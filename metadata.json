@@ -1,0 +1,6 @@
+{
+  "name": "EduClassroom 360 - Lớp Học Trực Tuyến Mô Phỏng",
+  "description": "Nền tảng lớp học mô phỏng trực tuyến tích hợp vẽ đồ thị hàm số và hình học tương tác (Toán), mô phỏng 2D vật lý thời gian thực (Lí), trình biên dịch và hệ thống nộp bài chấm test C++/Python (Tin), cùng sơ đồ tư duy văn học (Văn).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

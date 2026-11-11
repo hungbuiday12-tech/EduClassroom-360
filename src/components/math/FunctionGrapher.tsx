@@ -13,6 +13,7 @@ import {
   EyeOff,
   Camera,
   Maximize2,
+  Minimize2,
   Sliders,
   Table as TableIcon
 } from 'lucide-react';
@@ -21,6 +22,7 @@ const PRESET_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#
 
 export const FunctionGrapher: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Viewport transforms: center (cx, cy) in math units, scale (pixels per unit)
   const [viewport, setViewport] = useState({
@@ -61,6 +63,17 @@ export const FunctionGrapher: React.FC = () => {
   const [activeFuncId, setActiveFuncId] = useState<string>('f1');
   const [showTable, setShowTable] = useState<boolean>(false);
   const [hoverCoord, setHoverCoord] = useState<{ x: number; y: number } | null>(null);
+
+  // Keyboard shortcut listener to exit fullscreen on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullScreen) {
+        setIsFullScreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullScreen]);
 
   const activeFunc = functions.find((f) => f.id === activeFuncId) || functions[0];
 
@@ -499,17 +512,28 @@ export const FunctionGrapher: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full">
+    <div
+      className={
+        isFullScreen
+          ? 'fixed inset-0 z-50 p-4 sm:p-6 bg-slate-100/95 dark:bg-slate-950/95 backdrop-blur-xl flex flex-col lg:flex-row gap-4 overflow-hidden'
+          : 'flex flex-col lg:flex-row gap-6 h-full'
+      }
+    >
       {/* LEFT / MAIN: Graphing Stage */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+      <div className="flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-xs">
         {/* Stage Toolbar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tọa độ Oxy</span>
             <span className="text-slate-400" aria-hidden="true">·</span>
             <span className="text-xs font-mono text-slate-500 tabular-nums">
               {hoverCoord ? `x: ${hoverCoord.x.toFixed(2)} / y: ${hoverCoord.y.toFixed(2)}` : 'Di chuột để xem tọa độ'}
             </span>
+            {isFullScreen && (
+              <span className="ml-2 hidden sm:inline-flex text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-800/60">
+                Toàn màn hình (Esc)
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -547,6 +571,17 @@ export const FunctionGrapher: React.FC = () => {
               className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
             >
               <Camera className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setIsFullScreen(!isFullScreen)}
+              title={isFullScreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình (Full Screen)'}
+              className={`p-1.5 rounded-md transition-colors ${
+                isFullScreen
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+              }`}
+            >
+              {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>
         </div>

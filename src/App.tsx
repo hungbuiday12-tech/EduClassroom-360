@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { SubjectType } from './types';
 import { Header } from './components/Header';
 import { ClassroomOverview } from './components/ClassroomOverview';
@@ -88,98 +89,132 @@ function MainApp() {
 
   const activeXP = user ? user.xp : guestXP;
 
-  // DEDICATED VISITOR PAGE: Shown when user is not logged in and hasn't clicked guest explore
-  if (!loading && !user && !isGuestExploring) {
-    return <VisitorLandingPage onEnterAsGuest={handleEnterAsGuest} />;
-  }
-
   return (
-    <div className="relative min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
-      {/* Dynamic Cosmic Galaxy Background (subtle 60fps canvas in dark mode) */}
-      {isDark && (
-        <GalaxyBackground interactive={true} intensity="subtle" className="opacity-60" />
+    <AnimatePresence mode="wait">
+      {!loading && !user && !isGuestExploring ? (
+        <motion.div
+          key="visitor-landing-view"
+          initial={{ opacity: 0, scale: 0.985 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.015 }}
+          transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+          className="min-h-screen"
+        >
+          <VisitorLandingPage
+            onEnterAsGuest={handleEnterAsGuest}
+            isDark={isDark}
+            onToggleTheme={handleToggleTheme}
+          />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="classroom-main-view"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          className="relative min-h-screen flex flex-col bg-transparent text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200"
+        >
+          {/* Dynamic Cosmic Galaxy Background (active in both Light and Dark modes) */}
+          <GalaxyBackground
+            interactive={true}
+            intensity="vibrant"
+            isDark={isDark}
+            className={isDark ? 'opacity-70' : 'opacity-100'}
+          />
+
+          {/* Top Bar Contract Navigation */}
+          <Header
+            currentSubject={currentSubject}
+            onSelectSubject={setCurrentSubject}
+            isDark={isDark}
+            onToggleTheme={handleToggleTheme}
+            xp={activeXP}
+            onReturnToLanding={handleReturnToLanding}
+          />
+
+          {/* Main Viewport Container with Smooth Subject Transitions */}
+          <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSubject}
+                initial={{ opacity: 0, y: 12, scale: 0.995 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.995 }}
+                transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {currentSubject === 'overview' && (
+                  <ClassroomOverview onNavigate={setCurrentSubject} xp={activeXP} />
+                )}
+
+                {currentSubject === 'math' && <MathStudio />}
+
+                {currentSubject === 'physics' && <PhysicsLab />}
+
+                {currentSubject === 'cs' && (
+                  <CodeJudgeLab onScoreEarned={handleEarnXP} />
+                )}
+
+                {currentSubject === 'literature' && <LiteratureHub />}
+
+                {currentSubject === 'exams' && (
+                  <ExamHub onNavigateToSubject={setCurrentSubject} onEarnXP={handleEarnXP} />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+
+          {/* Welcome Screen & Authentication Modal for in-app login */}
+          <AuthModal />
+
+          {/* Clean Editorial Footer */}
+          <footer className="relative z-10 mt-auto border-t border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  EduClassroom 360
+                </span>
+                <span aria-hidden="true">·</span>
+                <span>Hệ thống lớp học mô phỏng vũ trụ học thuật Galaxy</span>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setCurrentSubject('math')}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                >
+                  Toán học
+                </button>
+                <button
+                  onClick={() => setCurrentSubject('physics')}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                >
+                  Vật lí 2D
+                </button>
+                <button
+                  onClick={() => setCurrentSubject('cs')}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                >
+                  Tin học
+                </button>
+                <button
+                  onClick={() => setCurrentSubject('literature')}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                >
+                  Ngữ văn
+                </button>
+                <button
+                  onClick={() => setCurrentSubject('exams')}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold"
+                >
+                  Đề Thi & Lời Giải (30 Đề)
+                </button>
+              </div>
+            </div>
+          </footer>
+        </motion.div>
       )}
-
-      {/* Top Bar Contract Navigation */}
-      <Header
-        currentSubject={currentSubject}
-        onSelectSubject={setCurrentSubject}
-        isDark={isDark}
-        onToggleTheme={handleToggleTheme}
-        xp={activeXP}
-        onReturnToLanding={handleReturnToLanding}
-      />
-
-      {/* Main Viewport Container */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {currentSubject === 'overview' && (
-          <ClassroomOverview onNavigate={setCurrentSubject} xp={activeXP} />
-        )}
-
-        {currentSubject === 'math' && <MathStudio />}
-
-        {currentSubject === 'physics' && <PhysicsLab />}
-
-        {currentSubject === 'cs' && (
-          <CodeJudgeLab onScoreEarned={handleEarnXP} />
-        )}
-
-        {currentSubject === 'literature' && <LiteratureHub />}
-
-        {currentSubject === 'exams' && (
-          <ExamHub onNavigateToSubject={setCurrentSubject} onEarnXP={handleEarnXP} />
-        )}
-      </main>
-
-      {/* Welcome Screen & Authentication Modal for in-app login */}
-      <AuthModal />
-
-      {/* Clean Editorial Footer */}
-      <footer className="relative z-10 mt-auto border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
-              EduClassroom 360
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>Hệ thống lớp học mô phỏng trực tuyến vũ trụ Galaxy</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setCurrentSubject('math')}
-              className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors"
-            >
-              Toán học
-            </button>
-            <button
-              onClick={() => setCurrentSubject('physics')}
-              className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors"
-            >
-              Vật lí 2D
-            </button>
-            <button
-              onClick={() => setCurrentSubject('cs')}
-              className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors"
-            >
-              Tin học
-            </button>
-            <button
-              onClick={() => setCurrentSubject('literature')}
-              className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors"
-            >
-              Ngữ văn
-            </button>
-            <button
-              onClick={() => setCurrentSubject('exams')}
-              className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold"
-            >
-              Đề Thi & Lời Giải (30 Đề)
-            </button>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </AnimatePresence>
   );
 }
 

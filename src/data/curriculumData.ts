@@ -10,40 +10,56 @@ export const MATH_LECTURES: MathLecture[] = [
     id: 'math-1',
     title: 'Khảo sát sự biến thiên & Đồ thị hàm số bậc ba',
     grade: 'Lớp 12 - Giải tích',
-    description: 'Nắm vững quy trình khảo sát đạo hàm $y\' = 3ax^2 + 2bx + c$, các dạng đồ thị chữ N/chữ N ngược, cực đại, cực tiểu và tâm đối xứng.',
+    category: 'Giải tích',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 8,
+    description: 'Nắm vững quy trình khảo sát đạo hàm $y\' = 3ax^2 + 2bx + c$, các dạng đồ thị chữ N/chữ N ngược, cực đại, cực tiểu và tâm đối xứng uốn.',
+    mnemonics: [
+      'a > 0: Nhánh phải đi lên (chữ N). a < 0: Nhánh phải đi xuống (chữ N ngược).',
+      'Đạo hàm y\' bậc 2: Có 2 cực trị khi Δ\' > 0; Không có cực trị khi Δ\' ≤ 0.',
+      'Tâm đối xứng uốn I luôn là trung điểm của đoạn nối 2 điểm cực trị.'
+    ],
+    commonTraps: [
+      'Quên điều kiện a ≠ 0 khi đề bài cho tham số m ở hệ số bậc cao nhất.',
+      'Nhầm lẫn giữa "Điểm cực trị của hàm số" (x) và "Cực trị của hàm số" (y).'
+    ],
     theory: [
       '1. Tập xác định: D = R với hàm số đa thức bậc ba $y = ax^3 + bx^2 + cx + d$ ($a \\neq 0$).',
       '2. Đạo hàm: $y\' = 3ax^2 + 2bx + c$. Biệt thức $\\Delta\' = b^2 - 3ac$.',
-      '3. Nếu $\\Delta\' > 0$: Đồ thị có 2 điểm cực trị. Nếu $\\Delta\' \\le 0$: Hàm số luôn đồng biến hoặc luôn nghịch biến trên R (không có cực trị).',
-      '4. Tâm đối xứng của đồ thị: Là điểm uốn $I(x_0, y_0)$ với $x_0 = -\\frac{b}{3a}$ (nghiệm của $y\'\' = 0$).',
-      '5. Đồ thị luôn cắt trục hoành tại ít nhất một điểm thực.'
+      '3. Nếu $\\Delta\' > 0$: Đồ thị có 2 điểm cực trị phân biệt ($x_1 < x_2$). Tích 2 cực trị cùng dấu nếu $ac > 0$.',
+      '4. Nếu $\\Delta\' \\le 0$: Hàm số luôn đồng biến trên R nếu $a > 0$, hoặc nghịch biến trên R nếu $a < 0$.',
+      '5. Điểm uốn $I(x_0, y_0)$ với $x_0 = -\\frac{b}{3a}$ (nghiệm của $y\'\' = 0$) là tâm đối xứng của đồ thị.',
+      '6. Phương trình đường thẳng đi qua 2 điểm cực trị: Lấy y chia cho y\' lấy phần dư.'
     ],
     keyFormulas: [
       'y = ax^3 + bx^2 + cx + d',
       'y\' = 3ax^2 + 2bx + c',
       'x_{uon} = -b / (3a)',
-      '\\Delta\' = b^2 - 3ac'
+      '\\Delta\' = b^2 - 3ac',
+      'd_{cuc\\_tri}: y = \\left(\\frac{2c}{3} - \\frac{2b^2}{9a}\\right)x + \\left(d - \\frac{bc}{9a}\\right)'
+    ],
+    flashcards: [
+      {
+        front: 'Khi nào đồ thị hàm bậc 3 có 2 điểm cực trị?',
+        back: 'Khi và chỉ khi phương trình y\' = 0 có 2 nghiệm phân biệt, tức là Δ\' = b² - 3ac > 0.',
+        tip: 'Nếu Δ\' ≤ 0 hàm số đơn điệu trên toàn R.'
+      },
+      {
+        front: 'Tọa độ hoành độ tâm đối xứng uốn x₀ của hàm bậc ba?',
+        back: 'x₀ = -b / (3a). Đây là nghiệm của đạo hàm cấp hai y\'\' = 6ax + 2b = 0.',
+        tip: 'Điểm uốn I luôn nằm chính giữa 2 điểm cực trị.'
+      }
     ],
     sampleProblems: [
       {
-        question: 'Cho hàm số $y = x^3 - 3x^2 + 2$. Điểm cực đại của đồ thị hàm số là:',
-        options: [
-          'A. (0; 2)',
-          'B. (2; -2)',
-          'C. (1; 0)',
-          'D. (-1; -2)'
-        ],
+        question: 'Cho hàm số $y = x^3 - 3x^2 + 2$. Tọa độ điểm cực đại của đồ thị hàm số là:',
+        options: ['A. (0; 2)', 'B. (2; -2)', 'C. (1; 0)', 'D. (-1; -2)'],
         correctIndex: 0,
-        explanation: 'Ta có $y\' = 3x^2 - 6x = 3x(x - 2)$. Nghiệm $x=0$ hoặc $x=2$. Bảng xét dấu $y\'$: qua $x=0$ đạo hàm đổi dấu từ (+) sang (-) nên $x=0$ là điểm cực đại, $y(0) = 2$. Vậy tọa độ điểm cực đại là (0; 2).'
+        explanation: 'Ta có $y\' = 3x^2 - 6x = 3x(x - 2)$. Nghiệm $x=0$ hoặc $x=2$. Bảng xét dấu: qua $x=0$ đạo hàm đổi dấu từ (+) sang (-) nên $x=0$ là điểm cực đại, thay vào được $y(0) = 2$. Vậy tọa độ điểm cực đại là (0; 2).'
       },
       {
         question: 'Đồ thị hàm số $y = -x^3 + 3x - 1$ nhận điểm nào sau đây làm tâm đối xứng?',
-        options: [
-          'A. (0; -1)',
-          'B. (1; 1)',
-          'C. (-1; -3)',
-          'D. (0; 0)'
-        ],
+        options: ['A. (0; -1)', 'B. (1; 1)', 'C. (-1; -3)', 'D. (0; 0)'],
         correctIndex: 0,
         explanation: 'Ta có $y\'\' = -6x$. $y\'\' = 0 \\Leftrightarrow x = 0$. Thay vào hàm số được $y(0) = -1$. Vậy tâm đối xứng (điểm uốn) là $I(0; -1)$.'
       }
@@ -59,29 +75,50 @@ export const MATH_LECTURES: MathLecture[] = [
     id: 'math-2',
     title: 'Hàm số phân thức hữu tỉ bậc nhất y = (ax+b)/(cx+d)',
     grade: 'Lớp 12 - Giải tích',
+    category: 'Giải tích',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 7,
     description: 'Quy tắc xác định tiệm cận đứng $x = -d/c$, tiệm cận ngang $y = a/c$, tâm đối xứng và hình dáng hypebol vuông góc.',
+    mnemonics: [
+      'Đạo hàm chéo: ad - bc (huyền trừ sắc). Dấu y\' phụ thuộc hoàn toàn vào hiệu này.',
+      'Đứng: Mẫu bằng 0 (x = -d/c). Ngang: Tỉ số bậc cao nhất (y = a/c).',
+      'Hàm số không bao giờ có cực trị!'
+    ],
+    commonTraps: [
+      'Ghi hàm số đồng biến trên R \\ {-d/c} là SAI. Phải ghi "trên từng khoảng xác định".',
+      'Quên điều kiện ad - bc ≠ 0 (nếu bằng 0 thì hàm số suy biến thành đường thẳng).'
+    ],
     theory: [
       '1. Tập xác định: $D = R \\setminus \\{-d/c\\}$ ($c \\neq 0, ad - bc \\neq 0$).',
-      '2. Đạo hàm: $y\' = \\frac{ad - bc}{(cx + d)^2}$. Dấu của đạo hàm hoàn toàn phụ thuộc vào tử số $ad - bc$.',
-      '3. Nếu $ad - bc > 0$: Hàm số đồng biến trên từng khoảng xác định. Đồ thị nằm ở góc phần tư II và IV so với 2 tiệm cận.',
-      '4. Nếu $ad - bc < 0$: Hàm số nghịch biến trên từng khoảng xác định. Đồ thị nằm ở góc phần tư I và III.',
-      '5. Tiệm cận đứng: Đường thẳng $x = -\\frac{d}{c}$. Tiệm cận ngang: Đường thẳng $y = \\frac{a}{c}$. Tâm đối xứng là giao điểm 2 tiệm cận $I(-d/c; a/c)$.'
+      '2. Đạo hàm: $y\' = \\frac{ad - bc}{(cx + d)^2}$. Luôn cùng dấu với $ad - bc$ trên từng khoảng.',
+      '3. Nếu $ad - bc > 0$: Hàm số đồng biến trên $(-\\infty; -d/c)$ và $(-d/c; +\\infty)$. Đồ thị nằm ở góc phần tư II và IV so với 2 tiệm cận.',
+      '4. Nếu $ad - bc < 0$: Hàm số nghịch biến trên từng khoảng xác định. Đồ thị nằm ở góc I và III.',
+      '5. Tiệm cận đứng: $x = -d/c$. Tiệm cận ngang: $y = a/c$. Tâm đối xứng $I(-d/c; a/c)$.',
+      '6. Mọi tiếp tuyến của hypebol đều cắt 2 tiệm cận tạo thành tam giác có diện tích không đổi $S = \\frac{2|ad - bc|}{c^2}$.'
     ],
     keyFormulas: [
       'y = \\frac{ax + b}{cx + d}',
       'y\' = \\frac{ad - bc}{(cx + d)^2}',
       'TCĐ: x = -d / c',
-      'TCN: y = a / c'
+      'TCN: y = a / c',
+      'Tam\\_doi\\_xung: I(-d/c; a/c)'
+    ],
+    flashcards: [
+      {
+        front: 'Hàm số y = (ax+b)/(cx+d) có cực trị không?',
+        back: 'Không bao giờ có cực trị! Vì đạo hàm y\' = (ad-bc)/(cx+d)² luôn mang một dấu không đổi trên tập xác định.',
+        tip: 'Rất nhiều học sinh chọn nhầm có cực trị khi làm nhanh.'
+      },
+      {
+        front: 'Công thức diện tích tam giác tạo bởi tiếp tuyến bất kỳ và 2 tiệm cận?',
+        back: 'S = 2|ad - bc| / c². Diện tích này luôn là hằng số bất biến đối với mọi tiếp điểm!',
+        tip: 'Áp dụng cho bài toán Min/Max diện tích tiếp tuyến.'
+      }
     ],
     sampleProblems: [
       {
         question: 'Hàm số $y = \\frac{2x + 1}{x - 1}$ có giao điểm của hai đường tiệm cận là:',
-        options: [
-          'A. (1; 2)',
-          'B. (-1; 2)',
-          'C. (2; 1)',
-          'D. (1; -1)'
-        ],
+        options: ['A. (1; 2)', 'B. (-1; 2)', 'C. (2; 1)', 'D. (1; -1)'],
         correctIndex: 0,
         explanation: 'Tiệm cận đứng là $x = 1$, tiệm cận ngang là $y = 2/1 = 2$. Do đó giao điểm của hai tiệm cận là $I(1; 2)$.'
       }
@@ -95,33 +132,515 @@ export const MATH_LECTURES: MathLecture[] = [
   },
   {
     id: 'math-3',
-    title: 'Định lý Pythagoras & Hình học lượng giác trong tam giác',
-    grade: 'Lớp 9-10 - Hình học',
-    description: 'Khám phá trực quan hệ thức lượng tam giác vuông, định lý Cosin, định lý Sin và công thức diện tích tam giác Heron.',
+    title: 'Hàm số trùng phương bậc bốn y = ax⁴ + bx² + c & 3 Cực Trị',
+    grade: 'Lớp 12 - Giải tích',
+    category: 'Giải tích',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 9,
+    description: 'Quy tắc dấu ab < 0 có 3 cực trị, tam giác cực trị cân tại đỉnh trên trục Oy, và các công thức giải nhanh tam giác vuông cân / tam giác đều.',
+    mnemonics: [
+      'ab < 0 (trái dấu): 3 cực trị hình chữ W (a > 0) hoặc M (a < 0).',
+      'ab ≥ 0 (cùng dấu): 1 cực trị duy nhất tại x = 0 (parabol uốn).',
+      '3 điểm cực trị luôn tạo thành tam giác cân tại A(0; c) đối xứng qua trục tung Oy.'
+    ],
+    commonTraps: [
+      'Quên rằng điểm cực trị A(0; c) luôn luôn cố định trên trục Oy.',
+      'Tính sai góc ∠BAC của tam giác cực trị: tan²(A/2) = -b³ / (8a).'
+    ],
     theory: [
-      '1. Định lý Pythagoras: Trong tam giác vuông, bình phương cạnh huyền bằng tổng bình phương hai cạnh góc vuông: $a^2 = b^2 + c^2$.',
-      '2. Hệ thức lượng trong tam giác vuông: $b^2 = a \\cdot b\'$, $c^2 = a \\cdot c\'$, $h^2 = b\' \\cdot c\'$, $a \\cdot h = b \\cdot c$.',
-      '3. Định lý Cosin trong tam giác bất kỳ: $a^2 = b^2 + c^2 - 2bc \\cos A$.',
-      '4. Định lý Sin: $\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C} = 2R$.',
-      '5. Diện tích tam giác: $S = \\frac{1}{2}ah = \\frac{1}{2}ab\\sin C = \\frac{abc}{4R} = pr = \\sqrt{p(p-a)(p-b)(p-c)}$.'
+      '1. Tập xác định: $D = R$. Hàm số chẵn: đồ thị luôn nhận trục tung Oy làm trục đối xứng.',
+      '2. Đạo hàm: $y\' = 4ax^3 + 2bx = 2x(2ax^2 + b)$.',
+      '3. Nếu $ab < 0$: Có 3 cực trị: $A(0; c)$, $B(-\\sqrt{-b/2a}; -\\Delta/4a)$, $C(\\sqrt{-b/2a}; -\\Delta/4a)$.',
+      '4. Tam giác ABC luôn cân tại A. Độ dài cạnh đáy $BC = 2\\sqrt{-b/2a}$, chiều cao $AH = \\frac{b^2}{4a}$.',
+      '5. Tam giác ABC vuông cân tại A $\\Leftrightarrow b^3 + 8a = 0$.',
+      '6. Tam giác ABC đều $\\Leftrightarrow b^3 + 24a = 0$.'
     ],
     keyFormulas: [
-      'a^2 = b^2 + c^2 (Pythagoras)',
-      'a^2 = b^2 + c^2 - 2bc\\cos(A)',
-      'S = \\frac{1}{2} a h_a = \\frac{1}{2} ab \\sin(C)',
-      'S = \\sqrt{p(p-a)(p-b)(p-c)}'
+      'y = ax^4 + bx^2 + c',
+      '3\\_cuc\\_tri \\Leftrightarrow ab < 0',
+      '\\Delta\\_ABC\\_vuong \\Leftrightarrow b^3 + 8a = 0',
+      '\\Delta\\_ABC\\_deu \\Leftrightarrow b^3 + 24a = 0',
+      'S_{\\Delta ABC} = \\sqrt{-\\frac{b^5}{32a^3}}'
+    ],
+    flashcards: [
+      {
+        front: 'Điều kiện để hàm trùng phương y = ax⁴ + bx² + c có 3 điểm cực trị tạo thành tam giác vuông cân?',
+        back: 'b³ + 8a = 0 (kết hợp với ab < 0).',
+        tip: 'Chứng minh từ tan(45°) = BC / (2*AH) suy ra b³ = -8a.'
+      },
+      {
+        front: 'Điều kiện để 3 điểm cực trị tạo thành tam giác đều?',
+        back: 'b³ + 24a = 0 (với ab < 0).',
+        tip: 'Công thức giải nhanh trắc nghiệm 30 giây.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Tìm tất cả các giá trị của m để hàm số $y = x^4 - 2mx^2 + 1$ có 3 điểm cực trị tạo thành tam giác vuông cân:',
+        options: ['A. m = 1', 'B. m = 2', 'C. m = -1', 'D. m = √2'],
+        correctIndex: 0,
+        explanation: 'Ta có a = 1, b = -2m. Áp dụng công thức giải nhanh tam giác cực trị vuông cân: b³ + 8a = 0 ⇔ (-2m)³ + 8(1) = 0 ⇔ -8m³ + 8 = 0 ⇔ m = 1. Kiểm tra ab = 1*(-2) < 0 (thỏa mãn).'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'quadratic',
+      params: { a: 1, b: 0, c: -2, d: 0 },
+      color: '#8b5cf6',
+      name: 'y = x⁴ - 2x²'
+    }
+  },
+  {
+    id: 'math-4',
+    title: 'Giá trị lớn nhất & Nhỏ nhất (Min - Max) & Bài toán tối ưu thực tế',
+    grade: 'Lớp 12 - Giải tích',
+    category: 'Giải tích',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 10,
+    description: 'Quy trình tìm Min/Max trên đoạn [a; b], trên khoảng (a; b) và ứng dụng tối ưu hóa chi phí sản xuất, thể tích lớn nhất trong thực tiễn.',
+    mnemonics: [
+      'Trên đoạn đóng [a; b]: Chỉ cần tính f(a), f(b) và f(xᵢ) tại các điểm đạo hàm bằng 0 rồi so sánh. KHÔNG CẦN lập bảng biến thiên!',
+      'Trên khoảng mở (a; b): Bắt buộc phải lập bảng biến thiên hoặc xét giới hạn tại 2 đầu mút.',
+      'Bất đẳng thức Cauchy: Dấu bằng xảy ra khi tất cả các số hạng bằng nhau.'
+    ],
+    commonTraps: [
+      'Quên loại nghiệm xᵢ không thuộc đoạn [a; b].',
+      'Đề bài hỏi trên khoảng (a; b) nhưng kết luận điểm cực trị nằm ngoài khoảng.'
+    ],
+    theory: [
+      '1. Định nghĩa: $M = \\max f(x)$ trên K nếu $f(x) \\le M, \\forall x \\in K$ và $\\exists x_0 \\in K: f(x_0) = M$.',
+      '2. Quy trình tìm GTLN, GTNN trên đoạn $[a; b]$: Tính $y\'$; tìm nghiệm $x_1, x_2, ... \\in [a; b]$; tính các giá trị $f(a), f(b), f(x_1)...$; so sánh số lớn nhất là Max, số nhỏ nhất là Min.',
+      '3. Bất đẳng thức Cauchy cho 2 số dương: $x + y \\ge 2\\sqrt{xy}$ (dấu = khi $x = y$).',
+      '4. Bất đẳng thức Cauchy cho 3 số dương: $x + y + z \\ge 3\\sqrt[3]{xyz}$ (dấu = khi $x = y = z$).',
+      '5. Kỹ thuật đưa về 1 biến trong bài toán thực tế: Tìm mối liên hệ hình học giữa bán kính R và chiều cao h để thế vào hàm thể tích.'
+    ],
+    keyFormulas: [
+      '\\max_{[a; b]} f(x) = \\max\\{f(a), f(b), f(x_i)\\}',
+      'a + b \\ge 2\\sqrt{ab} \\quad (a, b > 0)',
+      'a + b + c \\ge 3\\sqrt[3]{abc} \\quad (a, b, c > 0)',
+      '(ax + by)^2 \\le (a^2 + b^2)(x^2 + y^2)'
+    ],
+    flashcards: [
+      {
+        front: 'Quy trình tìm Min - Max của hàm liên tục trên đoạn [a; b] có cần vẽ bảng biến thiên không?',
+        back: 'Không cần! Chỉ cần tính giá trị tại 2 đầu mút f(a), f(b) và tại các nghiệm y\' = 0 thuộc (a; b), sau đó so sánh trực tiếp.',
+        tip: 'Tiết kiệm 50% thời gian làm bài trắc nghiệm.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Giá trị nhỏ nhất của hàm số $f(x) = x + \\frac{4}{x}$ trên đoạn $[1; 4]$ là:',
+        options: ['A. 4', 'B. 5', 'C. 2', 'D. 4.25'],
+        correctIndex: 0,
+        explanation: 'Ta có f\'(x) = 1 - 4/x² = (x² - 4)/x². f\'(x) = 0 ⇔ x = 2 (do x ∈ [1; 4]). Tính f(1) = 1 + 4 = 5; f(4) = 4 + 1 = 5; f(2) = 2 + 2 = 4. Vậy Min = 4 tại x = 2 (hoặc dùng Cauchy trực tiếp).'
+      }
+    ]
+  },
+  {
+    id: 'math-5',
+    title: 'Nguyên hàm & Kỹ thuật Tích phân từng phần',
+    grade: 'Lớp 12 - Giải tích',
+    category: 'Giải tích',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 11,
+    description: 'Bí kíp "Nhất Lô, Nhì Đa, Tam Lượng, Tứ Mũ" khi đặt u và dv, phương pháp múa cột vi phân - nguyên hàm đường chéo siêu tốc.',
+    mnemonics: [
+      'Thứ tự ưu tiên đặt u: "Nhất Lô (ln, log) - Nhì Đa (đa thức x) - Tam Lượng (sin, cos) - Tứ Mũ (eˣ, aˣ)". Đại lượng còn lại là dv.',
+      'Công thức từng phần: ∫ u dv = u·v - ∫ v du.',
+      'Múa cột: Cột Đạo hàm D và cột Nguyên hàm I, nhân chéo đổi dấu (+, -, +, -).'
+    ],
+    commonTraps: [
+      'Quên đổi cận tích phân khi thực hiện phương pháp đổi biến số $t = u(x)$.',
+      'Nhầm dấu trừ trong công thức tích phân từng phần: $uv - \\int v du$.'
+    ],
+    theory: [
+      '1. Định lý cơ bản: Nếu $F(x)$ là nguyên hàm của $f(x)$ thì $\\int_a^b f(x) dx = F(b) - F(a)$.',
+      '2. Phương pháp đổi biến: $\\int f(u(x)) u\'(x) dx = \\int f(u) du$. Với tích phân xác định bắt buộc phải đổi cận.',
+      '3. Công thức tích phân từng phần: $\\int u dv = uv - \\int v du$. Cận từ a đến b: $\\int_a^b u dv = uv|_a^b - \\int_a^b v du$.',
+      '4. Kỹ thuật múa cột (Tabular Integration):',
+      '   - Cột trái: Lấy đạo hàm của u liên tục cho đến khi bằng 0 hoặc xuất hiện lại biểu thức tuần hoàn ban đầu.',
+      '   - Cột phải: Lấy nguyên hàm của dv tương ứng.',
+      '   - Nối chéo: đường 1 mang dấu (+), đường 2 mang dấu (-), đường 3 mang dấu (+)...',
+      '5. Ứng dụng tính diện tích: $S = \\int_a^b |f(x) - g(x)| dx$. Thể tích tròn xoay quanh Ox: $V = \\pi \\int_a^b [f(x)]^2 dx$.'
+    ],
+    keyFormulas: [
+      '\\int u dv = uv - \\int v du',
+      '\\int_a^b u dv = [uv]_a^b - \\int_a^b v du',
+      'S = \\int_a^b |f(x) - g(x)| dx',
+      'V_{Ox} = \\pi \\int_a^b [f(x)]^2 dx'
+    ],
+    flashcards: [
+      {
+        front: 'Khẩu quyết chọn biến u khi tích phân từng phần là gì?',
+        back: '"Nhất Lô, Nhì Đa, Tam Lượng, Tứ Mũ": 1. Logarit (ln x) -> 2. Đa thức (P(x)) -> 3. Lượng giác (sin, cos) -> 4. Mũ (eˣ).',
+        tip: 'Phần còn lại tự động là dv.'
+      },
+      {
+        front: 'Thể tích khối tròn xoay tạo thành khi quay đồ thị y = f(x) quanh trục Ox từ a đến b?',
+        back: 'V = π ∫ [f(x)]² dx (cận từ a đến b). Đừng quên hằng số π và bình phương hàm số!',
+        tip: 'Học sinh hay quên nhân với số π dẫn đến chọn sai đáp án.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Tích phân $I = \\int_0^1 x e^x dx$ có giá trị bằng:',
+        options: ['A. 1', 'B. e - 1', 'C. e', 'D. 2'],
+        correctIndex: 0,
+        explanation: 'Đặt u = x => du = dx; dv = eˣ dx => v = eˣ. Ta có I = [x eˣ]|₀¹ - ∫₀¹ eˣ dx = (1*e¹ - 0) - [eˣ]|₀¹ = e - (e - 1) = 1.'
+      }
+    ]
+  },
+  {
+    id: 'math-6',
+    title: 'Hình học Tọa độ Oxyz: Mặt phẳng, Mặt cầu & Khoảng cách',
+    grade: 'Lớp 12 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 9,
+    description: 'Làm chủ phương trình mặt phẳng qua 1 điểm có VTPT, phương trình mặt cầu tâm I bán kính R và công thức khoảng cách từ điểm đến mặt phẳng.',
+    mnemonics: [
+      'Véc tơ pháp tuyến n = (A; B; C) là các hệ số đứng trước x, y, z trong Ax + By + Cz + D = 0.',
+      'Khoảng cách: "Thay tọa độ điểm vào vế trái chia căn tổng bình phương VTPT".',
+      'Mặt cầu cắt mặt phẳng: d(I, P) < R thì giao tuyến là đường tròn bán kính r = √(R² - d²).'
+    ],
+    commonTraps: [
+      'Quên lấy dấu trị tuyệt đối ở tử số trong công thức khoảng cách.',
+      'Nhầm lẫn giữa phương trình chính tắc và phương trình tổng quát của mặt cầu: $R^2 = a^2 + b^2 + c^2 - d$.'
+    ],
+    theory: [
+      '1. Phương trình mặt phẳng: Qua $M_0(x_0, y_0, z_0)$ có VTPT $\\vec{n}=(A; B; C)$: $A(x - x_0) + B(y - y_0) + C(z - z_0) = 0$.',
+      '2. Khoảng cách từ điểm $M_0(x_0, y_0, z_0)$ đến $(\\alpha): Ax + By + Cz + D = 0$: $d(M_0, \\alpha) = \\frac{|Ax_0 + By_0 + Cz_0 + D|}{\\sqrt{A^2 + B^2 + C^2}}$.',
+      '3. Phương trình mặt cầu tâm $I(a; b; c)$ bán kính $R$: $(x - a)^2 + (y - b)^2 + (z - c)^2 = R^2$.',
+      '4. Dạng khai triển mặt cầu: $x^2 + y^2 + z^2 - 2ax - 2by - 2cz + d = 0$ với điều kiện $R = \\sqrt{a^2 + b^2 + c^2 - d} > 0$.',
+      '5. Vị trí tương đối mặt cầu (S) và mặt phẳng (P):',
+      '   - $d(I, P) > R$: Không giao nhau.',
+      '   - $d(I, P) = R$: (P) tiếp xúc với (S) tại tiếp điểm H.',
+      '   - $d(I, P) < R$: (P) cắt (S) theo thiết diện là đường tròn tâm H bán kính $r = \\sqrt{R^2 - d^2}$.'
+    ],
+    keyFormulas: [
+      'd(M, P) = \\frac{|Ax_0 + By_0 + Cz_0 + D|}{\\sqrt{A^2 + B^2 + C^2}}',
+      '(x - a)^2 + (y - b)^2 + (z - c)^2 = R^2',
+      'R = \\sqrt{a^2 + b^2 + c^2 - d}',
+      'r_{duong\\_tron} = \\sqrt{R^2 - d^2}'
+    ],
+    flashcards: [
+      {
+        front: 'Công thức khoảng cách từ điểm M(x₀, y₀, z₀) đến mặt phẳng (P): Ax + By + Cz + D = 0?',
+        back: 'd = |Ax₀ + By₀ + Cz₀ + D| / √(A² + B² + C²).',
+        tip: 'Tử có trị tuyệt đối, mẫu có căn tổng bình phương các tọa độ VTPT.'
+      },
+      {
+        front: 'Bán kính r của đường tròn giao tuyến giữa mặt cầu bán kính R và mặt phẳng cách tâm khoảng cách d?',
+        back: 'r = √(R² - d²). Đây là định lý Pythagoras trong tam giác vuông tạo bởi tâm I, tiếp điểm và đường tròn.',
+        tip: 'Điều kiện cắt là d < R.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Khoảng cách từ điểm $M(1; -2; 3)$ đến mặt phẳng $(P): 2x - y + 2z + 1 = 0$ là:',
+        options: ['A. 11/3', 'B. 7/3', 'C. 3', 'D. 11/9'],
+        correctIndex: 0,
+        explanation: 'd(M, P) = |2(1) - (-2) + 2(3) + 1| / √(2² + (-1)² + 2²) = |2 + 2 + 6 + 1| / √(9) = 11 / 3.'
+      }
+    ]
+  },
+  {
+    id: 'math-7',
+    title: 'Thể tích Khối Đa Diện: Khối Chóp, Lăng Trụ & Tỉ số Thể tích Simson',
+    grade: 'Lớp 12 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Vận dụng cao',
+    readTimeMinutes: 10,
+    description: 'Quy tắc xác định chân đường cao khối chóp, công thức tỉ số Simson cho chóp tam giác và kỹ thuật đổi đỉnh / đổi đáy trong thể tích không gian.',
+    mnemonics: [
+      'Chóp: V = 1/3 S_đáy · h (Có chóp nhọn thì chia 3). Lăng trụ: V = S_đáy · h (Thẳng đứng không chia 3).',
+      'Chóp có các cạnh bên bằng nhau: Chân đường cao rơi đúng vào TÂM ĐƯỜNG TRÒN NGOẠI TIẾP ĐÁY.',
+      'Chóp có mặt bên vuông góc đáy: Đường cao nằm trong mặt bên đó hạ vuông góc xuống giao tuyến.'
+    ],
+    commonTraps: [
+      'Áp dụng tỉ số Simson cho chóp tứ giác là SAI (Simson chỉ đúng cho chóp tam giác S.ABC). Với chóp tứ giác phải chia thành 2 chóp tam giác!',
+      'Quên chia 3 trong công thức thể tích khối chóp.'
+    ],
+    theory: [
+      '1. Thể tích khối chóp: $V = \\frac{1}{3} B \\cdot h$ ($B$ là diện tích đáy, $h$ là chiều cao từ đỉnh đến mặt đáy).',
+      '2. Thể tích khối lăng trụ: $V = B \\cdot h$. Khối hộp chữ nhật: $V = abc$. Khối lập phương: $V = a^3$.',
+      '3. Tỉ số thể tích Simson (Chóp tam giác): Cho chóp $S.ABC$. Lấy $A\' \\in SA, B\' \\in SB, C\' \\in SC$: $\\frac{V_{S.A\'B\'C\'}}{V_{S.ABC}} = \\frac{SA\'}{SA} \\cdot \\frac{SB\'}{SB} \\cdot \\frac{SC\'}{SC}$.',
+      '4. Kỹ thuật tỉ số khoảng cách (Đổi đỉnh): Nếu đường thẳng $AB$ cắt mặt phẳng $(\\alpha)$ tại $I$ thì $\\frac{d(A, \\alpha)}{d(B, \\alpha)} = \\frac{IA}{IB}$.',
+      '5. Thể tích khối tứ diện đều cạnh $a$: $V = \\frac{a^3\\sqrt{2}}{12}$.'
+    ],
+    keyFormulas: [
+      'V_{chop} = \\frac{1}{3} S_{day} \\cdot h',
+      'V_{lang\\_tru} = S_{day} \\cdot h',
+      '\\frac{V_{S.A\'B\'C\'}}{V_{S.ABC}} = \\frac{SA\'}{SA} \\cdot \\frac{SB\'}{SB} \\cdot \\frac{SC\'}{SC}',
+      'V_{tu\\_dien\\_deu} = \\frac{a^3\\sqrt{2}}{12}'
+    ],
+    flashcards: [
+      {
+        front: 'Công thức tỉ số thể tích Simson áp dụng được cho loại hình chóp nào?',
+        back: 'CHỈ ÁP DỤNG ĐƯỢC CHO HÌNH CHÓP TAM GIÁC (S.ABC)! Tuyệt đối không áp dụng thẳng cho chóp tứ giác.',
+        tip: 'Nếu là chóp tứ giác phải kẻ đường chéo chia thành 2 chóp tam giác.'
+      },
+      {
+        front: 'Thể tích của khối tứ diện đều cạnh a là bao nhiêu?',
+        back: 'V = a³√2 / 12.',
+        tip: 'Thuộc lòng công thức này để giải câu trắc nghiệm nhận biết trong 5 giây.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho hình chóp $S.ABC$ có thể tích $V = 24$. Gọi $M, N$ lần lượt là trung điểm của $SA, SB$. Thể tích khối chóp $S.MNC$ là:',
+        options: ['A. 6', 'B. 12', 'C. 8', 'D. 4'],
+        correctIndex: 0,
+        explanation: 'Áp dụng công thức tỉ số thể tích Simson: V(S.MNC) / V(S.ABC) = (SM/SA) * (SN/SB) * (SC/SC) = (1/2) * (1/2) * 1 = 1/4. Vậy V(S.MNC) = 24 / 4 = 6.'
+      }
+    ]
+  },
+  {
+    id: 'math-8',
+    title: 'Hàm số Mũ & Logarit: Phương trình, Bất phương trình & Bài toán Lãi kép',
+    grade: 'Lớp 12 - Giải tích',
+    category: 'Lượng giác & Mũ',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 8,
+    description: 'Nắm chắc điều kiện cơ số $a > 0, a \\neq 1$, các công thức đổi cơ số logarit, nghiệm phương trình mũ và bài toán lãi kép ngân hàng.',
+    mnemonics: [
+      'Cơ số a > 1: Hàm đồng biến, giữ nguyên chiều bất phương trình.',
+      'Cơ số 0 < a < 1: Hàm nghịch biến, PHẢI ĐỔI CHIỀU bất phương trình!',
+      'Logarit của tích thành tổng: log(xy) = log(x) + log(y). Logarit của thương thành hiệu.'
+    ],
+    commonTraps: [
+      'Quên điều kiện biểu thức trong logarit phải DƯƠNG: $\\log_a f(x)$ xác định khi $f(x) > 0$.',
+      'Quên đổi chiều bất phương trình khi cơ số bé hơn 1 (ví dụ $\\log_{0.5} x < 2 \\Rightarrow x > 0.5^2$).'
+    ],
+    theory: [
+      '1. Điều kiện xác định: $\\log_a b$ có nghĩa khi $a > 0, a \\neq 1$ và $b > 0$.',
+      '2. Công thức biến đổi cơ bản: $\\log_a(xy) = \\log_a x + \\log_a y$; $\\log_a(x/y) = \\log_a x - \\log_a y$; $\\log_a(x^\\alpha) = \\alpha \\log_a x$.',
+      '3. Công thức đổi cơ số: $\\log_a b = \\frac{\\log_c b}{\\log_c a}$; $\\log_a b = \\frac{1}{\\log_b a}$.',
+      '4. Đạo hàm hàm số mũ và logarit: $(a^x)\' = a^x \\ln a$; $(e^x)\' = e^x$; $(\\log_a x)\' = \\frac{1}{x \\ln a}$; $(\\ln x)\' = \\frac{1}{x}$.',
+      '5. Công thức lãi kép gửi ngân hàng: $S_n = A(1 + r)^n$ ($A$ là vốn ban đầu, $r$ là lãi suất mỗi kỳ hạn, $n$ là số kỳ hạn).'
+    ],
+    keyFormulas: [
+      '\\log_a(xy) = \\log_a x + \\log_a y',
+      '\\log_a b = \\frac{\\ln b}{\\ln a}',
+      '(a^x)\' = a^x \\ln a',
+      '(\\ln x)\' = \\frac{1}{x}',
+      'S_n = A(1 + r)^n'
+    ],
+    flashcards: [
+      {
+        front: 'Khi giải bất phương trình logarit log_a f(x) > log_a g(x), khi nào phải đảo chiều?',
+        back: 'Khi cơ số a nằm trong khoảng 0 < a < 1 thì bất đẳng thức đổi chiều: f(x) < g(x) (kèm điều kiện f(x) > 0).',
+        tip: 'Lỗi sai phổ biến nhất trong đề thi tốt nghiệp THPT.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Tập nghiệm của bất phương trình $\\log_{0.5}(x - 1) > -1$ là:',
+        options: ['A. (1; 3)', 'B. (3; +∞)', 'C. (1; 2)', 'D. (-∞; 3)'],
+        correctIndex: 0,
+        explanation: 'Điều kiện: x - 1 > 0 <=> x > 1. Vì cơ số 0.5 < 1 nên đổi chiều: x - 1 < (0.5)⁻¹ = 2 <=> x < 3. Kết hợp điều kiện ta được tập nghiệm là (1; 3).'
+      }
+    ]
+  },
+  {
+    id: 'math-9',
+    title: 'Số Phức: Dạng Đại số z = a + bi, Môđun & Quỹ tích Hình học',
+    grade: 'Lớp 12 - Giải tích',
+    category: 'Số phức',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 7,
+    description: 'Khái niệm đơn vị ảo $i^2 = -1$, phần thực, phần ảo, số phức liên hợp $\\bar{z}$, môđun $|z| = \\sqrt{a^2+b^2}$ và phương trình đường tròn elip biểu diễn.',
+    mnemonics: [
+      'Số phức z = a + bi: a là phần thực, b là phần ảo (chú ý phần ảo không chứa chữ i!).',
+      'Môđun số phức tương đương độ dài véc tơ: |z| = √(a² + b²).',
+      'Tập hợp điểm |z - (x₀ + y₀i)| = R là đường tròn tâm I(x₀; y₀) bán kính R.'
+    ],
+    commonTraps: [
+      'Nói "phần ảo là bi" là SAI, phần ảo chỉ là số thực b.',
+      'Nhầm tính chất môđun: $|z_1 + z_2| \\le |z_1| + |z_2|$ (bất đẳng thức tam giác, không phải dấu bằng!).'
+    ],
+    theory: [
+      '1. Khái niệm: $z = a + bi$ ($a, b \\in R$, $i^2 = -1$). $a$ là phần thực, $b$ là phần ảo.',
+      '2. Số phức liên hợp: $\\bar{z} = a - bi$. Tính chất: $z \\cdot \\bar{z} = a^2 + b^2 = |z|^2$.',
+      '3. Môđun của số phức: $|z| = \\sqrt{a^2 + b^2}$. Tính chất: $|z_1 \\cdot z_2| = |z_1| \\cdot |z_2|$, $|\\frac{z_1}{z_2}| = \\frac{|z_1|}{|z_2|}$.',
+      '4. Biểu diễn hình học: Điểm $M(a; b)$ trên mặt phẳng tọa độ biểu diễn số phức $z = a + bi$.',
+      '5. Quỹ tích thường gặp: $|z - z_0| = R$ là đường tròn tâm biểu diễn $z_0$ bán kính $R$; $|z - z_1| = |z - z_2|$ là đường trung trực của đoạn thẳng nối 2 điểm.'
+    ],
+    keyFormulas: [
+      'z = a + bi \\quad (i^2 = -1)',
+      '\\bar{z} = a - bi',
+      '|z| = \\sqrt{a^2 + b^2}',
+      'z \\cdot \\bar{z} = |z|^2',
+      '|z - z_0| = R \\implies (x - x_0)^2 + (y - y_0)^2 = R^2'
+    ],
+    flashcards: [
+      {
+        front: 'Phần ảo của số phức z = 3 - 4i là bao nhiêu?',
+        back: 'Phần ảo là -4 (không phải -4i!).',
+        tip: 'Phần thực và phần ảo luôn luôn là các số thực.'
+      },
+      {
+        front: 'Tập hợp điểm biểu diễn số phức z thỏa mãn |z - 1 + 2i| = 3 là hình gì?',
+        back: 'Đường tròn tâm I(1; -2) có bán kính R = 3. Vì |z - (1 - 2i)| = 3.',
+        tip: 'Đổi dấu phần thực và phần ảo bên trong ngoặc để tìm tọa độ tâm.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Môđun của số phức $z = (1 + 2i)(2 - i)$ là:',
+        options: ['A. 5', 'B. √5', 'C. 25', 'D. √10'],
+        correctIndex: 0,
+        explanation: 'Áp dụng tính chất môđun của tích: |z| = |1 + 2i| * |2 - i| = √(1² + 2²) * √(2² + (-1)²) = √5 * √5 = 5.'
+      }
+    ]
+  },
+  {
+    id: 'math-10',
+    title: 'Định lý Pythagoras & Hệ thức lượng Lượng giác trong Tam giác',
+    grade: 'Lớp 9-10 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Cơ bản',
+    readTimeMinutes: 7,
+    description: 'Hệ thức cạnh và đường cao trong tam giác vuông, định lý Cosin, định lý Sin, và công thức tính diện tích tam giác Heron.',
+    mnemonics: [
+      'Pythagoras: Cạnh huyền bình phương bằng tổng bình phương hai cạnh góc vuông.',
+      'Định lý Cosin: a² = b² + c² - 2bc cos(A) (giống hằng đẳng thức mở rộng).',
+      'Định lý Sin: a/sinA = b/sinB = c/sinC = 2R (bán kính đường tròn ngoại tiếp).'
+    ],
+    commonTraps: [
+      'Nhầm lẫn giữa bán kính đường tròn ngoại tiếp R (chữ hoa) và nội tiếp r (chữ thường): S = pr nhưng S = abc/(4R).',
+      'Áp dụng nhầm góc khi dùng định lý Cosin.'
+    ],
+    theory: [
+      '1. Định lý Pythagoras: Trong tam giác vuông, $a^2 = b^2 + c^2$.',
+      '2. Hệ thức lượng tam giác vuông: $b^2 = a \\cdot b\'$, $c^2 = a \\cdot c\'$, $h^2 = b\' \\cdot c\'$, $a \\cdot h = b \\cdot c$, $\\frac{1}{h^2} = \\frac{1}{b^2} + \\frac{1}{c^2}$.',
+      '3. Định lý Cosin trong tam giác bất kỳ: $a^2 = b^2 + c^2 - 2bc \\cos A$.',
+      '4. Định lý Sin: $\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C} = 2R$.',
+      '5. Các công thức diện tích tam giác: $S = \\frac{1}{2}ah = \\frac{1}{2}ab\\sin C = \\frac{abc}{4R} = pr = \\sqrt{p(p-a)(p-b)(p-c)}$ với $p = \\frac{a+b+c}{2}$.'
+    ],
+    keyFormulas: [
+      'a^2 = b^2 + c^2',
+      'a^2 = b^2 + c^2 - 2bc\\cos A',
+      '\\frac{a}{\\sin A} = 2R',
+      'S = \\sqrt{p(p-a)(p-b)(p-c)}',
+      'S = pr = \\frac{abc}{4R}'
+    ],
+    flashcards: [
+      {
+        front: 'Công thức tính diện tích tam giác Heron khi biết độ dài 3 cạnh a, b, c?',
+        back: 'S = √[p(p - a)(p - b)(p - c)] với nửa chu vi p = (a + b + c) / 2.',
+        tip: 'Rất hữu ích khi tam giác không có góc đặc biệt.'
+      }
     ],
     sampleProblems: [
       {
         question: 'Cho tam giác $ABC$ có $b = 6, c = 8$, góc $A = 60^\\circ$. Độ dài cạnh $a$ là:',
-        options: [
-          'A. $2\\sqrt{13}$',
-          'B. $10$',
-          'C. $2\\sqrt{37}$',
-          'D. $\\sqrt{52}$'
-        ],
+        options: ['A. 2√13', 'B. 10', 'C. 2√37', 'D. √52'],
         correctIndex: 0,
-        explanation: 'Áp dụng định lý Cosin: $a^2 = b^2 + c^2 - 2bc \\cos A = 6^2 + 8^2 - 2(6)(8)\\cos 60^\\circ = 36 + 64 - 48 = 52$. Vậy $a = \\sqrt{52} = 2\\sqrt{13}$.'
+        explanation: 'Áp dụng định lý Cosin: a² = b² + c² - 2bc cos(A) = 36 + 64 - 2(6)(8)(1/2) = 100 - 48 = 52. Vậy a = √52 = 2√13.'
+      }
+    ]
+  },
+  {
+    id: 'math-11',
+    title: 'Cực trị Hàm số chứa dấu Giá trị tuyệt đối y = |f(x)| & y = f(|x|)',
+    grade: 'Lớp 12 - Giải tích',
+    category: 'Giải tích',
+    difficulty: 'Vận dụng cao',
+    readTimeMinutes: 11,
+    description: 'Công thức giải nhanh số điểm cực trị của hàm $y = |f(x)|$ là $N = a + b$ (với a là số cực trị, b là số nghiệm đơn cắt Ox) và kỹ thuật lật đồ thị.',
+    mnemonics: [
+      'Đồ thị y = |f(x)|: Giữ nguyên phần trên trục Ox, lật ngược phần dưới Ox lên trên.',
+      'Số cực trị y = |f(x)|: Bằng (số cực trị của f(x)) + (số giao điểm cắt xuyên trục Ox).',
+      'Đồ thị y = f(|x|): Bỏ phần bên trái Oy, lấy đối xứng phần bên phải qua Oy (hàm chẵn).'
+    ],
+    commonTraps: [
+      'Điểm tiếp xúc với trục Ox (nghiệm bội chẵn) KHÔNG được tính vào số cực trị thêm!',
+      'Nhầm lẫn giữa quy tắc lật đồ thị của $y = |f(x)|$ (lật qua Ox) và $y = f(|x|)$ (đối xứng qua Oy).'
+    ],
+    theory: [
+      '1. Hàm số $y = |f(x)|$: Là hàm số luôn không âm. Đồ thị nhận được bằng cách giữ nguyên phần đồ thị $y = f(x)$ nằm phía trên trục hoành, lấy đối xứng phần nằm phía dưới qua trục hoành rồi xóa bỏ phần dưới.',
+      '2. Công thức giải nhanh số điểm cực trị của $y = |f(x)|$: $N = a + b$, trong đó:',
+      '   - $a$ là số điểm cực trị của hàm số $f(x)$.',
+      '   - $b$ là số nghiệm đơn (hoặc bội lẻ) của phương trình $f(x) = 0$.',
+      '3. Hàm số $y = f(|x|)$: Là hàm số chẵn. Đồ thị nhận trục Oy làm trục đối xứng. Được vẽ bằng cách bỏ phần bên trái Oy, giữ nguyên phần bên phải Oy và lấy đối xứng phần bên phải qua Oy.',
+      '4. Số điểm cực trị của $y = f(|x|)$: $N = 2k + 1$, trong đó $k$ là số điểm cực trị dương của hàm số $f(x)$ ($x_i > 0$).'
+    ],
+    keyFormulas: [
+      'N_{|f(x)|} = a + b',
+      'N_{f(|x|)} = 2k + 1 \\quad (k: so\\_cuc\\_tri\\_duong)',
+      'f(x) = 0 \\quad (chi\\_tinh\\_nghiem\\_don)'
+    ],
+    flashcards: [
+      {
+        front: 'Công thức tính số điểm cực trị của hàm số y = |f(x)|?',
+        back: 'Số cực trị = a + b (với a là số cực trị của f(x), b là số nghiệm đơn của f(x) = 0).',
+        tip: 'Nghiệm kép tiếp xúc Ox không làm phát sinh điểm uốn nhọn cực trị mới.'
+      },
+      {
+        front: 'Số điểm cực trị của đồ thị hàm chẵn y = f(|x|)?',
+        back: 'Số cực trị = 2k + 1 (với k là số điểm cực trị dương x > 0 của f(x)).',
+        tip: 'Số 1 ở đây chính là điểm cực trị tại gốc tọa độ x = 0.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho hàm số $f(x) = x^3 - 3x + 1$. Số điểm cực trị của hàm số $y = |f(x)|$ là:',
+        options: ['A. 5', 'B. 3', 'C. 4', 'D. 7'],
+        correctIndex: 0,
+        explanation: 'Ta có f\'(x) = 3x² - 3 = 0 có 2 nghiệm phân biệt x = ±1 => a = 2 cực trị. Giá trị cực trị: f(-1) = 3; f(1) = -1. Vì f(-1) * f(1) = -3 < 0 nên phương trình f(x) = 0 có 3 nghiệm đơn phân biệt cắt Ox => b = 3. Số điểm cực trị của |f(x)| là N = a + b = 2 + 3 = 5.'
+      }
+    ]
+  },
+  {
+    id: 'math-12',
+    title: 'Đại số Tổ hợp, Nhị thức Newton & Xác suất Cổ điển',
+    grade: 'Lớp 11 - Đại số & Xác suất',
+    category: 'Đại số & Xác suất',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 9,
+    description: 'Quy tắc đếm, phân biệt hoán vị $P_n$, chỉnh hợp $A_n^k$, tổ hợp $C_n^k$, khai triển nhị thức Newton và công thức tính xác suất $P(A) = n(A)/n(\\Omega)$.',
+    mnemonics: [
+      'Chỉnh hợp A(n, k): Có thứ tự vị trí (chọn ban cán sự: lớp trưởng, lớp phó).',
+      'Tổ hợp C(n, k): Không phân biệt thứ tự (chọn nhóm 3 bạn đi trực nhật).',
+      'Xác suất biến cố đối: P(A) = 1 - P(A đối) - cứu cánh cho các bài toán "có ít nhất một...".'
+    ],
+    commonTraps: [
+      'Nhầm giữa chỉnh hợp và tổ hợp khi bài toán có hoặc không có sự phân công vị trí thứ tự.',
+      'Không liệt kê đủ các trường hợp hoặc để các trường hợp bị trùng lặp.'
+    ],
+    theory: [
+      '1. Quy tắc cộng và quy tắc nhân: Quy tắc cộng cho các phương án độc lập rời nhau; Quy tắc nhân cho các công đoạn liên tiếp hoàn thành công việc.',
+      '2. Hoán vị: $P_n = n!$. Số cách sắp xếp n phần tử khác nhau vào n vị trí.',
+      '3. Chỉnh hợp: $A_n^k = \\frac{n!}{(n - k)!}$. Chọn k phần tử từ n phần tử và CÓ SẮP THỨ TỰ.',
+      '4. Tổ hợp: $C_n^k = \\frac{n!}{k!(n - k)!}$. Chọn k phần tử từ n phần tử và KHÔNG PHÂN BIỆT THỨ TỰ. Tính chất: $C_n^k = C_n^{n-k}$.',
+      '5. Khai triển Nhị thức Newton: $(a + b)^n = \\sum_{k=0}^n C_n^k a^{n-k} b^k$. Số hạng tổng quát thứ $k+1$ là $T_{k+1} = C_n^k a^{n-k} b^k$.',
+      '6. Xác suất cổ điển: $P(A) = \\frac{n(A)}{n(\\Omega)}$. Với biến cố đối: $P(\\bar{A}) = 1 - P(A)$.'
+    ],
+    keyFormulas: [
+      'P_n = n!',
+      'A_n^k = \\frac{n!}{(n - k)!}',
+      'C_n^k = \\frac{n!}{k!(n - k)!}',
+      'T_{k+1} = C_n^k a^{n-k} b^k',
+      'P(A) = \\frac{n(A)}{n(\\Omega)}'
+    ],
+    flashcards: [
+      {
+        front: 'Làm thế nào để phân biệt khi nào dùng Chỉnh hợp A(n, k) và Tổ hợp C(n, k)?',
+        back: 'Hỏi câu hỏi: "Nếu đổi chỗ 2 phần tử được chọn, có tạo ra kết quả mới không?" Có đổi thứ tự -> Chỉnh hợp A. Không đổi -> Tổ hợp C.',
+        tip: 'Ví dụ: Chọn 3 người đi quét sân là C. Chọn 1 lớp trưởng, 1 lớp phó là A.'
+      },
+      {
+        front: 'Khi gặp cụm từ "có ít nhất một..." trong bài toán xác suất, nên làm gì?',
+        back: 'Dùng biến cố đối! P(A) = 1 - P(A đối), trong đó A đối là trường hợp "không có cái nào...".',
+        tip: 'Nhanh hơn gấp 3 lần so với chia 4-5 trường hợp thuận.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Một hộp đựng 5 viên bi xanh và 4 viên bi đỏ. Chọn ngẫu nhiên 3 viên bi. Xác suất để chọn được ít nhất 1 viên bi xanh là:',
+        options: ['A. 20/21', 'B. 1/21', 'C. 10/21', 'D. 19/21'],
+        correctIndex: 0,
+        explanation: 'Không gian mẫu n(Ω) = C(9, 3) = 84. Xét biến cố đối A\': "Không chọn được viên bi xanh nào" (cả 3 viên đều đỏ) => n(A\') = C(4, 3) = 4. Vậy P(A) = 1 - n(A\')/n(Ω) = 1 - 4/84 = 80/84 = 20/21.'
       }
     ]
   }

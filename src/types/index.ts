@@ -98,14 +98,21 @@ export interface MathLecture {
   id: string;
   title: string;
   grade: string;
+  category?: 'Giải tích' | 'Hình học' | 'Đại số & Xác suất' | 'Lượng giác & Mũ' | 'Số phức';
+  difficulty?: 'Cơ bản' | 'Thông hiểu' | 'Vận dụng' | 'Vận dụng cao';
+  readTimeMinutes?: number;
   description: string;
+  mnemonics?: string[];
+  commonTraps?: string[];
   theory: string[];
   keyFormulas: string[];
+  flashcards?: { front: string; back: string; tip?: string }[];
   sampleProblems: {
     question: string;
     options: string[];
     correctIndex: number;
     explanation: string;
+    tip?: string;
   }[];
   defaultGraphConfig?: Partial<FunctionPlotConfig>;
 }

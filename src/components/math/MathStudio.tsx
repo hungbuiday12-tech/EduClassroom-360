@@ -61,7 +61,7 @@ export const MathStudio: React.FC = () => {
       {/* Main Content Area */}
       {activeTab === 'grapher' && <FunctionGrapher />}
       {activeTab === 'geometry' && <GeometryStudio />}
-      {activeTab === 'lectures' && <MathLectures />}
+      {activeTab === 'lectures' && <MathLectures onNavigateTab={(tab) => setActiveTab(tab)} />}
     </div>
   );
 };

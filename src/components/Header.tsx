@@ -80,6 +80,16 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Ngữ văn (Sơ đồ tư duy)
           </button>
+          <button
+            onClick={() => onSelectSubject('exams')}
+            className={`whitespace-nowrap shrink-0 transition-colors ${
+              currentSubject === 'exams'
+                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
+            Đề Thi & Lời Giải (30 Đề)
+          </button>
         </nav>
 
         {/* Zone 3: 1 primary action area */}
@@ -130,6 +140,12 @@ export const Header: React.FC<HeaderProps> = ({
           className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'literature' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
         >
           Ngữ văn
+        </button>
+        <button
+          onClick={() => onSelectSubject('exams')}
+          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'exams' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
+        >
+          Đề Thi
         </button>
       </div>
     </header>

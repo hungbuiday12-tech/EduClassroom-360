@@ -1,4 +1,36 @@
-export type SubjectType = 'overview' | 'math' | 'physics' | 'cs' | 'literature';
+export type SubjectType = 'overview' | 'math' | 'physics' | 'cs' | 'literature' | 'exams';
+
+export type ExamSubject = 'math' | 'physics' | 'cs';
+
+export interface ExamQuestion {
+  number: string;
+  points?: string;
+  content: string;
+  solution: string;
+  keyFormulasOrHints?: string[];
+  simulationLink?: {
+    type: 'math' | 'physics' | 'cs';
+    targetId: string;
+    label: string;
+  };
+}
+
+export interface ExamPaper {
+  id: string;
+  subject: ExamSubject;
+  subjectTag: string; // e.g. "Toán 9-10", "Vật Lý 9", "Tin Học Chuyên"
+  categoryTag: string; // e.g. "Tuyển Sinh Chuyên", "Khảo Sát Chất Lượng", "Olympic 30/4", "HSG Quốc Gia"
+  academicYear: string; // e.g. "2025-2026", "2024-2025"
+  title: string;
+  school: string;
+  source: string;
+  timeMinutes: number;
+  featuredSnippet: string;
+  topics: string[];
+  difficulty: 'Cơ bản' | 'Khá' | 'Nâng cao' | 'Chuyên / HSG';
+  questions: ExamQuestion[];
+  fullWordDocContent: string;
+}
 
 export interface StudentProgress {
   xp: number;

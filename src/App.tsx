@@ -6,6 +6,7 @@ import { MathStudio } from './components/math/MathStudio';
 import { PhysicsLab } from './components/physics/PhysicsLab';
 import { CodeJudgeLab } from './components/cs/CodeJudgeLab';
 import { LiteratureHub } from './components/literature/LiteratureHub';
+import { ExamHub } from './components/exams/ExamHub';
 
 export default function App() {
   const [currentSubject, setCurrentSubject] = useState<SubjectType>('overview');
@@ -78,6 +79,10 @@ export default function App() {
         )}
 
         {currentSubject === 'literature' && <LiteratureHub />}
+
+        {currentSubject === 'exams' && (
+          <ExamHub onNavigateToSubject={setCurrentSubject} onEarnXP={handleEarnXP} />
+        )}
       </main>
 
       {/* Clean Editorial Footer */}
@@ -115,6 +120,12 @@ export default function App() {
               className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors"
             >
               Ngữ văn
+            </button>
+            <button
+              onClick={() => setCurrentSubject('exams')}
+              className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold"
+            >
+              Đề Thi & Lời Giải (30 Đề)
             </button>
           </div>
         </div>

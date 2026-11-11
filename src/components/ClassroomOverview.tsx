@@ -254,6 +254,36 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
         </div>
       </div>
 
+      {/* Featured Exam Bank Banner */}
+      <div
+        onClick={() => onNavigate('exams')}
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 p-6 shadow-lg cursor-pointer hover:border-indigo-400 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+      >
+        <div className="space-y-1.5 max-w-2xl">
+          <div className="flex items-center gap-2 text-xs font-semibold text-cyan-400">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span>Kho Đề Thi Mới 2025 - 2026 · Chuẩn Đề Thi Tuyển Sinh & HSG</span>
+          </div>
+          <h3 className="text-lg font-bold text-white tracking-tight">
+            Kho 30 Đề Thi & Hướng Dẫn Giải Chi Tiết (Toán · Lí · Tin)
+          </h3>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            Tuyển tập đề thi chính thức từ Chuyên KHTN ĐHQG Hà Nội, Chuyên Sư Phạm, Chuyên Amsterdam, Chuyên Lê Hồng Phong... kèm đáp án từng bước, tải file Word (.doc) và liên kết mô phỏng.
+          </p>
+        </div>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate('exams');
+          }}
+          className="shrink-0 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-xs transition-all shadow-md flex items-center gap-2"
+        >
+          Khám phá 30 đề thi
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+
       {/* Classroom Utilities: Focus Timer (Pomodoro) & Quick Notebook */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Pomodoro Focus Timer */}

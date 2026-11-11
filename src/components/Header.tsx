@@ -77,16 +77,6 @@ export const Header: React.FC<HeaderProps> = ({
             Tin học (C++/Python Judge)
           </button>
           <button
-            onClick={() => onSelectSubject('literature')}
-            className={`whitespace-nowrap shrink-0 transition-colors ${
-              currentSubject === 'literature'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            Ngữ văn (Sơ đồ)
-          </button>
-          <button
             onClick={() => onSelectSubject('exams')}
             className={`whitespace-nowrap shrink-0 transition-colors ${
               currentSubject === 'exams'
@@ -221,12 +211,6 @@ export const Header: React.FC<HeaderProps> = ({
           className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'cs' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
         >
           Tin học
-        </button>
-        <button
-          onClick={() => onSelectSubject('literature')}
-          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'literature' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
-        >
-          Ngữ văn
         </button>
         <button
           onClick={() => onSelectSubject('exams')}

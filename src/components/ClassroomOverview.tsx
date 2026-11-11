@@ -107,10 +107,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
               <span>Phòng học trực tuyến thông minh · Hệ thống mô phỏng đa môn</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
-              Bục giảng ảo: Khám phá trực quan Toán học, Vật lí, Tin học & Ngữ văn
+              Bục giảng ảo: Khám phá trực quan Toán học, Vật lí & Tin học (Lớp 9 - 12)
             </h1>
             <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-              Trang bị các công cụ chuyên sâu: hệ thống vẽ đồ thị hàm số và hình học Oxy, phòng thí nghiệm vật lý 2D thời gian thực, trình biên dịch chấm test C++/Python tự động, và sơ đồ tư duy tác phẩm.
+              Trang bị các công cụ chuyên sâu: bài giảng từng bài tích hợp đồ thị hàm số và hình học Oxy (Toán), phòng thí nghiệm mô phỏng 2D thời gian thực (Lí), và hệ thống bài giảng lập trình phân cấp C++/Python (Tin).
             </p>
 
             <div className="flex flex-wrap items-center gap-3 mt-5">
@@ -195,8 +195,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
         </div>
       </div>
 
-      {/* 4 Interactive Disciplines Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* 3 Interactive Disciplines Bento Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Math Card */}
         <div
           onClick={() => onNavigate('math')}
@@ -259,28 +259,6 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400">
             <span>Mở Code Judge Lab</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-
-        {/* Literature Card */}
-        <div
-          onClick={() => onNavigate('literature')}
-          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-500 rounded-2xl p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-              <Feather className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              Ngữ văn & Sơ đồ tư duy
-            </h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Sơ đồ tư duy mở rộng phân tích các tác phẩm kinh điển (Tây Tiến, Sóng, Vợ chồng A Phủ), thư viện dẫn chứng vàng.
-            </p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-rose-600 dark:text-rose-400">
-            <span>Khám phá văn học</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>

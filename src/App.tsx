@@ -6,7 +6,6 @@ import { ClassroomOverview } from './components/ClassroomOverview';
 import { MathStudio } from './components/math/MathStudio';
 import { PhysicsLab } from './components/physics/PhysicsLab';
 import { CodeJudgeLab } from './components/cs/CodeJudgeLab';
-import { LiteratureHub } from './components/literature/LiteratureHub';
 import { ExamHub } from './components/exams/ExamHub';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
@@ -155,8 +154,6 @@ function MainApp() {
                   <CodeJudgeLab onScoreEarned={handleEarnXP} />
                 )}
 
-                {currentSubject === 'literature' && <LiteratureHub />}
-
                 {currentSubject === 'exams' && (
                   <ExamHub onNavigateToSubject={setCurrentSubject} onEarnXP={handleEarnXP} />
                 )}
@@ -196,12 +193,6 @@ function MainApp() {
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
                   Tin học
-                </button>
-                <button
-                  onClick={() => setCurrentSubject('literature')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
-                >
-                  Ngữ văn
                 </button>
                 <button
                   onClick={() => setCurrentSubject('exams')}

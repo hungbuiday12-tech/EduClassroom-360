@@ -1,4 +1,4 @@
-export type SubjectType = 'overview' | 'math' | 'physics' | 'cs' | 'literature' | 'exams';
+export type SubjectType = 'overview' | 'math' | 'physics' | 'cs' | 'exams';
 
 export type ExamSubject = 'math' | 'physics' | 'cs';
 
@@ -118,8 +118,42 @@ export interface MathLecture {
 }
 
 // Physics Types
-export type PhysicsSimType = 'spring_pendulum' | 'simple_pendulum' | 'light_refraction' | 'projectile_motion' | 'wave_interference';
+export type PhysicsSimType =
+  | 'ohm_circuit'
+  | 'lens_optics'
+  | 'projectile_motion'
+  | 'free_fall_energy'
+  | 'light_refraction'
+  | 'magnetic_induction'
+  | 'spring_pendulum'
+  | 'simple_pendulum'
+  | 'wave_interference';
 
+export interface PhysicsLesson {
+  id: string;
+  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  lessonNumber: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  theorySections: {
+    heading: string;
+    content: string;
+  }[];
+  keyFormulas: string[];
+  simulationType: PhysicsSimType;
+  defaultParams: Record<string, number>;
+  paramBounds: Record<string, { min: number; max: number; step: number; unit: string; label: string }>;
+  practiceExercises: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+    stepByStep?: string[];
+  }[];
+}
+
+// Retain PhysicsExperiment for backwards compatibility
 export interface PhysicsExperiment {
   id: PhysicsSimType;
   title: string;
@@ -140,6 +174,39 @@ export interface PhysicsExperiment {
 
 // Computer Science Types
 export type CodeLanguage = 'cpp' | 'python';
+export type CSLevel = 'Cơ bản' | 'Trung cấp' | 'Nâng cao / HSG';
+
+export interface CSLesson {
+  id: string;
+  level: CSLevel;
+  lessonNumber: number;
+  title: string;
+  topic: string;
+  estimatedMinutes: number;
+  theory: string[];
+  complexity: {
+    time: string;
+    space: string;
+  };
+  codeExamples: {
+    language: 'cpp' | 'python';
+    title: string;
+    code: string;
+    explanation: string;
+  }[];
+  practiceProblem: {
+    id: string;
+    title: string;
+    difficulty: 'Easy' | 'Medium' | 'Hard';
+    description: string;
+    inputFormat: string;
+    outputFormat: string;
+    sampleCases: { input: string; output: string; explanation?: string }[];
+    solutionAnalysis: string;
+    fullSolutionCpp: string;
+    fullSolutionPython: string;
+  };
+}
 
 export interface TestCase {
   id: number;
@@ -186,36 +253,4 @@ export interface SubmissionRecord {
   score: number;
   status: 'Accepted' | 'Partial' | 'Wrong Answer';
   submittedAt: string;
-}
-
-// Literature Types
-export interface LiteratureWork {
-  id: string;
-  title: string;
-  author: string;
-  period: string;
-  genre: string;
-  summary: string;
-  mindmap: {
-    id: string;
-    label: string;
-    description: string;
-    children?: {
-      id: string;
-      label: string;
-      description: string;
-      children?: { id: string; label: string; description: string }[];
-    }[];
-  };
-  goldenQuotes: {
-    quote: string;
-    context: string;
-    analysis: string;
-  }[];
-  analysisQuestions: {
-    question: string;
-    options: string[];
-    correctIndex: number;
-    guide: string;
-  }[];
 }

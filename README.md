@@ -59,5 +59,19 @@ Kết quả bản phát hành sẽ nằm trong thư mục `dist/` sẵn sàng de
 
 ---
 
+## 🌐 Xuất Bản Lên GitHub Pages (Tự Động)
+
+Dự án đã được cấu hình sẵn **`base: './'`** trong `vite.config.ts` và workflow tự động **`.github/workflows/deploy.yml`**.
+
+Khi bạn đẩy code lên GitHub, chỉ cần bật GitHub Pages theo 3 bước sau là web sẽ tự động online:
+1. Vào repository của bạn trên GitHub $\to$ Chọn thẻ **Settings** (Cài đặt).
+2. Ở thanh bên trái, chọn mục **Pages**.
+3. Tại phần **Build and deployment** $\to$ **Source**, chọn:
+   - 👉 **GitHub Actions**
+4. Sau khi chọn xong, GitHub Actions sẽ tự động build và cung cấp link trang web trực tiếp dạng:
+   `https://<username>.github.io/<ten-repo>/`
+
+---
+
 ## 📄 Giấy phép
 Dự án được phân phối dưới giấy phép Apache-2.0.

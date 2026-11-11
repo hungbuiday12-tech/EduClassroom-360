@@ -491,6 +491,31 @@ export const AuthModal: React.FC = () => {
                           className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                       </div>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[11px] text-slate-500">
+                        <span className="shrink-0 text-slate-400">Gợi ý thử nhanh:</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIdentifier('hocsinh');
+                            setPassword('123456');
+                            setErrorMessage(null);
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-mono font-medium hover:bg-indigo-50 transition-colors"
+                        >
+                          hocsinh (123456)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIdentifier('chuyentoan2026');
+                            setPassword('123456');
+                            setErrorMessage(null);
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-mono font-medium hover:bg-indigo-50 transition-colors"
+                        >
+                          chuyentoan2026
+                        </button>
+                      </div>
                     </div>
 
                     <div>

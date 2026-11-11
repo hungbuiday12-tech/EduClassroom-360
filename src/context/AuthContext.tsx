@@ -52,18 +52,74 @@ interface StoredAccount {
   createdAt: string;
 }
 
+const DEFAULT_ACCOUNTS: StoredAccount[] = [
+  {
+    uid: 'demo_user_1',
+    username: 'hocsinh',
+    displayName: 'Học sinh Chuyên',
+    email: 'hocsinh@educlassroom360.vn',
+    password: '123456',
+    role: 'student',
+    xp: 250,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    uid: 'demo_user_2',
+    username: 'chuyentoan2026',
+    displayName: 'Nguyễn Văn An',
+    email: 'an.nguyen@educlassroom360.vn',
+    password: '123456',
+    role: 'student',
+    xp: 320,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    uid: 'demo_user_3',
+    username: 'hungbui',
+    displayName: 'Hùng Bùi',
+    email: 'hungbuiday12@gmail.com',
+    password: '123456',
+    role: 'student',
+    xp: 450,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    uid: 'demo_user_4',
+    username: 'giaovien',
+    displayName: 'Thầy Giáo Viên',
+    email: 'giaovien@educlassroom360.vn',
+    password: '123456',
+    role: 'teacher',
+    xp: 999,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+];
+
 const getStoredAccounts = (): StoredAccount[] => {
   try {
     const data = localStorage.getItem(LOCAL_ACCOUNTS_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) {
+      localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(DEFAULT_ACCOUNTS));
+      return DEFAULT_ACCOUNTS;
+    }
+    const parsed: StoredAccount[] = JSON.parse(data);
+    const combined = [...parsed];
+    for (const def of DEFAULT_ACCOUNTS) {
+      if (!combined.some((c) => c.username.toLowerCase() === def.username.toLowerCase())) {
+        combined.push(def);
+      }
+    }
+    return combined;
   } catch {
-    return [];
+    return DEFAULT_ACCOUNTS;
   }
 };
 
 const saveStoredAccount = (acc: StoredAccount) => {
   try {
-    const list = getStoredAccounts().filter((a) => a.username !== acc.username && a.email !== acc.email);
+    const list = getStoredAccounts().filter(
+      (a) => a.username.toLowerCase() !== acc.username.toLowerCase() && a.email.toLowerCase() !== acc.email.toLowerCase()
+    );
     list.push(acc);
     localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(list));
   } catch {}
@@ -243,18 +299,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Attempt Firebase Auth
+    // 2. Attempt Firebase Auth if configured
     try {
       let emailToUse = identifier.trim();
       if (!emailToUse.includes('@')) {
         emailToUse = `${emailToUse.toLowerCase()}@educlassroom360.local`;
       }
-      await signInWithEmailAndPassword(auth, emailToUse, password);
-      setIsAuthModalOpen(false);
-    } catch (error: any) {
-      console.warn('Firebase login attempt:', error?.code);
-      throw error;
+      const res = await signInWithEmailAndPassword(auth, emailToUse, password);
+      if (res.user) {
+        setIsAuthModalOpen(false);
+        return;
+      }
+    } catch {
+      // Firebase didn't match or domain unauthorized - continue to smart-enroll
     }
+
+    // 3. User friendly smart-enroll:
+    // If user enters a new username (not email) and password with at least 4 chars, auto-register and log them in!
+    if (!cleanId.includes('@') && password.length >= 4) {
+      const sanitized = cleanId.replace(/[^a-zA-Z0-9_]/g, '_');
+      const newAcc: StoredAccount = {
+        uid: 'user_' + Date.now().toString(36),
+        username: sanitized,
+        displayName: identifier.trim(),
+        email: `${sanitized}@educlassroom360.vn`,
+        password: password,
+        role: 'student',
+        xp: 150,
+        createdAt: new Date().toISOString(),
+      };
+      saveStoredAccount(newAcc);
+      const profile: UserProfile = {
+        uid: newAcc.uid,
+        username: newAcc.username,
+        displayName: newAcc.displayName,
+        email: newAcc.email,
+        role: newAcc.role,
+        xp: newAcc.xp,
+        createdAt: newAcc.createdAt,
+      };
+      setUser(profile);
+      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));
+      setIsAuthModalOpen(false);
+      return;
+    }
+
+    const err = new Error('Tài khoản hoặc mật khẩu không chính xác.');
+    (err as any).code = 'auth/invalid-credential';
+    throw err;
   };
 
   // Register new account (stores locally + creates in Firebase)

@@ -9,6 +9,8 @@ import { LiteratureHub } from './components/literature/LiteratureHub';
 import { ExamHub } from './components/exams/ExamHub';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
+import { VisitorLandingPage } from './components/landing/VisitorLandingPage';
+import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 
 function MainApp() {
   const [currentSubject, setCurrentSubject] = useState<SubjectType>('overview');
@@ -23,7 +25,16 @@ function MainApp() {
     return false;
   });
 
-  const { user, openAuthModal, addXP, loading } = useAuth();
+  const { user, addXP, loading } = useAuth();
+
+  // Guest explore mode state: allows unauthenticated visitors to explore the classroom
+  const [isGuestExploring, setIsGuestExploring] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('educlassroom_guest_exploring') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [guestXP, setGuestXP] = useState<number>(() => {
     try {
@@ -33,17 +44,6 @@ function MainApp() {
       return 180;
     }
   });
-
-  // Prompt Welcome screen on first entry if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      const hasWelcomed = sessionStorage.getItem('educlassroom_welcomed_session');
-      if (!hasWelcomed) {
-        sessionStorage.setItem('educlassroom_welcomed_session', 'true');
-        openAuthModal('login');
-      }
-    }
-  }, [loading, user]);
 
   // Sync theme with document element
   useEffect(() => {
@@ -56,6 +56,20 @@ function MainApp() {
 
   const handleToggleTheme = () => {
     setIsDark((prev) => !prev);
+  };
+
+  const handleEnterAsGuest = () => {
+    setIsGuestExploring(true);
+    try {
+      sessionStorage.setItem('educlassroom_guest_exploring', 'true');
+    } catch {}
+  };
+
+  const handleReturnToLanding = () => {
+    setIsGuestExploring(false);
+    try {
+      sessionStorage.removeItem('educlassroom_guest_exploring');
+    } catch {}
   };
 
   const handleEarnXP = (earned: number) => {
@@ -74,8 +88,18 @@ function MainApp() {
 
   const activeXP = user ? user.xp : guestXP;
 
+  // DEDICATED VISITOR PAGE: Shown when user is not logged in and hasn't clicked guest explore
+  if (!loading && !user && !isGuestExploring) {
+    return <VisitorLandingPage onEnterAsGuest={handleEnterAsGuest} />;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
+    <div className="relative min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
+      {/* Dynamic Cosmic Galaxy Background (subtle 60fps canvas in dark mode) */}
+      {isDark && (
+        <GalaxyBackground interactive={true} intensity="subtle" className="opacity-60" />
+      )}
+
       {/* Top Bar Contract Navigation */}
       <Header
         currentSubject={currentSubject}
@@ -83,10 +107,11 @@ function MainApp() {
         isDark={isDark}
         onToggleTheme={handleToggleTheme}
         xp={activeXP}
+        onReturnToLanding={handleReturnToLanding}
       />
 
       {/* Main Viewport Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {currentSubject === 'overview' && (
           <ClassroomOverview onNavigate={setCurrentSubject} xp={activeXP} />
         )}
@@ -106,18 +131,18 @@ function MainApp() {
         )}
       </main>
 
-      {/* Welcome Screen & Authentication Modal */}
+      {/* Welcome Screen & Authentication Modal for in-app login */}
       <AuthModal />
 
       {/* Clean Editorial Footer */}
-      <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6">
+      <footer className="relative z-10 mt-auto border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-800 dark:text-slate-200">
               EduClassroom 360
             </span>
             <span aria-hidden="true">·</span>
-            <span>Hệ thống lớp học mô phỏng trực tuyến</span>
+            <span>Hệ thống lớp học mô phỏng trực tuyến vũ trụ Galaxy</span>
           </div>
 
           <div className="flex items-center gap-4">

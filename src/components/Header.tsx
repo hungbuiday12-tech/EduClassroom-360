@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SubjectType } from '../types';
-import { Sun, Moon, Sparkles, Award } from 'lucide-react';
+import { Sun, Moon, Award, User, LogOut, LogIn, ChevronDown } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   currentSubject: SubjectType;
@@ -15,11 +16,14 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectSubject,
   isDark,
   onToggleTheme,
-  xp
+  xp,
 }) => {
+  const { user, openAuthModal, logout } = useAuth();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-8 h-16">
+    <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-6 h-16">
         {/* Zone 1: Single text element wordmark */}
         <button
           onClick={() => onSelectSubject('overview')}
@@ -29,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Zone 2: 4-5 single-line nav links */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+        <nav className="hidden lg:flex items-center gap-5 text-sm font-medium">
           <button
             onClick={() => onSelectSubject('overview')}
             className={`whitespace-nowrap shrink-0 transition-colors ${
@@ -78,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            Ngữ văn (Sơ đồ tư duy)
+            Ngữ văn (Sơ đồ)
           </button>
           <button
             onClick={() => onSelectSubject('exams')}
@@ -88,17 +92,19 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            Đề Thi & Lời Giải (30 Đề)
+            Đề Thi (30 Đề)
           </button>
         </nav>
 
-        {/* Zone 3: 1 primary action area */}
+        {/* Zone 3: Actions + User Profile & Theme switcher */}
         <div className="flex items-center gap-3 shrink-0">
+          {/* XP Pill */}
           <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/50 rounded-lg text-xs font-mono font-semibold text-amber-700 dark:text-amber-300">
             <Award className="w-3.5 h-3.5 text-amber-500" />
-            <span className="tabular-nums">{xp} XP</span>
+            <span className="tabular-nums">{user ? user.xp : xp} XP</span>
           </div>
 
+          {/* Theme button */}
           <button
             onClick={onToggleTheme}
             className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -106,11 +112,75 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
           </button>
+
+          {/* Authentication State */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-xs"
+              >
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.displayName}
+                    className="w-6 h-6 rounded-full object-cover border border-slate-300 dark:border-slate-600"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-[11px] flex items-center justify-center">
+                    {user.displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="font-semibold text-slate-800 dark:text-slate-200 hidden sm:inline max-w-[100px] truncate">
+                  {user.displayName}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400" />
+              </button>
+
+              {/* User dropdown popup */}
+              {isUserMenuOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-100"
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800">
+                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate">
+                      {user.displayName}
+                    </p>
+                    <p className="text-[11px] font-mono text-slate-400 truncate">
+                      @{user.username}
+                    </p>
+                    <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium mt-0.5 truncate">
+                      {user.email}
+                    </p>
+                  </div>
+
+                  <div className="px-2 py-1">
+                    <button
+                      onClick={() => logout()}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Đăng xuất</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => openAuthModal('login')}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 font-semibold text-xs shadow-xs transition-colors"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Đăng Nhập</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Mobile Navigation bar */}
-      <div className="md:hidden flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto text-xs font-medium">
+      <div className="lg:hidden flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto text-xs font-medium">
         <button
           onClick={() => onSelectSubject('overview')}
           className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'overview' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}

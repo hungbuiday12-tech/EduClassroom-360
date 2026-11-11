@@ -15,8 +15,11 @@ import {
   BookOpen,
   ArrowRight,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  User as UserIcon,
+  LogIn
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface ClassroomOverviewProps {
   onNavigate: (subject: SubjectType) => void;
@@ -24,6 +27,9 @@ interface ClassroomOverviewProps {
 }
 
 export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate, xp }) => {
+  const { user, openAuthModal } = useAuth();
+  const currentXP = user ? user.xp : xp;
+
   // Pomodoro Timer State
   const [pomodoroSeconds, setPomodoroSeconds] = useState<number>(25 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
@@ -133,30 +139,56 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
           </div>
 
           {/* Student Status Badge / Level */}
-          <div className="shrink-0 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl p-5 min-w-[240px]">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-indigo-500/30 border border-indigo-400 flex items-center justify-center text-amber-300">
-                <Award className="w-5 h-5" />
+          <div className="shrink-0 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl p-5 min-w-[250px]">
+            {user ? (
+              <div className="flex items-center gap-3 mb-3">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.displayName}
+                    className="w-10 h-10 rounded-full object-cover border border-indigo-400"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-indigo-500/30 border border-indigo-400 flex items-center justify-center text-amber-300 font-bold text-sm">
+                    {user.displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs text-indigo-200">@{user.username}</div>
+                  <div className="text-sm font-bold text-white truncate max-w-[140px]">
+                    {user.displayName}
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-xs text-slate-300">Học bạ cá nhân</div>
-                <div className="text-sm font-bold text-white">Học sinh tích cực</div>
+            ) : (
+              <div className="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-white/10">
+                <div>
+                  <div className="text-xs text-indigo-200">Chưa đăng nhập</div>
+                  <div className="text-xs font-semibold text-white">Lưu học bạ & bài làm</div>
+                </div>
+                <button
+                  onClick={() => openAuthModal('login')}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Đăng nhập</span>
+                </button>
               </div>
-            </div>
+            )}
 
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs font-mono">
                 <span className="text-slate-300">Điểm kinh nghiệm:</span>
-                <span className="text-amber-300 font-bold tabular-nums">{xp} XP</span>
+                <span className="text-amber-300 font-bold tabular-nums">{currentXP} XP</span>
               </div>
               <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
                 <div
                   className="bg-amber-400 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min((xp / 500) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((currentXP / 500) * 100, 100)}%` }}
                 />
               </div>
               <div className="text-[11px] text-slate-400 text-right">
-                {500 - (xp % 500)} XP nữa để lên cấp tiếp theo
+                {500 - (currentXP % 500)} XP nữa để lên cấp tiếp theo
               </div>
             </div>
           </div>

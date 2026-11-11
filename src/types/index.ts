@@ -36,8 +36,18 @@ export interface StudentProgress {
   xp: number;
   completedProblems: string[];
   exploredSimulations: string[];
-  graphedFunctions: number;
   notes: { id: string; title: string; content: string; date: string }[];
+}
+
+export interface UserProfile {
+  uid: string;
+  username: string;
+  displayName: string;
+  email: string;
+  avatarUrl?: string;
+  role: 'student' | 'teacher' | 'admin';
+  xp: number;
+  createdAt: string;
 }
 
 // Math Types

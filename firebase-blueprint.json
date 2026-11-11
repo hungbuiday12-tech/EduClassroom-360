@@ -1,0 +1,87 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and account information",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Unique username chosen by user",
+          "minLength": 3,
+          "maxLength": 30,
+          "pattern": "^[a-zA-Z0-9_]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the student or teacher",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of user",
+          "maxLength": 128
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Avatar photo URL",
+          "maxLength": 512
+        },
+        "xp": {
+          "type": "number",
+          "description": "Gamified study experience points"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["student", "teacher", "admin"],
+          "description": "User role in platform"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Account registration timestamp"
+        }
+      },
+      "required": ["username", "email", "role"]
+    },
+    "StudyProgress": {
+      "title": "StudyProgress",
+      "description": "Recorded exam or lab session progress for a student",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID",
+          "maxLength": 128
+        },
+        "itemType": {
+          "type": "string",
+          "enum": ["exam", "lab_physics", "lab_math", "code_judge"]
+        },
+        "itemId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "earnedXp": {
+          "type": "number"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "itemType", "itemId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profiles with access restricted to the user"
+    },
+    "/study_progress/{progressId}": {
+      "schema": "StudyProgress",
+      "description": "Stores completion records and XP logs of students"
+    }
+  }
+}

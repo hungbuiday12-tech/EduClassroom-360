@@ -10,8 +10,12 @@ import { LiteratureHub } from './components/literature/LiteratureHub';
 export default function App() {
   const [currentSubject, setCurrentSubject] = useState<SubjectType>('overview');
   const [isDark, setIsDark] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      try {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      } catch {
+        return false;
+      }
     }
     return false;
   });

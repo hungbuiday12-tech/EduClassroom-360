@@ -33,6 +33,8 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build project
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           npm run build
           cp dist/index.html dist/404.html

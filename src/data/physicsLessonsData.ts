@@ -502,5 +502,180 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
         ]
       }
     ]
+  },
+  {
+    id: 'phys-9-2',
+    grade: 'Lớp 9',
+    lessonNumber: 3,
+    title: 'Công suất Điện & Định luật Jun - Len-xơ',
+    subtitle: 'Nhiệt lượng tỏa ra trên điện trở và các phương pháp tiết kiệm điện năng',
+    description: 'Khảo sát điện năng tiêu thụ và sự chuyển hóa điện năng thành nhiệt năng, công thức Q = I²Rt và tính toán tiền điện thực tế.',
+    theorySections: [
+      {
+        heading: '1. Điện năng & Công của dòng điện',
+        content: 'Điện năng là năng lượng của dòng điện. Công của dòng điện sản ra trong một đoạn mạch là số đo lượng điện năng mà đoạn mạch đó tiêu thụ: A = P · t = U · I · t (J hoặc kWh, 1 kWh = 3.6·10⁶ J).'
+      },
+      {
+        heading: '2. Định luật Jun - Len-xơ',
+        content: 'Nhiệt lượng tỏa ra ở dây dẫn khi có dòng điện chạy qua tỉ lệ thuận với bình phương cường độ dòng điện, với điện trở của dây dẫn và thời gian dòng điện chạy qua: Q = I² · R · t.'
+      }
+    ],
+    keyFormulas: [
+      'A = U I t = P t',
+      'Q = I^2 R t \\quad (\\text{Jun - Lenxo})',
+      '1 \\text{ kWh} = 3.6 \\cdot 10^6 \\text{ J}'
+    ],
+    simulationType: 'ohm_circuit',
+    defaultParams: {
+      voltage: 220,
+      resistor1: 44,
+      resistor2: 44,
+      circuitMode: 1
+    },
+    paramBounds: {
+      voltage: { min: 50, max: 240, step: 10, unit: 'V', label: 'Hiệu điện thế (U)' },
+      resistor1: { min: 10, max: 100, step: 2, unit: 'Ω', label: 'Điện trở R₁' },
+      resistor2: { min: 10, max: 100, step: 2, unit: 'Ω', label: 'Điện trở R₂' },
+      circuitMode: { min: 0, max: 1, step: 1, unit: '', label: 'Chế độ (0: Nối tiếp, 1: Song song)' }
+    },
+    practiceExercises: [
+      {
+        question: 'Dòng điện có cường độ 2A chạy qua một điện trở 50Ω trong thời gian 10 phút. Nhiệt lượng tỏa ra trên điện trở là:',
+        options: ['A. 120 kJ', 'B. 20 kJ', 'C. 1.2 kJ', 'D. 200 kJ'],
+        correctIndex: 0,
+        explanation: 'Q = I² · R · t = (2)² · 50 · (10 · 60) = 4 · 50 · 600 = 120,000 J = 120 kJ.'
+      }
+    ]
+  },
+  {
+    id: 'phys-10-3',
+    grade: 'Lớp 10',
+    lessonNumber: 5,
+    title: 'Định luật II Newton & Vật trên mặt phẳng nghiêng',
+    subtitle: 'Phân tích trọng lực P, phản lực N, lực ma sát và gia tốc chuyển động',
+    description: 'Mô phỏng 2D khối vật chuyển động trượt trên dốc nghiêng có ma sát. Khảo sát góc dốc α, hệ số ma sát μ và đo gia tốc tức thời.',
+    theorySections: [
+      {
+        heading: '1. Nội dung định luật II Newton',
+        content: 'Gia tốc của một vật cùng hướng với lực tác dụng lên vật. Độ lớn của gia tốc tỉ lệ thuận với độ lớn của lực và tỉ lệ nghịch với khối lượng của vật: a = F_net / m.'
+      },
+      {
+        heading: '2. Chuyển động trên dốc nghiêng góc α',
+        content: 'Phân tích trọng lực: P_x = m·g·sinα (kéo vật xuống dốc), P_y = m·g·cosα (ép vào mặt phẳng). Lực ma sát trượt: F_ms = μ·N = μ·m·g·cosα. Gia tốc khi trượt xuống: a = g(sinα - μ·cosα).'
+      }
+    ],
+    keyFormulas: [
+      '\\vec{a} = \\frac{\\sum \\vec{F}}{m}',
+      'F_{ms} = \\mu N = \\mu m g \\cos \\alpha',
+      'a = g(\\sin \\alpha - \\mu \\cos \\alpha)'
+    ],
+    simulationType: 'projectile_motion',
+    defaultParams: {
+      angleDeg: 30,
+      v0: 15,
+      height: 0,
+      gravity: 9.8
+    },
+    paramBounds: {
+      angleDeg: { min: 10, max: 80, step: 5, unit: '°', label: 'Góc nghiêng / góc bắn' },
+      v0: { min: 5, max: 40, step: 1, unit: 'm/s', label: 'Vận tốc đầu (v₀)' },
+      height: { min: 0, max: 20, step: 1, unit: 'm', label: 'Độ cao ban đầu (h)' },
+      gravity: { min: 5, max: 15, step: 0.2, unit: 'm/s²', label: 'Gia tốc trọng trường (g)' }
+    },
+    practiceExercises: [
+      {
+        question: 'Một vật trượt không ma sát xuống mặt phẳng nghiêng góc α = 30° so với phương ngang. Lấy g = 10 m/s². Gia tốc của vật là:',
+        options: ['A. 5.0 m/s²', 'B. 8.66 m/s²', 'C. 10 m/s²', 'D. 2.5 m/s²'],
+        correctIndex: 0,
+        explanation: 'Do không có ma sát: a = g · sinα = 10 · sin(30°) = 10 · 0.5 = 5.0 m/s².'
+      }
+    ]
+  },
+  {
+    id: 'phys-11-3',
+    grade: 'Lớp 11',
+    lessonNumber: 7,
+    title: 'Từ trường của dòng điện & Lực từ Ampe',
+    subtitle: 'Quy tắc nắm tay phải, quy tắc bàn tay trái và lực tác dụng lên hạt điện tích',
+    description: 'Mô phỏng 2D đường sức từ xung quanh dây dẫn thẳng, cuộn dây tròn và lực Ampe tác dụng làm lệch khung dây mang dòng điện.',
+    theorySections: [
+      {
+        heading: '1. Từ trường dòng điện trong dây dẫn thẳng dài',
+        content: 'Cảm ứng từ tại điểm cách dây khoảng cách r: B = 2·10⁻⁷ · (I / r) (Tesla). Chiều đường sức từ xác định theo quy tắc nắm tay phải.'
+      },
+      {
+        heading: '2. Lực từ tác dụng lên đoạn dây dẫn (Lực Ampe)',
+        content: 'F = B · I · L · sinα. Chiều của lực Ampe tuân theo quy tắc bàn tay trái: Đặt bàn tay trái hứng đường sức từ, ngón giữa chỉ chiều dòng điện, ngón cái choãi 90° chỉ chiều lực từ.'
+      }
+    ],
+    keyFormulas: [
+      'B = 2 \\cdot 10^{-7} \\frac{I}{r}',
+      'F = B I L \\sin \\alpha \\quad (\\text{Lực Ampe})',
+      'f_L = |q| v B \\sin \\alpha \\quad (\\text{Lực Lorenxo})'
+    ],
+    simulationType: 'magnetic_induction',
+    defaultParams: {
+      turns: 200,
+      magnetSpeed: 1.5,
+      area: 25
+    },
+    paramBounds: {
+      turns: { min: 50, max: 500, step: 25, unit: 'vòng', label: 'Số vòng dây (N)' },
+      magnetSpeed: { min: 0.5, max: 4.0, step: 0.2, unit: 'm/s', label: 'Vận tốc nam châm (v)' },
+      area: { min: 10, max: 50, step: 5, unit: 'cm²', label: 'Diện tích vòng dây (S)' }
+    },
+    practiceExercises: [
+      {
+        question: 'Đoạn dây dẫn dài L = 0.2m mang dòng điện I = 5A đặt vuông góc với cảm ứng từ B = 0.4T. Độ lớn lực từ tác dụng lên đoạn dây là:',
+        options: ['A. 0.4 N', 'B. 0.2 N', 'C. 0.8 N', 'D. 1.0 N'],
+        correctIndex: 0,
+        explanation: 'F = B · I · L · sin(90°) = 0.4 · 5 · 0.2 · 1 = 0.4 N.'
+      }
+    ]
+  },
+  {
+    id: 'phys-12-4',
+    grade: 'Lớp 12',
+    lessonNumber: 10,
+    title: 'Mạch điện Xoay chiều RLC nối tiếp & Cộng hưởng điện',
+    subtitle: 'Nghiên cứu trở kháng Z, độ lệch pha φ và điều kiện cộng hưởng ω²LC = 1',
+    description: 'Mô phỏng 2D dao động điện xoay chiều, giản đồ vector Fresnel quay, biểu diễn dòng điện và hiệu điện thế tức thời thời gian thực.',
+    theorySections: [
+      {
+        heading: '1. Điện áp & Dòng điện xoay chiều',
+        content: 'i = I₀ · cos(ωt + φ_i), u = U₀ · cos(ωt + φ_u). Cảm kháng: Z_L = ωL, Dung kháng: Z_C = 1 / (ωC). Tổng trở mạch RLC: Z = √[R² + (Z_L - Z_C)²].'
+      },
+      {
+        heading: '2. Hiện tượng Cộng hưởng điện',
+        content: 'Khi Z_L = Z_C (tức là ω = 1 / √(LC)), tổng trở Z đạt giá trị nhỏ nhất Z_min = R, cường độ dòng điện hiệu dụng đạt cực đại I_max = U / R, u và i cùng pha (cosφ = 1).'
+      }
+    ],
+    keyFormulas: [
+      'Z = \\sqrt{R^2 + (Z_L - Z_C)^2}',
+      '\\tan \\varphi = \\frac{Z_L - Z_C}{R}',
+      '\\omega_{ch} = \\frac{1}{\\sqrt{LC}} \\implies Z_L = Z_C',
+      'P = U I \\cos \\varphi = I^2 R'
+    ],
+    simulationType: 'spring_pendulum',
+    defaultParams: {
+      mass: 0.5,
+      springK: 50,
+      amplitude: 60,
+      damping: 0.05
+    },
+    paramBounds: {
+      mass: { min: 0.1, max: 2.0, step: 0.1, unit: 'kg', label: 'Khối lượng / Hệ số tự cảm L' },
+      springK: { min: 10, max: 150, step: 5, unit: 'N/m', label: 'Độ cứng K / Nghịch đảo điện dung 1/C' },
+      amplitude: { min: 20, max: 100, step: 5, unit: 'px', label: 'Biên độ điện áp cực đại U₀' },
+      damping: { min: 0, max: 0.2, step: 0.01, unit: '', label: 'Hệ số cản / Điện trở R' }
+    },
+    practiceExercises: [
+      {
+        question: 'Trong mạch RLC nối tiếp có R = 40Ω, Z_L = 80Ω, Z_C = 50Ω. Tổng trở Z của đoạn mạch là:',
+        options: ['A. 50 Ω', 'B. 70 Ω', 'C. 40 Ω', 'D. 90 Ω'],
+        correctIndex: 0,
+        explanation: 'Z = √[R² + (Z_L - Z_C)²] = √[40² + (80 - 50)²] = √[1600 + 900] = √2500 = 50 Ω.'
+      }
+    ]
   }
 ];

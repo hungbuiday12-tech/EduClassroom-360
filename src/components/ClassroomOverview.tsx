@@ -20,6 +20,7 @@ import {
   LogIn
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ClassroomOverviewProps {
   onNavigate: (subject: SubjectType) => void;
@@ -28,6 +29,7 @@ interface ClassroomOverviewProps {
 
 export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate, xp }) => {
   const { user, openAuthModal } = useAuth();
+  const { t, translate } = useLanguage();
   const currentXP = user ? user.xp : xp;
 
   // Pomodoro Timer State
@@ -104,13 +106,13 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold mb-2">
               <span className="w-2 h-2 rounded-full bg-indigo-400" />
-              <span>Phòng học trực tuyến thông minh · Hệ thống mô phỏng đa môn</span>
+              <span>{t('overview.badge', 'Phòng học trực tuyến thông minh · Hệ thống mô phỏng đa môn', 'Smart Virtual Classroom · Multi-Discipline Simulation')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
-              Bục giảng ảo: Khám phá trực quan Toán học, Vật lí & Tin học (Lớp 9 - 12)
+              {t('overview.heroTitle', 'Bục giảng ảo: Khám phá trực quan Toán học, Vật lí & Tin học (Lớp 9 - 12)', 'Interactive STEM Galaxy: Math, Physics & Computer Science (Grades 9-12)')}
             </h1>
             <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-              Trang bị các công cụ chuyên sâu: bài giảng từng bài tích hợp đồ thị hàm số và hình học Oxy (Toán), phòng thí nghiệm mô phỏng 2D thời gian thực (Lí), và hệ thống bài giảng lập trình phân cấp C++/Python (Tin).
+              {t('overview.heroDesc', 'Trang bị các công cụ chuyên sâu: bài giảng từng bài tích hợp đồ thị hàm số và hình học Oxy (Toán), phòng thí nghiệm mô phỏng 2D thời gian thực (Lí), và hệ thống tự do giải đề Sublime Text (Tin).', 'Equipped with specialized interactive tools: 2D dynamic graphers and geometry (Math), real-time 60fps physics simulation lab (Physics), and Sublime Text style coding studio with online judge (CS).')}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 mt-5">
@@ -118,21 +120,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
                 onClick={() => onNavigate('math')}
                 className="px-4 py-2 text-xs font-semibold text-slate-900 bg-white hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1.5"
               >
-                Vào học Toán học
+                {t('overview.gotoMath', 'Vào học Toán học', 'Explore Math')}
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => onNavigate('physics')}
                 className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center gap-1.5"
               >
-                Vào học Vật lí
+                {t('overview.gotoPhysics', 'Vào học Vật lí', 'Explore Physics')}
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => onNavigate('cs')}
                 className="px-4 py-2 text-xs font-semibold text-white bg-slate-700/80 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-1.5"
               >
-                Vào học Tin học
+                {t('overview.gotoCS', 'Vào học Tin học', 'Explore CS')}
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

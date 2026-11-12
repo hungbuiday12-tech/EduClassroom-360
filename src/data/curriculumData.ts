@@ -645,6 +645,323 @@ export const MATH_LECTURES: MathLecture[] = [
         explanation: 'Không gian mẫu n(Ω) = C(9, 3) = 84. Xét biến cố đối A\': "Không chọn được viên bi xanh nào" (cả 3 viên đều đỏ) => n(A\') = C(4, 3) = 4. Vậy P(A) = 1 - n(A\')/n(Ω) = 1 - 4/84 = 80/84 = 20/21.'
       }
     ]
+  },
+  // ==========================================
+  // LỚP 9: HÀM SỐ & HÌNH HỌC PHẲNG
+  // ==========================================
+  {
+    id: 'math-9-1',
+    title: 'Hàm số bậc nhất y = ax + b & Vị trí tương đối hai đường thẳng',
+    grade: 'Lớp 9 - Đại số',
+    category: 'Đại số',
+    difficulty: 'Cơ bản',
+    readTimeMinutes: 7,
+    description: 'Nắm vững hệ số góc a, tung độ gốc b, hàm số đồng biến khi a > 0, nghịch biến khi a < 0, và điều kiện song song, vuông góc giữa 2 đường thẳng.',
+    mnemonics: [
+      'a > 0: Hàm số đồng biến (đồ thị dốc lên từ trái sang phải).',
+      'a < 0: Hàm số nghịch biến (đồ thị dốc xuống từ trái sang phải).',
+      'Song song: a = a\', b ≠ b\'. Trùng nhau: a = a\', b = b\'. Cắt nhau: a ≠ a\'. Vuông góc: a · a\' = -1.'
+    ],
+    commonTraps: [
+      'Quên điều kiện a ≠ 0 để hàm số là bậc nhất.',
+      'Nhầm lẫn giữa điều kiện song song (b ≠ b\') và cắt nhau.'
+    ],
+    theory: [
+      '1. Định nghĩa: Hàm số bậc nhất có dạng $y = ax + b$ ($a \\neq 0$).',
+      '2. Tính chất biến thiên: Xác định trên toàn R. Nếu $a > 0$: đồng biến; Nếu $a < 0$: nghịch biến.',
+      '3. Đồ thị: Là một đường thẳng đi qua 2 điểm $(0; b)$ và $(-b/a; 0)$.',
+      '4. Hệ số góc: $a = \\tan \\alpha$, trong đó $\\alpha$ là góc tạo bởi tia Ox và đường thẳng.',
+      '5. Vị trí tương đối của $d_1: y = a_1 x + b_1$ và $d_2: y = a_2 x + b_2$:',
+      '   - $d_1 // d_2 \\Leftrightarrow a_1 = a_2$ và $b_1 \\neq b_2$.',
+      '   - $d_1 \\equiv d_2 \\Leftrightarrow a_1 = a_2$ và $b_1 = b_2$.',
+      '   - $d_1 \\perp d_2 \\Leftrightarrow a_1 \\cdot a_2 = -1$.'
+    ],
+    keyFormulas: [
+      'y = ax + b \\quad (a \\neq 0)',
+      'a = \\tan \\alpha \\quad (\\text{Hệ số góc})',
+      'd_1 \\parallel d_2 \\iff a_1 = a_2 \\land b_1 \\neq b_2',
+      'd_1 \\perp d_2 \\iff a_1 \\cdot a_2 = -1'
+    ],
+    flashcards: [
+      {
+        front: 'Hai đường thẳng y = ax + b và y = a\'x + b\' vuông góc khi nào?',
+        back: 'Khi và chỉ khi tích hai hệ số góc bằng -1: a · a\' = -1.',
+        tip: 'Ví dụ: y = 2x + 1 vuông góc với y = -0.5x + 3.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Đường thẳng d: y = (m - 2)x + 3 song song với đường thẳng d\': y = 4x - 1 khi:',
+        options: ['A. m = 6', 'B. m = 2', 'C. m = -2', 'D. m = 4'],
+        correctIndex: 0,
+        explanation: 'Để d // d\' thì a = a\' và b ≠ b\'. Ta có m - 2 = 4 <=> m = 6, và 3 ≠ -1 (luôn đúng). Vậy m = 6.'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'linear',
+      params: { a: 2, b: -3, c: 0, d: 0 },
+      color: '#4f46e5',
+      name: 'y = 2x - 3'
+    }
+  },
+  {
+    id: 'math-9-2',
+    title: 'Hàm số bậc hai y = ax² & Phương trình bậc hai / Định lý Vi-ét',
+    grade: 'Lớp 9 - Đại số',
+    category: 'Đại số',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 8,
+    description: 'Khảo sát hình dạng Parabol đối xứng qua trục tung Oy, đỉnh O(0; 0), công thức nghiệm delta và định lý Vi-ét giải quyết hệ thức đối xứng.',
+    mnemonics: [
+      'a > 0: Bề lõm hướng lên trên, O(0; 0) là điểm cực tiểu.',
+      'a < 0: Bề lõm hướng xuống dưới, O(0; 0) là điểm cực đại.',
+      'Định lý Vi-ét: Tổng S = -b/a, Tích P = c/a.'
+    ],
+    commonTraps: [
+      'Quên kiểm tra điều kiện Δ ≥ 0 trước khi áp dụng định lý Vi-ét.',
+      'Nhầm lẫn dấu của tổng S: S = -b/a chứ không phải b/a.'
+    ],
+    theory: [
+      '1. Hàm số $y = ax^2$ ($a \\neq 0$): Xác định trên R. Nhận Oy làm trục đối xứng.',
+      '2. Phương trình bậc hai $ax^2 + bx + c = 0$ ($a \\neq 0$): Biệt thức $\\Delta = b^2 - 4ac$.',
+      '3. Nếu $\\Delta > 0$: có 2 nghiệm phân biệt $x_{1, 2} = \\frac{-b \\pm \\sqrt{\\Delta}}{2a}$.',
+      '4. Định lý Vi-ét: Nếu phương trình có 2 nghiệm $x_1, x_2$ thì $x_1 + x_2 = -\\frac{b}{a}$, $x_1 x_2 = \\frac{c}{a}$.',
+      '5. Các hệ thức thường gặp: $x_1^2 + x_2^2 = S^2 - 2P$; $\\frac{1}{x_1} + \\frac{1}{x_2} = \\frac{S}{P}$; $|x_1 - x_2| = \\frac{\\sqrt{\\Delta}}{|a|}$.'
+    ],
+    keyFormulas: [
+      'y = ax^2 \\quad (a \\neq 0)',
+      '\\Delta = b^2 - 4ac',
+      'S = x_1 + x_2 = -\\frac{b}{a}',
+      'P = x_1 x_2 = \\frac{c}{a}',
+      'x_1^2 + x_2^2 = S^2 - 2P'
+    ],
+    flashcards: [
+      {
+        front: 'Công thức biểu diễn x₁² + x₂² theo S và P trong định lý Vi-ét?',
+        back: 'x₁² + x₂² = (x₁ + x₂)² - 2x₁x₂ = S² - 2P.',
+        tip: 'Luôn biến đổi về tổng và tích để thay S và P.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho phương trình $x^2 - 5x + 6 = 0$. Giá trị biểu thức $A = x_1^2 + x_2^2$ là:',
+        options: ['A. 13', 'B. 25', 'C. 19', 'D. 37'],
+        correctIndex: 0,
+        explanation: 'Theo Vi-ét: S = 5, P = 6. Suy ra A = S² - 2P = 5² - 2·6 = 25 - 12 = 13.'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'quadratic',
+      params: { a: 1, b: 0, c: 0, d: 0 },
+      color: '#0ea5e9',
+      name: 'y = x²'
+    }
+  },
+  // ==========================================
+  // LỚP 10: TAM THỨC BẬC HAI & HÌNH HỌC VECTƠ
+  // ==========================================
+  {
+    id: 'math-10-1',
+    title: 'Tam thức bậc hai y = ax² + bx + c & Dấu tam thức',
+    grade: 'Lớp 10 - Đại số',
+    category: 'Đại số',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 8,
+    description: 'Quy tắc xét dấu trong trái ngoài cùng, tọa độ đỉnh I(-b/2a, -Δ/4a), trục đối xứng x = -b/2a và giải bất phương trình bậc hai.',
+    mnemonics: [
+      'Đỉnh Parabol: I(-b / (2a); -Δ / (4a)).',
+      'Dấu tam thức khi Δ > 0: Trong khoảng 2 nghiệm TRÁI dấu a, ngoài khoảng CÙNG dấu a (Trong trái ngoài cùng).',
+      'Khi Δ ≤ 0: Tam thức luôn cùng dấu với hệ số a với mọi x.'
+    ],
+    commonTraps: [
+      'Quên đảo chiều bất phương trình khi chia cho số âm a < 0.',
+      'Quên xét trường hợp a = 0 khi đề bài chứa tham số m.'
+    ],
+    theory: [
+      '1. Đồ thị hàm số $y = ax^2 + bx + c$ ($a \\neq 0$) là parabol có đỉnh $I(-\\frac{b}{2a}; -\\frac{\\Delta}{4a})$ và trục đối xứng $x = -\\frac{b}{2a}$.',
+      '2. Định lý về dấu của tam thức bậc hai $f(x) = ax^2 + bx + c$:',
+      '   - Nếu $\\Delta < 0$: $a \\cdot f(x) > 0, \\forall x \\in R$ (cùng dấu a).',
+      '   - Nếu $\\Delta = 0$: $a \\cdot f(x) > 0, \\forall x \\neq -\\frac{b}{2a}$.',
+      '   - Nếu $\\Delta > 0$: $f(x)$ cùng dấu với a ngoài đoạn $[x_1; x_2]$ và trái dấu với a trong khoảng $(x_1; x_2)$.'
+    ],
+    keyFormulas: [
+      'y = ax^2 + bx + c',
+      'x_I = -\\frac{b}{2a}, \\quad y_I = -\\frac{\\Delta}{4a}',
+      'f(x) > 0, \\forall x \\in R \\iff a > 0 \\land \\Delta < 0'
+    ],
+    flashcards: [
+      {
+        front: 'Điều kiện để tam thức f(x) = ax² + bx + c luôn dương với mọi x thuộc R?',
+        back: 'a > 0 và biệt thức Δ < 0.',
+        tip: 'Nếu f(x) ≥ 0 thì thêm dấu bằng ở delta: Δ ≤ 0.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Tập nghiệm của bất phương trình $x^2 - 4x + 3 < 0$ là:',
+        options: ['A. (1; 3)', 'B. (-∞; 1) ∪ (3; +∞)', 'C. [1; 3]', 'D. (-3; -1)'],
+        correctIndex: 0,
+        explanation: 'Tam thức $x^2 - 4x + 3 = 0$ có 2 nghiệm $x=1, x=3$. Hệ số a = 1 > 0. Cần tìm $f(x) < 0$ (trái dấu a) nên lấy trong khoảng 2 nghiệm: x ∈ (1; 3).'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'quadratic',
+      params: { a: 1, b: -4, c: 3, d: 0 },
+      color: '#10b981',
+      name: 'y = x² - 4x + 3'
+    }
+  },
+  {
+    id: 'math-10-2',
+    title: 'Tích vô hướng hai vectơ & Định lý Cosin trong tam giác',
+    grade: 'Lớp 10 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 8,
+    description: 'Định nghĩa tích vô hướng u · v = |u||v|cosθ, định lý hàm số cosin a² = b² + c² - 2bc cosA và ứng dụng giải tam giác tổng quát.',
+    mnemonics: [
+      'Tích vô hướng là một CON SỐ, không phải vectơ.',
+      'Hai vectơ vuông góc khi và chỉ khi tích vô hướng bằng 0: u · v = 0.',
+      'Định lý Cosin là mở rộng của định lý Pytago cho góc bất kỳ.'
+    ],
+    commonTraps: [
+      'Quên dấu trừ trước 2bc cosA trong công thức định lý Cosin.',
+      'Nhầm lẫn giữa tích vô hướng (số) và tích có hướng trong không gian (vectơ).'
+    ],
+    theory: [
+      '1. Tích vô hướng: $\\vec{u} \\cdot \\vec{v} = |\\vec{u}| \\cdot |\\vec{v}| \\cdot \\cos(\\vec{u}, \\vec{v})$.',
+      '2. Trong hệ tọa độ Oxy: $\\vec{u}(x_1; y_1), \\vec{v}(x_2; y_2) \\implies \\vec{u} \\cdot \\vec{v} = x_1 x_2 + y_1 y_2$.',
+      '3. Định lý hàm số Cosin trong tam giác ABC: $a^2 = b^2 + c^2 - 2bc \\cos A$.',
+      '4. Hệ quả tính góc: $\\cos A = \\frac{b^2 + c^2 - a^2}{2bc}$.',
+      '5. Định lý hàm số Sin: $\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C} = 2R$.'
+    ],
+    keyFormulas: [
+      '\\vec{u} \\cdot \\vec{v} = |\\vec{u}| |\\vec{v}| \\cos \\theta = x_1 x_2 + y_1 y_2',
+      'a^2 = b^2 + c^2 - 2bc \\cos A',
+      '\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C} = 2R',
+      'S = \\frac{1}{2} b c \\sin A = \\frac{a b c}{4R} = p r'
+    ],
+    flashcards: [
+      {
+        front: 'Hai vectơ u(x₁, y₁) và v(x₂, y₂) vuông góc khi nào?',
+        back: 'x₁x₂ + y₁y₂ = 0 (tích vô hướng bằng 0).',
+        tip: 'Áp dụng để lập phương trình đường cao hoặc tiếp tuyến.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Tam giác ABC có b = 6, c = 8, góc A = 60°. Độ dài cạnh a là:',
+        options: ['A. 2√13', 'B. 10', 'C. 2√37', 'D. 8'],
+        correctIndex: 0,
+        explanation: 'a² = b² + c² - 2bc·cos(60°) = 36 + 64 - 2·6·8·0.5 = 100 - 48 = 52. Suy ra a = √52 = 2√13.'
+      }
+    ]
+  },
+  // ==========================================
+  // LỚP 11: LƯỢNG GIÁC, ĐẠO HÀM & CẤP SỐ
+  // ==========================================
+  {
+    id: 'math-11-1',
+    title: 'Hàm số Lượng giác y = sin(x), cos(x) & Phương trình cơ bản',
+    grade: 'Lớp 11 - Lượng giác & Mũ',
+    category: 'Lượng giác & Mũ',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 9,
+    description: 'Tính tuần hoàn, tập giá trị [-1; 1], đồ thị hình sóng sin/cos, và công thức nghiệm phương trình lượng giác cơ bản.',
+    mnemonics: [
+      'Hàm số sin(x) tuần hoàn chu kỳ 2π, là hàm lẻ (đối xứng qua gốc O).',
+      'Hàm số cos(x) tuần hoàn chu kỳ 2π, là hàm chẵn (đối xứng qua trục Oy).',
+      'Sin bù: sin(x) = sin(α) <=> x = α + k2π hoặc x = π - α + k2π.',
+      'Cos đối: cos(x) = cos(α) <=> x = ±α + k2π.'
+    ],
+    commonTraps: [
+      'Quên họ nghiệm bù π - α khi giải sin(x) = sin(α).',
+      'Quên đuôi chu kỳ k2π đối với sin/cos, và kπ đối với tan/cot.'
+    ],
+    theory: [
+      '1. Hàm số $y = \\sin x$: Tập xác định R, tập giá trị $[-1; 1]$, tuần hoàn chu kỳ $2\\pi$.',
+      '2. Hàm số $y = \\cos x$: Tập xác định R, tập giá trị $[-1; 1]$, tuần hoàn chu kỳ $2\\pi$.',
+      '3. Phương trình $\\sin x = m$: Có nghiệm $\\iff |m| \\le 1$. Khi đó $x = \\arcsin(m) + k2\\pi$ hoặc $x = \\pi - \\arcsin(m) + k2\\pi$.',
+      '4. Phương trình $\\cos x = m$: Có nghiệm $\\iff |m| \\le 1$. Khi đó $x = \\pm \\arccos(m) + k2\\pi$.'
+    ],
+    keyFormulas: [
+      '\\sin x = \\sin \\alpha \\iff x = \\alpha + k2\\pi \\lor x = \\pi - \\alpha + k2\\pi',
+      '\\cos x = \\cos \\alpha \\iff x = \\pm \\alpha + k2\\pi',
+      '\\tan x = \\tan \\alpha \\iff x = \\alpha + k\\pi \\quad (k \\in Z)'
+    ],
+    flashcards: [
+      {
+        front: 'Phương trình sin(x) = 1 có nghiệm đặc biệt là gì?',
+        back: 'x = π/2 + k2π (chỉ có 1 điểm cực đại trên đường tròn lượng giác).',
+        tip: 'sin(x) = -1 <=> x = -π/2 + k2π; sin(x) = 0 <=> x = kπ.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Số nghiệm của phương trình $\\sin x = 0.5$ trên đoạn $[0; 2\\pi]$ là:',
+        options: ['A. 2', 'B. 1', 'C. 4', 'D. 0'],
+        correctIndex: 0,
+        explanation: 'sin(x) = 1/2 <=> x = π/6 + k2π hoặc x = 5π/6 + k2π. Trong đoạn [0; 2π] có đúng 2 nghiệm: π/6 và 5π/6.'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'trig_sin',
+      params: { a: 1, b: 1, c: 0, d: 0 },
+      color: '#f59e0b',
+      name: 'y = sin(x)'
+    }
+  },
+  {
+    id: 'math-11-2',
+    title: 'Đạo hàm & Ý nghĩa hình học / Phương trình tiếp tuyến',
+    grade: 'Lớp 11 - Giải tích',
+    category: 'Giải tích',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 9,
+    description: 'Quy tắc tính đạo hàm hàm hợp, hệ số góc tiếp tuyến k = f\'(x₀) và phương trình tiếp tuyến của đồ thị tại điểm M(x₀, y₀).',
+    mnemonics: [
+      'Đạo hàm tại x₀ chính là HỆ SỐ GÓC của tiếp tuyến tại điểm đó: k = f\'(x₀).',
+      'Tiếp tuyến song song với d: y = ax + b <=> f\'(x₀) = a.',
+      'Tiếp tuyến vuông góc với d: y = ax + b <=> f\'(x₀) = -1/a.'
+    ],
+    commonTraps: [
+      'Nhầm lẫn giữa tiếp tuyến TẠI điểm M(x₀, y₀) và tiếp tuyến ĐI QUA điểm A(x_A, y_A).',
+      'Tính sai đạo hàm hàm hợp: (u^n)\' = n · u^(n-1) · u\'.'
+    ],
+    theory: [
+      '1. Định nghĩa: $f\'(x_0) = \\lim_{x \\to x_0} \\frac{f(x) - f(x_0)}{x - x_0}$.',
+      '2. Ý nghĩa hình học: $f\'(x_0)$ là hệ số góc của tiếp tuyến của đồ thị $(C)$ tại $M(x_0; f(x_0))$.',
+      '3. Phương trình tiếp tuyến tại $M(x_0; y_0)$: $y = f\'(x_0)(x - x_0) + y_0$.',
+      '4. Các đạo hàm cơ bản: $(x^n)\' = n x^{n-1}$; $(\\sqrt{x})\' = \\frac{1}{2\\sqrt{x}}$; $(\\frac{1}{x})\' = -\\frac{1}{x^2}$; $(\\sin x)\' = \\cos x$; $(\\cos x)\' = -\\sin x$.'
+    ],
+    keyFormulas: [
+      'y = f\'(x_0)(x - x_0) + y_0 \\quad (\\text{Phương trình tiếp tuyến})',
+      'k = f\'(x_0) = \\tan \\alpha \\quad (\\text{Hệ số góc})',
+      '(u \\cdot v)\' = u\'v + uv\', \\quad \\left(\\frac{u}{v}\\right)\' = \\frac{u\'v - uv\'}{v^2}'
+    ],
+    flashcards: [
+      {
+        front: 'Phương trình tiếp tuyến của đồ thị hàm số y = f(x) tại điểm M(x₀; y₀)?',
+        back: 'y = f\'(x₀)(x - x₀) + y₀.',
+        tip: 'Cần xác định đủ 3 yếu tố: x₀, y₀ = f(x₀), và f\'(x₀).'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Phương trình tiếp tuyến của đồ thị hàm số $y = x^2 - 3x + 1$ tại điểm có hoành độ $x_0 = 2$ là:',
+        options: ['A. y = x - 3', 'B. y = x - 1', 'C. y = 2x - 5', 'D. y = -x + 1'],
+        correctIndex: 0,
+        explanation: 'Ta có $y_0 = 2^2 - 3(2) + 1 = -1$. Đạo hàm $y\' = 2x - 3 \\implies y\'(2) = 2(2) - 3 = 1$. Phương trình tiếp tuyến: $y = 1(x - 2) + (-1) = x - 3$.'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'quadratic',
+      params: { a: 1, b: -3, c: 1, d: 0 },
+      showTangent: true,
+      tangentX0: 2,
+      color: '#8b5cf6',
+      name: 'y = x² - 3x + 1'
+    }
   }
 ];
 

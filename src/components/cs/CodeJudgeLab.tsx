@@ -11,6 +11,8 @@ import {
   CSLevel
 } from '../../types';
 import { executeCode, judgeProblem } from './codeRunner';
+import { SublimeStudio } from './SublimeStudio';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   Play,
   Send,
@@ -37,8 +39,9 @@ interface CodeJudgeLabProps {
 }
 
 export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => {
-  // Top View Mode: 'curriculum' (Bài giảng & Code mẫu) or 'judge' (Trình chấm online)
-  const [viewMode, setViewMode] = useState<'curriculum' | 'judge'>('curriculum');
+  const { t } = useLanguage();
+  // Top View Mode: 'curriculum' (Bài giảng & Code mẫu), 'judge' (Trình chấm online), or 'custom' (Sublime Studio)
+  const [viewMode, setViewMode] = useState<'curriculum' | 'judge' | 'custom'>('curriculum');
 
   // Level filter for curriculum: 'all' | 'Cơ bản' | 'Trung cấp' | 'Nâng cao / HSG'
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
@@ -249,8 +252,8 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
           </p>
         </div>
 
-        {/* View Mode Switcher (Bài giảng vs Online Judge) */}
-        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+        {/* View Mode Switcher (Bài giảng vs Online Judge vs Sublime Studio) */}
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
           <button
             onClick={() => setViewMode('curriculum')}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
@@ -260,7 +263,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>1. Lộ Trình Bài Giảng & Code Mẫu</span>
+            <span>{t('cs.tab.curriculum', '1. Lộ Trình Bài Giảng & Code Mẫu', '1. Curriculum & Sample Code')}</span>
           </button>
           <button
             onClick={() => setViewMode('judge')}
@@ -271,7 +274,18 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
             }`}
           >
             <Code2 className="w-4 h-4" />
-            <span>2. Trình Chấm Online Judge</span>
+            <span>{t('cs.tab.judge', '2. Trình Chấm Online Judge', '2. Standard Online Judge')}</span>
+          </button>
+          <button
+            onClick={() => setViewMode('custom')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
+              viewMode === 'custom'
+                ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span>{t('cs.tab.custom', '3. ⚡ Tự Do Giải Đề (Sublime Studio)', '3. ⚡ Free Problem Solver (Sublime Studio)')}</span>
           </button>
         </div>
       </div>
@@ -972,6 +986,11 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
           </div>
         </div>
       )}
+
+      {/* ============================================================= */}
+      {/* MODE 3: TỰ DO GIẢI ĐỀ & AI SINH TEST (SUBLIME TEXT STUDIO)   */}
+      {/* ============================================================= */}
+      {viewMode === 'custom' && <SublimeStudio onScoreEarned={onScoreEarned} />}
     </div>
   );
 };

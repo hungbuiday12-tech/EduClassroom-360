@@ -25,12 +25,14 @@ import {
 import confetti from 'canvas-confetti';
 import { MathFormula, FormattedText } from '../common/MathRenderer';
 import { Physics3DView } from './Physics3DView';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface PhysicsLabProps {
   onScoreEarned?: (xp: number) => void;
 }
 
 export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
+  const { t, translate } = useLanguage();
   // Grade Filter: 'all' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12'
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
 
@@ -1172,7 +1174,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
               }`}
             >
-              {grade === 'all' ? 'Tất cả (9 bài)' : grade}
+              {grade === 'all'
+                ? t('grade.all', `Tất cả (${PHYSICS_LESSONS.length} bài)`, `All (${PHYSICS_LESSONS.length} lessons)`)
+                : t(grade, grade)}
             </button>
           ))}
         </div>
@@ -1197,9 +1201,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
                   : 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300'
               }`}
             >
-              {l.grade}
+              {t(l.grade, l.grade)}
             </span>
-            <span>{l.title.split(':')[0]}</span>
+            <span>{translate(l.title.split(':')[0])}</span>
           </button>
         ))}
       </div>
@@ -1210,17 +1214,17 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                {lesson.grade} • Bài {lesson.lessonNumber}
+                {t(lesson.grade, lesson.grade)} • {t('lesson.num', 'Bài', 'Lesson')} {lesson.lessonNumber}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                {lesson.subtitle}
+                {translate(lesson.subtitle)}
               </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              {lesson.title}
+              {translate(lesson.title)}
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-              {lesson.description}
+              {translate(lesson.description)}
             </p>
           </div>
 
@@ -1235,7 +1239,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
               }`}
             >
               <BookOpen className="w-4 h-4" />
-              <span>1. Bài Giảng Lý Thuyết</span>
+              <span>{t('sim.theory', '1. Bài Giảng Lý Thuyết', '1. Theory Lectures')}</span>
             </button>
             <button
               onClick={() => setActiveTab('simulation')}
@@ -1246,7 +1250,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
               }`}
             >
               <Zap className="w-4 h-4" />
-              <span>2. Phòng Lab 2D</span>
+              <span>{t('sim.2d', '2. Phòng Lab 2D Động', '2. Dynamic 2D Lab')}</span>
             </button>
             <button
               onClick={() => setActiveTab('sim3d')}
@@ -1257,7 +1261,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
               }`}
             >
               <Box className="w-4 h-4" />
-              <span>3. Mô Phỏng 3D Three.js</span>
+              <span>{t('sim.3d', '3. Mô Phỏng 3D Three.js', '3. Three.js 3D Sim')}</span>
             </button>
             <button
               onClick={() => setActiveTab('practice')}
@@ -1268,7 +1272,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
               }`}
             >
               <GraduationCap className="w-4 h-4" />
-              <span>4. Bài Tập & Lời Giải</span>
+              <span>{t('sim.practice', '4. Bài Tập & Lời Giải', '4. Exercises & Solutions')}</span>
             </button>
           </div>
         </div>

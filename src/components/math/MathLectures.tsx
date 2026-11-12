@@ -25,6 +25,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { MathFormula, FormattedText } from '../common/MathRenderer';
 
 interface MathLecturesProps {
@@ -33,12 +34,14 @@ interface MathLecturesProps {
 
 export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => {
   const { addXP } = useAuth();
+  const { t } = useLanguage();
 
   const [activeLectureId, setActiveLectureId] = useState<string>(MATH_LECTURES[0].id);
   const [activeTab, setActiveTab] = useState<'theory' | 'flashcards' | 'quiz'>('theory');
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Interactive Quiz State
@@ -78,23 +81,31 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
 
   // Categories list
   const categories = [
-    { id: 'all', label: 'Tất cả chuyên đề' },
-    { id: 'Giải tích', label: 'Giải tích 12' },
-    { id: 'Hình học', label: 'Hình học Oxyz & Không gian' },
-    { id: 'Lượng giác & Mũ', label: 'Mũ & Logarit' },
-    { id: 'Số phức', label: 'Số phức' },
-    { id: 'Đại số & Xác suất', label: 'Đại số & Xác suất' }
+    { id: 'all', label: t('cat.all', 'Tất cả chuyên đề', 'All Topics') },
+    { id: 'Giải tích', label: t('cat.calc', 'Giải tích (11-12)', 'Calculus (11-12)') },
+    { id: 'Hình học', label: t('cat.geo', 'Hình học (9-12)', 'Geometry (9-12)') },
+    { id: 'Đại số', label: t('cat.alg', 'Đại số & Hàm số (9-10)', 'Algebra & Functions (9-10)') },
+    { id: 'Lượng giác & Mũ', label: t('cat.trig', 'Lượng giác, Mũ & Logarit', 'Trig, Exp & Log') },
+    { id: 'Số phức', label: t('cat.complex', 'Số phức', 'Complex Numbers') },
+    { id: 'Đại số & Xác suất', label: t('cat.prob', 'Xác suất & Tổ hợp', 'Probability & Combinatorics') }
   ];
 
   // Filtered lectures
   const filteredLectures = MATH_LECTURES.filter((lec) => {
+    const matchesGrade =
+      selectedGrade === 'all' ||
+      (selectedGrade === 'Lớp 9' && lec.grade.includes('Lớp 9')) ||
+      (selectedGrade === 'Lớp 10' && lec.grade.includes('Lớp 10')) ||
+      (selectedGrade === 'Lớp 11' && lec.grade.includes('Lớp 11')) ||
+      (selectedGrade === 'Lớp 12' && lec.grade.includes('Lớp 12'));
+
     const matchesCategory =
       selectedCategory === 'all' || lec.category === selectedCategory;
     const matchesSearch =
       lec.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lec.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lec.keyFormulas.some((f) => f.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
+    return matchesGrade && matchesCategory && matchesSearch;
   });
 
   const handleSelectOption = (qIdx: number, optIdx: number) => {
@@ -167,16 +178,42 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
           </div>
         </div>
 
-        {/* Category Filter Chips */}
+        {/* Grade Level Selector (Lớp 9, 10, 11, 12) */}
         <div className="flex items-center gap-1.5 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 overflow-x-auto pb-1">
+          <span className="text-xs font-semibold text-slate-500 shrink-0 mr-1">
+            {t('grade.label', 'Khối lớp:', 'Grade:')}
+          </span>
+          {[
+            { id: 'all', label: t('grade.all', 'Tất cả (Lớp 9 - 12)', 'All (Grades 9-12)') },
+            { id: 'Lớp 9', label: t('grade.9', 'Lớp 9', 'Grade 9') },
+            { id: 'Lớp 10', label: t('grade.10', 'Lớp 10', 'Grade 10') },
+            { id: 'Lớp 11', label: t('grade.11', 'Lớp 11', 'Grade 11') },
+            { id: 'Lớp 12', label: t('grade.12', 'Lớp 12', 'Grade 12') }
+          ].map((g) => (
+            <button
+              key={g.id}
+              onClick={() => setSelectedGrade(g.id)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
+                selectedGrade === g.id
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Category Filter Chips */}
+        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-1">
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
                 selectedCategory === cat.id
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
+                  : 'bg-slate-100/70 dark:bg-slate-800/70 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               {cat.label}

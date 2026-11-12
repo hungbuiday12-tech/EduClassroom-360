@@ -100,7 +100,7 @@ export interface MathLecture {
   id: string;
   title: string;
   grade: string;
-  category?: 'Giải tích' | 'Hình học' | 'Đại số & Xác suất' | 'Lượng giác & Mũ' | 'Số phức';
+  category?: 'Giải tích' | 'Hình học' | 'Đại số & Xác suất' | 'Lượng giác & Mũ' | 'Số phức' | 'Đại số';
   difficulty?: 'Cơ bản' | 'Thông hiểu' | 'Vận dụng' | 'Vận dụng cao';
   readTimeMinutes?: number;
   description: string;

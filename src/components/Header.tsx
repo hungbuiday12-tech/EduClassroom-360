@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { SubjectType } from '../types';
-import { Sun, Moon, Award, User, LogOut, LogIn, ChevronDown, Sparkles } from 'lucide-react';
+import { Sun, Moon, Award, User, LogOut, LogIn, ChevronDown, Sparkles, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface HeaderProps {
   currentSubject: SubjectType;
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onReturnToLanding,
 }) => {
   const { user, openAuthModal, logout } = useAuth();
+  const { language, toggleLanguage, t } = useLanguage();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   return (
@@ -44,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            Lớp học
+            {t('nav.classroom', 'Lớp học', 'Classroom')}
           </button>
           <button
             onClick={() => onSelectSubject('math')}
@@ -54,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            Toán học (Đồ thị & Hình)
+            {t('nav.math', 'Toán học (Đồ thị & 3D)', 'Math (Graphs & 3D)')}
           </button>
           <button
             onClick={() => onSelectSubject('physics')}
@@ -64,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            Vật lí (Mô phỏng 2D)
+            {t('nav.physics', 'Vật lí (Mô phỏng 2D/3D)', 'Physics (2D/3D Labs)')}
           </button>
           <button
             onClick={() => onSelectSubject('cs')}
@@ -74,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            Tin học (C++/Python Judge)
+            {t('nav.cs', 'Tin học (Online Judge & Tự do)', 'CS (Online Judge & Custom)')}
           </button>
           <button
             onClick={() => onSelectSubject('exams')}
@@ -84,12 +86,28 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            Đề Thi (30 Đề)
+            {t('nav.exams', 'Đề Thi (60 Đề)', 'Exams (60 Papers)')}
           </button>
         </nav>
 
-        {/* Zone 3: Actions + User Profile & Theme switcher */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Zone 3: Actions + User Profile & Language/Theme switcher */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Language Switcher Button (VI | EN) */}
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            title={language === 'vi' ? 'Switch interface to English' : 'Chuyển giao diện sang Tiếng Việt'}
+          >
+            <Globe className="w-3.5 h-3.5 text-indigo-500" />
+            <span className={language === 'vi' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-400'}>
+              VI
+            </span>
+            <span className="text-slate-300 dark:text-slate-600">/</span>
+            <span className={language === 'en' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-400'}>
+              EN
+            </span>
+          </button>
+
           {/* XP Pill */}
           <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/50 rounded-lg text-xs font-mono font-semibold text-amber-700 dark:text-amber-300">
             <Award className="w-3.5 h-3.5 text-amber-500" />
@@ -99,8 +117,8 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Theme button */}
           <button
             onClick={onToggleTheme}
-            className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-            title={isDark ? 'Chuyển sang chế độ Sáng' : 'Chuyển sang chế độ Tối'}
+            className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            title={isDark ? 'Chuyển sang chế độ Sáng (Light)' : 'Chuyển sang chế độ Tối (Dark)'}
           >
             {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
           </button>

@@ -19,9 +19,12 @@ import {
   GraduationCap,
   Copy,
   Check,
-  Maximize2
+  Maximize2,
+  Box
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { MathFormula, FormattedText } from '../common/MathRenderer';
+import { Physics3DView } from './Physics3DView';
 
 interface PhysicsLabProps {
   onScoreEarned?: (xp: number) => void;
@@ -47,8 +50,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     );
   }, [selectedLessonId, filteredLessons]);
 
-  // Active sub-tab: 'theory' | 'simulation' | 'practice'
-  const [activeTab, setActiveTab] = useState<'theory' | 'simulation' | 'practice'>('theory');
+  // Active sub-tab: 'theory' | 'simulation' | 'sim3d' | 'practice'
+  const [activeTab, setActiveTab] = useState<'theory' | 'simulation' | 'sim3d' | 'practice'>('theory');
 
   // Simulation controls & params
   const [isRunning, setIsRunning] = useState<boolean>(true);
@@ -1221,11 +1224,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
             </p>
           </div>
 
-          {/* 3 Main Action Sub-Tabs */}
-          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+          {/* 4 Main Action Sub-Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
             <button
               onClick={() => setActiveTab('theory')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'theory'
                   ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm font-semibold'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -1236,30 +1239,41 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
             </button>
             <button
               onClick={() => setActiveTab('simulation')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'simulation'
                   ? 'bg-blue-600 text-white shadow-sm font-semibold'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Zap className="w-4 h-4" />
-              <span>2. Mô Phỏng 2D Tương Tác</span>
+              <span>2. Phòng Lab 2D</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('sim3d')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                activeTab === 'sim3d'
+                  ? 'bg-amber-600 text-white shadow-sm font-semibold'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Box className="w-4 h-4" />
+              <span>3. Mô Phỏng 3D Three.js</span>
             </button>
             <button
               onClick={() => setActiveTab('practice')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'practice'
                   ? 'bg-emerald-600 text-white shadow-sm font-semibold'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <GraduationCap className="w-4 h-4" />
-              <span>3. Bài Tập Củng Cố & Lời Giải</span>
+              <span>4. Bài Tập & Lời Giải</span>
             </button>
           </div>
         </div>
 
-        {/* Key Formulas Pills */}
+        {/* Key Formulas Pills with KaTeX */}
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             Công thức then chốt:
@@ -1267,9 +1281,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
           {lesson.keyFormulas.map((kf, idx) => (
             <span
               key={idx}
-              className="px-2.5 py-1 text-xs font-mono rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
+              className="px-2.5 py-1 text-xs font-mono rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-slate-700/60"
             >
-              {kf}
+              <MathFormula formula={kf} />
             </span>
           ))}
         </div>
@@ -1294,13 +1308,13 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
                 </div>
 
                 <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-sans whitespace-pre-line">
-                  {sec.content}
+                  <FormattedText text={sec.content} />
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-wrap justify-end gap-3">
             <button
               onClick={() => setActiveTab('simulation')}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
@@ -1308,7 +1322,21 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
               <span>Vào Thí Nghiệm Mô Phỏng 2D</span>
               <ChevronRight className="w-4 h-4" />
             </button>
+            <button
+              onClick={() => setActiveTab('sim3d')}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-all shadow-md shadow-amber-500/20"
+            >
+              <Box className="w-4 h-4" />
+              <span>Khám Phá Mô Phỏng 3D Three.js</span>
+            </button>
           </div>
+        </div>
+      )}
+
+      {/* VIEW 3D: THREE.JS 3D PHYSICS SIMULATION */}
+      {activeTab === 'sim3d' && (
+        <div className="space-y-4">
+          <Physics3DView />
         </div>
       )}
 

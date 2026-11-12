@@ -25,6 +25,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { MathFormula, FormattedText } from '../common/MathRenderer';
 
 interface MathLecturesProps {
   onNavigateTab?: (tab: 'grapher' | 'geometry' | 'lectures') => void;
@@ -374,7 +375,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                         key={idx}
                         className="leading-relaxed text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800"
                       >
-                        {item}
+                        <FormattedText text={item} />
                       </div>
                     ))}
                   </div>
@@ -393,7 +394,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                         className="group relative flex items-center justify-between p-3 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-900/60 rounded-xl"
                       >
                         <span className="font-mono font-bold text-indigo-950 dark:text-indigo-200">
-                          {f}
+                          <MathFormula formula={f} />
                         </span>
                         <button
                           onClick={() => handleCopyFormula(f)}
@@ -555,9 +556,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       className="bg-slate-50/80 dark:bg-slate-800/40 rounded-xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 space-y-3"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">
-                          Câu {qIdx + 1}: {prob.question}
-                        </p>
+                        <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                          Câu {qIdx + 1}: <FormattedText text={prob.question} />
+                        </div>
                         {answeredCorrectly[qKey] && (
                           <span className="shrink-0 text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-200">
                             +25 XP ✓
@@ -590,7 +591,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                               onClick={() => handleSelectOption(qIdx, optIdx)}
                               className={`w-full text-left px-4 py-2.5 rounded-xl border text-xs leading-relaxed transition-all ${btnStyle}`}
                             >
-                              {opt}
+                              <FormattedText text={opt} />
                             </button>
                           );
                         })}
@@ -617,9 +618,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                               </span>
                             )}
                           </div>
-                          <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
-                            {prob.explanation}
-                          </p>
+                          <div className="text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                            <FormattedText text={prob.explanation} />
+                          </div>
                         </div>
                       )}
                     </div>

@@ -74,21 +74,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
     description: p.description,
     inputFormat: p.inputFormat,
     outputFormat: p.outputFormat,
-    constraints: 'Thời gian chạy 1.0s, bộ nhớ 256MB',
-    sampleCases: p.sampleCases.map((s) => ({
-      input: s.input,
-      expectedOutput: s.output,
-      explanation: s.explanation
-    })),
-    testCases: p.sampleCases.map((s, idx) => ({
+    constraints: ['Thời gian chạy 1.0s, bộ nhớ 256MB'],
+    sampleCases: p.sampleCases.map((s, idx) => ({
       id: idx + 1,
       input: s.input,
       expectedOutput: s.output,
-      isSample: true
+      isSample: true,
+      explanation: s.explanation
     })),
+    hiddenCases: [],
     cppTemplate: p.fullSolutionCpp,
-    pythonTemplate: p.fullSolutionPython,
-    solutionExplanation: p.solutionAnalysis
+    pythonTemplate: p.fullSolutionPython
   });
 
   // -----------------------------------------------------------------
@@ -352,7 +348,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                   {currentLesson.title}
                 </h2>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  {currentLesson.description}
+                  Chủ đề: {currentLesson.topic} ({currentLesson.estimatedMinutes} phút học)
                 </p>
               </div>
 
@@ -363,16 +359,16 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                     Độ phức tạp Thời gian
                   </div>
                   <div className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    {currentLesson.timeComplexity}
+                    {currentLesson.complexity.time}
                   </div>
                 </div>
 
                 <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-right">
                   <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                    Bộ nhớ Bộ nhớ
+                    Bộ nhớ Space
                   </div>
                   <div className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
-                    {currentLesson.spaceComplexity}
+                    {currentLesson.complexity.space}
                   </div>
                 </div>
               </div>
@@ -384,91 +380,98 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
             <div className="flex items-center gap-2 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
               <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                1. Bài Giảng Lý Thuyết & Phân Tích Kỹ Thuật
+                1. Bài Giảng Lý Thuyết & Kỹ Thuật Lập Trình
               </h3>
             </div>
 
-            <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed font-sans bg-slate-50/60 dark:bg-slate-800/40 p-5 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-              {currentLesson.theoryMarkdown}
+            <div className="space-y-2.5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans bg-slate-50/60 dark:bg-slate-800/40 p-5 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+              {currentLesson.theory.map((line, idx) => (
+                <p key={idx}>{line}</p>
+              ))}
             </div>
           </div>
 
           {/* Section 2: Illustrated Code (C++ / Python) */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
-              <div className="flex items-center gap-2">
-                <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  2. Code Minh Họa Chuẩn Thi HSG Quốc Gia
-                </h3>
-              </div>
+          {(() => {
+            const activeCodeEx =
+              currentLesson.codeExamples.find((e) => e.language === curriculumLang) ||
+              currentLesson.codeExamples[0];
+            const displayCode = activeCodeEx?.code || '// Không có code mẫu';
+            const displayExplanation = activeCodeEx?.explanation || '';
 
-              {/* Language Switcher & Copy */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg">
-                  <button
-                    onClick={() => setCurriculumLang('cpp')}
-                    className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                      curriculumLang === 'cpp'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    C++ 17/20 STL
-                  </button>
-                  <button
-                    onClick={() => setCurriculumLang('python')}
-                    className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                      curriculumLang === 'python'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    Python 3
-                  </button>
+            return (
+              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
+                  <div className="flex items-center gap-2">
+                    <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        2. Code Minh Họa Chuẩn Thi HSG Quốc Gia
+                      </h3>
+                      <div className="text-xs text-slate-500">{activeCodeEx?.title}</div>
+                    </div>
+                  </div>
+
+                  {/* Language Switcher & Copy */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg">
+                      <button
+                        onClick={() => setCurriculumLang('cpp')}
+                        className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                          curriculumLang === 'cpp'
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        C++ 17/20 STL
+                      </button>
+                      <button
+                        onClick={() => setCurriculumLang('python')}
+                        className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                          curriculumLang === 'python'
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        Python 3
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => handleCopy(displayCode)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+                    >
+                      {copiedText === displayCode ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-emerald-500 font-semibold">Đã sao chép</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Sao chép code</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
-                <button
-                  onClick={() =>
-                    handleCopy(
-                      curriculumLang === 'cpp'
-                        ? currentLesson.illustratedCode.cpp
-                        : currentLesson.illustratedCode.python
-                    )
-                  }
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
-                >
-                  {copiedText ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
-                      <span className="text-emerald-500 font-semibold">Đã sao chép</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Sao chép code</span>
-                    </>
-                  )}
-                </button>
+                {/* Code Block */}
+                <div className="p-4 bg-slate-950 font-mono text-xs overflow-x-auto text-emerald-400 leading-relaxed max-h-[380px]">
+                  <pre>
+                    <code>{displayCode}</code>
+                  </pre>
+                </div>
+
+                {/* Code analysis note */}
+                {displayExplanation && (
+                  <div className="px-6 py-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium">
+                    💡 {displayExplanation}
+                  </div>
+                )}
               </div>
-            </div>
-
-            {/* Code Block */}
-            <div className="p-4 bg-slate-950 font-mono text-xs overflow-x-auto text-emerald-400 leading-relaxed max-h-[380px]">
-              <pre>
-                <code>
-                  {curriculumLang === 'cpp'
-                    ? currentLesson.illustratedCode.cpp
-                    : currentLesson.illustratedCode.python}
-                </code>
-              </pre>
-            </div>
-
-            {/* Code analysis note */}
-            <div className="px-6 py-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium">
-              💡 {currentLesson.illustratedCode.explanation}
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Section 3: Consolidation Problem + Step-by-Step Solution */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
@@ -516,9 +519,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
               </div>
 
               <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                Ràng buộc: {currentLesson.practiceProblem.constraints} | Thời gian:{' '}
-                {currentLesson.practiceProblem.timeLimitMs}ms | Bộ nhớ:{' '}
-                {currentLesson.practiceProblem.memoryLimitMb}MB
+                Độ khó: {currentLesson.practiceProblem.difficulty} | Thời gian: 1.0s | Bộ nhớ: 256MB
               </div>
             </div>
 
@@ -542,7 +543,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                     </div>
                     <div>
                       <span className="text-slate-500">Output:</span>
-                      <pre className="text-amber-400">{sc.expectedOutput.trim()}</pre>
+                      <pre className="text-amber-400">{sc.output.trim()}</pre>
                     </div>
                     {sc.explanation && (
                       <div className="text-slate-400 text-[11px] font-sans pt-1 border-t border-slate-800">
@@ -574,18 +575,22 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                       Phân tích thuật toán & Chiến lược tối ưu:
                     </h4>
                     <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans whitespace-pre-line">
-                      {currentLesson.practiceProblem.editorial}
+                      {currentLesson.practiceProblem.solutionAnalysis}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        Source code mẫu giải thuật:
+                        Source code mẫu giải thuật ({curriculumLang === 'cpp' ? 'C++' : 'Python'}):
                       </span>
                       <button
                         onClick={() =>
-                          handleCopy(currentLesson.practiceProblem.solutionCode)
+                          handleCopy(
+                            curriculumLang === 'cpp'
+                              ? currentLesson.practiceProblem.fullSolutionCpp
+                              : currentLesson.practiceProblem.fullSolutionPython
+                          )
                         }
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                       >
@@ -595,7 +600,11 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                     </div>
                     <div className="p-3 bg-slate-950 rounded-xl font-mono text-xs text-emerald-400 max-h-[300px] overflow-x-auto">
                       <pre>
-                        <code>{currentLesson.practiceProblem.solutionCode}</code>
+                        <code>
+                          {curriculumLang === 'cpp'
+                            ? currentLesson.practiceProblem.fullSolutionCpp
+                            : currentLesson.practiceProblem.fullSolutionPython}
+                        </code>
                       </pre>
                     </div>
                   </div>
@@ -621,10 +630,13 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                 <select
                   value={currentProblem.id}
                   onChange={(e) => {
-                    const prob =
-                      CODING_PROBLEMS.find((p) => p.id === e.target.value) ||
-                      CS_LESSONS.find((l) => l.practiceProblem.id === e.target.value)?.practiceProblem;
-                    if (prob) handleProblemChange(prob);
+                    const prob = CODING_PROBLEMS.find((p) => p.id === e.target.value);
+                    if (prob) {
+                      handleProblemChange(prob);
+                    } else {
+                      const lessonProb = CS_LESSONS.find((l) => l.practiceProblem.id === e.target.value)?.practiceProblem;
+                      if (lessonProb) handleProblemChange(toCodingProblem(lessonProb));
+                    }
                   }}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >

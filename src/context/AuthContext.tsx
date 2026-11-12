@@ -315,14 +315,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // 3. User friendly smart-enroll:
-    // If user enters a new username (not email) and password with at least 4 chars, auto-register and log them in!
-    if (!cleanId.includes('@') && password.length >= 4) {
+    // If user enters an identifier and password with at least 4 chars, auto-register and log them in!
+    if (password.length >= 4) {
       const sanitized = cleanId.replace(/[^a-zA-Z0-9_]/g, '_');
       const newAcc: StoredAccount = {
         uid: 'user_' + Date.now().toString(36),
         username: sanitized,
         displayName: identifier.trim(),
-        email: `${sanitized}@educlassroom360.vn`,
+        email: cleanId.includes('@') ? cleanId : `${sanitized}@educlassroom360.vn`,
         password: password,
         role: 'student',
         xp: 150,
@@ -366,6 +366,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (a) => a.username === sanitizedUsername || a.email.toLowerCase() === validEmail.toLowerCase()
     );
     if (existing) {
+      // If password matches or user is demo, seamlessly log in!
+      if (existing.password === password) {
+        const profile: UserProfile = {
+          uid: existing.uid,
+          username: existing.username,
+          displayName: existing.displayName,
+          email: existing.email,
+          role: existing.role,
+          xp: existing.xp,
+          createdAt: existing.createdAt,
+        };
+        setUser(profile);
+        localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));
+        setIsAuthModalOpen(false);
+        return;
+      }
       const err = new Error('Tên đăng nhập hoặc email này đã được sử dụng.');
       (err as any).code = 'auth/email-already-in-use';
       throw err;

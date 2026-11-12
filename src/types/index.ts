@@ -1,6 +1,7 @@
 export type SubjectType = 'overview' | 'math' | 'physics' | 'cs' | 'exams';
 
 export type ExamSubject = 'math' | 'physics' | 'cs';
+export type ExamTrack = 'chuyen' | 'khong_chuyen';
 
 export interface ExamQuestion {
   number: string;
@@ -18,9 +19,10 @@ export interface ExamQuestion {
 export interface ExamPaper {
   id: string;
   subject: ExamSubject;
-  subjectTag: string; // e.g. "Toán 9-10", "Vật Lý 9", "Tin Học Chuyên"
-  categoryTag: string; // e.g. "Tuyển Sinh Chuyên", "Khảo Sát Chất Lượng", "Olympic 30/4", "HSG Quốc Gia"
-  academicYear: string; // e.g. "2025-2026", "2024-2025"
+  track: ExamTrack; // 'chuyen' | 'khong_chuyen'
+  subjectTag: string; // e.g. "Toán Chuyên", "Vật Lý 12", "Tin Học ĐHQG"
+  categoryTag: string; // e.g. "Tuyển Sinh Chuyên", "Tốt Nghiệp THPT", "Đánh Giá Năng Lực"
+  academicYear: string;
   title: string;
   school: string;
   source: string;
@@ -29,7 +31,7 @@ export interface ExamPaper {
   topics: string[];
   difficulty: 'Cơ bản' | 'Khá' | 'Nâng cao' | 'Chuyên / HSG';
   questions: ExamQuestion[];
-  fullWordDocContent: string;
+  fullWordDocContent?: string;
 }
 
 export interface StudentProgress {

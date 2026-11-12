@@ -473,7 +473,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
             {mode === 'oxyz_vector' && t('math3d.oxyz', 'Hệ Trục Oxyz & Vector Tích Có Hướng', '3D Oxyz Coordinates & Cross Product')}
             {mode === 'sphere_plane' && t('math3d.sphere', 'Mặt Cầu & Mặt Phẳng Thiết Diện 3D', 'Sphere & Plane Intersection 3D')}
             {mode === 'pyramid_section' && t('math3d.pyramid', 'Khối Chóp & Mặt Cắt Thiết Diện Động', 'Pyramid & Dynamic Cross Section')}
-            {mode === 'revolution_solid', t('math3d.revolution', 'Khối Tròn Xoay & Tích Phân Thể Tích', 'Solids of Revolution & Integration')}
+            {mode === 'revolution_solid' && t('math3d.revolution', 'Khối Tròn Xoay & Tích Phân Thể Tích', 'Solids of Revolution & Integration')}
           </span>
         </div>
 

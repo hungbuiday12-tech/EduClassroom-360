@@ -22,11 +22,13 @@ import {
   Compass,
   LineChart,
   HelpCircle,
-  Clock
+  Clock,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { MathFormula, FormattedText } from '../common/MathRenderer';
+import { ViewportPortal } from '../common/ViewportPortal';
 
 interface MathLecturesProps {
   onNavigateTab?: (tab: 'grapher' | 'geometry' | 'math3d' | 'lectures') => void;
@@ -140,30 +142,45 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
   };
 
   return (
-    <div
-      className={
-        isFocusMode
-          ? 'fixed inset-0 z-50 p-4 sm:p-8 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-2xl flex flex-col overflow-y-auto'
-          : 'space-y-6'
-      }
-    >
-      {/* Top Banner & Search Controls */}
-      <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                Kho Tàng Bài Giảng Toán Học Trọng Tâm
-              </span>
-              <span className="text-slate-300 dark:text-slate-700">·</span>
-              <span className="text-xs font-mono text-slate-500">
-                12 Chuyên đề THPT & Luyện Thi Đại Học
-              </span>
-            </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 mt-1">
-              Hệ thống hóa Lý thuyết Cốt lõi, Bí kíp Phòng thi & Đấu trường Trắc nghiệm
-            </h2>
+    <ViewportPortal active={isFocusMode}>
+      <div
+        className={
+          isFocusMode
+            ? 'fixed inset-0 z-[100] h-[100dvh] w-screen p-4 sm:p-8 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-2xl flex flex-col overflow-y-auto'
+            : 'space-y-6'
+        }
+      >
+        {isFocusMode && (
+          <div className="sticky top-0 z-20 mb-4 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-indigo-200 dark:border-indigo-800 shadow-md backdrop-blur-md">
+            <button
+              onClick={() => setIsFocusMode(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Quay lại chế độ thường (Esc)</span>
+            </button>
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">
+              Đang đọc tập trung: {activeLecture.title}
+            </span>
           </div>
+        )}
+        {/* Top Banner & Search Controls */}
+        <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                  Kho Tàng Bài Giảng Toán Học Trọng Tâm
+                </span>
+                <span className="text-slate-300 dark:text-slate-700">·</span>
+                <span className="text-xs font-mono text-slate-500">
+                  {MATH_LECTURES.length} Chuyên đề THCS & THPT (Lớp 9 - 12)
+                </span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 mt-1">
+                Hệ thống hóa Lý thuyết Cốt lõi, Bí kíp Phòng thi & Đấu trường Trắc nghiệm
+              </h2>
+            </div>
 
           {/* Search Box */}
           <div className="relative min-w-[260px]">
@@ -686,5 +703,6 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
         </div>
       </div>
     </div>
+    </ViewportPortal>
   );
 };

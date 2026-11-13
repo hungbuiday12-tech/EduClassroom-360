@@ -132,30 +132,38 @@ function MainApp() {
             onReturnToLanding={handleReturnToLanding}
           />
 
-          {/* Main Viewport Container with Smooth Subject Transitions */}
-          <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          {/* Main Viewport Container with Smooth Subject Transitions (no persistent transform/z-index trap) */}
+          <main className="relative flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentSubject}
-                initial={{ opacity: 0, y: 12, scale: 0.995 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.995 }}
-                transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               >
                 {currentSubject === 'overview' && (
                   <ClassroomOverview onNavigate={setCurrentSubject} xp={activeXP} />
                 )}
 
-                {currentSubject === 'math' && <MathStudio />}
+                {currentSubject === 'math' && (
+                  <MathStudio onBack={() => setCurrentSubject('overview')} />
+                )}
 
-                {currentSubject === 'physics' && <PhysicsLab />}
+                {currentSubject === 'physics' && (
+                  <PhysicsLab onBack={() => setCurrentSubject('overview')} onScoreEarned={handleEarnXP} />
+                )}
 
                 {currentSubject === 'cs' && (
-                  <CodeJudgeLab onScoreEarned={handleEarnXP} />
+                  <CodeJudgeLab onScoreEarned={handleEarnXP} onBack={() => setCurrentSubject('overview')} />
                 )}
 
                 {currentSubject === 'exams' && (
-                  <ExamHub onNavigateToSubject={setCurrentSubject} onEarnXP={handleEarnXP} />
+                  <ExamHub
+                    onNavigateToSubject={setCurrentSubject}
+                    onEarnXP={handleEarnXP}
+                    onBack={() => setCurrentSubject('overview')}
+                  />
                 )}
               </motion.div>
             </AnimatePresence>

@@ -13,6 +13,7 @@ import {
 import { executeCode, judgeProblem } from './codeRunner';
 import { SublimeStudio } from './SublimeStudio';
 import { SublimeEditor, MonokaiCodeBlock } from './SublimeEditor';
+import { ViewportPortal } from '../common/ViewportPortal';
 import { FormattedText } from '../common/MathRenderer';
 import { useLanguage } from '../../context/LanguageContext';
 import {
@@ -34,15 +35,17 @@ import {
   Check,
   Zap,
   ArrowRight,
+  ArrowLeft,
   Maximize2,
   Minimize2
 } from 'lucide-react';
 
 interface CodeJudgeLabProps {
   onScoreEarned?: (xp: number) => void;
+  onBack?: () => void;
 }
 
-export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => {
+export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBack }) => {
   const { t } = useLanguage();
   // Top View Mode: 'curriculum' (Bài giảng & Code mẫu), 'judge' (Trình chấm online), or 'custom' (Sublime Studio)
   const [viewMode, setViewMode] = useState<'curriculum' | 'judge' | 'custom'>('curriculum');
@@ -249,9 +252,28 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       {/* Header Banner */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            {viewMode !== 'curriculum' ? (
+              <button
+                onClick={() => setViewMode('curriculum')}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>{t('nav.back_curriculum', 'Quay lại Bài giảng Tin học', 'Back to CS Curriculum')}</span>
+              </button>
+            ) : (
+              onBack && (
+                <button
+                  onClick={onBack}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>{t('nav.back_home', 'Quay lại Lớp học', 'Back to Classroom')}</span>
+                </button>
+              )
+            )}
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               Tin Học & Lập Trình Chuyên Tin
             </span>
@@ -623,46 +645,72 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
       {/* MODE 2: TRÌNH CHẤM ONLINE JUDGE (SUBLIME MONOKAI + FULLSCREEN) */}
       {/* ============================================================= */}
       {viewMode === 'judge' && (
-        <div
-          className={
-            isJudgeFullscreen
-              ? 'fixed inset-0 z-50 w-screen h-screen bg-[#1e1f1c] flex flex-col overflow-hidden'
-              : 'space-y-3'
-          }
-        >
-          {/* Mobile Pane Switcher (<lg) */}
-          <div className="lg:hidden grid grid-cols-3 gap-1 p-1 bg-[#171814] border border-[#3e3d32] rounded-xl shrink-0">
-            {[
-              { id: 'problem' as const, label: 'Đề Bài & Test' },
-              { id: 'editor' as const, label: 'Code Sublime' },
-              { id: 'console' as const, label: judgeScore !== null ? `Kết quả (${judgeScore}%)` : 'Console' }
-            ].map((pane) => (
-              <button
-                key={pane.id}
-                onClick={() => setMobileJudgePane(pane.id)}
-                className={`py-2 px-2 rounded-lg text-xs font-bold transition-colors ${
-                  mobileJudgePane === pane.id
-                    ? 'bg-[#272822] text-[#a6e22e] border border-[#3e3d32]'
-                    : 'text-[#90908a]'
-                }`}
-              >
-                {pane.label}
-              </button>
-            ))}
-          </div>
-
+        <ViewportPortal active={isJudgeFullscreen}>
           <div
-            className={`flex flex-1 overflow-hidden border border-[#3e3d32] bg-[#272822] ${
-              isJudgeFullscreen ? 'h-full border-0 rounded-none' : 'rounded-2xl min-h-[620px] lg:h-[78vh] shadow-2xl'
-            }`}
+            className={
+              isJudgeFullscreen
+                ? 'fixed inset-0 z-[100] w-screen h-[100dvh] bg-[#1e1f1c] flex flex-col overflow-hidden'
+                : 'space-y-3'
+            }
           >
-            {/* Left Column: Problem details & Sample cases */}
-            {(isJudgeSidebarOpen || mobileJudgePane === 'problem') && (
-              <div
-                className={`${
-                  mobileJudgePane === 'problem' ? 'flex w-full' : 'hidden lg:flex lg:w-[38%] xl:w-[35%]'
-                } bg-[#1e1f1c] border-r border-[#3e3d32] flex-col shrink-0 overflow-hidden`}
-              >
+            {/* Persistent Fullscreen Top Bar with Back / Exit button */}
+            {isJudgeFullscreen && (
+              <div className="bg-[#171814] border-b border-[#3e3d32] px-3 py-2 flex items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    onClick={() => setIsJudgeFullscreen(false)}
+                    className="px-3 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#66d9ef] text-xs font-bold flex items-center gap-1.5 shrink-0"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Quay lại / Thu nhỏ (Esc)</span>
+                  </button>
+                  <span className="text-xs font-bold text-white truncate hidden sm:inline">
+                    {currentProblem.title}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsJudgeFullscreen(false)}
+                  className="p-1.5 rounded-lg bg-[#f92672]/20 text-[#f92672] border border-[#f92672]/40 hover:bg-[#f92672]/30"
+                  title="Thoát toàn màn hình (Esc)"
+                >
+                  <Minimize2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Mobile Pane Switcher (<lg) */}
+            <div className="lg:hidden grid grid-cols-3 gap-1 p-1 bg-[#171814] border-b lg:border border-[#3e3d32] lg:rounded-xl shrink-0">
+              {[
+                { id: 'problem' as const, label: 'Đề Bài & Test' },
+                { id: 'editor' as const, label: 'Code Sublime' },
+                { id: 'console' as const, label: judgeScore !== null ? `Kết quả (${judgeScore}%)` : 'Console' }
+              ].map((pane) => (
+                <button
+                  key={pane.id}
+                  onClick={() => setMobileJudgePane(pane.id)}
+                  className={`py-2 px-2 rounded-lg text-xs font-bold transition-colors ${
+                    mobileJudgePane === pane.id
+                      ? 'bg-[#272822] text-[#a6e22e] border border-[#3e3d32]'
+                      : 'text-[#90908a]'
+                  }`}
+                >
+                  {pane.label}
+                </button>
+              ))}
+            </div>
+
+            <div
+              className={`flex flex-1 min-h-0 overflow-hidden border border-[#3e3d32] bg-[#272822] ${
+                isJudgeFullscreen ? 'border-0 rounded-none' : 'rounded-2xl min-h-[600px] lg:h-[78vh] shadow-2xl'
+              }`}
+            >
+              {/* Left Column: Problem details & Sample cases */}
+              {(isJudgeSidebarOpen || mobileJudgePane === 'problem') && (
+                <div
+                  className={`${
+                    mobileJudgePane === 'problem' ? 'flex w-full' : 'hidden lg:flex lg:w-[38%] xl:w-[35%]'
+                  } bg-[#1e1f1c] border-r border-[#3e3d32] flex-col shrink-0 min-h-0 overflow-hidden`}
+                >
                 <div className="p-3.5 border-b border-[#3e3d32] bg-[#171814] space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <label className="text-[11px] font-bold text-[#e6db74] uppercase tracking-wider">
@@ -778,10 +826,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
             <div
               className={`${
                 mobileJudgePane === 'problem' ? 'hidden lg:flex' : 'flex'
-              } flex-1 flex-col bg-[#272822] min-w-0 overflow-hidden`}
+              } flex-1 flex-col bg-[#272822] min-w-0 min-h-0 overflow-hidden`}
             >
               {/* Sublime Editor */}
-              <div className={`${mobileJudgePane === 'console' ? 'hidden lg:flex' : 'flex'} flex-1 flex-col min-h-0`}>
+              <div className={`${mobileJudgePane === 'console' ? 'hidden lg:flex' : 'flex'} flex-1 flex-col min-h-0 overflow-hidden`}>
                 <SublimeEditor
                   value={code}
                   onChange={setCode}
@@ -1020,13 +1068,19 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </ViewportPortal>
       )}
 
       {/* ============================================================= */}
       {/* MODE 3: TỰ DO GIẢI ĐỀ & AI SINH TEST (SUBLIME TEXT STUDIO)   */}
       {/* ============================================================= */}
-      {viewMode === 'custom' && <SublimeStudio onScoreEarned={onScoreEarned} />}
+      {viewMode === 'custom' && (
+        <SublimeStudio
+          onScoreEarned={onScoreEarned}
+          onBack={() => setViewMode('curriculum')}
+        />
+      )}
     </div>
   );
 };

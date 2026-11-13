@@ -18,8 +18,10 @@ import {
   Layers,
   ChevronRight,
   Eye,
-  Scissors
+  Scissors,
+  ArrowLeft
 } from 'lucide-react';
+import { ViewportPortal } from '../common/ViewportPortal';
 
 export interface GeoPoint {
   id: string;
@@ -1188,19 +1190,30 @@ export const GeometryStudio: React.FC = () => {
   };
 
   return (
-    <div
-      className={
-        isFullScreen
-          ? 'fixed inset-0 z-50 p-4 sm:p-6 bg-slate-100/95 dark:bg-slate-950/95 backdrop-blur-xl flex flex-col lg:flex-row gap-4 overflow-hidden'
-          : 'flex flex-col lg:flex-row gap-6 h-full'
-      }
-    >
-      {/* MAIN: Geometry Drawing Stage */}
-      <div className="flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-xs">
-        {/* Top Studio Switcher & Fullscreen Action */}
-        <div className="flex flex-wrap items-center justify-between px-4 py-2.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 gap-2">
-          {/* Studio Mode Selector */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-800 rounded-lg">
+    <ViewportPortal active={isFullScreen}>
+      <div
+        className={
+          isFullScreen
+            ? 'fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col lg:flex-row gap-4 overflow-y-auto lg:overflow-hidden'
+            : 'flex flex-col lg:flex-row gap-6 h-full'
+        }
+      >
+        {/* MAIN: Geometry Drawing Stage */}
+        <div className={`flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-xs ${isFullScreen ? 'min-h-[420px] lg:min-h-0' : ''}`}>
+          {/* Top Studio Switcher & Fullscreen Action */}
+          <div className="flex flex-wrap items-center justify-between px-3 sm:px-4 py-2.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2">
+              {isFullScreen && (
+                <button
+                  onClick={() => setIsFullScreen(false)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Quay lại (Esc)</span>
+                </button>
+              )}
+              {/* Studio Mode Selector */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-800 rounded-lg">
             <button
               onClick={() => setStudioMode('free_construction')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
@@ -1223,6 +1236,7 @@ export const GeometryStudio: React.FC = () => {
               <Layers className="w-3.5 h-3.5" />
               Mô hình định lý mẫu
             </button>
+          </div>
           </div>
 
           {/* Quick Utility Actions */}
@@ -1290,7 +1304,7 @@ export const GeometryStudio: React.FC = () => {
               {isFullScreen ? (
                 <>
                   <Minimize2 className="w-3.5 h-3.5" />
-                  <span>Thu nhỏ (Esc)</span>
+                  <span>Thu nhỏ</span>
                 </>
               ) : (
                 <>
@@ -1515,7 +1529,7 @@ export const GeometryStudio: React.FC = () => {
       </div>
 
       {/* SIDEBAR: Properties, Tools, & Theory Explorer */}
-      <div className="w-full lg:w-96 flex flex-col gap-4">
+      <div className={`w-full lg:w-96 flex flex-col gap-4 ${isFullScreen ? 'lg:overflow-y-auto lg:pr-1 shrink-0 pb-4 lg:pb-0' : ''}`}>
         {studioMode === 'free_construction' ? (
           <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-4 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -1727,5 +1741,6 @@ export const GeometryStudio: React.FC = () => {
         )}
       </div>
     </div>
+    </ViewportPortal>
   );
 };

@@ -473,12 +473,11 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
   isConsoleOpen,
   onToggleConsole,
   placeholder,
-  heightClass = 'flex-1 min-h-[340px]',
+  heightClass = 'flex-1 min-h-0',
   statusRightExtra
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const preRef = useRef<HTMLPreElement | null>(null);
-  const gutterRef = useRef<HTMLDivElement | null>(null);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [cursorPos, setCursorPos] = useState<{ line: number; col: number }>({ line: 1, col: 1 });
   const [scrollTop, setScrollTop] = useState<number>(0);
   const [copied, setCopied] = useState<boolean>(false);
@@ -501,21 +500,14 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
     });
   }, []);
 
-  const syncScroll = () => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    setScrollTop(ta.scrollTop);
-    if (preRef.current) {
-      preRef.current.scrollTop = ta.scrollTop;
-      preRef.current.scrollLeft = ta.scrollLeft;
-    }
-    if (gutterRef.current) {
-      gutterRef.current.scrollTop = ta.scrollTop;
-    }
+  const handleContainerScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
   };
 
   useEffect(() => {
-    syncScroll();
+    if (scrollerRef.current) {
+      setScrollTop(scrollerRef.current.scrollTop);
+    }
   }, [value, fontSize]);
 
   const insertSnippet = (snippet: string, cursorBack = 0) => {
@@ -856,96 +848,100 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         </div>
       )}
 
-      {/* Main Editor Canvas: Gutter + Layered Syntax Pre / Transparent Textarea + Minimap */}
+      {/* Main Editor Canvas: Unified Scroll Container (Sticky Gutter + Grid Syntax Pre / Textarea) + Minimap */}
       <div className="relative flex-1 flex bg-[#272822] overflow-hidden min-h-0">
-        {/* Line Numbers Gutter */}
         <div
-          ref={gutterRef}
-          className="w-12 sm:w-14 bg-[#272822] border-r border-[#3e3d32]/60 select-none overflow-hidden shrink-0 py-3 font-mono text-right pr-3"
-          style={{ fontSize: `${Math.max(11, fontSize - 1)}px`, lineHeight: `${lineHeightPx}px` }}
+          ref={scrollerRef}
+          onScroll={handleContainerScroll}
+          onClick={() => textareaRef.current?.focus()}
+          className="relative flex-1 flex items-start overflow-auto bg-[#272822] min-w-0 min-h-0 overscroll-contain cursor-text"
         >
-          {Array.from({ length: Math.max(lines.length, 24) }, (_, idx) => {
-            const ln = idx + 1;
-            const isCurrent = cursorPos.line === ln;
-            return (
-              <div
-                key={ln}
-                className={isCurrent ? 'text-[#f8f8f2] font-bold bg-[#3e3d32] -mr-3 pr-3' : 'text-[#90908a]'}
-                style={{ height: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` }}
-              >
-                {ln}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Code Viewport (Active Line Band + Syntax Pre + Editable Transparent Textarea) */}
-        <div className="relative flex-1 overflow-hidden bg-[#272822] min-w-0">
-          {/* Active Line Full-Width Highlight Band */}
+          {/* Sticky Line Numbers Gutter */}
           <div
-            aria-hidden="true"
-            className="pointer-events-none absolute left-0 right-0 bg-[#3e3d32]/90 z-0"
-            style={{
-              height: `${lineHeightPx}px`,
-              top: `${12 + (cursorPos.line - 1) * lineHeightPx - scrollTop}px`
-            }}
-          />
-
-          {/* Syntax-Highlighted Monokai Pre Layer */}
-          <pre
-            ref={preRef}
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 m-0 p-3 font-mono overflow-hidden z-10 whitespace-pre"
-            style={{
-              fontSize: `${fontSize}px`,
-              lineHeight: `${lineHeightPx}px`,
-              tabSize: 4
-            }}
+            className="sticky left-0 z-30 w-12 sm:w-14 bg-[#272822] border-r border-[#3e3d32]/60 select-none shrink-0 py-3 pb-16 font-mono text-right pr-3 min-h-full"
+            style={{ fontSize: `${Math.max(11, fontSize - 1)}px`, lineHeight: `${lineHeightPx}px` }}
           >
-            {tokenizedLines.map((tokens, lIdx) => (
-              <div key={lIdx} style={{ height: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` }}>
-                {tokens.map((tok, tIdx) => (
-                  <span
-                    key={tIdx}
-                    style={{
-                      color: tok.color,
-                      fontStyle: tok.italic ? 'italic' : 'normal',
-                      fontWeight: tok.bold ? 600 : 400
-                    }}
-                  >
-                    {tok.text}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </pre>
+            {Array.from({ length: Math.max(lines.length, 28) }, (_, idx) => {
+              const ln = idx + 1;
+              const isCurrent = cursorPos.line === ln;
+              return (
+                <div
+                  key={ln}
+                  className={isCurrent ? 'text-[#f8f8f2] font-bold bg-[#3e3d32] -mr-3 pr-3' : 'text-[#90908a]'}
+                  style={{ height: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` }}
+                >
+                  {ln}
+                </div>
+              );
+            })}
+          </div>
 
-          {/* Transparent Interactive Textarea Layer */}
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => {
-              onChange(e.target.value);
-              updateCursorFromTarget(e.target);
-            }}
-            onSelect={(e) => updateCursorFromTarget(e.currentTarget)}
-            onClick={(e) => updateCursorFromTarget(e.currentTarget)}
-            onKeyUp={(e) => updateCursorFromTarget(e.currentTarget)}
-            onScroll={syncScroll}
-            onKeyDown={handleKeyDown}
-            spellCheck={false}
-            autoCapitalize="off"
-            autoComplete="off"
-            autoCorrect="off"
-            placeholder={placeholder}
-            className="relative z-20 w-full h-full p-3 m-0 font-mono bg-transparent text-transparent caret-[#f8f8f0] resize-none focus:outline-none overflow-auto whitespace-pre selection:bg-[#49483e]/80 selection:text-transparent"
-            style={{
-              fontSize: `${fontSize}px`,
-              lineHeight: `${lineHeightPx}px`,
-              tabSize: 4,
-              WebkitTextFillColor: 'transparent'
-            }}
-          />
+          {/* Code Viewport (Single Grid cell sizes 1:1 to exact code dimensions, zero scroll desync) */}
+          <div className="relative flex-1 min-w-max min-h-full grid bg-[#272822]">
+            {/* Active Line Full-Width Highlight Band */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 right-0 bg-[#3e3d32]/90 z-0"
+              style={{
+                height: `${lineHeightPx}px`,
+                top: `${12 + (cursorPos.line - 1) * lineHeightPx}px`
+              }}
+            />
+
+            {/* Syntax-Highlighted Monokai Pre Layer */}
+            <pre
+              aria-hidden="true"
+              className="col-start-1 row-start-1 pointer-events-none m-0 p-3 pb-16 font-mono z-10 whitespace-pre select-none"
+              style={{
+                fontSize: `${fontSize}px`,
+                lineHeight: `${lineHeightPx}px`,
+                tabSize: 4
+              }}
+            >
+              {tokenizedLines.map((tokens, lIdx) => (
+                <div key={lIdx} style={{ height: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` }}>
+                  {tokens.map((tok, tIdx) => (
+                    <span
+                      key={tIdx}
+                      style={{
+                        color: tok.color,
+                        fontStyle: tok.italic ? 'italic' : 'normal',
+                        fontWeight: tok.bold ? 600 : 400
+                      }}
+                    >
+                      {tok.text}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </pre>
+
+            {/* Transparent Interactive Textarea Layer (sized 1:1 with Pre in same grid track) */}
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => {
+                onChange(e.target.value);
+                updateCursorFromTarget(e.target);
+              }}
+              onSelect={(e) => updateCursorFromTarget(e.currentTarget)}
+              onClick={(e) => updateCursorFromTarget(e.currentTarget)}
+              onKeyUp={(e) => updateCursorFromTarget(e.currentTarget)}
+              onKeyDown={handleKeyDown}
+              spellCheck={false}
+              autoCapitalize="off"
+              autoComplete="off"
+              autoCorrect="off"
+              placeholder={placeholder}
+              className="col-start-1 row-start-1 relative z-20 w-full h-full m-0 p-3 pb-16 font-mono bg-transparent text-transparent caret-[#f8f8f0] resize-none focus:outline-none overflow-hidden whitespace-pre selection:bg-[#49483e]/80 selection:text-transparent"
+              style={{
+                fontSize: `${fontSize}px`,
+                lineHeight: `${lineHeightPx}px`,
+                tabSize: 4,
+                WebkitTextFillColor: 'transparent'
+              }}
+            />
+          </div>
         </div>
 
         {/* Authentic Sublime Text Minimap */}

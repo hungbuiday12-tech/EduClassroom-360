@@ -13,9 +13,11 @@ import {
   Box,
   Compass,
   Sparkles,
+  ArrowLeft,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { MathFormula } from '../common/MathRenderer';
+import { ViewportPortal } from '../common/ViewportPortal';
 
 export type Math3DMode = 'oxyz_vector' | 'sphere_plane' | 'pyramid_section' | 'revolution_solid';
 
@@ -56,6 +58,16 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
+
+  // Escape key to exit fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isFullscreen]);
 
   // Initialize Three.js scene once
   useEffect(() => {
@@ -457,25 +469,35 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   const crossZ = ux * vy - uy * vx;
 
   return (
-    <div
-      className={`relative w-full rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all ${
-        isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'h-[470px] sm:h-[560px] lg:h-[620px]'
-      }`}
-    >
-      {/* 3D WebGL Canvas Container */}
-      <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
+    <ViewportPortal active={isFullscreen}>
+      <div
+        className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all ${
+          isFullscreen ? 'fixed inset-0 z-[100] h-[100dvh] w-screen rounded-none' : 'rounded-3xl h-[470px] sm:h-[560px] lg:h-[620px]'
+        }`}
+      >
+        {/* 3D WebGL Canvas Container */}
+        <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
 
-      {/* TOP HEADER OVERLAY */}
-      <div className="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white shadow-lg max-w-full">
-          <Box className="w-4 h-4 text-indigo-400 shrink-0" />
-          <span className="text-[11px] sm:text-xs font-bold tracking-wide truncate">
-            {mode === 'oxyz_vector' && t('math3d.oxyz', 'Hệ Trục Oxyz & Vector Tích Có Hướng', '3D Oxyz Coordinates & Cross Product')}
-            {mode === 'sphere_plane' && t('math3d.sphere', 'Mặt Cầu & Mặt Phẳng Thiết Diện 3D', 'Sphere & Plane Intersection 3D')}
-            {mode === 'pyramid_section' && t('math3d.pyramid', 'Khối Chóp & Mặt Cắt Thiết Diện Động', 'Pyramid & Dynamic Cross Section')}
-            {mode === 'revolution_solid' && t('math3d.revolution', 'Khối Tròn Xoay & Tích Phân Thể Tích', 'Solids of Revolution & Integration')}
-          </span>
-        </div>
+        {/* TOP HEADER OVERLAY */}
+        <div className="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pointer-events-none">
+          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white shadow-lg max-w-full">
+            {isFullscreen && (
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shrink-0"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Quay lại</span>
+              </button>
+            )}
+            <Box className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span className="text-[11px] sm:text-xs font-bold tracking-wide truncate">
+              {mode === 'oxyz_vector' && t('math3d.oxyz', 'Hệ Trục Oxyz & Vector Tích Có Hướng', '3D Oxyz Coordinates & Cross Product')}
+              {mode === 'sphere_plane' && t('math3d.sphere', 'Mặt Cầu & Mặt Phẳng Thiết Diện 3D', 'Sphere & Plane Intersection 3D')}
+              {mode === 'pyramid_section' && t('math3d.pyramid', 'Khối Chóp & Mặt Cắt Thiết Diện Động', 'Pyramid & Dynamic Cross Section')}
+              {mode === 'revolution_solid' && t('math3d.revolution', 'Khối Tròn Xoay & Tích Phân Thể Tích', 'Solids of Revolution & Integration')}
+            </span>
+          </div>
 
         <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
           {/* Mode Switcher Pills (scrollable on phones & iPads) */}
@@ -725,5 +747,6 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         </div>
       </div>
     </div>
+    </ViewportPortal>
   );
 };

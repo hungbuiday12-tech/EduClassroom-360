@@ -3,10 +3,14 @@ import { FunctionGrapher } from './FunctionGrapher';
 import { GeometryStudio } from './GeometryStudio';
 import { MathLectures } from './MathLectures';
 import { Math3DView } from './Math3DView';
-import { LineChart, Shapes, BookOpen, Box } from 'lucide-react';
+import { LineChart, Shapes, BookOpen, Box, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
-export const MathStudio: React.FC = () => {
+interface MathStudioProps {
+  onBack?: () => void;
+}
+
+export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'grapher' | 'geometry' | 'math3d' | 'lectures'>('grapher');
 
@@ -15,6 +19,26 @@ export const MathStudio: React.FC = () => {
       {/* Subject Sub-navigation */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
+          <div className="flex flex-wrap items-center gap-2.5 mb-1">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-xs"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>{t('nav.back_home', 'Quay lại Lớp học', 'Back to Classroom')}</span>
+              </button>
+            )}
+            {activeTab !== 'lectures' && (
+              <button
+                onClick={() => setActiveTab('lectures')}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>{t('math.goto_lectures', 'Kho Bài giảng', 'Lectures')}</span>
+              </button>
+            )}
+          </div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <span>{t('math.title', 'Toán Học Tương Tác 360°', 'Interactive Mathematics 360°')}</span>
           </h1>

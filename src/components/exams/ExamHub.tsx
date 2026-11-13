@@ -35,9 +35,10 @@ import {
 interface ExamHubProps {
   onNavigateToSubject?: (subject: SubjectType) => void;
   onEarnXP?: (amount: number) => void;
+  onBack?: () => void;
 }
 
-export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP }) => {
+export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP, onBack }) => {
   const { t, language } = useLanguage();
   // Main Track Filter: 'all' | 'chuyen' | 'khong_chuyen'
   const [selectedTrack, setSelectedTrack] = useState<'all' | ExamTrack>('all');
@@ -475,6 +476,16 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
                   </div>
                 </div>
               )}
+              {/* Bottom Back to Exam List button */}
+              <div className="flex justify-start pt-2">
+                <button
+                  onClick={handleCloseExam}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>{language === 'en' ? 'Back to exam list' : 'Quay lại danh sách đề'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -486,7 +497,16 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
           {/* Header Banner */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                {onBack && (
+                  <button
+                    onClick={onBack}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>{t('nav.back_home', 'Quay lại Lớp học', 'Back to Classroom')}</span>
+                  </button>
+                )}
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                   Ngân Hàng 60 Đề Thi Quốc Gia
                 </span>

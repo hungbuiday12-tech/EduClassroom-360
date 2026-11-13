@@ -20,19 +20,26 @@ import {
   Copy,
   Check,
   Maximize2,
-  Box
+  Minimize2,
+  Box,
+  ArrowLeft,
+  ExternalLink,
+  FlaskConical,
+  ListChecks
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MathFormula, FormattedText } from '../common/MathRenderer';
 import { Physics3DView } from './Physics3DView';
 import { useLanguage } from '../../context/LanguageContext';
+import { ViewportPortal } from '../common/ViewportPortal';
 
 interface PhysicsLabProps {
   onScoreEarned?: (xp: number) => void;
+  onBack?: () => void;
 }
 
-export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
-  const { t, translate } = useLanguage();
+export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack }) => {
+  const { t, translate, language } = useLanguage();
   // Grade Filter: 'all' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12'
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
 
@@ -54,6 +61,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
 
   // Active sub-tab: 'theory' | 'simulation' | 'sim3d' | 'practice'
   const [activeTab, setActiveTab] = useState<'theory' | 'simulation' | 'sim3d' | 'practice'>('theory');
+  // Sub-mode inside simulation tab: 'canvas2d' | 'phet'
+  const [simEngineMode, setSimEngineMode] = useState<'canvas2d' | 'phet'>('canvas2d');
+  const [isSimFullscreen, setIsSimFullscreen] = useState<boolean>(false);
+  const [checkedPhetTasks, setCheckedPhetTasks] = useState<Record<string, boolean>>({});
+  const [phetLoading, setPhetLoading] = useState<boolean>(false);
 
   // Simulation controls & params
   const [isRunning, setIsRunning] = useState<boolean>(true);
@@ -94,7 +106,20 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     setParams(lesson.defaultParams);
     simTimeRef.current = 0;
     setIsRunning(true);
+    if (simEngineMode === 'phet') {
+      setPhetLoading(true);
+    }
   }, [lesson]);
+
+  // Escape key to exit simulation fullscreen
+  useEffect(() => {
+    if (!isSimFullscreen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsSimFullscreen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isSimFullscreen]);
 
   // Copy formula helper
   const handleCopy = (text: string) => {
@@ -122,7 +147,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
   // 60 FPS HTML5 Canvas Physics Engine
   // -------------------------------------------------------------
   useEffect(() => {
-    if (activeTab !== 'simulation') return;
+    if (activeTab !== 'simulation' || simEngineMode !== 'canvas2d') return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -216,7 +241,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     return () => {
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
     };
-  }, [isRunning, simSpeed, lesson.simulationType, params, activeTab]);
+  }, [isRunning, simSpeed, lesson.simulationType, params, activeTab, simEngineMode, isSimFullscreen]);
 
   // 1. Ohm's Law Circuit (Lớp 9)
   const drawOhmCircuit = (
@@ -226,10 +251,10 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     t: number,
     isDark: boolean
   ) => {
-    const U = params.voltage || 12;
-    const R1 = params.r1 || 10;
-    const R2 = params.r2 || 10;
-    const isParallel = (params.circuitType || 0) === 1;
+    const U = params.voltage ?? 12;
+    const R1 = params.r1 ?? params.resistor1 ?? 10;
+    const R2 = params.r2 ?? params.resistor2 ?? 10;
+    const isParallel = (params.circuitType ?? params.circuitMode ?? 0) === 1;
 
     const R_eq = isParallel ? (R1 * R2) / (R1 + R2) : R1 + R2;
     const I = U / R_eq;
@@ -560,11 +585,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     t: number,
     isDark: boolean
   ) => {
-    const v0 = params.v0 || 25; // m/s
-    const alphaDeg = params.angle || 45; // deg
+    const v0 = params.v0 ?? params.initialVelocity ?? 25; // m/s
+    const alphaDeg = params.angle ?? params.launchAngle ?? params.angleDeg ?? 45; // deg
     const alphaRad = (alphaDeg * Math.PI) / 180;
-    const g = params.gravity || 9.8;
-    const h0 = params.h0 || 10; // m
+    const g = params.gravity ?? 9.8;
+    const h0 = params.h0 ?? params.height ?? 10; // m
 
     const v0x = v0 * Math.cos(alphaRad);
     const v0y = v0 * Math.sin(alphaRad);
@@ -765,9 +790,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     h: number,
     isDark: boolean
   ) => {
-    const n1 = params.n1 || 1.33; // Môi trường tới (ví dụ: nước/thủy tinh)
-    const n2 = params.n2 || 1.0; // Môi trường khúc xạ (ví dụ: không khí)
-    const iDeg = params.angle || 30; // Góc tới
+    const n1 = params.n1 ?? 1.33; // Môi trường tới (ví dụ: nước/thủy tinh)
+    const n2 = params.n2 ?? 1.0; // Môi trường khúc xạ (ví dụ: không khí)
+    const iDeg = params.angle ?? params.incidentAngle ?? 30; // Góc tới
     const iRad = (iDeg * Math.PI) / 180;
 
     const sinI = Math.sin(iRad);
@@ -870,9 +895,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     t: number,
     isDark: boolean
   ) => {
-    const N = params.turns || 200; // Số vòng dây
-    const B0 = params.bField || 0.5; // Tesla
-    const speed = params.magnetSpeed || 1.0;
+    const N = params.turns ?? 200; // Số vòng dây
+    const B0 = params.bField ?? params.magneticField ?? 0.5; // Tesla
+    const speed = params.magnetSpeed ?? (params.rotationSpeed ? params.rotationSpeed / 30 : 1.0);
 
     // Magnet oscillating into coil
     const magnetPos = Math.sin(t * speed * 2.5); // -1 to 1
@@ -961,10 +986,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     t: number,
     isDark: boolean
   ) => {
-    const m = params.mass || 0.5;
-    const k = params.stiffness || 50;
-    const A = params.amplitude || 0.15;
-    const gamma = params.damping || 0.02;
+    const m = params.mass ?? 0.5;
+    const k = params.stiffness ?? params.springK ?? 50;
+    const rawAmp = params.amplitude ?? 0.15;
+    const A = rawAmp > 1 ? rawAmp / 400 : rawAmp;
+    const gamma = params.damping ?? 0.02;
 
     const omega0 = Math.sqrt(k / m);
     const env = Math.exp(-gamma * t);
@@ -1032,9 +1058,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     t: number,
     isDark: boolean
   ) => {
-    const l = params.length || 1.0;
-    const g = params.gravity || 9.8;
-    const theta0Deg = params.angle0 || 20;
+    const l = params.length ?? 1.0;
+    const g = params.gravity ?? 9.8;
+    const theta0Deg = params.angle0 ?? params.initialAngleDeg ?? 20;
     const theta0Rad = (theta0Deg * Math.PI) / 180;
     const omega = Math.sqrt(g / l);
 
@@ -1090,8 +1116,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
     t: number,
     isDark: boolean
   ) => {
-    const lambda = params.wavelength || 40;
-    const d = params.sourceDistance || 180;
+    const lambda = params.wavelength ?? 40;
+    const d = params.sourceDistance ?? params.separation ?? 180;
     const omega = 4.0;
 
     setTelemetry({
@@ -1146,19 +1172,28 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
       {/* Header Banner */}
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>{t('nav.back_home', 'Quay lại Lớp học', 'Back to Classroom')}</span>
+              </button>
+            )}
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              Vật Lý 9 - 12 Chuyên Sâu
+              Vật Lý 9 - 12 & PhET Colorado
             </span>
             <span className="text-xs text-slate-400 dark:text-slate-500">
-              Mô phỏng 2D 60 FPS + Lý thuyết + Lời giải
+              Mô phỏng 2D/3D + PhET Thực Hành + Lời giải
             </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Phòng Lab Vật Lý Tương Tác 2D (Lớp 9 - 12)
+            Phòng Lab Vật Lý Tương Tác & PhET Colorado (Lớp 9 - 12)
           </h1>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Mỗi bài học tích hợp đầy đủ: Bài giảng trọng tâm, Thí nghiệm đồ họa thời gian thực và Hệ thống bài tập củng cố có lời giải chi tiết.
+            Mỗi bài học tích hợp đầy đủ: Bài giảng trọng tâm, Phòng Lab 2D tự viết + Mô phỏng PhET Colorado chính hãng, 3D Three.js và Bài tập có lời giải chi tiết.
           </p>
         </div>
 
@@ -1250,7 +1285,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
               }`}
             >
               <Zap className="w-4 h-4" />
-              <span>{t('sim.2d', '2. Phòng Lab 2D Động', '2. Dynamic 2D Lab')}</span>
+              <span>{t('sim.2d', '2. Lab 2D & PhET Colorado', '2. 2D Lab & PhET')}</span>
             </button>
             <button
               onClick={() => setActiveTab('sim3d')}
@@ -1340,186 +1375,387 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
       {/* VIEW 3D: THREE.JS 3D PHYSICS SIMULATION */}
       {activeTab === 'sim3d' && (
         <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setActiveTab('theory')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Quay lại Bài giảng Lý thuyết</span>
+            </button>
+          </div>
           <Physics3DView />
         </div>
       )}
 
-      {/* VIEW 2: 2D INTERACTIVE SIMULATION */}
+      {/* VIEW 2: 2D INTERACTIVE SIMULATION + PHET COLORADO */}
       {activeTab === 'simulation' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Canvas Main Stage (2 cols) */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
-              {/* Canvas Action Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
-                <div className="flex flex-wrap items-center gap-2">
+        <ViewportPortal active={isSimFullscreen}>
+          <div
+            className={
+              isSimFullscreen
+                ? 'fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col gap-4 overflow-y-auto'
+                : 'space-y-4'
+            }
+          >
+            {/* Top Mode Switcher Bar: Back to Theory + Canvas 2D vs PhET Colorado + Fullscreen */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs shrink-0">
+              <div className="flex flex-wrap items-center gap-2">
+                {isSimFullscreen ? (
                   <button
-                    onClick={() => setIsRunning(!isRunning)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      isRunning
-                        ? 'bg-amber-500 text-white hover:bg-amber-600'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    onClick={() => setIsSimFullscreen(false)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Quay lại (Esc)</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setActiveTab('theory')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Quay lại Bài giảng</span>
+                  </button>
+                )}
+
+                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                  <button
+                    onClick={() => setSimEngineMode('canvas2d')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      simEngineMode === 'canvas2d'
+                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                    <span>{isRunning ? 'Tạm dừng' : 'Chạy tiếp'}</span>
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Phòng Lab 2D Canvas</span>
                   </button>
+                  {lesson.phetSim && (
+                    <button
+                      onClick={() => {
+                        setSimEngineMode('phet');
+                        setPhetLoading(true);
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        simEngineMode === 'phet'
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <FlaskConical className="w-3.5 h-3.5" />
+                      <span>Mô phỏng PhET Colorado</span>
+                    </button>
+                  )}
+                </div>
+              </div>
 
-                  <button
-                    onClick={() => {
-                      simTimeRef.current = 0;
-                      setParams(lesson.defaultParams);
-                      setIsRunning(true);
-                    }}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
-                    title="Đặt lại trạng thái ban đầu"
+              <div className="flex items-center gap-2">
+                {simEngineMode === 'phet' && lesson.phetSim && (
+                  <a
+                    href={`https://phet.colorado.edu/sims/html/${lesson.phetSim.slug}/latest/${lesson.phetSim.slug}_all.html?locale=${language}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                   >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
-
-                  <div className="flex items-center gap-1 ml-2 text-xs text-slate-500 dark:text-slate-400">
-                    <span>Tốc độ:</span>
-                    {[0.5, 1.0, 2.0].map((spd) => (
-                      <button
-                        key={spd}
-                        onClick={() => setSimSpeed(spd)}
-                        className={`px-2 py-0.5 rounded text-[11px] font-medium ${
-                          simSpeed === spd
-                            ? 'bg-blue-600 text-white font-bold'
-                            : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                        }`}
-                      >
-                        {spd}x
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>60 FPS Live Physics</span>
-                </div>
-              </div>
-
-              {/* HTML5 Canvas */}
-              <div className="relative w-full h-[380px] bg-slate-950">
-                <canvas ref={canvasRef} className="w-full h-full block" />
-              </div>
-
-              {/* Real-time Telemetry Dashboard */}
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                    {telemetry.metric1Label}
-                  </div>
-                  <div className="text-base font-bold text-blue-600 dark:text-blue-400 font-mono mt-0.5">
-                    {telemetry.metric1Val}
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                    {telemetry.metric2Label}
-                  </div>
-                  <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-                    {telemetry.metric2Val}
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                    {telemetry.metric3Label}
-                  </div>
-                  <div className="text-base font-bold text-amber-600 dark:text-amber-400 font-mono mt-0.5">
-                    {telemetry.metric3Val}
-                  </div>
-                </div>
-              </div>
-
-              {/* Physical Note / Law explanation */}
-              <div className="px-4 py-2.5 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 shrink-0 text-blue-500" />
-                <span><FormattedText text={telemetry.note} /></span>
-              </div>
-            </div>
-          </div>
-
-          {/* Interactive Parameters Slider Box (1 col) */}
-          <div className="space-y-4">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
-                <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Thông Số Thí Nghiệm
-                  </h3>
-                </div>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Mở tab PhET riêng</span>
+                  </a>
+                )}
                 <button
-                  onClick={() => setParams(lesson.defaultParams)}
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                  onClick={() => setIsSimFullscreen(!isSimFullscreen)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                    isSimFullscreen
+                      ? 'bg-slate-800 text-white hover:bg-slate-700'
+                      : 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60 hover:bg-blue-100'
+                  }`}
                 >
-                  Mặc định
+                  {isSimFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  <span>{isSimFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
                 </button>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                {Object.entries(lesson.paramBounds).map(([paramKey, bound]) => {
-                  const curVal = params[paramKey] ?? bound.min;
-                  return (
-                    <div key={paramKey} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-slate-700 dark:text-slate-300">
-                          {bound.label}
-                        </span>
-                        <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
-                          {curVal} {bound.unit}
-                        </span>
+            {simEngineMode === 'phet' && lesson.phetSim ? (
+              <div className={`grid grid-cols-1 lg:grid-cols-4 gap-5 ${isSimFullscreen ? 'flex-1 min-h-0' : ''}`}>
+                {/* PhET Interactive Embed (3 cols) */}
+                <div className="lg:col-span-3 flex flex-col bg-slate-950 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-md overflow-hidden min-h-[480px]">
+                  <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 text-xs text-slate-200">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FlaskConical className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="font-bold truncate">{lesson.phetSim.title}</span>
+                      <span className="hidden sm:inline text-slate-400 truncate">— {lesson.phetSim.subtitle}</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] shrink-0">
+                      PhET HTML5 ({language.toUpperCase()})
+                    </span>
+                  </div>
+
+                  <div className={`relative w-full flex-1 ${isSimFullscreen ? 'min-h-[460px]' : 'h-[520px] sm:h-[600px]'}`}>
+                    {phetLoading && (
+                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/85 text-slate-200 gap-2 pointer-events-none">
+                        <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs font-medium">Đang tải phòng thí nghiệm PhET Colorado...</span>
                       </div>
-                      <input
-                        type="range"
-                        min={bound.min}
-                        max={bound.max}
-                        step={bound.step}
-                        value={curVal}
-                        onChange={(e) =>
-                          setParams((prev) => ({
-                            ...prev,
-                            [paramKey]: parseFloat(e.target.value)
-                          }))
-                        }
-                        className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
-                      />
-                      <div className="flex justify-between text-[10px] text-slate-400">
-                        <span>
-                          {bound.min} {bound.unit}
-                        </span>
-                        <span>
-                          {bound.max} {bound.unit}
-                        </span>
+                    )}
+                    <iframe
+                      key={`${lesson.id}-${lesson.phetSim.slug}-${language}`}
+                      src={`https://phet.colorado.edu/sims/html/${lesson.phetSim.slug}/latest/${lesson.phetSim.slug}_all.html?locale=${language}`}
+                      title={lesson.phetSim.title}
+                      onLoad={() => setPhetLoading(false)}
+                      allowFullScreen
+                      className="w-full h-full border-0"
+                    />
+                  </div>
+                </div>
+
+                {/* Guided PhET Inquiry Checklist (1 col) */}
+                <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col justify-between gap-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
+                      <ListChecks className="w-4 h-4 text-amber-500 shrink-0" />
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                        Phiếu Thực Hành PhET
+                      </h3>
+                    </div>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Thực hiện từng bước trên mô phỏng PhET Colorado bên trái để tự kiểm chứng định luật Vật lí:
+                    </p>
+
+                    <div className="space-y-2.5">
+                      {lesson.phetSim.experimentTasks.map((task, idx) => {
+                        const taskKey = `${lesson.id}-phet-${idx}`;
+                        const isDone = !!checkedPhetTasks[taskKey];
+                        return (
+                          <button
+                            key={taskKey}
+                            onClick={() =>
+                              setCheckedPhetTasks((prev) => ({ ...prev, [taskKey]: !prev[taskKey] }))
+                            }
+                            className={`w-full text-left p-3 rounded-xl border text-xs leading-relaxed transition-all flex items-start gap-2.5 ${
+                              isDone
+                                ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-400/60 text-emerald-900 dark:text-emerald-200'
+                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700/70 text-slate-700 dark:text-slate-300 hover:border-amber-400'
+                            }`}
+                          >
+                            <span
+                              className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center shrink-0 text-[10px] font-bold ${
+                                isDone
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-500'
+                              }`}
+                            >
+                              {isDone ? '✓' : idx + 1}
+                            </span>
+                            <span className={isDone ? 'line-through opacity-80' : ''}>{task}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-200/70 dark:border-slate-800">
+                    <button
+                      onClick={() => setSimEngineMode('canvas2d')}
+                      className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      Chuyển sang Phòng Lab 2D Canvas
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsSimFullscreen(false);
+                        setActiveTab('practice');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <GraduationCap className="w-4 h-4" />
+                      <span>Làm Bài Tập Củng Cố (+25 XP)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Canvas Main Stage (2 cols) */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
+                    {/* Canvas Action Bar */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => setIsRunning(!isRunning)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            isRunning
+                              ? 'bg-amber-500 text-white hover:bg-amber-600'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          }`}
+                        >
+                          {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                          <span>{isRunning ? 'Tạm dừng' : 'Chạy tiếp'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            simTimeRef.current = 0;
+                            setParams(lesson.defaultParams);
+                            setIsRunning(true);
+                          }}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+                          title="Đặt lại trạng thái ban đầu"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+
+                        <div className="flex items-center gap-1 ml-2 text-xs text-slate-500 dark:text-slate-400">
+                          <span>Tốc độ:</span>
+                          {[0.5, 1.0, 2.0].map((spd) => (
+                            <button
+                              key={spd}
+                              onClick={() => setSimSpeed(spd)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                                simSpeed === spd
+                                  ? 'bg-blue-600 text-white font-bold'
+                                  : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                              }`}
+                            >
+                              {spd}x
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>60 FPS Live Physics</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
 
-              <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
-                <button
-                  onClick={() => setActiveTab('practice')}
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                >
-                  <GraduationCap className="w-4 h-4" />
-                  <span>Làm Bài Tập Củng Cố Ngay (+25 XP)</span>
-                </button>
+                    {/* HTML5 Canvas */}
+                    <div className={`relative w-full bg-slate-950 ${isSimFullscreen ? 'h-[440px] sm:h-[520px]' : 'h-[380px]'}`}>
+                      <canvas ref={canvasRef} className="w-full h-full block" />
+                    </div>
+
+                    {/* Real-time Telemetry Dashboard */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                          {telemetry.metric1Label}
+                        </div>
+                        <div className="text-base font-bold text-blue-600 dark:text-blue-400 font-mono mt-0.5">
+                          {telemetry.metric1Val}
+                        </div>
+                      </div>
+
+                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                          {telemetry.metric2Label}
+                        </div>
+                        <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
+                          {telemetry.metric2Val}
+                        </div>
+                      </div>
+
+                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                          {telemetry.metric3Label}
+                        </div>
+                        <div className="text-base font-bold text-amber-600 dark:text-amber-400 font-mono mt-0.5">
+                          {telemetry.metric3Val}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Physical Note / Law explanation */}
+                    <div className="px-4 py-2.5 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+                      <span><FormattedText text={telemetry.note} /></span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interactive Parameters Slider Box (1 col) */}
+                <div className="space-y-4">
+                  <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
+                      <div className="flex items-center gap-2">
+                        <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                          Thông Số Thí Nghiệm
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => setParams(lesson.defaultParams)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                      >
+                        Mặc định
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {Object.entries(lesson.paramBounds).map(([paramKey, bound]) => {
+                        const curVal = params[paramKey] ?? bound.min;
+                        return (
+                          <div key={paramKey} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                {bound.label}
+                              </span>
+                              <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                                {curVal} {bound.unit}
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={bound.min}
+                              max={bound.max}
+                              step={bound.step}
+                              value={curVal}
+                              onChange={(e) =>
+                                setParams((prev) => ({
+                                  ...prev,
+                                  [paramKey]: parseFloat(e.target.value)
+                                }))
+                              }
+                              className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                            />
+                            <div className="flex justify-between text-[10px] text-slate-400">
+                              <span>
+                                {bound.min} {bound.unit}
+                              </span>
+                              <span>
+                                {bound.max} {bound.unit}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+                      <button
+                        onClick={() => {
+                          setIsSimFullscreen(false);
+                          setActiveTab('practice');
+                        }}
+                        className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                      >
+                        <GraduationCap className="w-4 h-4" />
+                        <span>Làm Bài Tập Củng Cố Ngay (+25 XP)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
-        </div>
+        </ViewportPortal>
       )}
 
       {/* VIEW 3: PRACTICE EXERCISES WITH STEP-BY-STEP SOLUTIONS */}
       {activeTab === 'practice' && (
         <div className="space-y-6">
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 flex items-center justify-between">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
                 <Award className="w-5 h-5" />
@@ -1533,6 +1769,13 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned }) => {
                 </p>
               </div>
             </div>
+            <button
+              onClick={() => setActiveTab('theory')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Quay lại Bài giảng</span>
+            </button>
           </div>
 
           <div className="space-y-6">

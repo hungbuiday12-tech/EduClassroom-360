@@ -153,6 +153,12 @@ export interface PhysicsLesson {
     explanation: string;
     stepByStep?: string[];
   }[];
+  phetSim?: {
+    slug: string;
+    title: string;
+    subtitle: string;
+    experimentTasks: string[];
+  };
 }
 
 // Retain PhysicsExperiment for backwards compatibility

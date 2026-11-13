@@ -37,6 +37,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'Q = I^2 R t \\quad (\\text{Jun - Lenxơ})'
     ],
     simulationType: 'ohm_circuit',
+    phetSim: {
+      slug: 'circuit-construction-kit-dc',
+      title: 'Circuit Construction Kit: DC (PhET Colorado)',
+      subtitle: 'Lắp mạch điện 1 chiều thực tế với pin, điện trở, bóng đèn, ampe kế và vôn kế',
+      experimentTasks: [
+        'Kéo thả Pin (Battery), Điện trở (Resistor) và Bóng đèn tạo mạch kín nối tiếp.',
+        'Đặt Ampe kế nối tiếp và Vôn kế song song để kiểm chứng I = U / (R₁ + R₂).',
+        'Chuyển sang mạch mắc song song hai bóng đèn và quan sát độ sáng cùng dòng mạch chính.'
+      ]
+    },
     defaultParams: {
       voltage: 12, // V
       resistor1: 6, // Ohm
@@ -104,6 +114,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'D = \\frac{1}{f} \\quad (\\text{Độ tụ, dp})'
     ],
     simulationType: 'lens_optics',
+    phetSim: {
+      slug: 'geometric-optics',
+      title: 'Geometric Optics (PhET Colorado)',
+      subtitle: 'Khảo sát quang hình học qua thấu kính hội tụ, phân kỳ và gương cầu',
+      experimentTasks: [
+        'Chọn Thấu kính hội tụ (Converging Lens) và bật chế độ Tia sáng chính (Principal Rays).',
+        'Đặt vật ở khoảng d > 2f, d = 2f, f < d < 2f và d < f để quan sát ảnh thật / ảnh ảo.',
+        'Dùng thước đo tiêu cự và chiều cao ảnh để kiểm chứng công thức 1/f = 1/d + 1/d\'.'
+      ]
+    },
     defaultParams: {
       focalLength: 80, // mm / px
       objectDistance: 160, // mm / px
@@ -160,6 +180,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       '\\alpha = 45^\\circ \\implies L_{max} = \\frac{v_0^2}{g}'
     ],
     simulationType: 'projectile_motion',
+    phetSim: {
+      slug: 'projectile-motion',
+      title: 'Projectile Motion (PhET Colorado)',
+      subtitle: 'Khẩu pháo bắn đạn nghiên cứu quỹ đạo parabol, tầm xa và lực cản không khí',
+      experimentTasks: [
+        'Thử bắn ở các góc α = 30°, 45°, 60° cùng vận tốc v₀ để thấy α = 45° cho tầm xa lớn nhất.',
+        'Bật vectơ Vận tốc (Velocity) & Gia tốc (Acceleration) để quan sát vx không đổi còn vy biến thiên.',
+        'Bật Lực cản không khí (Air Resistance) và so sánh quỹ đạo thực với parabol lí tưởng.'
+      ]
+    },
     defaultParams: {
       initialVelocity: 25, // m/s
       launchAngle: 45, // degrees
@@ -213,6 +243,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'v_{cham\\_dat} = \\sqrt{2gh}'
     ],
     simulationType: 'free_fall_energy',
+    phetSim: {
+      slug: 'energy-skate-park-basics',
+      title: 'Energy Skate Park: Basics (PhET Colorado)',
+      subtitle: 'Biểu đồ tròn và biểu đồ cột sự chuyển hóa Động năng - Thế năng - Nhiệt năng',
+      experimentTasks: [
+        'Bật Biểu đồ cột (Bar Graph) và Tốc độ kế (Speed) trên máng trượt hình chữ U.',
+        'Tắt ma sát (Friction = None) để quan sát Tổng cơ năng (Total Energy) luôn giữ nguyên không đổi.',
+        'Tăng ma sát và xem cơ năng chuyển hóa dần thành Nhiệt năng (Thermal) làm ván trượt dừng lại.'
+      ]
+    },
     defaultParams: {
       dropHeight: 30, // m
       mass: 2, // kg
@@ -267,6 +307,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'n = \\frac{c}{v}'
     ],
     simulationType: 'light_refraction',
+    phetSim: {
+      slug: 'bending-light',
+      title: 'Bending Light (PhET Colorado)',
+      subtitle: 'Đèn laser khảo sát Định luật Snell, phản xạ toàn phần và tán sắc qua lăng kính',
+      experimentTasks: [
+        'Đặt môi trường trên là Nước (n = 1.33) hoặc Thủy tinh (n = 1.50), môi trường dưới là Không khí.',
+        'Dùng thước đo góc kéo tia laser tăng dần góc tới i để tìm góc giới hạn phản xạ toàn phần.',
+        'Chuyển sang tab Prisms (Lăng kính) và bật ánh sáng trắng để quan sát hiện tượng tán sắc.'
+      ]
+    },
     defaultParams: {
       n1: 1.0, // Không khí
       n2: 1.5, // Thủy tinh
@@ -318,6 +368,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'I_c = \\frac{e_c}{R}'
     ],
     simulationType: 'magnetic_induction',
+    phetSim: {
+      slug: 'faradays-law',
+      title: "Faraday's Law (PhET Colorado)",
+      subtitle: 'Di chuyển thanh nam châm qua cuộn dây quan sát kim điện kế và độ sáng bóng đèn',
+      experimentTasks: [
+        'Bật đường sức từ (Field Lines) và đưa cực Bắc nam châm lại gần rồi ra xa cuộn 4 vòng.',
+        'Đổi sang cuộn 2 vòng để so sánh độ lớn suất điện động cảm ứng khi tốc độ thay đổi giống nhau.',
+        'Lật cực nam châm (N ↔ S) và quan sát chiều lệch kim Vôn kế đổi dấu (Định luật Len-xơ).'
+      ]
+    },
     defaultParams: {
       magneticField: 0.8, // Tesla
       coilArea: 0.05, // m^2
@@ -374,6 +434,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'W = \\frac{1}{2} k A^2 = \\frac{1}{2} m v_{max}^2'
     ],
     simulationType: 'spring_pendulum',
+    phetSim: {
+      slug: 'masses-and-springs',
+      title: 'Masses and Springs (PhET Colorado)',
+      subtitle: 'Thí nghiệm con lắc lò xo thẳng đứng: độ dãn Δl₀, đồ thị năng lượng và cộng hưởng',
+      experimentTasks: [
+        'Treo quả nặng 100g và 250g lên lò xo để đo độ dãn tại vị trí cân bằng Δl₀ = mg/k.',
+        'Bật đồng hồ bấm giờ đo 10 chu kỳ dao động, sau đó thay đổi độ cứng k để kiểm chứng T = 2π√(m/k).',
+        'Quan sát biểu đồ Thế năng đàn hồi - Động năng - Thế năng trọng trường theo thời gian thực.'
+      ]
+    },
     defaultParams: {
       mass: 0.5, // kg
       stiffness: 50, // N/m
@@ -427,6 +497,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'T_{max} = mg(3 - 2\\cos\\alpha_0) \\quad (\\text{tại VTCB})'
     ],
     simulationType: 'simple_pendulum',
+    phetSim: {
+      slug: 'pendulum-lab',
+      title: 'Pendulum Lab (PhET Colorado)',
+      subtitle: 'Phòng thí nghiệm con lắc đơn với đồng hồ đo chu kỳ chính xác tới 0.01s',
+      experimentTasks: [
+        'Kéo con lắc lệch góc nhỏ α₀ = 10°, bật Period Timer để đo chính xác chu kỳ T.',
+        'Thay đổi khối lượng quả nặng m từ 0.1kg lên 1.5kg và nhận xét chu kỳ T KHÔNG đổi.',
+        'Thay đổi môi trường từ Trái Đất (9.81 m/s²) sang Mặt Trăng (1.62 m/s²) hoặc Sao Mộc.'
+      ]
+    },
     defaultParams: {
       length: 1.0, // m
       initialAngleDeg: 12, // độ
@@ -480,6 +560,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       '\\lambda = \\frac{a \\cdot i}{D}'
     ],
     simulationType: 'wave_interference',
+    phetSim: {
+      slug: 'wave-interference',
+      title: 'Wave Interference (PhET Colorado)',
+      subtitle: 'Giao thoa sóng nước, sóng âm và giao thoa ánh sáng hai khe Young',
+      experimentTasks: [
+        'Chọn tab Interference với hai vòi nhỏ giọt tạo hai nguồn sóng nước kết hợp.',
+        'Thay đổi khoảng cách hai nguồn d và tần số f để đếm số vân cực đại giao thoa.',
+        'Chuyển sang chế độ Laser hai khe (Slits) và đặt màn quan sát vân sáng - vân tối.'
+      ]
+    },
     defaultParams: {
       sourceDistance: 180, // px
       wavelength: 28, // px
@@ -526,6 +616,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       '1 \\text{ kWh} = 3.6 \\cdot 10^6 \\text{ J}'
     ],
     simulationType: 'ohm_circuit',
+    phetSim: {
+      slug: 'circuit-construction-kit-dc',
+      title: 'Circuit Construction Kit: DC (PhET Colorado)',
+      subtitle: 'Khảo sát công suất tỏa nhiệt và điện năng tiêu thụ khi thay đổi U, R',
+      experimentTasks: [
+        'Lắp nguồn điện 24V nối với điện trở và công tắc; tăng/giảm điện trở để quan sát tốc độ electron.',
+        'Thử trường hợp đoản mạch (nối tắt hai cực nguồn) để thấy hiệu ứng tỏa nhiệt cháy pin.',
+        'Đo U và I trên từng bóng đèn để tính P = U·I và đối chiếu độ sáng thực tế.'
+      ]
+    },
     defaultParams: {
       voltage: 220,
       resistor1: 44,
@@ -570,6 +670,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'a = g(\\sin \\alpha - \\mu \\cos \\alpha)'
     ],
     simulationType: 'projectile_motion',
+    phetSim: {
+      slug: 'forces-and-motion-basics',
+      title: 'Forces and Motion: Basics (PhET Colorado)',
+      subtitle: 'Thí nghiệm Định luật II Newton, hợp lực, lực ma sát nghỉ và ma sát trượt',
+      experimentTasks: [
+        'Chọn tab Acceleration (Gia tốc), bật hiển thị Lực (Forces), Giá trị (Values) và Gia tốc.',
+        'Đặt thùng hàng 50kg và tăng lực đẩy từ từ để tìm lực ma sát nghỉ cực đại trước khi vật trượt.',
+        'Giữ nguyên lực đẩy 200N, chồng thêm vật lên trên để thấy gia tốc a tỉ lệ nghịch với khối lượng m.'
+      ]
+    },
     defaultParams: {
       angleDeg: 30,
       v0: 15,
@@ -614,6 +724,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'f_L = |q| v B \\sin \\alpha \\quad (\\text{Lực Lorenxo})'
     ],
     simulationType: 'magnetic_induction',
+    phetSim: {
+      slug: 'faradays-law',
+      title: "Faraday's Law (PhET Colorado)",
+      subtitle: 'Khám phá đường sức từ nam châm và tương tác từ thông qua ống dây',
+      experimentTasks: [
+        'Bật hiển thị đường sức từ trường (Field Lines) quanh thanh nam châm N-S.',
+        'Quan sát mật độ đường sức xuyên qua lòng ống dây khi nam châm ở gần so với ở xa.',
+        'Di chuyển nam châm nhanh/chậm để kiểm chứng độ lớn suất điện động tỉ lệ với ΔΦ/Δt.'
+      ]
+    },
     defaultParams: {
       turns: 200,
       magnetSpeed: 1.5,
@@ -657,6 +777,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'P = U I \\cos \\varphi = I^2 R'
     ],
     simulationType: 'spring_pendulum',
+    phetSim: {
+      slug: 'circuit-construction-kit-ac',
+      title: 'Circuit Construction Kit: AC (PhET Colorado)',
+      subtitle: 'Lắp mạch điện xoay chiều R - L - C nối tiếp và quan sát dao động đồ i(t), u(t)',
+      experimentTasks: [
+        'Lắp nguồn điện xoay chiều (AC Voltage) nối tiếp Điện trở R, Cuộn cảm L và Tụ điện C.',
+        'Kéo Ampe kế biểu đồ và Vôn kế biểu đồ để quan sát độ lệch pha giữa u và i theo thời gian.',
+        'Điều chỉnh tần số nguồn AC sao cho Z_L = Z_C để đạt cộng hưởng điện (I hiệu dụng cực đại).'
+      ]
+    },
     defaultParams: {
       mass: 0.5,
       springK: 50,
@@ -702,6 +832,15 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       '\\Delta P = \\frac{P^2 R}{U^2}'
     ],
     simulationType: 'magnetic_induction',
+    phetSim: {
+      slug: 'faradays-law',
+      title: "Faraday's Law (PhET Colorado)",
+      subtitle: 'Thí nghiệm tạo dòng điện cảm ứng xoay chiều bằng nam châm và cuộn dây',
+      experimentTasks: [
+        'Đưa nam châm ra vào ống dây liên tục để quan sát bóng đèn nhấp nháy tạo dòng xoay chiều.',
+        'So sánh độ sáng khi dùng cuộn 2 vòng và cuộn 4 vòng ở cùng tốc độ di chuyển.'
+      ]
+    },
     defaultParams: {
       turns: 250,
       magnetSpeed: 2.0,
@@ -745,6 +884,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'W = \\frac{1}{2} C U^2 = \\frac{1}{2} Q U'
     ],
     simulationType: 'ohm_circuit',
+    phetSim: {
+      slug: 'charges-and-fields',
+      title: 'Charges and Fields (PhET Colorado)',
+      subtitle: 'Bản đồ vectơ cường độ điện trường E, đường đẳng thế và lực tĩnh điện Cu-lông',
+      experimentTasks: [
+        'Đặt một điện tích dương +1 nC và một điện tích âm -1 nC tạo thành lưỡng cực điện.',
+        'Bật hiển thị Điện trường (Electric Field) và Điện áp (Voltage) để xem các đường đẳng thế.',
+        'Dùng cảm biến (Sensor) đo độ lớn E tại khoảng cách 1m và 2m để kiểm chứng E tỉ lệ nghịch 1/r².'
+      ]
+    },
     defaultParams: {
       voltage: 18,
       resistor1: 8,
@@ -790,6 +939,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'h f = E_{cao} - E_{thap}'
     ],
     simulationType: 'wave_interference',
+    phetSim: {
+      slug: 'models-of-the-hydrogen-atom',
+      title: 'Models of the Hydrogen Atom (PhET Colorado)',
+      subtitle: 'Chiếu chùm photon vào nguyên tử Hiđrô & đối chiếu các mẫu nguyên tử cổ điển - Bohr',
+      experimentTasks: [
+        'Chuyển từ Experiment sang Prediction và chọn mẫu Bohr.',
+        'Bật Máy quang phổ (Spectrometer) để thu các vạch bức xạ khi electron nhảy mức năng lượng.',
+        'Quan sát Sơ đồ mức năng lượng electron (n = 1, 2, 3...) khi hấp thụ hoặc phát xạ photon.'
+      ]
+    },
     defaultParams: {
       wavelength: 35,
       separation: 120
@@ -831,6 +990,16 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       '\\Delta E = (m_{truoc} - m_{sau}) c^2'
     ],
     simulationType: 'free_fall_energy',
+    phetSim: {
+      slug: 'radioactive-dating-game',
+      title: 'Radioactive Dating Game (PhET Colorado)',
+      subtitle: 'Đồ thị phân rã phóng xạ theo chu kỳ bán rã T và định tuổi cổ vật bằng C-14 / U-238',
+      experimentTasks: [
+        'Chọn tab Half Life (Chu kỳ bán rã) để quan sát số hạt nhân C-14 giảm còn 50% sau 5730 năm.',
+        'Kiểm chứng sau 2T còn 25% và sau 3T còn 12.5% số hạt nhân ban đầu.',
+        'Chuyển sang tab Dating Game để dùng máy dò phóng xạ xác định tuổi hóa thạch và tầng đá.'
+      ]
+    },
     defaultParams: {
       height: 50,
       gravity: 9.8,

@@ -13,6 +13,7 @@ import {
   UserSamplePair
 } from './problemAnalyzer';
 import { SublimeEditor, SublimeTabItem } from './SublimeEditor';
+import { ViewportPortal } from '../common/ViewportPortal';
 import { useLanguage } from '../../context/LanguageContext';
 import { FormattedText } from '../common/MathRenderer';
 import {
@@ -33,11 +34,14 @@ import {
   AlertCircle,
   Edit3,
   BookOpen,
-  X
+  X,
+  ArrowLeft,
+  Minimize2
 } from 'lucide-react';
 
 interface SublimeStudioProps {
   onScoreEarned?: (xp: number) => void;
+  onBack?: () => void;
 }
 
 const DEFAULT_CLEAN_CPP = `#include <iostream>
@@ -65,7 +69,7 @@ if __name__ == '__main__':
     solve()
 `;
 
-export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) => {
+export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onBack }) => {
   const { language: uiLang } = useLanguage();
 
   // Current analyzed problem
@@ -377,55 +381,68 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
 
   const allTests = problem ? [...problem.sampleCases, ...problem.hiddenCases] : [];
 
+  const handleDismissModal = () => {
+    setShowUploadModal(false);
+  };
+
   return (
-    <div
-      className={
-        isFullscreen
-          ? 'fixed inset-0 z-50 w-screen h-screen bg-[#1e1f1c] text-[#f8f8f2] flex flex-col overflow-hidden'
-          : 'relative space-y-3'
-      }
-    >
-      {/* Save Notification Toast */}
-      {saveFlash && (
-        <div className="fixed top-5 right-5 z-50 px-4 py-2 bg-[#a6e22e] text-[#272822] font-mono text-xs font-bold rounded-lg shadow-2xl flex items-center gap-2">
-          <Check className="w-4 h-4" />
-          <span>Saved {activeFile} (Ctrl+S)</span>
-        </div>
-      )}
-
-      {/* MODAL: PROBLEM UPLOAD & TEST SUITE ANALYZER */}
+    <>
+      {/* MODAL: PROBLEM UPLOAD & TEST SUITE ANALYZER (Portaled directly to body so nothing covers it) */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-          <div className="max-w-2xl w-full bg-[#1e1f1c] border border-[#3e3d32] rounded-2xl p-4 sm:p-6 shadow-2xl text-[#f8f8f2] space-y-4 my-auto max-h-[94vh] overflow-y-auto">
-            <div className="flex items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#3e3d32]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#a6e22e]/15 text-[#a6e22e] flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5" />
+        <ViewportPortal active={true}>
+          <div
+            className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+            onClick={handleDismissModal}
+          >
+            <div
+              className="max-w-2xl w-full bg-[#1e1f1c] border border-[#3e3d32] rounded-2xl p-4 sm:p-6 shadow-2xl text-[#f8f8f2] space-y-4 my-auto max-h-[92dvh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-wrap items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#3e3d32]">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!problem && onBack) {
+                        setShowUploadModal(false);
+                        onBack();
+                      } else {
+                        setShowUploadModal(false);
+                      }
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-xs font-bold text-[#66d9ef] flex items-center gap-1 shrink-0 transition-colors"
+                    title="Quay lại"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Quay lại</span>
+                  </button>
+                  <div className="w-9 h-9 rounded-xl bg-[#a6e22e]/15 text-[#a6e22e] hidden sm:flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm sm:text-base font-bold text-white truncate">
+                      {uiLang === 'en'
+                        ? 'Submit Problem & Generate Test Suite'
+                        : 'Gửi Đề Bài & Bộ Test Mẫu'}
+                    </h3>
+                    <p className="text-[11px] text-[#90908a] line-clamp-1">
+                      {uiLang === 'en'
+                        ? 'Paste problem statement, upload image/file, and attach sample Input/Output pairs.'
+                        : 'Dán đề bài hoặc tải ảnh/file, kèm test mẫu để hệ thống phân tích và sinh bộ test chuẩn xác.'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-white">
-                    {uiLang === 'en'
-                      ? 'Submit Problem & Generate Test Suite'
-                      : 'Gửi Đề Bài & Bộ Test Mẫu — Tự Động Sinh Bộ Test'}
-                  </h3>
-                  <p className="text-[11px] text-[#90908a]">
-                    {uiLang === 'en'
-                      ? 'Paste problem statement, upload image/file, and attach sample Input/Output pairs.'
-                      : 'Dán đề bài hoặc tải ảnh/file, kèm test mẫu để hệ thống phân tích và sinh bộ test chuẩn xác.'}
-                  </p>
-                </div>
-              </div>
 
-              {problem && (
                 <button
-                  onClick={() => setShowUploadModal(false)}
+                  type="button"
+                  onClick={handleDismissModal}
                   className="p-2 text-[#90908a] hover:text-white bg-[#272822] border border-[#3e3d32] rounded-lg shrink-0"
-                  aria-label="Close"
+                  aria-label="Đóng"
+                  title="Đóng hộp thoại để code tự do"
                 >
                   <X className="w-4 h-4" />
                 </button>
-              )}
-            </div>
+              </div>
 
             {/* Input Mode Tabs */}
             <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#171814] rounded-xl border border-[#3e3d32]">
@@ -658,24 +675,98 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#3e3d32]">
               <span className="text-[11px] text-[#90908a] font-mono">
-                {isAnalyzing ? 'Đang phân tích đề bài & sinh bộ test...' : 'Hệ thống hỗ trợ tự động phân tích đề & chạy thật C++/Python'}
+                {isAnalyzing ? 'Đang phân tích đề bài & sinh bộ test...' : 'Có thể đóng để vào thẳng trình soạn thảo code tự do'}
               </span>
-              <button
-                type="button"
-                onClick={handleAnalyzeProblem}
-                disabled={isAnalyzing}
-                className="px-5 py-2.5 rounded-xl bg-[#a6e22e] hover:bg-[#b8f242] text-[#272822] font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-50"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>{isAnalyzing ? 'Đang phân tích...' : 'Phân tích Đề & Sinh Bộ Test'}</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={handleDismissModal}
+                  className="px-3.5 py-2.5 rounded-xl bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#f8f8f2] font-semibold text-xs transition-colors"
+                >
+                  Vào Code Tự Do
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAnalyzeProblem}
+                  disabled={isAnalyzing}
+                  className="px-5 py-2.5 rounded-xl bg-[#a6e22e] hover:bg-[#b8f242] text-[#272822] font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-50"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>{isAnalyzing ? 'Đang phân tích...' : 'Phân tích Đề & Sinh Bộ Test'}</span>
+                </button>
+              </div>
+            </div>
             </div>
           </div>
-        </div>
+        </ViewportPortal>
       )}
 
-      {/* TOP COMPACT BAR (Hidden when fullscreen for pure 100vw x 100vh IDE) */}
-      {!isFullscreen && (
+      {/* MAIN IDE WORKSPACE (Portaled cleanly to document.body when Fullscreen) */}
+      <ViewportPortal active={isFullscreen}>
+        <div
+          className={
+            isFullscreen
+              ? 'fixed inset-0 z-[100] w-screen h-[100dvh] bg-[#1e1f1c] text-[#f8f8f2] flex flex-col overflow-hidden'
+              : 'relative space-y-3'
+          }
+        >
+          {/* Save Notification Toast */}
+          {saveFlash && (
+            <div className="fixed top-5 right-5 z-[120] px-4 py-2 bg-[#a6e22e] text-[#272822] font-mono text-xs font-bold rounded-lg shadow-2xl flex items-center gap-2">
+              <Check className="w-4 h-4" />
+              <span>Saved {activeFile} (Ctrl+S)</span>
+            </div>
+          )}
+
+          {/* FULLSCREEN TOP BAR WITH BACK & PANE TOGGLES */}
+          {isFullscreen && (
+            <div className="bg-[#171814] border-b border-[#3e3d32] px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  onClick={() => setIsFullscreen(false)}
+                  className="px-3 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#66d9ef] text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Quay lại / Thu nhỏ (Esc)</span>
+                </button>
+                <span className="text-xs font-bold text-white truncate hidden sm:inline">
+                  {problem ? problem.title : 'Sublime Text 4 Studio — Code Tự Do'}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="px-2.5 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#e6db74] text-xs font-semibold flex items-center gap-1"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Đổi đề</span>
+                </button>
+                <button
+                  onClick={() => setIsSidebarOpen((p) => !p)}
+                  className="hidden md:inline-flex px-2.5 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#f8f8f2] text-xs font-semibold"
+                >
+                  {isSidebarOpen ? 'Ẩn đề' : 'Hiện đề'}
+                </button>
+                <button
+                  onClick={() => setIsConsoleOpen((p) => !p)}
+                  className="hidden md:inline-flex px-2.5 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#f8f8f2] text-xs font-semibold"
+                >
+                  {isConsoleOpen ? 'Ẩn Console' : 'Hiện Console'}
+                </button>
+                <button
+                  onClick={() => setIsFullscreen(false)}
+                  className="p-1.5 rounded-lg bg-[#f92672]/20 text-[#f92672] border border-[#f92672]/40 hover:bg-[#f92672]/30"
+                  title="Thoát toàn màn hình (Esc)"
+                >
+                  <Minimize2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TOP COMPACT BAR (Normal mode) */}
+          {!isFullscreen && (
         <div className="bg-[#1e1f1c] border border-[#3e3d32] rounded-2xl p-3 sm:p-4 text-[#f8f8f2] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -716,7 +807,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
       )}
 
       {/* MOBILE / SMALL IPAD PANE SWITCHER (<md) */}
-      <div className="md:hidden grid grid-cols-3 gap-1 p-1 bg-[#171814] border border-[#3e3d32] rounded-xl">
+      <div className="md:hidden grid grid-cols-3 gap-1 p-1 bg-[#171814] border-b md:border border-[#3e3d32] md:rounded-xl shrink-0">
         {[
           { id: 'problem' as const, label: `Đề & Test (${allTests.length})` },
           { id: 'editor' as const, label: 'Code Sublime' },
@@ -738,8 +829,8 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
 
       {/* MAIN SPLIT-SCREEN IDE WORKSPACE */}
       <div
-        className={`flex flex-1 overflow-hidden border border-[#3e3d32] bg-[#272822] ${
-          isFullscreen ? 'h-screen border-0 rounded-none' : 'rounded-2xl h-[76vh] min-h-[580px] shadow-2xl'
+        className={`flex flex-1 min-h-0 overflow-hidden border border-[#3e3d32] bg-[#272822] ${
+          isFullscreen ? 'border-0 rounded-none' : 'rounded-2xl h-[76vh] min-h-[560px] shadow-2xl'
         }`}
       >
         {/* LEFT PANEL: PROBLEM STATEMENT & TEST SUITE */}
@@ -747,7 +838,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
           <div
             className={`${
               mobilePane === 'problem' ? 'flex w-full' : 'hidden md:flex md:w-[40%] lg:w-[35%]'
-            } bg-[#1e1f1c] border-r border-[#3e3d32] flex-col shrink-0 overflow-hidden`}
+            } bg-[#1e1f1c] border-r border-[#3e3d32] flex-col shrink-0 min-h-0 overflow-hidden`}
           >
             <div className="h-9 px-3 bg-[#171814] border-b border-[#3e3d32] flex items-center justify-between text-xs font-bold text-[#f8f8f2]">
               <span className="flex items-center gap-1.5 text-[#e6db74] truncate">
@@ -953,10 +1044,10 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
         <div
           className={`${
             mobilePane === 'problem' ? 'hidden md:flex' : 'flex'
-          } flex-1 flex-col bg-[#272822] min-w-0 overflow-hidden`}
+          } flex-1 flex-col bg-[#272822] min-w-0 min-h-0 overflow-hidden`}
         >
           {/* Sublime Editor Pane */}
-          <div className={`${mobilePane === 'console' ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-h-0`}>
+          <div className={`${mobilePane === 'console' ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-h-0 overflow-hidden`}>
             <SublimeEditor
               value={activeEditorValue}
               onChange={handleEditorChange}
@@ -1121,6 +1212,8 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
           )}
         </div>
       </div>
-    </div>
+        </div>
+      </ViewportPortal>
+    </>
   );
 };

@@ -1140,6 +1140,652 @@ export const MATH_LECTURES: MathLecture[] = [
         explanation: 'Đường sinh hình nón: $l = \\sqrt{r^2 + h^2} = \\sqrt{3^2 + 4^2} = 5\\text{ cm}$. Diện tích xung quanh: $S_{xq} = \\pi r l = \\pi \\cdot 3 \\cdot 5 = 15\\pi\\text{ cm}^2$.'
       }
     ]
+  },
+  // ==========================================
+  // BỔ SUNG CHUYÊN SÂU LỚP 9 (GDPT 2018 & THI VÀO 10)
+  // ==========================================
+  {
+    id: 'math-9-4',
+    title: 'Căn bậc hai, Căn bậc ba & Kỹ thuật Rút gọn Biểu thức thi vào 10',
+    grade: 'Lớp 9 - Đại số',
+    category: 'Đại số',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 10,
+    description: 'Làm chủ hằng đẳng thức $\\sqrt{A^2} = |A|$, trục căn thức ở mẫu, tìm điều kiện xác định và dạng bài rút gọn kết hợp tìm GTLN/GTNN hoặc giá trị nguyên trong đề tuyển sinh lớp 10.',
+    mnemonics: [
+      'Luôn đặt ĐKXĐ đầu tiên: biểu thức trong căn $\\ge 0$ và mẫu số $\\neq 0$.',
+      '$\\sqrt{A^2} = |A|$: phá dấu giá trị tuyệt đối phải xét âm hay dương, không tự ý bỏ dấu!',
+      'Trục căn ở mẫu: nhân cả tử và mẫu với biểu thức liên hợp ($\\sqrt{a} - \\sqrt{b}$ ↔ $\\sqrt{a} + \\sqrt{b}$).'
+    ],
+    commonTraps: [
+      'Quên đối chiếu nghiệm $x$ tìm được với Điều kiện xác định ban đầu.',
+      'Nhầm lẫn $\\sqrt{a + b} = \\sqrt{a} + \\sqrt{b}$ (SAI hoàn toàn!).'
+    ],
+    theory: [
+      '1. Điều kiện xác định: $\\sqrt{A}$ xác định khi và chỉ khi $A \\ge 0$. $\\frac{1}{\\sqrt{A}}$ xác định khi $A > 0$.',
+      '2. Các phép biến đổi căn thức: $\\sqrt{A^2 B} = |A|\\sqrt{B}$ ($B \\ge 0$); $\\sqrt{\\frac{A}{B}} = \\frac{\\sqrt{AB}}{|B|}$ ($AB \\ge 0, B \\neq 0$).',
+      '3. Trục căn thức ở mẫu: $\\frac{m}{\\sqrt{A} \\pm \\sqrt{B}} = \\frac{m(\\sqrt{A} \\mp \\sqrt{B})}{A - B}$ với $A, B \\ge 0$ và $A \\neq B$.',
+      '4. Bất đẳng thức Cô-si (AM-GM) áp dụng tìm cực trị: Với $a, b \\ge 0$, luôn có $a + b \\ge 2\\sqrt{ab}$, dấu "=" xảy ra khi $a = b$.',
+      '5. Căn bậc ba: $\\sqrt[3]{A^3} = A$ với mọi $A \\in R$ (không cần điều kiện $A \\ge 0$).'
+    ],
+    keyFormulas: [
+      '\\sqrt{A^2} = |A|',
+      '\\frac{1}{\\sqrt{A} - \\sqrt{B}} = \\frac{\\sqrt{A} + \\sqrt{B}}{A - B}',
+      'a + b \\ge 2\\sqrt{ab} \\quad (a, b \\ge 0)',
+      '\\sqrt[3]{A^3} = A \\quad (\\forall A \\in \\mathbb{R})'
+    ],
+    flashcards: [
+      {
+        front: 'Biểu thức $\\frac{\\sqrt{x}}{\\sqrt{x} - 2}$ có điều kiện xác định là gì?',
+        back: '$x \\ge 0$ và $\\sqrt{x} - 2 \\neq 0 \\iff x \\ge 0, x \\neq 4$.',
+        tip: 'Nhớ kiểm tra cả căn thức lẫn mẫu thức!'
+      },
+      {
+        front: 'Rút gọn $\\sqrt{(2 - \\sqrt{5})^2}$ cho kết quả bằng bao nhiêu?',
+        back: '$|2 - \\sqrt{5}| = \\sqrt{5} - 2$ (vì $2 = \\sqrt{4} < \\sqrt{5}$ nên $2 - \\sqrt{5} < 0$).',
+        tip: 'Bình phương so sánh $2^2 = 4 < 5$ trước khi phá trị tuyệt đối.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Giá trị rút gọn của biểu thức $P = \\sqrt{12} + 2\\sqrt{27} - \\frac{6}{\\sqrt{3}}$ là:',
+        options: ['A. $6\\sqrt{3}$', 'B. $8\\sqrt{3}$', 'C. $4\\sqrt{3}$', 'D. $10\\sqrt{3}$'],
+        correctIndex: 0,
+        explanation: 'Ta có $\\sqrt{12} = 2\\sqrt{3}$, $2\\sqrt{27} = 6\\sqrt{3}$, $\\frac{6}{\\sqrt{3}} = 2\\sqrt{3}$. Vậy $P = 2\\sqrt{3} + 6\\sqrt{3} - 2\\sqrt{3} = 6\\sqrt{3}$.'
+      },
+      {
+        question: 'Với $x > 0$, giá trị nhỏ nhất của biểu thức $Q = \\sqrt{x} + \\frac{4}{\\sqrt{x}}$ là:',
+        options: ['A. 4', 'B. 2', 'C. 8', 'D. 1'],
+        correctIndex: 0,
+        explanation: 'Áp dụng BĐT AM-GM cho 2 số dương $\\sqrt{x}$ và $\\frac{4}{\\sqrt{x}}$: $Q \\ge 2\\sqrt{\\sqrt{x} \\cdot \\frac{4}{\\sqrt{x}}} = 2 \\cdot 2 = 4$. Dấu "=" xảy ra khi $\\sqrt{x} = \\frac{4}{\\sqrt{x}} \\iff x = 4$.'
+      }
+    ]
+  },
+  {
+    id: 'math-9-5',
+    title: 'Hệ Phương Trình Bậc Nhất Hai Ẩn & Giải Bài Toán Thực Tế',
+    grade: 'Lớp 9 - Đại số',
+    category: 'Đại số',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 9,
+    description: 'Phương pháp thế, cộng đại số giải hệ $\\begin{cases} ax + by = c \\\\ a\'x + b\'y = c\' \\end{cases}$, biện luận nghiệm theo tham số $m$ và mô hình hóa bài toán chuyển động, năng suất vào 10.',
+    mnemonics: [
+      'Cắt nhau (1 nghiệm duy nhất): $\\frac{a}{a\'} \\neq \\frac{b}{b\'}$.',
+      'Song song (vô nghiệm): $\\frac{a}{a\'} = \\frac{b}{b\'} \\neq \\frac{c}{c\'}$. Trùng nhau (vô số nghiệm): $\\frac{a}{a\'} = \\frac{b}{b\'} = \\frac{c}{c\'}$.',
+      'Bài toán làm chung công việc: Năng suất 1 ngày = $1 / \\text{Tổng số ngày}$.'
+    ],
+    commonTraps: [
+      'Đặt ẩn mà quên ghi đơn vị và điều kiện thực tế ($x > 0$, nguyên dương, hoặc $v_{thuyen} > v_{nuoc}$).',
+      'Bài toán phần trăm tăng/giảm quên cộng 100%: tăng $15\\%$ nghĩa là nhân $1{,}15$.'
+    ],
+    theory: [
+      '1. Phương pháp thế: Rút một ẩn từ phương trình (1) rồi thế vào phương trình (2) để đưa về phương trình 1 ẩn.',
+      '2. Phương pháp cộng đại số: Nhân hai vế với hệ số thích hợp sao cho hệ số của cùng một ẩn bằng nhau hoặc đối nhau rồi cộng/trừ từng vế.',
+      '3. Ý nghĩa hình học: Nghiệm của hệ chính là tọa độ giao điểm của hai đường thẳng $d_1: ax + by = c$ và $d_2: a\'x + b\'y = c\'$.',
+      '4. Công thức các bài toán thực tế hay gặp: Chuyển động ($S = v \\cdot t$, xuôi dòng $v = v_t + v_n$, ngược dòng $v = v_t - v_n$); Năng suất ($A = N \\cdot t$).'
+    ],
+    keyFormulas: [
+      '\\frac{a}{a\'} \\neq \\frac{b}{b\'} \\implies \\text{Hệ có nghiệm duy nhất}',
+      '\\frac{a}{a\'} = \\frac{b}{b\'} \\neq \\frac{c}{c\'} \\implies \\text{Hệ vô nghiệm}',
+      'v_{xuoi} = v_{thuc} + v_{nuoc}, \\quad v_{nguoc} = v_{thuc} - v_{nuoc}',
+      '\\frac{1}{x} + \\frac{1}{y} = \\frac{1}{T_{chung}}'
+    ],
+    flashcards: [
+      {
+        front: 'Hai vòi nước cùng chảy vào một bể thì đầy sau 6 giờ. Nếu gọi thời gian vòi 1, vòi 2 chảy một mình đầy bể lần lượt là $x, y$ (giờ), ta có phương trình nào?',
+        back: '$\\frac{1}{x} + \\frac{1}{y} = \\frac{1}{6}$ (với $x, y > 6$).',
+        tip: 'Mỗi giờ vòi 1 chảy được $\\frac{1}{x}$ bể, vòi 2 chảy được $\\frac{1}{y}$ bể.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Nghiệm của hệ phương trình $\\begin{cases} 2x + y = 5 \\\\ x - y = 1 \\end{cases}$ là:',
+        options: ['A. $(2; 1)$', 'B. $(1; 3)$', 'C. $(3; -1)$', 'D. $(2; 3)$'],
+        correctIndex: 0,
+        explanation: 'Cộng hai phương trình vế theo vế ta được $3x = 6 \\implies x = 2$. Thay $x = 2$ vào phương trình thứ hai: $2 - y = 1 \\implies y = 1$. Vậy nghiệm là $(2; 1)$.'
+      },
+      {
+        question: 'Một ca nô chạy xuôi dòng 30 km rồi chạy ngược dòng 18 km hết tổng cộng 2 giờ. Biết vận tốc dòng nước là $3\\text{ km/h}$. Nếu gọi vận tốc thực của ca nô là $x$ ($x > 3$), phương trình đúng là:',
+        options: [
+          'A. $\\frac{30}{x + 3} + \\frac{18}{x - 3} = 2$',
+          'B. $\\frac{30}{x - 3} + \\frac{18}{x + 3} = 2$',
+          'C. $\\frac{30}{x} + \\frac{18}{x} = 2$',
+          'D. $30(x+3) + 18(x-3) = 2$'
+        ],
+        correctIndex: 0,
+        explanation: 'Vận tốc xuôi dòng là $x + 3$ (km/h), vận tốc ngược dòng là $x - 3$ (km/h). Tổng thời gian là $\\frac{30}{x+3} + \\frac{18}{x-3} = 2$.'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'linear',
+      params: { a: -2, b: 5, c: 0, d: 0 },
+      color: '#10b981',
+      name: 'y = -2x + 5'
+    }
+  },
+  {
+    id: 'math-9-6',
+    title: 'Tứ giác Nội tiếp Đường tròn & Các Dấu hiệu Nhận biết Kinh điển',
+    grade: 'Lớp 9 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 12,
+    description: 'Tổng hợp 4 dấu hiệu chứng minh tứ giác nội tiếp, góc nội tiếp - góc tạo bởi tia tiếp tuyến và dây cung, đồng quy - thẳng hàng và bài toán hình học câu c đề thi vào lớp 10.',
+    mnemonics: [
+      'Dấu hiệu 1 (hay dùng nhất): Tổng 2 góc đối diện bằng $180^\\circ$ (đặc biệt là 2 góc vuông đối nhau).',
+      'Dấu hiệu 2: Hai đỉnh kề nhau cùng nhìn cạnh chứa 2 đỉnh còn lại dưới một góc $\\alpha$ bằng nhau.',
+      'Dấu hiệu 3: Góc ngoài tại một đỉnh bằng góc trong tại đỉnh đối diện.'
+    ],
+    commonTraps: [
+      'Quên chỉ rõ tên đường kính khi kết luận tâm đường tròn ngoại tiếp tứ giác có hai góc vuông đối nhau.',
+      'Nhầm lẫn vị trí hai đỉnh "kề nhau" và "đối nhau" trong dấu hiệu cùng nhìn một đoạn thẳng.'
+    ],
+    theory: [
+      '1. Định nghĩa: Tứ giác có bốn đỉnh cùng nằm trên một đường tròn gọi là tứ giác nội tiếp đường tròn đó.',
+      '2. Định lý thuận & đảo: Trong một tứ giác nội tiếp, tổng số đo hai góc đối diện bằng $180^\\circ$. Ngược lại, nếu tứ giác có tổng hai góc đối bằng $180^\\circ$ thì tứ giác đó nội tiếp được đường tròn.',
+      '3. Dấu hiệu 2 đỉnh kề cùng nhìn 1 cạnh: Tứ giác $ABCD$ có $\\widehat{DAC} = \\widehat{DBC}$ (cùng nằm về một phía đối với $CD$) thì $ABCD$ nội tiếp.',
+      '4. Công thức góc liên hệ với đường tròn: Góc nội tiếp = $\\frac{1}{2}$ sđ cung bị chắn; Góc tạo bởi tia tiếp tuyến và dây cung = $\\frac{1}{2}$ sđ cung bị chắn (bằng góc nội tiếp cùng chắn một cung).',
+      '5. Phương tích đường tròn: Hai dây $AB, CD$ cắt nhau tại $M$ cho $MA \\cdot MB = MC \\cdot MD$. Cát tuyến $MAB$ và tiếp tuyến $MT$ cho $MT^2 = MA \\cdot MB$.'
+    ],
+    keyFormulas: [
+      '\\widehat{A} + \\widehat{C} = \\widehat{B} + \\widehat{D} = 180^\\circ',
+      '\\widehat{DAC} = \\widehat{DBC} \\implies ABCD \\text{ nội tiếp}',
+      'MT^2 = MA \\cdot MB \\quad (\\text{Tiếp tuyến - Cát tuyến})',
+      'MA \\cdot MB = MC \\cdot MD'
+    ],
+    flashcards: [
+      {
+        front: 'Trong $\\triangle ABC$ nhọn có hai đường cao $BE$ và $CF$ cắt nhau tại $H$. Những tứ giác nào nội tiếp?',
+        back: 'Tứ giác $AEHF$ nội tiếp (vì $\\widehat{AEH} + \\widehat{AFH} = 90^\\circ + 90^\\circ = 180^\\circ$) và tứ giác $BFEC$ nội tiếp (vì $\\widehat{BFC} = \\widehat{BEC} = 90^\\circ$ cùng nhìn cạnh $BC$).',
+        tip: 'Đây là cấu hình kinh điển xuất hiện trong hơn 80% đề thi tuyển sinh lớp 10!'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho tứ giác $ABCD$ nội tiếp đường tròn tâm $O$. Biết $\\widehat{ABC} = 105^\\circ$. Số đo góc $\\widehat{ADC}$ bằng:',
+        options: ['A. $75^\\circ$', 'B. $105^\\circ$', 'C. $90^\\circ$', 'D. $85^\\circ$'],
+        correctIndex: 0,
+        explanation: 'Vì $ABCD$ nội tiếp đường tròn nên hai góc đối diện bù nhau: $\\widehat{ABC} + \\widehat{ADC} = 180^\\circ \\implies \\widehat{ADC} = 180^\\circ - 105^\\circ = 75^\\circ$.'
+      },
+      {
+        question: 'Từ điểm $M$ nằm ngoài $(O)$, vẽ tiếp tuyến $MT$ và cát tuyến $MAB$ sao cho $MA = 4\\text{ cm}$, $AB = 5\\text{ cm}$. Độ dài đoạn tiếp tuyến $MT$ là:',
+        options: ['A. $6\\text{ cm}$', 'B. $2\\sqrt{5}\\text{ cm}$', 'C. $3\\text{ cm}$', 'D. $9\\text{ cm}$'],
+        correctIndex: 0,
+        explanation: 'Ta có $MB = MA + AB = 4 + 5 = 9\\text{ cm}$. Xét $\\triangle MTA \\sim \\triangle MBT \\implies MT^2 = MA \\cdot MB = 4 \\cdot 9 = 36 \\implies MT = 6\\text{ cm}$.'
+      }
+    ]
+  },
+  {
+    id: 'math-9-7',
+    title: 'Thống kê Tần số Ghép nhóm & Xác suất Thực nghiệm (CT Mới Lớp 9)',
+    grade: 'Lớp 9 - Đại số & Xác suất',
+    category: 'Đại số & Xác suất',
+    difficulty: 'Cơ bản',
+    readTimeMinutes: 8,
+    description: 'Bảng tần số, tần số tương đối, biểu đồ tần số ghép nhóm $[a_i; a_{i+1})$ và tính xác suất biến cố ngẫu nhiên bằng mô hình không gian mẫu (GDPT 2018).',
+    mnemonics: [
+      'Tổng tất cả tần số tương đối luôn bằng $100\\%$ (hoặc $1$).',
+      'Số đo góc cung tròn biểu diễn nhóm thứ $i$ trên biểu đồ quạt: $\\alpha_i = f_i \\cdot 360^\\circ$.',
+      'Xác suất biến cố $A$: $P(A) = \\frac{n(A)}{n(\\Omega)}$, luôn nằm trong đoạn $[0; 1]$.'
+    ],
+    commonTraps: [
+      'Nhầm giữa Tần số ($n_i$, số lần xuất hiện) và Tần số tương đối ($f_i = \\frac{n_i}{N} \\cdot 100\\%$).',
+      'Đếm thiếu phần tử của không gian mẫu $\\Omega$ trong bài toán tung đồng xu, gieo xúc xắc 2 lần.'
+    ],
+    theory: [
+      '1. Tần số và Tần số tương đối: Với mẫu dữ liệu cỡ $N$, giá trị $x_i$ xuất hiện $n_i$ lần có tần số tương đối là $f_i = \\frac{n_i}{N} \\cdot 100\\%$.',
+      '2. Bảng tần số ghép nhóm: Dữ liệu liên tục được chia thành các nửa khoảng $[a_1; a_2), [a_2; a_3), \\dots$ với độ rộng nhóm $d = a_{i+1} - a_i$.',
+      '3. Phép thử ngẫu nhiên & Không gian mẫu $\\Omega$: Tập hợp tất cả các kết quả có thể xảy ra của phép thử.',
+      '4. Công thức xác suất đồng khả năng: Nếu mọi kết quả trong $\\Omega$ đều có cùng khả năng xảy ra thì $P(A) = \\frac{n(A)}{n(\\Omega)}$.'
+    ],
+    keyFormulas: [
+      'f_i = \\frac{n_i}{N} \\cdot 100\\%, \\quad \\sum f_i = 100\\%',
+      '\\alpha_i = f_i \\cdot 360^\\circ',
+      'P(A) = \\frac{n(A)}{n(\\Omega)}, \\quad 0 \\le P(A) \\le 1'
+    ],
+    flashcards: [
+      {
+        front: 'Một lớp học có 40 học sinh, trong đó có 10 học sinh đạt điểm Giỏi. Tần số tương đối và góc hình quạt tương ứng là?',
+        back: 'Tần số tương đối $f = \\frac{10}{40} = 25\\%$. Góc quạt tròn $\\alpha = 25\\% \\cdot 360^\\circ = 90^\\circ$.',
+        tip: 'Mỗi $1\\%$ ứng với $3{,}6^\\circ$ trên biểu đồ hình quạt tròn.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Gieo một con xúc xắc cân đối đồng chất một lần. Xác suất để mặt xuất hiện có số chấm là số nguyên tố bằng:',
+        options: ['A. $\\frac{1}{2}$', 'B. $\\frac{1}{3}$', 'C. $\\frac{2}{3}$', 'D. $\\frac{1}{6}$'],
+        correctIndex: 0,
+        explanation: 'Không gian mẫu $\\Omega = \\{1, 2, 3, 4, 5, 6\\}$ có $n(\\Omega) = 6$. Các số nguyên tố từ 1 đến 6 là $\\{2, 3, 5\\}$ (lưu ý số 1 không phải số nguyên tố). Vậy $P = \\frac{3}{6} = \\frac{1}{2}$.'
+      }
+    ]
+  },
+  // ==========================================
+  // BỔ SUNG CHUYÊN SÂU LỚP 10 (GDPT 2018)
+  // ==========================================
+  {
+    id: 'math-10-3',
+    title: 'Mệnh đề, Tập hợp & Hệ Bất phương trình Bậc nhất Hai ẩn (Tối ưu Tuyến tính)',
+    grade: 'Lớp 10 - Đại số',
+    category: 'Đại số',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 10,
+    description: 'Mệnh đề chứa biến, phủ định $\\forall \\leftrightarrow \\exists$, các phép toán tập hợp và ứng dụng miền nghiệm đa giác lồi giải bài toán quy hoạch tuyến tính tìm lợi nhuận lớn nhất.',
+    mnemonics: [
+      'Phủ định: $\\forall x \\in X, P(x) \\xrightarrow{\\text{phủ định}} \\exists x \\in X, \\overline{P(x)}$.',
+      'Kiểm tra miền nghiệm của $ax + by \\le c$: thay điểm gốc $O(0; 0)$ (nếu đường thẳng không đi qua $O$); nếu đúng thì lấy nửa mặt phẳng chứa $O$.',
+      'Bài toán Tối ưu: Giá trị lớn nhất/nhỏ nhất của $F(x, y) = mx + ny$ luôn đạt tại MỘT TRONG CÁC ĐỈNH của miền đa giác nghiệm.'
+    ],
+    commonTraps: [
+      'Lấy sai phần bù hoặc hiệu hai khoảng tập hợp $(a; b] \\setminus [c; d)$ tại các đầu mút tròn/vuông.',
+      'Quên kiểm tra xem đường thẳng có nét liền ($\\le, \\ge$) hay nét đứt ($<, >$).'
+    ],
+    theory: [
+      '1. Mệnh đề kéo theo $P \\Rightarrow Q$: Chỉ sai khi $P$ đúng và $Q$ sai. Mệnh đề đảo là $Q \\Rightarrow P$. Hai mệnh đề $P, Q$ tương đương ($P \\Leftrightarrow Q$) khi cả chiều thuận và đảo đều đúng.',
+      '2. Các phép toán trên tập hợp: Hợp $A \\cup B$ (thuộc A hoặc B), Giao $A \\cap B$ (thuộc cả A và B), Hiệu $A \\setminus B$ (thuộc A nhưng không thuộc B). Công thức lực lượng: $n(A \\cup B) = n(A) + n(B) - n(A \\cap B)$.',
+      '3. Bất phương trình bậc nhất hai ẩn $ax + by \\le c$: Nghiệm biểu diễn là một nửa mặt phẳng bờ là đường thẳng $ax + by = c$.',
+      '4. Bài toán kinh tế / quy hoạch tuyến tính: Thiết lập hệ bất phương trình ràng buộc nguyên liệu/thời gian, vẽ miền đa giác lồi và tính giá trị hàm mục tiêu $F(x, y)$ tại tất cả các đỉnh.'
+    ],
+    keyFormulas: [
+      'n(A \\cup B) = n(A) + n(B) - n(A \\cap B)',
+      '\\overline{\\forall x \\in X, P(x)} \\equiv \\exists x \\in X, \\overline{P(x)}',
+      'F(x, y) = mx + ny \\quad \\text{đạt cực trị tại đỉnh đa giác}'
+    ],
+    flashcards: [
+      {
+        front: 'Cho $A = (-2; 5]$ và $B = [1; 7)$. Xác định $A \\cap B$ và $A \\setminus B$?',
+        back: '$A \\cap B = [1; 5]$ và $A \\setminus B = (-2; 1)$.',
+        tip: 'Vẽ trục số đánh dấu ngoặc tròn và ngoặc vuông để tránh sai đầu mút $1$.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Lớp 10A có 45 học sinh, trong đó có 25 em thích Toán, 20 em thích Lý và 10 em thích cả hai môn. Số học sinh không thích môn nào trong hai môn trên là:',
+        options: ['A. 10', 'B. 5', 'C. 15', 'D. 35'],
+        correctIndex: 0,
+        explanation: 'Số học sinh thích ít nhất một môn là: $n(T \\cup L) = n(T) + n(L) - n(T \\cap L) = 25 + 20 - 10 = 35$ em. Số học sinh không thích môn nào là $45 - 35 = 10$ em.'
+      },
+      {
+        question: 'Mệnh đề phủ định của mệnh đề $P: "\\forall x \\in \\mathbb{R}, x^2 + 1 > 0"$ là:',
+        options: [
+          'A. $\\exists x \\in \\mathbb{R}, x^2 + 1 \\le 0$',
+          'B. $\\forall x \\in \\mathbb{R}, x^2 + 1 \\le 0$',
+          'C. $\\exists x \\in \\mathbb{R}, x^2 + 1 < 0$',
+          'D. $\\exists x \\in \\mathbb{R}, x^2 + 1 = 0$'
+        ],
+        correctIndex: 0,
+        explanation: 'Phủ định của $\\forall$ là $\\exists$, phủ định của dấu $>$ là $\\le$. Do đó mệnh đề phủ định đúng là $\\exists x \\in \\mathbb{R}, x^2 + 1 \\le 0$.'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'linear',
+      params: { a: -1.5, b: 6, c: 0, d: 0 },
+      color: '#6366f1',
+      name: '2x + y = 6 (Bờ miền nghiệm)'
+    }
+  },
+  {
+    id: 'math-10-4',
+    title: 'Vectơ trong Mặt phẳng, Quy tắc Hình bình hành & Hệ thức Trung tuyến',
+    grade: 'Lớp 10 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 10,
+    description: 'Phép cộng, trừ, nhân vectơ với một số, điều kiện ba điểm thẳng hàng, định lý Sin - Cosin và toàn bộ 5 công thức tính diện tích tam giác.',
+    mnemonics: [
+      'Quy tắc 3 điểm cộng: $\\vec{AB} + \\vec{BC} = \\vec{AC}$ (nối đuôi). Quy tắc trừ: $\\vec{AB} - \\vec{AC} = \\vec{CB}$ (chung gốc đảo ngược!).',
+      'Trung điểm $I$ của $AB$: $\\vec{MA} + \\vec{MB} = 2\\vec{MI}$.',
+      'Trọng tâm $G$ của $\\triangle ABC$: $\\vec{MA} + \\vec{MB} + \\vec{MC} = 3\\vec{MG}$.'
+    ],
+    commonTraps: [
+      'Đảo nhầm thứ tự trong quy tắc trừ: $\\vec{OA} - \\vec{OB} = \\vec{BA}$ (chứ không phải $\\vec{AB}$).',
+      'Tính độ dài tổng hai vectơ $\\|\\vec{a} + \\vec{b}\\|$ bằng $\\|\\vec{a}\\| + \\|\\vec{b}\\|$ mà quên bình phương dùng góc xen giữa!'
+    ],
+    theory: [
+      '1. Quy tắc hình bình hành: Với hình bình hành $ABCD$, luôn có $\\vec{AB} + \\vec{AD} = \\vec{AC}$.',
+      '2. Điều kiện cùng phương: $\\vec{b}$ cùng phương $\\vec{a} (\\neq \\vec{0}) \\iff \\exists k \\in R: \\vec{b} = k\\vec{a}$. Ba điểm $A, B, C$ thẳng hàng khi và chỉ khi $\\vec{AB} = k\\vec{AC}$.',
+      '3. Định lý Sin trong $\\triangle ABC$ (bán kính ngoại tiếp $R$): $\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C} = 2R$.',
+      '4. Công thức tính diện tích tam giác $S$: (1) $\\frac{1}{2} a h_a$; (2) $\\frac{1}{2} ab\\sin C$; (3) $\\frac{abc}{4R}$; (4) $p \\cdot r$ ($p = \\frac{a+b+c}{2}$); (5) Công thức Hê-rông $S = \\sqrt{p(p-a)(p-b)(p-c)}$.'
+    ],
+    keyFormulas: [
+      '\\vec{AB} + \\vec{BC} = \\vec{AC}, \\quad \\vec{OB} - \\vec{OA} = \\vec{AB}',
+      '\\vec{GA} + \\vec{GB} + \\vec{GC} = \\vec{0}',
+      '\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C} = 2R',
+      'S = \\sqrt{p(p-a)(p-b)(p-c)} = \\frac{1}{2}ab\\sin C = pr'
+    ],
+    flashcards: [
+      {
+        front: 'Cho tam giác $ABC$ có $a = 5, b = 6, c = 7$. Nửa chu vi $p$ và diện tích theo Hê-rông là?',
+        back: '$p = \\frac{5 + 6 + 7}{2} = 9$. $S = \\sqrt{9(9-5)(9-6)(9-7)} = \\sqrt{9 \\cdot 4 \\cdot 3 \\cdot 2} = 6\\sqrt{6}$.',
+        tip: 'Nửa chu vi $p$ đẹp là dấu hiệu nên dùng ngay công thức Hê-rông!'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho hình vuông $ABCD$ cạnh $a$. Độ dài của vectơ $\\vec{u} = \\vec{AB} + \\vec{AD}$ bằng:',
+        options: ['A. $a\\sqrt{2}$', 'B. $2a$', 'C. $a$', 'D. $a\\sqrt{3}$'],
+        correctIndex: 0,
+        explanation: 'Theo quy tắc hình bình hành: $\\vec{AB} + \\vec{AD} = \\vec{AC}$. Vì $ABCD$ là hình vuông cạnh $a$ nên đường chéo $AC = a\\sqrt{2}$.'
+      },
+      {
+        question: 'Tam giác $ABC$ có cạnh $BC = 6\\text{ cm}$ và góc $\\widehat{A} = 30^\\circ$. Bán kính đường tròn ngoại tiếp $R$ của tam giác bằng:',
+        options: ['A. $6\\text{ cm}$', 'B. $3\\text{ cm}$', 'C. $12\\text{ cm}$', 'D. $3\\sqrt{3}\\text{ cm}$'],
+        correctIndex: 0,
+        explanation: 'Áp dụng định lý Sin: $2R = \\frac{a}{\\sin A} = \\frac{6}{\\sin 30^\\circ} = \\frac{6}{0.5} = 12 \\implies R = 6\\text{ cm}$.'
+      }
+    ]
+  },
+  {
+    id: 'math-10-5',
+    title: 'Phương pháp Tọa độ Oxy: Đường thẳng, Khoảng cách & Đường tròn',
+    grade: 'Lớp 10 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 11,
+    description: 'Phương trình tổng quát, phương trình tham số đường thẳng trong mặt phẳng Oxy, góc và khoảng cách từ điểm đến đường thẳng, phương trình đường tròn và tiếp tuyến.',
+    mnemonics: [
+      'PT Tổng quát $ax + by + c = 0$ cho Vectơ Pháp tuyến $\\vec{n} = (a; b)$ (vuông góc đường thẳng).',
+      'PT Tham số cho Vectơ Chỉ phương $\\vec{u} = (u_1; u_2)$ (song song đường thẳng). Đổi qua lại: $\\vec{n} = (a; b) \\leftrightarrow \\vec{u} = (-b; a)$.',
+      'Khoảng cách từ $M(x_0; y_0)$ đến $\\Delta: ax + by + c = 0$: "Thay tọa độ vào tử (lấy trị tuyệt đối), chia cho độ dài pháp tuyến ở mẫu".'
+    ],
+    commonTraps: [
+      'Lấy nhầm hệ số $(a; b)$ làm vectơ chỉ phương khi viết từ dạng $ax + by + c = 0$.',
+      'Phương trình $x^2 + y^2 - 2ax - 2by + c = 0$ chỉ là đường tròn khi $a^2 + b^2 - c > 0$.'
+    ],
+    theory: [
+      '1. Đường thẳng đi qua $M_0(x_0; y_0)$ nhận $\\vec{n} = (a; b)$ làm VTPT: $a(x - x_0) + b(y - y_0) = 0$.',
+      '2. Khoảng cách từ điểm $M(x_0; y_0)$ đến đường thẳng $\\Delta: ax + by + c = 0$: $d(M, \\Delta) = \\frac{|a x_0 + b y_0 + c|}{\\sqrt{a^2 + b^2}}$.',
+      '3. Góc giữa hai đường thẳng $\\Delta_1, \\Delta_2$: $\\cos\\varphi = |\\cos(\\vec{n_1}, \\vec{n_2})| = \\frac{|a_1 a_2 + b_1 b_2|}{\\sqrt{a_1^2 + b_1^2}\\sqrt{a_2^2 + b_2^2}}$.',
+      '4. Phương trình đường tròn tâm $I(a; b)$, bán kính $R$: $(x - a)^2 + (y - b)^2 = R^2$, hay dạng khai triển $x^2 + y^2 - 2ax - 2by + c = 0$ với $R = \\sqrt{a^2 + b^2 - c}$.',
+      '5. Đường thẳng $\\Delta$ tiếp xúc đường tròn $(I; R) \\iff d(I, \\Delta) = R$.'
+    ],
+    keyFormulas: [
+      'd(M, \\Delta) = \\frac{|a x_0 + b y_0 + c|}{\\sqrt{a^2 + b^2}}',
+      '\\cos(\\Delta_1, \\Delta_2) = \\frac{|\\vec{n_1} \\cdot \\vec{n_2}|}{\\|\\vec{n_1}\\| \\cdot \\|\\vec{n_2}\\|}',
+      '(x - a)^2 + (y - b)^2 = R^2',
+      'R = \\sqrt{a^2 + b^2 - c}'
+    ],
+    flashcards: [
+      {
+        front: 'Tìm tâm $I$ và bán kính $R$ của đường tròn $(C): x^2 + y^2 - 4x + 6y - 3 = 0$?',
+        back: 'Chia hệ số của $x, y$ cho $-2$: Tâm $I(2; -3)$. Bán kính $R = \\sqrt{2^2 + (-3)^2 - (-3)} = \\sqrt{4 + 9 + 3} = 4$.',
+        tip: 'Nhớ công thức: $a = \\text{hệ số } x / (-2)$, $b = \\text{hệ số } y / (-2)$.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Khoảng cách từ điểm $M(1; -2)$ đến đường thẳng $\\Delta: 3x - 4y + 4 = 0$ bằng:',
+        options: ['A. $3$', 'B. $5$', 'C. $\\frac{11}{5}$', 'D. $15$'],
+        correctIndex: 0,
+        explanation: '$d(M, \\Delta) = \\frac{|3(1) - 4(-2) + 4|}{\\sqrt{3^2 + (-4)^2}} = \\frac{|3 + 8 + 4|}{5} = \\frac{15}{5} = 3$.'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'linear',
+      params: { a: 0.75, b: 1, c: 0, d: 0 },
+      color: '#0891b2',
+      name: '3x - 4y + 4 = 0'
+    }
+  },
+  {
+    id: 'math-10-6',
+    title: 'Ba Đường Conic (Elip, Hypebol, Parabol) & Số Đặc trưng Đo độ Phân tán',
+    grade: 'Lớp 10 - Hình học & Thống kê',
+    category: 'Hình học',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 10,
+    description: 'Phương trình chính tắc Elip, Hypebol, Parabol cùng tiêu điểm, tâm sai (CT mới lớp 10) và các số đo xu thế trung tâm - độ phân tán mẫu số liệu: Trung vị $M_e$, Tứ phân vị $Q_1, Q_2, Q_3$, Độ lệch chuẩn $s$.',
+    mnemonics: [
+      'Elip ($+$): $\\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1$ với $a > b > 0$ và $c^2 = a^2 - b^2$ (a lớn nhất!).',
+      'Hypebol ($-$): $\\frac{x^2}{a^2} - \\frac{y^2}{b^2} = 1$ với $c^2 = a^2 + b^2$ (c lớn nhất!).',
+      'Parabol chính tắc: $y^2 = 2px$ ($p > 0$), tiêu điểm $F\\left(\\frac{p}{2}; 0\\right)$, đường chuẩn $\\Delta: x = -\\frac{p}{2}$.'
+    ],
+    commonTraps: [
+      'Nhầm lẫn quan hệ $a, b, c$ giữa Elip ($a^2 = b^2 + c^2$) và Hypebol ($c^2 = a^2 + b^2$).',
+      'Tính Tứ phân vị mà quên SẮP XẾP mẫu số liệu theo thứ tự không giảm trước!'
+    ],
+    theory: [
+      '1. Đường Elip $\\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1$: Độ dài trục lớn $2a$, trục nhỏ $2b$, tiêu cự $2c = 2\\sqrt{a^2 - b^2}$. Với mọi $M \\in (E)$, ta có $MF_1 + MF_2 = 2a$.',
+      '2. Đường Hypebol $\\frac{x^2}{a^2} - \\frac{y^2}{b^2} = 1$: Trục thực $2a$, trục ảo $2b$, tiêu cự $2c = 2\\sqrt{a^2 + b^2}$. $|MF_1 - MF_2| = 2a$.',
+      '3. Đường Parabol $y^2 = 2px$: Điểm $M \\in (P)$ cách đều tiêu điểm $F(p/2; 0)$ và đường chuẩn $x = -p/2$.',
+      '4. Thống kê (Số đo độ phân tán): Khoảng biến thiên $R = x_{max} - x_{min}$; Khoảng tứ phân vị $\\Delta_Q = Q_3 - Q_1$ (loại bỏ giá trị ngoại lệ: ngoài $[Q_1 - 1.5\\Delta_Q; Q_3 + 1.5\\Delta_Q]$); Phương sai $s^2 = \\frac{1}{n}\\sum (x_i - \\bar{x})^2$ và Độ lệch chuẩn $s = \\sqrt{s^2}$.'
+    ],
+    keyFormulas: [
+      '\\text{Elip: } \\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1, \\quad c = \\sqrt{a^2 - b^2}',
+      '\\text{Hypebol: } \\frac{x^2}{a^2} - \\frac{y^2}{b^2} = 1, \\quad c = \\sqrt{a^2 + b^2}',
+      '\\text{Parabol: } y^2 = 2px, \\quad F\\left(\\frac{p}{2}; 0\\right)',
+      '\\Delta_Q = Q_3 - Q_1, \\quad s = \\sqrt{\\frac{1}{n}\\sum (x_i - \\bar{x})^2}'
+    ],
+    flashcards: [
+      {
+        front: 'Elip có phương trình chính tắc $\\frac{x^2}{25} + \\frac{y^2}{9} = 1$ thì tiêu cự và tổng $MF_1 + MF_2$ bằng bao nhiêu?',
+        back: '$a = 5, b = 3 \\implies c = \\sqrt{25 - 9} = 4$. Tiêu cự $2c = 8$, tổng khoảng cách $MF_1 + MF_2 = 2a = 10$.',
+        tip: 'Bộ ba Pytago kinh điển $3 - 4 - 5$!'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho Elip $(E): \\frac{x^2}{16} + \\frac{y^2}{7} = 1$. Tọa độ hai tiêu điểm $F_1, F_2$ của Elip là:',
+        options: ['A. $(\\pm 3; 0)$', 'B. $(\\pm 4; 0)$', 'C. $(0; \\pm 3)$', 'D. $(\\pm \\sqrt{23}; 0)$'],
+        correctIndex: 0,
+        explanation: 'Ta có $a^2 = 16, b^2 = 7 \\implies c^2 = a^2 - b^2 = 16 - 7 = 9 \\implies c = 3$. Hai tiêu điểm nằm trên trục hoành nên $F_1(-3; 0), F_2(3; 0)$.'
+      },
+      {
+        question: 'Cho mẫu số liệu đã sắp xếp: $2, 4, 5, 7, 8, 10, 12$. Tứ phân vị thứ hai $Q_2$ (trung vị) và khoảng biến thiên $R$ lần lượt là:',
+        options: ['A. $Q_2 = 7, R = 10$', 'B. $Q_2 = 7, R = 8$', 'C. $Q_2 = 6.8, R = 10$', 'D. $Q_2 = 8, R = 10$'],
+        correctIndex: 0,
+        explanation: 'Mẫu có $n = 7$ giá trị lẻ, phần tử đứng chính giữa (thứ 4) là $Q_2 = 7$. Khoảng biến thiên $R = x_{max} - x_{min} = 12 - 2 = 10$.'
+      }
+    ]
+  },
+  // ==========================================
+  // BỔ SUNG CHUYÊN SÂU LỚP 11 (GDPT 2018)
+  // ==========================================
+  {
+    id: 'math-11-5',
+    title: 'Công thức Lượng giác Cộng - Nhân đôi - Biến đổi & Phương trình Nâng cao',
+    grade: 'Lớp 11 - Lượng giác',
+    category: 'Lượng giác & Mũ',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 11,
+    description: 'Hệ thống đầy đủ 4 nhóm công thức lượng giác (cộng, nhân đôi, hạ bậc, biến đổi tích ↔ tổng) và kỹ thuật giải phương trình bậc nhất đối với $\\sin x, \\cos x$.',
+    mnemonics: [
+      'Công thức cộng: "Sin thì sin cos, cos sin (cùng dấu); Cos thì cos cos, sin sin dấu trừ (ngược dấu)".',
+      'Biến tổng thành tích: "Cos cộng cos bằng 2 cos cos; Cos trừ cos bằng -2 sin sin; Sin cộng sin bằng 2 sin cos".',
+      'Hạ bậc: $\\cos^2 x = \\frac{1 + \\cos 2x}{2}$ (cộng); $\\sin^2 x = \\frac{1 - \\cos 2x}{2}$ (trừ).'
+    ],
+    commonTraps: [
+      'Quên dấu trừ ở công thức $\\cos a - \\cos b = -2\\sin\\frac{a+b}{2}\\sin\\frac{a-b}{2}$.',
+      'Chia cả hai vế phương trình cho $\\cos x$ hoặc $\\sin x$ mà quên xét riêng trường hợp $\\cos x = 0$.'
+    ],
+    theory: [
+      '1. Công thức cộng: $\\sin(a \\pm b) = \\sin a\\cos b \\pm \\cos a\\sin b$; $\\cos(a \\pm b) = \\cos a\\cos b \\mp \\sin a\\sin b$; $\\tan(a \\pm b) = \\frac{\\tan a \\pm \\tan b}{1 \\mp \\tan a \\tan b}$.',
+      '2. Công thức nhân đôi & hạ bậc: $\\sin 2a = 2\\sin a\\cos a$; $\\cos 2a = \\cos^2 a - \\sin^2 a = 2\\cos^2 a - 1 = 1 - 2\\sin^2 a$.',
+      '3. Công thức biến đổi tích thành tổng: $\\cos a\\cos b = \\frac{1}{2}[\\cos(a-b) + \\cos(a+b)]$; $\\sin a\\sin b = \\frac{1}{2}[\\cos(a-b) - \\cos(a+b)]$; $\\sin a\\cos b = \\frac{1}{2}[\\sin(a+b) + \\sin(a-b)]$.',
+      '4. Phương trình cổ điển $a\\sin x + b\\cos x = c$: Điều kiện có nghiệm là $a^2 + b^2 \\ge c^2$. Chia hai vế cho $\\sqrt{a^2 + b^2}$ để đưa về $\\sin(x + \\alpha) = \\frac{c}{\\sqrt{a^2 + b^2}}$.'
+    ],
+    keyFormulas: [
+      '\\sin 2a = 2\\sin a \\cos a, \\quad \\cos 2a = 2\\cos^2 a - 1 = 1 - 2\\sin^2 a',
+      '\\sin^2 a = \\frac{1 - \\cos 2a}{2}, \\quad \\cos^2 a = \\frac{1 + \\cos 2a}{2}',
+      'a\\sin x + b\\cos x = c \\text{ có nghiệm} \\iff a^2 + b^2 \\ge c^2'
+    ],
+    flashcards: [
+      {
+        front: 'Điều kiện để phương trình $m\\sin x + 3\\cos x = 5$ có nghiệm thực $x$ là gì?',
+        back: '$m^2 + 3^2 \\ge 5^2 \\iff m^2 \\ge 16 \\iff |m| \\ge 4$.',
+        tip: 'Nhớ công thức $a^2 + b^2 \\ge c^2$ cực nhanh!'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Giá trị của biểu thức $A = \\sin\\frac{\\pi}{12}\\cos\\frac{\\pi}{12}$ bằng:',
+        options: ['A. $\\frac{1}{4}$', 'B. $\\frac{1}{2}$', 'C. $\\frac{\\sqrt{3}}{4}$', 'D. $\\frac{\\sqrt{2}}{2}$'],
+        correctIndex: 0,
+        explanation: 'Áp dụng công thức nhân đôi $\\sin x \\cos x = \\frac{1}{2}\\sin 2x$: $A = \\frac{1}{2}\\sin\\frac{\\pi}{6} = \\frac{1}{2} \\cdot \\frac{1}{2} = \\frac{1}{4}$.'
+      },
+      {
+        question: 'Số giá trị nguyên của tham số $m$ để phương trình $3\\sin x - 4\\cos x = m$ có nghiệm là:',
+        options: ['A. $11$', 'B. $10$', 'C. $9$', 'D. $5$'],
+        correctIndex: 0,
+        explanation: 'Điều kiện có nghiệm: $3^2 + (-4)^2 \\ge m^2 \\iff m^2 \\le 25 \\iff -5 \\le m \\le 5$. Số giá trị nguyên của $m$ là $5 - (-5) + 1 = 11$.'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'trig_sin',
+      params: { a: 2, b: 1, c: 0, d: 0 },
+      color: '#f59e0b',
+      name: 'y = 2·sin(x)'
+    }
+  },
+  {
+    id: 'math-11-6',
+    title: 'Giới hạn Dãy số, Giới hạn Hàm số & Hàm số Liên tục',
+    grade: 'Lớp 11 - Giải tích',
+    category: 'Giải tích',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 11,
+    description: 'Khử dạng vô định $\\frac{\\infty}{\\infty}$, $\\frac{0}{0}$, $\\infty - \\infty$ bằng phân tích nhân tử và nhân liên hợp; cấp số nhân lùi vô hạn; xét tính liên tục của hàm số tại điểm $x_0$.',
+    mnemonics: [
+      'Dạng $\\frac{\\infty}{\\infty}$ phân thức đa thức: chia tử và mẫu cho lũy thừa cao nhất của $n$ (hoặc $x$); so sánh bậc tử và bậc mẫu.',
+      'Tổng cấp số nhân lùi vô hạn ($|q| < 1$): $S = \\frac{u_1}{1 - q}$.',
+      'Hàm $y = f(x)$ liên tục tại $x_0 \\iff \\lim_{x \\to x_0^+} f(x) = \\lim_{x \\to x_0^-} f(x) = f(x_0)$.'
+    ],
+    commonTraps: [
+      'Khi $x \\to -\\infty$, đưa $\\sqrt{x^2}$ ra ngoài dấu căn phải viết $|x| = -x$ (rất hay quên dấu trừ!).',
+      'Tính $\\lim (\\sqrt{n^2 + an} - n)$ bằng cách bỏ qua số hạng $an$ mà không nhân liên hợp (ĐÁP ÁN ĐÚNG là $\\frac{a}{2}$!).'
+    ],
+    theory: [
+      '1. Một số giới hạn đặc biệt: $\\lim \\frac{1}{n^k} = 0$ ($k > 0$); $\\lim q^n = 0$ nếu $|q| < 1$.',
+      '2. Quy tắc tìm giới hạn phân thức khi $x \\to \\pm\\infty$: Chia cả tử và mẫu cho $x^k$ với $k$ là bậc lớn nhất.',
+      '3. Dạng vô định $\\frac{0}{0}$ khi $x \\to x_0$: Nếu là đa thức, phân tích nhân tử $(x - x_0)$ để rút gọn. Nếu có căn thức, nhân cả tử và mẫu với biểu thức liên hợp.',
+      '4. Định lý giá trị trung gian chứng minh nghiệm phương trình: Nếu $f(x)$ liên tục trên $[a; b]$ và $f(a) \\cdot f(b) < 0$ thì phương trình $f(x) = 0$ có ít nhất 1 nghiệm thuộc khoảng $(a; b)$.'
+    ],
+    keyFormulas: [
+      'S = u_1 + u_1 q + u_1 q^2 + \\dots = \\frac{u_1}{1 - q} \\quad (|q| < 1)',
+      '\\lim_{n \\to \\infty} (\\sqrt{n^2 + an + b} - n) = \\frac{a}{2}',
+      'f \\text{ liên tục tại } x_0 \\iff \\lim_{x \\to x_0} f(x) = f(x_0)'
+    ],
+    flashcards: [
+      {
+        front: 'Tính nhanh giới hạn $\\lim_{x \\to 2} \\frac{x^2 - 4}{x - 2}$?',
+        back: '$\\lim_{x \\to 2} \\frac{(x - 2)(x + 2)}{x - 2} = \\lim_{x \\to 2} (x + 2) = 4$.',
+        tip: 'Khử nhân tử $(x - 2)$ gây ra dạng vô định $0/0$.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Giá trị của giới hạn $\\lim \\frac{3n^2 - 2n + 1}{2n^2 + 5}$ bằng:',
+        options: ['A. $\\frac{3}{2}$', 'B. $0$', 'C. $+\\infty$', 'D. $\\frac{1}{5}$'],
+        correctIndex: 0,
+        explanation: 'Bậc tử bằng bậc mẫu (cùng bậc 2). Chia cả tử và mẫu cho $n^2$ ta được tỉ số hệ số bậc cao nhất: $\\frac{3}{2}$.'
+      },
+      {
+        question: 'Biết hàm số $f(x) = \\begin{cases} \\frac{x^2 - 9}{x - 3} & \\text{khi } x \\neq 3 \\\\ 2m - 1 & \\text{khi } x = 3 \\end{cases}$ liên tục tại $x_0 = 3$. Giá trị của $m$ là:',
+        options: ['A. $m = \\frac{7}{2}$', 'B. $m = 3$', 'C. $m = \\frac{5}{2}$', 'D. $m = 6$'],
+        correctIndex: 0,
+        explanation: 'Ta có $\\lim_{x \\to 3} f(x) = \\lim_{x \\to 3} (x + 3) = 6$. Để hàm số liên tục tại $x = 3$ cần $2m - 1 = 6 \\iff m = \\frac{7}{2}$.'
+      }
+    ]
+  },
+  {
+    id: 'math-11-7',
+    title: 'Quan hệ Song song trong Không gian & Phương pháp Tìm Thiết diện',
+    grade: 'Lớp 11 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 12,
+    description: 'Tìm giao tuyến hai mặt phẳng, giao điểm đường thẳng và mặt phẳng, chứng minh song song và 3 phương pháp dựng thiết diện cắt khối chóp/lăng trụ (dùng kèm mô phỏng 3D).',
+    mnemonics: [
+      'Tìm giao tuyến $(P) \\cap (Q)$: Tìm 2 điểm chung phân biệt, HOẶC 1 điểm chung + 2 đường thẳng chứa trong 2 mặt phẳng song song nhau (giao tuyến song song 2 đường đó).',
+      'Tìm giao điểm $d \\cap (P)$: Chọn mặt phẳng phụ $(Q)$ chứa $d$, tìm $a = (P) \\cap (Q)$, giao điểm chính là $I = d \\cap a$.',
+      'Hình biểu diễn không gian: đường nhìn thấy vẽ nét LIỀN, đường bị che khuất vẽ nét ĐỨT.'
+    ],
+    commonTraps: [
+      'Kéo dài cắt nhau hai đường thẳng CHÉO NHAU (chỉ được cho cắt nhau khi chúng cùng nằm trong một mặt phẳng!).',
+      'Xác định thiết diện quên khép kín thành đa giác trên tất cả các mặt của khối đa diện.'
+    ],
+    theory: [
+      '1. Đường thẳng song song mặt phẳng ($d // (P)$): Nếu $d \\not\\subset (P)$ và $d$ song song với một đường thẳng $a \\subset (P)$ thì $d // (P)$.',
+      '2. Hai mặt phẳng song song ($(P) // (Q)$): Nếu $(P)$ chứa hai đường thẳng cắt nhau $a, b$ cùng song song với $(Q)$ thì $(P) // (Q)$.',
+      '3. Định lý Ta-lét trong không gian: Ba mặt phẳng đôi một song song chắn trên hai cát tuyến bất kỳ những đoạn thẳng tương ứng tỉ lệ.',
+      '4. Thiết diện của mặt phẳng $(\\alpha)$ cắt hình chóp: Dựng lần lượt giao tuyến của $(\\alpha)$ với các mặt của hình chóp cho đến khi khép kín thành đa giác (thường dùng tính chất giao tuyến song song).'
+    ],
+    keyFormulas: [
+      'a // b \\subset (P), a \\not\\subset (P) \\implies a // (P)',
+      '(P) // (Q) \\text{ và } (R) \\cap (P) = a, (R) \\cap (Q) = b \\implies a // b',
+      '\\frac{AB}{BC} = \\frac{A\'B\'}{B\'C\'} \\quad (\\text{Ta-lét không gian})'
+    ],
+    flashcards: [
+      {
+        front: 'Cho hình chóp $S.ABCD$ có đáy $ABCD$ là hình bình hành. Giao tuyến của $(SAB)$ và $(SCD)$ là đường thẳng nào?',
+        back: 'Đường thẳng $Sx$ đi qua đỉnh $S$ và song song với $AB // CD$.',
+        tip: 'Hai mặt phẳng lần lượt chứa $AB$ và $CD$ song song với nhau và có điểm chung là $S$.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho tứ diện $ABCD$. Gọi $M, N$ lần lượt là trung điểm của $AB$ và $AC$. Đường thẳng $MN$ song song với mặt phẳng nào dưới đây?',
+        options: ['A. $(BCD)$', 'B. $(ABC)$', 'C. $(ABD)$', 'D. $(ACD)$'],
+        correctIndex: 0,
+        explanation: '$MN$ là đường trung bình của $\\triangle ABC$ nên $MN // BC$. Mà $BC \\subset (BCD)$ và $MN \\not\\subset (BCD)$ nên $MN // (BCD)$.'
+      }
+    ]
+  },
+  {
+    id: 'math-11-8',
+    title: 'Lũy thừa, Logarit & Quy tắc Cộng - Nhân Xác suất (CT Mới Lớp 11)',
+    grade: 'Lớp 11 - Lượng giác & Xác suất',
+    category: 'Lượng giác & Mũ',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 10,
+    description: 'Chuyên đề mới chương trình GDPT 2018 Lớp 11: Lũy thừa số mũ thực, các phép biến đổi Logarit, phương trình mũ/log cơ bản và Quy tắc cộng - Quy tắc nhân xác suất biến cố độc lập.',
+    mnemonics: [
+      'Đổi cơ số logarit: $\\log_a b = \\frac{\\log_c b}{\\log_c a}$, suy ra quy tắc nối đuôi: $\\log_a b \\cdot \\log_b c = \\log_a c$.',
+      'Nhảy mũ ra ngoài: $\\log_{a^\\alpha} b^\\beta = \\frac{\\beta}{\\alpha} \\log_a b$ (tử giữ nguyên, mẫu lộn xuống).',
+      'Biến cố xung khắc ($A \\cap B = \\emptyset$): $P(A \\cup B) = P(A) + P(B)$. Độc lập: $P(AB) = P(A)\\cdot P(B)$.'
+    ],
+    commonTraps: [
+      'Quên điều kiện xác định của logarit $\\log_a B$: $0 < a \\neq 1$ và $B > 0$.',
+      'Rút gọn $\\log_a(x^2) = 2\\log_a x$ khi chưa biết $x > 0$ (ĐÚNG phải là $2\\log_a |x|$).'
+    ],
+    theory: [
+      '1. Lũy thừa với số mũ hữu tỉ & thực: Với $a > 0$, $a^{\\frac{m}{n}} = \\sqrt[n]{a^m}$ ($n \\ge 2$); $a^m \\cdot a^n = a^{m+n}$; $(a^m)^n = a^{mn}$.',
+      '2. Định nghĩa & Tính chất Logarit: Với $0 < a \\neq 1, b > 0$: $\\alpha = \\log_a b \\iff a^\\alpha = b$. Các tính chất: $\\log_a(xy) = \\log_a x + \\log_a y$; $\\log_a\\frac{x}{y} = \\log_a x - \\log_a y$.',
+      '3. Công thức cộng xác suất tổng quát (CT mới 11): Cho hai biến cố bất kỳ $A, B$, ta luôn có $P(A \\cup B) = P(A) + P(B) - P(A \\cap B)$.',
+      '4. Hai biến cố độc lập: Việc xảy ra của $A$ không ảnh hưởng tới xác suất xảy ra của $B$. Khi đó $P(A \\cap B) = P(A) \\cdot P(B)$.'
+    ],
+    keyFormulas: [
+      '\\log_a(xy) = \\log_a x + \\log_a y, \\quad \\log_{a^\\alpha} b^\\beta = \\frac{\\beta}{\\alpha}\\log_a b',
+      'a^{\\log_a b} = b',
+      'P(A \\cup B) = P(A) + P(B) - P(A \\cap B)',
+      'A, B \\text{ độc lập} \\iff P(AB) = P(A) \\cdot P(B)'
+    ],
+    flashcards: [
+      {
+        front: 'Cho hai biến cố độc lập $A$ và $B$ với $P(A) = 0{,}4$ và $P(B) = 0{,}5$. Tính $P(A \\cup B)$?',
+        back: '$P(A \\cap B) = 0{,}4 \\cdot 0{,}5 = 0{,}2$. Vậy $P(A \\cup B) = 0{,}4 + 0{,}5 - 0{,}2 = 0{,}7$.',
+        tip: 'Không được cộng trực tiếp $0{,}4 + 0{,}5 = 0{,}9$ vì $A, B$ độc lập chứ không xung khắc!'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Với $a > 0, a \\neq 1$, giá trị của biểu thức $T = \\log_{a^2}(a^5)$ bằng:',
+        options: ['A. $\\frac{5}{2}$', 'B. $\\frac{2}{5}$', 'C. $3$', 'D. $10$'],
+        correctIndex: 0,
+        explanation: 'Áp dụng công thức $\\log_{a^\\alpha}(a^\\beta) = \\frac{\\beta}{\\alpha}$: $T = \\frac{5}{2}\\log_a a = \\frac{5}{2}$.'
+      },
+      {
+        question: 'Hai xạ thủ cùng bắn độc lập vào bia. Xác suất bắn trúng của người thứ nhất là $0{,}7$, người thứ hai là $0{,}8$. Xác suất để có ít nhất một người bắn trúng bia là:',
+        options: ['A. $0{,}94$', 'B. $0{,}56$', 'C. $0{,}85$', 'D. $0{,}38$'],
+        correctIndex: 0,
+        explanation: 'Xác suất cả hai người cùng bắn trượt là $(1 - 0{,}7)(1 - 0{,}8) = 0{,}3 \\cdot 0{,}2 = 0{,}06$. Vậy xác suất có ít nhất 1 người trúng là $1 - 0{,}06 = 0{,}94$.'
+      }
+    ],
+    defaultGraphConfig: {
+      type: 'exponential',
+      params: { a: 1, b: 0.7, c: 0, d: 0 },
+      color: '#ec4899',
+      name: 'y = e^(0.7x)'
+    }
   }
 ];
 

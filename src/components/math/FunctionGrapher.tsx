@@ -15,8 +15,10 @@ import {
   Maximize2,
   Minimize2,
   Sliders,
-  Table as TableIcon
+  Table as TableIcon,
+  ArrowLeft
 } from 'lucide-react';
+import { ViewportPortal } from '../common/ViewportPortal';
 
 const PRESET_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#0891b2'];
 
@@ -512,82 +514,87 @@ export const FunctionGrapher: React.FC = () => {
   }
 
   return (
-    <div
-      className={
-        isFullScreen
-          ? 'fixed inset-0 z-50 p-4 sm:p-6 bg-slate-100/95 dark:bg-slate-950/95 backdrop-blur-xl flex flex-col lg:flex-row gap-4 overflow-hidden'
-          : 'flex flex-col lg:flex-row gap-6 h-full'
-      }
-    >
-      {/* LEFT / MAIN: Graphing Stage */}
-      <div className="flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-xs">
-        {/* Stage Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tọa độ Oxy</span>
-            <span className="text-slate-400" aria-hidden="true">·</span>
-            <span className="text-xs font-mono text-slate-500 tabular-nums">
-              {hoverCoord ? `x: ${hoverCoord.x.toFixed(2)} / y: ${hoverCoord.y.toFixed(2)}` : 'Di chuột để xem tọa độ'}
-            </span>
-            {isFullScreen && (
-              <span className="ml-2 hidden sm:inline-flex text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-800/60">
-                Toàn màn hình (Esc)
+    <ViewportPortal active={isFullScreen}>
+      <div
+        className={
+          isFullScreen
+            ? 'fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col lg:flex-row gap-4 overflow-y-auto lg:overflow-hidden'
+            : 'flex flex-col lg:flex-row gap-6 h-full'
+        }
+      >
+        {/* LEFT / MAIN: Graphing Stage */}
+        <div className={`flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-xs ${isFullScreen ? 'min-h-[380px] lg:min-h-0' : ''}`}>
+          {/* Stage Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 shrink-0">
+            <div className="flex flex-wrap items-center gap-2">
+              {isFullScreen && (
+                <button
+                  onClick={() => setIsFullScreen(false)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Quay lại (Esc)</span>
+                </button>
+              )}
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tọa độ Oxy</span>
+              <span className="text-slate-400" aria-hidden="true">·</span>
+              <span className="text-xs font-mono text-slate-500 tabular-nums">
+                {hoverCoord ? `x: ${hoverCoord.x.toFixed(2)} / y: ${hoverCoord.y.toFixed(2)}` : 'Di chuột để xem tọa độ'}
               </span>
-            )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={zoomIn}
+                title="Phóng to (Zoom In)"
+                className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                onClick={zoomOut}
+                title="Thu nhỏ (Zoom Out)"
+                className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <button
+                onClick={resetView}
+                title="Khôi phục vị trí ban đầu"
+                className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowTable(!showTable)}
+                title="Bảng giá trị biến thiên"
+                className={`p-1.5 rounded-md transition-colors ${showTable ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+              >
+                <TableIcon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleExportPNG}
+                title="Xuất ảnh đồ thị PNG"
+                className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                title={isFullScreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình (Full Screen)'}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                  isFullScreen
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                }`}
+              >
+                {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={zoomIn}
-              title="Phóng to (Zoom In)"
-              className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button
-              onClick={zoomOut}
-              title="Thu nhỏ (Zoom Out)"
-              className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button
-              onClick={resetView}
-              title="Khôi phục vị trí ban đầu"
-              className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowTable(!showTable)}
-              title="Bảng giá trị biến thiên"
-              className={`p-1.5 rounded-md transition-colors ${showTable ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-            >
-              <TableIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleExportPNG}
-              title="Xuất ảnh đồ thị PNG"
-              className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
-            >
-              <Camera className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setIsFullScreen(!isFullScreen)}
-              title={isFullScreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình (Full Screen)'}
-              className={`p-1.5 rounded-md transition-colors ${
-                isFullScreen
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
-              }`}
-            >
-              {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Canvas Area */}
-        <div className="relative flex-1 min-h-[340px] sm:min-h-[460px] bg-slate-900/5 dark:bg-black/20">
+          {/* Canvas Area */}
+          <div className="relative flex-1 min-h-[340px] sm:min-h-[460px] bg-slate-900/5 dark:bg-black/20">
           <canvas
             ref={canvasRef}
             onPointerDown={handleMouseDown}
@@ -633,7 +640,7 @@ export const FunctionGrapher: React.FC = () => {
       </div>
 
       {/* RIGHT: Parameter & Function Controls */}
-      <div className="w-full lg:w-96 flex flex-col gap-4">
+      <div className={`w-full lg:w-96 flex flex-col gap-4 ${isFullScreen ? 'lg:overflow-y-auto lg:pr-1 shrink-0 pb-4 lg:pb-0' : ''}`}>
         {/* Function Tabs */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
           <div className="flex items-center justify-between mb-3">
@@ -868,5 +875,6 @@ export const FunctionGrapher: React.FC = () => {
         )}
       </div>
     </div>
+    </ViewportPortal>
   );
 };

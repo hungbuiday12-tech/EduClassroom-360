@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { EXAM_PAPERS } from '../../data/examData';
 import { ExamPaper, ExamSubject, ExamTrack, SubjectType } from '../../types';
+import { FormattedText, MathFormula } from '../common/MathRenderer';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   FileText,
   Search,
@@ -36,6 +38,7 @@ interface ExamHubProps {
 }
 
 export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP }) => {
+  const { t, language } = useLanguage();
   // Main Track Filter: 'all' | 'chuyen' | 'khong_chuyen'
   const [selectedTrack, setSelectedTrack] = useState<'all' | ExamTrack>('all');
 
@@ -165,15 +168,15 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
       {/* ============================================================ */}
       {activeExam ? (
         <div className="space-y-6">
-          {/* Top Sticky Timer & Control Bar */}
-          <div className="sticky top-20 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Top Sticky Timer & Control Bar (sticky on iPad/Desktop md+, static on small phones) */}
+          <div className="md:sticky md:top-20 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={handleCloseExam}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Quay lại danh sách đề</span>
+                <span>{language === 'en' ? 'Back to exams' : 'Quay lại danh sách đề'}</span>
               </button>
 
               <div className="hidden sm:block h-5 w-px bg-slate-200 dark:bg-slate-700" />
@@ -189,10 +192,10 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
             </div>
 
             {/* Interactive Timer Controls */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Timer Badge */}
               <div
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-mono text-sm font-bold border transition-all ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-mono text-sm font-bold border transition-all ${
                   timerSeconds < 300 && timerSeconds > 0
                     ? 'bg-red-500/10 border-red-500/30 text-red-600 animate-pulse'
                     : isTimerRunning
@@ -214,14 +217,14 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
                 }`}
               >
                 {isTimerRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                <span>{isTimerRunning ? 'Tạm dừng' : 'Bắt đầu tính giờ'}</span>
+                <span>{isTimerRunning ? t('exam.pause', 'Tạm dừng', 'Pause') : t('exam.start', 'Bắt đầu tính giờ', 'Start Timer')}</span>
               </button>
 
               {/* Reset Timer Button */}
               <button
                 onClick={handleResetTimer}
                 className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                title="Đặt lại thời gian làm bài"
+                title={t('exam.reset', 'Đặt lại thời gian làm bài', 'Reset Timer')}
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -233,11 +236,11 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Nộp bài & Chấm điểm (+50 XP)</span>
+                  <span>{t('exam.finish', 'Nộp bài & Xem giải (+50 XP)', 'Finish & Solutions (+50 XP)')}</span>
                 </button>
               ) : (
                 <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                  Đã hoàn thành!
+                  {language === 'en' ? 'Completed!' : 'Đã hoàn thành!'}
                 </span>
               )}
             </div>
@@ -316,20 +319,22 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
                     </div>
 
                     {/* Question Content */}
-                    <div className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-sans whitespace-pre-line pl-1">
-                      {q.content}
+                    <div className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-sans pl-1">
+                      <FormattedText text={q.content} />
                     </div>
 
                     {/* Key formulas or hints */}
                     {q.keyFormulasOrHints && q.keyFormulasOrHints.length > 0 && (
                       <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <span className="text-[11px] font-semibold text-slate-400">Gợi ý then chốt:</span>
+                        <span className="text-[11px] font-semibold text-slate-400">
+                          {language === 'en' ? 'Key hints:' : 'Gợi ý then chốt:'}
+                        </span>
                         {q.keyFormulasOrHints.map((hint, hIdx) => (
                           <span
                             key={hIdx}
-                            className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                            className="px-2 py-0.5 rounded text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                           >
-                            {hint}
+                            <FormattedText text={hint} />
                           </span>
                         ))}
                       </div>
@@ -367,8 +372,8 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
                             <span>Sao chép</span>
                           </button>
                         </div>
-                        <div className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed font-sans">
-                          {q.solution}
+                        <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                          <FormattedText text={q.solution} />
                         </div>
                       </div>
                     )}
@@ -447,16 +452,22 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
                           </button>
                         </div>
 
-                        <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans whitespace-pre-line">
-                          {q.solution}
+                        <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                          <FormattedText text={q.solution} />
                         </div>
 
                         {q.keyFormulasOrHints && (
-                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center gap-2">
-                            <span className="text-[11px] font-bold text-slate-400">Công thức chốt:</span>
-                            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
-                              {q.keyFormulasOrHints.join(' • ')}
+                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex flex-wrap items-center gap-2">
+                            <span className="text-[11px] font-bold text-slate-400">
+                              {language === 'en' ? 'Key formulas:' : 'Công thức chốt:'}
                             </span>
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400">
+                              {q.keyFormulasOrHints.map((hint, idx) => (
+                                <span key={idx} className="px-1.5 py-0.5 rounded bg-emerald-500/10">
+                                  <MathFormula formula={hint} />
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -623,9 +634,9 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP 
                   </div>
 
                   {/* Snippet */}
-                  <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                    {exam.featuredSnippet}
-                  </p>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                    <FormattedText text={exam.featuredSnippet} />
+                  </div>
 
                   {/* Question count & Topics */}
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">

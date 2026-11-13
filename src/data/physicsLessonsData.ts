@@ -504,7 +504,7 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
     ]
   },
   {
-    id: 'phys-9-2',
+    id: 'phys-9-3',
     grade: 'Lớp 9',
     lessonNumber: 3,
     title: 'Công suất Điện & Định luật Jun - Len-xơ',
@@ -675,6 +675,178 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
         options: ['A. 50 Ω', 'B. 70 Ω', 'C. 40 Ω', 'D. 90 Ω'],
         correctIndex: 0,
         explanation: 'Z = √[R² + (Z_L - Z_C)²] = √[40² + (80 - 50)²] = √[1600 + 900] = √2500 = 50 Ω.'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-4',
+    grade: 'Lớp 9',
+    lessonNumber: 4,
+    title: 'Hiện tượng Cảm ứng Điện từ & Máy phát điện Xoay chiều',
+    subtitle: 'Điều kiện xuất hiện dòng điện cảm ứng, định luật Lenz và truyền tải điện năng đi xa',
+    description: 'Khảo sát sự biến thiên từ thông qua cuộn dây khi nam châm quay hoặc tịnh tiến, nguyên lý hoạt động của máy biến áp và giảm hao phí trên đường dây.',
+    theorySections: [
+      {
+        heading: '1. Điều kiện xuất hiện dòng điện cảm ứng',
+        content: 'Dòng điện cảm ứng xuất hiện trong cuộn dây dẫn kín khi số đường sức từ (từ thông $\\Phi = B \\cdot S \\cdot \\cos\\alpha$) xuyên qua tiết diện $S$ của cuộn dây biến thiên theo thời gian.'
+      },
+      {
+        heading: '2. Dòng điện xoay chiều & Máy biến áp',
+        content: 'Khi khung dây quay đều trong từ trường, trong khung xuất hiện suất điện động xoay chiều đổi chiều liên tục. Máy biến áp thay đổi điện áp theo tỉ số vòng dây: $\\frac{U_1}{U_2} = \\frac{N_1}{N_2}$. Công suất hao phí khi truyền tải: $\\Delta P = \\frac{P^2 R}{U^2}$ (tăng điện áp lên $k$ lần giúp giảm hao phí $k^2$ lần).'
+      }
+    ],
+    keyFormulas: [
+      '\\Phi = N B S \\cos \\alpha',
+      'e_c = -\\frac{\\Delta \\Phi}{\\Delta t}',
+      '\\frac{U_1}{U_2} = \\frac{N_1}{N_2}',
+      '\\Delta P = \\frac{P^2 R}{U^2}'
+    ],
+    simulationType: 'magnetic_induction',
+    defaultParams: {
+      turns: 250,
+      magnetSpeed: 2.0,
+      area: 30
+    },
+    paramBounds: {
+      turns: { min: 50, max: 500, step: 25, unit: 'vòng', label: 'Số vòng dây (N)' },
+      magnetSpeed: { min: 0.5, max: 4.0, step: 0.2, unit: 'm/s', label: 'Tốc độ biến thiên từ thông' },
+      area: { min: 10, max: 50, step: 5, unit: 'cm²', label: 'Tiết diện vòng dây (S)' }
+    },
+    practiceExercises: [
+      {
+        question: 'Một máy biến áp lí tưởng có cuộn sơ cấp $N_1 = 500$ vòng đặt vào hiệu điện thế $U_1 = 220\\text{ V}$. Muốn điện áp thứ cấp bằng $110\\text{ V}$ thì số vòng dây cuộn thứ cấp $N_2$ là:',
+        options: ['A. 250 vòng', 'B. 1000 vòng', 'C. 500 vòng', 'D. 125 vòng'],
+        correctIndex: 0,
+        explanation: 'Áp dụng công thức máy biến áp: $\\frac{U_1}{U_2} = \\frac{N_1}{N_2} \\implies N_2 = N_1 \\cdot \\frac{U_2}{U_1} = 500 \\cdot \\frac{110}{220} = 250$ vòng.'
+      }
+    ]
+  },
+  {
+    id: 'phys-11-4',
+    grade: 'Lớp 11',
+    lessonNumber: 8,
+    title: 'Định luật Cu-lông, Điện trường & Tụ điện',
+    subtitle: 'Tương tác tĩnh điện trong điện môi, cường độ điện trường E và năng lượng điện trường tụ điện',
+    description: 'Hệ thống hóa các đại lượng đặc trưng của điện trường tĩnh: lực Cu-lông, vectơ cường độ điện trường, hiệu điện thế và ghép tụ điện.',
+    theorySections: [
+      {
+        heading: '1. Định luật Cu-lông & Cường độ điện trường',
+        content: 'Lực tương tác giữa hai điện tích điểm trong môi trường hằng số điện môi $\\varepsilon$: $F = k \\frac{|q_1 q_2|}{\\varepsilon r^2}$ với $k = 9 \\cdot 10^9 \\text{ N}\\cdot\\text{m}^2/\\text{C}^2$. Cường độ điện trường tại điểm cách $Q$ khoảng $r$: $E = k \\frac{|Q|}{\\varepsilon r^2}$.'
+      },
+      {
+        heading: '2. Công lực điện, Hiệu điện thế & Tụ điện',
+        content: 'Công của lực điện trường đều không phụ thuộc hình dạng đường đi: $A_{MN} = q E d$. Hiệu điện thế $U = E \\cdot d$. Điện dung tụ điện: $C = \\frac{Q}{U}$, năng lượng tụ điện: $W = \\frac{1}{2} C U^2 = \\frac{Q^2}{2C}$.'
+      }
+    ],
+    keyFormulas: [
+      'F = k \\frac{|q_1 q_2|}{\\varepsilon r^2}',
+      'E = \\frac{F}{|q|} = k \\frac{|Q|}{\\varepsilon r^2}',
+      'A_{MN} = q E d = q U_{MN}',
+      'W = \\frac{1}{2} C U^2 = \\frac{1}{2} Q U'
+    ],
+    simulationType: 'ohm_circuit',
+    defaultParams: {
+      voltage: 18,
+      resistor1: 8,
+      resistor2: 12,
+      circuitMode: 0
+    },
+    paramBounds: {
+      voltage: { min: 2, max: 30, step: 1, unit: 'V', label: 'Hiệu điện thế (U)' },
+      resistor1: { min: 1, max: 20, step: 1, unit: 'Ω', label: 'Thông số nhánh 1' },
+      resistor2: { min: 1, max: 20, step: 1, unit: 'Ω', label: 'Thông số nhánh 2' },
+      circuitMode: { min: 0, max: 1, step: 1, unit: '', label: 'Kiểu mạch (0: Nối tiếp, 1: Song song)' }
+    },
+    practiceExercises: [
+      {
+        question: 'Một tụ điện có điện dung $C = 20\\,\\mu\\text{F}$ được tích điện ở hiệu điện thế $U = 100\\text{ V}$. Năng lượng điện trường dự trữ trong tụ là:',
+        options: ['A. 0.1 J', 'B. 0.2 J', 'C. 1.0 J', 'D. 0.05 J'],
+        correctIndex: 0,
+        explanation: 'Đổi $C = 20 \\cdot 10^{-6}\\text{ F}$. Năng lượng tụ điện: $W = \\frac{1}{2} C U^2 = 0.5 \\cdot 20 \\cdot 10^{-6} \\cdot 100^2 = 0.1\\text{ J}$.'
+      }
+    ]
+  },
+  {
+    id: 'phys-12-5',
+    grade: 'Lớp 12',
+    lessonNumber: 11,
+    title: 'Lượng tử Ánh sáng, Hiện tượng Quang điện & Mẫu Bohr',
+    subtitle: 'Thuyết lượng tử Planck, công thức Anh-xtanh và bức xạ vạch quang phổ của nguyên tử Hiđrô',
+    description: 'Khám phá bản chất hạt của ánh sáng thông qua photon năng lượng ε = hf, điều kiện xảy ra quang điện ngoài và sự chuyển mức năng lượng lượng tử trong nguyên tử Hiđrô (kết hợp tab Mô phỏng 3D Bohr).',
+    theorySections: [
+      {
+        heading: '1. Thuyết lượng tử ánh sáng & Hiện tượng quang điện',
+        content: 'Mỗi photon mang năng lượng $\\varepsilon = h f = \\frac{h c}{\\lambda}$ ($h = 6.625 \\cdot 10^{-34}\\text{ J}\\cdot\\text{s}$). Để xảy ra hiện tượng quang điện ngoài thì bước sóng ánh sáng kích thích phải thỏa điều kiện $\\lambda \\le \\lambda_0 = \\frac{hc}{A}$ (với $A$ là công thoát electron).'
+      },
+      {
+        heading: '2. Tiên đề Bohr & Quang phổ nguyên tử Hiđrô',
+        content: 'Bán kính quỹ đạo dừng thứ $n$: $r_n = n^2 r_0$ ($r_0 = 5.3 \\cdot 10^{-11}\\text{ m}$). Mức năng lượng dừng của electron trong nguyên tử Hiđrô: $E_n = -\\frac{13.6}{n^2}\\text{ (eV)}$. Khi chuyển từ mức cao $E_m$ về mức thấp $E_n$, nguyên tử phát ra photon có năng lượng $\\varepsilon = E_m - E_n$.'
+      }
+    ],
+    keyFormulas: [
+      '\\varepsilon = h f = \\frac{h c}{\\lambda}',
+      '\\lambda_0 = \\frac{h c}{A}',
+      'E_n = -\\frac{13.6}{n^2} \\text{ eV}',
+      'h f = E_{cao} - E_{thap}'
+    ],
+    simulationType: 'wave_interference',
+    defaultParams: {
+      wavelength: 35,
+      separation: 120
+    },
+    paramBounds: {
+      wavelength: { min: 15, max: 60, step: 1, unit: 'px', label: 'Bước sóng ánh sáng (λ)' },
+      separation: { min: 60, max: 200, step: 10, unit: 'px', label: 'Khoảng cách nguồn sáng' }
+    },
+    practiceExercises: [
+      {
+        question: 'Công thoát của electron khỏi kim loại kẽm là $A = 3.55\\text{ eV}$. Lấy $hc = 1.9875 \\cdot 10^{-25}\\text{ J}\\cdot\\text{m}$, $1\\text{ eV} = 1.6 \\cdot 10^{-19}\\text{ J}$. Giới hạn quang điện $\\lambda_0$ của kẽm xấp xỉ:',
+        options: ['A. 0.35 µm', 'B. 0.55 µm', 'C. 0.25 µm', 'D. 0.42 µm'],
+        correctIndex: 0,
+        explanation: 'Đổi $A = 3.55 \\cdot 1.6 \\cdot 10^{-19} = 5.68 \\cdot 10^{-19}\\text{ J}$. Giới hạn quang điện $\\lambda_0 = \\frac{hc}{A} = \\frac{1.9875 \\cdot 10^{-25}}{5.68 \\cdot 10^{-19}} \\approx 0.35 \\cdot 10^{-6}\\text{ m} = 0.35\\,\\mu\\text{m}$.'
+      }
+    ]
+  },
+  {
+    id: 'phys-12-6',
+    grade: 'Lớp 12',
+    lessonNumber: 12,
+    title: 'Vật lý Hạt nhân, Độ hụt khối & Phản ứng Hạt nhân',
+    subtitle: 'Hệ thức Einstein E = mc², năng lượng liên kết riêng và định luật phóng xạ',
+    description: 'Tính độ hụt khối Δm, năng lượng liên kết riêng xác định độ bền vững hạt nhân, phương trình phóng xạ và bài toán năng lượng tỏa/thu trong phản ứng hạt nhân.',
+    theorySections: [
+      {
+        heading: '1. Độ hụt khối & Năng lượng liên kết',
+        content: 'Độ hụt khối của hạt nhân $^A_Z X$: $\\Delta m = Z m_p + (A - Z) m_n - m_X$. Năng lượng liên kết: $W_{lk} = \\Delta m \\cdot c^2$. Năng lượng liên kết riêng $\\frac{W_{lk}}{A}$ càng lớn thì hạt nhân càng bền vững.'
+      },
+      {
+        heading: '2. Định luật Phóng xạ & Phản ứng hạt nhân',
+        content: 'Số hạt nhân còn lại sau thời gian $t$: $N(t) = N_0 \\cdot 2^{-t/T} = N_0 e^{-\\lambda t}$, với $T = \\frac{\\ln 2}{\\lambda}$ là chu kỳ bán rã. Năng lượng phản ứng hạt nhân: $\\Delta E = (m_{truoc} - m_{sau}) c^2 = (\\Delta m_{sau} - \\Delta m_{truoc}) c^2$.'
+      }
+    ],
+    keyFormulas: [
+      '\\Delta m = Z m_p + (A - Z) m_n - m_X',
+      'W_{lk} = \\Delta m \\cdot c^2',
+      'N(t) = N_0 \\cdot 2^{-\\frac{t}{T}}',
+      '\\Delta E = (m_{truoc} - m_{sau}) c^2'
+    ],
+    simulationType: 'free_fall_energy',
+    defaultParams: {
+      height: 50,
+      gravity: 9.8,
+      mass: 2.0
+    },
+    paramBounds: {
+      height: { min: 10, max: 100, step: 5, unit: 'm', label: 'Mức thế năng quy chiếu' },
+      gravity: { min: 5, max: 15, step: 0.2, unit: 'm/s²', label: 'Cường độ trường (g)' },
+      mass: { min: 0.5, max: 5.0, step: 0.5, unit: 'kg', label: 'Khối lượng tương đương (m)' }
+    },
+    practiceExercises: [
+      {
+        question: 'Một chất phóng xạ ban đầu có $N_0$ hạt nhân. Sau thời gian bằng 3 lần chu kỳ bán rã ($t = 3T$), tỉ lệ phần trăm số hạt nhân đã bị phân rã là:',
+        options: ['A. 87.5%', 'B. 12.5%', 'C. 75%', 'D. 25%'],
+        correctIndex: 0,
+        explanation: 'Số hạt nhân còn lại sau $t = 3T$ là $N = N_0 \\cdot 2^{-3} = \\frac{1}{8} N_0 = 12.5\\% N_0$. Vậy số hạt nhân đã bị phân rã là $100\\% - 12.5\\% = 87.5\\%$.'
       }
     ]
   }

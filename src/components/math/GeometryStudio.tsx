@@ -937,8 +937,8 @@ export const GeometryStudio: React.FC = () => {
     showMeasurements
   ]);
 
-  // Handle Canvas Mouse Actions
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Handle Canvas Pointer Actions (mouse + touch + stylus)
+  const handleCanvasMouseDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -1112,7 +1112,7 @@ export const GeometryStudio: React.FC = () => {
     }
   };
 
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasMouseMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -1478,14 +1478,15 @@ export const GeometryStudio: React.FC = () => {
         )}
 
         {/* Canvas Area */}
-        <div className="relative flex-1 min-h-[500px] bg-slate-900/5 dark:bg-black/25">
+        <div className="relative flex-1 min-h-[360px] sm:min-h-[500px] bg-slate-900/5 dark:bg-black/25">
           <canvas
             ref={canvasRef}
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseUp}
-            className="w-full h-full cursor-crosshair block"
+            onPointerDown={handleCanvasMouseDown}
+            onPointerMove={handleCanvasMouseMove}
+            onPointerUp={handleCanvasMouseUp}
+            onPointerCancel={handleCanvasMouseUp}
+            onPointerLeave={handleCanvasMouseUp}
+            className="w-full h-full cursor-crosshair block touch-none"
           />
 
           {/* Pending Point Floating Instruction */}

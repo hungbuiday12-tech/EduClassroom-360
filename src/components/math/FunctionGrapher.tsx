@@ -403,13 +403,13 @@ export const FunctionGrapher: React.FC = () => {
     }
   }, [viewport, functions, evaluateFunc, evaluateDerivative, hoverCoord]);
 
-  // Mouse pan handlers
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Pointer (mouse + touch + stylus) pan handlers
+  const handleMouseDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -522,7 +522,7 @@ export const FunctionGrapher: React.FC = () => {
       {/* LEFT / MAIN: Graphing Stage */}
       <div className="flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-xs">
         {/* Stage Toolbar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tọa độ Oxy</span>
             <span className="text-slate-400" aria-hidden="true">·</span>
@@ -587,18 +587,19 @@ export const FunctionGrapher: React.FC = () => {
         </div>
 
         {/* Canvas Area */}
-        <div className="relative flex-1 min-h-[460px] bg-slate-900/5 dark:bg-black/20">
+        <div className="relative flex-1 min-h-[340px] sm:min-h-[460px] bg-slate-900/5 dark:bg-black/20">
           <canvas
             ref={canvasRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={() => {
+            onPointerDown={handleMouseDown}
+            onPointerMove={handleMouseMove}
+            onPointerUp={handleMouseUp}
+            onPointerCancel={handleMouseUp}
+            onPointerLeave={() => {
               setIsDragging(false);
               setHoverCoord(null);
             }}
             onWheel={handleWheel}
-            className="w-full h-full cursor-grab active:cursor-grabbing block"
+            className="w-full h-full cursor-grab active:cursor-grabbing block touch-none"
           />
 
           {/* Table Slide-Over */}

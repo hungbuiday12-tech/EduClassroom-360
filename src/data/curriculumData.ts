@@ -962,6 +962,184 @@ export const MATH_LECTURES: MathLecture[] = [
       color: '#8b5cf6',
       name: 'y = x² - 3x + 1'
     }
+  },
+  {
+    id: 'math-9-3',
+    title: 'Hệ thức lượng trong Tam giác vuông & Góc với Đường tròn',
+    grade: 'Lớp 9 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 10,
+    description: 'Tổng hợp 5 hệ thức lượng trong tam giác vuông, tỉ số lượng giác sin-cos-tan, tính chất hai tiếp tuyến cắt nhau và các loại góc với đường tròn.',
+    mnemonics: [
+      'Cạnh góc vuông bình phương = Cạnh huyền × Hình chiếu.',
+      'Đường cao bình phương = Tích hai hình chiếu: $h^2 = b\' \\cdot c\'$.',
+      'Sin đi học (Đối/Huyền), Cos không hư (Kề/Huyền), Tan đoàn kết (Đối/Kề), Cot kết đoàn (Kề/Đối).',
+      'Góc nội tiếp chắn nửa đường tròn luôn bằng $90^\\circ$.'
+    ],
+    commonTraps: [
+      'Nhầm góc nội tiếp bằng số đo cung bị chắn (đúng phải bằng NỬA số đo cung bị chắn).',
+      'Quên chứng minh góc vuông tại tiếp điểm $OT \\perp d$ trước khi áp dụng định lý Pytago.'
+    ],
+    theory: [
+      '1. Trong $\\triangle ABC$ vuông tại $A$, đường cao $AH = h$, cạnh huyền $BC = a$, hình chiếu $BH = c\', CH = b\'$: $b^2 = a \\cdot b\'$, $c^2 = a \\cdot c\'$, $h^2 = b\' \\cdot c\'$, $a \\cdot h = b \\cdot c$, $\\frac{1}{h^2} = \\frac{1}{b^2} + \\frac{1}{c^2}$.',
+      '2. Tỉ số lượng giác góc nhọn $\\alpha$: $\\sin^2 \\alpha + \\cos^2 \\alpha = 1$, $\\tan \\alpha \\cdot \\cot \\alpha = 1$.',
+      '3. Góc ở tâm có số đo bằng số đo cung bị chắn; góc nội tiếp và góc tạo bởi tia tiếp tuyến và dây cung cùng chắn một cung thì bằng nhau và bằng nửa số đo cung đó.',
+      '4. Tứ giác nội tiếp đường tròn khi và chỉ khi tổng hai góc đối bằng $180^\\circ$ hoặc hai đỉnh kề nhau cùng nhìn một cạnh dưới hai góc bằng nhau.'
+    ],
+    keyFormulas: [
+      'h^2 = b\' \\cdot c\', \\quad \\frac{1}{h^2} = \\frac{1}{b^2} + \\frac{1}{c^2}',
+      '\\sin^2 \\alpha + \\cos^2 \\alpha = 1',
+      '\\widehat{ACB} = \\frac{1}{2} \\text{sđ}\\wideparen{AB} \\quad (\\text{Góc nội tiếp})'
+    ],
+    flashcards: [
+      {
+        front: 'Tính chất hai tiếp tuyến cắt nhau PA và PB của đường tròn (O)?',
+        back: 'PA = PB; PO là phân giác góc APB; OP là phân giác góc AOB.',
+        tip: 'Bốn điểm P, A, O, B luôn cùng nằm trên một đường tròn đường kính OP.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho tam giác $ABC$ vuông tại $A$, đường cao $AH$. Biết $BH = 4\\text{ cm}$, $CH = 9\\text{ cm}$. Độ dài đường cao $AH$ bằng:',
+        options: ['A. 6 cm', 'B. 6.5 cm', 'C. 5 cm', 'D. 36 cm'],
+        correctIndex: 0,
+        explanation: 'Áp dụng hệ thức lượng: $AH^2 = BH \\cdot CH = 4 \\cdot 9 = 36 \\implies AH = 6\\text{ cm}$.'
+      }
+    ]
+  },
+  {
+    id: 'math-11-3',
+    title: 'Cấp số cộng (CSC) & Cấp số nhân (CSN)',
+    grade: 'Lớp 11 - Đại số & Xác suất',
+    category: 'Đại số & Xác suất',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 8,
+    description: 'Công thức số hạng tổng quát $u_n$, tính chất ba số hạng liên tiếp và tổng $n$ số hạng đầu $S_n$ của cấp số cộng và cấp số nhân.',
+    mnemonics: [
+      'Cấp số cộng: Cộng thêm công sai $d \\implies u_n = u_1 + (n-1)d$.',
+      'Cấp số nhân: Nhân thêm công bội $q \\implies u_n = u_1 \\cdot q^{n-1}$.',
+      'Tổng cấp số cộng giống tính diện tích hình thang: $S_n = \\frac{(u_1 + u_n)n}{2}$.'
+    ],
+    commonTraps: [
+      'Nhầm số mũ trong cấp số nhân là $q^n$ thay vì $q^{n-1}$.',
+      'Áp dụng công thức $S_n = u_1 \\frac{1 - q^n}{1 - q}$ khi $q = 1$ (khi $q=1$ thì $S_n = n \\cdot u_1$).'
+    ],
+    theory: [
+      '1. Cấp số cộng $(u_n)$ công sai $d$: $u_{n+1} = u_n + d$. Số hạng tổng quát: $u_n = u_1 + (n - 1)d$. Tính chất: $u_k = \\frac{u_{k-1} + u_{k+1}}{2}$.',
+      '2. Tổng $n$ số hạng đầu CSC: $S_n = \\frac{n(u_1 + u_n)}{2} = \\frac{n[2u_1 + (n - 1)d]}{2}$.',
+      '3. Cấp số nhân $(u_n)$ công bội $q$: $u_{n+1} = u_n \\cdot q$. Số hạng tổng quát: $u_n = u_1 \\cdot q^{n-1}$. Tính chất: $u_k^2 = u_{k-1} \\cdot u_{k+1}$.',
+      '4. Tổng $n$ số hạng đầu CSN ($q \\neq 1$): $S_n = u_1 \\cdot \\frac{1 - q^n}{1 - q}$.'
+    ],
+    keyFormulas: [
+      'u_n = u_1 + (n-1)d, \\quad S_n = \\frac{n(u_1 + u_n)}{2}',
+      'u_n = u_1 \\cdot q^{n-1}, \\quad S_n = u_1 \\frac{1 - q^n}{1 - q} \\; (q \\neq 1)',
+      'S = \\frac{u_1}{1 - q} \\quad (\\text{CSN lùi vô hạn } |q| < 1)'
+    ],
+    flashcards: [
+      {
+        front: 'Ba số a, b, c lập thành cấp số nhân khi nào?',
+        back: 'b² = a · c.',
+        tip: 'Còn lập thành cấp số cộng khi 2b = a + c.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho cấp số cộng $(u_n)$ có $u_1 = 3$ và công sai $d = 4$. Số hạng $u_5$ và tổng 5 số hạng đầu $S_5$ lần lượt là:',
+        options: ['A. u₅ = 19, S₅ = 55', 'B. u₅ = 23, S₅ = 65', 'C. u₅ = 19, S₅ = 45', 'D. u₅ = 15, S₅ = 55'],
+        correctIndex: 0,
+        explanation: '$u_5 = u_1 + 4d = 3 + 4 \\cdot 4 = 19$. Tổng $S_5 = \\frac{5(u_1 + u_5)}{2} = \\frac{5(3 + 19)}{2} = 55$.'
+      }
+    ]
+  },
+  {
+    id: 'math-11-4',
+    title: 'Quan hệ Vuông góc, Góc & Khoảng cách trong Không gian',
+    grade: 'Lớp 11 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 12,
+    description: 'Phương pháp tìm góc giữa đường thẳng và mặt phẳng, góc giữa hai mặt phẳng (nhị diện) và 3 bước dựng khoảng cách từ điểm đến mặt phẳng.',
+    mnemonics: [
+      'Muốn chứng minh đường $d \\perp (P)$, hãy chỉ ra $d$ vuông góc với HAI đường thẳng cắt nhau nằm trong $(P)$.',
+      'Tìm góc $(SA, (ABC))$: Tìm chân đường vuông góc $H$ của $S$ xuống $(ABC)$, góc là $\\widehat{SAH}$.',
+      'Tính khoảng cách từ chân đường cao $H$ đến mặt bên $(SBC)$: Kẻ $HK \\perp BC$ (chân cạnh đáy), nối $SK$, kẻ $HI \\perp SK \\implies d(H, (SBC)) = HI$.'
+    ],
+    commonTraps: [
+      'Xác định sai giao tuyến hoặc kẻ không vuông góc giao tuyến khi tính góc giữa hai mặt phẳng.',
+      'Quên đổi điểm về chân đường vuông góc bằng tỉ lệ đồng dạng khi tính khoảng cách từ điểm bất kỳ.'
+    ],
+    theory: [
+      '1. Đường thẳng vuông góc mặt phẳng: $d \\perp a, d \\perp b$ ($a, b \\subset (P), a \\cap b = I$) $\\implies d \\perp (P)$.',
+      '2. Định lý ba đường vuông góc: Hình chiếu vuông góc $a\'$ của $a$ trên $(P)$ vuông góc với $b \\subset (P)$ khi và chỉ khi $a \\perp b$.',
+      '3. Khoảng cách từ chân đường cao $H$ đến mặt bên $(SAB)$: Kẻ $HK \\perp AB$, kẻ $HI \\perp SK \\implies HI \\perp (SAB) \\implies d(H, (SAB)) = HI$ với $\\frac{1}{HI^2} = \\frac{1}{SH^2} + \\frac{1}{HK^2}$.',
+      '4. Thể tích khối chóp & lăng trụ: $V_{chop} = \\frac{1}{3} S_{day} \\cdot h$; $V_{lang\\ tru} = S_{day} \\cdot h$.'
+    ],
+    keyFormulas: [
+      '\\frac{1}{d(H,(SBC))^2} = \\frac{1}{SH^2} + \\frac{1}{HK^2}',
+      'V_{chop} = \\frac{1}{3} S_{day} \\cdot h',
+      '\\frac{V_{S.A\'B\'C\'}}{V_{S.ABC}} = \\frac{SA\'}{SA} \\cdot \\frac{SB\'}{SB} \\cdot \\frac{SC\'}{SC}'
+    ],
+    flashcards: [
+      {
+        front: 'Công thức nhanh diện tích tam giác đều cạnh a và đường cao tam giác đều?',
+        back: 'Diện tích S = (a²√3)/4; đường cao h = (a√3)/2.',
+        tip: 'Bán kính ngoại tiếp R = (a√3)/3, bán kính nội tiếp r = (a√3)/6.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho hình chóp $S.ABC$ có $SA \\perp (ABC)$, $SA = a\\sqrt{3}$, đáy $ABC$ là tam giác đều cạnh $a$. Góc giữa $SB$ và mặt phẳng $(ABC)$ bằng:',
+        options: ['A. 60°', 'B. 30°', 'C. 45°', 'D. 90°'],
+        correctIndex: 0,
+        explanation: 'Vì $SA \\perp (ABC)$ nên $AB$ là hình chiếu của $SB$ lên $(ABC)$. Suy ra $\\widehat{(SB, (ABC))} = \\widehat{SBA}$. Trong $\\triangle SAB$ vuông tại $A$: $\\tan \\widehat{SBA} = \\frac{SA}{AB} = \\frac{a\\sqrt{3}}{a} = \\sqrt{3} \\implies \\widehat{SBA} = 60^\\circ$.'
+      }
+    ]
+  },
+  {
+    id: 'math-12-3',
+    title: 'Khối tròn xoay: Mặt Nón, Mặt Trụ & Mặt Cầu 3D',
+    grade: 'Lớp 12 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 10,
+    description: 'Hệ thống công thức diện tích xung quanh, diện tích toàn phần, thể tích mặt nón - mặt trụ - mặt cầu và bài toán thiết diện cắt qua trục hoặc song song trục.',
+    mnemonics: [
+      'Hình Nón: $l^2 = h^2 + r^2$; $S_{xq} = \\pi r l$; $V = \\frac{1}{3} \\pi r^2 h$ (có hệ số $1/3$ giống khối chóp).',
+      'Hình Trụ: $l = h$; $S_{xq} = 2 \\pi r h$; $V = \\pi r^2 h$ (giống khối lăng trụ).',
+      'Mặt Cầu: $S = 4 \\pi R^2$; $V = \\frac{4}{3} \\pi R^3$.'
+    ],
+    commonTraps: [
+      'Nhầm đường sinh $l$ với chiều cao $h$ trong hình nón.',
+      'Tính $S_{tp}$ hình trụ quên nhân 2 diện tích đáy: $S_{tp} = 2\\pi r h + 2\\pi r^2$.'
+    ],
+    theory: [
+      '1. Khối nón (bán kính $r$, chiều cao $h$, đường sinh $l = \\sqrt{r^2 + h^2}$): $S_{xq} = \\pi r l$, $S_{tp} = \\pi r l + \\pi r^2$, $V = \\frac{1}{3} \\pi r^2 h$.',
+      '2. Khối trụ (bán kính $r$, chiều cao $h = l$): $S_{xq} = 2\\pi r h$, $S_{tp} = 2\\pi r h + 2\\pi r^2$, $V = \\pi r^2 h$.',
+      '3. Khối cầu (bán kính $R$): $S_{cau} = 4\\pi R^2$, $V_{cau} = \\frac{4}{3} \\pi R^3$. Giao tuyến của mặt phẳng $(P)$ cách tâm $O$ khoảng $d < R$ với mặt cầu là đường tròn bán kính $r = \\sqrt{R^2 - d^2}$.',
+      '4. Công thức nhanh bán kính mặt cầu ngoại tiếp hình chóp có cạnh bên $SA \\perp$ đáy: $R_{mc} = \\sqrt{R_{day}^2 + \\left(\\frac{SA}{2}\\right)^2}$.'
+    ],
+    keyFormulas: [
+      'V_{non} = \\frac{1}{3} \\pi r^2 h, \\quad S_{xq\\,non} = \\pi r l',
+      'V_{tru} = \\pi r^2 h, \\quad S_{xq\\,tru} = 2\\pi r h',
+      'S_{cau} = 4\\pi R^2, \\quad V_{cau} = \\frac{4}{3} \\pi R^3',
+      'R_{mc} = \\sqrt{R_{day}^2 + \\left(\\frac{h}{2}\\right)^2}'
+    ],
+    flashcards: [
+      {
+        front: 'Bán kính đường tròn giao tuyến khi mặt phẳng (P) cắt mặt cầu S(O; R) với d(O, (P)) = d < R?',
+        back: 'r = √(R² - d²).',
+        tip: 'Thử tương tác trực tiếp bài toán Mặt Cầu & Thiết Diện tại tab Không gian Oxyz 3D!'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho hình nón có bán kính đáy $r = 3\\text{ cm}$ và chiều cao $h = 4\\text{ cm}$. Diện tích xung quanh của hình nón bằng:',
+        options: ['A. 15π cm²', 'B. 12π cm²', 'C. 24π cm²', 'D. 30π cm²'],
+        correctIndex: 0,
+        explanation: 'Đường sinh hình nón: $l = \\sqrt{r^2 + h^2} = \\sqrt{3^2 + 4^2} = 5\\text{ cm}$. Diện tích xung quanh: $S_{xq} = \\pi r l = \\pi \\cdot 3 \\cdot 5 = 15\\pi\\text{ cm}^2$.'
+      }
+    ]
   }
 ];
 
@@ -1403,14 +1581,14 @@ if __name__ == '__main__':
     outputFormat: 'In ra chỉ số của phần tử X đầu tiên tìm thấy (1-based index) hoặc -1.',
     constraints: ['1 <= N <= 10^5', '-10^9 <= X, A[i] <= 10^9'],
     sampleCases: [
-      { id: 1, input: '5 7\\n1 3 5 7 9', expectedOutput: '4', isSample: true, explanation: 'Số 7 nằm ở vị trí thứ 4' },
-      { id: 2, input: '4 4\\n1 2 3 5', expectedOutput: '-1', isSample: true, explanation: 'Không có số 4 trong mảng' }
+      { id: 1, input: '5 7\n1 3 5 7 9', expectedOutput: '4', isSample: true, explanation: 'Số 7 nằm ở vị trí thứ 4' },
+      { id: 2, input: '4 4\n1 2 3 5', expectedOutput: '-1', isSample: true, explanation: 'Không có số 4 trong mảng' }
     ],
     hiddenCases: [
-      { id: 3, input: '6 5\\n2 4 5 5 5 8', expectedOutput: '3' },
-      { id: 4, input: '1 10\\n10', expectedOutput: '1' },
-      { id: 5, input: '5 1\\n2 4 6 8 10', expectedOutput: '-1' },
-      { id: 6, input: '7 99\\n1 5 12 25 60 99 105', expectedOutput: '6' }
+      { id: 3, input: '6 5\n2 4 5 5 5 8', expectedOutput: '3' },
+      { id: 4, input: '1 10\n10', expectedOutput: '1' },
+      { id: 5, input: '5 1\n2 4 6 8 10', expectedOutput: '-1' },
+      { id: 6, input: '7 99\n1 5 12 25 60 99 105', expectedOutput: '6' }
     ],
     cppTemplate: `#include <iostream>
 #include <vector>
@@ -1539,16 +1717,16 @@ if __name__ == '__main__':
     timeLimit: '2.0s',
     memoryLimit: '256MB',
     description: 'Một tên trộm có một cái túi chịu được khối lượng tối đa W. Có N món đồ, món thứ i có khối lượng w_i và giá trị v_i. Hãy chọn các món đồ để tổng giá trị trong túi là lớn nhất mà không vượt quá tải trọng W.',
-    inputFormat: 'Dòng 1: Hai số nguyên N và W.\\nDòng 2..N+1: Mỗi dòng chứa 2 số nguyên w_i và v_i là khối lượng và giá trị món đồ i.',
+    inputFormat: 'Dòng 1: Hai số nguyên N và W.\nDòng 2..N+1: Mỗi dòng chứa 2 số nguyên w_i và v_i là khối lượng và giá trị món đồ i.',
     outputFormat: 'In ra một số nguyên là tổng giá trị lớn nhất đạt được.',
     constraints: ['1 <= N <= 100', '1 <= W <= 1000', '1 <= w_i, v_i <= 1000'],
     sampleCases: [
-      { id: 1, input: '3 50\\n10 60\\n20 100\\n30 120', expectedOutput: '220', isSample: true, explanation: 'Chọn món 2 (20kg, 100) và món 3 (30kg, 120): tổng khối lượng 50, giá trị 220.' }
+      { id: 1, input: '3 50\n10 60\n20 100\n30 120', expectedOutput: '220', isSample: true, explanation: 'Chọn món 2 (20kg, 100) và món 3 (30kg, 120): tổng khối lượng 50, giá trị 220.' }
     ],
     hiddenCases: [
-      { id: 2, input: '4 7\\n1 1\\n3 4\\n4 5\\n5 7', expectedOutput: '9' },
-      { id: 3, input: '2 3\\n4 10\\n5 20', expectedOutput: '0' },
-      { id: 4, input: '5 10\\n2 3\\n3 4\\n4 5\\n5 8\\n9 10', expectedOutput: '17' }
+      { id: 2, input: '4 7\n1 1\n3 4\n4 5\n5 7', expectedOutput: '9' },
+      { id: 3, input: '2 3\n4 10\n5 20', expectedOutput: '0' },
+      { id: 4, input: '5 10\n2 3\n3 4\n4 5\n5 8\n9 10', expectedOutput: '15' }
     ],
     cppTemplate: `#include <iostream>
 #include <vector>

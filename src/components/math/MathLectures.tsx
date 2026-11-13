@@ -29,7 +29,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { MathFormula, FormattedText } from '../common/MathRenderer';
 
 interface MathLecturesProps {
-  onNavigateTab?: (tab: 'grapher' | 'geometry' | 'lectures') => void;
+  onNavigateTab?: (tab: 'grapher' | 'geometry' | 'math3d' | 'lectures') => void;
 }
 
 export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => {
@@ -272,9 +272,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   {lec.title}
                 </h4>
 
-                <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                  {lec.description}
-                </p>
+                <div className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                  <FormattedText text={lec.description} />
+                </div>
               </div>
             );
           })}
@@ -326,9 +326,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                 {activeLecture.title}
               </h1>
 
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-                {activeLecture.description}
-              </p>
+              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                <FormattedText text={activeLecture.description} />
+              </div>
 
               {/* Direct Simulation Action Links */}
               <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
@@ -351,11 +351,24 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                     Mở phòng thực hành Vẽ Hình Học & Đo đạc
                   </button>
                 )}
+
+                {(activeLecture.category === 'Hình học' ||
+                  activeLecture.id.startsWith('math-11') ||
+                  activeLecture.id.startsWith('math-12')) &&
+                  onNavigateTab && (
+                    <button
+                      onClick={() => onNavigateTab('math3d')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800 rounded-lg transition-colors"
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      Mô phỏng Hình Học Không Gian 3D
+                    </button>
+                  )}
               </div>
             </div>
 
             {/* Sub-tabs Navigation */}
-            <div className="flex items-center gap-2 mb-6 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 mb-6 border-b border-slate-200 dark:border-slate-800 pb-3 overflow-x-auto scrollbar-none">
               <button
                 onClick={() => setActiveTab('theory')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
@@ -460,7 +473,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       {activeLecture.mnemonics.map((m, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <span className="text-amber-500 font-bold shrink-0">⚡</span>
-                          <span>{m}</span>
+                          <div className="flex-1"><FormattedText text={m} /></div>
                         </li>
                       ))}
                     </ul>
@@ -478,7 +491,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       {activeLecture.commonTraps.map((trap, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <span className="text-rose-500 font-bold shrink-0">⚠️</span>
-                          <span>{trap}</span>
+                          <div className="flex-1"><FormattedText text={trap} /></div>
                         </li>
                       ))}
                     </ul>
@@ -515,15 +528,19 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       </div>
 
                       <div className="my-auto py-4 text-center">
-                        <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 leading-relaxed">
-                          {isFlipped
-                            ? activeLecture.flashcards[currentCardIdx].back
-                            : activeLecture.flashcards[currentCardIdx].front}
-                        </p>
+                        <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 leading-relaxed">
+                          <FormattedText
+                            text={
+                              isFlipped
+                                ? activeLecture.flashcards[currentCardIdx].back
+                                : activeLecture.flashcards[currentCardIdx].front
+                            }
+                          />
+                        </div>
                         {isFlipped && activeLecture.flashcards[currentCardIdx].tip && (
-                          <p className="mt-3 text-xs text-amber-700 dark:text-amber-300 bg-amber-100/60 dark:bg-amber-950/40 py-1.5 px-3 rounded-lg inline-block">
-                            💡 Mẹo: {activeLecture.flashcards[currentCardIdx].tip}
-                          </p>
+                          <div className="mt-3 text-xs text-amber-700 dark:text-amber-300 bg-amber-100/60 dark:bg-amber-950/40 py-1.5 px-3 rounded-lg inline-block">
+                            💡 Mẹo: <FormattedText text={activeLecture.flashcards[currentCardIdx].tip!} />
+                          </div>
                         )}
                       </div>
 

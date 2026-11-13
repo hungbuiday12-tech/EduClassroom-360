@@ -12,6 +12,8 @@ import {
 } from '../../types';
 import { executeCode, judgeProblem } from './codeRunner';
 import { SublimeStudio } from './SublimeStudio';
+import { SublimeEditor, MonokaiCodeBlock } from './SublimeEditor';
+import { FormattedText } from '../common/MathRenderer';
 import { useLanguage } from '../../context/LanguageContext';
 import {
   Play,
@@ -31,7 +33,9 @@ import {
   Copy,
   Check,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 interface CodeJudgeLabProps {
@@ -108,6 +112,9 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
   const [judgeLang, setJudgeLang] = useState<CodeLanguage>('cpp');
   const [code, setCode] = useState<string>(currentProblem.cppTemplate);
   const [fontSize, setFontSize] = useState<number>(14);
+  const [isJudgeFullscreen, setIsJudgeFullscreen] = useState<boolean>(false);
+  const [isJudgeSidebarOpen, setIsJudgeSidebarOpen] = useState<boolean>(true);
+  const [mobileJudgePane, setMobileJudgePane] = useState<'problem' | 'editor' | 'console'>('editor');
 
   // Bottom tabs: 'custom_run' | 'judge_results' | 'history'
   const [activeConsoleTab, setActiveConsoleTab] = useState<'custom_run' | 'judge_results' | 'history'>('custom_run');
@@ -127,6 +134,14 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
 
   // Submissions history
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>([]);
+
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isJudgeFullscreen) setIsJudgeFullscreen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isJudgeFullscreen]);
 
   // Copy helper
   const handleCopy = (text: string) => {
@@ -398,9 +413,11 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
               </h3>
             </div>
 
-            <div className="space-y-2.5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans bg-slate-50/60 dark:bg-slate-800/40 p-5 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+            <div className="space-y-2.5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans bg-slate-50/60 dark:bg-slate-800/40 p-4 sm:p-5 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
               {currentLesson.theory.map((line, idx) => (
-                <p key={idx}>{line}</p>
+                <div key={idx}>
+                  <FormattedText text={line} />
+                </div>
               ))}
             </div>
           </div>
@@ -415,18 +432,18 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
 
             return (
               <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
                   <div className="flex items-center gap-2">
-                    <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                         2. Code Minh Họa Chuẩn Thi HSG Quốc Gia
                       </h3>
                       <div className="text-xs text-slate-500">{activeCodeEx?.title}</div>
                     </div>
                   </div>
 
-                  {/* Language Switcher & Copy */}
+                  {/* Language Switcher */}
                   <div className="flex items-center gap-2">
                     <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg">
                       <button
@@ -450,37 +467,24 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                         Python 3
                       </button>
                     </div>
-
-                    <button
-                      onClick={() => handleCopy(displayCode)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
-                    >
-                      {copiedText === displayCode ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-emerald-500 font-semibold">Đã sao chép</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Sao chép code</span>
-                        </>
-                      )}
-                    </button>
                   </div>
                 </div>
 
-                {/* Code Block */}
-                <div className="p-4 bg-slate-950 font-mono text-xs overflow-x-auto text-emerald-400 leading-relaxed max-h-[380px]">
-                  <pre>
-                    <code>{displayCode}</code>
-                  </pre>
+                {/* Authentic Sublime Monokai Code Block */}
+                <div className="p-3 sm:p-4 bg-[#171814]">
+                  <MonokaiCodeBlock
+                    code={displayCode}
+                    language={curriculumLang}
+                    title={curriculumLang === 'cpp' ? 'example.cpp' : 'example.py'}
+                    onCopy={() => handleCopy(displayCode)}
+                    copied={copiedText === displayCode}
+                  />
                 </div>
 
                 {/* Code analysis note */}
                 {displayExplanation && (
-                  <div className="px-6 py-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium">
-                    💡 {displayExplanation}
+                  <div className="px-4 sm:px-6 py-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium">
+                    <FormattedText text={displayExplanation} />
                   </div>
                 )}
               </div>
@@ -588,39 +592,25 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                       Phân tích thuật toán & Chiến lược tối ưu:
                     </h4>
-                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans whitespace-pre-line">
-                      {currentLesson.practiceProblem.solutionAnalysis}
-                    </p>
+                    <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                      <FormattedText text={currentLesson.practiceProblem.solutionAnalysis} />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        Source code mẫu giải thuật ({curriculumLang === 'cpp' ? 'C++' : 'Python'}):
-                      </span>
-                      <button
-                        onClick={() =>
-                          handleCopy(
-                            curriculumLang === 'cpp'
-                              ? currentLesson.practiceProblem.fullSolutionCpp
-                              : currentLesson.practiceProblem.fullSolutionPython
-                          )
-                        }
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Sao chép code AC</span>
-                      </button>
-                    </div>
-                    <div className="p-3 bg-slate-950 rounded-xl font-mono text-xs text-emerald-400 max-h-[300px] overflow-x-auto">
-                      <pre>
-                        <code>
-                          {curriculumLang === 'cpp'
-                            ? currentLesson.practiceProblem.fullSolutionCpp
-                            : currentLesson.practiceProblem.fullSolutionPython}
-                        </code>
-                      </pre>
-                    </div>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                      Source code mẫu giải thuật ({curriculumLang === 'cpp' ? 'C++' : 'Python'}):
+                    </span>
+                    <MonokaiCodeBlock
+                      code={
+                        curriculumLang === 'cpp'
+                          ? currentLesson.practiceProblem.fullSolutionCpp
+                          : currentLesson.practiceProblem.fullSolutionPython
+                      }
+                      language={curriculumLang}
+                      title={curriculumLang === 'cpp' ? 'solution.cpp' : 'solution.py'}
+                      maxHeightClass="max-h-[360px]"
+                    />
                   </div>
                 </div>
               )}
@@ -630,244 +620,300 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
       )}
 
       {/* ============================================================= */}
-      {/* MODE 2: TRÌNH CHẤM ONLINE JUDGE & BỘ TEST TỰ ĐỘNG             */}
+      {/* MODE 2: TRÌNH CHẤM ONLINE JUDGE (SUBLIME MONOKAI + FULLSCREEN) */}
       {/* ============================================================= */}
       {viewMode === 'judge' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Problem details & Sample cases (4 cols) */}
-          <div className="lg:col-span-4 space-y-4">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Chọn đề bài chấm thử:
-                </label>
-                <select
-                  value={currentProblem.id}
-                  onChange={(e) => {
-                    const prob = CODING_PROBLEMS.find((p) => p.id === e.target.value);
-                    if (prob) {
-                      handleProblemChange(prob);
-                    } else {
-                      const lessonProb = CS_LESSONS.find((l) => l.practiceProblem.id === e.target.value)?.practiceProblem;
-                      if (lessonProb) handleProblemChange(toCodingProblem(lessonProb));
-                    }
-                  }}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <optgroup label="Bài tập củng cố theo bài giảng:">
-                    {CS_LESSONS.map((l) => (
-                      <option key={l.practiceProblem.id} value={l.practiceProblem.id}>
-                        Bài {l.lessonNumber}: {l.practiceProblem.title} ({l.practiceProblem.difficulty})
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Bộ đề Olympic tổng hợp:">
-                    {CODING_PROBLEMS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title} ({p.difficulty})
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    {currentProblem.title}
-                  </h3>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                    {currentProblem.difficulty}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mt-2">
-                  {currentProblem.description}
-                </p>
-              </div>
-
-              {/* I/O Format */}
-              <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 text-xs">
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-white">Input: </span>
-                  <span className="text-slate-600 dark:text-slate-300 font-mono">
-                    {currentProblem.inputFormat}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-white">Output: </span>
-                  <span className="text-slate-600 dark:text-slate-300 font-mono">
-                    {currentProblem.outputFormat}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-white">Ràng buộc: </span>
-                  <span className="text-slate-600 dark:text-slate-300 font-mono">
-                    {currentProblem.constraints}
-                  </span>
-                </div>
-              </div>
-
-              {/* Sample test */}
-              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 space-y-2">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  Test ví dụ:
-                </span>
-                <div className="bg-slate-950 text-slate-100 p-3 rounded-xl font-mono text-xs space-y-1">
-                  <div>
-                    <span className="text-slate-500">Input:</span>{' '}
-                    <span className="text-emerald-400">
-                      {currentProblem.sampleCases[0]?.input.trim()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Output:</span>{' '}
-                    <span className="text-amber-400">
-                      {currentProblem.sampleCases[0]?.expectedOutput.trim()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div
+          className={
+            isJudgeFullscreen
+              ? 'fixed inset-0 z-50 w-screen h-screen bg-[#1e1f1c] flex flex-col overflow-hidden'
+              : 'space-y-3'
+          }
+        >
+          {/* Mobile Pane Switcher (<lg) */}
+          <div className="lg:hidden grid grid-cols-3 gap-1 p-1 bg-[#171814] border border-[#3e3d32] rounded-xl shrink-0">
+            {[
+              { id: 'problem' as const, label: 'Đề Bài & Test' },
+              { id: 'editor' as const, label: 'Code Sublime' },
+              { id: 'console' as const, label: judgeScore !== null ? `Kết quả (${judgeScore}%)` : 'Console' }
+            ].map((pane) => (
+              <button
+                key={pane.id}
+                onClick={() => setMobileJudgePane(pane.id)}
+                className={`py-2 px-2 rounded-lg text-xs font-bold transition-colors ${
+                  mobileJudgePane === pane.id
+                    ? 'bg-[#272822] text-[#a6e22e] border border-[#3e3d32]'
+                    : 'text-[#90908a]'
+                }`}
+              >
+                {pane.label}
+              </button>
+            ))}
           </div>
 
-          {/* Right Column: Code Editor & Execution Console (8 cols) */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden flex flex-col">
-              {/* Editor Toolbar */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg">
+          <div
+            className={`flex flex-1 overflow-hidden border border-[#3e3d32] bg-[#272822] ${
+              isJudgeFullscreen ? 'h-full border-0 rounded-none' : 'rounded-2xl min-h-[620px] lg:h-[78vh] shadow-2xl'
+            }`}
+          >
+            {/* Left Column: Problem details & Sample cases */}
+            {(isJudgeSidebarOpen || mobileJudgePane === 'problem') && (
+              <div
+                className={`${
+                  mobileJudgePane === 'problem' ? 'flex w-full' : 'hidden lg:flex lg:w-[38%] xl:w-[35%]'
+                } bg-[#1e1f1c] border-r border-[#3e3d32] flex-col shrink-0 overflow-hidden`}
+              >
+                <div className="p-3.5 border-b border-[#3e3d32] bg-[#171814] space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-[11px] font-bold text-[#e6db74] uppercase tracking-wider">
+                      Chọn đề bài chấm:
+                    </label>
                     <button
-                      onClick={() => handleLanguageChange('cpp')}
-                      className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                        judgeLang === 'cpp'
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400'
-                      }`}
+                      onClick={() => setIsJudgeFullscreen(!isJudgeFullscreen)}
+                      className="hidden lg:inline-flex items-center gap-1 px-2 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[11px] text-[#66d9ef]"
                     >
-                      C++ 17
-                    </button>
-                    <button
-                      onClick={() => handleLanguageChange('python')}
-                      className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                        judgeLang === 'python'
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      Python 3
+                      {isJudgeFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+                      <span>{isJudgeFullscreen ? 'Thu nhỏ' : 'Split Fullscreen'}</span>
                     </button>
                   </div>
-
-                  <button
-                    onClick={handleResetTemplate}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/60"
-                    title="Đặt lại khung code ban đầu"
+                  <select
+                    value={currentProblem.id}
+                    onChange={(e) => {
+                      const prob = CODING_PROBLEMS.find((p) => p.id === e.target.value);
+                      if (prob) {
+                        handleProblemChange(prob);
+                      } else {
+                        const lessonProb = CS_LESSONS.find((l) => l.practiceProblem.id === e.target.value)?.practiceProblem;
+                        if (lessonProb) handleProblemChange(toCodingProblem(lessonProb));
+                      }
+                    }}
+                    className="w-full bg-[#272822] border border-[#3e3d32] rounded-xl px-3 py-2 text-xs font-semibold text-[#f8f8f2] focus:outline-none focus:border-[#66d9ef]"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
+                    <optgroup label="Bài tập củng cố theo bài giảng:">
+                      {CS_LESSONS.map((l) => (
+                        <option key={l.practiceProblem.id} value={l.practiceProblem.id}>
+                          Bài {l.lessonNumber}: {l.practiceProblem.title} ({l.practiceProblem.difficulty})
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Bộ đề Olympic tổng hợp:">
+                      {CODING_PROBLEMS.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.title} ({p.difficulty})
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
                 </div>
 
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs text-[#d8d8d0]">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <h3 className="text-sm font-bold text-white">{currentProblem.title}</h3>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#66d9ef]/20 text-[#66d9ef] shrink-0">
+                        {currentProblem.difficulty}
+                      </span>
+                    </div>
+                    <div className="leading-relaxed bg-[#272822] p-3 rounded-xl border border-[#3e3d32]">
+                      <FormattedText text={currentProblem.description} />
+                    </div>
+                  </div>
+
+                  {/* I/O Format */}
+                  <div className="space-y-2 text-[11px]">
+                    <div className="bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32]">
+                      <span className="font-bold text-[#66d9ef] block mb-0.5">Input:</span>
+                      <span className="font-mono whitespace-pre-line">{currentProblem.inputFormat}</span>
+                    </div>
+                    <div className="bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32]">
+                      <span className="font-bold text-[#a6e22e] block mb-0.5">Output:</span>
+                      <span className="font-mono whitespace-pre-line">{currentProblem.outputFormat}</span>
+                    </div>
+                    <div className="bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32]">
+                      <span className="font-bold text-[#e6db74] block mb-0.5">Ràng buộc:</span>
+                      <span className="font-mono">
+                        {Array.isArray(currentProblem.constraints)
+                          ? currentProblem.constraints.join(' • ')
+                          : currentProblem.constraints}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Sample test */}
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-[#e6db74] uppercase tracking-wider block">
+                      Test ví dụ ({currentProblem.sampleCases.length} mẫu + {currentProblem.hiddenCases.length} test ẩn):
+                    </span>
+                    {currentProblem.sampleCases.map((sc, sIdx) => (
+                      <div key={sIdx} className="bg-[#272822] border border-[#3e3d32] p-3 rounded-xl font-mono text-[11px] space-y-1">
+                        <div className="flex items-center justify-between text-[#90908a] text-[10px]">
+                          <span>Ví dụ #{sIdx + 1}</span>
+                          <button
+                            onClick={() => {
+                              setCustomInput(sc.input);
+                              setActiveConsoleTab('custom_run');
+                              setMobileJudgePane('editor');
+                            }}
+                            className="text-[#66d9ef] hover:underline"
+                          >
+                            Nạp stdin
+                          </button>
+                        </div>
+                        <div>
+                          <span className="text-[#90908a]">In: </span>
+                          <span className="text-[#e6db74] whitespace-pre-wrap">{sc.input.trim()}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#90908a]">Out: </span>
+                          <span className="text-[#a6e22e] font-bold whitespace-pre-wrap">{sc.expectedOutput.trim()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Right Column: Sublime Text 4 Monokai Editor & Console */}
+            <div
+              className={`${
+                mobileJudgePane === 'problem' ? 'hidden lg:flex' : 'flex'
+              } flex-1 flex-col bg-[#272822] min-w-0 overflow-hidden`}
+            >
+              {/* Sublime Editor */}
+              <div className={`${mobileJudgePane === 'console' ? 'hidden lg:flex' : 'flex'} flex-1 flex-col min-h-0`}>
+                <SublimeEditor
+                  value={code}
+                  onChange={setCode}
+                  language={judgeLang}
+                  tabs={[
+                    { id: 'cpp', label: 'main.cpp', language: 'cpp', dirty: true },
+                    { id: 'python', label: 'solution.py', language: 'python', dirty: true }
+                  ]}
+                  activeTabId={judgeLang}
+                  onSelectTab={(id) => handleLanguageChange(id as CodeLanguage)}
+                  fontSize={fontSize}
+                  onFontSizeChange={setFontSize}
+                  onRun={handleRunCustom}
+                  onReset={handleResetTemplate}
+                  isFullscreen={isJudgeFullscreen}
+                  onToggleFullscreen={() => setIsJudgeFullscreen(!isJudgeFullscreen)}
+                  isSidebarOpen={isJudgeSidebarOpen}
+                  onToggleSidebar={() => setIsJudgeSidebarOpen(!isJudgeSidebarOpen)}
+                  statusRightExtra={judgeScore !== null ? `Score: ${judgeScore}/100` : undefined}
+                />
+              </div>
+
+              {/* Action Toolbar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-[#3e3d32] bg-[#1e1f1c] shrink-0">
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={handleRunCustom}
+                    onClick={() => {
+                      handleRunCustom();
+                      setMobileJudgePane('console');
+                    }}
                     disabled={isRunningCustom || isJudging}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2] text-xs font-bold transition-colors disabled:opacity-50"
                   >
-                    <Play className="w-3.5 h-3.5 text-blue-500" />
+                    <Play className="w-3.5 h-3.5 text-[#66d9ef]" />
                     <span>{isRunningCustom ? 'Đang chạy...' : 'Chạy thử (Run)'}</span>
                   </button>
 
                   <button
-                    onClick={handleSubmitCode}
+                    onClick={() => {
+                      handleSubmitCode();
+                      setMobileJudgePane('console');
+                    }}
                     disabled={isRunningCustom || isJudging}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/20"
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#a6e22e] hover:bg-[#b8f242] text-[#272822] text-xs font-bold transition-all shadow disabled:opacity-50"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>{isJudging ? 'Đang chấm...' : 'Nộp bài (Submit)'}</span>
                   </button>
                 </div>
-              </div>
 
-              {/* Textarea Code Editor */}
-              <div className="relative">
-                <textarea
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  spellCheck={false}
-                  className="w-full h-[320px] p-4 bg-slate-950 text-slate-100 font-mono text-xs focus:outline-none resize-none leading-relaxed"
-                  style={{ fontSize: `${fontSize}px` }}
-                />
+                {judgeScore !== null && (
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold ${
+                      judgeScore === 100
+                        ? 'bg-[#a6e22e]/20 text-[#a6e22e] border border-[#a6e22e]/40'
+                        : judgeScore > 0
+                        ? 'bg-[#e6db74]/20 text-[#e6db74] border border-[#e6db74]/40'
+                        : 'bg-[#f92672]/20 text-[#f92672] border border-[#f92672]/40'
+                    }`}
+                  >
+                    {judgeVerdict} ({judgeScore}/100)
+                  </span>
+                )}
               </div>
 
               {/* Console Output Bar */}
-              <div className="border-t border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/90">
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-slate-200/60 dark:border-slate-800/60">
+              <div
+                className={`${
+                  mobileJudgePane === 'console' ? 'flex-1 lg:flex-none lg:h-52' : 'hidden lg:flex lg:h-52'
+                } border-t border-[#3e3d32] bg-[#171814] flex-col shrink-0 overflow-hidden font-mono text-xs text-[#f8f8f2]`}
+              >
+                <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-[#3e3d32] bg-[#1e1f1c] overflow-x-auto">
                   <button
                     onClick={() => setActiveConsoleTab('custom_run')}
-                    className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-all shrink-0 ${
                       activeConsoleTab === 'custom_run'
-                        ? 'bg-blue-600 text-white font-bold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        ? 'bg-[#3e3d32] text-[#e6db74]'
+                        : 'text-[#90908a] hover:text-white'
                     }`}
                   >
                     Custom Test Stdin
                   </button>
                   <button
                     onClick={() => setActiveConsoleTab('judge_results')}
-                    className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-all shrink-0 ${
                       activeConsoleTab === 'judge_results'
-                        ? 'bg-emerald-600 text-white font-bold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        ? 'bg-[#3e3d32] text-[#a6e22e]'
+                        : 'text-[#90908a] hover:text-white'
                     }`}
                   >
-                    Kết quả Chấm Test {judgeScore !== null ? `(${judgeScore}/100)` : ''}
+                    Kết quả Chấm {judgeScore !== null ? `(${judgeScore}/100)` : ''}
                   </button>
                   <button
                     onClick={() => setActiveConsoleTab('history')}
-                    className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-all shrink-0 ${
                       activeConsoleTab === 'history'
-                        ? 'bg-slate-700 text-white font-bold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        ? 'bg-[#3e3d32] text-[#66d9ef]'
+                        : 'text-[#90908a] hover:text-white'
                     }`}
                   >
-                    Lịch sử Nộp ({submissions.length})
+                    Lịch sử ({submissions.length})
                   </button>
                 </div>
 
-                <div className="p-4">
-                  {/* Console Tab 1: Custom Run */}
+                <div className="flex-1 p-3 overflow-y-auto">
                   {activeConsoleTab === 'custom_run' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-full">
+                      <div className="flex flex-col">
+                        <div className="text-[10px] font-bold text-[#90908a] uppercase tracking-wider mb-1">
                           Input Stdin tùy chỉnh:
                         </div>
                         <textarea
                           value={customInput}
                           onChange={(e) => setCustomInput(e.target.value)}
-                          className="w-full h-24 p-2.5 bg-slate-950 text-slate-100 font-mono text-xs rounded-xl focus:outline-none resize-none border border-slate-800"
+                          className="flex-1 min-h-[84px] p-2.5 bg-[#272822] text-[#f8f8f2] font-mono text-xs rounded-lg focus:outline-none focus:border-[#66d9ef] resize-none border border-[#3e3d32]"
                         />
                       </div>
 
-                      <div>
-                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      <div className="flex flex-col">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-[#90908a] uppercase tracking-wider mb-1">
                           <span>Output chương trình:</span>
                           {customRuntime !== null && (
-                            <span className="text-emerald-500 font-mono">
-                              {customRuntime}ms
-                            </span>
+                            <span className="text-[#66d9ef] font-mono">{customRuntime}ms</span>
                           )}
                         </div>
-                        <div className="w-full h-24 p-2.5 bg-slate-950 text-slate-100 font-mono text-xs rounded-xl overflow-y-auto border border-slate-800">
+                        <div className="flex-1 min-h-[84px] p-2.5 bg-[#272822] text-[#f8f8f2] font-mono text-xs rounded-lg overflow-y-auto border border-[#3e3d32]">
                           {customStderr ? (
-                            <span className="text-red-400">{customStderr}</span>
+                            <span className="text-[#f92672]">{customStderr}</span>
                           ) : customOutput ? (
-                            <span className="text-emerald-400 whitespace-pre">
-                              {customOutput}
-                            </span>
+                            <span className="text-[#a6e22e] whitespace-pre">{customOutput}</span>
                           ) : (
-                            <span className="text-slate-500 italic">
+                            <span className="text-[#75715e] italic">
                               Bấm "Chạy thử (Run)" để xem kết quả xuất ra...
                             </span>
                           )}
@@ -876,65 +922,64 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                     </div>
                   )}
 
-                  {/* Console Tab 2: Judge Test Suite Results */}
                   {activeConsoleTab === 'judge_results' && (
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                       {judgeResults ? (
-                        <div>
-                          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mb-3">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`text-sm font-bold ${
-                                  judgeScore === 100
-                                    ? 'text-emerald-500'
-                                    : judgeScore && judgeScore > 0
-                                    ? 'text-amber-500'
-                                    : 'text-red-500'
-                                }`}
-                              >
-                                {judgeVerdict}
-                              </span>
-                            </div>
-                            <div className="text-base font-bold font-mono text-slate-900 dark:text-white">
-                              {judgeScore} / 100 Điểm
-                            </div>
+                        <>
+                          <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#272822] border border-[#3e3d32]">
+                            <span
+                              className={`text-xs font-bold ${
+                                judgeScore === 100
+                                  ? 'text-[#a6e22e]'
+                                  : judgeScore && judgeScore > 0
+                                  ? 'text-[#e6db74]'
+                                  : 'text-[#f92672]'
+                              }`}
+                            >
+                              {judgeVerdict}
+                            </span>
+                            <span className="text-sm font-bold text-white">{judgeScore} / 100 Điểm</span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                             {judgeResults.map((tr, tIdx) => (
                               <div
                                 key={tIdx}
-                                className={`p-2.5 rounded-xl border text-xs font-mono flex items-center justify-between ${
+                                className={`p-2 rounded-lg border text-[11px] font-mono space-y-1 ${
                                   tr.passed
-                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                                    : 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400'
+                                    ? 'bg-[#a6e22e]/10 border-[#a6e22e]/30 text-[#a6e22e]'
+                                    : 'bg-[#f92672]/10 border-[#f92672]/30 text-[#f92672]'
                                 }`}
                               >
-                                <span>Test #{tIdx + 1}</span>
-                                <span className="font-bold">
-                                  {tr.passed ? 'ACCEPTED' : 'WA'}
-                                </span>
+                                <div className="flex items-center justify-between font-bold">
+                                  <span>Test #{tIdx + 1}</span>
+                                  <span>{tr.passed ? 'ACCEPTED' : tr.status}</span>
+                                </div>
+                                {!tr.passed && (
+                                  <div className="text-[10px] text-[#f8f8f2] truncate">
+                                    Exp: {tr.expected.replace(/\n/g, ' ')} | Got: {tr.actual.replace(/\n/g, ' ')}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
-                        </div>
+                        </>
                       ) : (
-                        <div className="text-center py-6 text-xs text-slate-500">
+                        <div className="text-center py-6 text-xs text-[#75715e]">
                           Bấm "Nộp bài (Submit)" để chấm điểm với bộ test tự động.
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Console Tab 3: Submission History */}
                   {activeConsoleTab === 'history' && (
                     <div className="space-y-2">
                       {submissions.length > 0 ? (
                         <div className="overflow-x-auto">
                           <table className="w-full text-left text-xs">
                             <thead>
-                              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
-                                <th className="py-2">Thời gian</th>
+                              <tr className="border-b border-[#3e3d32] text-[#90908a]">
+                                <th className="py-1.5">Thời gian</th>
                                 <th>Bài</th>
                                 <th>Ngôn ngữ</th>
                                 <th>Điểm</th>
@@ -943,26 +988,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                             </thead>
                             <tbody>
                               {submissions.map((sub) => (
-                                <tr
-                                  key={sub.id}
-                                  className="border-b border-slate-100 dark:border-slate-800/60 font-mono"
-                                >
-                                  <td className="py-2 text-slate-400">
-                                    {sub.submittedAt}
-                                  </td>
-                                  <td className="font-sans font-medium text-slate-800 dark:text-slate-200">
-                                    {sub.problemTitle}
-                                  </td>
-                                  <td className="uppercase">{sub.language}</td>
-                                  <td className="font-bold text-emerald-500">
-                                    {sub.score}/100
-                                  </td>
+                                <tr key={sub.id} className="border-b border-[#3e3d32]/50 font-mono">
+                                  <td className="py-1.5 text-[#90908a]">{sub.submittedAt}</td>
+                                  <td className="font-sans font-medium text-[#f8f8f2]">{sub.problemTitle}</td>
+                                  <td className="uppercase text-[#66d9ef]">{sub.language}</td>
+                                  <td className="font-bold text-[#a6e22e]">{sub.score}/100</td>
                                   <td>
                                     <span
                                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                                         sub.status === 'Accepted'
-                                          ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600'
-                                          : 'bg-red-100 dark:bg-red-900/40 text-red-600'
+                                          ? 'bg-[#a6e22e]/20 text-[#a6e22e]'
+                                          : 'bg-[#f92672]/20 text-[#f92672]'
                                       }`}
                                     >
                                       {sub.status}
@@ -974,7 +1010,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned }) => 
                           </table>
                         </div>
                       ) : (
-                        <div className="text-center py-6 text-xs text-slate-500">
+                        <div className="text-center py-6 text-xs text-[#75715e]">
                           Chưa có lượt nộp bài nào.
                         </div>
                       )}

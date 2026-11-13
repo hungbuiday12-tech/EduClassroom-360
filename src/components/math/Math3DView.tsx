@@ -459,17 +459,17 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   return (
     <div
       className={`relative w-full rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all ${
-        isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'h-[620px]'
+        isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'h-[470px] sm:h-[560px] lg:h-[620px]'
       }`}
     >
       {/* 3D WebGL Canvas Container */}
-      <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+      <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
 
       {/* TOP HEADER OVERLAY */}
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white shadow-lg">
-          <Box className="w-4 h-4 text-indigo-400" />
-          <span className="text-xs font-bold tracking-wide">
+      <div className="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white shadow-lg max-w-full">
+          <Box className="w-4 h-4 text-indigo-400 shrink-0" />
+          <span className="text-[11px] sm:text-xs font-bold tracking-wide truncate">
             {mode === 'oxyz_vector' && t('math3d.oxyz', 'Hệ Trục Oxyz & Vector Tích Có Hướng', '3D Oxyz Coordinates & Cross Product')}
             {mode === 'sphere_plane' && t('math3d.sphere', 'Mặt Cầu & Mặt Phẳng Thiết Diện 3D', 'Sphere & Plane Intersection 3D')}
             {mode === 'pyramid_section' && t('math3d.pyramid', 'Khối Chóp & Mặt Cắt Thiết Diện Động', 'Pyramid & Dynamic Cross Section')}
@@ -477,12 +477,12 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
           </span>
         </div>
 
-        <div className="pointer-events-auto flex items-center gap-2">
-          {/* Mode Switcher Pills */}
-          <div className="hidden sm:flex items-center gap-1 p-1 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-lg">
+        <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
+          {/* Mode Switcher Pills (scrollable on phones & iPads) */}
+          <div className="flex items-center gap-1 p-1 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-lg overflow-x-auto max-w-full scrollbar-none">
             <button
               onClick={() => setMode('oxyz_vector')}
-              className={`px-3 py-1 text-xs font-semibold rounded-xl transition-all ${
+              className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
                 mode === 'oxyz_vector' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -490,7 +490,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
             </button>
             <button
               onClick={() => setMode('sphere_plane')}
-              className={`px-3 py-1 text-xs font-semibold rounded-xl transition-all ${
+              className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
                 mode === 'sphere_plane' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -498,7 +498,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
             </button>
             <button
               onClick={() => setMode('pyramid_section')}
-              className={`px-3 py-1 text-xs font-semibold rounded-xl transition-all ${
+              className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
                 mode === 'pyramid_section' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -506,7 +506,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
             </button>
             <button
               onClick={() => setMode('revolution_solid')}
-              className={`px-3 py-1 text-xs font-semibold rounded-xl transition-all ${
+              className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
                 mode === 'revolution_solid' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -526,8 +526,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       </div>
 
       {/* ERGONOMIC COLLAPSIBLE BOTTOM CONTROL DOCK (Zero Viewport Occlusion) */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl pointer-events-none z-20">
-        <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl p-4 text-white space-y-3 transition-all duration-300">
+      <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 w-[96%] max-w-3xl pointer-events-none z-20">
+        <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[210px] sm:max-h-none overflow-y-auto transition-all duration-300">
           {/* Header Row of Dock */}
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-300">

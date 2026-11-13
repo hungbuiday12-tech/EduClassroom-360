@@ -27,11 +27,11 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-6 h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 lg:gap-6 h-14 sm:h-16">
         {/* Zone 1: Single text element wordmark */}
         <button
           onClick={() => onSelectSubject('overview')}
-          className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap shrink-0 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          className="text-sm sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap shrink-0 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
           EduClassroom 360
         </button>
@@ -91,14 +91,14 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Zone 3: Actions + User Profile & Language/Theme switcher */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Language Switcher Button (VI | EN) */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
             title={language === 'vi' ? 'Switch interface to English' : 'Chuyển giao diện sang Tiếng Việt'}
           >
-            <Globe className="w-3.5 h-3.5 text-indigo-500" />
+            <Globe className="w-3.5 h-3.5 text-indigo-500 hidden xs:block sm:block" />
             <span className={language === 'vi' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-400'}>
               VI
             </span>
@@ -109,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* XP Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/50 rounded-lg text-xs font-mono font-semibold text-amber-700 dark:text-amber-300">
+          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/50 rounded-lg text-[11px] sm:text-xs font-mono font-semibold text-amber-700 dark:text-amber-300">
             <Award className="w-3.5 h-3.5 text-amber-500" />
             <span className="tabular-nums">{user ? user.xp : xp} XP</span>
           </div>
@@ -194,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
               <button
                 onClick={() => openAuthModal('login')}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 font-semibold text-xs shadow-xs transition-colors"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 font-semibold text-[11px] sm:text-xs shadow-xs transition-colors whitespace-nowrap"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>{t('nav.login', 'Đăng Nhập', 'Sign In')}</span>

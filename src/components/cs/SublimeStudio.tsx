@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import {
   CodeLanguage,
@@ -7,7 +7,14 @@ import {
   TestResult
 } from '../../types';
 import { executeCode, compareOutputs } from './codeRunner';
+import {
+  analyzeProblemAndGenerateTests,
+  extractSamplesFromText,
+  UserSamplePair
+} from './problemAnalyzer';
+import { SublimeEditor, SublimeTabItem } from './SublimeEditor';
 import { useLanguage } from '../../context/LanguageContext';
+import { FormattedText } from '../common/MathRenderer';
 import {
   Play,
   Send,
@@ -15,27 +22,18 @@ import {
   FileText,
   Image as ImageIcon,
   Sparkles,
-  RotateCcw,
   Plus,
   Trash2,
   CheckCircle2,
   XCircle,
-  Copy,
   Check,
   Code2,
   Terminal,
-  Settings,
-  HelpCircle,
-  Clock,
   Layers,
-  ChevronRight,
-  ChevronLeft,
-  Maximize2,
-  Minimize2,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Eye,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  BookOpen,
+  X
 } from 'lucide-react';
 
 interface SublimeStudioProps {
@@ -43,224 +41,166 @@ interface SublimeStudioProps {
 }
 
 const DEFAULT_CLEAN_CPP = `#include <iostream>
+#include <vector>
+#include <algorithm>
 using namespace std;
 
 int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
     // Viết mã nguồn C++ tại đây...
     
     return 0;
 }`;
 
-const DEFAULT_CLEAN_PYTHON = `# Viết mã nguồn Python tại đây...
+const DEFAULT_CLEAN_PYTHON = `import sys
+
+def solve():
+    data = sys.stdin.read().split()
+    if not data:
+        return
+    # Viết mã nguồn Python tại đây...
+
+if __name__ == '__main__':
+    solve()
 `;
 
 export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) => {
-  const { t, language } = useLanguage();
+  const { language: uiLang } = useLanguage();
 
-  // Current analyzed problem (null initially so user uploads their own)
+  // Current analyzed problem
   const [problem, setProblem] = useState<CodingProblem | null>(null);
+  const [diagnosticNote, setDiagnosticNote] = useState<string>('');
+  const [analysisSource, setAnalysisSource] = useState<'ai' | 'local-oracle' | 'local-inferred' | 'template' | null>(null);
 
-  // Problem Upload Modal / Tab
+  // Problem Upload & Analyzer Modal
   const [showUploadModal, setShowUploadModal] = useState<boolean>(true);
-  const [inputMode, setInputMode] = useState<'image' | 'file' | 'text'>('image');
+  const [inputMode, setInputMode] = useState<'text' | 'image' | 'file'>('text');
   const [rawText, setRawText] = useState<string>('');
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [uploadedMimeType, setUploadedMimeType] = useState<string>('image/png');
+  const [userSamples, setUserSamples] = useState<UserSamplePair[]>([
+    { input: '', expectedOutput: '' }
+  ]);
+  const [showRefCodeBox, setShowRefCodeBox] = useState<boolean>(false);
+  const [refCode, setRefCode] = useState<string>('');
+  const [refLang, setRefLang] = useState<CodeLanguage>('cpp');
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Sublime Editor State
   const [selectedLang, setSelectedLang] = useState<CodeLanguage>('cpp');
-  const [code, setCode] = useState<string>(DEFAULT_CLEAN_CPP);
   const [cppCode, setCppCode] = useState<string>(DEFAULT_CLEAN_CPP);
   const [pyCode, setPyCode] = useState<string>(DEFAULT_CLEAN_PYTHON);
+  const [customInput, setCustomInput] = useState<string>('');
   const [activeFile, setActiveFile] = useState<'main.cpp' | 'solution.py' | 'input.txt'>('main.cpp');
 
-  // Fullscreen and Layout
+  // Layout & Fullscreen
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isConsoleOpen, setIsConsoleOpen] = useState<boolean>(true);
+  const [consoleTab, setConsoleTab] = useState<'output' | 'judge'>('output');
+  const [mobilePane, setMobilePane] = useState<'problem' | 'editor' | 'console'>('editor');
   const [fontSize, setFontSize] = useState<number>(14);
-  const [cursorPos, setCursorPos] = useState<{ line: number; col: number }>({ line: 1, col: 1 });
   const [saveFlash, setSaveFlash] = useState<boolean>(false);
 
-  // Test Runner & Judge State
-  const [customInput, setCustomInput] = useState<string>('');
+  // Inline test editor in sidebar
+  const [editingTestId, setEditingTestId] = useState<number | null>(null);
+  const [editTestInput, setEditTestInput] = useState<string>('');
+  const [editTestOutput, setEditTestOutput] = useState<string>('');
+
+  // Runner & Judge State
   const [customOutput, setCustomOutput] = useState<string>('');
   const [customStderr, setCustomStderr] = useState<string>('');
+  const [customRuntimeMs, setCustomRuntimeMs] = useState<number | null>(null);
   const [isRunningCustom, setIsRunningCustom] = useState<boolean>(false);
 
   const [isJudging, setIsJudging] = useState<boolean>(false);
   const [judgeResults, setJudgeResults] = useState<TestResult[] | null>(null);
   const [judgeScore, setJudgeScore] = useState<number | null>(null);
   const [judgeVerdict, setJudgeVerdict] = useState<string | null>(null);
-  const [selectedTestDetail, setSelectedTestDetail] = useState<TestResult | null>(null);
 
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-
-  // Sync active file code
-  const handleSwitchFile = (file: 'main.cpp' | 'solution.py' | 'input.txt') => {
-    if (activeFile === 'main.cpp') setCppCode(code);
-    else if (activeFile === 'solution.py') setPyCode(code);
-    else if (activeFile === 'input.txt') setCustomInput(code);
-
-    setActiveFile(file);
-    if (file === 'main.cpp') {
-      setSelectedLang('cpp');
-      setCode(cppCode);
-    } else if (file === 'solution.py') {
-      setSelectedLang('python');
-      setCode(pyCode);
-    } else if (file === 'input.txt') {
-      setCode(customInput);
-    }
-  };
-
-  // Cursor tracking
-  const handleTextareaSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
-    const target = e.currentTarget;
-    const val = target.value.substring(0, target.selectionStart);
-    const lines = val.split('\n');
-    setCursorPos({
-      line: lines.length,
-      col: lines[lines.length - 1].length + 1
-    });
-  };
-
-  // Authentic Sublime Text Shortcuts
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    // Run / Submit: Ctrl+Enter or Cmd+Enter
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      handleRunCustom();
-      return;
-    }
-
-    // Save: Ctrl+S or Cmd+S
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-      e.preventDefault();
-      setSaveFlash(true);
-      setTimeout(() => setSaveFlash(false), 1200);
-      return;
-    }
-
-    // Duplicate Line: Ctrl+D / Cmd+D (if no selection)
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      if (start === end) {
+  // Escape exits fullscreen cleanly
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      } else if (e.key === 'F11') {
         e.preventDefault();
-        const lines = code.split('\n');
-        const currentLineIdx = code.substring(0, start).split('\n').length - 1;
-        const currentLineText = lines[currentLineIdx];
-        lines.splice(currentLineIdx + 1, 0, currentLineText);
-        const newCode = lines.join('\n');
-        setCode(newCode);
-        return;
+        setIsFullscreen((prev) => !prev);
       }
-    }
-
-    // Toggle Comment: Ctrl+/ or Cmd+/
-    if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-      e.preventDefault();
-      const start = textarea.selectionStart;
-      const lines = code.split('\n');
-      const currentLineIdx = code.substring(0, start).split('\n').length - 1;
-      const commentPrefix = selectedLang === 'cpp' ? '// ' : '# ';
-      const line = lines[currentLineIdx];
-
-      if (line.trim().startsWith(commentPrefix.trim())) {
-        lines[currentLineIdx] = line.replace(commentPrefix, '');
-      } else {
-        lines[currentLineIdx] = commentPrefix + line;
-      }
-      setCode(lines.join('\n'));
-      return;
-    }
-
-    // Tab / Shift+Tab indentation
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-
-      if (!e.shiftKey) {
-        // Insert 4 spaces (Sublime Spaces: 4 default)
-        const newCode = code.substring(0, start) + '    ' + code.substring(end);
-        setCode(newCode);
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = start + 4;
-        }, 0);
-      } else {
-        // Unindent current line
-        const lines = code.split('\n');
-        const lineIdx = code.substring(0, start).split('\n').length - 1;
-        if (lines[lineIdx].startsWith('    ')) {
-          lines[lineIdx] = lines[lineIdx].substring(4);
-          setCode(lines.join('\n'));
-        }
-      }
-      return;
-    }
-
-    // Auto-close brackets and quotes
-    const autoPairs: Record<string, string> = {
-      '(': ')',
-      '[': ']',
-      '{': '}',
-      '"': '"',
-      "'": "'"
     };
-    if (autoPairs[e.key]) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      if (start === end) {
-        e.preventDefault();
-        const close = autoPairs[e.key];
-        const newCode = code.substring(0, start) + e.key + close + code.substring(end);
-        setCode(newCode);
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = start + 1;
-        }, 0);
-      }
-    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isFullscreen]);
+
+  const activeEditorValue =
+    activeFile === 'main.cpp' ? cppCode : activeFile === 'solution.py' ? pyCode : customInput;
+
+  const handleEditorChange = (val: string) => {
+    if (activeFile === 'main.cpp') setCppCode(val);
+    else if (activeFile === 'solution.py') setPyCode(val);
+    else setCustomInput(val);
   };
+
+  const handleSelectTab = (tabId: string) => {
+    const file = tabId as 'main.cpp' | 'solution.py' | 'input.txt';
+    setActiveFile(file);
+    if (file === 'main.cpp') setSelectedLang('cpp');
+    else if (file === 'solution.py') setSelectedLang('python');
+  };
+
+  const editorTabs: SublimeTabItem[] = useMemo(
+    () => [
+      { id: 'main.cpp', label: 'main.cpp', language: 'cpp', dirty: cppCode !== DEFAULT_CLEAN_CPP },
+      { id: 'solution.py', label: 'solution.py', language: 'python', dirty: pyCode !== DEFAULT_CLEAN_PYTHON },
+      { id: 'input.txt', label: 'input.txt', language: 'text', dirty: Boolean(customInput) }
+    ],
+    [cppCode, pyCode, customInput]
+  );
 
   // Image Upload Handler
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFileName(file.name);
-      setUploadedMimeType(file.type || 'image/png');
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUploadedImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    setUploadedFileName(file.name);
+    setUploadedMimeType(file.type || 'image/png');
+    const reader = new FileReader();
+    reader.onload = () => setUploadedImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
-  // File Upload Handler (.txt, .md, .cpp, .py)
+  // Text/Code File Upload Handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFileName(file.name);
-      const reader = new FileReader();
-      reader.onload = () => {
-        setRawText(reader.result as string);
-      };
-      reader.readAsText(file);
+    if (!file) return;
+    setUploadedFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || '');
+      setRawText(text);
+      const parsed = extractSamplesFromText(text);
+      if (parsed.length > 0) setUserSamples(parsed);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleAutoExtractSamples = () => {
+    const extracted = extractSamplesFromText(rawText);
+    if (extracted.length > 0) {
+      setUserSamples(extracted);
     }
   };
 
-  // AI Problem Analysis & Automatic Test Generation
-  const handleAnalyzeWithAI = async () => {
-    if (!rawText.trim() && !uploadedImagePreview) {
-      setAnalysisError('Vui lòng chọn hình ảnh hoặc nhập văn bản đề bài.');
+  // Analyze problem + generate verified test suite
+  const handleAnalyzeProblem = async () => {
+    const validSamples = userSamples.filter(
+      (s) => s.input.trim().length > 0 || s.expectedOutput.trim().length > 0
+    );
+
+    if (!rawText.trim() && !uploadedImagePreview && validSamples.length === 0) {
+      setAnalysisError('Vui lòng nhập đề bài, tải ảnh đề, hoặc nhập ít nhất 1 test mẫu.');
       return;
     }
 
@@ -268,122 +208,87 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
     setAnalysisError(null);
 
     try {
-      // Call server route /api/gemini/analyze-problem
-      const res = await fetch('/api/gemini/analyze-problem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: rawText.trim(),
-          imageBase64: uploadedImagePreview,
-          mimeType: uploadedMimeType
-        })
+      const result = await analyzeProblemAndGenerateTests({
+        text: rawText.trim(),
+        imageBase64: uploadedImagePreview,
+        mimeType: uploadedMimeType,
+        fileName: uploadedFileName,
+        userSamples: validSamples,
+        referenceCode: showRefCodeBox && refCode.trim() ? refCode : undefined,
+        referenceLang: refLang
       });
 
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
-      }
+      setProblem(result.problem);
+      setDiagnosticNote(result.diagnosticNote);
+      setAnalysisSource(result.source);
 
-      const data = await res.json();
-      if (!data.success || !data.problem) {
-        throw new Error(data.error || 'Không nhận được dữ liệu đề bài hợp lệ');
-      }
-
-      const analyzedProblem: CodingProblem = {
-        id: data.problem.id || `CUSTOM_${Date.now()}`,
-        title: data.problem.title || 'Bài Toán Mới (Phân Tích AI)',
-        category: 'Tự do - Phân tích AI',
-        difficulty: 'Medium',
-        timeLimit: '1.0s',
-        memoryLimit: '256MB',
-        description: data.problem.description || rawText,
-        inputFormat: data.problem.inputFormat || 'Dữ liệu đầu vào theo đề bài.',
-        outputFormat: data.problem.outputFormat || 'Dữ liệu đầu ra theo đề bài.',
-        constraints: data.problem.constraints || ['1 ≤ N ≤ 10⁵'],
-        sampleCases: data.problem.sampleCases || [],
-        hiddenCases: data.problem.hiddenCases || [],
-        cppTemplate: DEFAULT_CLEAN_CPP,
-        pythonTemplate: DEFAULT_CLEAN_PYTHON
-      };
-
-      setProblem(analyzedProblem);
-      if (analyzedProblem.sampleCases[0]?.input) {
-        setCustomInput(analyzedProblem.sampleCases[0].input);
-      }
+      const firstIn = result.problem.sampleCases[0]?.input || result.problem.hiddenCases[0]?.input || '';
+      setCustomInput(firstIn);
+      setCustomOutput('');
+      setCustomStderr('');
       setJudgeResults(null);
       setJudgeScore(null);
+      setJudgeVerdict(null);
       setShowUploadModal(false);
-      setIsAnalyzing(false);
+      setIsSidebarOpen(true);
+      setMobilePane('problem');
     } catch (err: any) {
-      console.warn('AI analysis API error, generating local test suite:', err);
-
-      // Local smart synthesis fallback based strictly on user text/file
-      const lines = rawText.split('\n').filter(Boolean);
-      const title = lines[0]?.replace(/^[#*0-9.\s]+/, '') || uploadedFileName || 'Bài Toán Tự Do Mới';
-
-      // Parse sample test if present in text
-      const cleanInput = lines.slice(1, 3).join('\n') || '5\n1 2 3 4 5';
-      const cleanProblem: CodingProblem = {
-        id: `CUSTOM_${Date.now()}`,
-        title,
-        category: 'Tự do - Phân tích',
-        difficulty: 'Medium',
-        timeLimit: '1.0s',
-        memoryLimit: '256MB',
-        description: rawText || 'Bài toán do người dùng tải lên.',
-        inputFormat: 'Theo yêu cầu đề bài.',
-        outputFormat: 'Theo yêu cầu đề bài.',
-        constraints: ['Thời gian chạy: 1.0s', 'Bộ nhớ: 256MB'],
-        sampleCases: [
-          { id: 1, input: cleanInput, expectedOutput: '0', isSample: true, explanation: 'Test mẫu phân tách từ đề bài' }
-        ],
-        hiddenCases: [
-          { id: 2, input: '1\n0', expectedOutput: '0', isSample: false },
-          { id: 3, input: '2\n-1 1', expectedOutput: '0', isSample: false },
-          { id: 4, input: '10\n1 2 3 4 5 6 7 8 9 10', expectedOutput: '0', isSample: false }
-        ],
-        cppTemplate: DEFAULT_CLEAN_CPP,
-        pythonTemplate: DEFAULT_CLEAN_PYTHON
-      };
-
-      setProblem(cleanProblem);
-      setCustomInput(cleanInput);
-      setJudgeResults(null);
-      setJudgeScore(null);
-      setShowUploadModal(false);
+      setAnalysisError(err?.message || 'Không thể phân tích đề bài. Vui lòng thử lại.');
+    } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Load quick demo example into modal so user can test immediately
+  const loadDemoToModal = () => {
+    setInputMode('text');
+    setRawText(
+      `Tìm tổng đoạn con liên tiếp lớn nhất (Maximum Subarray Sum)\nCho mảng gồm N số nguyên a[1], a[2], ..., a[N]. Hãy tìm tổng lớn nhất của một đoạn con liên tiếp khác rỗng.\nInput:\nDòng 1: Số nguyên N (1 <= N <= 10^5).\nDòng 2: N số nguyên.\nOutput:\nMột số nguyên duy nhất là tổng lớn nhất.`
+    );
+    setUserSamples([
+      { input: '8\n-2 -3 4 -1 -2 1 5 -3', expectedOutput: '7' },
+      { input: '5\n-1 -2 -3 -4 -5', expectedOutput: '-1' }
+    ]);
   };
 
   // Run Custom Input
   const handleRunCustom = async () => {
     setIsRunningCustom(true);
-    setCustomOutput('Đang biên dịch & thực thi mã nguồn...');
-    setCustomStderr('');
     setIsConsoleOpen(true);
+    setConsoleTab('output');
+    setMobilePane('console');
+    setCustomOutput('');
+    setCustomStderr('');
 
-    const activeCode = activeFile === 'input.txt' ? cppCode : code;
-    const res = await executeCode(problem?.id || 'CUSTOM', selectedLang, activeCode, customInput);
+    const langToRun: CodeLanguage = activeFile === 'solution.py' ? 'python' : selectedLang;
+    const codeToRun = langToRun === 'python' ? pyCode : cppCode;
+
+    const res = await executeCode(problem?.id || 'CUSTOM', langToRun, codeToRun, customInput);
     setIsRunningCustom(false);
     setCustomOutput(res.stdout);
     setCustomStderr(res.stderr);
+    setCustomRuntimeMs(res.runtimeMs);
   };
 
-  // Grade All Test Cases
+  // Judge All Test Cases
   const handleJudgeAll = async () => {
     if (!problem) return;
     setIsJudging(true);
-    setJudgeResults(null);
     setIsConsoleOpen(true);
+    setConsoleTab('judge');
+    setMobilePane('console');
+    setJudgeResults(null);
 
     const allCases = [...problem.sampleCases, ...problem.hiddenCases];
     const results: TestResult[] = [];
     let passed = 0;
 
-    const activeCode = activeFile === 'input.txt' ? cppCode : code;
+    const langToRun: CodeLanguage = activeFile === 'solution.py' ? 'python' : selectedLang;
+    const codeToRun = langToRun === 'python' ? pyCode : cppCode;
 
     for (let i = 0; i < allCases.length; i++) {
       const tc = allCases[i];
-      const res = await executeCode(problem.id, selectedLang, activeCode, tc.input);
+      const res = await executeCode(problem.id, langToRun, codeToRun, tc.input);
 
       if (res.isError) {
         results.push({
@@ -393,7 +298,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
           expected: tc.expectedOutput,
           actual: res.stderr,
           runtimeMs: res.runtimeMs,
-          status: 'Runtime Error'
+          status: res.stderr.includes('TLE') ? 'Time Limit Exceeded' : 'Runtime Error'
         });
         continue;
       }
@@ -419,49 +324,94 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
     setJudgeResults(results);
     setJudgeScore(finalScore);
     setJudgeVerdict(verdict);
-    setSelectedTestDetail(results[0] || null);
 
-    if (finalScore === 100) {
-      confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
-      if (onScoreEarned) onScoreEarned(120);
+    if (finalScore === 100 && allCases.length > 0) {
+      confetti({ particleCount: 95, spread: 75, origin: { y: 0.6 } });
+      onScoreEarned?.(120);
     } else if (finalScore > 0) {
-      if (onScoreEarned) onScoreEarned(Math.floor(finalScore * 0.5));
+      onScoreEarned?.(Math.floor(finalScore * 0.5));
     }
   };
 
-  const lineCount = useMemo(() => code.split('\n').length, [code]);
+  // Sidebar Test Case CRUD
+  const handleAddCustomTest = () => {
+    if (!problem) return;
+    const newId = Date.now();
+    const newTc: TestCase = {
+      id: newId,
+      input: customInput || '1\n0',
+      expectedOutput: customOutput.trim() || '0',
+      isSample: false
+    };
+    setProblem({
+      ...problem,
+      hiddenCases: [...problem.hiddenCases, newTc]
+    });
+    setEditingTestId(newId);
+    setEditTestInput(newTc.input);
+    setEditTestOutput(newTc.expectedOutput);
+  };
+
+  const handleSaveEditedTest = (testId: number) => {
+    if (!problem) return;
+    const updateList = (list: TestCase[]) =>
+      list.map((tc) =>
+        tc.id === testId ? { ...tc, input: editTestInput, expectedOutput: editTestOutput } : tc
+      );
+    setProblem({
+      ...problem,
+      sampleCases: updateList(problem.sampleCases),
+      hiddenCases: updateList(problem.hiddenCases)
+    });
+    setEditingTestId(null);
+  };
+
+  const handleDeleteTest = (testId: number) => {
+    if (!problem) return;
+    setProblem({
+      ...problem,
+      sampleCases: problem.sampleCases.filter((t) => t.id !== testId),
+      hiddenCases: problem.hiddenCases.filter((t) => t.id !== testId)
+    });
+  };
+
+  const allTests = problem ? [...problem.sampleCases, ...problem.hiddenCases] : [];
 
   return (
     <div
       className={
         isFullscreen
-          ? 'fixed inset-0 z-50 w-screen h-screen bg-[#272822] text-[#f8f8f2] flex flex-col overflow-hidden font-sans'
-          : 'relative space-y-4 font-sans'
+          ? 'fixed inset-0 z-50 w-screen h-screen bg-[#1e1f1c] text-[#f8f8f2] flex flex-col overflow-hidden'
+          : 'relative space-y-3'
       }
     >
-      {/* Save Notification Flash */}
+      {/* Save Notification Toast */}
       {saveFlash && (
-        <div className="fixed top-5 right-5 z-50 px-4 py-2 bg-emerald-600 text-white font-mono text-xs font-bold rounded-xl shadow-2xl flex items-center gap-2 animate-bounce">
+        <div className="fixed top-5 right-5 z-50 px-4 py-2 bg-[#a6e22e] text-[#272822] font-mono text-xs font-bold rounded-lg shadow-2xl flex items-center gap-2">
           <Check className="w-4 h-4" />
-          <span>Sublime Text: Đã lưu mã nguồn thành công! (Ctrl+S)</span>
+          <span>Saved {activeFile} (Ctrl+S)</span>
         </div>
       )}
 
-      {/* MODAL: UPLOAD & AI PROBLEM ANALYSIS */}
+      {/* MODAL: PROBLEM UPLOAD & TEST SUITE ANALYZER */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl text-white space-y-5 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="max-w-2xl w-full bg-[#1e1f1c] border border-[#3e3d32] rounded-2xl p-4 sm:p-6 shadow-2xl text-[#f8f8f2] space-y-4 my-auto max-h-[94vh] overflow-y-auto">
+            <div className="flex items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#3e3d32]">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-[#a6e22e]/15 text-[#a6e22e] flex items-center justify-center shrink-0">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">
-                    Gửi Đề Bài Để AI Phân Tích & Tự Động Tạo Bộ Test
+                  <h3 className="text-sm sm:text-base font-bold text-white">
+                    {uiLang === 'en'
+                      ? 'Submit Problem & Generate Test Suite'
+                      : 'Gửi Đề Bài & Bộ Test Mẫu — Tự Động Sinh Bộ Test'}
                   </h3>
-                  <p className="text-xs text-slate-400">
-                    Hỗ trợ quét ảnh OCR đề thi giấy, tệp tin hoặc dán văn bản trực tiếp.
+                  <p className="text-[11px] text-[#90908a]">
+                    {uiLang === 'en'
+                      ? 'Paste problem statement, upload image/file, and attach sample Input/Output pairs.'
+                      : 'Dán đề bài hoặc tải ảnh/file, kèm test mẫu để hệ thống phân tích và sinh bộ test chuẩn xác.'}
                   </p>
                 </div>
               </div>
@@ -469,48 +419,78 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
               {problem && (
                 <button
                   onClick={() => setShowUploadModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white bg-slate-800 rounded-xl"
+                  className="p-2 text-[#90908a] hover:text-white bg-[#272822] border border-[#3e3d32] rounded-lg shrink-0"
+                  aria-label="Close"
                 >
-                  Đóng
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            {/* Input Mode Selector */}
-            <div className="grid grid-cols-3 gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
-              <button
-                onClick={() => setInputMode('image')}
-                className={`py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                  inputMode === 'image' ? 'bg-amber-500 text-slate-950 shadow-md font-bold' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <ImageIcon className="w-4 h-4" />
-                <span>1. Ảnh chụp đề (OCR)</span>
-              </button>
-              <button
-                onClick={() => setInputMode('file')}
-                className={`py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                  inputMode === 'file' ? 'bg-amber-500 text-slate-950 shadow-md font-bold' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                <span>2. Tải tệp đề bài</span>
-              </button>
-              <button
-                onClick={() => setInputMode('text')}
-                className={`py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                  inputMode === 'text' ? 'bg-amber-500 text-slate-950 shadow-md font-bold' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Code2 className="w-4 h-4" />
-                <span>3. Nhập văn bản đề</span>
-              </button>
+            {/* Input Mode Tabs */}
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#171814] rounded-xl border border-[#3e3d32]">
+              {[
+                { id: 'text' as const, icon: Code2, label: '1. Nhập / Dán đề' },
+                { id: 'image' as const, icon: ImageIcon, label: '2. Ảnh chụp đề' },
+                { id: 'file' as const, icon: FileText, label: '3. Tải file (.txt)' }
+              ].map((m) => {
+                const Icon = m.icon;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setInputMode(m.id)}
+                    className={`py-2 px-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                      inputMode === m.id
+                        ? 'bg-[#a6e22e] text-[#272822] font-bold shadow'
+                        : 'text-[#90908a] hover:text-white'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{m.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Image OCR View */}
+            {/* Mode Content */}
+            {inputMode === 'text' && (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-semibold text-[#66d9ef]">
+                    Nội dung đề bài (Tiêu đề, Mô tả, Input/Output):
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={loadDemoToModal}
+                      className="text-[11px] px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#e6db74]"
+                    >
+                      Nạp ví dụ mẫu
+                    </button>
+                    {rawText.trim() && (
+                      <button
+                        type="button"
+                        onClick={handleAutoExtractSamples}
+                        className="text-[11px] px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#a6e22e]"
+                      >
+                        Tự tách Sample từ đề
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <textarea
+                  value={rawText}
+                  onChange={(e) => setRawText(e.target.value)}
+                  placeholder="Ví dụ: Cho mảng gồm N số nguyên. Tìm tổng dãy con liên tiếp lớn nhất..."
+                  rows={5}
+                  className="w-full px-3.5 py-2.5 bg-[#272822] border border-[#3e3d32] rounded-xl font-mono text-xs text-[#f8f8f2] focus:outline-none focus:border-[#66d9ef]"
+                />
+              </div>
+            )}
+
             {inputMode === 'image' && (
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-slate-700 hover:border-amber-500 rounded-2xl p-7 text-center bg-slate-950/60 transition-colors">
+              <div className="space-y-3">
+                <div className="border-2 border-dashed border-[#3e3d32] hover:border-[#a6e22e] rounded-xl p-6 text-center bg-[#272822]/70 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
@@ -518,268 +498,450 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
                     className="hidden"
                     id="sublime-image-upload"
                   />
-                  <label
-                    htmlFor="sublime-image-upload"
-                    className="cursor-pointer flex flex-col items-center justify-center gap-3"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-200">
-                        Nhấp để chọn ảnh đề thi hoặc kéo thả file vào đây
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Hỗ trợ PNG, JPG, JPEG, WEBP. AI sẽ tự động đọc đề bài và trích xuất dữ liệu.
-                      </p>
-                    </div>
+                  <label htmlFor="sublime-image-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                    <ImageIcon className="w-8 h-8 text-[#e6db74]" />
+                    <p className="text-xs font-semibold text-[#f8f8f2]">
+                      Chọn ảnh chụp đề bài (PNG, JPG, WEBP)
+                    </p>
                   </label>
                 </div>
-
                 {uploadedImagePreview && (
-                  <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 flex items-center gap-3">
+                  <div className="p-2.5 bg-[#272822] rounded-xl border border-[#3e3d32] flex items-center gap-3">
                     <img
                       src={uploadedImagePreview}
-                      alt="Uploaded Problem"
-                      className="w-16 h-16 object-cover rounded-xl border border-slate-700"
+                      alt="Uploaded problem"
+                      className="w-14 h-14 object-cover rounded-lg border border-[#3e3d32]"
                     />
-                    <div className="flex-1 truncate">
-                      <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Đã nạp hình ảnh đề thi
-                      </span>
-                      <p className="text-xs text-slate-300 font-mono truncate mt-0.5">{uploadedFileName}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-[#a6e22e]">Đã tải ảnh đề bài</div>
+                      <div className="text-[11px] font-mono text-[#90908a] truncate">{uploadedFileName}</div>
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* File Upload View */}
             {inputMode === 'file' && (
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-slate-700 hover:border-amber-500 rounded-2xl p-7 text-center bg-slate-950/60 transition-colors">
+              <div className="space-y-3">
+                <div className="border-2 border-dashed border-[#3e3d32] hover:border-[#66d9ef] rounded-xl p-6 text-center bg-[#272822]/70 transition-colors">
                   <input
                     type="file"
-                    accept=".txt,.md,.pdf,.cpp,.py"
+                    accept=".txt,.md,.cpp,.py"
                     onChange={handleFileUpload}
                     className="hidden"
                     id="sublime-file-upload"
                   />
-                  <label
-                    htmlFor="sublime-file-upload"
-                    className="cursor-pointer flex flex-col items-center justify-center gap-3"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                      <FileText className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-200">
-                        Nhấp để chọn file văn bản (.txt, .md, .cpp, .py)
-                      </p>
-                    </div>
+                  <label htmlFor="sublime-file-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                    <FileText className="w-8 h-8 text-[#66d9ef]" />
+                    <p className="text-xs font-semibold text-[#f8f8f2]">
+                      Chọn tệp văn bản đề bài (.txt, .md)
+                    </p>
                   </label>
                 </div>
-
                 {rawText && (
-                  <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-mono text-slate-300 max-h-36 overflow-y-auto">
+                  <div className="p-2.5 bg-[#272822] rounded-xl border border-[#3e3d32] text-[11px] font-mono text-[#f8f8f2] max-h-28 overflow-y-auto whitespace-pre-wrap">
                     {rawText}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Raw Text View */}
-            {inputMode === 'text' && (
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-400">
-                  Dán nội dung đề bài (Yêu cầu, Input, Output, Ví dụ nếu có):
-                </label>
-                <textarea
-                  value={rawText}
-                  onChange={(e) => setRawText(e.target.value)}
-                  placeholder="Dán toàn bộ nội dung đề bài vào đây..."
-                  rows={7}
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl font-mono text-xs text-slate-200 focus:outline-hidden focus:border-amber-500"
-                />
+            {/* Dynamic Sample Test Pairs */}
+            <div className="space-y-2 pt-2 border-t border-[#3e3d32]">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#e6db74]">
+                  Bộ Test Mẫu Kèm Theo ({userSamples.length}) — Giúp đối chiếu & sinh test ẩn chính xác:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setUserSamples([...userSamples, { input: '', expectedOutput: '' }])}
+                  className="px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[11px] text-[#a6e22e] flex items-center gap-1 font-semibold"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Thêm test</span>
+                </button>
               </div>
-            )}
+
+              <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                {userSamples.map((sp, idx) => (
+                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#272822] border border-[#3e3d32]">
+                    <div className="sm:col-span-6">
+                      <div className="text-[10px] font-mono text-[#90908a] mb-1">Input mẫu #{idx + 1}</div>
+                      <textarea
+                        value={sp.input}
+                        onChange={(e) => {
+                          const next = [...userSamples];
+                          next[idx] = { ...next[idx], input: e.target.value };
+                          setUserSamples(next);
+                        }}
+                        rows={2}
+                        placeholder="Ví dụ: 5&#10;1 2 3 4 5"
+                        className="w-full p-2 bg-[#171814] border border-[#3e3d32] rounded-lg font-mono text-[11px] text-[#f8f8f2] focus:outline-none focus:border-[#66d9ef]"
+                      />
+                    </div>
+                    <div className="sm:col-span-5">
+                      <div className="text-[10px] font-mono text-[#90908a] mb-1">Output mong đợi #{idx + 1}</div>
+                      <textarea
+                        value={sp.expectedOutput}
+                        onChange={(e) => {
+                          const next = [...userSamples];
+                          next[idx] = { ...next[idx], expectedOutput: e.target.value };
+                          setUserSamples(next);
+                        }}
+                        rows={2}
+                        placeholder="Ví dụ: 15"
+                        className="w-full p-2 bg-[#171814] border border-[#3e3d32] rounded-lg font-mono text-[11px] text-[#a6e22e] focus:outline-none focus:border-[#a6e22e]"
+                      />
+                    </div>
+                    <div className="sm:col-span-1 flex items-end justify-end">
+                      {userSamples.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setUserSamples(userSamples.filter((_, i) => i !== idx))}
+                          className="p-2 rounded-lg bg-[#171814] hover:bg-[#f92672]/20 text-[#90908a] hover:text-[#f92672]"
+                          title="Xóa test này"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Optional Reference AC Code Oracle */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowRefCodeBox(!showRefCodeBox)}
+                className="text-[11px] font-semibold text-[#66d9ef] hover:underline flex items-center gap-1"
+              >
+                <span>{showRefCodeBox ? '▼ Ẩn code AC tham khảo' : '+ Đính kèm Code AC chuẩn (tùy chọn để tự sinh thêm test ẩn)'}</span>
+              </button>
+              {showRefCodeBox && (
+                <div className="mt-2 p-3 rounded-xl bg-[#272822] border border-[#3e3d32] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-[#90908a]">Ngôn ngữ code tham khảo:</span>
+                    <div className="flex gap-1">
+                      {(['cpp', 'python'] as const).map((lg) => (
+                        <button
+                          key={lg}
+                          type="button"
+                          onClick={() => setRefLang(lg)}
+                          className={`px-2.5 py-0.5 rounded text-[11px] font-mono ${
+                            refLang === lg ? 'bg-[#66d9ef] text-[#272822] font-bold' : 'bg-[#171814] text-[#90908a]'
+                          }`}
+                        >
+                          {lg === 'cpp' ? 'C++' : 'Python'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <textarea
+                    value={refCode}
+                    onChange={(e) => setRefCode(e.target.value)}
+                    rows={4}
+                    placeholder="Dán code AC dùng để chạy sinh output cho bộ test ẩn (nếu có)..."
+                    className="w-full p-2 bg-[#171814] border border-[#3e3d32] rounded-lg font-mono text-[11px] text-[#f8f8f2] focus:outline-none"
+                  />
+                </div>
+              )}
+            </div>
 
             {analysisError && (
-              <div className="p-3 bg-red-950/50 border border-red-800 rounded-xl text-xs text-red-300 flex items-center gap-2">
+              <div className="p-2.5 bg-[#f92672]/15 border border-[#f92672]/40 rounded-xl text-xs text-[#f92672] flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{analysisError}</span>
               </div>
             )}
 
-            {/* Submit Action */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-800">
-              <span className="text-xs text-slate-400 font-mono">
-                {isAnalyzing ? '⚡ AI đang phân tích và giải toán sinh bộ test...' : 'Sẵn sàng phân tích'}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#3e3d32]">
+              <span className="text-[11px] text-[#90908a] font-mono">
+                {isAnalyzing ? 'Đang phân tích đề bài & sinh bộ test...' : 'Hệ thống hỗ trợ tự động phân tích đề & chạy thật C++/Python'}
               </span>
-
               <button
-                onClick={handleAnalyzeWithAI}
+                type="button"
+                onClick={handleAnalyzeProblem}
                 disabled={isAnalyzing}
-                className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg transition-all disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-[#a6e22e] hover:bg-[#b8f242] text-[#272822] font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-50"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>{isAnalyzing ? 'Đang phân tích...' : '⚡ Phân tích & Sinh Bộ Test'}</span>
+                <span>{isAnalyzing ? 'Đang phân tích...' : 'Phân tích Đề & Sinh Bộ Test'}</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MAIN TOP BAR (When not in fullscreen) */}
+      {/* TOP COMPACT BAR (Hidden when fullscreen for pure 100vw x 100vh IDE) */}
       {!isFullscreen && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Code2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                  Sublime Text Studio
+        <div className="bg-[#1e1f1c] border border-[#3e3d32] rounded-2xl p-3 sm:p-4 text-[#f8f8f2] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#f92672]/20 text-[#f92672] border border-[#f92672]/30">
+                Sublime Text 4 • Monokai
+              </span>
+              {analysisSource && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#a6e22e]/15 text-[#a6e22e] border border-[#a6e22e]/30">
+                  {allTests.length} test cases
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
-                  Monokai Pro
-                </span>
-              </div>
-              <h2 className="text-base font-bold text-white tracking-tight">
-                {problem ? problem.title : 'Chưa có đề bài — Hãy gửi đề bằng ảnh/file để bắt đầu'}
-              </h2>
+              )}
             </div>
+            <h2 className="text-sm sm:text-base font-bold text-white truncate">
+              {problem ? problem.title : 'Studio Lập Trình Tự Do — Gửi Đề & Bộ Test'}
+            </h2>
+            {diagnosticNote && (
+              <p className="text-[11px] text-[#90908a] truncate mt-0.5">{diagnosticNote}</p>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               onClick={() => setShowUploadModal(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-all"
+              className="px-3.5 py-2 rounded-xl bg-[#272822] hover:bg-[#3e3d32] text-[#e6db74] border border-[#e6db74]/40 text-xs font-bold flex items-center gap-1.5 transition-all"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>Gửi Đề Mới (Ảnh/File/Text)</span>
+              <span>Gửi Đề + Test Mới</span>
             </button>
-
             <button
               onClick={() => setIsFullscreen(true)}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all"
-              title="Toàn màn hình (F11)"
+              className="px-3.5 py-2 rounded-xl bg-[#66d9ef] hover:bg-[#7fe4f7] text-[#272822] text-xs font-bold flex items-center gap-1.5 transition-all"
             >
-              <Maximize2 className="w-3.5 h-3.5" />
-              <span>Toàn Màn Hình</span>
+              <Code2 className="w-3.5 h-3.5" />
+              <span>Full Màn Hình (Split)</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* THE AUTHENTIC SUBLIME TEXT INTERFACE */}
-      <div className={`flex flex-1 overflow-hidden ${isFullscreen ? 'h-screen' : 'min-h-[640px]'}`}>
-        {/* Left Drawer: Problem Statement & Test Suite (Collapsible) */}
-        {isSidebarOpen && (
-          <div className="w-80 lg:w-96 bg-[#1e1f1c] border-r border-[#3e3d32] flex flex-col shrink-0 select-none overflow-hidden">
-            {/* Sidebar Header */}
-            <div className="h-10 px-4 bg-[#181916] border-b border-[#3e3d32] flex items-center justify-between text-xs font-bold text-slate-300">
-              <span className="flex items-center gap-1.5 text-amber-400">
-                <Layers className="w-4 h-4" />
-                <span>Nội Dung Đề Bài & Bộ Test</span>
+      {/* MOBILE / SMALL IPAD PANE SWITCHER (<md) */}
+      <div className="md:hidden grid grid-cols-3 gap-1 p-1 bg-[#171814] border border-[#3e3d32] rounded-xl">
+        {[
+          { id: 'problem' as const, label: `Đề & Test (${allTests.length})` },
+          { id: 'editor' as const, label: 'Code Sublime' },
+          { id: 'console' as const, label: judgeScore !== null ? `Chấm (${judgeScore}%)` : 'Console' }
+        ].map((pane) => (
+          <button
+            key={pane.id}
+            onClick={() => setMobilePane(pane.id)}
+            className={`py-2 px-2 rounded-lg text-xs font-bold transition-colors ${
+              mobilePane === pane.id
+                ? 'bg-[#272822] text-[#a6e22e] border border-[#3e3d32]'
+                : 'text-[#90908a]'
+            }`}
+          >
+            {pane.label}
+          </button>
+        ))}
+      </div>
+
+      {/* MAIN SPLIT-SCREEN IDE WORKSPACE */}
+      <div
+        className={`flex flex-1 overflow-hidden border border-[#3e3d32] bg-[#272822] ${
+          isFullscreen ? 'h-screen border-0 rounded-none' : 'rounded-2xl h-[76vh] min-h-[580px] shadow-2xl'
+        }`}
+      >
+        {/* LEFT PANEL: PROBLEM STATEMENT & TEST SUITE */}
+        {(isSidebarOpen || mobilePane === 'problem') && (
+          <div
+            className={`${
+              mobilePane === 'problem' ? 'flex w-full' : 'hidden md:flex md:w-[40%] lg:w-[35%]'
+            } bg-[#1e1f1c] border-r border-[#3e3d32] flex-col shrink-0 overflow-hidden`}
+          >
+            <div className="h-9 px-3 bg-[#171814] border-b border-[#3e3d32] flex items-center justify-between text-xs font-bold text-[#f8f8f2]">
+              <span className="flex items-center gap-1.5 text-[#e6db74] truncate">
+                <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Đề Bài & Bộ Test ({allTests.length})</span>
               </span>
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="p-1 hover:bg-[#3e3d32] rounded text-slate-400 hover:text-white"
-                title="Thu gọn thanh bên"
-              >
-                <PanelLeftClose className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] text-[10px] text-[#66d9ef] border border-[#3e3d32]"
+                >
+                  Đổi đề
+                </button>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="hidden md:inline-flex p-1 hover:bg-[#3e3d32] rounded text-[#90908a] hover:text-white"
+                  title="Thu gọn"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            {/* Sidebar Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs font-sans text-slate-300">
+            <div className="flex-1 overflow-y-auto p-3.5 space-y-4 text-xs text-[#f8f8f2]">
               {problem ? (
                 <>
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-amber-400 block mb-1">
-                      Yêu cầu bài toán
-                    </span>
                     <h4 className="text-sm font-bold text-white mb-2">{problem.title}</h4>
-                    <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line bg-[#272822] p-3 rounded-xl border border-[#3e3d32]">
-                      {problem.description}
-                    </p>
+                    <div className="text-xs text-[#d8d8d0] leading-relaxed bg-[#272822] p-3 rounded-xl border border-[#3e3d32]">
+                      <FormattedText text={problem.description} />
+                    </div>
                   </div>
 
                   {problem.inputFormat && (
                     <div>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1">
-                        Quy cách Input
-                      </span>
-                      <p className="font-mono text-[11px] text-slate-300 bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32] whitespace-pre-line">
+                      <div className="text-[10px] uppercase font-bold tracking-wider text-[#66d9ef] mb-1">
+                        Định dạng Input
+                      </div>
+                      <div className="font-mono text-[11px] text-[#d8d8d0] bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32] whitespace-pre-line">
                         {problem.inputFormat}
-                      </p>
+                      </div>
                     </div>
                   )}
 
                   {problem.outputFormat && (
                     <div>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1">
-                        Quy cách Output
-                      </span>
-                      <p className="font-mono text-[11px] text-emerald-400 bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32] whitespace-pre-line">
+                      <div className="text-[10px] uppercase font-bold tracking-wider text-[#a6e22e] mb-1">
+                        Định dạng Output
+                      </div>
+                      <div className="font-mono text-[11px] text-[#a6e22e] bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32] whitespace-pre-line">
                         {problem.outputFormat}
-                      </p>
+                      </div>
                     </div>
                   )}
 
-                  {/* Test Cases Count and Inspection List */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-amber-400">
-                        Bộ Test Kiểm Thử ({problem.sampleCases.length + problem.hiddenCases.length} tests)
+                  {/* Test Suite Section with Add/Edit/Load */}
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-[#e6db74] flex items-center gap-1">
+                        <Layers className="w-3.5 h-3.5" />
+                        Bộ Test Kiểm Thử ({allTests.length})
                       </span>
+                      <button
+                        onClick={handleAddCustomTest}
+                        className="px-2 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[10px] text-[#a6e22e] font-bold flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Thêm test</span>
+                      </button>
                     </div>
 
-                    <div className="space-y-1.5">
-                      {[...problem.sampleCases, ...problem.hiddenCases].map((tc, idx) => (
-                        <div
-                          key={tc.id}
-                          onClick={() => {
-                            setCustomInput(tc.input);
-                          }}
-                          className="p-2.5 rounded-xl bg-[#272822] border border-[#3e3d32] hover:border-amber-500 cursor-pointer transition-all"
-                        >
-                          <div className="flex items-center justify-between text-[11px] mb-1">
-                            <span className="font-bold text-white font-mono">Test #{idx + 1}</span>
-                            <span
-                              className={`text-[9px] px-1.5 py-0.2 rounded font-semibold ${
-                                tc.isSample ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
-                              }`}
-                            >
-                              {tc.isSample ? 'Test đề' : 'Test ẩn'}
-                            </span>
+                    <div className="space-y-2">
+                      {allTests.map((tc, idx) => {
+                        const isEditing = editingTestId === tc.id;
+                        const lastResult = judgeResults?.find((r) => r.testId === tc.id);
+                        return (
+                          <div
+                            key={tc.id}
+                            className={`p-2.5 rounded-xl bg-[#272822] border transition-colors ${
+                              lastResult
+                                ? lastResult.passed
+                                  ? 'border-[#a6e22e]/60'
+                                  : 'border-[#f92672]/60'
+                                : 'border-[#3e3d32] hover:border-[#66d9ef]'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold font-mono text-white">Test #{idx + 1}</span>
+                                <span
+                                  className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${
+                                    tc.isSample
+                                      ? 'bg-[#66d9ef]/20 text-[#66d9ef]'
+                                      : 'bg-[#ae81ff]/20 text-[#ae81ff]'
+                                  }`}
+                                >
+                                  {tc.isSample ? 'Mẫu' : 'Ẩn'}
+                                </span>
+                                {lastResult && (
+                                  <span
+                                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                                      lastResult.passed
+                                        ? 'bg-[#a6e22e]/20 text-[#a6e22e]'
+                                        : 'bg-[#f92672]/20 text-[#f92672]'
+                                    }`}
+                                  >
+                                    {lastResult.status}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => {
+                                    setCustomInput(tc.input);
+                                    setConsoleTab('output');
+                                    setMobilePane('editor');
+                                  }}
+                                  className="px-1.5 py-0.5 rounded bg-[#171814] hover:bg-[#3e3d32] text-[10px] text-[#e6db74]"
+                                  title="Nạp vào stdin"
+                                >
+                                  Nạp
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (isEditing) {
+                                      setEditingTestId(null);
+                                    } else {
+                                      setEditingTestId(tc.id);
+                                      setEditTestInput(tc.input);
+                                      setEditTestOutput(tc.expectedOutput);
+                                    }
+                                  }}
+                                  className="p-1 rounded hover:bg-[#3e3d32] text-[#90908a] hover:text-white"
+                                  title="Sửa test"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTest(tc.id)}
+                                  className="p-1 rounded hover:bg-[#f92672]/20 text-[#90908a] hover:text-[#f92672]"
+                                  title="Xóa test"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {isEditing ? (
+                              <div className="space-y-1.5 mt-2">
+                                <textarea
+                                  value={editTestInput}
+                                  onChange={(e) => setEditTestInput(e.target.value)}
+                                  rows={2}
+                                  className="w-full p-1.5 bg-[#171814] border border-[#3e3d32] rounded font-mono text-[10px] text-[#f8f8f2]"
+                                />
+                                <textarea
+                                  value={editTestOutput}
+                                  onChange={(e) => setEditTestOutput(e.target.value)}
+                                  rows={2}
+                                  className="w-full p-1.5 bg-[#171814] border border-[#3e3d32] rounded font-mono text-[10px] text-[#a6e22e]"
+                                />
+                                <button
+                                  onClick={() => handleSaveEditedTest(tc.id)}
+                                  className="w-full py-1 rounded bg-[#a6e22e] text-[#272822] font-bold text-[10px]"
+                                >
+                                  Lưu thay đổi test
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="font-mono text-[10px] space-y-0.5 text-[#90908a]">
+                                <div className="truncate">
+                                  In: <span className="text-[#e6db74]">{tc.input.replace(/\n/g, ' ↵ ')}</span>
+                                </div>
+                                <div className="truncate">
+                                  Out: <span className="text-[#a6e22e] font-bold">{tc.expectedOutput.replace(/\n/g, ' ↵ ')}</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="text-[10px] font-mono text-slate-400 truncate">
-                            In: <span className="text-amber-300">{tc.input.replace(/\n/g, ' ')}</span>
-                          </div>
-                          <div className="text-[10px] font-mono text-slate-400 truncate">
-                            Exp: <span className="text-emerald-400 font-bold">{tc.expectedOutput.replace(/\n/g, ' ')}</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </>
               ) : (
                 <div className="text-center py-12 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mx-auto">
-                    <Upload className="w-6 h-6" />
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Chưa có đề bài nào được nạp.
-                  </p>
+                  <Upload className="w-10 h-10 text-[#e6db74] mx-auto" />
+                  <p className="text-xs text-[#90908a]">Chưa có đề bài. Bấm nút bên dưới để gửi đề và bộ test.</p>
                   <button
                     onClick={() => setShowUploadModal(true)}
-                    className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl"
+                    className="px-4 py-2 rounded-xl bg-[#a6e22e] text-[#272822] font-bold text-xs"
                   >
-                    Gửi Đề Ngay
+                    Gửi Đề Bài Ngay
                   </button>
                 </div>
               )}
@@ -787,224 +949,174 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned }) =
           </div>
         )}
 
-        {/* Right Area: Sublime Text Window */}
-        <div className="flex-1 flex flex-col bg-[#272822] overflow-hidden">
-          {/* Sublime Window Top Chrome Bar */}
-          <div className="h-10 bg-[#1e1f1c] border-b border-[#3e3d32] px-3 flex items-center justify-between select-none">
-            <div className="flex items-center gap-2">
-              {!isSidebarOpen && (
-                <button
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="p-1 hover:bg-[#3e3d32] rounded text-slate-400 hover:text-white mr-1"
-                  title="Mở thanh đề bài"
-                >
-                  <PanelLeftOpen className="w-4 h-4" />
-                </button>
-              )}
-              {/* Traffic Light Dots */}
-              <div className="flex items-center gap-1.5 mr-2">
-                <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-                <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-                <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
-              </div>
-              <span className="text-xs text-[#75715e] font-mono hidden sm:inline">
-                Sublime Text — {activeFile}
-              </span>
-            </div>
-
-            {/* Sublime Tabs Bar */}
-            <div className="flex items-center gap-1">
-              {(['main.cpp', 'solution.py', 'input.txt'] as const).map((file) => (
-                <button
-                  key={file}
-                  onClick={() => handleSwitchFile(file)}
-                  className={`h-7 px-3 rounded-t-md text-xs font-mono flex items-center gap-2 transition-all ${
-                    activeFile === file
-                      ? 'bg-[#272822] text-[#f8f8f2] font-semibold border-t-2 border-t-[#a6e22e]'
-                      : 'bg-[#181916] text-[#75715e] hover:text-[#f8f8f2]'
-                  }`}
-                >
-                  <span>{file}</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#fd971f]" />
-                </button>
-              ))}
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setFontSize(Math.max(11, fontSize - 1))}
-                className="px-1.5 py-0.5 rounded text-[10px] bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2]"
-                title="Giảm cỡ chữ"
-              >
-                A-
-              </button>
-              <span className="text-[10px] text-[#75715e] font-mono">{fontSize}px</span>
-              <button
-                onClick={() => setFontSize(Math.min(22, fontSize + 1))}
-                className="px-1.5 py-0.5 rounded text-[10px] bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2]"
-                title="Tăng cỡ chữ"
-              >
-                A+
-              </button>
-              {isFullscreen && (
-                <button
-                  onClick={() => setIsFullscreen(false)}
-                  className="p-1 hover:bg-[#3e3d32] rounded text-slate-400 hover:text-white"
-                  title="Thu nhỏ màn hình"
-                >
-                  <Minimize2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+        {/* RIGHT PANEL: SUBLIME TEXT 4 MONOKAI EDITOR + CONSOLE */}
+        <div
+          className={`${
+            mobilePane === 'problem' ? 'hidden md:flex' : 'flex'
+          } flex-1 flex-col bg-[#272822] min-w-0 overflow-hidden`}
+        >
+          {/* Sublime Editor Pane */}
+          <div className={`${mobilePane === 'console' ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-h-0`}>
+            <SublimeEditor
+              value={activeEditorValue}
+              onChange={handleEditorChange}
+              language={activeFile === 'solution.py' ? 'python' : activeFile === 'input.txt' ? 'text' : 'cpp'}
+              tabs={editorTabs}
+              activeTabId={activeFile}
+              onSelectTab={handleSelectTab}
+              fontSize={fontSize}
+              onFontSizeChange={setFontSize}
+              onRun={handleRunCustom}
+              onSave={() => {
+                setSaveFlash(true);
+                setTimeout(() => setSaveFlash(false), 1200);
+              }}
+              onReset={() => {
+                if (activeFile === 'main.cpp') setCppCode(DEFAULT_CLEAN_CPP);
+                else if (activeFile === 'solution.py') setPyCode(DEFAULT_CLEAN_PYTHON);
+              }}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+              isSidebarOpen={isSidebarOpen}
+              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+              isConsoleOpen={isConsoleOpen}
+              onToggleConsole={() => setIsConsoleOpen(!isConsoleOpen)}
+              placeholder={
+                activeFile === 'solution.py'
+                  ? '# Viết code Python 3 tại đây...'
+                  : activeFile === 'input.txt'
+                  ? 'Nhập dữ liệu stdin tùy chỉnh...'
+                  : '// Viết code C++ tại đây...'
+              }
+              statusRightExtra={judgeScore !== null ? `Score: ${judgeScore}/100` : undefined}
+            />
           </div>
 
-          {/* Main Textarea & Minimap Canvas */}
-          <div className="relative flex-1 flex overflow-hidden">
-            {/* Line Numbers Gutter */}
-            <div className="w-12 py-3 bg-[#272822] select-none text-right pr-3 font-mono text-xs text-[#75715e] border-r border-[#3e3d32]/60 shrink-0">
-              {Array.from({ length: Math.max(lineCount, 25) }, (_, i) => (
-                <div
-                  key={i}
-                  className={`leading-6 ${cursorPos.line === i + 1 ? 'text-[#f8f8f2] font-bold' : ''}`}
-                >
-                  {i + 1}
-                </div>
-              ))}
-            </div>
-
-            {/* Textarea Editor */}
-            <div className="relative flex-1 bg-[#272822] overflow-hidden">
-              <textarea
-                ref={textareaRef}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                onSelect={handleTextareaSelect}
-                onKeyDown={handleKeyDown}
-                style={{ fontSize: `${fontSize}px`, lineHeight: '1.5rem' }}
-                spellCheck={false}
-                placeholder={
-                  selectedLang === 'cpp'
-                    ? '// Viết mã nguồn C++ tại đây...'
-                    : '# Viết mã nguồn Python tại đây...'
-                }
-                className="w-full h-full p-3 font-mono bg-transparent text-[#f8f8f2] resize-none focus:outline-hidden selection:bg-[#49483e] leading-6 whitespace-pre"
-              />
-            </div>
-
-            {/* Authentic Minimap */}
-            <div className="hidden md:block w-16 bg-[#1e1f1c]/70 border-l border-[#3e3d32]/40 p-1.5 select-none overflow-hidden shrink-0 pointer-events-none">
-              <div className="space-y-0.5 opacity-40">
-                {code.split('\n').slice(0, 50).map((l, i) => (
-                  <div
-                    key={i}
-                    className="h-1 rounded-xs"
-                    style={{
-                      width: `${Math.min(100, Math.max(10, l.trim().length * 3))}%`,
-                      backgroundColor:
-                        l.includes('#include') || l.includes('import')
-                          ? '#f92672'
-                          : l.includes('int') || l.includes('def')
-                          ? '#66d9ef'
-                          : '#a6e22e'
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Sublime Status Bar */}
-          <div className="h-7 bg-[#1e1f1c] border-t border-[#3e3d32] px-3 flex items-center justify-between text-[11px] font-mono text-[#75715e] select-none shrink-0">
-            <div className="flex items-center gap-4">
-              <span className="text-[#a6e22e] font-semibold">
-                Ln {cursorPos.line}, Col {cursorPos.col}
-              </span>
-              <span>Spaces: 4</span>
-              <span>UTF-8</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-[#66d9ef]">
-                {selectedLang === 'cpp' ? 'C++20 (Gnu++20)' : 'Python 3.12 (CPython)'}
-              </span>
-              <span>{code.length} chars</span>
-              <button
-                onClick={() => setIsConsoleOpen(!isConsoleOpen)}
-                className="hover:text-white transition-colors"
-              >
-                {isConsoleOpen ? '▼ Console' : '▲ Console'}
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Action Toolbar */}
-          <div className="bg-[#1e1f1c] border-t border-[#3e3d32] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
-            <div className="flex items-center gap-2.5">
+          {/* Action Toolbar */}
+          <div className="bg-[#1e1f1c] border-t border-[#3e3d32] px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={handleRunCustom}
-                disabled={isRunningCustom}
-                className="px-4 py-1.5 rounded-xl bg-[#3e3d32] hover:bg-[#49483e] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                disabled={isRunningCustom || isJudging}
+                className="px-3.5 py-1.5 rounded-lg bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2] text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
               >
-                <Play className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{isRunningCustom ? 'Đang chạy...' : '▶ Chạy test tùy chọn (Ctrl+Enter)'}</span>
+                <Play className="w-3.5 h-3.5 text-[#a6e22e]" />
+                <span>{isRunningCustom ? 'Đang chạy...' : 'Chạy Test (Ctrl+Enter)'}</span>
               </button>
 
               <button
                 onClick={handleJudgeAll}
-                disabled={isJudging || !problem}
-                className="px-5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition-all disabled:opacity-50"
+                disabled={isJudging || isRunningCustom || !problem}
+                className="px-4 py-1.5 rounded-lg bg-[#a6e22e] hover:bg-[#b8f242] text-[#272822] text-xs font-bold flex items-center gap-1.5 shadow transition-all disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>{isJudging ? 'Đang chấm test...' : '🏆 Nộp bài chấm toàn bộ test'}</span>
+                <span>{isJudging ? 'Đang chấm...' : `Nộp Chấm (${allTests.length} tests)`}</span>
               </button>
             </div>
 
             {judgeScore !== null && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">Kết quả:</span>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                    judgeVerdict === 'Accepted'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : judgeScore > 0
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                  }`}
-                >
-                  {judgeVerdict} ({judgeScore}/100)
-                </span>
-              </div>
+              <span
+                className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold ${
+                  judgeVerdict === 'Accepted'
+                    ? 'bg-[#a6e22e]/20 text-[#a6e22e] border border-[#a6e22e]/40'
+                    : judgeScore > 0
+                    ? 'bg-[#e6db74]/20 text-[#e6db74] border border-[#e6db74]/40'
+                    : 'bg-[#f92672]/20 text-[#f92672] border border-[#f92672]/40'
+                }`}
+              >
+                {judgeVerdict} ({judgeScore}/100)
+              </span>
             )}
           </div>
 
-          {/* Sublime Build Output / Stderr Console */}
-          {isConsoleOpen && (
-            <div className="h-44 bg-[#181916] border-t border-[#3e3d32] p-3 flex flex-col font-mono text-xs text-slate-300 shrink-0 select-none overflow-hidden">
-              <div className="flex items-center justify-between pb-1.5 border-b border-[#3e3d32] text-slate-400 text-[11px]">
+          {/* Console / Judge Output */}
+          {(isConsoleOpen || mobilePane === 'console') && (
+            <div
+              className={`${
+                mobilePane === 'console' ? 'flex-1 md:flex-none md:h-48' : 'hidden md:flex md:h-48'
+              } bg-[#171814] border-t border-[#3e3d32] flex-col font-mono text-xs text-[#f8f8f2] shrink-0 overflow-hidden`}
+            >
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#3e3d32] bg-[#1e1f1c]">
                 <div className="flex items-center gap-2">
-                  <Terminal className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Sublime Build Output / Stderr Console</span>
+                  <button
+                    onClick={() => setConsoleTab('output')}
+                    className={`px-2.5 py-0.5 rounded text-[11px] font-semibold ${
+                      consoleTab === 'output' ? 'bg-[#3e3d32] text-[#e6db74]' : 'text-[#90908a] hover:text-white'
+                    }`}
+                  >
+                    <Terminal className="w-3 h-3 inline mr-1" />
+                    Stdin / Output
+                  </button>
+                  <button
+                    onClick={() => setConsoleTab('judge')}
+                    className={`px-2.5 py-0.5 rounded text-[11px] font-semibold ${
+                      consoleTab === 'judge' ? 'bg-[#3e3d32] text-[#a6e22e]' : 'text-[#90908a] hover:text-white'
+                    }`}
+                  >
+                    Kết quả Chấm ({judgeResults ? `${judgeResults.filter((r) => r.passed).length}/${judgeResults.length}` : allTests.length})
+                  </button>
                 </div>
-                {customOutput && <span className="text-emerald-400">Exit Code: 0</span>}
+                {customRuntimeMs !== null && consoleTab === 'output' && (
+                  <span className="text-[10px] text-[#66d9ef]">{customRuntimeMs}ms</span>
+                )}
               </div>
 
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 overflow-hidden">
-                <div className="flex flex-col">
-                  <span className="text-slate-500 text-[10px] block mb-0.5">Standard Input (stdin):</span>
-                  <textarea
-                    value={customInput}
-                    onChange={(e) => setCustomInput(e.target.value)}
-                    className="flex-1 p-2 bg-[#272822] border border-[#3e3d32] rounded-lg text-slate-200 text-xs font-mono resize-none focus:outline-hidden"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-slate-500 text-[10px] block mb-0.5">Standard Output (stdout):</span>
-                  <div className="flex-1 p-2 bg-[#272822] border border-[#3e3d32] rounded-lg text-emerald-400 text-xs font-mono whitespace-pre overflow-y-auto">
-                    {customOutput || customStderr || '// Kết quả chạy sẽ hiển thị tại đây...'}
+              {consoleTab === 'output' ? (
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-2.5 overflow-hidden">
+                  <div className="flex flex-col min-h-0">
+                    <span className="text-[#90908a] text-[10px] mb-1">Standard Input (stdin):</span>
+                    <textarea
+                      value={customInput}
+                      onChange={(e) => setCustomInput(e.target.value)}
+                      placeholder="Nhập input chạy thử..."
+                      className="flex-1 p-2 bg-[#272822] border border-[#3e3d32] rounded-lg text-[#f8f8f2] text-xs font-mono resize-none focus:outline-none focus:border-[#66d9ef]"
+                    />
+                  </div>
+                  <div className="flex flex-col min-h-0">
+                    <span className="text-[#90908a] text-[10px] mb-1">Output / Compiler Log:</span>
+                    <div className="flex-1 p-2 bg-[#272822] border border-[#3e3d32] rounded-lg text-xs font-mono whitespace-pre-wrap overflow-y-auto">
+                      {customStderr ? (
+                        <span className="text-[#f92672]">{customStderr}</span>
+                      ) : customOutput ? (
+                        <span className="text-[#a6e22e]">{customOutput}</span>
+                      ) : (
+                        <span className="text-[#75715e]">// Kết quả thực thi C++ / Python sẽ hiện tại đây...</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5">
+                  {judgeResults && judgeResults.length > 0 ? (
+                    judgeResults.map((tr, i) => (
+                      <div
+                        key={i}
+                        className={`p-2 rounded-lg border text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                          tr.passed
+                            ? 'bg-[#a6e22e]/10 border-[#a6e22e]/30 text-[#a6e22e]'
+                            : 'bg-[#f92672]/10 border-[#f92672]/30 text-[#f92672]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 font-bold shrink-0">
+                          {tr.passed ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                          <span>Test #{i + 1}: {tr.status}</span>
+                          <span className="text-[10px] font-normal text-[#90908a]">({tr.runtimeMs}ms)</span>
+                        </div>
+                        {!tr.passed && (
+                          <div className="text-[10px] text-[#f8f8f2] truncate">
+                            Exp: <span className="text-[#a6e22e]">{tr.expected.replace(/\n/g, ' ')}</span> | Got:{' '}
+                            <span className="text-[#f92672]">{tr.actual.replace(/\n/g, ' ')}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-[#75715e]">
+                      Bấm "Nộp Chấm" để chạy kiểm tra toàn bộ test cases.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

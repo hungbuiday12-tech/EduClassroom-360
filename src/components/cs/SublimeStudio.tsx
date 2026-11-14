@@ -770,6 +770,15 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
         <div className="bg-[#1e1f1c] border border-[#3e3d32] rounded-2xl p-3 sm:p-4 text-[#f8f8f2] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="px-2.5 py-0.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#66d9ef] text-[11px] font-bold flex items-center gap-1 shrink-0 transition-colors"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  <span>Quay lại</span>
+                </button>
+              )}
               <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#f92672]/20 text-[#f92672] border border-[#f92672]/30">
                 Sublime Text 4 • Monokai
               </span>

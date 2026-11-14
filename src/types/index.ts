@@ -96,26 +96,63 @@ export interface GeoCircle {
   radiusPointId: string;
 }
 
+export type CurriculumTrack = 'khong_chuyen' | 'chuyen';
+export type SpecializedTier = 'Cơ bản' | 'Nâng cao' | 'Chuyên / HSG';
+
+export interface LectureStep {
+  stepTitle: string;
+  stepType?: 'intuition' | 'concept' | 'derivation' | 'example' | 'pitfall' | 'experiment';
+  teacherExplanation: string;
+  formulaHighlight?: string;
+  workedExample?: {
+    problem: string;
+    steps: string[];
+    answer: string;
+  };
+  codeSnippet?: {
+    language: 'cpp' | 'python';
+    title: string;
+    code: string;
+  };
+  keyTakeaway?: string;
+}
+
+export interface MathEssayProblem {
+  source?: string;
+  question: string;
+  hints?: string[];
+  solutionSteps: string[];
+  finalAnswer: string;
+}
+
 export interface MathLecture {
   id: string;
+  track?: CurriculumTrack;
+  gradeGroup?: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12' | 'Chuyên Toán';
+  tier?: SpecializedTier;
   title: string;
   grade: string;
-  category?: 'Giải tích' | 'Hình học' | 'Đại số & Xác suất' | 'Lượng giác & Mũ' | 'Số phức' | 'Đại số';
+  category?: 'Giải tích' | 'Hình học' | 'Đại số & Xác suất' | 'Lượng giác & Mũ' | 'Số phức' | 'Đại số' | 'Số học & Tổ hợp';
   difficulty?: 'Cơ bản' | 'Thông hiểu' | 'Vận dụng' | 'Vận dụng cao';
   readTimeMinutes?: number;
   description: string;
   mnemonics?: string[];
   commonTraps?: string[];
   theory: string[];
+  lectureSteps?: LectureStep[];
   keyFormulas: string[];
   flashcards?: { front: string; back: string; tip?: string }[];
   sampleProblems: {
+    source?: string;
     question: string;
     options: string[];
     correctIndex: number;
     explanation: string;
     tip?: string;
   }[];
+  essayProblems?: MathEssayProblem[];
+  sim2dMode?: 'grapher' | 'geometry';
+  sim3dMode?: 'oxyz_vector' | 'sphere_plane' | 'pyramid_section' | 'revolution_solid';
   defaultGraphConfig?: Partial<FunctionPlotConfig>;
 }
 
@@ -129,11 +166,38 @@ export type PhysicsSimType =
   | 'magnetic_induction'
   | 'spring_pendulum'
   | 'simple_pendulum'
-  | 'wave_interference';
+  | 'wave_interference'
+  | 'kinematics_graphs'
+  | 'thermal_gas'
+  | 'electric_field'
+  | 'nuclear_decay';
+
+export type Physics3DMode =
+  | 'pendulum_spring'
+  | 'projectile_3d'
+  | 'lorentz_helix'
+  | 'wave_ripple'
+  | 'bohr_atom'
+  | 'optics_3d'
+  | 'kinematics_3d'
+  | 'thermal_gas_3d';
+
+export interface PhysicsEssayExercise {
+  id?: string;
+  source?: string;
+  question: string;
+  hints?: string[];
+  solutionSteps: string[];
+  finalAnswer: string;
+}
 
 export interface PhysicsLesson {
   id: string;
+  track: CurriculumTrack;
   grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  tier?: SpecializedTier;
+  stageLabel?: string;
+  sourceTag?: string;
   lessonNumber: number;
   title: string;
   subtitle: string;
@@ -142,23 +206,21 @@ export interface PhysicsLesson {
     heading: string;
     content: string;
   }[];
+  lectureSteps?: LectureStep[];
   keyFormulas: string[];
   simulationType: PhysicsSimType;
+  sim3dType: Physics3DMode;
   defaultParams: Record<string, number>;
   paramBounds: Record<string, { min: number; max: number; step: number; unit: string; label: string }>;
   practiceExercises: {
+    source?: string;
     question: string;
     options: string[];
     correctIndex: number;
     explanation: string;
     stepByStep?: string[];
   }[];
-  phetSim?: {
-    slug: string;
-    title: string;
-    subtitle: string;
-    experimentTasks: string[];
-  };
+  essayExercises: PhysicsEssayExercise[];
 }
 
 // Retain PhysicsExperiment for backwards compatibility
@@ -183,15 +245,25 @@ export interface PhysicsExperiment {
 // Computer Science Types
 export type CodeLanguage = 'cpp' | 'python';
 export type CSLevel = 'Cơ bản' | 'Trung cấp' | 'Nâng cao / HSG';
+export type VNOIPhase =
+  | 'Phase 0 · Nhập môn & Độ phức tạp'
+  | 'Phase 1 · Cơ bản & Số học sơ cấp'
+  | 'Phase 2 · Kỹ thuật tối ưu kinh điển'
+  | 'Phase 3 · Quy hoạch động & Đồ thị'
+  | 'Phase 4 · Cấu trúc dữ liệu & HSG';
 
 export interface CSLesson {
   id: string;
   level: CSLevel;
+  vnoiPhase?: VNOIPhase;
+  vnoiTag?: string;
+  prerequisites?: string[];
   lessonNumber: number;
   title: string;
   topic: string;
   estimatedMinutes: number;
   theory: string[];
+  lectureSteps?: LectureStep[];
   complexity: {
     time: string;
     space: string;

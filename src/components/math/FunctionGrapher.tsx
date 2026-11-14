@@ -22,7 +22,34 @@ import { ViewportPortal } from '../common/ViewportPortal';
 
 const PRESET_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#0891b2'];
 
-export const FunctionGrapher: React.FC = () => {
+interface FunctionGrapherProps {
+  initialConfig?: Partial<FunctionPlotConfig> | null;
+  onBack?: () => void;
+}
+
+const formatFormulaDisplay = (fn: Pick<FunctionPlotConfig, 'type' | 'params' | 'customExpr'>): string => {
+  const { a, b, c, d } = fn.params;
+  switch (fn.type) {
+    case 'linear':
+      return `y = ${a}x ${b >= 0 ? '+' : '-'} ${Math.abs(b)}`;
+    case 'quadratic':
+      return `y = ${a}x² ${b >= 0 ? '+' : '-'} ${Math.abs(b)}x ${c >= 0 ? '+' : '-'} ${Math.abs(c)}`;
+    case 'cubic':
+      return `y = ${a}x³ ${b >= 0 ? '+' : '-'} ${Math.abs(b)}x² ${c >= 0 ? '+' : '-'} ${Math.abs(c)}x ${d >= 0 ? '+' : '-'} ${Math.abs(d)}`;
+    case 'rational':
+      return `y = (${a}x + ${b})/(${c}x + ${d})`;
+    case 'trig_sin':
+      return `y = ${a}·sin(${b}x + ${c}) + ${d}`;
+    case 'exponential':
+      return `y = ${a}·e^(${b}x)`;
+    case 'custom':
+      return fn.customExpr ? `y = ${fn.customExpr}` : 'y = f(x)';
+    default:
+      return 'y = f(x)';
+  }
+};
+
+export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig = null, onBack }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
 
@@ -66,6 +93,48 @@ export const FunctionGrapher: React.FC = () => {
   const [showTable, setShowTable] = useState<boolean>(false);
   const [hoverCoord, setHoverCoord] = useState<{ x: number; y: number } | null>(null);
   const [resizeTick, setResizeTick] = useState(0);
+
+  useEffect(() => {
+    if (!initialConfig) return;
+    setFunctions((prev) => {
+      const base = prev[0] || {
+        id: 'f1',
+        type: 'cubic' as FunctionType,
+        color: '#2563eb',
+        name: 'f(x)',
+        formulaDisplay: 'y = x³ - 3x² + 2',
+        params: { a: 1, b: -3, c: 0, d: 2 },
+        showTangent: false,
+        tangentX0: 1,
+        visible: true
+      };
+      const mergedType = (initialConfig.type || base.type) as FunctionType;
+      const mergedParams = {
+        a: initialConfig.params?.a ?? base.params.a,
+        b: initialConfig.params?.b ?? base.params.b,
+        c: initialConfig.params?.c ?? base.params.c,
+        d: initialConfig.params?.d ?? base.params.d
+      };
+      const customExpr =
+        initialConfig.customExpr ?? (mergedType === 'custom' ? base.customExpr : undefined);
+      const updatedFirst: FunctionPlotConfig = {
+        ...base,
+        ...initialConfig,
+        id: 'f1',
+        type: mergedType,
+        params: mergedParams,
+        customExpr,
+        name: initialConfig.name || base.name,
+        formulaDisplay:
+          initialConfig.formulaDisplay ||
+          initialConfig.name ||
+          formatFormulaDisplay({ type: mergedType, params: mergedParams, customExpr }),
+        visible: true
+      };
+      return [updatedFirst, ...prev.slice(1)];
+    });
+    setActiveFuncId('f1');
+  }, [initialConfig]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -537,13 +606,19 @@ export const FunctionGrapher: React.FC = () => {
           {/* Stage Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 shrink-0">
             <div className="flex flex-wrap items-center gap-2">
-              {isFullScreen && (
+              {(isFullScreen || onBack) && (
                 <button
-                  onClick={() => setIsFullScreen(false)}
+                  onClick={() => {
+                    if (isFullScreen) {
+                      setIsFullScreen(false);
+                    } else if (onBack) {
+                      onBack();
+                    }
+                  }}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Quay lại (Esc)</span>
+                  <span>{isFullScreen ? 'Thu nhỏ (Esc)' : 'Quay lại'}</span>
                 </button>
               )}
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tọa độ Oxy</span>
@@ -767,78 +842,60 @@ export const FunctionGrapher: React.FC = () => {
                 <option value="rational">Phân thức: (ax+b)/(cx+d)</option>
                 <option value="trig_sin">Lượng giác: a·sin(bx + c) + d</option>
                 <option value="exponential">Mũ: a·e^(bx)</option>
+                <option value="custom">Tùy chỉnh: f(x)</option>
               </select>
             </div>
 
-            {/* Sliders for a, b, c, d */}
+            {/* Numeric + Slider controls for a, b, c, d */}
             <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-600 dark:text-slate-400">Hệ số a</span>
-                  <span className="font-mono tabular-nums text-slate-900 dark:text-slate-100">{activeFunc.params.a}</span>
-                </div>
-                <input
-                  type="range"
-                  min="-5"
-                  max="5"
-                  step="0.5"
-                  value={activeFunc.params.a}
-                  onChange={(e) => updateParam('a', parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-600 dark:text-slate-400">Hệ số b</span>
-                  <span className="font-mono tabular-nums text-slate-900 dark:text-slate-100">{activeFunc.params.b}</span>
-                </div>
-                <input
-                  type="range"
-                  min="-5"
-                  max="5"
-                  step="0.5"
-                  value={activeFunc.params.b}
-                  onChange={(e) => updateParam('b', parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                />
-              </div>
-
-              {(activeFunc.type === 'quadratic' || activeFunc.type === 'cubic' || activeFunc.type === 'rational' || activeFunc.type === 'trig_sin') && (
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-600 dark:text-slate-400">Hệ số c</span>
-                    <span className="font-mono tabular-nums text-slate-900 dark:text-slate-100">{activeFunc.params.c}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="-5"
-                    max="5"
-                    step="0.5"
-                    value={activeFunc.params.c}
-                    onChange={(e) => updateParam('c', parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
-                </div>
-              )}
-
-              {(activeFunc.type === 'cubic' || activeFunc.type === 'rational' || activeFunc.type === 'trig_sin') && (
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-600 dark:text-slate-400">Hệ số d</span>
-                    <span className="font-mono tabular-nums text-slate-900 dark:text-slate-100">{activeFunc.params.d}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="-5"
-                    max="5"
-                    step="0.5"
-                    value={activeFunc.params.d}
-                    onChange={(e) => updateParam('d', parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
-                </div>
-              )}
+              {(['a', 'b', 'c', 'd'] as const)
+                .filter((coef) => {
+                  if (coef === 'a' || coef === 'b') return true;
+                  if (coef === 'c') {
+                    return (
+                      activeFunc.type === 'quadratic' ||
+                      activeFunc.type === 'cubic' ||
+                      activeFunc.type === 'rational' ||
+                      activeFunc.type === 'trig_sin' ||
+                      activeFunc.type === 'trig_cos'
+                    );
+                  }
+                  return (
+                    activeFunc.type === 'cubic' ||
+                    activeFunc.type === 'rational' ||
+                    activeFunc.type === 'trig_sin' ||
+                    activeFunc.type === 'trig_cos'
+                  );
+                })
+                .map((coef) => {
+                  const val = activeFunc.params[coef];
+                  return (
+                    <div key={coef}>
+                      <div className="flex items-center justify-between text-xs mb-1 gap-2">
+                        <span className="text-slate-600 dark:text-slate-400 font-medium">Hệ số {coef}</span>
+                        <input
+                          type="number"
+                          step="any"
+                          value={Number.isFinite(val) ? val : 0}
+                          onChange={(e) => {
+                            const parsed = parseFloat(e.target.value);
+                            if (Number.isFinite(parsed)) updateParam(coef, parsed);
+                          }}
+                          className="w-24 px-2 py-0.5 text-right text-xs font-mono tabular-nums rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <input
+                        type="range"
+                        min="-10"
+                        max="10"
+                        step="0.25"
+                        value={Math.max(-10, Math.min(10, val))}
+                        onChange={(e) => updateParam(coef, parseFloat(e.target.value))}
+                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                      />
+                    </div>
+                  );
+                })}
             </div>
 
             {/* Tangent Line Controls */}
@@ -860,18 +917,29 @@ export const FunctionGrapher: React.FC = () => {
 
               {activeFunc.showTangent && (
                 <div className="mt-2.5 bg-amber-50 dark:bg-amber-950/20 p-2.5 rounded-lg border border-amber-200/60 dark:border-amber-800/40">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-amber-800 dark:text-amber-200">Hoành độ x₀</span>
-                    <span className="font-mono tabular-nums text-amber-900 dark:text-amber-100 font-semibold">
-                      {activeFunc.tangentX0 ?? 0}
-                    </span>
+                  <div className="flex items-center justify-between text-xs mb-1 gap-2">
+                    <span className="text-amber-800 dark:text-amber-200 font-medium">Hoành độ x₀</span>
+                    <input
+                      type="number"
+                      step="any"
+                      value={activeFunc.tangentX0 ?? 0}
+                      onChange={(e) => {
+                        const x0 = parseFloat(e.target.value);
+                        if (Number.isFinite(x0)) {
+                          setFunctions((list) =>
+                            list.map((fn) => (fn.id === activeFuncId ? { ...fn, tangentX0: x0 } : fn))
+                          );
+                        }
+                      }}
+                      className="w-24 px-2 py-0.5 text-right text-xs font-mono tabular-nums rounded-md bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    />
                   </div>
                   <input
                     type="range"
-                    min="-4"
-                    max="4"
-                    step="0.2"
-                    value={activeFunc.tangentX0 ?? 0}
+                    min="-8"
+                    max="8"
+                    step="0.1"
+                    value={Math.max(-8, Math.min(8, activeFunc.tangentX0 ?? 0))}
                     onChange={(e) => {
                       const x0 = parseFloat(e.target.value);
                       setFunctions((list) =>

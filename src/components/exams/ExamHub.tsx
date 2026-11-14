@@ -4,6 +4,7 @@ import { EXAM_PAPERS } from '../../data/examData';
 import { ExamPaper, ExamSubject, ExamTrack, SubjectType } from '../../types';
 import { FormattedText, MathFormula } from '../common/MathRenderer';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNavigation } from '../../context/NavigationContext';
 import {
   FileText,
   Search,
@@ -40,6 +41,7 @@ interface ExamHubProps {
 
 export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP, onBack }) => {
   const { t, language } = useLanguage();
+  const { location, navigate, goBack } = useNavigation();
   // Main Track Filter: 'all' | 'chuyen' | 'khong_chuyen'
   const [selectedTrack, setSelectedTrack] = useState<'all' | ExamTrack>('all');
 
@@ -49,8 +51,11 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP,
   // Keyword search
   const [searchKeyword, setSearchKeyword] = useState<string>('');
 
-  // Active Full Exam View State
-  const [activeExam, setActiveExam] = useState<ExamPaper | null>(null);
+  // Active Full Exam View State (synced with NavigationContext)
+  const activeExam = useMemo(
+    () => EXAM_PAPERS.find((e) => e.id === location.examId) || null,
+    [location.examId]
+  );
 
   // Timer State for Active Exam
   const [timerSeconds, setTimerSeconds] = useState<number>(0);
@@ -82,22 +87,30 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP,
     return () => clearInterval(interval);
   }, [isTimerRunning, timerSeconds]);
 
+  // Reset timer and answers whenever activeExam changes (including via browser Back or Header back)
+  useEffect(() => {
+    if (activeExam) {
+      setTimerSeconds(activeExam.timeMinutes * 60);
+      setIsTimerRunning(false);
+      setIsExamCompleted(false);
+      setStudentNotes({});
+      setIsMasterSolutionExpanded(false);
+      setRevealedQuestionSolutions({});
+    } else {
+      setIsTimerRunning(false);
+    }
+  }, [activeExam?.id]);
+
   // Open Full Exam
   const handleOpenExam = (exam: ExamPaper) => {
-    setActiveExam(exam);
-    setTimerSeconds(exam.timeMinutes * 60);
-    setIsTimerRunning(false); // student can start timer when ready
-    setIsExamCompleted(false);
-    setStudentNotes({});
-    setIsMasterSolutionExpanded(false);
-    setRevealedQuestionSolutions({});
+    navigate({ examId: exam.id });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Close Full Exam
   const handleCloseExam = () => {
-    setActiveExam(null);
     setIsTimerRunning(false);
+    goBack();
   };
 
   // Toggle timer

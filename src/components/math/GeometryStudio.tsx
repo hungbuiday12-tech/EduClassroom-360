@@ -80,7 +80,11 @@ type FreeTool =
 
 const POINT_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-export const GeometryStudio: React.FC = () => {
+interface GeometryStudioProps {
+  onBack?: () => void;
+}
+
+export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Overall studio navigation & fullscreen state
@@ -1214,13 +1218,19 @@ export const GeometryStudio: React.FC = () => {
           {/* Top Studio Switcher & Fullscreen Action */}
           <div className="flex flex-wrap items-center justify-between px-3 sm:px-4 py-2.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 gap-2 shrink-0">
             <div className="flex flex-wrap items-center gap-2">
-              {isFullScreen && (
+              {(isFullScreen || onBack) && (
                 <button
-                  onClick={() => setIsFullScreen(false)}
+                  onClick={() => {
+                    if (isFullScreen) {
+                      setIsFullScreen(false);
+                    } else if (onBack) {
+                      onBack();
+                    }
+                  }}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Quay lại (Esc)</span>
+                  <span>{isFullScreen ? 'Thu nhỏ (Esc)' : 'Quay lại'}</span>
                 </button>
               )}
               {/* Studio Mode Selector */}
@@ -1557,11 +1567,19 @@ export const GeometryStudio: React.FC = () => {
 
             {/* Custom Angle Selector */}
             <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
-              <div className="flex items-center justify-between text-xs font-semibold text-indigo-950 dark:text-indigo-200 mb-2">
-                <span>Vẽ góc theo số đo chính xác</span>
-                <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
-                  {selectedAngleDegree}°
-                </span>
+              <div className="flex items-center justify-between text-xs font-semibold text-indigo-950 dark:text-indigo-200 mb-2 gap-2">
+                <span>Vẽ góc theo số đo chính xác (°)</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="359"
+                  value={selectedAngleDegree}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value);
+                    if (Number.isFinite(v)) setSelectedAngleDegree(Math.max(1, Math.min(359, v)));
+                  }}
+                  className="w-16 px-2 py-0.5 text-right font-mono text-indigo-600 dark:text-indigo-400 font-bold bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded"
+                />
               </div>
               <input
                 type="range"
@@ -1611,11 +1629,19 @@ export const GeometryStudio: React.FC = () => {
               </div>
               {protractor.visible && (
                 <div className="space-y-1.5 text-xs text-slate-500">
-                  <div className="flex justify-between">
-                    <span>Góc xoay thước:</span>
-                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                      {Math.round(protractor.rotation)}°
-                    </span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Góc xoay thước (°):</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="360"
+                      value={Math.round(protractor.rotation)}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        if (Number.isFinite(v)) setProtractor((p) => ({ ...p, rotation: ((v % 360) + 360) % 360 }));
+                      }}
+                      className="w-16 px-2 py-0.5 text-right font-mono font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
+                    />
                   </div>
                   <input
                     type="range"
@@ -1720,9 +1746,19 @@ export const GeometryStudio: React.FC = () => {
                 </p>
 
                 <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-600 dark:text-slate-400">Góc xoay 3D</span>
-                    <span className="font-mono text-slate-900 dark:text-slate-100">{spatialRotation}°</span>
+                  <div className="flex items-center justify-between text-xs mb-1 gap-2">
+                    <span className="text-slate-600 dark:text-slate-400">Góc xoay 3D (°)</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="360"
+                      value={spatialRotation}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value);
+                        if (Number.isFinite(v)) setSpatialRotation(((v % 360) + 360) % 360);
+                      }}
+                      className="w-16 px-2 py-0.5 text-right font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-slate-100"
+                    />
                   </div>
                   <input
                     type="range"
@@ -1735,15 +1771,25 @@ export const GeometryStudio: React.FC = () => {
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-600 dark:text-slate-400">Chiều cao chóp (SO)</span>
-                    <span className="font-mono text-slate-900 dark:text-slate-100">{spatialHeight} px</span>
+                  <div className="flex items-center justify-between text-xs mb-1 gap-2">
+                    <span className="text-slate-600 dark:text-slate-400">Chiều cao chóp SO (px)</span>
+                    <input
+                      type="number"
+                      min="60"
+                      max="320"
+                      value={spatialHeight}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value);
+                        if (Number.isFinite(v)) setSpatialHeight(Math.max(40, Math.min(360, v)));
+                      }}
+                      className="w-16 px-2 py-0.5 text-right font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-slate-100"
+                    />
                   </div>
                   <input
                     type="range"
                     min="80"
                     max="260"
-                    value={spatialHeight}
+                    value={Math.max(80, Math.min(260, spatialHeight))}
                     onChange={(e) => setSpatialHeight(parseInt(e.target.value))}
                     className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                   />

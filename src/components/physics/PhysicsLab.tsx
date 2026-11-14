@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
-import { PhysicsLesson, PhysicsSimType } from '../../types';
+import { CurriculumTrack, PhysicsLesson, PhysicsSimType, SpecializedTier } from '../../types';
 import {
   Play,
   Pause,
@@ -11,27 +11,202 @@ import {
   XCircle,
   HelpCircle,
   Zap,
-  Gauge,
   Sparkles,
   ChevronRight,
+  ChevronLeft,
   Award,
-  Layers,
   GraduationCap,
-  Copy,
-  Check,
   Maximize2,
   Minimize2,
   Box,
   ArrowLeft,
-  ExternalLink,
-  FlaskConical,
-  ListChecks
+  ChevronDown,
+  ChevronUp,
+  Lightbulb,
+  FileText,
+  Clock,
+  Grid,
+  Activity,
+  Plus,
+  Minus,
+  StepForward,
+  Camera,
+  Trash2,
+  Compass,
+  ArrowRightLeft,
+  Eye
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MathFormula, FormattedText } from '../common/MathRenderer';
 import { Physics3DView } from './Physics3DView';
 import { useLanguage } from '../../context/LanguageContext';
 import { ViewportPortal } from '../common/ViewportPortal';
+import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
+import { buildPhysicsLectureSteps } from '../../data/lectureStepsBuilder';
+import { useNavigation } from '../../context/NavigationContext';
+
+interface OverlayState {
+  showRulerGrid: boolean;
+  showVectors: boolean;
+  showTrace: boolean;
+  showRealtimeChart: boolean;
+}
+
+interface LabFlags {
+  circuitOpen: boolean;
+  reversePolarity: boolean;
+  showVoltmeter: boolean;
+  isDiverging: boolean;
+  showThirdRay: boolean;
+  airDrag: boolean;
+  hasFriction: boolean;
+  singleSource: boolean;
+  showNodalLines: boolean;
+  flipMagnet: boolean;
+  inductionAction: number; // 0: Dao động | 1: Đưa vào | 2: Rút ra | 3: Đứng yên
+  showProtractor: boolean;
+  showFieldGrid: boolean;
+}
+
+interface DataLogEntry {
+  id: number;
+  timeStr: string;
+  m1Label: string;
+  m1Val: string;
+  m2Label: string;
+  m2Val: string;
+  m3Label: string;
+  m3Val: string;
+}
+
+interface NumericParamFieldProps {
+  label: string;
+  unit: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (nextVal: number) => void;
+}
+
+const NumericParamField: React.FC<NumericParamFieldProps> = ({
+  label,
+  unit,
+  value,
+  min,
+  max,
+  step,
+  onChange
+}) => {
+  const [draft, setDraft] = useState<string>(String(value));
+  const [focused, setFocused] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!focused) {
+      setDraft(String(value));
+    }
+  }, [value, focused]);
+
+  const commitDraft = (raw: string) => {
+    const normalized = raw.replace(',', '.').trim();
+    const parsed = parseFloat(normalized);
+    if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+      onChange(parsed);
+      setDraft(String(parsed));
+    } else {
+      setDraft(String(value));
+    }
+  };
+
+  const handleStep = (dir: -1 | 1) => {
+    const decimals = (step.toString().split('.')[1] || '').length;
+    const next = Number((value + dir * step).toFixed(Math.max(decimals, 2)));
+    onChange(next);
+    setDraft(String(next));
+  };
+
+  const sliderVal = Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
+
+  return (
+    <div className="space-y-1.5 bg-slate-50/80 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="font-semibold text-slate-700 dark:text-slate-200 leading-snug">
+          {label}
+        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleStep(-1)}
+            className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            title={`Giảm ${step}`}
+          >
+            <Minus className="w-3 h-3" />
+          </button>
+          <input
+            type="number"
+            step="any"
+            value={focused ? draft : String(value)}
+            onFocus={() => {
+              setFocused(true);
+              setDraft(String(value));
+            }}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setDraft(raw);
+              const parsed = parseFloat(raw.replace(',', '.'));
+              if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+                onChange(parsed);
+              }
+            }}
+            onBlur={() => {
+              setFocused(false);
+              commitDraft(draft);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                commitDraft(draft);
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            className="w-20 px-2 py-1 text-right font-mono text-xs font-bold bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+          />
+          <button
+            type="button"
+            onClick={() => handleStep(1)}
+            className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            title={`Tăng ${step}`}
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+          {unit && (
+            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 min-w-[24px]">
+              {unit}
+            </span>
+          )}
+        </div>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={sliderVal}
+        onChange={(e) => {
+          const parsed = parseFloat(e.target.value);
+          if (!Number.isNaN(parsed)) {
+            onChange(parsed);
+            setDraft(String(parsed));
+          }
+        }}
+        className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+      />
+      <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+        <span>Gợi ý: {min} {unit}</span>
+        <span>{max} {unit} (nhập số tự do)</span>
+      </div>
+    </div>
+  );
+};
 
 interface PhysicsLabProps {
   onScoreEarned?: (xp: number) => void;
@@ -39,48 +214,126 @@ interface PhysicsLabProps {
 }
 
 export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack }) => {
-  const { t, translate, language } = useLanguage();
-  // Grade Filter: 'all' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12'
+  const { t, translate } = useLanguage();
+  const { location, navigate, goBack } = useNavigation();
+  // View flow: 'catalog' (Danh sách bài học) -> 'lecture' (Giao diện lớp giảng bài chi tiết)
+  const activeView = location.physicsView;
+  // Two explicit zones: 'khong_chuyen' (GDPT 9-12) | 'chuyen' (Cơ bản -> Nâng cao -> Chuyên/HSG)
+  const [selectedTrack, setSelectedTrack] = useState<CurriculumTrack>('khong_chuyen');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [selectedTier, setSelectedTier] = useState<'all' | SpecializedTier>('all');
+  const [showStudyPrinciples, setShowStudyPrinciples] = useState<boolean>(false);
 
-  // Filtered lessons
+  // Filtered lessons by track + grade/tier
   const filteredLessons = useMemo(() => {
-    if (selectedGrade === 'all') return PHYSICS_LESSONS;
-    return PHYSICS_LESSONS.filter((l) => l.grade === selectedGrade);
-  }, [selectedGrade]);
+    return PHYSICS_LESSONS.filter((l) => {
+      if (l.track !== selectedTrack) return false;
+      if (selectedTrack === 'khong_chuyen') {
+        return selectedGrade === 'all' || l.grade === selectedGrade;
+      }
+      return selectedTier === 'all' || l.tier === selectedTier;
+    });
+  }, [selectedTrack, selectedGrade, selectedTier]);
 
   // Current selected lesson
-  const [selectedLessonId, setSelectedLessonId] = useState<string>(PHYSICS_LESSONS[0].id);
+  const selectedLessonId = location.physicsLessonId;
   const lesson = useMemo(() => {
-    return (
-      PHYSICS_LESSONS.find((l) => l.id === selectedLessonId) ||
-      filteredLessons[0] ||
-      PHYSICS_LESSONS[0]
-    );
+    const matchInAny = PHYSICS_LESSONS.find((l) => l.id === selectedLessonId);
+    const matchInTrack = filteredLessons.find((l) => l.id === selectedLessonId);
+    if (matchInTrack) return matchInTrack;
+    if (matchInAny) return matchInAny;
+    return filteredLessons[0] || PHYSICS_LESSONS[0];
   }, [selectedLessonId, filteredLessons]);
 
+  const currentLessonIndex = useMemo(
+    () => filteredLessons.findIndex((l) => l.id === lesson.id),
+    [filteredLessons, lesson.id]
+  );
+
   // Active sub-tab: 'theory' | 'simulation' | 'sim3d' | 'practice'
-  const [activeTab, setActiveTab] = useState<'theory' | 'simulation' | 'sim3d' | 'practice'>('theory');
-  // Sub-mode inside simulation tab: 'canvas2d' | 'phet'
-  const [simEngineMode, setSimEngineMode] = useState<'canvas2d' | 'phet'>('canvas2d');
+  const activeTab = location.physicsTab;
   const [isSimFullscreen, setIsSimFullscreen] = useState<boolean>(false);
-  const [checkedPhetTasks, setCheckedPhetTasks] = useState<Record<string, boolean>>({});
-  const [phetLoading, setPhetLoading] = useState<boolean>(false);
 
   // Simulation controls & params
   const [isRunning, setIsRunning] = useState<boolean>(true);
   const [simSpeed, setSimSpeed] = useState<number>(1.0);
   const [params, setParams] = useState<Record<string, number>>(lesson.defaultParams);
 
-  // Quiz / practice states: { [exerciseId]: selectedOptionIndex }
+  // PhET-inspired scientific overlays, experiment flags, stopwatch & data logger
+  const [overlays, setOverlays] = useState<OverlayState>({
+    showRulerGrid: true,
+    showVectors: true,
+    showTrace: true,
+    showRealtimeChart: true
+  });
+  const [labFlags, setLabFlags] = useState<LabFlags>({
+    circuitOpen: false,
+    reversePolarity: false,
+    showVoltmeter: true,
+    isDiverging: false,
+    showThirdRay: true,
+    airDrag: false,
+    hasFriction: false,
+    singleSource: false,
+    showNodalLines: true,
+    flipMagnet: false,
+    inductionAction: 0,
+    showProtractor: true,
+    showFieldGrid: true
+  });
+
+  const [stopwatchRunning, setStopwatchRunning] = useState<boolean>(false);
+  const [stopwatchElapsed, setStopwatchElapsed] = useState<number>(0);
+  const [dataLogs, setDataLogs] = useState<DataLogEntry[]>([]);
+
+  // Quiz / practice states
   const [userAnswers, setUserAnswers] = useState<Record<string, number>>({});
   const [revealedSolutions, setRevealedSolutions] = useState<Record<string, boolean>>({});
-  const [copiedFormula, setCopiedFormula] = useState<string | null>(null);
+  const [revealedEssayHints, setRevealedEssayHints] = useState<Record<string, boolean>>({});
+  const [revealedEssaySolutions, setRevealedEssaySolutions] = useState<Record<string, boolean>>({});
 
-  // Canvas ref & internal simulation physics clock
+  // Canvas & simulation refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const simTimeRef = useRef<number>(0);
   const animFrameIdRef = useRef<number | null>(null);
+  const isRunningRef = useRef<boolean>(isRunning);
+  const simSpeedRef = useRef<number>(simSpeed);
+  const paramsRef = useRef<Record<string, number>>(params);
+  const overlaysRef = useRef<OverlayState>(overlays);
+  const labFlagsRef = useRef<LabFlags>(labFlags);
+  const stopwatchRunningRef = useRef<boolean>(stopwatchRunning);
+  const stopwatchAccumRef = useRef<number>(0);
+  const lastStopwatchUiRef = useRef<number>(0);
+  const lastTelemetryUpdateRef = useRef<number>(0);
+  const forceTelemetrySyncRef = useRef<boolean>(true);
+  const oscHistoryRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+  }, [isRunning]);
+
+  useEffect(() => {
+    simSpeedRef.current = simSpeed;
+  }, [simSpeed]);
+
+  useEffect(() => {
+    paramsRef.current = params;
+    forceTelemetrySyncRef.current = true;
+  }, [params]);
+
+  useEffect(() => {
+    overlaysRef.current = overlays;
+    forceTelemetrySyncRef.current = true;
+  }, [overlays]);
+
+  useEffect(() => {
+    labFlagsRef.current = labFlags;
+    forceTelemetrySyncRef.current = true;
+  }, [labFlags]);
+
+  useEffect(() => {
+    stopwatchRunningRef.current = stopwatchRunning;
+  }, [stopwatchRunning]);
 
   // Telemetry real-time values
   const [telemetry, setTelemetry] = useState<{
@@ -92,23 +345,38 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     metric3Val: string;
     note: string;
   }>({
-    metric1Label: 'Điện áp (U)',
-    metric1Val: '12.0 V',
-    metric2Label: 'Dòng điện (I)',
-    metric2Val: '0.60 A',
-    metric3Label: 'Công suất (P)',
-    metric3Val: '7.20 W',
-    note: 'Định luật Ôm mạch kín: I = U / R'
+    metric1Label: 'Thông số 1',
+    metric1Val: '--',
+    metric2Label: 'Thông số 2',
+    metric2Val: '--',
+    metric3Label: 'Thông số 3',
+    metric3Val: '--',
+    note: 'Điều chỉnh tham số hoặc nhập số trực tiếp để khảo sát quy luật vật lí theo thời gian thực.'
   });
+  const telemetryRef = useRef(telemetry);
 
-  // When lesson changes, reset params & time
+  const pushTelemetry = useCallback((next: typeof telemetry) => {
+    telemetryRef.current = next;
+    const now = performance.now();
+    if (forceTelemetrySyncRef.current || now - lastTelemetryUpdateRef.current >= 100) {
+      lastTelemetryUpdateRef.current = now;
+      forceTelemetrySyncRef.current = false;
+      setTelemetry(next);
+    }
+  }, []);
+
+  // When lesson changes, reset params, clock, stopwatch & data logs
   useEffect(() => {
     setParams(lesson.defaultParams);
+    paramsRef.current = lesson.defaultParams;
     simTimeRef.current = 0;
+    oscHistoryRef.current = [];
+    stopwatchAccumRef.current = 0;
+    setStopwatchElapsed(0);
+    setStopwatchRunning(false);
+    setDataLogs([]);
     setIsRunning(true);
-    if (simEngineMode === 'phet') {
-      setPhetLoading(true);
-    }
+    forceTelemetrySyncRef.current = true;
   }, [lesson]);
 
   // Escape key to exit simulation fullscreen
@@ -121,11 +389,50 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isSimFullscreen]);
 
-  // Copy formula helper
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedFormula(text);
-    setTimeout(() => setCopiedFormula(null), 2000);
+  const handleOpenLesson = (targetLesson: PhysicsLesson, targetTab: 'theory' | 'simulation' | 'sim3d' | 'practice' = 'theory') => {
+    navigate({
+      physicsLessonId: targetLesson.id,
+      physicsTab: targetTab,
+      physicsView: 'lecture'
+    });
+  };
+
+  const handleStepOnce = () => {
+    setIsRunning(false);
+    isRunningRef.current = false;
+    simTimeRef.current += 0.05;
+    if (stopwatchRunningRef.current) {
+      stopwatchAccumRef.current += 0.05;
+      setStopwatchElapsed(stopwatchAccumRef.current);
+    }
+    forceTelemetrySyncRef.current = true;
+  };
+
+  const handleResetSim = () => {
+    simTimeRef.current = 0;
+    oscHistoryRef.current = [];
+    stopwatchAccumRef.current = 0;
+    setStopwatchElapsed(0);
+    setParams(lesson.defaultParams);
+    setIsRunning(true);
+    forceTelemetrySyncRef.current = true;
+  };
+
+  const handleLogSample = () => {
+    const snap = telemetryRef.current;
+    setDataLogs((prev) => [
+      {
+        id: prev.length + 1,
+        timeStr: `${simTimeRef.current.toFixed(2)} s`,
+        m1Label: snap.metric1Label,
+        m1Val: snap.metric1Val,
+        m2Label: snap.metric2Label,
+        m2Val: snap.metric2Val,
+        m3Label: snap.metric3Label,
+        m3Val: snap.metric3Val
+      },
+      ...prev.slice(0, 14)
+    ]);
   };
 
   // Submit exercise answer
@@ -144,10 +451,10 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
   };
 
   // -------------------------------------------------------------
-  // 60 FPS HTML5 Canvas Physics Engine
+  // 60 FPS HTML5 Canvas Physics Engine (Ref-driven, zero stutter)
   // -------------------------------------------------------------
   useEffect(() => {
-    if (activeTab !== 'simulation' || simEngineMode !== 'canvas2d') return;
+    if (activeView !== 'lecture' || activeTab !== 'simulation') return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -157,13 +464,22 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     let lastTimestamp = performance.now();
 
     const render = (now: number) => {
-      const dt = Math.min((now - lastTimestamp) / 1000, 0.05) * simSpeed;
+      const rawDt = Math.min((now - lastTimestamp) / 1000, 0.05);
+      const dt = rawDt * simSpeedRef.current;
       lastTimestamp = now;
 
-      if (isRunning) {
+      if (isRunningRef.current) {
         simTimeRef.current += dt;
+        if (stopwatchRunningRef.current) {
+          stopwatchAccumRef.current += dt;
+          if (now - lastStopwatchUiRef.current >= 60) {
+            lastStopwatchUiRef.current = now;
+            setStopwatchElapsed(stopwatchAccumRef.current);
+          }
+        }
       }
       const t = simTimeRef.current;
+      const curOverlays = overlaysRef.current;
 
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -186,21 +502,23 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
       ctx.fillRect(0, 0, w, h);
 
-      // Draw subtle grid
-      ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
-      ctx.lineWidth = 1;
-      const gridSize = 30;
-      for (let x = 0; x < w; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
-      }
-      for (let y = 0; y < h; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
+      // Draw Grid / Ruler Overlay
+      if (curOverlays.showRulerGrid) {
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.06)';
+        ctx.lineWidth = 1;
+        const gridSize = 30;
+        for (let x = 0; x < w; x += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h);
+          ctx.stroke();
+        }
+        for (let y = 0; y < h; y += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
       }
 
       // Render specialized 2D simulation
@@ -232,9 +550,32 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
         case 'wave_interference':
           drawWaveInterference(ctx, w, h, t, isDark);
           break;
+        case 'kinematics_graphs':
+          drawKinematicsGraphs(ctx, w, h, t, isDark);
+          break;
+        case 'thermal_gas':
+          drawThermalGas(ctx, w, h, t, isDark);
+          break;
+        case 'electric_field':
+          drawElectricField(ctx, w, h, t, isDark);
+          break;
+        case 'nuclear_decay':
+          drawNuclearDecay(ctx, w, h, t, isDark);
+          break;
         default:
           drawSpring(ctx, w, h, t, isDark);
       }
+
+      // Subtle Time Stamp badge in top-right of canvas
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.85)';
+      ctx.fillRect(w - 94, 8, 84, 22);
+      ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.35)' : 'rgba(2, 132, 199, 0.25)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(w - 94, 8, 84, 22);
+      ctx.fillStyle = isDark ? '#38bdf8' : '#0284c7';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`t = ${t.toFixed(2)}s`, w - 52, 23);
 
       ctx.restore();
       animFrameIdRef.current = requestAnimationFrame(render);
@@ -245,9 +586,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     return () => {
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
     };
-  }, [isRunning, simSpeed, lesson.simulationType, params, activeTab, simEngineMode, isSimFullscreen]);
+  }, [activeView, activeTab, lesson.simulationType, isSimFullscreen]);
 
-  // 1. Ohm's Law Circuit (Lớp 9)
+  // 1. Ohm's Law Circuit (Lớp 9 & 11)
   const drawOhmCircuit = (
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -255,31 +596,40 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     t: number,
     isDark: boolean
   ) => {
-    const U = params.voltage ?? 12;
-    const R1 = params.r1 ?? params.resistor1 ?? 10;
-    const R2 = params.r2 ?? params.resistor2 ?? 10;
-    const isParallel = (params.circuitType ?? params.circuitMode ?? 0) === 1;
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
+    const ov = overlaysRef.current;
 
-    const R_eq = isParallel ? (R1 * R2) / (R1 + R2) : R1 + R2;
-    const I = U / R_eq;
+    const U = Math.max(0, p.voltage ?? 12);
+    const R1 = Math.max(0.1, p.r1 ?? p.resistor1 ?? 10);
+    const R2 = Math.max(0.1, p.r2 ?? p.resistor2 ?? 10);
+    const isParallel = Math.round(p.circuitType ?? p.circuitMode ?? 0) === 1;
+    const isOpen = flags.circuitOpen;
+    const signDir = flags.reversePolarity ? -1 : 1;
+
+    const R_eq = isParallel ? (R1 * R2) / Math.max(0.1, R1 + R2) : R1 + R2;
+    const I = isOpen ? 0 : U / Math.max(0.1, R_eq);
     const P = U * I;
+    const U1 = isOpen ? 0 : isParallel ? U : I * R1;
 
-    setTelemetry({
+    pushTelemetry({
       metric1Label: 'Điện trở tương đương (Rtđ)',
       metric1Val: `${R_eq.toFixed(2)} Ω`,
-      metric2Label: 'Cường độ dòng mạch chính (I)',
-      metric2Val: `${I.toFixed(2)} A`,
+      metric2Label: 'Cường độ dòng (I)',
+      metric2Val: isOpen ? '0.00 A (Ngắt K)' : `${(I * signDir).toFixed(2)} A`,
       metric3Label: 'Công suất tiêu thụ (P)',
       metric3Val: `${P.toFixed(2)} W`,
-      note: isParallel
-        ? `Mạch song song: 1/Rtđ = 1/R1 + 1/R2. I1 = ${(U / R1).toFixed(2)}A, I2 = ${(U / R2).toFixed(2)}A`
-        : `Mạch nối tiếp: Rtđ = R1 + R2. U1 = ${(I * R1).toFixed(1)}V, U2 = ${(I * R2).toFixed(1)}V`
+      note: isOpen
+        ? 'Khóa K đang MỞ: Mạch hở nên I = 0 A, đèn tắt.'
+        : isParallel
+        ? `Mạch song song: I₁ = ${(U / R1).toFixed(2)} A, I₂ = ${(U / R2).toFixed(2)} A, U₁ = U₂ = ${U.toFixed(1)} V`
+        : `Mạch nối tiếp: Rtđ = R₁ + R₂. U₁ = ${(I * R1).toFixed(1)} V, U₂ = ${(I * R2).toFixed(1)} V`
     });
 
     const cx = w / 2;
     const cy = h / 2;
-    const cw = Math.min(w * 0.7, 460);
-    const ch = Math.min(h * 0.6, 260);
+    const cw = Math.min(w * 0.68, 460);
+    const ch = Math.min(h * 0.56, 250);
 
     const left = cx - cw / 2;
     const right = cx + cw / 2;
@@ -287,152 +637,239 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     const bottom = cy + ch / 2;
 
     // Draw Circuit Wire
-    ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
+    ctx.strokeStyle = isOpen ? '#64748b' : isDark ? '#38bdf8' : '#0284c7';
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
     ctx.beginPath();
-    ctx.rect(left, top, cw, ch);
+    ctx.moveTo(left, top);
+    ctx.lineTo(cx + cw * 0.22, top);
+    if (!isOpen) {
+      ctx.lineTo(right, top);
+    } else {
+      ctx.moveTo(cx + cw * 0.36, top);
+      ctx.lineTo(right, top);
+    }
+    ctx.lineTo(right, bottom);
+    ctx.lineTo(left, bottom);
+    ctx.closePath();
     ctx.stroke();
 
-    // Moving electrons (Current Animation)
-    const electronCount = 20;
-    const perimeter = 2 * (cw + ch);
-    const speedPix = I * 70;
-    const electronOffset = (t * speedPix) % perimeter;
+    // Switch K on Top-Right Wire
+    const swX1 = cx + cw * 0.22;
+    const swX2 = cx + cw * 0.36;
+    ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
+    ctx.fillRect(swX1, top - 14, swX2 - swX1, 24);
+    ctx.strokeStyle = isOpen ? '#ef4444' : '#10b981';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(swX1, top);
+    if (isOpen) {
+      ctx.lineTo(swX2 - 4, top - 20);
+    } else {
+      ctx.lineTo(swX2, top);
+    }
+    ctx.stroke();
+    ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(isOpen ? 'K (Mở)' : 'K (Đóng)', (swX1 + swX2) / 2, top + 16);
 
-    ctx.fillStyle = '#facc15';
-    for (let i = 0; i < electronCount; i++) {
-      let d = (electronOffset + (i * perimeter) / electronCount) % perimeter;
-      let ex = left;
-      let ey = top;
+    // Moving electrons / current flow
+    if (!isOpen && I > 0.01) {
+      const electronCount = 20;
+      const perimeter = 2 * (cw + ch);
+      const speedPix = Math.min(260, I * 55);
+      const electronOffset = ((t * speedPix * signDir) % perimeter + perimeter) % perimeter;
 
-      if (d < cw) {
-        // top wire (left -> right)
-        ex = left + d;
-        ey = top;
-      } else if (d < cw + ch) {
-        // right wire (top -> bottom)
-        ex = right;
-        ey = top + (d - cw);
-      } else if (d < 2 * cw + ch) {
-        // bottom wire (right -> left)
-        ex = right - (d - cw - ch);
-        ey = bottom;
-      } else {
-        // left wire (bottom -> top)
-        ex = left;
-        ey = bottom - (d - 2 * cw - ch);
+      ctx.fillStyle = ov.showVectors ? '#facc15' : '#fde047';
+      for (let i = 0; i < electronCount; i++) {
+        const d = (electronOffset + (i * perimeter) / electronCount) % perimeter;
+        let ex = left;
+        let ey = top;
+
+        if (d < cw) {
+          ex = left + d;
+          ey = top;
+        } else if (d < cw + ch) {
+          ex = right;
+          ey = top + (d - cw);
+        } else if (d < 2 * cw + ch) {
+          ex = right - (d - cw - ch);
+          ey = bottom;
+        } else {
+          ex = left;
+          ey = bottom - (d - 2 * cw - ch);
+        }
+
+        ctx.beginPath();
+        ctx.arc(ex, ey, 3.5, 0, Math.PI * 2);
+        ctx.fill();
       }
 
-      ctx.beginPath();
-      ctx.arc(ex, ey, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      if (ov.showVectors) {
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(signDir > 0 ? 'Chiều I →' : '← Chiều I', cx - cw * 0.28, top - 10);
+      }
     }
 
     // DC Battery on Top Wire
     const batW = 50;
     ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
-    ctx.fillRect(cx - batW / 2, top - 15, batW, 30);
+    ctx.fillRect(cx - batW / 2 - 20, top - 16, batW, 32);
+
+    const batCx = cx - 20;
+    const posOffset = flags.reversePolarity ? 9 : -9;
+    const negOffset = flags.reversePolarity ? -9 : 9;
 
     ctx.strokeStyle = '#ef4444';
     ctx.lineWidth = 5;
     ctx.beginPath();
-    ctx.moveTo(cx - 10, top - 15);
-    ctx.lineTo(cx - 10, top + 15);
+    ctx.moveTo(batCx + posOffset, top - 15);
+    ctx.lineTo(batCx + posOffset, top + 15);
     ctx.stroke();
 
     ctx.strokeStyle = '#3b82f6';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(cx + 8, top - 9);
-    ctx.lineTo(cx + 8, top + 9);
+    ctx.moveTo(batCx + negOffset, top - 9);
+    ctx.lineTo(batCx + negOffset, top + 9);
     ctx.stroke();
 
     ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`+ Nguồn U = ${U}V -`, cx, top - 24);
+    ctx.fillText(
+      `${flags.reversePolarity ? '−' : '+'} Nguồn U = ${U}V ${flags.reversePolarity ? '+' : '−'}`,
+      batCx,
+      top - 24
+    );
 
     // Resistors on Bottom Wire
     if (!isParallel) {
-      // Series: 2 Resistors side-by-side
       const drawResistorBox = (rx: number, ry: number, label: string, rVal: number) => {
         ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
-        ctx.fillRect(rx - 35, ry - 14, 70, 28);
+        ctx.fillRect(rx - 36, ry - 14, 72, 28);
         ctx.strokeStyle = '#f59e0b';
         ctx.lineWidth = 2;
-        ctx.strokeRect(rx - 35, ry - 14, 70, 28);
+        ctx.strokeRect(rx - 36, ry - 14, 72, 28);
 
         ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
         ctx.font = '11px monospace';
         ctx.fillText(`${label}: ${rVal}Ω`, rx, ry + 4);
       };
 
-      drawResistorBox(cx - 70, bottom, 'R1', R1);
-      drawResistorBox(cx + 70, bottom, 'R2', R2);
+      drawResistorBox(cx - 72, bottom, 'R1', R1);
+      drawResistorBox(cx + 72, bottom, 'R2', R2);
+
+      // Voltmeter across R1
+      if (flags.showVoltmeter) {
+        const vx = cx - 72;
+        const vy = bottom - 48;
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(vx - 44, bottom);
+        ctx.lineTo(vx - 44, vy);
+        ctx.lineTo(vx + 44, vy);
+        ctx.lineTo(vx + 44, bottom);
+        ctx.stroke();
+
+        ctx.fillStyle = isDark ? '#1e293b' : '#f3e8ff';
+        ctx.beginPath();
+        ctx.arc(vx, vy, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#a855f7';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`V:${U1.toFixed(1)}`, vx, vy + 4);
+      }
     } else {
-      // Parallel: Branching
       const drawResistorBox = (rx: number, ry: number, label: string, rVal: number) => {
         ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
-        ctx.fillRect(rx - 30, ry - 12, 60, 24);
+        ctx.fillRect(rx - 34, ry - 12, 68, 24);
         ctx.strokeStyle = '#f59e0b';
         ctx.lineWidth = 2;
-        ctx.strokeRect(rx - 30, ry - 12, 60, 24);
+        ctx.strokeRect(rx - 34, ry - 12, 68, 24);
 
         ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
         ctx.font = '10px monospace';
         ctx.fillText(`${label}=${rVal}Ω`, rx, ry + 3);
       };
 
+      ctx.strokeStyle = isOpen ? '#64748b' : isDark ? '#38bdf8' : '#0284c7';
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(cx - 80, bottom);
-      ctx.lineTo(cx - 80, bottom - 30);
-      ctx.lineTo(cx + 80, bottom - 30);
+      ctx.lineTo(cx - 80, bottom - 34);
+      ctx.lineTo(cx + 80, bottom - 34);
       ctx.lineTo(cx + 80, bottom);
       ctx.stroke();
 
       drawResistorBox(cx, bottom, 'R1', R1);
-      drawResistorBox(cx, bottom - 30, 'R2', R2);
+      drawResistorBox(cx, bottom - 34, 'R2', R2);
+
+      if (flags.showVoltmeter) {
+        const vy = bottom - 70;
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(cx - 80, bottom - 34);
+        ctx.lineTo(cx - 80, vy);
+        ctx.lineTo(cx + 80, vy);
+        ctx.lineTo(cx + 80, bottom - 34);
+        ctx.stroke();
+
+        ctx.fillStyle = isDark ? '#1e293b' : '#f3e8ff';
+        ctx.beginPath();
+        ctx.arc(cx, vy, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#a855f7';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`${U1.toFixed(1)}V`, cx, vy + 4);
+      }
     }
 
     // Ammeter on Right Wire
     ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
     ctx.beginPath();
-    ctx.arc(right, cy, 22, 0, Math.PI * 2);
+    ctx.arc(right, cy, 24, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#10b981';
     ctx.lineWidth = 3;
     ctx.stroke();
     ctx.fillStyle = '#10b981';
-    ctx.font = 'bold 14px sans-serif';
-    ctx.fillText('A', right, cy + 5);
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(`${I.toFixed(2)}A`, right, cy + 4);
 
     // Glowing Lamp on Left Wire
-    const glowRadius = Math.min(30 + P * 2, 65);
-    const lampGrad = ctx.createRadialGradient(left, cy, 5, left, cy, glowRadius);
-    lampGrad.addColorStop(0, 'rgba(250, 204, 21, 0.9)');
-    lampGrad.addColorStop(1, 'rgba(250, 204, 21, 0)');
-    ctx.fillStyle = lampGrad;
-    ctx.beginPath();
-    ctx.arc(left, cy, glowRadius, 0, Math.PI * 2);
-    ctx.fill();
+    if (!isOpen && P > 0.05) {
+      const glowRadius = Math.min(30 + P * 1.6, 65);
+      const lampGrad = ctx.createRadialGradient(left, cy, 5, left, cy, glowRadius);
+      lampGrad.addColorStop(0, 'rgba(250, 204, 21, 0.9)');
+      lampGrad.addColorStop(1, 'rgba(250, 204, 21, 0)');
+      ctx.fillStyle = lampGrad;
+      ctx.beginPath();
+      ctx.arc(left, cy, glowRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-    // Lamp Bulb Icon
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = isOpen ? '#64748b' : '#fbbf24';
     ctx.beginPath();
     ctx.arc(left, cy, 14, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#d97706';
+    ctx.strokeStyle = isOpen ? '#475569' : '#d97706';
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.fillStyle = '#78350f';
+    ctx.fillStyle = isOpen ? '#f8fafc' : '#78350f';
     ctx.font = 'bold 10px sans-serif';
     ctx.fillText('Đèn', left, cy + 4);
   };
 
-  // 2. Converging / Diverging Lens (Lớp 9)
+  // 2. Converging / Diverging Lens (Lớp 9 & Chuyên)
   const drawLensOptics = (
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -440,36 +877,45 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     _t: number,
     isDark: boolean
   ) => {
-    const f = params.focalLength || 20; // cm
-    const d = params.objectDistance || 35; // cm
-    const hObj = params.objectHeight || 8; // cm
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
+    const ov = overlaysRef.current;
+
+    const fRaw = Math.max(1, Math.abs(p.f ?? p.focalLength ?? 15)); // cm
+    const f = flags.isDiverging ? -fRaw : fRaw;
+    const d = Math.max(0.5, p.d ?? p.objectDistance ?? 35); // cm
+    const hObj = Math.max(0.5, p.objH ?? p.objectHeight ?? 10); // cm
 
     // Lens formula: 1/f = 1/d + 1/d' => d' = d*f / (d - f)
-    const isAtFocal = Math.abs(d - f) < 0.1;
+    const isAtFocal = Math.abs(d - f) < 0.15;
     const dPrime = isAtFocal ? 999999 : (d * f) / (d - f);
     const k = isAtFocal ? 0 : -dPrime / d;
     const hPrime = isAtFocal ? 0 : k * hObj;
 
-    setTelemetry({
-      metric1Label: 'Vị trí ảnh (d\')',
+    pushTelemetry({
+      metric1Label: "Vị trí ảnh (d')",
       metric1Val: isAtFocal ? 'Vô cực (∞)' : `${dPrime.toFixed(1)} cm`,
       metric2Label: 'Số phóng đại (k)',
       metric2Val: isAtFocal ? '∞' : `${k.toFixed(2)}x`,
-      metric3Label: 'Chiều cao ảnh (A\'B\')',
+      metric3Label: "Chiều cao ảnh (A'B')",
       metric3Val: isAtFocal ? '∞' : `${Math.abs(hPrime).toFixed(1)} cm`,
-      note:
-        dPrime > 0
-          ? 'Ảnh thật, ngược chiều, hứng được trên màn chắn phía sau thấu kính.'
-          : 'Ảnh ảo, cùng chiều với vật, quan sát trực tiếp qua thấu kính.'
+      note: flags.isDiverging
+        ? 'Thấu kính phân kì (f < 0): Luôn cho ảnh ảo, cùng chiều và nhỏ hơn vật.'
+        : isAtFocal
+        ? 'Vật đặt tại tiêu điểm F (d = f): Chùm tia ló song song, ảnh ở vô cực.'
+        : dPrime > 0
+        ? 'Thấu kính hội tụ: Ảnh thật, ngược chiều, hứng được trên màn chắn phía sau.'
+        : 'Thấu kính hội tụ (d < f): Ảnh ảo cùng chiều, lớn hơn vật (kính lúp).'
     });
 
     const s = Math.min(1, w / 560, h / 320);
-    const scale = 5.5 * s; // pixel per cm responsive
-    const lensHalfH = 130 * s;
+    const maxSpan = Math.max(30, Math.abs(d), isAtFocal ? fRaw * 2 : Math.min(140, Math.abs(dPrime)));
+    const scale = Math.min(5.5 * s, (w * 0.42) / maxSpan);
+    const lensHalfH = 128 * s;
     const cx = w / 2;
     const cy = h / 2;
 
-    // Principal Axis (Trục chính)
+    // Principal Axis
     ctx.strokeStyle = isDark ? '#64748b' : '#94a3b8';
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 4]);
@@ -479,7 +925,25 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Lens at Center
+    // Optional cm ticks along principal axis
+    if (ov.showRulerGrid) {
+      ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      for (let cm = -80; cm <= 80; cm += 10) {
+        if (cm === 0) continue;
+        const tx = cx + cm * scale;
+        if (tx > 25 && tx < w - 25) {
+          ctx.beginPath();
+          ctx.moveTo(tx, cy - 3);
+          ctx.lineTo(tx, cy + 3);
+          ctx.stroke();
+          if (cm % 20 === 0) ctx.fillText(`${Math.abs(cm)}`, tx, cy + 13);
+        }
+      }
+    }
+
+    // Lens Body at Center
     ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -487,37 +951,52 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineTo(cx, cy + lensHalfH);
     ctx.stroke();
 
-    // Arrows at Lens ends (Converging)
+    // Lens Arrows (Converging outward vs Diverging inward)
     ctx.fillStyle = isDark ? '#38bdf8' : '#0284c7';
-    ctx.beginPath();
-    ctx.moveTo(cx - 8 * s, cy - lensHalfH + 10 * s);
-    ctx.lineTo(cx, cy - lensHalfH - 4 * s);
-    ctx.lineTo(cx + 8 * s, cy - lensHalfH + 10 * s);
-    ctx.fill();
+    if (!flags.isDiverging) {
+      ctx.beginPath();
+      ctx.moveTo(cx - 8 * s, cy - lensHalfH + 10 * s);
+      ctx.lineTo(cx, cy - lensHalfH - 4 * s);
+      ctx.lineTo(cx + 8 * s, cy - lensHalfH + 10 * s);
+      ctx.fill();
 
-    ctx.beginPath();
-    ctx.moveTo(cx - 8 * s, cy + lensHalfH - 10 * s);
-    ctx.lineTo(cx, cy + lensHalfH + 4 * s);
-    ctx.lineTo(cx + 8 * s, cy + lensHalfH - 10 * s);
-    ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx - 8 * s, cy + lensHalfH - 10 * s);
+      ctx.lineTo(cx, cy + lensHalfH + 4 * s);
+      ctx.lineTo(cx + 8 * s, cy + lensHalfH - 10 * s);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(cx - 8 * s, cy - lensHalfH - 4 * s);
+      ctx.lineTo(cx, cy - lensHalfH + 10 * s);
+      ctx.lineTo(cx + 8 * s, cy - lensHalfH - 4 * s);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(cx - 8 * s, cy + lensHalfH + 4 * s);
+      ctx.lineTo(cx, cy + lensHalfH - 10 * s);
+      ctx.lineTo(cx + 8 * s, cy + lensHalfH + 4 * s);
+      ctx.fill();
+    }
 
     // Optical Center O & Foci F, F'
-    const fPix = f * scale;
-    const Fx = cx - fPix;
-    const FPrimeX = cx + fPix;
+    const fPix = fRaw * scale;
+    const leftFocusX = cx - fPix;
+    const rightFocusX = cx + fPix;
 
     ctx.fillStyle = '#ef4444';
     ctx.beginPath();
-    ctx.arc(Fx, cy, 4, 0, Math.PI * 2);
-    ctx.arc(FPrimeX, cy, 4, 0, Math.PI * 2);
+    ctx.arc(leftFocusX, cy, 4, 0, Math.PI * 2);
+    ctx.arc(rightFocusX, cy, 4, 0, Math.PI * 2);
     ctx.arc(cx, cy, 4, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('O', cx + 6, cy + 14);
-    ctx.fillText('F', Fx - 4, cy + 16);
-    ctx.fillText("F'", FPrimeX - 4, cy + 16);
+    ctx.textAlign = 'center';
+    ctx.fillText('O', cx + 8, cy + 15);
+    ctx.fillText(flags.isDiverging ? "F'" : 'F', leftFocusX, cy - 10);
+    ctx.fillText(flags.isDiverging ? 'F' : "F'", rightFocusX, cy - 10);
 
     // Object AB
     const objX = cx - d * scale;
@@ -530,31 +1009,28 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineTo(objX, objY);
     ctx.stroke();
 
-    // Object Arrow Head
     ctx.fillStyle = '#10b981';
     ctx.beginPath();
     ctx.moveTo(objX - 6, objY + 8);
     ctx.lineTo(objX, objY - 2);
     ctx.lineTo(objX + 6, objY + 8);
     ctx.fill();
-    ctx.fillText('B (Vật)', objX - 10, objY - 8);
-    ctx.fillText('A', objX - 6, cy + 14);
+    ctx.fillText('B (Vật)', objX, objY - 10);
 
-    // Image A'B'
-    if (!isAtFocal && Math.abs(dPrime) < 150) {
+    // Image A'B' & Rays
+    if (!isAtFocal && Math.abs(dPrime) < 220) {
       const imgX = cx + dPrime * scale;
       const imgY = cy - hPrime * scale;
 
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 3;
-      if (dPrime < 0) ctx.setLineDash([5, 3]); // virtual image dashed
+      if (dPrime < 0) ctx.setLineDash([5, 3]);
       ctx.beginPath();
       ctx.moveTo(imgX, cy);
       ctx.lineTo(imgX, imgY);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Arrow head for Image
       const arrowDir = hPrime < 0 ? 1 : -1;
       ctx.fillStyle = '#f59e0b';
       ctx.beginPath();
@@ -562,28 +1038,65 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       ctx.lineTo(imgX, imgY + arrowDir * 2);
       ctx.lineTo(imgX + 5, imgY - arrowDir * 6);
       ctx.fill();
-      ctx.fillText(dPrime > 0 ? "B' (Ảnh thật)" : "B' (Ảnh ảo)", imgX - 10, imgY + (hPrime < 0 ? 16 : -8));
+      ctx.fillText(dPrime > 0 ? "B' (Thật)" : "B' (Ảo)", imgX, imgY + (hPrime < 0 ? 18 : -10));
 
-      // Light Rays
-      // Ray 1: Parallel to axis -> refracted through F'
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
-      ctx.lineWidth = 1.5;
+      // Ray 1: Parallel to axis -> refracted via F'
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
       ctx.moveTo(objX, objY);
       ctx.lineTo(cx, objY);
-      ctx.lineTo(imgX, imgY);
+      if (dPrime > 0) {
+        ctx.lineTo(imgX, imgY);
+      } else {
+        const slope = flags.isDiverging
+          ? (objY - cy) / (cx - leftFocusX)
+          : (cy - objY) / (rightFocusX - cx);
+        ctx.lineTo(w - 20, objY + slope * (w - 20 - cx));
+      }
       ctx.stroke();
 
-      // Ray 2: Through Optical Center O straight
-      ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)';
+      if (dPrime < 0) {
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(cx, objY);
+        ctx.lineTo(imgX, imgY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Ray 2: Straight through O
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
       ctx.beginPath();
       ctx.moveTo(objX, objY);
-      ctx.lineTo(imgX, imgY);
+      ctx.lineTo(dPrime > 0 ? imgX : w - 20, dPrime > 0 ? imgY : cy + ((cy - objY) / (cx - objX)) * (w - 20 - cx));
       ctx.stroke();
+
+      // Ray 3: Through F -> parallel to axis
+      if (flags.showThirdRay && !flags.isDiverging) {
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.75)';
+        ctx.beginPath();
+        ctx.moveTo(objX, objY);
+        ctx.lineTo(cx, imgY);
+        if (dPrime > 0) {
+          ctx.lineTo(imgX, imgY);
+        } else {
+          ctx.lineTo(w - 20, imgY);
+        }
+        ctx.stroke();
+        if (dPrime < 0) {
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(cx, imgY);
+          ctx.lineTo(imgX, imgY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
     }
   };
 
-  // 3. Projectile Motion (Lớp 10)
+  // 3. Projectile Motion (Lớp 10 & Chuyên)
   const drawProjectile = (
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -591,50 +1104,74 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     t: number,
     isDark: boolean
   ) => {
-    const v0 = params.v0 ?? params.initialVelocity ?? 25; // m/s
-    const alphaDeg = params.angle ?? params.launchAngle ?? params.angleDeg ?? 45; // deg
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
+    const ov = overlaysRef.current;
+
+    const v0 = Math.max(0.5, p.v0 ?? p.initialVelocity ?? 25);
+    const alphaDeg = p.angle ?? p.launchAngle ?? p.angleDeg ?? 45;
     const alphaRad = (alphaDeg * Math.PI) / 180;
-    const g = params.gravity ?? 9.8;
-    const h0 = params.h0 ?? params.height ?? 10; // m
+    const g = Math.max(0.2, p.g ?? p.gravity ?? 9.8);
+    const h0 = Math.max(0, p.h0 ?? p.height ?? 0);
 
     const v0x = v0 * Math.cos(alphaRad);
     const v0y = v0 * Math.sin(alphaRad);
+    const dragCoeff = flags.airDrag ? 0.16 : 0;
 
-    // Total flight time: y = h0 + v0y*t - 0.5*g*t^2 = 0
+    // Total flight time (analytical vacuum + drag scaling)
     const delta = v0y * v0y + 2 * g * h0;
-    const tTotal = (v0y + Math.sqrt(delta)) / g;
-    const maxRange = v0x * tTotal;
-    const tMaxH = v0y / g;
-    const maxH = h0 + (v0y * v0y) / (2 * g);
+    const tVac = (v0y + Math.sqrt(Math.max(0, delta))) / g;
+    const tTotal = flags.airDrag ? tVac * 0.92 : tVac;
+    const posAt = (tt: number) => {
+      if (!flags.airDrag) {
+        return {
+          x: v0x * tt,
+          y: Math.max(0, h0 + v0y * tt - 0.5 * g * tt * tt),
+          vx: v0x,
+          vy: v0y - g * tt
+        };
+      }
+      const k = dragCoeff;
+      const expFactor = (1 - Math.exp(-k * tt)) / k;
+      const xDrag = v0x * expFactor;
+      const yDrag = Math.max(0, h0 + v0y * expFactor * 0.94 - 0.5 * g * tt * tt * 0.98);
+      return {
+        x: xDrag,
+        y: yDrag,
+        vx: v0x * Math.exp(-k * tt),
+        vy: v0y * Math.exp(-k * tt) - g * tt
+      };
+    };
 
-    // Current projectile time (looping)
-    const curT = t % (tTotal + 1.2);
+    const endSample = posAt(tTotal);
+    const maxRange = Math.max(1, endSample.x);
+    const maxH = Math.max(1, h0 + (v0y > 0 ? (v0y * v0y) / (2 * g) : 0));
+
+    const curT = t % (tTotal + 1.1);
     const inFlight = curT <= tTotal;
+    const curState = inFlight ? posAt(curT) : { x: maxRange, y: 0, vx: 0, vy: 0 };
+    const curV = Math.sqrt(curState.vx * curState.vx + curState.vy * curState.vy);
 
-    const curX = inFlight ? v0x * curT : maxRange;
-    const curY = inFlight ? h0 + v0y * curT - 0.5 * g * curT * curT : 0;
-    const curVx = inFlight ? v0x : 0;
-    const curVy = inFlight ? v0y - g * curT : 0;
-    const curV = Math.sqrt(curVx * curVx + curVy * curVy);
-
-    setTelemetry({
+    pushTelemetry({
       metric1Label: 'Tầm xa tối đa (L)',
       metric1Val: `${maxRange.toFixed(1)} m`,
       metric2Label: 'Độ cao cực đại (Hmax)',
       metric2Val: `${maxH.toFixed(1)} m`,
       metric3Label: 'Vận tốc tức thời (v)',
       metric3Val: `${curV.toFixed(1)} m/s`,
-      note: `Thời gian bay: t = ${curT.toFixed(2)}s / ${tTotal.toFixed(2)}s | vx = ${curVx.toFixed(1)} m/s, vy = ${curVy.toFixed(1)} m/s`
+      note: flags.airDrag
+        ? `Có lực cản không khí: Tầm xa giảm còn ${maxRange.toFixed(1)} m. vx giảm theo hàm mũ.`
+        : `Chuyển động ném không ma sát: t = ${curT.toFixed(2)}s / ${tTotal.toFixed(2)}s | vx = ${curState.vx.toFixed(1)} m/s, vy = ${curState.vy.toFixed(1)} m/s`
     });
 
-    const groundY = h - 60;
-    const scaleX = (w - 140) / (maxRange * 1.15 || 100);
-    const scaleY = (h - 140) / (maxH * 1.25 || 100);
-    const originX = 60;
+    const groundY = h - 54;
+    const scaleX = (w - 130) / Math.max(10, maxRange * 1.12);
+    const scaleY = (h - 130) / Math.max(5, maxH * 1.22);
+    const originX = 56;
 
     // Ground
     ctx.fillStyle = isDark ? '#1e293b' : '#cbd5e1';
-    ctx.fillRect(0, groundY, w, 60);
+    ctx.fillRect(0, groundY, w, 54);
     ctx.strokeStyle = isDark ? '#334155' : '#94a3b8';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -642,53 +1179,89 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineTo(w, groundY);
     ctx.stroke();
 
-    // Launch cliff/hill (h0)
-    const hillW = originX - 10;
-    const hillTopY = groundY - h0 * scaleY;
-    ctx.fillStyle = isDark ? '#334155' : '#94a3b8';
-    ctx.fillRect(0, hillTopY, hillW, groundY - hillTopY);
-
-    // Parabolic trajectory path
-    ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.4)' : 'rgba(2, 132, 199, 0.4)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    const steps = 60;
-    for (let i = 0; i <= steps; i++) {
-      const stepT = (i / steps) * tTotal;
-      const px = originX + v0x * stepT * scaleX;
-      const py = groundY - (h0 + v0y * stepT - 0.5 * g * stepT * stepT) * scaleY;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
+    // Ground meter ticks
+    if (ov.showRulerGrid) {
+      ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      const stepM = Math.max(5, Math.ceil(maxRange / 5 / 5) * 5);
+      for (let m = 0; m <= maxRange * 1.1; m += stepM) {
+        const rx = originX + m * scaleX;
+        if (rx < w - 20) {
+          ctx.beginPath();
+          ctx.moveTo(rx, groundY);
+          ctx.lineTo(rx, groundY + 6);
+          ctx.stroke();
+          ctx.fillText(`${m}m`, rx, groundY + 18);
+        }
+      }
     }
-    ctx.stroke();
-    ctx.setLineDash([]);
+
+    // Launch cliff (h0)
+    if (h0 > 0) {
+      const hillW = originX - 8;
+      const hillTopY = groundY - h0 * scaleY;
+      ctx.fillStyle = isDark ? '#334155' : '#94a3b8';
+      ctx.fillRect(0, hillTopY, hillW, groundY - hillTopY);
+    }
+
+    // Parabolic trajectory trace
+    if (ov.showTrace) {
+      ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.5)' : 'rgba(2, 132, 199, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      const steps = 60;
+      for (let i = 0; i <= steps; i++) {
+        const sample = posAt((i / steps) * tTotal);
+        const px = originX + sample.x * scaleX;
+        const py = groundY - sample.y * scaleY;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
     // Projectile Ball
-    const ballPx = originX + curX * scaleX;
-    const ballPy = groundY - Math.max(curY, 0) * scaleY;
+    const ballPx = originX + curState.x * scaleX;
+    const ballPy = groundY - curState.y * scaleY;
 
     ctx.fillStyle = '#ef4444';
     ctx.beginPath();
-    ctx.arc(ballPx, ballPy, 7, 0, Math.PI * 2);
+    ctx.arc(ballPx, ballPy, 7.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#fee2e2';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Velocity Vector
-    if (inFlight) {
-      const vecScale = 1.2;
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 2.5;
+    // Velocity Vector & Components
+    if (ov.showVectors && inFlight) {
+      const vecScale = 1.25;
+      // vx
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
       ctx.moveTo(ballPx, ballPy);
-      ctx.lineTo(ballPx + curVx * vecScale, ballPy - curVy * vecScale);
+      ctx.lineTo(ballPx + curState.vx * vecScale, ballPy);
+      ctx.stroke();
+      // vy
+      ctx.strokeStyle = '#10b981';
+      ctx.beginPath();
+      ctx.moveTo(ballPx, ballPy);
+      ctx.lineTo(ballPx, ballPy - curState.vy * vecScale);
+      ctx.stroke();
+      // v total
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(ballPx, ballPy);
+      ctx.lineTo(ballPx + curState.vx * vecScale, ballPy - curState.vy * vecScale);
       ctx.stroke();
     }
   };
 
-  // 4. Free Fall & Mechanical Energy (Lớp 10)
+  // 4. Free Fall & Mechanical Energy (Lớp 9 & 10)
   const drawFreeFall = (
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -696,29 +1269,38 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     t: number,
     isDark: boolean
   ) => {
-    const H = params.dropHeight || 20; // m
-    const m = params.mass || 1.0; // kg
-    const g = params.gravity || 9.8;
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
+    const ov = overlaysRef.current;
 
-    const tTotal = Math.sqrt((2 * H) / g);
+    const H = Math.max(0.5, p.height ?? p.dropHeight ?? 20);
+    const m = Math.max(0.05, p.mass ?? 2.0);
+    const g = Math.max(0.2, p.gravity ?? 9.8);
+
+    const tVac = Math.sqrt((2 * H) / g);
+    const tTotal = flags.airDrag ? tVac * 1.18 : tVac;
     const curT = t % (tTotal + 1.0);
     const inDrop = curT <= tTotal;
 
-    const curY = inDrop ? H - 0.5 * g * curT * curT : 0;
-    const curV = inDrop ? g * curT : Math.sqrt(2 * g * H);
+    const dragFactor = flags.airDrag ? 0.85 : 1.0;
+    const curY = inDrop ? Math.max(0, H - 0.5 * g * dragFactor * curT * curT * (tVac / tTotal) ** 0.3) : 0;
+    const curV = inDrop ? g * curT * (flags.airDrag ? 0.78 : 1.0) : Math.sqrt(2 * g * H) * (flags.airDrag ? 0.78 : 1.0);
 
     const Ep = m * g * curY;
     const Ek = 0.5 * m * curV * curV;
-    const ETotal = m * g * H;
+    const ETotal = Math.max(0.01, m * g * H);
+    const EThermal = flags.airDrag ? Math.max(0, ETotal - Ep - Ek) : 0;
 
-    setTelemetry({
-      metric1Label: 'Thế năng hấp dẫn (Wt)',
+    pushTelemetry({
+      metric1Label: 'Thế năng (Wt)',
       metric1Val: `${Ep.toFixed(1)} J`,
       metric2Label: 'Động năng (Wđ)',
       metric2Val: `${Ek.toFixed(1)} J`,
-      metric3Label: 'Cơ năng toàn phần (W)',
-      metric3Val: `${ETotal.toFixed(1)} J`,
-      note: `Bảo toàn cơ năng: W = Wđ + Wt = const. Vận tốc chạm đất: v = ${(Math.sqrt(2 * g * H)).toFixed(1)} m/s`
+      metric3Label: flags.airDrag ? 'Nhiệt hao phí (Q)' : 'Cơ năng (W)',
+      metric3Val: flags.airDrag ? `${EThermal.toFixed(1)} J` : `${ETotal.toFixed(1)} J`,
+      note: flags.airDrag
+        ? `Có lực cản không khí: Một phần cơ năng chuyển hóa thành nhiệt (${EThermal.toFixed(1)} J).`
+        : `Bảo toàn cơ năng: W = Wđ + Wt = ${ETotal.toFixed(1)} J. Vận tốc chạm đất: ${Math.sqrt(2 * g * H).toFixed(1)} m/s.`
     });
 
     const groundY = h - 46;
@@ -732,23 +1314,40 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.fillRect(0, groundY, w, 46);
 
     // Height Ruler
-    ctx.strokeStyle = isDark ? '#64748b' : '#94a3b8';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(ballX - 34, topY);
-    ctx.lineTo(ballX - 34, groundY);
-    ctx.stroke();
-
-    for (let meter = 0; meter <= H; meter += Math.max(2, Math.floor(H / 5))) {
-      const markY = groundY - meter * dropScale;
+    if (ov.showRulerGrid) {
+      ctx.strokeStyle = isDark ? '#64748b' : '#94a3b8';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(ballX - 42, markY);
-      ctx.lineTo(ballX - 34, markY);
+      ctx.moveTo(ballX - 34, topY);
+      ctx.lineTo(ballX - 34, groundY);
       ctx.stroke();
 
-      ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
-      ctx.font = '10px monospace';
-      ctx.fillText(`${meter}m`, Math.max(6, ballX - 66), markY + 4);
+      const stepM = Math.max(2, Math.floor(H / 5));
+      for (let meter = 0; meter <= H; meter += stepM) {
+        const markY = groundY - meter * dropScale;
+        ctx.beginPath();
+        ctx.moveTo(ballX - 42, markY);
+        ctx.lineTo(ballX - 34, markY);
+        ctx.stroke();
+
+        ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${meter}m`, Math.max(6, ballX - 66), markY + 4);
+      }
+    }
+
+    // Strobe motion trail
+    if (ov.showTrace && inDrop) {
+      for (let i = 1; i <= 4; i++) {
+        const pastT = Math.max(0, curT - i * 0.14);
+        const pastY = Math.max(0, H - 0.5 * g * dragFactor * pastT * pastT);
+        const py = topY + (H - pastY) * dropScale;
+        ctx.fillStyle = `rgba(59, 130, 246, ${0.35 - i * 0.07})`;
+        ctx.beginPath();
+        ctx.arc(ballX, py, 9, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     // Falling Ball
@@ -760,80 +1359,104 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineWidth = 2;
     ctx.stroke();
 
+    // Velocity & Weight vector
+    if (ov.showVectors) {
+      const vLen = Math.min(70, curV * 2.5);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(ballX + 18, ballY);
+      ctx.lineTo(ballX + 18, ballY + vLen);
+      ctx.stroke();
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('v', ballX + 23, ballY + vLen / 2 + 4);
+    }
+
     // Energy Bar Chart on Right side
-    const barW = Math.min(80, Math.max(54, w * 0.22));
-    const barX = Math.min(w - barW - 18, w * 0.62);
-    const barMaxH = Math.min(180, Math.max(100, groundY - topY - 12));
-    const barY = groundY - barMaxH;
+    if (ov.showRealtimeChart) {
+      const barW = Math.min(82, Math.max(54, w * 0.22));
+      const barX = Math.min(w - barW - 18, w * 0.62);
+      const barMaxH = Math.min(180, Math.max(100, groundY - topY - 12));
+      const barY = groundY - barMaxH;
 
-    ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
-    ctx.fillRect(barX, barY, barW, barMaxH);
+      ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
+      ctx.fillRect(barX, barY, barW, barMaxH);
 
-    // Ep block (Bottom)
-    const epHeight = (Ep / ETotal) * barMaxH;
-    ctx.fillStyle = '#10b981';
-    ctx.fillRect(barX, groundY - epHeight, barW, epHeight);
+      const epHeight = Math.max(0, Math.min(barMaxH, (Ep / ETotal) * barMaxH));
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(barX, groundY - epHeight, barW, epHeight);
 
-    // Ek block (Top)
-    const ekHeight = (Ek / ETotal) * barMaxH;
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(barX, groundY - epHeight - ekHeight, barW, ekHeight);
+      const ekHeight = Math.max(0, Math.min(barMaxH - epHeight, (Ek / ETotal) * barMaxH));
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(barX, groundY - epHeight - ekHeight, barW, ekHeight);
 
-    ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Biểu đồ Năng lượng', barX + barW / 2, barY - 12);
-    ctx.fillText(`Wt: ${Ep.toFixed(0)}J`, barX + barW / 2, groundY - epHeight / 2 + 4);
-    if (ekHeight > 16) {
-      ctx.fillText(`Wđ: ${Ek.toFixed(0)}J`, barX + barW / 2, groundY - epHeight - ekHeight / 2 + 4);
+      if (EThermal > 0.1) {
+        const thHeight = Math.max(0, barMaxH - epHeight - ekHeight);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(barX, barY, barW, thHeight);
+      }
+
+      ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Biểu đồ Năng lượng', barX + barW / 2, barY - 12);
+      if (epHeight > 14) ctx.fillText(`Wt: ${Ep.toFixed(0)}J`, barX + barW / 2, groundY - epHeight / 2 + 4);
+      if (ekHeight > 14) {
+        ctx.fillText(`Wđ: ${Ek.toFixed(0)}J`, barX + barW / 2, groundY - epHeight - ekHeight / 2 + 4);
+      }
     }
   };
 
-  // 5. Light Refraction & Total Internal Reflection (Lớp 11)
+  // 5. Light Refraction & Total Internal Reflection (Lớp 11 & 12)
   const drawRefraction = (
     ctx: CanvasRenderingContext2D,
     w: number,
     h: number,
     isDark: boolean
   ) => {
-    const n1 = params.n1 ?? 1.33; // Môi trường tới (ví dụ: nước/thủy tinh)
-    const n2 = params.n2 ?? 1.0; // Môi trường khúc xạ (ví dụ: không khí)
-    const iDeg = params.angle ?? params.incidentAngle ?? 30; // Góc tới
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
+    const ov = overlaysRef.current;
+
+    const n1 = Math.max(1.0, p.n1 ?? 1.33);
+    const n2 = Math.max(1.0, p.n2 ?? 1.0);
+    const iDeg = Math.max(0, Math.min(89.9, p.angleI ?? p.angle ?? p.incidentAngle ?? 30));
     const iRad = (iDeg * Math.PI) / 180;
 
     const sinI = Math.sin(iRad);
     const sinR = (n1 / n2) * sinI;
-    const isTIR = sinR > 1.0; // Hiện tượng phản xạ toàn phần
+    const isTIR = sinR > 1.0;
     const rRad = isTIR ? 0 : Math.asin(sinR);
     const rDeg = isTIR ? 0 : (rRad * 180) / Math.PI;
 
-    // Critical angle
     const sinIgh = n1 > n2 ? n2 / n1 : 1.0;
     const ighDeg = n1 > n2 ? (Math.asin(sinIgh) * 180) / Math.PI : 90;
 
-    setTelemetry({
+    pushTelemetry({
       metric1Label: 'Góc tới hạn (igh)',
       metric1Val: n1 > n2 ? `${ighDeg.toFixed(1)}°` : 'Không có (n1 ≤ n2)',
       metric2Label: 'Góc khúc xạ (r)',
       metric2Val: isTIR ? 'Phản xạ toàn phần' : `${rDeg.toFixed(1)}°`,
-      metric3Label: 'Trạng thái',
+      metric3Label: 'Trạng thái tia ló',
       metric3Val: isTIR ? '100% Tia phản xạ' : 'Khúc xạ + Phản xạ 1 phần',
       note: isTIR
-        ? `Tia sáng bị phản xạ toàn phần trở lại môi trường 1 vì i (${iDeg}°) > igh (${ighDeg.toFixed(1)}°)`
-        : `Định luật Snellius: ${n1.toFixed(2)} · sin(${iDeg}°) = ${n2.toFixed(2)} · sin(${rDeg.toFixed(1)}°)`
+        ? `Phản xạ toàn phần vì i (${iDeg.toFixed(1)}°) > igh (${ighDeg.toFixed(1)}°)`
+        : `Định luật Snell: ${n1.toFixed(2)} · sin(${iDeg.toFixed(1)}°) = ${n2.toFixed(2)} · sin(${rDeg.toFixed(1)}°)`
     });
 
     const midY = h / 2;
     const midX = w / 2;
-    const beamLen = Math.min(160, Math.min(w, h) * 0.4);
+    const beamLen = Math.min(165, Math.min(w, h) * 0.42);
 
-    // Interface
+    // Mediums
     ctx.fillStyle = isDark ? '#1e293b' : '#e0f2fe';
-    ctx.fillRect(0, 0, w, midY); // Top (Medium 1)
+    ctx.fillRect(0, 0, w, midY);
     ctx.fillStyle = isDark ? '#0f172a' : '#f0fdf4';
-    ctx.fillRect(0, midY, w, h - midY); // Bottom (Medium 2)
+    ctx.fillRect(0, midY, w, h - midY);
 
-    // Interface boundary
+    // Boundary
     ctx.strokeStyle = isDark ? '#64748b' : '#0284c7';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -841,7 +1464,26 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineTo(w, midY);
     ctx.stroke();
 
-    // Normal line (Pháp tuyến N-N')
+    // Protractor overlay (Thước đo góc PhET)
+    if (flags.showProtractor) {
+      const pR = Math.min(110, Math.min(w, h) * 0.28);
+      ctx.strokeStyle = isDark ? 'rgba(248, 250, 252, 0.22)' : 'rgba(15, 23, 42, 0.22)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(midX, midY, pR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let deg = 0; deg < 360; deg += 15) {
+        const rad = (deg * Math.PI) / 180;
+        const inner = deg % 45 === 0 ? pR - 10 : pR - 5;
+        ctx.beginPath();
+        ctx.moveTo(midX + inner * Math.cos(rad), midY + inner * Math.sin(rad));
+        ctx.lineTo(midX + pR * Math.cos(rad), midY + pR * Math.sin(rad));
+        ctx.stroke();
+      }
+    }
+
+    // Normal line
     ctx.strokeStyle = isDark ? '#94a3b8' : '#64748b';
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 4]);
@@ -851,16 +1493,16 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Medium Labels
+    // Labels
     ctx.fillStyle = isDark ? '#93c5fd' : '#0369a1';
     ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(`Môi trường 1 (n₁ = ${n1})`, 20, 30);
-    ctx.fillText(`Môi trường 2 (n₂ = ${n2})`, 20, midY + 30);
+    ctx.textAlign = 'left';
+    ctx.fillText(`Môi trường 1 (n₁ = ${n1.toFixed(2)})`, 20, 30);
+    ctx.fillText(`Môi trường 2 (n₂ = ${n2.toFixed(2)})`, 20, midY + 30);
 
-    // Incident Ray (Tia tới)
+    // Incident Ray
     const incStartX = midX - beamLen * Math.sin(iRad);
     const incStartY = midY - beamLen * Math.cos(iRad);
-
     ctx.strokeStyle = '#ef4444';
     ctx.lineWidth = 3.5;
     ctx.beginPath();
@@ -868,32 +1510,41 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineTo(midX, midY);
     ctx.stroke();
 
-    // Reflected Ray (Tia phản xạ)
+    // Reflected Ray
     const refEndX = midX + beamLen * Math.sin(iRad);
     const refEndY = midY - beamLen * Math.cos(iRad);
-
-    ctx.strokeStyle = isTIR ? '#ef4444' : 'rgba(239, 68, 68, 0.4)';
+    ctx.strokeStyle = isTIR ? '#ef4444' : 'rgba(239, 68, 68, 0.45)';
     ctx.lineWidth = isTIR ? 3.5 : 2;
     ctx.beginPath();
     ctx.moveTo(midX, midY);
     ctx.lineTo(refEndX, refEndY);
     ctx.stroke();
 
-    // Refracted Ray (Tia khúc xạ)
+    // Refracted Ray
     if (!isTIR) {
       const refrEndX = midX + beamLen * Math.sin(rRad);
       const refrEndY = midY + beamLen * Math.cos(rRad);
-
       ctx.strokeStyle = '#10b981';
       ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.moveTo(midX, midY);
       ctx.lineTo(refrEndX, refrEndY);
       ctx.stroke();
+
+      if (ov.showVectors) {
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`r=${rDeg.toFixed(1)}°`, midX + 18, midY + 55);
+      }
+    }
+    if (ov.showVectors) {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`i=${iDeg.toFixed(1)}°`, midX - 62, midY - 40);
     }
   };
 
-  // 6. Magnetic Induction (Lớp 11)
+  // 6. Magnetic Induction (Lớp 11 & 12)
   const drawInduction = (
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -901,34 +1552,63 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     t: number,
     isDark: boolean
   ) => {
-    const N = params.turns ?? 200; // Số vòng dây
-    const B0 = params.bField ?? params.magneticField ?? 0.5; // Tesla
-    const speed = params.magnetSpeed ?? (params.rotationSpeed ? params.rotationSpeed / 30 : 1.0);
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
+    const ov = overlaysRef.current;
 
-    // Magnet oscillating into coil
-    const magnetPos = Math.sin(t * speed * 2.5); // -1 to 1
-    const flux = B0 * N * 0.01 * (1 + 0.8 * magnetPos);
-    const dFluxDt = B0 * N * 0.01 * 0.8 * Math.cos(t * speed * 2.5) * speed * 2.5;
-    const eC = -dFluxDt; // Suất điện động cảm ứng
+    const N = Math.max(1, p.turns ?? 15);
+    const B0 = Math.max(0.05, p.B ?? p.bField ?? p.magneticField ?? 1.2);
+    const speed = Math.max(0.1, p.velocity ?? p.magnetSpeed ?? (p.rotationSpeed ? p.rotationSpeed / 30 : 4.0));
+    const poleSign = flags.flipMagnet ? -1 : 1;
 
-    setTelemetry({
+    // inductionAction: 0 = Oscillate, 1 = Move In, 2 = Pull Out, 3 = Stationary
+    let magnetPos = 0;
+    let dPosDt = 0;
+    if (flags.inductionAction === 0) {
+      const freq = speed * 0.7;
+      magnetPos = Math.sin(t * freq);
+      dPosDt = freq * Math.cos(t * freq);
+    } else if (flags.inductionAction === 1) {
+      const cycle = (t * speed * 0.35) % 2;
+      magnetPos = cycle <= 1 ? -1 + 2 * cycle : 1;
+      dPosDt = cycle <= 1 ? speed * 0.7 : 0;
+    } else if (flags.inductionAction === 2) {
+      const cycle = (t * speed * 0.35) % 2;
+      magnetPos = cycle <= 1 ? 1 - 2 * cycle : -1;
+      dPosDt = cycle <= 1 ? -speed * 0.7 : 0;
+    } else {
+      magnetPos = 0.25;
+      dPosDt = 0;
+    }
+
+    const flux = poleSign * B0 * N * 0.015 * (1 + 0.8 * magnetPos);
+    const eC = -poleSign * B0 * N * 0.015 * 0.8 * dPosDt;
+
+    if (isRunningRef.current) {
+      oscHistoryRef.current.push(eC);
+      if (oscHistoryRef.current.length > 90) oscHistoryRef.current.shift();
+    }
+
+    pushTelemetry({
       metric1Label: 'Từ thông qua ống dây (Φ)',
       metric1Val: `${(flux * 1000).toFixed(1)} mWb`,
       metric2Label: 'Suất điện động cảm ứng (ec)',
       metric2Val: `${eC.toFixed(2)} V`,
       metric3Label: 'Dòng điện cảm ứng (ic)',
-      metric3Val: `${(eC * 10).toFixed(1)} mA`,
+      metric3Val: `${(eC * 12).toFixed(1)} mA`,
       note:
-        eC > 0
-          ? 'Từ thông giảm -> Dòng điện cảm ứng sinh từ trường cùng chiều chống lại sự giảm.'
-          : 'Từ thông tăng -> Dòng điện cảm ứng sinh từ trường ngược chiều chống lại sự tăng (Định luật Len-xơ).'
+        Math.abs(eC) < 0.05
+          ? 'Nam châm ĐỨNG YÊN: Từ thông không đổi (ΔΦ = 0) → Không có dòng điện cảm ứng!'
+          : eC > 0
+          ? 'Định luật Len-xơ: Từ trường cảm ứng chống lại sự biến thiên từ thông ban đầu.'
+          : 'Đảo cực hoặc đổi chiều chuyển động làm đổi dấu suất điện động cảm ứng e_c.'
     });
 
     const midX = w / 2;
     const midY = h * 0.44;
     const s = Math.min(1, w / 480, h / 280);
 
-    // Solenoid Coil (Ống dây)
+    // Solenoid Coil
     const coilW = 140 * s;
     const coilH = 70 * s;
     ctx.fillStyle = isDark ? '#1e293b' : '#f1f5f9';
@@ -936,8 +1616,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 3;
 
-    // Draw coil loops
-    const loops = 8;
+    const loops = Math.min(12, Math.max(4, Math.round(N / 2)));
     for (let i = 0; i < loops; i++) {
       const lx = midX - coilW / 2 + (i * coilW) / (loops - 1);
       ctx.beginPath();
@@ -945,26 +1624,36 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       ctx.stroke();
     }
 
-    // Permanent Bar Magnet (Nam châm thanh)
-    const magW = 80 * s;
+    // Bar Magnet
+    const magW = 84 * s;
     const magH = 36 * s;
-    const magX = midX - 155 * s + magnetPos * 48 * s;
+    const magX = midX - 155 * s + magnetPos * 54 * s;
     const magY = midY;
 
-    // North Pole (Red)
-    ctx.fillStyle = '#ef4444';
+    // Field lines around magnet
+    if (ov.showVectors) {
+      ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.35)' : 'rgba(2, 132, 199, 0.3)';
+      ctx.lineWidth = 1.4;
+      for (let arc = 1; arc <= 2; arc++) {
+        ctx.beginPath();
+        ctx.ellipse(magX + magW / 2, magY, magW * (0.65 + arc * 0.25), magH * (0.75 + arc * 0.45), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    const leftIsNorth = flags.flipMagnet;
+    ctx.fillStyle = leftIsNorth ? '#ef4444' : '#3b82f6';
+    ctx.fillRect(magX, magY - magH / 2, magW / 2, magH);
+    ctx.fillStyle = leftIsNorth ? '#3b82f6' : '#ef4444';
     ctx.fillRect(magX + magW / 2, magY - magH / 2, magW / 2, magH);
+
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('N', magX + (3 * magW) / 4 - 4, magY + 4);
+    ctx.textAlign = 'center';
+    ctx.fillText(leftIsNorth ? 'N' : 'S', magX + magW / 4, magY + 4);
+    ctx.fillText(leftIsNorth ? 'S' : 'N', magX + (3 * magW) / 4, magY + 4);
 
-    // South Pole (Blue)
-    ctx.fillStyle = '#3b82f6';
-    ctx.fillRect(magX, magY - magH / 2, magW / 2, magH);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('S', magX + magW / 4 - 4, magY + 4);
-
-    // Galvanometer (Điện kế G)
+    // Galvanometer
     const galX = midX;
     const galY = Math.min(h - 32, midY + 86 * s);
     const galR = 24 * s;
@@ -976,17 +1665,42 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineWidth = 2.5;
     ctx.stroke();
 
-    // Needle deflected by eC
-    const needleAngle = -Math.PI / 2 + eC * 0.4;
+    const needleAngle = -Math.PI / 2 + Math.max(-1.2, Math.min(1.2, eC * 0.35));
     ctx.strokeStyle = '#ef4444';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(galX, galY);
     ctx.lineTo(galX + 17 * s * Math.cos(needleAngle), galY + 17 * s * Math.sin(needleAngle));
     ctx.stroke();
+
+    // Live e_c(t) mini oscilloscope chart
+    if (ov.showRealtimeChart && oscHistoryRef.current.length > 2) {
+      const cw2 = Math.min(130, w * 0.28);
+      const ch2 = 54;
+      const cx2 = w - cw2 - 12;
+      const cy2 = h - ch2 - 12;
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.85)';
+      ctx.fillRect(cx2, cy2, cw2, ch2);
+      ctx.strokeStyle = isDark ? '#334155' : '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx2, cy2, cw2, ch2);
+
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      const hist = oscHistoryRef.current;
+      const maxAmp = Math.max(1.5, ...hist.map(Math.abs));
+      for (let i = 0; i < hist.length; i++) {
+        const px = cx2 + (i / Math.max(1, hist.length - 1)) * cw2;
+        const py = cy2 + ch2 / 2 - (hist[i] / maxAmp) * (ch2 * 0.38);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
   };
 
-  // 7. Spring Pendulum (Lớp 12)
+  // 7. Spring Pendulum (Lớp 11 & 12)
   const drawSpring = (
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -994,33 +1708,43 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     t: number,
     isDark: boolean
   ) => {
-    const m = params.mass ?? 0.5;
-    const k = params.stiffness ?? params.springK ?? 50;
-    const rawAmp = params.amplitude ?? 0.15;
-    const A = rawAmp > 1 ? rawAmp / 400 : rawAmp;
-    const gamma = params.damping ?? 0.02;
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
+    const ov = overlaysRef.current;
+
+    const m = Math.max(0.05, p.m ?? p.mass ?? 1.0);
+    const k = Math.max(0.5, p.k ?? p.stiffness ?? p.springK ?? 40);
+    const rawAmp = p.A ?? p.amplitude ?? 12;
+    const A = Math.min(0.45, Math.abs(rawAmp > 1 ? rawAmp / 100 : rawAmp)); // m
+    const gamma = flags.hasFriction ? 0.24 : 0;
 
     const omega0 = Math.sqrt(k / m);
     const env = Math.exp(-gamma * t);
     const x = A * env * Math.cos(omega0 * t);
     const v = -A * omega0 * env * Math.sin(omega0 * t);
-    const a = -omega0 * omega0 * x;
 
     const Ek = 0.5 * m * v * v;
     const Ep = 0.5 * k * x * x;
     const ETotal = Ek + Ep;
 
-    setTelemetry({
+    if (isRunningRef.current) {
+      oscHistoryRef.current.push(x * 100);
+      if (oscHistoryRef.current.length > 100) oscHistoryRef.current.shift();
+    }
+
+    pushTelemetry({
       metric1Label: 'Li độ (x)',
       metric1Val: `${(x * 100).toFixed(1)} cm`,
       metric2Label: 'Vận tốc (v)',
       metric2Val: `${(v * 100).toFixed(1)} cm/s`,
       metric3Label: 'Cơ năng (W)',
       metric3Val: `${ETotal.toFixed(3)} J`,
-      note: `Tần số góc: ω = ${omega0.toFixed(2)} rad/s | Chu kỳ: T = ${(2 * Math.PI / omega0).toFixed(2)}s`
+      note: flags.hasFriction
+        ? `Dao động tắt dần (có ma sát): Biên độ giảm theo hàm mũ. ω₀ = ${omega0.toFixed(2)} rad/s.`
+        : `Dao động điều hòa lí tưởng: ω = ${omega0.toFixed(2)} rad/s | T = ${(2 * Math.PI / omega0).toFixed(2)} s`
     });
 
-    const midY = h / 2;
+    const midY = h * 0.48;
     const s = Math.min(1, w / 480);
     const anchorX = Math.max(24, w * 0.1);
     const eqX = w * 0.56;
@@ -1028,6 +1752,22 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     const massSize = Math.max(36, 50 * s);
     const halfM = massSize / 2;
     const massX = Math.max(anchorX + halfM + 30, Math.min(w - halfM - 12, eqX + x * scale));
+
+    // Equilibrium Line & Ruler
+    if (ov.showRulerGrid) {
+      ctx.strokeStyle = isDark ? 'rgba(16, 185, 129, 0.45)' : 'rgba(5, 150, 105, 0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(eqX, midY - 68);
+      ctx.lineTo(eqX, midY + 68);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('VTCB O', eqX, midY - 74);
+    }
 
     // Anchor Wall
     ctx.fillStyle = isDark ? '#334155' : '#94a3b8';
@@ -1059,9 +1799,63 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(`${m}kg`, massX, midY + 4);
+
+    // Restoring Force & Velocity Vectors
+    if (ov.showVectors) {
+      const fLen = Math.max(-55, Math.min(55, -k * x * 12));
+      if (Math.abs(fLen) > 3) {
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(massX, midY - halfM - 10);
+        ctx.lineTo(massX + fLen, midY - halfM - 10);
+        ctx.stroke();
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('Fkv', massX + fLen / 2, midY - halfM - 16);
+      }
+
+      const vLen = Math.max(-55, Math.min(55, v * 45));
+      if (Math.abs(vLen) > 3) {
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(massX, midY + halfM + 12);
+        ctx.lineTo(massX + vLen, midY + halfM + 12);
+        ctx.stroke();
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillText('v', massX + vLen / 2, midY + halfM + 25);
+      }
+    }
+
+    // Real-time x(t) chart at bottom
+    if (ov.showRealtimeChart && oscHistoryRef.current.length > 2) {
+      const cw2 = Math.min(200, w * 0.42);
+      const ch2 = 52;
+      const cx2 = w - cw2 - 14;
+      const cy2 = h - ch2 - 12;
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.88)';
+      ctx.fillRect(cx2, cy2, cw2, ch2);
+      ctx.strokeStyle = isDark ? '#334155' : '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx2, cy2, cw2, ch2);
+
+      const hist = oscHistoryRef.current;
+      const maxXcm = Math.max(1, A * 100);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      for (let i = 0; i < hist.length; i++) {
+        const px = cx2 + (i / Math.max(1, hist.length - 1)) * cw2;
+        const py = cy2 + ch2 / 2 - (hist[i] / maxXcm) * (ch2 * 0.38);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
   };
 
-  // 8. Simple Pendulum (Lớp 12)
+  // 8. Simple Pendulum (Lớp 12 & Chuyên)
   const drawPendulum = (
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -1069,31 +1863,71 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     t: number,
     isDark: boolean
   ) => {
-    const l = params.length ?? 1.0;
-    const g = params.gravity ?? 9.8;
-    const theta0Deg = params.angle0 ?? params.initialAngleDeg ?? 20;
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
+    const ov = overlaysRef.current;
+
+    const l = Math.max(0.1, p.length ?? 2.0);
+    const g = Math.max(0.2, p.gravity ?? 9.8);
+    const theta0Deg = p.theta0 ?? p.angle0 ?? p.initialAngleDeg ?? 15;
     const theta0Rad = (theta0Deg * Math.PI) / 180;
     const omega = Math.sqrt(g / l);
+    const gamma = flags.hasFriction ? 0.14 : 0;
+    const env = Math.exp(-gamma * t);
 
-    const theta = theta0Rad * Math.cos(omega * t);
-    const v = -omega * l * theta0Rad * Math.sin(omega * t);
+    const theta = theta0Rad * env * Math.cos(omega * t);
+    const v = -omega * l * theta0Rad * env * Math.sin(omega * t);
 
-    setTelemetry({
+    pushTelemetry({
       metric1Label: 'Góc lệch (α)',
       metric1Val: `${((theta * 180) / Math.PI).toFixed(1)}°`,
       metric2Label: 'Vận tốc tiếp tuyến (v)',
       metric2Val: `${v.toFixed(2)} m/s`,
       metric3Label: 'Chu kỳ dao động (T)',
       metric3Val: `${((2 * Math.PI) / omega).toFixed(2)} s`,
-      note: `Công thức dao động nhỏ: T = 2π√(l/g). Lực căng cực đại tại VTCB: Tmax = mg(3 - 2cosα₀)`
+      note: flags.hasFriction
+        ? `Con lắc tắt dần (có lực cản môi trường): Biên độ góc giảm dần theo thời gian.`
+        : `Dao động điều hòa: T = 2π√(l/g) = ${((2 * Math.PI) / omega).toFixed(2)} s (không phụ thuộc khối lượng m).`
     });
 
     const pivotX = w / 2;
-    const pivotY = 50;
-    const lengthPix = Math.min(h * 0.65, l * 180);
+    const pivotY = 46;
+    const lengthPix = Math.min(h * 0.66, Math.max(70, l * 95));
 
     const bobX = pivotX + lengthPix * Math.sin(theta);
     const bobY = pivotY + lengthPix * Math.cos(theta);
+
+    // Protractor arc
+    if (flags.showProtractor) {
+      ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(100, 116, 139, 0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(pivotX, pivotY);
+      ctx.lineTo(pivotX, pivotY + lengthPix + 20);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const arcR = 56;
+      ctx.beginPath();
+      ctx.arc(pivotX, pivotY, arcR, Math.PI / 2 - Math.abs(theta0Rad), Math.PI / 2 + Math.abs(theta0Rad));
+      ctx.stroke();
+    }
+
+    // Arc swing trace
+    if (ov.showTrace) {
+      ctx.strokeStyle = isDark ? 'rgba(236, 72, 153, 0.35)' : 'rgba(219, 39, 119, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(
+        pivotX,
+        pivotY,
+        lengthPix,
+        Math.PI / 2 - Math.abs(theta0Rad) * env,
+        Math.PI / 2 + Math.abs(theta0Rad) * env
+      );
+      ctx.stroke();
+    }
 
     // Pivot
     ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
@@ -1103,7 +1937,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
     // String
     ctx.strokeStyle = isDark ? '#94a3b8' : '#475569';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(pivotX, pivotY);
     ctx.lineTo(bobX, bobY);
@@ -1117,9 +1951,24 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.strokeStyle = '#fbcfe8';
     ctx.lineWidth = 2;
     ctx.stroke();
+
+    // Tangential Velocity Vector
+    if (ov.showVectors && Math.abs(v) > 0.02) {
+      const vx = v * Math.cos(theta) * 28;
+      const vy = -v * Math.sin(theta) * 28;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(bobX, bobY);
+      ctx.lineTo(bobX + vx, bobY + vy);
+      ctx.stroke();
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText('v', bobX + vx + 8, bobY + vy);
+    }
   };
 
-  // 9. Wave Interference (Lớp 12)
+  // 9. Wave Interference (Lớp 11 & 12)
   const drawWaveInterference = (
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -1127,646 +1976,1581 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     t: number,
     isDark: boolean
   ) => {
-    const lambda = params.wavelength ?? 40;
-    const d = params.sourceDistance ?? params.separation ?? 180;
-    const omega = 4.0;
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
 
-    setTelemetry({
-      metric1Label: 'Bước sóng (λ)',
-      metric1Val: `${lambda} px`,
+    const freq = Math.max(0.2, p.freq ?? 2.5); // Hz
+    const speed = Math.max(10, p.speed ?? 60); // cm/s
+    const d = Math.max(10, p.sep ?? p.sourceDistance ?? p.separation ?? 120);
+    const lambda = p.wavelength ?? Math.max(8, speed / freq);
+
+    const maxK = Math.floor(d / Math.max(1, lambda));
+
+    pushTelemetry({
+      metric1Label: 'Bước sóng (λ = v/f)',
+      metric1Val: `${lambda.toFixed(1)} cm`,
       metric2Label: 'Khoảng cách nguồn (S1S2)',
-      metric2Val: `${d} px`,
+      metric2Val: flags.singleSource ? '1 nguồn đơn' : `${d.toFixed(0)} cm`,
       metric3Label: 'Số cực đại giao thoa',
-      metric3Val: `${2 * Math.floor(d / lambda) + 1}`,
-      note: 'Điều kiện cực đại: d2 - d1 = k·λ. Điều kiện cực tiểu: d2 - d1 = (k + 0.5)·λ'
+      metric3Val: flags.singleSource ? 'Không giao thoa' : `${2 * maxK + 1} dãy`,
+      note: flags.singleSource
+        ? 'Chế độ 1 nguồn: Sóng tròn lan tỏa đều với tốc độ v, chưa có giao thoa.'
+        : `Giao thoa 2 nguồn cùng pha: d₂ - d₁ = kλ (cực đại), d₂ - d₁ = (k + 0.5)λ (cực tiểu).`
     });
 
     const midY = h / 2;
-    const drawD = Math.min(d, Math.max(80, w * 0.62));
-    const s1X = w / 2 - drawD / 2;
+    const drawD = Math.min(d * 1.4, Math.max(70, w * 0.56));
+    const s1X = flags.singleSource ? w / 2 : w / 2 - drawD / 2;
     const s2X = w / 2 + drawD / 2;
+    const waveStepPix = Math.max(14, Math.min(70, lambda * 1.3));
+    const maxR = Math.min(w, h) * 0.72;
 
-    // Draw interference ripples
-    const maxR = Math.min(w, h) * 0.7;
-    ctx.lineWidth = 1.5;
-
-    for (let r = (t * 20) % lambda; r < maxR; r += lambda) {
-      // Source 1
-      ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.25)' : 'rgba(2, 132, 199, 0.25)';
+    ctx.lineWidth = 1.6;
+    for (let r = (t * speed * 0.8) % waveStepPix; r < maxR; r += waveStepPix) {
+      ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.35)' : 'rgba(2, 132, 199, 0.32)';
       ctx.beginPath();
       ctx.arc(s1X, midY, r, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Source 2
-      ctx.strokeStyle = isDark ? 'rgba(236, 72, 153, 0.25)' : 'rgba(219, 39, 119, 0.25)';
-      ctx.beginPath();
-      ctx.arc(s2X, midY, r, 0, Math.PI * 2);
-      ctx.stroke();
+      if (!flags.singleSource) {
+        ctx.strokeStyle = isDark ? 'rgba(236, 72, 153, 0.35)' : 'rgba(219, 39, 119, 0.32)';
+        ctx.beginPath();
+        ctx.arc(s2X, midY, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    // Antinodal (Cực đại) hyperbola guides
+    if (!flags.singleSource && flags.showNodalLines) {
+      ctx.strokeStyle = isDark ? 'rgba(16, 185, 129, 0.4)' : 'rgba(5, 150, 105, 0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      const kLim = Math.min(4, maxK);
+      for (let k = -kLim; k <= kLim; k++) {
+        ctx.beginPath();
+        const a = (k * (drawD / Math.max(1, d / lambda))) / 2;
+        const c = drawD / 2;
+        if (Math.abs(a) < c) {
+          const b = Math.sqrt(Math.max(1, c * c - a * a));
+          for (let yy = -h * 0.42; yy <= h * 0.42; yy += 10) {
+            const xHyp = w / 2 + (a >= 0 ? 1 : -1) * Math.abs(a) * Math.sqrt(1 + (yy * yy) / (b * b));
+            if (yy === -h * 0.42) ctx.moveTo(xHyp, midY + yy);
+            else ctx.lineTo(xHyp, midY + yy);
+          }
+          ctx.stroke();
+        }
+      }
+      ctx.setLineDash([]);
     }
 
     // Source 1 point
     ctx.fillStyle = '#0284c7';
     ctx.beginPath();
-    ctx.arc(s1X, midY, 6, 0, Math.PI * 2);
+    ctx.arc(s1X, midY, 6.5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillText('S1', s1X - 8, midY - 12);
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('S1', s1X, midY - 12);
 
     // Source 2 point
-    ctx.fillStyle = '#db2777';
+    if (!flags.singleSource) {
+      ctx.fillStyle = '#db2777';
+      ctx.beginPath();
+      ctx.arc(s2X, midY, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillText('S2', s2X, midY - 12);
+    }
+  };
+
+  // 10. Kinematics Graphs (d-t, v-t) & Vector / Trigonometry Visualizer
+  const drawKinematicsGraphs = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const ov = overlaysRef.current;
+
+    const vizMode = Math.round(p.vizMode ?? 1);
+    const v0 = p.v0 ?? 5;
+    const accel = p.accel ?? 0;
+    const angleDeg = p.angleDeg ?? 35;
+    const f1 = p.f1 ?? 30;
+    const f2 = p.f2 ?? 20;
+
+    if (vizMode === 0) {
+      const rad = (angleDeg * Math.PI) / 180;
+      const res = Math.sqrt(f1 * f1 + f2 * f2 + 2 * f1 * f2 * Math.cos(rad));
+      const fx = f1 + f2 * Math.cos(rad);
+      const fy = f2 * Math.sin(rad);
+
+      pushTelemetry({
+        metric1Label: 'Thành phần ngang (Fx)',
+        metric1Val: `${fx.toFixed(1)} N`,
+        metric2Label: 'Thành phần đứng (Fy)',
+        metric2Val: `${fy.toFixed(1)} N`,
+        metric3Label: 'Hợp lực tổng (F)',
+        metric3Val: `${res.toFixed(1)} N`,
+        note: `sin(${angleDeg}°) = ${Math.sin(rad).toFixed(2)}, cos(${angleDeg}°) = ${Math.cos(rad).toFixed(2)} | F = √(F₁² + F₂² + 2F₁F₂cosα)`
+      });
+
+      const ox = Math.max(70, w * 0.25);
+      const oy = h * 0.72;
+      const maxForce = Math.max(10, Math.abs(f1), Math.abs(f2), res);
+      const scale = Math.min(w, h) * 0.45 / maxForce;
+
+      ctx.strokeStyle = isDark ? '#475569' : '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(40, oy);
+      ctx.lineTo(w - 30, oy);
+      ctx.moveTo(ox, h - 25);
+      ctx.lineTo(ox, 25);
+      ctx.stroke();
+
+      const drawArrow = (x1: number, y1: number, x2: number, y2: number, color: string, label: string) => {
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        const a = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - 10 * Math.cos(a - 0.35), y2 - 10 * Math.sin(a - 0.35));
+        ctx.lineTo(x2 - 10 * Math.cos(a + 0.35), y2 - 10 * Math.sin(a + 0.35));
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(label, (x1 + x2) / 2 + 8, (y1 + y2) / 2 - 8);
+      };
+
+      const p1x = ox + f1 * scale;
+      const p1y = oy;
+      const p2x = ox + f2 * Math.cos(rad) * scale;
+      const p2y = oy - f2 * Math.sin(rad) * scale;
+      const prx = ox + fx * scale;
+      const pry = oy - fy * scale;
+
+      if (ov.showTrace) {
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = isDark ? 'rgba(148,163,184,0.5)' : 'rgba(100,116,139,0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(p1x, p1y);
+        ctx.lineTo(prx, pry);
+        ctx.lineTo(p2x, p2y);
+        ctx.moveTo(prx, pry);
+        ctx.lineTo(prx, oy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      drawArrow(ox, oy, p1x, p1y, '#38bdf8', `F₁ = ${f1}N`);
+      drawArrow(ox, oy, p2x, p2y, '#f59e0b', `F₂ = ${f2}N`);
+      if (ov.showVectors) {
+        drawArrow(ox, oy, prx, pry, '#ef4444', `F = ${res.toFixed(1)}N`);
+      }
+      return;
+    }
+
+    const maxT = 5.0;
+    const tCur = t % maxT;
+    const curD = v0 * tCur + 0.5 * accel * tCur * tCur;
+    const curV = v0 + accel * tCur;
+
+    pushTelemetry({
+      metric1Label: 'Thời gian (t)',
+      metric1Val: `${tCur.toFixed(2)} s`,
+      metric2Label: 'Vận tốc tức thời (v)',
+      metric2Val: `${curV.toFixed(2)} m/s`,
+      metric3Label: 'Độ dịch chuyển (d)',
+      metric3Val: `${curD.toFixed(2)} m`,
+      note:
+        vizMode === 1
+          ? 'Đồ thị (d - t): Độ dốc biểu thị vận tốc v. Nếu a = 0 đường thẳng xiên đều.'
+          : 'Đồ thị (v - t): Độ dốc là gia tốc a, diện tích tô màu dưới đường bằng độ dịch chuyển d!'
+    });
+
+    const roadY = h * 0.24;
+    ctx.strokeStyle = isDark ? '#475569' : '#94a3b8';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(s2X, midY, 6, 0, Math.PI * 2);
+    ctx.moveTo(40, roadY + 18);
+    ctx.lineTo(w - 40, roadY + 18);
+    ctx.stroke();
+
+    const maxD = Math.max(15, Math.abs(v0 * maxT + 0.5 * accel * maxT * maxT));
+    const normPos = Math.max(0, Math.min(1, curD / maxD));
+    const carX = 50 + normPos * (w - 130);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(carX, roadY - 12, 46, 22);
+    ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+    ctx.beginPath();
+    ctx.arc(carX + 10, roadY + 12, 6, 0, Math.PI * 2);
+    ctx.arc(carX + 36, roadY + 12, 6, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillText('S2', s2X - 8, midY - 12);
+
+    if (ov.showVectors) {
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(carX + 46, roadY - 2);
+      ctx.lineTo(carX + 46 + Math.max(-30, Math.min(70, curV * 4)), roadY - 2);
+      ctx.stroke();
+    }
+
+    // Bottom half: Graph Plot
+    const gx0 = 60;
+    const gy0 = h * 0.88;
+    const gw = w - 100;
+    const gh = h * 0.44;
+
+    ctx.strokeStyle = isDark ? '#64748b' : '#475569';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(gx0, gy0 - gh);
+    ctx.lineTo(gx0, gy0);
+    ctx.lineTo(gx0 + gw, gy0);
+    ctx.stroke();
+
+    ctx.fillStyle = isDark ? '#cbd5e1' : '#334155';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('t (s)', gx0 + gw - 22, gy0 + 16);
+    ctx.fillText(vizMode === 1 ? 'd (m)' : 'v (m/s)', gx0 - 42, gy0 - gh + 10);
+
+    const valAtT = (tt: number) => (vizMode === 1 ? v0 * tt + 0.5 * accel * tt * tt : v0 + accel * tt);
+    const maxYVal = Math.max(10, Math.abs(valAtT(maxT)), Math.abs(valAtT(0)));
+
+    if (vizMode === 2) {
+      ctx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.16)' : 'rgba(14, 165, 233, 0.15)';
+      ctx.beginPath();
+      ctx.moveTo(gx0, gy0);
+      for (let i = 0; i <= 40; i++) {
+        const tt = (i / 40) * tCur;
+        const px = gx0 + (tt / maxT) * gw;
+        const py = gy0 - Math.max(0, Math.min(gh, (valAtT(tt) / maxYVal) * gh * 0.85));
+        ctx.lineTo(px, py);
+      }
+      ctx.lineTo(gx0 + (tCur / maxT) * gw, gy0);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.strokeStyle = vizMode === 1 ? '#f59e0b' : '#38bdf8';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 60; i++) {
+      const tt = (i / 60) * maxT;
+      const px = gx0 + (tt / maxT) * gw;
+      const py = gy0 - Math.max(-10, Math.min(gh, (valAtT(tt) / maxYVal) * gh * 0.85));
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    const dotX = gx0 + (tCur / maxT) * gw;
+    const dotY = gy0 - Math.max(-10, Math.min(gh, (valAtT(tCur) / maxYVal) * gh * 0.85));
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  // 11. Thermal Gas & Ideal Gas Law Chamber (Lớp 12)
+  const drawThermalGas = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const ov = overlaysRef.current;
+
+    const tempK = Math.max(10, p.tempK ?? 320);
+    const vol = Math.max(0.5, p.volume ?? 10);
+    const moles = Math.max(0.1, p.moles ?? 1);
+    const pressureKPa = (moles * 8.31 * tempK) / vol;
+    const eMean = (1.5 * 1.38e-23 * tempK) * 1e21;
+
+    pushTelemetry({
+      metric1Label: 'Nhiệt độ tuyệt đối (T)',
+      metric1Val: `${tempK} K (${(tempK - 273).toFixed(0)} °C)`,
+      metric2Label: 'Áp suất khí (p)',
+      metric2Val: `${pressureKPa.toFixed(1)} kPa`,
+      metric3Label: 'Động năng TB phân tử',
+      metric3Val: `${eMean.toFixed(2)} × 10⁻²¹ J`,
+      note: 'Phương trình Clapeyron: pV = nRT. Tăng nhiệt độ T làm tốc độ phân tử và áp suất tăng tỉ lệ thuận.'
+    });
+
+    const boxW = Math.min(w * 0.52, 290);
+    const maxBoxH = h * 0.68;
+    const boxH = Math.max(60, Math.min(maxBoxH, (vol / 18) * maxBoxH));
+    const bx = w / 2 - boxW / 2 - 20;
+    const byBottom = h * 0.85;
+    const byTop = byBottom - boxH;
+
+    ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(bx, byTop, boxW, boxH);
+
+    // Movable Piston
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(bx + 2, byTop - 12, boxW - 4, 12);
+
+    const count = Math.min(80, Math.max(6, Math.round(14 + moles * 10)));
+    const speedFactor = Math.sqrt(tempK / 300) * 90;
+    ctx.fillStyle = tempK > 450 ? '#ef4444' : tempK > 330 ? '#f59e0b' : '#38bdf8';
+
+    for (let i = 0; i < count; i++) {
+      const rx = ((i * 73 + 19) % 100) / 100;
+      const ry = ((i * 41 + 7) % 100) / 100;
+      const vx = ((i % 2 === 0 ? 1 : -1) * (0.7 + (i % 5) * 0.2)) * speedFactor;
+      const vy = ((i % 3 === 0 ? 1 : -1) * (0.6 + (i % 4) * 0.22)) * speedFactor;
+
+      const spanX = Math.max(12, boxW - 16);
+      const spanY = Math.max(12, boxH - 16);
+      const rawX = (((rx * boxW + vx * t) % (2 * spanX)) + 2 * spanX) % (2 * spanX);
+      const posX = bx + 8 + (rawX > spanX ? 2 * spanX - rawX : rawX);
+      const rawY = (((ry * boxH + vy * t) % (2 * spanY)) + 2 * spanY) % (2 * spanY);
+      const posY = byTop + 8 + (rawY > spanY ? 2 * spanY - rawY : rawY);
+
+      ctx.beginPath();
+      ctx.arc(posX, posY, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (ov.showVectors && i < 6) {
+        ctx.strokeStyle = isDark ? 'rgba(248, 250, 252, 0.55)' : 'rgba(15, 23, 42, 0.55)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(posX, posY);
+        ctx.lineTo(posX + (vx / speedFactor) * 14, posY + (vy / speedFactor) * 14);
+        ctx.stroke();
+      }
+    }
+
+    // Pressure Gauge Column on right
+    if (ov.showRealtimeChart) {
+      const gx = bx + boxW + 24;
+      const gh = 140;
+      const gy = byBottom - gh;
+      ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
+      ctx.fillRect(gx, gy, 24, gh);
+      const pFrac = Math.min(1, pressureKPa / 800);
+      ctx.fillStyle = pressureKPa > 450 ? '#ef4444' : '#10b981';
+      ctx.fillRect(gx, byBottom - pFrac * gh, 24, pFrac * gh);
+      ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('p', gx + 12, gy - 6);
+    }
+  };
+
+  // 12. Electric Field & Coulomb Interaction (Lớp 11)
+  const drawElectricField = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const flags = labFlagsRef.current;
+    const ov = overlaysRef.current;
+
+    const q1 = p.q1 ?? 4;
+    const q2 = p.q2 ?? -4;
+    const distMm = Math.max(10, p.dist ?? 180);
+    const rMeters = distMm / 1000;
+    const force = (9e9 * Math.abs(q1 * q2) * 1e-12) / (rMeters * rMeters);
+    const sameSign = q1 * q2 > 0;
+
+    pushTelemetry({
+      metric1Label: 'Lực tương tác Coulomb',
+      metric1Val: `${force.toFixed(2)} N`,
+      metric2Label: 'Tính chất tương tác',
+      metric2Val: q1 === 0 || q2 === 0 ? 'Không tương tác' : sameSign ? 'Đẩy nhau' : 'Hút nhau',
+      metric3Label: 'Khoảng cách r',
+      metric3Val: `${distMm} mm`,
+      note: 'Định luật Coulomb: F = k|q₁q₂|/r². Mũi tên lưới biểu diễn hướng vectơ cường độ điện trường tổng hợp E.'
+    });
+
+    const cy = h / 2;
+    const drawSpan = Math.min(w * 0.65, Math.max(70, distMm * 1.4));
+    const x1 = w / 2 - drawSpan / 2;
+    const x2 = w / 2 + drawSpan / 2;
+
+    // 2D E-Field Grid Arrows (PhET style)
+    if (flags.showFieldGrid) {
+      const step = 42;
+      for (let gx = 30; gx < w - 20; gx += step) {
+        for (let gy = 30; gy < h - 20; gy += step) {
+          const dx1 = gx - x1;
+          const dy1 = gy - cy;
+          const r1Sq = Math.max(400, dx1 * dx1 + dy1 * dy1);
+          const dx2 = gx - x2;
+          const dy2 = gy - cy;
+          const r2Sq = Math.max(400, dx2 * dx2 + dy2 * dy2);
+
+          const ex = (q1 * dx1) / Math.pow(r1Sq, 1.5) + (q2 * dx2) / Math.pow(r2Sq, 1.5);
+          const ey = (q1 * dy1) / Math.pow(r1Sq, 1.5) + (q2 * dy2) / Math.pow(r2Sq, 1.5);
+          const mag = Math.hypot(ex, ey);
+          if (mag > 1e-7) {
+            const ux = (ex / mag) * 13;
+            const uy = (ey / mag) * 13;
+            const alpha = Math.min(0.8, 0.25 + mag * 15000);
+            ctx.strokeStyle = isDark ? `rgba(56, 189, 248, ${alpha})` : `rgba(2, 132, 199, ${alpha})`;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(gx - ux * 0.5, gy - uy * 0.5);
+            ctx.lineTo(gx + ux * 0.5, gy + uy * 0.5);
+            ctx.stroke();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.beginPath();
+            ctx.arc(gx + ux * 0.5, gy + uy * 0.5, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+    }
+
+    // Equipotential ripples
+    for (let i = 1; i <= 3; i++) {
+      const rad = i * 24 + ((t * 14) % 24);
+      ctx.strokeStyle = q1 >= 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(56, 189, 248, 0.2)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(x1, cy, rad, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = q2 >= 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(56, 189, 248, 0.2)';
+      ctx.beginPath();
+      ctx.arc(x2, cy, rad, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Force arrows
+    if (ov.showVectors && q1 !== 0 && q2 !== 0) {
+      const fLen = Math.min(75, Math.max(25, force * 8));
+      const dir1 = sameSign ? -1 : 1;
+      const dir2 = sameSign ? 1 : -1;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x1, cy);
+      ctx.lineTo(x1 + dir1 * fLen, cy);
+      ctx.moveTo(x2, cy);
+      ctx.lineTo(x2 + dir2 * fLen, cy);
+      ctx.stroke();
+    }
+
+    const drawCharge = (cx: number, q: number, name: string) => {
+      ctx.fillStyle = q > 0 ? '#ef4444' : q < 0 ? '#3b82f6' : '#64748b';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(q > 0 ? '+' : q < 0 ? '−' : '0', cx, cy + 5);
+      ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`${name} = ${q > 0 ? '+' : ''}${q} μC`, cx, cy - 26);
+    };
+
+    drawCharge(x1, q1, 'q₁');
+    drawCharge(x2, q2, 'q₂');
+  };
+
+  // 13. Nuclear Decay Grid & Exponential Curve (Lớp 12)
+  const drawNuclearDecay = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const ov = overlaysRef.current;
+
+    const halfLife = Math.max(0.2, p.halfLife ?? 4.0);
+    const n0 = Math.max(1, p.n0 ?? 100);
+    const cycleT = t % (halfLife * 4.2);
+    const remaining = n0 * Math.pow(2, -cycleT / halfLife);
+    const decayed = n0 - remaining;
+
+    pushTelemetry({
+      metric1Label: 'Thời gian trôi qua (t)',
+      metric1Val: `${cycleT.toFixed(1)} s (${(cycleT / halfLife).toFixed(2)} T)`,
+      metric2Label: 'Số hạt còn lại N(t)',
+      metric2Val: `${remaining.toFixed(1)} (${((remaining / n0) * 100).toFixed(1)}%)`,
+      metric3Label: 'Đã phân rã ΔN',
+      metric3Val: `${decayed.toFixed(1)}`,
+      note: 'Định luật phóng xạ: N(t) = N₀ · 2^(-t/T). Sau mỗi chu kì bán rã T, một nửa số hạt nhân mẹ phân rã thành hạt con.'
+    });
+
+    // Left panel: 10x10 Atom Lattice
+    const cols = 10;
+    const rows = 10;
+    const cell = Math.min((w * 0.42) / cols, (h * 0.72) / rows);
+    const startX = 28;
+    const startY = h / 2 - (rows * cell) / 2;
+    const activeCount = Math.round((remaining / n0) * 100);
+
+    for (let idx = 0; idx < 100; idx++) {
+      const r = Math.floor(idx / cols);
+      const c = idx % cols;
+      const orderRank = (idx * 37 + 13) % 100;
+      const isParent = orderRank < activeCount;
+      ctx.fillStyle = isParent ? '#f59e0b' : isDark ? '#334155' : '#cbd5e1';
+      ctx.beginPath();
+      ctx.arc(startX + c * cell + cell / 2, startY + r * cell + cell / 2, cell * 0.34, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Right panel: Exponential decay graph N(t)
+    if (ov.showRealtimeChart) {
+      const gx0 = w * 0.54;
+      const gy0 = h * 0.82;
+      const gw = w * 0.4;
+      const gh = h * 0.62;
+
+      ctx.strokeStyle = isDark ? '#64748b' : '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(gx0, gy0 - gh);
+      ctx.lineTo(gx0, gy0);
+      ctx.lineTo(gx0 + gw, gy0);
+      ctx.stroke();
+
+      // Half-life vertical ticks 1T, 2T, 3T, 4T
+      ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      const maxGraphT = halfLife * 4.2;
+      for (let k = 1; k <= 4; k++) {
+        const tx = gx0 + ((k * halfLife) / maxGraphT) * gw;
+        ctx.fillText(`${k}T`, tx, gy0 + 14);
+      }
+
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const tt = (i / 60) * maxGraphT;
+        const frac = Math.pow(2, -tt / halfLife);
+        const px = gx0 + (tt / maxGraphT) * gw;
+        const py = gy0 - frac * gh;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      const curPx = gx0 + (cycleT / maxGraphT) * gw;
+      const curPy = gy0 - (remaining / n0) * gh;
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(curPx, curPy, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   };
 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
-      {/* Header Banner */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>{t('nav.back_home', 'Quay lại Lớp học', 'Back to Classroom')}</span>
-              </button>
-            )}
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              Vật Lý 9 - 12 & PhET Colorado
-            </span>
-            <span className="text-xs text-slate-400 dark:text-slate-500">
-              Mô phỏng 2D/3D + PhET Thực Hành + Lời giải
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Phòng Lab Vật Lý Tương Tác & PhET Colorado (Lớp 9 - 12)
-          </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Mỗi bài học tích hợp đầy đủ: Bài giảng trọng tâm, Phòng Lab 2D tự viết + Mô phỏng PhET Colorado chính hãng, 3D Three.js và Bài tập có lời giải chi tiết.
-          </p>
-        </div>
-
-        {/* Grade Filter Bar */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-          {['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((grade) => (
-            <button
-              key={grade}
-              onClick={() => setSelectedGrade(grade)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                selectedGrade === grade
-                  ? 'bg-blue-600 text-white shadow-sm font-semibold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
-              }`}
-            >
-              {grade === 'all'
-                ? t('grade.all', `Tất cả (${PHYSICS_LESSONS.length} bài)`, `All (${PHYSICS_LESSONS.length} lessons)`)
-                : t(grade, grade)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Lesson Selector Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {filteredLessons.map((l) => (
-          <button
-            key={l.id}
-            onClick={() => setSelectedLessonId(l.id)}
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all border ${
-              lesson.id === l.id
-                ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 font-semibold'
-                : 'bg-white/70 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <span
-              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                lesson.id === l.id
-                  ? 'bg-white/20 text-white'
-                  : 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300'
-              }`}
-            >
-              {t(l.grade, l.grade)}
-            </span>
-            <span>{translate(l.title.split(':')[0])}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Active Lesson Header & Tab Switcher */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                {t(lesson.grade, lesson.grade)} • {t('lesson.num', 'Bài', 'Lesson')} {lesson.lessonNumber}
-              </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                {translate(lesson.subtitle)}
-              </span>
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              {translate(lesson.title)}
-            </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-              {translate(lesson.description)}
-            </p>
-          </div>
-
-          {/* 4 Main Action Sub-Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-            <button
-              onClick={() => setActiveTab('theory')}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                activeTab === 'theory'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm font-semibold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>{t('sim.theory', '1. Bài Giảng Lý Thuyết', '1. Theory Lectures')}</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('simulation')}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                activeTab === 'simulation'
-                  ? 'bg-blue-600 text-white shadow-sm font-semibold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Zap className="w-4 h-4" />
-              <span>{t('sim.2d', '2. Lab 2D & PhET Colorado', '2. 2D Lab & PhET')}</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('sim3d')}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                activeTab === 'sim3d'
-                  ? 'bg-amber-600 text-white shadow-sm font-semibold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Box className="w-4 h-4" />
-              <span>{t('sim.3d', '3. Mô Phỏng 3D Three.js', '3. Three.js 3D Sim')}</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('practice')}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                activeTab === 'practice'
-                  ? 'bg-emerald-600 text-white shadow-sm font-semibold'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <GraduationCap className="w-4 h-4" />
-              <span>{t('sim.practice', '4. Bài Tập & Lời Giải', '4. Exercises & Solutions')}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Key Formulas Pills with KaTeX */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            Công thức then chốt:
-          </span>
-          {lesson.keyFormulas.map((kf, idx) => (
-            <span
-              key={idx}
-              className="px-2.5 py-1 text-xs font-mono rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-slate-700/60"
-            >
-              <MathFormula formula={kf} />
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* VIEW 1: THEORY LECTURE */}
-      {activeTab === 'theory' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {lesson.theorySections.map((sec, idx) => (
-              <div
-                key={idx}
-                className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs flex items-center justify-center font-bold">
-                      {idx + 1}
-                    </span>
-                    {sec.heading}
-                  </h3>
-                </div>
-
-                <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-sans whitespace-pre-line">
-                  <FormattedText text={sec.content} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap justify-end gap-3">
-            <button
-              onClick={() => setActiveTab('simulation')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20"
-            >
-              <span>Vào Thí Nghiệm Mô Phỏng 2D</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setActiveTab('sim3d')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-all shadow-md shadow-amber-500/20"
-            >
-              <Box className="w-4 h-4" />
-              <span>Khám Phá Mô Phỏng 3D Three.js</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* VIEW 3D: THREE.JS 3D PHYSICS SIMULATION */}
-      {activeTab === 'sim3d' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setActiveTab('theory')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Quay lại Bài giảng Lý thuyết</span>
-            </button>
-          </div>
-          <Physics3DView />
-        </div>
-      )}
-
-      {/* VIEW 2: 2D INTERACTIVE SIMULATION + PHET COLORADO */}
-      {activeTab === 'simulation' && (
-        <ViewportPortal active={isSimFullscreen}>
-          <div
-            className={
-              isSimFullscreen
-                ? 'fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col gap-4 overflow-y-auto'
-                : 'space-y-4'
-            }
-          >
-            {/* Top Mode Switcher Bar: Back to Theory + Canvas 2D vs PhET Colorado + Fullscreen */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs shrink-0">
-              <div className="flex flex-wrap items-center gap-2">
-                {isSimFullscreen ? (
-                  <button
-                    onClick={() => setIsSimFullscreen(false)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Quay lại (Esc)</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setActiveTab('theory')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Quay lại Bài giảng</span>
-                  </button>
-                )}
-
-                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                  <button
-                    onClick={() => setSimEngineMode('canvas2d')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      simEngineMode === 'canvas2d'
-                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Zap className="w-3.5 h-3.5" />
-                    <span>Phòng Lab 2D Canvas</span>
-                  </button>
-                  {lesson.phetSim && (
+      {activeView === 'catalog' && (
+        <>
+          {/* Header Banner */}
+          <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  {(onBack || true) && (
                     <button
-                      onClick={() => {
-                        setSimEngineMode('phet');
-                        setPhetLoading(true);
-                      }}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        simEngineMode === 'phet'
-                          ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
+                      onClick={onBack || goBack}
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     >
-                      <FlaskConical className="w-3.5 h-3.5" />
-                      <span>Mô phỏng PhET Colorado</span>
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>{t('nav.back_prev', 'Quay lại trang trước', 'Back')}</span>
                     </button>
                   )}
+                  <span className="font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                    Vật Lí 9 – 12 &amp; Bồi Dưỡng Chuyên
+                  </span>
+                  <span>·</span>
+                  <span>Giảng bài từng bước + Thí nghiệm 2D/3D tương tác</span>
+                  <span>·</span>
+                  <span>VietJack / Loigiaihay</span>
                 </div>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  Hệ Thống Bài Giảng &amp; Phòng Thí Nghiệm Vật Lí
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Chọn một chuyên đề bên dưới để vào giao diện lớp giảng bài chi tiết từng bước, thực hành mô phỏng 2D/3D tùy chỉnh số liệu tự do và làm bài tập củng cố.
+                </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                {simEngineMode === 'phet' && lesson.phetSim && (
-                  <a
-                    href={`https://phet.colorado.edu/sims/html/${lesson.phetSim.slug}/latest/${lesson.phetSim.slug}_all.html?locale=${language}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>Mở tab PhET riêng</span>
-                  </a>
-                )}
+              {/* 2-Zone Track Switcher */}
+              <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/70 shrink-0 self-start">
                 <button
-                  onClick={() => setIsSimFullscreen(!isSimFullscreen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
-                    isSimFullscreen
-                      ? 'bg-slate-800 text-white hover:bg-slate-700'
-                      : 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60 hover:bg-blue-100'
+                  onClick={() => setSelectedTrack('khong_chuyen')}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                    selectedTrack === 'khong_chuyen'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  {isSimFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                  <span>{isSimFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
+                  Khu Không Chuyên (GDPT 9–12)
+                </button>
+                <button
+                  onClick={() => setSelectedTrack('chuyen')}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                    selectedTrack === 'chuyen'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Khu Chuyên Lí (CB → NC → Chuyên)
                 </button>
               </div>
             </div>
 
-            {simEngineMode === 'phet' && lesson.phetSim ? (
-              <div className={`grid grid-cols-1 lg:grid-cols-4 gap-5 ${isSimFullscreen ? 'flex-1 min-h-0' : ''}`}>
-                {/* PhET Interactive Embed (3 cols) */}
-                <div className="lg:col-span-3 flex flex-col bg-slate-950 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-md overflow-hidden min-h-[340px] sm:min-h-[480px]">
-                  <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 text-xs text-slate-200">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FlaskConical className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span className="font-bold truncate">{lesson.phetSim.title}</span>
-                      <span className="hidden sm:inline text-slate-400 truncate">— {lesson.phetSim.subtitle}</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] shrink-0">
-                      PhET HTML5 ({language.toUpperCase()})
-                    </span>
-                  </div>
-
-                  <div className={`relative w-full flex-1 ${isSimFullscreen ? 'min-h-[340px] sm:min-h-[460px]' : 'h-[360px] sm:h-[540px] lg:h-[600px]'}`}>
-                    {phetLoading && (
-                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/85 text-slate-200 gap-2 pointer-events-none">
-                        <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-xs font-medium">Đang tải phòng thí nghiệm PhET Colorado...</span>
-                      </div>
-                    )}
-                    <iframe
-                      key={`${lesson.id}-${lesson.phetSim.slug}-${language}`}
-                      src={`https://phet.colorado.edu/sims/html/${lesson.phetSim.slug}/latest/${lesson.phetSim.slug}_all.html?locale=${language}`}
-                      title={lesson.phetSim.title}
-                      onLoad={() => setPhetLoading(false)}
-                      allowFullScreen
-                      className="w-full h-full border-0"
-                    />
-                  </div>
-                </div>
-
-                {/* Guided PhET Inquiry Checklist (1 col) */}
-                <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col justify-between gap-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
-                      <ListChecks className="w-4 h-4 text-amber-500 shrink-0" />
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                        Phiếu Thực Hành PhET
-                      </h3>
-                    </div>
-
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      Thực hiện từng bước trên mô phỏng PhET Colorado bên trái để tự kiểm chứng định luật Vật lí:
-                    </p>
-
-                    <div className="space-y-2.5">
-                      {lesson.phetSim.experimentTasks.map((task, idx) => {
-                        const taskKey = `${lesson.id}-phet-${idx}`;
-                        const isDone = !!checkedPhetTasks[taskKey];
-                        return (
-                          <button
-                            key={taskKey}
-                            onClick={() =>
-                              setCheckedPhetTasks((prev) => ({ ...prev, [taskKey]: !prev[taskKey] }))
-                            }
-                            className={`w-full text-left p-3 rounded-xl border text-xs leading-relaxed transition-all flex items-start gap-2.5 ${
-                              isDone
-                                ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-400/60 text-emerald-900 dark:text-emerald-200'
-                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700/70 text-slate-700 dark:text-slate-300 hover:border-amber-400'
-                            }`}
-                          >
-                            <span
-                              className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center shrink-0 text-[10px] font-bold ${
-                                isDone
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-500'
-                              }`}
-                            >
-                              {isDone ? '✓' : idx + 1}
-                            </span>
-                            <span className={isDone ? 'line-through opacity-80' : ''}>{task}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 pt-3 border-t border-slate-200/70 dark:border-slate-800">
+            {/* Sub-Filter Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-200/70 dark:border-slate-800">
+              {selectedTrack === 'khong_chuyen' ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-semibold text-slate-500 mr-1">Khối lớp:</span>
+                  {['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((grade) => (
                     <button
-                      onClick={() => setSimEngineMode('canvas2d')}
-                      className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      key={grade}
+                      onClick={() => setSelectedGrade(grade)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                        selectedGrade === grade
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
                     >
-                      Chuyển sang Phòng Lab 2D Canvas
+                      {grade === 'all'
+                        ? `Tất cả (${PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài)`
+                        : grade}
                     </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-semibold text-slate-500 mr-1">Trình độ Chuyên:</span>
+                  {(['all', 'Cơ bản', 'Nâng cao', 'Chuyên / HSG'] as const).map((tier) => (
                     <button
-                      onClick={() => {
-                        setIsSimFullscreen(false);
-                        setActiveTab('practice');
-                      }}
-                      className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                      key={tier}
+                      onClick={() => setSelectedTier(tier)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                        selectedTier === tier
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
                     >
-                      <GraduationCap className="w-4 h-4" />
-                      <span>Làm Bài Tập Củng Cố (+25 XP)</span>
+                      {tier === 'all' ? 'Tất cả lộ trình Chuyên' : tier}
                     </button>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Canvas Main Stage (2 cols) */}
-                <div className="lg:col-span-2 space-y-4">
-                  <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
-                    {/* Canvas Action Bar */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() => setIsRunning(!isRunning)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                            isRunning
-                              ? 'bg-amber-500 text-white hover:bg-amber-600'
-                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          }`}
-                        >
-                          {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                          <span>{isRunning ? 'Tạm dừng' : 'Chạy tiếp'}</span>
-                        </button>
+              )}
 
-                        <button
-                          onClick={() => {
-                            simTimeRef.current = 0;
-                            setParams(lesson.defaultParams);
-                            setIsRunning(true);
-                          }}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
-                          title="Đặt lại trạng thái ban đầu"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                        </button>
+              <button
+                onClick={() => setShowStudyPrinciples(!showStudyPrinciples)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors self-start sm:self-auto"
+              >
+                <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                <span>Nguyên tắc tự học SGK &amp; Sổ tay SI</span>
+                {showStudyPrinciples ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </div>
 
-                        <div className="flex items-center gap-1 ml-2 text-xs text-slate-500 dark:text-slate-400">
-                          <span>Tốc độ:</span>
-                          {[0.5, 1.0, 2.0].map((spd) => (
-                            <button
-                              key={spd}
-                              onClick={() => setSimSpeed(spd)}
-                              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
-                                simSpeed === spd
-                                  ? 'bg-blue-600 text-white font-bold'
-                                  : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                              }`}
-                            >
-                              {spd}x
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>60 FPS Live Physics</span>
-                      </div>
-                    </div>
-
-                    {/* HTML5 Canvas */}
-                    <div className={`relative w-full bg-slate-950 ${isSimFullscreen ? 'h-[280px] sm:h-[460px] lg:h-[520px]' : 'h-[280px] sm:h-[380px]'}`}>
-                      <canvas ref={canvasRef} className="w-full h-full block" />
-                    </div>
-
-                    {/* Real-time Telemetry Dashboard */}
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                          {telemetry.metric1Label}
-                        </div>
-                        <div className="text-base font-bold text-blue-600 dark:text-blue-400 font-mono mt-0.5">
-                          {telemetry.metric1Val}
-                        </div>
-                      </div>
-
-                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                          {telemetry.metric2Label}
-                        </div>
-                        <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-                          {telemetry.metric2Val}
-                        </div>
-                      </div>
-
-                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                          {telemetry.metric3Label}
-                        </div>
-                        <div className="text-base font-bold text-amber-600 dark:text-amber-400 font-mono mt-0.5">
-                          {telemetry.metric3Val}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Physical Note / Law explanation */}
-                    <div className="px-4 py-2.5 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium flex items-center gap-2">
-                      <Sparkles className="w-3.5 h-3.5 shrink-0 text-blue-500" />
-                      <span><FormattedText text={telemetry.note} /></span>
-                    </div>
+            {showStudyPrinciples && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+                <div className="space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+                    Tập trung vào Sách Giáo Khoa &amp; Thí nghiệm
                   </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Đọc kỹ phần mô tả thí nghiệm, câu hỏi thảo luận SGK, tự kiểm chứng lại qua Mô phỏng 2D/3D trên lớp và giải hết bài tập Trắc nghiệm – Tự luận cuối mỗi bài.
+                  </p>
                 </div>
-
-                {/* Interactive Parameters Slider Box (1 col) */}
-                <div className="space-y-4">
-                  <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
-                      <div className="flex items-center gap-2">
-                        <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                          Thông Số Thí Nghiệm
-                        </h3>
-                      </div>
-                      <button
-                        onClick={() => setParams(lesson.defaultParams)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                      >
-                        Mặc định
-                      </button>
-                    </div>
-
-                    <div className="space-y-4">
-                      {Object.entries(lesson.paramBounds).map(([paramKey, bound]) => {
-                        const curVal = params[paramKey] ?? bound.min;
-                        return (
-                          <div key={paramKey} className="space-y-1.5">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-medium text-slate-700 dark:text-slate-300">
-                                {bound.label}
-                              </span>
-                              <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
-                                {curVal} {bound.unit}
-                              </span>
-                            </div>
-                            <input
-                              type="range"
-                              min={bound.min}
-                              max={bound.max}
-                              step={bound.step}
-                              value={curVal}
-                              onChange={(e) =>
-                                setParams((prev) => ({
-                                  ...prev,
-                                  [paramKey]: parseFloat(e.target.value)
-                                }))
-                              }
-                              className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
-                            />
-                            <div className="flex justify-between text-[10px] text-slate-400">
-                              <span>
-                                {bound.min} {bound.unit}
-                              </span>
-                              <span>
-                                {bound.max} {bound.unit}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
-                      <button
-                        onClick={() => {
-                          setIsSimFullscreen(false);
-                          setActiveTab('practice');
-                        }}
-                        className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                      >
-                        <GraduationCap className="w-4 h-4" />
-                        <span>Làm Bài Tập Củng Cố Ngay (+25 XP)</span>
-                      </button>
-                    </div>
+                <div className="space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-emerald-500" />
+                    Ghi chép bằng Sơ đồ tư duy &amp; Sổ công thức hệ SI
                   </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Hệ thống hóa kiến thức theo sơ đồ nhánh, tóm tắt công thức then chốt kèm đơn vị đo chuẩn hệ SI (m, kg, s, N, J, W, A, V, Ω) để tra cứu nhanh khi giải bài.
+                  </p>
                 </div>
               </div>
             )}
           </div>
-        </ViewportPortal>
+
+          {/* 3-Column Lesson Cards Catalog */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredLessons.map((l) => {
+              const isPro = l.track === 'chuyen';
+              return (
+                <div
+                  key={l.id}
+                  onClick={() => handleOpenLesson(l, 'theory')}
+                  className="group cursor-pointer bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 hover:border-blue-400/70 dark:hover:border-blue-500/60 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                      <span className={`font-bold uppercase tracking-wider ${isPro ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                        {isPro ? `Chuyên Lí · ${l.tier || 'Nâng cao'}` : `${l.grade} · Bài ${l.lessonNumber}`}
+                      </span>
+                      <span className="font-mono">{l.practiceExercises.length} TN + {(l.essayExercises || []).length} TL</span>
+                    </div>
+
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
+                      {translate(l.title)}
+                    </h3>
+
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      {translate(l.description)}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenLesson(l, 'simulation');
+                        }}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+                      >
+                        Lab 2D
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenLesson(l, 'sim3d');
+                        }}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors"
+                      >
+                        Lab 3D
+                      </button>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                      <span>Vào giảng bài</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
-      {/* VIEW 3: PRACTICE EXERCISES WITH STEP-BY-STEP SOLUTIONS */}
+      {activeView === 'lecture' && (
+        <>
+          {/* Dedicated Classroom Navigation Bar & Header */}
+          <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200/70 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    setIsSimFullscreen(false);
+                    goBack();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Quay lại</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsSimFullscreen(false);
+                    navigate({ physicsView: 'catalog' });
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <span>Danh sách Vật Lí</span>
+                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    disabled={currentLessonIndex <= 0}
+                    onClick={() => {
+                      if (currentLessonIndex > 0) {
+                        navigate({ physicsLessonId: filteredLessons[currentLessonIndex - 1].id });
+                      }
+                    }}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Bài trước</span>
+                  </button>
+                  <button
+                    disabled={currentLessonIndex < 0 || currentLessonIndex >= filteredLessons.length - 1}
+                    onClick={() => {
+                      if (currentLessonIndex >= 0 && currentLessonIndex < filteredLessons.length - 1) {
+                        navigate({ physicsLessonId: filteredLessons[currentLessonIndex + 1].id });
+                      }
+                    }}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <span>Bài tiếp</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 Main Classroom Sub-Tabs */}
+              <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                <button
+                  onClick={() => navigate({ physicsTab: 'theory' })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                    activeTab === 'theory'
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm font-semibold'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>{t('sim.theory', '1. Bài Giảng', '1. Lecture')}</span>
+                </button>
+                <button
+                  onClick={() => navigate({ physicsTab: 'simulation' })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                    activeTab === 'simulation'
+                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>{t('sim.2d', '2. Lab 2D', '2. 2D Lab')}</span>
+                </button>
+                <button
+                  onClick={() => navigate({ physicsTab: 'sim3d' })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                    activeTab === 'sim3d'
+                      ? 'bg-amber-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Box className="w-3.5 h-3.5" />
+                  <span>{t('sim.3d', '3. Lab 3D', '3. 3D Lab')}</span>
+                </button>
+                <button
+                  onClick={() => navigate({ physicsTab: 'practice' })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                    activeTab === 'practice'
+                      ? 'bg-emerald-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  <span>{t('sim.practice', '4. Bài Tập', '4. Practice')}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-bold text-blue-600 dark:text-blue-400">
+                  {lesson.track === 'chuyen'
+                    ? `Chuyên Lí · ${lesson.tier || 'Nâng cao'} (${lesson.grade})`
+                    : `${lesson.grade} · Bài ${lesson.lessonNumber}`}
+                </span>
+                {lesson.stageLabel && (
+                  <>
+                    <span>·</span>
+                    <span>{lesson.stageLabel}</span>
+                  </>
+                )}
+                {lesson.sourceTag && (
+                  <>
+                    <span>·</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">{lesson.sourceTag}</span>
+                  </>
+                )}
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                {translate(lesson.title)}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                {translate(lesson.description)}
+              </p>
+            </div>
+
+            {/* Key Formulas with KaTeX */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Công thức hệ SI:
+              </span>
+              {lesson.keyFormulas.map((kf, idx) => (
+                <span
+                  key={idx}
+                  className="px-2.5 py-1 text-xs font-mono rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-slate-700/60"
+                >
+                  <MathFormula formula={kf} />
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* VIEW 1: DEDICATED STEP-BY-STEP INTERACTIVE LECTURE ROOM */}
+          {activeTab === 'theory' && (
+            <InteractiveLectureRoom
+              lessonKey={lesson.id}
+              subjectAccent={lesson.track === 'chuyen' ? 'amber' : 'blue'}
+              kicker={
+                lesson.track === 'chuyen'
+                  ? `Bồi dưỡng Chuyên Lí · ${lesson.tier || 'Nâng cao'}`
+                  : `${lesson.grade} · Bài giảng Vật Lí chi tiết`
+              }
+              title={translate(lesson.title)}
+              subtitle={translate(lesson.description)}
+              steps={buildPhysicsLectureSteps(lesson)}
+              keyFormulas={lesson.keyFormulas}
+              actions={[
+                {
+                  label: 'Mở Phòng Thí Nghiệm 2D',
+                  onClick: () => navigate({ physicsTab: 'simulation' }),
+                  variant: 'primary',
+                  icon: <Zap className="w-4 h-4" />
+                },
+                {
+                  label: 'Mở Mô Phỏng 3D',
+                  onClick: () => navigate({ physicsTab: 'sim3d' }),
+                  variant: 'amber',
+                  icon: <Box className="w-4 h-4" />
+                },
+                {
+                  label: 'Làm Bài Tập Củng Cố (+25 XP)',
+                  onClick: () => navigate({ physicsTab: 'practice' }),
+                  variant: 'emerald',
+                  icon: <GraduationCap className="w-4 h-4" />
+                }
+              ]}
+            />
+          )}
+
+          {/* VIEW 3D: THREE.JS 3D PHYSICS SIMULATION */}
+          {activeTab === 'sim3d' && (
+            <Physics3DView initialMode={lesson.sim3dType} onBack={goBack} />
+          )}
+
+          {/* VIEW 2: PhET-INSPIRED 2D INTERACTIVE PHYSICS LAB */}
+          {activeTab === 'simulation' && (
+            <ViewportPortal active={isSimFullscreen}>
+              <div
+                className={
+                  isSimFullscreen
+                    ? 'fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col gap-4 overflow-y-auto'
+                    : 'space-y-4'
+                }
+              >
+                {/* Top Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    {isSimFullscreen ? (
+                      <button
+                        onClick={() => setIsSimFullscreen(false)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Quay lại (Esc)</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={goBack}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Quay lại</span>
+                      </button>
+                    )}
+
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                      Phòng Thí Nghiệm 2D · {lesson.title.split(':')[0]}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setIsSimFullscreen(false);
+                        navigate({ physicsTab: 'sim3d' });
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition-colors"
+                    >
+                      <Box className="w-3.5 h-3.5" />
+                      <span>Chuyển sang 3D</span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsSimFullscreen(!isSimFullscreen)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                        isSimFullscreen
+                          ? 'bg-slate-800 text-white hover:bg-slate-700'
+                          : 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60 hover:bg-blue-100'
+                      }`}
+                    >
+                      {isSimFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                      <span>{isSimFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                  {/* Canvas Main Stage + Telemetry + Data Logger (2 cols) */}
+                  <div className="lg:col-span-2 space-y-4">
+                    <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
+                      {/* Transport, Step, Speed & Stopwatch Toolbar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/70 dark:bg-slate-800/50">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            onClick={() => setIsRunning(!isRunning)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                              isRunning
+                                ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                            }`}
+                          >
+                            {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                            <span>{isRunning ? 'Tạm dừng' : 'Chạy tiếp'}</span>
+                          </button>
+
+                          <button
+                            onClick={handleStepOnce}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            title="Tiến từng bước 0.05 giây"
+                          >
+                            <StepForward className="w-3.5 h-3.5 text-blue-500" />
+                            <span>+0.05s</span>
+                          </button>
+
+                          <button
+                            onClick={handleResetSim}
+                            className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            title="Đặt lại trạng thái ban đầu"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+
+                          <div className="flex items-center gap-1 ml-1 text-xs text-slate-500 dark:text-slate-400">
+                            {[0.25, 0.5, 1.0, 2.0].map((spd) => (
+                              <button
+                                key={spd}
+                                onClick={() => setSimSpeed(spd)}
+                                className={`px-2 py-1 rounded-md text-[11px] font-mono ${
+                                  simSpeed === spd
+                                    ? 'bg-blue-600 text-white font-bold'
+                                    : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                                }`}
+                              >
+                                {spd}x
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Built-in Stopwatch + Log Sample */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs">
+                            <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                            <span className="font-mono font-bold text-slate-800 dark:text-slate-100 min-w-[54px]">
+                              {stopwatchElapsed.toFixed(2)}s
+                            </span>
+                            <button
+                              onClick={() => setStopwatchRunning(!stopwatchRunning)}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                stopwatchRunning
+                                  ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                                  : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
+                              }`}
+                            >
+                              {stopwatchRunning ? 'Dừng' : 'Bấm'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setStopwatchRunning(false);
+                                stopwatchAccumRef.current = 0;
+                                setStopwatchElapsed(0);
+                              }}
+                              className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                            >
+                              0
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={handleLogSample}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Ghi mẫu đo</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Visual Overlays & Experiment Actions Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 text-[11px]">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-semibold text-slate-500 dark:text-slate-400 mr-0.5">Hiển thị:</span>
+                          <button
+                            onClick={() => setOverlays((o) => ({ ...o, showRulerGrid: !o.showRulerGrid }))}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md font-semibold border transition-colors ${
+                              overlays.showRulerGrid
+                                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                            }`}
+                          >
+                            <Grid className="w-3 h-3" />
+                            <span>Lưới &amp; Thước</span>
+                          </button>
+                          <button
+                            onClick={() => setOverlays((o) => ({ ...o, showVectors: !o.showVectors }))}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md font-semibold border transition-colors ${
+                              overlays.showVectors
+                                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                            }`}
+                          >
+                            <Compass className="w-3 h-3" />
+                            <span>Vectơ</span>
+                          </button>
+                          <button
+                            onClick={() => setOverlays((o) => ({ ...o, showTrace: !o.showTrace }))}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md font-semibold border transition-colors ${
+                              overlays.showTrace
+                                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                            }`}
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Quỹ đạo</span>
+                          </button>
+                          <button
+                            onClick={() => setOverlays((o) => ({ ...o, showRealtimeChart: !o.showRealtimeChart }))}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md font-semibold border transition-colors ${
+                              overlays.showRealtimeChart
+                                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                            }`}
+                          >
+                            <Activity className="w-3 h-3" />
+                            <span>Biểu đồ</span>
+                          </button>
+                        </div>
+
+                        {/* Experiment-Specific PhET Action Controls */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {lesson.simulationType === 'ohm_circuit' && (
+                            <>
+                              <button
+                                onClick={() => setLabFlags((f) => ({ ...f, circuitOpen: !f.circuitOpen }))}
+                                className={`px-2.5 py-1 rounded-md font-bold transition-colors ${
+                                  labFlags.circuitOpen
+                                    ? 'bg-rose-600 text-white'
+                                    : 'bg-emerald-600 text-white'
+                                }`}
+                              >
+                                {labFlags.circuitOpen ? 'Khóa K: MỞ (Đóng K)' : 'Khóa K: ĐÓNG (Ngắt K)'}
+                              </button>
+                              <button
+                                onClick={() => setLabFlags((f) => ({ ...f, reversePolarity: !f.reversePolarity }))}
+                                className="flex items-center gap-1 px-2 py-1 rounded-md font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                              >
+                                <ArrowRightLeft className="w-3 h-3" />
+                                <span>Đảo cực nguồn</span>
+                              </button>
+                              <button
+                                onClick={() => setLabFlags((f) => ({ ...f, showVoltmeter: !f.showVoltmeter }))}
+                                className={`px-2 py-1 rounded-md font-semibold border ${
+                                  labFlags.showVoltmeter
+                                    ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                                }`}
+                              >
+                                Vôn kế R1
+                              </button>
+                            </>
+                          )}
+
+                          {lesson.simulationType === 'lens_optics' && (
+                            <>
+                              <button
+                                onClick={() => setLabFlags((f) => ({ ...f, isDiverging: !f.isDiverging }))}
+                                className={`px-2.5 py-1 rounded-md font-bold transition-colors ${
+                                  labFlags.isDiverging
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-blue-600 text-white'
+                                }`}
+                              >
+                                {labFlags.isDiverging ? 'Thấu kính Phân kì' : 'Thấu kính Hội tụ'}
+                              </button>
+                              <button
+                                onClick={() => setLabFlags((f) => ({ ...f, showThirdRay: !f.showThirdRay }))}
+                                className={`px-2 py-1 rounded-md font-semibold border ${
+                                  labFlags.showThirdRay
+                                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                                }`}
+                              >
+                                Tia qua F
+                              </button>
+                            </>
+                          )}
+
+                          {(lesson.simulationType === 'projectile_motion' || lesson.simulationType === 'free_fall_energy') && (
+                            <button
+                              onClick={() => setLabFlags((f) => ({ ...f, airDrag: !f.airDrag }))}
+                              className={`px-2.5 py-1 rounded-md font-bold transition-colors ${
+                                labFlags.airDrag
+                                  ? 'bg-rose-600 text-white'
+                                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              {labFlags.airDrag ? 'Lực cản KK: BẬT' : 'Lực cản KK: TẮT'}
+                            </button>
+                          )}
+
+                          {(lesson.simulationType === 'spring_pendulum' || lesson.simulationType === 'simple_pendulum') && (
+                            <button
+                              onClick={() => setLabFlags((f) => ({ ...f, hasFriction: !f.hasFriction }))}
+                              className={`px-2.5 py-1 rounded-md font-bold transition-colors ${
+                                labFlags.hasFriction
+                                  ? 'bg-rose-600 text-white'
+                                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              {labFlags.hasFriction ? 'Ma sát tắt dần: BẬT' : 'Dao động lí tưởng'}
+                            </button>
+                          )}
+
+                          {lesson.simulationType === 'simple_pendulum' && (
+                            <button
+                              onClick={() => setLabFlags((f) => ({ ...f, showProtractor: !f.showProtractor }))}
+                              className={`px-2 py-1 rounded-md font-semibold border ${
+                                labFlags.showProtractor
+                                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                              }`}
+                            >
+                              Thước đo góc
+                            </button>
+                          )}
+
+                          {lesson.simulationType === 'light_refraction' && (
+                            <button
+                              onClick={() => setLabFlags((f) => ({ ...f, showProtractor: !f.showProtractor }))}
+                              className={`px-2.5 py-1 rounded-md font-semibold border ${
+                                labFlags.showProtractor
+                                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                              }`}
+                            >
+                              Thước đo góc 360°
+                            </button>
+                          )}
+
+                          {lesson.simulationType === 'wave_interference' && (
+                            <>
+                              <button
+                                onClick={() => setLabFlags((f) => ({ ...f, singleSource: !f.singleSource }))}
+                                className={`px-2.5 py-1 rounded-md font-bold transition-colors ${
+                                  labFlags.singleSource
+                                    ? 'bg-slate-700 text-white'
+                                    : 'bg-blue-600 text-white'
+                                }`}
+                              >
+                                {labFlags.singleSource ? '1 Nguồn đơn' : '2 Nguồn giao thoa'}
+                              </button>
+                              <button
+                                onClick={() => setLabFlags((f) => ({ ...f, showNodalLines: !f.showNodalLines }))}
+                                className={`px-2 py-1 rounded-md font-semibold border ${
+                                  labFlags.showNodalLines
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                                }`}
+                              >
+                                Đường cực đại
+                              </button>
+                            </>
+                          )}
+
+                          {lesson.simulationType === 'magnetic_induction' && (
+                            <>
+                              <button
+                                onClick={() => setLabFlags((f) => ({ ...f, flipMagnet: !f.flipMagnet }))}
+                                className="flex items-center gap-1 px-2 py-1 rounded-md font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                              >
+                                <ArrowRightLeft className="w-3 h-3" />
+                                <span>Đảo cực N-S</span>
+                              </button>
+                              {[
+                                { idx: 0, label: 'Dao động' },
+                                { idx: 1, label: 'Đưa vào' },
+                                { idx: 2, label: 'Rút ra' },
+                                { idx: 3, label: 'Đứng yên' }
+                              ].map((act) => (
+                                <button
+                                  key={act.idx}
+                                  onClick={() => setLabFlags((f) => ({ ...f, inductionAction: act.idx }))}
+                                  className={`px-2 py-1 rounded-md font-semibold ${
+                                    labFlags.inductionAction === act.idx
+                                      ? 'bg-amber-600 text-white'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                                  }`}
+                                >
+                                  {act.label}
+                                </button>
+                              ))}
+                            </>
+                          )}
+
+                          {lesson.simulationType === 'electric_field' && (
+                            <button
+                              onClick={() => setLabFlags((f) => ({ ...f, showFieldGrid: !f.showFieldGrid }))}
+                              className={`px-2.5 py-1 rounded-md font-semibold border ${
+                                labFlags.showFieldGrid
+                                  ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                              }`}
+                            >
+                              Lưới điện trường E
+                            </button>
+                          )}
+
+                          {lesson.simulationType === 'nuclear_decay' && (
+                            <button
+                              onClick={() => {
+                                const T = Math.max(0.2, params.halfLife ?? 4.0);
+                                simTimeRef.current += T;
+                                forceTelemetrySyncRef.current = true;
+                              }}
+                              className="px-2.5 py-1 rounded-md font-bold bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+                            >
+                              +1 Chu kì bán rã (T)
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* HTML5 Canvas */}
+                      <div className={`relative w-full bg-slate-950 ${isSimFullscreen ? 'h-[280px] sm:h-[450px] lg:h-[500px]' : 'h-[280px] sm:h-[380px]'}`}>
+                        <canvas ref={canvasRef} className="w-full h-full block" />
+                      </div>
+
+                      {/* Real-time Telemetry Dashboard */}
+                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            {telemetry.metric1Label}
+                          </div>
+                          <div className="text-base font-bold text-blue-600 dark:text-blue-400 font-mono mt-0.5">
+                            {telemetry.metric1Val}
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            {telemetry.metric2Label}
+                          </div>
+                          <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
+                            {telemetry.metric2Val}
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            {telemetry.metric3Label}
+                          </div>
+                          <div className="text-base font-bold text-amber-600 dark:text-amber-400 font-mono mt-0.5">
+                            {telemetry.metric3Val}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Physical Note / Law explanation */}
+                      <div className="px-4 py-2.5 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+                        <span><FormattedText text={telemetry.note} /></span>
+                      </div>
+                    </div>
+
+                    {/* Data Logger Table */}
+                    {dataLogs.length > 0 && (
+                      <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                            Bảng Ghi Số Liệu Thực Nghiệm ({dataLogs.length} mẫu)
+                          </h4>
+                          <button
+                            onClick={() => setDataLogs([])}
+                            className="flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Xóa bảng</span>
+                          </button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                                <th className="py-1.5 pr-3">Lần</th>
+                                <th className="py-1.5 pr-3">t</th>
+                                <th className="py-1.5 pr-3">{dataLogs[0].m1Label}</th>
+                                <th className="py-1.5 pr-3">{dataLogs[0].m2Label}</th>
+                                <th className="py-1.5">{dataLogs[0].m3Label}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {dataLogs.map((row) => (
+                                <tr key={row.id} className="border-b border-slate-100 dark:border-slate-800/80 font-mono">
+                                  <td className="py-1.5 pr-3 text-slate-400">#{row.id}</td>
+                                  <td className="py-1.5 pr-3 text-slate-700 dark:text-slate-300">{row.timeStr}</td>
+                                  <td className="py-1.5 pr-3 text-blue-600 dark:text-blue-400 font-bold">{row.m1Val}</td>
+                                  <td className="py-1.5 pr-3 text-emerald-600 dark:text-emerald-400 font-bold">{row.m2Val}</td>
+                                  <td className="py-1.5 text-amber-600 dark:text-amber-400 font-bold">{row.m3Val}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Interactive Parameters Numeric Panel (1 col) */}
+                  <div className="space-y-4">
+                    <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
+                        <div className="flex items-center gap-2">
+                          <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Tham Số Thí Nghiệm (Nhập số tự do)
+                          </h3>
+                        </div>
+                        <button
+                          onClick={() => setParams(lesson.defaultParams)}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                        >
+                          Mặc định
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {Object.entries(lesson.paramBounds).map(([paramKey, bound]) => {
+                          const curVal = params[paramKey] ?? lesson.defaultParams[paramKey] ?? bound.min;
+
+                          if (paramKey === 'circuitType') {
+                            return (
+                              <div key={paramKey} className="space-y-1.5 bg-slate-50/80 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                                <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                  {bound.label}
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  {[
+                                    { v: 0, label: 'Mắc Nối Tiếp' },
+                                    { v: 1, label: 'Mắc Song Song' }
+                                  ].map((opt) => (
+                                    <button
+                                      key={opt.v}
+                                      type="button"
+                                      onClick={() => setParams((prev) => ({ ...prev, [paramKey]: opt.v }))}
+                                      className={`py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                                        Math.round(curVal) === opt.v
+                                          ? 'bg-blue-600 text-white'
+                                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                                      }`}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (paramKey === 'vizMode') {
+                            return (
+                              <div key={paramKey} className="space-y-1.5 bg-slate-50/80 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                                <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                  {bound.label}
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  {[
+                                    { v: 0, label: 'Vectơ' },
+                                    { v: 1, label: 'Đồ thị d-t' },
+                                    { v: 2, label: 'Đồ thị v-t' }
+                                  ].map((opt) => (
+                                    <button
+                                      key={opt.v}
+                                      type="button"
+                                      onClick={() => setParams((prev) => ({ ...prev, [paramKey]: opt.v }))}
+                                      className={`py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                                        Math.round(curVal) === opt.v
+                                          ? 'bg-blue-600 text-white'
+                                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                                      }`}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <NumericParamField
+                              key={paramKey}
+                              label={bound.label}
+                              unit={bound.unit}
+                              value={curVal}
+                              min={bound.min}
+                              max={bound.max}
+                              step={bound.step}
+                              onChange={(nextVal) =>
+                                setParams((prev) => ({
+                                  ...prev,
+                                  [paramKey]: nextVal
+                                }))
+                              }
+                            />
+                          );
+                        })}
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+                        <button
+                          onClick={() => {
+                            setIsSimFullscreen(false);
+                            navigate({ physicsTab: 'practice' });
+                          }}
+                          className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <GraduationCap className="w-4 h-4" />
+                          <span>Làm Bài Tập Củng Cố Ngay (+25 XP)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ViewportPortal>
+          )}
+
+      {/* VIEW 4: PRACTICE EXERCISES (MCQ + ESSAY - VIETJACK / LOIGIAIHAY STYLE) */}
       {activeTab === 'practice' && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
@@ -1774,23 +3558,30 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Bài Tập Củng Cố & Lời Giải Chi Tiết
+                  Bài Tập Trắc Nghiệm &amp; Tự Luận Có Lời Giải Chi Tiết
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                  Thử sức với các câu hỏi vận dụng thực tế. Mỗi câu đúng nhận ngay +25 XP!
+                  Biên soạn chuẩn SGK (VietJack / Loigiaihay). Mỗi câu trắc nghiệm đúng nhận ngay +25 XP!
                 </p>
               </div>
             </div>
             <button
-              onClick={() => setActiveTab('theory')}
+              onClick={goBack}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Quay lại Bài giảng</span>
+              <span>Quay lại</span>
             </button>
           </div>
 
-          <div className="space-y-6">
+          {/* SECTION A: MULTIPLE CHOICE */}
+          <div className="space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                Phần A · Trắc Nghiệm Củng Cố ({lesson.practiceExercises.length} câu)
+              </h4>
+            </div>
+
             {lesson.practiceExercises.map((ex, exIdx) => {
               const exKey = `${lesson.id}-ex-${exIdx}`;
               const selectedOpt = userAnswers[exKey];
@@ -1801,21 +3592,26 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               return (
                 <div
                   key={exKey}
-                  className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4"
+                  className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold flex items-center justify-center shrink-0">
+                  <div className="space-y-1.5">
+                    {ex.source && (
+                      <div className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                        {ex.source}
+                      </div>
+                    )}
+                    <div className="flex items-start gap-2.5">
+                      <span className="px-2 py-0.5 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold shrink-0">
                         Câu {exIdx + 1}
                       </span>
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
+                      <div className="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
                         <FormattedText text={ex.question} />
-                      </h4>
+                      </div>
                     </div>
                   </div>
 
                   {/* Options List */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     {ex.options.map((opt, optIdx) => {
                       let btnStyle =
                         'border-slate-200/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300';
@@ -1850,7 +3646,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   </div>
 
                   {/* Solution Accordion */}
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <button
                       onClick={() =>
                         setRevealedSolutions((prev) => ({
@@ -1886,7 +3682,100 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               );
             })}
           </div>
+
+          {/* SECTION B: ESSAY EXERCISES (TỰ LUẬN) */}
+          {lesson.essayExercises && lesson.essayExercises.length > 0 && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Phần B · Bài Tập Tự Luận Giải Chi Tiết ({lesson.essayExercises.length} bài)
+                </h4>
+              </div>
+
+              {lesson.essayExercises.map((essay, eIdx) => {
+                const essayKey = `${lesson.id}-essay-${eIdx}`;
+                const hintOpen = !!revealedEssayHints[essayKey];
+                const solOpen = !!revealedEssaySolutions[essayKey];
+
+                return (
+                  <div
+                    key={essayKey}
+                    className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4"
+                  >
+                    <div className="space-y-1.5">
+                      {essay.source && (
+                        <div className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                          {essay.source}
+                        </div>
+                      )}
+                      <div className="flex items-start gap-2.5">
+                        <span className="px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold shrink-0">
+                          Bài {eIdx + 1}
+                        </span>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
+                          <FormattedText text={essay.question} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      {essay.hints && essay.hints.length > 0 && (
+                        <button
+                          onClick={() =>
+                            setRevealedEssayHints((prev) => ({ ...prev, [essayKey]: !prev[essayKey] }))
+                          }
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 hover:bg-amber-100 transition-colors"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" />
+                          <span>{hintOpen ? 'Ẩn gợi ý' : 'Xem gợi ý hướng giải'}</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() =>
+                          setRevealedEssaySolutions((prev) => ({ ...prev, [essayKey]: !prev[essayKey] }))
+                        }
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>{solOpen ? 'Thu gọn bài giải' : 'Xem lời giải chi tiết từng bước'}</span>
+                      </button>
+                    </div>
+
+                    {hintOpen && essay.hints && (
+                      <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/25 border border-amber-200/70 dark:border-amber-900/50 text-xs text-amber-950 dark:text-amber-200 space-y-1">
+                        <div className="font-bold">Gợi ý phương pháp:</div>
+                        {essay.hints.map((h, i) => (
+                          <div key={i}><FormattedText text={h} /></div>
+                        ))}
+                      </div>
+                    )}
+
+                    {solOpen && (
+                      <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5 text-xs">
+                        <div className="font-bold text-emerald-700 dark:text-emerald-300 text-xs uppercase tracking-wide">
+                          Bài giải tham khảo chi tiết
+                        </div>
+                        <div className="space-y-2 text-slate-700 dark:text-slate-200 leading-relaxed">
+                          {essay.solutionSteps.map((step, sIdx) => (
+                            <div key={sIdx} className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-700/60">
+                              <FormattedText text={step} />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="pt-2 border-t border-slate-200 dark:border-slate-700 font-bold text-slate-900 dark:text-white">
+                          Đáp số: <FormattedText text={essay.finalAnswer} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
+      )}
+        </>
       )}
     </div>
   );

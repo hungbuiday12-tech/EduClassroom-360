@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SubjectType } from '../types';
-import { Sun, Moon, Award, User, LogOut, LogIn, ChevronDown, Sparkles, Globe, Wand2, Check } from 'lucide-react';
+import { Sun, Moon, Award, User, LogOut, LogIn, ChevronDown, Sparkles, Globe, Wand2, Check, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../context/BackgroundContext';
+import { useNavigation, getLocationLabel } from '../context/NavigationContext';
 
 interface HeaderProps {
   currentSubject: SubjectType;
@@ -25,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { user, openAuthModal, logout } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
   const { creatureTheme, setCreatureTheme } = useBackgroundTheme();
+  const { canGoBack, previousLocation, goBack, goClassroom } = useNavigation();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCreatureMenuOpen, setIsCreatureMenuOpen] = useState(false);
   const creatureMenuRef = useRef<HTMLDivElement | null>(null);
@@ -42,25 +44,39 @@ export const Header: React.FC<HeaderProps> = ({
 
   const activeCreature =
     CREATURE_THEME_OPTIONS.find((opt) => opt.id === creatureTheme) || CREATURE_THEME_OPTIONS[0];
+  const prevLabel = previousLocation ? getLocationLabel(previousLocation, language) : t('nav.classroom', 'Lớp học', 'Classroom');
 
   return (
     <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 lg:gap-6 h-14 sm:h-16">
-        {/* Zone 1: Single text element wordmark */}
-        <button
-          onClick={() => onSelectSubject('overview')}
-          className="text-sm sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap shrink-0 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-        >
-          EduClassroom 360
-        </button>
+        {/* Zone 1: Back History button + Brand Wordmark */}
+        <div className="flex items-center gap-2 shrink-0">
+          {canGoBack && (
+            <button
+              onClick={goBack}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-700 dark:hover:text-indigo-300 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-xs shrink-0"
+              title={`${language === 'en' ? 'Back to' : 'Quay lại trang trước'}: ${prevLabel}`}
+              aria-label={`Quay lại ${prevLabel}`}
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{language === 'en' ? 'Back' : 'Quay lại'}</span>
+            </button>
+          )}
+          <button
+            onClick={goClassroom}
+            className="text-sm sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap shrink-0 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1.5 py-1 rounded-lg"
+          >
+            EduClassroom 360
+          </button>
+        </div>
 
         {/* Zone 2: Concise single-line nav links */}
         <nav className="hidden lg:flex items-center gap-4 text-sm font-medium">
           <button
-            onClick={() => onSelectSubject('overview')}
-            className={`whitespace-nowrap shrink-0 transition-colors ${
+            onClick={goClassroom}
+            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
               currentSubject === 'overview'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
@@ -288,7 +304,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Mobile Navigation bar */}
       <div className="lg:hidden flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto text-xs font-medium gap-2">
         <button
-          onClick={() => onSelectSubject('overview')}
+          onClick={goClassroom}
           className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'overview' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
         >
           {t('nav.classroom', 'Lớp học', 'Classroom')}

@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { FunctionGrapher } from './FunctionGrapher';
 import { GeometryStudio } from './GeometryStudio';
 import { MathLectures } from './MathLectures';
-import { Math3DView } from './Math3DView';
-import { LineChart, Shapes, BookOpen, Box, ArrowLeft } from 'lucide-react';
+import { Math3DView, Math3DMode } from './Math3DView';
+import { LineChart, Shapes, BookOpen, Box, ArrowLeft, Home } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNavigation } from '../../context/NavigationContext';
+import { FunctionPlotConfig } from '../../types';
 
 interface MathStudioProps {
   onBack?: () => void;
@@ -12,27 +14,54 @@ interface MathStudioProps {
 
 export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'grapher' | 'geometry' | 'math3d' | 'lectures'>('grapher');
+  const { location, navigate, goBack, goClassroom } = useNavigation();
+  const activeTab = location.mathTab;
+  const [selectedGraphConfig, setSelectedGraphConfig] = useState<Partial<FunctionPlotConfig> | null>(null);
+  const [selected3DMode, setSelected3DMode] = useState<Math3DMode>('oxyz_vector');
+
+  const setActiveTab = (tab: 'grapher' | 'geometry' | 'math3d' | 'lectures') => {
+    navigate({ mathTab: tab });
+  };
+
+  const handleNavigateFromLecture = (
+    tab: 'grapher' | 'geometry' | 'math3d' | 'lectures',
+    opts?: { graphConfig?: Partial<FunctionPlotConfig>; mode3d?: Math3DMode }
+  ) => {
+    if (opts?.graphConfig) {
+      setSelectedGraphConfig({ ...opts.graphConfig });
+    }
+    if (opts?.mode3d) {
+      setSelected3DMode(opts.mode3d);
+    }
+    navigate({ mathTab: tab });
+  };
+
+  const handleBackAction = onBack || goBack;
 
   return (
     <div className="space-y-6">
       {/* Subject Sub-navigation */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <div className="flex flex-wrap items-center gap-2.5 mb-1">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-xs"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>{t('nav.back_home', 'Quay lại Lớp học', 'Back to Classroom')}</span>
-              </button>
-            )}
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <button
+              onClick={handleBackAction}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-xs whitespace-nowrap"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{t('nav.back_prev', 'Quay lại trang trước', 'Back')}</span>
+            </button>
+            <button
+              onClick={goClassroom}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-100/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>{t('nav.classroom', 'Lớp học', 'Classroom')}</span>
+            </button>
             {activeTab !== 'lectures' && (
               <button
-                onClick={() => setActiveTab('lectures')}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                onClick={() => navigate({ mathTab: 'lectures', mathViewMode: 'catalog' })}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors whitespace-nowrap"
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>{t('math.goto_lectures', 'Kho Bài giảng', 'Lectures')}</span>
@@ -45,8 +74,8 @@ export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
           <p className="text-xs text-slate-500 mt-0.5">
             {t(
               'math.desc',
-              'Khảo sát đồ thị hàm số 2D, phòng thực hành vẽ hình học phẳng, mô phỏng không gian Oxyz 3D và kho bài giảng chuyên sâu',
-              '2D function grapher, dynamic geometry studio, 3D Oxyz spatial geometry simulations, and comprehensive curriculum lectures'
+              'Hai khu chuyên biệt (Không chuyên GDPT 9–12 & Chuyên Toán CB → NC → HSG), mô phỏng 2D/3D từng bài và Trắc nghiệm + Tự luận chi tiết',
+              'Two tracks (Standard Grades 9–12 & Specialized Math), per-lesson 2D/3D simulations, and MCQ + Essay practice'
             )}
           </p>
         </div>
@@ -54,57 +83,57 @@ export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
         {/* Tab Switcher */}
         <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
           <button
-            onClick={() => setActiveTab('grapher')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-              activeTab === 'grapher'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            <LineChart className="w-3.5 h-3.5 text-indigo-500" />
-            <span>{t('math.tab.grapher', 'Đồ thị hàm số', 'Function Grapher')}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('geometry')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-              activeTab === 'geometry'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            <Shapes className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{t('math.tab.geometry', 'Vẽ hình học', 'Geometry')}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('math3d')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-              activeTab === 'math3d'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            <Box className="w-3.5 h-3.5 text-blue-500" />
-            <span>{t('math.tab.3d', 'Không gian Oxyz 3D', '3D Oxyz Spatial')}</span>
-          </button>
-          <button
             onClick={() => setActiveTab('lectures')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
               activeTab === 'lectures'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5 text-amber-500" />
-            <span>{t('math.tab.lectures', 'Bài giảng & Trắc nghiệm', 'Lectures & Quiz')}</span>
+            <span>{t('math.tab.lectures', 'Bài giảng & Bài tập', 'Lectures & Practice')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('grapher')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+              activeTab === 'grapher'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
+            <LineChart className="w-3.5 h-3.5 text-indigo-500" />
+            <span>{t('math.tab.grapher', 'Đồ thị Oxy 2D', '2D Grapher')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('geometry')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+              activeTab === 'geometry'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
+            <Shapes className="w-3.5 h-3.5 text-emerald-500" />
+            <span>{t('math.tab.geometry', 'Hình học phẳng 2D', '2D Geometry')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('math3d')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+              activeTab === 'math3d'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
+            <Box className="w-3.5 h-3.5 text-blue-500" />
+            <span>{t('math.tab.3d', 'Mô phỏng 3D Oxyz', '3D Oxyz Spatial')}</span>
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      {activeTab === 'grapher' && <FunctionGrapher />}
-      {activeTab === 'geometry' && <GeometryStudio />}
-      {activeTab === 'math3d' && <Math3DView />}
-      {activeTab === 'lectures' && <MathLectures onNavigateTab={(tab) => setActiveTab(tab as any)} />}
+      {activeTab === 'lectures' && <MathLectures onNavigateTab={handleNavigateFromLecture} />}
+      {activeTab === 'grapher' && <FunctionGrapher initialConfig={selectedGraphConfig} onBack={goBack} />}
+      {activeTab === 'geometry' && <GeometryStudio onBack={goBack} />}
+      {activeTab === 'math3d' && <Math3DView initialMode={selected3DMode} onBack={goBack} />}
     </div>
   );
 };

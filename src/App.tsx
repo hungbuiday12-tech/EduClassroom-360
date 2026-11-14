@@ -15,24 +15,28 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
 import { VisitorLandingPage } from './components/landing/VisitorLandingPage';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
+import { useNavigation } from './context/NavigationContext';
 
 function MainApp() {
-  const [currentSubject, setCurrentSubject] = useState<SubjectType>('overview');
-  const [isTutorOpen, setIsTutorOpen] = useState<boolean>(false);
+  const { location, navigate, selectSubject, goBack } = useNavigation();
+  const currentSubject = location.subject;
+  const isTutorOpen = location.tutorOpen;
   const [tutorContext, setTutorContext] = useState<TutorContextPayload>({
     subject: 'math'
   });
 
   const handleOpenTutor = (ctx?: TutorContextPayload) => {
+    const targetSubj: SubjectType =
+      ctx?.subject ||
+      (currentSubject === 'physics' || currentSubject === 'cs' || currentSubject === 'math'
+        ? currentSubject
+        : 'math');
     setTutorContext(
       ctx || {
-        subject:
-          currentSubject === 'physics' || currentSubject === 'cs' || currentSubject === 'math'
-            ? currentSubject
-            : 'math'
+        subject: targetSubj
       }
     );
-    setIsTutorOpen(true);
+    navigate({ tutorOpen: true, tutorSubject: targetSubj });
   };
   const [isDark, setIsDark] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
@@ -145,7 +149,7 @@ function MainApp() {
           {/* Top Bar Contract Navigation */}
           <Header
             currentSubject={currentSubject}
-            onSelectSubject={setCurrentSubject}
+            onSelectSubject={selectSubject}
             isDark={isDark}
             onToggleTheme={handleToggleTheme}
             xp={activeXP}
@@ -164,7 +168,7 @@ function MainApp() {
               >
                 {currentSubject === 'overview' && (
                   <ClassroomOverview
-                    onNavigate={setCurrentSubject}
+                    onNavigate={selectSubject}
                     xp={activeXP}
                     onOpenTutor={() => handleOpenTutor({ subject: 'math' })}
                   />
@@ -172,36 +176,36 @@ function MainApp() {
 
                 {currentSubject === 'roadmap' && (
                   <LearningRoadmap
-                    onBack={() => setCurrentSubject('overview')}
-                    onNavigateSubject={setCurrentSubject}
+                    onBack={goBack}
+                    onNavigateSubject={selectSubject}
                     onOpenTutor={handleOpenTutor}
                     onEarnXP={handleEarnXP}
                   />
                 )}
 
                 {currentSubject === 'math' && (
-                  <MathStudio onBack={() => setCurrentSubject('overview')} />
+                  <MathStudio onBack={goBack} />
                 )}
 
                 {currentSubject === 'physics' && (
-                  <PhysicsLab onBack={() => setCurrentSubject('overview')} onScoreEarned={handleEarnXP} />
+                  <PhysicsLab onBack={goBack} onScoreEarned={handleEarnXP} />
                 )}
 
                 {currentSubject === 'cs' && (
-                  <CodeJudgeLab onScoreEarned={handleEarnXP} onBack={() => setCurrentSubject('overview')} />
+                  <CodeJudgeLab onScoreEarned={handleEarnXP} onBack={goBack} />
                 )}
 
                 {currentSubject === 'exams' && (
                   <ExamHub
-                    onNavigateToSubject={setCurrentSubject}
+                    onNavigateToSubject={selectSubject}
                     onEarnXP={handleEarnXP}
-                    onBack={() => setCurrentSubject('overview')}
+                    onBack={goBack}
                   />
                 )}
 
                 {currentSubject === 'arena' && (
                   <ArenaHub
-                    onBack={() => setCurrentSubject('overview')}
+                    onBack={goBack}
                     onEarnXP={handleEarnXP}
                     onOpenTutor={handleOpenTutor}
                   />
@@ -214,7 +218,7 @@ function MainApp() {
           {!isTutorOpen && (
             <button
               onClick={() => handleOpenTutor()}
-              className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[85] px-3 py-2 sm:px-4 sm:py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-transform hover:scale-105"
+              className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[85] px-3 py-2 sm:px-4 sm:py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-all"
               title="Mở Trợ Giảng AI 3 Môn · 3 Chế Độ"
             >
               <Sparkles className="w-4 h-4 shrink-0" />
@@ -224,12 +228,15 @@ function MainApp() {
           )}
           <SocraticAITutor
             isOpen={isTutorOpen}
-            onClose={() => setIsTutorOpen(false)}
+            onClose={goBack}
+            onBack={goBack}
             context={tutorContext}
-            onChangeSubject={(subj) => setTutorContext((prev) => ({ ...prev, subject: subj }))}
+            onChangeSubject={(subj) => {
+              setTutorContext((prev) => ({ ...prev, subject: subj }));
+              navigate({ tutorSubject: subj }, { replace: true });
+            }}
             onNavigateSubject={(subj) => {
-              setCurrentSubject(subj);
-              setIsTutorOpen(false);
+              selectSubject(subj);
             }}
           />
 
@@ -249,37 +256,37 @@ function MainApp() {
 
               <div className="flex flex-wrap items-center gap-4">
                 <button
-                  onClick={() => setCurrentSubject('roadmap')}
+                  onClick={() => selectSubject('roadmap')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
                   Lộ trình học
                 </button>
                 <button
-                  onClick={() => setCurrentSubject('math')}
+                  onClick={() => selectSubject('math')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
                   Toán học
                 </button>
                 <button
-                  onClick={() => setCurrentSubject('physics')}
+                  onClick={() => selectSubject('physics')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
                   Vật lí 2D
                 </button>
                 <button
-                  onClick={() => setCurrentSubject('cs')}
+                  onClick={() => selectSubject('cs')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
                   Tin học
                 </button>
                 <button
-                  onClick={() => setCurrentSubject('exams')}
+                  onClick={() => selectSubject('exams')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold"
                 >
                   Đề Thi (60 Đề)
                 </button>
                 <button
-                  onClick={() => setCurrentSubject('arena')}
+                  onClick={() => selectSubject('arena')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-amber-600 dark:text-amber-400 font-semibold"
                 >
                   Thi Đấu & BXH Tuần

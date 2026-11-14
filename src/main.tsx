@@ -5,6 +5,7 @@ import './index.css';
 import 'katex/dist/katex.min.css';
 import { LanguageProvider } from './context/LanguageContext';
 import { BackgroundProvider } from './context/BackgroundContext';
+import { NavigationProvider } from './context/NavigationContext';
 
 interface Props {
   children: ReactNode;
@@ -63,7 +64,9 @@ if (rootElement) {
     <ErrorBoundary>
       <LanguageProvider>
         <BackgroundProvider>
-          <App />
+          <NavigationProvider>
+            <App />
+          </NavigationProvider>
         </BackgroundProvider>
       </LanguageProvider>
     </ErrorBoundary>

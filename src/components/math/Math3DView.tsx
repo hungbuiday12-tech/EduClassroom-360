@@ -23,14 +23,20 @@ export type Math3DMode = 'oxyz_vector' | 'sphere_plane' | 'pyramid_section' | 'r
 
 interface Math3DViewProps {
   initialMode?: Math3DMode;
+  onBack?: () => void;
 }
 
-export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vector' }) => {
+export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vector', onBack }) => {
   const { t } = useLanguage();
   const mountRef = useRef<HTMLDivElement>(null);
 
   // Mode selection
   const [mode, setMode] = useState<Math3DMode>(initialMode);
+  useEffect(() => {
+    if (initialMode) {
+      setMode(initialMode);
+    }
+  }, [initialMode]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isControlsExpanded, setIsControlsExpanded] = useState(true);
 
@@ -484,13 +490,19 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         {/* TOP HEADER OVERLAY (Stacked on < lg to prevent overlapping 3D viewport, floating on lg+) */}
         <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:top-4 lg:left-4 lg:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/95 lg:bg-transparent border-b border-slate-800/80 lg:border-b-0 lg:pointer-events-none shrink-0">
           <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-800/70 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white shadow-lg max-w-full">
-            {isFullscreen && (
+            {(isFullscreen || onBack) && (
               <button
-                onClick={() => setIsFullscreen(false)}
+                onClick={() => {
+                  if (isFullscreen) {
+                    setIsFullscreen(false);
+                  } else if (onBack) {
+                    onBack();
+                  }
+                }}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shrink-0"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Quay lại</span>
+                <span>{isFullscreen ? 'Thu nhỏ' : 'Quay lại'}</span>
               </button>
             )}
             <Box className="w-4 h-4 text-indigo-400 shrink-0" />
@@ -591,16 +603,52 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <span className="text-[10px] text-slate-400">x: {ux}</span>
-                          <input type="range" min="-4" max="4" value={ux} onChange={(e) => setUx(Number(e.target.value))} className="w-full accent-amber-500 h-1" />
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+                            <span>x</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              value={ux}
+                              onChange={(e) => {
+                                const v = parseFloat(e.target.value);
+                                if (Number.isFinite(v)) setUx(v);
+                              }}
+                              className="w-11 px-1 py-0.5 text-right text-[10px] font-mono bg-slate-900 border border-slate-700 rounded text-amber-300"
+                            />
+                          </div>
+                          <input type="range" min="-5" max="5" step="0.5" value={Math.max(-5, Math.min(5, ux))} onChange={(e) => setUx(Number(e.target.value))} className="w-full accent-amber-500 h-1" />
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-400">y: {uy}</span>
-                          <input type="range" min="-4" max="4" value={uy} onChange={(e) => setUy(Number(e.target.value))} className="w-full accent-amber-500 h-1" />
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+                            <span>y</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              value={uy}
+                              onChange={(e) => {
+                                const v = parseFloat(e.target.value);
+                                if (Number.isFinite(v)) setUy(v);
+                              }}
+                              className="w-11 px-1 py-0.5 text-right text-[10px] font-mono bg-slate-900 border border-slate-700 rounded text-amber-300"
+                            />
+                          </div>
+                          <input type="range" min="-5" max="5" step="0.5" value={Math.max(-5, Math.min(5, uy))} onChange={(e) => setUy(Number(e.target.value))} className="w-full accent-amber-500 h-1" />
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-400">z: {uz}</span>
-                          <input type="range" min="-4" max="4" value={uz} onChange={(e) => setUz(Number(e.target.value))} className="w-full accent-amber-500 h-1" />
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+                            <span>z</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              value={uz}
+                              onChange={(e) => {
+                                const v = parseFloat(e.target.value);
+                                if (Number.isFinite(v)) setUz(v);
+                              }}
+                              className="w-11 px-1 py-0.5 text-right text-[10px] font-mono bg-slate-900 border border-slate-700 rounded text-amber-300"
+                            />
+                          </div>
+                          <input type="range" min="-5" max="5" step="0.5" value={Math.max(-5, Math.min(5, uz))} onChange={(e) => setUz(Number(e.target.value))} className="w-full accent-amber-500 h-1" />
                         </div>
                       </div>
                     </div>
@@ -613,16 +661,52 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <span className="text-[10px] text-slate-400">x: {vx}</span>
-                          <input type="range" min="-4" max="4" value={vx} onChange={(e) => setVx(Number(e.target.value))} className="w-full accent-cyan-500 h-1" />
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+                            <span>x</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              value={vx}
+                              onChange={(e) => {
+                                const v = parseFloat(e.target.value);
+                                if (Number.isFinite(v)) setVx(v);
+                              }}
+                              className="w-11 px-1 py-0.5 text-right text-[10px] font-mono bg-slate-900 border border-slate-700 rounded text-cyan-300"
+                            />
+                          </div>
+                          <input type="range" min="-5" max="5" step="0.5" value={Math.max(-5, Math.min(5, vx))} onChange={(e) => setVx(Number(e.target.value))} className="w-full accent-cyan-500 h-1" />
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-400">y: {vy}</span>
-                          <input type="range" min="-4" max="4" value={vy} onChange={(e) => setVy(Number(e.target.value))} className="w-full accent-cyan-500 h-1" />
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+                            <span>y</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              value={vy}
+                              onChange={(e) => {
+                                const v = parseFloat(e.target.value);
+                                if (Number.isFinite(v)) setVy(v);
+                              }}
+                              className="w-11 px-1 py-0.5 text-right text-[10px] font-mono bg-slate-900 border border-slate-700 rounded text-cyan-300"
+                            />
+                          </div>
+                          <input type="range" min="-5" max="5" step="0.5" value={Math.max(-5, Math.min(5, vy))} onChange={(e) => setVy(Number(e.target.value))} className="w-full accent-cyan-500 h-1" />
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-400">z: {vz}</span>
-                          <input type="range" min="-4" max="4" value={vz} onChange={(e) => setVz(Number(e.target.value))} className="w-full accent-cyan-500 h-1" />
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+                            <span>z</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              value={vz}
+                              onChange={(e) => {
+                                const v = parseFloat(e.target.value);
+                                if (Number.isFinite(v)) setVz(v);
+                              }}
+                              className="w-11 px-1 py-0.5 text-right text-[10px] font-mono bg-slate-900 border border-slate-700 rounded text-cyan-300"
+                            />
+                          </div>
+                          <input type="range" min="-5" max="5" step="0.5" value={Math.max(-5, Math.min(5, vz))} onChange={(e) => setVz(Number(e.target.value))} className="w-full accent-cyan-500 h-1" />
                         </div>
                       </div>
                     </div>
@@ -645,32 +729,60 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                 <div className="space-y-2.5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1 gap-2">
                         <span className="text-slate-300">Bán kính mặt cầu (R):</span>
-                        <span className="font-bold text-blue-400">{sphereRadius} m</span>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0.5"
+                            max="8"
+                            step="0.1"
+                            value={sphereRadius}
+                            onChange={(e) => {
+                              const v = parseFloat(e.target.value);
+                              if (Number.isFinite(v) && v >= 0.2) setSphereRadius(v);
+                            }}
+                            className="w-16 px-1.5 py-0.5 text-right text-xs font-mono bg-slate-900 border border-slate-700 rounded text-blue-400 font-bold"
+                          />
+                          <span className="text-slate-400">m</span>
+                        </div>
                       </div>
                       <input
                         type="range"
-                        min="1.5"
-                        max="4.5"
+                        min="1.0"
+                        max="6.0"
                         step="0.1"
-                        value={sphereRadius}
+                        value={Math.max(1.0, Math.min(6.0, sphereRadius))}
                         onChange={(e) => setSphereRadius(Number(e.target.value))}
                         className="w-full accent-blue-500 h-1.5"
                       />
                     </div>
 
                     <div>
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1 gap-2">
                         <span className="text-slate-300">Khoảng cách d(I, (P)):</span>
-                        <span className="font-bold text-emerald-400">{planeDistance.toFixed(1)} m</span>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="8"
+                            step="0.1"
+                            value={planeDistance}
+                            onChange={(e) => {
+                              const v = parseFloat(e.target.value);
+                              if (Number.isFinite(v) && v >= 0) setPlaneDistance(v);
+                            }}
+                            className="w-16 px-1.5 py-0.5 text-right text-xs font-mono bg-slate-900 border border-slate-700 rounded text-emerald-400 font-bold"
+                          />
+                          <span className="text-slate-400">m</span>
+                        </div>
                       </div>
                       <input
                         type="range"
                         min="0"
-                        max="5.0"
+                        max="6.0"
                         step="0.1"
-                        value={planeDistance}
+                        value={Math.max(0, Math.min(6.0, planeDistance))}
                         onChange={(e) => setPlaneDistance(Number(e.target.value))}
                         className="w-full accent-emerald-500 h-1.5"
                       />
@@ -698,14 +810,25 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
               {mode === 'pyramid_section' && (
                 <div className="space-y-2.5">
                   <div>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-slate-300">Vị trí mặt cắt thiết diện (k = SM/SA):</span>
-                      <span className="font-bold text-amber-400">{(cutHeightRatio * 100).toFixed(0)}%</span>
+                    <div className="flex items-center justify-between text-xs mb-1 gap-2">
+                      <span className="text-slate-300">Tỉ số cắt mặt phẳng k = SM/SA (0.05 – 0.95):</span>
+                      <input
+                        type="number"
+                        min="0.05"
+                        max="0.95"
+                        step="0.02"
+                        value={cutHeightRatio}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          if (Number.isFinite(v)) setCutHeightRatio(Math.max(0.05, Math.min(0.95, v)));
+                        }}
+                        className="w-20 px-1.5 py-0.5 text-right text-xs font-mono bg-slate-900 border border-slate-700 rounded text-amber-400 font-bold"
+                      />
                     </div>
                     <input
                       type="range"
-                      min="0.1"
-                      max="0.9"
+                      min="0.05"
+                      max="0.95"
                       step="0.02"
                       value={cutHeightRatio}
                       onChange={(e) => setCutHeightRatio(Number(e.target.value))}
@@ -713,7 +836,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                     />
                   </div>
                   <div className="text-[11px] text-slate-400">
-                    Kéo thanh trượt để di chuyển mặt phẳng cắt qua 4 cạnh bên chóp tứ giác, thiết diện biến đổi liên tục từ tứ giác nhỏ dần về đáy!
+                    Nhập số trực tiếp hoặc kéo thanh trượt để di chuyển mặt phẳng cắt qua 4 cạnh bên chóp tứ giác!
                   </div>
                 </div>
               )}

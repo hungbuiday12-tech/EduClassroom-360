@@ -1,6 +1,7 @@
 import { CSLesson } from '../types';
+import { EXTRA_VNOI_LESSONS, VNOI_LESSON_ENRICHMENT } from './csVnoiModules';
 
-export const CS_LESSONS: CSLesson[] = [
+const BASE_CS_LESSONS: CSLesson[] = [
   // ==========================================
   // CẤP ĐỘ 1: CƠ BẢN (BEGINNER)
   // ==========================================
@@ -1301,3 +1302,12 @@ solve()`
     }
   }
 ];
+
+export const CS_LESSONS: CSLesson[] = [
+  ...BASE_CS_LESSONS.map((lesson) => {
+    const enrich = VNOI_LESSON_ENRICHMENT[lesson.id];
+    return enrich ? { ...lesson, ...enrich } : lesson;
+  }),
+  ...EXTRA_VNOI_LESSONS
+].sort((a, b) => a.lessonNumber - b.lessonNumber);
+

@@ -33,6 +33,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { FormattedText } from '../common/MathRenderer';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { safeFetchJson } from '../../lib/apiClient';
+import { useNavigation, getLocationLabel } from '../../context/NavigationContext';
 
 export const AI_ROADMAPS_STORAGE_KEY = 'educlassroom_ai_roadmaps_v1';
 
@@ -41,6 +42,7 @@ type AISubjectKey = 'math' | 'physics' | 'cs';
 interface SocraticAITutorProps {
   isOpen: boolean;
   onClose: () => void;
+  onBack?: () => void;
   context: TutorContextPayload;
   onChangeSubject?: (subj: SubjectType) => void;
   onNavigateSubject?: (subj: SubjectType) => void;
@@ -70,12 +72,19 @@ function normalizeSubject(subj?: SubjectType): AISubjectKey {
 export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   isOpen,
   onClose,
+  onBack,
   context,
   onChangeSubject,
   onNavigateSubject
 }) => {
   const { language } = useLanguage();
+  const { previousLocation } = useNavigation();
   const isEn = language === 'en';
+  const backLabel = previousLocation
+    ? getLocationLabel(previousLocation, language)
+    : isEn
+    ? 'Previous'
+    : 'Trang trước';
 
   const [activeSubject, setActiveSubject] = useState<AISubjectKey>(() => normalizeSubject(context.subject));
   const [activeMode, setActiveMode] = useState<AITutorMode>(() => context.mode || 'explain_no_answer');
@@ -501,17 +510,27 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       }
     >
       {/* Top Header */}
-      <div className="px-3.5 sm:px-4 py-2.5 bg-slate-900 dark:bg-slate-950 text-white border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+      <div className="px-3 sm:px-4 py-2.5 bg-slate-900 dark:bg-slate-950 text-white border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          {isFullscreen && (
-            <button
-              onClick={() => setIsFullscreen(false)}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-sky-300 flex items-center gap-1 shrink-0"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Back' : 'Thu gọn'}</span>
-            </button>
-          )}
+          <button
+            onClick={() => {
+              if (isFullscreen) {
+                setIsFullscreen(false);
+              }
+              if (onBack) {
+                onBack();
+              } else {
+                onClose();
+              }
+            }}
+            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-indigo-600 border border-slate-700 text-xs font-bold text-sky-300 hover:text-white flex items-center gap-1 shrink-0 transition-colors"
+            title={isEn ? `Back to ${backLabel}` : `Quay lại ${backLabel}`}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="max-w-[130px] truncate">
+              {isEn ? `Back (${backLabel})` : `Quay lại (${backLabel})`}
+            </span>
+          </button>
           <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${activeMeta.softClass}`}>
             {activeMeta.icon}
           </div>

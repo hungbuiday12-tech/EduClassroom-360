@@ -15,7 +15,9 @@ import { SublimeStudio } from './SublimeStudio';
 import { SublimeEditor, MonokaiCodeBlock } from './SublimeEditor';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { FormattedText } from '../common/MathRenderer';
+import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNavigation } from '../../context/NavigationContext';
 import {
   Play,
   Send,
@@ -47,19 +49,31 @@ interface CodeJudgeLabProps {
 
 export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBack }) => {
   const { t } = useLanguage();
-  // Top View Mode: 'curriculum' (Bài giảng & Code mẫu), 'judge' (Trình chấm online), or 'custom' (Sublime Studio)
-  const [viewMode, setViewMode] = useState<'curriculum' | 'judge' | 'custom'>('curriculum');
+  const { location, navigate, goBack } = useNavigation();
+  // Top View Mode: 'curriculum' (VNOI Roadmap & Bài giảng), 'judge' (Trình chấm online), or 'custom' (Sublime Studio)
+  const viewMode = location.csViewMode;
+  // Sub-view inside curriculum: 'roadmap' (VNOI Roadmap grid) or 'lecture' (Dedicated teaching classroom)
+  const curriculumSubView = location.csSubView;
+  const lessonTab = location.csLessonTab;
 
-  // Level filter for curriculum: 'all' | 'Cơ bản' | 'Trung cấp' | 'Nâng cao / HSG'
-  const [selectedLevel, setSelectedLevel] = useState<string>('all');
+  // VNOI Phase filter: 'all' | phase name
+  const [selectedPhase, setSelectedPhase] = useState<string>('all');
+
+  const vnoiPhases = [
+    'Phase 0 · Nhập môn & Độ phức tạp',
+    'Phase 1 · Cơ bản & Số học sơ cấp',
+    'Phase 2 · Kỹ thuật tối ưu kinh điển',
+    'Phase 3 · Quy hoạch động & Đồ thị',
+    'Phase 4 · Cấu trúc dữ liệu & HSG'
+  ];
 
   const filteredLessons = useMemo(() => {
-    if (selectedLevel === 'all') return CS_LESSONS;
-    return CS_LESSONS.filter((l) => l.level === selectedLevel);
-  }, [selectedLevel]);
+    if (selectedPhase === 'all') return CS_LESSONS;
+    return CS_LESSONS.filter((l) => l.vnoiPhase === selectedPhase);
+  }, [selectedPhase]);
 
   // Current selected lesson
-  const [selectedLessonId, setSelectedLessonId] = useState<string>('cs-1');
+  const selectedLessonId = location.csLessonId;
   const currentLesson: CSLesson = useMemo(() => {
     return (
       CS_LESSONS.find((l) => l.id === selectedLessonId) ||
@@ -164,7 +178,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
     setCustomRuntime(null);
     setJudgeResults(null);
     setJudgeScore(null);
-    setViewMode('judge');
+    navigate({ csViewMode: 'judge' });
   };
 
   // When problem or language changes in Judge
@@ -255,56 +269,54 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            {viewMode !== 'curriculum' ? (
+            <button
+              onClick={viewMode !== 'curriculum' ? goBack : onBack || goBack}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{t('nav.back_prev', 'Quay lại trang trước', 'Back')}</span>
+            </button>
+            {viewMode !== 'curriculum' && (
               <button
-                onClick={() => setViewMode('curriculum')}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                onClick={() => navigate({ csViewMode: 'curriculum' })}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 hover:bg-blue-100 transition-colors"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>{t('nav.back_curriculum', 'Quay lại Bài giảng Tin học', 'Back to CS Curriculum')}</span>
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>{t('cs.goto_curriculum', 'VNOI Roadmap', 'VNOI Roadmap')}</span>
               </button>
-            ) : (
-              onBack && (
-                <button
-                  onClick={onBack}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>{t('nav.back_home', 'Quay lại Lớp học', 'Back to Classroom')}</span>
-                </button>
-              )
             )}
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              Tin Học & Lập Trình Chuyên Tin
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              Tin Học Chuyên Sâu · VNOI Roadmap
             </span>
-            <span className="text-xs text-slate-400 dark:text-slate-500">
-              Cơ bản ➜ Nâng cao / HSG • C++ & Python
+            <span className="text-slate-400" aria-hidden="true">·</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Phase 0 ➜ Phase 4 · C++ &amp; Python
             </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Kho Luyện Tin Học & Trình Chấm Online Judge
+            Lộ Trình VNOI Roadmap &amp; Trình Chấm Online Judge
           </h1>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Lộ trình bài giảng chuẩn thuật toán quốc tế, code mẫu song ngữ C++/Python, bài tập củng cố và hệ thống chấm test tự động.
+            Hệ thống bài giảng chi tiết từng phần theo chuẩn VNOI Wiki, code mẫu song ngữ C++/Python và trình chấm test tự động.
           </p>
         </div>
 
-        {/* View Mode Switcher (Bài giảng vs Online Judge vs Sublime Studio) */}
+        {/* View Mode Switcher (VNOI Roadmap vs Online Judge vs Sublime Studio) */}
         <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
           <button
-            onClick={() => setViewMode('curriculum')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
+            onClick={() => navigate({ csViewMode: 'curriculum' })}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
               viewMode === 'curriculum'
                 ? 'bg-blue-600 text-white shadow-sm font-semibold'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>{t('cs.tab.curriculum', '1. Lộ Trình Bài Giảng & Code Mẫu', '1. Curriculum & Sample Code')}</span>
+            <span>{t('cs.tab.curriculum', '1. VNOI Roadmap & Bài Giảng', '1. VNOI Roadmap & Lectures')}</span>
           </button>
           <button
-            onClick={() => setViewMode('judge')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
+            onClick={() => navigate({ csViewMode: 'judge' })}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
               viewMode === 'judge'
                 ? 'bg-emerald-600 text-white shadow-sm font-semibold'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -314,330 +326,463 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
             <span>{t('cs.tab.judge', '2. Trình Chấm Online Judge', '2. Standard Online Judge')}</span>
           </button>
           <button
-            onClick={() => setViewMode('custom')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
+            onClick={() => navigate({ csViewMode: 'custom' })}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
               viewMode === 'custom'
                 ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>{t('cs.tab.custom', '3. ⚡ Tự Do Giải Đề (Sublime Studio)', '3. ⚡ Free Problem Solver (Sublime Studio)')}</span>
+            <Sparkles className="w-4 h-4 text-amber-600" />
+            <span>{t('cs.tab.custom', '3. Tự Do Giải Đề (Sublime Studio)', '3. Free Problem Solver')}</span>
           </button>
         </div>
       </div>
 
       {/* ============================================================= */}
-      {/* MODE 1: LỘ TRÌNH BÀI GIẢNG & CODE MINH HỌA (Cơ bản -> HSG)  */}
+      {/* MODE 1: VNOI ROADMAP BROWSER & DEDICATED LECTURE ROOM        */}
       {/* ============================================================= */}
-      {viewMode === 'curriculum' && (
+      {viewMode === 'curriculum' && curriculumSubView === 'roadmap' && (
         <div className="space-y-6">
-          {/* Level Filter */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {['all', 'Cơ bản', 'Trung cấp', 'Nâng cao / HSG'].map((lvl) => (
-              <button
-                key={lvl}
-                onClick={() => setSelectedLevel(lvl)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                  selectedLevel === lvl
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm font-semibold'
-                    : 'bg-white/70 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                {lvl === 'all' ? 'Tất cả cấp độ (9 bài)' : `${lvl}`}
-              </button>
-            ))}
-          </div>
-
-          {/* Lessons Selector Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {filteredLessons.map((l) => (
-              <button
-                key={l.id}
-                onClick={() => {
-                  setSelectedLessonId(l.id);
-                  setRevealedSolution(false);
-                }}
-                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all border ${
-                  currentLesson.id === l.id
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 font-semibold'
-                    : 'bg-white/70 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                    currentLesson.id === l.id
-                      ? 'bg-white/20 text-white'
-                      : 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300'
-                  }`}
-                >
-                  Bài {l.lessonNumber}
-                </span>
-                <span>{l.title.split(':')[0]}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Current Lesson Hero Header */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* VNOI Phase Filter Bar */}
+          <div className="bg-white/85 dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span
-                    className={`px-2.5 py-0.5 rounded text-xs font-bold ${
-                      currentLesson.level === 'Cơ bản'
-                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                        : currentLesson.level === 'Trung cấp'
-                        ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-                        : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
-                    }`}
-                  >
-                    {currentLesson.level} • Bài {currentLesson.lessonNumber}
-                  </span>
-                </div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {currentLesson.title}
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                  Bản Đồ Học Tập Tin Học Theo Lộ Trình VNOI Roadmap ({CS_LESSONS.length} Bài Giảng Chuyên Đề)
                 </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  Chủ đề: {currentLesson.topic} ({currentLesson.estimatedMinutes} phút học)
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                  Bấm vào bất kỳ bài nào dưới đây để mở ngay giao diện Giảng bài chi tiết từng bước, Code mẫu và Bài tập tự chấm.
                 </p>
               </div>
-
-              {/* Complexity Badges */}
-              <div className="flex items-center gap-2">
-                <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-right">
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                    Độ phức tạp Thời gian
-                  </div>
-                  <div className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    {currentLesson.complexity.time}
-                  </div>
-                </div>
-
-                <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-right">
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                    Bộ nhớ Space
-                  </div>
-                  <div className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
-                    {currentLesson.complexity.space}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 1: Theory breakdown */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
-              <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                1. Bài Giảng Lý Thuyết & Kỹ Thuật Lập Trình
-              </h3>
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400 tabular-nums">
+                5 Giai đoạn · 12 Chuyên đề cốt lõi
+              </span>
             </div>
 
-            <div className="space-y-2.5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans bg-slate-50/60 dark:bg-slate-800/40 p-4 sm:p-5 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
-              {currentLesson.theory.map((line, idx) => (
-                <div key={idx}>
-                  <FormattedText text={line} />
-                </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              <button
+                onClick={() => setSelectedPhase('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                  selectedPhase === 'all'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                Tất cả Phase ({CS_LESSONS.length})
+              </button>
+              {vnoiPhases.map((phase) => (
+                <button
+                  key={phase}
+                  onClick={() => setSelectedPhase(phase)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                    selectedPhase === phase
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {phase}
+                </button>
               ))}
             </div>
           </div>
 
-          {/* Section 2: Illustrated Code (C++ / Python) */}
-          {(() => {
-            const activeCodeEx =
-              currentLesson.codeExamples.find((e) => e.language === curriculumLang) ||
-              currentLesson.codeExamples[0];
-            const displayCode = activeCodeEx?.code || '// Không có code mẫu';
-            const displayExplanation = activeCodeEx?.explanation || '';
+          {/* VNOI Roadmap Progression Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredLessons.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => {
+                  setRevealedSolution(false);
+                  navigate({
+                    csLessonId: l.id,
+                    csLessonTab: 'lecture',
+                    csSubView: 'lecture'
+                  });
+                }}
+                className="group text-left bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-4"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                    <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                      Bài {l.lessonNumber}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>{l.vnoiPhase || l.level}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="tabular-nums">{l.estimatedMinutes}p</span>
+                  </div>
 
-            return (
-              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
-                  <div className="flex items-center gap-2">
-                    <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <div>
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                        2. Code Minh Họa Chuẩn Thi HSG Quốc Gia
-                      </h3>
-                      <div className="text-xs text-slate-500">{activeCodeEx?.title}</div>
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
+                    {l.title}
+                  </h3>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                    {l.topic}
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+                  <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 truncate">
+                    {l.complexity.time}
+                  </span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 shrink-0">
+                    Vào giảng bài <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'curriculum' && curriculumSubView === 'lecture' && (
+        <div className="space-y-5">
+          {/* Dedicated Lesson Classroom Header Bar */}
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={goBack}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Quay lại</span>
+                </button>
+                <button
+                  onClick={() => navigate({ csSubView: 'roadmap' })}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+                >
+                  <span>Danh sách VNOI</span>
+                </button>
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="font-bold text-blue-600 dark:text-blue-400">
+                    {currentLesson.vnoiPhase || currentLesson.level}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span>Bài {currentLesson.lessonNumber} / {CS_LESSONS.length}</span>
+                  {currentLesson.vnoiTag && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span>{currentLesson.vnoiTag}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Prev / Next Lesson Quick Controls */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  disabled={currentLesson.lessonNumber <= 1}
+                  onClick={() => {
+                    const prev = CS_LESSONS.find((x) => x.lessonNumber === currentLesson.lessonNumber - 1);
+                    if (prev) {
+                      setRevealedSolution(false);
+                      navigate({ csLessonId: prev.id });
+                    }
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap"
+                >
+                  ← Bài trước
+                </button>
+                <button
+                  disabled={currentLesson.lessonNumber >= CS_LESSONS.length}
+                  onClick={() => {
+                    const next = CS_LESSONS.find((x) => x.lessonNumber === currentLesson.lessonNumber + 1);
+                    if (next) {
+                      setRevealedSolution(false);
+                      navigate({ csLessonId: next.id });
+                    }
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap"
+                >
+                  Bài tiếp →
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div>
+                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
+                  {currentLesson.title}
+                </h2>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <span>{currentLesson.topic}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                    Time: {currentLesson.complexity.time}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-mono text-blue-600 dark:text-blue-400">
+                    Space: {currentLesson.complexity.space}
+                  </span>
+                </div>
+              </div>
+
+              {/* 3 Lesson Room Sub-tabs */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-x-auto shrink-0">
+                <button
+                  onClick={() => navigate({ csLessonTab: 'lecture' })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                    lessonTab === 'lecture'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>1. Bài Giảng Chi Tiết</span>
+                </button>
+                <button
+                  onClick={() => navigate({ csLessonTab: 'code' })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                    lessonTab === 'code'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Code2 className="w-3.5 h-3.5" />
+                  <span>2. Code Mẫu C++ / Python</span>
+                </button>
+                <button
+                  onClick={() => navigate({ csLessonTab: 'practice' })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                    lessonTab === 'practice'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>3. Bài Tập &amp; Chấm Code</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* LESSON TAB 1: DEDICATED STEP-BY-STEP INTERACTIVE LECTURE */}
+          {lessonTab === 'lecture' && (
+            <InteractiveLectureRoom
+              lessonKey={currentLesson.id}
+              subjectAccent="blue"
+              kicker={`${currentLesson.vnoiPhase || currentLesson.level} · Bài ${currentLesson.lessonNumber} · Thời lượng ~${currentLesson.estimatedMinutes} phút`}
+              title={currentLesson.title}
+              subtitle={currentLesson.topic}
+              steps={
+                currentLesson.lectureSteps && currentLesson.lectureSteps.length > 0
+                  ? currentLesson.lectureSteps
+                  : currentLesson.theory.map((tItem, idx) => ({
+                      stepTitle: `Phần ${idx + 1}: Kiến thức trọng tâm`,
+                      stepType: 'concept',
+                      teacherExplanation: tItem
+                    }))
+              }
+              actions={[
+                {
+                  label: 'Xem Code Minh Họa C++/Python',
+                  onClick: () => navigate({ csLessonTab: 'code' }),
+                  variant: 'primary',
+                  icon: <Code2 className="w-4 h-4" />
+                },
+                {
+                  label: 'Làm Bài Tập & Chấm Online Judge',
+                  onClick: () => handleLoadIntoJudge(currentLesson.practiceProblem),
+                  variant: 'emerald',
+                  icon: <Zap className="w-4 h-4" />
+                }
+              ]}
+            />
+          )}
+
+          {/* LESSON TAB 2: ILLUSTRATED CODE (C++ / PYTHON) */}
+          {lessonTab === 'code' &&
+            (() => {
+              const activeCodeEx =
+                currentLesson.codeExamples.find((e) => e.language === curriculumLang) ||
+                currentLesson.codeExamples[0];
+              const displayCode = activeCodeEx?.code || '// Không có code mẫu';
+              const displayExplanation = activeCodeEx?.explanation || '';
+
+              return (
+                <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
+                    <div className="flex items-center gap-2">
+                      <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <div>
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                          Code Minh Họa Chuẩn Thi VNOI / HSG Quốc Gia
+                        </h3>
+                        <div className="text-xs text-slate-500">{activeCodeEx?.title}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg">
+                        <button
+                          onClick={() => setCurriculumLang('cpp')}
+                          className={`px-3 py-1 rounded text-xs font-semibold whitespace-nowrap transition-all ${
+                            curriculumLang === 'cpp'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          C++ 17/20 STL
+                        </button>
+                        <button
+                          onClick={() => setCurriculumLang('python')}
+                          className={`px-3 py-1 rounded text-xs font-semibold whitespace-nowrap transition-all ${
+                            curriculumLang === 'python'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          Python 3
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Language Switcher */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg">
-                      <button
-                        onClick={() => setCurriculumLang('cpp')}
-                        className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                  <div className="p-3 sm:p-4 bg-[#171814]">
+                    <MonokaiCodeBlock
+                      code={displayCode}
+                      language={curriculumLang}
+                      title={curriculumLang === 'cpp' ? 'example.cpp' : 'example.py'}
+                      onCopy={() => handleCopy(displayCode)}
+                      copied={copiedText === displayCode}
+                    />
+                  </div>
+
+                  {displayExplanation && (
+                    <div className="px-4 sm:px-6 py-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium">
+                      <FormattedText text={displayExplanation} />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+          {/* LESSON TAB 3: CONSOLIDATION PROBLEM + ONLINE JUDGE */}
+          {lessonTab === 'practice' && (
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-500" />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Bài Tập Thực Hành Chuẩn VNOI: {currentLesson.practiceProblem.title}
+                  </h3>
+                </div>
+
+                <button
+                  onClick={() => handleLoadIntoJudge(currentLesson.practiceProblem)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/20 whitespace-nowrap"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Nạp Bài Vào Trình Chấm Online Judge</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                <p className="leading-relaxed">{currentLesson.practiceProblem.description}</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+                  <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                    <div className="font-semibold text-slate-900 dark:text-white mb-1">
+                      Định dạng Input:
+                    </div>
+                    <div className="font-mono text-slate-600 dark:text-slate-300">
+                      {currentLesson.practiceProblem.inputFormat}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                    <div className="font-semibold text-slate-900 dark:text-white mb-1">
+                      Định dạng Output:
+                    </div>
+                    <div className="font-mono text-slate-600 dark:text-slate-300">
+                      {currentLesson.practiceProblem.outputFormat}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                  Độ khó: {currentLesson.practiceProblem.difficulty} · Thời gian: 1.0s · Bộ nhớ: 256MB
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-slate-900 dark:text-white">
+                  Ví dụ mẫu (Sample Cases):
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {currentLesson.practiceProblem.sampleCases.map((sc, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-slate-900 text-slate-100 rounded-xl p-3 font-mono text-xs space-y-1.5"
+                    >
+                      <div className="text-slate-400 text-[10px] uppercase font-bold">
+                        Ví dụ {idx + 1}
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Input:</span>
+                        <pre className="text-emerald-400">{sc.input.trim()}</pre>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Output:</span>
+                        <pre className="text-amber-400">{sc.output.trim()}</pre>
+                      </div>
+                      {sc.explanation && (
+                        <div className="text-slate-400 text-[11px] font-sans pt-1 border-t border-slate-800">
+                          {sc.explanation}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setRevealedSolution(!revealedSolution)}
+                  className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5"
+                >
+                  <span>
+                    {revealedSolution
+                      ? 'Ẩn lời giải chi tiết & source code mẫu'
+                      : 'Xem lời giải chi tiết & source code mẫu chuẩn AC'}
+                  </span>
+                </button>
+
+                {revealedSolution && (
+                  <div className="mt-3 p-5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-4 animate-fadeIn">
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                        Phân tích thuật toán &amp; Chiến lược tối ưu:
+                      </h4>
+                      <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                        <FormattedText text={currentLesson.practiceProblem.solutionAnalysis} />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                        Source code mẫu giải thuật ({curriculumLang === 'cpp' ? 'C++' : 'Python'}):
+                      </span>
+                      <MonokaiCodeBlock
+                        code={
                           curriculumLang === 'cpp'
-                            ? 'bg-blue-600 text-white shadow-xs'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                      >
-                        C++ 17/20 STL
-                      </button>
-                      <button
-                        onClick={() => setCurriculumLang('python')}
-                        className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                          curriculumLang === 'python'
-                            ? 'bg-blue-600 text-white shadow-xs'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                      >
-                        Python 3
-                      </button>
+                            ? currentLesson.practiceProblem.fullSolutionCpp
+                            : currentLesson.practiceProblem.fullSolutionPython
+                        }
+                        language={curriculumLang}
+                        title={curriculumLang === 'cpp' ? 'solution.cpp' : 'solution.py'}
+                        maxHeightClass="max-h-[360px]"
+                      />
                     </div>
-                  </div>
-                </div>
-
-                {/* Authentic Sublime Monokai Code Block */}
-                <div className="p-3 sm:p-4 bg-[#171814]">
-                  <MonokaiCodeBlock
-                    code={displayCode}
-                    language={curriculumLang}
-                    title={curriculumLang === 'cpp' ? 'example.cpp' : 'example.py'}
-                    onCopy={() => handleCopy(displayCode)}
-                    copied={copiedText === displayCode}
-                  />
-                </div>
-
-                {/* Code analysis note */}
-                {displayExplanation && (
-                  <div className="px-4 sm:px-6 py-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium">
-                    <FormattedText text={displayExplanation} />
                   </div>
                 )}
               </div>
-            );
-          })()}
-
-          {/* Section 3: Consolidation Problem + Step-by-Step Solution */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
-              <div className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-amber-500" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  3. Bài Tập Củng Cố Sau Bài Học: {currentLesson.practiceProblem.title}
-                </h3>
-              </div>
-
-              {/* Action Button: Load into Online Judge */}
-              <button
-                onClick={() => handleLoadIntoJudge(currentLesson.practiceProblem)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/20"
-              >
-                <Zap className="w-4 h-4" />
-                <span>Nạp Bài Vào Trình Chấm Online Judge</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
             </div>
-
-            {/* Problem Details */}
-            <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
-              <p className="leading-relaxed">{currentLesson.practiceProblem.description}</p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
-                <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                  <div className="font-semibold text-slate-900 dark:text-white mb-1">
-                    Định dạng Input:
-                  </div>
-                  <div className="font-mono text-slate-600 dark:text-slate-300">
-                    {currentLesson.practiceProblem.inputFormat}
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                  <div className="font-semibold text-slate-900 dark:text-white mb-1">
-                    Định dạng Output:
-                  </div>
-                  <div className="font-mono text-slate-600 dark:text-slate-300">
-                    {currentLesson.practiceProblem.outputFormat}
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                Độ khó: {currentLesson.practiceProblem.difficulty} | Thời gian: 1.0s | Bộ nhớ: 256MB
-              </div>
-            </div>
-
-            {/* Sample Cases Table */}
-            <div className="space-y-2">
-              <div className="text-xs font-bold text-slate-900 dark:text-white">
-                Ví dụ mẫu (Sample Cases):
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {currentLesson.practiceProblem.sampleCases.map((sc, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-slate-900 text-slate-100 rounded-xl p-3 font-mono text-xs space-y-1.5"
-                  >
-                    <div className="text-slate-400 text-[10px] uppercase font-bold">
-                      Ví dụ {idx + 1}
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Input:</span>
-                      <pre className="text-emerald-400">{sc.input.trim()}</pre>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Output:</span>
-                      <pre className="text-amber-400">{sc.output.trim()}</pre>
-                    </div>
-                    {sc.explanation && (
-                      <div className="text-slate-400 text-[11px] font-sans pt-1 border-t border-slate-800">
-                        {sc.explanation}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Collapsible Step-by-Step Solution & Full Code */}
-            <div className="pt-2">
-              <button
-                onClick={() => setRevealedSolution(!revealedSolution)}
-                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5"
-              >
-                <span>
-                  {revealedSolution
-                    ? 'Ẩn lời giải chi tiết & source code mẫu'
-                    : 'Xem lời giải chi tiết & source code mẫu chuẩn AC'}
-                </span>
-              </button>
-
-              {revealedSolution && (
-                <div className="mt-3 p-5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-4 animate-fadeIn">
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                      Phân tích thuật toán & Chiến lược tối ưu:
-                    </h4>
-                    <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
-                      <FormattedText text={currentLesson.practiceProblem.solutionAnalysis} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold text-slate-900 dark:text-white block">
-                      Source code mẫu giải thuật ({curriculumLang === 'cpp' ? 'C++' : 'Python'}):
-                    </span>
-                    <MonokaiCodeBlock
-                      code={
-                        curriculumLang === 'cpp'
-                          ? currentLesson.practiceProblem.fullSolutionCpp
-                          : currentLesson.practiceProblem.fullSolutionPython
-                      }
-                      language={curriculumLang}
-                      title={curriculumLang === 'cpp' ? 'solution.cpp' : 'solution.py'}
-                      maxHeightClass="max-h-[360px]"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -713,12 +858,24 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 >
                 <div className="p-3.5 border-b border-[#3e3d32] bg-[#171814] space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <label className="text-[11px] font-bold text-[#e6db74] uppercase tracking-wider">
-                      Chọn đề bài chấm:
-                    </label>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {!isJudgeFullscreen && (
+                        <button
+                          onClick={goBack}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[11px] font-bold text-[#66d9ef] shrink-0"
+                          title="Quay lại trang trước"
+                        >
+                          <ArrowLeft className="w-3 h-3" />
+                          <span>Quay lại</span>
+                        </button>
+                      )}
+                      <label className="text-[11px] font-bold text-[#e6db74] uppercase tracking-wider truncate">
+                        Chọn đề bài:
+                      </label>
+                    </div>
                     <button
                       onClick={() => setIsJudgeFullscreen(!isJudgeFullscreen)}
-                      className="hidden lg:inline-flex items-center gap-1 px-2 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[11px] text-[#66d9ef]"
+                      className="hidden lg:inline-flex items-center gap-1 px-2 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[11px] text-[#66d9ef] shrink-0"
                     >
                       {isJudgeFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
                       <span>{isJudgeFullscreen ? 'Thu nhỏ' : 'Split Fullscreen'}</span>
@@ -1078,7 +1235,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       {viewMode === 'custom' && (
         <SublimeStudio
           onScoreEarned={onScoreEarned}
-          onBack={() => setViewMode('curriculum')}
+          onBack={goBack}
         />
       )}
     </div>

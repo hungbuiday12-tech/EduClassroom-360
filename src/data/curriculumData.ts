@@ -3,11 +3,12 @@ import {
   PhysicsExperiment,
   CodingProblem,
 } from '../types';
+import { CHUYEN_MATH_LECTURES, MATH_METADATA_AND_ESSAYS } from './mathChuyenData';
 export { PHYSICS_LESSONS } from './physicsLessonsData';
 export { CS_LESSONS } from './csLessonsData';
 
 
-export const MATH_LECTURES: MathLecture[] = [
+const BASE_MATH_LECTURES: MathLecture[] = [
   {
     id: 'math-1',
     title: 'Khảo sát sự biến thiên & Đồ thị hàm số bậc ba',
@@ -1787,6 +1788,23 @@ export const MATH_LECTURES: MathLecture[] = [
       name: 'y = e^(0.7x)'
     }
   }
+];
+
+export const MATH_LECTURES: MathLecture[] = [
+  ...BASE_MATH_LECTURES.map((lec) => {
+    const meta = MATH_METADATA_AND_ESSAYS[lec.id];
+    if (!meta) return { track: 'khong_chuyen' as const, ...lec };
+    return {
+      ...lec,
+      track: meta.track,
+      gradeGroup: meta.gradeGroup,
+      sim2dMode: lec.sim2dMode ?? meta.sim2dMode,
+      sim3dMode: lec.sim3dMode ?? meta.sim3dMode,
+      defaultGraphConfig: lec.defaultGraphConfig ?? meta.defaultGraphConfig,
+      essayProblems: lec.essayProblems ?? meta.essayProblems,
+    };
+  }),
+  ...CHUYEN_MATH_LECTURES,
 ];
 
 export const PHYSICS_EXPERIMENTS: PhysicsExperiment[] = [

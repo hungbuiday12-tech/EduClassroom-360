@@ -15,12 +15,13 @@ import {
   Code2,
   BookOpen
 } from 'lucide-react';
-import { RoadmapNode, SubjectType, TutorContextPayload } from '../../types';
+import { PersonalizedRoadmapResult, RoadmapNode, SubjectType, TutorContextPayload } from '../../types';
 import { ROADMAP_NODES, WORKFLOW_STAGES } from '../../data/roadmapData';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { FormattedText } from '../common/MathRenderer';
 import { db, doc, getDoc, setDoc, handleFirestoreError, OperationType } from '../../lib/firebase';
+import { AI_ROADMAPS_STORAGE_KEY } from '../tutor/SocraticAITutor';
 
 interface LearningRoadmapProps {
   onBack: () => void;
@@ -54,6 +55,26 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
       return [];
     }
   });
+
+  const [aiRoadmaps, setAiRoadmaps] = useState<Partial<Record<'math' | 'physics' | 'cs', PersonalizedRoadmapResult>>>(() => {
+    try {
+      const saved = localStorage.getItem(AI_ROADMAPS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    const syncAiRoadmaps = () => {
+      try {
+        const saved = localStorage.getItem(AI_ROADMAPS_STORAGE_KEY);
+        setAiRoadmaps(saved ? JSON.parse(saved) : {});
+      } catch {}
+    };
+    window.addEventListener('educlassroom:roadmap-updated', syncAiRoadmaps);
+    return () => window.removeEventListener('educlassroom:roadmap-updated', syncAiRoadmaps);
+  }, []);
 
   // Load roadmap completion from Firestore if signed into Firebase
   useEffect(() => {
@@ -195,6 +216,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
               onClick={() =>
                 onOpenTutor({
                   subject: activeNode.subject,
+                  mode: 'diagnostic_roadmap',
                   topicTitle: activeNode.title,
                   grade: activeNode.grade
                 })
@@ -202,11 +224,84 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
               className="px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors whitespace-nowrap shrink-0"
             >
               <Sparkles className="w-4 h-4" />
-              <span>{isEn ? 'Ask Socratic AI Tutor' : 'Hỏi Gia Sư AI'}</span>
+              <span>{isEn ? 'AI Mode 3: Build My Roadmap' : 'AI Chế Độ 3: Tạo Sơ Đồ Riêng'}</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* PERSONALIZED AI ROADMAPS FROM MODE 3 (IF CREATED) */}
+      {Object.values(aiRoadmaps).some(Boolean) && (
+        <div className="bg-white dark:bg-slate-900 border border-emerald-300/70 dark:border-emerald-800/70 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+                {isEn ? 'Your AI-Diagnosed Personalized Roadmaps' : 'Sơ Đồ Học Tập Cá Nhân Hóa Từ AI Chế Độ 3'}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {isEn
+                  ? 'Built from your skill assessment & specialization choices.'
+                  : 'Được tổng hợp từ bài kiểm tra kỹ năng chuyên môn và định hướng chuyên ngành của bạn.'}
+              </p>
+            </div>
+            <button
+              onClick={() => onOpenTutor({ subject: 'math', mode: 'diagnostic_roadmap' })}
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline self-start sm:self-auto"
+            >
+              {isEn ? 'Re-assess with AI →' : 'Đánh giá lại với AI →'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(['math', 'physics', 'cs'] as const).map((subj) => {
+              const rm = aiRoadmaps[subj];
+              if (!rm) return null;
+              return (
+                <div
+                  key={subj}
+                  className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5 flex flex-col justify-between"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-900 dark:text-slate-100">
+                        {getSubjectName(subj)} · {rm.grade}
+                      </span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                        {rm.knowledgeScore}%
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+                      {rm.targetMajor}
+                    </p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                      {rm.estimatedLevel}
+                    </p>
+                    <div className="space-y-1 pt-1">
+                      {rm.stages.slice(0, 3).map((st) => (
+                        <div key={st.step} className="text-[11px] text-slate-700 dark:text-slate-300 truncate">
+                          0{st.step}. {st.title}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      onOpenTutor({
+                        subject: subj,
+                        mode: 'diagnostic_roadmap'
+                      })
+                    }
+                    className="w-full py-2 px-3 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold hover:opacity-90 transition-opacity"
+                  >
+                    {isEn ? 'View Full Flowchart' : 'Mở Sơ Đồ Chi Tiết'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* SECTION 1: 5-STEP PROCEDURAL LEARNING WORKFLOW */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">

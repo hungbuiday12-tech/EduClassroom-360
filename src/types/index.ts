@@ -293,7 +293,9 @@ export interface RoadmapNode {
   checkQuestions: string[];
 }
 
-// Socratic AI Tutor Types
+// Socratic AI Tutor & 3-Mode Multi-Subject AI Types
+export type AITutorMode = 'explain_no_answer' | 'full_solution' | 'diagnostic_roadmap';
+
 export interface TutorMessage {
   id: string;
   role: 'user' | 'tutor';
@@ -304,9 +306,47 @@ export interface TutorMessage {
 
 export interface TutorContextPayload {
   subject: SubjectType;
+  mode?: AITutorMode;
   topicTitle?: string;
   problemStatement?: string;
   grade?: string;
+}
+
+export interface DiagnosticQuestion {
+  id: string;
+  category: 'knowledge' | 'specialization';
+  topicTag: string;
+  question: string;
+  options: string[];
+  correctIndex?: number; // present for 'knowledge' questions
+}
+
+export interface PersonalizedRoadmapStage {
+  step: number;
+  phase: string;
+  title: string;
+  durationWeeks: number;
+  dailyMinutes: number;
+  focusTopics: string[];
+  recommendedModule: 'math' | 'physics' | 'cs' | 'exams' | 'arena' | 'roadmap';
+  concreteTasks: string[];
+  targetMilestone: string;
+}
+
+export interface PersonalizedRoadmapResult {
+  subject: 'math' | 'physics' | 'cs';
+  grade: string;
+  targetMajor: string;
+  estimatedLevel: string;
+  knowledgeScore: number;
+  knowledgeCorrect: number;
+  knowledgeTotal: number;
+  strengths: string[];
+  weaknesses: string[];
+  majorAdvice: string;
+  dailyScheduleSummary: string;
+  stages: PersonalizedRoadmapStage[];
+  createdAt: string;
 }
 
 // Weekly Online Competition Arena Types

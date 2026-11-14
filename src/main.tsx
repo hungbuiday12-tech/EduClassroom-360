@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import 'katex/dist/katex.min.css';
 import { LanguageProvider } from './context/LanguageContext';
+import { BackgroundProvider } from './context/BackgroundContext';
 
 interface Props {
   children: ReactNode;
@@ -61,7 +62,9 @@ if (rootElement) {
   createRoot(rootElement).render(
     <ErrorBoundary>
       <LanguageProvider>
-        <App />
+        <BackgroundProvider>
+          <App />
+        </BackgroundProvider>
       </LanguageProvider>
     </ErrorBoundary>
   );

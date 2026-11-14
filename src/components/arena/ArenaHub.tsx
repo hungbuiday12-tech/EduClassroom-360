@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
+import { safeFetchJson } from '../../lib/apiClient';
 import {
   ArrowLeft,
   Award,
@@ -207,9 +208,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
         dateKey,
         userId: activeContestant.uid
       });
-      const res = await fetch(`/api/arena/state?${params.toString()}`);
-      if (!res.ok) return;
-      const data = await res.json();
+      const res = await safeFetchJson<any>(`/api/arena/state?${params.toString()}`);
+      if (!res.ok || !res.data) return;
+      const data = res.data;
       if (Array.isArray(data.leaderboard)) {
         setServerLeaderboard(data.leaderboard);
       }
@@ -350,17 +351,17 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
   const commitAttemptToBackendAndFirestore = async (
     payload: Omit<ArenaAttempt, 'id' | 'createdAt'>
   ): Promise<ArenaAttempt> => {
-    const res = await fetch('/api/arena/submit', {
+    const res = await safeFetchJson<any>('/api/arena/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error(data?.error || 'Không thể lưu điểm thi đấu hôm nay.');
+    if (!res.ok || !res.data?.attempt) {
+      throw new Error(res.error || 'Không thể lưu điểm thi đấu hôm nay.');
     }
 
+    const data = res.data;
     const savedAttempt: ArenaAttempt = data.attempt;
 
     // Persist locally
@@ -542,7 +543,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
         extraCodeNote = `\n[KẾT QUẢ CHẠY SANDBOX ${csLang.toUpperCase()}: ${passedTests}/${essay.sampleCode.tests.length} test đạt (${details.join('; ')})]`;
       }
 
-      const gradeRes = await fetch('/api/gemini/grade-essay', {
+      const gradeRes = await safeFetchJson<any>('/api/gemini/grade-essay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -558,12 +559,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
         })
       });
 
-      const gradeData = await gradeRes.json();
-      if (!gradeRes.ok || !gradeData.evaluation) {
-        throw new Error(gradeData?.error || 'Không thể chấm bài tự luận lúc này.');
+      if (!gradeRes.ok || !gradeRes.data?.evaluation) {
+        throw new Error(gradeRes.error || 'Không thể chấm bài tự luận lúc này.');
       }
 
-      const evaluation: ArenaEssayEvaluation = gradeData.evaluation;
+      const evaluation: ArenaEssayEvaluation = gradeRes.data.evaluation;
       const durationSec = Math.max(10, Math.floor((Date.now() - activeMatch.startedAt) / 1000));
 
       const attempt = await commitAttemptToBackendAndFirestore({

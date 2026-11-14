@@ -86,6 +86,15 @@ export const GeometryStudio: React.FC = () => {
   // Overall studio navigation & fullscreen state
   const [studioMode, setStudioMode] = useState<StudioMode>('free_construction');
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+  const [resizeTick, setResizeTick] = useState(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setResizeTick((t) => t + 1));
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, []);
 
   // Presets state
   const [activePreset, setActivePreset] = useState<GeoPreset>('pythagoras');
@@ -247,9 +256,10 @@ export const GeometryStudio: React.FC = () => {
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
+    if (rect.width <= 0 || rect.height <= 0) return;
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const width = rect.width;
     const height = rect.height;
@@ -936,7 +946,8 @@ export const GeometryStudio: React.FC = () => {
     spatialRotation,
     spatialHeight,
     showGrid,
-    showMeasurements
+    showMeasurements,
+    resizeTick
   ]);
 
   // Handle Canvas Pointer Actions (mouse + touch + stylus)
@@ -1318,8 +1329,8 @@ export const GeometryStudio: React.FC = () => {
 
         {/* Free Construction Active Tool Palette Banner */}
         {studioMode === 'free_construction' && (
-          <div className="flex flex-wrap items-center justify-between px-4 py-2 border-b border-slate-200/60 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/40 gap-2">
-            <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-between px-3 sm:px-4 py-2 border-b border-slate-200/60 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/40 gap-2">
+            <div className="flex sm:flex-wrap items-center gap-1.5 overflow-x-auto sm:overflow-visible scrollbar-none pb-0.5 sm:pb-0 max-w-full [&>button]:whitespace-nowrap [&>button]:shrink-0">
               <button
                 onClick={() => setActiveTool('select')}
                 className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
@@ -1492,27 +1503,29 @@ export const GeometryStudio: React.FC = () => {
         )}
 
         {/* Canvas Area */}
-        <div className="relative flex-1 min-h-[360px] sm:min-h-[500px] bg-slate-900/5 dark:bg-black/25">
-          <canvas
-            ref={canvasRef}
-            onPointerDown={handleCanvasMouseDown}
-            onPointerMove={handleCanvasMouseMove}
-            onPointerUp={handleCanvasMouseUp}
-            onPointerCancel={handleCanvasMouseUp}
-            onPointerLeave={handleCanvasMouseUp}
-            className="w-full h-full cursor-crosshair block touch-none"
-          />
+        <div className="relative flex-1 flex flex-col sm:block min-h-[300px] sm:min-h-[500px] bg-slate-900/5 dark:bg-black/25">
+          <div className="relative w-full h-[300px] sm:h-full">
+            <canvas
+              ref={canvasRef}
+              onPointerDown={handleCanvasMouseDown}
+              onPointerMove={handleCanvasMouseMove}
+              onPointerUp={handleCanvasMouseUp}
+              onPointerCancel={handleCanvasMouseUp}
+              onPointerLeave={handleCanvasMouseUp}
+              className="w-full h-full cursor-crosshair block touch-none"
+            />
 
-          {/* Pending Point Floating Instruction */}
-          {pendingPointId && (
-            <div className="absolute top-3 left-4 bg-indigo-600/90 text-white text-xs px-3 py-1.5 rounded-lg shadow-md backdrop-blur-sm animate-pulse">
-              Đang chọn điểm thứ 2 để hoàn tất dựng hình...
-            </div>
-          )}
+            {/* Pending Point Floating Instruction */}
+            {pendingPointId && (
+              <div className="absolute top-3 left-3 sm:left-4 bg-indigo-600/90 text-white text-xs px-3 py-1.5 rounded-lg shadow-md backdrop-blur-sm animate-pulse">
+                Đang chọn điểm thứ 2 để hoàn tất dựng hình...
+              </div>
+            )}
+          </div>
 
-          {/* Instructions Overlay Bottom Left */}
-          <div className="absolute bottom-3 left-4 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-lg px-3 py-1.5 text-[11px] text-slate-600 dark:text-slate-400 shadow-sm flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+          {/* Instructions Overlay (Below canvas on mobile < sm, floating bottom-left on sm+) */}
+          <div className="relative sm:absolute sm:bottom-3 sm:left-4 m-2 sm:m-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-lg px-3 py-1.5 text-[11px] text-slate-600 dark:text-slate-400 shadow-sm flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block shrink-0" />
             <span>
               {studioMode === 'free_construction'
                 ? activeTool === 'segment'

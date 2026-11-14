@@ -59,6 +59,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
   // Refs for animation
   const sceneRef = useRef<THREE.Scene | null>(null);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
+  const isRunningRef = useRef<boolean>(isRunning);
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+  }, [isRunning]);
   const simStateRef = useRef({
     time: 0,
     projT: 0,
@@ -166,7 +170,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
 
-      if (isRunning) {
+      if (isRunningRef.current) {
         simStateRef.current.time += dt;
         simStateRef.current.projT += dt;
         simStateRef.current.electronAngle += dt * 3.0;
@@ -177,20 +181,24 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     };
     animate();
 
-    // Resize handler
+    // Resize handler + ResizeObserver
     const handleResize = () => {
       if (!container || !renderer) return;
       const width = container.clientWidth;
       const height = container.clientHeight;
-      camera.aspect = width / Math.max(height, 200);
+      if (width <= 0 || height <= 0) return;
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
     };
     window.addEventListener('resize', handleResize);
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
+    if (resizeObserver) resizeObserver.observe(container);
 
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener('resize', handleResize);
+      resizeObserver?.disconnect();
       controls.dispose();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
@@ -578,16 +586,15 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
   return (
     <ViewportPortal active={isFullscreen}>
       <div
-        className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all ${
-          isFullscreen ? 'fixed inset-0 z-[100] h-[100dvh] w-screen rounded-none' : 'rounded-3xl h-[470px] sm:h-[560px] lg:h-[620px]'
+        className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col lg:block ${
+          isFullscreen
+            ? 'fixed inset-0 z-[100] h-[100dvh] w-screen rounded-none'
+            : 'rounded-2xl sm:rounded-3xl min-h-[540px] lg:min-h-0 lg:h-[620px]'
         }`}
       >
-        {/* 3D WebGL Canvas */}
-        <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
-
-        {/* TOP HEADER OVERLAY */}
-        <div className="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pointer-events-none">
-          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white shadow-lg max-w-full">
+        {/* TOP HEADER OVERLAY (Stacked on < lg to prevent overlapping 3D viewport, floating on lg+) */}
+        <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:top-4 lg:left-4 lg:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/95 lg:bg-transparent border-b border-slate-800/80 lg:border-b-0 lg:pointer-events-none shrink-0">
+          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-800/70 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white shadow-lg max-w-full">
             {isFullscreen && (
               <button
                 onClick={() => setIsFullscreen(false)}
@@ -607,73 +614,81 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
             </span>
           </div>
 
-        <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
-          {/* Mode Switcher Buttons (scrollable on phones & iPads) */}
-          <div className="flex items-center gap-1 p-1 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-lg overflow-x-auto max-w-full scrollbar-none">
+          <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
+            {/* Mode Switcher Buttons (scrollable on phones & iPads) */}
+            <div className="flex items-center gap-1 p-1 bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-lg overflow-x-auto max-w-full scrollbar-none">
+              <button
+                onClick={() => setMode('pendulum_spring')}
+                className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
+                  mode === 'pendulum_spring' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Con Lắc 3D
+              </button>
+              <button
+                onClick={() => setMode('projectile_3d')}
+                className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
+                  mode === 'projectile_3d' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Ném Xiên 3D
+              </button>
+              <button
+                onClick={() => setMode('lorentz_helix')}
+                className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
+                  mode === 'lorentz_helix' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Từ Trường Lorentz
+              </button>
+              <button
+                onClick={() => setMode('wave_ripple')}
+                className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
+                  mode === 'wave_ripple' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Sóng Nước 3D
+              </button>
+              <button
+                onClick={() => setMode('bohr_atom')}
+                className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
+                  mode === 'bohr_atom' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Nguyên Tử Bohr
+              </button>
+            </div>
+
+            {/* Play/Pause */}
             <button
-              onClick={() => setMode('pendulum_spring')}
-              className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                mode === 'pendulum_spring' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-              }`}
+              onClick={() => setIsRunning(!isRunning)}
+              className="p-2 rounded-xl bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
+              title={isRunning ? 'Tạm dừng mô phỏng' : 'Tiếp tục mô phỏng'}
             >
-              Con Lắc 3D
+              {isRunning ? <Pause className="w-4 h-4 text-amber-400" /> : <Play className="w-4 h-4 text-emerald-400" />}
             </button>
+
+            {/* Fullscreen */}
             <button
-              onClick={() => setMode('projectile_3d')}
-              className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                mode === 'projectile_3d' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-              }`}
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 rounded-xl bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
             >
-              Ném Xiên 3D
-            </button>
-            <button
-              onClick={() => setMode('lorentz_helix')}
-              className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                mode === 'lorentz_helix' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              Từ Trường Lorentz
-            </button>
-            <button
-              onClick={() => setMode('wave_ripple')}
-              className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                mode === 'wave_ripple' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              Sóng Nước 3D
-            </button>
-            <button
-              onClick={() => setMode('bohr_atom')}
-              className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                mode === 'bohr_atom' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              Nguyên Tử Bohr
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>
-
-          {/* Play/Pause */}
-          <button
-            onClick={() => setIsRunning(!isRunning)}
-            className="p-2 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer"
-            title={isRunning ? 'Tạm dừng mô phỏng' : 'Tiếp tục mô phỏng'}
-          >
-            {isRunning ? <Pause className="w-4 h-4 text-amber-400" /> : <Play className="w-4 h-4 text-emerald-400" />}
-          </button>
-
-          {/* Fullscreen */}
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer"
-          >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
         </div>
-      </div>
 
-      {/* ERGONOMIC COLLAPSIBLE BOTTOM CONTROL DOCK */}
-      <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 w-[96%] max-w-3xl pointer-events-none z-20">
-        <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[210px] sm:max-h-none overflow-y-auto">
+        {/* 3D WebGL Canvas (Unobstructed middle stage on < lg, full height on lg+) */}
+        <div
+          ref={mountRef}
+          className={`w-full cursor-grab active:cursor-grabbing touch-none ${
+            isFullscreen ? 'flex-1 min-h-[240px] lg:h-full' : 'h-[270px] sm:h-[340px] lg:h-full'
+          }`}
+        />
+
+        {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK (Below canvas on < lg, floating dock on lg+) */}
+        <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 w-full lg:w-[96%] lg:max-w-3xl lg:pointer-events-none bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
+          <div className="pointer-events-auto bg-slate-900/95 lg:bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[34dvh] sm:max-h-[240px] lg:max-h-none overflow-y-auto">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
               <Sliders className="w-3.5 h-3.5 text-amber-400" />
@@ -727,7 +742,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
 
                     <div>
                       <span className="block text-slate-300 mb-1">Trọng trường g:</span>
-                      <div className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-1">
                         <button
                           onClick={() => setGravityPreset('earth')}
                           className={`px-2 py-1 rounded text-[11px] font-bold ${
@@ -889,7 +904,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
               {/* 5. Bohr Atom */}
               {mode === 'bohr_atom' && (
                 <div className="space-y-2.5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs text-slate-300">Mức quỹ đạo dừng n:</span>
                     {[1, 2, 3, 4].map((level) => (
                       <button

@@ -1,5 +1,6 @@
 import { CodeLanguage, CodingProblem, TestCase } from '../../types';
 import { executeCode } from './codeRunner';
+import { safeFetchJson } from '../../lib/apiClient';
 
 export interface UserSamplePair {
   input: string;
@@ -591,7 +592,7 @@ export async function analyzeProblemAndGenerateTests(
 
   // 1. Try Server AI Endpoint (/api/gemini/analyze-problem) if available
   try {
-    const res = await fetch('/api/gemini/analyze-problem', {
+    const res = await safeFetchJson<any>('/api/gemini/analyze-problem', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -601,8 +602,8 @@ export async function analyzeProblemAndGenerateTests(
       })
     });
 
-    if (res.ok) {
-      const data = await res.json();
+    if (res.ok && res.data) {
+      const data = res.data;
       if (data.success && data.problem) {
         const aiSamples: TestCase[] = Array.isArray(data.problem.sampleCases)
           ? data.problem.sampleCases.map((tc: any, idx: number) => ({

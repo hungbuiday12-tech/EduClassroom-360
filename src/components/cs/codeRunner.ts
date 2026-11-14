@@ -1,4 +1,5 @@
 import { CodeLanguage, CodingProblem, TestCase, TestResult } from '../../types';
+import { safeFetchJson } from '../../lib/apiClient';
 
 /**
  * Standard ICPC / IOI / VNOI output comparator:
@@ -1973,13 +1974,13 @@ export async function executeCode(
 
   // 3. Optional server verification fallback if advanced C++/Python constructs (e.g. templates/classes) hit local limits
   try {
-    const response = await fetch('/api/gemini/run-code', {
+    const response = await safeFetchJson<any>('/api/gemini/run-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, language, input })
     });
-    if (response.ok) {
-      const data = await response.json();
+    if (response.ok && response.data) {
+      const data = response.data;
       if (data && typeof data.stdout === 'string') {
         const endTime = performance.now();
         return {

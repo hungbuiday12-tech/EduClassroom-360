@@ -65,6 +65,15 @@ export const FunctionGrapher: React.FC = () => {
   const [activeFuncId, setActiveFuncId] = useState<string>('f1');
   const [showTable, setShowTable] = useState<boolean>(false);
   const [hoverCoord, setHoverCoord] = useState<{ x: number; y: number } | null>(null);
+  const [resizeTick, setResizeTick] = useState(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setResizeTick((t) => t + 1));
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, []);
 
   // Keyboard shortcut listener to exit fullscreen on Escape
   useEffect(() => {
@@ -154,9 +163,10 @@ export const FunctionGrapher: React.FC = () => {
     // Handle high DPI
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
+    if (rect.width <= 0 || rect.height <= 0) return;
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const width = rect.width;
     const height = rect.height;
@@ -403,7 +413,7 @@ export const FunctionGrapher: React.FC = () => {
       ctx.stroke();
       ctx.restore();
     }
-  }, [viewport, functions, evaluateFunc, evaluateDerivative, hoverCoord]);
+  }, [viewport, functions, evaluateFunc, evaluateDerivative, hoverCoord, resizeTick]);
 
   // Pointer (mouse + touch + stylus) pan handlers
   const handleMouseDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -594,50 +604,52 @@ export const FunctionGrapher: React.FC = () => {
           </div>
 
           {/* Canvas Area */}
-          <div className="relative flex-1 min-h-[340px] sm:min-h-[460px] bg-slate-900/5 dark:bg-black/20">
-          <canvas
-            ref={canvasRef}
-            onPointerDown={handleMouseDown}
-            onPointerMove={handleMouseMove}
-            onPointerUp={handleMouseUp}
-            onPointerCancel={handleMouseUp}
-            onPointerLeave={() => {
-              setIsDragging(false);
-              setHoverCoord(null);
-            }}
-            onWheel={handleWheel}
-            className="w-full h-full cursor-grab active:cursor-grabbing block touch-none"
-          />
-
-          {/* Table Slide-Over */}
-          {showTable && (
-            <div className="absolute top-3 right-3 w-64 max-h-[90%] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-lg p-3 shadow-lg overflow-y-auto">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 mb-2">
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Bảng giá trị: {activeFunc?.name}</span>
-                <button onClick={() => setShowTable(false)} className="text-slate-400 hover:text-slate-600 text-xs">✕</button>
-              </div>
-              <table className="w-full text-xs font-mono tabular-nums">
-                <thead>
-                  <tr className="text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                    <th className="py-1 text-left">x</th>
-                    <th className="py-1 text-right">f(x)</th>
-                    <th className="py-1 text-right">f'(x)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableData.map((row) => (
-                    <tr key={row.x} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800">
-                      <td className="py-1 text-slate-700 dark:text-slate-300">{row.x}</td>
-                      <td className="py-1 text-right text-indigo-600 dark:text-indigo-400 font-medium">{row.y}</td>
-                      <td className="py-1 text-right text-amber-600 dark:text-amber-400">{row.dy}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="relative flex-1 flex flex-col sm:block min-h-[290px] sm:min-h-[460px] bg-slate-900/5 dark:bg-black/20">
+            <div className="relative w-full h-[290px] sm:h-full">
+              <canvas
+                ref={canvasRef}
+                onPointerDown={handleMouseDown}
+                onPointerMove={handleMouseMove}
+                onPointerUp={handleMouseUp}
+                onPointerCancel={handleMouseUp}
+                onPointerLeave={() => {
+                  setIsDragging(false);
+                  setHoverCoord(null);
+                }}
+                onWheel={handleWheel}
+                className="w-full h-full cursor-grab active:cursor-grabbing block touch-none"
+              />
             </div>
-          )}
+
+            {/* Table Slide-Over (Below canvas on mobile < sm, floating top-right on sm+) */}
+            {showTable && (
+              <div className="relative sm:absolute sm:top-3 sm:right-3 w-full sm:w-64 max-h-56 sm:max-h-[90%] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t sm:border border-slate-200 dark:border-slate-800 sm:rounded-lg p-3 shadow-lg overflow-y-auto z-10">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 mb-2">
+                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Bảng giá trị: {activeFunc?.name}</span>
+                  <button onClick={() => setShowTable(false)} className="text-slate-400 hover:text-slate-600 text-xs">✕</button>
+                </div>
+                <table className="w-full text-xs font-mono tabular-nums">
+                  <thead>
+                    <tr className="text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                      <th className="py-1 text-left">x</th>
+                      <th className="py-1 text-right">f(x)</th>
+                      <th className="py-1 text-right">f'(x)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableData.map((row) => (
+                      <tr key={row.x} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <td className="py-1 text-slate-700 dark:text-slate-300">{row.x}</td>
+                        <td className="py-1 text-right text-indigo-600 dark:text-indigo-400 font-medium">{row.y}</td>
+                        <td className="py-1 text-right text-amber-600 dark:text-amber-400">{row.dy}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* RIGHT: Parameter & Function Controls */}
       <div className={`w-full lg:w-96 flex flex-col gap-4 ${isFullScreen ? 'lg:overflow-y-auto lg:pr-1 shrink-0 pb-4 lg:pb-0' : ''}`}>

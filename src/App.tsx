@@ -210,15 +210,16 @@ function MainApp() {
             </AnimatePresence>
           </main>
 
-          {/* Global Socratic AI Tutor Drawer & Floating Trigger */}
+          {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Compact Mobile Floating Trigger */}
           {!isTutorOpen && (
             <button
               onClick={() => handleOpenTutor()}
-              className="fixed bottom-4 right-4 z-[85] px-4 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xl flex items-center gap-2 transition-transform hover:scale-105"
-              title="Mở Gia sư AI Socratic (Hỏi chỗ chưa hiểu)"
+              className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[85] px-3 py-2 sm:px-4 sm:py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-transform hover:scale-105"
+              title="Mở Trợ Giảng AI 3 Môn · 3 Chế Độ"
             >
-              <Sparkles className="w-4 h-4" />
-              <span>Gia Sư AI (Hỏi Chỗ Chưa Hiểu)</span>
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span className="sm:hidden">AI 3 Chế Độ</span>
+              <span className="hidden sm:inline">Gia Sư AI (Toán · Lí · Tin)</span>
             </button>
           )}
           <SocraticAITutor
@@ -226,6 +227,10 @@ function MainApp() {
             onClose={() => setIsTutorOpen(false)}
             context={tutorContext}
             onChangeSubject={(subj) => setTutorContext((prev) => ({ ...prev, subject: subj }))}
+            onNavigateSubject={(subj) => {
+              setCurrentSubject(subj);
+              setIsTutorOpen(false);
+            }}
           />
 
           {/* Welcome Screen & Authentication Modal for in-app login */}

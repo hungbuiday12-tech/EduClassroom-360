@@ -167,13 +167,17 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        animFrameIdRef.current = requestAnimationFrame(render);
+        return;
+      }
       if (canvas.width !== Math.floor(rect.width * dpr) || canvas.height !== Math.floor(rect.height * dpr)) {
         canvas.width = Math.floor(rect.width * dpr);
         canvas.height = Math.floor(rect.height * dpr);
       }
 
       ctx.save();
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const w = rect.width;
       const h = rect.height;
       const isDark = document.documentElement.classList.contains('dark');
@@ -459,7 +463,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
           : 'Ảnh ảo, cùng chiều với vật, quan sát trực tiếp qua thấu kính.'
     });
 
-    const scale = 5.5; // pixel per cm
+    const s = Math.min(1, w / 560, h / 320);
+    const scale = 5.5 * s; // pixel per cm responsive
+    const lensHalfH = 130 * s;
     const cx = w / 2;
     const cy = h / 2;
 
@@ -468,8 +474,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(30, cy);
-    ctx.lineTo(w - 30, cy);
+    ctx.moveTo(20, cy);
+    ctx.lineTo(w - 20, cy);
     ctx.stroke();
     ctx.setLineDash([]);
 
@@ -477,22 +483,22 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(cx, cy - 130);
-    ctx.lineTo(cx, cy + 130);
+    ctx.moveTo(cx, cy - lensHalfH);
+    ctx.lineTo(cx, cy + lensHalfH);
     ctx.stroke();
 
     // Arrows at Lens ends (Converging)
     ctx.fillStyle = isDark ? '#38bdf8' : '#0284c7';
     ctx.beginPath();
-    ctx.moveTo(cx - 8, cy - 120);
-    ctx.lineTo(cx, cy - 134);
-    ctx.lineTo(cx + 8, cy - 120);
+    ctx.moveTo(cx - 8 * s, cy - lensHalfH + 10 * s);
+    ctx.lineTo(cx, cy - lensHalfH - 4 * s);
+    ctx.lineTo(cx + 8 * s, cy - lensHalfH + 10 * s);
     ctx.fill();
 
     ctx.beginPath();
-    ctx.moveTo(cx - 8, cy + 120);
-    ctx.lineTo(cx, cy + 134);
-    ctx.lineTo(cx + 8, cy + 120);
+    ctx.moveTo(cx - 8 * s, cy + lensHalfH - 10 * s);
+    ctx.lineTo(cx, cy + lensHalfH + 4 * s);
+    ctx.lineTo(cx + 8 * s, cy + lensHalfH - 10 * s);
     ctx.fill();
 
     // Optical Center O & Foci F, F'
@@ -715,49 +721,49 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       note: `Bảo toàn cơ năng: W = Wđ + Wt = const. Vận tốc chạm đất: v = ${(Math.sqrt(2 * g * H)).toFixed(1)} m/s`
     });
 
-    const groundY = h - 60;
-    const topY = 60;
-    const dropScale = (groundY - topY) / H;
-    const ballX = w * 0.35;
+    const groundY = h - 46;
+    const topY = 44;
+    const dropScale = Math.max(1, groundY - topY) / H;
+    const ballX = Math.max(76, w * 0.3);
     const ballY = topY + (H - curY) * dropScale;
 
     // Ground
     ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
-    ctx.fillRect(0, groundY, w, 60);
+    ctx.fillRect(0, groundY, w, 46);
 
     // Height Ruler
     ctx.strokeStyle = isDark ? '#64748b' : '#94a3b8';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(ballX - 40, topY);
-    ctx.lineTo(ballX - 40, groundY);
+    ctx.moveTo(ballX - 34, topY);
+    ctx.lineTo(ballX - 34, groundY);
     ctx.stroke();
 
     for (let meter = 0; meter <= H; meter += Math.max(2, Math.floor(H / 5))) {
       const markY = groundY - meter * dropScale;
       ctx.beginPath();
-      ctx.moveTo(ballX - 48, markY);
-      ctx.lineTo(ballX - 40, markY);
+      ctx.moveTo(ballX - 42, markY);
+      ctx.lineTo(ballX - 34, markY);
       ctx.stroke();
 
       ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
       ctx.font = '10px monospace';
-      ctx.fillText(`${meter}m`, ballX - 70, markY + 4);
+      ctx.fillText(`${meter}m`, Math.max(6, ballX - 66), markY + 4);
     }
 
     // Falling Ball
     ctx.fillStyle = '#3b82f6';
     ctx.beginPath();
-    ctx.arc(ballX, ballY, 14, 0, Math.PI * 2);
+    ctx.arc(ballX, ballY, 13, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#93c5fd';
     ctx.lineWidth = 2;
     ctx.stroke();
 
     // Energy Bar Chart on Right side
-    const barX = w * 0.65;
-    const barW = 80;
-    const barMaxH = 180;
+    const barW = Math.min(80, Math.max(54, w * 0.22));
+    const barX = Math.min(w - barW - 18, w * 0.62);
+    const barMaxH = Math.min(180, Math.max(100, groundY - topY - 12));
     const barY = groundY - barMaxH;
 
     ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
@@ -819,7 +825,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
     const midY = h / 2;
     const midX = w / 2;
-    const beamLen = 160;
+    const beamLen = Math.min(160, Math.min(w, h) * 0.4);
 
     // Interface
     ctx.fillStyle = isDark ? '#1e293b' : '#e0f2fe';
@@ -919,11 +925,12 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     });
 
     const midX = w / 2;
-    const midY = h / 2;
+    const midY = h * 0.44;
+    const s = Math.min(1, w / 480, h / 280);
 
     // Solenoid Coil (Ống dây)
-    const coilW = 140;
-    const coilH = 70;
+    const coilW = 140 * s;
+    const coilH = 70 * s;
     ctx.fillStyle = isDark ? '#1e293b' : '#f1f5f9';
     ctx.fillRect(midX - coilW / 2, midY - coilH / 2, coilW, coilH);
     ctx.strokeStyle = '#f59e0b';
@@ -934,15 +941,15 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     for (let i = 0; i < loops; i++) {
       const lx = midX - coilW / 2 + (i * coilW) / (loops - 1);
       ctx.beginPath();
-      ctx.ellipse(lx, midY, 6, coilH / 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(lx, midY, 6 * s, coilH / 2, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
 
     // Permanent Bar Magnet (Nam châm thanh)
-    const magX = midX - 160 + magnetPos * 50;
+    const magW = 80 * s;
+    const magH = 36 * s;
+    const magX = midX - 155 * s + magnetPos * 48 * s;
     const magY = midY;
-    const magW = 80;
-    const magH = 36;
 
     // North Pole (Red)
     ctx.fillStyle = '#ef4444';
@@ -959,10 +966,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
     // Galvanometer (Điện kế G)
     const galX = midX;
-    const galY = midY + 90;
+    const galY = Math.min(h - 32, midY + 86 * s);
+    const galR = 24 * s;
     ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
     ctx.beginPath();
-    ctx.arc(galX, galY, 26, 0, Math.PI * 2);
+    ctx.arc(galX, galY, galR, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#10b981';
     ctx.lineWidth = 2.5;
@@ -974,7 +982,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(galX, galY);
-    ctx.lineTo(galX + 18 * Math.cos(needleAngle), galY + 18 * Math.sin(needleAngle));
+    ctx.lineTo(galX + 17 * s * Math.cos(needleAngle), galY + 17 * s * Math.sin(needleAngle));
     ctx.stroke();
   };
 
@@ -1013,14 +1021,17 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     });
 
     const midY = h / 2;
-    const anchorX = 60;
-    const eqX = w / 2;
-    const scale = 500;
-    const massX = eqX + x * scale;
+    const s = Math.min(1, w / 480);
+    const anchorX = Math.max(24, w * 0.1);
+    const eqX = w * 0.56;
+    const scale = 500 * s;
+    const massSize = Math.max(36, 50 * s);
+    const halfM = massSize / 2;
+    const massX = Math.max(anchorX + halfM + 30, Math.min(w - halfM - 12, eqX + x * scale));
 
     // Anchor Wall
     ctx.fillStyle = isDark ? '#334155' : '#94a3b8';
-    ctx.fillRect(anchorX - 15, midY - 60, 15, 120);
+    ctx.fillRect(anchorX - 14, midY - 56 * s, 14, 112 * s);
 
     // Spring Coils
     ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
@@ -1028,24 +1039,24 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.beginPath();
     ctx.moveTo(anchorX, midY);
     const coils = 16;
-    const coilW = (massX - anchorX - 25) / coils;
+    const coilW = (massX - anchorX - halfM) / coils;
     for (let i = 0; i < coils; i++) {
       const cx_pt = anchorX + i * coilW;
-      const cy_pt = midY + (i % 2 === 0 ? -14 : 14);
+      const cy_pt = midY + (i % 2 === 0 ? -13 * s : 13 * s);
       ctx.lineTo(cx_pt, cy_pt);
     }
-    ctx.lineTo(massX - 25, midY);
+    ctx.lineTo(massX - halfM, midY);
     ctx.stroke();
 
     // Mass Block
     ctx.fillStyle = '#8b5cf6';
-    ctx.fillRect(massX - 25, midY - 25, 50, 50);
+    ctx.fillRect(massX - halfM, midY - halfM, massSize, massSize);
     ctx.strokeStyle = '#c4b5fd';
     ctx.lineWidth = 2;
-    ctx.strokeRect(massX - 25, midY - 25, 50, 50);
+    ctx.strokeRect(massX - halfM, midY - halfM, massSize, massSize);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 12px sans-serif';
+    ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(`${m}kg`, massX, midY + 4);
   };
@@ -1131,8 +1142,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     });
 
     const midY = h / 2;
-    const s1X = w / 2 - d / 2;
-    const s2X = w / 2 + d / 2;
+    const drawD = Math.min(d, Math.max(80, w * 0.62));
+    const s1X = w / 2 - drawD / 2;
+    const s2X = w / 2 + drawD / 2;
 
     // Draw interference ripples
     const maxR = Math.min(w, h) * 0.7;
@@ -1479,7 +1491,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
             {simEngineMode === 'phet' && lesson.phetSim ? (
               <div className={`grid grid-cols-1 lg:grid-cols-4 gap-5 ${isSimFullscreen ? 'flex-1 min-h-0' : ''}`}>
                 {/* PhET Interactive Embed (3 cols) */}
-                <div className="lg:col-span-3 flex flex-col bg-slate-950 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-md overflow-hidden min-h-[480px]">
+                <div className="lg:col-span-3 flex flex-col bg-slate-950 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-md overflow-hidden min-h-[340px] sm:min-h-[480px]">
                   <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 text-xs text-slate-200">
                     <div className="flex items-center gap-2 min-w-0">
                       <FlaskConical className="w-4 h-4 text-amber-400 shrink-0" />
@@ -1491,7 +1503,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     </span>
                   </div>
 
-                  <div className={`relative w-full flex-1 ${isSimFullscreen ? 'min-h-[460px]' : 'h-[520px] sm:h-[600px]'}`}>
+                  <div className={`relative w-full flex-1 ${isSimFullscreen ? 'min-h-[340px] sm:min-h-[460px]' : 'h-[360px] sm:h-[540px] lg:h-[600px]'}`}>
                     {phetLoading && (
                       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/85 text-slate-200 gap-2 pointer-events-none">
                         <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
@@ -1632,7 +1644,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     </div>
 
                     {/* HTML5 Canvas */}
-                    <div className={`relative w-full bg-slate-950 ${isSimFullscreen ? 'h-[440px] sm:h-[520px]' : 'h-[380px]'}`}>
+                    <div className={`relative w-full bg-slate-950 ${isSimFullscreen ? 'h-[280px] sm:h-[460px] lg:h-[520px]' : 'h-[280px] sm:h-[380px]'}`}>
                       <canvas ref={canvasRef} className="w-full h-full block" />
                     </div>
 

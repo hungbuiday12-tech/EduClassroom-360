@@ -31,6 +31,10 @@ service cloud.firestore {
       return resource.data;
     }
 
+    function isScoreRange(val) {
+      return val is number && val >= 0 && val <= 100;
+    }
+
     // Validation for User entity
     function isValidUser(data) {
       return data.keys().hasAll(['username', 'email', 'role']) &&
@@ -49,12 +53,12 @@ service cloud.firestore {
       allow create: if isOwner(userId) &&
                        isValidId(userId) &&
                        isValidUser(incoming()) &&
-                       incoming().role == 'student'; // Prevent self-elevation to admin/teacher
+                       incoming().role == 'student';
       allow update: if isOwner(userId) &&
                        isValidId(userId) &&
                        isValidUser(incoming()) &&
-                       incoming().role == existing().role && // Role is immutable by self
-                       incoming().username == existing().username && // Username is immutable
+                       incoming().role == existing().role &&
+                       incoming().username == existing().username &&
                        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'avatarUrl', 'xp', 'updatedAt']);
       allow delete: if false;
     }
@@ -82,6 +86,106 @@ service cloud.firestore {
                        isValidProgress(incoming()) &&
                        incoming().userId == existing().userId;
       allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Validation for StudyRoadmap entity
+    function isValidRoadmap(data) {
+      return data.keys().hasAll(['userId', 'completedNodeIds']) &&
+             data.keys().hasOnly(['userId', 'completedNodeIds', 'currentStage', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.completedNodeIds is list &&
+             data.completedNodeIds.size() <= 100 &&
+             (data.completedNodeIds.size() == 0 || (data.completedNodeIds[0] is string && data.completedNodeIds[0].size() <= 64)) &&
+             (!('currentStage' in data) || (data.currentStage is string && data.currentStage.size() <= 32)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // StudyRoadmap Collection (per-user procedural mastery state)
+    match /study_roadmap/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidRoadmap(incoming());
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidRoadmap(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['completedNodeIds', 'currentStage', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // Validation for ArenaAttempt entity (immutable 1-attempt-per-day-per-subject)
+    function isValidArenaAttempt(data) {
+      return data.keys().hasAll(['userId', 'weekId', 'dateKey', 'subject', 'mode', 'score', 'durationSec']) &&
+             data.keys().hasOnly(['userId', 'username', 'displayName', 'weekId', 'dateKey', 'subject', 'mode', 'score', 'correctCount', 'totalQuestions', 'durationSec', 'summary', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.weekId is string && data.weekId.size() >= 4 && data.weekId.size() <= 16 &&
+             data.dateKey is string && data.dateKey.size() == 10 &&
+             data.subject in ['math', 'physics', 'cs'] &&
+             data.mode in ['mcq', 'essay'] &&
+             isScoreRange(data.score) &&
+             data.durationSec is number && data.durationSec >= 0 && data.durationSec <= 7200 &&
+             (!('username' in data) || (data.username is string && data.username.size() <= 40)) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('summary' in data) || (data.summary is string && data.summary.size() <= 1000)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    // ArenaAttempts Collection (strict owner read/create, zero updates/deletes)
+    match /arena_attempts/{attemptId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() &&
+                       isValidId(attemptId) &&
+                       isValidArenaAttempt(incoming());
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Validation for WeeklyLeaderboardEntry entity (zero PII)
+    function isValidLeaderboardEntry(data) {
+      return data.keys().hasAll(['userId', 'displayName', 'weekId', 'overallAvg', 'totalAttempts']) &&
+             data.keys().hasOnly([
+               'userId', 'username', 'displayName', 'weekId',
+               'mathBest', 'mathAvg', 'mathAttempts',
+               'physicsBest', 'physicsAvg', 'physicsAttempts',
+               'csBest', 'csAvg', 'csAttempts',
+               'overallAvg', 'totalAttempts', 'totalTimeSec', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             data.weekId is string && data.weekId.size() >= 4 && data.weekId.size() <= 16 &&
+             isScoreRange(data.overallAvg) &&
+             data.totalAttempts is number && data.totalAttempts >= 1 && data.totalAttempts <= 21 &&
+             (!('username' in data) || (data.username is string && data.username.size() <= 40)) &&
+             (!('mathBest' in data) || data.mathBest == null || isScoreRange(data.mathBest)) &&
+             (!('mathAvg' in data) || data.mathAvg == null || isScoreRange(data.mathAvg)) &&
+             (!('physicsBest' in data) || data.physicsBest == null || isScoreRange(data.physicsBest)) &&
+             (!('physicsAvg' in data) || data.physicsAvg == null || isScoreRange(data.physicsAvg)) &&
+             (!('csBest' in data) || data.csBest == null || isScoreRange(data.csBest)) &&
+             (!('csAvg' in data) || data.csAvg == null || isScoreRange(data.csAvg));
+    }
+
+    // Weekly Leaderboard Collection (public non-PII read scoped to weekId, owner-only write)
+    match /weekly_leaderboard/{entryId} {
+      allow get: if true;
+      allow list: if resource.data.weekId is string;
+      allow create: if isSignedIn() &&
+                       isValidId(entryId) &&
+                       isValidLeaderboardEntry(incoming()) &&
+                       incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() &&
+                       isValidId(entryId) &&
+                       existing().userId == request.auth.uid &&
+                       isValidLeaderboardEntry(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().weekId == existing().weekId &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'username', 'displayName',
+                         'mathBest', 'mathAvg', 'mathAttempts',
+                         'physicsBest', 'physicsAvg', 'physicsAttempts',
+                         'csBest', 'csAvg', 'csAttempts',
+                         'overallAvg', 'totalAttempts', 'totalTimeSec', 'updatedAt'
+                       ]);
+      allow delete: if false;
     }
   }
 }

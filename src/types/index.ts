@@ -1,4 +1,4 @@
-export type SubjectType = 'overview' | 'math' | 'physics' | 'cs' | 'exams';
+export type SubjectType = 'overview' | 'roadmap' | 'math' | 'physics' | 'cs' | 'exams' | 'arena';
 
 export type ExamSubject = 'math' | 'physics' | 'cs';
 export type ExamTrack = 'chuyen' | 'khong_chuyen';
@@ -262,3 +262,128 @@ export interface SubmissionRecord {
   status: 'Accepted' | 'Partial' | 'Wrong Answer';
   submittedAt: string;
 }
+
+// Learning Process Roadmap Types
+export interface WorkflowStage {
+  stepNumber: number;
+  id: 'concept' | 'simulate' | 'tutor' | 'practice' | 'arena';
+  titleVi: string;
+  titleEn: string;
+  subtitleVi: string;
+  subtitleEn: string;
+  actionChecklistVi: string[];
+  actionChecklistEn: string[];
+  targetSubject: SubjectType;
+  estimatedMinutes: number;
+}
+
+export interface RoadmapNode {
+  id: string;
+  subject: 'math' | 'physics' | 'cs';
+  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12' | 'Cơ bản' | 'Trung cấp' | 'Nâng cao / HSG';
+  order: number;
+  title: string;
+  titleEn: string;
+  goal: string;
+  goalEn: string;
+  prerequisites: string[];
+  estimatedMinutes: number;
+  targetLessonId?: string;
+  workflowTips: string[];
+  checkQuestions: string[];
+}
+
+// Socratic AI Tutor Types
+export interface TutorMessage {
+  id: string;
+  role: 'user' | 'tutor';
+  text: string;
+  timestamp: string;
+  imagePreview?: string;
+}
+
+export interface TutorContextPayload {
+  subject: SubjectType;
+  topicTitle?: string;
+  problemStatement?: string;
+  grade?: string;
+}
+
+// Weekly Online Competition Arena Types
+export type ArenaSubject = 'math' | 'physics' | 'cs';
+export type ArenaMode = 'mcq' | 'essay';
+
+export interface ArenaQuestionMCQ {
+  id: string;
+  subject: ArenaSubject;
+  grade: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  points: number;
+}
+
+export interface ArenaEssayPrompt {
+  id: string;
+  subject: ArenaSubject;
+  grade: string;
+  title: string;
+  prompt: string;
+  rubricChecklist: string[];
+  referenceSolution: string;
+  sampleCode?: {
+    language: CodeLanguage;
+    starter: string;
+    tests: { input: string; expectedOutput: string }[];
+  };
+  maxScore: number;
+}
+
+export interface ArenaEssayEvaluation {
+  score: number;
+  strengths: string[];
+  mistakes: string[];
+  stepScores: { criterion: string; earned: number; max: number; comment: string }[];
+  detailedFeedback: string;
+  suggestedStudyTip: string;
+}
+
+export interface ArenaAttempt {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  weekId: string;
+  dateKey: string;
+  subject: ArenaSubject;
+  mode: ArenaMode;
+  score: number; // 0 - 100
+  correctCount?: number;
+  totalQuestions?: number;
+  durationSec: number;
+  summary: string;
+  createdAt: string;
+}
+
+export interface WeeklyLeaderboardEntry {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  weekId: string;
+  mathBest: number | null;
+  mathAvg: number | null;
+  mathAttempts: number;
+  physicsBest: number | null;
+  physicsAvg: number | null;
+  physicsAttempts: number;
+  csBest: number | null;
+  csAvg: number | null;
+  csAttempts: number;
+  overallAvg: number;
+  totalAttempts: number;
+  totalTimeSec: number;
+  updatedAt: string;
+}
+

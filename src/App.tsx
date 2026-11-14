@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { SubjectType } from './types';
+import { Sparkles } from 'lucide-react';
+import { SubjectType, TutorContextPayload } from './types';
 import { Header } from './components/Header';
 import { ClassroomOverview } from './components/ClassroomOverview';
 import { MathStudio } from './components/math/MathStudio';
 import { PhysicsLab } from './components/physics/PhysicsLab';
 import { CodeJudgeLab } from './components/cs/CodeJudgeLab';
 import { ExamHub } from './components/exams/ExamHub';
+import { LearningRoadmap } from './components/roadmap/LearningRoadmap';
+import { ArenaHub } from './components/arena/ArenaHub';
+import { SocraticAITutor } from './components/tutor/SocraticAITutor';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
 import { VisitorLandingPage } from './components/landing/VisitorLandingPage';
@@ -14,6 +18,22 @@ import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 
 function MainApp() {
   const [currentSubject, setCurrentSubject] = useState<SubjectType>('overview');
+  const [isTutorOpen, setIsTutorOpen] = useState<boolean>(false);
+  const [tutorContext, setTutorContext] = useState<TutorContextPayload>({
+    subject: 'math'
+  });
+
+  const handleOpenTutor = (ctx?: TutorContextPayload) => {
+    setTutorContext(
+      ctx || {
+        subject:
+          currentSubject === 'physics' || currentSubject === 'cs' || currentSubject === 'math'
+            ? currentSubject
+            : 'math'
+      }
+    );
+    setIsTutorOpen(true);
+  };
   const [isDark, setIsDark] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       try {
@@ -143,7 +163,20 @@ function MainApp() {
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               >
                 {currentSubject === 'overview' && (
-                  <ClassroomOverview onNavigate={setCurrentSubject} xp={activeXP} />
+                  <ClassroomOverview
+                    onNavigate={setCurrentSubject}
+                    xp={activeXP}
+                    onOpenTutor={() => handleOpenTutor({ subject: 'math' })}
+                  />
+                )}
+
+                {currentSubject === 'roadmap' && (
+                  <LearningRoadmap
+                    onBack={() => setCurrentSubject('overview')}
+                    onNavigateSubject={setCurrentSubject}
+                    onOpenTutor={handleOpenTutor}
+                    onEarnXP={handleEarnXP}
+                  />
                 )}
 
                 {currentSubject === 'math' && (
@@ -165,9 +198,35 @@ function MainApp() {
                     onBack={() => setCurrentSubject('overview')}
                   />
                 )}
+
+                {currentSubject === 'arena' && (
+                  <ArenaHub
+                    onBack={() => setCurrentSubject('overview')}
+                    onEarnXP={handleEarnXP}
+                    onOpenTutor={handleOpenTutor}
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
           </main>
+
+          {/* Global Socratic AI Tutor Drawer & Floating Trigger */}
+          {!isTutorOpen && (
+            <button
+              onClick={() => handleOpenTutor()}
+              className="fixed bottom-4 right-4 z-[85] px-4 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xl flex items-center gap-2 transition-transform hover:scale-105"
+              title="Mở Gia sư AI Socratic (Hỏi chỗ chưa hiểu)"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Gia Sư AI (Hỏi Chỗ Chưa Hiểu)</span>
+            </button>
+          )}
+          <SocraticAITutor
+            isOpen={isTutorOpen}
+            onClose={() => setIsTutorOpen(false)}
+            context={tutorContext}
+            onChangeSubject={(subj) => setTutorContext((prev) => ({ ...prev, subject: subj }))}
+          />
 
           {/* Welcome Screen & Authentication Modal for in-app login */}
           <AuthModal />
@@ -183,7 +242,13 @@ function MainApp() {
                 <span>Hệ thống lớp học mô phỏng vũ trụ học thuật Galaxy</span>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <button
+                  onClick={() => setCurrentSubject('roadmap')}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                >
+                  Lộ trình học
+                </button>
                 <button
                   onClick={() => setCurrentSubject('math')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
@@ -206,7 +271,13 @@ function MainApp() {
                   onClick={() => setCurrentSubject('exams')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold"
                 >
-                  Đề Thi & Lời Giải (30 Đề)
+                  Đề Thi (60 Đề)
+                </button>
+                <button
+                  onClick={() => setCurrentSubject('arena')}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-amber-600 dark:text-amber-400 font-semibold"
+                >
+                  Thi Đấu & BXH Tuần
                 </button>
               </div>
             </div>

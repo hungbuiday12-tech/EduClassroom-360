@@ -72,6 +72,117 @@
         }
       },
       "required": ["userId", "itemType", "itemId"]
+    },
+    "StudyRoadmap": {
+      "title": "StudyRoadmap",
+      "description": "Student procedural learning roadmap progress",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "completedNodeIds": {
+          "type": "array",
+          "description": "Completed procedural node IDs (max 100)"
+        },
+        "currentStage": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      "required": ["userId", "completedNodeIds"]
+    },
+    "ArenaAttempt": {
+      "title": "ArenaAttempt",
+      "description": "Daily once-per-subject online competition submission",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "username": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "weekId": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "dateKey": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "subject": {
+          "type": "string",
+          "enum": ["math", "physics", "cs"]
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["mcq", "essay"]
+        },
+        "score": {
+          "type": "number"
+        },
+        "durationSec": {
+          "type": "number"
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      "required": ["userId", "weekId", "dateKey", "subject", "mode", "score", "durationSec"]
+    },
+    "WeeklyLeaderboardEntry": {
+      "title": "WeeklyLeaderboardEntry",
+      "description": "Public non-PII weekly arena performance entry per subject and average",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "username": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "weekId": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "mathBest": { "type": "number" },
+        "mathAvg": { "type": "number" },
+        "mathAttempts": { "type": "number" },
+        "physicsBest": { "type": "number" },
+        "physicsAvg": { "type": "number" },
+        "physicsAttempts": { "type": "number" },
+        "csBest": { "type": "number" },
+        "csAvg": { "type": "number" },
+        "csAttempts": { "type": "number" },
+        "overallAvg": { "type": "number" },
+        "totalAttempts": { "type": "number" },
+        "totalTimeSec": { "type": "number" },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["userId", "displayName", "weekId", "overallAvg", "totalAttempts"]
     }
   },
   "firestore": {
@@ -82,6 +193,18 @@
     "/study_progress/{progressId}": {
       "schema": "StudyProgress",
       "description": "Stores completion records and XP logs of students"
+    },
+    "/study_roadmap/{userId}": {
+      "schema": "StudyRoadmap",
+      "description": "Stores completed procedural learning roadmap nodes for each student"
+    },
+    "/arena_attempts/{attemptId}": {
+      "schema": "ArenaAttempt",
+      "description": "Immutable daily competition attempt keyed by uid_dateKey_subject"
+    },
+    "/weekly_leaderboard/{entryId}": {
+      "schema": "WeeklyLeaderboardEntry",
+      "description": "Weekly leaderboard metrics keyed by weekId_uid"
     }
   }
 }

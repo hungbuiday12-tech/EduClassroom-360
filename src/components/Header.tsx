@@ -36,8 +36,8 @@ export const Header: React.FC<HeaderProps> = ({
           EduClassroom 360
         </button>
 
-        {/* Zone 2: 4-5 single-line nav links */}
-        <nav className="hidden lg:flex items-center gap-5 text-sm font-medium">
+        {/* Zone 2: Concise single-line nav links */}
+        <nav className="hidden lg:flex items-center gap-4 text-sm font-medium">
           <button
             onClick={() => onSelectSubject('overview')}
             className={`whitespace-nowrap shrink-0 transition-colors ${
@@ -49,6 +49,16 @@ export const Header: React.FC<HeaderProps> = ({
             {t('nav.classroom', 'Lớp học', 'Classroom')}
           </button>
           <button
+            onClick={() => onSelectSubject('roadmap')}
+            className={`whitespace-nowrap shrink-0 transition-colors ${
+              currentSubject === 'roadmap'
+                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
+            {t('nav.roadmap', 'Lộ trình', 'Roadmap')}
+          </button>
+          <button
             onClick={() => onSelectSubject('math')}
             className={`whitespace-nowrap shrink-0 transition-colors ${
               currentSubject === 'math'
@@ -56,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            {t('nav.math', 'Toán học (Đồ thị & 3D)', 'Math (Graphs & 3D)')}
+            {t('subject.math', 'Toán học', 'Math')}
           </button>
           <button
             onClick={() => onSelectSubject('physics')}
@@ -66,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            {t('nav.physics', 'Vật lí (Mô phỏng 2D/3D)', 'Physics (2D/3D Labs)')}
+            {t('subject.physics', 'Vật lí', 'Physics')}
           </button>
           <button
             onClick={() => onSelectSubject('cs')}
@@ -76,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            {t('nav.cs', 'Tin học (Online Judge & Tự do)', 'CS (Online Judge & Custom)')}
+            {t('subject.cs', 'Tin học', 'CS')}
           </button>
           <button
             onClick={() => onSelectSubject('exams')}
@@ -86,7 +96,17 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            {t('nav.exams', 'Đề Thi (60 Đề)', 'Exams (60 Papers)')}
+            {t('nav.exams', 'Đề Thi', 'Exams')}
+          </button>
+          <button
+            onClick={() => onSelectSubject('arena')}
+            className={`whitespace-nowrap shrink-0 transition-colors ${
+              currentSubject === 'arena'
+                ? 'text-amber-600 dark:text-amber-400 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
+          >
+            {t('nav.arena', 'Thi Đấu & BXH', 'Weekly Arena')}
           </button>
         </nav>
 
@@ -205,12 +225,18 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Mobile Navigation bar */}
-      <div className="lg:hidden flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto text-xs font-medium">
+      <div className="lg:hidden flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto text-xs font-medium gap-2">
         <button
           onClick={() => onSelectSubject('overview')}
           className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'overview' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
         >
           {t('nav.classroom', 'Lớp học', 'Classroom')}
+        </button>
+        <button
+          onClick={() => onSelectSubject('roadmap')}
+          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'roadmap' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
+        >
+          {t('nav.roadmap', 'Lộ trình', 'Roadmap')}
         </button>
         <button
           onClick={() => onSelectSubject('math')}
@@ -222,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onSelectSubject('physics')}
           className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'physics' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
         >
-          {t('subject.physics', 'Vật lí 2D', 'Physics 2D')}
+          {t('subject.physics', 'Vật lí', 'Physics')}
         </button>
         <button
           onClick={() => onSelectSubject('cs')}
@@ -235,6 +261,12 @@ export const Header: React.FC<HeaderProps> = ({
           className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'exams' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
         >
           {t('nav.exams', 'Đề Thi', 'Exams')}
+        </button>
+        <button
+          onClick={() => onSelectSubject('arena')}
+          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'arena' ? 'text-amber-600 font-bold' : 'text-slate-500'}`}
+        >
+          {t('nav.arena', 'Thi Đấu & BXH', 'Arena')}
         </button>
       </div>
     </header>

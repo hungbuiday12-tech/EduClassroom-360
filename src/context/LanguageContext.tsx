@@ -17,6 +17,9 @@ const LOCAL_STORAGE_KEY = 'educlassroom_app_language';
 export const TRANSLATIONS: Record<string, { vi: string; en: string }> = {
   // Navigation & Top Bar
   'nav.classroom': { vi: 'Lớp học', en: 'Classroom' },
+  'nav.roadmap': { vi: 'Lộ trình học', en: 'Roadmap' },
+  'nav.arena': { vi: 'Thi Đấu & BXH', en: 'Weekly Arena' },
+  'nav.tutor': { vi: 'Gia Sư AI', en: 'AI Tutor' },
   'nav.math': { vi: 'Toán học (Đồ thị & 3D)', en: 'Math (Graphs & 3D)' },
   'nav.physics': { vi: 'Vật lí (Mô phỏng 2D/3D)', en: 'Physics (2D/3D Labs)' },
   'nav.cs': { vi: 'Tin học (Online Judge & Tự do)', en: 'CS (Online Judge & Studio)' },

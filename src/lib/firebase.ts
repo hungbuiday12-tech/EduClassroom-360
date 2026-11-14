@@ -17,7 +17,15 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  getDocFromServer
+  getDocFromServer,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  getDocs,
+  serverTimestamp
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -107,6 +115,14 @@ export {
   getDoc,
   setDoc,
   updateDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  getDocs,
+  serverTimestamp,
 };
 
 export type { FirebaseUser };

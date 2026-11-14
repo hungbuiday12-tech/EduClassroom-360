@@ -1,0 +1,352 @@
+import { RoadmapNode, WorkflowStage } from '../types';
+
+export const WORKFLOW_STAGES: WorkflowStage[] = [
+  {
+    stepNumber: 1,
+    id: 'concept',
+    titleVi: '1. Nắm Bản Chất & Công Thức Cốt Lõi',
+    titleEn: '1. Master Core Concepts & Formulas',
+    subtitleVi: 'Đọc lý thuyết trọng tâm, ghi nhớ mẹo nhanh và nhận diện bẫy thường gặp trước khi làm bài.',
+    subtitleEn: 'Study core theory, memory mnemonics, and common traps before solving problems.',
+    actionChecklistVi: [
+      'Đọc mục Lý thuyết trọng tâm của chuyên đề đang học',
+      'Tự nhẩm lại các công thức KaTeX và điều kiện áp dụng',
+      'Lật nhanh 3-5 thẻ Flashcards để kiểm tra trí nhớ ngắn hạn'
+    ],
+    actionChecklistEn: [
+      'Read the core theory section of the chosen topic',
+      'Recall key formulas and their boundary conditions',
+      'Flip 3-5 Flashcards for active recall'
+    ],
+    targetSubject: 'math',
+    estimatedMinutes: 15
+  },
+  {
+    stepNumber: 2,
+    id: 'simulate',
+    titleVi: '2. Quan Sát & Tương Tác Trực Quan 2D/3D/PhET',
+    titleEn: '2. Visualize via 2D/3D/PhET Simulations',
+    subtitleVi: 'Kéo thả tham số trên Đồ thị Oxy, Phòng thí nghiệm PhET Colorado hoặc Không gian 3D để hiểu quy luật biến thiên.',
+    subtitleEn: 'Manipulate parameters on 2D graphs, PhET Colorado labs, or 3D viewports to build physical intuition.',
+    actionChecklistVi: [
+      'Thay đổi các hệ số (a, b, k, góc tới, R...) để xem đồ thị/mô hình phản ứng',
+      'Hoàn thành Phiếu thực hành PhET Colorado (với môn Vật lí)',
+      'Ghi chú lại hiện tượng bất biến và trường hợp biên'
+    ],
+    actionChecklistEn: [
+      'Vary coefficients/parameters and observe real-time changes',
+      'Complete the interactive PhET lab checklist (Physics)',
+      'Note invariant relationships and edge behaviors'
+    ],
+    targetSubject: 'physics',
+    estimatedMinutes: 15
+  },
+  {
+    stepNumber: 3,
+    id: 'tutor',
+    titleVi: '3. Hỏi Gia Sư AI Socratic Khi Gặp Điểm Mù',
+    titleEn: '3. Consult Socratic AI Tutor on Stuck Steps',
+    subtitleVi: 'AI không giải hộ trực tiếp mà hỏi ngược xem bạn đang vướng phần nào, rồi giảng cặn kẽ đúng chỗ chưa hiểu.',
+    subtitleEn: 'The AI tutor never spoils answers—it pinpoints your exact confusion and re-explains step by step.',
+    actionChecklistVi: [
+      'Chỉ rõ bước hoặc công thức bạn đang thấy khó hiểu',
+      'Đọc giải thích trực quan từng bước của Gia sư AI',
+      'Tự trả lời câu hỏi gợi mở cuối mỗi lượt trao đổi'
+    ],
+    actionChecklistEn: [
+      'State the exact formula or step you feel unclear about',
+      'Follow the tailored concrete breakdown and mini-example',
+      'Answer the tutor’s checkpoint question on your own'
+    ],
+    targetSubject: 'roadmap',
+    estimatedMinutes: 10
+  },
+  {
+    stepNumber: 4,
+    id: 'practice',
+    titleVi: '4. Thực Hành Củng Cố & Tự Chấm Test',
+    titleEn: '4. Practice Exercises & Automated Grading',
+    subtitleVi: 'Làm bài tập trắc nghiệm có giải thích chi tiết (Toán/Lí) hoặc viết code C++/Python nộp Online Judge (Tin).',
+    subtitleEn: 'Solve worked quizzes (Math/Physics) or code in Sublime Studio and run Online Judge test suites (CS).',
+    actionChecklistVi: [
+      'Tự giải trước khi bấm xem lời giải chi tiết từng bước',
+      'Với môn Tin: chạy thử input mẫu rồi nộp chấm bộ test ẩn',
+      'Tích lũy XP và đánh dấu hoàn thành mốc lộ trình'
+    ],
+    actionChecklistEn: [
+      'Attempt exercises independently before revealing solutions',
+      'For CS: test custom stdin then submit against hidden test cases',
+      'Earn XP and mark the roadmap node as mastered'
+    ],
+    targetSubject: 'cs',
+    estimatedMinutes: 20
+  },
+  {
+    stepNumber: 5,
+    id: 'arena',
+    titleVi: '5. Thi Đề Chuẩn & Đấu Trường Xếp Hạng Tuần',
+    titleEn: '5. Official Exam Papers & Weekly Online Arena',
+    subtitleVi: 'Thử sức với 60 Đề thi có đồng hồ bấm giờ và tham gia Đấu trường Online (1 lượt/ngày/môn) để leo Bảng xếp hạng tuần.',
+    subtitleEn: 'Take timed 60-paper practice sets and enter the Weekly Online Arena (1 attempt/day/subject) to climb the rankings.',
+    actionChecklistVi: [
+      'Mỗi ngày chọn Trắc nghiệm hoặc Tự luận để thi đấu 1 lượt/môn',
+      'Nhận chấm điểm tự luận chi tiết hoặc điểm tốc độ trắc nghiệm',
+      'Theo dõi Điểm Trung Bình và thứ hạng từng môn trên Bảng xếp hạng tuần'
+    ],
+    actionChecklistEn: [
+      'Complete 1 daily Arena round per subject (MCQ or Essay)',
+      'Review detailed AI rubric scoring or MCQ breakdown',
+      'Track your subject & overall weekly average rank'
+    ],
+    targetSubject: 'arena',
+    estimatedMinutes: 15
+  }
+];
+
+export const ROADMAP_NODES: RoadmapNode[] = [
+  // ==================== TOÁN HỌC (LỚP 9 -> 12) ====================
+  {
+    id: 'rm-math-9-1',
+    subject: 'math',
+    grade: 'Lớp 9',
+    order: 1,
+    title: 'Căn bậc hai, Hệ phương trình & Định lí Vi-ét',
+    titleEn: 'Square Roots, Linear Systems & Viète’s Theorem',
+    goal: 'Biết tìm điều kiện xác định căn thức, giải hệ 2 ẩn và ứng dụng $S = x_1 + x_2$, $P = x_1 x_2$ vào bài toán tham số $m$.',
+    goalEn: 'Master radical domain conditions, linear systems, and parameter problems via Viète.',
+    prerequisites: [],
+    estimatedMinutes: 35,
+    targetLessonId: 'math-9-4',
+    workflowTips: ['Vẽ Parabol $y = ax^2$ và đường thẳng $y = mx + n$ trên Đồ thị 2D để thấy ngay số giao điểm'],
+    checkQuestions: ['Khi nào cần dùng $|A|$ khi khai căn $\\sqrt{A^2}$?', 'Điều kiện $\\Delta \\ge 0$ trước khi áp dụng Vi-ét là gì?']
+  },
+  {
+    id: 'rm-math-9-2',
+    subject: 'math',
+    grade: 'Lớp 9',
+    order: 2,
+    title: 'Góc với đường tròn, Tứ giác nội tiếp & Hình khối 3D',
+    titleEn: 'Circle Angles, Cyclic Quadrilaterals & 3D Solids',
+    goal: 'Chứng minh 4 điểm cùng thuộc 1 đường tròn và tính thể tích Hình trụ, Nón, Cầu.',
+    goalEn: 'Prove cyclic quadrilaterals and compute Cylinder, Cone, Sphere volumes.',
+    prerequisites: ['rm-math-9-1'],
+    estimatedMinutes: 40,
+    targetLessonId: 'math-9-6',
+    workflowTips: ['Dùng Studio Hình học phẳng để dựng đường tròn ngoại tiếp và kiểm chứng góc nội tiếp'],
+    checkQuestions: ['Tổng hai góc đối của tứ giác nội tiếp bằng bao nhiêu độ?']
+  },
+  {
+    id: 'rm-math-10-1',
+    subject: 'math',
+    grade: 'Lớp 10',
+    order: 3,
+    title: 'Hàm số bậc hai, Bất phương trình & Hệ thức lượng tam giác',
+    titleEn: 'Quadratics, Linear Inequalities & Triangle Trigonometry',
+    goal: 'Xác định đỉnh Parabol, dấu tam thức bậc hai $ax^2+bx+c$, định lí Côsin - Sin trong tam giác.',
+    goalEn: 'Analyze parabolic vertex, quadratic signs, and Law of Cosines/Sines.',
+    prerequisites: ['rm-math-9-1'],
+    estimatedMinutes: 40,
+    targetLessonId: 'math-10-4',
+    workflowTips: ['Thử nghiệm thanh trượt hệ số $a, b, c$ của hàm bậc 2 trên Đồ thị 2D'],
+    checkQuestions: ['Độ dài $a^2 = b^2 + c^2 - 2bc\\cos A$ khi góc $A = 90^\\circ$ trở thành định lí gì?']
+  },
+  {
+    id: 'rm-math-10-2',
+    subject: 'math',
+    grade: 'Lớp 10',
+    order: 4,
+    title: 'Vectơ, Tọa độ mặt phẳng Oxy & Tổ hợp - Xác suất',
+    titleEn: 'Vectors, Oxy Plane Coordinates & Combinatorics',
+    goal: 'Thành thạo tích vô hướng $\\vec{u}\\cdot\\vec{v}$, viết phương trình đường thẳng/đường tròn và tính xác suất cổ điển.',
+    goalEn: 'Apply dot products, line/circle equations, and classical probability.',
+    prerequisites: ['rm-math-10-1'],
+    estimatedMinutes: 45,
+    targetLessonId: 'math-10-6',
+    workflowTips: ['Phân biệt Hoán vị $P_n$, Chỉnh hợp $A_n^k$ và Tổ hợp $C_n^k$ qua bài toán chọn ban cán sự'],
+    checkQuestions: ['Khi nào chọn $k$ phần tử cần phân biệt thứ tự ($A_n^k$) hay không cần ($C_n^k$)?']
+  },
+  {
+    id: 'rm-math-11-1',
+    subject: 'math',
+    grade: 'Lớp 11',
+    order: 5,
+    title: 'Hàm số Lượng giác, Dãy số & Cấp số cộng - nhân',
+    titleEn: 'Trigonometric Functions, Sequences & Progressions',
+    goal: 'Giải phương trình lượng giác cơ bản, tìm số hạng tổng quát $u_n$ và tổng $S_n$ của CSC, CSN.',
+    goalEn: 'Solve trig equations and compute arithmetic/geometric series sums.',
+    prerequisites: ['rm-math-10-1'],
+    estimatedMinutes: 45,
+    targetLessonId: 'math-11-5',
+    workflowTips: ['Quan sát đồ thị $y = \\sin x, y = \\cos x$ tuần hoàn với chu kỳ $2\\pi$ trên Đồ thị 2D'],
+    checkQuestions: ['Điều kiện để tổng CSN lùi vô hạn $S = \\frac{u_1}{1-q}$ tồn tại là gì?']
+  },
+  {
+    id: 'rm-math-11-2',
+    subject: 'math',
+    grade: 'Lớp 11',
+    order: 6,
+    title: 'Giới hạn, Đạo hàm & Quan hệ vuông góc không gian 3D',
+    titleEn: 'Limits, Derivatives & 3D Perpendicularity',
+    goal: 'Khử dạng vô định $\\frac{0}{0}$, tính tiếp tuyến bằng đạo hàm và xác định góc, khoảng cách trong hình không gian.',
+    goalEn: 'Resolve indeterminate limits, tangents via derivatives, and 3D angles/distances.',
+    prerequisites: ['rm-math-11-1'],
+    estimatedMinutes: 50,
+    targetLessonId: 'math-11-8',
+    workflowTips: ['Mở Không gian 3D để xoay hình chóp, lăng trụ và quan sát đường cao vuông góc với đáy'],
+    checkQuestions: ['Muốn chứng minh đường thẳng $d \\perp (P)$, cần $d$ vuông góc với ít nhất mấy đường thẳng cắt nhau trong $(P)$?']
+  },
+  {
+    id: 'rm-math-12-1',
+    subject: 'math',
+    grade: 'Lớp 12',
+    order: 7,
+    title: 'Khảo sát hàm số, Mũ - Logarit & Nguyên hàm - Tích phân',
+    titleEn: 'Curve Sketching, Exp/Log & Integral Calculus',
+    goal: 'Tìm cực trị, GTLN-GTNN, giải BPT Mũ/Logarit và tính diện tích, thể tích vật tròn xoay bằng tích phân.',
+    goalEn: 'Find extrema, solve exponential/log inequalities, and compute areas/volumes via integrals.',
+    prerequisites: ['rm-math-11-2'],
+    estimatedMinutes: 60,
+    targetLessonId: 'math-1',
+    workflowTips: ['Luôn đặt điều kiện biểu thức dưới dấu logarit dương trước khi biến đổi'],
+    checkQuestions: ['Tại sao khi đạo hàm đổi dấu từ dương sang âm qua $x_0$ thì $x_0$ là điểm cực đại?']
+  },
+  {
+    id: 'rm-math-12-2',
+    subject: 'math',
+    grade: 'Lớp 12',
+    order: 8,
+    title: 'Hình học tọa độ Oxyz & Tổng ôn Thi đấu ĐHQG / THPT',
+    titleEn: '3D Oxyz Coordinate Geometry & Exam Mastery',
+    goal: 'Viết phương trình mặt phẳng, đường thẳng, mặt cầu trong không gian $Oxyz$ và chinh phục Đề thi chuẩn.',
+    goalEn: 'Master planes, lines, and spheres in 3D Oxyz and solve full national papers.',
+    prerequisites: ['rm-math-12-1'],
+    estimatedMinutes: 55,
+    targetLessonId: 'math-8',
+    workflowTips: ['Dùng tích có hướng $[\\vec{u}, \\vec{v}]$ để tìm nhanh vectơ pháp tuyến mặt phẳng'],
+    checkQuestions: ['Khoảng cách từ điểm $M_0$ đến mặt phẳng $(P): Ax+By+Cz+D=0$ tính như thế nào?']
+  },
+
+  // ==================== VẬT LÍ (LỚP 9 -> 12) ====================
+  {
+    id: 'rm-phys-9-1',
+    subject: 'physics',
+    grade: 'Lớp 9',
+    order: 1,
+    title: 'Định luật Ôm, Mạch nối tiếp - song song & Quang hình',
+    titleEn: 'Ohm’s Law, Series/Parallel Circuits & Geometric Optics',
+    goal: 'Tính $R_{tđ}$, cường độ dòng điện, công suất tỏa nhiệt và dựng ảnh qua thấu kính hội tụ/phân kì.',
+    goalEn: 'Analyze DC circuits and ray diagrams through converging/diverging lenses.',
+    prerequisites: [],
+    estimatedMinutes: 35,
+    targetLessonId: 'phys-9-1',
+    workflowTips: ['Mở mô phỏng PhET Circuit Construction Kit DC để tự mắc mạch và đo Ampe kế / Vôn kế'],
+    checkQuestions: ['Khi mắc thêm một điện trở song song vào mạch, điện trở tương đương tăng hay giảm?']
+  },
+  {
+    id: 'rm-phys-10-1',
+    subject: 'physics',
+    grade: 'Lớp 10',
+    order: 2,
+    title: 'Chuyển động Ném ngang/xiên & Bảo toàn Cơ năng',
+    titleEn: 'Projectile Motion & Conservation of Mechanical Energy',
+    goal: 'Phân tích chuyển động 2 chiều ($O_x$ thẳng đều, $O_y$ rơi tự do) và áp dụng $W = W_đ + W_t = \\text{const}$.',
+    goalEn: 'Decompose 2D projectile trajectories and apply energy conservation.',
+    prerequisites: ['rm-phys-9-1'],
+    estimatedMinutes: 40,
+    targetLessonId: 'phys-10-1',
+    workflowTips: ['Chạy PhET Projectile Motion thử góc bắn $30^\\circ, 45^\\circ, 60^\\circ$ để kiểm chứng tầm xa cực đại'],
+    checkQuestions: ['Ở độ cao cực đại của vật ném xiên, vận tốc toàn phần có bằng 0 không?']
+  },
+  {
+    id: 'rm-phys-11-1',
+    subject: 'physics',
+    grade: 'Lớp 11',
+    order: 3,
+    title: 'Dao động điều hòa, Con lắc & Sóng giao thoa',
+    titleEn: 'Harmonic Oscillations, Pendulums & Wave Interference',
+    goal: 'Viết phương trình $x = A\\cos(\\omega t + \\varphi)$, tính chu kì con lắc lò xo/đơn và tìm vân cực đại giao thoa.',
+    goalEn: 'Model SHM equations, pendulum periods, and constructive/destructive interference fringes.',
+    prerequisites: ['rm-phys-10-1'],
+    estimatedMinutes: 45,
+    targetLessonId: 'phys-11-1',
+    workflowTips: ['Kéo con lắc trên PhET Masses & Springs để quan sát sự chuyển hóa Động năng - Thế năng'],
+    checkQuestions: ['Khi vật đi qua vị trí cân bằng, đại lượng nào đạt cực đại và đại lượng nào bằng 0?']
+  },
+  {
+    id: 'rm-phys-12-1',
+    subject: 'physics',
+    grade: 'Lớp 12',
+    order: 4,
+    title: 'Mạch RLC, Cảm ứng điện từ & Hạt nhân - Lượng tử',
+    titleEn: 'AC RLC Circuits, Induction & Quantum/Nuclear Physics',
+    goal: 'Tính tổng trở $Z$, hiện tượng cộng hưởng điện $\\omega L = \\frac{1}{\\omega C}$, định luật phóng xạ $N = N_0 2^{-t/T}$.',
+    goalEn: 'Solve AC resonance circuits, Faraday induction, and radioactive decay laws.',
+    prerequisites: ['rm-phys-11-1'],
+    estimatedMinutes: 50,
+    targetLessonId: 'phys-12-1',
+    workflowTips: ['Thực hành PhET Faraday’s Law để hiểu khi nào từ thông biến thiên sinh ra dòng điện cảm ứng'],
+    checkQuestions: ['Điều kiện xảy ra cộng hưởng trong mạch RLC nối tiếp là gì và lúc đó $\\cos\\varphi$ bằng bao nhiêu?']
+  },
+
+  // ==================== TIN HỌC (CƠ BẢN -> HSG) ====================
+  {
+    id: 'rm-cs-1',
+    subject: 'cs',
+    grade: 'Cơ bản',
+    order: 1,
+    title: 'Nhập xuất chuẩn, Rẽ nhánh & Vòng lặp (C++ / Python)',
+    titleEn: 'Fast I/O, Conditionals & Loops (C++ / Python)',
+    goal: 'Thành thạo `cin/cout`, `sys.stdin`, vòng lặp `for/while` và xử lý số nguyên lớn `long long`.',
+    goalEn: 'Write clean I/O, loops, and prevent integer overflow with 64-bit integers.',
+    prerequisites: [],
+    estimatedMinutes: 30,
+    targetLessonId: 'cs-1',
+    workflowTips: ['Code trực tiếp trong Sublime Studio với syntax Monokai và tự chạy thử `input.txt`'],
+    checkQuestions: ['Tại sao bài toán tính tổng mảng $N \\le 10^5, |a_i| \\le 10^9$ trong C++ phải dùng `long long` thay vì `int`?']
+  },
+  {
+    id: 'rm-cs-2',
+    subject: 'cs',
+    grade: 'Cơ bản',
+    order: 2,
+    title: 'Mảng, Xâu kí tự & Số học (Sàng Eratosthenes, GCD)',
+    titleEn: 'Arrays, Strings & Number Theory (Sieve, GCD)',
+    goal: 'Tối ưu đếm tần suất, kiểm tra đối xứng, tìm $\\gcd(a,b)$ và sàng số nguyên tố $\\mathcal{O}(N\\log\\log N)$.',
+    goalEn: 'Master frequency arrays, string processing, Euclidean GCD, and prime sieve.',
+    prerequisites: ['rm-cs-1'],
+    estimatedMinutes: 40,
+    targetLessonId: 'cs-3',
+    workflowTips: ['Nộp bài lên Online Judge để kiểm tra cả test biên $N=1$, số nguyên tố $2$ và số lớn'],
+    checkQuestions: ['Khi kiểm tra số $x$ có phải số nguyên tố hay không, chỉ cần duyệt đến $\\sqrt{x}$ vì sao?']
+  },
+  {
+    id: 'rm-cs-3',
+    subject: 'cs',
+    grade: 'Trung cấp',
+    order: 3,
+    title: 'Mảng cộng dồn, Hai con trỏ & Tìm kiếm nhị phân',
+    titleEn: 'Prefix Sums, Two Pointers & Binary Search',
+    goal: 'Giảm độ phức tạp từ $\\mathcal{O}(N^2)$ xuống $\\mathcal{O}(N)$ hoặc $\\mathcal{O}(N\\log N)$ bằng Prefix Sum và Binary Search.',
+    goalEn: 'Optimize brute-force quadratic loops to linear/log-linear solutions.',
+    prerequisites: ['rm-cs-2'],
+    estimatedMinutes: 45,
+    targetLessonId: 'cs-5',
+    workflowTips: ['Phân tích số phép tính tối đa ($10^8$/giây) trước khi code để tránh Time Limit Exceeded (TLE)'],
+    checkQuestions: ['Điều kiện bắt buộc của mảng đầu vào để áp dụng Tìm kiếm nhị phân là gì?']
+  },
+  {
+    id: 'rm-cs-4',
+    subject: 'cs',
+    grade: 'Nâng cao / HSG',
+    order: 4,
+    title: 'Quy hoạch động (DP), Đồ thị BFS/DFS & Thi đấu Tự do',
+    titleEn: 'Dynamic Programming, Graph BFS/DFS & Free Contest',
+    goal: 'Thiết kế trạng thái DP (Cái túi, Dãy con tăng dài nhất LIS), duyệt đồ thị ngắn nhất và luyện AI sinh test.',
+    goalEn: 'Formulate DP recurrences, traverse graphs, and compete in weekly CS challenges.',
+    prerequisites: ['rm-cs-3'],
+    estimatedMinutes: 60,
+    targetLessonId: 'cs-8',
+    workflowTips: ['Xác định rõ: Trạng thái $dp[i]$ lưu gì? Bài toán cơ sở? Công thức chuyển trạng thái?'],
+    checkQuestions: ['Tại sao ở bài toán Balo 0/1 dùng mảng 1 chiều phải duyệt trọng lượng $w$ ngược từ $W$ về $w_i$?']
+  }
+];

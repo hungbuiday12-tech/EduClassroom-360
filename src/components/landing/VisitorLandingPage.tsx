@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { GalaxyBackground } from '../galaxy/GalaxyBackground';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -33,7 +34,8 @@ import {
   Volume2,
   VolumeX,
   ListOrdered,
-  ChevronDown
+  ChevronDown,
+  Orbit
 } from 'lucide-react';
 import { useAudio } from '../../context/AudioContext';
 import { useNavigation } from '../../context/NavigationContext';
@@ -90,6 +92,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 30);
+  };
+
+  const handleEnterSynapseV2 = () => {
+    navigate({ subject: 'synapse_v2', tutorOpen: false });
+    onEnterAsGuest();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const scrollToVisitorSection = (sectionId: string) => {
@@ -154,17 +162,42 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const [unauthDomainWarning, setUnauthDomainWarning] = useState<string | null>(null);
   const { creatureTheme, setCreatureTheme } = useBackgroundTheme();
   const [isCreatureMenuOpen, setIsCreatureMenuOpen] = useState(false);
+  const [creatureCoords, setCreatureCoords] = useState<{ top: number; right: number }>({
+    top: 66,
+    right: 24
+  });
   const creatureMenuRef = useRef<HTMLDivElement | null>(null);
+  const creaturePanelRef = useRef<HTMLDivElement | null>(null);
+
+  const syncCreatureCoords = () => {
+    const rect = creatureMenuRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setCreatureCoords({
+      top: Math.round(rect.bottom + 8),
+      right: Math.max(12, Math.round(window.innerWidth - rect.right))
+    });
+  };
 
   useEffect(() => {
     if (!isCreatureMenuOpen) return;
+    syncCreatureCoords();
     const handleClickOutside = (e: MouseEvent) => {
-      if (creatureMenuRef.current && !creatureMenuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const inTrigger = creatureMenuRef.current?.contains(target);
+      const inPanel = creaturePanelRef.current?.contains(target);
+      if (!inTrigger && !inPanel) {
         setIsCreatureMenuOpen(false);
       }
     };
+    const handleReposition = () => syncCreatureCoords();
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('resize', handleReposition);
+    window.addEventListener('scroll', handleReposition, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleReposition);
+      window.removeEventListener('scroll', handleReposition, true);
+    };
   }, [isCreatureMenuOpen]);
 
   const [activeSpotlight, setActiveSpotlight] = useState<LandingSpotlightKey>('math');
@@ -418,97 +451,115 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       {/* Dynamic 60fps Galaxy Background (Works in both Dark Deep Space & Light Celestial Aurora) */}
       <GalaxyBackground interactive={true} intensity="vibrant" isDark={isDark} />
 
-      {/* Top Navigation Bar (Enlarged VI/EN row with lively interactions) */}
-      <header className="relative z-20 border-b border-slate-200/80 dark:border-white/10 bg-white/75 dark:bg-slate-950/50 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 min-h-[68px] sm:min-h-[78px] flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <BrandLogo sizeClass="w-9 h-9 sm:w-10 sm:h-10" />
+      {/* Top Navigation Bar (Single-row medium-balanced VI/EN header, never wraps to second row) */}
+      <header className="relative z-40 border-b border-slate-200/80 dark:border-white/10 bg-white/75 dark:bg-slate-950/50 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-1.5 min-h-[58px] sm:min-h-[64px] flex items-center justify-between gap-2 sm:gap-3 flex-nowrap overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2.5 min-w-0 shrink-0">
+            <BrandLogo sizeClass="w-8 h-8 sm:w-9 sm:h-9" />
             <div className="min-w-0">
-              <span className="text-base sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white block truncate">
+              <span className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white block truncate">
                 Synapse
               </span>
-              <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-300 block -mt-0.5 truncate">
+              <span className="hidden sm:block text-[10px] font-mono text-indigo-600 dark:text-indigo-300 -mt-0.5 truncate">
                 Galaxy Academic Edition
               </span>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 lg:gap-2 flex-nowrap shrink-0">
             <button
               type="button"
               onClick={toggleLanguage}
-              className="group sheen-btn flex items-center gap-1.5 px-3.5 sm:px-4.5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-2xl border border-indigo-200/90 dark:border-white/20 bg-white/90 dark:bg-white/10 text-slate-800 dark:text-slate-100 hover:bg-indigo-50 dark:hover:bg-white/20 hover:border-indigo-400 shadow-xs transition-all cursor-pointer whitespace-nowrap"
+              className="group sheen-btn flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 text-xs font-bold rounded-xl border border-indigo-200/90 dark:border-white/20 bg-white/90 dark:bg-white/10 text-slate-800 dark:text-slate-100 hover:bg-indigo-50 dark:hover:bg-white/20 hover:border-indigo-400 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               title={isEn ? 'Chuyển sang Tiếng Việt' : 'Switch to English'}
             >
-              <Globe className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-indigo-500 group-hover:rotate-12 transition-transform" />
+              <Globe className="w-4 h-4 text-indigo-500 icon-anim-globe shrink-0" />
               <span className={!isEn ? 'text-indigo-600 dark:text-indigo-300 font-black' : 'opacity-60'}>VI</span>
               <span className="opacity-40">/</span>
               <span className={isEn ? 'text-indigo-600 dark:text-indigo-300 font-black' : 'opacity-60'}>EN</span>
             </button>
 
-            <div className="relative" ref={creatureMenuRef}>
+            <div className="relative shrink-0" ref={creatureMenuRef}>
               <button
-                onClick={() => setIsCreatureMenuOpen(!isCreatureMenuOpen)}
-                className="group sheen-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-2xl border border-indigo-200/80 dark:border-white/20 bg-white/90 dark:bg-white/10 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-white/20 hover:border-indigo-400 shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                type="button"
+                onClick={() => {
+                  syncCreatureCoords();
+                  setIsCreatureMenuOpen((v) => !v);
+                }}
+                aria-expanded={isCreatureMenuOpen}
+                className="group sheen-btn flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 text-xs font-bold rounded-xl border border-indigo-200/80 dark:border-white/20 bg-white/90 dark:bg-white/10 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-white/20 hover:border-indigo-400 shadow-xs transition-all cursor-pointer whitespace-nowrap"
                 title={isEn ? 'Choose interactive background creature' : 'Chọn sinh vật nền tương tác'}
               >
-                <Wand2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] group-hover:rotate-12 transition-transform shrink-0" />
-                <span className="hidden sm:inline">{isEn ? activeCreature.shortEn : activeCreature.shortVi}</span>
+                <Wand2 className="w-4 h-4 icon-anim-wand shrink-0" />
+                <span className="hidden lg:inline">{isEn ? activeCreature.shortEn : activeCreature.shortVi}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 opacity-75 transition-transform duration-200 ${
+                    isCreatureMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
 
-              {isCreatureMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-50 text-xs">
-                  <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800 mb-1">
-                    {isEn ? 'Interactive Background' : 'Nền Sinh Vật Tương Tác'}
-                  </div>
-                  {CREATURE_THEME_OPTIONS.map((opt) => {
-                    const selected = opt.id === creatureTheme;
-                    return (
-                      <button
-                        key={opt.id}
-                        onClick={() => {
-                          setCreatureTheme(opt.id);
-                          setIsCreatureMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${
-                          selected
-                            ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-bold'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        <span>{isEn ? opt.labelEn : opt.labelVi}</span>
-                        {selected && <Check className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              {isCreatureMenuOpen &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                  <div
+                    ref={creaturePanelRef}
+                    style={{ top: creatureCoords.top, right: creatureCoords.right }}
+                    className="fixed w-64 bg-white/98 dark:bg-slate-900/98 backdrop-blur-2xl border border-slate-200 dark:border-white/15 rounded-2xl shadow-[0_24px_64px_-12px_rgba(15,23,42,0.4)] dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.85)] p-1.5 z-[220] text-xs max-h-[75vh] overflow-y-auto"
+                  >
+                    <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 mb-1">
+                      {isEn ? 'Interactive Background' : 'Nền Sinh Vật Tương Tác'}
+                    </div>
+                    {CREATURE_THEME_OPTIONS.map((opt) => {
+                      const selected = opt.id === creatureTheme;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setCreatureTheme(opt.id);
+                            setIsCreatureMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${
+                            selected
+                              ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-bold'
+                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span>{isEn ? opt.labelEn : opt.labelVi}</span>
+                          {selected && <Check className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>,
+                  document.body
+                )}
             </div>
 
             <button
               type="button"
               onClick={() => scrollToLectureDirectory('all')}
-              className="group sheen-btn flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-extrabold rounded-2xl border border-indigo-400/80 dark:border-indigo-400/50 bg-indigo-600/12 dark:bg-indigo-500/25 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+              className="group sheen-btn flex items-center gap-1.5 px-3 lg:px-3.5 py-1.5 text-xs font-extrabold rounded-xl border border-indigo-400/80 dark:border-indigo-400/50 bg-indigo-600/12 dark:bg-indigo-500/25 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               title={isEn ? 'Table of Contents · Jump to Lectures' : 'Mục lục · Cuộn xuống Danh sách bài giảng'}
             >
-              <ListOrdered className="w-4 h-4 sm:w-[18px] sm:h-[18px] group-hover:scale-110 transition-transform shrink-0" />
+              <ListOrdered className="w-4 h-4 icon-anim-list shrink-0" />
               <span>{isEn ? 'Contents' : 'Mục lục'}</span>
             </button>
 
             <button
               type="button"
               onClick={scrollToVisitorReviews}
-              className="group sheen-btn flex items-center gap-2 px-3.5 sm:px-4.5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-2xl border border-amber-300/90 dark:border-amber-400/40 bg-amber-50/95 dark:bg-amber-950/45 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+              className="group sheen-btn flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 text-xs font-bold rounded-xl border border-amber-300/90 dark:border-amber-400/40 bg-amber-50/95 dark:bg-amber-950/45 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               title={isEn ? 'Scroll to Reviews & Votes' : 'Cuộn xuống Đánh giá & Bình chọn'}
             >
-              <Star className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-amber-500 fill-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
-              <span className="hidden md:inline">{isEn ? 'Reviews' : 'Đánh giá & Bình chọn'}</span>
+              <Star className="w-4 h-4 text-amber-500 fill-amber-400 icon-anim-star shrink-0" />
+              <span className="hidden xl:inline">{isEn ? 'Reviews' : 'Đánh giá'}</span>
             </button>
 
             <button
               type="button"
               onClick={toggleBgPlaying}
-              className={`group sheen-btn p-2.5 sm:p-3 rounded-2xl border shadow-xs transition-all cursor-pointer ${
+              className={`group sheen-btn p-2 rounded-xl border shadow-xs transition-all cursor-pointer shrink-0 ${
                 isBgPlaying && bgSound !== 'off'
                   ? 'border-emerald-400/70 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
                   : 'border-slate-200 dark:border-white/20 bg-white/90 dark:bg-white/10 text-slate-600 dark:text-slate-200 hover:border-indigo-400'
@@ -516,33 +567,33 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               title={isEn ? 'Toggle background music' : 'Bật/tắt âm thanh nền'}
             >
               {isBgPlaying && bgSound !== 'off' ? (
-                <Volume2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] group-hover:scale-110 transition-transform" />
+                <Volume2 className="w-4 h-4 icon-anim-wave" />
               ) : (
-                <VolumeX className="w-4 h-4 sm:w-[18px] sm:h-[18px] group-hover:scale-110 transition-transform" />
+                <VolumeX className="w-4 h-4 group-hover:scale-110 transition-transform" />
               )}
             </button>
 
             {onToggleTheme && (
               <button
                 onClick={onToggleTheme}
-                className="group sheen-btn p-2.5 sm:p-3 text-slate-600 dark:text-slate-200 bg-white/90 dark:bg-white/10 border border-slate-200 dark:border-white/20 hover:bg-amber-50 dark:hover:bg-white/20 rounded-2xl shadow-xs transition-all cursor-pointer"
+                className="group sheen-btn p-2 text-slate-600 dark:text-slate-200 bg-white/90 dark:bg-white/10 border border-slate-200 dark:border-white/20 hover:bg-amber-50 dark:hover:bg-white/20 rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
                 title={isEn ? (isDark ? 'Switch to Light' : 'Switch to Dark') : isDark ? 'Chuyển sang chế độ Sáng' : 'Chuyển sang chế độ Tối'}
               >
                 {isDark ? (
-                  <Sun className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-amber-400 group-hover:rotate-45 transition-transform" />
+                  <Sun className="w-4 h-4 text-amber-400 icon-anim-star" />
                 ) : (
-                  <Moon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-indigo-600 group-hover:-rotate-12 transition-transform" />
+                  <Moon className="w-4 h-4 text-indigo-600 group-hover:-rotate-12 transition-transform" />
                 )}
               </button>
             )}
 
             <button
               onClick={onEnterAsGuest}
-              className="group sheen-btn px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-indigo-600 dark:hover:bg-indigo-100 border border-transparent transition-all flex items-center gap-2 shadow-md whitespace-nowrap cursor-pointer"
+              className="group sheen-btn px-3 lg:px-4 py-1.5 text-xs font-bold rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-indigo-600 dark:hover:bg-indigo-100 border border-transparent transition-all flex items-center gap-1.5 shadow-md whitespace-nowrap cursor-pointer shrink-0"
             >
-              <span className="hidden sm:inline">{isEn ? 'Explore as Guest' : 'Vào trải nghiệm thử (Khách)'}</span>
-              <span className="sm:hidden">{isEn ? 'Try Now' : 'Vào thử'}</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              <span className="hidden md:inline">{isEn ? 'Explore as Guest' : 'Vào trải nghiệm thử'}</span>
+              <span className="md:hidden">{isEn ? 'Try Now' : 'Vào thử'}</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform shrink-0" />
             </button>
           </div>
         </div>
@@ -606,13 +657,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSpotlight('math')}
-                className={`min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'math'
                     ? 'bg-white dark:bg-slate-900/90 border-blue-500 ring-2 ring-blue-500/20'
                     : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-blue-400/60'
                 }`}
               >
-                <Compass className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-1.5" />
+                <Compass className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-1.5 icon-anim-compass" />
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                   {isEn ? 'Math 2D / Oxyz 3D' : 'Toán 2D / Oxyz 3D'}
                 </h4>
@@ -624,13 +675,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSpotlight('physics')}
-                className={`min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'physics'
                     ? 'bg-white dark:bg-slate-900/90 border-amber-500 ring-2 ring-amber-500/20'
                     : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400/60'
                 }`}
               >
-                <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1.5" />
+                <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1.5 icon-anim-zap" />
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                   {isEn ? 'Physics 2D & 3D' : 'Vật Lý 2D & 3D'}
                 </h4>
@@ -642,13 +693,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSpotlight('cs')}
-                className={`min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'cs'
                     ? 'bg-white dark:bg-slate-900/90 border-emerald-500 ring-2 ring-emerald-500/20'
                     : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-emerald-400/60'
                 }`}
               >
-                <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-1.5" />
+                <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-1.5 icon-anim-code" />
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                   {isEn ? 'CS Sublime 4' : 'Tin Học Sublime 4'}
                 </h4>
@@ -660,13 +711,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSpotlight('exams')}
-                className={`min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'exams'
                     ? 'bg-white dark:bg-slate-900/90 border-purple-500 ring-2 ring-purple-500/20'
                     : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-purple-400/60'
                 }`}
               >
-                <Award className="w-5 h-5 text-purple-600 dark:text-purple-400 mb-1.5" />
+                <Award className="w-5 h-5 text-purple-600 dark:text-purple-400 mb-1.5 icon-anim-award" />
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate tabular-nums">
                   {isEn ? `${totalExams} Official Exams` : `${totalExams} Đề Thi Chuẩn`}
                 </h4>
@@ -705,7 +756,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </div>
             </div>
 
-            {/* Quick Guest Enter Action + Reviews Quick Scroll */}
+            {/* Quick Guest Enter Action + Synapse v2 + Reviews Quick Scroll */}
             <div className="pt-1 flex flex-wrap items-center gap-3">
               <button
                 onClick={onEnterAsGuest}
@@ -718,10 +769,19 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
               <button
                 type="button"
+                onClick={handleEnterSynapseV2}
+                className="group sheen-btn w-full sm:w-auto px-5 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/25 whitespace-nowrap"
+              >
+                <Orbit className="w-4 h-4 icon-anim-cosmos shrink-0" />
+                <span>{isEn ? 'Synapse v2 · Virtual Campus' : 'Lớp học ảo · Synapse v2'}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={scrollToVisitorReviews}
                 className="group sheen-btn w-full sm:w-auto px-5 py-4 rounded-2xl bg-white/95 dark:bg-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-amber-300/90 dark:border-amber-400/40 text-amber-800 dark:text-amber-200 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap"
               >
-                <Star className="w-4 h-4 text-amber-500 fill-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-400 icon-anim-star shrink-0" />
                 <span>{isEn ? 'Ratings & Votes' : 'Đánh giá & Bình chọn'}</span>
               </button>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Compass, Zap, Code2 } from 'lucide-react';
+import { Compass, Zap, Code2, Orbit } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
 import { Header } from './components/Header';
 import { ClassroomOverview } from './components/ClassroomOverview';
@@ -11,6 +11,7 @@ import { ExamHub } from './components/exams/ExamHub';
 import { LearningRoadmap } from './components/roadmap/LearningRoadmap';
 import { ArenaHub } from './components/arena/ArenaHub';
 import { StudyForum } from './components/forum/StudyForum';
+import { SynapseV2Studio } from './components/synapsev2/SynapseV2Studio';
 import { SocraticAITutor } from './components/tutor/SocraticAITutor';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
@@ -238,7 +239,7 @@ function MainApp() {
           />
 
           {/* Main Viewport Container with Smooth Subject Transitions (no persistent transform/z-index trap) */}
-          <main className="relative flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-5 lg:px-7 py-6 sm:py-8">
+          <main className="relative z-10 flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-5 lg:px-7 py-6 sm:py-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentSubject}
@@ -298,6 +299,14 @@ function MainApp() {
                 {currentSubject === 'forum' && (
                   <StudyForum onBack={goBack} />
                 )}
+
+                {currentSubject === 'synapse_v2' && (
+                  <SynapseV2Studio
+                    onBack={goBack}
+                    onNavigate={selectSubject}
+                    onEarnXP={handleEarnXP}
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
           </main>
@@ -306,30 +315,30 @@ function MainApp() {
           <FloatingFocusTimer />
 
           {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Modern Floating 3-AI Dock */}
-          {!isTutorOpen && (
+          {!isTutorOpen && currentSubject !== 'synapse_v2' && (
             <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/90 dark:bg-slate-900/92 border border-white/15 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-md">
               <button
                 onClick={() => handleOpenTutor({ subject: 'math' })}
-                className="px-3 sm:px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                className="group px-3 sm:px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                 title={isEn ? 'Open Math AI (Left Ctrl + D)' : 'Mở AI Toán Học (Ctrl trái + D)'}
               >
-                <Compass className="w-3.5 h-3.5 shrink-0" />
+                <Compass className="w-3.5 h-3.5 shrink-0 icon-anim-compass" />
                 <span>{isEn ? 'Math AI' : 'AI Toán'}</span>
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'physics' })}
-                className="px-3 sm:px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer"
+                className="group px-3 sm:px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                 title={isEn ? 'Open Physics AI (Left Ctrl + F)' : 'Mở AI Vật Lí (Ctrl trái + F)'}
               >
-                <Zap className="w-3.5 h-3.5 shrink-0" />
+                <Zap className="w-3.5 h-3.5 shrink-0 icon-anim-zap" />
                 <span>{isEn ? 'Physics AI' : 'AI Lí'}</span>
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'cs' })}
-                className="px-3 sm:px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                className="group px-3 sm:px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                 title={isEn ? 'Open CS AI (Left Ctrl + G)' : 'Mở AI Tin Học (Ctrl trái + G)'}
               >
-                <Code2 className="w-3.5 h-3.5 shrink-0" />
+                <Code2 className="w-3.5 h-3.5 shrink-0 icon-anim-code" />
                 <span>{isEn ? 'CS AI' : 'AI Tin'}</span>
               </button>
             </div>
@@ -425,6 +434,13 @@ function MainApp() {
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-sky-600 dark:text-sky-400 font-semibold cursor-pointer"
                 >
                   {isEn ? 'Study Forum' : 'Diễn đàn học tập'}
+                </button>
+                <button
+                  onClick={() => selectSubject('synapse_v2')}
+                  className="group inline-flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-cyan-600 dark:text-cyan-400 font-bold cursor-pointer"
+                >
+                  <Orbit className="w-3.5 h-3.5 shrink-0 icon-anim-cosmos" />
+                  <span>{isEn ? 'Virtual Campus · Synapse v2' : 'Lớp học ảo · Synapse v2'}</span>
                 </button>
                 <button
                   onClick={() => setIsSettingsOpen(true)}

@@ -276,7 +276,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
                 : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-indigo-400 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/50'
             }`}
           >
-            <Layers className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform" />
+            <Layers className="w-4 h-4 shrink-0 icon-anim-list" />
             <span className="tabular-nums">
               {isEn ? `All (${totalCount})` : `Tất cả (${totalCount} bài)`}
             </span>
@@ -291,7 +291,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
                 : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400 hover:bg-sky-50/70 dark:hover:bg-sky-950/50'
             }`}
           >
-            <Compass className="w-4 h-4 shrink-0 group-hover:rotate-12 transition-transform" />
+            <Compass className="w-4 h-4 shrink-0 icon-anim-compass" />
             <span className="tabular-nums">
               {isEn ? `Math (${MATH_LECTURES.length})` : `Toán học (${MATH_LECTURES.length})`}
             </span>
@@ -306,7 +306,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
                 : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-amber-400 hover:bg-amber-50/70 dark:hover:bg-amber-950/50'
             }`}
           >
-            <Zap className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform" />
+            <Zap className="w-4 h-4 shrink-0 icon-anim-zap" />
             <span className="tabular-nums">
               {isEn ? `Physics (${PHYSICS_LESSONS.length})` : `Vật lí (${PHYSICS_LESSONS.length})`}
             </span>
@@ -321,7 +321,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
                 : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-emerald-400 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/50'
             }`}
           >
-            <Code2 className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform" />
+            <Code2 className="w-4 h-4 shrink-0 icon-anim-code" />
             <span className="tabular-nums">
               {isEn ? `CS (${CS_LESSONS.length})` : `Tin học (${CS_LESSONS.length})`}
             </span>

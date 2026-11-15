@@ -2,9 +2,16 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --font-display: 'Lora', Georgia, serif;
+  --font-sans: 'Merriweather', Georgia, serif;
+  --font-serif: 'Lora', 'Merriweather', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
 :root {
-  --font-display: 'Outfit', 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
-  --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+  --font-display: 'Lora', Georgia, serif;
+  --font-sans: 'Merriweather', Georgia, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -16,7 +23,7 @@
 
   h1, h2, h3, h4, .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
     text-wrap: balance;
   }
 
@@ -254,6 +261,557 @@
   animation: sheen-slide 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Lively GPU-composited animations for symbolic icons next to button text */
+@keyframes icon-compass-needle {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(16deg); }
+}
+
+@keyframes icon-zap-spark {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  35% { transform: scale(1.16) rotate(-7deg); opacity: 0.92; }
+  70% { transform: scale(0.96) rotate(5deg); opacity: 1; }
+}
+
+@keyframes icon-code-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-2.5px) rotate(-4deg); }
+}
+
+@keyframes icon-trophy-bob {
+  0%, 100% { transform: translateY(0px) rotate(-3deg); }
+  50% { transform: translateY(-3px) rotate(4deg) scale(1.06); }
+}
+
+@keyframes icon-star-twinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.18) rotate(12deg); }
+}
+
+@keyframes icon-wand-swish {
+  0%, 100% { transform: rotate(-6deg) translateY(0px); }
+  50% { transform: rotate(12deg) translateY(-2px); }
+}
+
+@keyframes icon-branch-sway {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(7deg) scale(1.08); }
+}
+
+@keyframes icon-wave-bounce {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.14) translateX(1px); }
+}
+
+@keyframes icon-award-swing {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(6deg) scale(1.07); }
+}
+
+@keyframes icon-list-glide {
+  0%, 100% { transform: translateX(0px) scale(1); }
+  50% { transform: translateX(2px) scale(1.08); }
+}
+
+@keyframes icon-cosmos-pulse {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.12); }
+}
+
+.icon-anim-compass {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-compass-needle 3.4s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-compass {
+  animation: none;
+  transform: rotate(38deg) scale(1.18);
+}
+.group:active .icon-anim-compass {
+  transform: rotate(95deg) scale(0.95);
+}
+
+.icon-anim-zap {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-zap-spark 2.4s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-zap {
+  animation: none;
+  transform: scale(1.22) rotate(-12deg);
+}
+
+.icon-anim-code {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-code-float 2.8s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-code {
+  animation: none;
+  transform: translateY(-2px) scale(1.18) rotate(6deg);
+}
+
+.icon-anim-globe {
+  display: inline-flex;
+  transform-origin: center;
+  animation: orbit-spin 11s linear infinite;
+  transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-globe {
+  animation-duration: 2.2s;
+  transform: scale(1.15);
+}
+
+.icon-anim-atom {
+  display: inline-flex;
+  transform-origin: center;
+  animation: orbit-spin 8.5s linear infinite;
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-atom {
+  animation-duration: 1.8s;
+  transform: scale(1.18);
+}
+
+.icon-anim-cosmos {
+  display: inline-flex;
+  transform-origin: center;
+  animation: orbit-spin 7s linear infinite;
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-cosmos {
+  animation-duration: 1.5s;
+  transform: scale(1.22);
+}
+
+.icon-anim-trophy {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-trophy-bob 2.6s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-trophy {
+  animation: none;
+  transform: translateY(-3px) rotate(10deg) scale(1.2);
+}
+
+.icon-anim-star {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-star-twinkle 2.8s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-star {
+  animation: none;
+  transform: rotate(36deg) scale(1.24);
+}
+
+.icon-anim-wand {
+  display: inline-flex;
+  transform-origin: bottom left;
+  animation: icon-wand-swish 3s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-wand {
+  animation: none;
+  transform: rotate(22deg) scale(1.18);
+}
+
+.icon-anim-branch {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-branch-sway 3.2s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-branch {
+  animation: none;
+  transform: rotate(12deg) scale(1.18);
+}
+
+.icon-anim-wave {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-wave-bounce 2.2s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-wave {
+  animation: none;
+  transform: scale(1.22);
+}
+
+.icon-anim-award {
+  display: inline-flex;
+  transform-origin: top center;
+  animation: icon-award-swing 3.1s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-award {
+  animation: none;
+  transform: rotate(14deg) scale(1.18);
+}
+
+.icon-anim-list {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-list-glide 2.7s ease-in-out infinite;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-list {
+  animation: none;
+  transform: translateX(3px) scale(1.18);
+}
+
+@keyframes icon-book-open {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(-5deg) scale(1.08); }
+}
+
+.icon-anim-book {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-book-open 3s ease-in-out infinite;
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-book {
+  animation: none;
+  transform: rotate(-8deg) scale(1.22);
+}
+
+/* Kinetic Deck Button: larger specular sweep, glow edge, and spring lift */
+.cs-deck-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.cs-deck-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 55%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.34) 48%,
+    rgba(255, 255, 255, 0.08) 65%,
+    transparent 100%
+  );
+  transform: translateX(-180%) skewX(-22deg);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cs-deck-btn:hover::before {
+  animation: sheen-slide 0.78s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cs-deck-btn::after {
+  content: '';
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: 2px;
+  height: 2.5px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0;
+  transform: scaleX(0.25);
+  transform-origin: center;
+  transition:
+    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 180ms ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cs-deck-btn:hover::after {
+  opacity: 0.75;
+  transform: scaleX(1);
+}
+
+.cs-deck-btn:hover {
+  transform: translateY(-3px) scale(1.022);
+}
+
+.cs-deck-btn:active {
+  transform: translateY(1px) scale(0.965) !important;
+  transition-duration: 90ms !important;
+}
+
+.icon-anim-gear {
+  display: inline-flex;
+  transform-origin: center;
+  animation: orbit-spin 16s linear infinite;
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-gear {
+  animation: none;
+  transform: rotate(90deg) scale(1.18);
+}
+
+/* Futuristic Holographic Card Frames (Synapse v2 Virtual Campus) */
+@keyframes holo-scan-sweep {
+  0% { transform: translateY(-110%); opacity: 0; }
+  15% { opacity: 0.75; }
+  85% { opacity: 0.75; }
+  100% { transform: translateY(230%); opacity: 0; }
+}
+
+@keyframes holo-float-idle {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-5px) scale(1.03); }
+}
+
+@keyframes holo-dash-flow {
+  from { stroke-dashoffset: 120; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes holo-ring-pulse {
+  0%, 100% { transform: scale(0.92); opacity: 0.35; }
+  50% { transform: scale(1.12); opacity: 0.85; }
+}
+
+.holo-card-frame {
+  position: relative;
+  border-radius: 1.5rem;
+  padding: 1.5px;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.holo-card-frame:hover {
+  transform: translateY(-7px) scale(1.016);
+}
+
+.holo-card-frame:active {
+  transform: translateY(-1px) scale(0.978) !important;
+  transition-duration: 100ms !important;
+}
+
+.holo-conic-ring {
+  position: absolute;
+  inset: -60%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--holo-accent, #38bdf8) 55deg,
+    transparent 125deg,
+    var(--holo-secondary, #818cf8) 215deg,
+    transparent 290deg,
+    var(--holo-accent, #38bdf8) 360deg
+  );
+  opacity: 0.42;
+  animation: orbit-spin 8.5s linear infinite;
+  transition: opacity 280ms ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.holo-card-frame:hover .holo-conic-ring {
+  opacity: 0.96;
+  animation-duration: 2.8s;
+}
+
+.holo-scan-beam {
+  animation: holo-scan-sweep 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.holo-card-frame:hover .holo-scan-beam {
+  animation-duration: 1.9s;
+}
+
+.holo-orbit-cw {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: orbit-spin 12s linear infinite;
+}
+
+.holo-orbit-ccw {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: orbit-spin 9s linear infinite reverse;
+}
+
+.holo-card-frame:hover .holo-orbit-cw {
+  animation-duration: 4.5s;
+}
+
+.holo-card-frame:hover .holo-orbit-ccw {
+  animation-duration: 3.5s;
+}
+
+.holo-float {
+  animation: holo-float-idle 3.8s ease-in-out infinite;
+}
+
+.holo-dash {
+  stroke-dasharray: 10 8;
+  animation: holo-dash-flow 2.4s linear infinite;
+}
+
+.holo-ring-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: holo-ring-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes holo-radar-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.holo-radar-sweep {
+  animation: holo-radar-spin 7.5s linear infinite;
+}
+
+.holo-card-frame:hover .holo-radar-sweep {
+  animation-duration: 3s;
+}
+
+@keyframes aurora-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(60px, 40px, 0) scale(1.12); }
+}
+
+@keyframes aurora-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+  50% { transform: translate3d(-70px, 50px, 0) scale(0.95); }
+}
+
+@keyframes aurora-drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(40px, -45px, 0) scale(1.1); }
+}
+
+.synapse-aurora-blob-a {
+  animation: aurora-drift-a 16s ease-in-out infinite;
+}
+
+.synapse-aurora-blob-b {
+  animation: aurora-drift-b 20s ease-in-out infinite;
+}
+
+.synapse-aurora-blob-c {
+  animation: aurora-drift-c 18s ease-in-out infinite;
+}
+
+/* Informatics / Computer Science Algorithm Frame Animations */
+@keyframes algo-cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.12; }
+}
+
+@keyframes algo-sweep-x {
+  0%, 100% { transform: translateX(0px); }
+  50% { transform: translateX(132px); }
+}
+
+@keyframes algo-window-slide {
+  0%, 100% { transform: translateX(0px); }
+  50% { transform: translateX(74px); }
+}
+
+@keyframes algo-bar-oscillate {
+  0%, 100% { transform: scaleY(1); opacity: 0.85; }
+  50% { transform: scaleY(1.22); opacity: 1; }
+}
+
+@keyframes algo-data-stream {
+  0% { transform: translateY(8px); opacity: 0.15; }
+  50% { opacity: 0.72; }
+  100% { transform: translateY(-18px); opacity: 0.15; }
+}
+
+@keyframes algo-node-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.72; }
+  50% { transform: scale(1.28); opacity: 1; }
+}
+
+.algo-card-frame {
+  position: relative;
+  border-radius: 1.35rem;
+  padding: 1.5px;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.algo-card-frame:hover {
+  transform: translateY(-6px) scale(1.015);
+}
+
+.algo-card-frame:active {
+  transform: translateY(-1px) scale(0.98) !important;
+  transition-duration: 90ms !important;
+}
+
+.algo-circuit-ring {
+  position: absolute;
+  inset: -65%;
+  background: conic-gradient(
+    from 90deg,
+    transparent 0deg,
+    var(--algo-accent, #10b981) 45deg,
+    transparent 110deg,
+    var(--algo-secondary, #06b6d4) 210deg,
+    transparent 275deg,
+    var(--algo-accent, #10b981) 360deg
+  );
+  opacity: 0.36;
+  animation: orbit-spin 10s linear infinite;
+  transition: opacity 240ms ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.algo-card-frame:hover .algo-circuit-ring {
+  opacity: 0.94;
+  animation-duration: 3.2s;
+}
+
+.algo-cursor-blink {
+  animation: algo-cursor-blink 1.05s steps(2, start) infinite;
+}
+
+.algo-sweep-x {
+  animation: algo-sweep-x 3.4s ease-in-out infinite;
+}
+
+.algo-window-slide {
+  animation: algo-window-slide 3s ease-in-out infinite;
+}
+
+.algo-bar-oscillate {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: algo-bar-oscillate 2.1s ease-in-out infinite;
+}
+
+.algo-data-stream {
+  animation: algo-data-stream 3.2s linear infinite;
+}
+
+.algo-node-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: algo-node-pulse 2.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-electric-flow,
   .animate-electric-flow-fast,
@@ -266,10 +824,44 @@
   .typing-dot-2,
   .typing-dot-3,
   .sheen-btn:hover::after,
+  .cs-deck-btn:hover::before,
   .group:hover .group-hover-sheen,
   .water-ripple-fill,
   .water-ripple-ring-primary,
-  .water-ripple-ring-secondary {
+  .water-ripple-ring-secondary,
+  .icon-anim-compass,
+  .icon-anim-zap,
+  .icon-anim-code,
+  .icon-anim-globe,
+  .icon-anim-atom,
+  .icon-anim-cosmos,
+  .icon-anim-trophy,
+  .icon-anim-star,
+  .icon-anim-wand,
+  .icon-anim-branch,
+  .icon-anim-wave,
+  .icon-anim-award,
+  .icon-anim-list,
+  .icon-anim-book,
+  .icon-anim-gear,
+  .holo-conic-ring,
+  .holo-scan-beam,
+  .holo-orbit-cw,
+  .holo-orbit-ccw,
+  .holo-float,
+  .holo-dash,
+  .holo-ring-pulse,
+  .holo-radar-sweep,
+  .synapse-aurora-blob-a,
+  .synapse-aurora-blob-b,
+  .synapse-aurora-blob-c,
+  .algo-circuit-ring,
+  .algo-cursor-blink,
+  .algo-sweep-x,
+  .algo-window-slide,
+  .algo-bar-oscillate,
+  .algo-data-stream,
+  .algo-node-pulse {
     animation: none !important;
   }
 }

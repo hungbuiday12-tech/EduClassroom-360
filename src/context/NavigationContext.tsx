@@ -17,6 +17,8 @@ export interface NavLocation {
   csLessonTab: 'lecture' | 'code' | 'practice' | 'visualizer';
   csAlgoId?: string;
   examId: string | null;
+  synapseMode: 'catalog' | 'stage';
+  synapseMonumentId: string;
   tutorOpen: boolean;
   tutorSubject: SubjectType;
 }
@@ -35,6 +37,8 @@ const DEFAULT_LOCATION: NavLocation = {
   csLessonTab: 'lecture',
   csAlgoId: 'coord_hull',
   examId: null,
+  synapseMode: 'catalog',
+  synapseMonumentId: 'dyson',
   tutorOpen: false,
   tutorSubject: 'math'
 };
@@ -47,6 +51,14 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
   switch (loc.subject) {
     case 'overview':
       return isEn ? 'Classroom' : 'Lớp học';
+    case 'synapse_v2':
+      return loc.synapseMode === 'stage'
+        ? isEn
+          ? '3D Observatory'
+          : 'Không gian 3D Ảo'
+        : isEn
+        ? 'Virtual Campus · Synapse v2'
+        : 'Lớp học ảo · Synapse v2';
     case 'roadmap':
       return isEn ? 'Study Roadmap' : 'Lộ trình học';
     case 'math':
@@ -101,6 +113,8 @@ function isSameLocation(a: NavLocation, b: NavLocation): boolean {
     a.csLessonTab === b.csLessonTab &&
     a.csAlgoId === b.csAlgoId &&
     a.examId === b.examId &&
+    a.synapseMode === b.synapseMode &&
+    a.synapseMonumentId === b.synapseMonumentId &&
     a.tutorOpen === b.tutorOpen &&
     a.tutorSubject === b.tutorSubject
   );
@@ -205,6 +219,8 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         patch.csLessonTab = 'lecture';
       } else if (subject === 'exams') {
         patch.examId = null;
+      } else if (subject === 'synapse_v2') {
+        patch.synapseMode = 'catalog';
       }
 
       if (isSameLocation(prev, { ...prev, ...patch })) {

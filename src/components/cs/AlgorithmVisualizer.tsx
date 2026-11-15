@@ -34,18 +34,24 @@ import { ArrayStringVisualizer } from './visualizer/renderers/ArrayStringVisuali
 import { MatrixDpVisualizer } from './visualizer/renderers/MatrixDpVisualizer';
 import { GraphAlgoCanvas } from './visualizer/renderers/GraphAlgoCanvas';
 import { ViewportPortal } from '../common/ViewportPortal';
+import { ALGO_THEME_PALETTE, AlgoThumbPreview } from './visualizer/AlgoThumbPreview';
 import {
   ArrowLeft,
+  ArrowRight,
   ChevronFirst,
   ChevronLast,
   ChevronLeft,
   ChevronRight,
+  Cpu,
+  LayoutGrid,
   Maximize2,
   Minimize2,
   Pause,
   Play,
   RotateCcw,
-  SlidersHorizontal
+  Search,
+  SlidersHorizontal,
+  Terminal
 } from 'lucide-react';
 
 interface AlgorithmVisualizerProps {
@@ -240,7 +246,11 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
   onScoreEarned
 }) => {
   const [category, setCategory] = useState<AlgoCategory>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [algoId, setAlgoId] = useState<AlgoId>(initialAlgoId);
+  const [vizViewMode, setVizViewMode] = useState<'gallery' | 'stage'>(() =>
+    embeddedLessonTitle ? 'stage' : 'gallery'
+  );
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Sync if prop changes from lesson navigation
@@ -248,7 +258,21 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
     setAlgoId(initialAlgoId);
     setStepIdx(0);
     setIsPlaying(false);
-  }, [initialAlgoId]);
+    if (embeddedLessonTitle) {
+      setVizViewMode('stage');
+    }
+  }, [initialAlgoId, embeddedLessonTitle]);
+
+  useEffect(() => {
+    const onVizReset = () => {
+      if (!embeddedLessonTitle) {
+        setIsFullscreen(false);
+        setVizViewMode('gallery');
+      }
+    };
+    window.addEventListener('educlassroom:cs-viz-reset', onVizReset);
+    return () => window.removeEventListener('educlassroom:cs-viz-reset', onVizReset);
+  }, [embeddedLessonTitle]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -536,9 +560,16 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
   );
 
   const visibleAlgos = useMemo(() => {
-    if (category === 'all') return ALGO_CATALOG;
-    return ALGO_CATALOG.filter((a) => a.category === category);
-  }, [category]);
+    const kw = searchQuery.trim().toLowerCase();
+    return ALGO_CATALOG.filter((a) => {
+      if (category !== 'all' && a.category !== category) return false;
+      if (kw) {
+        const hay = `${a.titleVi} ${a.titleEn} ${a.shortTag} ${a.complexity} ${a.summaryVi}`.toLowerCase();
+        if (!hay.includes(kw)) return false;
+      }
+      return true;
+    });
+  }, [category, searchQuery]);
 
   const currentStep: VizStep = steps[Math.min(stepIdx, Math.max(0, steps.length - 1))] || {
     stepIndex: 0,
@@ -548,10 +579,13 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
     state: {}
   };
 
-  const handleSelectAlgo = (nextId: AlgoId) => {
+  const handleSelectAlgo = (nextId: AlgoId, enterStage = true) => {
     setAlgoId(nextId);
     setStepIdx(0);
     setIsPlaying(false);
+    if (enterStage) {
+      setVizViewMode('stage');
+    }
   };
 
   // Canvas Interaction Handlers
@@ -1515,6 +1549,219 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
     return null;
   };
 
+  // =========================================================================
+  // VIEW 1: 16 INFORMATICS ALGORITHM FRAMES GALLERY (CYBER MATRIX EDITION)
+  // =========================================================================
+  if (vizViewMode === 'gallery' && !isFullscreen) {
+    return (
+      <div className="space-y-6 pb-8">
+        {/* Informatics Command Header Banner */}
+        <section className="relative overflow-hidden rounded-3xl border border-emerald-400/35 bg-gradient-to-br from-[#030b17] via-[#061326] to-[#0a192f] text-white p-6 sm:p-8 shadow-[0_24px_80px_-20px_rgba(16,185,129,0.42)]">
+          {/* Matrix Grid + Laser Sweep */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-35"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 12% 20%, rgba(16,185,129,0.28) 0%, transparent 45%), radial-gradient(circle at 88% 75%, rgba(6,182,212,0.25) 0%, transparent 48%), linear-gradient(to right, rgba(16,185,129,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(16,185,129,0.1) 1px, transparent 1px)',
+              backgroundSize: '100% 100%, 100% 100%, 26px 26px, 26px 26px'
+            }}
+          />
+          <div
+            aria-hidden="true"
+            className="holo-scan-beam pointer-events-none absolute inset-x-0 h-16 opacity-40"
+            style={{
+              background:
+                'linear-gradient(180deg, transparent 0%, rgba(16,185,129,0.22) 50%, transparent 100%)'
+            }}
+          />
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-3">
+                {onBack && (
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-emerald-500/25 border border-white/20 hover:border-emerald-400/60 text-xs font-bold text-slate-100 transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                    <span>Quay lại</span>
+                  </button>
+                )}
+                <span className="inline-flex items-center gap-2 text-xs font-mono font-extrabold uppercase tracking-[0.2em] text-emerald-300">
+                  <Terminal className="w-4 h-4 text-emerald-400 icon-anim-code" />
+                  INFORMATICS LAB · {ALGO_CATALOG.length} MODULE THUẬT TOÁN
+                </span>
+              </div>
+
+              <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
+                {ALGO_CATALOG.length} Khung Mô Phỏng Thuật Toán &amp; Cấu Trúc Dữ Liệu
+              </h2>
+
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Chọn một khung thuật toán bên dưới để chạy từng bước thực thi, theo dõi biến trực tiếp, chỉnh sửa dữ liệu đầu vào và đối chiếu mã giả chuẩn thi VNOI / HSG Quốc gia.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-3 shrink-0">
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => handleSelectAlgo(algoId, true)}
+                className="group cs-deck-btn px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-extrabold text-sm shadow-[0_14px_34px_-6px_rgba(16,185,129,0.68)] flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <Cpu className="w-4 h-4 icon-anim-code" />
+                <span>Mở Phòng Mô Phỏng Đang Chọn</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <span className="text-[11px] font-mono text-emerald-300/85 tabular-nums">
+                +15 XP khi hoàn thành mô phỏng mỗi thuật toán
+              </span>
+            </div>
+          </div>
+
+          {/* Filter & Search Bar */}
+          <div className="relative z-10 mt-6 pt-5 border-t border-emerald-400/20 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {CATEGORY_TABS.map((cat) => {
+                const selected = category === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setCategory(cat.id)}
+                    className={`group cs-deck-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer border transition-all ${
+                      selected
+                        ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 border-emerald-200 shadow-[0_8px_20px_-4px_rgba(16,185,129,0.65)]'
+                        : 'bg-slate-900/75 text-slate-200 border-emerald-500/25 hover:bg-emerald-950/60 hover:text-white hover:border-emerald-400/60'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="relative w-full lg:w-72">
+              <Search className="w-4 h-4 text-emerald-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm KMP, Dijkstra, DP, O(N log N)..."
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950/80 border border-emerald-400/30 focus:border-emerald-300 focus:outline-none text-xs text-white placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 16 Animated Informatics Frames Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {visibleAlgos.map((item, idx) => {
+            const palette = ALGO_THEME_PALETTE[item.id];
+            const cleanTitle = item.titleVi;
+            const snippet = item.pseudocode.slice(0, 2);
+            return (
+              <div
+                key={item.id}
+                style={
+                  {
+                    '--algo-accent': palette.accent,
+                    '--algo-secondary': palette.secondary
+                  } as React.CSSProperties
+                }
+                className="algo-card-frame group shadow-[0_18px_45px_-16px_rgba(16,185,129,0.28)] hover:shadow-[0_24px_60px_-12px_rgba(6,182,212,0.52)]"
+              >
+                {/* Animated Cyber Circuit Conic Border Ring */}
+                <div aria-hidden="true" className="algo-circuit-ring" />
+
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => handleSelectAlgo(item.id, true)}
+                  className="relative z-10 w-full h-full flex flex-col justify-between text-left rounded-[1.28rem] bg-gradient-to-br from-[#061121] via-[#071528] to-[#0a1a31] text-white overflow-hidden cursor-pointer"
+                >
+                  <div>
+                    {/* Live Animated Informatics SVG Schematic */}
+                    <AlgoThumbPreview
+                      id={item.id}
+                      accentHex={palette.accent}
+                      secondaryHex={palette.secondary}
+                      complexity={item.complexity}
+                    />
+
+                    {/* Card Content */}
+                    <div className="p-5 space-y-2.5">
+                      <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
+                        <span className="font-bold text-emerald-300 tabular-nums">
+                          #{String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span className="text-cyan-200/85 truncate">{item.shortTag}</span>
+                      </div>
+
+                      <h3 className="font-display text-base sm:text-lg font-extrabold text-white group-hover:text-emerald-300 transition-colors leading-snug">
+                        {cleanTitle}
+                      </h3>
+
+                      <p className="text-xs text-slate-300/90 leading-relaxed line-clamp-2">
+                        {item.summaryVi}
+                      </p>
+
+                      {/* Mini Terminal Pseudocode Preview */}
+                      <div className="mt-2 rounded-xl bg-[#020710] border border-emerald-500/20 px-3 py-2 font-mono text-[10.5px] leading-relaxed text-emerald-300/85 overflow-hidden">
+                        {snippet.map((line, lineIdx) => (
+                          <div key={lineIdx} className="truncate">
+                            <span className="text-slate-600 select-none mr-2">{lineIdx + 1}</span>
+                            <span>{line}</span>
+                            {lineIdx === snippet.length - 1 && (
+                              <span className="algo-cursor-blink inline-block w-1.5 h-3 bg-emerald-400 ml-1 align-middle" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Footer Launch Bar */}
+                  <div className="px-5 py-3 border-t border-emerald-400/15 bg-gradient-to-r from-emerald-500/[0.06] to-cyan-500/[0.08] flex items-center justify-between gap-2 text-xs">
+                    <span className="font-mono text-[11px] text-slate-400">
+                      Step Trace · Watch Variables
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 font-extrabold text-emerald-300 group-hover:text-white transition-colors shrink-0">
+                      <span>Mở Mô Phỏng</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </div>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {visibleAlgos.length === 0 && (
+          <div className="rounded-2xl border border-emerald-500/25 bg-[#061121] p-8 text-center text-slate-300 space-y-3">
+            <p className="text-sm font-semibold">Không tìm thấy thuật toán nào khớp với "{searchQuery}".</p>
+            <button
+              type="button"
+              onClick={() => {
+                setCategory('all');
+                setSearchQuery('');
+              }}
+              className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold cursor-pointer"
+            >
+              Hiển thị tất cả {ALGO_CATALOG.length} khung thuật toán
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW 2: INTERACTIVE STEP-BY-STEP ALGORITHM WORKBENCH STAGE
+  // =========================================================================
   const mainShell = (
     <div
       className={`space-y-4 ${
@@ -1523,20 +1770,31 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
           : ''
       }`}
     >
-      {/* Top Bar: Selector & Categories */}
-      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-3">
+      {/* Sleek Single-Row Workbench Header Bar */}
+      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {onBack && !isFullscreen && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            {onBack && !isFullscreen && embeddedLessonTitle && (
               <button
                 type="button"
                 onClick={onBack}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer whitespace-nowrap"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Quay lại</span>
+                <span>Bài giảng</span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                setIsFullscreen(false);
+                setVizViewMode('gallery');
+              }}
+              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <LayoutGrid className="w-3.5 h-3.5 icon-anim-list" />
+              <span>{ALGO_CATALOG.length} Khung Thuật Toán</span>
+            </button>
             <div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-bold text-blue-600 dark:text-blue-400">
@@ -1553,7 +1811,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   </>
                 )}
               </div>
-              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white mt-0.5">
+              <h2 className="font-display text-base sm:text-lg font-extrabold text-slate-900 dark:text-white mt-0.5">
                 {currentMeta.titleVi}
               </h2>
             </div>
@@ -1562,10 +1820,10 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
           <div className="flex items-center gap-2">
             <select
               value={algoId}
-              onChange={(e) => handleSelectAlgo(e.target.value as AlgoId)}
-              className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-100 max-w-[270px]"
+              onChange={(e) => handleSelectAlgo(e.target.value as AlgoId, true)}
+              className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-100 max-w-[260px]"
             >
-              {visibleAlgos.map((a) => (
+              {ALGO_CATALOG.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.titleVi}
                 </option>
@@ -1575,55 +1833,11 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
               type="button"
               onClick={() => setIsFullscreen((f) => !f)}
               title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
-              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>
-        </div>
-
-        {/* Category Filter Strip */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {CATEGORY_TABS.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => {
-                setCategory(cat.id);
-                if (cat.id !== 'all') {
-                  const first = ALGO_CATALOG.find((a) => a.category === cat.id);
-                  if (first && ALGO_CATALOG.find((a) => a.id === algoId)?.category !== cat.id) {
-                    handleSelectAlgo(first.id);
-                  }
-                }
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                category === cat.id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Algorithm Quick Buttons inside selected category */}
-        <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
-          {visibleAlgos.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => handleSelectAlgo(item.id)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
-                algoId === item.id
-                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950'
-                  : 'bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/70 text-slate-600 dark:text-slate-300 hover:border-blue-400'
-              }`}
-            >
-              {item.titleVi.replace(/^.*?: /, '')}
-            </button>
-          ))}
         </div>
       </div>
 

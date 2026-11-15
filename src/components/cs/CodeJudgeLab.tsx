@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import confetti from 'canvas-confetti';
+import { motion } from 'motion/react';
 import { CS_LESSONS } from '../../data/csLessonsData';
 import { CODING_PROBLEMS } from '../../data/curriculumData';
 import {
@@ -515,86 +516,162 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
   return (
     <div className="space-y-6 animate-fadeIn pb-12 overflow-x-hidden">
       {/* Header Banner */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <button
-              onClick={viewMode !== 'curriculum' ? goBack : onBack || goBack}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{t('nav.back_prev', 'Quay lại trang trước', 'Back')}</span>
-            </button>
-            {viewMode !== 'curriculum' && (
+      <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col gap-5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <button
-                onClick={() => navigate({ csViewMode: 'curriculum' })}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 hover:bg-blue-100 transition-colors"
+                onClick={viewMode !== 'curriculum' ? goBack : onBack || goBack}
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>{t('cs.goto_curriculum', 'VNOI Roadmap', 'VNOI Roadmap')}</span>
+                <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                <span>{t('nav.back_prev', 'Quay lại trang trước', 'Back')}</span>
               </button>
-            )}
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              Tin Học Chuyên Sâu · VNOI Roadmap
-            </span>
-            <span className="text-slate-400" aria-hidden="true">·</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              Phase 0 ➜ Phase 4 · C++ &amp; Python
-            </span>
+              {viewMode !== 'curriculum' && (
+                <button
+                  onClick={() => navigate({ csViewMode: 'curriculum' })}
+                  className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 hover:bg-blue-100 transition-colors cursor-pointer"
+                >
+                  <BookOpen className="w-3.5 h-3.5 icon-anim-book" />
+                  <span>{t('cs.goto_curriculum', 'VNOI Roadmap', 'VNOI Roadmap')}</span>
+                </button>
+              )}
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                Tin Học Chuyên Sâu · VNOI Roadmap
+              </span>
+              <span className="text-slate-400" aria-hidden="true">·</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Phase 0 ➜ Phase 4 · C++ &amp; Python
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+              Lộ Trình VNOI Roadmap &amp; Trình Chấm Online Judge
+            </h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Hệ thống bài giảng chi tiết từng phần theo chuẩn VNOI Wiki, code mẫu song ngữ C++/Python và trình chấm test tự động.
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Lộ Trình VNOI Roadmap &amp; Trình Chấm Online Judge
-          </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Hệ thống bài giảng chi tiết từng phần theo chuẩn VNOI Wiki, code mẫu song ngữ C++/Python và trình chấm test tự động.
-          </p>
         </div>
 
-        {/* View Mode Switcher (VNOI Roadmap vs Online Judge vs Sublime Studio) */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+        {/* View Mode Switcher (Large Interactive Command Deck) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-stretch gap-2.5 bg-slate-100/90 dark:bg-slate-800/75 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 shadow-inner">
           <button
             onClick={() => navigate({ csViewMode: 'curriculum' })}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[50px] rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
               viewMode === 'curriculum'
-                ? 'bg-blue-600 text-white shadow-sm font-semibold'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-white shadow-[0_12px_28px_-8px_rgba(37,99,235,0.65)]'
+                : 'bg-white/75 dark:bg-slate-900/55 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-400/70 hover:text-blue-600 dark:hover:text-blue-300'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
-            <span>{t('cs.tab.curriculum', '1. VNOI Roadmap & Bài Giảng', '1. VNOI Roadmap & Lectures')}</span>
+            {viewMode === 'curriculum' && (
+              <motion.span
+                layoutId="cs-viewmode-active"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 z-0"
+              />
+            )}
+            <span
+              className={`relative z-10 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${
+                viewMode === 'curriculum'
+                  ? 'bg-white/20 text-white ring-1 ring-white/30'
+                  : 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/60'
+              }`}
+            >
+              <BookOpen className="w-[18px] h-[18px] icon-anim-book" />
+            </span>
+            <span className="relative z-10">
+              {t('cs.tab.curriculum', '1. VNOI Roadmap & Bài Giảng', '1. VNOI Roadmap & Lectures')}
+            </span>
           </button>
+
           <button
             onClick={() => navigate({ csViewMode: 'judge' })}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[50px] rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
               viewMode === 'judge'
-                ? 'bg-emerald-600 text-white shadow-sm font-semibold'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-white shadow-[0_12px_28px_-8px_rgba(5,150,105,0.65)]'
+                : 'bg-white/75 dark:bg-slate-900/55 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-800 hover:border-emerald-400/70 hover:text-emerald-600 dark:hover:text-emerald-300'
             }`}
           >
-            <Code2 className="w-4 h-4" />
-            <span>{t('cs.tab.judge', '2. Trình Chấm Online Judge', '2. Standard Online Judge')}</span>
+            {viewMode === 'judge' && (
+              <motion.span
+                layoutId="cs-viewmode-active"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 z-0"
+              />
+            )}
+            <span
+              className={`relative z-10 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 ${
+                viewMode === 'judge'
+                  ? 'bg-white/20 text-white ring-1 ring-white/30'
+                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/60'
+              }`}
+            >
+              <Code2 className="w-[18px] h-[18px] icon-anim-code" />
+            </span>
+            <span className="relative z-10">
+              {t('cs.tab.judge', '2. Trình Chấm Online Judge', '2. Standard Online Judge')}
+            </span>
           </button>
+
           <button
             onClick={() => navigate({ csViewMode: 'custom' })}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[50px] rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
               viewMode === 'custom'
-                ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-slate-950 shadow-[0_12px_28px_-8px_rgba(245,158,11,0.68)]'
+                : 'bg-white/75 dark:bg-slate-900/55 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-800 hover:border-amber-400/80 hover:text-amber-700 dark:hover:text-amber-300'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-amber-600" />
-            <span>{t('cs.tab.custom', '3. Tự Do Giải Đề (Sublime Studio)', '3. Free Problem Solver')}</span>
+            {viewMode === 'custom' && (
+              <motion.span
+                layoutId="cs-viewmode-active"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 z-0"
+              />
+            )}
+            <span
+              className={`relative z-10 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 ${
+                viewMode === 'custom'
+                  ? 'bg-slate-950/15 text-slate-950 ring-1 ring-slate-950/20'
+                  : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60'
+              }`}
+            >
+              <Sparkles className="w-[18px] h-[18px] icon-anim-star" />
+            </span>
+            <span className="relative z-10">
+              {t('cs.tab.custom', '3. Tự Do Giải Đề (Sublime Studio)', '3. Free Problem Solver')}
+            </span>
           </button>
+
           <button
-            onClick={() => navigate({ csViewMode: 'visualizer' })}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+            onClick={() => {
+              navigate({ csViewMode: 'visualizer' });
+              window.dispatchEvent(new Event('educlassroom:cs-viz-reset'));
+            }}
+            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[50px] rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
               viewMode === 'visualizer'
-                ? 'bg-sky-600 text-white shadow-sm font-semibold'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-white shadow-[0_12px_28px_-8px_rgba(2,132,199,0.65)]'
+                : 'bg-white/75 dark:bg-slate-900/55 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-800 hover:border-sky-400/75 hover:text-sky-600 dark:hover:text-sky-300'
             }`}
           >
-            <GitBranch className="w-4 h-4" />
-            <span>{t('cs.tab.visualizer', '4. Đồ Thị & Mô Phỏng Thuật Toán', '4. Algorithm Visualizer')}</span>
+            {viewMode === 'visualizer' && (
+              <motion.span
+                layoutId="cs-viewmode-active"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                className="absolute inset-0 rounded-xl bg-gradient-to-r from-sky-500 via-cyan-600 to-blue-600 z-0"
+              />
+            )}
+            <span
+              className={`relative z-10 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${
+                viewMode === 'visualizer'
+                  ? 'bg-white/20 text-white ring-1 ring-white/30'
+                  : 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 group-hover:bg-sky-100 dark:group-hover:bg-sky-900/60'
+              }`}
+            >
+              <GitBranch className="w-[18px] h-[18px] icon-anim-branch" />
+            </span>
+            <span className="relative z-10">
+              {t('cs.tab.visualizer', '4. Đồ Thị & Mô Phỏng Thuật Toán', '4. Algorithm Visualizer')}
+            </span>
           </button>
         </div>
       </div>
@@ -799,51 +876,79 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 </div>
               </div>
 
-              {/* 3 Lesson Room Sub-tabs */}
-              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-x-auto shrink-0">
+              {/* 4 Lesson Room Sub-tabs */}
+              <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100/90 dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 shrink-0">
                 <button
                   onClick={() => navigate({ csLessonTab: 'lecture' })}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'lecture'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      ? 'text-white shadow-md shadow-blue-500/30'
+                      : 'bg-white/75 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800'
                   }`}
                 >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>1. Bài Giảng Chi Tiết</span>
+                  {lessonTab === 'lecture' && (
+                    <motion.span
+                      layoutId="cs-lessontab-active"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 z-0"
+                    />
+                  )}
+                  <BookOpen className="relative z-10 w-4 h-4 icon-anim-book" />
+                  <span className="relative z-10">1. Bài Giảng Chi Tiết</span>
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'code' })}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'code'
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      ? 'text-white shadow-md shadow-emerald-500/30'
+                      : 'bg-white/75 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-white dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Code2 className="w-3.5 h-3.5" />
-                  <span>2. Code Mẫu C++ / Python</span>
+                  {lessonTab === 'code' && (
+                    <motion.span
+                      layoutId="cs-lessontab-active"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 z-0"
+                    />
+                  )}
+                  <Code2 className="relative z-10 w-4 h-4 icon-anim-code" />
+                  <span className="relative z-10">2. Code Mẫu C++ / Python</span>
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'practice' })}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'practice'
-                      ? 'bg-amber-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      ? 'text-white shadow-md shadow-amber-500/30'
+                      : 'bg-white/75 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-300 hover:bg-white dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Award className="w-3.5 h-3.5" />
-                  <span>3. Bài Tập &amp; Chấm Code</span>
+                  {lessonTab === 'practice' && (
+                    <motion.span
+                      layoutId="cs-lessontab-active"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-600 to-orange-500 z-0"
+                    />
+                  )}
+                  <Award className="relative z-10 w-4 h-4 icon-anim-award" />
+                  <span className="relative z-10">3. Bài Tập &amp; Chấm Code</span>
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'visualizer' })}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'visualizer'
-                      ? 'bg-sky-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      ? 'text-white shadow-md shadow-sky-500/30'
+                      : 'bg-white/75 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-300 hover:bg-white dark:hover:bg-slate-800'
                   }`}
                 >
-                  <GitBranch className="w-3.5 h-3.5" />
-                  <span>4. Mô Phỏng Trực Quan</span>
+                  {lessonTab === 'visualizer' && (
+                    <motion.span
+                      layoutId="cs-lessontab-active"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-600 z-0"
+                    />
+                  )}
+                  <GitBranch className="relative z-10 w-4 h-4 icon-anim-branch" />
+                  <span className="relative z-10">4. Mô Phỏng Trực Quan</span>
                 </button>
               </div>
             </div>

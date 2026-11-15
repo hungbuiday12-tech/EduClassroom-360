@@ -276,7 +276,7 @@ function MainApp() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  EduClassroom 360
+                  Synapse
                 </span>
                 <span aria-hidden="true">·</span>
                 <span>Hệ thống lớp học mô phỏng vũ trụ học thuật Galaxy</span>

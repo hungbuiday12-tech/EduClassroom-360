@@ -1014,7 +1014,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
               <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
-                <span>{isEn ? 'How to Practice on EduClassroom 360:' : 'Cách thực hành đúng qui trình:'}</span>
+                <span>{isEn ? 'How to Practice on Synapse:' : 'Cách thực hành đúng qui trình:'}</span>
               </div>
               {activeNode.workflowTips.map((tip, i) => (
                 <div key={i} className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">

@@ -66,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={goClassroom}
             className="text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap truncate max-w-[130px] sm:max-w-none hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1 sm:px-1.5 py-1 rounded-lg shrink-0"
           >
-            EduClassroom 360
+            Synapse
           </button>
         </div>
 

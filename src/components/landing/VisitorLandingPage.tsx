@@ -311,7 +311,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             </div>
             <div className="min-w-0">
               <span className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 dark:text-white block truncate">
-                EduClassroom 360
+                Synapse
               </span>
               <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-300 block -mt-0.5 truncate">
                 Galaxy Academic Edition
@@ -981,7 +981,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       {/* Footer */}
       <footer className="relative z-10 border-t border-slate-200/80 dark:border-white/10 py-6 bg-white/60 dark:bg-slate-950/60 backdrop-blur-md text-xs text-slate-500 dark:text-slate-400 text-center">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span>EduClassroom 360 · Hệ thống giáo dục mô phỏng vũ trụ học thuật</span>
+          <span>Synapse · Hệ thống giáo dục mô phỏng vũ trụ học thuật</span>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
             <span>Toán 2D &amp; Oxyz 3D</span>
             <span aria-hidden="true">·</span>

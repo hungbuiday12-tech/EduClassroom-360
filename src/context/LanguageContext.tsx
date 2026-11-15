@@ -158,7 +158,7 @@ export const TRANSLATIONS: Record<string, { vi: string; en: string }> = {
   'sublime.shortcuts': { vi: 'Phím tắt: Tab thụt lề 4 space, Ctrl+Enter chạy test, Ctrl+S lưu bài', en: 'Shortcuts: Tab indents 4 spaces, Ctrl+Enter runs tests, Ctrl+S saves' },
 
   // Classroom Overview
-  'overview.title': { vi: 'Trung Tâm Lớp Học EduClassroom 360', en: 'EduClassroom 360 Academic Center' },
+  'overview.title': { vi: 'Trung Tâm Lớp Học Synapse', en: 'Synapse Academic Center' },
   'overview.welcome': { vi: 'Chào mừng bạn đến với vũ trụ học tập tương tác', en: 'Welcome to your interactive learning galaxy' },
   'overview.quickStart': { vi: 'Khám phá nhanh các phân hệ học thuật', en: 'Explore Academic Modules' },
   'overview.mathCard': { vi: 'Phòng Toán Học 2D/3D', en: 'Mathematics 2D/3D' },

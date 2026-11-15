@@ -1,4 +1,4 @@
-# EduClassroom 360 - Lớp Học Trực Tuyến Mô Phỏng
+# Synapse - Lớp Học Trực Tuyến Mô Phỏng
 
 Nền tảng lớp học mô phỏng trực tuyến tích hợp 4 môn học: **Toán học**, **Vật lí**, **Tin học** và **Ngữ văn**, được xây dựng trên nền tảng **React 19 + TypeScript + Tailwind CSS v4 + Vite**.
 

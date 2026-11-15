@@ -95,6 +95,8 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
   },
 ];
 
+const GOOGLE_OAUTH_PLACEHOLDER_PW = 'google_oauth_pass';
+
 const getStoredAccounts = (): StoredAccount[] => {
   try {
     const data = localStorage.getItem(LOCAL_ACCOUNTS_KEY);
@@ -103,9 +105,30 @@ const getStoredAccounts = (): StoredAccount[] => {
       return DEFAULT_ACCOUNTS;
     }
     const parsed: StoredAccount[] = JSON.parse(data);
-    const combined = [...parsed];
+    const combined: StoredAccount[] = Array.isArray(parsed) ? [...parsed] : [];
+
     for (const def of DEFAULT_ACCOUNTS) {
-      if (!combined.some((c) => c.username.toLowerCase() === def.username.toLowerCase())) {
+      const existingByUsername = combined.findIndex(
+        (c) => c.username.toLowerCase() === def.username.toLowerCase()
+      );
+      const existingByEmail = combined.findIndex(
+        (c) => c.email.toLowerCase() === def.email.toLowerCase()
+      );
+
+      // Heal legacy duplicate Google-placeholder entries that shadowed default demo emails (e.g. hungbuiday12@gmail.com)
+      if (
+        existingByEmail !== -1 &&
+        combined[existingByEmail].password === GOOGLE_OAUTH_PLACEHOLDER_PW &&
+        combined[existingByEmail].username.toLowerCase() !== def.username.toLowerCase()
+      ) {
+        combined[existingByEmail] = {
+          ...def,
+          xp: Math.max(def.xp, combined[existingByEmail].xp || 0),
+        };
+        continue;
+      }
+
+      if (existingByUsername === -1 && existingByEmail === -1) {
         combined.push(def);
       }
     }
@@ -117,10 +140,29 @@ const getStoredAccounts = (): StoredAccount[] => {
 
 const saveStoredAccount = (acc: StoredAccount) => {
   try {
-    const list = getStoredAccounts().filter(
-      (a) => a.username.toLowerCase() !== acc.username.toLowerCase() && a.email.toLowerCase() !== acc.email.toLowerCase()
+    const existingList = getStoredAccounts();
+    const existingSameEmail = existingList.find(
+      (a) => a.email.toLowerCase() === acc.email.toLowerCase()
     );
-    list.push(acc);
+
+    const accountToSave: StoredAccount =
+      acc.password === GOOGLE_OAUTH_PLACEHOLDER_PW &&
+      existingSameEmail &&
+      existingSameEmail.password &&
+      existingSameEmail.password !== GOOGLE_OAUTH_PLACEHOLDER_PW
+        ? {
+            ...existingSameEmail,
+            displayName: acc.displayName || existingSameEmail.displayName,
+            xp: Math.max(existingSameEmail.xp || 0, acc.xp || 0),
+          }
+        : acc;
+
+    const list = existingList.filter(
+      (a) =>
+        a.username.toLowerCase() !== accountToSave.username.toLowerCase() &&
+        a.email.toLowerCase() !== accountToSave.email.toLowerCase()
+    );
+    list.push(accountToSave);
     localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(list));
   } catch {}
 };
@@ -246,87 +288,125 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Direct 1-click Google Login fallback (bypasses domain authorization barrier)
   const loginWithGoogleDirectly = (customEmail?: string, customName?: string) => {
-    const email = customEmail || 'hungbuiday12@gmail.com';
-    const username = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
-    const displayName = customName || 'Học Viên Google';
+    const email = (customEmail || 'hungbuiday12@gmail.com').trim();
+    const existing = getStoredAccounts().find(
+      (a) => a.email.toLowerCase() === email.toLowerCase()
+    );
+    const username =
+      existing?.username || email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
+    const displayName = customName || existing?.displayName || 'Học Viên Google';
     const profile: UserProfile = {
-      uid: 'goog_' + Date.now().toString(36),
+      uid: existing?.uid || 'goog_' + Date.now().toString(36),
       username,
       displayName,
-      email,
+      email: existing?.email || email,
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`,
-      role: 'student',
-      xp: 200,
-      createdAt: new Date().toISOString(),
+      role: existing?.role || 'student',
+      xp: existing?.xp || 200,
+      createdAt: existing?.createdAt || new Date().toISOString(),
     };
     setUser(profile);
     localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));
     saveStoredAccount({
       ...profile,
-      password: 'google_oauth_pass',
+      password: existing?.password || GOOGLE_OAUTH_PLACEHOLDER_PW,
     });
     setIsAuthModalOpen(false);
   };
 
   // Login with Username or Email (hybrid: checks local store + attempts Firebase)
   const loginWithUsernameOrEmail = async (identifier: string, password: string) => {
-    const cleanId = identifier.trim().toLowerCase();
+    const rawId = identifier.trim();
+    const cleanId = rawId.toLowerCase();
     const accounts = getStoredAccounts();
-    const matched = accounts.find(
+    const matches = accounts.filter(
       (a) => a.username.toLowerCase() === cleanId || a.email.toLowerCase() === cleanId
     );
 
-    // If account exists in local store
-    if (matched) {
-      if (matched.password === password) {
-        const profile: UserProfile = {
-          uid: matched.uid,
-          username: matched.username,
-          displayName: matched.displayName,
-          email: matched.email,
-          role: matched.role,
-          xp: matched.xp || 150,
-          createdAt: matched.createdAt,
-        };
-        setUser(profile);
-        localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));
-        setIsAuthModalOpen(false);
-        return;
-      } else {
-        const err = new Error('Tài khoản hoặc mật khẩu không chính xác.');
-        (err as any).code = 'auth/wrong-password';
-        throw err;
+    // 1. Check any local account with a real password matching the entered password
+    const matchedWithPassword = matches.find(
+      (a) => a.password !== GOOGLE_OAUTH_PLACEHOLDER_PW && a.password === password
+    );
+    if (matchedWithPassword) {
+      const profile: UserProfile = {
+        uid: matchedWithPassword.uid,
+        username: matchedWithPassword.username,
+        displayName: matchedWithPassword.displayName,
+        email: matchedWithPassword.email,
+        role: matchedWithPassword.role,
+        xp: matchedWithPassword.xp || 150,
+        createdAt: matchedWithPassword.createdAt,
+      };
+      setUser(profile);
+      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));
+      setIsAuthModalOpen(false);
+      return;
+    }
+
+    // 2. Attempt real Firebase Auth (including after password reset or cross-device login)
+    const candidateEmails = new Set<string>();
+    if (rawId.includes('@')) {
+      candidateEmails.add(rawId);
+    } else {
+      for (const m of matches) {
+        if (m.email && m.email.includes('@')) {
+          candidateEmails.add(m.email);
+        }
+      }
+      candidateEmails.add(`${cleanId}@educlassroom360.local`);
+      candidateEmails.add(`${cleanId}@educlassroom360.vn`);
+    }
+
+    for (const emailToTry of candidateEmails) {
+      try {
+        const res = await signInWithEmailAndPassword(auth, emailToTry, password);
+        if (res.user) {
+          const base = matches[0];
+          saveStoredAccount({
+            uid: res.user.uid,
+            username: base?.username || emailToTry.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_'),
+            displayName: base?.displayName || res.user.displayName || rawId,
+            email: res.user.email || emailToTry,
+            password,
+            role: base?.role || 'student',
+            xp: base?.xp || 150,
+            createdAt: base?.createdAt || new Date().toISOString(),
+          });
+          setIsAuthModalOpen(false);
+          return;
+        }
+      } catch {
+        // Try next candidate or fall through
       }
     }
 
-    // 2. Attempt Firebase Auth if configured
-    try {
-      let emailToUse = identifier.trim();
-      if (!emailToUse.includes('@')) {
-        emailToUse = `${emailToUse.toLowerCase()}@educlassroom360.local`;
-      }
-      const res = await signInWithEmailAndPassword(auth, emailToUse, password);
-      if (res.user) {
-        setIsAuthModalOpen(false);
-        return;
-      }
-    } catch {
-      // Firebase didn't match or domain unauthorized - continue to smart-enroll
+    // 3. Reject only if an account explicitly has a different real password
+    const hasRealPasswordMismatch = matches.some(
+      (a) => Boolean(a.password) && a.password !== GOOGLE_OAUTH_PLACEHOLDER_PW
+    );
+    if (hasRealPasswordMismatch) {
+      const err = new Error('Tài khoản hoặc mật khẩu không chính xác.');
+      (err as any).code = 'auth/wrong-password';
+      throw err;
     }
 
-    // 3. User friendly smart-enroll:
-    // If user enters an identifier and password with at least 4 chars, auto-register and log them in!
+    // 4. Smart-enroll or upgrade Google-placeholder local profile when password has >= 4 chars
     if (password.length >= 4) {
-      const sanitized = cleanId.replace(/[^a-zA-Z0-9_]/g, '_');
+      const googlePlaceholder = matches.find((a) => a.password === GOOGLE_OAUTH_PLACEHOLDER_PW);
+      const sanitized = (
+        googlePlaceholder?.username ||
+        (cleanId.includes('@') ? cleanId.split('@')[0] : cleanId).replace(/[^a-zA-Z0-9_]/g, '_')
+      );
+      const targetEmail = googlePlaceholder?.email || (cleanId.includes('@') ? cleanId : `${sanitized}@educlassroom360.vn`);
       const newAcc: StoredAccount = {
-        uid: 'user_' + Date.now().toString(36),
+        uid: googlePlaceholder?.uid || 'user_' + Date.now().toString(36),
         username: sanitized,
-        displayName: identifier.trim(),
-        email: cleanId.includes('@') ? cleanId : `${sanitized}@educlassroom360.vn`,
-        password: password,
-        role: 'student',
-        xp: 150,
-        createdAt: new Date().toISOString(),
+        displayName: googlePlaceholder?.displayName || rawId,
+        email: targetEmail,
+        password,
+        role: googlePlaceholder?.role || 'student',
+        xp: googlePlaceholder?.xp || 150,
+        createdAt: googlePlaceholder?.createdAt || new Date().toISOString(),
       };
       saveStoredAccount(newAcc);
       const profile: UserProfile = {
@@ -341,6 +421,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(profile);
       localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));
       setIsAuthModalOpen(false);
+
+      // Background sync to Firebase Auth when user signed in/enrolled with a real email
+      if (targetEmail.includes('@') && !targetEmail.endsWith('.local')) {
+        createUserWithEmailAndPassword(auth, targetEmail, password).catch(() => {});
+      }
       return;
     }
 
@@ -366,16 +451,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (a) => a.username === sanitizedUsername || a.email.toLowerCase() === validEmail.toLowerCase()
     );
     if (existing) {
-      // If password matches or user is demo, seamlessly log in!
-      if (existing.password === password) {
+      // If password matches or existing entry was only a Google-OAuth placeholder, log in and upgrade password
+      if (existing.password === password || existing.password === GOOGLE_OAUTH_PLACEHOLDER_PW) {
+        const updatedAcc: StoredAccount = {
+          ...existing,
+          username: sanitizedUsername || existing.username,
+          displayName: shownName || existing.displayName,
+          email: validEmail,
+          password,
+        };
+        saveStoredAccount(updatedAcc);
         const profile: UserProfile = {
-          uid: existing.uid,
-          username: existing.username,
-          displayName: existing.displayName,
-          email: existing.email,
-          role: existing.role,
-          xp: existing.xp,
-          createdAt: existing.createdAt,
+          uid: updatedAcc.uid,
+          username: updatedAcc.username,
+          displayName: updatedAcc.displayName,
+          email: updatedAcc.email,
+          role: updatedAcc.role,
+          xp: updatedAcc.xp,
+          createdAt: updatedAcc.createdAt,
         };
         setUser(profile);
         localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));

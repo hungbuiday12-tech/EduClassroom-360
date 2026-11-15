@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -1741,7 +1741,7 @@ app.use('/api', (err: any, _req: Request, res: Response, _next: any) => {
 
 // Vite middleware in dev or static files in production
 async function startServer() {
-  const isDev = process.env.NODE_ENV !== 'production';
+  const isDev = process.env.NODE_ENV !== 'production' && process.env.RENDER !== 'true';
 
   if (isDev) {
     const { createServer: createViteServer } = await import('vite');

@@ -10,12 +10,28 @@ const DEFAULT_REMOTE_API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim().replace(/\/+$/, '') ||
   'https://ais-pre-2cajz7v7fqng2hy3peejkj-489067186717.asia-southeast1.run.app';
 
+const STORAGE_KEY = 'educlassroom_api_base_url';
 let sessionForceRemote = false;
 
 function getStoredApiBase(): string | null {
   try {
     if (typeof window === 'undefined') return null;
-    const val = window.localStorage.getItem('educlassroom_api_base_url')?.trim();
+
+    // Allow passing ?apiBase=https://... in APK/EXE/WebView URLs and persist it
+    const params = new URLSearchParams(window.location.search);
+    const paramVal = params.get('apiBase')?.trim();
+    if (paramVal && /^https?:\/\//i.test(paramVal)) {
+      const clean = paramVal.replace(/\/+$/, '');
+      window.localStorage.setItem(STORAGE_KEY, clean);
+      return clean;
+    }
+
+    const globalVal = (window as any).__EDUCLASSROOM_API_BASE__;
+    if (typeof globalVal === 'string' && /^https?:\/\//i.test(globalVal.trim())) {
+      return globalVal.trim().replace(/\/+$/, '');
+    }
+
+    const val = window.localStorage.getItem(STORAGE_KEY)?.trim();
     if (val && /^https?:\/\//i.test(val)) {
       return val.replace(/\/+$/, '');
     }
@@ -23,7 +39,7 @@ function getStoredApiBase(): string | null {
   return null;
 }
 
-function isPackagedOrStaticOrigin(): boolean {
+export function isPackagedOrStaticOrigin(): boolean {
   if (typeof window === 'undefined') return false;
   const { protocol, hostname, port } = window.location;
   if (
@@ -61,6 +77,16 @@ export function resolveApiUrl(path: string, forceRemote = false): string {
   return normalizedPath;
 }
 
+function buildNetworkErrorMessage(raw: string): string {
+  if (isPackagedOrStaticOrigin()) {
+    return 'Không kết nối được tới máy chủ AI backend. Nếu bạn đang chạy bản Web tĩnh (GitHub Pages), file APK hoặc EXE, hãy đảm bảo máy chủ Node (server.ts) đã được Publish/deploy và cấu hình đúng URL backend (VITE_API_BASE_URL).';
+  }
+  if (/http2|protocol/i.test(raw)) {
+    return 'Kết nối truyền dữ liệu bị gián đoạn tạm thời. Đang hoặc vui lòng thử gửi lại sau giây lát.';
+  }
+  return 'Không thể kết nối tới máy chủ AI. Vui lòng kiểm tra kết nối mạng và thử gửi lại.';
+}
+
 function normalizeErrorPayload(rawMessage: unknown): string {
   if (!rawMessage) return '';
   if (typeof rawMessage === 'string') {
@@ -75,6 +101,9 @@ function normalizeErrorPayload(rawMessage: unknown): string {
       } catch {
         // Keep original string if not valid JSON
       }
+    }
+    if (/failed to fetch|load failed|networkerror|network request failed|err_connection|err_http2/i.test(trimmed)) {
+      return buildNetworkErrorMessage(trimmed);
     }
     if (/high demand|unavailable|503|overloaded/i.test(trimmed)) {
       return 'Hệ thống AI đang có lượng truy cập cao. Vui lòng thử gửi lại sau vài giây.';
@@ -182,7 +211,7 @@ async function fetchJsonOnce<T = any>(
           ok: false,
           status: res.status || 500,
           data: null,
-          isStaticFallback: res.status >= 500,
+          isStaticFallback: false,
           error: 'Phản hồi từ máy chủ không đúng định dạng JSON. Vui lòng thử lại.'
         };
       }
@@ -218,8 +247,8 @@ async function fetchJsonOnce<T = any>(
       ok: false,
       status: 0,
       data: null,
-      isStaticFallback: true,
-      error: err?.message || 'Không thể kết nối tới máy chủ AI. Vui lòng kiểm tra mạng và thử lại.'
+      isStaticFallback: false,
+      error: normalizeErrorPayload(err?.message) || buildNetworkErrorMessage('')
     };
   } finally {
     clearTimeout(timeoutId);
@@ -234,15 +263,19 @@ export async function safeFetchJson<T = any>(
   const primaryUrl = resolveApiUrl(url);
   const firstRes = await fetchJsonOnce<T>(primaryUrl, init, timeoutMs);
 
-  // If packaged APK/EXE/static host served HTML or 404 on relative /api/*, auto-route to remote AI backend
+  // Only fall back to remote backend if current host actually returned static HTML / 404 / 405
   if (!firstRes.ok && firstRes.isStaticFallback && !/^https?:\/\//i.test(primaryUrl)) {
     const remoteUrl = resolveApiUrl(url, true);
     if (remoteUrl !== primaryUrl) {
       const remoteRes = await fetchJsonOnce<T>(remoteUrl, init, timeoutMs);
-      if (remoteRes.ok || !remoteRes.isStaticFallback) {
+      if (remoteRes.ok) {
         sessionForceRemote = true;
+        return remoteRes;
       }
-      return remoteRes;
+      // Do not replace a clean origin message with a CORS failure if remote is also unreachable
+      if (remoteRes.status !== 0) {
+        return remoteRes;
+      }
     }
   }
 
@@ -258,125 +291,107 @@ export async function streamTutorChat(
   onDelta: (accumulatedText: string) => void,
   timeoutMs = 42000
 ): Promise<{ ok: boolean; reply?: string; error?: string; isStaticFallback?: boolean }> {
-  const attemptStream = async (forceRemote: boolean) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      const streamUrl = resolveApiUrl('/api/gemini/tutor/stream', forceRemote);
-      const res = await fetch(streamUrl, {
+  const tryNonStreamFallback = async (): Promise<{
+    ok: boolean;
+    reply?: string;
+    error?: string;
+    isStaticFallback?: boolean;
+  }> => {
+    const jsonFallback = await safeFetchJson<{ success?: boolean; reply?: string; error?: string }>(
+      '/api/gemini/tutor',
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
+        body: JSON.stringify(payload)
+      },
+      timeoutMs
+    );
+    if (jsonFallback.ok && jsonFallback.data?.reply) {
+      onDelta(jsonFallback.data.reply);
+      return { ok: true, reply: jsonFallback.data.reply };
+    }
+    return {
+      ok: false,
+      isStaticFallback: jsonFallback.isStaticFallback,
+      error: jsonFallback.error || 'Không nhận được phản hồi từ Gemini AI. Vui lòng thử lại.'
+    };
+  };
 
-      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-      if (!res.ok || !res.body || !contentType.includes('text/event-stream')) {
-        const txt = await res.text().catch(() => '');
-        const trimmed = txt.trim();
-        if (
-          trimmed.startsWith('<') ||
-          trimmed.toLowerCase().startsWith('<!doctype') ||
-          res.status === 404 ||
-          res.status === 405
-        ) {
-          return {
-            ok: false,
-            isStaticFallback: true,
-            error: 'Origin hiện tại không có máy chủ API Node.'
-          };
-        }
+  try {
+    const streamUrl = resolveApiUrl('/api/gemini/tutor/stream');
+    const res = await fetch(streamUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
 
-        const jsonFallback = await safeFetchJson<{ success?: boolean; reply?: string; error?: string }>(
-          '/api/gemini/tutor',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          },
-          timeoutMs
-        );
-        if (jsonFallback.ok && jsonFallback.data?.reply) {
-          onDelta(jsonFallback.data.reply);
-          return { ok: true, reply: jsonFallback.data.reply };
-        }
-        return {
-          ok: false,
-          isStaticFallback: jsonFallback.isStaticFallback,
-          error: jsonFallback.error || `Không nhận được phản hồi từ Gemini (HTTP ${res.status}).`
-        };
-      }
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let buffer = '';
-      let accumulated = '';
-      let streamError: string | undefined;
+    if (!res.ok || !res.body || !contentType.includes('text/event-stream')) {
+      clearTimeout(timer);
+      return await tryNonStreamFallback();
+    }
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split('\n\n');
-        buffer = events.pop() || '';
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let accumulated = '';
+    let streamError: string | undefined;
 
-        for (const evt of events) {
-          const lines = evt.split('\n');
-          for (const line of lines) {
-            if (!line.startsWith('data:')) continue;
-            const rawJson = line.slice(5).trim();
-            if (!rawJson) continue;
-            try {
-              const parsed = JSON.parse(rawJson);
-              if (parsed.error) {
-                streamError = normalizeErrorPayload(parsed.error);
-              } else if (typeof parsed.delta === 'string') {
-                accumulated += parsed.delta;
-                onDelta(accumulated);
-              } else if (parsed.done && typeof parsed.reply === 'string' && !accumulated) {
-                accumulated = parsed.reply;
-                onDelta(accumulated);
-              }
-            } catch {
-              // ignore partial SSE JSON frames
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() || '';
+
+      for (const evt of events) {
+        const lines = evt.split('\n');
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const rawJson = line.slice(5).trim();
+          if (!rawJson) continue;
+          try {
+            const parsed = JSON.parse(rawJson);
+            if (parsed.error) {
+              streamError = normalizeErrorPayload(parsed.error);
+            } else if (typeof parsed.delta === 'string') {
+              accumulated += parsed.delta;
+              onDelta(accumulated);
+            } else if (parsed.done && typeof parsed.reply === 'string' && !accumulated) {
+              accumulated = parsed.reply;
+              onDelta(accumulated);
             }
+          } catch {
+            // ignore partial SSE JSON frames
           }
         }
       }
+    }
 
-      if (streamError && !accumulated) {
-        return { ok: false, error: streamError };
-      }
-      if (!accumulated.trim()) {
-        return {
-          ok: false,
-          error: streamError || 'Gemini chưa trả về nội dung phản hồi. Vui lòng thử lại.'
-        };
-      }
+    if (accumulated.trim()) {
       return { ok: true, reply: accumulated.trim() };
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
-        return { ok: false, error: 'Kết nối AI bị quá thời gian (timeout). Vui lòng thử lại.' };
-      }
-      return {
-        ok: false,
-        isStaticFallback: !forceRemote,
-        error: normalizeErrorPayload(err?.message) || 'Lỗi kết nối tới máy chủ Gemini AI.'
-      };
-    } finally {
-      clearTimeout(timer);
     }
-  };
 
-  const firstAttempt = await attemptStream(false);
-  if (!firstAttempt.ok && firstAttempt.isStaticFallback && !sessionForceRemote) {
-    const remoteAttempt = await attemptStream(true);
-    if (remoteAttempt.ok || !remoteAttempt.isStaticFallback) {
-      sessionForceRemote = true;
+    if (streamError) {
+      return { ok: false, error: streamError };
     }
-    return remoteAttempt;
+
+    // Stream closed cleanly without tokens — retry via standard JSON POST
+    clearTimeout(timer);
+    return await tryNonStreamFallback();
+  } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      return { ok: false, error: 'Kết nối AI bị quá thời gian (timeout). Vui lòng thử lại.' };
+    }
+    // If SSE stream failed (e.g. HTTP/2 proxy reset or WebView stream issue), fall back to standard JSON POST
+    clearTimeout(timer);
+    return await tryNonStreamFallback();
+  } finally {
+    clearTimeout(timer);
   }
-  return firstAttempt;
 }

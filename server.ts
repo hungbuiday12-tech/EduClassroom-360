@@ -205,10 +205,18 @@ function broadcastArenaUpdate(weekId: string) {
   }
 }
 
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({
+    ok: true,
+    aiConfigured: Boolean(process.env.GEMINI_API_KEY),
+    timestamp: Date.now()
+  });
+});
+
 app.get('/api/arena/stream', (req: Request, res: Response) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
 
   sseClients.add(res);
@@ -647,8 +655,22 @@ function buildGeminiChatHistoryAndLastTurn(messages: any[]) {
 app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
-  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
+
+  try {
+    res.write(': connected\n\n');
+  } catch {
+    return;
+  }
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': ping\n\n');
+    } catch {
+      clearInterval(heartbeat);
+    }
+  }, 4000);
 
   const sendSse = (payload: Record<string, any>) => {
     try {
@@ -729,6 +751,8 @@ app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
     console.error('Error in /api/gemini/tutor/stream:', err);
     sendSse({ error: extractCleanErrorMessage(err) });
     return res.end();
+  } finally {
+    clearInterval(heartbeat);
   }
 });
 

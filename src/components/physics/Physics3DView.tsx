@@ -297,7 +297,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       powerPreference: 'high-performance',
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
@@ -339,6 +339,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
 
     const animate = () => {
       frameId = requestAnimationFrame(animate);
+      if (document.hidden) {
+        lastTime = performance.now();
+        return;
+      }
       const now = performance.now();
       const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
@@ -452,28 +456,30 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       springBob.position.set(-2, 2.5, 0);
       group.add(springBob);
 
-      // Spring Coil (Helix)
+      // Spring Coil (Helix anchored at Y=5 with unit height = 1, scaled smoothly via GPU matrix!)
       const numTurns = 12;
       const springRadius = 0.25;
       const springCurvePoints: THREE.Vector3[] = [];
-      const steps = 120;
+      const steps = 108;
       for (let i = 0; i <= steps; i++) {
         const tVal = i / steps;
         const angle = tVal * numTurns * Math.PI * 2;
-        const x = -2 + Math.cos(angle) * springRadius;
+        const x = Math.cos(angle) * springRadius;
         const z = Math.sin(angle) * springRadius;
-        const y = 5 - tVal * 2.5;
+        const y = -tVal; // normalized 0 -> -1
         springCurvePoints.push(new THREE.Vector3(x, y, z));
       }
       const springCurve = new THREE.CatmullRomCurve3(springCurvePoints);
-      const springTubeGeo = new THREE.TubeGeometry(springCurve, 100, 0.04, 8, false);
+      const springTubeGeo = new THREE.TubeGeometry(springCurve, 96, 0.04, 8, false);
       const springTubeMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.1 });
       const springMesh = new THREE.Mesh(springTubeGeo, springTubeMat);
+      springMesh.position.set(-2, 5, 0);
+      springMesh.scale.y = 2.5;
       group.add(springMesh);
 
       // Pendulum String & Bob
       const pendLen = 3.5;
-      const pendBobGeo = new THREE.SphereGeometry(0.45, 32, 32);
+      const pendBobGeo = new THREE.SphereGeometry(0.45, 24, 24);
       const pendBobMat = new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.7, roughness: 0.2 });
       const pendBob = new THREE.Mesh(pendBobGeo, pendBobMat);
       group.add(pendBob);
@@ -482,44 +488,27 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       const pendLineMat = new THREE.LineBasicMaterial({ color: 0xffffff });
       const pendLine = new THREE.Line(pendLineGeo, pendLineMat);
       group.add(pendLine);
+      const pendPosAttr = pendLineGeo.attributes.position as THREE.BufferAttribute;
 
-      // Tick update for spring and pendulum
+      // Tick update for spring and pendulum (zero geometry allocations!)
       let lastStepSeen = -1;
       const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
         lastStepSeen = stepTriggerRef.current;
         const tNow = simStateRef.current.time;
-        // Spring Y:
         const springY = 2.5 + Math.sin(omega * tNow) * 1.2;
         springBob.position.y = springY;
+        springMesh.scale.y = Math.max(0.25, 5 - springY);
 
-        // Rebuild spring tube with current height
-        const currentPoints: THREE.Vector3[] = [];
-        const currentH = 5 - springY;
-        for (let i = 0; i <= steps; i++) {
-          const tVal = i / steps;
-          const angle = tVal * numTurns * Math.PI * 2;
-          const x = -2 + Math.cos(angle) * springRadius;
-          const z = Math.sin(angle) * springRadius;
-          const y = 5 - tVal * currentH;
-          currentPoints.push(new THREE.Vector3(x, y, z));
-        }
-        springMesh.geometry.dispose();
-        springMesh.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(currentPoints), 100, 0.04, 8, false);
-
-        // Pendulum angle theta:
         const omegaP = Math.sqrt(g / pendLen);
         const theta = Math.sin(omegaP * tNow) * 0.55;
         const pendX = 2 + Math.sin(theta) * pendLen;
         const pendY = 5 - Math.cos(theta) * pendLen;
         pendBob.position.set(pendX, pendY, 0);
 
-        pendLine.geometry.dispose();
-        pendLine.geometry = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(2, 5, 0),
-          new THREE.Vector3(pendX, pendY, 0),
-        ]);
-      }, 30);
+        pendPosAttr.setXYZ(1, pendX, pendY, 0);
+        pendPosAttr.needsUpdate = true;
+      }, 24);
 
       return () => clearInterval(updateInterval);
     }
@@ -693,34 +682,40 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       group.add(s1Mesh);
       group.add(s2Mesh);
 
-      const posAttr = planeGeo.attributes.position;
-      const origY = new Float32Array(posAttr.count);
-      for (let i = 0; i < posAttr.count; i++) origY[i] = posAttr.getY(i);
+      const posAttr = planeGeo.attributes.position as THREE.BufferAttribute;
+      const vertCount = posAttr.count;
+      const d1Arr = new Float32Array(vertCount);
+      const d2Arr = new Float32Array(vertCount);
+      const invSqrtD1 = new Float32Array(vertCount);
+      const invSqrtD2 = new Float32Array(vertCount);
+      for (let i = 0; i < vertCount; i++) {
+        const vx = posAttr.getX(i);
+        const vz = posAttr.getZ(i);
+        const d1 = Math.hypot(vx - s1Pos.x, vz - s1Pos.z);
+        const d2 = Math.hypot(vx - s2Pos.x, vz - s2Pos.z);
+        d1Arr[i] = d1;
+        d2Arr[i] = d2;
+        invSqrtD1[i] = 0.25 / Math.max(1, Math.sqrt(d1));
+        invSqrtD2[i] = 0.25 / Math.max(1, Math.sqrt(d2));
+      }
 
       let lastStepSeen = -1;
       const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
         lastStepSeen = stepTriggerRef.current;
         const tNow = simStateRef.current.time;
-        const omega = Math.max(0.2, waveFrequency) * Math.PI * 2;
+        const phaseShift = Math.max(0.2, waveFrequency) * Math.PI * 2 * tNow;
         const k = 1.8;
 
-        for (let i = 0; i < posAttr.count; i++) {
-          const vx = posAttr.getX(i);
-          const vz = posAttr.getZ(i);
-
-          const d1 = Math.sqrt((vx - s1Pos.x) ** 2 + (vz - s1Pos.z) ** 2);
-          const d2 = Math.sqrt((vx - s2Pos.x) ** 2 + (vz - s2Pos.z) ** 2);
-
+        for (let i = 0; i < vertCount; i++) {
           const yVal =
-            0.25 * Math.sin(k * d1 - omega * tNow) / Math.max(1, Math.sqrt(d1)) +
-            0.25 * Math.sin(k * d2 - omega * tNow) / Math.max(1, Math.sqrt(d2));
-
+            invSqrtD1[i] * Math.sin(k * d1Arr[i] - phaseShift) +
+            invSqrtD2[i] * Math.sin(k * d2Arr[i] - phaseShift);
           posAttr.setY(i, yVal);
         }
         posAttr.needsUpdate = true;
         planeGeo.computeVertexNormals();
-      }, 35);
+      }, 30);
 
       return () => clearInterval(updateInterval);
     }
@@ -1026,10 +1021,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
 
       let lastStepSeen = -1;
       const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
         lastStepSeen = stepTriggerRef.current;
+        const spd = simSpeedRef.current;
         for (const p of particles) {
-          p.mesh.position.add(p.vel.clone().multiplyScalar(simSpeedRef.current));
+          p.mesh.position.addScaledVector(p.vel, spd);
           if (p.mesh.position.x > halfW || p.mesh.position.x < -halfW) p.vel.x *= -1;
           if (p.mesh.position.z > halfD || p.mesh.position.z < -halfD) p.vel.z *= -1;
           if (p.mesh.position.y > maxY || p.mesh.position.y < minY) p.vel.y *= -1;
@@ -1085,23 +1081,25 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       const fArrow = new THREE.ArrowHelper(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(r, yLevel, 0), 1.5, 0xef4444, 0.3, 0.16);
       group.add(vArrow, fArrow);
 
+      const rodPosAttr = rodLine.geometry.attributes.position as THREE.BufferAttribute;
+      const vDir = new THREE.Vector3();
+      const fDir = new THREE.Vector3();
       let lastStepSeen = -1;
       const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
         lastStepSeen = stepTriggerRef.current;
         const theta = simStateRef.current.time * Math.max(0.2, circOmega3D);
-        const bx = Math.cos(theta) * r;
-        const bz = -Math.sin(theta) * r;
+        const cosT = Math.cos(theta);
+        const sinT = Math.sin(theta);
+        const bx = cosT * r;
+        const bz = -sinT * r;
         ball.position.set(bx, yLevel, bz);
 
-        rodLine.geometry.dispose();
-        rodLine.geometry = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(0, yLevel, 0),
-          new THREE.Vector3(bx, yLevel, bz)
-        ]);
+        rodPosAttr.setXYZ(1, bx, yLevel, bz);
+        rodPosAttr.needsUpdate = true;
 
-        const vDir = new THREE.Vector3(-Math.sin(theta), 0, -Math.cos(theta)).normalize();
-        const fDir = new THREE.Vector3(-Math.cos(theta), 0, Math.sin(theta)).normalize();
+        vDir.set(-sinT, 0, -cosT).normalize();
+        fDir.set(-cosT, 0, sinT).normalize();
         vArrow.position.set(bx, yLevel, bz);
         vArrow.setDirection(vDir);
         vArrow.setLength(Math.min(2.6, Math.max(0.8, circOmega3D * r * 0.28)), 0.3, 0.15);
@@ -1109,7 +1107,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         fArrow.position.set(bx, yLevel, bz);
         fArrow.setDirection(fDir);
         fArrow.setLength(Math.min(r * 0.8, Math.max(0.8, circOmega3D * circOmega3D * r * 0.12)), 0.3, 0.15);
-      }, 30);
+      }, 28);
 
       return () => clearInterval(updateInterval);
     }
@@ -1307,23 +1305,25 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       );
       group.add(stringLine);
 
+      const stringPosAttr = stringLine.geometry.attributes.position as THREE.BufferAttribute;
+      const sinHarmonics = new Float32Array(segs + 1);
+      for (let i = 0; i <= segs; i++) {
+        sinHarmonics[i] = amp * Math.sin(harmonics * Math.PI * (i / segs));
+      }
+
       let lastStepSeen = -1;
       const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
         lastStepSeen = stepTriggerRef.current;
         const tCur = simStateRef.current.time;
         const cosW = Math.cos(tCur * (2.2 + harmonics * 0.55));
-        const pts: THREE.Vector3[] = [];
         for (let i = 0; i <= segs; i++) {
-          const u = i / segs;
-          const bx = -halfSpan + u * span;
-          const by = yBase + amp * Math.sin(harmonics * Math.PI * u) * cosW;
+          const by = yBase + sinHarmonics[i] * cosW;
           beads[i].position.y = by;
-          pts.push(new THREE.Vector3(bx, by, 0));
+          stringPosAttr.setY(i, by);
         }
-        stringLine.geometry.dispose();
-        stringLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
-      }, 28);
+        stringPosAttr.needsUpdate = true;
+      }, 24);
 
       return () => clearInterval(updateInterval);
     }
@@ -1459,18 +1459,20 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         electrons.push(em);
       }
 
+      const startVec = new THREE.Vector3();
+      const endVec = new THREE.Vector3();
       let lastStepSeen = -1;
       const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
         lastStepSeen = stepTriggerRef.current;
         const tCur = simStateRef.current.time;
 
         for (let i = 0; i < photons.length; i++) {
           const prog = (tCur * 1.4 + i / photons.length) % 1;
           const zOff = Math.sin(i * 1.9) * 0.55;
-          const start = new THREE.Vector3(-0.3, 4.4, zOff);
-          const end = new THREE.Vector3(-2.75, 2.1 + Math.cos(i * 1.4) * 0.5, zOff);
-          photons[i].position.lerpVectors(start, end, prog);
+          startVec.set(-0.3, 4.4, zOff);
+          endVec.set(-2.75, 2.1 + Math.cos(i * 1.4) * 0.5, zOff);
+          photons[i].position.lerpVectors(startVec, endVec, prog);
         }
 
         if (canEmit) {
@@ -1482,7 +1484,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
             electrons[i].position.set(-2.7 + prog * 5.4, yOff, zOff);
           }
         }
-      }, 28);
+      }, 24);
 
       return () => clearInterval(updateInterval);
     }

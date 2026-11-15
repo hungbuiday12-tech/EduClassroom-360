@@ -248,8 +248,8 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Handle high DPI
-    const dpr = window.devicePixelRatio || 1;
+    // Handle high DPI (capped at 1.5x for smooth FPS)
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const rect = canvas.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
     canvas.width = Math.floor(rect.width * dpr);

@@ -297,7 +297,7 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const rect = canvas.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
     canvas.width = Math.floor(rect.width * dpr);

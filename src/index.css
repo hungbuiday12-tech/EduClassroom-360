@@ -189,6 +189,29 @@
   }
 }
 
+/* Smooth FPS GPU Compositor Optimizations: reduce heavy 24-40px backdrop-blur fill-rate over 60fps Canvas */
+[data-perf="smooth"] .backdrop-blur-2xl,
+[data-perf="smooth"] .backdrop-blur-xl {
+  -webkit-backdrop-filter: blur(8px) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+[data-perf="balanced"] .backdrop-blur-2xl {
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+[data-perf="smooth"] .animate-wave-glide,
+[data-perf="smooth"] .animate-matrix-sweep,
+[data-perf="smooth"] .animate-orbit-slow {
+  will-change: transform;
+}
+
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 420px;
+}
+
 /* Custom scrollbars for code editor and simulation consoles */
 ::-webkit-scrollbar {
   width: 6px;

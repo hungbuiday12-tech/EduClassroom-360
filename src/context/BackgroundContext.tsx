@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type BackgroundCreatureTheme =
   | 'koi'
@@ -10,6 +10,48 @@ export type BackgroundCreatureTheme =
   | 'fireflies'
   | 'all'
   | 'galaxy';
+
+export type PerformanceMode = 'smooth' | 'balanced' | 'ultra';
+
+export interface PerformanceModeOption {
+  id: PerformanceMode;
+  labelVi: string;
+  labelEn: string;
+  shortVi: string;
+  shortEn: string;
+  descVi: string;
+  descEn: string;
+}
+
+export const PERFORMANCE_MODE_OPTIONS: PerformanceModeOption[] = [
+  {
+    id: 'smooth',
+    labelVi: 'Mượt Tối Đa (Tối ưu 60 FPS)',
+    labelEn: 'Max Smooth (60 FPS Boost)',
+    shortVi: 'Mượt FPS',
+    shortEn: 'Smooth',
+    descVi: 'Tối ưu bộ nhớ đệm Canvas, giảm blur GPU nặng, giữ nguyên toàn bộ hiệu ứng & sinh vật.',
+    descEn: 'Caches Canvas layers & trims heavy GPU blur while keeping all animations and creatures.'
+  },
+  {
+    id: 'balanced',
+    labelVi: 'Cân Bằng (Đẹp & Nhẹ)',
+    labelEn: 'Balanced Quality',
+    shortVi: 'Cân bằng',
+    shortEn: 'Balanced',
+    descVi: 'Cân bằng độ nét Retina (1.5x) và mật độ sinh vật nền.',
+    descEn: 'Balances 1.5x Retina crispness with smooth animation pacing.'
+  },
+  {
+    id: 'ultra',
+    labelVi: 'Chi Tiết Cao (Toàn bộ đàn)',
+    labelEn: 'High Detail (Full Swarm)',
+    shortVi: 'Chi tiết cao',
+    shortEn: 'High Detail',
+    descVi: 'Hiển thị tối đa số lượng sinh vật và hiệu ứng kính mờ sâu (phù hợp máy có GPU rời).',
+    descEn: 'Full creature swarm density and deep glass blur (best on dedicated GPUs).'
+  }
+];
 
 export interface CreatureThemeOption {
   id: BackgroundCreatureTheme;
@@ -97,16 +139,23 @@ const VALID_THEMES: BackgroundCreatureTheme[] = [
   'galaxy'
 ];
 
+const VALID_PERF_MODES: PerformanceMode[] = ['smooth', 'balanced', 'ultra'];
+
 interface BackgroundContextValue {
   creatureTheme: BackgroundCreatureTheme;
   setCreatureTheme: (theme: BackgroundCreatureTheme) => void;
+  perfMode: PerformanceMode;
+  setPerfMode: (mode: PerformanceMode) => void;
 }
 
 const STORAGE_KEY = 'educlassroom_bg_creature';
+const PERF_STORAGE_KEY = 'educlassroom_perf_mode_v1';
 
 const BackgroundContext = createContext<BackgroundContextValue>({
   creatureTheme: 'all',
-  setCreatureTheme: () => {}
+  setCreatureTheme: () => {},
+  perfMode: 'smooth',
+  setPerfMode: () => {}
 });
 
 export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -120,6 +169,22 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return 'all';
   });
 
+  const [perfMode, setPerfModeState] = useState<PerformanceMode>(() => {
+    try {
+      const saved = localStorage.getItem(PERF_STORAGE_KEY) as PerformanceMode | null;
+      if (saved && VALID_PERF_MODES.includes(saved)) {
+        return saved;
+      }
+    } catch {}
+    return 'smooth';
+  });
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset.perf = perfMode;
+    }
+  }, [perfMode]);
+
   const setCreatureTheme = (theme: BackgroundCreatureTheme) => {
     setCreatureThemeState(theme);
     try {
@@ -127,8 +192,15 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch {}
   };
 
+  const setPerfMode = (mode: PerformanceMode) => {
+    setPerfModeState(mode);
+    try {
+      localStorage.setItem(PERF_STORAGE_KEY, mode);
+    } catch {}
+  };
+
   return (
-    <BackgroundContext.Provider value={{ creatureTheme, setCreatureTheme }}>
+    <BackgroundContext.Provider value={{ creatureTheme, setCreatureTheme, perfMode, setPerfMode }}>
       {children}
     </BackgroundContext.Provider>
   );

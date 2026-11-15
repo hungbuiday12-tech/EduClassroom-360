@@ -23,11 +23,16 @@ import {
   Trophy,
   Star,
   Volume2,
-  VolumeX
+  VolumeX,
+  Gauge
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../context/BackgroundContext';
+import {
+  useBackgroundTheme,
+  CREATURE_THEME_OPTIONS,
+  PERFORMANCE_MODE_OPTIONS
+} from '../context/BackgroundContext';
 import { useNavigation, getLocationLabel } from '../context/NavigationContext';
 import { useAudio } from '../context/AudioContext';
 import { BrandLogo } from './common/BrandLogo';
@@ -57,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { user, openAuthModal, logout } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
   const isEn = language === 'en';
-  const { creatureTheme, setCreatureTheme } = useBackgroundTheme();
+  const { creatureTheme, setCreatureTheme, perfMode, setPerfMode } = useBackgroundTheme();
   const { canGoBack, previousLocation, goBack, goClassroom, requestScrollToReviews } = useNavigation();
   const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
 
@@ -177,8 +182,16 @@ export const Header: React.FC<HeaderProps> = ({
     </div>
   );
 
+  const activePerf =
+    PERFORMANCE_MODE_OPTIONS.find((p) => p.id === perfMode) || PERFORMANCE_MODE_OPTIONS[0];
+  const cyclePerfMode = () => {
+    const order: Array<'smooth' | 'balanced' | 'ultra'> = ['smooth', 'balanced', 'ultra'];
+    const idx = order.indexOf(perfMode);
+    setPerfMode(order[(idx + 1) % order.length]);
+  };
+
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/84 dark:bg-slate-950/84 backdrop-blur-2xl border-b border-indigo-200/60 dark:border-indigo-500/20 shadow-[0_10px_35px_-16px_rgba(79,70,229,0.25)]">
+    <header className="sticky top-0 z-40 w-full bg-white/88 dark:bg-slate-950/88 backdrop-blur-md border-b border-indigo-200/60 dark:border-indigo-500/20 shadow-[0_10px_35px_-16px_rgba(79,70,229,0.25)]">
       {/* ROW 1: Brand + Utility Cluster pushed right next to Synapse on the left | Settings & Auth on the right */}
       <div className="w-full px-3 sm:px-5 lg:px-7 flex items-center justify-between gap-2 sm:gap-3 h-14 sm:h-15">
         {/* Left Cluster: Back + Brand + VI/EN + XP + Creatures + Theme */}
@@ -332,6 +345,29 @@ export const Header: React.FC<HeaderProps> = ({
                 : isEn
                 ? 'Sound Off'
                 : 'Âm nền'}
+            </span>
+          </button>
+
+          {/* Quick FPS / Graphics Performance Mode Cycler */}
+          <button
+            type="button"
+            onClick={cyclePerfMode}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shadow-xs ${
+              perfMode === 'smooth'
+                ? 'border-sky-400/70 bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300'
+                : perfMode === 'balanced'
+                ? 'border-indigo-300/80 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300'
+                : 'border-amber-300/80 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
+            }`}
+            title={
+              isEn
+                ? `Graphics Mode: ${activePerf.labelEn} (click to switch)`
+                : `Chế độ đồ họa / FPS: ${activePerf.labelVi} (bấm để đổi)`
+            }
+          >
+            <Gauge className="w-4 h-4 shrink-0" />
+            <span className="hidden xl:inline">
+              {isEn ? activePerf.shortEn : activePerf.shortVi}
             </span>
           </button>
 

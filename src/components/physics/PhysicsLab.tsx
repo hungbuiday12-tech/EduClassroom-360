@@ -462,9 +462,42 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    let cachedW = canvas.clientWidth;
+    let cachedH = canvas.clientHeight;
+    let cachedDark = document.documentElement.classList.contains('dark');
+    const classObs = new MutationObserver(() => {
+      cachedDark = document.documentElement.classList.contains('dark');
+    });
+    classObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    const resizeObs =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver((entries) => {
+            const entry = entries[0];
+            if (entry) {
+              cachedW = entry.contentRect.width;
+              cachedH = entry.contentRect.height;
+            }
+          })
+        : null;
+    resizeObs?.observe(canvas);
+
     let lastTimestamp = performance.now();
+    let lastIdleDrawMs = 0;
 
     const render = (now: number) => {
+      animFrameIdRef.current = requestAnimationFrame(render);
+      if (document.hidden) {
+        lastTimestamp = now;
+        return;
+      }
+
+      if (!isRunningRef.current && now - lastIdleDrawMs < 65) {
+        lastTimestamp = now;
+        return;
+      }
+      lastIdleDrawMs = now;
+
       const rawDt = Math.min((now - lastTimestamp) / 1000, 0.05);
       const dt = rawDt * simSpeedRef.current;
       lastTimestamp = now;
@@ -482,44 +515,42 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       const t = simTimeRef.current;
       const curOverlays = overlaysRef.current;
 
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) {
-        animFrameIdRef.current = requestAnimationFrame(render);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const w = cachedW || canvas.clientWidth;
+      const h = cachedH || canvas.clientHeight;
+      if (w <= 0 || h <= 0) {
         return;
       }
-      if (canvas.width !== Math.floor(rect.width * dpr) || canvas.height !== Math.floor(rect.height * dpr)) {
-        canvas.width = Math.floor(rect.width * dpr);
-        canvas.height = Math.floor(rect.height * dpr);
+      const targetCw = Math.floor(w * dpr);
+      const targetCh = Math.floor(h * dpr);
+      if (canvas.width !== targetCw || canvas.height !== targetCh) {
+        canvas.width = targetCw;
+        canvas.height = targetCh;
       }
 
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const w = rect.width;
-      const h = rect.height;
-      const isDark = document.documentElement.classList.contains('dark');
+      const isDark = cachedDark;
 
       // Clear Canvas Background
       ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
       ctx.fillRect(0, 0, w, h);
 
-      // Draw Grid / Ruler Overlay
+      // Draw Grid / Ruler Overlay (single batched stroke call)
       if (curOverlays.showRulerGrid) {
         ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.06)';
         ctx.lineWidth = 1;
         const gridSize = 30;
+        ctx.beginPath();
         for (let x = 0; x < w; x += gridSize) {
-          ctx.beginPath();
           ctx.moveTo(x, 0);
           ctx.lineTo(x, h);
-          ctx.stroke();
         }
         for (let y = 0; y < h; y += gridSize) {
-          ctx.beginPath();
           ctx.moveTo(0, y);
           ctx.lineTo(w, y);
-          ctx.stroke();
         }
+        ctx.stroke();
       }
 
       // Render specialized 2D simulation
@@ -597,13 +628,14 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       ctx.fillText(`t = ${t.toFixed(2)}s`, w - 52, 23);
 
       ctx.restore();
-      animFrameIdRef.current = requestAnimationFrame(render);
     };
 
     animFrameIdRef.current = requestAnimationFrame(render);
 
     return () => {
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
+      resizeObs?.disconnect();
+      classObs.disconnect();
     };
   }, [activeView, activeTab, lesson.simulationType, isSimFullscreen]);
 

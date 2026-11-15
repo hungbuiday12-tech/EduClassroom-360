@@ -320,7 +320,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
           {/* Right 5 Cols: Frosted Mastery & XP Status Card */}
           <div className="lg:col-span-5">
-            <div className="bg-white/[0.08] backdrop-blur-2xl ring-1 ring-inset ring-white/15 rounded-2xl p-5 sm:p-6 space-y-4 shadow-inner">
+            <div className="bg-white/[0.08] backdrop-blur-md ring-1 ring-inset ring-white/15 rounded-2xl p-5 sm:p-6 space-y-4 shadow-inner">
               {user ? (
                 <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10">
                   <div className="flex items-center gap-3 min-w-0">
@@ -443,7 +443,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <div
             data-ripple="true"
             onClick={() => onNavigate('math')}
-            className="md:col-span-5 group relative overflow-hidden bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/80 dark:border-sky-500/30 hover:border-sky-500 hover:-translate-y-0.5 rounded-[1.75rem] rounded-tr-[3.25rem] p-6 sm:p-7 shadow-[0_14px_34px_-14px_rgba(14,165,233,0.22)] hover:shadow-[0_24px_50px_-16px_rgba(14,165,233,0.36)] transition-all cursor-pointer flex flex-col justify-between gap-6"
+            className="md:col-span-5 group relative overflow-hidden bg-white/82 dark:bg-slate-900/74 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/80 dark:border-sky-500/30 hover:border-sky-500 hover:-translate-y-0.5 rounded-[1.75rem] rounded-tr-[3.25rem] p-6 sm:p-7 shadow-[0_14px_34px_-14px_rgba(14,165,233,0.22)] hover:shadow-[0_24px_50px_-16px_rgba(14,165,233,0.36)] transition-all cursor-pointer flex flex-col justify-between gap-6"
           >
             {/* Math Custom Animated Wave & Coordinate Grid */}
             <svg
@@ -509,7 +509,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <div
             data-ripple="true"
             onClick={() => onNavigate('physics')}
-            className="md:col-span-4 group relative overflow-hidden bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-amber-300/80 dark:border-amber-500/30 hover:border-amber-400 hover:-translate-y-0.5 rounded-[1.75rem] rounded-tl-[3.25rem] p-6 sm:p-7 shadow-[0_14px_34px_-14px_rgba(245,158,11,0.22)] hover:shadow-[0_24px_50px_-16px_rgba(245,158,11,0.36)] transition-all cursor-pointer flex flex-col justify-between gap-6"
+            className="md:col-span-4 group relative overflow-hidden bg-white/82 dark:bg-slate-900/74 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-amber-300/80 dark:border-amber-500/30 hover:border-amber-400 hover:-translate-y-0.5 rounded-[1.75rem] rounded-tl-[3.25rem] p-6 sm:p-7 shadow-[0_14px_34px_-14px_rgba(245,158,11,0.22)] hover:shadow-[0_24px_50px_-16px_rgba(245,158,11,0.36)] transition-all cursor-pointer flex flex-col justify-between gap-6"
           >
             {/* Physics Custom Animated Electric Current SVG Circuit */}
             <svg
@@ -581,7 +581,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <div
             data-ripple="true"
             onClick={() => onNavigate('cs')}
-            className="md:col-span-3 group relative overflow-hidden bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-emerald-300/80 dark:border-emerald-500/30 hover:border-emerald-500 hover:-translate-y-0.5 rounded-[1.75rem] rounded-br-[3.25rem] p-6 sm:p-7 shadow-[0_14px_34px_-14px_rgba(16,185,129,0.22)] hover:shadow-[0_24px_50px_-16px_rgba(16,185,129,0.36)] transition-all cursor-pointer flex flex-col justify-between gap-6"
+            className="md:col-span-3 group relative overflow-hidden bg-white/82 dark:bg-slate-900/74 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-emerald-300/80 dark:border-emerald-500/30 hover:border-emerald-500 hover:-translate-y-0.5 rounded-[1.75rem] rounded-br-[3.25rem] p-6 sm:p-7 shadow-[0_14px_34px_-14px_rgba(16,185,129,0.22)] hover:shadow-[0_24px_50px_-16px_rgba(16,185,129,0.36)] transition-all cursor-pointer flex flex-col justify-between gap-6"
           >
             {/* CS Custom Animated Code Stream + Dijkstra Graph Edge Pulse */}
             <svg
@@ -666,7 +666,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <div
             data-ripple="true"
             onClick={() => onNavigate('roadmap')}
-            className="group relative overflow-hidden rounded-3xl border border-indigo-200/80 dark:border-indigo-500/25 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 p-6 sm:p-7 min-h-[245px] shadow-[0_12px_32px_-14px_rgba(99,102,241,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(99,102,241,0.3)] hover:border-indigo-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-5"
+            className="group relative overflow-hidden rounded-3xl border border-indigo-200/80 dark:border-indigo-500/25 bg-white/80 dark:bg-slate-900/72 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 p-6 sm:p-7 min-h-[245px] shadow-[0_12px_32px_-14px_rgba(99,102,241,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(99,102,241,0.3)] hover:border-indigo-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-5"
           >
             <svg
               aria-hidden="true"
@@ -723,7 +723,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <div
             data-ripple="true"
             onClick={() => onNavigate('arena')}
-            className="group relative overflow-hidden rounded-3xl border border-amber-300/80 dark:border-amber-500/25 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 p-6 sm:p-7 min-h-[245px] shadow-[0_12px_32px_-14px_rgba(245,158,11,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(245,158,11,0.3)] hover:border-amber-400 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-5"
+            className="group relative overflow-hidden rounded-3xl border border-amber-300/80 dark:border-amber-500/25 bg-white/80 dark:bg-slate-900/72 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 p-6 sm:p-7 min-h-[245px] shadow-[0_12px_32px_-14px_rgba(245,158,11,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(245,158,11,0.3)] hover:border-amber-400 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-5"
           >
             <svg
               aria-hidden="true"
@@ -789,7 +789,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <div
             data-ripple="true"
             onClick={() => onOpenTutor?.('math', 'explain_no_answer')}
-            className="group relative overflow-hidden rounded-3xl border border-violet-300/80 dark:border-violet-500/25 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 p-6 sm:p-7 min-h-[245px] shadow-[0_12px_32px_-14px_rgba(139,92,246,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(139,92,246,0.3)] hover:border-violet-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-5"
+            className="group relative overflow-hidden rounded-3xl border border-violet-300/80 dark:border-violet-500/25 bg-white/80 dark:bg-slate-900/72 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 p-6 sm:p-7 min-h-[245px] shadow-[0_12px_32px_-14px_rgba(139,92,246,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(139,92,246,0.3)] hover:border-violet-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-5"
           >
             <svg
               aria-hidden="true"
@@ -841,7 +841,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
       {/* SECTION 3: Dedicated 3 Subject AI Assistants × 3 Modes */}
       {onOpenTutor && (
-        <section className="rounded-3xl bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_14px_42px_-16px_rgba(15,23,42,0.12)] space-y-5">
+        <section className="rounded-3xl bg-white/80 dark:bg-slate-900/72 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_14px_42px_-16px_rgba(15,23,42,0.12)] space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200/70 dark:border-white/10">
             <div>
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
@@ -945,7 +945,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       {/* SECTION 5: Classroom Focus Utilities (Synced Study-Format Pomodoro + Bells + Quick Notebook) */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Focus Timer synced with Bottom-Left Floating Widget */}
-        <div className="lg:col-span-5 bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-indigo-200/80 dark:border-indigo-500/25 rounded-[2rem] p-6 sm:p-7 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="lg:col-span-5 bg-white/82 dark:bg-slate-900/74 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-indigo-200/80 dark:border-indigo-500/25 rounded-[2rem] p-6 sm:p-7 shadow-xs flex flex-col justify-between space-y-4">
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1152,7 +1152,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </div>
 
         {/* Quick Classroom Notes */}
-        <div className="lg:col-span-7 bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 rounded-[2rem] p-6 sm:p-7 shadow-xs flex flex-col">
+        <div className="lg:col-span-7 bg-white/82 dark:bg-slate-900/74 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 rounded-[2rem] p-6 sm:p-7 shadow-xs flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-indigo-500" />
@@ -1208,7 +1208,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       </section>
 
       {/* SECTION 6: Community Reviews, Star Ratings & Favorite Votes */}
-      <PlatformReviews id="platform-reviews" />
+      <div className="cv-auto">
+        <PlatformReviews id="platform-reviews" />
+      </div>
     </div>
   );
 };

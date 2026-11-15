@@ -24,11 +24,16 @@ import {
   Music,
   Bell,
   MousePointerClick,
-  Play
+  Play,
+  Gauge
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../../context/BackgroundContext';
+import {
+  useBackgroundTheme,
+  CREATURE_THEME_OPTIONS,
+  PERFORMANCE_MODE_OPTIONS
+} from '../../context/BackgroundContext';
 import { useAudio } from '../../context/AudioContext';
 import {
   CLICK_SOUND_OPTIONS,
@@ -72,7 +77,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const isEn = language === 'en';
-  const { creatureTheme, setCreatureTheme } = useBackgroundTheme();
+  const { creatureTheme, setCreatureTheme, perfMode, setPerfMode } = useBackgroundTheme();
   const {
     clickSound,
     setClickSound,
@@ -745,6 +750,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         }`}
                       >
                         {isEn ? opt.labelEn : opt.labelVi}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* FPS & Graphics Performance Tier */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                  <Gauge className="w-4 h-4 text-sky-500" />
+                  <span>{isEn ? 'FPS & Graphics Performance Mode' : 'Tối ưu FPS & Chất lượng Đồ họa'}</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {PERFORMANCE_MODE_OPTIONS.map((opt) => {
+                    const selected = opt.id === perfMode;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setPerfMode(opt.id)}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          selected
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{isEn ? opt.labelEn : opt.labelVi}</div>
+                        <div
+                          className={`text-[11px] mt-1 leading-snug ${
+                            selected ? 'text-sky-100' : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          {isEn ? opt.descEn : opt.descVi}
+                        </div>
                       </button>
                     );
                   })}

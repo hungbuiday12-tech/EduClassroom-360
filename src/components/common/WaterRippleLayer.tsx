@@ -58,11 +58,11 @@ export const WaterRippleLayer: React.FC = () => {
         diameter
       };
 
-      setRipples((prev) => [...prev.slice(-10), nextRipple]);
+      setRipples((prev) => [...prev.slice(-3), nextRipple]);
 
       window.setTimeout(() => {
         setRipples((prev) => prev.filter((item) => item.id !== id));
-      }, 920);
+      }, 740);
     };
 
     window.addEventListener('pointerdown', handlePointerDown, { passive: true, capture: true });
@@ -89,7 +89,8 @@ export const WaterRippleLayer: React.FC = () => {
             height: `${r.boxHeight}px`,
             borderRadius: r.borderRadius,
             overflow: 'hidden',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            contain: 'layout paint'
           }}
         >
           {/* Gentle radial water surface shimmer */}
@@ -102,6 +103,7 @@ export const WaterRippleLayer: React.FC = () => {
               width: `${r.diameter}px`,
               height: `${r.diameter}px`,
               borderRadius: '9999px',
+              willChange: 'transform, opacity',
               background:
                 'radial-gradient(circle, rgba(125, 211, 252, 0.38) 0%, rgba(56, 189, 248, 0.2) 38%, rgba(129, 140, 248, 0.08) 68%, rgba(255, 255, 255, 0) 100%)'
             }}
@@ -116,8 +118,8 @@ export const WaterRippleLayer: React.FC = () => {
               width: `${r.diameter * 0.92}px`,
               height: `${r.diameter * 0.92}px`,
               borderRadius: '9999px',
-              border: '1.5px solid rgba(125, 211, 252, 0.62)',
-              boxShadow: '0 0 12px rgba(56, 189, 248, 0.25) inset'
+              willChange: 'transform, opacity',
+              border: '1.5px solid rgba(125, 211, 252, 0.62)'
             }}
           />
           {/* Secondary trailing water ring */}
@@ -130,6 +132,7 @@ export const WaterRippleLayer: React.FC = () => {
               width: `${r.diameter * 0.72}px`,
               height: `${r.diameter * 0.72}px`,
               borderRadius: '9999px',
+              willChange: 'transform, opacity',
               border: '1px solid rgba(186, 230, 253, 0.5)',
               opacity: 0
             }}

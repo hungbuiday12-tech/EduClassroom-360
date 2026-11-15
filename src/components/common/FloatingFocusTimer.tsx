@@ -69,7 +69,7 @@ export const FloatingFocusTimer: React.FC = () => {
     <div className="fixed bottom-3 left-3 sm:bottom-5 sm:left-5 z-[85] flex flex-col items-start gap-2.5">
       {/* Expanded Mini-Chat Style Focus Panel */}
       {isWidgetOpen && (
-        <div className="w-[318px] sm:w-[348px] max-w-[calc(100vw-24px)] rounded-2xl bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/15 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.55)] overflow-hidden text-xs">
+        <div className="w-[318px] sm:w-[348px] max-w-[calc(100vw-24px)] rounded-2xl bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-200/90 dark:border-white/15 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.55)] overflow-hidden text-xs">
           {/* Panel Header */}
           <div className="px-4 py-3 bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 text-white flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -365,7 +365,7 @@ export const FloatingFocusTimer: React.FC = () => {
       )}
 
       {/* Compact Mini-Chat Launcher Pill in Bottom-Left */}
-      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/90 dark:bg-slate-900/92 border border-white/15 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-2xl">
+      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/90 dark:bg-slate-900/92 border border-white/15 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-md">
         <button
           type="button"
           onClick={() => setIsWidgetOpen(!isWidgetOpen)}

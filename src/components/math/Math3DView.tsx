@@ -94,6 +94,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
+  const needsRenderRef = useRef<boolean>(true);
 
   // Escape key to exit fullscreen
   useEffect(() => {
@@ -142,7 +143,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       powerPreference: 'high-performance',
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
@@ -156,6 +157,11 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     controls.dampingFactor = 0.05;
     controls.maxDistance = 25;
     controls.minDistance = 2;
+
+    const markDirty = () => {
+      needsRenderRef.current = true;
+    };
+    controls.addEventListener('change', markDirty);
 
     // Studio Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -178,13 +184,18 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     const dynamicGroup = new THREE.Group();
     scene.add(dynamicGroup);
     dynamicGroupRef.current = dynamicGroup;
+    needsRenderRef.current = true;
 
-    // Animation loop
+    // On-demand + damping animation loop (0% GPU when idle or hidden)
     let frameId = 0;
     const animate = () => {
       frameId = requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
+      if (document.hidden) return;
+      const moved = controls.update();
+      if (needsRenderRef.current || moved) {
+        needsRenderRef.current = false;
+        renderer.render(scene, camera);
+      }
     };
     animate();
 
@@ -196,6 +207,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     };
     const onContextRestored = () => {
       setContextLost(false);
+      needsRenderRef.current = true;
     };
     canvasEl.addEventListener('webglcontextlost', onContextLost);
     canvasEl.addEventListener('webglcontextrestored', onContextRestored);
@@ -209,6 +221,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
+      needsRenderRef.current = true;
     };
     window.addEventListener('resize', handleResize);
     const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
@@ -216,6 +229,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
 
     return () => {
       cancelAnimationFrame(frameId);
+      controls.removeEventListener('change', markDirty);
       window.removeEventListener('resize', handleResize);
       canvasEl.removeEventListener('webglcontextlost', onContextLost);
       canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
@@ -826,6 +840,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([center, TPos]), new THREE.LineBasicMaterial({ color: 0x34d399 })));
       });
     }
+    needsRenderRef.current = true;
   }, [
     mode,
     ux,

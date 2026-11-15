@@ -216,13 +216,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(profile);
             localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));
           } else {
-            const initialUsername = (fbUser.email?.split('@')[0] || 'student_' + fbUser.uid.slice(0, 6)).replace(/[^a-zA-Z0-9_]/g, '_');
+            const rawPrefix = (fbUser.email?.split('@')[0] || 'student_' + fbUser.uid.slice(0, 6))
+              .replace(/[^a-zA-Z0-9_]/g, '_')
+              .slice(0, 30);
+            const initialUsername = rawPrefix.length >= 3 ? rawPrefix : `u_${rawPrefix}`.padEnd(3, '0').slice(0, 30);
             const newProfile: UserProfile = {
               uid: fbUser.uid,
               username: initialUsername,
-              displayName: fbUser.displayName || 'Học sinh Chuyên',
-              email: fbUser.email || '',
-              avatarUrl: fbUser.photoURL || undefined,
+              displayName: (fbUser.displayName || 'Học sinh Chuyên').slice(0, 100),
+              email: (fbUser.email || '').slice(0, 128),
+              avatarUrl: fbUser.photoURL ? fbUser.photoURL.slice(0, 512) : undefined,
               role: 'student',
               xp: 150,
               createdAt: new Date().toISOString(),
@@ -242,19 +245,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(newProfile));
           }
         } catch {
-          if (!user && fbUser.email) {
+          if (fbUser.email) {
+            const rawPrefix = fbUser.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 30);
+            const fallbackUsername = rawPrefix.length >= 3 ? rawPrefix : `u_${rawPrefix}`.padEnd(3, '0').slice(0, 30);
             const fallback: UserProfile = {
               uid: fbUser.uid,
-              username: fbUser.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_'),
-              displayName: fbUser.displayName || 'Học sinh Chuyên',
-              email: fbUser.email,
-              avatarUrl: fbUser.photoURL || undefined,
+              username: fallbackUsername,
+              displayName: (fbUser.displayName || 'Học sinh Chuyên').slice(0, 100),
+              email: fbUser.email.slice(0, 128),
+              avatarUrl: fbUser.photoURL ? fbUser.photoURL.slice(0, 512) : undefined,
               role: 'student',
               xp: 150,
               createdAt: new Date().toISOString(),
             };
-            setUser(fallback);
-            localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(fallback));
+            setUser((prev) => {
+              if (prev) return prev;
+              try {
+                localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(fallback));
+              } catch {}
+              return fallback;
+            });
           }
         }
       } else {

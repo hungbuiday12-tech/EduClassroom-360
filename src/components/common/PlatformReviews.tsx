@@ -21,13 +21,13 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  orderBy,
+  deleteDoc,
+  where,
   query,
   limit,
   OperationType,
   handleFirestoreError
 } from '../../lib/firebase';
-import { deleteDoc } from 'firebase/firestore';
 
 export type ReviewCategory = 'simulations' | 'lectures_ai' | 'coding_exams' | 'interface' | 'general';
 
@@ -103,35 +103,38 @@ export const PlatformReviews: React.FC<PlatformReviewsProps> = ({ id = 'platform
       // ignore fallback fetch error
     }
 
-    // 2. Fetch from Firestore public collection if available
-    try {
-      const q = query(
-        collection(db, 'platform_reviews'),
-        orderBy('createdAt', 'desc'),
-        limit(100)
-      );
-      const snap = await getDocs(q);
-      snap.forEach((docSnap) => {
-        const d = docSnap.data() as any;
-        if (d && typeof d.rating === 'number' && d.comment) {
-          mergedMap.set(docSnap.id, {
-            id: docSnap.id,
-            userId: d.userId,
-            username: d.username,
-            displayName: d.displayName,
-            avatarUrl: d.avatarUrl,
-            rating: d.rating,
-            favoriteCategory: d.favoriteCategory || 'general',
-            comment: d.comment,
-            helpfulUserIds: Array.isArray(d.helpfulUserIds) ? d.helpfulUserIds : [],
-            helpfulCount: typeof d.helpfulCount === 'number' ? d.helpfulCount : 0,
-            createdAt: d.createdAt || new Date().toISOString(),
-            updatedAt: d.updatedAt
-          });
-        }
-      });
-    } catch {
-      // Firestore optional if offline / unconfigured
+    // 2. Fetch from Firestore public collection if online and rules permit
+    if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+      try {
+        const q = query(
+          collection(db, 'platform_reviews'),
+          where('rating', '>=', 1),
+          where('rating', '<=', 5),
+          limit(100)
+        );
+        const snap = await getDocs(q);
+        snap.forEach((docSnap) => {
+          const d = docSnap.data() as any;
+          if (d && typeof d.rating === 'number' && d.comment) {
+            mergedMap.set(docSnap.id, {
+              id: docSnap.id,
+              userId: d.userId,
+              username: d.username,
+              displayName: d.displayName,
+              avatarUrl: d.avatarUrl,
+              rating: d.rating,
+              favoriteCategory: d.favoriteCategory || 'general',
+              comment: d.comment,
+              helpfulUserIds: Array.isArray(d.helpfulUserIds) ? d.helpfulUserIds : [],
+              helpfulCount: typeof d.helpfulCount === 'number' ? d.helpfulCount : 0,
+              createdAt: d.createdAt || new Date().toISOString(),
+              updatedAt: d.updatedAt
+            });
+          }
+        });
+      } catch {
+        // Firestore optional if offline / unconfigured / rules not yet deployed
+      }
     }
 
     const list = Array.from(mergedMap.values()).sort(

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../context/BackgroundContext';
 import { useNavigation, getLocationLabel } from '../context/NavigationContext';
+import { BrandLogo } from './common/BrandLogo';
 
 interface HeaderProps {
   currentSubject: SubjectType;
@@ -64,9 +65,10 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           <button
             onClick={goClassroom}
-            className="text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap truncate max-w-[130px] sm:max-w-none hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1 sm:px-1.5 py-1 rounded-lg shrink-0"
+            className="flex items-center gap-2 text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap truncate max-w-[160px] sm:max-w-none hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1 sm:px-1.5 py-1 rounded-lg shrink-0"
           >
-            Synapse
+            <BrandLogo sizeClass="w-7 h-7 sm:w-8 sm:h-8" />
+            <span>Synapse</span>
           </button>
         </div>
 
@@ -205,7 +207,15 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleTheme}
             className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-            title={isDark ? 'Chuyển sang chế độ Sáng (Light)' : 'Chuyển sang chế độ Tối (Dark)'}
+            title={
+              language === 'en'
+                ? isDark
+                  ? 'Switch to Light Mode'
+                  : 'Switch to Dark Mode'
+                : isDark
+                ? 'Chuyển sang chế độ Sáng (Light)'
+                : 'Chuyển sang chế độ Tối (Dark)'
+            }
           >
             {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
           </button>
@@ -273,7 +283,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={onReturnToLanding}
                   className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-semibold text-xs transition-colors"
-                  title="Quay lại Trang Cổng Chào Mừng Galaxy"
+                  title={language === 'en' ? 'Return to Welcome Portal' : 'Quay lại Trang Cổng Chào Mừng Galaxy'}
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>{t('nav.landing', 'Trang Chào Mừng', 'Welcome Portal')}</span>

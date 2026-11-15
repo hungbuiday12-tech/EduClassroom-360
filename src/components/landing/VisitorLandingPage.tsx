@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GalaxyBackground } from '../galaxy/GalaxyBackground';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../../context/BackgroundContext';
+import { BrandLogo } from '../common/BrandLogo';
 import {
   Sparkles,
   Compass,
@@ -55,6 +57,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     registerAccount,
     sendResetPasswordMail,
   } = useAuth();
+  const { language, toggleLanguage } = useLanguage();
+  const isEn = language === 'en';
 
   // Auth Card Modes on Landing: 'login' | 'register' | 'forgot'
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
@@ -114,55 +118,97 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     }
   > = {
     math: {
-      label: 'Toán 2D & 3D',
-      badge: `${MATH_LECTURES.length} chuyên đề VietJack 9–12`,
-      headline: 'Đồ thị giải tích Oxy, Hình học kéo thả & 7 mô hình Oxyz 3D',
-      summary:
-        'Khảo sát hàm đa thức, phân thức, mũ – lôgarit, trị tuyệt đối và tô miền tích phân xác định trực tiếp; tương tác hình tròn ngoại tiếp, tiếp tuyến, elip 2D cùng mặt nón Conic, đĩa tròn xoay và đường thẳng Oxyz 3D.',
-      highlights: [
-        'Tô bóng diện tích tích phân ∫ f(x)dx trực quan',
-        '7 cảnh 3D xoay tự do: Conic, Oxyz, Thiết diện chóp, Đĩa tích phân',
-        'Bài giảng 5 bước + 2 TN & 1 TL tự lưu phân tích lộ trình AI',
-      ],
+      label: isEn ? 'Math 2D & 3D' : 'Toán 2D & 3D',
+      badge: isEn ? `${MATH_LECTURES.length} Grades 9–12 topics` : `${MATH_LECTURES.length} chuyên đề VietJack 9–12`,
+      headline: isEn
+        ? 'Oxy Analytic Grapher, Interactive Geometry & 7 Oxyz 3D Scenes'
+        : 'Đồ thị giải tích Oxy, Hình học kéo thả & 7 mô hình Oxyz 3D',
+      summary: isEn
+        ? 'Plot polynomials, rationals, exponentials, logarithms, absolute values and shade definite integrals; explore circumscribed circles, tangents, ellipses in 2D alongside Conic sections, solids of revolution and 3D Oxyz lines.'
+        : 'Khảo sát hàm đa thức, phân thức, mũ – lôgarit, trị tuyệt đối và tô miền tích phân xác định trực tiếp; tương tác hình tròn ngoại tiếp, tiếp tuyến, elip 2D cùng mặt nón Conic, đĩa tròn xoay và đường thẳng Oxyz 3D.',
+      highlights: isEn
+        ? [
+            'Visualize definite integral shaded area ∫ f(x)dx',
+            '7 interactive 3D scenes: Conic, Oxyz, Pyramids, Revolution Disks',
+            '5-step lectures + 2 MCQs & 1 essay synced with AI roadmap',
+          ]
+        : [
+            'Tô bóng diện tích tích phân ∫ f(x)dx trực quan',
+            '7 cảnh 3D xoay tự do: Conic, Oxyz, Thiết diện chóp, Đĩa tích phân',
+            'Bài giảng 5 bước + 2 TN & 1 TL tự lưu phân tích lộ trình AI',
+          ],
       accentClass: 'text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/10',
     },
     physics: {
-      label: 'Vật Lí 2D & 3D',
-      badge: `${PHYSICS_LESSONS.length} bài giảng · 10 Lab 2D & 11 mô hình 3D`,
-      headline: 'Phòng thí nghiệm Vật lí thời gian thực 60 FPS từ Lớp 9 đến 12',
-      summary:
-        'Điều chỉnh tự do tham số khối lượng, lò xo, bước sóng ánh sáng, mạch RLC nối tiếp hoặc tốc độ góc trên cả mặt phẳng 2D và không gian 3D tương tác để quan sát giản đồ Fresnel và vân giao thoa Y-âng.',
-      highlights: [
-        'Chuyển động tròn đều, Lực hướng tâm & Ném xiên 2D/3D',
-        'Mạch xoay chiều RLC, Cộng hưởng điện & Máy phát 3D',
-        'Giao thoa ánh sáng khe Y-âng đổi màu theo bước sóng λ',
-      ],
+      label: isEn ? 'Physics 2D & 3D' : 'Vật Lí 2D & 3D',
+      badge: isEn
+        ? `${PHYSICS_LESSONS.length} lessons · 10 2D Labs & 11 3D models`
+        : `${PHYSICS_LESSONS.length} bài giảng · 10 Lab 2D & 11 mô hình 3D`,
+      headline: isEn
+        ? 'Real-time 60 FPS Physics Laboratory for Grades 9 to 12'
+        : 'Phòng thí nghiệm Vật lí thời gian thực 60 FPS từ Lớp 9 đến 12',
+      summary: isEn
+        ? 'Adjust mass, spring constant, wavelength, RLC series circuits or angular velocity across 2D canvases and 3D simulations to observe Fresnel phasor diagrams and Young double-slit interference.'
+        : 'Điều chỉnh tự do tham số khối lượng, lò xo, bước sóng ánh sáng, mạch RLC nối tiếp hoặc tốc độ góc trên cả mặt phẳng 2D và không gian 3D tương tác để quan sát giản đồ Fresnel và vân giao thoa Y-âng.',
+      highlights: isEn
+        ? [
+            'Uniform circular motion, centripetal force & projectile 2D/3D',
+            'RLC AC circuits, resonance & 3D AC generator',
+            'Young double-slit light interference with dynamic λ colors',
+          ]
+        : [
+            'Chuyển động tròn đều, Lực hướng tâm & Ném xiên 2D/3D',
+            'Mạch xoay chiều RLC, Cộng hưởng điện & Máy phát 3D',
+            'Giao thoa ánh sáng khe Y-âng đổi màu theo bước sóng λ',
+          ],
       accentClass: 'text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10',
     },
     cs: {
-      label: 'Tin Học Sublime IDE',
-      badge: `${CS_LESSONS.length} lộ trình VNOI + Code Tự Do`,
-      headline: 'Trình soạn thảo Sublime Text 4 Monokai & Online Judge đa ngôn ngữ',
-      summary:
-        'Trang bị đầy đủ thanh thực đơn Edit/Selection/Find-Replace/Goto Line/Snippets C++ & Python chuẩn thi HSG, kèm chế độ gửi đề bài bằng ảnh hoặc file để tự động sinh bộ test ẩn chấm điểm tức thì.',
-      highlights: [
-        'Full Edit: Undo/Redo 60 bước, Duplicate/Move Line, Find & Replace',
-        'Thư viện Snippet CP (Fast I/O, Prefix Sum, BFS, DP) chèn 1 chạm',
-        'Chấm tự động C++ & Python với stdin/stdout và báo cáo test ẩn',
-      ],
+      label: isEn ? 'CS Sublime IDE' : 'Tin Học Sublime IDE',
+      badge: isEn
+        ? `${CS_LESSONS.length} VNOI modules + Free Studio`
+        : `${CS_LESSONS.length} lộ trình VNOI + Code Tự Do`,
+      headline: isEn
+        ? 'Sublime Text 4 Monokai Studio & Multi-Language Online Judge'
+        : 'Trình soạn thảo Sublime Text 4 Monokai & Online Judge đa ngôn ngữ',
+      summary: isEn
+        ? 'Includes Edit/Selection/Find-Replace/Goto Line menus, C++ & Python competitive snippets, and image/file problem upload to auto-generate hidden test cases and grade instantaneously.'
+        : 'Trang bị đầy đủ thanh thực đơn Edit/Selection/Find-Replace/Goto Line/Snippets C++ & Python chuẩn thi HSG, kèm chế độ gửi đề bài bằng ảnh hoặc file để tự động sinh bộ test ẩn chấm điểm tức thì.',
+      highlights: isEn
+        ? [
+            'Full Edit: 60-step Undo/Redo, Duplicate/Move Line, Find & Replace',
+            '1-click CP Snippets (Fast I/O, Prefix Sum, BFS, DP)',
+            'Auto-judge C++ & Python with stdin/stdout & hidden tests',
+          ]
+        : [
+            'Full Edit: Undo/Redo 60 bước, Duplicate/Move Line, Find & Replace',
+            'Thư viện Snippet CP (Fast I/O, Prefix Sum, BFS, DP) chèn 1 chạm',
+            'Chấm tự động C++ & Python với stdin/stdout và báo cáo test ẩn',
+          ],
       accentClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
     },
     exams: {
-      label: `${totalExams} Đề Thi Chuẩn`,
-      badge: `${chuyenExams} Chuyên & ${khongChuyenExams} Không Chuyên`,
-      headline: `Ngân hàng ${totalExams} đề thi quốc gia kèm đồng hồ bấm giờ & lời giải từng bước`,
-      summary:
-        'Số lượng đề hiển thị tự động cập nhật theo kho đề thực tế của hệ thống. Mỗi đề tích hợp đồng hồ đếm ngược, ghi chú đáp án từng câu, biểu điểm chi tiết và liên kết mở nhanh phòng mô phỏng.',
-      highlights: [
-        `Tự động đồng bộ đúng ${totalExams} bộ đề Toán · Lí · Tin`,
-        'Phân khu rõ Chuyên KHTN, Sư Phạm, Amsterdam & Tốt nghiệp THPT',
-        'Kết nối Đấu trường Online (1 lượt/ngày/môn) & Gia sư AI Socratic',
-      ],
+      label: isEn ? `${totalExams} Official Exams` : `${totalExams} Đề Thi Chuẩn`,
+      badge: isEn
+        ? `${chuyenExams} Specialized & ${khongChuyenExams} Standard`
+        : `${chuyenExams} Chuyên & ${khongChuyenExams} Không Chuyên`,
+      headline: isEn
+        ? `${totalExams} national exam bank with timer, AI image grading & step solutions`
+        : `Ngân hàng ${totalExams} đề thi quốc gia kèm đồng hồ bấm giờ, chấm ảnh AI & lời giải`,
+      summary: isEn
+        ? 'Synced dynamically with the full exam bank. Each paper features a countdown timer, scratchpad, photo submission with AI grading & follow-up Q&A, and step-by-step solutions.'
+        : 'Số lượng đề hiển thị tự động cập nhật theo kho đề thực tế của hệ thống. Mỗi đề tích hợp đồng hồ đếm ngược, ghi chú đáp án, nộp ảnh bài làm để AI chấm điểm và giải đáp thắc mắc.',
+      highlights: isEn
+        ? [
+            `Complete ${totalExams} papers across Math · Physics · CS`,
+            'Separated into Specialized / Olympic & Standard High School tracks',
+            'Upload handwritten work photo for AI scoring & follow-up Q&A',
+          ]
+        : [
+            `Tự động đồng bộ đúng ${totalExams} bộ đề Toán · Lí · Tin`,
+            'Phân khu rõ Chuyên & HSG Quốc gia với Không chuyên THPT',
+            'Nộp ảnh bài làm để AI chấm điểm, công bố & giải đáp trực tiếp',
+          ],
       accentClass: 'text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10',
     },
   };
@@ -191,7 +237,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         return;
       }
       if (err?.code === 'auth/popup-closed-by-user') {
-        setErrorMessage('Cửa sổ đăng nhập Google đã được đóng.');
+        setErrorMessage(isEn ? 'Google sign-in window was closed.' : 'Cửa sổ đăng nhập Google đã được đóng.');
       } else {
         loginWithGoogleDirectly(
           regEmail || identifier || 'hocsinh.chuyen@gmail.com',
@@ -214,7 +260,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim() || !password) {
-      setErrorMessage('Vui lòng nhập tên đăng nhập/email và mật khẩu.');
+      setErrorMessage(isEn ? 'Please enter your username/email and password.' : 'Vui lòng nhập tên đăng nhập/email và mật khẩu.');
       return;
     }
     setLoading(true);
@@ -236,11 +282,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         err?.code === 'auth/user-not-found' ||
         err?.code === 'auth/wrong-password'
       ) {
-        setErrorMessage('Mật khẩu không chính xác. Vui lòng kiểm tra lại.');
+        setErrorMessage(isEn ? 'Incorrect username/email or password. Please check again.' : 'Mật khẩu không chính xác. Vui lòng kiểm tra lại.');
       } else if (err?.code === 'auth/invalid-email') {
-        setErrorMessage('Định dạng email hoặc tên đăng nhập chưa hợp lệ.');
+        setErrorMessage(isEn ? 'Invalid email or username format.' : 'Định dạng email hoặc tên đăng nhập chưa hợp lệ.');
       } else {
-        setErrorMessage('Đăng nhập thất bại. Vui lòng thử lại với mật khẩu 123456 hoặc tài khoản mẫu.');
+        setErrorMessage(isEn ? 'Sign-in failed. Please retry or use a demo account.' : 'Đăng nhập thất bại. Vui lòng thử lại với mật khẩu 123456 hoặc tài khoản mẫu.');
       }
     } finally {
       setLoading(false);
@@ -251,11 +297,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regUsername.trim()) {
-      setErrorMessage('Vui lòng nhập tên đăng nhập (viết liền không dấu).');
+      setErrorMessage(isEn ? 'Please choose a username (no spaces).' : 'Vui lòng nhập tên đăng nhập (viết liền không dấu).');
       return;
     }
     if (regPassword.length < 4) {
-      setErrorMessage('Mật khẩu phải chứa ít nhất 4 ký tự.');
+      setErrorMessage(isEn ? 'Password must be at least 4 characters.' : 'Mật khẩu phải chứa ít nhất 4 ký tự.');
       return;
     }
     setLoading(true);
@@ -269,9 +315,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         return;
       }
       if (err?.code === 'auth/email-already-in-use') {
-        setErrorMessage('Tên đăng nhập hoặc email này đã tồn tại trong hệ thống. Bạn có thể chọn tab Đăng Nhập.');
+        setErrorMessage(isEn ? 'This username or email already exists. Try signing in.' : 'Tên đăng nhập hoặc email này đã tồn tại trong hệ thống. Bạn có thể chọn tab Đăng Nhập.');
       } else {
-        setErrorMessage('Đăng ký không thành công, vui lòng kiểm tra lại thông tin.');
+        setErrorMessage(isEn ? 'Registration failed. Please check your details.' : 'Đăng ký không thành công, vui lòng kiểm tra lại thông tin.');
       }
     } finally {
       setLoading(false);
@@ -282,7 +328,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetEmail.trim() || !resetEmail.includes('@')) {
-      setErrorMessage('Vui lòng nhập email chính xác để nhận thư.');
+      setErrorMessage(isEn ? 'Please enter a valid email address.' : 'Vui lòng nhập email chính xác để nhận thư.');
       return;
     }
     setLoading(true);
@@ -306,9 +352,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       <header className="relative z-20 border-b border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-slate-950/40 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-amber-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
+            <BrandLogo sizeClass="w-8 h-8 sm:w-9 sm:h-9" />
             <div className="min-w-0">
               <span className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 dark:text-white block truncate">
                 Synapse
@@ -320,20 +364,32 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-white/15 bg-white/80 dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/20 transition-colors cursor-pointer"
+              title={isEn ? 'Chuyển sang Tiếng Việt' : 'Switch to English'}
+            >
+              <Globe className="w-3.5 h-3.5 text-indigo-500" />
+              <span className={!isEn ? 'text-indigo-600 dark:text-indigo-300 font-black' : 'opacity-60'}>VI</span>
+              <span className="opacity-40">/</span>
+              <span className={isEn ? 'text-indigo-600 dark:text-indigo-300 font-black' : 'opacity-60'}>EN</span>
+            </button>
+
             <div className="relative" ref={creatureMenuRef}>
               <button
                 onClick={() => setIsCreatureMenuOpen(!isCreatureMenuOpen)}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-indigo-200/70 dark:border-white/15 bg-white/80 dark:bg-white/10 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-white/20 transition-colors cursor-pointer"
-                title="Chọn sinh vật nền tương tác"
+                title={isEn ? 'Choose interactive background creature' : 'Chọn sinh vật nền tương tác'}
               >
                 <Wand2 className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">{activeCreature.shortVi}</span>
+                <span className="hidden sm:inline">{isEn ? activeCreature.shortEn : activeCreature.shortVi}</span>
               </button>
 
               {isCreatureMenuOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-50 text-xs">
                   <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800 mb-1">
-                    Nền Sinh Vật Tương Tác
+                    {isEn ? 'Interactive Background' : 'Nền Sinh Vật Tương Tác'}
                   </div>
                   {CREATURE_THEME_OPTIONS.map((opt) => {
                     const selected = opt.id === creatureTheme;
@@ -350,7 +406,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
-                        <span>{opt.labelVi}</span>
+                        <span>{isEn ? opt.labelEn : opt.labelVi}</span>
                         {selected && <Check className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
                       </button>
                     );
@@ -363,7 +419,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <button
                 onClick={onToggleTheme}
                 className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10 rounded-xl transition-colors"
-                title={isDark ? 'Chuyển sang chế độ Sáng' : 'Chuyển sang chế độ Tối'}
+                title={isEn ? (isDark ? 'Switch to Light' : 'Switch to Dark') : isDark ? 'Chuyển sang chế độ Sáng' : 'Chuyển sang chế độ Tối'}
               >
                 {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
               </button>
@@ -373,8 +429,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               onClick={onEnterAsGuest}
               className="px-3 sm:px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 text-white dark:bg-white/10 hover:bg-slate-800 dark:hover:bg-white/20 dark:text-white border border-transparent dark:border-white/15 transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
             >
-              <span className="hidden sm:inline">Vào trải nghiệm thử (Khách)</span>
-              <span className="sm:hidden">Vào thử</span>
+              <span className="hidden sm:inline">{isEn ? 'Explore as Guest' : 'Vào trải nghiệm thử (Khách)'}</span>
+              <span className="sm:hidden">{isEn ? 'Try Now' : 'Vào thử'}</span>
               <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </button>
           </div>
@@ -390,20 +446,48 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-400/30 text-xs font-semibold text-indigo-700 dark:text-indigo-300 backdrop-blur-sm max-w-full">
               <Star className="w-3.5 h-3.5 shrink-0 text-amber-500 dark:text-amber-300 fill-amber-400" />
               <span className="truncate sm:whitespace-normal">
-                Hệ Sinh Thái Học Tập Trực Quan 9–12 &amp; Chuyên Quốc Gia
+                {isEn
+                  ? 'Interactive Visual Learning Ecosystem Grades 9–12 & Olympiad'
+                  : 'Hệ Sinh Thái Học Tập Trực Quan 9–12 & Chuyên Quốc Gia'}
               </span>
             </div>
 
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
-              Khám Phá Vũ Trụ Mô Phỏng Lớp Học <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 dark:from-indigo-400 dark:via-purple-300 dark:to-amber-300">360°</span>
+              {isEn ? (
+                <>
+                  Explore the 360° Interactive Classroom{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 dark:from-indigo-400 dark:via-purple-300 dark:to-amber-300">
+                    Galaxy
+                  </span>
+                </>
+              ) : (
+                <>
+                  Khám Phá Vũ Trụ Mô Phỏng Lớp Học{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 dark:from-indigo-400 dark:via-purple-300 dark:to-amber-300">
+                    360°
+                  </span>
+                </>
+              )}
             </h1>
 
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
-              Nền tảng học tập chuyên sâu dành cho học sinh THCS, THPT và Đội tuyển Chuyên với{' '}
-              <strong className="text-slate-900 dark:text-white">{totalLessons} bài giảng 5 bước</strong> theo chuẩn VietJack, phòng mô phỏng{' '}
-              <strong className="text-slate-900 dark:text-white">Toán · Vật lí 2D/3D 60 FPS</strong>, trình soạn thảo{' '}
-              <strong className="text-slate-900 dark:text-white">Sublime Text 4</strong> kèm Online Judge và kho{' '}
-              <strong className="text-slate-900 dark:text-white">{totalExams} đề thi</strong> cập nhật linh hoạt.
+              {isEn ? (
+                <>
+                  Specialized STEM platform for Junior/High School &amp; Olympiad students featuring{' '}
+                  <strong className="text-slate-900 dark:text-white">{totalLessons} 5-step lessons</strong>, real-time{' '}
+                  <strong className="text-slate-900 dark:text-white">Math · Physics 2D/3D 60 FPS</strong> labs,{' '}
+                  <strong className="text-slate-900 dark:text-white">Sublime Text 4</strong> Online Judge and{' '}
+                  <strong className="text-slate-900 dark:text-white">{totalExams} official exam papers</strong>.
+                </>
+              ) : (
+                <>
+                  Nền tảng học tập chuyên sâu dành cho học sinh THCS, THPT và Đội tuyển Chuyên với{' '}
+                  <strong className="text-slate-900 dark:text-white">{totalLessons} bài giảng 5 bước</strong> theo chuẩn VietJack, phòng mô phỏng{' '}
+                  <strong className="text-slate-900 dark:text-white">Toán · Vật lí 2D/3D 60 FPS</strong>, trình soạn thảo{' '}
+                  <strong className="text-slate-900 dark:text-white">Sublime Text 4</strong> kèm Online Judge và kho{' '}
+                  <strong className="text-slate-900 dark:text-white">{totalExams} đề thi</strong> cập nhật linh hoạt.
+                </>
+              )}
             </p>
 
             {/* Interactive 4-Pillar Quick Cards */}
@@ -418,9 +502,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 }`}
               >
                 <Compass className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-1.5" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">Toán 2D / Oxyz 3D</h4>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {isEn ? 'Math 2D / Oxyz 3D' : 'Toán 2D / Oxyz 3D'}
+                </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {MATH_LECTURES.length} bài · 7 cảnh 3D
+                  {isEn ? `${MATH_LECTURES.length} topics · 7 3D scenes` : `${MATH_LECTURES.length} bài · 7 cảnh 3D`}
                 </p>
               </button>
 
@@ -434,9 +520,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 }`}
               >
                 <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1.5" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">Vật Lý 2D &amp; 3D</h4>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {isEn ? 'Physics 2D & 3D' : 'Vật Lý 2D & 3D'}
+                </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  10 Lab 2D · 11 mẫu 3D
+                  {isEn ? '10 2D Labs · 11 3D models' : '10 Lab 2D · 11 mẫu 3D'}
                 </p>
               </button>
 
@@ -450,9 +538,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 }`}
               >
                 <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-1.5" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">Tin Học Sublime 4</h4>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {isEn ? 'CS Sublime 4' : 'Tin Học Sublime 4'}
+                </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {CS_LESSONS.length} bài · Judge C++/Py
+                  {isEn ? `${CS_LESSONS.length} modules · C++/Py` : `${CS_LESSONS.length} bài · Judge C++/Py`}
                 </p>
               </button>
 
@@ -467,10 +557,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               >
                 <Award className="w-5 h-5 text-purple-600 dark:text-purple-400 mb-1.5" />
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate tabular-nums">
-                  {totalExams} Đề Thi Chuẩn
+                  {isEn ? `${totalExams} Official Exams` : `${totalExams} Đề Thi Chuẩn`}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {chuyenExams} Chuyên · {khongChuyenExams} THPT
+                  {isEn ? `${chuyenExams} Spec · ${khongChuyenExams} Std` : `${chuyenExams} Chuyên · ${khongChuyenExams} THPT`}
                 </p>
               </button>
             </div>
@@ -482,7 +572,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {spotlightDetails[activeSpotlight].badge}
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Bấm từng thẻ phía trên để xem chi tiết tính năng
+                  {isEn ? 'Click any card above to inspect features' : 'Bấm từng thẻ phía trên để xem chi tiết tính năng'}
                 </span>
               </div>
               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug">
@@ -511,13 +601,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 className="w-full sm:w-auto px-5 sm:px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
               >
                 <Play className="w-4 h-4 fill-white shrink-0" />
-                <span>Vào Trực Tiếp Lớp Học (Không Cần Đăng Nhập)</span>
+                <span>{isEn ? 'Enter Classroom Directly (Guest Mode)' : 'Vào Trực Tiếp Lớp Học (Không Cần Đăng Nhập)'}</span>
                 <ChevronRight className="w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform" />
               </button>
 
               <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Lưu kết quả học &amp; phân tích lộ trình trực tiếp trên máy bạn</span>
+                <span>{isEn ? 'Study progress & roadmap saved automatically' : 'Lưu kết quả học & phân tích lộ trình trực tiếp trên máy bạn'}</span>
               </span>
             </div>
           </div>
@@ -541,7 +631,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                         : 'text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    Đăng Nhập
+                    {isEn ? 'Sign In' : 'Đăng Nhập'}
                   </button>
                   <button
                     type="button"
@@ -556,7 +646,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                         : 'text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    Đăng Ký Tài Khoản
+                    {isEn ? 'Create Account' : 'Đăng Ký Tài Khoản'}
                   </button>
                 </div>
               ) : (
@@ -570,7 +660,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-300 hover:underline transition-colors"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Quay lại Đăng nhập</span>
+                    <span>{isEn ? 'Back to Sign In' : 'Quay lại Đăng nhập'}</span>
                   </button>
                 </div>
               )}
@@ -580,16 +670,22 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 <div className="mb-4 p-3.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-400/30 rounded-2xl text-xs text-amber-900 dark:text-amber-200 space-y-2">
                   <div className="flex items-center gap-2 font-semibold">
                     <Globe className="w-4 h-4 text-amber-600 dark:text-amber-300 shrink-0" />
-                    <span>Tên miền chưa cấp phép: {unauthDomainWarning}</span>
+                    <span>
+                      {isEn
+                        ? `Unauthorized OAuth domain: ${unauthDomainWarning}`
+                        : `Tên miền chưa cấp phép: ${unauthDomainWarning}`}
+                    </span>
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                    Bấm nút bên dưới để vào ngay lập tức bằng hồ sơ Google mà không cần cài đặt:
+                    {isEn
+                      ? 'Click below to enter immediately with your Google profile:'
+                      : 'Bấm nút bên dưới để vào ngay lập tức bằng hồ sơ Google mà không cần cài đặt:'}
                   </p>
                   <button
                     onClick={handleGoogleDirect}
                     className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                   >
-                    <span>Tiếp tục vào với Google ngay</span>
+                    <span>{isEn ? 'Continue with Google Now' : 'Tiếp tục vào với Google ngay'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -606,9 +702,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               {authMode === 'forgot' ? (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Quên Mật Khẩu?</h3>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {isEn ? 'Forgot Password?' : 'Quên Mật Khẩu?'}
+                    </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">
-                      Nhập địa chỉ Gmail của bạn để nhận liên kết bảo mật thiết lập lại mật khẩu mới.
+                      {isEn
+                        ? 'Enter your Gmail address to receive a secure password reset link.'
+                        : 'Nhập địa chỉ Gmail của bạn để nhận liên kết bảo mật thiết lập lại mật khẩu mới.'}
                     </p>
                   </div>
 
@@ -616,7 +716,15 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     <div className="p-4 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-400/30 rounded-2xl text-center space-y-2.5">
                       <CheckCircle2 className="w-8 h-8 text-emerald-500 dark:text-emerald-400 mx-auto" />
                       <p className="text-xs text-emerald-800 dark:text-emerald-200 font-semibold">
-                        Đã gửi thư hướng dẫn đặt lại mật khẩu đến <strong>{resetEmail}</strong>!
+                        {isEn ? (
+                          <>
+                            Reset instructions sent to <strong>{resetEmail}</strong>!
+                          </>
+                        ) : (
+                          <>
+                            Đã gửi thư hướng dẫn đặt lại mật khẩu đến <strong>{resetEmail}</strong>!
+                          </>
+                        )}
                       </p>
                       <button
                         onClick={() => {
@@ -625,14 +733,14 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                         }}
                         className="px-4 py-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-xl text-xs font-bold"
                       >
-                        Quay lại Đăng nhập
+                        {isEn ? 'Back to Sign In' : 'Quay lại Đăng nhập'}
                       </button>
                     </div>
                   ) : (
                     <form onSubmit={handleResetSubmit} className="space-y-3">
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Địa chỉ Gmail / Email:
+                          {isEn ? 'Gmail / Email Address:' : 'Địa chỉ Gmail / Email:'}
                         </label>
                         <div className="relative">
                           <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -641,7 +749,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                             required
                             value={resetEmail}
                             onChange={(e) => setResetEmail(e.target.value)}
-                            placeholder="ví dụ: hocsinh@gmail.com"
+                            placeholder={isEn ? 'e.g., student@gmail.com' : 'ví dụ: hocsinh@gmail.com'}
                             className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         </div>
@@ -653,7 +761,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                         className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>Gửi Thư Đặt Lại Mật Khẩu</span>
+                        <span>{isEn ? 'Send Password Reset Email' : 'Gửi Thư Đặt Lại Mật Khẩu'}</span>
                       </button>
                     </form>
                   )}
@@ -688,15 +796,15 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </svg>
                     <span>
                       {authMode === 'login'
-                        ? 'Đăng nhập nhanh với Google / Gmail'
-                        : 'Đăng ký nhanh với Google / Gmail'}
+                        ? isEn ? 'Quick Sign In with Google / Gmail' : 'Đăng nhập nhanh với Google / Gmail'
+                        : isEn ? 'Quick Sign Up with Google / Gmail' : 'Đăng ký nhanh với Google / Gmail'}
                     </span>
                   </button>
 
                   <div className="relative flex items-center justify-center my-2">
                     <div className="border-t border-slate-200 dark:border-white/10 w-full" />
                     <span className="bg-white dark:bg-slate-900/90 px-3 text-[11px] text-slate-400 uppercase font-medium">
-                      Hoặc tài khoản & mật khẩu
+                      {isEn ? 'Or account & password' : 'Hoặc tài khoản & mật khẩu'}
                     </span>
                   </div>
 
@@ -705,7 +813,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     <form onSubmit={handleLoginSubmit} className="space-y-3">
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Tên đăng nhập (Username) hoặc Gmail:
+                          {isEn ? 'Username or Gmail:' : 'Tên đăng nhập (Username) hoặc Gmail:'}
                         </label>
                         <div className="relative">
                           <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -714,14 +822,14 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                             required
                             value={identifier}
                             onChange={(e) => setIdentifier(e.target.value)}
-                            placeholder="ví dụ: hocsinh hoặc email"
+                            placeholder={isEn ? 'e.g., hocsinh or email' : 'ví dụ: hocsinh hoặc email'}
                             className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         </div>
 
                         {/* Demo test buttons */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                          <span>Gợi ý thử nhanh:</span>
+                          <span>{isEn ? 'Quick demo:' : 'Gợi ý thử nhanh:'}</span>
                           <button
                             type="button"
                             onClick={() => {
@@ -750,7 +858,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                            Mật khẩu:
+                            {isEn ? 'Password:' : 'Mật khẩu:'}
                           </label>
                           <button
                             type="button"
@@ -762,7 +870,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                             }}
                             className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
                           >
-                            Quên mật khẩu?
+                            {isEn ? 'Forgot password?' : 'Quên mật khẩu?'}
                           </button>
                         </div>
                         <div className="relative">
@@ -790,7 +898,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                         disabled={loading}
                         className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-colors shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        {loading ? 'Đang vào...' : 'Đăng Nhập Vào Bục Giảng'}
+                        {loading
+                          ? isEn ? 'Signing in...' : 'Đang vào...'
+                          : isEn ? 'Sign In to Classroom' : 'Đăng Nhập Vào Bục Giảng'}
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </form>
@@ -799,13 +909,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     <form onSubmit={handleRegisterSubmit} className="space-y-3">
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Họ và tên học sinh:
+                          {isEn ? 'Full Name:' : 'Họ và tên học sinh:'}
                         </label>
                         <input
                           type="text"
                           value={regFullName}
                           onChange={(e) => setRegFullName(e.target.value)}
-                          placeholder="ví dụ: Nguyễn Văn An"
+                          placeholder={isEn ? 'e.g., Nguyen Van An' : 'ví dụ: Nguyễn Văn An'}
                           className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
@@ -813,7 +923,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
                           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Tên đăng nhập (Username):
+                            {isEn ? 'Username:' : 'Tên đăng nhập (Username):'}
                           </label>
                           <input
                             type="text"
@@ -827,7 +937,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
                         <div>
                           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Gmail / Email:
+                            {isEn ? 'Gmail / Email:' : 'Gmail / Email:'}
                           </label>
                           <input
                             type="email"
@@ -842,7 +952,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Mật khẩu:
+                          {isEn ? 'Password:' : 'Mật khẩu:'}
                         </label>
                         <div className="relative">
                           <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -869,7 +979,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                         disabled={loading}
                         className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-colors shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        {loading ? 'Đang tạo...' : 'Đăng Ký & Nhận +150 XP'}
+                        {loading
+                          ? isEn ? 'Creating...' : 'Đang tạo...'
+                          : isEn ? 'Register & Earn +150 XP' : 'Đăng Ký & Nhận +150 XP'}
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </form>
@@ -884,7 +996,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   onClick={onEnterAsGuest}
                   className="text-xs text-indigo-600 dark:text-indigo-300 hover:underline font-medium transition-colors"
                 >
-                  Hoặc trải nghiệm với tư cách Khách (Không cần tài khoản) →
+                  {isEn
+                    ? 'Or explore directly as a Guest (No account required) →'
+                    : 'Hoặc trải nghiệm với tư cách Khách (Không cần tài khoản) →'}
                 </button>
               </div>
             </div>
@@ -895,10 +1009,14 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         <div className="mt-14 sm:mt-20 pt-10 border-t border-slate-200/80 dark:border-white/10 space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
-              Hệ Sinh Thái Lớp Học Mô Phỏng 360° Toàn Diện
+              {isEn
+                ? 'Complete 360° Interactive STEM Learning Ecosystem'
+                : 'Hệ Sinh Thái Lớp Học Mô Phỏng 360° Toàn Diện'}
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-300 leading-relaxed">
-              Mỗi bài giảng gồm 5 phần chuyên sâu (Khái niệm · Công thức · Giải thích sâu · Hỏi AI · 2 Trắc nghiệm &amp; 1 Tự luận), tự động lưu kết quả và phân tích lộ trình học thông minh.
+              {isEn
+                ? 'Every lesson includes 5 structured stages (Concept · Formula · Deep Dive · Ask AI · 2 MCQs & 1 Essay) with automatic progress & roadmap analysis.'
+                : 'Mỗi bài giảng gồm 5 phần chuyên sâu (Khái niệm · Công thức · Giải thích sâu · Hỏi AI · 2 Trắc nghiệm & 1 Tự luận), tự động lưu kết quả và phân tích lộ trình học thông minh.'}
             </p>
           </div>
 
@@ -911,13 +1029,15 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 <Compass className="w-5 h-5" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
-                Toán Học 2D &amp; Oxyz 3D
+                {isEn ? 'Math 2D & Oxyz 3D' : 'Toán Học 2D & Oxyz 3D'}
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                Vẽ đồ thị đa thức, logarit, trị tuyệt đối, tô diện tích tích phân; dựng hình phẳng Conic/tứ giác nội tiếp và xoay 7 mô hình 3D trực quan.
+                {isEn
+                  ? 'Plot polynomials, logarithms, integrals; drag-and-drop geometry and rotate 7 interactive Oxyz 3D models.'
+                  : 'Vẽ đồ thị đa thức, logarit, trị tuyệt đối, tô diện tích tích phân; dựng hình phẳng Conic/tứ giác nội tiếp và xoay 7 mô hình 3D trực quan.'}
               </p>
               <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1">
-                Xem {MATH_LECTURES.length} bài Toán →
+                {isEn ? `Explore ${MATH_LECTURES.length} Math topics →` : `Xem ${MATH_LECTURES.length} bài Toán →`}
               </span>
             </div>
 
@@ -929,13 +1049,15 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 <Zap className="w-5 h-5" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
-                Phòng Lab Vật Lý 2D &amp; 3D
+                {isEn ? 'Physics 2D & 3D Labs' : 'Phòng Lab Vật Lý 2D & 3D'}
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                10 phòng thí nghiệm 2D và 11 cảnh 3D 60 FPS: Con lắc, chuyển động tròn, mạch xoay chiều RLC Fresnel, giao thoa khe Y-âng, từ trường Lorentz.
+                {isEn
+                  ? '10 2D labs & 11 60 FPS 3D simulations: pendulums, circular motion, RLC AC phasors, Young wave interference, Lorentz fields.'
+                  : '10 phòng thí nghiệm 2D và 11 cảnh 3D 60 FPS: Con lắc, chuyển động tròn, mạch xoay chiều RLC Fresnel, giao thoa khe Y-âng, từ trường Lorentz.'}
               </p>
               <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
-                Khám phá {PHYSICS_LESSONS.length} bài Lí →
+                {isEn ? `Explore ${PHYSICS_LESSONS.length} Physics labs →` : `Khám phá ${PHYSICS_LESSONS.length} bài Lí →`}
               </span>
             </div>
 
@@ -950,10 +1072,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 Sublime Text 4 &amp; Online Judge
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                Trình soạn thảo Monokai đầy đủ Edit, Find/Replace, Goto Line, Snippet thi HSG; nộp bài C++/Python chấm test ẩn hoặc gửi đề tự do bằng ảnh/file.
+                {isEn
+                  ? 'Monokai editor with Find/Replace, Goto Line, CP snippets; submit C++/Python against hidden tests or OCR custom problem images.'
+                  : 'Trình soạn thảo Monokai đầy đủ Edit, Find/Replace, Goto Line, Snippet thi HSG; nộp bài C++/Python chấm test ẩn hoặc gửi đề tự do bằng ảnh/file.'}
               </p>
               <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                Luyện {CS_LESSONS.length} chuyên đề →
+                {isEn ? `Practice ${CS_LESSONS.length} modules →` : `Luyện ${CS_LESSONS.length} chuyên đề →`}
               </span>
             </div>
 
@@ -965,13 +1089,15 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 <FileText className="w-5 h-5" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors tabular-nums">
-                {totalExams} Đề Thi &amp; Hướng Dẫn Giải
+                {isEn ? `${totalExams} Exams & AI Photo Grading` : `${totalExams} Đề Thi & AI Chấm Ảnh`}
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                Ngân hàng {totalExams} đề thi ({chuyenExams} Chuyên từ KHTN, Sư Phạm, Amsterdam, Lê Hồng Phong &amp; {khongChuyenExams} đề THPT) kèm lời giải chi tiết.
+                {isEn
+                  ? `${totalExams} curated papers (${chuyenExams} Specialized & ${khongChuyenExams} Standard) with photo submission, AI scoring & interactive Q&A.`
+                  : `Ngân hàng ${totalExams} đề thi (${chuyenExams} Chuyên & ${khongChuyenExams} đề THPT) kèm nộp ảnh AI chấm điểm & giải đáp từng bước.`}
               </p>
               <span className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold flex items-center gap-1">
-                Khám phá đề thi →
+                {isEn ? 'Explore Exam Bank →' : 'Khám phá đề thi →'}
               </span>
             </div>
           </div>
@@ -981,15 +1107,21 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       {/* Footer */}
       <footer className="relative z-10 border-t border-slate-200/80 dark:border-white/10 py-6 bg-white/60 dark:bg-slate-950/60 backdrop-blur-md text-xs text-slate-500 dark:text-slate-400 text-center">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span>Synapse · Hệ thống giáo dục mô phỏng vũ trụ học thuật</span>
+          <span>
+            {isEn
+              ? 'Synapse · Academic STEM Simulation Classroom'
+              : 'Synapse · Hệ thống giáo dục mô phỏng vũ trụ học thuật'}
+          </span>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
-            <span>Toán 2D &amp; Oxyz 3D</span>
+            <span>{isEn ? 'Math 2D & Oxyz 3D' : 'Toán 2D & Oxyz 3D'}</span>
             <span aria-hidden="true">·</span>
-            <span>Vật lí 2D/3D 60FPS</span>
+            <span>{isEn ? 'Physics 2D/3D 60FPS' : 'Vật lí 2D/3D 60FPS'}</span>
             <span aria-hidden="true">·</span>
             <span>Sublime Text 4 Judge</span>
             <span aria-hidden="true">·</span>
-            <span className="tabular-nums">{totalExams} Đề Khảo Thí</span>
+            <span className="tabular-nums">
+              {isEn ? `${totalExams} Official Exams` : `${totalExams} Đề Khảo Thí`}
+            </span>
           </div>
         </div>
       </footer>

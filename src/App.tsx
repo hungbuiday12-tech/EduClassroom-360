@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Compass, Zap, Code2 } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
@@ -16,12 +16,19 @@ import { AuthModal } from './components/auth/AuthModal';
 import { VisitorLandingPage } from './components/landing/VisitorLandingPage';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 import { useNavigation } from './context/NavigationContext';
+import { useLanguage } from './context/LanguageContext';
 import { EXAM_PAPERS } from './data/examData';
 
 function MainApp() {
   const { location, navigate, selectSubject, goBack } = useNavigation();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const currentSubject = location.subject;
   const isTutorOpen = location.tutorOpen;
+  const isTutorOpenRef = useRef(isTutorOpen);
+  isTutorOpenRef.current = isTutorOpen;
+  const leftCtrlDownRef = useRef(false);
+  const rightCtrlDownRef = useRef(false);
   const [tutorContext, setTutorContext] = useState<TutorContextPayload>({
     subject: 'math'
   });
@@ -112,6 +119,71 @@ function MainApp() {
   };
 
   const activeXP = user ? user.xp : guestXP;
+
+  // Global Left-Ctrl Shortcuts for 3 Subject AIs:
+  // Left Ctrl + D -> Math AI | Left Ctrl + F -> Physics AI | Left Ctrl + G -> CS AI
+  useEffect(() => {
+    const resetCtrl = () => {
+      leftCtrlDownRef.current = false;
+      rightCtrlDownRef.current = false;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'ControlLeft' || (e.key === 'Control' && e.location === 1)) {
+        leftCtrlDownRef.current = true;
+      } else if (e.code === 'ControlRight' || (e.key === 'Control' && e.location === 2)) {
+        rightCtrlDownRef.current = true;
+      }
+
+      if (!e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+      // Only trigger for Left Ctrl (or when Ctrl was already held before focus and not Right Ctrl)
+      const isLeftCtrlActive = leftCtrlDownRef.current || !rightCtrlDownRef.current;
+      if (!isLeftCtrlActive) return;
+
+      let targetSubj: 'math' | 'physics' | 'cs' | null = null;
+      if (e.code === 'KeyD') targetSubj = 'math';
+      else if (e.code === 'KeyF') targetSubj = 'physics';
+      else if (e.code === 'KeyG') targetSubj = 'cs';
+
+      if (!targetSubj) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!user) {
+        setIsGuestExploring(true);
+        try {
+          sessionStorage.setItem('educlassroom_guest_exploring', 'true');
+        } catch {}
+      }
+
+      setTutorContext((prev) => ({ ...prev, subject: targetSubj! }));
+      navigate(
+        { tutorOpen: true, tutorSubject: targetSubj },
+        { replace: isTutorOpenRef.current }
+      );
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'ControlLeft' || (e.key === 'Control' && e.location === 1)) {
+        leftCtrlDownRef.current = false;
+      } else if (e.code === 'ControlRight' || (e.key === 'Control' && e.location === 2)) {
+        rightCtrlDownRef.current = false;
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown, { capture: true });
+    window.addEventListener('keyup', onKeyUp, { capture: true });
+    window.addEventListener('blur', resetCtrl);
+    document.addEventListener('visibilitychange', resetCtrl);
+
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, { capture: true });
+      window.removeEventListener('keyup', onKeyUp, { capture: true });
+      window.removeEventListener('blur', resetCtrl);
+      document.removeEventListener('visibilitychange', resetCtrl);
+    };
+  }, [navigate, user]);
 
   return (
     <AnimatePresence mode="wait">
@@ -223,26 +295,26 @@ function MainApp() {
               <button
                 onClick={() => handleOpenTutor({ subject: 'math' })}
                 className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors"
-                title="Mở AI Toán Học (3 Chế Độ)"
+                title={isEn ? 'Open Math AI (Left Ctrl + D)' : 'Mở AI Toán Học (Ctrl trái + D)'}
               >
                 <Compass className="w-3.5 h-3.5 shrink-0" />
-                <span>AI Toán</span>
+                <span>{isEn ? 'Math AI' : 'AI Toán'}</span>
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'physics' })}
                 className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-amber-600 hover:bg-amber-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors"
-                title="Mở AI Vật Lí (3 Chế Độ)"
+                title={isEn ? 'Open Physics AI (Left Ctrl + F)' : 'Mở AI Vật Lí (Ctrl trái + F)'}
               >
                 <Zap className="w-3.5 h-3.5 shrink-0" />
-                <span>AI Lí</span>
+                <span>{isEn ? 'Physics AI' : 'AI Lí'}</span>
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'cs' })}
                 className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors"
-                title="Mở AI Tin Học (3 Chế Độ)"
+                title={isEn ? 'Open CS AI (Left Ctrl + G)' : 'Mở AI Tin Học (Ctrl trái + G)'}
               >
                 <Code2 className="w-3.5 h-3.5 shrink-0" />
-                <span>AI Tin</span>
+                <span>{isEn ? 'CS AI' : 'AI Tin'}</span>
               </button>
             </div>
           )}
@@ -279,7 +351,11 @@ function MainApp() {
                   Synapse
                 </span>
                 <span aria-hidden="true">·</span>
-                <span>Hệ thống lớp học mô phỏng vũ trụ học thuật Galaxy</span>
+                <span>
+                  {isEn
+                    ? 'Interactive Academic STEM Simulation Galaxy'
+                    : 'Hệ thống lớp học mô phỏng vũ trụ học thuật Galaxy'}
+                </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
@@ -287,37 +363,37 @@ function MainApp() {
                   onClick={() => selectSubject('roadmap')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
-                  Lộ trình học
+                  {isEn ? 'Roadmap' : 'Lộ trình học'}
                 </button>
                 <button
                   onClick={() => selectSubject('math')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
-                  Toán học
+                  {isEn ? 'Mathematics' : 'Toán học'}
                 </button>
                 <button
                   onClick={() => selectSubject('physics')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
-                  Vật lí 2D
+                  {isEn ? 'Physics 2D/3D' : 'Vật lí 2D'}
                 </button>
                 <button
                   onClick={() => selectSubject('cs')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
-                  Tin học
+                  {isEn ? 'Computer Science' : 'Tin học'}
                 </button>
                 <button
                   onClick={() => selectSubject('exams')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold"
                 >
-                  Đề Thi ({EXAM_PAPERS.length} Đề)
+                  {isEn ? `Exams (${EXAM_PAPERS.length})` : `Đề Thi (${EXAM_PAPERS.length} Đề)`}
                 </button>
                 <button
                   onClick={() => selectSubject('arena')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-amber-600 dark:text-amber-400 font-semibold"
                 >
-                  Thi Đấu & BXH Tuần
+                  {isEn ? 'Weekly Arena' : 'Thi Đấu & BXH Tuần'}
                 </button>
               </div>
             </div>

@@ -685,11 +685,14 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           {(['math', 'physics', 'cs'] as AISubjectKey[]).map((subj) => {
             const meta = getAiPersonaMeta(subj);
             const selected = activeSubject === subj;
+            const shortcut = subj === 'math' ? 'Ctrl(L)+D' : subj === 'physics' ? 'Ctrl(L)+F' : 'Ctrl(L)+G';
+            const shortKey = subj === 'math' ? '^D' : subj === 'physics' ? '^F' : '^G';
             return (
               <button
                 key={subj}
                 onClick={() => handleSwitchSubject(subj)}
-                className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap ${
+                title={isEn ? `Shortcut: Left ${shortcut}` : `Phím tắt: ${shortcut.replace('Ctrl(L)', 'Ctrl trái')}`}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap ${
                   selected
                     ? meta.colorClass
                     : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
@@ -697,6 +700,9 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
               >
                 {meta.icon}
                 <span>{isEn ? meta.nameEn : meta.nameVi}</span>
+                <span className={`hidden sm:inline text-[9px] font-mono opacity-80 ${selected ? 'text-white/90' : 'text-slate-400'}`}>
+                  {shortKey}
+                </span>
               </button>
             );
           })}

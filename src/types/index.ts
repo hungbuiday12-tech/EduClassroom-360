@@ -34,6 +34,33 @@ export interface ExamPaper {
   fullWordDocContent?: string;
 }
 
+export interface ExamQuestionBreakdownItem {
+  questionNumber: string;
+  earned: number;
+  max: number;
+  status: 'correct' | 'partial' | 'incorrect' | 'missing';
+  comment: string;
+}
+
+export interface ExamImageEvaluation {
+  score: number; // 0 - 10
+  maxScore: number; // 10
+  verdict: string;
+  summary: string;
+  questionBreakdown: ExamQuestionBreakdownItem[];
+  strengths: string[];
+  mistakes: string[];
+  nextAdvice: string;
+  gradedAt: string;
+}
+
+export interface ExamQAMessage {
+  id: string;
+  role: 'user' | 'tutor';
+  text: string;
+  timestamp: string;
+}
+
 export interface StudentProgress {
   xp: number;
   completedProblems: string[];

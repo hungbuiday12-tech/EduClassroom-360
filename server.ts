@@ -1226,6 +1226,311 @@ Hãy chấm điểm công tâm, chính xác từng bước lập luận/công th
   }
 });
 
+// =====================================================================
+// GEMINI AI: MULTIMODAL EXAM PHOTO GRADING (0 - 10 SCALE) & FOLLOW-UP Q&A
+// =====================================================================
+app.post('/api/gemini/grade-exam-image', async (req: Request, res: Response) => {
+  try {
+    const {
+      subject = 'math',
+      examTitle = '',
+      track = 'khong_chuyen',
+      questions = [],
+      studentImages = [],
+      studentNotesText = '',
+      language = 'vi'
+    } = req.body || {};
+
+    const validImages = Array.isArray(studentImages)
+      ? studentImages.filter((img: any) => img && typeof img.base64 === 'string' && img.base64.trim().length > 0).slice(0, 5)
+      : [];
+    const hasNotes = String(studentNotesText || '').trim().length > 0;
+
+    if (validImages.length === 0 && !hasNotes) {
+      return res.status(400).json({
+        error:
+          language === 'en'
+            ? 'Please upload at least one answer sheet photo or enter notes before submitting for AI grading.'
+            : 'Vui lòng tải lên ít nhất 1 ảnh bài làm hoặc nhập nháp lời giải trước khi nộp cho AI chấm điểm.'
+      });
+    }
+
+    const ai = getGenAI();
+    const isEn = language === 'en';
+    const subjName =
+      subject === 'physics'
+        ? isEn ? 'Physics' : 'Vật lí'
+        : subject === 'cs'
+        ? isEn ? 'Computer Science' : 'Tin học'
+        : isEn ? 'Mathematics' : 'Toán học';
+
+    const parts: any[] = [];
+    for (const img of validImages) {
+      const raw = String(img.base64);
+      const mimeMatch = raw.match(/^data:([^;]+);base64,/);
+      const cleanBase64 = raw.replace(/^data:[^;]+;base64,/, '');
+      parts.push({
+        inlineData: {
+          mimeType: img.mimeType || (mimeMatch ? mimeMatch[1] : 'image/jpeg'),
+          data: cleanBase64
+        }
+      });
+    }
+
+    const safeQuestions = Array.isArray(questions) ? questions : [];
+    const examTranscript = safeQuestions
+      .map(
+        (q: any, idx: number) =>
+          `[${q.number || `Q${idx + 1}`}${q.points ? ` - ${q.points}` : ''}]\nĐỀ BÀI: ${q.content}\nĐÁP ÁN CHUẨN: ${q.solution}`
+      )
+      .join('\n\n---\n\n');
+
+    const promptText = isEn
+      ? `You are a strict, fair ${subjName} examiner grading a student's submitted exam (${track === 'chuyen' ? 'Specialized / Olympiad Track' : 'Standard High School Track'}): "${examTitle}".
+Total scale: 0 to 10 points (increments of 0.25 or 0.5).
+
+EXAM QUESTIONS & OFFICIAL SOLUTIONS:
+${examTranscript}
+
+STUDENT DRAFT NOTES (if any):
+${hasNotes ? studentNotesText : '(None typed; see attached handwritten photo(s) above)'}
+
+TASK:
+1. Carefully OCR and read every line, equation, diagram, or code in the student's attached photo(s) (and/or draft notes).
+2. Match each part of the student's work to the corresponding exam question. If a question is not answered in the photo/notes, mark status as "missing" with 0 earned points.
+3. Grade accurately step-by-step on a 0–10 total scale. Never invent steps the student did not write. If the image is completely unrelated or blank, score 0 and explain clearly.
+4. Provide a concise verdict, overall summary, questionBreakdown for all ${safeQuestions.length} questions, specific strengths, exact mistakes/missing conditions, and actionable nextAdvice. Format formulas in KaTeX ($...$). Respond strictly in JSON matching the schema.`
+      : `Bạn là Giám khảo chấm thi môn ${subjName} (${track === 'chuyen' ? 'Hệ Chuyên / HSG' : 'Hệ Phổ Thông / THPT'}), chấm bài thi "${examTitle}" trên thang điểm 0 đến 10 (làm tròn 0.25 hoặc 0.5 điểm).
+
+ĐỀ BÀI & ĐÁP ÁN CHUẨN TỪNG CÂU:
+${examTranscript}
+
+PHẦN NHÁP / GHI CHÚ CỦA HỌC SINH (nếu có):
+${hasNotes ? studentNotesText : '(Học sinh nộp ảnh bài làm viết tay đính kèm ở trên)'}
+
+NHIỆM VỤ:
+1. Đọc kỹ chữ viết tay, công thức, hình vẽ hoặc đoạn code trong các ảnh đính kèm (kết hợp nháp nếu có).
+2. Đối chiếu từng ý bài làm của học sinh với đáp án chuẩn của từng câu. Câu nào không thấy trong ảnh hoặc chưa làm thì đánh status = "missing" và cho 0 điểm câu đó.
+3. Chấm điểm công tâm, chính xác từng bước (tổng điểm thang 0–10). Tuyệt đối không tự bịa thêm ý mà học sinh không viết. Nếu ảnh bị mờ hoàn toàn hoặc không phải bài làm, cho 0 điểm và nêu rõ lý do.
+4. Trả về JSON đúng schema gồm: score (0-10), verdict (xếp loại ngắn), summary (nhận xét tổng quan), questionBreakdown (đủ ${safeQuestions.length} câu), strengths, mistakes, nextAdvice. Mọi công thức viết chuẩn KaTeX ($...$). Phản hồi bằng Tiếng Việt.`;
+
+    parts.push({ text: promptText });
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: { parts },
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          score: { type: Type.NUMBER, description: 'Total score from 0 to 10' },
+          verdict: { type: Type.STRING, description: 'Short rating e.g. Xuat sac / Kha / Can co gang' },
+          summary: { type: Type.STRING, description: 'Overall examiner assessment' },
+          questionBreakdown: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                questionNumber: { type: Type.STRING },
+                earned: { type: Type.NUMBER },
+                max: { type: Type.NUMBER },
+                status: { type: Type.STRING, description: 'correct | partial | incorrect | missing' },
+                comment: { type: Type.STRING }
+              }
+            }
+          },
+          strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+          mistakes: { type: Type.ARRAY, items: { type: Type.STRING } },
+          nextAdvice: { type: Type.STRING }
+        }
+      },
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 35000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {});
+    const rawScore = Number(parsed?.score);
+    const clampedScore = Number.isFinite(rawScore)
+      ? Math.max(0, Math.min(10, Math.round(rawScore * 4) / 4))
+      : 0;
+
+    const validStatuses = new Set(['correct', 'partial', 'incorrect', 'missing']);
+    const breakdown = Array.isArray(parsed?.questionBreakdown)
+      ? parsed.questionBreakdown.map((item: any, idx: number) => ({
+          questionNumber: String(item?.questionNumber || safeQuestions[idx]?.number || `Q${idx + 1}`),
+          earned: Math.max(0, Number(item?.earned ?? 0)),
+          max: Math.max(0.5, Number(item?.max ?? 2.5)),
+          status: validStatuses.has(String(item?.status)) ? String(item.status) : 'partial',
+          comment: String(item?.comment || '')
+        }))
+      : [];
+
+    return res.json({
+      success: true,
+      evaluation: {
+        score: clampedScore,
+        maxScore: 10,
+        verdict: String(
+          parsed?.verdict ||
+            (clampedScore >= 8
+              ? isEn ? 'Excellent' : 'Xuất sắc'
+              : clampedScore >= 6.5
+              ? isEn ? 'Good' : 'Khá tốt'
+              : clampedScore >= 5
+              ? isEn ? 'Pass' : 'Đạt yêu cầu'
+              : isEn ? 'Needs Review' : 'Cần ôn tập thêm')
+        ),
+        summary: String(
+          parsed?.summary ||
+            (isEn ? 'AI grading completed for your submitted solution.' : 'AI đã hoàn thành chấm ảnh bài làm của bạn.')
+        ),
+        questionBreakdown: breakdown,
+        strengths: Array.isArray(parsed?.strengths) ? parsed.strengths.map(String) : [],
+        mistakes: Array.isArray(parsed?.mistakes) ? parsed.mistakes.map(String) : [],
+        nextAdvice: String(
+          parsed?.nextAdvice ||
+            (isEn
+              ? 'Ask follow-up questions below on any step you want explained more clearly.'
+              : 'Hãy đặt câu hỏi ngay bên dưới để AI giải thích kỹ những phần em còn băn khoăn.')
+        ),
+        gradedAt: new Date().toISOString()
+      }
+    });
+  } catch (err: any) {
+    console.error('Error in /api/gemini/grade-exam-image:', err);
+    return res.status(500).json({
+      error: extractCleanErrorMessage(err)
+    });
+  }
+});
+
+app.post('/api/gemini/exam-qa', async (req: Request, res: Response) => {
+  try {
+    const {
+      subject = 'math',
+      examTitle = '',
+      questions = [],
+      studentImages = [],
+      evaluation = null,
+      messages = [],
+      language = 'vi'
+    } = req.body || {};
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({
+        error: language === 'en' ? 'Please enter your question.' : 'Vui lòng nhập câu hỏi cần AI giải đáp.'
+      });
+    }
+
+    const ai = getGenAI();
+    const isEn = language === 'en';
+    const subjLabel =
+      subject === 'physics'
+        ? isEn ? 'Physics' : 'Vật lí'
+        : subject === 'cs'
+        ? isEn ? 'Computer Science' : 'Tin học'
+        : isEn ? 'Mathematics' : 'Toán học';
+
+    const safeQuestions = Array.isArray(questions) ? questions : [];
+    const examContext = safeQuestions
+      .map(
+        (q: any, idx: number) =>
+          `${q.number || `Q${idx + 1}`}: ${q.content}\nĐáp án chuẩn: ${q.solution}`
+      )
+      .join('\n\n');
+
+    const evalContext = evaluation
+      ? `KẾT QUẢ AI ĐÃ CHẤM: ${evaluation.score}/10 (${evaluation.verdict})\nNhận xét chung: ${evaluation.summary}\nChi tiết từng câu: ${(evaluation.questionBreakdown || [])
+          .map((b: any) => `${b.questionNumber}: ${b.earned}/${b.max} (${b.status}) - ${b.comment}`)
+          .join(' | ')}\nLỗi sai cần lưu ý: ${(evaluation.mistakes || []).join('; ')}`
+      : '';
+
+    const systemInstruction = isEn
+      ? `You are a dedicated ${subjLabel} tutor helping a student understand every unclear part of the exam "${examTitle}" after grading.
+Respond clearly, warmly, step-by-step in English, using KaTeX ($...$ or $$...$$) for every mathematical/physics expression. Reference the student's uploaded answer photo(s) and the grading feedback directly when relevant.
+
+EXAM CONTEXT:
+${examContext}
+
+${evalContext}`
+      : `Bạn là Gia sư chuyên sâu môn ${subjLabel}, đang giải đáp thắc mắc cho học sinh sau khi nộp bài và chấm điểm đề "${examTitle}".
+Hãy giải thích cặn kẽ, sư phạm, từng bước một bằng Tiếng Việt. Mọi công thức Toán/Lí/Độ phức tạp viết chuẩn KaTeX ($...$ hoặc $$...$$, luôn dùng \\frac{a}{b}). Nếu học sinh hỏi vì sao bị trừ điểm hoặc chưa hiểu bước biến đổi nào trong ảnh bài làm hay đáp án chuẩn, hãy chỉ ra đúng dòng/bước đó và giảng rõ bản chất.
+
+NỘI DUNG ĐỀ THI & ĐÁP ÁN:
+${examContext}
+
+${evalContext}`;
+
+    const validImages = Array.isArray(studentImages)
+      ? studentImages.filter((img: any) => img && typeof img.base64 === 'string' && img.base64.trim().length > 0).slice(0, 4)
+      : [];
+
+    const { history, lastMessageParts } = buildGeminiChatHistoryAndLastTurn(messages);
+
+    const imageParts = validImages.map((img: any) => {
+      const raw = String(img.base64);
+      const mimeMatch = raw.match(/^data:([^;]+);base64,/);
+      return {
+        inlineData: {
+          mimeType: img.mimeType || (mimeMatch ? mimeMatch[1] : 'image/jpeg'),
+          data: raw.replace(/^data:[^;]+;base64,/, '')
+        }
+      };
+    });
+
+    // Attach the submitted student answer images to the earliest user turn so AI retains visual context
+    if (imageParts.length > 0) {
+      if (history.length > 0 && history[0].role === 'user') {
+        history[0].parts = [...imageParts, ...history[0].parts];
+      } else {
+        lastMessageParts.unshift(...imageParts);
+      }
+    }
+
+    const runChatWithModel = async (modelName: string) => {
+      const chat = ai.chats.create({
+        model: modelName,
+        history,
+        config: {
+          systemInstruction,
+          thinkingConfig: {
+            thinkingLevel: modelName === 'gemini-3.1-flash-lite' ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW
+          }
+        }
+      });
+      return await withTimeout(
+        chat.sendMessage({
+          message:
+            lastMessageParts.length === 1 && lastMessageParts[0].text
+              ? lastMessageParts[0].text
+              : lastMessageParts
+        }),
+        22000,
+        `exam-qa-${modelName}`
+      );
+    };
+
+    let response;
+    try {
+      response = await runChatWithModel('gemini-4-hydrogen');
+    } catch (err1: any) {
+      console.warn('Exam QA primary error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
+      response = await runChatWithModel('gemini-3.1-flash-lite');
+    }
+
+    const reply = (response.text || '').trim();
+    if (!reply) {
+      throw new Error(isEn ? 'AI returned an empty reply. Please retry.' : 'AI chưa trả về phản hồi. Vui lòng thử lại.');
+    }
+    return res.json({ success: true, reply });
+  } catch (err: any) {
+    console.error('Error in /api/gemini/exam-qa:', err);
+    return res.status(500).json({
+      error: extractCleanErrorMessage(err)
+    });
+  }
+});
+
 /**
  * API: Analyze problem from image (OCR) or raw text and synthesize verified test suite
  */

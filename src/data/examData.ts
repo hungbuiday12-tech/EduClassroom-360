@@ -1,4 +1,5 @@
 import { ExamPaper } from '../types';
+import { EXTRA_EXAM_PAPERS } from './extraExamsData';
 
 export const EXAM_PAPERS: ExamPaper[] = [
   {
@@ -3760,5 +3761,6 @@ export const EXAM_PAPERS: ExamPaper[] = [
         ]
       }
     ]
-  }
+  },
+  ...EXTRA_EXAM_PAPERS
 ];

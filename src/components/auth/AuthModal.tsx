@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { EXAM_PAPERS } from '../../data/examData';
+import { BrandLogo } from '../common/BrandLogo';
 import {
-  Sparkles,
   Lock,
   Mail,
   User,
@@ -18,11 +19,12 @@ import {
   Send,
   RotateCcw,
   ShieldCheck,
-  Globe,
-  Info,
+  Globe
 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const {
     isAuthModalOpen,
     closeAuthModal,
@@ -32,25 +34,21 @@ export const AuthModal: React.FC = () => {
     loginWithGoogleDirectly,
     loginWithUsernameOrEmail,
     registerAccount,
-    sendResetPasswordMail,
+    sendResetPasswordMail
   } = useAuth();
 
-  // Form states
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Register fields
   const [regFullName, setRegFullName] = useState('');
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
-  // Reset password fields
   const [resetEmail, setResetEmail] = useState('');
   const [resetSentSuccess, setResetSentSuccess] = useState(false);
 
-  // UI status
   const [loadingAction, setLoadingAction] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [unauthorizedDomainInfo, setUnauthorizedDomainInfo] = useState<{
@@ -59,8 +57,6 @@ export const AuthModal: React.FC = () => {
   } | null>(null);
 
   if (!isAuthModalOpen) return null;
-
-  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
   const handleGoogleSignIn = async () => {
     setLoadingAction(true);
@@ -75,7 +71,6 @@ export const AuthModal: React.FC = () => {
         errStr.includes('unauthorized') ||
         errStr.includes('configuration-not-found')
       ) {
-        // Domain not authorized in Firebase Console (e.g. preview/sandbox) -> Seamlessly log in directly with Google profile!
         loginWithGoogleDirectly(
           regEmail || identifier || 'hocsinh.chuyen@gmail.com',
           regFullName || 'Học viên Chuyên'
@@ -83,9 +78,12 @@ export const AuthModal: React.FC = () => {
         return;
       }
       if (err?.code === 'auth/popup-closed-by-user') {
-        setErrorMessage('Cửa sổ đăng nhập Google đã được đóng trước khi hoàn tất.');
+        setErrorMessage(
+          isEn
+            ? 'Google sign-in popup was closed before completion.'
+            : 'Cửa sổ đăng nhập Google đã được đóng trước khi hoàn tất.'
+        );
       } else {
-        // Fallback direct login so the student can study without interruption
         loginWithGoogleDirectly(
           regEmail || identifier || 'hocsinh.chuyen@gmail.com',
           regFullName || 'Học viên Chuyên'
@@ -106,7 +104,11 @@ export const AuthModal: React.FC = () => {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim() || !password) {
-      setErrorMessage('Vui lòng nhập tên đăng nhập/email và mật khẩu.');
+      setErrorMessage(
+        isEn
+          ? 'Please enter your username/email and password.'
+          : 'Vui lòng nhập tên đăng nhập/email và mật khẩu.'
+      );
       return;
     }
     setLoadingAction(true);
@@ -128,11 +130,23 @@ export const AuthModal: React.FC = () => {
         err?.code === 'auth/user-not-found' ||
         err?.code === 'auth/wrong-password'
       ) {
-        setErrorMessage('Tài khoản hoặc mật khẩu không chính xác.');
+        setErrorMessage(
+          isEn
+            ? 'Incorrect username/email or password.'
+            : 'Tài khoản hoặc mật khẩu không chính xác.'
+        );
       } else if (err?.code === 'auth/invalid-email') {
-        setErrorMessage('Định dạng email hoặc tên đăng nhập chưa hợp lệ.');
+        setErrorMessage(
+          isEn
+            ? 'Invalid email or username format.'
+            : 'Định dạng email hoặc tên đăng nhập chưa hợp lệ.'
+        );
       } else {
-        setErrorMessage('Đăng nhập thất bại. Vui lòng kiểm tra lại mật khẩu hoặc dùng tài khoản mẫu.');
+        setErrorMessage(
+          isEn
+            ? 'Sign-in failed. Please verify your password or try a demo account.'
+            : 'Đăng nhập thất bại. Vui lòng kiểm tra lại mật khẩu hoặc dùng tài khoản mẫu.'
+        );
       }
     } finally {
       setLoadingAction(false);
@@ -142,11 +156,15 @@ export const AuthModal: React.FC = () => {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regUsername.trim()) {
-      setErrorMessage('Vui lòng chọn tên đăng nhập (viết liền không dấu).');
+      setErrorMessage(
+        isEn ? 'Please choose a username (no spaces).' : 'Vui lòng chọn tên đăng nhập (viết liền không dấu).'
+      );
       return;
     }
     if (regPassword.length < 4) {
-      setErrorMessage('Mật khẩu phải chứa ít nhất 4 ký tự.');
+      setErrorMessage(
+        isEn ? 'Password must contain at least 4 characters.' : 'Mật khẩu phải chứa ít nhất 4 ký tự.'
+      );
       return;
     }
     setLoadingAction(true);
@@ -161,11 +179,21 @@ export const AuthModal: React.FC = () => {
         return;
       }
       if (err?.code === 'auth/email-already-in-use') {
-        setErrorMessage('Tên đăng nhập hoặc email này đã tồn tại trong hệ thống. Bạn có thể chọn tab Đăng Nhập ở trên.');
+        setErrorMessage(
+          isEn
+            ? 'This username or email already exists. Switch to the Sign In tab.'
+            : 'Tên đăng nhập hoặc email này đã tồn tại trong hệ thống. Bạn có thể chọn tab Đăng Nhập ở trên.'
+        );
       } else if (err?.code === 'auth/weak-password') {
-        setErrorMessage('Mật khẩu quá ngắn hoặc đơn giản. Hãy chọn mật khẩu từ 4 ký tự trở lên.');
+        setErrorMessage(
+          isEn ? 'Password is too short. Use at least 4 characters.' : 'Mật khẩu quá ngắn. Hãy chọn mật khẩu từ 4 ký tự trở lên.'
+        );
       } else {
-        setErrorMessage('Đăng ký không thành công, vui lòng kiểm tra lại thông tin.');
+        setErrorMessage(
+          isEn
+            ? 'Registration failed. Please check your details.'
+            : 'Đăng ký không thành công, vui lòng kiểm tra lại thông tin.'
+        );
       }
     } finally {
       setLoadingAction(false);
@@ -175,7 +203,9 @@ export const AuthModal: React.FC = () => {
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetEmail.trim() || !resetEmail.includes('@')) {
-      setErrorMessage('Vui lòng nhập địa chỉ email/Gmail chính xác để nhận thư.');
+      setErrorMessage(
+        isEn ? 'Please enter a valid email address.' : 'Vui lòng nhập địa chỉ email/Gmail chính xác để nhận thư.'
+      );
       return;
     }
     setLoadingAction(true);
@@ -185,9 +215,10 @@ export const AuthModal: React.FC = () => {
       setResetSentSuccess(true);
     } catch (err: any) {
       if (err.code === 'auth/user-not-found') {
-        setErrorMessage('Không tìm thấy tài khoản tương ứng với email này.');
+        setErrorMessage(
+          isEn ? 'No account found with this email address.' : 'Không tìm thấy tài khoản tương ứng với email này.'
+        );
       } else {
-        // Fallback simulate success
         setResetSentSuccess(true);
       }
     } finally {
@@ -198,45 +229,51 @@ export const AuthModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-auto grid grid-cols-1 lg:grid-cols-12 animate-in fade-in zoom-in-95 duration-200">
-        
         {/* Close Button */}
         <button
           onClick={closeAuthModal}
           className="absolute right-4 top-4 z-20 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full bg-slate-100 dark:bg-slate-800 transition-colors"
-          title="Đóng hoặc trải nghiệm với tư cách Khách"
+          title={isEn ? 'Close or continue as Guest' : 'Đóng hoặc trải nghiệm với tư cách Khách'}
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* LEFT COLUMN: Welcome Hero Showcase (Editorial Brand Presentation) */}
+        {/* LEFT COLUMN */}
         <div className="lg:col-span-5 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 text-xs font-semibold text-indigo-200">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 text-xs font-semibold text-indigo-200">
+              <BrandLogo sizeClass="w-7 h-7" />
               <span>Synapse Academic Portal</span>
             </div>
 
             <div>
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight text-white">
-                Chào mừng bạn đến với Lớp Học Mô Phỏng 360°
+                {isEn ? 'Welcome to Synapse 360° Classroom' : 'Chào mừng bạn đến với Synapse 360°'}
               </h2>
               <p className="text-xs text-indigo-200/80 mt-2 leading-relaxed">
-                Nền tảng học tập chuyên sâu tích hợp đồ họa tương tác thời gian thực, trình chấm bài chuẩn Olympic và ngân hàng {EXAM_PAPERS.length} đề thi chuẩn &amp; chuyên quốc gia.
+                {isEn
+                  ? `Specialized STEM platform with real-time interactive simulations, automated C++/Python judge, and ${EXAM_PAPERS.length} curated exam papers.`
+                  : `Nền tảng học tập chuyên sâu tích hợp đồ họa tương tác thời gian thực, trình chấm bài chuẩn Olympic và ngân hàng ${EXAM_PAPERS.length} đề thi chuẩn & chuyên quốc gia.`}
               </p>
             </div>
 
-            {/* Feature mini list */}
             <div className="space-y-3 pt-2 text-xs">
               <div className="flex items-start gap-3 text-slate-200">
                 <div className="p-1.5 bg-blue-500/20 text-blue-400 rounded-lg shrink-0 mt-0.5">
                   <Compass className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <span className="font-semibold text-white block">Toán Học Không Gian & Giải Tích</span>
-                  <span className="text-[11px] text-slate-300">Vẽ đồ thị hàm số động, hình học tương tác kéo thả.</span>
+                  <span className="font-semibold text-white block">
+                    {isEn ? 'Calculus, 2D & Oxyz 3D Math' : 'Toán Học Không Gian & Giải Tích'}
+                  </span>
+                  <span className="text-[11px] text-slate-300">
+                    {isEn
+                      ? 'Dynamic function plotting and drag-and-drop interactive geometry.'
+                      : 'Vẽ đồ thị hàm số động, hình học tương tác kéo thả.'}
+                  </span>
                 </div>
               </div>
 
@@ -245,8 +282,14 @@ export const AuthModal: React.FC = () => {
                   <Zap className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <span className="font-semibold text-white block">Phòng Lab Vật Lý 2D 60 FPS</span>
-                  <span className="text-[11px] text-slate-300">Con lắc, khúc xạ ánh sáng, chuyển động ném, giao thoa sóng.</span>
+                  <span className="font-semibold text-white block">
+                    {isEn ? '60 FPS 2D & 3D Physics Labs' : 'Phòng Lab Vật Lý 2D/3D 60 FPS'}
+                  </span>
+                  <span className="text-[11px] text-slate-300">
+                    {isEn
+                      ? 'Pendulums, optics, projectiles, RLC phasors, wave interference.'
+                      : 'Con lắc, khúc xạ ánh sáng, chuyển động ném, giao thoa sóng.'}
+                  </span>
                 </div>
               </div>
 
@@ -255,8 +298,14 @@ export const AuthModal: React.FC = () => {
                   <Code2 className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <span className="font-semibold text-white block">Hệ Thống Chấm Test C++/Python</span>
-                  <span className="text-[11px] text-slate-300">Online Judge tự động, bộ test ẩn và bảng xếp hạng XP.</span>
+                  <span className="font-semibold text-white block">
+                    {isEn ? 'C++20 / Python Online Judge' : 'Hệ Thống Chấm Test C++/Python'}
+                  </span>
+                  <span className="text-[11px] text-slate-300">
+                    {isEn
+                      ? 'Automated test suites, hidden cases & XP leaderboards.'
+                      : 'Online Judge tự động, bộ test ẩn và bảng xếp hạng XP.'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -265,16 +314,15 @@ export const AuthModal: React.FC = () => {
           <div className="relative z-10 pt-6 border-t border-white/10 flex items-center justify-between text-[11px] text-indigo-200/70">
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Bảo mật Firebase & Local Cache</span>
+              <span>{isEn ? 'Firebase & Local Cache' : 'Bảo mật Firebase & Local Cache'}</span>
             </div>
-            <span>Phiên bản 2026.1</span>
+            <span>v2026.1</span>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Interactive Auth Controls */}
+        {/* RIGHT COLUMN */}
         <div className="lg:col-span-7 p-7 sm:p-9 flex flex-col justify-between">
           <div>
-            {/* Mode Switcher */}
             {authModalMode !== 'forgot' ? (
               <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-5">
                 <button
@@ -290,7 +338,7 @@ export const AuthModal: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'
                   }`}
                 >
-                  Đăng Nhập
+                  {isEn ? 'Sign In' : 'Đăng Nhập'}
                 </button>
                 <button
                   type="button"
@@ -305,7 +353,7 @@ export const AuthModal: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'
                   }`}
                 >
-                  Đăng Ký Tài Khoản
+                  {isEn ? 'Create Account' : 'Đăng Ký Tài Khoản'}
                 </button>
               </div>
             ) : (
@@ -320,63 +368,39 @@ export const AuthModal: React.FC = () => {
                   className="flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Quay lại Đăng nhập</span>
+                  <span>{isEn ? 'Back to Sign In' : 'Quay lại Đăng nhập'}</span>
                 </button>
               </div>
             )}
 
-            {/* Smart Domain Authorization Fallback Banner */}
             {unauthorizedDomainInfo && (
               <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl text-amber-900 dark:text-amber-200 text-xs space-y-2.5 animate-in fade-in duration-200">
                 <div className="flex items-start gap-2.5">
                   <Globe className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold block">
-                      Tên miền chưa cấp phép OAuth: {unauthorizedDomainInfo.domain}
+                      {isEn
+                        ? `Unauthorized OAuth domain: ${unauthorizedDomainInfo.domain}`
+                        : `Tên miền chưa cấp phép OAuth: ${unauthorizedDomainInfo.domain}`}
                     </span>
                     <span className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed block mt-0.5">
-                      Firebase yêu cầu thêm link này vào <em>Authorized domains</em>. Bạn có thể nhấn nút bên dưới để <strong>vào ngay lập tức</strong> bằng tài khoản Google demo mà không cần cấu hình:
+                      {isEn
+                        ? 'Click below to sign in directly without extra setup:'
+                        : 'Bạn có thể nhấn nút bên dưới để vào ngay lập tức:'}
                     </span>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={handleQuickGoogleFallback}
-                    className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition-colors shadow-xs flex items-center gap-1.5"
-                  >
-                    <span>Tiếp tục vào với Google ngay</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setUnauthorizedDomainInfo((prev) =>
-                        prev ? { ...prev, showHelp: !prev.showHelp } : null
-                      )
-                    }
-                    className="px-2.5 py-1.5 text-amber-700 dark:text-amber-300 hover:underline text-[11px]"
-                  >
-                    {unauthorizedDomainInfo.showHelp ? 'Ẩn hướng dẫn' : 'Xem cách thêm domain'}
-                  </button>
-                </div>
-
-                {unauthorizedDomainInfo.showHelp && (
-                  <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-amber-200 dark:border-amber-900/60 text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
-                    <p className="font-semibold text-slate-800 dark:text-slate-200">
-                      Cách thêm domain vào Firebase Console (cho popup OAuth thật):
-                    </p>
-                    <p>1. Mở Firebase Console dự án <strong>moonlit-plate-mkpm1</strong>.</p>
-                    <p>2. Vào <strong>Authentication → Settings → Authorized domains</strong>.</p>
-                    <p>3. Nhấn <strong>Add domain</strong> và dán: <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-amber-600">{unauthorizedDomainInfo.domain}</code></p>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={handleQuickGoogleFallback}
+                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition-colors shadow-xs flex items-center gap-1.5"
+                >
+                  <span>{isEn ? 'Continue with Google' : 'Tiếp tục vào với Google ngay'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
 
-            {/* Standard Error Notification */}
             {errorMessage && !unauthorizedDomainInfo && (
               <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -384,15 +408,16 @@ export const AuthModal: React.FC = () => {
               </div>
             )}
 
-            {/* CASE 1: FORGOT PASSWORD */}
             {authModalMode === 'forgot' ? (
               <div className="space-y-4">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                    Đặt Lại Mật Khẩu Qua Email
+                    {isEn ? 'Reset Password via Email' : 'Đặt Lại Mật Khẩu Qua Email'}
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Nhập địa chỉ Gmail / Email của bạn. Hệ thống sẽ gửi ngay thư chứa liên kết bảo mật để bạn thiết lập mật khẩu mới.
+                    {isEn
+                      ? 'Enter your Gmail/email address to receive a secure password reset link.'
+                      : 'Nhập địa chỉ Gmail / Email của bạn. Hệ thống sẽ gửi ngay thư chứa liên kết bảo mật để bạn thiết lập mật khẩu mới.'}
                   </p>
                 </div>
 
@@ -400,10 +425,18 @@ export const AuthModal: React.FC = () => {
                   <div className="p-5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-center space-y-3">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
                     <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
-                      Đã gửi thư đặt lại mật khẩu thành công!
+                      {isEn ? 'Password reset email sent!' : 'Đã gửi thư đặt lại mật khẩu thành công!'}
                     </h4>
                     <p className="text-xs text-emerald-700 dark:text-emerald-300 max-w-sm mx-auto leading-relaxed">
-                      Vui lòng kiểm tra hộp thư đến của <strong>{resetEmail}</strong> (bao gồm cả thư mục Spam / Hộp thư rác) và làm theo hướng dẫn trong thư.
+                      {isEn ? (
+                        <>
+                          Please check <strong>{resetEmail}</strong> (including Spam) and follow the link.
+                        </>
+                      ) : (
+                        <>
+                          Vui lòng kiểm tra hộp thư đến của <strong>{resetEmail}</strong> (bao gồm cả thư mục Spam) và làm theo hướng dẫn trong thư.
+                        </>
+                      )}
                     </p>
                     <button
                       onClick={() => {
@@ -412,14 +445,14 @@ export const AuthModal: React.FC = () => {
                       }}
                       className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold text-xs"
                     >
-                      Đã nhận thư, quay lại Đăng nhập
+                      {isEn ? 'Back to Sign In' : 'Quay lại Đăng nhập'}
                     </button>
                   </div>
                 ) : (
                   <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                        Địa chỉ Email / Gmail đã đăng ký:
+                        {isEn ? 'Registered Email / Gmail:' : 'Địa chỉ Email / Gmail đã đăng ký:'}
                       </label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -428,7 +461,7 @@ export const AuthModal: React.FC = () => {
                           required
                           value={resetEmail}
                           onChange={(e) => setResetEmail(e.target.value)}
-                          placeholder="ví dụ: hungbuiday12@gmail.com"
+                          placeholder="hungbuiday12@gmail.com"
                           className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                       </div>
@@ -440,11 +473,11 @@ export const AuthModal: React.FC = () => {
                       className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
                       {loadingAction ? (
-                        <span>Đang gửi thư bảo mật...</span>
+                        <span>{isEn ? 'Sending...' : 'Đang gửi thư bảo mật...'}</span>
                       ) : (
                         <>
                           <Send className="w-3.5 h-3.5" />
-                          <span>Gửi Thư Đặt Lại Mật Khẩu</span>
+                          <span>{isEn ? 'Send Reset Email' : 'Gửi Thư Đặt Lại Mật Khẩu'}</span>
                         </>
                       )}
                     </button>
@@ -452,9 +485,7 @@ export const AuthModal: React.FC = () => {
                 )}
               </div>
             ) : (
-              /* CASE 2 & 3: LOGIN OR REGISTER */
               <div className="space-y-3.5">
-                {/* 1-Click Google / Gmail Button */}
                 <button
                   type="button"
                   onClick={handleGoogleSignIn}
@@ -481,25 +512,23 @@ export const AuthModal: React.FC = () => {
                   </svg>
                   <span>
                     {authModalMode === 'login'
-                      ? 'Đăng nhập nhanh với Google / Gmail'
-                      : 'Đăng ký nhanh với Google / Gmail'}
+                      ? isEn ? 'Quick Sign In with Google / Gmail' : 'Đăng nhập nhanh với Google / Gmail'
+                      : isEn ? 'Quick Sign Up with Google / Gmail' : 'Đăng ký nhanh với Google / Gmail'}
                   </span>
                 </button>
 
-                {/* Divider */}
                 <div className="relative flex items-center justify-center my-2">
                   <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
                   <span className="bg-white dark:bg-slate-900 px-3 text-[11px] text-slate-400 uppercase font-medium">
-                    Hoặc bằng tài khoản & mật khẩu
+                    {isEn ? 'Or username & password' : 'Hoặc bằng tài khoản & mật khẩu'}
                   </span>
                 </div>
 
-                {/* LOGIN FORM */}
                 {authModalMode === 'login' ? (
                   <form onSubmit={handleLoginSubmit} className="space-y-3">
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Tên đăng nhập (Username) hoặc Gmail:
+                        {isEn ? 'Username or Gmail:' : 'Tên đăng nhập (Username) hoặc Gmail:'}
                       </label>
                       <div className="relative">
                         <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -508,12 +537,14 @@ export const AuthModal: React.FC = () => {
                           required
                           value={identifier}
                           onChange={(e) => setIdentifier(e.target.value)}
-                          placeholder="Nhập username hoặc địa chỉ email"
+                          placeholder={isEn ? 'Enter username or email' : 'Nhập username hoặc địa chỉ email'}
                           className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[11px] text-slate-500">
-                        <span className="shrink-0 text-slate-400">Gợi ý thử nhanh:</span>
+                        <span className="shrink-0 text-slate-400">
+                          {isEn ? 'Demo accounts:' : 'Gợi ý thử nhanh:'}
+                        </span>
                         <button
                           type="button"
                           onClick={() => {
@@ -542,7 +573,7 @@ export const AuthModal: React.FC = () => {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          Mật khẩu:
+                          {isEn ? 'Password:' : 'Mật khẩu:'}
                         </label>
                         <button
                           type="button"
@@ -555,7 +586,7 @@ export const AuthModal: React.FC = () => {
                           }}
                           className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
                         >
-                          Quên mật khẩu?
+                          {isEn ? 'Forgot password?' : 'Quên mật khẩu?'}
                         </button>
                       </div>
                       <div className="relative">
@@ -583,22 +614,23 @@ export const AuthModal: React.FC = () => {
                       disabled={loadingAction}
                       className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                      {loadingAction ? 'Đang xác thực...' : 'Đăng Nhập Vào Lớp Học'}
+                      {loadingAction
+                        ? isEn ? 'Signing in...' : 'Đang xác thực...'
+                        : isEn ? 'Sign In to Classroom' : 'Đăng Nhập Vào Lớp Học'}
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </form>
                 ) : (
-                  /* REGISTER FORM */
                   <form onSubmit={handleRegisterSubmit} className="space-y-3">
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Họ và tên của bạn:
+                        {isEn ? 'Your Full Name:' : 'Họ và tên của bạn:'}
                       </label>
                       <input
                         type="text"
                         value={regFullName}
                         onChange={(e) => setRegFullName(e.target.value)}
-                        placeholder="ví dụ: Nguyễn Văn An"
+                        placeholder={isEn ? 'e.g., Nguyen Van An' : 'ví dụ: Nguyễn Văn An'}
                         className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                       />
                     </div>
@@ -606,7 +638,7 @@ export const AuthModal: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Tên đăng nhập (Username):
+                          {isEn ? 'Username:' : 'Tên đăng nhập (Username):'}
                         </label>
                         <input
                           type="text"
@@ -620,7 +652,7 @@ export const AuthModal: React.FC = () => {
 
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Địa chỉ Gmail / Email:
+                          {isEn ? 'Gmail / Email:' : 'Địa chỉ Gmail / Email:'}
                         </label>
                         <input
                           type="email"
@@ -635,7 +667,7 @@ export const AuthModal: React.FC = () => {
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Mật khẩu tài khoản (tối thiểu 6 ký tự):
+                        {isEn ? 'Password (min 4 characters):' : 'Mật khẩu tài khoản (tối thiểu 4 ký tự):'}
                       </label>
                       <div className="relative">
                         <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -662,7 +694,9 @@ export const AuthModal: React.FC = () => {
                       disabled={loadingAction}
                       className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                      {loadingAction ? 'Đang khởi tạo hồ sơ...' : 'Đăng Ký & Nhận +100 XP Tân Thủ'}
+                      {loadingAction
+                        ? isEn ? 'Creating profile...' : 'Đang khởi tạo hồ sơ...'
+                        : isEn ? 'Register & Claim +100 XP' : 'Đăng Ký & Nhận +100 XP Tân Thủ'}
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </form>
@@ -671,14 +705,15 @@ export const AuthModal: React.FC = () => {
             )}
           </div>
 
-          {/* Guest Explore Option at the bottom */}
           <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
             <button
               type="button"
               onClick={closeAuthModal}
               className="text-xs text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors"
             >
-              Hoặc trải nghiệm thử với tư cách Khách (Không cần đăng nhập) →
+              {isEn
+                ? 'Or try as a Guest (No account required) →'
+                : 'Hoặc trải nghiệm thử với tư cách Khách (Không cần đăng nhập) →'}
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { safeFetchJson } from '../../lib/apiClient';
+import { safeFetchJson, resolveApiUrl } from '../../lib/apiClient';
 import {
   ArrowLeft,
   Award,
@@ -234,7 +234,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
     let evtSource: EventSource | null = null;
     try {
       if (typeof window !== 'undefined' && typeof EventSource !== 'undefined') {
-        evtSource = new EventSource('/api/arena/stream');
+        evtSource = new EventSource(resolveApiUrl('/api/arena/stream'));
         evtSource.onopen = () => setIsStreamLive(true);
         evtSource.onmessage = (event) => {
           try {

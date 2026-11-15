@@ -13,8 +13,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
     <script>
-      // Fix GitHub Pages blank screen when URL is accessed without trailing slash
+      // Fix GitHub Pages blank screen when URL is accessed without trailing slash (http/https only)
       (function() {
+        if (!/^https?:$/i.test(window.location.protocol)) return;
         var path = window.location.pathname;
         if (path.length > 1 && !path.endsWith('/') && !path.includes('.')) {
           window.location.replace(path + '/' + window.location.search + window.location.hash);

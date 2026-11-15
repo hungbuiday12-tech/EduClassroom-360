@@ -590,19 +590,26 @@ export async function analyzeProblemAndGenerateTests(
   const combinedSamples: UserSamplePair[] =
     userSamples.length > 0 ? userSamples : extractedFromText;
 
-  // 1. Try Server AI Endpoint (/api/gemini/analyze-problem) if available
+  // 1. Try Server AI Endpoint (/api/gemini/analyze-problem)
+  let aiError: string | undefined;
   try {
-    const res = await safeFetchJson<any>('/api/gemini/analyze-problem', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: req.text.trim(),
-        imageBase64: req.imageBase64 || undefined,
-        mimeType: req.mimeType || undefined
-      })
-    });
+    const res = await safeFetchJson<any>(
+      '/api/gemini/analyze-problem',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: req.text.trim(),
+          imageBase64: req.imageBase64 || undefined,
+          mimeType: req.mimeType || undefined
+        })
+      },
+      38000
+    );
 
-    if (res.ok && res.data) {
+    if (!res.ok) {
+      aiError = res.error;
+    } else if (res.data) {
       const data = res.data;
       if (data.success && data.problem) {
         const aiSamples: TestCase[] = Array.isArray(data.problem.sampleCases)
@@ -684,8 +691,13 @@ export async function analyzeProblemAndGenerateTests(
         };
       }
     }
-  } catch {
-    // Fall through cleanly to local algorithmic / oracle engine
+  } catch (err: any) {
+    aiError = err?.message;
+  }
+
+  // If user uploaded an image without text and AI failed, report the real OCR error instead of silently returning empty template
+  if (req.imageBase64 && !req.text.trim() && !req.referenceCode?.trim()) {
+    throw new Error(aiError || 'Không thể đọc đề bài từ ảnh bằng Gemini AI lúc này. Vui lòng thử lại.');
   }
 
   // 2. Local Structured Analysis + Smart Test Generator

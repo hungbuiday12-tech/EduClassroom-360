@@ -14,6 +14,19 @@ const app = express();
 const PORT = 3000;
 const HOST = '0.0.0.0';
 
+// Enable CORS for Web, GitHub Pages, Android APK (Capacitor/Cordova/WebView), and Desktop EXE (Electron/Tauri)
+app.use((req: Request, res: Response, next: any) => {
+  const origin = req.headers.origin;
+  res.setHeader('Access-Control-Allow-Origin', origin && origin !== 'null' ? origin : '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
+
 // Enable body parsing for JSON and base64 payloads (up to 20MB for images)
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
@@ -425,7 +438,7 @@ async function callGeminiWithFallback({
   responseMimeType,
   responseSchema,
   thinkingLevel = ThinkingLevel.LOW,
-  timeoutMs = 15000
+  timeoutMs = 18000
 }: GeminiCallOptions) {
   const buildConfig = (model: string) => {
     const cfg: Record<string, any> = {};
@@ -448,7 +461,7 @@ async function callGeminiWithFallback({
         contents,
         config: buildConfig('gemini-4-hydrogen')
       }),
-      timeoutMs,
+      Math.min(timeoutMs, 18000),
       'gemini-4-hydrogen'
     );
   } catch (err1: any) {
@@ -459,7 +472,7 @@ async function callGeminiWithFallback({
   }
 
   // Attempt 2: Fast fallback to gemini-3.1-flash-lite after brief backoff
-  await new Promise((r) => setTimeout(r, 500));
+  await new Promise((r) => setTimeout(r, 400));
   try {
     return await withTimeout(
       ai.models.generateContent({
@@ -467,7 +480,7 @@ async function callGeminiWithFallback({
         contents,
         config: buildConfig('gemini-3.1-flash-lite')
       }),
-      timeoutMs,
+      Math.min(timeoutMs, 18000),
       'gemini-3.1-flash-lite'
     );
   } catch (err2: any) {
@@ -475,14 +488,14 @@ async function callGeminiWithFallback({
       throw err2;
     }
     // Attempt 3: One final retry on gemini-3.1-flash-lite
-    await new Promise((r) => setTimeout(r, 700));
+    await new Promise((r) => setTimeout(r, 600));
     return await withTimeout(
       ai.models.generateContent({
         model: 'gemini-3.1-flash-lite',
         contents,
         config: buildConfig('gemini-3.1-flash-lite')
       }),
-      timeoutMs,
+      Math.min(timeoutMs, 18000),
       'gemini-3.1-flash-lite-retry'
     );
   }
@@ -677,9 +690,16 @@ app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
         }
       });
 
-      const stream = await chat.sendMessageStream({
-        message: lastMessageParts.length === 1 && lastMessageParts[0].text ? lastMessageParts[0].text : lastMessageParts
-      });
+      const stream = await withTimeout(
+        chat.sendMessageStream({
+          message:
+            lastMessageParts.length === 1 && lastMessageParts[0].text
+              ? lastMessageParts[0].text
+              : lastMessageParts
+        }),
+        20000,
+        `stream-${modelName}`
+      );
 
       let fullText = '';
       for await (const chunk of stream) {
@@ -689,6 +709,9 @@ app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
           sendSse({ delta: piece });
         }
       }
+      if (!fullText.trim()) {
+        throw new Error(`Empty stream response from ${modelName}`);
+      }
       return fullText;
     };
 
@@ -696,8 +719,7 @@ app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
     try {
       finalReply = await runStreamWithModel('gemini-4-hydrogen');
     } catch (err1: any) {
-      if (!isTransientGeminiError(err1)) throw err1;
-      console.warn('Primary stream transient error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
+      console.warn('Primary stream error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
       finalReply = await runStreamWithModel('gemini-3.1-flash-lite');
     }
 
@@ -749,7 +771,7 @@ app.post('/api/gemini/tutor', async (req: Request, res: Response) => {
               ? lastMessageParts[0].text
               : lastMessageParts
         }),
-        35000,
+        20000,
         `tutor-${modelName}`
       );
     };
@@ -758,8 +780,7 @@ app.post('/api/gemini/tutor', async (req: Request, res: Response) => {
     try {
       response = await runChatWithModel('gemini-4-hydrogen');
     } catch (err1: any) {
-      if (!isTransientGeminiError(err1)) throw err1;
-      console.warn('Primary chat transient error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
+      console.warn('Primary chat error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
       response = await runChatWithModel('gemini-3.1-flash-lite');
     }
 
@@ -782,389 +803,12 @@ app.post('/api/gemini/tutor', async (req: Request, res: Response) => {
 // =====================================================================
 // GEMINI AI MODE 3: DIAGNOSTIC QUIZ GENERATOR & PERSONALIZED ROADMAP
 // =====================================================================
-function buildFallbackDiagnosticQuestions(subject: 'math' | 'physics' | 'cs', grade: string, isEn: boolean) {
-  if (subject === 'physics') {
-    return isEn
-      ? [
-          {
-            id: 'q1',
-            category: 'knowledge',
-            topicTag: 'Mechanics & Energy',
-            question: 'When a ball falls freely from height $h$ (ignoring air resistance), how does its mechanical energy behave?',
-            options: ['Increases continuously', 'Decreases continuously', 'Remains conserved ($W_t + W_d = \\text{const}$)', 'Equals zero at mid-height'],
-            correctIndex: 2
-          },
-          {
-            id: 'q2',
-            category: 'knowledge',
-            topicTag: 'Oscillations & Waves',
-            question: 'What is the period formula for a simple harmonic spring pendulum with mass $m$ and stiffness $k$?',
-            options: ['$T = 2\\pi\\sqrt{\\frac{k}{m}}$', '$T = 2\\pi\\sqrt{\\frac{m}{k}}$', '$T = \\frac{1}{2\\pi}\\sqrt{\\frac{m}{k}}$', '$T = \\pi\\sqrt{\\frac{l}{g}}$'],
-            correctIndex: 1
-          },
-          {
-            id: 'q3',
-            category: 'knowledge',
-            topicTag: 'Electricity & Optics',
-            question: 'In a parallel circuit with two resistors $R_1 = 6\\,\\Omega$ and $R_2 = 3\\,\\Omega$, what is the equivalent resistance?',
-            options: ['$9\\,\\Omega$', '$4.5\\,\\Omega$', '$2\\,\\Omega$', '$1.5\\,\\Omega$'],
-            correctIndex: 2
-          },
-          {
-            id: 'q4',
-            category: 'specialization',
-            topicTag: 'Major Track Selection',
-            question: 'Which engineering/science track excites you the most right now?',
-            options: ['Electrical, Automation & Robotics', 'Semiconductors, Microchips & Applied Physics', 'Aerospace, Civil & Mechanical Engineering', 'High-School Physics Olympiad / University Entrance Exam']
-          },
-          {
-            id: 'q5',
-            category: 'specialization',
-            topicTag: 'Learning Preference',
-            question: 'How do you absorb new Physics concepts fastest?',
-            options: ['Interactive 2D/3D & PhET simulations first', 'Deriving formulas step-by-step from first principles', 'Solving timed multiple-choice drills', 'Working through tough Olympiad essay problems']
-          }
-        ]
-      : [
-          {
-            id: 'q1',
-            category: 'knowledge',
-            topicTag: 'Cơ học & Bảo toàn cơ năng',
-            question: 'Khi một vật rơi tự do không ma sát từ độ cao $h$, cơ năng toàn phần $W = W_đ + W_t$ của vật thay đổi thế nào?',
-            options: ['Tăng đều theo thời gian', 'Giảm dần khi gần chạm đất', 'Được bảo toàn không đổi tại mọi vị trí', 'Bằng $0$ tại vị trí nửa độ cao'],
-            correctIndex: 2
-          },
-          {
-            id: 'q2',
-            category: 'knowledge',
-            topicTag: 'Dao động điều hòa',
-            question: 'Chu kì dao động điều hòa của con lắc lò xo gồm vật khối lượng $m$ và độ cứng $k$ là:',
-            options: ['$T = 2\\pi\\sqrt{\\frac{k}{m}}$', '$T = 2\\pi\\sqrt{\\frac{m}{k}}$', '$T = \\frac{1}{2\\pi}\\sqrt{\\frac{m}{k}}$', '$T = 2\\pi\\sqrt{\\frac{g}{l}}$'],
-            correctIndex: 1
-          },
-          {
-            id: 'q3',
-            category: 'knowledge',
-            topicTag: 'Điện học & Mạch điện',
-            question: 'Hai điện trở $R_1 = 6\\,\\Omega$ và $R_2 = 3\\,\\Omega$ mắc song song với nhau. Điện trở tương đương $R_{tđ}$ bằng bao nhiêu?',
-            options: ['$9\\,\\Omega$', '$4.5\\,\\Omega$', '$2\\,\\Omega$', '$0.5\\,\\Omega$'],
-            correctIndex: 2
-          },
-          {
-            id: 'q4',
-            category: 'specialization',
-            topicTag: 'Lựa chọn chuyên ngành',
-            question: `Ở trình độ ${grade}, em muốn định hướng chuyên ngành gắn với Vật lí nào nhất?`,
-            options: ['Kỹ thuật Điện - Tự động hóa - Robotics', 'Vi mạch bán dẫn - Vật lí kỹ thuật & AI phần cứng', 'Cơ khí chế tạo - Hàng không - Xây dựng', 'Ôn thi HSG / Chuyên Lí / Đạt 9+ THPT Quốc Gia']
-          },
-          {
-            id: 'q5',
-            category: 'specialization',
-            topicTag: 'Phương pháp học tối ưu',
-            question: 'Cách học nào giúp em nắm chắc bản chất Vật lí nhanh nhất?',
-            options: ['Thao tác trực tiếp trên mô phỏng 2D/3D & PhET Colorado', 'Hiểu cặn kẽ chứng minh công thức từ gốc', 'Luyện đề trắc nghiệm bấm giờ tốc độ cao', 'Giải bài tập tự luận chuyên sâu nhiều bẫy']
-          }
-        ];
-  }
-
-  if (subject === 'cs') {
-    return isEn
-      ? [
-          {
-            id: 'q1',
-            category: 'knowledge',
-            topicTag: 'Complexity Analysis',
-            question: 'What is the time complexity of Binary Search on a sorted array of $N$ elements?',
-            options: ['$O(N)$', '$O(N \\log N)$', '$O(\\log N)$', '$O(1)$'],
-            correctIndex: 2
-          },
-          {
-            id: 'q2',
-            category: 'knowledge',
-            topicTag: 'Data Structures',
-            question: 'Which data structure follows the LIFO (Last-In, First-Out) principle?',
-            options: ['Queue', 'Stack', 'Binary Heap', 'Hash Map'],
-            correctIndex: 1
-          },
-          {
-            id: 'q3',
-            category: 'knowledge',
-            topicTag: 'Algorithms & DP',
-            question: 'Which technique optimizes overlapping subproblems by caching previously computed states?',
-            options: ['Brute Force Backtracking', 'Dynamic Programming (Memoization)', 'Bubble Sort', 'Linear Scan'],
-            correctIndex: 1
-          },
-          {
-            id: 'q4',
-            category: 'specialization',
-            topicTag: 'Major Track Selection',
-            question: 'Which Computer Science specialization matches your career goal?',
-            options: ['Competitive Programming (HSG / IOI / ICPC)', 'Artificial Intelligence & Data Science', 'Software Engineering & Full-Stack Web', 'Cybersecurity & Systems Architecture']
-          },
-          {
-            id: 'q5',
-            category: 'specialization',
-            topicTag: 'Language & Practice Style',
-            question: 'Which programming workflow do you prefer when practicing?',
-            options: ['Fast C++20 STL & Online Judge stress-testing', 'Clean Python 3 prototyping & step-by-step tracing', 'Visualizing algorithms before coding', 'Solving real past Olympiad & University contest problems']
-          }
-        ]
-      : [
-          {
-            id: 'q1',
-            category: 'knowledge',
-            topicTag: 'Độ phức tạp thuật toán',
-            question: 'Độ phức tạp thời gian của thuật toán Tìm kiếm nhị phân (Binary Search) trên mảng đã sắp xếp gồm $N$ phần tử là:',
-            options: ['$O(N)$', '$O(N \\log N)$', '$O(\\log N)$', '$O(1)$'],
-            correctIndex: 2
-          },
-          {
-            id: 'q2',
-            category: 'knowledge',
-            topicTag: 'Cấu trúc dữ liệu',
-            question: 'Cấu trúc dữ liệu nào hoạt động theo nguyên tắc LIFO (Vào sau - Ra trước)?',
-            options: ['Hàng đợi (Queue)', 'Ngăn xếp (Stack)', 'Danh sách liên kết', 'Cây khung nhỏ nhất'],
-            correctIndex: 1
-          },
-          {
-            id: 'q3',
-            category: 'knowledge',
-            topicTag: 'Quy hoạch động & Tối ưu',
-            question: 'Kỹ thuật lưu kết quả các bài toán con gối nhau để tránh tính lại nhiều lần thuộc về phương pháp nào?',
-            options: ['Vét cạn (Brute Force)', 'Quy hoạch động (Dynamic Programming)', 'Sắp xếp nổi bọt', 'Đệ quy không nhớ'],
-            correctIndex: 1
-          },
-          {
-            id: 'q4',
-            category: 'specialization',
-            topicTag: 'Lựa chọn chuyên ngành',
-            question: 'Em muốn hướng tới chuyên ngành Tin học nào trong 1-3 năm tới?',
-            options: ['Lập trình thi đấu (HSG Quốc Gia / Chuyên Tin / ICPC)', 'Trí tuệ nhân tạo (AI), Machine Learning & Khoa học dữ liệu', 'Kỹ thuật phần mềm & Phát triển Web/App', 'An toàn thông tin & Hệ thống nhúng']
-          },
-          {
-            id: 'q5',
-            category: 'specialization',
-            topicTag: 'Ngôn ngữ & Phong cách code',
-            question: 'Khi luyện bài trên website, em ưu tiên phong cách nào?',
-            options: ['Code C++20 tốc độ cao kết hợp STL chuẩn thi đấu', 'Code Python 3 rõ ràng, tập trung tư duy thuật toán', 'Đọc phân tích mẫu và tự sinh thêm test biên', 'Thử thách với đề Chuyên Tin & Đánh giá năng lực']
-          }
-        ];
-  }
-
-  // Default: Math
-  return isEn
-    ? [
-        {
-          id: 'q1',
-          category: 'knowledge',
-          topicTag: 'Algebra & Equations',
-          question: 'For quadratic $ax^2 + bx + c = 0$ ($a \\neq 0$) having two distinct roots $x_1, x_2$, what is $x_1 + x_2$?',
-          options: ['$x_1 + x_2 = \\frac{b}{a}$', '$x_1 + x_2 = -\\frac{b}{a}$', '$x_1 + x_2 = \\frac{c}{a}$', '$x_1 + x_2 = -\\frac{c}{a}$'],
-          correctIndex: 1
-        },
-        {
-          id: 'q2',
-          category: 'knowledge',
-          topicTag: 'Calculus & Derivatives',
-          question: 'At a local extremum $x_0$ of a differentiable polynomial $f(x)$, what holds true?',
-          options: ["$f'(x_0) = 0$ and $f'(x)$ changes sign across $x_0$", "$f(x_0) = 0$ always", "$f'(x_0) > 0$ always", "$f''(x_0) = 0$ always"],
-          correctIndex: 0
-        },
-        {
-          id: 'q3',
-          category: 'knowledge',
-          topicTag: '3D Geometry (Oxyz)',
-          question: 'Given $\\vec{u} = (1, 0, 0)$ and $\\vec{v} = (0, 1, 0)$ in Oxyz, what is the cross product $[\\vec{u}, \\vec{v}]$?',
-          options: ['$(0, 0, 0)$', '$(1, 1, 0)$', '$(0, 0, 1)$', '$(0, 1, 1)$'],
-          correctIndex: 2
-        },
-        {
-          id: 'q4',
-          category: 'specialization',
-          topicTag: 'Major Track Selection',
-          question: 'Which Math-heavy specialization best matches your future direction?',
-          options: ['Computer Science, AI & Quantitative Modeling', 'Engineering, Architecture & Applied Physics', 'Economics, Finance & Data Analytics', 'High-School Gifted Math (Chuyên Toán) / Top University Entrance']
-        },
-        {
-          id: 'q5',
-          category: 'specialization',
-          topicTag: 'Study Bottleneck',
-          question: 'Which area currently slows you down most when solving Math problems?',
-          options: ['Translating word problems into equations & formulas', 'Visualizing 2D graphs & 3D spatial geometry sections', 'Handling parameters $m$, inequalities & edge conditions', 'Time management and avoiding careless calculation traps']
-        }
-      ]
-    : [
-        {
-          id: 'q1',
-          category: 'knowledge',
-          topicTag: 'Đại số & Hệ thức Vi-ét',
-          question: 'Với phương trình bậc hai $ax^2 + bx + c = 0$ ($a \\neq 0$) có hai nghiệm phân biệt $x_1, x_2$, tổng hai nghiệm $x_1 + x_2$ bằng:',
-          options: ['$\\frac{b}{a}$', '$-\\frac{b}{a}$', '$\\frac{c}{a}$', '$-\\frac{c}{a}$'],
-          correctIndex: 1
-        },
-        {
-          id: 'q2',
-          category: 'knowledge',
-          topicTag: 'Giải tích & Cực trị hàm số',
-          question: 'Điều kiện để điểm $x_0$ là điểm cực trị của hàm đa thức $y = f(x)$ là:',
-          options: ["$f'(x_0) = 0$ và $f'(x)$ đổi dấu khi qua $x_0$", '$f(x_0) = 0$', "$f'(x_0) > 0$", "$f''(x_0) = 0$"],
-          correctIndex: 0
-        },
-        {
-          id: 'q3',
-          category: 'knowledge',
-          topicTag: 'Hình học không gian Oxyz',
-          question: 'Trong không gian $Oxyz$, tích có hướng của hai vector đơn vị $\\vec{i} = (1;0;0)$ và $\\vec{j} = (0;1;0)$ là:',
-          options: ['$(0; 0; 0)$', '$(1; 1; 0)$', '$(0; 0; 1)$', '$(0; 1; 1)$'],
-          correctIndex: 2
-        },
-        {
-          id: 'q4',
-          category: 'specialization',
-          topicTag: 'Lựa chọn chuyên ngành',
-          question: `Ở ${grade}, em định hướng sử dụng Toán học cho chuyên ngành / mục tiêu nào?`,
-          options: ['Công nghệ thông tin, AI & Khoa học dữ liệu', 'Kỹ thuật, Công nghệ, Kiến trúc & Cơ điện tử', 'Kinh tế, Tài chính định lượng & Quản trị', 'Đội tuyển Chuyên Toán / HSG / Mục tiêu 9+ Đánh giá năng lực']
-        },
-        {
-          id: 'q5',
-          category: 'specialization',
-          topicTag: 'Điểm nghẽn học tập',
-          question: 'Khi làm bài Toán, phần nào thường khiến em mất nhiều thời gian hoặc hay bị kẹt nhất?',
-          options: ['Chưa hình dung được đồ thị hàm số & thiết diện hình học 3D', 'Quên công thức hoặc hay nhầm dấu biến đổi đại số', 'Bài toán chứa tham số $m$, bất đẳng thức & điều kiện nghiệm', 'Phân bổ thời gian làm bài và tránh bẫy trắc nghiệm']
-        }
-      ];
-}
-
-function buildFallbackRoadmap(
-  subject: 'math' | 'physics' | 'cs',
-  grade: string,
-  targetMajor: string,
-  knowledgeCorrect: number,
-  knowledgeTotal: number,
-  specAnswers: string[],
-  isEn: boolean
-) {
-  const score = knowledgeTotal > 0 ? Math.round((knowledgeCorrect / knowledgeTotal) * 100) : 70;
-  const level =
-    score >= 85
-      ? isEn ? 'Strong Foundation · Ready for Advanced Track' : 'Nền tảng vững · Sẵn sàng bứt phá nâng cao'
-      : score >= 50
-      ? isEn ? 'Intermediate · Needs Targeted Consolidation' : 'Trung bình Khá · Cần củng cố lỗ hổng trọng tâm'
-      : isEn ? 'Foundational · Rebuild Core Principles First' : 'Cần xây lại gốc · Ưu tiên bản chất & bài mẫu chuẩn';
-
-  const moduleName = subject === 'math' ? 'math' : subject === 'physics' ? 'physics' : 'cs';
-
-  return {
-    subject,
-    grade,
-    targetMajor,
-    estimatedLevel: level,
-    knowledgeScore: score,
-    knowledgeCorrect,
-    knowledgeTotal,
-    strengths: isEn
-      ? [
-          `Proactive diagnostic awareness for ${grade}`,
-          `Clear specialization alignment toward ${targetMajor}`
-        ]
-      : [
-          `Chủ động kiểm tra năng lực đúng lộ trình ${grade}`,
-          `Định hướng rõ ràng theo chuyên ngành ${targetMajor}`
-        ],
-    weaknesses:
-      score < 85
-        ? isEn
-          ? ['Needs stronger link between core formulas and edge conditions', 'More timed practice on multi-step transformations']
-          : ['Cần gắn chặt công thức trọng tâm với điều kiện áp dụng thực tế', 'Cần tăng tốc độ xử lý biến đổi nhiều bước và tránh bẫy biên']
-        : isEn
-        ? ['Focus on Olympiad-level optimization and speed under exam pressure']
-        : ['Cần nâng độ khó với bài toán phân loại và tối ưu thời gian thi'],
-    majorAdvice: isEn
-      ? `Based on your specialization choices (${specAnswers.join('; ') || targetMajor}), balance visual conceptual mastery with daily problem-solving drills.`
-      : `Dựa trên lựa chọn định hướng (${specAnswers.join(' · ') || targetMajor}), em nên kết hợp học trực quan qua mô phỏng để hiểu gốc rễ trước khi tăng tốc luyện đề chuyên đề.`,
-    dailyScheduleSummary: isEn
-      ? '45–60 min/day: 15m concept review · 25m interactive lab/practice · 15m AI Mode 1 review'
-      : '45–60 phút/ngày: 15p nắm bản chất · 25p thực hành mô phỏng/code · 15p kiểm tra lại lỗi sai với AI Chế độ 1',
-    stages: [
-      {
-        step: 1,
-        phase: isEn ? 'Phase 01 · Foundation' : 'Chặng 01 · Xây Gốc Chuẩn',
-        title:
-          subject === 'math'
-            ? isEn ? 'Core Equations, Functions & Visual Graph Intuition' : 'Hàm Số, Phương Trình & Tư Duy Đồ Thị Oxy'
-            : subject === 'physics'
-            ? isEn ? 'Physical Laws Intuition & 2D/PhET Experimentation' : 'Bản Chất Định Luật & Thực Hành Lab 2D / PhET'
-            : isEn ? 'Syntax Mastery, Complexity & Core Data Structures' : 'Làm Chủ Cú Pháp C++/Python, Độ Phức Tạp & CTDL Nền',
-        durationWeeks: 2,
-        dailyMinutes: 45,
-        focusTopics:
-          subject === 'math'
-            ? ['Hàm số bậc 2, bậc 3', 'Hệ thức Vi-ét & Điều kiện nghiệm', 'Đạo hàm & Khảo sát đồ thị']
-            : subject === 'physics'
-            ? ['Định luật Ôm & Bảo toàn cơ năng', 'Dao động điều hòa', 'Quang hình & Khúc xạ']
-            : ['Tìm kiếm nhị phân', 'Stack / Queue / Map', 'Phân tích độ phức tạp O(N log N)'],
-        recommendedModule: moduleName as 'math' | 'physics' | 'cs',
-        concreteTasks: [
-          isEn ? 'Read 2 core lectures and test edge parameters in the simulator' : 'Đọc 2 bài giảng trọng tâm và kéo thanh trượt kiểm chứng trên mô phỏng',
-          isEn ? 'Use AI Mode 1 whenever stuck on any transformation step' : 'Dùng AI Chế độ 1 hỏi lại ngay đúng bước biến đổi chưa hiểu (không xem đáp án trước)'
-        ],
-        targetMilestone: isEn ? 'Score ≥ 80% on lesson reinforcement drills' : 'Đạt từ 80% trở lên ở bài tập củng cố từng bài'
-      },
-      {
-        step: 2,
-        phase: isEn ? 'Phase 02 · Spatial & Deep Logic' : 'Chặng 02 · Đào Sâu Chuyên Ngành',
-        title:
-          subject === 'math'
-            ? isEn ? '3D Coordinates Oxyz, Pyramids & Optimization' : 'Hình Học Không Gian Oxyz, Thiết Diện 3D & Tích Phân'
-            : subject === 'physics'
-            ? isEn ? '3D Fields, Wave Interference & Quantum Models' : 'Từ Trường 3D, Giao Thoa Sóng & Mẫu Nguyên Tử Bohr'
-            : isEn ? 'Dynamic Programming, Graphs & Custom Stress Tests' : 'Quy Hoạch Động, Đồ Thị & Luyện Judge Tự Do',
-        durationWeeks: 3,
-        dailyMinutes: 55,
-        focusTopics:
-          subject === 'math'
-            ? ['Hệ trục Oxyz & Tích có hướng', 'Mặt cầu - Mặt phẳng', 'Thể tích tròn xoay']
-            : subject === 'physics'
-            ? ['Lực Lorentz 3D', 'Giao thoa sóng cơ', 'Mạch xoay chiều & Cộng hưởng']
-            : ['Quy hoạch động 1D/2D', 'BFS / DFS / Dijkstra', 'Kỹ thuật sinh test biên'],
-        recommendedModule: moduleName as 'math' | 'physics' | 'cs',
-        concreteTasks: [
-          isEn ? 'Explore 3D WebGL interactive view to build spatial intuition' : 'Xoay mô hình 3D WebGL trực tiếp để hình dung không gian & vector',
-          isEn ? 'Compare your own reasoning with AI Mode 2 full method breakdown' : 'Tự giải nháp trước rồi đối chiếu với AI Chế độ 2 (Tóm tắt + Lời giải chi tiết)'
-        ],
-        targetMilestone: isEn ? 'Solve medium-hard problems cleanly without formula hints' : 'Tự giải trọn vẹn bài mức Vận dụng không cần nhìn công thức'
-      },
-      {
-        step: 3,
-        phase: isEn ? 'Phase 03 · Exam Mastery' : 'Chặng 03 · Tổng Ôn Kho Đề Chuẩn',
-        title: isEn ? 'Timed Mock Exams (Track-Matched)' : 'Luyện Đề Thực Chiến Bấm Giờ (Chuyên / Không Chuyên)',
-        durationWeeks: 2,
-        dailyMinutes: 60,
-        focusTopics: ['Phân bổ thời gian làm bài', 'Rà soát bẫy điều kiện', 'Hoàn thiện trình bày tự luận'],
-        recommendedModule: 'exams',
-        concreteTasks: [
-          isEn ? 'Complete 3 full timed papers per week in Exam Hub' : 'Hoàn thành 3 đề thi bấm giờ/tuần trong Kho Đề Thi Chuẩn',
-          isEn ? 'Review wrong steps with detailed solutions & AI Mode 1' : 'Xem hướng dẫn giải chi tiết và hỏi lại AI đúng câu bị mất điểm'
-        ],
-        targetMilestone: isEn ? 'Consistent ≥ 8.5/10 across timed papers' : 'Ổn định từ 8.5/10 trở lên ở đề bấm giờ chuẩn'
-      },
-      {
-        step: 4,
-        phase: isEn ? 'Phase 04 · Competitive Arena' : 'Chặng 04 · Đấu Trường Xếp Hạng Tuần',
-        title: isEn ? 'Daily Ranked MCQ & AI-Graded Essay Matches' : 'Thi Đấu Hằng Ngày & Leo Bảng Xếp Hạng Tuần',
-        durationWeeks: 2,
-        dailyMinutes: 30,
-        focusTopics: ['Phản xạ nhanh Trắc nghiệm', 'Chấm Tự luận theo Rubric', 'Tối ưu điểm trung bình 3 môn'],
-        recommendedModule: 'arena',
-        concreteTasks: [
-          isEn ? 'Play 1 official match daily in Weekly Arena' : 'Tham gia 1 lượt thi đấu chính thức/ngày ở Đấu Trường Tuần',
-          isEn ? 'Analyze AI rubric feedback on your essay submissions' : 'Đọc phản hồi chấm từng ý của Giám khảo AI để vá lỗ hổng cuối cùng'
-        ],
-        targetMilestone: isEn ? 'Maintain Top Weekly Ranking & 85+ average' : 'Giữ điểm trung bình tuần từ 85+/100 và bứt top BXH'
-      }
-    ],
-    createdAt: new Date().toISOString()
-  };
+function hasDegenerateQuizOptions(options: unknown): boolean {
+  if (!Array.isArray(options) || options.length < 4) return true;
+  const cleaned = options.map((o) => String(o || '').trim());
+  const tooShort = cleaned.some((o) => o.replace(/^[A-Da-d][\.\):]?\s*/, '').trim().length === 0);
+  const allUnique = new Set(cleaned.map((o) => o.toLowerCase())).size >= 3;
+  return tooShort || !allUnique;
 }
 
 app.post('/api/gemini/diagnostic-quiz', async (req: Request, res: Response) => {
@@ -1179,50 +823,88 @@ app.post('/api/gemini/diagnostic-quiz', async (req: Request, res: Response) => {
       : subj === 'physics' ? (isEn ? 'Physics' : 'Vật lí')
       : (isEn ? 'Computer Science (C++/Python & Algorithms)' : 'Tin học (Thuật toán & C++/Python)');
 
+    const systemInstruction = isEn
+      ? `You are a strict STEM curriculum examiner. Output ONLY valid JSON matching:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "category": "knowledge" | "specialization",
+      "topicTag": "Short topic label (max 6 words)",
+      "question": "Full problem statement with KaTeX ($...$)",
+      "options": ["Full answer text 1", "Full answer text 2", "Full answer text 3", "Full answer text 4"],
+      "correctIndex": 0..3
+    }
+  ]
+}
+CRITICAL: Every entry in "options" MUST contain the full concrete answer value/text (e.g. "$x = 2$", "$10\\text{ m/s}$", "Dynamic Programming"). NEVER return bare letters like "A", "B", "C", "D". Vary correctIndex accurately across 0, 1, 2, 3.`
+      : `Bạn là chuyên gia khảo thí Toán - Lí - Tin. CHỈ trả về JSON hợp lệ theo cấu trúc:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "category": "knowledge" | "specialization",
+      "topicTag": "Tên chuyên đề ngắn gọn (tối đa 6 từ)",
+      "question": "Nội dung câu hỏi đầy đủ, công thức viết chuẩn KaTeX ($...$)",
+      "options": ["Nội dung phương án 1", "Nội dung phương án 2", "Nội dung phương án 3", "Nội dung phương án 4"],
+      "correctIndex": 0..3
+    }
+  ]
+}
+QUY TẮC TUYỆT ĐỐI: Mỗi phần tử trong mảng "options" PHẢI chứa nội dung đáp án đầy đủ (ví dụ "$x = 2$", "$20\\text{ N}$", "Độ phức tạp $\\mathcal{O}(N \\log N)$"). TUYỆT ĐỐI KHÔNG chỉ ghi "A", "B", "C", "D" trống rỗng. Phân bổ correctIndex chính xác và đa dạng (0, 1, 2, 3).`;
+
     const prompt = isEn
-      ? `Create a 5-question diagnostic & specialization quiz for a ${grade} student studying ${subjectName}, interested in major "${targetMajor}" (self-assessed level: ${selfLevel}).
-Requirements:
-- Return exactly 5 questions in array "questions":
-  - Questions 1, 2, 3 MUST have category: "knowledge" (testing real core concepts/problem-solving of ${subjectName} at ${grade} level, with 4 clear choices A/B/C/D and exact "correctIndex" 0..3).
-  - Questions 4, 5 MUST have category: "specialization" (asking about their preferred sub-specialization/major track and learning bottleneck/style, with 4 options, no right/wrong answer).
-- Format all math/physics formulas in KaTeX ($...$, always use \\frac).`
-      : `Hãy tạo đúng 5 câu hỏi đánh giá trình độ chuyên môn và định hướng chuyên ngành cho học sinh ${grade} môn ${subjectName}, đang quan tâm chuyên ngành "${targetMajor}" (tự đánh giá: ${selfLevel}).
-Yêu cầu bắt buộc:
-- Mảng "questions" gồm ĐÚNG 5 câu:
-  - Câu 1, 2, 3: category = "knowledge" (3 câu hỏi chuyên môn thực chất của môn ${subjectName} trình độ ${grade}, có 4 phương án rõ ràng và "correctIndex" từ 0 đến 3 chính xác 100%).
-  - Câu 4, 5: category = "specialization" (2 câu hỏi lựa chọn nhánh chuyên ngành / mục tiêu nghề nghiệp và điểm nghẽn / phong cách học tập, gồm 4 lựa chọn thực tế).
-- Mọi công thức Toán/Lí PHẢI viết đúng chuẩn KaTeX ($...$, luôn dùng \\frac{a}{b}, không viết thiếu dấu gạch chéo).`;
+      ? `Create exactly 5 diagnostic & specialization questions for a ${grade} student in ${subjectName}, targeting major "${targetMajor}" (self-assessed level: ${selfLevel}).
+- q1, q2, q3: category = "knowledge" — genuine ${grade} ${subjectName} problems with 4 complete concrete answer options and exact correctIndex (0..3).
+- q4, q5: category = "specialization" — ask about sub-specialization focus within "${targetMajor}" and study bottleneck, with 4 concrete descriptive options.`
+      : `Hãy tạo ĐÚNG 5 câu hỏi đánh giá trình độ và định hướng cho học sinh ${grade} môn ${subjectName}, định hướng chuyên ngành "${targetMajor}" (tự đánh giá: ${selfLevel}).
+- Câu 1, 2, 3 (id: q1, q2, q3): category = "knowledge" — 3 bài toán/câu hỏi chuyên môn thực chất trình độ ${grade} môn ${subjectName}, có 4 đáp án cụ thể (KHÔNG ghi mỗi chữ A/B/C/D) và correctIndex chính xác 100% (0..3).
+- Câu 4, 5 (id: q4, q5): category = "specialization" — hỏi về nhánh chuyên sâu trong "${targetMajor}" và điểm nghẽn học tập, mỗi câu có 4 lựa chọn mô tả đầy đủ.`;
 
-    const response = await callGeminiWithFallback({
-      ai,
-      contents: prompt,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          questions: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                id: { type: Type.STRING },
-                category: { type: Type.STRING },
-                topicTag: { type: Type.STRING },
-                question: { type: Type.STRING },
-                options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                correctIndex: { type: Type.INTEGER }
-              }
-            }
-          }
-        }
-      },
-      thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 35000
-    });
+    let parsed: any = {};
+    let attemptModel: 'primary' | 'fallback' = 'primary';
 
-    const parsed = safeParseGeminiJson<any>(response.text, {});
-    if (!Array.isArray(parsed?.questions) || parsed.questions.length < 4) {
-      throw new Error('Gemini chưa trả về đủ 5 câu hỏi đánh giá. Vui lòng bấm tạo lại.');
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response =
+        attemptModel === 'primary'
+          ? await callGeminiWithFallback({
+              ai,
+              contents: prompt,
+              systemInstruction,
+              responseMimeType: 'application/json',
+              thinkingLevel: ThinkingLevel.LOW,
+              timeoutMs: 18000
+            })
+          : await withTimeout(
+              ai.models.generateContent({
+                model: 'gemini-3.1-flash-lite',
+                contents: prompt,
+                config: {
+                  systemInstruction,
+                  responseMimeType: 'application/json',
+                  thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+                }
+              }),
+              15000,
+              'diagnostic-quiz-retry'
+            );
+
+      parsed = safeParseGeminiJson<any>(response.text, {});
+      const validList =
+        Array.isArray(parsed?.questions) &&
+        parsed.questions.length >= 4 &&
+        parsed.questions.slice(0, 5).every((q: any) => !hasDegenerateQuizOptions(q?.options));
+
+      if (validList) break;
+      attemptModel = 'fallback';
+    }
+
+    if (
+      !Array.isArray(parsed?.questions) ||
+      parsed.questions.length < 4 ||
+      parsed.questions.slice(0, 5).some((q: any) => hasDegenerateQuizOptions(q?.options))
+    ) {
+      throw new Error('Gemini chưa tạo được đầy đủ phương án trả lời hợp lệ. Vui lòng bấm tạo lại.');
     }
 
     const normalized = parsed.questions.slice(0, 5).map((q: any, idx: number) => ({
@@ -1230,7 +912,7 @@ Yêu cầu bắt buộc:
       category: q.category === 'specialization' || idx >= 3 ? 'specialization' : 'knowledge',
       topicTag: String(q.topicTag || `Chuyên đề ${idx + 1}`),
       question: String(q.question || ''),
-      options: Array.isArray(q.options) && q.options.length >= 2 ? q.options.map(String).slice(0, 4) : ['A', 'B', 'C', 'D'],
+      options: q.options.map((o: any) => String(o || '').trim()).slice(0, 4),
       ...(q.category !== 'specialization' && idx < 3
         ? { correctIndex: Math.max(0, Math.min(3, Number(q.correctIndex ?? 0))) }
         : {})
@@ -1288,73 +970,97 @@ app.post('/api/gemini/diagnostic-roadmap', async (req: Request, res: Response) =
       )
       .join('\n');
 
+    const systemInstruction = isEn
+      ? `You are a senior STEM academic mentor. Output ONLY valid JSON matching:
+{
+  "estimatedLevel": "short level assessment",
+  "strengths": ["strength 1", "strength 2"],
+  "weaknesses": ["gap 1", "gap 2"],
+  "majorAdvice": "specialization advice connecting subject to target major",
+  "dailyScheduleSummary": "e.g. 45-60 mins/day breakdown",
+  "stages": [
+    {
+      "step": 1,
+      "phase": "Stage 01",
+      "title": "Stage title",
+      "durationWeeks": 2,
+      "dailyMinutes": 45,
+      "focusTopics": ["Topic 1", "Topic 2", "Topic 3"],
+      "recommendedModule": "${subj}",
+      "concreteTasks": ["Task 1", "Task 2"],
+      "targetMilestone": "Measurable milestone"
+    }
+  ]
+}
+CRITICAL: Return EXACTLY 4 stages (step 1..4). recommendedModule must be one of: "${subj}", "exams", "arena", "roadmap". Format math/physics in KaTeX ($...$).`
+      : `Bạn là cố vấn học thuật STEM. CHỈ trả về JSON hợp lệ theo cấu trúc:
+{
+  "estimatedLevel": "nhận định trình độ hiện tại ngắn gọn",
+  "strengths": ["điểm mạnh 1", "điểm mạnh 2"],
+  "weaknesses": ["lỗ hổng cần khắc phục 1", "lỗ hổng 2"],
+  "majorAdvice": "lời khuyên định hướng chuyên ngành gắn với môn học",
+  "dailyScheduleSummary": "lịch học khuyến nghị mỗi ngày (vd 45-60 phút/ngày)",
+  "stages": [
+    {
+      "step": 1,
+      "phase": "Chặng 01",
+      "title": "Tiêu đề chặng",
+      "durationWeeks": 2,
+      "dailyMinutes": 45,
+      "focusTopics": ["Chuyên đề 1", "Chuyên đề 2", "Chuyên đề 3"],
+      "recommendedModule": "${subj}",
+      "concreteTasks": ["Việc làm cụ thể 1", "Việc làm cụ thể 2"],
+      "targetMilestone": "Mục tiêu đầu ra cần đạt"
+    }
+  ]
+}
+QUY TẮC: stages PHẢI có ĐÚNG 4 chặng (step 1..4). recommendedModule chọn trong: "${subj}", "exams", "arena", "roadmap". Công thức viết chuẩn KaTeX ($...$, dùng \\frac).`;
+
     const prompt = isEn
       ? `Analyze the student's diagnostic result and generate a visual personalized learning roadmap for ${subjectName} (${grade}), target major "${targetMajor}".
 Knowledge Score: ${knowledgeCorrect}/${knowledgeTotal} (${knowledgeScore}%).
+Specialization preferences: ${specSummary.join(' | ') || 'None specified'}.
 Custom student goal: ${customGoal || 'Master core topics & excel in exams'}.
 Transcript:
-${answerTranscript}
-
-Return strict JSON with:
-- estimatedLevel (string)
-- strengths (array of 2-3 strings)
-- weaknesses (array of 2-3 strings targeting missed concepts)
-- majorAdvice (string: specific specialization guidance connecting ${subjectName} to "${targetMajor}")
-- dailyScheduleSummary (string)
-- stages (array of exactly 4 progressive phases: step 1..4, phase label, title, durationWeeks, dailyMinutes, focusTopics array, recommendedModule in ['math','physics','cs','exams','arena','roadmap'], concreteTasks array of 2-3 items, targetMilestone string).
-Use KaTeX ($...$) if writing formulas.`
-      : `Hãy phân tích năng lực học tập từ bài đánh giá sau và thiết kế SƠ ĐỒ LỘ TRÌNH HỌC TẬP CÁ NHÂN HÓA môn ${subjectName} (${grade}), định hướng chuyên ngành "${targetMajor}".
+${answerTranscript}`
+      : `Phân tích năng lực từ bài đánh giá sau và thiết kế SƠ ĐỒ LỘ TRÌNH HỌC TẬP CÁ NHÂN HÓA môn ${subjectName} (${grade}), định hướng chuyên ngành "${targetMajor}".
 Điểm chuyên môn: ${knowledgeCorrect}/${knowledgeTotal} câu đúng (${knowledgeScore}%).
+Định hướng đã chọn: ${specSummary.join(' | ') || 'Chưa rõ'}.
 Mục tiêu riêng của học sinh: ${customGoal || 'Nắm chắc bản chất, xử lý bài tập vững và đạt điểm cao'}.
 
 Chi tiết bài làm:
-${answerTranscript}
+${answerTranscript}`;
 
-Hãy trả về JSON chuẩn gồm:
-- estimatedLevel: nhận định trình độ hiện tại (ngắn gọn, rõ ràng).
-- strengths: 2-3 điểm mạnh cụ thể.
-- weaknesses: 2-3 lỗ hổng hoặc điểm cần khắc phục (bám sát câu học sinh trả lời sai hoặc điểm nghẽn đã chọn).
-- majorAdvice: lời khuyên định hướng chuyên ngành "${targetMajor}" gắn với môn ${subjectName}.
-- dailyScheduleSummary: lịch học khuyến nghị mỗi ngày (ví dụ 45-60 phút/ngày chia theo bước).
-- stages: ĐÚNG 4 chặng nối tiếp nhau (step 1..4), mỗi chặng có: phase, title, durationWeeks (số nguyên), dailyMinutes (số nguyên), focusTopics (3-4 chuyên đề cụ thể), recommendedModule (chọn 1 trong: '${subj}', 'exams', 'arena', 'roadmap'), concreteTasks (2-3 việc làm cụ thể trên EduClassroom 360), targetMilestone (mục tiêu đầu ra cần đạt).
-Mọi công thức Toán/Lí dùng chuẩn KaTeX ($...$, luôn dùng \\frac).`;
+    let parsed: any = {};
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response =
+        attempt === 0
+          ? await callGeminiWithFallback({
+              ai,
+              contents: prompt,
+              systemInstruction,
+              responseMimeType: 'application/json',
+              thinkingLevel: ThinkingLevel.LOW,
+              timeoutMs: 18000
+            })
+          : await withTimeout(
+              ai.models.generateContent({
+                model: 'gemini-3.1-flash-lite',
+                contents: prompt,
+                config: {
+                  systemInstruction,
+                  responseMimeType: 'application/json',
+                  thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+                }
+              }),
+              15000,
+              'diagnostic-roadmap-retry'
+            );
 
-    const response = await callGeminiWithFallback({
-      ai,
-      contents: prompt,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          estimatedLevel: { type: Type.STRING },
-          strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-          weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-          majorAdvice: { type: Type.STRING },
-          dailyScheduleSummary: { type: Type.STRING },
-          stages: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                step: { type: Type.INTEGER },
-                phase: { type: Type.STRING },
-                title: { type: Type.STRING },
-                durationWeeks: { type: Type.INTEGER },
-                dailyMinutes: { type: Type.INTEGER },
-                focusTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
-                recommendedModule: { type: Type.STRING },
-                concreteTasks: { type: Type.ARRAY, items: { type: Type.STRING } },
-                targetMilestone: { type: Type.STRING }
-              }
-            }
-          }
-        }
-      },
-      thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 38000
-    });
+      parsed = safeParseGeminiJson<any>(response.text, {});
+      if (Array.isArray(parsed?.stages) && parsed.stages.length >= 3) break;
+    }
 
-    const parsed = safeParseGeminiJson<any>(response.text, {});
     if (!Array.isArray(parsed?.stages) || parsed.stages.length < 3) {
       throw new Error('Gemini chưa trả về đầy đủ sơ đồ lộ trình. Vui lòng thử tạo lại.');
     }
@@ -1750,67 +1456,104 @@ app.post('/api/gemini/generate-step-quiz', async (req: Request, res: Response) =
     const subjLabel =
       subject === 'physics' ? 'Vật lí' : subject === 'cs' ? 'Tin học & Thuật toán' : 'Toán học';
 
+    const systemInstruction = isEn
+      ? `You are an expert STEM teacher. Output ONLY valid JSON matching:
+{
+  "miniQuiz": [
+    {
+      "id": "mcq1",
+      "question": "Question text with KaTeX ($...$)",
+      "options": ["A. Full option 1", "B. Full option 2", "C. Full option 3", "D. Full option 4"],
+      "correctIndex": 0..3,
+      "explanation": "Clear step-by-step explanation"
+    }
+  ],
+  "miniEssay": {
+    "id": "essay1",
+    "question": "Short 3-5 line conceptual/calculation prompt",
+    "hint": "Concise hint",
+    "rubricChecklist": ["Criterion 1", "Criterion 2", "Criterion 3"],
+    "sampleAnswer": "Concise reference solution"
+  }
+}
+CRITICAL: miniQuiz MUST have exactly 2 distinct questions, each with 4 full non-empty options (never bare "A"/"B"/"C"/"D").`
+      : `Bạn là giáo viên chuyên môn Toán - Lí - Tin. CHỈ trả về JSON hợp lệ theo cấu trúc:
+{
+  "miniQuiz": [
+    {
+      "id": "mcq1",
+      "question": "Nội dung câu hỏi (KaTeX $...$)",
+      "options": ["A. Nội dung đầy đủ 1", "B. Nội dung đầy đủ 2", "C. Nội dung đầy đủ 3", "D. Nội dung đầy đủ 4"],
+      "correctIndex": 0..3,
+      "explanation": "Giải thích chi tiết"
+    }
+  ],
+  "miniEssay": {
+    "id": "essay1",
+    "question": "Câu hỏi tự luận ngắn 3-5 dòng",
+    "hint": "Gợi ý ngắn",
+    "rubricChecklist": ["Tiêu chí 1", "Tiêu chí 2", "Tiêu chí 3"],
+    "sampleAnswer": "Lời giải mẫu ngắn gọn"
+  }
+}
+QUY TẮC: miniQuiz PHẢI gồm đúng 2 câu hỏi khác nhau, mỗi câu có 4 phương án đầy đủ nội dung (TUYỆT ĐỐI không chỉ ghi A/B/C/D).`;
+
     const prompt = isEn
       ? `Create a focused micro-assessment for ${subject} lesson "${lessonTitle}", section "${stepTitle}".
 Concept: ${conceptSection}
 Formula: ${primaryFormula}
 Deep dive: ${deepDiveSection}
-
-Return strict JSON with:
-- miniQuiz: array of EXACTLY 2 multiple-choice questions (id, question, 4 options labeled A./B./C./D., correctIndex 0..3, detailed explanation). One tests conceptual understanding/conditions, one tests formula application.
-- miniEssay: 1 short essay question (id, question, hint, rubricChecklist of 2-3 points, sampleAnswer).
-Format all math/physics expressions in KaTeX ($...$, always use \\frac).`
-      : `Hãy tạo bộ kiểm tra kiến thức chuyên sâu cho đúng phần nội dung sau của môn ${subjLabel}:
+Return EXACTLY 2 MCQs (1 conceptual/condition check, 1 formula application) + 1 miniEssay. Format math/physics in KaTeX ($...$).`
+      : `Hãy tạo bộ kiểm tra kiến thức cho phần sau của môn ${subjLabel}:
 Bài học: ${lessonTitle}
-Phần đang học: ${stepTitle}
+Phần: ${stepTitle}
 Khái niệm: ${conceptSection}
-Công thức trọng tâm: ${primaryFormula}
+Công thức: ${primaryFormula}
 Giải thích sâu: ${deepDiveSection}
+Trả về ĐÚNG 2 câu trắc nghiệm (câu 1 kiểm tra bản chất/điều kiện, câu 2 vận dụng công thức/bài toán cụ thể) + 1 câu tự luận ngắn. Công thức viết chuẩn KaTeX ($...$, luôn dùng \\frac{a}{b}).`;
 
-Yêu cầu trả về JSON chuẩn gồm:
-- miniQuiz: ĐÚNG 2 câu trắc nghiệm (mỗi câu gồm id, question, options gồm đúng 4 phương án A./B./C./D., correctIndex từ 0..3 chính xác 100%, explanation giải thích tường minh). Câu 1 kiểm tra bản chất khái niệm/điều kiện; Câu 2 kiểm tra vận dụng công thức/bài toán cụ thể.
-- miniEssay: ĐÚNG 1 câu tự luận nhỏ (id, question yêu cầu giải thích ngắn hoặc tính toán/chứng minh nhanh 3-5 dòng, hint gợi ý, rubricChecklist gồm 2-3 ý chấm điểm, sampleAnswer lời giải mẫu).
-Mọi công thức Toán/Lí PHẢI viết chuẩn KaTeX ($...$, luôn dùng \\frac{a}{b}).`;
+    let parsed: any = {};
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response =
+        attempt === 0
+          ? await callGeminiWithFallback({
+              ai,
+              contents: prompt,
+              systemInstruction,
+              responseMimeType: 'application/json',
+              thinkingLevel: ThinkingLevel.LOW,
+              timeoutMs: 18000
+            })
+          : await withTimeout(
+              ai.models.generateContent({
+                model: 'gemini-3.1-flash-lite',
+                contents: prompt,
+                config: {
+                  systemInstruction,
+                  responseMimeType: 'application/json',
+                  thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+                }
+              }),
+              15000,
+              'step-quiz-retry'
+            );
 
-    const response = await callGeminiWithFallback({
-      ai,
-      contents: prompt,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          miniQuiz: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                id: { type: Type.STRING },
-                question: { type: Type.STRING },
-                options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                correctIndex: { type: Type.INTEGER },
-                explanation: { type: Type.STRING }
-              }
-            }
-          },
-          miniEssay: {
-            type: Type.OBJECT,
-            properties: {
-              id: { type: Type.STRING },
-              question: { type: Type.STRING },
-              hint: { type: Type.STRING },
-              rubricChecklist: { type: Type.ARRAY, items: { type: Type.STRING } },
-              sampleAnswer: { type: Type.STRING }
-            }
-          }
-        }
-      },
-      thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 35000
-    });
+      parsed = safeParseGeminiJson<any>(response.text, {});
+      const valid =
+        Array.isArray(parsed?.miniQuiz) &&
+        parsed.miniQuiz.length >= 2 &&
+        parsed.miniQuiz.slice(0, 2).every((q: any) => !hasDegenerateQuizOptions(q?.options)) &&
+        Boolean(parsed?.miniEssay?.question);
+      if (valid) break;
+    }
 
-    const parsed = safeParseGeminiJson<any>(response.text, {});
-    if (!Array.isArray(parsed?.miniQuiz) || parsed.miniQuiz.length < 2 || !parsed?.miniEssay?.question) {
-      throw new Error('Gemini chưa tạo đủ 2 câu trắc nghiệm + 1 tự luận. Vui lòng thử lại.');
+    if (
+      !Array.isArray(parsed?.miniQuiz) ||
+      parsed.miniQuiz.length < 2 ||
+      parsed.miniQuiz.slice(0, 2).some((q: any) => hasDegenerateQuizOptions(q?.options)) ||
+      !parsed?.miniEssay?.question
+    ) {
+      throw new Error('Gemini chưa tạo đủ 2 câu trắc nghiệm + 1 tự luận hợp lệ. Vui lòng thử lại.');
     }
 
     return res.json({
@@ -1818,7 +1561,7 @@ Mọi công thức Toán/Lí PHẢI viết chuẩn KaTeX ($...$, luôn dùng \\f
       miniQuiz: parsed.miniQuiz.slice(0, 2).map((q: any, idx: number) => ({
         id: String(q.id || `ai_mcq_${Date.now()}_${idx}`),
         question: String(q.question || ''),
-        options: Array.isArray(q.options) ? q.options.map(String).slice(0, 4) : ['A.', 'B.', 'C.', 'D.'],
+        options: q.options.map((o: any) => String(o || '').trim()).slice(0, 4),
         correctIndex: Math.max(0, Math.min(3, Number(q.correctIndex ?? 0))),
         explanation: String(q.explanation || '')
       })),
@@ -1843,132 +1586,6 @@ Mọi công thức Toán/Lí PHẢI viết chuẩn KaTeX ($...$, luôn dùng \\f
 // =====================================================================
 // GEMINI AI: ANALYZE SAVED LESSON RESULTS & RECOMMEND ROADMAP
 // =====================================================================
-function buildFallbackLessonAnalysis(
-  subject: 'math' | 'physics' | 'cs',
-  lessonTitle: string,
-  stepsSummary: any[],
-  isEn: boolean
-) {
-  let totalMcq = 0;
-  let correctMcq = 0;
-  let essaySum = 0;
-  let essayCount = 0;
-  const strongPoints: string[] = [];
-  const weakPoints: string[] = [];
-  const weakStepIndices: number[] = [];
-
-  for (const s of stepsSummary) {
-    const t = Number(s.mcqTotal || 0);
-    const c = Number(s.mcqCorrect || 0);
-    totalMcq += t;
-    correctMcq += c;
-
-    const hasEssay = typeof s.essayScore === 'number';
-    if (hasEssay) {
-      essaySum += s.essayScore;
-      essayCount += 1;
-    }
-
-    const mcqRate = t > 0 ? c / t : 0;
-    const essayRate = hasEssay ? s.essayScore / 10 : mcqRate;
-    const combined = (mcqRate + essayRate) / 2;
-
-    if (t > 0 || hasEssay) {
-      if (combined >= 0.75) {
-        strongPoints.push(`${s.stepTitle}: Đạt ${c}/${t} TN${hasEssay ? `, Tự luận ${s.essayScore}/10` : ''}`);
-      } else {
-        weakPoints.push(`${s.stepTitle}: Cần củng cố lại (${c}/${t} TN${hasEssay ? `, Tự luận ${s.essayScore}/10` : ''})`);
-        weakStepIndices.push(Number(s.stepIndex || 0));
-      }
-    }
-  }
-
-  const mcqPct = totalMcq > 0 ? (correctMcq / totalMcq) * 100 : 0;
-  const essayPct = essayCount > 0 ? (essaySum / essayCount) * 10 : mcqPct;
-  const overallMastery =
-    totalMcq > 0 || essayCount > 0 ? Math.round((mcqPct * 0.55 + essayPct * 0.45)) : 0;
-
-  const readinessLevel =
-    overallMastery >= 80
-      ? isEn ? 'Mastered · Ready for Simulation & Next Lesson' : 'Nắm vững cốt lõi · Sẵn sàng thực chiến & học bài tiếp'
-      : overallMastery >= 55
-      ? isEn ? 'Developing · Review Flagged Formulas' : 'Đạt mức Khá · Cần vá lại các phần công thức còn hổng'
-      : isEn ? 'Needs Reinforcement · Re-study Concepts Step-by-Step' : 'Cần củng cố gốc · Hãy ôn lại Khái niệm & hỏi AI phần chưa rõ';
-
-  const recommendedRoadmap: any[] = [];
-  let stepOrder = 1;
-
-  if (weakStepIndices.length > 0) {
-    const firstWeak = stepsSummary.find((s) => Number(s.stepIndex) === weakStepIndices[0]);
-    recommendedRoadmap.push({
-      step: stepOrder++,
-      title: isEn ? `Review: ${firstWeak?.stepTitle || 'Weak section'}` : `Ôn lại ngay: ${firstWeak?.stepTitle || 'Phần còn yếu'}`,
-      action: isEn
-        ? 'Re-read the Concept, Formula, and Deep Dive sections, then ask AI about any unclear step.'
-        : 'Đọc kỹ lại mục Khái niệm, Công thức, Giải thích sâu hơn và dùng hộp Đặt câu hỏi cho AI ở phần này.',
-      targetType: 'review_step',
-      stepIndex: weakStepIndices[0]
-    });
-  }
-
-  recommendedRoadmap.push({
-    step: stepOrder++,
-    title:
-      subject === 'cs'
-        ? isEn ? 'Run & Test Code in Online Judge' : 'Thực hành viết code & Chấm Test Online Judge'
-        : isEn ? 'Verify Laws on 2D Interactive Lab' : 'Kiểm chứng trực quan trên Mô phỏng 2D',
-    action:
-      subject === 'cs'
-        ? isEn
-          ? 'Open the illustrated C++/Python code and submit the lesson problem on Judge.'
-          : 'Mở tab Code Mẫu C++/Python và nộp bài trên Trình chấm Online Judge để rèn biên độ test.'
-        : isEn
-        ? 'Adjust sliders and inspect live graphs/vectors to connect formulas with visual intuition.'
-        : 'Kéo thanh trượt thay đổi tham số trên Mô phỏng 2D để thấy quy luật công thức vận hành trực tiếp.',
-    targetType: 'sim_2d'
-  });
-
-  if (overallMastery < 75) {
-    recommendedRoadmap.push({
-      step: stepOrder++,
-      title: isEn ? 'Clarify Doubts with AI Tutor (Mode 1)' : 'Gỡ nút thắt cùng Gia Sư AI (Chế độ 1)',
-      action: isEn
-        ? 'Ask Socratic AI Tutor to guide you step-by-step on the missed essay/MCQ concepts.'
-        : 'Hỏi Gia Sư AI về các câu sai hoặc ý tự luận còn thiếu để hiểu sâu bản chất trước khi làm đề.',
-      targetType: 'ai_tutor'
-    });
-  }
-
-  recommendedRoadmap.push({
-    step: stepOrder++,
-    title:
-      overallMastery >= 75
-        ? isEn ? 'Advance to Next Lesson or Timed Exam' : 'Chuyển sang Bài tiếp theo hoặc Thử sức Đề thi'
-        : isEn ? 'Retry Section Quizzes Before Advancing' : 'Làm lại bộ câu hỏi phần yếu rồi sang Bài tiếp theo',
-    action:
-      overallMastery >= 75
-        ? isEn
-          ? `You are ready to progress beyond "${lessonTitle}" or test yourself in Exam Hub / Weekly Arena.`
-          : `Kết quả bài "${lessonTitle}" rất khả quan — hãy tiến sang bài mới hoặc thử sức trong Kho Đề / Đấu Trường.`
-        : isEn
-        ? 'Aim for >= 75% mastery before moving to the next lesson.'
-        : 'Đạt tối thiểu 75% mức nắm vững ở bài này để xây nền chắc cho bài tiếp theo.',
-    targetType: overallMastery >= 75 ? 'next_lesson' : 'exams'
-  });
-
-  return {
-    overallMastery,
-    readinessLevel,
-    summaryFeedback: isEn
-      ? `You answered ${correctMcq}/${totalMcq} MCQs correctly${essayCount > 0 ? ` and averaged ${Math.round((essaySum / essayCount) * 10) / 10}/10 on mini-essays` : ''} for "${lessonTitle}".`
-      : `Ở bài "${lessonTitle}", bạn đạt ${correctMcq}/${totalMcq} câu trắc nghiệm${essayCount > 0 ? ` và điểm trung bình tự luận ngắn là ${Math.round((essaySum / essayCount) * 10) / 10}/10` : ''}. ${weakPoints.length > 0 ? 'Hãy tập trung vá lại các phần đánh dấu đỏ trước khi chuyển bài.' : 'Bạn đang giữ nhịp học rất tốt!'}`,
-    strongPoints: strongPoints.length > 0 ? strongPoints : [isEn ? 'Completed initial theory reading' : 'Đã chủ động tiếp cận nội dung bài giảng'],
-    weakPoints: weakPoints.length > 0 ? weakPoints : [isEn ? 'Complete remaining mini-essays for deeper retention' : 'Nên hoàn thành đầy đủ tự luận nhỏ ở tất cả các phần để chốt kiến thức'],
-    recommendedRoadmap,
-    analyzedAt: new Date().toISOString()
-  };
-}
-
 app.post('/api/gemini/analyze-lesson-progress', async (req: Request, res: Response) => {
   const {
     subject = 'math',
@@ -1995,67 +1612,82 @@ app.post('/api/gemini/analyze-lesson-progress', async (req: Request, res: Respon
       )
       .join('\n');
 
+    const systemInstruction = isEn
+      ? `You are a STEM learning analytics advisor. Output ONLY valid JSON matching:
+{
+  "overallMastery": 0..100,
+  "readinessLevel": "short status string",
+  "summaryFeedback": "2-3 sentences diagnosing mastery and root gaps",
+  "strongPoints": ["strength 1", "strength 2"],
+  "weakPoints": ["gap 1", "gap 2"],
+  "recommendedRoadmap": [
+    {
+      "step": 1,
+      "title": "short action title",
+      "action": "concrete instruction",
+      "targetType": "review_step",
+      "stepIndex": 0
+    }
+  ]
+}
+CRITICAL: recommendedRoadmap must have 3-4 steps. targetType MUST be one of: "review_step", "sim_2d", "sim_3d", "ai_tutor", "next_lesson", "exams", "arena". Include numeric 0-based "stepIndex" when targetType is "review_step". Format math/physics in KaTeX ($...$).`
+      : `Bạn là chuyên gia phân tích kết quả học tập STEM. CHỈ trả về JSON hợp lệ theo cấu trúc:
+{
+  "overallMastery": 0..100,
+  "readinessLevel": "nhận định ngắn gọn trạng thái sẵn sàng",
+  "summaryFeedback": "2-3 câu phân tích điểm làm được, lỗ hổng tư duy/công thức và định hướng cải thiện",
+  "strongPoints": ["điểm mạnh 1", "điểm mạnh 2"],
+  "weakPoints": ["điểm yếu/cần ôn 1", "điểm yếu 2"],
+  "recommendedRoadmap": [
+    {
+      "step": 1,
+      "title": "tiêu đề hành động ngắn gọn",
+      "action": "hướng dẫn cụ thể bước tiếp theo",
+      "targetType": "review_step",
+      "stepIndex": 0
+    }
+  ]
+}
+QUY TẮC: recommendedRoadmap gồm 3-4 bước theo thứ tự ưu tiên. targetType CHỈ chọn trong: "review_step", "sim_2d", "sim_3d", "ai_tutor", "next_lesson", "exams", "arena". Nếu targetType là "review_step" thì kèm "stepIndex" (chỉ số 0-based). Công thức dùng KaTeX ($...$).`;
+
     const prompt = isEn
       ? `Analyze the student's per-section results in lesson "${lessonTitle}" (${subj}, ${grade}) and recommend a concrete next-step learning roadmap.
 Results:
-${transcript}
-
-Return strict JSON:
-- overallMastery (integer 0-100)
-- readinessLevel (short status string)
-- summaryFeedback (2-3 sentences diagnosing mastery and root gaps)
-- strongPoints (array of 2-3 strings)
-- weakPoints (array of 1-3 strings targeting weak sections/formulas)
-- recommendedRoadmap (array of 3-4 ordered objects: { step, title, action, targetType in ['review_step','sim_2d','sim_3d','ai_tutor','next_lesson','exams','arena'], stepIndex (optional 0-based index for review_step) }).`
-      : `Hãy phân tích kết quả học tập chi tiết theo từng phần của học sinh trong bài "${lessonTitle}" (Môn: ${subj}, Trình độ: ${grade}) và đề xuất lộ trình học tiếp theo thật hợp lý.
+${transcript}`
+      : `Phân tích kết quả học tập chi tiết theo từng phần của học sinh trong bài "${lessonTitle}" (Môn: ${subj}, Trình độ: ${grade}) và đề xuất lộ trình học tiếp theo thật hợp lý.
 Dữ liệu làm bài từng phần:
-${transcript}
+${transcript}`;
 
-Trả về JSON chuẩn gồm:
-- overallMastery: số nguyên 0..100 đánh giá mức độ nắm vững thực chất cả bài.
-- readinessLevel: nhận định ngắn gọn trạng thái sẵn sàng (vd: "Nắm vững · Sẵn sàng nâng cao" hoặc "Cần ôn lại Phần 2 trước khi làm đề").
-- summaryFeedback: 2-3 câu phân tích sâu sắc điểm làm được, lỗ hổng tư duy/công thức và định hướng cải thiện.
-- strongPoints: mảng 2-3 điểm mạnh cụ thể theo tên phần/công thức.
-- weakPoints: mảng 1-3 điểm yếu hoặc phần chưa làm/làm sai cần khắc phục.
-- recommendedRoadmap: mảng 3-4 bước lộ trình gợi ý theo thứ tự ưu tiên, mỗi bước gồm:
-  + step (1, 2, 3...)
-  + title (tiêu đề hành động ngắn gọn)
-  + action (hướng dẫn cụ thể nên làm gì ở bước đó)
-  + targetType (CHỈ chọn trong: 'review_step', 'sim_2d', 'sim_3d', 'ai_tutor', 'next_lesson', 'exams', 'arena')
-  + stepIndex (chỉ số 0-based của phần cần ôn nếu targetType là 'review_step').`;
+    let parsed: any = {};
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response =
+        attempt === 0
+          ? await callGeminiWithFallback({
+              ai,
+              contents: prompt,
+              systemInstruction,
+              responseMimeType: 'application/json',
+              thinkingLevel: ThinkingLevel.LOW,
+              timeoutMs: 18000
+            })
+          : await withTimeout(
+              ai.models.generateContent({
+                model: 'gemini-3.1-flash-lite',
+                contents: prompt,
+                config: {
+                  systemInstruction,
+                  responseMimeType: 'application/json',
+                  thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+                }
+              }),
+              15000,
+              'analyze-lesson-progress-retry'
+            );
 
-    const response = await callGeminiWithFallback({
-      ai,
-      contents: prompt,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          overallMastery: { type: Type.INTEGER },
-          readinessLevel: { type: Type.STRING },
-          summaryFeedback: { type: Type.STRING },
-          strongPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-          weakPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-          recommendedRoadmap: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                step: { type: Type.INTEGER },
-                title: { type: Type.STRING },
-                action: { type: Type.STRING },
-                targetType: { type: Type.STRING },
-                stepIndex: { type: Type.INTEGER }
-              }
-            }
-          }
-        }
-      },
-      thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 35000
-    });
+      parsed = safeParseGeminiJson<any>(response.text, {});
+      if (Array.isArray(parsed?.recommendedRoadmap) && parsed.recommendedRoadmap.length > 0) break;
+    }
 
-    const parsed = safeParseGeminiJson<any>(response.text, {});
     const validTargets = new Set(['review_step', 'sim_2d', 'sim_3d', 'ai_tutor', 'next_lesson', 'exams', 'arena']);
     if (!Array.isArray(parsed?.recommendedRoadmap) || parsed.recommendedRoadmap.length === 0) {
       throw new Error('Gemini chưa tạo được phân tích lộ trình. Vui lòng thử lại.');

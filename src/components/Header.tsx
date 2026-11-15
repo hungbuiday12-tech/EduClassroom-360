@@ -24,7 +24,8 @@ import {
   Star,
   Volume2,
   VolumeX,
-  Gauge
+  Gauge,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -541,6 +542,18 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Trophy className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0" />
           <span>{t('nav.arena', 'Thi Đấu & BXH', 'Weekly Arena')}</span>
+        </button>
+
+        <button
+          onClick={() => onSelectSubject('forum')}
+          className={`flex items-center gap-2 whitespace-nowrap shrink-0 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-xl text-[13px] sm:text-[15px] font-bold transition-all cursor-pointer ${
+            currentSubject === 'forum'
+              ? 'bg-gradient-to-r from-indigo-600 to-sky-600 text-white shadow-sm'
+              : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/90 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200/80 dark:hover:border-white/10'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0" />
+          <span>{isEn ? 'Study Forum' : 'Diễn đàn học tập'}</span>
         </button>
 
         {/* Quick Scroll Button: Đánh giá & Bình chọn */}

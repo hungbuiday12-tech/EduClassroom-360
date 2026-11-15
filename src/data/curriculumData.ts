@@ -29,7 +29,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     theory: [
       '1. Tập xác định: D = R với hàm số đa thức bậc ba $y = ax^3 + bx^2 + cx + d$ ($a \\neq 0$).',
       '2. Đạo hàm: $y\' = 3ax^2 + 2bx + c$. Biệt thức $\\Delta\' = b^2 - 3ac$.',
-      '3. Nếu $\\Delta\' > 0$: Đồ thị có 2 điểm cực trị phân biệt ($x_1 < x_2$). Tích 2 cực trị cùng dấu nếu $ac > 0$.',
+      '3. Nếu $\\Delta\' > 0$: Đồ thị có 2 điểm cực trị phân biệt ($x_1 < x_2$). Hai điểm cực trị có hoành độ cùng dấu khi $x_1 x_2 = \\frac{c}{3a} > 0$ (tức $ac > 0$).',
       '4. Nếu $\\Delta\' \\le 0$: Hàm số luôn đồng biến trên R nếu $a > 0$, hoặc nghịch biến trên R nếu $a < 0$.',
       '5. Điểm uốn $I(x_0, y_0)$ với $x_0 = -\\frac{b}{3a}$ (nghiệm của $y\'\' = 0$) là tâm đối xứng của đồ thị.',
       '6. Phương trình đường thẳng đi qua 2 điểm cực trị: Lấy y chia cho y\' lấy phần dư.'
@@ -102,9 +102,9 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     keyFormulas: [
       'y = \\frac{ax + b}{cx + d}',
       'y\' = \\frac{ad - bc}{(cx + d)^2}',
-      'TCĐ: x = -d / c',
-      'TCN: y = a / c',
-      'Tam\\_doi\\_xung: I(-d/c; a/c)'
+      '\\text{TCĐ: } x = -\\frac{d}{c}',
+      '\\text{TCN: } y = \\frac{a}{c}',
+      '\\text{Tâm đối xứng: } I\\left(-\\frac{d}{c};\\, \\frac{a}{c}\\right)'
     ],
     flashcards: [
       {
@@ -514,11 +514,11 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       'Áp dụng nhầm góc khi dùng định lý Cosin.'
     ],
     theory: [
-      '1. Định lý Pythagoras: Trong tam giác vuông, $a^2 = b^2 + c^2$.',
-      '2. Hệ thức lượng tam giác vuông: $b^2 = a \\cdot b\'$, $c^2 = a \\cdot c\'$, $h^2 = b\' \\cdot c\'$, $a \\cdot h = b \\cdot c$, $\\frac{1}{h^2} = \\frac{1}{b^2} + \\frac{1}{c^2}$.',
-      '3. Định lý Cosin trong tam giác bất kỳ: $a^2 = b^2 + c^2 - 2bc \\cos A$.',
-      '4. Định lý Sin: $\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C} = 2R$.',
-      '5. Các công thức diện tích tam giác: $S = \\frac{1}{2}ah = \\frac{1}{2}ab\\sin C = \\frac{abc}{4R} = pr = \\sqrt{p(p-a)(p-b)(p-c)}$ với $p = \\frac{a+b+c}{2}$.'
+      '1. Định lý Pythagoras: Trong $\\triangle ABC$ vuông tại $A$ với cạnh huyền $BC = a$ và hai cạnh góc vuông $AC = b, AB = c$: $a^2 = b^2 + c^2$.',
+      '2. Hệ thức lượng tam giác vuông (đường cao $AH = h$, hình chiếu $CH = b\'$ của $AC$ và $BH = c\'$ của $AB$ lên cạnh huyền $BC = a$): $b^2 = a \\cdot b\'$, $c^2 = a \\cdot c\'$, $h^2 = b\' \\cdot c\'$, $a \\cdot h = b \\cdot c$, $\\frac{1}{h^2} = \\frac{1}{b^2} + \\frac{1}{c^2}$.',
+      '3. Định lý Cosin trong $\\triangle ABC$ bất kỳ (đặt $BC = a, AC = b, AB = c$): $a^2 = b^2 + c^2 - 2bc \\cos A$.',
+      '4. Định lý Sin ($R$ là bán kính đường tròn ngoại tiếp $\\triangle ABC$): $\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C} = 2R$.',
+      '5. Các công thức diện tích $\\triangle ABC$ (đường cao $h = h_a$ hạ từ $A$, bán kính ngoại tiếp $R$, nội tiếp $r$, nửa chu vi $p = \\frac{a+b+c}{2}$): $S = \\frac{1}{2}ah = \\frac{1}{2}ab\\sin C = \\frac{abc}{4R} = pr = \\sqrt{p(p-a)(p-b)(p-c)}$.'
     ],
     keyFormulas: [
       'a^2 = b^2 + c^2',
@@ -577,7 +577,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       {
         front: 'Công thức tính số điểm cực trị của hàm số y = |f(x)|?',
         back: 'Số cực trị = a + b (với a là số cực trị của f(x), b là số nghiệm đơn của f(x) = 0).',
-        tip: 'Nghiệm kép tiếp xúc Ox không làm phát sinh điểm uốn nhọn cực trị mới.'
+        tip: 'Nghiệm kép tiếp xúc Ox không làm phát sinh điểm cực trị gãy nhọn mới.'
       },
       {
         front: 'Số điểm cực trị của đồ thị hàm chẵn y = f(|x|)?',
@@ -983,7 +983,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       'Quên chứng minh góc vuông tại tiếp điểm $OT \\perp d$ trước khi áp dụng định lý Pytago.'
     ],
     theory: [
-      '1. Trong $\\triangle ABC$ vuông tại $A$, đường cao $AH = h$, cạnh huyền $BC = a$, hình chiếu $BH = c\', CH = b\'$: $b^2 = a \\cdot b\'$, $c^2 = a \\cdot c\'$, $h^2 = b\' \\cdot c\'$, $a \\cdot h = b \\cdot c$, $\\frac{1}{h^2} = \\frac{1}{b^2} + \\frac{1}{c^2}$.',
+      '1. Trong $\\triangle ABC$ vuông tại $A$ (cạnh huyền $BC = a$, hai cạnh góc vuông $AC = b, AB = c$, đường cao $AH = h$, hình chiếu $BH = c\'$ của $AB$ và $CH = b\'$ của $AC$ lên $BC$): $b^2 = a \\cdot b\'$, $c^2 = a \\cdot c\'$, $h^2 = b\' \\cdot c\'$, $a \\cdot h = b \\cdot c$, $\\frac{1}{h^2} = \\frac{1}{b^2} + \\frac{1}{c^2}$.',
       '2. Tỉ số lượng giác góc nhọn $\\alpha$: $\\sin^2 \\alpha + \\cos^2 \\alpha = 1$, $\\tan \\alpha \\cdot \\cot \\alpha = 1$.',
       '3. Góc ở tâm có số đo bằng số đo cung bị chắn; góc nội tiếp và góc tạo bởi tia tiếp tuyến và dây cung cùng chắn một cung thì bằng nhau và bằng nửa số đo cung đó.',
       '4. Tứ giác nội tiếp đường tròn khi và chỉ khi tổng hai góc đối bằng $180^\\circ$ hoặc hai đỉnh kề nhau cùng nhìn một cạnh dưới hai góc bằng nhau.'
@@ -991,7 +991,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     keyFormulas: [
       'h^2 = b\' \\cdot c\', \\quad \\frac{1}{h^2} = \\frac{1}{b^2} + \\frac{1}{c^2}',
       '\\sin^2 \\alpha + \\cos^2 \\alpha = 1',
-      '\\widehat{ACB} = \\frac{1}{2} \\text{sđ}\\wideparen{AB} \\quad (\\text{Góc nội tiếp})'
+      '\\widehat{ACB} = \\frac{1}{2} \\text{sđ}\\overset{\\frown}{AB} \\quad (\\text{Góc nội tiếp})'
     ],
     flashcards: [
       {
@@ -1073,12 +1073,12 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     theory: [
       '1. Đường thẳng vuông góc mặt phẳng: $d \\perp a, d \\perp b$ ($a, b \\subset (P), a \\cap b = I$) $\\implies d \\perp (P)$.',
       '2. Định lý ba đường vuông góc: Hình chiếu vuông góc $a\'$ của $a$ trên $(P)$ vuông góc với $b \\subset (P)$ khi và chỉ khi $a \\perp b$.',
-      '3. Khoảng cách từ chân đường cao $H$ đến mặt bên $(SAB)$: Kẻ $HK \\perp AB$, kẻ $HI \\perp SK \\implies HI \\perp (SAB) \\implies d(H, (SAB)) = HI$ với $\\frac{1}{HI^2} = \\frac{1}{SH^2} + \\frac{1}{HK^2}$.',
-      '4. Thể tích khối chóp & lăng trụ: $V_{chop} = \\frac{1}{3} S_{day} \\cdot h$; $V_{lang\\ tru} = S_{day} \\cdot h$.'
+      '3. Khoảng cách từ chân đường cao $H$ ($SH \\perp (ABC)$) đến mặt bên $(SBC)$: Kẻ $HK \\perp BC$ ($K \\in BC$), nối $SK$, kẻ $HI \\perp SK$ ($I \\in SK$) $\\implies HI \\perp (SBC) \\implies d(H, (SBC)) = HI$ với $\\frac{1}{HI^2} = \\frac{1}{SH^2} + \\frac{1}{HK^2}$.',
+      '4. Thể tích khối chóp & lăng trụ: $V_{\\text{chóp}} = \\frac{1}{3} S_{\\text{đáy}} \\cdot h$; $V_{\\text{lăng trụ}} = S_{\\text{đáy}} \\cdot h$.'
     ],
     keyFormulas: [
-      '\\frac{1}{d(H,(SBC))^2} = \\frac{1}{SH^2} + \\frac{1}{HK^2}',
-      'V_{chop} = \\frac{1}{3} S_{day} \\cdot h',
+      '\\frac{1}{d(H,(SBC))^2} = \\frac{1}{SH^2} + \\frac{1}{HK^2} \\quad (HK \\perp BC)',
+      'V_{\\text{chóp}} = \\frac{1}{3} S_{\\text{đáy}} \\cdot h',
       '\\frac{V_{S.A\'B\'C\'}}{V_{S.ABC}} = \\frac{SA\'}{SA} \\cdot \\frac{SB\'}{SB} \\cdot \\frac{SC\'}{SC}'
     ],
     flashcards: [
@@ -1117,14 +1117,14 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     theory: [
       '1. Khối nón (bán kính $r$, chiều cao $h$, đường sinh $l = \\sqrt{r^2 + h^2}$): $S_{xq} = \\pi r l$, $S_{tp} = \\pi r l + \\pi r^2$, $V = \\frac{1}{3} \\pi r^2 h$.',
       '2. Khối trụ (bán kính $r$, chiều cao $h = l$): $S_{xq} = 2\\pi r h$, $S_{tp} = 2\\pi r h + 2\\pi r^2$, $V = \\pi r^2 h$.',
-      '3. Khối cầu (bán kính $R$): $S_{cau} = 4\\pi R^2$, $V_{cau} = \\frac{4}{3} \\pi R^3$. Giao tuyến của mặt phẳng $(P)$ cách tâm $O$ khoảng $d < R$ với mặt cầu là đường tròn bán kính $r = \\sqrt{R^2 - d^2}$.',
-      '4. Công thức nhanh bán kính mặt cầu ngoại tiếp hình chóp có cạnh bên $SA \\perp$ đáy: $R_{mc} = \\sqrt{R_{day}^2 + \\left(\\frac{SA}{2}\\right)^2}$.'
+      '3. Khối cầu (bán kính $R$): $S_{\\text{cầu}} = 4\\pi R^2$, $V_{\\text{cầu}} = \\frac{4}{3} \\pi R^3$. Giao tuyến của mặt phẳng $(P)$ cách tâm $O$ khoảng $d < R$ với mặt cầu là đường tròn bán kính $r = \\sqrt{R^2 - d^2}$.',
+      '4. Công thức nhanh bán kính mặt cầu ngoại tiếp hình chóp có cạnh bên $SA = h$ vuông góc với đáy ($R_{\\text{đáy}}$ là bán kính đường tròn ngoại tiếp đáy): $R_{mc} = \\sqrt{R_{\\text{đáy}}^2 + \\left(\\frac{h}{2}\\right)^2}$.'
     ],
     keyFormulas: [
-      'V_{non} = \\frac{1}{3} \\pi r^2 h, \\quad S_{xq\\,non} = \\pi r l',
-      'V_{tru} = \\pi r^2 h, \\quad S_{xq\\,tru} = 2\\pi r h',
-      'S_{cau} = 4\\pi R^2, \\quad V_{cau} = \\frac{4}{3} \\pi R^3',
-      'R_{mc} = \\sqrt{R_{day}^2 + \\left(\\frac{h}{2}\\right)^2}'
+      'V_{\\text{nón}} = \\frac{1}{3} \\pi r^2 h, \\quad S_{\\text{xq nón}} = \\pi r l',
+      'V_{\\text{trụ}} = \\pi r^2 h, \\quad S_{\\text{xq trụ}} = 2\\pi r h',
+      'S_{\\text{cầu}} = 4\\pi R^2, \\quad V_{\\text{cầu}} = \\frac{4}{3} \\pi R^3',
+      'R_{mc} = \\sqrt{R_{\\text{đáy}}^2 + \\left(\\frac{h}{2}\\right)^2}'
     ],
     flashcards: [
       {
@@ -1713,7 +1713,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     keyFormulas: [
       'a // b \\subset (P), a \\not\\subset (P) \\implies a // (P)',
       '(P) // (Q) \\text{ và } (R) \\cap (P) = a, (R) \\cap (Q) = b \\implies a // b',
-      '\\frac{AB}{BC} = \\frac{A\'B\'}{B\'C\'} \\quad (\\text{Ta-lét không gian})'
+      '\\frac{AB}{BC} = \\frac{A\'B\'}{B\'C\'} \\quad (d_1, d_2 \\text{ cắt 3 mp song song tại } A,B,C \\text{ và } A\',B\',C\')'
     ],
     flashcards: [
       {
@@ -1850,7 +1850,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     description: 'Chuyên đề trọng tâm Oxyz lớp 12 theo VietJack: phương trình tham số và chính tắc của đường thẳng, xét vị trí tương đối hai đường thẳng, tính góc giữa đường thẳng – mặt phẳng và khoảng cách trong không gian Oxyz.',
     mnemonics: [
       'Đường thẳng cần 1 điểm đi qua $M_0(x_0; y_0; z_0)$ và 1 vectơ chỉ phương $\\vec{u} = (a; b; c)$.',
-      'Góc giữa đường thẳng $d$ ($\vec{u}$) và mặt phẳng $(P)$ ($\vec{n}$) dùng HÀM SIN: $\\sin(d, (P)) = |\\cos(\\vec{u}, \\vec{n})|$.',
+      'Góc giữa đường thẳng $d$ ($\\vec{u}$) và mặt phẳng $(P)$ ($\\vec{n}$) dùng HÀM SIN: $\\sin(d, (P)) = |\\cos(\\vec{u}, \\vec{n})|$.',
       'Hai đường thẳng chéo nhau khi $[\\vec{u}_1, \\vec{u}_2] \\cdot \\vec{M_1 M_2} \\neq 0$.'
     ],
     commonTraps: [
@@ -1964,7 +1964,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       '4. Giải bất phương trình Logarit: Nếu $0 < a < 1$ thì $\\log_a f(x) \\ge b \\iff 0 < f(x) \\le a^b$.'
     ],
     keyFormulas: [
-      '(a^u)\' = u\' a^u \\ln a, \\quad (\\log_a u)\' = \\frac{u\'}{u \\ln a}',
+      '(a^u)\' = u\' a^u \\ln a, \\quad (\\log_a u)\' = \\frac{u\'}{u \\ln a} \\quad (u > 0,\\; 0 < a \\neq 1)',
       '\\log_a f(x) > b \\iff \\begin{cases} f(x) > a^b & (a > 1) \\\\ 0 < f(x) < a^b & (0 < a < 1) \\end{cases}'
     ],
     flashcards: [
@@ -2011,13 +2011,13 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     theory: [
       '1. Định nghĩa & Đối xứng: Đường tròn $(O; R)$ là tập hợp các điểm cách $O$ một khoảng $R$. Đường tròn có tâm đối xứng là $O$ và vô số trục đối xứng là các đường thẳng đi qua tâm.',
       '2. Đường kính và Dây cung: Trong các dây của đường tròn, đường kính là dây lớn nhất ($AB \\le 2R$). Đường kính vuông góc với một dây thì đi qua trung điểm của dây ấy ($OH \\perp AB \\implies HA = HB = \\frac{AB}{2}$).',
-      '3. Liên hệ Dây và Khoảng cách đến tâm: Trong một đường tròn: $AB = CD \\iff OH = OK$; $AB > CD \\iff OH < OK$. Công thức Pythagoras chuẩn: $\\left(\\frac{AB}{2}\\right)^2 + OH^2 = R^2$.',
+      '3. Liên hệ Dây và Khoảng cách đến tâm (gọi $OH = d(O, AB), OK = d(O, CD)$): Trong một đường tròn: $AB = CD \\iff OH = OK$; $AB > CD \\iff OH < OK$. Công thức Pythagoras chuẩn: $\\left(\\frac{AB}{2}\\right)^2 + OH^2 = R^2$.',
       '4. Vị trí tương đối Đường thẳng & Đường tròn ($d = d(O, \\Delta)$): cắt nhau ($d < R$, 2 điểm), tiếp xúc ($d = R$, $\\Delta \\perp OT$ tại tiếp điểm $T$), không giao nhau ($d > R$).',
       '5. Vị trí tương đối Hai đường tròn $(O_1; R_1)$ và $(O_2; R_2)$ với $d = O_1O_2$: Ngoài nhau ($d > R_1 + R_2$), Tiếp xúc ngoài ($d = R_1 + R_2$), Cắt nhau ($|R_1 - R_2| < d < R_1 + R_2$, khi đó $O_1O_2$ là đường trung trực của dây chung $MN$), Tiếp xúc trong ($d = |R_1 - R_2|$), Đựng nhau ($d < |R_1 - R_2|$).'
     ],
     keyFormulas: [
       'OH \\perp AB \\implies HA = HB = \\frac{AB}{2}, \\quad OH^2 + \\left(\\frac{AB}{2}\\right)^2 = R^2',
-      'AB > CD \\iff OH < OK',
+      'AB > CD \\iff OH < OK \\quad (OH = d(O, AB),\\; OK = d(O, CD))',
       '|R_1 - R_2| < O_1O_2 < R_1 + R_2 \\iff (O_1) \\cap (O_2) = \\{M, N\\}, \\; O_1O_2 \\perp MN'
     ],
     flashcards: [
@@ -2089,14 +2089,14 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       'Nhầm hệ thức cát tuyến $MA \\cdot MB = MC \\cdot MD$: đoạn tính từ giao điểm $M$, KHÔNG phải đoạn dây $AB$.'
     ],
     theory: [
-      '1. Các góc với đường tròn: Góc ở tâm $\\angle AOB = \\text{sđ}\\wideparen{AB}$. Góc nội tiếp $\\angle ACB = \\frac{1}{2}\\text{sđ}\\wideparen{AB} = \\frac{1}{2}\\angle AOB$. Góc tạo bởi tia tiếp tuyến $Ax$ và dây cung $AB$: $\\angle xAB = \\frac{1}{2}\\text{sđ}\\wideparen{AB}$ (cùng bằng góc nội tiếp chắn cung $AB$).',
+      '1. Các góc với đường tròn: Góc ở tâm $\\angle AOB = \\text{sđ}\\overset{\\frown}{AB}$. Góc nội tiếp $\\angle ACB = \\frac{1}{2}\\text{sđ}\\overset{\\frown}{AB} = \\frac{1}{2}\\angle AOB$. Góc tạo bởi tia tiếp tuyến $Ax$ và dây cung $AB$: $\\angle xAB = \\frac{1}{2}\\text{sđ}\\overset{\\frown}{AB}$ (cùng bằng góc nội tiếp chắn cung $AB$).',
       '2. Tính chất hai tiếp tuyến cắt nhau: Từ điểm $M$ ngoài $(O)$ kẻ hai tiếp tuyến $MA, MB$ ($A, B$ là tiếp điểm) thì $MA = MB = \\sqrt{OM^2 - R^2}$, $MO$ là phân giác $\\angle AMB$, $OM$ là phân giác $\\angle AOB$ và $OM \\perp AB$ tại trung điểm $H$ với $OH \\cdot OM = R^2$.',
-      '3. Hệ thức đoạn thẳng (Cát tuyến & Tiếp tuyến): Nếu cát tuyến qua $M$ cắt $(O)$ tại $A, B$ và tiếp tuyến $MT$ thì $\\triangle MTA \\sim \\triangle MBT \\implies MT^2 = MA \\cdot MB = MO^2 - R^2$. Nếu hai dây $AB, CD$ cắt nhau tại $I$ bên trong đường tròn thì $IA \\cdot IB = IC \\cdot ID$.',
+      '3. Hệ thức đoạn thẳng (Cát tuyến & Tiếp tuyến): Từ điểm $M$ ngoài $(O)$ kẻ tiếp tuyến $MT$ và các cát tuyến $MAB, MCD$ thì $\\triangle MTA \\sim \\triangle MBT \\implies MT^2 = MA \\cdot MB = MC \\cdot MD = MO^2 - R^2$. Nếu hai dây $AB, CD$ cắt nhau tại $I$ bên trong đường tròn thì $IA \\cdot IB = IC \\cdot ID$.',
       '4. Tứ giác nội tiếp: Tổng hai góc đối bằng $180^\\circ$, hoặc hai đỉnh kề nhau cùng nhìn một cạnh dưới hai góc bằng nhau.'
     ],
     keyFormulas: [
-      '\\angle ACB = \\angle xAB = \\frac{1}{2}\\angle AOB = \\frac{1}{2}\\text{sđ}\\wideparen{AB}',
-      'MA = MB = \\sqrt{OM^2 - R^2}, \\quad OH \\cdot OM = R^2, \\quad HA^2 = HO \\cdot HM',
+      '\\angle ACB = \\angle xAB = \\frac{1}{2}\\angle AOB = \\frac{1}{2}\\text{sđ}\\overset{\\frown}{AB}',
+      'MA = MB = \\sqrt{OM^2 - R^2}, \\quad OH \\cdot OM = R^2, \\quad HA^2 = HO \\cdot HM \\quad (H = OM \\cap AB)',
       'MT^2 = MA \\cdot MB = MC \\cdot MD = MO^2 - R^2'
     ],
     flashcards: [
@@ -2138,7 +2138,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
           'Từ điểm $M$ nằm ngoài $(O; R)$ kẻ hai tiếp tuyến $MA, MB$ ($A, B$ là tiếp điểm) và cát tuyến $MCD$ ($MC < MD$, tia $MD$ nằm giữa $MO$ và $MB$). Gọi $H$ là giao điểm của $OM$ và $AB$. Chứng minh rằng $MA^2 = MC \\cdot MD$ và tứ giác $OHCD$ nội tiếp.',
         hints: [
           'Chứng minh $\\triangle MAC \\sim \\triangle MDA$ (g.g) vì góc $M$ chung và $\\angle MAC = \\angle MDA$ (cùng chắn cung $AC$).',
-          'Dùng $OH \\cdot OM = OA^2 = MA^2$ (sai! Kiểm tra hệ thức lượng trong $\\triangle OAM$: $MA^2 = MH \\cdot MO$) để suy ra $MH \\cdot MO = MC \\cdot MD \\implies \\triangle MHC \\sim \\triangle MDO$.'
+          'Dùng hệ thức lượng trong $\\triangle OAM$ vuông tại $A$ đường cao $AH$: $MA^2 = MH \\cdot MO$ để suy ra $MH \\cdot MO = MC \\cdot MD \\implies \\triangle MHC \\sim \\triangle MDO$.'
         ],
         solutionSteps: [
           'Bước 1: Xét $\\triangle MAC$ và $\\triangle MDA$ có $\\widehat{AMC}$ chung và $\\widehat{MAC} = \\widehat{MDA}$ (góc tạo bởi tiếp tuyến - dây cung và góc nội tiếp cùng chắn cung $AC$). Suy ra $\\triangle MAC \\sim \\triangle MDA \\implies MA^2 = MC \\cdot MD$.',

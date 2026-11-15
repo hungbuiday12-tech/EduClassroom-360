@@ -233,7 +233,7 @@ export const ARENA_MCQ_BANK: Record<ArenaSubject, ArenaQuestionMCQ[]> = {
       question: 'Trong C++, để lưu tổng của $10^5$ số nguyên mà mỗi số có giá trị lên tới $10^9$ không bị tràn số (overflow), ta nên khai báo biến tổng kiểu nào?',
       options: ['`long long`', '`int`', '`short`', '`float`'],
       correctIndex: 0,
-      explanation: 'Tổng tối đa đạt $10^{14}$, vượt quá giới hạn `int` ($\approx 2\\times 10^9$). Kiểu `long long` (64-bit) lưu tới $\approx 9\\times 10^{18}$.',
+      explanation: 'Tổng tối đa đạt $10^{14}$, vượt quá giới hạn `int` ($\\approx 2\\times 10^9$). Kiểu `long long` (64-bit) lưu tới $\\approx 9\\times 10^{18}$.',
       points: 20
     },
     {

@@ -24,7 +24,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
         hints: ['Tính $y\' = 3(x^2 - 2mx + m^2 - 1) = 0$ để tìm trực tiếp $x_1 = m - 1, x_2 = m + 1$, rồi tính $\\vec{OA} \\cdot \\vec{OB} = 0$.'],
         solutionSteps: [
           'Bước 1: $y\' = 3x^2 - 6mx + 3(m^2 - 1) = 0 \\iff (x - m)^2 = 1 \\iff x_1 = m - 1, x_2 = m + 1$ (luôn có 2 cực trị $\\forall m$).',
-          'Bước 2: Tọa độ $A(m - 1; 3 - 2m)$ và $B(m + 1; -1 - 2m)$ (kiểm tra $y(m-1) = (m-1)^3 - 3m(m-1)^2 + 3(m^2-1)(m-1) - m^3 + 1 = 3 - 2m$? Ta tính gọn: $y(m\\mp 1) = [(m\\mp 1) - m]^3 - 3(m\\mp 1) + 1 = \\mp 1 - 3m \\pm 3 + 1 = -3m + 3 \\text{ hoặc } -3m - 1$? Kiểm tra lại: $(x-m)^3 = x^3 - 3mx^2 + 3m^2 x - m^3$, nên $y = (x - m)^3 - 3x + 1$. Suy ra $y(m-1) = (-1)^3 - 3(m-1) + 1 = 3 - 3m$ và $y(m+1) = 1 - 3(m+1) + 1 = -1 - 3m$).',
+          'Bước 2: Viết gọn $y = (x - m)^3 - 3x + 1$, suy ra tọa độ hai điểm cực trị là $A(m - 1; 3 - 3m)$ và $B(m + 1; -1 - 3m)$.',
           'Bước 3: $\\vec{OA} \\cdot \\vec{OB} = (m - 1)(m + 1) + (3 - 3m)(-1 - 3m) = (m^2 - 1) + (9m^2 - 6m - 3) = 10m^2 - 6m - 4 = 0$.',
           'Bước 4: Giải phương trình bậc hai: $5m^2 - 3m - 2 = 0 \\iff m = 1$ hoặc $m = -\\frac{2}{5}$.'
         ],
@@ -211,7 +211,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
         hints: ['Tìm tâm $I(1; -2; 3)$, $R = 5$. Tính $d(I, (\\alpha))$, so sánh với $R$ rồi tính $r = \\sqrt{R^2 - d^2}$.'],
         solutionSteps: [
           'Bước 1: Mặt cầu $(S)$ có tâm $I(1; -2; 3)$, bán kính $R = 5$.',
-          'Bước 2: Khoảng cách từ tâm $I$ đến $(\\alpha)$: $d(I, (\\alpha)) = \\frac{|2(1) + 2(-2) - 3 + 6|}{\\sqrt{2^2 + 2^2 + (-1)^2}} = \\frac{|2 - 4 - 3 + 6|}{3} = \\frac{1}{3}$? Chờ chút: $2 - 4 - 3 + 6 = 1$, vậy $d = \\frac{1}{3} < 5$. (Nếu đề muốn số đẹp hơn ta vẫn tính chính xác: $r = \\sqrt{5^2 - (1/3)^2} = \\frac{4\\sqrt{14}}{3}$).',
+          'Bước 2: Khoảng cách từ tâm $I$ đến $(\\alpha)$: $d(I, (\\alpha)) = \\frac{|2(1) + 2(-2) - 3 + 6|}{\\sqrt{2^2 + 2^2 + (-1)^2}} = \\frac{1}{3} < 5 = R$.',
           'Bước 3: Vì $d < R$ nên $(\\alpha)$ cắt $(S)$ theo một đường tròn có bán kính $r = \\sqrt{25 - \\frac{1}{9}} = \\frac{\\sqrt{224}}{3} = \\frac{4\\sqrt{14}}{3}$.'
         ],
         finalAnswer: '$d = \\frac{1}{3} < R = 5$; bán kính đường tròn giao tuyến $r = \\frac{4\\sqrt{14}}{3}$.'
@@ -240,7 +240,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
       {
         source: 'Loigiaihay · Tỉ số thể tích Simson',
         question:
-          'Cho khối tứ diện $S.ABC$ có thể tích $V$. Gọi $M, N, P$ lần lượt là trọng tâm các tam giác $SAB, SBC, SCA$? (Hoặc đơn giản hơn: $M$ là trung điểm $SA$, $N$ thuộc $SB$ với $SN = 2NB$, $P$ là trung điểm $SC$). Tính thể tích khối chóp $S.MNP$ theo $V$.',
+          'Cho khối tứ diện $S.ABC$ có thể tích $V$. Gọi $M$ là trung điểm $SA$, $N$ thuộc $SB$ với $SN = 2NB$, $P$ là trung điểm $SC$. Tính thể tích khối chóp $S.MNP$ theo $V$.',
         hints: ['Áp dụng trực tiếp tỉ số Simson: $\\frac{V_{S.MNP}}{V_{S.ABC}} = \\frac{SM}{SA} \\cdot \\frac{SN}{SB} \\cdot \\frac{SP}{SC}$.'],
         solutionSteps: [
           'Bước 1: Theo giả thiết: $\\frac{SM}{SA} = \\frac{1}{2}$, $\\frac{SN}{SB} = \\frac{2}{3}$, $\\frac{SP}{SC} = \\frac{1}{2}$.',
@@ -591,7 +591,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
         source: 'Loigiaihay · Hệ phương trình có tham số m 9',
         question:
           'Cho hệ phương trình $\\begin{cases} mx + y = 2m \\\\ x + my = m + 1 \\end{cases}$. Tìm $m$ để hệ có nghiệm duy nhất $(x; y)$ thỏa mãn $x, y$ đều là số nguyên.',
-        hints: ['Rút $y = 2m - mx$ thế vào PT(2) được $(m^2 - 1)x = (m - 1)(2m + 1)$? Kiểm tra cẩn thận: $x + m(2m - mx) = m + 1 \\iff (1 - m^2)x = 1 + m - 2m^2 = (1 - m)(2m + 1)$.'],
+        hints: ['Rút $y = 2m - mx$ thế vào PT(2) để thu được $(1 - m^2)x = (1 - m)(2m + 1)$.'],
         solutionSteps: [
           'Bước 1: Rút $y = 2m - mx$ thế vào PT(2): $(1 - m^2)x = -2m^2 + m + 1 = (1 - m)(2m + 1)$.',
           'Bước 2: Hệ có nghiệm duy nhất $\\iff m \\neq \\pm 1$. Khi đó $x = \\frac{2m + 1}{m + 1} = 2 - \\frac{1}{m + 1}$ và $y = 2m - m\\frac{2m+1}{m+1} = \\frac{m}{m + 1} = 1 - \\frac{1}{m + 1}$.',
@@ -622,7 +622,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
         source: 'Loigiaihay · Phương tích đường tròn 9',
         question:
           'Cho đường tròn $(O; R)$, từ điểm $A$ ngoài $(O)$ vẽ tiếp tuyến $AB$ ($B$ là tiếp điểm) và cát tuyến $ACD$ ($C$ nằm giữa $A$ và $D$). Chứng minh $AB^2 = AC \\cdot AD$ và tính $CD$ nếu $AB = 6\\text{ cm}, AC = 4\\text{ cm}$.',
-        hints: ['Chứng minh $\\triangle ABC \\sim \\triangle ADB$ theo trường hợp góc-góc ($\widehat{A}$ chung, $\\widehat{ABC} = \\widehat{ADB}$ cùng chắn cung $BC$).'],
+        hints: ['Chứng minh $\\triangle ABC \\sim \\triangle ADB$ theo trường hợp góc-góc ($\\widehat{A}$ chung, $\\widehat{ABC} = \\widehat{ADB}$ cùng chắn cung $BC$).'],
         solutionSteps: [
           'Bước 1: Xét $\\triangle ABC$ và $\\triangle ADB$ có $\\widehat{BAC}$ chung và $\\widehat{ABC} = \\widehat{ADB}$ (góc tạo bởi tiếp tuyến và dây cung bằng góc nội tiếp cùng chắn cung $BC$).',
           'Bước 2: Suy ra $\\triangle ABC \\sim \\triangle ADB \\implies \\frac{AB}{AD} = \\frac{AC}{AB} \\implies AB^2 = AC \\cdot AD$.',
@@ -818,7 +818,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
       {
         source: 'Loigiaihay · Đường cao & Tâm đường tròn ngoại tiếp 10',
         question:
-          'Viết phương trình tổng quát đường cao $AH$ của $\\triangle ABC$ với $A(1; 3), B(-2; 1), C(4; 5)$. (Kiểm tra 3 điểm không thẳng hàng: $\\vec{AB} = (-3; -2), \\vec{AC} = (3; 2)$? Đổi $C(4; -1)$ để $\\vec{BC} = (6; -2)$). Viết PT đường cao $AH$ của $\\triangle ABC$ với $A(1; 3), B(-2; 1), C(4; -1)$.',
+          'Viết phương trình tổng quát đường cao $AH$ của $\\triangle ABC$ với $A(1; 3)$, $B(-2; 1)$, $C(4; -1)$.',
         hints: ['Đường cao $AH$ đi qua $A(1; 3)$ và vuông góc với $BC$, nên nhận $\\vec{BC}$ làm vectơ pháp tuyến.'],
         solutionSteps: [
           'Bước 1: Tính $\\vec{BC} = (4 - (-2); -1 - 1) = (6; -2)$. Chọn VTPT rút gọn $\\vec{n} = (3; -1)$.',
@@ -1370,7 +1370,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
         solutionSteps: [
           'Bước 1: Điều kiện $x \\ge -\\frac{1}{3}$. PT $\\iff \\frac{(3x + 1) - (x + 3)}{\\sqrt{3x + 1} + \\sqrt{x + 3}} = x - 1 \\iff \\frac{2(x - 1)}{\\sqrt{3x + 1} + \\sqrt{x + 3}} - (x - 1) = 0$.',
           'Bước 2: Đặt nhân tử $(x - 1)\\left(\\frac{2}{\\sqrt{3x + 1} + \\sqrt{x + 3}} - 1\\right) = 0$.',
-          'Bước 3: Trường hợp 1: $x = 1$ (nhận). Trường hợp 2: $\\sqrt{3x + 1} + \\sqrt{x + 3} = 2$. Bình phương thử lại thấy $x = 0$ cho $\\sqrt{1} + \\sqrt{3} \\approx 2{,}73 > 2$; giải $4x + 4 + 2\\sqrt{(3x+1)(x+3)} = 4 \\iff 2\\sqrt{...} = -4x \\implies x \\le 0$, thay $x \\in [-1/3; 0]$ được $(3x+1)(x+3) = 4x^2 \\iff x^2 - 10x - 3 = 0 \\implies x = 5 - 2\\sqrt{7} \\approx -0{,}2915 \\in [-1/3; 0]$ (kiểm tra lại: $\\sqrt{3(-0{,}2915)+1} + \\sqrt{2{,}7085} \\approx 0{,}354 + 1{,}646 = 2$ — ĐÚNG!).'
+          'Bước 3: Trường hợp 1: $x = 1$ (nhận). Trường hợp 2: $\\sqrt{3x + 1} + \\sqrt{x + 3} = 2$. Bình phương hai vế thu được $2\\sqrt{(3x+1)(x+3)} = -4x$, suy ra điều kiện $x \\in [-\\frac{1}{3}; 0]$. Tiếp tục bình phương: $(3x+1)(x+3) = 4x^2 \\iff x^2 - 10x - 3 = 0$, đối chiếu điều kiện nhận $x = 5 - 2\\sqrt{7}$.'
         ],
         finalAnswer: '$x = 1$ và $x = 5 - 2\\sqrt{7}$.'
       }
@@ -1630,7 +1630,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
       {
         source: 'Đề HSG Hình học phẳng · Tâm đẳng phương đồng quy',
         question:
-          'Cho $\\triangle ABC$ nhọn nội tiếp $(O)$, hai đường cao $BE, CF$ cắt nhau tại trực tâm $H$. Chứng minh giao điểm $K$ của $EF$ và $BC$ luôn nằm trên tiếp tuyến tại $A$ của đường tròn? (Biến thể chuẩn: $EF$ cắt $BC$ tại $K$, $AK$ cắt $(O)$ tại $M$, chứng minh $MH$ vuông góc $AK$, hoặc chứng minh 3 trục đẳng phương đồng quy: xét 3 đường tròn $(O)$, đường tròn đường kính $BC$, và đường tròn đường kính $AH$). Hãy chứng minh $AK$ và trực tâm thỏa hệ thức phương tích: $KF \\cdot KE = KB \\cdot KC$.',
+          'Cho $\\triangle ABC$ nhọn nội tiếp $(O)$, hai đường cao $BE, CF$ cắt nhau tại trực tâm $H$. Gọi $K$ là giao điểm của $EF$ và $BC$. Chứng minh hệ thức phương tích: $KF \\cdot KE = KB \\cdot KC$.',
         hints: ['Tứ giác $BFEC$ nội tiếp nên dùng tam giác đồng dạng $\\triangle KFB \\sim \\triangle KCE$ (hoặc phương tích điểm $K$ với đường tròn đường kính $BC$).'],
         solutionSteps: [
           'Bước 1: Do $BE, CF$ là đường cao nên $\\widehat{BFC} = \\widehat{BEC} = 90^\\circ \\implies$ bốn điểm $B, F, E, C$ cùng thuộc đường tròn đường kính $BC$.',
@@ -1770,7 +1770,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
     theory: [
       '1. Kỹ thuật Đạo hàm & Ghép trục hàm hợp: Với $g(x) = f(u(x))$, ta có $g\'(x) = u\'(x) \\cdot f\'(u(x)) = 0 \\iff u\'(x) = 0$ hoặc $f\'(u(x)) = 0$.',
       '2. Phương pháp Hàm đặc trưng: Biến đổi phương trình hai vế thành $g(A) = g(B)$, chứng minh $g(t)$ đơn điệu nghiêm ngặt để rút ra $A = B$.',
-      '3. Tâm tỉ cự trong không gian $Oxyz$: Để tìm $M$ thuộc $(P)$ hoặc $(S)$ sao cho $T = \\sum k_i MA_i^2$ ($\sum k_i = K \\neq 0$) đạt Min/Max, chọn điểm $I$ thỏa $\\sum k_i \\vec{IA_i} = \\vec{0}$. Khi đó $T = K \\cdot MI^2 + \\sum k_i IA_i^2$.'
+      '3. Tâm tỉ cự trong không gian $Oxyz$: Để tìm $M$ thuộc $(P)$ hoặc $(S)$ sao cho $T = \\sum k_i MA_i^2$ ($\\sum k_i = K \\neq 0$) đạt Min/Max, chọn điểm $I$ thỏa $\\sum k_i \\vec{IA_i} = \\vec{0}$. Khi đó $T = K \\cdot MI^2 + \\sum k_i IA_i^2$.'
     ],
     keyFormulas: [
       '[f(u(x))]\' = u\'(x) \\cdot f\'(u(x))',
@@ -1892,18 +1892,19 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
     ],
     essayProblems: [
       {
-        source: 'Đề Thi HSG Toán 9 · Tâm đẳng phương chứng minh đồng quy',
+        source: 'Đề Thi HSG Toán 9 · Tiếp tuyến & Tứ giác nội tiếp',
         question:
-          'Cho tam giác nhọn $ABC$ nội tiếp $(O)$, các đường cao $AD, BE, CF$ cắt nhau tại trực tâm $H$. Chứng minh rằng ba đường thẳng $EF, BC$ và tiếp tuyến tại $A$ của $(O)$ đồng quy (hoặc đôi một song song).',
+          'Cho tam giác nhọn $ABC$ nội tiếp $(O)$, các đường cao $BE, CF$ cắt nhau tại trực tâm $H$. Vẽ tiếp tuyến $Ax$ của đường tròn $(O)$ nằm khác phía với điểm $B$ bờ là đường thẳng $AC$. Chứng minh rằng $Ax \\parallel EF$ và $OA \\perp EF$.',
         hints: [
-          'Xét 3 đường tròn: $(O)$, đường tròn đường kính $BC$ tâm $M$ (đi qua $E, F$), và đường tròn đường kính $AH$ (đi qua $E, F$ - hoặc xét cặp $(O)$ và đường tròn $(BFEC)$).'
+          'Dùng tứ giác $BFEC$ nội tiếp đường tròn đường kính $BC$ để chứng minh $\\widehat{AEF} = \\widehat{ABC}$, rồi so sánh với góc tạo bởi tia tiếp tuyến và dây cung $\\widehat{xAC}$.'
         ],
         solutionSteps: [
-          'Bước 1: Vì $\\widehat{BEC} = \\widehat{BFC} = 90^\\circ$ nên 4 điểm $B, F, E, C$ cùng thuộc đường tròn $(M)$ đường kính $BC$.',
-          'Bước 2: Xét đường tròn điểm $(A; 0)$ (hoặc đường tròn tiếp xúc $(O)$ tại $A$ với tiếp tuyến $Ax$), hoặc xét trục đẳng phương giữa $(O)$, $(M)$ và đường tròn $(AEHF)$: trục đẳng phương của $(O)$ và $(M)$ là $BC$; của $(M)$ và $(AEHF)$ là $EF$.',
-          'Bước 3: Gọi $K = EF \\cap BC$. Khi đó $K$ thuộc trục đẳng phương của $(O)$ và $(AEHF)$, suy ra $KE \\cdot KF = KB \\cdot KC = KA^2$ khi $KA$ tiếp xúc $(O)$ hay $K$ nằm trên đường thẳng vuông góc $OA$ tại $A$? Đúng hơn: tiếp tuyến tại $A$ của $(O)$ là trục đẳng phương của $(O)$ và đường tròn đường kính $AH$? Kiểm tra: đường kính $AH$ cắt $(O)$ tại $A$ và điểm $G$, nhưng $\\triangle ABC$ có tiếp tuyến tại $A$ song song hay cắt $BC$: chuẩn nhất dùng $(O)$, $(BFEC)$ và đường tròn ngoại tiếp $\\triangle AEF$ (tâm là trung điểm $AH$). Khi đó $(AEF)$ và $(O)$ tiếp xúc nhau tại $A$? Không! $(AEF)$ trực giao hoặc tiếp xúc khi $AB=AC$? À: $\\widehat{xAB} = \\widehat{ACB} = \\widehat{AEF}$ nên $Ax \\parallel EF$? Không, $\\widehat{xAC} = \\widehat{ABC} = \\widehat{AEF}$? Kiểm tra: $B, F, E, C$ nội tiếp $\\implies \\widehat{AEF} = \\widehat{ABC} = \\widehat{xAC} \\implies Ax \\parallel EF$ luôn! Thực ra $Ax$ luôn song song $EF$!'
+          'Bước 1: Vì $\\widehat{BEC} = \\widehat{BFC} = 90^\\circ$ nên bốn điểm $B, F, E, C$ cùng thuộc đường tròn đường kính $BC$.',
+          'Bước 2: Từ tứ giác $BFEC$ nội tiếp suy ra $\\widehat{AEF} = 180^\\circ - \\widehat{FEC} = \\widehat{ABC}$ (góc ngoài bằng góc trong tại đỉnh đối).',
+          'Bước 3: Xét đường tròn $(O)$ có $\\widehat{xAC}$ là góc tạo bởi tia tiếp tuyến $Ax$ và dây cung $AC$ cùng chắn cung nhỏ $AC$ với góc nội tiếp $\\widehat{ABC}$, nên $\\widehat{xAC} = \\widehat{ABC}$.',
+          'Bước 4: Suy ra $\\widehat{xAC} = \\widehat{AEF}$. Hai góc này ở vị trí so le trong nên $Ax \\parallel EF$. Mà $OA \\perp Ax$ tại tiếp điểm $A$, suy ra $OA \\perp EF$.'
         ],
-        finalAnswer: 'Đường thẳng $Ax$ song song $EF$ (trục đẳng phương của $(O)$ và $(BFEC)$ là $BC$, còn với $(AEF)$ là tiếp tuyến $Ax$).'
+        finalAnswer: 'Đã chứng minh $Ax \\parallel EF$ và $OA \\perp EF$.'
       }
     ],
     sim2dMode: 'geometry',

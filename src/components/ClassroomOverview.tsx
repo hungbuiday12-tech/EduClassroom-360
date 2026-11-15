@@ -22,7 +22,8 @@ import {
   Bell,
   Volume2,
   VolumeX,
-  PanelBottomOpen
+  PanelBottomOpen,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -278,6 +279,14 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               >
                 <FileText className="w-3.5 h-3.5 text-indigo-300" />
                 <span>{isEn ? 'Exam Bank' : 'Kho Đề Thi'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('forum')}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-500/30 to-sky-500/25 hover:from-indigo-500/45 hover:to-sky-500/40 border border-indigo-300/45 text-sky-100 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-sky-300" />
+                <span>{isEn ? 'Study Forum' : 'Diễn đàn học tập'}</span>
               </button>
               <button
                 type="button"

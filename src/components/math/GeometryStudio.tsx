@@ -2283,7 +2283,7 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
             {activePreset === 'pythagoras' && (
               <div className="space-y-3 text-xs">
                 <p className="text-slate-600 dark:text-slate-400">
-                  <strong>Định lý Pythagoras:</strong> Trong tam giác vuông, tổng diện tích hai hình vuông dựng trên hai cạnh góc vuông bằng diện tích hình vuông dựng trên cạnh huyền:
+                  <strong>Định lý Pythagoras:</strong> Trong tam giác <strong>ABC vuông tại B</strong> (cạnh huyền <span className="font-semibold">AC = b</span>, hai cạnh góc vuông <span className="font-semibold">AB = c</span>, <span className="font-semibold">BC = a</span>), tổng diện tích hai hình vuông dựng trên hai cạnh góc vuông bằng diện tích hình vuông dựng trên cạnh huyền:
                 </p>
                 <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/40 rounded-lg font-mono text-center text-blue-900 dark:text-blue-200 font-bold">
                   c² (AB) + a² (BC) = b² (AC)

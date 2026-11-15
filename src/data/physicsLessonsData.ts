@@ -350,7 +350,7 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       {
         heading: '3. Khái niệm Vectơ, Quy tắc cộng & Chiếu lên trục tọa độ',
         content:
-          '• Mỗi đại lượng vectơ ($\vec{v}, \\vec{a}, \\vec{F}$) gồm 4 yếu tố: **Điểm đặt, Phương, Chiều, Độ lớn**.\n• Quy tắc hình bình hành: Tổng hai vectơ đồng quy $\\vec{F} = \\vec{F}_1 + \\vec{F}_2$ là đường chéo hình bình hành, độ lớn:\n  $$F = \\sqrt{F_1^2 + F_2^2 + 2F_1 F_2\\cos\\alpha}$$\n• Chiếu vectơ $\\vec{a}$ lên trục $Ox$: Nếu $\\vec{a}$ cùng chiều $Ox$ lấy $+a$; ngược chiều lấy $-a$; hợp góc $\\alpha$ lấy $a\\cos\\alpha$; vuông góc $Ox$ bằng $0$.'
+          '• Mỗi đại lượng vectơ ($\\vec{v}, \\vec{a}, \\vec{F}$) gồm 4 yếu tố: **Điểm đặt, Phương, Chiều, Độ lớn**.\n• Quy tắc hình bình hành: Tổng hai vectơ đồng quy $\\vec{F} = \\vec{F}_1 + \\vec{F}_2$ là đường chéo hình bình hành, độ lớn:\n  $$F = \\sqrt{F_1^2 + F_2^2 + 2F_1 F_2\\cos\\alpha}$$\n• Chiếu vectơ $\\vec{a}$ lên trục $Ox$: Nếu $\\vec{a}$ cùng chiều $Ox$ lấy $+a$; ngược chiều lấy $-a$; hợp góc $\\alpha$ lấy $a\\cos\\alpha$; vuông góc $Ox$ bằng $0$.'
       }
     ],
     keyFormulas: [
@@ -866,7 +866,7 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
     title: 'Ba định luật Newton, Ma sát, Động lượng & Bảo toàn cơ năng',
     subtitle: 'Định luật II Newton F = ma, lực ma sát trượt, xung lượng – định luật bảo toàn động lượng và bảo toàn cơ năng',
     description:
-      'Trụ cột của Cơ học Lớp 10: liên hệ giữa Lực và Gia tốc ($\vec{F}_{hl} = m\\vec{a}$), phân tích lực ma sát trượt $F_{ms} = \\mu N$, động lượng $\\vec{p} = m\\vec{v}$ trong va chạm và bài toán năng lượng cơ học.',
+      'Trụ cột của Cơ học Lớp 10: liên hệ giữa Lực và Gia tốc ($\\vec{F}_{hl} = m\\vec{a}$), phân tích lực ma sát trượt $F_{ms} = \\mu N$, động lượng $\\vec{p} = m\\vec{v}$ trong va chạm và bài toán năng lượng cơ học.',
     theorySections: [
       {
         heading: '1. Ba định luật Newton & Lực ma sát trượt',
@@ -1983,7 +1983,7 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'Hoàn chỉnh chương Dao động Vật lí 11 theo VietJack: khảo sát chu kì con lắc đơn phụ thuộc chiều dài dây và gia tốc trọng trường, phân biệt dao động tắt dần – duy trì – cưỡng bức và ứng dụng phòng tránh cộng hưởng.',
     theorySections: [
       {
-        heading: '1. Con lắc đơn dao động điều hòa ($\alpha_0 \le 10^\circ$)',
+        heading: '1. Con lắc đơn dao động điều hòa ($\\alpha_0 \\le 10^\\circ$)',
         content:
           '• Tần số góc $\\omega = \\sqrt{\\frac{g}{l}}$, chu kì $T = 2\\pi\\sqrt{\\frac{l}{g}}$, tần số $f = \\frac{1}{2\\pi}\\sqrt{\\frac{g}{l}}$.\n• Chú ý: Chu kì con lắc đơn KHÔNG phụ thuộc vào khối lượng quả nặng $m$ và biên độ góc nhỏ $\\alpha_0$.'
       },
@@ -2285,7 +2285,7 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: [
-      'i = \\frac{\\lambda D}{a} \\quad (\\lambda \\text{ [\\mu m]}, D \\text{ [m]}, a \\text{ [mm]} \\implies i \\text{ [mm]})',
+      'i = \\frac{\\lambda D}{a} \\quad (\\lambda\\,[\\mu\\text{m}],\\; D\\,[\\text{m}],\\; a\\,[\\text{mm}] \\implies i\\,[\\text{mm}])',
       'x_{\\text{sáng}} = k i, \\quad x_{\\text{tối}} = \\left(k + \\frac{1}{2}\\right)i',
       '\\Delta x = x_2 - x_1'
     ],

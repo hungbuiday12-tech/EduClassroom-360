@@ -233,6 +233,45 @@
         "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["userId", "displayName", "rating", "favoriteCategory", "comment", "helpfulCount", "createdAt"]
+    },
+    "ForumGroup": {
+      "title": "ForumGroup",
+      "description": "Study forum discussion group or the mandatory admin announcement group",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 3, "maxLength": 80 },
+        "description": { "type": "string", "minLength": 3, "maxLength": 300 },
+        "subject": {
+          "type": "string",
+          "enum": ["announcements", "general", "math", "physics", "cs", "exams"]
+        },
+        "isMandatoryAdminGroup": { "type": "boolean" },
+        "creatorId": { "type": "string", "maxLength": 128 },
+        "creatorName": { "type": "string", "maxLength": 100 },
+        "creatorUsername": { "type": "string", "maxLength": 40 },
+        "messageCount": { "type": "number" },
+        "lastMessagePreview": { "type": "string", "maxLength": 200 },
+        "lastMessageAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["name", "description", "subject", "isMandatoryAdminGroup", "creatorId", "creatorName", "messageCount", "createdAt"]
+    },
+    "ForumMessage": {
+      "title": "ForumMessage",
+      "description": "Message inside a study forum group",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string", "maxLength": 128 },
+        "isAdminGroup": { "type": "boolean" },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 100 },
+        "senderUsername": { "type": "string", "maxLength": 40 },
+        "senderAvatar": { "type": "string", "maxLength": 512 },
+        "senderRole": { "type": "string", "enum": ["student", "teacher", "admin"] },
+        "content": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["groupId", "isAdminGroup", "senderId", "senderName", "senderRole", "content", "createdAt"]
     }
   },
   "firestore": {
@@ -263,6 +302,14 @@
     "/platform_reviews/{reviewId}": {
       "schema": "PlatformReview",
       "description": "Public user reviews, star ratings, favorite votes, and comments"
+    },
+    "/forum_groups/{groupId}": {
+      "schema": "ForumGroup",
+      "description": "Study forum discussion groups plus mandatory official announcement group managed by Admin TanHung"
+    },
+    "/forum_groups/{groupId}/messages/{messageId}": {
+      "schema": "ForumMessage",
+      "description": "Chat and announcement messages nested under each forum group"
     }
   }
 }

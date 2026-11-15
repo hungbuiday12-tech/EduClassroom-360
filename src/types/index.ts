@@ -1,4 +1,34 @@
-export type SubjectType = 'overview' | 'roadmap' | 'math' | 'physics' | 'cs' | 'exams' | 'arena';
+export type SubjectType = 'overview' | 'roadmap' | 'math' | 'physics' | 'cs' | 'exams' | 'arena' | 'forum';
+
+export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
+
+export interface ForumGroup {
+  id: string;
+  name: string;
+  description: string;
+  subject: ForumSubject;
+  isMandatoryAdminGroup: boolean;
+  creatorId: string;
+  creatorName: string;
+  creatorUsername?: string;
+  messageCount: number;
+  lastMessagePreview?: string;
+  lastMessageAt?: string;
+  createdAt: string;
+}
+
+export interface ForumMessage {
+  id: string;
+  groupId: string;
+  isAdminGroup: boolean;
+  senderId: string;
+  senderName: string;
+  senderUsername?: string;
+  senderAvatar?: string;
+  senderRole: 'student' | 'teacher' | 'admin';
+  content: string;
+  createdAt: string;
+}
 
 export type ExamSubject = 'math' | 'physics' | 'cs';
 export type ExamTrack = 'chuyen' | 'khong_chuyen';

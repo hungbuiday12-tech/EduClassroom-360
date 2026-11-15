@@ -87,12 +87,12 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
   },
   {
     uid: 'demo_user_3',
-    username: 'hungbui',
-    displayName: 'Hùng Bùi',
+    username: 'TanHung',
+    displayName: 'TanHung',
     email: 'hungbuiday12@gmail.com',
     password: '123456',
-    role: 'student',
-    xp: 450,
+    role: 'admin',
+    xp: 9999,
     createdAt: '2026-01-01T00:00:00.000Z',
   },
   {
@@ -127,11 +127,10 @@ const getStoredAccounts = (): StoredAccount[] => {
         (c) => c.email.toLowerCase() === def.email.toLowerCase()
       );
 
-      // Heal legacy duplicate Google-placeholder entries that shadowed default demo emails (e.g. hungbuiday12@gmail.com)
+      // Keep admin account TanHung (hungbuiday12@gmail.com) synchronized if an older cached student entry exists
       if (
         existingByEmail !== -1 &&
-        combined[existingByEmail].password === GOOGLE_OAUTH_PLACEHOLDER_PW &&
-        combined[existingByEmail].username.toLowerCase() !== def.username.toLowerCase()
+        combined[existingByEmail].email.toLowerCase() === 'hungbuiday12@gmail.com'
       ) {
         combined[existingByEmail] = {
           ...def,
@@ -203,30 +202,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const snap = await getDoc(userDocRef);
           if (snap.exists()) {
             const data = snap.data();
+            const isDesignatedAdmin =
+              (fbUser.email || '').trim().toLowerCase() === 'hungbuiday12@gmail.com';
             const profile: UserProfile = {
               uid: fbUser.uid,
-              username: data.username || fbUser.email?.split('@')[0] || 'hocsinh',
-              displayName: data.displayName || fbUser.displayName || 'Học viên Chuyên',
+              username: isDesignatedAdmin
+                ? 'TanHung'
+                : data.username || fbUser.email?.split('@')[0] || 'hocsinh',
+              displayName: isDesignatedAdmin
+                ? data.displayName || fbUser.displayName || 'TanHung'
+                : data.displayName || fbUser.displayName || 'Học viên Chuyên',
               email: fbUser.email || '',
               avatarUrl: fbUser.photoURL || undefined,
-              role: data.role || 'student',
+              role: isDesignatedAdmin ? 'admin' : data.role || 'student',
               xp: data.xp || 150,
               createdAt: data.createdAt || new Date().toISOString(),
             };
             setUser(profile);
             localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));
           } else {
+            const isDesignatedAdmin =
+              (fbUser.email || '').trim().toLowerCase() === 'hungbuiday12@gmail.com';
             const rawPrefix = (fbUser.email?.split('@')[0] || 'student_' + fbUser.uid.slice(0, 6))
               .replace(/[^a-zA-Z0-9_]/g, '_')
               .slice(0, 30);
-            const initialUsername = rawPrefix.length >= 3 ? rawPrefix : `u_${rawPrefix}`.padEnd(3, '0').slice(0, 30);
+            const initialUsername = isDesignatedAdmin
+              ? 'TanHung'
+              : rawPrefix.length >= 3
+              ? rawPrefix
+              : `u_${rawPrefix}`.padEnd(3, '0').slice(0, 30);
             const newProfile: UserProfile = {
               uid: fbUser.uid,
               username: initialUsername,
-              displayName: (fbUser.displayName || 'Học sinh Chuyên').slice(0, 100),
+              displayName: isDesignatedAdmin
+                ? 'TanHung'
+                : (fbUser.displayName || 'Học sinh Chuyên').slice(0, 100),
               email: (fbUser.email || '').slice(0, 128),
               avatarUrl: fbUser.photoURL ? fbUser.photoURL.slice(0, 512) : undefined,
-              role: 'student',
+              role: isDesignatedAdmin ? 'admin' : 'student',
               xp: 150,
               createdAt: new Date().toISOString(),
             };
@@ -246,15 +259,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch {
           if (fbUser.email) {
+            const isDesignatedAdmin = fbUser.email.trim().toLowerCase() === 'hungbuiday12@gmail.com';
             const rawPrefix = fbUser.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 30);
-            const fallbackUsername = rawPrefix.length >= 3 ? rawPrefix : `u_${rawPrefix}`.padEnd(3, '0').slice(0, 30);
+            const fallbackUsername = isDesignatedAdmin
+              ? 'TanHung'
+              : rawPrefix.length >= 3
+              ? rawPrefix
+              : `u_${rawPrefix}`.padEnd(3, '0').slice(0, 30);
             const fallback: UserProfile = {
               uid: fbUser.uid,
               username: fallbackUsername,
-              displayName: (fbUser.displayName || 'Học sinh Chuyên').slice(0, 100),
+              displayName: isDesignatedAdmin
+                ? 'TanHung'
+                : (fbUser.displayName || 'Học sinh Chuyên').slice(0, 100),
               email: fbUser.email.slice(0, 128),
               avatarUrl: fbUser.photoURL ? fbUser.photoURL.slice(0, 512) : undefined,
-              role: 'student',
+              role: isDesignatedAdmin ? 'admin' : 'student',
               xp: 150,
               createdAt: new Date().toISOString(),
             };
@@ -308,22 +328,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Direct 1-click Google Login fallback (bypasses domain authorization barrier)
+  // Direct 1-click Google Login fallback (bypasses domain authorization barrier for regular learner accounts; never grants admin)
   const loginWithGoogleDirectly = (customEmail?: string, customName?: string) => {
-    const email = (customEmail || 'hungbuiday12@gmail.com').trim();
+    const requested = (customEmail || '').trim();
+    const email =
+      requested && requested.toLowerCase() !== 'hungbuiday12@gmail.com'
+        ? requested
+        : 'hocsinh.chuyen@gmail.com';
     const existing = getStoredAccounts().find(
-      (a) => a.email.toLowerCase() === email.toLowerCase()
+      (a) => a.email.toLowerCase() === email.toLowerCase() && a.role !== 'admin'
     );
     const username =
       existing?.username || email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
-    const displayName = customName || existing?.displayName || 'Học Viên Google';
+    const displayName =
+      customName && customName.trim().toLowerCase() !== 'tanhung'
+        ? customName
+        : existing?.displayName || 'Học Viên Google';
     const profile: UserProfile = {
       uid: existing?.uid || 'goog_' + Date.now().toString(36),
       username,
       displayName,
       email: existing?.email || email,
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`,
-      role: existing?.role || 'student',
+      role: existing?.role === 'teacher' ? 'teacher' : 'student',
       xp: existing?.xp || 200,
       createdAt: existing?.createdAt || new Date().toISOString(),
     };
@@ -414,8 +441,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw err;
     }
 
-    // 4. Smart-enroll or upgrade Google-placeholder local profile when password has >= 4 chars
-    if (password.length >= 4) {
+    // 4. Smart-enroll or upgrade Google-placeholder local profile when password has >= 4 chars (never auto-enroll admin)
+    if (
+      password.length >= 4 &&
+      cleanId !== 'hungbuiday12@gmail.com' &&
+      cleanId !== 'tanhung'
+    ) {
       const googlePlaceholder = matches.find((a) => a.password === GOOGLE_OAUTH_PLACEHOLDER_PW);
       const sanitized = (
         googlePlaceholder?.username ||
@@ -467,14 +498,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string,
     displayName?: string
   ) => {
-    const sanitizedUsername = username.trim().toLowerCase().replace(/[^a-zA-Z0-9_]/g, '');
-    const validEmail = email.trim() || `${sanitizedUsername}@educlassroom360.local`;
+    const sanitizedUsername = username.trim().replace(/[^a-zA-Z0-9_]/g, '');
+    const validEmail = email.trim() || `${sanitizedUsername.toLowerCase()}@educlassroom360.local`;
     const shownName = displayName?.trim() || username;
+
+    if (
+      sanitizedUsername.toLowerCase() === 'tanhung' ||
+      validEmail.toLowerCase() === 'hungbuiday12@gmail.com'
+    ) {
+      const err = new Error('Tài khoản hoặc email Admin đã được bảo vệ và không thể đăng ký mới.');
+      (err as any).code = 'auth/email-already-in-use';
+      throw err;
+    }
 
     // Check if username/email already taken in local store
     const accounts = getStoredAccounts();
     const existing = accounts.find(
-      (a) => a.username === sanitizedUsername || a.email.toLowerCase() === validEmail.toLowerCase()
+      (a) =>
+        a.username.toLowerCase() === sanitizedUsername.toLowerCase() ||
+        a.email.toLowerCase() === validEmail.toLowerCase()
     );
     if (existing) {
       // If password matches or existing entry was only a Google-OAuth placeholder, log in and upgrade password
@@ -630,6 +672,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cleanEmail = newEmail.trim();
     if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       throw new Error('Địa chỉ Gmail / Email không hợp lệ.');
+    }
+
+    if (
+      cleanEmail.toLowerCase() === 'hungbuiday12@gmail.com' &&
+      user.email.toLowerCase() !== 'hungbuiday12@gmail.com'
+    ) {
+      throw new Error('Địa chỉ Gmail Admin này không thể gán cho tài khoản khác.');
     }
 
     const accounts = getStoredAccounts();

@@ -95,10 +95,12 @@ export const AuthModal: React.FC = () => {
   };
 
   const handleQuickGoogleFallback = () => {
-    loginWithGoogleDirectly(
-      regEmail || identifier || 'hungbuiday12@gmail.com',
-      regFullName || 'Học viên Chuyên'
-    );
+    const candidate = (regEmail || identifier || '').trim();
+    const safeEmail =
+      candidate && candidate.toLowerCase() !== 'hungbuiday12@gmail.com'
+        ? candidate
+        : 'hocsinh.chuyen@gmail.com';
+    loginWithGoogleDirectly(safeEmail, regFullName || 'Học viên Chuyên');
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {

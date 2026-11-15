@@ -13,6 +13,62 @@ import { PHYSICS_CUSTOM_LECTURE_STEPS } from './physicsLectureSteps';
 // SHARED HELPERS FOR EXTRACTING FORMULAS, CONCEPTS & BUILDING STEP QUIZZES
 // ============================================================================
 
+function isTrivialConventionOrLabel(tex: string): boolean {
+  const cleaned = tex.replace(/\s+/g, ' ').trim();
+  const hasRelation = /(=|\\neq|\\ne|\\approx|\\equiv|<|>|\\le|\\ge|\\iff|\\implies|\\Leftrightarrow|\\Rightarrow|\\perp|\\parallel)/.test(cleaned);
+
+  // Comma-separated segment/variable naming conventions like "AC = b, AB = c" or "AH = h" or "BH = c', CH = b'"
+  const assignParts = cleaned.split(/\s*,\s*/);
+  if (
+    assignParts.length > 0 &&
+    assignParts.every((p) => /^[A-Z]{1,3}'?(?:_[A-Za-z0-9]+)?\s*=\s*[a-zA-Z0-9']+(?:'|_[a-zA-Z0-9{}]+)?$/.test(p))
+  ) {
+    return true;
+  }
+
+  // Simple numeric assignments like "N = 0", "x = 1", "k = 0"
+  if (/^[a-zA-Z]'?(?:_[a-zA-Z0-9]+)?\s*=\s*-?\d+(?:[.,]\d+)?$/.test(cleaned)) return true;
+
+  // Simple domain bounds like "x > 0", "a \neq 0", "n \ge 2", "B > 0"
+  if (/^[a-zA-Z]'?(?:_[a-zA-Z0-9]+)?\s*(?:<|>|\\le|\\ge|\\neq|\\ne)\s*-?\d+(?:[.,]\d+)?$/.test(cleaned)) return true;
+
+  // Pure set notation / membership without an equation, e.g., "D = R", "k \in \mathbb{N}^*", "a, b \in R", "c \in [0, N-1]"
+  if (/^[A-Za-z0-9',\s.\\]*(?:=|\\in)\s*(?:(\\mathbb\{)?[RNZQ](\})?(\^\*)?|\[[^\]]+\]|\([^)]+\))$/.test(cleaned)) return true;
+
+  if (!hasRelation) {
+    // Pure geometric/point/tuple/interval notation: \triangle ABC, \angle AOB, M(x_0; y_0), (O_1; R_1), [a; b), (-\infty; -d/c), (u_n), (\alpha), S[l_1..r_1]
+    if (/^\\?(triangle|Delta|angle|widehat|square|overrightarrow|vec|overset)\b/.test(cleaned)) return true;
+    if (/^[A-Za-z][A-Za-z0-9'_]*(?:\([^)]+\)|\[[^\]]+\])$/.test(cleaned) && !cleaned.includes('O(')) return true;
+    if (/^[\[(][^)\]]+[)\]]$/.test(cleaned)) return true;
+    if (/^(\[[a-z0-9_]+;\s*[a-z0-9_]+\)\s*,?\s*)+(\\dots)?$/i.test(cleaned)) return true;
+
+    // Standalone numbers, powers, or angles like "180^\circ", "2\pi", "10^9", "10^{12}", "\frac{0}{0}", "9 \cdot 10^{18}"
+    if (/^-?(?:\d+(?:[.,]\d+)?(?:\s*\\cdot\s*)?)*\d*(?:\^\{?[-+]?\d+\}?|\\circ|\\pi|\\frac\{[01]\}\{[02]\})+(?:\^\\circ)?$/.test(cleaned)) return true;
+    if (/^\\frac\{\\lambda\}\{\d+\}$/.test(cleaned)) return true;
+
+    // Single symbols, Greek letters, subscripts, simple powers, or comma lists of variables/indices
+    const listParts = cleaned.split(/\s*,\s*/);
+    if (
+      listParts.every((p) =>
+        /^(?:\\(?:alpha|beta|gamma|delta|Delta|varepsilon|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|pi|rho|sigma|tau|phi|varphi|chi|psi|omega|Omega|dots|ldots)|[A-Za-z0-9]+)(?:'|_(?:\{[^{}]+\}|[A-Za-z0-9]+)|\^(?:\{[^{}]+\}|[A-Za-z0-9]+))*$/.test(
+          p
+        )
+      )
+    ) {
+      return true;
+    }
+
+    // Bare SI units like "\text{kg}\cdot\text{m/s}", "\text{N}\cdot\text{m}"
+    if (/^(?:\\text\{[^}]+\}|\\cdot|\/|\s)+$/.test(cleaned)) return true;
+
+    // Bare single radical/fraction/exponent placeholders like "\sqrt{A}", "\frac{1}{\sqrt{A}}", "{}^A_Z X", "M \in (P)"
+    if (/^\\(sqrt|frac)\{[A-Z0-9\\{}]+\}$/.test(cleaned) || /^(\{\})?\^[A-Z]_[A-Z]\s+[A-Z]$/.test(cleaned)) return true;
+    if (/\\(in|notin|subset|not\\subset)\b/.test(cleaned)) return true;
+  }
+
+  return false;
+}
+
 function extractInlineFormulas(text: string): string[] {
   const found: string[] = [];
   const regex = /\$([^$]+)\$/g;
@@ -20,9 +76,11 @@ function extractInlineFormulas(text: string): string[] {
   while ((match = regex.exec(text)) !== null) {
     const candidate = match[1].trim();
     if (
-      candidate.length >= 3 &&
+      candidate.length >= 4 &&
       candidate.length <= 140 &&
-      (/[=<>\\^_{}]/.test(candidate) || candidate.includes('O(')) &&
+      (/[=<>+\-*/]|\\(frac|sqrt|sum|prod|int|lim|sin|cos|tan|cot|log|ln|vec|widehat|perp|parallel|approx|equiv|neq|ne|le|ge|iff|implies|Rightarrow|Leftrightarrow)/.test(candidate) ||
+        candidate.includes('O(')) &&
+      !isTrivialConventionOrLabel(candidate) &&
       !found.includes(candidate)
     ) {
       found.push(candidate);
@@ -43,12 +101,12 @@ function buildVariablesNote(
 ): string {
   const lines: string[] = [];
   if (subject === 'math') {
-    lines.push('• Kiểm tra điều kiện xác định của ẩn/biến, mẫu số ($\\ne 0$), biểu thức trong căn ($\ge 0$) hoặc cơ số ($> 0, \\ne 1$) trước khi áp dụng.');
+    lines.push('• Kiểm tra điều kiện xác định của ẩn/biến, mẫu số ($\\ne 0$), biểu thức trong căn ($\\ge 0$) hoặc cơ số ($> 0, \\ne 1$) trước khi áp dụng.');
     if (formula && /[a-zA-Z]/.test(formula)) {
       lines.push('• Chú ý phân biệt tham số ($m$, $a$, $b$, $c$) với biến số độc lập ($x$, $t$); xét riêng trường hợp hệ số bậc cao nhất bằng $0$ nếu có tham số.');
     }
   } else if (subject === 'physics') {
-    lines.push('• Đổi đồng nhất toàn bộ đại lượng sang hệ đo lường chuẩn SI ($\text{m}$, $\text{kg}$, $\text{s}$, $\text{N}$, $\text{J}$, $\text{W}$, $\text{A}$, $\text{V}$, $\\Omega$) trước khi bấm máy.');
+    lines.push('• Đổi đồng nhất toàn bộ đại lượng sang hệ đo lường chuẩn SI ($\\text{m}$, $\\text{kg}$, $\\text{s}$, $\\text{N}$, $\\text{J}$, $\\text{W}$, $\\text{A}$, $\\text{V}$, $\\Omega$) trước khi bấm máy.');
     lines.push('• Chú ý quy ước dấu đại số theo chiều dương đã chọn (đặc biệt với vận tốc, gia tốc, li độ và nhiệt lượng).');
   } else {
     lines.push('• Đánh giá giới hạn $N$ và giá trị lớn nhất của biến trung gian (dùng `long long` trong C++ nếu vượt $2\\cdot 10^9$).');

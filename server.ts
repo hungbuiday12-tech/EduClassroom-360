@@ -353,6 +353,493 @@ app.delete('/api/reviews/:id', (req: Request, res: Response) => {
   return res.json({ success: true, id: reviewId });
 });
 
+// =====================================================================
+// PERSISTENT STUDY FORUM STORE (.forum_db.json) + REAL-TIME SSE
+// =====================================================================
+type ForumSubjectServer = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
+
+interface ForumGroupRecord {
+  id: string;
+  name: string;
+  description: string;
+  subject: ForumSubjectServer;
+  isMandatoryAdminGroup: boolean;
+  creatorId: string;
+  creatorName: string;
+  creatorUsername?: string;
+  messageCount: number;
+  lastMessagePreview?: string;
+  lastMessageAt?: string;
+  createdAt: string;
+}
+
+interface ForumMessageRecord {
+  id: string;
+  groupId: string;
+  isAdminGroup: boolean;
+  senderId: string;
+  senderName: string;
+  senderUsername?: string;
+  senderAvatar?: string;
+  senderRole: 'student' | 'teacher' | 'admin';
+  content: string;
+  createdAt: string;
+}
+
+interface ForumDatabase {
+  groups: ForumGroupRecord[];
+  messages: ForumMessageRecord[];
+}
+
+const FORUM_DB_PATH = path.resolve(process.cwd(), '.forum_db.json');
+const MANDATORY_ADMIN_GROUP_ID = 'official-announcements';
+const FORUM_ADMIN_EMAIL = 'hungbuiday12@gmail.com';
+
+function isForumAdminIdentity(email?: unknown, _username?: unknown): boolean {
+  return String(email || '').trim().toLowerCase() === FORUM_ADMIN_EMAIL;
+}
+
+function buildDefaultForumSeed(): ForumDatabase {
+  const now = new Date('2026-11-15T00:00:00.000Z');
+  const t1 = new Date(now.getTime()).toISOString();
+  const t2 = new Date(now.getTime() + 60_000).toISOString();
+  const t3 = new Date(now.getTime() + 120_000).toISOString();
+
+  return {
+    groups: [
+      {
+        id: MANDATORY_ADMIN_GROUP_ID,
+        name: 'Thông báo Chính thức · Admin TanHung',
+        description:
+          'Nhóm bắt buộc của toàn hệ thống Synapse. Chỉ tài khoản Admin TanHung (hungbuiday12@gmail.com) có quyền đăng thông báo cập nhật hoạt động của web.',
+        subject: 'announcements',
+        isMandatoryAdminGroup: true,
+        creatorId: 'demo_user_3',
+        creatorName: 'TanHung',
+        creatorUsername: 'TanHung',
+        messageCount: 1,
+        lastMessagePreview:
+          'Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°. Mọi thông báo bảo trì, sự kiện thi đấu & nâng cấp tính năng sẽ được cập nhật tại đây.',
+        lastMessageAt: t1,
+        createdAt: t1
+      },
+      {
+        id: 'math-olympiad-club',
+        name: 'CLB Toán Hình Học & Giải Tích 9–12',
+        description:
+          'Trao đổi phương pháp giải hệ thức lượng đường tròn, đạo hàm, tích phân và hình học không gian Oxyz.',
+        subject: 'math',
+        isMandatoryAdminGroup: false,
+        creatorId: 'demo_user_2',
+        creatorName: 'Nguyễn Văn An',
+        creatorUsername: 'chuyentoan2026',
+        messageCount: 1,
+        lastMessagePreview:
+          'Chào mọi người! Ai cần thảo luận phần tiếp tuyến đường tròn hay tọa độ $Oxyz$ có thể nhắn ở đây nhé.',
+        lastMessageAt: t2,
+        createdAt: t2
+      },
+      {
+        id: 'cs-vnoi-algorithms',
+        name: 'Nhóm Thuật Toán C++ & Luyện Thi VNOI',
+        description:
+          'Cùng chia sẻ lời giải Quy hoạch động, Đồ thị, Segment Tree và debug test biên trên Sublime Studio.',
+        subject: 'cs',
+        isMandatoryAdminGroup: false,
+        creatorId: 'demo_user_1',
+        creatorName: 'Học sinh Chuyên',
+        creatorUsername: 'hocsinh',
+        messageCount: 1,
+        lastMessagePreview:
+          'Mọi người nhớ kiểm tra tràn số `long long` với các bài có $N \\le 10^5$ và trọng số $10^9$ nha!',
+        lastMessageAt: t3,
+        createdAt: t3
+      }
+    ],
+    messages: [
+      {
+        id: 'msg_seed_admin_1',
+        groupId: MANDATORY_ADMIN_GROUP_ID,
+        isAdminGroup: true,
+        senderId: 'demo_user_3',
+        senderName: 'TanHung',
+        senderUsername: 'TanHung',
+        senderRole: 'admin',
+        content:
+          'Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°!\n\nĐây là kênh thông báo chính thức do Admin **TanHung** (`hungbuiday12@gmail.com`) quản lí để cập nhật lịch thi đấu hàng tuần, các mô phỏng 2D/3D mới và hoạt động của website.\n\n• Các bạn có thể tạo nhóm học tập riêng để cùng nhau trao đổi bài tập Toán, Vật lí, Tin học và hỗ trợ công thức KaTeX dạng `$a^2 + b^2 = c^2$`.',
+        createdAt: t1
+      },
+      {
+        id: 'msg_seed_math_1',
+        groupId: 'math-olympiad-club',
+        isAdminGroup: false,
+        senderId: 'demo_user_2',
+        senderName: 'Nguyễn Văn An',
+        senderUsername: 'chuyentoan2026',
+        senderRole: 'student',
+        content:
+          'Chào mọi người! Ai cần thảo luận phần tiếp tuyến đường tròn hay tọa độ $Oxyz$ có thể nhắn ở đây nhé.',
+        createdAt: t2
+      },
+      {
+        id: 'msg_seed_cs_1',
+        groupId: 'cs-vnoi-algorithms',
+        isAdminGroup: false,
+        senderId: 'demo_user_1',
+        senderName: 'Học sinh Chuyên',
+        senderUsername: 'hocsinh',
+        senderRole: 'student',
+        content:
+          'Mọi người nhớ kiểm tra tràn số `long long` với các bài có $N \\le 10^5$ và trọng số $10^9$ nha!',
+        createdAt: t3
+      }
+    ]
+  };
+}
+
+function ensureMandatoryAdminGroup(data: ForumDatabase): ForumDatabase {
+  const seed = buildDefaultForumSeed();
+  const hasMandatory = data.groups.some((g) => g.id === MANDATORY_ADMIN_GROUP_ID);
+  if (!hasMandatory) {
+    data.groups.unshift(seed.groups[0]);
+    const hasAdminMsg = data.messages.some((m) => m.groupId === MANDATORY_ADMIN_GROUP_ID);
+    if (!hasAdminMsg) {
+      data.messages.unshift(seed.messages[0]);
+    }
+  } else {
+    data.groups = data.groups.map((g) =>
+      g.id === MANDATORY_ADMIN_GROUP_ID
+        ? {
+            ...g,
+            isMandatoryAdminGroup: true,
+            subject: 'announcements',
+            creatorName: 'TanHung',
+            creatorUsername: 'TanHung'
+          }
+        : g
+    );
+  }
+  return data;
+}
+
+function loadForumDb(): ForumDatabase {
+  try {
+    if (fs.existsSync(FORUM_DB_PATH)) {
+      const raw = fs.readFileSync(FORUM_DB_PATH, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.groups) && Array.isArray(parsed.messages)) {
+        return ensureMandatoryAdminGroup(parsed);
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read .forum_db.json, initializing default store:', err);
+  }
+  const initial = buildDefaultForumSeed();
+  saveForumDb(initial);
+  return initial;
+}
+
+function saveForumDb(data: ForumDatabase) {
+  try {
+    fs.writeFileSync(FORUM_DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to persist .forum_db.json:', err);
+  }
+}
+
+let forumDb: ForumDatabase = loadForumDb();
+const forumSseClients = new Set<Response>();
+
+function broadcastForumEvent(payload: Record<string, any>) {
+  const dataStr = JSON.stringify({ ...payload, timestamp: Date.now() });
+  for (const client of forumSseClients) {
+    try {
+      client.write(`data: ${dataStr}\n\n`);
+    } catch {
+      forumSseClients.delete(client);
+    }
+  }
+}
+
+function getSortedGroupsForClient(isAuthenticated: boolean): ForumGroupRecord[] {
+  const sorted = [...forumDb.groups].sort((a, b) => {
+    if (a.isMandatoryAdminGroup !== b.isMandatoryAdminGroup) {
+      return a.isMandatoryAdminGroup ? -1 : 1;
+    }
+    const ta = new Date(a.lastMessageAt || a.createdAt).getTime();
+    const tb = new Date(b.lastMessageAt || b.createdAt).getTime();
+    return tb - ta;
+  });
+
+  if (isAuthenticated) return sorted;
+
+  return sorted.map((g) =>
+    g.isMandatoryAdminGroup
+      ? {
+          ...g,
+          lastMessagePreview: 'Đăng nhập để vào nhóm thông báo do Admin TanHung quản lí.'
+        }
+      : g
+  );
+}
+
+app.get('/api/forum/stream', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  forumSseClients.add(res);
+  res.write(`data: ${JSON.stringify({ type: 'forum:connected', timestamp: Date.now() })}\n\n`);
+
+  const keepAlive = setInterval(() => {
+    try {
+      res.write(': ping\n\n');
+    } catch {
+      clearInterval(keepAlive);
+      forumSseClients.delete(res);
+    }
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(keepAlive);
+    forumSseClients.delete(res);
+  });
+});
+
+app.get('/api/forum/groups', (req: Request, res: Response) => {
+  const userId = String(req.query.userId || '').trim();
+  const isAuthenticated = userId.length > 0;
+  return res.json({ groups: getSortedGroupsForClient(isAuthenticated) });
+});
+
+app.post('/api/forum/groups', (req: Request, res: Response) => {
+  const { id, name, description, subject, creatorId, creatorName, creatorUsername } = req.body || {};
+
+  if (!creatorId || !creatorName) {
+    return res.status(401).json({ error: 'Chỉ tài khoản đã đăng nhập mới có thể tạo nhóm học tập.' });
+  }
+
+  const cleanName = String(name || '').trim();
+  const cleanDesc = String(description || '').trim();
+  if (cleanName.length < 3 || cleanName.length > 80) {
+    return res.status(400).json({ error: 'Tên nhóm phải từ 3 đến 80 ký tự.' });
+  }
+  if (cleanDesc.length < 3 || cleanDesc.length > 300) {
+    return res.status(400).json({ error: 'Mô tả nhóm phải từ 3 đến 300 ký tự.' });
+  }
+
+  const allowedSubjects: ForumSubjectServer[] = ['general', 'math', 'physics', 'cs', 'exams'];
+  const cleanSubject: ForumSubjectServer = allowedSubjects.includes(subject) ? subject : 'general';
+  const cleanId = id
+    ? String(id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 128)
+    : `grp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+  if (!cleanId || cleanId === MANDATORY_ADMIN_GROUP_ID) {
+    return res.status(403).json({ error: 'ID nhóm không hợp lệ hoặc trùng với nhóm Admin.' });
+  }
+
+  const existingGroup = forumDb.groups.find((g) => g.id === cleanId);
+  if (existingGroup) {
+    return res.status(200).json({ success: true, group: existingGroup });
+  }
+
+  const nowIso = new Date().toISOString();
+  const record: ForumGroupRecord = {
+    id: cleanId,
+    name: cleanName,
+    description: cleanDesc,
+    subject: cleanSubject,
+    isMandatoryAdminGroup: false,
+    creatorId: String(creatorId).slice(0, 128),
+    creatorName: String(creatorName).slice(0, 100),
+    creatorUsername: creatorUsername ? String(creatorUsername).slice(0, 40) : undefined,
+    messageCount: 0,
+    lastMessagePreview: 'Nhóm vừa được tạo · Hãy gửi tin nhắn đầu tiên!',
+    lastMessageAt: nowIso,
+    createdAt: nowIso
+  };
+
+  forumDb.groups.push(record);
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:group_created', group: record });
+
+  return res.status(201).json({ success: true, group: record });
+});
+
+app.get('/api/forum/groups/:groupId/messages', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const userId = String(req.query.userId || '').trim();
+
+  const group = forumDb.groups.find((g) => g.id === groupId);
+  if (!group) {
+    return res.status(404).json({ error: 'Không tìm thấy nhóm thảo luận.' });
+  }
+
+  if (group.isMandatoryAdminGroup && !userId) {
+    return res.status(401).json({
+      error: 'Chỉ tài khoản đã đăng nhập mới có thể vào nhóm do Admin TanHung quản lí.'
+    });
+  }
+
+  const messages = forumDb.messages
+    .filter((m) => m.groupId === groupId)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  return res.json({ group, messages });
+});
+
+app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const {
+    id,
+    senderId,
+    senderName,
+    senderUsername,
+    senderEmail,
+    senderAvatar,
+    senderRole,
+    content
+  } = req.body || {};
+
+  if (!senderId || !senderName) {
+    return res.status(401).json({ error: 'Chỉ tài khoản đã đăng nhập mới có thể gửi tin nhắn.' });
+  }
+
+  const group = forumDb.groups.find((g) => g.id === groupId);
+  if (!group) {
+    return res.status(404).json({ error: 'Không tìm thấy nhóm thảo luận.' });
+  }
+
+  const isAdminSender = isForumAdminIdentity(senderEmail, senderUsername);
+  if (group.isMandatoryAdminGroup && !isAdminSender) {
+    return res.status(403).json({
+      error:
+        'Chỉ tài khoản Admin TanHung (hungbuiday12@gmail.com) được phép gửi tin nhắn thông báo trong nhóm bắt buộc này.'
+    });
+  }
+
+  const cleanContent = String(content || '').trim();
+  if (cleanContent.length < 1 || cleanContent.length > 2000) {
+    return res.status(400).json({ error: 'Nội dung tin nhắn cần từ 1 đến 2000 ký tự.' });
+  }
+
+  const nowIso = new Date().toISOString();
+  const messageId = id
+    ? String(id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 128)
+    : `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+  const resolvedRole: 'student' | 'teacher' | 'admin' = isAdminSender
+    ? 'admin'
+    : senderRole === 'teacher'
+    ? 'teacher'
+    : 'student';
+
+  const record: ForumMessageRecord = {
+    id: messageId,
+    groupId,
+    isAdminGroup: group.isMandatoryAdminGroup,
+    senderId: String(senderId).slice(0, 128),
+    senderName: String(isAdminSender ? 'TanHung' : senderName).slice(0, 100),
+    senderUsername: isAdminSender
+      ? 'TanHung'
+      : senderUsername
+      ? String(senderUsername).slice(0, 40)
+      : undefined,
+    senderAvatar: senderAvatar ? String(senderAvatar).slice(0, 512) : undefined,
+    senderRole: resolvedRole,
+    content: cleanContent,
+    createdAt: nowIso
+  };
+
+  forumDb.messages.push(record);
+  group.messageCount = forumDb.messages.filter((m) => m.groupId === groupId).length;
+  group.lastMessagePreview = cleanContent.replace(/\s+/g, ' ').slice(0, 160);
+  group.lastMessageAt = nowIso;
+  saveForumDb(forumDb);
+
+  broadcastForumEvent({
+    type: 'forum:message_created',
+    groupId,
+    message: record,
+    group
+  });
+
+  return res.status(201).json({ success: true, message: record, group });
+});
+
+app.delete('/api/forum/groups/:groupId', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const userId = String(req.query.userId || req.body?.userId || '').trim();
+  const userEmail = String(req.query.userEmail || req.body?.userEmail || '').trim();
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Cần đăng nhập để thao tác.' });
+  }
+
+  const idx = forumDb.groups.findIndex((g) => g.id === groupId);
+  if (idx < 0) {
+    return res.status(404).json({ error: 'Không tìm thấy nhóm.' });
+  }
+
+  const target = forumDb.groups[idx];
+  if (target.isMandatoryAdminGroup || target.id === MANDATORY_ADMIN_GROUP_ID) {
+    return res.status(403).json({ error: 'Không thể xóa nhóm thông báo bắt buộc của hệ thống.' });
+  }
+
+  const isAdmin = isForumAdminIdentity(userEmail);
+  if (target.creatorId !== userId && !isAdmin) {
+    return res.status(403).json({ error: 'Chỉ người tạo nhóm hoặc Admin mới có quyền xóa nhóm này.' });
+  }
+
+  forumDb.groups.splice(idx, 1);
+  forumDb.messages = forumDb.messages.filter((m) => m.groupId !== groupId);
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:group_deleted', groupId });
+
+  return res.json({ success: true, groupId });
+});
+
+app.delete('/api/forum/groups/:groupId/messages/:messageId', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const messageId = String(req.params.messageId || '').trim();
+  const userId = String(req.query.userId || req.body?.userId || '').trim();
+  const userEmail = String(req.query.userEmail || req.body?.userEmail || '').trim();
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Cần đăng nhập để xóa tin nhắn.' });
+  }
+
+  const msgIdx = forumDb.messages.findIndex((m) => m.id === messageId && m.groupId === groupId);
+  if (msgIdx < 0) {
+    return res.status(404).json({ error: 'Không tìm thấy tin nhắn.' });
+  }
+
+  const targetMsg = forumDb.messages[msgIdx];
+  const isAdmin = isForumAdminIdentity(userEmail);
+  if (targetMsg.isAdminGroup && !isAdmin) {
+    return res.status(403).json({ error: 'Chỉ Admin TanHung có thể quản lý tin nhắn trong nhóm bắt buộc.' });
+  }
+  if (targetMsg.senderId !== userId && !isAdmin) {
+    return res.status(403).json({ error: 'Bạn chỉ có thể xóa tin nhắn của chính mình.' });
+  }
+
+  forumDb.messages.splice(msgIdx, 1);
+  const group = forumDb.groups.find((g) => g.id === groupId);
+  if (group) {
+    const remaining = forumDb.messages
+      .filter((m) => m.groupId === groupId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    group.messageCount = remaining.length;
+    group.lastMessagePreview = remaining[0]?.content.replace(/\s+/g, ' ').slice(0, 160) || '';
+    group.lastMessageAt = remaining[0]?.createdAt || group.createdAt;
+  }
+  saveForumDb(forumDb);
+
+  broadcastForumEvent({ type: 'forum:message_deleted', groupId, messageId, group });
+  return res.json({ success: true, messageId, group });
+});
+
 app.get('/api/arena/stream', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');

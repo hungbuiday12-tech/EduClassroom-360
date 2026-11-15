@@ -1,0 +1,81 @@
+{
+  "groups": [
+    {
+      "id": "official-announcements",
+      "name": "Thông báo Chính thức · Admin TanHung",
+      "description": "Nhóm bắt buộc của toàn hệ thống Synapse. Chỉ tài khoản Admin TanHung (hungbuiday12@gmail.com) có quyền đăng thông báo cập nhật hoạt động của web.",
+      "subject": "announcements",
+      "isMandatoryAdminGroup": true,
+      "creatorId": "demo_user_3",
+      "creatorName": "TanHung",
+      "creatorUsername": "TanHung",
+      "messageCount": 1,
+      "lastMessagePreview": "Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°! Đây là kênh thông báo chính thức do Admin **TanHung** (`hungbuiday12@gmail.com`) quản lí để cập nhật lị",
+      "lastMessageAt": "2026-11-15T00:00:00.000Z",
+      "createdAt": "2026-11-15T00:00:00.000Z"
+    },
+    {
+      "id": "math-olympiad-club",
+      "name": "CLB Toán Hình Học & Giải Tích 9–12",
+      "description": "Trao đổi phương pháp giải hệ thức lượng đường tròn, đạo hàm, tích phân và hình học không gian Oxyz.",
+      "subject": "math",
+      "isMandatoryAdminGroup": false,
+      "creatorId": "demo_user_2",
+      "creatorName": "Nguyễn Văn An",
+      "creatorUsername": "chuyentoan2026",
+      "messageCount": 1,
+      "lastMessagePreview": "Chào mọi người! Ai cần thảo luận phần tiếp tuyến đường tròn hay tọa độ $Oxyz$ có thể nhắn ở đây nhé.",
+      "lastMessageAt": "2026-11-15T00:01:00.000Z",
+      "createdAt": "2026-11-15T00:01:00.000Z"
+    },
+    {
+      "id": "cs-vnoi-algorithms",
+      "name": "Nhóm Thuật Toán C++ & Luyện Thi VNOI",
+      "description": "Cùng chia sẻ lời giải Quy hoạch động, Đồ thị, Segment Tree và debug test biên trên Sublime Studio.",
+      "subject": "cs",
+      "isMandatoryAdminGroup": false,
+      "creatorId": "demo_user_1",
+      "creatorName": "Học sinh Chuyên",
+      "creatorUsername": "hocsinh",
+      "messageCount": 1,
+      "lastMessagePreview": "Mọi người nhớ kiểm tra tràn số `long long` với các bài có $N \\le 10^5$ và trọng số $10^9$ nha!",
+      "lastMessageAt": "2026-11-15T00:02:00.000Z",
+      "createdAt": "2026-11-15T00:02:00.000Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg_seed_admin_1",
+      "groupId": "official-announcements",
+      "isAdminGroup": true,
+      "senderId": "demo_user_3",
+      "senderName": "TanHung",
+      "senderUsername": "TanHung",
+      "senderRole": "admin",
+      "content": "Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°!\n\nĐây là kênh thông báo chính thức do Admin **TanHung** (`hungbuiday12@gmail.com`) quản lí để cập nhật lịch thi đấu hàng tuần, các mô phỏng 2D/3D mới và hoạt động của website.\n\n• Các bạn có thể tạo nhóm học tập riêng để cùng nhau trao đổi bài tập Toán, Vật lí, Tin học và hỗ trợ công thức KaTeX dạng `$a^2 + b^2 = c^2$`.",
+      "createdAt": "2026-11-15T00:00:00.000Z"
+    },
+    {
+      "id": "msg_seed_math_1",
+      "groupId": "math-olympiad-club",
+      "isAdminGroup": false,
+      "senderId": "demo_user_2",
+      "senderName": "Nguyễn Văn An",
+      "senderUsername": "chuyentoan2026",
+      "senderRole": "student",
+      "content": "Chào mọi người! Ai cần thảo luận phần tiếp tuyến đường tròn hay tọa độ $Oxyz$ có thể nhắn ở đây nhé.",
+      "createdAt": "2026-11-15T00:01:00.000Z"
+    },
+    {
+      "id": "msg_seed_cs_1",
+      "groupId": "cs-vnoi-algorithms",
+      "isAdminGroup": false,
+      "senderId": "demo_user_1",
+      "senderName": "Học sinh Chuyên",
+      "senderUsername": "hocsinh",
+      "senderRole": "student",
+      "content": "Mọi người nhớ kiểm tra tràn số `long long` với các bài có $N \\le 10^5$ và trọng số $10^9$ nha!",
+      "createdAt": "2026-11-15T00:02:00.000Z"
+    }
+  ]
+}

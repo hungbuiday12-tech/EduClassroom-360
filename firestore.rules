@@ -280,5 +280,106 @@ service cloud.firestore {
                        );
       allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
+
+    function isForumAdmin() {
+      return isSignedIn() &&
+             request.auth.token.email_verified == true &&
+             request.auth.token.email == 'hungbuiday12@gmail.com';
+    }
+
+    function isValidForumGroup(data) {
+      return data.keys().hasAll(['name', 'description', 'subject', 'isMandatoryAdminGroup', 'creatorId', 'creatorName', 'messageCount', 'createdAt']) &&
+             data.keys().hasOnly([
+               'name', 'description', 'subject', 'isMandatoryAdminGroup',
+               'creatorId', 'creatorName', 'creatorUsername',
+               'messageCount', 'lastMessagePreview', 'lastMessageAt', 'createdAt'
+             ]) &&
+             data.name is string && data.name.size() >= 3 && data.name.size() <= 80 &&
+             data.description is string && data.description.size() >= 3 && data.description.size() <= 300 &&
+             data.subject in ['announcements', 'general', 'math', 'physics', 'cs', 'exams'] &&
+             data.isMandatoryAdminGroup is bool &&
+             data.creatorId is string && data.creatorId.size() > 0 && data.creatorId.size() <= 128 &&
+             data.creatorName is string && data.creatorName.size() >= 1 && data.creatorName.size() <= 100 &&
+             data.messageCount is number && data.messageCount >= 0 && data.messageCount <= 1000000 &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('creatorUsername' in data) || (data.creatorUsername is string && data.creatorUsername.size() <= 40)) &&
+             (!('lastMessagePreview' in data) || (data.lastMessagePreview is string && data.lastMessagePreview.size() <= 200)) &&
+             (!('lastMessageAt' in data) || (data.lastMessageAt is string && data.lastMessageAt.size() <= 64));
+    }
+
+    function isValidForumMessage(data, groupId) {
+      return data.keys().hasAll(['groupId', 'isAdminGroup', 'senderId', 'senderName', 'senderRole', 'content', 'createdAt']) &&
+             data.keys().hasOnly([
+               'groupId', 'isAdminGroup', 'senderId', 'senderName',
+               'senderUsername', 'senderAvatar', 'senderRole', 'content', 'createdAt'
+             ]) &&
+             data.groupId == groupId &&
+             data.isAdminGroup is bool &&
+             data.senderId == request.auth.uid &&
+             data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 100 &&
+             data.senderRole in ['student', 'teacher', 'admin'] &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 2000 &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('senderUsername' in data) || (data.senderUsername is string && data.senderUsername.size() <= 40)) &&
+             (!('senderAvatar' in data) || (data.senderAvatar is string && data.senderAvatar.size() <= 512));
+    }
+
+    // Study Forum Groups (Only signed-in users can create groups or enter the mandatory Admin group)
+    match /forum_groups/{groupId} {
+      allow get: if isSignedIn() || (existing().isMandatoryAdminGroup == false && groupId != 'official-announcements');
+      allow list: if isSignedIn() || resource.data.isMandatoryAdminGroup == false;
+      allow create: if isSignedIn() &&
+                       request.auth.token.email_verified == true &&
+                       isValidId(groupId) &&
+                       isValidForumGroup(incoming()) &&
+                       incoming().creatorId == request.auth.uid &&
+                       incoming().messageCount == 0 &&
+                       (
+                         (!incoming().isMandatoryAdminGroup && groupId != 'official-announcements') ||
+                         (isForumAdmin() && groupId == 'official-announcements' && incoming().isMandatoryAdminGroup)
+                       );
+      allow update: if isSignedIn() &&
+                       isValidId(groupId) &&
+                       isValidForumGroup(incoming()) &&
+                       incoming().creatorId == existing().creatorId &&
+                       incoming().isMandatoryAdminGroup == existing().isMandatoryAdminGroup &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         ((existing().creatorId == request.auth.uid || isForumAdmin()) &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'subject', 'lastMessagePreview', 'lastMessageAt', 'messageCount'])) ||
+                         ((!existing().isMandatoryAdminGroup && groupId != 'official-announcements') &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['lastMessagePreview', 'lastMessageAt', 'messageCount']))
+                       );
+      allow delete: if isSignedIn() &&
+                       isValidId(groupId) &&
+                       !existing().isMandatoryAdminGroup &&
+                       groupId != 'official-announcements' &&
+                       (existing().creatorId == request.auth.uid || isForumAdmin());
+
+      // Nested Group Messages (Master Gate checks parent group + TanHung admin-only rule on official-announcements)
+      match /messages/{messageId} {
+        allow get: if isSignedIn() || existing().isAdminGroup == false;
+        allow list: if isSignedIn() || resource.data.isAdminGroup == false;
+        allow create: if isSignedIn() &&
+                         request.auth.token.email_verified == true &&
+                         isValidId(groupId) &&
+                         isValidId(messageId) &&
+                         isValidForumMessage(incoming(), groupId) &&
+                         exists(/databases/$(database)/documents/forum_groups/$(groupId)) &&
+                         get(/databases/$(database)/documents/forum_groups/$(groupId)).data.isMandatoryAdminGroup == incoming().isAdminGroup &&
+                         (
+                           (!incoming().isAdminGroup && groupId != 'official-announcements' && incoming().senderRole != 'admin') ||
+                           isForumAdmin()
+                         );
+        allow update: if false;
+        allow delete: if isSignedIn() &&
+                         isValidId(groupId) &&
+                         isValidId(messageId) &&
+                         (
+                           (!existing().isAdminGroup && groupId != 'official-announcements' && existing().senderId == request.auth.uid) ||
+                           isForumAdmin()
+                         );
+      }
+    }
   }
 }

@@ -56,7 +56,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 21 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 21 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x21.\nGiả sử không có hai số nào có hiệu thuộc {1, 2, 3} và cũng không có hai cặp số rời nhau có cùng hiệu.\nXét 20 hiệu liên tiếp d_i = x_{i+1} - x_i >= 4 (i = 1..20). Hai hiệu d_i, d_j với |i - j| >= 2 ứng với 4 số đôi một phân biệt nên không thể bằng nhau; do đó mỗi giá trị hiệu k >= 4 chỉ xuất hiện tối đa 2 lần (liền kề).\nSuy ra tổng các hiệu: sum(d_i) >= 2 * (4 + 5 + ... + 13) = 170.\nMặt khác, sum(d_i) = x21 - x1 <= 100 - 1 = 99 < 170 (vô lý). Vậy điều phải chứng minh đúng.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -118,7 +118,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 22 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 22 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x22.\nGiả sử không có hai số nào có hiệu thuộc {1, 2, 3} và cũng không có hai cặp số rời nhau có cùng hiệu.\nXét 21 hiệu liên tiếp d_i = x_{i+1} - x_i >= 4. Mỗi giá trị k >= 4 chỉ có thể xuất hiện tối đa 2 lần (ở hai hiệu kề nhau, nếu không sẽ tạo ra hai cặp rời nhau cùng hiệu).\nDo đó sum(d_i) >= 2 * (4 + 5 + ... + 13) + 14 = 184.\nMặt khác, sum(d_i) = x22 - x1 <= 100 - 1 = 99 < 184 (vô lý). Vậy bài toán được chứng minh.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -180,7 +180,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 23 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 23 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x23.\nGiả sử mọi hiệu liên tiếp d_i = x_{i+1} - x_i >= 4 và không tồn tại hai cặp rời nhau nào có cùng hiệu.\nKhi đó mỗi giá trị hiệu k >= 4 xuất hiện tối đa 2 lần (ở hai khoảng kề nhau), nên với 22 hiệu ta có: sum(d_i) >= 2 * (4 + 5 + ... + 14) = 198.\nMặt khác, sum(d_i) = x23 - x1 <= 100 - 1 = 99 < 198 (vô lý). Vậy luôn chọn được hai số thỏa yêu cầu.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -242,7 +242,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 24 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 24 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x24.\nGiả sử mọi hiệu liên tiếp d_i = x_{i+1} - x_i >= 4 và không tồn tại hai cặp rời nhau cùng hiệu.\nMỗi giá trị k >= 4 xuất hiện tối đa 2 lần trong dãy 23 hiệu liên tiếp, suy ra sum(d_i) >= 2 * (4 + 5 + ... + 14) + 15 = 213.\nMặt khác, sum(d_i) = x24 - x1 <= 100 - 1 = 99 < 213 (vô lý). Vậy bài toán được chứng minh.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -304,7 +304,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 25 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 25 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x25.\nGiả sử mọi hiệu liên tiếp d_i = x_{i+1} - x_i >= 4 và không tồn tại hai cặp rời nhau cùng hiệu.\nMỗi giá trị k >= 4 xuất hiện tối đa 2 lần trong 24 hiệu liên tiếp, suy ra sum(d_i) >= 2 * (4 + 5 + ... + 15) = 228.\nMặt khác, sum(d_i) = x25 - x1 <= 100 - 1 = 99 < 228 (vô lý). Vậy bài toán được chứng minh.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -366,7 +366,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 26 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 26 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x26.\nXét 25 hiệu liên tiếp d_i = x_{i+1} - x_i >= 1. Tổng các hiệu: sum(d_i) = x26 - x1 <= 100 - 1 = 99.\nNếu tất cả 25 hiệu đều >= 4 thì sum(d_i) >= 4 * 25 = 100 > 99 (vô lý!).\nVậy chắc chắn tồn tại ít nhất một hiệu d_i <= 3, tức là có hai số a, b thuộc X sao cho |a - b| thuộc {1, 2, 3}.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -428,7 +428,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 27 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 27 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x27.\nXét 26 hiệu liên tiếp d_i = x_{i+1} - x_i >= 1. Tổng các hiệu: sum(d_i) = x27 - x1 <= 100 - 1 = 99.\nNếu tất cả 26 hiệu đều >= 4 thì sum(d_i) >= 4 * 26 = 104 > 99 (vô lý!).\nVậy chắc chắn tồn tại ít nhất một hiệu d_i <= 3, tức là có hai số a, b thuộc X sao cho |a - b| thuộc {1, 2, 3}.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -490,7 +490,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 28 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 28 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x28.\nXét 27 hiệu liên tiếp d_i = x_{i+1} - x_i >= 1. Tổng các hiệu: sum(d_i) = x28 - x1 <= 100 - 1 = 99.\nNếu tất cả 27 hiệu đều >= 4 thì sum(d_i) >= 4 * 27 = 108 > 99 (vô lý!).\nVậy chắc chắn tồn tại ít nhất một hiệu d_i <= 3, tức là có hai số a, b thuộc X sao cho |a - b| thuộc {1, 2, 3}.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -552,7 +552,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 29 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 29 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x29.\nXét 28 hiệu liên tiếp d_i = x_{i+1} - x_i >= 1. Tổng các hiệu: sum(d_i) = x29 - x1 <= 100 - 1 = 99.\nNếu tất cả 28 hiệu đều >= 4 thì sum(d_i) >= 4 * 28 = 112 > 99 (vô lý!).\nVậy chắc chắn tồn tại ít nhất một hiệu d_i <= 3, tức là có hai số a, b thuộc X sao cho |a - b| thuộc {1, 2, 3}.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -614,7 +614,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 4",
         "points": "2.0 điểm",
         "content": "Cho tập hợp $X$ gồm 30 số nguyên dương phân biệt không vượt quá 100. Chứng minh rằng luôn chọn được ít nhất hai số $a, b \\in X$ sao cho $|a - b| \\in \\{1, 2, 3\\}$ hoặc luôn tồn tại hai cặp số rời nhau có cùng hiệu.",
-        "solution": "Áp dụng nguyên lý Dirichlet:\nSắp xếp tập X theo thứ tự tăng dần: x1 < x2 < ... < xn (n = 20 + idx).\nXét n - 1 hiệu liên tiếp: d_i = x_{i+1} - x_i >= 1.\nTổng các hiệu: sum(d_i) = x_n - x_1 <= 100 - 1 = 99.\nNếu tất cả các hiệu d_i đều >= 4 thì sum(d_i) >= 4 * (n - 1) >= 4 * 20 = 80.\nBằng phương pháp phản chứng kết hợp nguyên lý ngăn kéo Dirichlet, suy ra luôn tồn tại ít nhất một hiệu d_i <= 3, tức là |a - b| thuộc {1, 2, 3}.",
+        "solution": "Áp dụng nguyên lý Dirichlet (chứng minh phản chứng):\nSắp xếp tập X (n = 30 phần tử) theo thứ tự tăng dần: x1 < x2 < ... < x30.\nXét 29 hiệu liên tiếp d_i = x_{i+1} - x_i >= 1. Tổng các hiệu: sum(d_i) = x30 - x1 <= 100 - 1 = 99.\nNếu tất cả 29 hiệu đều >= 4 thì sum(d_i) >= 4 * 29 = 116 > 99 (vô lý!).\nVậy chắc chắn tồn tại ít nhất một hiệu d_i <= 3, tức là có hai số a, b thuộc X sao cho |a - b| thuộc {1, 2, 3}.",
         "keyFormulasOrHints": [
           "Nguyên lý Dirichlet",
           "Đánh giá tổng các hiệu liên tiếp"
@@ -676,7 +676,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 4 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 4) = 210. Biến cố đối A': không có quả đỏ nào (cả 4 quả toàn xanh) => n(A') = C(6, 4) = 15. Vậy P(A) = 1 - 15/210 = 13/14.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -739,7 +739,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 3 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 3) = 120. Biến cố đối A': không có quả đỏ nào (cả 3 quả toàn xanh) => n(A') = C(6, 3) = 20. Vậy P(A) = 1 - 20/120 = 5/6.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -802,7 +802,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 4 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 4) = 210. Biến cố đối A': không có quả đỏ nào (cả 4 quả toàn xanh) => n(A') = C(6, 4) = 15. Vậy P(A) = 1 - 15/210 = 13/14.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -865,7 +865,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 3 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 3) = 120. Biến cố đối A': không có quả đỏ nào (cả 3 quả toàn xanh) => n(A') = C(6, 3) = 20. Vậy P(A) = 1 - 20/120 = 5/6.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -928,7 +928,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 4 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 4) = 210. Biến cố đối A': không có quả đỏ nào (cả 4 quả toàn xanh) => n(A') = C(6, 4) = 15. Vậy P(A) = 1 - 15/210 = 13/14.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -991,7 +991,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 3 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 3) = 120. Biến cố đối A': không có quả đỏ nào (cả 3 quả toàn xanh) => n(A') = C(6, 3) = 20. Vậy P(A) = 1 - 20/120 = 5/6.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -1054,7 +1054,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 4 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 4) = 210. Biến cố đối A': không có quả đỏ nào (cả 4 quả toàn xanh) => n(A') = C(6, 4) = 15. Vậy P(A) = 1 - 15/210 = 13/14.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -1117,7 +1117,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 3 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 3) = 120. Biến cố đối A': không có quả đỏ nào (cả 3 quả toàn xanh) => n(A') = C(6, 3) = 20. Vậy P(A) = 1 - 20/120 = 5/6.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -1180,7 +1180,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 4 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 4) = 210. Biến cố đối A': không có quả đỏ nào (cả 4 quả toàn xanh) => n(A') = C(6, 4) = 15. Vậy P(A) = 1 - 15/210 = 13/14.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -1243,7 +1243,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Câu 4",
         "points": "2.5 điểm",
         "content": "a) Cho hình chóp $S.ABCD$ có đáy hình vuông cạnh $a$, cạnh bên $SA \\perp (ABCD)$ và $SA = a\\sqrt{3}$. Tính thể tích khối chóp $S.ABCD$ và khoảng cách từ $A$ đến mặt phẳng $(SBD)$.\nb) Một hộp chứa 6 quả cầu xanh và 4 quả cầu đỏ. Chọn ngẫu nhiên 3 quả cầu. Tính xác suất chọn được ít nhất 1 quả cầu đỏ.",
-        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, k). Biến cố đối A': không có quả đỏ nào (toàn xanh) => n(A') = C(6, k). P(A) = 1 - n(A')/n(Omega).",
+        "solution": "a) V = (1/3)*S_day*SA = (1/3)*a^2 * a*sqrt(3) = a^3 * sqrt(3) / 3.\nKhoảng cách: 1/h^2 = 1/SA^2 + 1/AB^2 + 1/AD^2 = 1/(3a^2) + 1/a^2 + 1/a^2 = 7/(3a^2) => d = a*sqrt(21)/7.\nb) Số cách chọn n(Omega) = C(10, 3) = 120. Biến cố đối A': không có quả đỏ nào (cả 3 quả toàn xanh) => n(A') = C(6, 3) = 20. Vậy P(A) = 1 - 20/120 = 5/6.",
         "keyFormulasOrHints": [
           "V = (1/3)*B*h",
           "1/h^2 = 1/a^2 + 1/b^2 + 1/c^2",
@@ -1276,7 +1276,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 2 Ohm, R4 = 3 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",
@@ -1339,7 +1339,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 4 Ohm, R4 = 6 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 4/6 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",
@@ -1402,7 +1402,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 6 Ohm, R4 = 9 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 6/9 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",
@@ -1465,7 +1465,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 8 Ohm, R4 = 12 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 8/12 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",
@@ -1528,7 +1528,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 10 Ohm, R4 = 15 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 10/15 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",
@@ -1591,7 +1591,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 12 Ohm, R4 = 18 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 12/18 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",
@@ -1654,7 +1654,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 14 Ohm, R4 = 21 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 14/21 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",
@@ -1717,7 +1717,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 16 Ohm, R4 = 24 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 16/24 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",
@@ -1780,7 +1780,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 18 Ohm, R4 = 27 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 18/27 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",
@@ -1843,7 +1843,7 @@ export const EXAM_PAPERS: ExamPaper[] = [
         "number": "Bài 1",
         "points": "2.5 điểm",
         "content": "Cho mạch cầu Wheatstone ABCD như hình vẽ. Các điện trở R1 = 4 Ohm, R2 = 6 Ohm, R3 = 20 Ohm, R4 = 30 Ohm. Nguồn điện có hiệu điện thế không đổi U = 24 V. Điện kế G mắc giữa C và D có điện trở Rg = 10 Ohm.\na) Chứng minh mạch cầu ở trạng thái cân bằng. Tính dòng điện qua điện kế G.\nb) Thay điện kế G bằng một tụ điện có điện dung C = 5 microFarad. Tính điện tích và năng lượng điện trường của tụ điện khi mạch đã ổn định.",
-        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây 4/6 = 2/3 và (2*idx)/(3*idx) = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
+        "solution": "a) Điều kiện cân bằng mạch cầu: R1/R2 = R3/R4. Ở đây R1/R2 = 4/6 = 2/3 và R3/R4 = 20/30 = 2/3. Do đó mạch cầu hoàn toàn cân bằng, U_CD = 0 V => Dòng điện qua điện kế G bằng không: Ig = 0 A.\nb) Khi thay G bằng tụ điện C: Do mạch cầu cân bằng nên U_C = 0 V => Điện tích tụ điện q = C * U_C = 0 C. Năng lượng điện trường W = 0.5 * C * U^2 = 0 J.",
         "keyFormulasOrHints": [
           "Cân bằng: R1 * R4 = R2 * R3",
           "q = C * U",

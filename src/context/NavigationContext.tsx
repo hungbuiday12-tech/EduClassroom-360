@@ -79,6 +79,8 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
         : isEn ? 'Exams' : 'Đề thi';
     case 'arena':
       return isEn ? 'Weekly Arena' : 'Thi đấu & BXH';
+    case 'forum':
+      return isEn ? 'Study Forum' : 'Diễn đàn học tập';
     default:
       return isEn ? 'Classroom' : 'Lớp học';
   }

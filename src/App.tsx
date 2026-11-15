@@ -10,6 +10,7 @@ import { CodeJudgeLab } from './components/cs/CodeJudgeLab';
 import { ExamHub } from './components/exams/ExamHub';
 import { LearningRoadmap } from './components/roadmap/LearningRoadmap';
 import { ArenaHub } from './components/arena/ArenaHub';
+import { StudyForum } from './components/forum/StudyForum';
 import { SocraticAITutor } from './components/tutor/SocraticAITutor';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
@@ -293,6 +294,10 @@ function MainApp() {
                     onOpenTutor={handleOpenTutor}
                   />
                 )}
+
+                {currentSubject === 'forum' && (
+                  <StudyForum onBack={goBack} />
+                )}
               </motion.div>
             </AnimatePresence>
           </main>
@@ -414,6 +419,12 @@ function MainApp() {
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-amber-600 dark:text-amber-400 font-semibold cursor-pointer"
                 >
                   {isEn ? 'Weekly Arena' : 'Thi Đấu & BXH Tuần'}
+                </button>
+                <button
+                  onClick={() => selectSubject('forum')}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-sky-600 dark:text-sky-400 font-semibold cursor-pointer"
+                >
+                  {isEn ? 'Study Forum' : 'Diễn đàn học tập'}
                 </button>
                 <button
                   onClick={() => setIsSettingsOpen(true)}

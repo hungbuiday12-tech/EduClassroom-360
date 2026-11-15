@@ -45,6 +45,8 @@ interface MathLecturesProps {
 
 const get3DModeLabel = (mode?: Math3DMode): string => {
   switch (mode) {
+    case 'circle_theorems_3d':
+      return 'Đường Tròn & Hình Nón Tiếp Tuyến 3D';
     case 'conic_sections_3d':
       return 'Mặt Nón Conic 3D';
     case 'line_plane_oxyz':

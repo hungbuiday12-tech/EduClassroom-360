@@ -17,10 +17,19 @@ import {
   Trophy,
   GitBranch,
   Settings,
-  FileText
+  FileText,
+  Star,
+  Bell,
+  Volume2,
+  VolumeX,
+  PanelBottomOpen
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useNavigation } from '../context/NavigationContext';
+import { useFocusTimer, STUDY_FORMAT_PRESETS } from '../context/FocusTimerContext';
+import { useAudio } from '../context/AudioContext';
+import { BELL_SOUND_OPTIONS } from '../lib/soundEngine';
 import { EXAM_PAPERS } from '../data/examData';
 import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
@@ -42,6 +51,30 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 }) => {
   const { user, openAuthModal } = useAuth();
   const { t, language } = useLanguage();
+  const { reviewScrollTick, requestScrollToReviews } = useNavigation();
+  const {
+    studyFormat,
+    setStudyFormat,
+    phase,
+    switchPhase,
+    timeLeft,
+    totalDuration,
+    isRunning: isTimerRunning,
+    startPause: toggleTimer,
+    resetTimer,
+    completedSessions,
+    alarmRinging,
+    dismissAlarm,
+    setIsWidgetOpen,
+  } = useFocusTimer();
+  const {
+    bellSound,
+    setBellSound,
+    playBell,
+    isBgPlaying,
+    toggleBgPlaying,
+    bgSound,
+  } = useAudio();
   const isEn = language === 'en';
 
   const currentXP = user ? user.xp : xp;
@@ -52,9 +85,16 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   const standardExams = EXAM_PAPERS.filter((e) => e.track === 'khong_chuyen').length;
   const totalLessons = MATH_LECTURES.length + PHYSICS_LESSONS.length + CS_LESSONS.length;
 
-  // Pomodoro Timer State
-  const [pomodoroSeconds, setPomodoroSeconds] = useState<number>(25 * 60);
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  useEffect(() => {
+    if (reviewScrollTick === 0) return;
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById('platform-reviews');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 90);
+    return () => window.clearTimeout(timer);
+  }, [reviewScrollTick]);
 
   // Quick Notes State
   const [notes, setNotes] = useState<{ id: string; text: string; date: string }[]>(() => {
@@ -80,24 +120,6 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   });
 
   const [newNoteText, setNewNoteText] = useState('');
-
-  useEffect(() => {
-    let interval: any = null;
-    if (isTimerRunning && pomodoroSeconds > 0) {
-      interval = setInterval(() => {
-        setPomodoroSeconds((prev) => prev - 1);
-      }, 1000);
-    } else if (pomodoroSeconds === 0) {
-      setIsTimerRunning(false);
-    }
-    return () => clearInterval(interval);
-  }, [isTimerRunning, pomodoroSeconds]);
-
-  const toggleTimer = () => setIsTimerRunning(!isTimerRunning);
-  const resetTimer = () => {
-    setIsTimerRunning(false);
-    setPomodoroSeconds(25 * 60);
-  };
 
   const formatTimer = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -257,6 +279,14 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 <FileText className="w-3.5 h-3.5 text-indigo-300" />
                 <span>{isEn ? 'Exam Bank' : 'Kho Đề Thi'}</span>
               </button>
+              <button
+                type="button"
+                onClick={requestScrollToReviews}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400/25 to-rose-400/20 hover:from-amber-400/35 hover:to-rose-400/30 border border-amber-300/45 text-amber-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Star className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                <span>{isEn ? 'Ratings & Votes' : 'Đánh giá & Bình chọn'}</span>
+              </button>
             </div>
 
             {/* Clean Inline Key Metrics Bar */}
@@ -408,12 +438,12 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* MATH CARD: Flowing Harmonic Wave + Orbital Geometry */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+          {/* MATH CARD: Asymmetric Sculpted Bento Span (5 cols) */}
           <div
             data-ripple="true"
             onClick={() => onNavigate('math')}
-            className="group relative overflow-hidden bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/80 dark:border-sky-500/25 hover:border-sky-500 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 shadow-[0_12px_32px_-14px_rgba(14,165,233,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(14,165,233,0.32)] transition-all cursor-pointer flex flex-col justify-between gap-6"
+            className="md:col-span-5 group relative overflow-hidden bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/80 dark:border-sky-500/30 hover:border-sky-500 hover:-translate-y-0.5 rounded-[1.75rem] rounded-tr-[3.25rem] p-6 sm:p-7 shadow-[0_14px_34px_-14px_rgba(14,165,233,0.22)] hover:shadow-[0_24px_50px_-16px_rgba(14,165,233,0.36)] transition-all cursor-pointer flex flex-col justify-between gap-6"
           >
             {/* Math Custom Animated Wave & Coordinate Grid */}
             <svg
@@ -475,11 +505,11 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </div>
           </div>
 
-          {/* PHYSICS CARD: Animated Flowing Electric Current & Circuit Sparks */}
+          {/* PHYSICS CARD: Sculpted Bento Span (4 cols) */}
           <div
             data-ripple="true"
             onClick={() => onNavigate('physics')}
-            className="group relative overflow-hidden bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-amber-300/80 dark:border-amber-500/25 hover:border-amber-400 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 shadow-[0_12px_32px_-14px_rgba(245,158,11,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(245,158,11,0.32)] transition-all cursor-pointer flex flex-col justify-between gap-6"
+            className="md:col-span-4 group relative overflow-hidden bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-amber-300/80 dark:border-amber-500/30 hover:border-amber-400 hover:-translate-y-0.5 rounded-[1.75rem] rounded-tl-[3.25rem] p-6 sm:p-7 shadow-[0_14px_34px_-14px_rgba(245,158,11,0.22)] hover:shadow-[0_24px_50px_-16px_rgba(245,158,11,0.36)] transition-all cursor-pointer flex flex-col justify-between gap-6"
           >
             {/* Physics Custom Animated Electric Current SVG Circuit */}
             <svg
@@ -526,8 +556,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isEn
-                  ? '10 2D labs & 11 real-time 60 FPS 3D simulations: pendulums, circular motion, RLC AC phasors, Young wave interference.'
-                  : 'Phòng Lab 2D & 11 mô phỏng 3D 60 FPS: Dòng điện Ôm, con lắc, chuyển động tròn, mạch RLC Fresnel, giao thoa Y-âng.'}
+                  ? '19 2D labs & 14 real-time 60 FPS 3D simulations: standing waves, Doppler cones, photoelectric tube, RLC phasors, Young fringes.'
+                  : '19 Lab 2D & 14 mô phỏng 3D 60 FPS: Sóng dừng, hiệu ứng Doppler, ống quang điện, mạch RLC Fresnel, giao thoa Y-âng.'}
               </p>
             </div>
 
@@ -547,11 +577,11 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </div>
           </div>
 
-          {/* CS CARD: Animated Code Data Sweep & Algorithmic Graph Nodes */}
+          {/* CS CARD: Sculpted Bento Span (3 cols) */}
           <div
             data-ripple="true"
             onClick={() => onNavigate('cs')}
-            className="group relative overflow-hidden bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-emerald-300/80 dark:border-emerald-500/25 hover:border-emerald-500 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 shadow-[0_12px_32px_-14px_rgba(16,185,129,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(16,185,129,0.32)] transition-all cursor-pointer flex flex-col justify-between gap-6"
+            className="md:col-span-3 group relative overflow-hidden bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-emerald-300/80 dark:border-emerald-500/30 hover:border-emerald-500 hover:-translate-y-0.5 rounded-[1.75rem] rounded-br-[3.25rem] p-6 sm:p-7 shadow-[0_14px_34px_-14px_rgba(16,185,129,0.22)] hover:shadow-[0_24px_50px_-16px_rgba(16,185,129,0.36)] transition-all cursor-pointer flex flex-col justify-between gap-6"
           >
             {/* CS Custom Animated Code Stream + Dijkstra Graph Edge Pulse */}
             <svg
@@ -912,23 +942,82 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </button>
       </section>
 
-      {/* SECTION 5: Classroom Focus Utilities (Circular SVG Pomodoro & Quick Notebook) */}
+      {/* SECTION 5: Classroom Focus Utilities (Synced Study-Format Pomodoro + Bells + Quick Notebook) */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Pomodoro Focus Timer with SVG Circular Progress Ring */}
-        <div className="lg:col-span-5 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-7 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
+        {/* Focus Timer synced with Bottom-Left Floating Widget */}
+        <div className="lg:col-span-5 bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-indigo-200/80 dark:border-indigo-500/25 rounded-[2rem] p-6 sm:p-7 shadow-xs flex flex-col justify-between space-y-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Clock className="w-4 h-4 text-indigo-500" />
-                {isEn ? 'Study Focus Timer (Pomodoro)' : 'Đồng hồ tập trung (Pomodoro)'}
+                {isEn ? 'Focus Timer & Study Formats' : 'Đồng hồ tập trung & Hình thức học'}
               </h3>
-              <span className="text-xs text-slate-400 font-mono">
-                {isEn ? '25m' : '25 phút'}
+              <button
+                type="button"
+                onClick={() => setIsWidgetOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/70 dark:border-indigo-700/60 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 cursor-pointer"
+                title={isEn ? 'Open corner mini widget' : 'Mở khung bấm giờ góc trái'}
+              >
+                <PanelBottomOpen className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Mini Corner' : 'Góc trái'}</span>
+              </button>
+            </div>
+
+            {/* Study Format Selector Grid */}
+            <div className="grid grid-cols-3 gap-1.5">
+              {STUDY_FORMAT_PRESETS.map((preset) => {
+                const active = studyFormat === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => setStudyFormat(preset.id)}
+                    className={`px-2 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer truncate ${
+                      active
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/70 dark:border-white/10 hover:border-indigo-400'
+                    }`}
+                  >
+                    {isEn ? preset.labelEn : preset.labelVi}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Phase Switch + Sessions Count */}
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => switchPhase('focus')}
+                  className={`px-2.5 py-1 rounded-md font-bold cursor-pointer ${
+                    phase === 'focus'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {isEn ? 'Focus' : 'Tập trung'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchPhase('break')}
+                  className={`px-2.5 py-1 rounded-md font-bold cursor-pointer ${
+                    phase === 'break'
+                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-300 shadow-xs'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {isEn ? 'Break' : 'Nghỉ ngơi'}
+                </button>
+              </div>
+              <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                {completedSessions} {isEn ? 'done' : 'phiên'}
               </span>
             </div>
 
-            <div className="flex flex-col items-center justify-center py-3">
-              <div className="relative w-44 h-44 flex items-center justify-center">
+            {/* SVG Circular Ring */}
+            <div className="flex flex-col items-center justify-center py-1">
+              <div className="relative w-40 h-40 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 140 140" aria-hidden="true">
                   <circle
                     cx="70"
@@ -944,42 +1033,97 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                     cy="70"
                     r="58"
                     fill="none"
-                    stroke={isTimerRunning ? '#f59e0b' : '#6366f1'}
+                    stroke={phase === 'break' ? '#10b981' : isTimerRunning ? '#f59e0b' : '#6366f1'}
                     strokeWidth="8"
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 58}
-                    strokeDashoffset={(2 * Math.PI * 58) * (1 - pomodoroSeconds / (25 * 60))}
+                    strokeDashoffset={(2 * Math.PI * 58) * (1 - timeLeft / Math.max(1, totalDuration))}
                     className="transition-[stroke-dashoffset,stroke] duration-500 ease-out"
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">
-                    {formatTimer(pomodoroSeconds)}
+                  <div className="font-display text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">
+                    {formatTimer(timeLeft)}
                   </div>
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mt-1">
-                    {isTimerRunning
+                    {alarmRinging
                       ? isEn
+                        ? 'Bell Ringing!'
+                        : 'Đổ chuông!'
+                      : isTimerRunning
+                      ? phase === 'break'
+                        ? isEn
+                          ? 'Break Time'
+                          : 'Đang nghỉ'
+                        : isEn
                         ? 'Focusing'
-                        : 'Đang tập trung'
+                        : 'Đang học'
                       : isEn
                       ? 'Ready'
                       : 'Sẵn sàng'}
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center">
-                {isTimerRunning
-                  ? isEn
-                    ? 'Focus session in progress'
-                    : 'Đang trong phiên tập trung làm bài'
-                  : isEn
-                  ? 'Ready to start studying'
-                  : 'Sẵn sàng bắt đầu buổi học'}
-              </p>
+            </div>
+
+            {/* Bell & Ambient Sound Strip */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-white/10 text-xs">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Bell className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <select
+                  value={bellSound}
+                  onChange={(e) => {
+                    const nextId = e.target.value as typeof bellSound;
+                    setBellSound(nextId);
+                    playBell(nextId);
+                  }}
+                  className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer truncate max-w-[140px]"
+                  aria-label={isEn ? 'Alarm bell sound' : 'Chọn chuông báo'}
+                >
+                  {BELL_SOUND_OPTIONS.map((b) => (
+                    <option key={b.id} value={b.id} className="bg-white dark:bg-slate-900">
+                      {isEn ? b.labelEn : b.labelVi}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => playBell()}
+                  className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold cursor-pointer"
+                >
+                  {isEn ? 'Test' : 'Thử'}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={toggleBgPlaying}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                  isBgPlaying && bgSound !== 'off'
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-slate-200/70 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                {isBgPlaying && bgSound !== 'off' ? (
+                  <Volume2 className="w-3.5 h-3.5" />
+                ) : (
+                  <VolumeX className="w-3.5 h-3.5" />
+                )}
+                <span>{isEn ? 'Ambient' : 'Nhạc nền'}</span>
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-3 pt-4 border-t border-slate-200/70 dark:border-white/10">
+          <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-200/70 dark:border-white/10">
+            {alarmRinging && (
+              <button
+                type="button"
+                onClick={dismissAlarm}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer"
+              >
+                {isEn ? 'Stop Bell' : 'Tắt chuông'}
+              </button>
+            )}
             <button
               onClick={toggleTimer}
               className={`px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white flex items-center gap-2 transition-colors cursor-pointer ${
@@ -1000,7 +1144,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <button
               onClick={resetTimer}
               className="p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
-              title={isEn ? 'Reset 25 min' : 'Đặt lại 25 phút'}
+              title={isEn ? 'Reset Timer' : 'Đặt lại đồng hồ'}
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -1008,7 +1152,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </div>
 
         {/* Quick Classroom Notes */}
-        <div className="lg:col-span-7 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-7 shadow-xs flex flex-col">
+        <div className="lg:col-span-7 bg-white/82 dark:bg-slate-900/74 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 rounded-[2rem] p-6 sm:p-7 shadow-xs flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-indigo-500" />
@@ -1041,7 +1185,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </button>
           </div>
 
-          <div className="space-y-2 overflow-y-auto max-h-48 pr-1">
+          <div className="space-y-2 overflow-y-auto max-h-56 pr-1">
             {notes.map((n) => (
               <div
                 key={n.id}
@@ -1064,7 +1208,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       </section>
 
       {/* SECTION 6: Community Reviews, Star Ratings & Favorite Votes */}
-      <PlatformReviews />
+      <PlatformReviews id="platform-reviews" />
     </div>
   );
 };

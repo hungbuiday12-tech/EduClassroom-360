@@ -30,7 +30,11 @@ import {
   Moon,
   Wand2,
   Check,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
+import { useAudio } from '../../context/AudioContext';
+import { PlatformReviews } from '../common/PlatformReviews';
 
 import { EXAM_PAPERS } from '../../data/examData';
 import { MATH_LECTURES } from '../../data/curriculumData';
@@ -58,7 +62,15 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     sendResetPasswordMail,
   } = useAuth();
   const { language, toggleLanguage } = useLanguage();
+  const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
   const isEn = language === 'en';
+
+  const scrollToVisitorReviews = () => {
+    const el = document.getElementById('visitor-platform-reviews');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   // Auth Card Modes on Landing: 'login' | 'register' | 'forgot'
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
@@ -121,20 +133,20 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       label: isEn ? 'Math 2D & 3D' : 'Toán 2D & 3D',
       badge: isEn ? `${MATH_LECTURES.length} Grades 9–12 topics` : `${MATH_LECTURES.length} chuyên đề VietJack 9–12`,
       headline: isEn
-        ? 'Oxy Analytic Grapher, Interactive Geometry & 7 Oxyz 3D Scenes'
-        : 'Đồ thị giải tích Oxy, Hình học kéo thả & 7 mô hình Oxyz 3D',
+        ? 'Oxy Analytic Grapher, Circle Geometry & 8 Oxyz 3D Scenes'
+        : 'Đồ thị Oxy, Đường tròn Tương tác & 8 mô hình Oxyz 3D',
       summary: isEn
-        ? 'Plot polynomials, rationals, exponentials, logarithms, absolute values and shade definite integrals; explore circumscribed circles, tangents, ellipses in 2D alongside Conic sections, solids of revolution and 3D Oxyz lines.'
-        : 'Khảo sát hàm đa thức, phân thức, mũ – lôgarit, trị tuyệt đối và tô miền tích phân xác định trực tiếp; tương tác hình tròn ngoại tiếp, tiếp tuyến, elip 2D cùng mặt nón Conic, đĩa tròn xoay và đường thẳng Oxyz 3D.',
+        ? 'Plot polynomials, rationals, exponentials, logarithms, and integrals; explore circle chords, tangents, Power of a Point and ellipses in 2D alongside sphere tangent cones, Conic sections and Oxyz lines.'
+        : 'Khảo sát hàm đa thức, phân thức, mũ – lôgarit, tích phân; tương tác dây cung, góc nội tiếp, hai tiếp tuyến, phương tích đường tròn 2D cùng nón tiếp tuyến mặt cầu và Oxyz 3D.',
       highlights: isEn
         ? [
             'Visualize definite integral shaded area ∫ f(x)dx',
-            '7 interactive 3D scenes: Conic, Oxyz, Pyramids, Revolution Disks',
+            '8 interactive 3D scenes: Circle Spheres, Conic, Oxyz, Pyramids',
             '5-step lectures + 2 MCQs & 1 essay synced with AI roadmap',
           ]
         : [
-            'Tô bóng diện tích tích phân ∫ f(x)dx trực quan',
-            '7 cảnh 3D xoay tự do: Conic, Oxyz, Thiết diện chóp, Đĩa tích phân',
+            'Tô bóng diện tích tích phân ∫ f(x)dx & Hình học Đường tròn',
+            '8 cảnh 3D xoay tự do: Tiếp tuyến cầu, Conic, Oxyz, Thiết diện chóp',
             'Bài giảng 5 bước + 2 TN & 1 TL tự lưu phân tích lộ trình AI',
           ],
       accentClass: 'text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/10',
@@ -142,22 +154,22 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     physics: {
       label: isEn ? 'Physics 2D & 3D' : 'Vật Lí 2D & 3D',
       badge: isEn
-        ? `${PHYSICS_LESSONS.length} lessons · 10 2D Labs & 11 3D models`
-        : `${PHYSICS_LESSONS.length} bài giảng · 10 Lab 2D & 11 mô hình 3D`,
+        ? `${PHYSICS_LESSONS.length} lessons · 19 2D Labs & 14 3D models`
+        : `${PHYSICS_LESSONS.length} bài giảng · 19 Lab 2D & 14 mô hình 3D`,
       headline: isEn
         ? 'Real-time 60 FPS Physics Laboratory for Grades 9 to 12'
         : 'Phòng thí nghiệm Vật lí thời gian thực 60 FPS từ Lớp 9 đến 12',
       summary: isEn
-        ? 'Adjust mass, spring constant, wavelength, RLC series circuits or angular velocity across 2D canvases and 3D simulations to observe Fresnel phasor diagrams and Young double-slit interference.'
-        : 'Điều chỉnh tự do tham số khối lượng, lò xo, bước sóng ánh sáng, mạch RLC nối tiếp hoặc tốc độ góc trên cả mặt phẳng 2D và không gian 3D tương tác để quan sát giản đồ Fresnel và vân giao thoa Y-âng.',
+        ? 'Adjust standing waves, Doppler sound speed, photoelectric wavelengths, RLC circuits or angular velocity across 2D canvases and 3D simulations.'
+        : 'Điều chỉnh tự do tham số sóng dừng, hiệu ứng Doppler, ống quang điện Einstein, mạch RLC nối tiếp hoặc tốc độ góc trên cả mặt phẳng 2D và không gian 3D tương tác.',
       highlights: isEn
         ? [
-            'Uniform circular motion, centripetal force & projectile 2D/3D',
+            'Standing waves, Doppler shock cones & Photoelectric tube 2D/3D',
             'RLC AC circuits, resonance & 3D AC generator',
             'Young double-slit light interference with dynamic λ colors',
           ]
         : [
-            'Chuyển động tròn đều, Lực hướng tâm & Ném xiên 2D/3D',
+            'Sóng dừng, Hiệu ứng Doppler & Ống Quang điện ngoài 2D/3D',
             'Mạch xoay chiều RLC, Cộng hưởng điện & Máy phát 3D',
             'Giao thoa ánh sáng khe Y-âng đổi màu theo bước sóng λ',
           ],
@@ -415,6 +427,29 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               )}
             </div>
 
+            <button
+              type="button"
+              onClick={scrollToVisitorReviews}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-xl border border-amber-300/80 dark:border-amber-400/35 bg-amber-50/90 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer whitespace-nowrap"
+              title={isEn ? 'Scroll to Reviews & Votes' : 'Cuộn xuống Đánh giá & Bình chọn'}
+            >
+              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400 shrink-0" />
+              <span className="hidden md:inline">{isEn ? 'Reviews' : 'Đánh giá & Bình chọn'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleBgPlaying}
+              className={`p-2 rounded-xl border transition-colors cursor-pointer ${
+                isBgPlaying && bgSound !== 'off'
+                  ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
+                  : 'border-slate-200 dark:border-white/15 bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-300'
+              }`}
+              title={isEn ? 'Toggle background music' : 'Bật/tắt âm thanh nền'}
+            >
+              {isBgPlaying && bgSound !== 'off' ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+
             {onToggleTheme && (
               <button
                 onClick={onToggleTheme}
@@ -506,7 +541,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'Math 2D / Oxyz 3D' : 'Toán 2D / Oxyz 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${MATH_LECTURES.length} topics · 7 3D scenes` : `${MATH_LECTURES.length} bài · 7 cảnh 3D`}
+                  {isEn ? `${MATH_LECTURES.length} topics · 8 3D scenes` : `${MATH_LECTURES.length} bài · 8 cảnh 3D`}
                 </p>
               </button>
 
@@ -524,7 +559,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'Physics 2D & 3D' : 'Vật Lý 2D & 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '10 2D Labs · 11 3D models' : '10 Lab 2D · 11 mẫu 3D'}
+                  {isEn ? '19 2D Labs · 14 3D models' : '19 Lab 2D · 14 mẫu 3D'}
                 </p>
               </button>
 
@@ -594,8 +629,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </div>
             </div>
 
-            {/* Quick Guest Enter Action */}
-            <div className="pt-1 flex flex-wrap items-center gap-3 sm:gap-4">
+            {/* Quick Guest Enter Action + Reviews Quick Scroll */}
+            <div className="pt-1 flex flex-wrap items-center gap-3">
               <button
                 onClick={onEnterAsGuest}
                 className="w-full sm:w-auto px-5 sm:px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
@@ -603,6 +638,15 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 <Play className="w-4 h-4 fill-white shrink-0" />
                 <span>{isEn ? 'Enter Classroom Directly (Guest Mode)' : 'Vào Trực Tiếp Lớp Học (Không Cần Đăng Nhập)'}</span>
                 <ChevronRight className="w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              <button
+                type="button"
+                onClick={scrollToVisitorReviews}
+                className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-white/90 dark:bg-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-amber-300/80 dark:border-amber-400/35 text-amber-800 dark:text-amber-200 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              >
+                <Star className="w-4 h-4 text-amber-500 fill-amber-400 shrink-0" />
+                <span>{isEn ? 'Ratings & Votes' : 'Đánh giá & Bình chọn'}</span>
               </button>
 
               <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
@@ -1101,6 +1145,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Community Reviews & Ratings Section on Landing */}
+        <div className="mt-14 sm:mt-16">
+          <PlatformReviews id="visitor-platform-reviews" />
         </div>
       </main>
 

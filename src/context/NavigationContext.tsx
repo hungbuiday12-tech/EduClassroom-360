@@ -112,6 +112,8 @@ interface NavigationContextValue {
   selectSubject: (subject: SubjectType) => void;
   goBack: () => void;
   goClassroom: () => void;
+  reviewScrollTick: number;
+  requestScrollToReviews: () => void;
 }
 
 const NavigationContext = createContext<NavigationContextValue | null>(null);
@@ -119,6 +121,7 @@ const NavigationContext = createContext<NavigationContextValue | null>(null);
 export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [location, setLocation] = useState<NavLocation>(DEFAULT_LOCATION);
   const [historyStack, setHistoryStack] = useState<NavLocation[]>([]);
+  const [reviewScrollTick, setReviewScrollTick] = useState<number>(0);
 
   const locationRef = useRef<NavLocation>(location);
   const stackRef = useRef<NavLocation[]>(historyStack);
@@ -247,6 +250,14 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     navigate({ subject: 'overview', tutorOpen: false });
   }, [navigate]);
 
+  const requestScrollToReviews = useCallback(() => {
+    const prev = locationRef.current;
+    if (prev.subject !== 'overview' || prev.tutorOpen) {
+      navigate({ subject: 'overview', tutorOpen: false });
+    }
+    setReviewScrollTick((n) => n + 1);
+  }, [navigate]);
+
   const previousLocation =
     historyStack.length > 0 ? historyStack[historyStack.length - 1] : null;
   const canGoBack =
@@ -261,7 +272,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         navigate,
         selectSubject,
         goBack,
-        goClassroom
+        goClassroom,
+        reviewScrollTick,
+        requestScrollToReviews
       }}
     >
       {children}

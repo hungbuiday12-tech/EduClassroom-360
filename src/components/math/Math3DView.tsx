@@ -26,7 +26,8 @@ export type Math3DMode =
   | 'revolution_solid'
   | 'conic_sections_3d'
   | 'line_plane_oxyz'
-  | 'integral_disks_3d';
+  | 'integral_disks_3d'
+  | 'circle_theorems_3d';
 
 interface Math3DViewProps {
   initialMode?: Math3DMode;
@@ -80,6 +81,11 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   // Integral Riemann disks 3D mode
   const [diskCount, setDiskCount] = useState(12);
   const [diskFuncType, setDiskFuncType] = useState<'sqrt' | 'linear' | 'parabola'>('sqrt');
+
+  // Circle & Tangent Cone 3D mode
+  const [circleR3D, setCircleR3D] = useState(2.2);
+  const [extDist3D, setExtDist3D] = useState(4.2);
+  const [secOffset3D, setSecOffset3D] = useState(1.1);
 
   // WebGL context safety
   const [contextLost, setContextLost] = useState(false);
@@ -724,6 +730,102 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       axMesh.position.y = 1.8;
       group.add(axMesh);
     }
+
+    // -------------------------------------------------------------
+    // MODE 8: Đường tròn, Tiếp tuyến & Nón Tiếp Tuyến 3D
+    // -------------------------------------------------------------
+    else if (mode === 'circle_theorems_3d') {
+      const R = circleR3D;
+      const om = Math.max(R + 0.35, extDist3D);
+      const center = new THREE.Vector3(0, 2.2, 0);
+
+      // Sphere (O; R)
+      const spGeo = new THREE.SphereGeometry(R, 36, 28);
+      const spMat = new THREE.MeshStandardMaterial({
+        color: 0x0ea5e9,
+        transparent: true,
+        opacity: 0.28,
+        roughness: 0.2,
+        metalness: 0.15
+      });
+      const spMesh = new THREE.Mesh(spGeo, spMat);
+      spMesh.position.copy(center);
+      group.add(spMesh);
+
+      // Equator Great Circle
+      const eqPts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 64; i++) {
+        const th = (i / 64) * Math.PI * 2;
+        eqPts.push(new THREE.Vector3(center.x + R * Math.cos(th), center.y, center.z + R * Math.sin(th)));
+      }
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(eqPts), new THREE.LineBasicMaterial({ color: 0x38bdf8 })));
+
+      // Small circle section plane at y = center.y + secOffset3D
+      const dSec = Math.max(-R + 0.05, Math.min(R - 0.05, secOffset3D));
+      const rSec = Math.sqrt(Math.max(0.01, R * R - dSec * dSec));
+      const secGeo = new THREE.CircleGeometry(rSec, 48);
+      secGeo.rotateX(-Math.PI / 2);
+      const secMesh = new THREE.Mesh(
+        secGeo,
+        new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.42, side: THREE.DoubleSide })
+      );
+      secMesh.position.set(center.x, center.y + dSec, center.z);
+      group.add(secMesh);
+
+      // External Point M on +X axis
+      const MPos = new THREE.Vector3(om, center.y, 0);
+      const mSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.16, 18, 18),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.4 })
+      );
+      mSphere.position.copy(MPos);
+      group.add(mSphere);
+
+      // Center O marker and OM axis
+      const oSphere = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 16), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      oSphere.position.copy(center);
+      group.add(oSphere);
+      group.add(
+        new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([center, MPos]),
+          new THREE.LineBasicMaterial({ color: 0xfacc15 })
+        )
+      );
+
+      // Polar circle of tangency: xH = R^2 / OM, rPolar = R * sqrt(1 - (R/OM)^2)
+      const xH = (R * R) / om;
+      const rPolar = Math.sqrt(Math.max(0.01, R * R - xH * xH));
+      const polarPts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 64; i++) {
+        const th = (i / 64) * Math.PI * 2;
+        polarPts.push(new THREE.Vector3(xH, center.y + rPolar * Math.cos(th), rPolar * Math.sin(th)));
+      }
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(polarPts), new THREE.LineBasicMaterial({ color: 0xf43f5e })));
+
+      // Enveloping tangent cone surface from M to polar tangent circle
+      const coneHeight = om - xH;
+      const coneGeo = new THREE.ConeGeometry(rPolar, coneHeight, 36, 1, true);
+      coneGeo.rotateZ(-Math.PI / 2);
+      const coneMat = new THREE.MeshStandardMaterial({
+        color: 0xa855f7,
+        transparent: true,
+        opacity: 0.2,
+        side: THREE.DoubleSide
+      });
+      const coneMesh = new THREE.Mesh(coneGeo, coneMat);
+      coneMesh.position.set(xH + coneHeight / 2, center.y, 0);
+      group.add(coneMesh);
+
+      // 4 Principal tangent rays & radius perpendiculars OT ⊥ MT
+      [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].forEach((ang) => {
+        const TPos = new THREE.Vector3(xH, center.y + rPolar * Math.cos(ang), rPolar * Math.sin(ang));
+        const tDot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 12), new THREE.MeshBasicMaterial({ color: 0xf43f5e }));
+        tDot.position.copy(TPos);
+        group.add(tDot);
+        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([MPos, TPos]), new THREE.LineBasicMaterial({ color: 0xc084fc })));
+        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([center, TPos]), new THREE.LineBasicMaterial({ color: 0x34d399 })));
+      });
+    }
   }, [
     mode,
     ux,
@@ -744,7 +846,10 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     lineDirZ,
     planeTiltDeg,
     diskCount,
-    diskFuncType
+    diskFuncType,
+    circleR3D,
+    extDist3D,
+    secOffset3D
   ]);
 
   // Derived math calculations for display
@@ -791,6 +896,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
               {mode === 'conic_sections_3d' && 'Ba Đường Conic từ Mặt Nón Đôi 3D (Elip · Parabol · Hypebol)'}
               {mode === 'line_plane_oxyz' && 'Đường Thẳng & Mặt Phẳng Oxyz · Góc & Giao Điểm'}
               {mode === 'integral_disks_3d' && 'Tích Phân Đĩa Trụ Riemann · Thể Tích Tròn Xoay'}
+              {mode === 'circle_theorems_3d' && 'Đường Tròn, Tiếp Tuyến & Nón Tiếp Xúc 3D'}
             </span>
           </div>
 
@@ -799,6 +905,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
             <div className="flex items-center gap-1 p-1 bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-lg overflow-x-auto max-w-full scrollbar-none">
               {[
                 { id: 'oxyz_vector' as Math3DMode, label: 'Vector Oxyz' },
+                { id: 'circle_theorems_3d' as Math3DMode, label: 'Đường Tròn 3D' },
                 { id: 'sphere_plane' as Math3DMode, label: 'Mặt Cầu' },
                 { id: 'pyramid_section' as Math3DMode, label: 'Thiết Diện Chóp' },
                 { id: 'revolution_solid' as Math3DMode, label: 'Khối Tròn Xoay' },
@@ -1286,6 +1393,69 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                     <div className="p-2 bg-slate-950/60 rounded-xl font-mono text-[11px] flex flex-wrap items-center justify-between gap-2 text-emerald-300">
                       <span>Tổng Riemann ({diskCount} đĩa): V ≈ {riemannV.toFixed(2)} đvtt</span>
                       <span className="text-slate-400">Tăng n → ∞ để hội tụ về V = π∫[f(x)]²dx</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Controls for Circle Theorems 3D */}
+              {mode === 'circle_theorems_3d' && (() => {
+                const effOm = Math.max(circleR3D + 0.35, extDist3D);
+                const tangentLen = Math.sqrt(Math.max(0, effOm * effOm - circleR3D * circleR3D));
+                const dSec = Math.max(-circleR3D + 0.05, Math.min(circleR3D - 0.05, secOffset3D));
+                const rSec = Math.sqrt(Math.max(0, circleR3D * circleR3D - dSec * dSec));
+                return (
+                  <div className="space-y-2.5 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-slate-300">Bán kính R:</span>
+                          <span className="font-mono font-bold text-sky-400">{circleR3D.toFixed(1)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1.2"
+                          max="3.4"
+                          step="0.1"
+                          value={circleR3D}
+                          onChange={(e) => setCircleR3D(Number(e.target.value))}
+                          className="w-full accent-sky-500 h-1.5"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-slate-300">Khoảng cách OM:</span>
+                          <span className="font-mono font-bold text-amber-400">{effOm.toFixed(1)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={(circleR3D + 0.4).toFixed(1)}
+                          max="6.5"
+                          step="0.1"
+                          value={effOm}
+                          onChange={(e) => setExtDist3D(Number(e.target.value))}
+                          className="w-full accent-amber-500 h-1.5"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-slate-300">Thiết diện phẳng d:</span>
+                          <span className="font-mono font-bold text-emerald-400">{dSec.toFixed(1)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={(-circleR3D + 0.2).toFixed(1)}
+                          max={(circleR3D - 0.2).toFixed(1)}
+                          step="0.1"
+                          value={dSec}
+                          onChange={(e) => setSecOffset3D(Number(e.target.value))}
+                          className="w-full accent-emerald-500 h-1.5"
+                        />
+                      </div>
+                    </div>
+                    <div className="p-2 bg-slate-950/60 rounded-xl font-mono text-[11px] flex flex-wrap items-center justify-between gap-2 text-slate-200">
+                      <span className="text-purple-300">Tiếp tuyến MT = √(OM² - R²) = {tangentLen.toFixed(2)}</span>
+                      <span className="text-emerald-300">Bán kính thiết diện r = √(R² - d²) = {rSec.toFixed(2)}</span>
                     </div>
                   </div>
                 );

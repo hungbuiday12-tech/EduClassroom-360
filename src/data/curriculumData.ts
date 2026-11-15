@@ -1988,6 +1988,169 @@ const BASE_MATH_LECTURES: MathLecture[] = [
         explanation: 'Viết $4 = \\left(\\frac{1}{2}\\right)^{-2}$. Vì cơ số $\\frac{1}{2} < 1$ nên bất phương trình tương đương $x - 1 < -2 \\iff x < -1$.'
       }
     ]
+  },
+  {
+    id: 'math-9-9',
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 9',
+    title: 'Đường tròn: Dây cung, Khoảng cách & Vị trí tương đối',
+    grade: 'Lớp 9 · Hình học',
+    category: 'Hình học',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 16,
+    description:
+      'Làm chủ tính đối xứng của đường tròn (O; R), liên hệ vuông góc đường kính - dây cung, quan hệ độ dài dây và khoảng cách đến tâm, cùng 5 vị trí tương đối giữa đường thẳng và hai đường tròn.',
+    mnemonics: [
+      'Đường kính vuông góc với dây thì đi qua trung điểm dây; dây lớn hơn thì gần tâm hơn ($AB > CD \\iff OH < OK$).',
+      'Hai đường tròn cắt nhau: hiệu bán kính $< d <$ tổng bán kính; tiếp xúc ngoài $d = R + r$, tiếp xúc trong $d = |R - r|$.'
+    ],
+    commonTraps: [
+      'Nhầm lẫn chiều đảo: đường kính đi qua trung điểm dây chỉ vuông góc với dây KHI dây không đi qua tâm!',
+      'Quên xét trường hợp dây nằm cùng phía hay khác phía đối với tâm O khi tính khoảng cách giữa hai dây song song.'
+    ],
+    theory: [
+      '1. Định nghĩa & Đối xứng: Đường tròn $(O; R)$ là tập hợp các điểm cách $O$ một khoảng $R$. Đường tròn có tâm đối xứng là $O$ và vô số trục đối xứng là các đường thẳng đi qua tâm.',
+      '2. Đường kính và Dây cung: Trong các dây của đường tròn, đường kính là dây lớn nhất ($AB \\le 2R$). Đường kính vuông góc với một dây thì đi qua trung điểm của dây ấy ($OH \\perp AB \\implies HA = HB = \\frac{AB}{2}$).',
+      '3. Liên hệ Dây và Khoảng cách đến tâm: Trong một đường tròn: $AB = CD \\iff OH = OK$; $AB > CD \\iff OH < OK$. Công thức Pythagoras chuẩn: $\\left(\\frac{AB}{2}\\right)^2 + OH^2 = R^2$.',
+      '4. Vị trí tương đối Đường thẳng & Đường tròn ($d = d(O, \\Delta)$): cắt nhau ($d < R$, 2 điểm), tiếp xúc ($d = R$, $\\Delta \\perp OT$ tại tiếp điểm $T$), không giao nhau ($d > R$).',
+      '5. Vị trí tương đối Hai đường tròn $(O_1; R_1)$ và $(O_2; R_2)$ với $d = O_1O_2$: Ngoài nhau ($d > R_1 + R_2$), Tiếp xúc ngoài ($d = R_1 + R_2$), Cắt nhau ($|R_1 - R_2| < d < R_1 + R_2$, khi đó $O_1O_2$ là đường trung trực của dây chung $MN$), Tiếp xúc trong ($d = |R_1 - R_2|$), Đựng nhau ($d < |R_1 - R_2|$).'
+    ],
+    keyFormulas: [
+      'OH \\perp AB \\implies HA = HB = \\frac{AB}{2}, \\quad OH^2 + \\left(\\frac{AB}{2}\\right)^2 = R^2',
+      'AB > CD \\iff OH < OK',
+      '|R_1 - R_2| < O_1O_2 < R_1 + R_2 \\iff (O_1) \\cap (O_2) = \\{M, N\\}, \\; O_1O_2 \\perp MN'
+    ],
+    flashcards: [
+      {
+        front: 'Cho $(O; R = 10\\text{ cm})$ và dây $AB = 16\\text{ cm}$. Khoảng cách từ tâm $O$ đến dây $AB$ bằng bao nhiêu?',
+        back: '$H$ là trung điểm $AB \\implies HB = 8\\text{ cm}$. Theo Pythagoras: $OH = \\sqrt{R^2 - HB^2} = \\sqrt{10^2 - 8^2} = 6\\text{ cm}$.',
+        tip: 'Bộ ba Pythagoras $6 - 8 - 10$ xuất hiện cực kỳ nhiều trong bài toán dây cung!'
+      },
+      {
+        front: 'Hai đường tròn $(O_1; 7\\text{ cm})$ và $(O_2; 3\\text{ cm})$ có $O_1O_2 = 10\\text{ cm}$ ở vị trí nào?',
+        back: 'Vì $O_1O_2 = 10 = 7 + 3 = R_1 + R_2$ nên hai đường tròn tiếp xúc ngoài nhau tại 1 điểm.',
+        tip: 'Tiếp điểm luôn nằm trên đoạn thẳng nối hai tâm $O_1O_2$.'
+      }
+    ],
+    sampleProblems: [
+      {
+        source: 'SGK Toán 9 GDPT · Chương Đường tròn',
+        question:
+          'Cho đường tròn $(O; 13\\text{ cm})$ và dây $AB$ cách tâm $O$ một khoảng $OH = 5\\text{ cm}$. Độ dài dây $AB$ bằng bao nhiêu?',
+        options: ['A. $12\\text{ cm}$', 'B. $24\\text{ cm}$', 'C. $18\\text{ cm}$', 'D. $10\\text{ cm}$'],
+        correctIndex: 1,
+        explanation:
+          'Ta có $HA = \\sqrt{R^2 - OH^2} = \\sqrt{13^2 - 5^2} = 12\\text{ cm}$. Vì $OH \\perp AB$ nên $H$ là trung điểm $AB \\implies AB = 2HA = 24\\text{ cm}$.'
+      },
+      {
+        source: 'Đề Tuyển sinh 10 · Hình học Đường tròn',
+        question:
+          'Hai đường tròn $(O_1; 8\\text{ cm})$ và $(O_2; 5\\text{ cm})$ cắt nhau khi khoảng cách $d = O_1O_2$ thỏa mãn điều kiện nào?',
+        options: ['A. $3 < d < 13$', 'B. $d = 13$', 'C. $d < 3$', 'D. $d > 13$'],
+        correctIndex: 0,
+        explanation:
+          'Điều kiện hai đường tròn cắt nhau là $|R_1 - R_2| < d < R_1 + R_2 \\iff 8 - 5 < d < 8 + 5 \\iff 3 < d < 13$.'
+      }
+    ],
+    essayProblems: [
+      {
+        source: 'VietJack · Toán 9 · Hai dây song song trong đường tròn',
+        question:
+          'Cho đường tròn $(O; 5\\text{ cm})$ có hai dây song song $AB = 8\\text{ cm}$ và $CD = 6\\text{ cm}$. Tính khoảng cách giữa hai dây $AB$ và $CD$.',
+        hints: ['Kẻ $OH \\perp AB$ và $OK \\perp CD$. Xét 2 trường hợp: hai dây nằm cùng phía so với tâm $O$ và hai dây nằm khác phía so với tâm $O$.'],
+        solutionSteps: [
+          'Bước 1: Kẻ $OH \\perp AB$ ($H \\in AB$) và $OK \\perp CD$ ($K \\in CD$). Vì $AB \\parallel CD$ nên $O, H, K$ thẳng hàng.',
+          'Bước 2: Tính khoảng cách đến tâm: $OH = \\sqrt{5^2 - 4^2} = 3\\text{ cm}$; $OK = \\sqrt{5^2 - 3^2} = 4\\text{ cm}$.',
+          'Bước 3: TH1 (cùng phía tâm $O$): $HK = |OK - OH| = 4 - 3 = 1\\text{ cm}$. TH2 (khác phía tâm $O$): $HK = OK + OH = 4 + 3 = 7\\text{ cm}$.'
+        ],
+        finalAnswer: 'Khoảng cách giữa hai dây là $1\\text{ cm}$ (cùng phía) hoặc $7\\text{ cm}$ (khác phía).'
+      }
+    ],
+    sim2dMode: 'geometry',
+    sim3dMode: 'circle_theorems_3d'
+  },
+  {
+    id: 'math-9-10',
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 9',
+    title: 'Các góc với Đường tròn, Hai Tiếp tuyến & Đoạn thẳng liên quan',
+    grade: 'Lớp 9 · Hình học',
+    category: 'Hình học',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 18,
+    description:
+      'Tổng hợp toàn bộ quan hệ góc và đoạn thẳng gắn với đường tròn: góc ở tâm, góc nội tiếp, góc tạo bởi tiếp tuyến và dây cung, tính chất hai tiếp tuyến cắt nhau ($MA = MB$) và hệ thức cát tuyến - tiếp tuyến ($MA\\cdot MB = MT^2$).',
+    mnemonics: [
+      'Góc ở tâm $= \\text{sđ}$ cung; Góc nội tiếp = Góc tiếp tuyến & dây cung $= \\frac{1}{2}\\text{sđ}$ cung bị chắn.',
+      'Hai tiếp tuyến cắt nhau tại $M$: $MA = MB$, $MO$ phân giác $\\angle AMB$, $OM$ trung trực $AB$.'
+    ],
+    commonTraps: [
+      'Quên trường hợp góc nội tiếp có cạnh là đường kính thì góc bằng $90^\\circ$ để tạo tam giác vuông nhanh.',
+      'Nhầm hệ thức cát tuyến $MA \\cdot MB = MC \\cdot MD$: đoạn tính từ giao điểm $M$, KHÔNG phải đoạn dây $AB$.'
+    ],
+    theory: [
+      '1. Các góc với đường tròn: Góc ở tâm $\\angle AOB = \\text{sđ}\\wideparen{AB}$. Góc nội tiếp $\\angle ACB = \\frac{1}{2}\\text{sđ}\\wideparen{AB} = \\frac{1}{2}\\angle AOB$. Góc tạo bởi tia tiếp tuyến $Ax$ và dây cung $AB$: $\\angle xAB = \\frac{1}{2}\\text{sđ}\\wideparen{AB}$ (cùng bằng góc nội tiếp chắn cung $AB$).',
+      '2. Tính chất hai tiếp tuyến cắt nhau: Từ điểm $M$ ngoài $(O)$ kẻ hai tiếp tuyến $MA, MB$ ($A, B$ là tiếp điểm) thì $MA = MB = \\sqrt{OM^2 - R^2}$, $MO$ là phân giác $\\angle AMB$, $OM$ là phân giác $\\angle AOB$ và $OM \\perp AB$ tại trung điểm $H$ với $OH \\cdot OM = R^2$.',
+      '3. Hệ thức đoạn thẳng (Cát tuyến & Tiếp tuyến): Nếu cát tuyến qua $M$ cắt $(O)$ tại $A, B$ và tiếp tuyến $MT$ thì $\\triangle MTA \\sim \\triangle MBT \\implies MT^2 = MA \\cdot MB = MO^2 - R^2$. Nếu hai dây $AB, CD$ cắt nhau tại $I$ bên trong đường tròn thì $IA \\cdot IB = IC \\cdot ID$.',
+      '4. Tứ giác nội tiếp: Tổng hai góc đối bằng $180^\\circ$, hoặc hai đỉnh kề nhau cùng nhìn một cạnh dưới hai góc bằng nhau.'
+    ],
+    keyFormulas: [
+      '\\angle ACB = \\angle xAB = \\frac{1}{2}\\angle AOB = \\frac{1}{2}\\text{sđ}\\wideparen{AB}',
+      'MA = MB = \\sqrt{OM^2 - R^2}, \\quad OH \\cdot OM = R^2, \\quad HA^2 = HO \\cdot HM',
+      'MT^2 = MA \\cdot MB = MC \\cdot MD = MO^2 - R^2'
+    ],
+    flashcards: [
+      {
+        front: 'Cho điểm $M$ cách tâm $O$ của $(O; R = 6\\text{ cm})$ một khoảng $OM = 10\\text{ cm}$. Độ dài đoạn tiếp tuyến $MA$ là?',
+        back: 'Do $OA \\perp MA$ tại $A$, theo Pythagoras: $MA = \\sqrt{OM^2 - OA^2} = \\sqrt{10^2 - 6^2} = 8\\text{ cm}$.',
+        tip: 'Luôn khai thác tam giác vuông $OAM$ vuông tại tiếp điểm $A$!'
+      },
+      {
+        front: 'Gọi $H$ là giao điểm của $OM$ và dây nối hai tiếp điểm $AB$. Hệ thức lượng nào liên hệ $OH, OM, R$?',
+        back: 'Trong $\\triangle OAM$ vuông tại $A$ có đường cao $AH$: $OA^2 = OH \\cdot OM \\implies OH \\cdot OM = R^2$.',
+        tip: 'Đây là cầu nối kinh điển để chứng minh 4 điểm cùng thuộc đường tròn hoặc tích không đổi.'
+      }
+    ],
+    sampleProblems: [
+      {
+        source: 'Đề Tuyển sinh 10 · Hai tiếp tuyến cắt nhau',
+        question:
+          'Từ điểm $M$ nằm ngoài $(O; 5\\text{ cm})$ sao cho $OM = 13\\text{ cm}$, kẻ hai tiếp tuyến $MA, MB$. Tính độ dài đoạn nối hai tiếp điểm $AB$.',
+        options: ['A. $\\frac{120}{13}\\text{ cm}$', 'B. $\\frac{60}{13}\\text{ cm}$', 'C. $12\\text{ cm}$', 'D. $10\\text{ cm}$'],
+        correctIndex: 0,
+        explanation:
+          'Ta có $MA = \\sqrt{13^2 - 5^2} = 12\\text{ cm}$. Đường cao $AH$ trong $\\triangle OAM$ vuông tại $A$: $AH = \\frac{OA \\cdot MA}{OM} = \\frac{5 \\cdot 12}{13} = \\frac{60}{13}$. Do $H$ là trung điểm $AB \\implies AB = 2AH = \\frac{120}{13}\\text{ cm}$.'
+      },
+      {
+        source: 'Đề Chuyên 9 · Phương tích & Cát tuyến',
+        question:
+          'Từ điểm $P$ ngoài $(O)$ kẻ tiếp tuyến $PT = 6\\text{ cm}$ và cát tuyến $PAB$ ($PA < PB$) sao cho $PA = 4\\text{ cm}$. Độ dài dây cung $AB$ bằng bao nhiêu?',
+        options: ['A. $9\\text{ cm}$', 'B. $5\\text{ cm}$', 'C. $4{,}5\\text{ cm}$', 'D. $6\\text{ cm}$'],
+        correctIndex: 1,
+        explanation:
+          'Theo hệ thức tiếp tuyến - cát tuyến: $PT^2 = PA \\cdot PB \\implies PB = \\frac{36}{4} = 9\\text{ cm}$. Suy ra dây cung $AB = PB - PA = 9 - 4 = 5\\text{ cm}$.'
+      }
+    ],
+    essayProblems: [
+      {
+        source: 'Đề Tuyển sinh 10 Hà Nội · Câu Hình học tổng hợp',
+        question:
+          'Từ điểm $M$ nằm ngoài $(O; R)$ kẻ hai tiếp tuyến $MA, MB$ ($A, B$ là tiếp điểm) và cát tuyến $MCD$ ($MC < MD$, tia $MD$ nằm giữa $MO$ và $MB$). Gọi $H$ là giao điểm của $OM$ và $AB$. Chứng minh rằng $MA^2 = MC \\cdot MD$ và tứ giác $OHCD$ nội tiếp.',
+        hints: [
+          'Chứng minh $\\triangle MAC \\sim \\triangle MDA$ (g.g) vì góc $M$ chung và $\\angle MAC = \\angle MDA$ (cùng chắn cung $AC$).',
+          'Dùng $OH \\cdot OM = OA^2 = MA^2$ (sai! Kiểm tra hệ thức lượng trong $\\triangle OAM$: $MA^2 = MH \\cdot MO$) để suy ra $MH \\cdot MO = MC \\cdot MD \\implies \\triangle MHC \\sim \\triangle MDO$.'
+        ],
+        solutionSteps: [
+          'Bước 1: Xét $\\triangle MAC$ và $\\triangle MDA$ có $\\widehat{AMC}$ chung và $\\widehat{MAC} = \\widehat{MDA}$ (góc tạo bởi tiếp tuyến - dây cung và góc nội tiếp cùng chắn cung $AC$). Suy ra $\\triangle MAC \\sim \\triangle MDA \\implies MA^2 = MC \\cdot MD$.',
+          'Bước 2: Vì $MA = MB$ và $OA = OB$ nên $OM \\perp AB$ tại $H$. Trong $\\triangle OAM$ vuông tại $A$ đường cao $AH$, ta có $MA^2 = MH \\cdot MO$.',
+          'Bước 3: Từ (1) và (2) suy ra $MH \\cdot MO = MC \\cdot MD \\implies \\frac{MH}{MD} = \\frac{MC}{MO}$. Kết hợp $\\widehat{CMH}$ chung $\\implies \\triangle MHC \\sim \\triangle MDO$ (c.g.c) $\\implies \\widehat{MHC} = \\widehat{MDO}$.',
+          'Bước 4: Vì $\\widehat{MHC} + \\widehat{OHC} = 180^\\circ \\implies \\widehat{OHC} + \\widehat{ODC} = 180^\\circ$, do đó tứ giác $OHCD$ nội tiếp đường tròn.'
+        ],
+        finalAnswer: 'Đã chứng minh $MA^2 = MC \\cdot MD$ và tứ giác $OHCD$ nội tiếp.'
+      }
+    ],
+    sim2dMode: 'geometry',
+    sim3dMode: 'circle_theorems_3d'
   }
 ];
 

@@ -58,7 +58,11 @@ const CATEGORY_OPTIONS: Array<{
   { id: 'general', labelVi: 'Trải nghiệm tổng thể', labelEn: 'Overall Experience' }
 ];
 
-export const PlatformReviews: React.FC = () => {
+interface PlatformReviewsProps {
+  id?: string;
+}
+
+export const PlatformReviews: React.FC<PlatformReviewsProps> = ({ id = 'platform-reviews' }) => {
   const { user, openAuthModal } = useAuth();
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -338,7 +342,10 @@ export const PlatformReviews: React.FC = () => {
   };
 
   return (
-    <section className="rounded-3xl bg-white/85 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.14)] dark:shadow-[0_18px_45px_-16px_rgba(0,0,0,0.6)] space-y-6">
+    <section
+      id={id}
+      className="scroll-mt-24 rounded-3xl bg-white/85 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.14)] dark:shadow-[0_18px_45px_-16px_rgba(0,0,0,0.6)] space-y-6"
+    >
       {/* Header & Overall Summary */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200/70 dark:border-white/10">
         <div className="space-y-2 max-w-2xl">

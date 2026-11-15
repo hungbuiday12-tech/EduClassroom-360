@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAudio } from '../../context/AudioContext';
 
 interface WaterRippleItem {
   id: number;
@@ -16,6 +17,7 @@ let rippleCounter = 0;
 
 export const WaterRippleLayer: React.FC = () => {
   const [ripples, setRipples] = useState<WaterRippleItem[]>([]);
+  const { playClick } = useAudio();
 
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
@@ -28,6 +30,8 @@ export const WaterRippleLayer: React.FC = () => {
       ) as HTMLElement | null;
 
       if (!interactiveEl) return;
+
+      playClick();
 
       const rect = interactiveEl.getBoundingClientRect();
       if (rect.width < 8 || rect.height < 8) return;
@@ -65,7 +69,7 @@ export const WaterRippleLayer: React.FC = () => {
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown, { capture: true });
     };
-  }, []);
+  }, [playClick]);
 
   if (ripples.length === 0) return null;
 

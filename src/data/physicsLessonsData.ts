@@ -2819,5 +2819,200 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
         finalAnswer: 'Công khí sinh ra sau 1 chu trình: $A\' = 200\\text{ J}$.'
       }
     ]
+  },
+  {
+    id: 'phys-standing-wave',
+    lessonNumber: 15,
+    title: 'Sóng dừng trên sợi dây: Nút sóng, Bụng sóng & Điều kiện cộng hưởng',
+    subtitle: 'Sóng cơ Lớp 11 · Hai đầu cố định & Một đầu tự do',
+    grade: 'Lớp 11',
+    track: 'khong_chuyen',
+    stageLabel: 'Chương Sóng Cơ · Kết Nối Tri Thức 11',
+    sourceTag: 'Chuẩn SGK Vật lí 11 · Lab 2D & 3D Sóng Dừng',
+    description:
+      'Khảo sát hiện tượng giao thoa giữa sóng tới và sóng phản xạ tạo nên các nút sóng đứng yên và bụng sóng dao động cực đại trên dây hai đầu cố định hoặc một đầu tự do.',
+    theorySections: [
+      {
+        heading: '1. Bản chất hình thành Sóng dừng',
+        content: 'Sóng dừng là sóng có các nút và các bụng cố định trong không gian, hình thành do sự giao thoa giữa sóng tới và sóng phản xạ truyền ngược chiều trên cùng một phương.'
+      },
+      {
+        heading: '2. Điều kiện có sóng dừng trên dây chiều dài l',
+        content: '• Hai đầu cố định: $l = k \\frac{\\lambda}{2}$ ($k \\in \\mathbb{N}^*$). Trên dây có $k$ bó sóng, $k + 1$ nút sóng và $k$ bụng sóng.\n• Một đầu cố định, một đầu tự do: $l = (2k - 1)\\frac{\\lambda}{4}$. Trên dây có $k$ nút sóng và $k$ bụng sóng.'
+      }
+    ],
+    keyFormulas: [
+      'l = k\\frac{\\lambda}{2}',
+      'l = (2k - 1)\\frac{\\lambda}{4}',
+      'd_{\\text{2 nút liên tiếp}} = \\frac{\\lambda}{2}',
+      'f_k = k\\frac{v}{2l}'
+    ],
+    simulationType: 'standing_wave',
+    sim3dType: 'standing_wave_3d',
+    defaultParams: { length: 2.4, waveSpeed: 24, amplitude: 4, harmonicN: 3, openEnd: 0 },
+    paramBounds: {
+      length: { min: 0.8, max: 5.0, step: 0.2, unit: 'm', label: 'Chiều dài dây l' },
+      waveSpeed: { min: 6, max: 60, step: 2, unit: 'm/s', label: 'Tốc độ truyền sóng v' },
+      amplitude: { min: 1, max: 8, step: 0.5, unit: 'cm', label: 'Biên độ sóng nguồn a' },
+      harmonicN: { min: 1, max: 7, step: 1, unit: 'bó', label: 'Bậc sóng dừng k' }
+    },
+    practiceExercises: [
+      {
+        source: 'SGK Vật lí 11 · Sóng dừng hai đầu cố định',
+        question:
+          'Một sợi dây dài $l = 1{,}2\\text{ m}$ hai đầu cố định có sóng dừng với $3$ bó sóng nguyên. Bước sóng truyền trên dây là:',
+        options: ['A. 0,8 m', 'B. 0,4 m', 'C. 1,2 m', 'D. 0,6 m'],
+        correctIndex: 0,
+        explanation: '$l = k\\frac{\\lambda}{2} \\Rightarrow \\lambda = \\frac{2l}{k} = \\frac{2 \\cdot 1{,}2}{3} = 0{,}8\\text{ m}$.'
+      },
+      {
+        source: 'SGK Vật lí 11 · Khoảng cách nút và bụng',
+        question:
+          'Khoảng cách giữa một nút sóng và một bụng sóng liền kề trên dây có sóng dừng là:',
+        options: ['A. $\\lambda/4$', 'B. $\\lambda/2$', 'C. $\\lambda$', 'D. $\\lambda/8$'],
+        correctIndex: 0,
+        explanation: 'Hai nút liên tiếp cách nhau $\\lambda/2$, bụng nằm chính giữa nên nút và bụng liền kề cách nhau $\\lambda/4$.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'Tự luận Vật lí 11 · Tần số cơ bản và họa âm',
+        question:
+          'Một dây đàn guitar dài $l = 0{,}65\\text{ m}$ hai đầu cố định, tốc độ truyền sóng ngang trên dây là $v = 520\\text{ m/s}$. Tìm tần số âm cơ bản ($k = 1$) và tần số họa âm bậc $3$ phát ra.',
+        hints: ['Sử dụng công thức $f_k = k \\frac{v}{2l}$ với $k = 1$ và $k = 3$.'],
+        solutionSteps: [
+          'Bước 1: Tần số cơ bản ứng với $k = 1$: $f_1 = \\frac{v}{2l} = \\frac{520}{2 \\cdot 0{,}65} = 400\\text{ Hz}$.',
+          'Bước 2: Tần số họa âm bậc 3 ($k = 3$): $f_3 = 3 f_1 = 3 \\cdot 400 = 1200\\text{ Hz}$.'
+        ],
+        finalAnswer: '$f_1 = 400\\text{ Hz}$; $f_3 = 1200\\text{ Hz}$.'
+      }
+    ]
+  },
+  {
+    id: 'phys-doppler-effect',
+    lessonNumber: 16,
+    title: 'Hiệu ứng Doppler & Sóng xung kích Mach: Nguồn sóng chuyển động',
+    subtitle: 'Chuyên Lí Sóng âm · Độ nén bước sóng & Nón Mach',
+    grade: 'Lớp 11',
+    track: 'chuyen',
+    tier: 'Nâng cao',
+    stageLabel: 'Chuyên đề Sóng Âm & Cơ Học Tương Đối Cổ Điển',
+    sourceTag: 'Bồi dưỡng Chuyên Lí · Lab 2D & 3D Doppler',
+    description:
+      'Phân tích sự biến thiên bước sóng và tần số âm thanh khi nguồn phát chuyển động tương đối so với máy thu, cùng cơ chế tạo nón sóng xung kích khi vượt tốc độ âm thanh.',
+    theorySections: [
+      {
+        heading: '1. Độ nén mặt sóng & Công thức Doppler',
+        content: 'Khi nguồn phát chuyển động lại gần máy thu đứng yên với tốc độ $v_s < v$, các mặt sóng phía trước bị nén lại nên bước sóng giảm $\\lambda\' = \\lambda\\left(1 - \\frac{v_s}{v}\\right)$, kéo theo tần số thu được tăng lên.'
+      },
+      {
+        heading: '2. Nón sóng Mach khi $v_s \\ge v$',
+        content: 'Khi tốc độ nguồn vượt quá tốc độ truyền sóng trong môi trường ($M = v_s/v > 1$), các mặt sóng giao thoa tăng cường tạo thành mặt nón sóng xung kích với nửa góc mở $\\sin\\theta = \\frac{v}{v_s} = \\frac{1}{M}$.'
+      }
+    ],
+    keyFormulas: [
+      "f'_{\\text{lại gần}} = f_0 \\frac{v}{v - v_s}",
+      "f''_{\\text{ra xa}} = f_0 \\frac{v}{v + v_s}",
+      '\\sin\\theta_{\\text{Mach}} = \\frac{v}{v_s}'
+    ],
+    simulationType: 'doppler_effect',
+    sim3dType: 'doppler_effect_3d',
+    defaultParams: { waveSpeed: 340, sourceSpeed: 140, sourceFreq: 440 },
+    paramBounds: {
+      waveSpeed: { min: 150, max: 500, step: 10, unit: 'm/s', label: 'Tốc độ truyền sóng v' },
+      sourceSpeed: { min: 0, max: 520, step: 10, unit: 'm/s', label: 'Tốc độ nguồn phát v_s' },
+      sourceFreq: { min: 150, max: 800, step: 10, unit: 'Hz', label: 'Tần số gốc nguồn f₀' }
+    },
+    practiceExercises: [
+      {
+        source: 'Chuyên Lí · Hiệu ứng Doppler âm thanh',
+        question:
+          'Một xe cứu thương phát còi tần số $f_0 = 600\\text{ Hz}$ chạy thẳng lại gần người đứng yên với tốc độ $v_s = 34\\text{ m/s}$ (tốc độ âm $v = 340\\text{ m/s}$). Tần số người đó nghe được gần nhất với:',
+        options: ['A. 666,7 Hz', 'B. 545,5 Hz', 'C. 634,0 Hz', 'D. 720,0 Hz'],
+        correctIndex: 0,
+        explanation: "$f' = f_0 \\frac{v}{v - v_s} = 600 \\cdot \\frac{340}{340 - 34} = 600 \\cdot \\frac{340}{306} \\approx 666{,}7\\text{ Hz}$."
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'Chuyên đề Sóng siêu thanh · Góc nón Mach',
+        question:
+          'Một máy bay siêu thanh bay ngang ở độ cao không đổi với tốc độ $v_s = 680\\text{ m/s}$ trong không khí có tốc độ âm $v = 340\\text{ m/s}$. Tính số Mach và nửa góc mở của nón sóng xung kích.',
+        hints: ['Tính số Mach $M = v_s / v$, sau đó áp dụng $\\sin\\theta = 1/M$.'],
+        solutionSteps: [
+          'Bước 1: Số Mach $M = \\frac{v_s}{v} = \\frac{680}{340} = 2$.',
+          'Bước 2: $\\sin\\theta = \\frac{1}{M} = \\frac{1}{2} \\Rightarrow \\theta = 30^\\circ$.'
+        ],
+        finalAnswer: 'Số Mach $M = 2$; nửa góc mở nón sóng xung kích $\\theta = 30^\\circ$.'
+      }
+    ]
+  },
+  {
+    id: 'phys-photoelectric',
+    lessonNumber: 17,
+    title: 'Hiện tượng Quang điện ngoài & Thuyết lượng tử ánh sáng Einstein',
+    subtitle: 'Vật lí 12 · Giới hạn quang điện & Hiệu điện thế hãm',
+    grade: 'Lớp 12',
+    track: 'khong_chuyen',
+    stageLabel: 'Chương Lượng Tử Ánh Sáng · Vật Lí 12',
+    sourceTag: 'Chuẩn SGK Vật lí 12 · Lab 2D & 3D Ống Quang Điện',
+    description:
+      'Khảo sát sự bứt quang electron khỏi tấm Catốt kim loại khi chiếu chùm photon có bước sóng λ ≤ λ₀, xác định động năng cực đại và hiệu điện thế hãm U_h.',
+    theorySections: [
+      {
+        heading: '1. Định luật về Giới hạn quang điện',
+        content: 'Hiện tượng quang điện ngoài chỉ xảy ra khi bước sóng ánh sáng kích thích nhỏ hơn hoặc bằng giới hạn quang điện của kim loại: $\\lambda \\le \\lambda_0 = \\frac{hc}{A}$ (tương đương $\\varepsilon = hf \\ge A$).'
+      },
+      {
+        heading: '2. Phương trình Anh-xtanh & Hiệu điện thế hãm',
+        content: 'Năng lượng photon dùng để thắng công thoát $A$ và cung cấp động năng ban đầu cực đại cho electron: $\\frac{hc}{\\lambda} = A + \\frac{1}{2}m v_{0\\max}^2 = A + e|U_h|$.'
+      }
+    ],
+    keyFormulas: [
+      '\\varepsilon = \\frac{hc}{\\lambda}',
+      '\\lambda_0 = \\frac{hc}{A}',
+      '\\frac{hc}{\\lambda} = A + W_{\\text{đ0max}}',
+      'W_{\\text{đ0max}} = e|U_h|'
+    ],
+    simulationType: 'photoelectric_effect',
+    sim3dType: 'photoelectric_3d',
+    defaultParams: { wavelengthNm: 280, workFunctionEv: 2.14, voltageUak: 1.5 },
+    paramBounds: {
+      wavelengthNm: { min: 160, max: 720, step: 10, unit: 'nm', label: 'Bước sóng kích thích λ' },
+      workFunctionEv: { min: 1.8, max: 5.2, step: 0.1, unit: 'eV', label: 'Công thoát kim loại A' },
+      voltageUak: { min: -4.5, max: 4.5, step: 0.2, unit: 'V', label: 'Hiệu điện thế U_AK' }
+    },
+    practiceExercises: [
+      {
+        source: 'SGK Vật lí 12 · Tính giới hạn quang điện',
+        question:
+          'Kim loại Xesi (Cs) có công thoát electron $A = 2{,}14\\text{ eV}$ (lấy $hc \\approx 1240\\text{ eV}\\cdot\\text{nm}$). Giới hạn quang điện $\\lambda_0$ của Cs là:',
+        options: ['A. 579 nm', 'B. 350 nm', 'C. 680 nm', 'D. 420 nm'],
+        correctIndex: 0,
+        explanation: '$\\lambda_0 = \\frac{hc}{A} \\approx \\frac{1240}{2{,}14} \\approx 579\\text{ nm}$.'
+      },
+      {
+        source: 'SGK Vật lí 12 · Hiệu điện thế hãm',
+        question:
+          'Chiếu bức xạ có năng lượng photon $\\varepsilon = 4{,}14\\text{ eV}$ vào tấm kim loại có công thoát $A = 2{,}14\\text{ eV}$. Động năng ban đầu cực đại của quang electron là:',
+        options: ['A. 2,00 eV', 'B. 6,28 eV', 'C. 1,93 eV', 'D. 4,14 eV'],
+        correctIndex: 0,
+        explanation: 'Áp dụng phương trình Anh-xtanh: $W_{\\text{đ0max}} = \\varepsilon - A = 4{,}14 - 2{,}14 = 2{,}00\\text{ eV}$.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'Tự luận Lượng tử · Tìm hiệu điện thế hãm U_h',
+        question:
+          'Chiếu chùm sáng đơn sắc có bước sóng $\\lambda = 310\\text{ nm}$ vào Catốt làm bằng Natri có công thoát $A = 2{,}28\\text{ eV}$ (lấy $hc \\approx 1240\\text{ eV}\\cdot\\text{nm}$). Tính năng lượng mỗi photon theo đơn vị eV và hiệu điện thế hãm $U_h$ vừa đủ làm triệt tiêu dòng quang điện.',
+        hints: ['Tính $\\varepsilon = 1240/\\lambda$ trước, sau đó dùng $e U_h = \\varepsilon - A$.'],
+        solutionSteps: [
+          'Bước 1: Năng lượng photon $\\varepsilon = \\frac{hc}{\\lambda} = \\frac{1240}{310} = 4{,}00\\text{ eV}$.',
+          'Bước 2: Vì $\\varepsilon > A$ nên xảy ra quang điện với động năng cực đại $W_{\\text{đ0max}} = 4{,}00 - 2{,}28 = 1{,}72\\text{ eV}$.',
+          'Bước 3: Hiệu điện thế hãm $|U_h| = \\frac{W_{\\text{đ0max}}}{e} = 1{,}72\\text{ V}$.'
+        ],
+        finalAnswer: '$\\varepsilon = 4{,}00\\text{ eV}$; hiệu điện thế hãm $U_h = 1{,}72\\text{ V}$.'
+      }
+    ]
   }
 ];

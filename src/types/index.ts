@@ -290,7 +290,8 @@ export interface MathLecture {
     | 'revolution_solid'
     | 'conic_sections_3d'
     | 'line_plane_oxyz'
-    | 'integral_disks_3d';
+    | 'integral_disks_3d'
+    | 'circle_theorems_3d';
   defaultGraphConfig?: Partial<FunctionPlotConfig>;
 }
 
@@ -311,7 +312,10 @@ export type PhysicsSimType =
   | 'nuclear_decay'
   | 'circular_motion'
   | 'ac_rlc_circuit'
-  | 'young_interference';
+  | 'young_interference'
+  | 'standing_wave'
+  | 'doppler_effect'
+  | 'photoelectric_effect';
 
 export type Physics3DMode =
   | 'pendulum_spring'
@@ -324,7 +328,10 @@ export type Physics3DMode =
   | 'thermal_gas_3d'
   | 'circular_motion_3d'
   | 'ac_generator_3d'
-  | 'young_interference_3d';
+  | 'young_interference_3d'
+  | 'standing_wave_3d'
+  | 'doppler_effect_3d'
+  | 'photoelectric_3d';
 
 export interface PhysicsEssayExercise {
   id?: string;

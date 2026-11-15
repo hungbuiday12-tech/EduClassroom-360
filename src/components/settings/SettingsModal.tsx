@@ -18,11 +18,23 @@ import {
   Sparkles,
   KeyRound,
   Save,
-  ShieldCheck
+  ShieldCheck,
+  Volume2,
+  VolumeX,
+  Music,
+  Bell,
+  MousePointerClick,
+  Play
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../../context/BackgroundContext';
+import { useAudio } from '../../context/AudioContext';
+import {
+  CLICK_SOUND_OPTIONS,
+  BG_SOUND_OPTIONS,
+  BELL_SOUND_OPTIONS
+} from '../../lib/soundEngine';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -32,7 +44,7 @@ interface SettingsModalProps {
   onReturnToLanding?: () => void;
 }
 
-type SettingsTab = 'account' | 'security' | 'appearance';
+type SettingsTab = 'account' | 'security' | 'appearance' | 'audio';
 
 const PRESET_AVATARS = [
   'https://api.dicebear.com/7.x/bottts/svg?seed=synapse_math',
@@ -61,6 +73,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const { language, toggleLanguage } = useLanguage();
   const isEn = language === 'en';
   const { creatureTheme, setCreatureTheme } = useBackgroundTheme();
+  const {
+    clickSound,
+    setClickSound,
+    sfxVolume,
+    setSfxVolume,
+    bgSound,
+    setBgSound,
+    bgVolume,
+    setBgVolume,
+    isBgPlaying,
+    toggleBgPlaying,
+    bellSound,
+    setBellSound,
+    playClick,
+    playBell
+  } = useAudio();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
 
@@ -216,6 +244,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       id: 'appearance',
       label: isEn ? 'UI & Creatures' : 'Giao diện & Sinh vật',
       icon: <SlidersHorizontal className="w-4 h-4" />
+    },
+    {
+      id: 'audio',
+      label: isEn ? 'Audio & Bells' : 'Âm thanh & Nhạc nền',
+      icon: <Volume2 className="w-4 h-4" />
     }
   ];
 
@@ -340,6 +373,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   ? isEn
                     ? 'Update your password or send a secure recovery email.'
                     : 'Đổi mật khẩu đăng nhập hoặc gửi thư khôi phục bảo mật qua Gmail.'
+                  : activeTab === 'audio'
+                  ? isEn
+                    ? 'Choose interactive click effects, continuous ambient study soundscapes, and focus timer bells.'
+                    : 'Chọn hiệu ứng âm thanh khi click, nhạc nền không gian học tập và chuông báo đồng hồ tập trung.'
                   : isEn
                   ? 'Customize Light/Dark mode, VI/EN language, and animated galaxy creatures.'
                   : 'Tùy chỉnh giao diện Sáng/Tối, ngôn ngữ VI/EN và sinh vật nền tương tác.'}
@@ -725,6 +762,172 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       ? 'Left Ctrl + D (Math AI) · Left Ctrl + F (Physics AI) · Left Ctrl + G (CS AI)'
                       : 'Ctrl trái + D (AI Toán) · Ctrl trái + F (AI Vật Lí) · Ctrl trái + G (AI Tin Học)'}
                   </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: AUDIO, CLICK SFX, BACKGROUND MUSIC & FOCUS BELLS */}
+          {activeTab === 'audio' && (
+            <div className="space-y-5">
+              {/* Click SFX Section */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                    <MousePointerClick className="w-4 h-4 text-sky-500" />
+                    <span>{isEn ? 'Interactive Click Sound Effects' : 'Âm thanh hiệu ứng khi Click'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => playClick()}
+                      className="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-700 dark:text-sky-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Play className="w-3 h-3" />
+                      <span>{isEn ? 'Preview' : 'Nghe thử'}</span>
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={sfxVolume}
+                      onChange={(e) => setSfxVolume(Number(e.target.value))}
+                      aria-label={isEn ? 'Click SFX volume' : 'Âm lượng click'}
+                      className="w-20 accent-sky-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {CLICK_SOUND_OPTIONS.map((opt) => {
+                    const selected = opt.id === clickSound;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setClickSound(opt.id)}
+                        className={`px-3 py-2 rounded-xl border text-left text-xs font-semibold transition-all cursor-pointer ${
+                          selected
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
+                        }`}
+                      >
+                        {isEn ? opt.labelEn : opt.labelVi}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Background Ambient Soundscapes */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                    <Music className="w-4 h-4 text-indigo-500" />
+                    <span>{isEn ? 'Background Study Soundscapes' : 'Âm thanh nền tự chọn khi học'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={toggleBgPlaying}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
+                        isBgPlaying && bgSound !== 'off'
+                          ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
+                      }`}
+                    >
+                      {isBgPlaying && bgSound !== 'off' ? (
+                        <Volume2 className="w-3.5 h-3.5" />
+                      ) : (
+                        <VolumeX className="w-3.5 h-3.5" />
+                      )}
+                      <span>
+                        {isBgPlaying && bgSound !== 'off'
+                          ? isEn
+                            ? 'Playing'
+                            : 'Đang phát'
+                          : isEn
+                          ? 'Paused'
+                          : 'Đang tắt'}
+                      </span>
+                    </button>
+                    <input
+                      type="range"
+                      min={0.05}
+                      max={1}
+                      step={0.05}
+                      value={bgVolume}
+                      onChange={(e) => setBgVolume(Number(e.target.value))}
+                      aria-label={isEn ? 'Ambient music volume' : 'Âm lượng nhạc nền'}
+                      className="w-20 accent-indigo-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {BG_SOUND_OPTIONS.map((opt) => {
+                    const selected = opt.id === bgSound;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setBgSound(opt.id)}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          selected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-indigo-400'
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{isEn ? opt.labelEn : opt.labelVi}</div>
+                        <div
+                          className={`text-[11px] mt-0.5 ${
+                            selected ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          {isEn ? opt.descEn : opt.descVi}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Focus Timer Alarm Bell */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                    <Bell className="w-4 h-4 text-amber-500" />
+                    <span>{isEn ? 'Focus Timer Completion Bell' : 'Chuông báo Đồng hồ tập trung'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => playBell()}
+                    className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Play className="w-3 h-3" />
+                    <span>{isEn ? 'Test Bell' : 'Nghe thử chuông'}</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {BELL_SOUND_OPTIONS.map((opt) => {
+                    const selected = opt.id === bellSound;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setBellSound(opt.id)}
+                        className={`px-3 py-2 rounded-xl border text-left text-xs font-semibold transition-all cursor-pointer ${
+                          selected
+                            ? 'bg-amber-500 text-slate-950 border-amber-500 font-bold shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-amber-400'
+                        }`}
+                      >
+                        {isEn ? opt.labelEn : opt.labelVi}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

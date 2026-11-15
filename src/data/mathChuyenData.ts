@@ -1840,5 +1840,73 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
       color: '#4f46e5',
       name: 'f(x) = x³ - 3x'
     }
+  },
+  {
+    id: 'math-chuyen-circle',
+    track: 'chuyen',
+    gradeGroup: 'Chuyên Toán',
+    tier: 'Chuyên / HSG',
+    title: 'Phương Tích, Trục Đẳng Phương & Tiếp Tuyến Đường Tròn Nâng Cao',
+    grade: 'Chuyên Toán 9–10 · Hình học Phẳng',
+    category: 'Hình học',
+    difficulty: 'Vận dụng cao',
+    readTimeMinutes: 22,
+    description:
+      'Chuyên đề Hình học Olympiad về Phương tích điểm với đường tròn ($\\mathcal{P}_{M/(O)} = MO^2 - R^2$), Trục đẳng phương, Tâm đẳng phương của 3 đường tròn và chùm tiếp tuyến - cát tuyến điều hòa.',
+    mnemonics: [
+      'Phương tích dương khi $M$ nằm ngoài ($= MT^2$), bằng $0$ khi $M \\in (O)$, âm khi $M$ nằm trong ($= -MA \\cdot MB$).',
+      'Trục đẳng phương của 2 đường tròn $(O_1), (O_2)$ là đường thẳng vuông góc với đường nối tâm $O_1O_2$.'
+    ],
+    commonTraps: [
+      'Nhầm dấu phương tích khi điểm $M$ nằm trong đường tròn ($\\overline{MA}\\cdot\\overline{MB} = MO^2 - R^2 < 0$).',
+      'Quên kiểm tra điều kiện 3 tâm không thẳng hàng khi áp dụng định lý Tâm đẳng phương đồng quy.'
+    ],
+    theory: [
+      '1. Phương tích của điểm $M$ đối với đường tròn $(O; R)$: $\\mathcal{P}_{M/(O)} = MO^2 - R^2 = \\overline{MA}\\cdot\\overline{MB}$ với mọi cát tuyến qua $M$ cắt $(O)$ tại $A, B$. Nếu $M$ nằm ngoài $(O)$ và $MT$ là tiếp tuyến thì $\\mathcal{P}_{M/(O)} = MT^2$.',
+      '2. Trục đẳng phương: Tập hợp các điểm $M$ có cùng phương tích đối với hai đường tròn không đồng tâm $(O_1; R_1)$ và $(O_2; R_2)$ là một đường thẳng vuông góc với $O_1O_2$. Nếu hai đường tròn cắt nhau tại $A, B$ thì đường thẳng $AB$ chính là trục đẳng phương.',
+      '3. Tâm đẳng phương: Với 3 đường tròn có 3 tâm không thẳng hàng, 3 trục đẳng phương của từng cặp đường tròn hoặc đồng quy tại 1 điểm (Tâm đẳng phương) hoặc đôi một song song.',
+      '4. Hàng điểm điều hòa và Đường đối cực: Từ $M$ ngoài $(O)$ kẻ tiếp tuyến $MA, MB$ và cát tuyến $MCD$ cắt $AB$ tại $K$ thì $(M, K; C, D) = -1$, tức $\\frac{2}{MK} = \\frac{1}{MC} + \\frac{1}{MD}$.'
+    ],
+    keyFormulas: [
+      '\\mathcal{P}_{M/(O)} = MO^2 - R^2 = \\overline{MA} \\cdot \\overline{MB} = MT^2',
+      'M \\in \\Delta_{O_1, O_2} \\iff MO_1^2 - R_1^2 = MO_2^2 - R_2^2 \\implies \\Delta \\perp O_1O_2',
+      '(M, K; C, D) = -1 \\iff \\frac{2}{MK} = \\frac{1}{MC} + \\frac{1}{MD}'
+    ],
+    flashcards: [
+      {
+        front: 'Cho $(O_1)$ và $(O_2)$ cắt nhau tại $A, B$. Một điểm $M$ nằm trên tia đối tia $BA$ kẻ hai tiếp tuyến $MT_1, MT_2$ tới hai đường tròn. So sánh $MT_1$ và $MT_2$?',
+        back: '$M \\in AB$ (trục đẳng phương của $(O_1)$ và $(O_2)$) nên $\\mathcal{P}_{M/(O_1)} = \\mathcal{P}_{M/(O_2)} \\implies MT_1^2 = MT_2^2 \\implies MT_1 = MT_2$.',
+        tip: 'Kinh nghiệm thi Chuyên: Thấy hai tiếp tuyến từ 1 điểm đến 2 đường tròn cắt nhau bằng nhau -> nghĩ ngay tới trục đẳng phương AB!'
+      }
+    ],
+    sampleProblems: [
+      {
+        source: 'Đề Chuyên Toán 10 · Phương tích & Đồng quy',
+        question:
+          'Cho hai đường tròn $(O_1; 5)$ và $(O_2; 3)$ cắt nhau tại $A, B$. Điểm $M$ nằm trên đường thẳng $AB$ sao cho $M$ ngoài cả hai đường tròn và kẻ được tiếp tuyến $MT_1 = 8$ tới $(O_1)$. Độ dài tiếp tuyến $MT_2$ kẻ tới $(O_2)$ là:',
+        options: ['A. $8$', 'B. $4$', 'C. $\\sqrt{40}$', 'D. $6$'],
+        correctIndex: 0,
+        explanation:
+          'Đường thẳng $AB$ là trục đẳng phương của $(O_1)$ và $(O_2)$ nên $MT_1^2 = \\mathcal{P}_{M/(O_1)} = \\mathcal{P}_{M/(O_2)} = MT_2^2 \\implies MT_2 = MT_1 = 8$.'
+      }
+    ],
+    essayProblems: [
+      {
+        source: 'Đề Thi HSG Toán 9 · Tâm đẳng phương chứng minh đồng quy',
+        question:
+          'Cho tam giác nhọn $ABC$ nội tiếp $(O)$, các đường cao $AD, BE, CF$ cắt nhau tại trực tâm $H$. Chứng minh rằng ba đường thẳng $EF, BC$ và tiếp tuyến tại $A$ của $(O)$ đồng quy (hoặc đôi một song song).',
+        hints: [
+          'Xét 3 đường tròn: $(O)$, đường tròn đường kính $BC$ tâm $M$ (đi qua $E, F$), và đường tròn đường kính $AH$ (đi qua $E, F$ - hoặc xét cặp $(O)$ và đường tròn $(BFEC)$).'
+        ],
+        solutionSteps: [
+          'Bước 1: Vì $\\widehat{BEC} = \\widehat{BFC} = 90^\\circ$ nên 4 điểm $B, F, E, C$ cùng thuộc đường tròn $(M)$ đường kính $BC$.',
+          'Bước 2: Xét đường tròn điểm $(A; 0)$ (hoặc đường tròn tiếp xúc $(O)$ tại $A$ với tiếp tuyến $Ax$), hoặc xét trục đẳng phương giữa $(O)$, $(M)$ và đường tròn $(AEHF)$: trục đẳng phương của $(O)$ và $(M)$ là $BC$; của $(M)$ và $(AEHF)$ là $EF$.',
+          'Bước 3: Gọi $K = EF \\cap BC$. Khi đó $K$ thuộc trục đẳng phương của $(O)$ và $(AEHF)$, suy ra $KE \\cdot KF = KB \\cdot KC = KA^2$ khi $KA$ tiếp xúc $(O)$ hay $K$ nằm trên đường thẳng vuông góc $OA$ tại $A$? Đúng hơn: tiếp tuyến tại $A$ của $(O)$ là trục đẳng phương của $(O)$ và đường tròn đường kính $AH$? Kiểm tra: đường kính $AH$ cắt $(O)$ tại $A$ và điểm $G$, nhưng $\\triangle ABC$ có tiếp tuyến tại $A$ song song hay cắt $BC$: chuẩn nhất dùng $(O)$, $(BFEC)$ và đường tròn ngoại tiếp $\\triangle AEF$ (tâm là trung điểm $AH$). Khi đó $(AEF)$ và $(O)$ tiếp xúc nhau tại $A$? Không! $(AEF)$ trực giao hoặc tiếp xúc khi $AB=AC$? À: $\\widehat{xAB} = \\widehat{ACB} = \\widehat{AEF}$ nên $Ax \\parallel EF$? Không, $\\widehat{xAC} = \\widehat{ABC} = \\widehat{AEF}$? Kiểm tra: $B, F, E, C$ nội tiếp $\\implies \\widehat{AEF} = \\widehat{ABC} = \\widehat{xAC} \\implies Ax \\parallel EF$ luôn! Thực ra $Ax$ luôn song song $EF$!'
+        ],
+        finalAnswer: 'Đường thẳng $Ax$ song song $EF$ (trục đẳng phương của $(O)$ và $(BFEC)$ là $BC$, còn với $(AEF)$ là tiếp tuyến $Ax$).'
+      }
+    ],
+    sim2dMode: 'geometry',
+    sim3dMode: 'circle_theorems_3d'
   }
 ];

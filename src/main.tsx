@@ -6,6 +6,8 @@ import 'katex/dist/katex.min.css';
 import { LanguageProvider } from './context/LanguageContext';
 import { BackgroundProvider } from './context/BackgroundContext';
 import { NavigationProvider } from './context/NavigationContext';
+import { AudioProvider } from './context/AudioContext';
+import { FocusTimerProvider } from './context/FocusTimerContext';
 
 interface Props {
   children: ReactNode;
@@ -65,7 +67,11 @@ if (rootElement) {
       <LanguageProvider>
         <BackgroundProvider>
           <NavigationProvider>
-            <App />
+            <AudioProvider>
+              <FocusTimerProvider>
+                <App />
+              </FocusTimerProvider>
+            </AudioProvider>
           </NavigationProvider>
         </BackgroundProvider>
       </LanguageProvider>

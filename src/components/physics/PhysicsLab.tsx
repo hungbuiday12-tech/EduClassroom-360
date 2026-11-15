@@ -572,6 +572,15 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
         case 'young_interference':
           drawYoungInterference(ctx, w, h, t, isDark);
           break;
+        case 'standing_wave':
+          drawStandingWave(ctx, w, h, t, isDark);
+          break;
+        case 'doppler_effect':
+          drawDopplerEffect(ctx, w, h, t, isDark);
+          break;
+        case 'photoelectric_effect':
+          drawPhotoelectricEffect(ctx, w, h, t, isDark);
+          break;
         default:
           drawSpring(ctx, w, h, t, isDark);
       }
@@ -3028,6 +3037,415 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.fillText(`i = ${fringeI.toFixed(2)} mm`, screenX - 12, screenTop + screenH + 16);
   };
 
+  // 17. Standing Waves on a String (Sóng Dừng Trên Sợi Dây - Lớp 11 & Chuyên)
+  const drawStandingWave = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const ov = overlaysRef.current;
+
+    const lengthM = Math.max(0.5, p.length ?? 2.4);
+    const speedV = Math.max(4, p.waveSpeed ?? 24);
+    const ampCm = Math.max(1, Math.min(10, p.amplitude ?? 4));
+    const harmonicN = Math.max(1, Math.min(8, Math.round(p.harmonicN ?? 3)));
+    const isFreeEnd = Math.round(p.openEnd ?? 0) === 1;
+
+    // Resonant wavelength & frequency depending on boundary condition
+    const lambdaM = isFreeEnd
+      ? (4 * lengthM) / Math.max(1, 2 * harmonicN - 1)
+      : (2 * lengthM) / harmonicN;
+    const freqHz = speedV / lambdaM;
+    const omega = 2 * Math.PI * Math.min(4.5, Math.max(0.6, freqHz * 0.14));
+
+    const padX = 56;
+    const wireStartX = padX;
+    const wireEndX = w - padX;
+    const wireLenPx = Math.max(120, wireEndX - wireStartX);
+    const centerY = h * 0.52;
+    const ampPx = Math.min(h * 0.28, ampCm * 8.5);
+    const effectiveHalfWaves = isFreeEnd ? harmonicN - 0.5 : harmonicN;
+
+    pushTelemetry({
+      metric1Label: 'Bước sóng λ',
+      metric1Val: `${lambdaM.toFixed(2)} m`,
+      metric2Label: 'Tần số cộng hưởng f',
+      metric2Val: `${freqHz.toFixed(2)} Hz`,
+      metric3Label: isFreeEnd ? 'Số bó / Nút-Bụng (1 đầu tự do)' : 'Số bó sóng nguyên (k)',
+      metric3Val: isFreeEnd ? `${harmonicN} nút · ${harmonicN} bụng` : `${harmonicN} bó (${harmonicN + 1} nút)`,
+      note: isFreeEnd
+        ? `Dây 1 đầu cố định 1 đầu tự do: l = (2k - 1)λ/4 = ${lengthM.toFixed(2)} m với k = ${harmonicN}.`
+        : `Dây 2 đầu cố định: l = k·λ/2 = ${lengthM.toFixed(2)} m với k = ${harmonicN} bó sóng.`
+    });
+
+    // Equilibrium axis
+    ctx.strokeStyle = isDark ? 'rgba(148,163,184,0.35)' : 'rgba(100,116,139,0.4)';
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(wireStartX, centerY);
+    ctx.lineTo(wireEndX, centerY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Envelope curves (+/- 2A sin(kx))
+    ctx.strokeStyle = isDark ? 'rgba(56,189,248,0.28)' : 'rgba(14,165,233,0.3)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.4;
+    for (const sign of [-1, 1]) {
+      ctx.beginPath();
+      for (let i = 0; i <= 160; i++) {
+        const u = i / 160;
+        const x = wireStartX + u * wireLenPx;
+        const envY = centerY + sign * ampPx * Math.abs(Math.sin(effectiveHalfWaves * Math.PI * u));
+        if (i === 0) ctx.moveTo(x, envY);
+        else ctx.lineTo(x, envY);
+      }
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Instantaneous standing wave string y(x,t) = A * sin(k*x) * cos(w*t)
+    const cosWt = Math.cos(omega * t);
+    ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    for (let i = 0; i <= 180; i++) {
+      const u = i / 180;
+      const x = wireStartX + u * wireLenPx;
+      const y = centerY - ampPx * Math.sin(effectiveHalfWaves * Math.PI * u) * cosWt;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Support clamps
+    ctx.fillStyle = isDark ? '#475569' : '#334155';
+    ctx.fillRect(wireStartX - 10, centerY - 38, 10, 76);
+
+    if (isFreeEnd) {
+      // Vertical frictionless ring rod on right
+      ctx.strokeStyle = isDark ? '#94a3b8' : '#475569';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(wireEndX + 2, centerY - ampPx - 18);
+      ctx.lineTo(wireEndX + 2, centerY + ampPx + 18);
+      ctx.stroke();
+      const tipY = centerY - ampPx * Math.sin(effectiveHalfWaves * Math.PI) * cosWt;
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(wireEndX + 2, tipY, 6, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = isDark ? '#475569' : '#334155';
+      ctx.fillRect(wireEndX, centerY - 38, 10, 76);
+    }
+
+    // Highlight Nodes (Red) & Antinodes (Emerald)
+    const nodeCount = isFreeEnd ? harmonicN : harmonicN + 1;
+    for (let nIdx = 0; nIdx < nodeCount; nIdx++) {
+      const uNode = nIdx / effectiveHalfWaves;
+      if (uNode <= 1.001) {
+        const nx = wireStartX + Math.min(1, uNode) * wireLenPx;
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(nx, centerY, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    for (let aIdx = 0; aIdx < harmonicN; aIdx++) {
+      const uAnti = (aIdx + 0.5) / effectiveHalfWaves;
+      const ax = wireStartX + Math.min(1, uAnti) * wireLenPx;
+      const ay = centerY - ampPx * Math.sin(effectiveHalfWaves * Math.PI * Math.min(1, uAnti)) * cosWt;
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(ax, ay, 4.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (ov.showVectors && Math.abs(cosWt) > 0.15) {
+        const vY = centerY - ampPx * Math.sin(effectiveHalfWaves * Math.PI * Math.min(1, uAnti)) * Math.sin(omega * t) * 0.45;
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax, ay + (ay - vY) * 0.55);
+        ctx.stroke();
+      }
+    }
+
+    // Legend tags
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText('● Nút sóng (Biên độ = 0)', wireStartX, 26);
+    ctx.fillStyle = '#10b981';
+    ctx.fillText('● Bụng sóng (Biên độ 2A)', wireStartX + 165, 26);
+    ctx.fillStyle = isDark ? '#cbd5e1' : '#334155';
+    ctx.fillText(`l = ${lengthM.toFixed(2)} m · v = ${speedV.toFixed(0)} m/s`, wireStartX, h - 14);
+  };
+
+  // 18. Doppler Effect & Mach Cone (Hiệu Ứng Doppler & Nón Sóng Xung Kích)
+  const drawDopplerEffect = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const ov = overlaysRef.current;
+
+    const vWave = Math.max(100, p.waveSpeed ?? 340);
+    const vSource = Math.max(0, Math.min(vWave * 1.6, p.sourceSpeed ?? 140));
+    const f0 = Math.max(100, p.sourceFreq ?? 440);
+    const ratio = vSource / vWave;
+    const isMach = ratio >= 1;
+
+    const fApproach = ratio < 0.99 ? f0 * (vWave / (vWave - vSource)) : Infinity;
+    const fRecede = f0 * (vWave / (vWave + vSource));
+
+    pushTelemetry({
+      metric1Label: 'Tần số máy thu phía trước (f\')',
+      metric1Val: Number.isFinite(fApproach) ? `${fApproach.toFixed(1)} Hz` : 'Sóng xung kích!',
+      metric2Label: 'Tần số phía sau (f")',
+      metric2Val: `${fRecede.toFixed(1)} Hz`,
+      metric3Label: 'Tỉ số Mach (v_s / v)',
+      metric3Val: `${ratio.toFixed(2)} M`,
+      note: isMach
+        ? `Nguồn vượt tốc độ sóng (Mach = ${ratio.toFixed(2)}) tạo mặt đầu sóng hình nón (Sóng xung kích)!`
+        : `Phía trước nguồn, các gợn sóng bị nén (λ' = λ·(1 - v_s/v)) nên tần số tăng lên ${fApproach.toFixed(1)} Hz.`
+    });
+
+    const cy = h * 0.52;
+    const pxSpeedWave = 68;
+    const pxSpeedSrc = pxSpeedWave * ratio;
+    const periodSec = Math.max(0.16, 1.35 / Math.max(1, f0 / 350));
+
+    // Continuous cyclic wrap every 8s so emitter sweeps smoothly left -> right
+    const cycleDuration = Math.max(4.5, (w * 0.85) / Math.max(18, pxSpeedSrc || 40));
+    const localT = ratio < 0.01 ? t % 6 : t % cycleDuration;
+    const srcStartX = ratio < 0.01 ? w * 0.5 : w * 0.14;
+    const srcX = srcStartX + pxSpeedSrc * localT;
+
+    // Draw emitted circular wavefronts from past emission instants
+    const numPulses = 16;
+    const currentStep = Math.floor(localT / periodSec);
+    for (let k = Math.max(0, currentStep - numPulses); k <= currentStep; k++) {
+      const emitT = k * periodSec;
+      const age = localT - emitT;
+      if (age <= 0) continue;
+      const emitX = srcStartX + pxSpeedSrc * emitT;
+      const rad = pxSpeedWave * age;
+      const alpha = Math.max(0.08, 1 - age / (numPulses * periodSec));
+
+      ctx.strokeStyle = isDark
+        ? `rgba(56, 189, 248, ${alpha.toFixed(2)})`
+        : `rgba(2, 132, 199, ${alpha.toFixed(2)})`;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(emitX, cy, rad, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Mach shock cone tangent lines when v_s >= v
+    if (isMach && localT > 0.25) {
+      const halfConeAngle = Math.asin(Math.min(1, 1 / ratio));
+      const coneLen = Math.min(w * 0.65, pxSpeedSrc * localT * 1.15);
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.4;
+      for (const sgn of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(srcX, cy);
+        ctx.lineTo(
+          srcX - coneLen * Math.cos(halfConeAngle),
+          cy + sgn * coneLen * Math.sin(halfConeAngle)
+        );
+        ctx.stroke();
+      }
+    }
+
+    // Velocity vector & Emitter dot
+    if (ov.showVectors && vSource > 0) {
+      const arrowLen = Math.min(90, 20 + ratio * 48);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(srcX, cy);
+      ctx.lineTo(srcX + arrowLen, cy);
+      ctx.lineTo(srcX + arrowLen - 7, cy - 5);
+      ctx.moveTo(srcX + arrowLen, cy);
+      ctx.lineTo(srcX + arrowLen - 7, cy + 5);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(srcX, cy, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    // Stationary observer microphone on the right
+    const obsX = w - 48;
+    ctx.fillStyle = '#10b981';
+    ctx.beginPath();
+    ctx.arc(obsX, cy, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Máy thu', obsX, cy - 15);
+    ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+    ctx.fillText(`Nguồn f₀=${f0.toFixed(0)}Hz`, Math.min(w - 90, Math.max(70, srcX)), cy + 24);
+  };
+
+  // 19. Photoelectric Effect (Hiệu Ứng Quang Điện Ngoài - Lớp 12)
+  const drawPhotoelectricEffect = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const ov = overlaysRef.current;
+
+    const lambdaNm = Math.max(150, Math.min(760, p.wavelengthNm ?? 280));
+    const workEv = Math.max(1.2, Math.min(5.5, p.workFunctionEv ?? 2.14));
+    const stopV = Math.max(-5, Math.min(5, p.voltageUak ?? 1.5));
+
+    // Photon energy E = hc / lambda in eV (hc ≈ 1240 eV·nm)
+    const photonEv = 1240 / lambdaNm;
+    const lambda0Nm = 1240 / workEv;
+    const canEmit = photonEv >= workEv;
+    const maxKeEv = canEmit ? Math.max(0, photonEv - workEv) : 0;
+    const stoppingV = maxKeEv; // in Volts numerically equal to eV
+    const netReachable = canEmit && (stopV >= -stoppingV);
+
+    // Light color from wavelength
+    let beamColor = '#8b5cf6';
+    if (lambdaNm < 380) beamColor = '#a855f7'; // UV
+    else if (lambdaNm < 450) beamColor = '#6366f1';
+    else if (lambdaNm < 495) beamColor = '#3b82f6';
+    else if (lambdaNm < 570) beamColor = '#10b981';
+    else if (lambdaNm < 590) beamColor = '#eab308';
+    else if (lambdaNm < 620) beamColor = '#f97316';
+    else beamColor = '#ef4444';
+
+    pushTelemetry({
+      metric1Label: 'Năng lượng photon (ε)',
+      metric1Val: `${photonEv.toFixed(2)} eV`,
+      metric2Label: 'Giới hạn quang điện (λ₀)',
+      metric2Val: `${lambda0Nm.toFixed(0)} nm`,
+      metric3Label: 'Động năng ban đầu W_đ0max',
+      metric3Val: canEmit ? `${maxKeEv.toFixed(2)} eV (U_h=${stoppingV.toFixed(2)}V)` : '0 eV (Không bứt e)',
+      note: canEmit
+        ? netReachable
+          ? `ε = ${photonEv.toFixed(2)} eV ≥ A = ${workEv.toFixed(2)} eV → Bật quang electron! ${stopV < 0 ? 'Điện áp hãm đang làm chậm dòng e.' : 'U_AK giúp tăng tốc dòng quang điện.'}`
+          : `Electron đã bật ra nhưng bị điện áp hãm |U_AK| = ${Math.abs(stopV).toFixed(2)} V > U_h = ${stoppingV.toFixed(2)} V đẩy ngược lại Catốt!`
+        : `λ = ${lambdaNm.toFixed(0)} nm > λ₀ = ${lambda0Nm.toFixed(0)} nm (ε < A) → Không xảy ra hiệu ứng quang điện.`
+    });
+
+    // Vacuum quartz tube
+    const tubeL = w * 0.14;
+    const tubeR = w * 0.86;
+    const tubeW = tubeR - tubeL;
+    const tubeTop = h * 0.24;
+    const tubeBot = h * 0.78;
+    const tubeMidY = (tubeTop + tubeBot) / 2;
+
+    ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.45)' : 'rgba(226, 232, 240, 0.55)';
+    ctx.strokeStyle = isDark ? '#475569' : '#64748b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(tubeL, tubeTop, tubeW, tubeBot - tubeTop, 32);
+    ctx.fill();
+    ctx.stroke();
+
+    // Cathode (left plate) & Anode (right plate)
+    const catX = tubeL + 36;
+    const anoX = tubeR - 36;
+    ctx.fillStyle = '#0ea5e9';
+    ctx.fillRect(catX - 6, tubeTop + 22, 12, tubeBot - tubeTop - 44);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(anoX - 6, tubeTop + 22, 12, tubeBot - tubeTop - 44);
+
+    // Incoming photon rays hitting Cathode from top-right
+    for (let i = 0; i < 4; i++) {
+      const targetY = tubeTop + 42 + i * ((tubeBot - tubeTop - 84) / 3);
+      const startX = tubeL + tubeW * 0.42 + i * 16;
+      const startY = 18;
+      const progress = (t * 1.4 + i * 0.23) % 1;
+      const px = startX + (catX - startX) * progress;
+      const py = startY + (targetY - startY) * progress;
+
+      ctx.strokeStyle = beamColor;
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(catX, targetY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = beamColor;
+      ctx.beginPath();
+      ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Ejected photoelectrons moving between Cathode and Anode
+    if (canEmit) {
+      const travelSpan = anoX - catX - 12;
+      const eSpeedFactor = Math.max(0.35, Math.min(2.2, 0.5 + maxKeEv * 0.35 + stopV * 0.14));
+      for (let i = 0; i < 7; i++) {
+        const yOff = tubeTop + 34 + ((i * 29) % Math.max(30, tubeBot - tubeTop - 68));
+        const phase = (t * eSpeedFactor + i * 0.14) % 1;
+        let ex: number;
+        if (netReachable) {
+          ex = catX + 8 + phase * travelSpan;
+        } else {
+          // Electron travels partway then reverses back to cathode due to strong stopping voltage
+          const maxReachRatio = Math.max(0.12, Math.min(0.85, stoppingV / Math.max(0.1, Math.abs(stopV))));
+          const dist = Math.sin(phase * Math.PI) * travelSpan * maxReachRatio;
+          ex = catX + 8 + dist;
+        }
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(ex, yOff, 4, 0, Math.PI * 2);
+        ctx.fill();
+        if (ov.showVectors) {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(ex, yOff);
+          ctx.lineTo(ex + (netReachable || phase < 0.5 ? 10 : -10), yOff);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Labels & Voltage readout
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#0ea5e9';
+    ctx.fillText(`Catốt (K) · A=${workEv.toFixed(2)}eV`, catX + 18, tubeBot + 18);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillText(`Anốt (A) · U_AK=${stopV.toFixed(1)}V`, anoX - 18, tubeBot + 18);
+    ctx.fillStyle = beamColor;
+    ctx.fillText(`Chùm sáng λ = ${lambdaNm.toFixed(0)} nm`, w * 0.5, 22);
+    if (!canEmit) {
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('KHÔNG BỨT ELECTRON (λ > λ₀)', (catX + anoX) / 2, tubeMidY);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn pb-12 overflow-x-hidden">
       {activeView === 'catalog' && (
@@ -3839,6 +4257,75 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                             >
                               Đặt cộng hưởng (Z_L = Z_C)
                             </button>
+                          )}
+
+                          {lesson.simulationType === 'standing_wave' && (
+                            <button
+                              onClick={() =>
+                                setParams((prev) => ({
+                                  ...prev,
+                                  openEnd: Math.round(prev.openEnd ?? 0) === 1 ? 0 : 1
+                                }))
+                              }
+                              className={`px-2.5 py-1 rounded-md font-bold transition-colors ${
+                                Math.round(params.openEnd ?? 0) === 1
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-blue-600 text-white'
+                              }`}
+                            >
+                              {Math.round(params.openEnd ?? 0) === 1
+                                ? 'Chế độ: 1 đầu tự do'
+                                : 'Chế độ: 2 đầu cố định'}
+                            </button>
+                          )}
+
+                          {lesson.simulationType === 'doppler_effect' && (
+                            <div className="flex flex-wrap items-center gap-1">
+                              {[
+                                { label: 'Dưới âm (0.45M)', ratio: 0.45 },
+                                { label: 'Cận âm (1.0M)', ratio: 1.0 },
+                                { label: 'Siêu âm (1.35M)', ratio: 1.35 }
+                              ].map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  onClick={() => {
+                                    const vw = Math.max(100, params.waveSpeed ?? 340);
+                                    setParams((prev) => ({
+                                      ...prev,
+                                      sourceSpeed: Number((vw * preset.ratio).toFixed(0))
+                                    }));
+                                  }}
+                                  className="px-2 py-1 rounded-md font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100"
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {lesson.simulationType === 'photoelectric_effect' && (
+                            <div className="flex flex-wrap items-center gap-1">
+                              {[
+                                { label: 'Cs (2.14 eV)', work: 2.14 },
+                                { label: 'Na (2.28 eV)', work: 2.28 },
+                                { label: 'Zn (3.63 eV)', work: 3.63 },
+                                { label: 'Cu (4.70 eV)', work: 4.7 }
+                              ].map((metal) => (
+                                <button
+                                  key={metal.label}
+                                  onClick={() =>
+                                    setParams((prev) => ({ ...prev, workFunctionEv: metal.work }))
+                                  }
+                                  className={`px-2 py-1 rounded-md font-semibold border ${
+                                    Math.abs((params.workFunctionEv ?? 2.14) - metal.work) < 0.05
+                                      ? 'bg-purple-600 text-white border-purple-600'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                                  }`}
+                                >
+                                  {metal.label}
+                                </button>
+                              ))}
+                            </div>
                           )}
                         </div>
                       </div>

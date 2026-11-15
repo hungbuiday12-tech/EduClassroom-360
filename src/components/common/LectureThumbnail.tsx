@@ -121,6 +121,20 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
       );
     }
 
+    // Circle Theorems & Chords / Secants / Two Circles
+    if (lowCat.includes('đường tròn') || lowId.includes('math-9-9') || lowId.includes('math-9-10') || lowId.includes('circle')) {
+      return (
+        <svg viewBox="0 0 56 56" className="w-full h-full">
+          <circle cx="28" cy="28" r="16" fill="#0ea5e9" fillOpacity="0.14" stroke="#0284c7" strokeWidth="2" />
+          <line x1="14" y1="36" x2="43" y2="21" stroke="#6366f1" strokeWidth="1.8" />
+          <line x1="28" y1="28" x2="29" y2="28" stroke="#0284c7" strokeWidth="2" />
+          <line x1="44" y1="12" x2="36" y2="44" stroke="#f59e0b" strokeWidth="1.8" strokeDasharray="3 2" />
+          <circle cx="28" cy="28" r="2.2" fill="#0284c7" />
+          <circle cx="40.5" cy="18" r="2.3" fill="#ef4444" />
+        </svg>
+      );
+    }
+
     // 2D Geometry / Triangles / Circles / Conics
     if (sim2dMode === 'geometry' || lowCat.includes('hình học')) {
       return (
@@ -283,6 +297,36 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
             <line x1="28" y1="28" x2="40" y2="19" stroke="#f59e0b" strokeWidth="2" />
             <circle cx="40" cy="19" r="4" fill="#ef4444" />
             <circle cx="28" cy="28" r="2.5" fill="#64748b" />
+          </svg>
+        );
+      case 'standing_wave':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <path d="M8 28Q14 11 21 28T35 28T48 28" fill="none" stroke="#0ea5e9" strokeWidth="2.2" />
+            <path d="M8 28Q14 45 21 28T35 28T48 28" fill="none" stroke="#38bdf8" strokeWidth="1.4" strokeDasharray="2.5 2" />
+            <circle cx="8" cy="28" r="2.6" fill="#ef4444" />
+            <circle cx="21" cy="28" r="2.6" fill="#ef4444" />
+            <circle cx="35" cy="28" r="2.6" fill="#ef4444" />
+            <circle cx="48" cy="28" r="2.6" fill="#ef4444" />
+          </svg>
+        );
+      case 'doppler_effect':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <circle cx="31" cy="28" r="6" fill="none" stroke="#38bdf8" strokeWidth="1.6" />
+            <circle cx="27" cy="28" r="12" fill="none" stroke="#38bdf8" strokeWidth="1.4" opacity="0.75" />
+            <circle cx="22" cy="28" r="18" fill="none" stroke="#38bdf8" strokeWidth="1.2" opacity="0.5" />
+            <circle cx="34" cy="28" r="3.4" fill="#f59e0b" />
+          </svg>
+        );
+      case 'photoelectric_effect':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <rect x="11" y="16" width="5" height="24" rx="1.5" fill="#0ea5e9" />
+            <rect x="40" y="16" width="5" height="24" rx="1.5" fill="#f59e0b" />
+            <path d="M26 10L16 25" stroke="#a855f7" strokeWidth="2" strokeDasharray="2.5 2" />
+            <circle cx="26" cy="26" r="2.8" fill="#38bdf8" />
+            <circle cx="33" cy="31" r="2.8" fill="#38bdf8" />
           </svg>
         );
       default:

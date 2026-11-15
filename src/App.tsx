@@ -17,6 +17,7 @@ import { SettingsModal } from './components/settings/SettingsModal';
 import { VisitorLandingPage } from './components/landing/VisitorLandingPage';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 import { WaterRippleLayer } from './components/common/WaterRippleLayer';
+import { FloatingFocusTimer } from './components/common/FloatingFocusTimer';
 import { useNavigation } from './context/NavigationContext';
 import { useLanguage } from './context/LanguageContext';
 import { EXAM_PAPERS } from './data/examData';
@@ -295,6 +296,9 @@ function MainApp() {
               </motion.div>
             </AnimatePresence>
           </main>
+
+          {/* Persistent Bottom-Left Mini Focus Timer & Ambient Audio Widget */}
+          <FloatingFocusTimer />
 
           {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Modern Floating 3-AI Dock */}
           {!isTutorOpen && (

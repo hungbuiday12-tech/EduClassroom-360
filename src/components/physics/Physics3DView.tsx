@@ -121,7 +121,10 @@ export type Physics3DMode =
   | 'thermal_gas_3d'
   | 'circular_motion_3d'
   | 'ac_generator_3d'
-  | 'young_interference_3d';
+  | 'young_interference_3d'
+  | 'standing_wave_3d'
+  | 'doppler_effect_3d'
+  | 'photoelectric_3d';
 
 interface Physics3DViewProps {
   initialMode?: Physics3DMode;
@@ -190,6 +193,18 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
   // 11. Young Double-Slit Interference 3D
   const [youngLambdaUm, setYoungLambdaUm] = useState(0.55);
   const [youngSlitMm, setYoungSlitMm] = useState(1.0);
+
+  // 12. Standing Wave 3D
+  const [standingN, setStandingN] = useState(3);
+  const [standingAmp, setStandingAmp] = useState(0.95);
+
+  // 13. Doppler Effect 3D
+  const [dopplerSpeedRatio, setDopplerSpeedRatio] = useState(0.55);
+  const [dopplerFreq, setDopplerFreq] = useState(2.8);
+
+  // 14. Photoelectric Effect 3D
+  const [photoLambdaNm, setPhotoLambdaNm] = useState(280);
+  const [photoWorkEv, setPhotoWorkEv] = useState(2.14);
 
   // WebGL context safety
   const [contextLost, setContextLost] = useState(false);
@@ -1231,6 +1246,246 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       screenMesh.position.set(3.8, 2.0, 0);
       group.add(screenMesh);
     }
+
+    // -------------------------------------------------------------
+    // SCENE 12: SÓNG DỪNG TRÊN DÂY 3D (STANDING WAVES & NODES)
+    // -------------------------------------------------------------
+    else if (mode === 'standing_wave_3d') {
+      const span = 8.4;
+      const halfSpan = span / 2;
+      const yBase = 2.2;
+      const harmonics = Math.max(1, Math.min(7, Math.round(standingN)));
+      const amp = Math.max(0.2, Math.min(1.5, standingAmp));
+
+      // Support posts at both ends
+      [-halfSpan, halfSpan].forEach((px) => {
+        const post = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.12, 0.16, yBase + 1.2, 16),
+          new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.65, roughness: 0.3 })
+        );
+        post.position.set(px, (yBase + 1.2) / 2, 0);
+        group.add(post);
+      });
+
+      // Equilibrium centerline
+      const eqGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-halfSpan, yBase, 0),
+        new THREE.Vector3(halfSpan, yBase, 0),
+      ]);
+      group.add(new THREE.Line(eqGeo, new THREE.LineBasicMaterial({ color: 0x475569 })));
+
+      // Red node spheres
+      for (let i = 0; i <= harmonics; i++) {
+        const nx = -halfSpan + (i / harmonics) * span;
+        const nodeOrb = new THREE.Mesh(
+          new THREE.SphereGeometry(0.14, 16, 16),
+          new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.35 })
+        );
+        nodeOrb.position.set(nx, yBase, 0);
+        group.add(nodeOrb);
+      }
+
+      // Segmented vibrating beads + connecting polyline
+      const segs = 64;
+      const beads: THREE.Mesh[] = [];
+      const beadGeo = new THREE.SphereGeometry(0.085, 12, 12);
+      const beadMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.45 });
+      const initPts: THREE.Vector3[] = [];
+      for (let i = 0; i <= segs; i++) {
+        const u = i / segs;
+        const bx = -halfSpan + u * span;
+        const bead = new THREE.Mesh(beadGeo, beadMat);
+        bead.position.set(bx, yBase, 0);
+        group.add(bead);
+        beads.push(bead);
+        initPts.push(new THREE.Vector3(bx, yBase, 0));
+      }
+
+      const stringLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(initPts),
+        new THREE.LineBasicMaterial({ color: 0x38bdf8 })
+      );
+      group.add(stringLine);
+
+      let lastStepSeen = -1;
+      const updateInterval = setInterval(() => {
+        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        lastStepSeen = stepTriggerRef.current;
+        const tCur = simStateRef.current.time;
+        const cosW = Math.cos(tCur * (2.2 + harmonics * 0.55));
+        const pts: THREE.Vector3[] = [];
+        for (let i = 0; i <= segs; i++) {
+          const u = i / segs;
+          const bx = -halfSpan + u * span;
+          const by = yBase + amp * Math.sin(harmonics * Math.PI * u) * cosW;
+          beads[i].position.y = by;
+          pts.push(new THREE.Vector3(bx, by, 0));
+        }
+        stringLine.geometry.dispose();
+        stringLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+      }, 28);
+
+      return () => clearInterval(updateInterval);
+    }
+
+    // -------------------------------------------------------------
+    // SCENE 13: HIỆU ỨNG DOPPLER 3D (MOVING SOURCE & WAVEFRONTS)
+    // -------------------------------------------------------------
+    else if (mode === 'doppler_effect_3d') {
+      const yWave = 1.6;
+      const ratio = Math.max(0, Math.min(1.45, dopplerSpeedRatio));
+      const freq = Math.max(1.0, Math.min(5.0, dopplerFreq));
+
+      // Ground observer post at +X
+      const obs = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.2, 1.5, 16),
+        new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669, emissiveIntensity: 0.3 })
+      );
+      obs.position.set(4.5, 0.75, 0);
+      group.add(obs);
+
+      // Moving emitter sphere
+      const sourceOrb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.28, 24, 24),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.55 })
+      );
+      sourceOrb.position.set(-4.0, yWave, 0);
+      group.add(sourceOrb);
+
+      // Pool of 14 expanding 3D wavefront rings
+      const rings: { mesh: THREE.Mesh; emitTime: number; emitX: number }[] = [];
+      const ringBaseGeo = new THREE.TorusGeometry(1, 0.032, 10, 48);
+      ringBaseGeo.rotateX(Math.PI / 2);
+      for (let i = 0; i < 14; i++) {
+        const mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.75 });
+        const ringMesh = new THREE.Mesh(ringBaseGeo, mat);
+        ringMesh.position.set(-4.0, yWave, 0);
+        ringMesh.scale.setScalar(0.01);
+        group.add(ringMesh);
+        rings.push({ mesh: ringMesh, emitTime: -99, emitX: -4.0 });
+      }
+
+      const cycleLen = 4.6;
+      const waveV = 1.85;
+      const srcV = waveV * ratio;
+      let lastStepSeen = -1;
+
+      const updateInterval = setInterval(() => {
+        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        lastStepSeen = stepTriggerRef.current;
+        const tCycle = simStateRef.current.time % cycleLen;
+        const srcX = ratio < 0.01 ? 0 : -4.2 + srcV * tCycle;
+        sourceOrb.position.set(Math.min(4.8, srcX), yWave, 0);
+
+        const intervalSec = Math.max(0.18, 1 / freq);
+        const latestK = Math.floor(tCycle / intervalSec);
+        for (let idx = 0; idx < rings.length; idx++) {
+          const k = latestK - idx;
+          const rObj = rings[idx];
+          if (k < 0) {
+            rObj.mesh.visible = false;
+            continue;
+          }
+          const emitT = k * intervalSec;
+          const age = tCycle - emitT;
+          if (age <= 0 || age > 3.2) {
+            rObj.mesh.visible = false;
+            continue;
+          }
+          rObj.mesh.visible = true;
+          const rad = Math.max(0.08, waveV * age);
+          const emitX = ratio < 0.01 ? 0 : -4.2 + srcV * emitT;
+          rObj.mesh.position.set(emitX, yWave, 0);
+          rObj.mesh.scale.setScalar(rad);
+          (rObj.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0.05, 0.85 * (1 - age / 3.2));
+        }
+      }, 28);
+
+      return () => clearInterval(updateInterval);
+    }
+
+    // -------------------------------------------------------------
+    // SCENE 14: HIỆU ỨNG QUANG ĐIỆN NGOÀI 3D (PHOTOELECTRIC TUBE)
+    // -------------------------------------------------------------
+    else if (mode === 'photoelectric_3d') {
+      const photonEv = 1240 / Math.max(150, photoLambdaNm);
+      const canEmit = photonEv >= photoWorkEv;
+
+      // Glass outer cylinder
+      const glassTube = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.5, 1.5, 7.0, 28, 1, true),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.16, roughness: 0.1, side: THREE.DoubleSide })
+      );
+      glassTube.rotation.z = Math.PI / 2;
+      glassTube.position.set(0, 2.1, 0);
+      group.add(glassTube);
+
+      // Cathode (Blue left disc) & Anode (Amber right disc)
+      const cathode = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.25, 1.25, 0.2, 24),
+        new THREE.MeshStandardMaterial({ color: 0x0ea5e9, metalness: 0.7, roughness: 0.25 })
+      );
+      cathode.rotation.z = Math.PI / 2;
+      cathode.position.set(-2.9, 2.1, 0);
+      group.add(cathode);
+
+      const anode = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.25, 1.25, 0.2, 24),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.7, roughness: 0.25 })
+      );
+      anode.rotation.z = Math.PI / 2;
+      anode.position.set(2.9, 2.1, 0);
+      group.add(anode);
+
+      // Photon spheres hitting cathode
+      const beamHex = photoLambdaNm < 380 ? 0xa855f7 : photoLambdaNm < 470 ? 0x3b82f6 : photoLambdaNm < 570 ? 0x10b981 : 0xef4444;
+      const photons: THREE.Mesh[] = [];
+      const pGeo = new THREE.SphereGeometry(0.11, 12, 12);
+      const pMat = new THREE.MeshBasicMaterial({ color: beamHex });
+      for (let i = 0; i < 6; i++) {
+        const pm = new THREE.Mesh(pGeo, pMat);
+        group.add(pm);
+        photons.push(pm);
+      }
+
+      // Ejected photoelectrons moving cathode -> anode if photonEv >= photoWorkEv
+      const electrons: THREE.Mesh[] = [];
+      const eGeo = new THREE.SphereGeometry(0.1, 12, 12);
+      const eMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.7 });
+      for (let i = 0; i < 8; i++) {
+        const em = new THREE.Mesh(eGeo, eMat);
+        em.visible = canEmit;
+        group.add(em);
+        electrons.push(em);
+      }
+
+      let lastStepSeen = -1;
+      const updateInterval = setInterval(() => {
+        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        lastStepSeen = stepTriggerRef.current;
+        const tCur = simStateRef.current.time;
+
+        for (let i = 0; i < photons.length; i++) {
+          const prog = (tCur * 1.4 + i / photons.length) % 1;
+          const zOff = Math.sin(i * 1.9) * 0.55;
+          const start = new THREE.Vector3(-0.3, 4.4, zOff);
+          const end = new THREE.Vector3(-2.75, 2.1 + Math.cos(i * 1.4) * 0.5, zOff);
+          photons[i].position.lerpVectors(start, end, prog);
+        }
+
+        if (canEmit) {
+          const keScale = Math.max(0.45, Math.min(2.4, 0.7 + (photonEv - photoWorkEv) * 0.55));
+          for (let i = 0; i < electrons.length; i++) {
+            const prog = (tCur * keScale + i / electrons.length) % 1;
+            const yOff = 2.1 + Math.sin(i * 2.1) * 0.65;
+            const zOff = Math.cos(i * 1.7) * 0.65;
+            electrons[i].position.set(-2.7 + prog * 5.4, yOff, zOff);
+          }
+        }
+      }, 28);
+
+      return () => clearInterval(updateInterval);
+    }
   }, [
     mode,
     isRunning,
@@ -1258,6 +1513,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     genFieldB3D,
     youngLambdaUm,
     youngSlitMm,
+    standingN,
+    standingAmp,
+    dopplerSpeedRatio,
+    dopplerFreq,
+    photoLambdaNm,
+    photoWorkEv,
   ]);
 
   // Derived telemetry
@@ -1307,6 +1568,9 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
               {mode === 'circular_motion_3d' && 'Chuyển Động Tròn Đều & Lực Hướng Tâm 3D'}
               {mode === 'ac_generator_3d' && 'Máy Phát Điện Xoay Chiều & Từ Thông 3D'}
               {mode === 'young_interference_3d' && 'Giao Thoa Khe Y-âng & Hệ Vân Sáng Tối 3D'}
+              {mode === 'standing_wave_3d' && 'Sóng Dừng Trên Sợi Dây & Nút Bụng 3D'}
+              {mode === 'doppler_effect_3d' && 'Hiệu Ứng Doppler & Nón Sóng Xung Kích 3D'}
+              {mode === 'photoelectric_3d' && 'Ống Chân Không & Hiệu Ứng Quang Điện 3D'}
             </span>
           </div>
 
@@ -1320,9 +1584,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
                 { id: 'pendulum_spring', label: 'Con Lắc 3D' },
                 { id: 'projectile_3d', label: 'Ném Xiên 3D' },
                 { id: 'wave_ripple', label: 'Sóng Nước 3D' },
+                { id: 'standing_wave_3d', label: 'Sóng Dừng 3D' },
+                { id: 'doppler_effect_3d', label: 'Doppler 3D' },
                 { id: 'thermal_gas_3d', label: 'Khí Lí Tưởng 3D' },
                 { id: 'ac_generator_3d', label: 'Máy Phát AC 3D' },
                 { id: 'young_interference_3d', label: 'Khe Y-âng 3D' },
+                { id: 'photoelectric_3d', label: 'Quang Điện 3D' },
                 { id: 'lorentz_helix', label: 'Từ Trường Lorentz' },
                 { id: 'bohr_atom', label: 'Nguyên Tử Bohr' },
               ].map((m) => (
@@ -1814,6 +2081,104 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
                   </div>
                   <div className="text-[11px] text-slate-400 font-mono">
                     Khoảng vân i = λD/a (D = 2m) = {((youngLambdaUm * 2.0) / Math.max(0.2, youngSlitMm)).toFixed(2)} mm · Vân sáng trung tâm nằm tại chính giữa màn quan sát!
+                  </div>
+                </div>
+              )}
+
+              {/* 12. Standing Wave 3D */}
+              {mode === 'standing_wave_3d' && (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <Numeric3DControl
+                      label="Số bó sóng nguyên k"
+                      unit="bó"
+                      value={standingN}
+                      min={1}
+                      max={6}
+                      step={1}
+                      accentClass="accent-cyan-500"
+                      onChange={(v) => setStandingN(v)}
+                    />
+                    <Numeric3DControl
+                      label="Biên độ bụng sóng"
+                      unit="m"
+                      value={standingAmp}
+                      min={0.3}
+                      max={1.4}
+                      step={0.05}
+                      accentClass="accent-emerald-500"
+                      onChange={(v) => setStandingAmp(v)}
+                    />
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    Dây 2 đầu cố định: Số nút sóng = {Math.round(standingN) + 1} (điểm đỏ đứng yên), số bụng sóng = {Math.round(standingN)} (dao động mạnh nhất).
+                  </div>
+                </div>
+              )}
+
+              {/* 13. Doppler Effect 3D */}
+              {mode === 'doppler_effect_3d' && (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <Numeric3DControl
+                      label="Tỉ số tốc độ nguồn v_s / v"
+                      unit="Mach"
+                      value={dopplerSpeedRatio}
+                      min={0}
+                      max={1.45}
+                      step={0.05}
+                      accentClass="accent-amber-500"
+                      onChange={(v) => setDopplerSpeedRatio(v)}
+                    />
+                    <Numeric3DControl
+                      label="Tần số phát f₀"
+                      unit="Hz"
+                      value={dopplerFreq}
+                      min={1.0}
+                      max={5.0}
+                      step={0.2}
+                      accentClass="accent-cyan-500"
+                      onChange={(v) => setDopplerFreq(v)}
+                    />
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    {dopplerSpeedRatio >= 1
+                      ? `Nguồn siêu âm (Mach ${dopplerSpeedRatio.toFixed(2)}) vượt mặt đầu sóng → Hình thành sóng xung kích!`
+                      : `Các gợn sóng phía trước nguồn nén lại: tần số máy thu f' = ${(dopplerFreq / Math.max(0.05, 1 - dopplerSpeedRatio)).toFixed(2)} Hz.`}
+                  </div>
+                </div>
+              )}
+
+              {/* 14. Photoelectric Effect 3D */}
+              {mode === 'photoelectric_3d' && (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <Numeric3DControl
+                      label="Bước sóng ánh sáng λ"
+                      unit="nm"
+                      value={photoLambdaNm}
+                      min={180}
+                      max={700}
+                      step={10}
+                      accentClass="accent-purple-500"
+                      onChange={(v) => setPhotoLambdaNm(v)}
+                    />
+                    <Numeric3DControl
+                      label="Công thoát kim loại A"
+                      unit="eV"
+                      value={photoWorkEv}
+                      min={1.8}
+                      max={5.0}
+                      step={0.1}
+                      accentClass="accent-sky-500"
+                      onChange={(v) => setPhotoWorkEv(v)}
+                    />
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    ε = {(1240 / Math.max(150, photoLambdaNm)).toFixed(2)} eV · Giới hạn λ₀ = {(1240 / photoWorkEv).toFixed(0)} nm ·{' '}
+                    {1240 / Math.max(150, photoLambdaNm) >= photoWorkEv
+                      ? 'Đủ năng lượng bứt quang electron về phía Anốt!'
+                      : 'Chưa đủ công thoát A (ε < A) → Không có quang electron!'}
                   </div>
                 </div>
               )}

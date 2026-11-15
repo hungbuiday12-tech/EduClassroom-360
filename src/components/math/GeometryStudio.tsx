@@ -69,6 +69,9 @@ type GeoPreset =
   | 'pythagoras'
   | 'triangle_explorer'
   | 'circle_tangent'
+  | 'circle_chords_angles'
+  | 'circle_secant_power'
+  | 'two_circles_relative'
   | 'inscribed_quad'
   | 'vector_parallelogram'
   | 'conic_ellipse'
@@ -182,6 +185,21 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
       { id: 'O', x: 300, y: 250, label: 'O', isFixed: true },
       { id: 'R', x: 420, y: 250, label: 'R' },
       { id: 'P', x: 520, y: 160, label: 'P' }
+    ],
+    circle_chords_angles: [
+      { id: 'A', x: 205, y: 195, label: 'A' },
+      { id: 'B', x: 395, y: 195, label: 'B' },
+      { id: 'C', x: 325, y: 380, label: 'C' }
+    ],
+    circle_secant_power: [
+      { id: 'P', x: 515, y: 185, label: 'P' },
+      { id: 'A', x: 215, y: 155, label: 'A' }
+    ],
+    two_circles_relative: [
+      { id: 'O1', x: 225, y: 250, label: 'O₁' },
+      { id: 'R1', x: 330, y: 250, label: 'R₁' },
+      { id: 'O2', x: 430, y: 250, label: 'O₂' },
+      { id: 'R2', x: 505, y: 250, label: 'R₂' }
     ],
     inscribed_quad: [
       { id: 'A', x: 210, y: 150, label: 'A' },
@@ -1148,6 +1166,333 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
           16,
           26
         );
+      } else if (activePreset === 'circle_chords_angles') {
+        const cx = width / 2;
+        const cy = height / 2 + 8;
+        const r = Math.min(width, height) * 0.34;
+        const O = { x: cx, y: cy };
+
+        const projectOnCircle = (pt: GeoPoint) => {
+          const ang = Math.atan2(pt.y - cy, pt.x - cx);
+          return { x: cx + r * Math.cos(ang), y: cy + r * Math.sin(ang) };
+        };
+
+        const rawA = activePts.find((p) => p.id === 'A') || { id: 'A', x: cx - 80, y: cy - 60, label: 'A' };
+        const rawB = activePts.find((p) => p.id === 'B') || { id: 'B', x: cx + 80, y: cy - 60, label: 'B' };
+        const rawC = activePts.find((p) => p.id === 'C') || { id: 'C', x: cx + 20, y: cy + r, label: 'C' };
+
+        const A = projectOnCircle(rawA);
+        const B = projectOnCircle(rawB);
+        const C = projectOnCircle(rawC);
+        const H = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+
+        // Circle (O; R)
+        ctx.fillStyle = 'rgba(14, 165, 233, 0.08)';
+        ctx.strokeStyle = '#0ea5e9';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Central Angle AOB filled sector wedge
+        const aO = Math.atan2(A.y - cy, A.x - cx);
+        const bO = Math.atan2(B.y - cy, B.x - cx);
+        let diffO = bO - aO;
+        while (diffO <= -Math.PI) diffO += Math.PI * 2;
+        while (diffO > Math.PI) diffO -= Math.PI * 2;
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.16)';
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.arc(O.x, O.y, r * 0.36, aO, aO + diffO, diffO < 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Radii OA, OB and perpendicular distance OH ⊥ AB
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(O.x, O.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // Perpendicular OH (midpoint theorem)
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(H.x, H.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Chord AB & Inscribed Triangle sides CA, CB
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(A.x, A.y);
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // Tangent line at A (to show tangent-chord angle)
+        const txDir = { x: -(A.y - cy), y: A.x - cx };
+        const tLen = Math.hypot(txDir.x, txDir.y) || 1;
+        const ux = txDir.x / tLen;
+        const uy = txDir.y / tLen;
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = '#ec4899';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(A.x - ux * 110, A.y - uy * 110);
+        ctx.lineTo(A.x + ux * 110, A.y + uy * 110);
+        ctx.stroke();
+        ctx.restore();
+
+        // Points O and H
+        [
+          { pt: O, lbl: 'O', col: '#ef4444' },
+          { pt: H, lbl: 'H (AH=HB)', col: '#ef4444' }
+        ].forEach((m) => {
+          ctx.fillStyle = m.col;
+          ctx.beginPath();
+          ctx.arc(m.pt.x, m.pt.y, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+          ctx.font = 'bold 11px "JetBrains Mono", monospace';
+          ctx.fillText(m.lbl, m.pt.x + 8, m.pt.y + 14);
+        });
+
+        // Compute inscribed angle ∠ACB and central angle ∠AOB
+        const vec = (p1: { x: number; y: number }, p2: { x: number; y: number }) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
+        const angleBetween = (v1: { x: number; y: number }, v2: { x: number; y: number }) => {
+          const d1 = Math.hypot(v1.x, v1.y) || 1;
+          const d2 = Math.hypot(v2.x, v2.y) || 1;
+          const cos = Math.max(-1, Math.min(1, (v1.x * v2.x + v1.y * v2.y) / (d1 * d2)));
+          return (Math.acos(cos) * 180) / Math.PI;
+        };
+        const centralDeg = angleBetween(vec(O, A), vec(O, B));
+        const inscribedDeg = angleBetween(vec(C, A), vec(C, B));
+        const chordCm = (dist(A, B) / 25).toFixed(2);
+        const ohCm = (dist(O, H) / 25).toFixed(2);
+        const rCm = (r / 25).toFixed(2);
+
+        ctx.fillStyle = '#0ea5e9';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(
+          `R=${rCm}cm · Dây AB=${chordCm}cm · OH=${ohCm}cm · ∠AOB=${centralDeg.toFixed(1)}° · ∠ACB=${inscribedDeg.toFixed(1)}°`,
+          14,
+          26
+        );
+      } else if (activePreset === 'circle_secant_power') {
+        const cx = width * 0.42;
+        const cy = height * 0.54;
+        const r = Math.min(width, height) * 0.3;
+        const O = { x: cx, y: cy };
+
+        const rawP = activePts.find((p) => p.id === 'P') || { x: cx + r + 110, y: cy - 60 };
+        const rawA = activePts.find((p) => p.id === 'A') || { x: cx - 70, y: cy - 75 };
+
+        // Enforce P strictly outside circle (dist > r + 24)
+        let dxP = rawP.x - cx;
+        let dyP = rawP.y - cy;
+        let dP = Math.hypot(dxP, dyP) || 1;
+        if (dP < r + 28) {
+          dxP = (dxP / dP) * (r + 28);
+          dyP = (dyP / dP) * (r + 28);
+          dP = r + 28;
+        }
+        const P = { x: cx + dxP, y: cy + dyP };
+
+        // Project direction from P through A on circle to construct secant PAB
+        const angA = Math.atan2(rawA.y - cy, rawA.x - cx);
+        const A = { x: cx + r * Math.cos(angA), y: cy + r * Math.sin(angA) };
+
+        // Solve line P + t * u intersecting circle centered at O with radius r
+        const dirX = A.x - P.x;
+        const dirY = A.y - P.y;
+        const lenD = Math.hypot(dirX, dirY) || 1;
+        const ux = dirX / lenD;
+        const uy = dirY / lenD;
+        const ocX = P.x - O.x;
+        const ocY = P.y - O.y;
+        const bCoef = 2 * (ocX * ux + ocY * uy);
+        const cCoef = ocX * ocX + ocY * ocY - r * r;
+        const disc = Math.max(0, bCoef * bCoef - 4 * cCoef);
+        const t1 = (-bCoef - Math.sqrt(disc)) / 2;
+        const t2 = (-bCoef + Math.sqrt(disc)) / 2;
+        const B = { x: P.x + t1 * ux, y: P.y + t1 * uy };
+        const A2 = { x: P.x + t2 * ux, y: P.y + t2 * uy };
+
+        // Tangents from P
+        const angPO = Math.atan2(O.y - P.y, O.x - P.x);
+        const alpha = Math.asin(Math.min(0.99, r / dP));
+        const ptLen = Math.sqrt(Math.max(0, dP * dP - r * r));
+        const T1 = { x: P.x + ptLen * Math.cos(angPO + alpha), y: P.y + ptLen * Math.sin(angPO + alpha) };
+
+        // Circle
+        ctx.fillStyle = 'rgba(139, 92, 246, 0.08)';
+        ctx.strokeStyle = '#8b5cf6';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Radius OT1 perpendicular to PT1
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(T1.x, T1.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Tangent PT1
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(T1.x, T1.y);
+        ctx.stroke();
+
+        // Secant P -> B -> A2
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(A2.x, A2.y);
+        ctx.stroke();
+
+        // Points O, B, T1, A2
+        [
+          { pt: O, lbl: 'O', col: '#ef4444' },
+          { pt: B, lbl: 'B', col: '#10b981' },
+          { pt: A2, lbl: 'A′', col: '#10b981' },
+          { pt: T1, lbl: 'T', col: '#f59e0b' }
+        ].forEach((m) => {
+          ctx.fillStyle = m.col;
+          ctx.beginPath();
+          ctx.arc(m.pt.x, m.pt.y, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+          ctx.font = 'bold 11px "JetBrains Mono", monospace';
+          ctx.fillText(m.lbl, m.pt.x + 7, m.pt.y - 6);
+        });
+
+        const pbCm = dist(P, B) / 25;
+        const paCm = dist(P, A2) / 25;
+        const ptCm = dist(P, T1) / 25;
+        ctx.fillStyle = '#8b5cf6';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(
+          `PB=${pbCm.toFixed(2)} · PA′=${paCm.toFixed(2)} ⇒ PB·PA′ = ${(pbCm * paCm).toFixed(2)} | PT² = ${(ptCm * ptCm).toFixed(2)}`,
+          14,
+          26
+        );
+      } else if (activePreset === 'two_circles_relative') {
+        const O1 = activePts.find((p) => p.id === 'O1') || { x: 225, y: 250 };
+        const R1Pt = activePts.find((p) => p.id === 'R1') || { x: 330, y: 250 };
+        const O2 = activePts.find((p) => p.id === 'O2') || { x: 430, y: 250 };
+        const R2Pt = activePts.find((p) => p.id === 'R2') || { x: 505, y: 250 };
+
+        const r1 = Math.max(24, dist(O1, R1Pt));
+        const r2 = Math.max(24, dist(O2, R2Pt));
+        const d = dist(O1, O2);
+
+        // Circle 1
+        ctx.fillStyle = 'rgba(14, 165, 233, 0.1)';
+        ctx.strokeStyle = '#0ea5e9';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(O1.x, O1.y, r1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Circle 2
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.1)';
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(O2.x, O2.y, r2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Centerline O1O2
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = isDark ? '#e2e8f0' : '#475569';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(O1.x, O1.y);
+        ctx.lineTo(O2.x, O2.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Check intersection points
+        const eps = 5;
+        let statusText = '';
+        if (d > r1 + r2 + eps) {
+          statusText = 'Ngoài nhau (d > R₁ + R₂ · 0 giao điểm)';
+        } else if (Math.abs(d - (r1 + r2)) <= eps) {
+          statusText = 'Tiếp xúc ngoài (d = R₁ + R₂ · 1 giao điểm)';
+        } else if (d < Math.abs(r1 - r2) - eps) {
+          statusText = 'Đựng nhau (d < |R₁ - R₂| · 0 giao điểm)';
+        } else if (Math.abs(d - Math.abs(r1 - r2)) <= eps) {
+          statusText = 'Tiếp xúc trong (d = |R₁ - R₂| · 1 giao điểm)';
+        } else {
+          statusText = 'Cắt nhau tại 2 điểm (|R₁-R₂| < d < R₁+R₂)';
+          const a = (r1 * r1 - r2 * r2 + d * d) / (2 * Math.max(1, d));
+          const h = Math.sqrt(Math.max(0, r1 * r1 - a * a));
+          const ux = (O2.x - O1.x) / Math.max(1, d);
+          const uy = (O2.y - O1.y) / Math.max(1, d);
+          const px = O1.x + a * ux;
+          const py = O1.y + a * uy;
+          const M1 = { x: px + h * -uy, y: py + h * ux };
+          const M2 = { x: px - h * -uy, y: py - h * ux };
+
+          // Common chord M1M2 perpendicular to O1O2
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(M1.x, M1.y);
+          ctx.lineTo(M2.x, M2.y);
+          ctx.stroke();
+
+          [
+            { pt: M1, lbl: 'M' },
+            { pt: M2, lbl: 'N' }
+          ].forEach((m) => {
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(m.pt.x, m.pt.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+            ctx.font = 'bold 11px "JetBrains Mono", monospace';
+            ctx.fillText(m.lbl, m.pt.x + 7, m.pt.y - 6);
+          });
+        }
+
+        ctx.fillStyle = '#0ea5e9';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(
+          `R₁=${(r1 / 25).toFixed(1)} · R₂=${(r2 / 25).toFixed(1)} · d=${(d / 25).toFixed(1)}cm ⇒ ${statusText}`,
+          14,
+          26
+        );
       }
 
       // Draw vertex handles for 2D presets
@@ -1400,10 +1745,18 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
               if (p.id === 'A') return { ...p, y: Math.max(80, Math.min(my, 320)) };
               if (p.id === 'C') return { ...p, x: Math.max(260, Math.min(mx, 560)) };
             }
-            if (activePreset === 'inscribed_quad') {
+            if (activePreset === 'inscribed_quad' || activePreset === 'circle_chords_angles') {
               const rad = Math.min(rect.width, rect.height) * 0.34;
-              const ang = Math.atan2(my - cy, mx - cx);
-              return { ...p, x: cx + rad * Math.cos(ang), y: cy + rad * Math.sin(ang) };
+              const yOffset = activePreset === 'circle_chords_angles' ? cy + 8 : cy;
+              const ang = Math.atan2(my - yOffset, mx - cx);
+              return { ...p, x: cx + rad * Math.cos(ang), y: yOffset + rad * Math.sin(ang) };
+            }
+            if (activePreset === 'circle_secant_power' && p.id === 'A') {
+              const scx = rect.width * 0.42;
+              const scy = rect.height * 0.54;
+              const rad = Math.min(rect.width, rect.height) * 0.3;
+              const ang = Math.atan2(my - scy, mx - scx);
+              return { ...p, x: scx + rad * Math.cos(ang), y: scy + rad * Math.sin(ang) };
             }
             if (activePreset === 'conic_ellipse' && p.id === 'M') {
               const a = Math.min(rect.width * 0.36, 185);
@@ -1718,7 +2071,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
             {[
               { id: 'pythagoras' as GeoPreset, label: 'Định lý Pythagoras' },
               { id: 'triangle_explorer' as GeoPreset, label: 'Tam giác & Trọng tâm G' },
+              { id: 'circle_chords_angles' as GeoPreset, label: 'Dây cung & Góc đường tròn' },
               { id: 'circle_tangent' as GeoPreset, label: 'Đường tròn & 2 Tiếp tuyến' },
+              { id: 'circle_secant_power' as GeoPreset, label: 'Cát tuyến & Phương tích' },
+              { id: 'two_circles_relative' as GeoPreset, label: 'Vị trí tương đối 2 đường tròn' },
               { id: 'inscribed_quad' as GeoPreset, label: 'Tứ giác nội tiếp' },
               { id: 'vector_parallelogram' as GeoPreset, label: 'Vectơ & Tích vô hướng' },
               { id: 'conic_ellipse' as GeoPreset, label: 'Elip & Hai tiêu điểm' },
@@ -1754,7 +2110,7 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
             {/* Pending Point Floating Instruction */}
             {pendingPointId && (
-              <div className="absolute top-3 left-3 sm:left-4 bg-indigo-600/90 text-white text-xs px-3 py-1.5 rounded-lg shadow-md backdrop-blur-sm animate-pulse">
+              <div className="absolute top-3 left-3 sm:left-4 bg-indigo-600/90 text-white text-xs px-3 py-1.5 rounded-lg shadow-md backdrop-blur-sm">
                 Đang chọn điểm thứ 2 để hoàn tất dựng hình...
               </div>
             )}
@@ -1762,7 +2118,7 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
           {/* Instructions Overlay (Below canvas on mobile < sm, floating bottom-left on sm+) */}
           <div className="relative sm:absolute sm:bottom-3 sm:left-4 m-2 sm:m-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-lg px-3 py-1.5 text-[11px] text-slate-600 dark:text-slate-400 shadow-sm flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0" />
             <span>
               {studioMode === 'free_construction'
                 ? activeTool === 'segment'
@@ -1962,6 +2318,48 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
                 </div>
                 <p className="text-slate-500">
                   Kéo điểm P hoặc điểm R (bán kính) để quan sát hai tiếp điểm T₁ và T₂ tự động bám sát đường tròn.
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'circle_chords_angles' && (
+              <div className="space-y-3 text-xs">
+                <p className="text-slate-600 dark:text-slate-400">
+                  <strong>Liên hệ đường kính – dây cung &amp; Góc với đường tròn:</strong> Đường vuông góc OH hạ từ tâm O xuống dây AB đi qua trung điểm H của AB. Góc nội tiếp ∠ACB luôn bằng nửa góc ở tâm ∠AOB cùng chắn cung AB (hoặc bù khi C thuộc cung nhỏ).
+                </p>
+                <div className="p-3 bg-sky-50 dark:bg-sky-950/20 border border-sky-200/50 dark:border-sky-900/40 rounded-lg font-mono text-center text-sky-900 dark:text-sky-200 font-bold">
+                  OH ⊥ AB ⇒ HA = HB = AB/2 · (AB/2)² + OH² = R²
+                </div>
+                <p className="text-slate-500">
+                  Kéo A, B hoặc C chạy quanh đường tròn để quan sát tiếp tuyến tại A, độ dài dây cung AB và sự thay đổi của OH.
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'circle_secant_power' && (
+              <div className="space-y-3 text-xs">
+                <p className="text-slate-600 dark:text-slate-400">
+                  <strong>Cát tuyến – Tiếp tuyến &amp; Phương tích của điểm P:</strong> Từ điểm P ngoài đường tròn (O), kẻ cát tuyến PBA′ và tiếp tuyến PT: tích PB · PA′ luôn không đổi và bằng bình phương tiếp tuyến PT².
+                </p>
+                <div className="p-3 bg-violet-50 dark:bg-violet-950/20 border border-violet-200/50 dark:border-violet-900/40 rounded-lg font-mono text-center text-violet-900 dark:text-violet-200 font-bold">
+                  𝒫<sub>P/(O)</sub> = PB · PA′ = PT² = OP² - R²
+                </div>
+                <p className="text-slate-500">
+                  Kéo điểm P ra xa gần hoặc xoay điểm A trên đường tròn để kiểm chứng tích PB·PA′ luôn bằng đúng PT².
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'two_circles_relative' && (
+              <div className="space-y-3 text-xs">
+                <p className="text-slate-600 dark:text-slate-400">
+                  <strong>Vị trí tương đối hai đường tròn (O₁; R₁) &amp; (O₂; R₂):</strong> So sánh khoảng cách hai tâm d = O₁O₂ với tổng (R₁ + R₂) và hiệu |R₁ - R₂|. Khi cắt nhau, đường nối tâm O₁O₂ là trung trực của dây chung MN.
+                </p>
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 rounded-lg font-mono text-center text-amber-900 dark:text-amber-200 font-bold">
+                  |R₁ - R₂| &lt; d &lt; R₁ + R₂ ⇔ Cắt nhau (O₁O₂ ⊥ MN)
+                </div>
+                <p className="text-slate-500">
+                  Kéo O₁, O₂ để dịch chuyển hai tâm hoặc kéo R₁, R₂ để thay đổi bán kính và xem dây chung MN tự xuất hiện.
                 </p>
               </div>
             )}

@@ -20,12 +20,16 @@ import {
   Settings,
   GitBranch,
   FileText,
-  Trophy
+  Trophy,
+  Star,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../context/BackgroundContext';
 import { useNavigation, getLocationLabel } from '../context/NavigationContext';
+import { useAudio } from '../context/AudioContext';
 import { BrandLogo } from './common/BrandLogo';
 import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
@@ -54,7 +58,8 @@ export const Header: React.FC<HeaderProps> = ({
   const { language, toggleLanguage, t } = useLanguage();
   const isEn = language === 'en';
   const { creatureTheme, setCreatureTheme } = useBackgroundTheme();
-  const { canGoBack, previousLocation, goBack, goClassroom } = useNavigation();
+  const { canGoBack, previousLocation, goBack, goClassroom, requestScrollToReviews } = useNavigation();
+  const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCreatureMenuOpen, setIsCreatureMenuOpen] = useState(false);
@@ -96,8 +101,8 @@ export const Header: React.FC<HeaderProps> = ({
       id: 'math' as const,
       title: isEn ? 'Mathematics' : 'Toán học',
       subtitle: isEn
-        ? `${MATH_LECTURES.length} lectures · Oxy & Oxyz 3D models`
-        : `${MATH_LECTURES.length} bài giảng · Đồ thị Oxy & 7 mô hình Oxyz 3D`,
+        ? `${MATH_LECTURES.length} lectures · Oxy Circles & 8 Oxyz 3D scenes`
+        : `${MATH_LECTURES.length} bài giảng · Đường tròn & 8 mô hình 3D`,
       icon: <Compass className="w-5 h-5 text-sky-500 dark:text-sky-400" />,
       iconBox: 'bg-sky-500/15 border-sky-500/30',
       activeRow:
@@ -107,8 +112,8 @@ export const Header: React.FC<HeaderProps> = ({
       id: 'physics' as const,
       title: isEn ? 'Physics' : 'Vật lí',
       subtitle: isEn
-        ? `${PHYSICS_LESSONS.length} lessons · 2D Lab & 11 3D simulations`
-        : `${PHYSICS_LESSONS.length} bài thí nghiệm 2D & 11 mô phỏng 3D trực quan`,
+        ? `${PHYSICS_LESSONS.length} lessons · 19 2D Labs & 14 3D models`
+        : `${PHYSICS_LESSONS.length} bài thí nghiệm 2D & 14 mô phỏng 3D trực quan`,
       icon: <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400" />,
       iconBox: 'bg-amber-500/15 border-amber-500/30',
       activeRow:
@@ -173,7 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-950/82 backdrop-blur-2xl border-b border-slate-200/75 dark:border-white/10 shadow-[0_6px_30px_-18px_rgba(15,23,42,0.18)]">
+    <header className="sticky top-0 z-40 w-full bg-white/84 dark:bg-slate-950/84 backdrop-blur-2xl border-b border-indigo-200/60 dark:border-indigo-500/20 shadow-[0_10px_35px_-16px_rgba(79,70,229,0.25)]">
       {/* ROW 1: Brand + Utility Cluster pushed right next to Synapse on the left | Settings & Auth on the right */}
       <div className="w-full px-3 sm:px-5 lg:px-7 flex items-center justify-between gap-2 sm:gap-3 h-14 sm:h-15">
         {/* Left Cluster: Back + Brand + VI/EN + XP + Creatures + Theme */}
@@ -301,14 +306,41 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Right Cluster: Settings Button + User Account / Sign In */}
+        {/* Right Cluster: Quick Ambient Audio Toggle + Settings Button + User Account / Sign In */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Quick Background Soundscape Toggle */}
+          <button
+            type="button"
+            onClick={toggleBgPlaying}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs ${
+              isBgPlaying && bgSound !== 'off'
+                ? 'border-emerald-400/70 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                : 'border-slate-200/90 dark:border-white/15 bg-white/90 dark:bg-slate-900/85 text-slate-600 dark:text-slate-300 hover:border-indigo-400/60'
+            }`}
+            title={isEn ? 'Toggle background ambient sound' : 'Bật/tắt âm thanh nền học tập'}
+          >
+            {isBgPlaying && bgSound !== 'off' ? (
+              <Volume2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            ) : (
+              <VolumeX className="w-4 h-4 text-slate-400 shrink-0" />
+            )}
+            <span className="hidden lg:inline">
+              {isBgPlaying && bgSound !== 'off'
+                ? isEn
+                  ? 'Music On'
+                  : 'Nhạc nền'
+                : isEn
+                ? 'Sound Off'
+                : 'Âm nền'}
+            </span>
+          </button>
+
           {/* Dedicated Settings Trigger */}
           <button
             type="button"
             onClick={onOpenSettings}
             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200/90 dark:border-white/15 bg-white/90 dark:bg-slate-900/85 hover:border-indigo-400/70 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
-            title={isEn ? 'Account, Gmail, Password & Preferences' : 'Cài đặt tài khoản, Gmail, mật khẩu & giao diện'}
+            title={isEn ? 'Account, Audio, Gmail & Preferences' : 'Cài đặt âm thanh, tài khoản & giao diện'}
           >
             <Settings className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
             <span className="hidden sm:inline">{isEn ? 'Settings' : 'Cài đặt'}</span>
@@ -473,6 +505,17 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Trophy className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0" />
           <span>{t('nav.arena', 'Thi Đấu & BXH', 'Weekly Arena')}</span>
+        </button>
+
+        {/* Quick Scroll Button: Đánh giá & Bình chọn */}
+        <button
+          type="button"
+          onClick={requestScrollToReviews}
+          className="flex items-center gap-2 whitespace-nowrap shrink-0 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-xl border border-amber-300/80 dark:border-amber-500/40 bg-gradient-to-r from-amber-50 to-rose-50 dark:from-amber-950/50 dark:to-rose-950/40 text-amber-800 dark:text-amber-300 hover:border-amber-500 hover:shadow-xs text-[13px] sm:text-[15px] font-bold transition-all cursor-pointer"
+          title={isEn ? 'Jump to Ratings & Community Votes' : 'Cuộn xuống phần Đánh giá & Bình chọn'}
+        >
+          <Star className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-amber-500 fill-amber-400 shrink-0" />
+          <span>{isEn ? 'Ratings & Votes' : 'Đánh giá & Bình chọn'}</span>
         </button>
       </nav>
     </header>

@@ -23,6 +23,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { EXAM_PAPERS } from '../data/examData';
+import { MATH_LECTURES } from '../data/curriculumData';
+import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
+import { CS_LESSONS } from '../data/csLessonsData';
 
 interface ClassroomOverviewProps {
   onNavigate: (subject: SubjectType) => void;
@@ -34,6 +38,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
   const { user, openAuthModal } = useAuth();
   const { t, translate } = useLanguage();
   const currentXP = user ? user.xp : xp;
+  const totalExams = EXAM_PAPERS.length;
+  const chuyenExams = EXAM_PAPERS.filter((e) => e.track === 'chuyen').length;
+  const standardExams = EXAM_PAPERS.filter((e) => e.track === 'khong_chuyen').length;
 
   // Pomodoro Timer State
   const [pomodoroSeconds, setPomodoroSeconds] = useState<number>(25 * 60);
@@ -101,21 +108,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
   return (
     <div className="space-y-8">
       {/* Smart Digital Blackboard Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white p-8 border border-slate-800 shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white p-5 sm:p-8 border border-slate-800 shadow-xl">
         {/* Subtle grid pattern background */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.15),transparent_50%)] pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="max-w-2xl">
+          <div className="max-w-2xl min-w-0">
             <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold mb-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-400" />
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
               <span>{t('overview.badge', 'Phòng học trực tuyến thông minh · Hệ thống mô phỏng đa môn', 'Smart Virtual Classroom · Multi-Discipline Simulation')}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+            <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
               {t('overview.heroTitle', 'Bục giảng ảo: Khám phá trực quan Toán học, Vật lí & Tin học (Lớp 9 - 12)', 'Interactive STEM Galaxy: Math, Physics & Computer Science (Grades 9-12)')}
             </h1>
-            <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-              {t('overview.heroDesc', 'Trang bị các công cụ chuyên sâu: bài giảng từng bài tích hợp đồ thị hàm số và hình học Oxy (Toán), phòng thí nghiệm mô phỏng 2D thời gian thực (Lí), và hệ thống tự do giải đề Sublime Text (Tin).', 'Equipped with specialized interactive tools: 2D dynamic graphers and geometry (Math), real-time 60fps physics simulation lab (Physics), and Sublime Text style coding studio with online judge (CS).')}
+            <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+              {t('overview.heroDesc', 'Trang bị các công cụ chuyên sâu: bài giảng 5 phần tích hợp đồ thị hàm số, hình học 2D & 7 cảnh Oxyz 3D (Toán), phòng thí nghiệm 2D/3D 60 FPS (Lí), và hệ thống giải đề Sublime Text 4 (Tin).', 'Equipped with specialized interactive tools: 5-step lectures with 2D/3D graphers and spatial geometry (Math), real-time 60fps 2D/3D physics labs (Physics), and Sublime Text 4 coding studio with online judge (CS).')}
             </p>
 
             <div className="flex flex-wrap items-center gap-2.5 mt-5">
@@ -153,7 +160,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
           </div>
 
           {/* Student Status Badge / Level */}
-          <div className="shrink-0 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl p-5 min-w-[250px]">
+          <div className="shrink-0 w-full lg:w-auto lg:min-w-[260px] bg-white/10 backdrop-blur-md border border-white/10 rounded-xl p-4 sm:p-5">
             {user ? (
               <div className="flex items-center gap-3 mb-3">
                 {user.avatarUrl ? (
@@ -221,14 +228,14 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
               <Compass className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              Toán học tương tác
+              Toán học tương tác ({MATH_LECTURES.length} bài)
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Vẽ đồ thị hàm số đa thức, phân thức, lượng giác; vẽ hình học kéo thả điểm và định lý Pythagoras trực quan.
+              Vẽ đồ thị đa thức, logarit, trị tuyệt đối, tô diện tích tích phân; hình học kéo thả &amp; 7 mô hình Oxyz 3D trực quan.
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-blue-600 dark:text-blue-400">
-            <span>Mở công cụ vẽ Oxy</span>
+            <span>Mở công cụ vẽ Oxy &amp; 3D</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
@@ -243,10 +250,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
               <Zap className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              Vật lí thực nghiệm 2D
+              Vật lí thực nghiệm ({PHYSICS_LESSONS.length} bài)
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              5 mô phỏng động 60fps: Con lắc lò xo, con lắc đơn, quang hình khúc xạ laser, đạn đạo parabol, giao thoa sóng.
+              10 phòng Lab 2D &amp; 11 mô phỏng 3D 60 FPS: Con lắc, chuyển động tròn, mạch xoay chiều RLC Fresnel, giao thoa Y-âng.
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400">
@@ -265,10 +272,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
               <Code2 className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              Tin học & Chấm test
+              Tin học Sublime 4 ({CS_LESSONS.length} bài)
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Editor code C++ và Python, hệ thống nộp bài tự động chấm nhiều test case ngầm, đo lường thời gian chạy.
+              Trình soạn thảo Sublime Text 4 (Edit, Find/Replace, Snippet CP), chấm bài C++/Python tự động với test ẩn.
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400">
@@ -350,14 +357,14 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
       {/* Featured Exam Bank Banner */}
       <div
         onClick={() => onNavigate('exams')}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 p-6 shadow-lg cursor-pointer hover:border-indigo-400 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 p-5 sm:p-6 shadow-lg cursor-pointer hover:border-indigo-400 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6"
       >
-        <div className="space-y-1.5 max-w-2xl">
+        <div className="space-y-1.5 max-w-2xl min-w-0">
           <div className="text-xs font-semibold text-cyan-400">
-            Kho Đề Thi Chuẩn 2025 - 2026 · Chuyên & Không Chuyên
+            Kho Đề Thi Chuẩn 2025 - 2026 · {chuyenExams} Chuyên &amp; {standardExams} Không Chuyên
           </div>
-          <h3 className="text-lg font-bold text-white tracking-tight">
-            Kho 60 Đề Thi & Hướng Dẫn Giải Chi Tiết (Toán · Lí · Tin)
+          <h3 className="text-base sm:text-lg font-bold text-white tracking-tight tabular-nums">
+            Kho {totalExams} Đề Thi &amp; Hướng Dẫn Giải Chi Tiết (Toán · Lí · Tin)
           </h3>
           <p className="text-xs text-slate-300 leading-relaxed">
             Tuyển tập đề thi chính thức từ Chuyên KHTN ĐHQG Hà Nội, Chuyên Sư Phạm, Chuyên Amsterdam, Chuyên Lê Hồng Phong... kèm đồng hồ bấm giờ, đáp án từng bước và liên kết mô phỏng.
@@ -369,9 +376,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({ onNavigate
             e.stopPropagation();
             onNavigate('exams');
           }}
-          className="shrink-0 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-xs transition-all shadow-md flex items-center gap-2"
+          className="shrink-0 w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 whitespace-nowrap"
         >
-          Khám phá 60 đề thi
+          <span>Khám phá {totalExams} đề thi</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

@@ -33,6 +33,11 @@ import { useLanguage } from '../../context/LanguageContext';
 import { FormattedText } from '../common/MathRenderer';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { safeFetchJson } from '../../lib/apiClient';
+import {
+  buildLocalTutorReply,
+  buildLocalDiagnosticQuiz,
+  buildLocalDiagnosticRoadmap
+} from '../../lib/aiStaticFallback';
 import { useNavigation, getLocationLabel } from '../../context/NavigationContext';
 
 export const AI_ROADMAPS_STORAGE_KEY = 'educlassroom_ai_roadmaps_v1';
@@ -343,14 +348,27 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         }
       );
 
-      if (!res.ok || !res.data?.reply) {
-        throw new Error(res.error || 'Lỗi phản hồi từ Trợ giảng AI');
+      let replyText = res.data?.reply;
+      if (!res.ok || !replyText) {
+        if (res.isStaticFallback || res.status === 0 || res.status === 404 || res.status === 405 || res.status >= 500) {
+          replyText = buildLocalTutorReply({
+            messages: nextHistory.map((m) => ({ role: m.role, text: m.text })),
+            context: {
+              ...context,
+              subject: activeSubject,
+              mode: activeMode
+            },
+            language
+          });
+        } else {
+          throw new Error(res.error || 'Lỗi phản hồi từ Trợ giảng AI');
+        }
       }
 
       const tutorMsg: TutorMessage = {
         id: `t_${Date.now()}`,
         role: 'tutor',
-        text: res.data.reply,
+        text: replyText,
         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
       };
       setThreads((prev) => ({
@@ -386,12 +404,18 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
     setDiagLoadingQuiz(false);
 
-    if (!res.ok || !Array.isArray(res.data?.questions) || res.data.questions.length === 0) {
-      setDiagError(res.error || 'Không thể tạo bộ câu hỏi đánh giá lúc này. Vui lòng thử lại.');
-      return;
+    let questions = res.ok && Array.isArray(res.data?.questions) ? res.data.questions : null;
+    if (!questions || questions.length === 0) {
+      questions = buildLocalDiagnosticQuiz({
+        subject: activeSubject,
+        grade: diagGrade,
+        targetMajor: diagMajor,
+        selfLevel: diagSelfLevel,
+        language
+      });
     }
 
-    setDiagQuestionsBySubj((prev) => ({ ...prev, [activeSubject]: res.data!.questions! }));
+    setDiagQuestionsBySubj((prev) => ({ ...prev, [activeSubject]: questions! }));
     setDiagAnswersBySubj((prev) => ({ ...prev, [activeSubject]: {} }));
   };
 
@@ -443,12 +467,18 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
     setDiagLoadingRoadmap(false);
 
-    if (!res.ok || !res.data?.roadmap) {
-      setDiagError(res.error || 'Không thể phân tích & tạo sơ đồ học tập lúc này.');
-      return;
+    let createdRoadmap = res.ok && res.data?.roadmap ? res.data.roadmap : null;
+    if (!createdRoadmap) {
+      createdRoadmap = buildLocalDiagnosticRoadmap({
+        subject: activeSubject,
+        grade: diagGrade,
+        targetMajor: diagMajor,
+        quizAnswers,
+        customGoal: diagCustomGoal,
+        language
+      });
     }
 
-    const createdRoadmap = res.data.roadmap;
     setRoadmapsBySubj((prev) => {
       const next = { ...prev, [activeSubject]: createdRoadmap };
       try {

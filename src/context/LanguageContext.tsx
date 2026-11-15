@@ -1,4 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { EXAM_PAPERS } from '../data/examData';
+
+const TOTAL_EXAMS = EXAM_PAPERS.length;
+const CHUYEN_EXAMS = EXAM_PAPERS.filter((e) => e.track === 'chuyen').length;
+const STANDARD_EXAMS = TOTAL_EXAMS - CHUYEN_EXAMS;
 
 export type Language = 'vi' | 'en';
 
@@ -23,7 +28,7 @@ export const TRANSLATIONS: Record<string, { vi: string; en: string }> = {
   'nav.math': { vi: 'Toán học (Đồ thị & 3D)', en: 'Math (Graphs & 3D)' },
   'nav.physics': { vi: 'Vật lí (Mô phỏng 2D/3D)', en: 'Physics (2D/3D Labs)' },
   'nav.cs': { vi: 'Tin học (Online Judge & Tự do)', en: 'CS (Online Judge & Studio)' },
-  'nav.exams': { vi: 'Đề Thi (60 Đề Chuẩn)', en: 'Exams (60 Official Papers)' },
+  'nav.exams': { vi: `Đề Thi (${TOTAL_EXAMS} Đề Chuẩn)`, en: `Exams (${TOTAL_EXAMS} Official Papers)` },
   'nav.overview': { vi: 'Tổng quan', en: 'Overview' },
   'nav.leaderboard': { vi: 'Bảng xếp hạng XP', en: 'XP Leaderboard' },
   'nav.home': { vi: 'Trang chủ', en: 'Home' },
@@ -37,8 +42,8 @@ export const TRANSLATIONS: Record<string, { vi: string; en: string }> = {
 
   // Brand & Subtitle
   'brand.subtitle': {
-    vi: 'Nền tảng học tập chuyên sâu tích hợp đồ họa tương tác thời gian thực, mô phỏng 2D/3D và ngân hàng 60 đề thi chuẩn quốc gia.',
-    en: 'Advanced academic platform featuring real-time 2D/3D interactive simulations, live Online Judge, and 60 official national exam papers.',
+    vi: `Nền tảng học tập chuyên sâu tích hợp đồ họa tương tác thời gian thực, mô phỏng 2D/3D và ngân hàng ${TOTAL_EXAMS} đề thi chuẩn quốc gia.`,
+    en: `Advanced academic platform featuring real-time 2D/3D interactive simulations, live Online Judge, and ${TOTAL_EXAMS} official national exam papers.`,
   },
   'brand.tagline': {
     vi: 'Vũ trụ học tập mô phỏng Toán - Lí - Tin THCS & THPT',
@@ -82,9 +87,9 @@ export const TRANSLATIONS: Record<string, { vi: string; en: string }> = {
   'grade.12': { vi: 'Lớp 12 (Tốt nghiệp & Chuyên)', en: 'Grade 12 (Graduation & Olympic)' },
 
   // Exam tracks
-  'track.all': { vi: 'Tất cả lĩnh vực (60 đề)', en: 'All Tracks (60 Exams)' },
-  'track.chuyen': { vi: '🏆 1. Đề Chuyên & Olympic (30 đề)', en: '🏆 1. Specialized & Olympic (30 Exams)' },
-  'track.khong_chuyen': { vi: '🎯 2. Đề Không Chuyên & Tốt Nghiệp (30 đề)', en: '🎯 2. Standard & Graduation (30 Exams)' },
+  'track.all': { vi: `Tất cả lĩnh vực (${TOTAL_EXAMS} đề)`, en: `All Tracks (${TOTAL_EXAMS} Exams)` },
+  'track.chuyen': { vi: `🏆 1. Đề Chuyên & Olympic (${CHUYEN_EXAMS} đề)`, en: `🏆 1. Specialized & Olympic (${CHUYEN_EXAMS} Exams)` },
+  'track.khong_chuyen': { vi: `🎯 2. Đề Không Chuyên & Tốt Nghiệp (${STANDARD_EXAMS} đề)`, en: `🎯 2. Standard & Graduation (${STANDARD_EXAMS} Exams)` },
 
   // Subjects
   'subject.all': { vi: 'Tất cả môn', en: 'All Subjects' },
@@ -159,11 +164,11 @@ export const TRANSLATIONS: Record<string, { vi: string; en: string }> = {
   'overview.mathCard': { vi: 'Phòng Toán Học 2D/3D', en: 'Mathematics 2D/3D' },
   'overview.physicsCard': { vi: 'Phòng Vật Lí Mô Phỏng', en: 'Physics Simulation Lab' },
   'overview.csCard': { vi: 'Đấu Trường Tin Học & Online Judge', en: 'Computer Science Arena' },
-  'overview.examsCard': { vi: 'Ngân Hàng 60 Đề Thi Tuyển Sinh & THPT', en: '60 Official Exam Papers Hub' },
+  'overview.examsCard': { vi: `Ngân Hàng ${TOTAL_EXAMS} Đề Thi Tuyển Sinh & THPT`, en: `${TOTAL_EXAMS} Official Exam Papers Hub` },
 
   // Exams Hub
   'exams.title': { vi: 'Ngân Hàng Đề Thi Quốc Gia & Chuyên', en: 'Official & Specialized Exam Hub' },
-  'exams.totalPapers': { vi: '60 Đề Thi Chọn Lọc Kèm Lời Giải Chi Tiết', en: '60 Curated Exam Papers with Step-by-Step Solutions' },
+  'exams.totalPapers': { vi: `${TOTAL_EXAMS} Đề Thi Chọn Lọc Kèm Lời Giải Chi Tiết`, en: `${TOTAL_EXAMS} Curated Exam Papers with Step-by-Step Solutions` },
   'exams.filterTrack': { vi: 'Phân loại đề', en: 'Exam Category' },
   'exams.filterSubject': { vi: 'Môn học', en: 'Subject' },
   'exams.filterGrade': { vi: 'Khối lớp', en: 'Grade Level' },

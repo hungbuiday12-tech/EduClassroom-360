@@ -37,11 +37,19 @@ const formatFormulaDisplay = (fn: Pick<FunctionPlotConfig, 'type' | 'params' | '
     case 'cubic':
       return `y = ${a}x³ ${b >= 0 ? '+' : '-'} ${Math.abs(b)}x² ${c >= 0 ? '+' : '-'} ${Math.abs(c)}x ${d >= 0 ? '+' : '-'} ${Math.abs(d)}`;
     case 'rational':
-      return `y = (${a}x + ${b})/(${c}x + ${d})`;
+      return `y = (${a}x ${b >= 0 ? '+' : '-'} ${Math.abs(b)})/(${c}x ${d >= 0 ? '+' : '-'} ${Math.abs(d)})`;
     case 'trig_sin':
-      return `y = ${a}·sin(${b}x + ${c}) + ${d}`;
+      return `y = ${a}·sin(${b}x ${c >= 0 ? '+' : '-'} ${Math.abs(c)}) ${d >= 0 ? '+' : '-'} ${Math.abs(d)}`;
+    case 'trig_cos':
+      return `y = ${a}·cos(${b}x ${c >= 0 ? '+' : '-'} ${Math.abs(c)}) ${d >= 0 ? '+' : '-'} ${Math.abs(d)}`;
     case 'exponential':
-      return `y = ${a}·e^(${b}x)`;
+      return `y = ${a}·e^(${b}x) ${d >= 0 ? '+' : '-'} ${Math.abs(d)}`;
+    case 'logarithmic':
+      return `y = ${a}·ln(${b}x ${c >= 0 ? '+' : '-'} ${Math.abs(c)}) ${d >= 0 ? '+' : '-'} ${Math.abs(d)}`;
+    case 'abs':
+      return `y = ${a}·|${b}x ${c >= 0 ? '+' : '-'} ${Math.abs(c)}| ${d >= 0 ? '+' : '-'} ${Math.abs(d)}`;
+    case 'sqrt':
+      return `y = ${a}·√(${b}x ${c >= 0 ? '+' : '-'} ${Math.abs(c)}) ${d >= 0 ? '+' : '-'} ${Math.abs(d)}`;
     case 'custom':
       return fn.customExpr ? `y = ${fn.customExpr}` : 'y = f(x)';
     default:
@@ -178,10 +186,21 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
         case 'trig_cos':
           return a * Math.cos(b * x + c) + d;
         case 'exponential':
-          return a * Math.exp(b * x);
+          return a * Math.exp(b * x) + d;
+        case 'logarithmic': {
+          const arg = b * x + c;
+          if (arg <= 1e-6) return null;
+          return a * Math.log(arg) + d;
+        }
+        case 'abs':
+          return a * Math.abs(b * x + c) + d;
+        case 'sqrt': {
+          const inner = b * x + c;
+          if (inner < 0) return null;
+          return a * Math.sqrt(inner) + d;
+        }
         case 'custom':
           if (!fn.customExpr) return null;
-          // Safe eval using sanitized expression
           return evaluateSafeMath(fn.customExpr, x);
         default:
           return null;
@@ -202,19 +221,19 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
 
   // Safe parser for user expressions
   const evaluateSafeMath = (expr: string, x: number): number => {
-    // Replace functions with Math equivalents
-    let sanitized = expr.toLowerCase()
+    const sanitized = expr
+      .toLowerCase()
       .replace(/\^/g, '**')
+      .replace(/ln\(/g, 'Math.log(')
       .replace(/sin/g, 'Math.sin')
       .replace(/cos/g, 'Math.cos')
       .replace(/tan/g, 'Math.tan')
       .replace(/sqrt/g, 'Math.sqrt')
       .replace(/abs/g, 'Math.abs')
       .replace(/pi/g, 'Math.PI')
-      .replace(/e\b/g, 'Math.E');
+      .replace(/\be\b/g, 'Math.E');
 
-    // Only allow safe characters
-    if (!/^[0-9x\s\+\-\*\/\(\)\.\,MathsincotaqrbeE]+$/.test(sanitized)) {
+    if (!/^[0-9x\s\+\-\*\/\(\)\.\,MathsincotaqrblgpePI]+$/.test(sanitized)) {
       throw new Error('Invalid formula');
     }
 
@@ -357,6 +376,81 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
     functions.forEach((fn) => {
       if (!fn.visible) return;
 
+      // Definite Integral Shading ∫[a, b] f(x) dx
+      if (fn.showIntegral) {
+        const intA = fn.integralA ?? 0;
+        const intB = fn.integralB ?? 2;
+        const lo = Math.min(intA, intB);
+        const hi = Math.max(intA, intB);
+        if (hi > lo) {
+          const slices = 60;
+          const dxStep = (hi - lo) / slices;
+          let signedIntegral = 0;
+          let unsignedArea = 0;
+
+          ctx.save();
+          for (let i = 0; i < slices; i++) {
+            const x0 = lo + i * dxStep;
+            const x1 = x0 + dxStep;
+            const y0 = evaluateFunc(fn, x0);
+            const y1 = evaluateFunc(fn, x1);
+            if (y0 === null || y1 === null || !isFinite(y0) || !isFinite(y1)) continue;
+
+            const trapArea = 0.5 * (y0 + y1) * dxStep;
+            signedIntegral += trapArea;
+            unsignedArea += Math.abs(trapArea);
+
+            const px0 = toPxX(x0);
+            const px1 = toPxX(x1);
+            const py0 = toPxY(y0);
+            const py1 = toPxY(y1);
+            const pyAxis = toPxY(0);
+
+            ctx.fillStyle = trapArea >= 0 ? 'rgba(16, 185, 129, 0.22)' : 'rgba(244, 63, 94, 0.22)';
+            ctx.beginPath();
+            ctx.moveTo(px0, pyAxis);
+            ctx.lineTo(px0, py0);
+            ctx.lineTo(px1, py1);
+            ctx.lineTo(px1, pyAxis);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          // Vertical bound lines x = a and x = b
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 1.5;
+          [lo, hi].forEach((boundX) => {
+            const bPx = toPxX(boundX);
+            const boundY = evaluateFunc(fn, boundX);
+            ctx.beginPath();
+            ctx.moveTo(bPx, toPxY(0));
+            ctx.lineTo(bPx, boundY !== null && isFinite(boundY) ? toPxY(boundY) : toPxY(0));
+            ctx.stroke();
+          });
+
+          // Integral readout badge on canvas
+          ctx.setLineDash([]);
+          const midPx = toPxX((lo + hi) / 2);
+          ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)';
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 1.2;
+          const badgeW = 175;
+          const badgeH = 38;
+          const badgeX = Math.max(8, Math.min(width - badgeW - 8, midPx - badgeW / 2));
+          const badgeY = 12;
+          ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+          ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+          ctx.fillStyle = '#10b981';
+          ctx.font = 'bold 11px "JetBrains Mono", monospace';
+          ctx.fillText(`∫[${lo.toFixed(1)}, ${hi.toFixed(1)}] = ${signedIntegral.toFixed(3)}`, badgeX + 8, badgeY + 15);
+          ctx.fillStyle = isDark ? '#cbd5e1' : '#334155';
+          ctx.font = '10px "JetBrains Mono", monospace';
+          ctx.fillText(`S hình phẳng = ${unsignedArea.toFixed(3)} đvdt`, badgeX + 8, badgeY + 30);
+          ctx.restore();
+        }
+      }
+
       // Asymptote lines for rational functions
       if (fn.type === 'rational' && fn.params.c !== 0) {
         const verticalAsymptote = -fn.params.d / fn.params.c;
@@ -386,6 +480,24 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
           ctx.stroke();
         }
         ctx.restore();
+      }
+
+      // Domain boundary line for logarithmic/sqrt
+      if ((fn.type === 'logarithmic' || fn.type === 'sqrt') && Math.abs(fn.params.b) > 1e-6) {
+        const boundaryX = -fn.params.c / fn.params.b;
+        const bPx = toPxX(boundaryX);
+        if (bPx >= 0 && bPx <= width) {
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = fn.color;
+          ctx.globalAlpha = 0.45;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(bPx, 0);
+          ctx.lineTo(bPx, height);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
 
       ctx.strokeStyle = fn.color;
@@ -535,20 +647,10 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
       list.map((fn) => {
         if (fn.id !== activeFuncId) return fn;
         const newParams = { ...fn.params, [paramName]: val };
-        let formulaDisplay = fn.formulaDisplay;
-        if (fn.type === 'cubic') {
-          formulaDisplay = `y = ${newParams.a}x³ + ${newParams.b}x² + ${newParams.c}x + ${newParams.d}`;
-        } else if (fn.type === 'linear') {
-          formulaDisplay = `y = ${newParams.a}x + ${newParams.b}`;
-        } else if (fn.type === 'quadratic') {
-          formulaDisplay = `y = ${newParams.a}x² + ${newParams.b}x + ${newParams.c}`;
-        } else if (fn.type === 'rational') {
-          formulaDisplay = `y = (${newParams.a}x + ${newParams.b})/(${newParams.c}x + ${newParams.d})`;
-        }
         return {
           ...fn,
           params: newParams,
-          formulaDisplay
+          formulaDisplay: formatFormulaDisplay({ type: fn.type, params: newParams, customExpr: fn.customExpr })
         };
       })
     );
@@ -809,8 +911,52 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
 
         {/* Selected Function Details & Sliders */}
         {activeFunc && (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex-1">
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs flex-1 space-y-4">
+            {/* Quick VietJack Presets */}
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Mẫu đồ thị SGK & Ôn thi nhanh
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: 'Bậc 3', type: 'cubic' as FunctionType, params: { a: 1, b: -3, c: 0, d: 2 }, showIntegral: false },
+                  { label: 'Phân thức 1/1', type: 'rational' as FunctionType, params: { a: 2, b: 1, c: 1, d: -1 }, showIntegral: false },
+                  { label: 'Parabol', type: 'quadratic' as FunctionType, params: { a: 1, b: -2, c: -3, d: 0 }, showIntegral: false },
+                  { label: 'Trị tuyệt đối |x|', type: 'abs' as FunctionType, params: { a: 1, b: 1, c: -1, d: -2 }, showIntegral: false },
+                  { label: 'Căn √(x+2)', type: 'sqrt' as FunctionType, params: { a: 1, b: 1, c: 2, d: 0 }, showIntegral: false },
+                  { label: 'Logarit ln(x)', type: 'logarithmic' as FunctionType, params: { a: 1.5, b: 1, c: 0, d: 0 }, showIntegral: false },
+                  { label: 'Sin(x)', type: 'trig_sin' as FunctionType, params: { a: 2, b: 1, c: 0, d: 0 }, showIntegral: false },
+                  { label: 'Tích phân ∫x²dx', type: 'quadratic' as FunctionType, params: { a: 1, b: 0, c: 0, d: 0 }, showIntegral: true, integralA: 0, integralB: 2 }
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => {
+                      setFunctions((list) =>
+                        list.map((fn) =>
+                          fn.id !== activeFuncId
+                            ? fn
+                            : {
+                                ...fn,
+                                type: preset.type,
+                                params: preset.params,
+                                showIntegral: preset.showIntegral,
+                                integralA: preset.integralA ?? fn.integralA ?? 0,
+                                integralB: preset.integralB ?? fn.integralB ?? 2,
+                                formulaDisplay: formatFormulaDisplay({ type: preset.type, params: preset.params }),
+                                visible: true
+                              }
+                        )
+                      );
+                    }}
+                    className="px-2 py-1 text-[11px] font-semibold rounded-md bg-slate-100 hover:bg-indigo-100 text-slate-700 hover:text-indigo-700 dark:bg-slate-800 dark:hover:bg-indigo-950/60 dark:text-slate-300 dark:hover:text-indigo-300 transition-colors"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Điều chỉnh hệ số & khảo sát
               </span>
@@ -821,85 +967,132 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
                   setFunctions((list) =>
                     list.map((fn) => {
                       if (fn.id !== activeFuncId) return fn;
+                      const nextParams =
+                        newType === 'rational'
+                          ? { a: 2, b: 1, c: 1, d: -1 }
+                          : newType === 'trig_sin' || newType === 'trig_cos'
+                          ? { a: 2, b: 1, c: 0, d: 0 }
+                          : newType === 'logarithmic'
+                          ? { a: 1.5, b: 1, c: 1, d: 0 }
+                          : newType === 'sqrt'
+                          ? { a: 1.5, b: 1, c: 2, d: 0 }
+                          : newType === 'abs'
+                          ? { a: 1, b: 1, c: -1, d: -2 }
+                          : fn.params;
                       return {
                         ...fn,
                         type: newType,
-                        params:
-                          newType === 'rational'
-                            ? { a: 2, b: 1, c: 1, d: -1 }
-                            : newType === 'trig_sin'
-                            ? { a: 2, b: 1, c: 0, d: 0 }
-                            : fn.params
+                        params: nextParams,
+                        customExpr: newType === 'custom' ? fn.customExpr || 'x^4 - 2*x^2' : fn.customExpr,
+                        formulaDisplay: formatFormulaDisplay({
+                          type: newType,
+                          params: nextParams,
+                          customExpr: newType === 'custom' ? fn.customExpr || 'x^4 - 2*x^2' : fn.customExpr
+                        })
                       };
                     })
                   );
                 }}
-                className="text-xs bg-slate-100 dark:bg-slate-800 border-none rounded-md px-2 py-1 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500"
+                className="text-xs bg-slate-100 dark:bg-slate-800 border-none rounded-md px-2 py-1 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 max-w-full"
               >
                 <option value="linear">Bậc 1: y = ax + b</option>
                 <option value="quadratic">Bậc 2 (Parabol): y = ax² + bx + c</option>
                 <option value="cubic">Bậc 3: y = ax³ + bx² + cx + d</option>
                 <option value="rational">Phân thức: (ax+b)/(cx+d)</option>
                 <option value="trig_sin">Lượng giác: a·sin(bx + c) + d</option>
-                <option value="exponential">Mũ: a·e^(bx)</option>
+                <option value="trig_cos">Lượng giác: a·cos(bx + c) + d</option>
+                <option value="exponential">Mũ: a·e^(bx) + d</option>
+                <option value="logarithmic">Logarit: a·ln(bx + c) + d</option>
+                <option value="abs">Trị tuyệt đối: a·|bx + c| + d</option>
+                <option value="sqrt">Căn thức: a·√(bx + c) + d</option>
                 <option value="custom">Tùy chỉnh: f(x)</option>
               </select>
             </div>
 
-            {/* Numeric + Slider controls for a, b, c, d */}
-            <div className="space-y-3">
-              {(['a', 'b', 'c', 'd'] as const)
-                .filter((coef) => {
-                  if (coef === 'a' || coef === 'b') return true;
-                  if (coef === 'c') {
+            {activeFunc.type === 'custom' ? (
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Biểu thức f(x) (hỗ trợ x^4, sin(x), cos(x), sqrt(x), abs(x), ln(x)):
+                </label>
+                <input
+                  type="text"
+                  value={activeFunc.customExpr || ''}
+                  onChange={(e) => {
+                    const expr = e.target.value;
+                    setFunctions((list) =>
+                      list.map((fn) =>
+                        fn.id !== activeFuncId
+                          ? fn
+                          : { ...fn, customExpr: expr, formulaDisplay: expr ? `y = ${expr}` : 'y = f(x)' }
+                      )
+                    );
+                  }}
+                  placeholder="Ví dụ: x^4 - 2*x^2"
+                  className="w-full px-3 py-1.5 text-xs font-mono rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(['a', 'b', 'c', 'd'] as const)
+                  .filter((coef) => {
+                    if (coef === 'a' || coef === 'b') return true;
+                    if (coef === 'c') {
+                      return (
+                        activeFunc.type === 'quadratic' ||
+                        activeFunc.type === 'cubic' ||
+                        activeFunc.type === 'rational' ||
+                        activeFunc.type === 'trig_sin' ||
+                        activeFunc.type === 'trig_cos' ||
+                        activeFunc.type === 'logarithmic' ||
+                        activeFunc.type === 'abs' ||
+                        activeFunc.type === 'sqrt'
+                      );
+                    }
                     return (
-                      activeFunc.type === 'quadratic' ||
                       activeFunc.type === 'cubic' ||
                       activeFunc.type === 'rational' ||
                       activeFunc.type === 'trig_sin' ||
-                      activeFunc.type === 'trig_cos'
+                      activeFunc.type === 'trig_cos' ||
+                      activeFunc.type === 'exponential' ||
+                      activeFunc.type === 'logarithmic' ||
+                      activeFunc.type === 'abs' ||
+                      activeFunc.type === 'sqrt'
                     );
-                  }
-                  return (
-                    activeFunc.type === 'cubic' ||
-                    activeFunc.type === 'rational' ||
-                    activeFunc.type === 'trig_sin' ||
-                    activeFunc.type === 'trig_cos'
-                  );
-                })
-                .map((coef) => {
-                  const val = activeFunc.params[coef];
-                  return (
-                    <div key={coef}>
-                      <div className="flex items-center justify-between text-xs mb-1 gap-2">
-                        <span className="text-slate-600 dark:text-slate-400 font-medium">Hệ số {coef}</span>
+                  })
+                  .map((coef) => {
+                    const val = activeFunc.params[coef];
+                    return (
+                      <div key={coef}>
+                        <div className="flex items-center justify-between text-xs mb-1 gap-2">
+                          <span className="text-slate-600 dark:text-slate-400 font-medium">Hệ số {coef}</span>
+                          <input
+                            type="number"
+                            step="any"
+                            value={Number.isFinite(val) ? val : 0}
+                            onChange={(e) => {
+                              const parsed = parseFloat(e.target.value);
+                              if (Number.isFinite(parsed)) updateParam(coef, parsed);
+                            }}
+                            className="w-24 px-2 py-0.5 text-right text-xs font-mono tabular-nums rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          />
+                        </div>
                         <input
-                          type="number"
-                          step="any"
-                          value={Number.isFinite(val) ? val : 0}
-                          onChange={(e) => {
-                            const parsed = parseFloat(e.target.value);
-                            if (Number.isFinite(parsed)) updateParam(coef, parsed);
-                          }}
-                          className="w-24 px-2 py-0.5 text-right text-xs font-mono tabular-nums rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          type="range"
+                          min="-10"
+                          max="10"
+                          step="0.25"
+                          value={Math.max(-10, Math.min(10, val))}
+                          onChange={(e) => updateParam(coef, parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                         />
                       </div>
-                      <input
-                        type="range"
-                        min="-10"
-                        max="10"
-                        step="0.25"
-                        value={Math.max(-10, Math.min(10, val))}
-                        onChange={(e) => updateParam(coef, parseFloat(e.target.value))}
-                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                      />
-                    </div>
-                  );
-                })}
-            </div>
+                    );
+                  })}
+              </div>
+            )}
 
             {/* Tangent Line Controls */}
-            <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
               <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
                 <span>Vẽ tiếp tuyến tại tiếp điểm x₀</span>
                 <input
@@ -948,6 +1141,78 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
                     }}
                     className="w-full h-1.5 bg-amber-200 dark:bg-amber-800 rounded-lg appearance-none cursor-pointer accent-amber-600"
                   />
+                </div>
+              )}
+            </div>
+
+            {/* Definite Integral Shading Controls */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+              <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                <span>Tô diện tích tích phân ∫[a, b] f(x)dx</span>
+                <input
+                  type="checkbox"
+                  checked={!!activeFunc.showIntegral}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setFunctions((list) =>
+                      list.map((fn) =>
+                        fn.id === activeFuncId
+                          ? {
+                              ...fn,
+                              showIntegral: checked,
+                              integralA: fn.integralA ?? 0,
+                              integralB: fn.integralB ?? 2
+                            }
+                          : fn
+                      )
+                    );
+                  }}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+              </label>
+
+              {activeFunc.showIntegral && (
+                <div className="mt-2.5 bg-emerald-50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/40 space-y-2">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="block text-[11px] text-emerald-800 dark:text-emerald-200 font-medium mb-1">
+                        Cận dưới a
+                      </span>
+                      <input
+                        type="number"
+                        step="0.25"
+                        value={activeFunc.integralA ?? 0}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          if (Number.isFinite(v)) {
+                            setFunctions((list) =>
+                              list.map((fn) => (fn.id === activeFuncId ? { ...fn, integralA: v } : fn))
+                            );
+                          }
+                        }}
+                        className="w-full px-2 py-1 text-right text-xs font-mono tabular-nums rounded-md bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-100 font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[11px] text-emerald-800 dark:text-emerald-200 font-medium mb-1">
+                        Cận trên b
+                      </span>
+                      <input
+                        type="number"
+                        step="0.25"
+                        value={activeFunc.integralB ?? 2}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          if (Number.isFinite(v)) {
+                            setFunctions((list) =>
+                              list.map((fn) => (fn.id === activeFuncId ? { ...fn, integralB: v } : fn))
+                            );
+                          }
+                        }}
+                        className="w-full px-2 py-1 text-right text-xs font-mono tabular-nums rounded-md bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-100 font-semibold"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

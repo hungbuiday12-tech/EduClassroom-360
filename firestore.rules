@@ -187,5 +187,55 @@ service cloud.firestore {
                        ]);
       allow delete: if false;
     }
+
+    // Validation for LessonAssessment entity
+    function isValidLessonAssessment(data) {
+      return data.keys().hasAll(['userId', 'lessonKey', 'subject', 'lessonTitle', 'mcqCorrect', 'mcqTotal', 'overallMastery']) &&
+             data.keys().hasOnly([
+               'userId', 'lessonKey', 'subject', 'lessonTitle', 'grade',
+               'totalSteps', 'completedSteps', 'mcqCorrect', 'mcqTotal',
+               'essayGradedCount', 'essayAvgScore', 'overallMastery',
+               'strongStepTitles', 'weakStepTitles', 'readinessLevel', 'recommendedAction', 'updatedAt'
+             ]) &&
+             data.userId == request.auth.uid &&
+             data.lessonKey is string && data.lessonKey.size() > 0 && data.lessonKey.size() <= 128 &&
+             data.subject in ['math', 'physics', 'cs'] &&
+             data.lessonTitle is string && data.lessonTitle.size() > 0 && data.lessonTitle.size() <= 200 &&
+             data.mcqCorrect is number && data.mcqCorrect >= 0 && data.mcqCorrect <= 200 &&
+             data.mcqTotal is number && data.mcqTotal >= 0 && data.mcqTotal <= 200 &&
+             isScoreRange(data.overallMastery) &&
+             (!('grade' in data) || (data.grade is string && data.grade.size() <= 64)) &&
+             (!('totalSteps' in data) || (data.totalSteps is number && data.totalSteps >= 0 && data.totalSteps <= 50)) &&
+             (!('completedSteps' in data) || (data.completedSteps is number && data.completedSteps >= 0 && data.completedSteps <= 50)) &&
+             (!('essayGradedCount' in data) || (data.essayGradedCount is number && data.essayGradedCount >= 0 && data.essayGradedCount <= 50)) &&
+             (!('essayAvgScore' in data) || (data.essayAvgScore is number && data.essayAvgScore >= 0 && data.essayAvgScore <= 10)) &&
+             (!('strongStepTitles' in data) || (data.strongStepTitles is list && data.strongStepTitles.size() <= 20 && (data.strongStepTitles.size() == 0 || (data.strongStepTitles[0] is string && data.strongStepTitles[0].size() <= 200)))) &&
+             (!('weakStepTitles' in data) || (data.weakStepTitles is list && data.weakStepTitles.size() <= 20 && (data.weakStepTitles.size() == 0 || (data.weakStepTitles[0] is string && data.weakStepTitles[0].size() <= 200)))) &&
+             (!('readinessLevel' in data) || (data.readinessLevel is string && data.readinessLevel.size() <= 160)) &&
+             (!('recommendedAction' in data) || (data.recommendedAction is string && data.recommendedAction.size() <= 400)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // LessonAssessments Collection (strict owner read/write)
+    match /lesson_assessments/{assessmentId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() &&
+                       isValidId(assessmentId) &&
+                       isValidLessonAssessment(incoming());
+      allow update: if isSignedIn() &&
+                       isValidId(assessmentId) &&
+                       existing().userId == request.auth.uid &&
+                       isValidLessonAssessment(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().lessonKey == existing().lessonKey &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'subject', 'lessonTitle', 'grade',
+                         'totalSteps', 'completedSteps', 'mcqCorrect', 'mcqTotal',
+                         'essayGradedCount', 'essayAvgScore', 'overallMastery',
+                         'strongStepTitles', 'weakStepTitles', 'readinessLevel', 'recommendedAction', 'updatedAt'
+                       ]);
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
   }
 }

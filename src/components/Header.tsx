@@ -48,13 +48,13 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 lg:gap-6 h-14 sm:h-16">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 flex items-center justify-between gap-1.5 sm:gap-4 lg:gap-6 h-14 sm:h-16">
         {/* Zone 1: Back History button + Brand Wordmark */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           {canGoBack && (
             <button
               onClick={goBack}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-700 dark:hover:text-indigo-300 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-xs shrink-0"
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-700 dark:hover:text-indigo-300 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-xs shrink-0"
               title={`${language === 'en' ? 'Back to' : 'Quay lại trang trước'}: ${prevLabel}`}
               aria-label={`Quay lại ${prevLabel}`}
             >
@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           <button
             onClick={goClassroom}
-            className="text-sm sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap shrink-0 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1.5 py-1 rounded-lg"
+            className="text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 truncate max-w-[130px] sm:max-w-none hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1 sm:px-1.5 py-1 rounded-lg"
           >
             EduClassroom 360
           </button>
@@ -145,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Zone 3: Actions + User Profile & Language/Theme switcher */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
           {/* Language Switcher Button (VI | EN) */}
           <button
             onClick={toggleLanguage}

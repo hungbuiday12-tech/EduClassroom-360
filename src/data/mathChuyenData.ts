@@ -150,12 +150,15 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
     track: 'khong_chuyen',
     gradeGroup: 'Lớp 12',
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
+    sim3dMode: 'integral_disks_3d',
     defaultGraphConfig: {
       type: 'quadratic',
       params: { a: -1, b: 0, c: 4, d: 0 },
       color: '#6366f1',
-      name: 'y = 4 - x² (Diện tích hình phẳng)'
+      name: 'y = 4 - x² (Diện tích & Khối tròn xoay)',
+      showIntegral: true,
+      integralA: -2,
+      integralB: 2
     },
     essayProblems: [
       {
@@ -254,10 +257,10 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
     sim2dMode: 'grapher',
     sim3dMode: 'revolution_solid',
     defaultGraphConfig: {
-      type: 'exponential',
-      params: { a: 1, b: 1, c: 0, d: 0 },
+      type: 'logarithmic',
+      params: { a: 1.5, b: 1, c: 1, d: 0 },
       color: '#f59e0b',
-      name: 'y = eˣ'
+      name: 'y = 1.5·ln(x + 1)'
     },
     essayProblems: [
       {
@@ -360,10 +363,10 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
     sim2dMode: 'grapher',
     sim3dMode: 'revolution_solid',
     defaultGraphConfig: {
-      type: 'cubic',
-      params: { a: 1, b: 0, c: -3, d: 1 },
+      type: 'abs',
+      params: { a: 1, b: 1, c: -1, d: -2 },
       color: '#ef4444',
-      name: 'f(x) = x³ - 3x + 1'
+      name: 'y = |x - 1| - 2'
     },
     essayProblems: [
       {
@@ -828,8 +831,8 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
   'math-10-6': {
     track: 'khong_chuyen',
     gradeGroup: 'Lớp 10',
-    sim2dMode: 'grapher',
-    sim3dMode: 'pyramid_section',
+    sim2dMode: 'geometry',
+    sim3dMode: 'conic_sections_3d',
     defaultGraphConfig: {
       type: 'quadratic',
       params: { a: 0.25, b: 0, c: 0, d: 0 },
@@ -1149,6 +1152,142 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
           'Bước 3: Diện tích thiết diện: $S = AB \\cdot h = 8 \\cdot 6 = 48\\text{ cm}^2$.'
         ],
         finalAnswer: '$S = 48\\text{ cm}^2$.'
+      }
+    ]
+  },
+  'math-9-8': {
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 9',
+    sim2dMode: 'geometry',
+    sim3dMode: 'revolution_solid',
+    essayProblems: [
+      {
+        source: 'VietJack · Toán 9 GDPT 2018 · Hình trụ - Nón - Cầu',
+        question:
+          'Một chiếc cốc hình trụ có bán kính đáy $R = 3\\text{ cm}$ và chiều cao $h = 10\\text{ cm}$. Tính diện tích xung quanh và thể tích tối đa của chiếc cốc (lấy $\\pi \\approx 3{,}14$).',
+        hints: ['Hình trụ: $S_{xq} = 2\\pi R h$ và $V = \\pi R^2 h$.'],
+        solutionSteps: [
+          'Bước 1: Diện tích xung quanh: $S_{xq} = 2\\pi R h = 2\\pi \\cdot 3 \\cdot 10 = 60\\pi \\approx 188{,}4\\text{ cm}^2$.',
+          'Bước 2: Thể tích cốc: $V = \\pi R^2 h = \\pi \\cdot 3^2 \\cdot 10 = 90\\pi \\approx 282{,}6\\text{ cm}^3$.'
+        ],
+        finalAnswer: '$S_{xq} = 60\\pi\\text{ cm}^2 \\approx 188{,}4\\text{ cm}^2$; $V = 90\\pi\\text{ cm}^3 \\approx 282{,}6\\text{ cm}^3$.'
+      },
+      {
+        source: 'Loigiaihay · Hình nón & Hình cầu Lớp 9',
+        question:
+          'Một quả bóng rổ hình cầu có bán kính $R = 12\\text{ cm}$. Tính diện tích bề mặt da và thể tích không khí bên trong quả bóng (theo $\\pi$).',
+        hints: ['Mặt cầu: $S = 4\\pi R^2$ và $V = \\frac{4}{3}\\pi R^3$.'],
+        solutionSteps: [
+          'Bước 1: Diện tích mặt cầu: $S = 4\\pi R^2 = 4\\pi \\cdot 12^2 = 576\\pi\\text{ cm}^2$.',
+          'Bước 2: Thể tích khối cầu: $V = \\frac{4}{3}\\pi R^3 = \\frac{4}{3}\\pi \\cdot 1728 = 2304\\pi\\text{ cm}^3$.'
+        ],
+        finalAnswer: '$S = 576\\pi\\text{ cm}^2$; $V = 2304\\pi\\text{ cm}^3$.'
+      }
+    ]
+  },
+  'math-12-4': {
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 12',
+    sim2dMode: 'grapher',
+    sim3dMode: 'line_plane_oxyz',
+    essayProblems: [
+      {
+        source: 'VietJack · Hình học Oxyz 12 · Đường thẳng',
+        question:
+          'Trong không gian $Oxyz$, cho đường thẳng $d: \\frac{x - 1}{2} = \\frac{y + 2}{-1} = \\frac{z - 3}{2}$ và mặt phẳng $(P): 2x - y - 2z + 5 = 0$. Tính $\\sin$ góc giữa đường thẳng $d$ và mặt phẳng $(P)$, và tìm giao điểm của $d$ với $(P)$.',
+        hints: ['VTCP $\\vec{u} = (2; -1; 2)$, VTPT $\\vec{n} = (2; -1; -2)$. $\\sin(d, (P)) = |\\cos(\\vec{u}, \\vec{n})|$. Tham số hóa $d$ thay vào $(P)$ để tìm $t$.'],
+        solutionSteps: [
+          'Bước 1: $\\sin(d, (P)) = \\frac{|\\vec{u}\\cdot\\vec{n}|}{|\\vec{u}||\\vec{n}|} = \\frac{|2\\cdot 2 + (-1)(-1) + 2(-2)|}{\\sqrt{4+1+4}\\cdot\\sqrt{4+1+4}} = \\frac{|4 + 1 - 4|}{3 \\cdot 3} = \\frac{1}{9}$.',
+          'Bước 2: Phương trình tham số $d$: $x = 1 + 2t, y = -2 - t, z = 3 + 2t$. Thay vào $(P)$: $2(1+2t) - (-2-t) - 2(3+2t) + 5 = 0 \\iff t + 3 = 0 \\iff t = -3$.',
+          'Bước 3: Giao điểm $M(-5; 1; -3)$.'
+        ],
+        finalAnswer: '$\\sin(d, (P)) = \\frac{1}{9}$; giao điểm $M(-5; 1; -3)$.'
+      },
+      {
+        source: 'Loigiaihay · Khoảng cách chéo nhau Oxyz',
+        question:
+          'Tính khoảng cách từ điểm $M(1; 2; -1)$ đến đường thẳng $\\Delta: \\frac{x - 2}{1} = \\frac{y}{2} = \\frac{z + 1}{-2}$.',
+        hints: ['Lấy $A(2; 0; -1) \\in \\Delta$, VTCP $\\vec{u} = (1; 2; -2)$. Áp dụng $d(M, \\Delta) = \\frac{|[\\vec{AM}, \\vec{u}]|}{|\\vec{u}|}$.'],
+        solutionSteps: [
+          'Bước 1: $\\vec{AM} = (-1; 2; 0)$, $\\vec{u} = (1; 2; -2)$.',
+          'Bước 2: Tích có hướng $[\\vec{AM}, \\vec{u}] = (-4; -2; -4) \\implies |[\\vec{AM}, \\vec{u}]| = \\sqrt{16 + 4 + 16} = 6$.',
+          'Bước 3: $|\\vec{u}| = \\sqrt{1 + 4 + 4} = 3 \\implies d(M, \\Delta) = \\frac{6}{3} = 2$.'
+        ],
+        finalAnswer: '$d(M, \\Delta) = 2$.'
+      }
+    ]
+  },
+  'math-12-5': {
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 12',
+    sim2dMode: 'grapher',
+    sim3dMode: 'oxyz_vector',
+    defaultGraphConfig: {
+      type: 'linear',
+      params: { a: 0.85, b: 0.1, c: 0, d: 0 },
+      color: '#06b6d4',
+      name: 'Đường xác suất Bayes'
+    },
+    essayProblems: [
+      {
+        source: 'VietJack · Toán 12 GDPT 2018 · Công thức Bayes',
+        question:
+          'Một nhà máy có 2 phân xưởng I và II. Phân xưởng I sản xuất $60\\%$ tổng sản phẩm với tỉ lệ phế phẩm $2\\%$; phân xưởng II sản xuất $40\\%$ với tỉ lệ phế phẩm $5\\%$. Lấy ngẫu nhiên 1 sản phẩm và thấy đó là phế phẩm. Tính xác suất sản phẩm đó do phân xưởng II sản xuất.',
+        hints: ['Dùng công thức xác suất toàn phần tính $P(B)$ (là phế phẩm), rồi áp dụng Bayes: $P(A_2 | B) = \\frac{P(A_2)P(B|A_2)}{P(B)}$.'],
+        solutionSteps: [
+          'Bước 1: Gọi $A_1, A_2$ là biến cố sản phẩm thuộc phân xưởng I, II ($P(A_1) = 0{,}6$, $P(A_2) = 0{,}4$); $B$ là biến cố phế phẩm.',
+          'Bước 2: Xác suất toàn phần: $P(B) = 0{,}6 \\cdot 0{,}02 + 0{,}4 \\cdot 0{,}05 = 0{,}012 + 0{,}020 = 0{,}032$.',
+          'Bước 3: Theo công thức Bayes: $P(A_2 | B) = \\frac{0{,}020}{0{,}032} = \\frac{5}{8} = 0{,}625$.'
+        ],
+        finalAnswer: '$P(A_2 | B) = \\frac{5}{8} = 62{,}5\\%$.'
+      },
+      {
+        source: 'Loigiaihay · Xác suất có điều kiện 12',
+        question:
+          'Một hộp chứa 7 bi xanh và 3 bi đỏ. Lần lượt lấy ngẫu nhiên không hoàn lại 2 viên bi. Biết viên thứ nhất là bi xanh, tính xác suất để viên thứ hai cũng là bi xanh.',
+        hints: ['Sau khi rút 1 bi xanh ở lần 1, trong hộp còn 6 bi xanh và 3 bi đỏ (tổng 9 viên).'],
+        solutionSteps: [
+          'Bước 1: Gọi $A$: "viên 1 xanh", $B$: "viên 2 xanh".',
+          'Bước 2: Khi biến cố $A$ đã xảy ra, hộp còn $9$ viên bi gồm $6$ bi xanh và $3$ bi đỏ.',
+          'Bước 3: Xác suất có điều kiện $P(B | A) = \\frac{6}{9} = \\frac{2}{3}$.'
+        ],
+        finalAnswer: '$P(B | A) = \\frac{2}{3}$.'
+      }
+    ]
+  },
+  'math-12-6': {
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 12',
+    sim2dMode: 'grapher',
+    sim3dMode: 'revolution_solid',
+    defaultGraphConfig: {
+      type: 'logarithmic',
+      params: { a: 2, b: 1, c: 0, d: 0 },
+      color: '#f59e0b',
+      name: 'y = 2·ln(x)'
+    },
+    essayProblems: [
+      {
+        source: 'VietJack · Toán 12 · Bất phương trình Mũ - Logarit',
+        question: 'Giải bất phương trình $\\log_{0{,}5}(x^2 - 5x + 6) \\ge -1$.',
+        hints: ['Cơ số $0 < 0{,}5 < 1$ nên KHI BỎ LOGARIT PHẢI ĐỔI CHIỀU: $0 < x^2 - 5x + 6 \\le (0{,}5)^{-1} = 2$.'],
+        solutionSteps: [
+          'Bước 1: Điều kiện: $x^2 - 5x + 6 > 0 \\iff x < 2$ hoặc $x > 3$.',
+          'Bước 2: Vì cơ số $0{,}5 \\in (0; 1)$, bất phương trình $\\iff x^2 - 5x + 6 \\le 2 \\iff x^2 - 5x + 4 \\le 0 \\iff 1 \\le x \\le 4$.',
+          'Bước 3: Kết hợp ĐKXĐ: $x \\in [1; 2) \\cup (3; 4]$.'
+        ],
+        finalAnswer: 'Tập nghiệm $S = [1; 2) \\cup (3; 4]$.'
+      },
+      {
+        source: 'Loigiaihay · Phương trình mũ đặt ẩn phụ',
+        question: 'Giải phương trình $9^x - 4 \\cdot 3^x + 3 = 0$.',
+        hints: ['Đặt $t = 3^x > 0$, phương trình trở thành $t^2 - 4t + 3 = 0$.'],
+        solutionSteps: [
+          'Bước 1: Đặt $t = 3^x$ ($t > 0$). Phương trình trở thành $t^2 - 4t + 3 = 0$.',
+          'Bước 2: Giải được $t = 1$ (nhận) hoặc $t = 3$ (nhận).',
+          'Bước 3: Với $3^x = 1 \\implies x = 0$; với $3^x = 3 \\implies x = 1$.'
+        ],
+        finalAnswer: '$x = 0$ hoặc $x = 1$.'
       }
     ]
   }

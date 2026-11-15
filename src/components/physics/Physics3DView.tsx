@@ -118,7 +118,10 @@ export type Physics3DMode =
   | 'bohr_atom'
   | 'optics_3d'
   | 'kinematics_3d'
-  | 'thermal_gas_3d';
+  | 'thermal_gas_3d'
+  | 'circular_motion_3d'
+  | 'ac_generator_3d'
+  | 'young_interference_3d';
 
 interface Physics3DViewProps {
   initialMode?: Physics3DMode;
@@ -175,6 +178,21 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
   // 8. Thermal Gas 3D
   const [gasTempK, setGasTempK] = useState(350); // Kelvin
   const [gasVolumeFactor, setGasVolumeFactor] = useState(1.0); // Piston factor 0.55 -> 1.4
+
+  // 9. Circular Motion 3D
+  const [circRadius3D, setCircRadius3D] = useState(2.6);
+  const [circOmega3D, setCircOmega3D] = useState(2.2);
+
+  // 10. AC Generator 3D
+  const [genOmega3D, setGenOmega3D] = useState(2.5);
+  const [genFieldB3D, setGenFieldB3D] = useState(1.2);
+
+  // 11. Young Double-Slit Interference 3D
+  const [youngLambdaUm, setYoungLambdaUm] = useState(0.55);
+  const [youngSlitMm, setYoungSlitMm] = useState(1.0);
+
+  // WebGL context safety
+  const [contextLost, setContextLost] = useState(false);
 
   // Refs for animation
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -322,6 +340,18 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     };
     animate();
 
+    // WebGL context loss/restore safety
+    const canvasEl = renderer.domElement;
+    const onContextLost = (event: Event) => {
+      event.preventDefault();
+      setContextLost(true);
+    };
+    const onContextRestored = () => {
+      setContextLost(false);
+    };
+    canvasEl.addEventListener('webglcontextlost', onContextLost);
+    canvasEl.addEventListener('webglcontextrestored', onContextRestored);
+
     // Resize handler + ResizeObserver
     const handleResize = () => {
       if (!container || !renderer) return;
@@ -339,8 +369,17 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener('resize', handleResize);
+      canvasEl.removeEventListener('webglcontextlost', onContextLost);
+      canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
       resizeObserver?.disconnect();
       controls.dispose();
+      scene.traverse((obj: any) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach((m: any) => m.dispose());
+          else obj.material.dispose();
+        }
+      });
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -353,18 +392,23 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     const group = dynamicGroupRef.current;
     if (!group) return;
 
-    // Clear previous geometries safely
+    // Clear previous geometries and materials recursively to prevent GPU leaks
     while (group.children.length > 0) {
       const child = group.children[0];
       group.remove(child);
-      if ((child as any).geometry) (child as any).geometry.dispose();
-      if ((child as any).material) {
-        if (Array.isArray((child as any).material)) {
-          (child as any).material.forEach((m: any) => m.dispose());
-        } else {
-          (child as any).material.dispose();
+      child.traverse((obj: any) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((m: any) => m.dispose());
+          } else {
+            obj.material.dispose();
+          }
         }
-      }
+        if (obj.material && obj.material.map) {
+          obj.material.map.dispose();
+        }
+      });
     }
 
     // -------------------------------------------------------------
@@ -982,6 +1026,211 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
 
       return () => clearInterval(updateInterval);
     }
+
+    // -------------------------------------------------------------
+    // SCENE 9: CHUYỂN ĐỘNG TRÒN ĐỀU & LỰC HƯỚNG TÂM 3D
+    // -------------------------------------------------------------
+    else if (mode === 'circular_motion_3d') {
+      const r = Math.max(1.0, Math.min(4.2, circRadius3D));
+      const yLevel = 1.6;
+
+      // Central pivot post + angular velocity vector omega
+      const pivot = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.14, 0.18, yLevel, 16),
+        new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.7 })
+      );
+      pivot.position.y = yLevel / 2;
+      group.add(pivot);
+
+      const omegaArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, yLevel + 0.1, 0), 1.8, 0xf59e0b, 0.3, 0.16);
+      group.add(omegaArrow);
+
+      // Orbit ring
+      const ringGeo = new THREE.TorusGeometry(r, 0.035, 12, 64);
+      ringGeo.rotateX(Math.PI / 2);
+      const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 }));
+      ring.position.y = yLevel;
+      group.add(ring);
+
+      // Orbiting sphere + connecting rod
+      const ball = new THREE.Mesh(
+        new THREE.SphereGeometry(0.32, 24, 24),
+        new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.4, roughness: 0.25 })
+      );
+      group.add(ball);
+
+      const rodLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, yLevel, 0), new THREE.Vector3(r, yLevel, 0)]),
+        new THREE.LineBasicMaterial({ color: 0x94a3b8 })
+      );
+      group.add(rodLine);
+
+      // Tangential velocity & centripetal force arrows
+      const vArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), new THREE.Vector3(r, yLevel, 0), 1.8, 0x10b981, 0.3, 0.16);
+      const fArrow = new THREE.ArrowHelper(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(r, yLevel, 0), 1.5, 0xef4444, 0.3, 0.16);
+      group.add(vArrow, fArrow);
+
+      let lastStepSeen = -1;
+      const updateInterval = setInterval(() => {
+        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        lastStepSeen = stepTriggerRef.current;
+        const theta = simStateRef.current.time * Math.max(0.2, circOmega3D);
+        const bx = Math.cos(theta) * r;
+        const bz = -Math.sin(theta) * r;
+        ball.position.set(bx, yLevel, bz);
+
+        rodLine.geometry.dispose();
+        rodLine.geometry = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, yLevel, 0),
+          new THREE.Vector3(bx, yLevel, bz)
+        ]);
+
+        const vDir = new THREE.Vector3(-Math.sin(theta), 0, -Math.cos(theta)).normalize();
+        const fDir = new THREE.Vector3(-Math.cos(theta), 0, Math.sin(theta)).normalize();
+        vArrow.position.set(bx, yLevel, bz);
+        vArrow.setDirection(vDir);
+        vArrow.setLength(Math.min(2.6, Math.max(0.8, circOmega3D * r * 0.28)), 0.3, 0.15);
+
+        fArrow.position.set(bx, yLevel, bz);
+        fArrow.setDirection(fDir);
+        fArrow.setLength(Math.min(r * 0.8, Math.max(0.8, circOmega3D * circOmega3D * r * 0.12)), 0.3, 0.15);
+      }, 30);
+
+      return () => clearInterval(updateInterval);
+    }
+
+    // -------------------------------------------------------------
+    // SCENE 10: MÁY PHÁT ĐIỆN XOAY CHIỀU 3D (AC GENERATOR & TỪ THÔNG)
+    // -------------------------------------------------------------
+    else if (mode === 'ac_generator_3d') {
+      // N Pole (Red, left) & S Pole (Blue, right)
+      const nPole = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 3.0, 3.2),
+        new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.3 })
+      );
+      nPole.position.set(-3.6, 2.2, 0);
+      const sPole = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 3.0, 3.2),
+        new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3, metalness: 0.3 })
+      );
+      sPole.position.set(3.6, 2.2, 0);
+      group.add(nPole, sPole);
+
+      // Magnetic field arrows N -> S along +X
+      for (let iy = 1.4; iy <= 3.0; iy += 0.8) {
+        for (let iz = -0.8; iz <= 0.8; iz += 0.8) {
+          group.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(-2.7, iy, iz), 5.4, 0x38bdf8, 0.28, 0.14));
+        }
+      }
+
+      // Rotating rectangular copper coil
+      const coilGroup = new THREE.Group();
+      coilGroup.position.set(0, 2.2, 0);
+      const wirePts = [
+        new THREE.Vector3(-1.3, -1.1, 0),
+        new THREE.Vector3(1.3, -1.1, 0),
+        new THREE.Vector3(1.3, 1.1, 0),
+        new THREE.Vector3(-1.3, 1.1, 0),
+        new THREE.Vector3(-1.3, -1.1, 0)
+      ];
+      const coilGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(wirePts, false, 'catmullrom', 0.05), 48, 0.07, 10, false);
+      const coilMesh = new THREE.Mesh(coilGeo, new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.2 }));
+      coilGroup.add(coilMesh);
+
+      // Normal vector n attached to coil
+      const normalArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), 1.6, 0x10b981, 0.28, 0.15);
+      coilGroup.add(normalArrow);
+      group.add(coilGroup);
+
+      // Slip ring axis
+      const axle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.06, 4.6, 12),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 })
+      );
+      axle.rotation.x = Math.PI / 2;
+      axle.position.set(0, 2.2, 0);
+      group.add(axle);
+
+      let lastStepSeen = -1;
+      const updateInterval = setInterval(() => {
+        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
+        lastStepSeen = stepTriggerRef.current;
+        coilGroup.rotation.z = simStateRef.current.time * Math.max(0.2, genOmega3D);
+      }, 30);
+
+      return () => clearInterval(updateInterval);
+    }
+
+    // -------------------------------------------------------------
+    // SCENE 11: GIAO THOA KHE Y-ÂNG 3D (DOUBLE-SLIT LIGHT FRINGES)
+    // -------------------------------------------------------------
+    else if (mode === 'young_interference_3d') {
+      const nm = Math.round(youngLambdaUm * 1000);
+      const cssColor = (() => {
+        let r = 0, g = 0, b = 0;
+        if (nm >= 380 && nm < 440) { r = -(nm - 440) / 60; b = 1; }
+        else if (nm < 490) { g = (nm - 440) / 50; b = 1; }
+        else if (nm < 510) { g = 1; b = -(nm - 510) / 20; }
+        else if (nm < 580) { r = (nm - 510) / 70; g = 1; }
+        else if (nm < 645) { r = 1; g = -(nm - 645) / 65; }
+        else { r = 1; }
+        return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+      })();
+
+      const hexColor = (cssColor.r << 16) | (cssColor.g << 8) | cssColor.b;
+      const slitGap = Math.max(0.4, Math.min(2.2, youngSlitMm * 0.9));
+
+      // Barrier with two glowing slits S1 and S2 at X = -3.2
+      const barrier = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 3.6, 5.2),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 })
+      );
+      barrier.position.set(-3.2, 2.0, 0);
+      group.add(barrier);
+
+      [-slitGap / 2, slitGap / 2].forEach((zSlit) => {
+        const slitGlow = new THREE.Mesh(
+          new THREE.BoxGeometry(0.22, 1.8, 0.14),
+          new THREE.MeshBasicMaterial({ color: hexColor })
+        );
+        slitGlow.position.set(-3.2, 2.0, zSlit);
+        group.add(slitGlow);
+
+        // Diverging rays to screen X = 3.8
+        for (let targetZ = -2.2; targetZ <= 2.2; targetZ += 1.1) {
+          const rGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-3.1, 2.0, zSlit),
+            new THREE.Vector3(3.8, 2.0, targetZ)
+          ]);
+          const rMat = new THREE.LineBasicMaterial({ color: hexColor, transparent: true, opacity: 0.45 });
+          group.add(new THREE.Line(rGeo, rMat));
+        }
+      });
+
+      // Procedural interference fringe texture on observation screen at X = 3.8
+      const texCanvas = document.createElement('canvas');
+      texCanvas.width = 256;
+      texCanvas.height = 128;
+      const tCtx = texCanvas.getContext('2d');
+      if (tCtx) {
+        tCtx.fillStyle = '#050814';
+        tCtx.fillRect(0, 0, 256, 128);
+        const fringePeriodPx = (youngLambdaUm * 46) / Math.max(0.25, youngSlitMm);
+        for (let px = 0; px < 256; px++) {
+          const xRel = px - 128;
+          const intensity = Math.pow(Math.cos((Math.PI * xRel) / fringePeriodPx), 2);
+          tCtx.fillStyle = `rgba(${cssColor.r}, ${cssColor.g}, ${cssColor.b}, ${Math.max(0.05, intensity)})`;
+          tCtx.fillRect(px, 0, 1, 128);
+        }
+      }
+      const screenTex = new THREE.CanvasTexture(texCanvas);
+      const screenMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.2, 3.6, 5.4),
+        new THREE.MeshStandardMaterial({ map: screenTex, roughness: 0.4 })
+      );
+      screenMesh.position.set(3.8, 2.0, 0);
+      group.add(screenMesh);
+    }
   }, [
     mode,
     isRunning,
@@ -1003,6 +1252,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     vecAngle,
     gasTempK,
     gasVolumeFactor,
+    circRadius3D,
+    circOmega3D,
+    genOmega3D,
+    genFieldB3D,
+    youngLambdaUm,
+    youngSlitMm,
   ]);
 
   // Derived telemetry
@@ -1049,6 +1304,9 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
               {mode === 'optics_3d' && 'Quang Hình Học 3D & Đường Đi Tia Sáng'}
               {mode === 'kinematics_3d' && 'Động Học Chất Điểm & Tổng Hợp Vectơ 3D'}
               {mode === 'thermal_gas_3d' && 'Động Học Phân Tử & Khí Lí Tưởng 3D'}
+              {mode === 'circular_motion_3d' && 'Chuyển Động Tròn Đều & Lực Hướng Tâm 3D'}
+              {mode === 'ac_generator_3d' && 'Máy Phát Điện Xoay Chiều & Từ Thông 3D'}
+              {mode === 'young_interference_3d' && 'Giao Thoa Khe Y-âng & Hệ Vân Sáng Tối 3D'}
             </span>
           </div>
 
@@ -1057,18 +1315,21 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
             <div className="flex items-center gap-1 p-1 bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-lg overflow-x-auto max-w-full scrollbar-none">
               {[
                 { id: 'kinematics_3d', label: 'Động Học & Vectơ' },
+                { id: 'circular_motion_3d', label: 'Tròn Đều 3D' },
                 { id: 'optics_3d', label: 'Quang Học 3D' },
                 { id: 'pendulum_spring', label: 'Con Lắc 3D' },
                 { id: 'projectile_3d', label: 'Ném Xiên 3D' },
                 { id: 'wave_ripple', label: 'Sóng Nước 3D' },
                 { id: 'thermal_gas_3d', label: 'Khí Lí Tưởng 3D' },
+                { id: 'ac_generator_3d', label: 'Máy Phát AC 3D' },
+                { id: 'young_interference_3d', label: 'Khe Y-âng 3D' },
                 { id: 'lorentz_helix', label: 'Từ Trường Lorentz' },
                 { id: 'bohr_atom', label: 'Nguyên Tử Bohr' },
               ].map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setMode(m.id as Physics3DMode)}
-                  className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
+                  className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all shrink-0 ${
                     mode === m.id ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
                   }`}
                 >
@@ -1114,12 +1375,17 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         </div>
 
         {/* 3D WebGL Canvas (Unobstructed middle stage on < lg, full height on lg+) */}
-        <div
-          ref={mountRef}
-          className={`w-full cursor-grab active:cursor-grabbing touch-none ${
-            isFullscreen ? 'flex-1 min-h-[240px] lg:h-full' : 'h-[270px] sm:h-[340px] lg:h-full'
-          }`}
-        />
+        <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[240px] lg:h-full' : 'h-[270px] sm:h-[340px] lg:h-full'}`}>
+          <div
+            ref={mountRef}
+            className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
+          />
+          {contextLost && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/90 text-slate-200 text-xs p-4 text-center">
+              Ngữ cảnh WebGL tạm ngưng. Vui lòng chuyển tab hoặc tải lại để khôi phục mô phỏng 3D.
+            </div>
+          )}
+        </div>
 
         {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK (Below canvas on < lg, floating dock on lg+) */}
         <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 w-full lg:w-[96%] lg:max-w-3xl lg:pointer-events-none bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
@@ -1455,6 +1721,99 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
                   </div>
                   <div className="text-[11px] text-slate-400 font-mono">
                     Áp suất tỉ lệ P ~ T / V = {((Math.max(10, gasTempK) / 300) / Math.max(0.3, gasVolumeFactor)).toFixed(2)} atm (Động năng phân tử tăng theo T).
+                  </div>
+                </div>
+              )}
+
+              {/* 9. Circular Motion 3D */}
+              {mode === 'circular_motion_3d' && (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <Numeric3DControl
+                      label="Bán kính quỹ đạo r"
+                      unit="m"
+                      value={circRadius3D}
+                      min={1.0}
+                      max={4.0}
+                      step={0.2}
+                      accentClass="accent-cyan-500"
+                      onChange={(v) => setCircRadius3D(v)}
+                    />
+                    <Numeric3DControl
+                      label="Tốc độ góc ω"
+                      unit="rad/s"
+                      value={circOmega3D}
+                      min={0.5}
+                      max={5.0}
+                      step={0.2}
+                      accentClass="accent-amber-500"
+                      onChange={(v) => setCircOmega3D(v)}
+                    />
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    v = ω·r = {(circOmega3D * circRadius3D).toFixed(2)} m/s · a_ht = ω²·r = {(circOmega3D * circOmega3D * circRadius3D).toFixed(2)} m/s² (Mũi tên xanh: v, mũi tên đỏ: F_ht).
+                  </div>
+                </div>
+              )}
+
+              {/* 10. AC Generator 3D */}
+              {mode === 'ac_generator_3d' && (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <Numeric3DControl
+                      label="Tốc độ quay ω"
+                      unit="rad/s"
+                      value={genOmega3D}
+                      min={0.5}
+                      max={6.0}
+                      step={0.25}
+                      accentClass="accent-amber-500"
+                      onChange={(v) => setGenOmega3D(v)}
+                    />
+                    <Numeric3DControl
+                      label="Cảm ứng từ B"
+                      unit="T"
+                      value={genFieldB3D}
+                      min={0.4}
+                      max={2.5}
+                      step={0.1}
+                      accentClass="accent-blue-500"
+                      onChange={(v) => setGenFieldB3D(v)}
+                    />
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    Từ thông Φ = NBS·cos(ωt) · Suất điện động cực đại E₀ = NBSω ∝ {(genFieldB3D * genOmega3D).toFixed(2)} V (Pháp tuyến xanh quay cắt đường sức B).
+                  </div>
+                </div>
+              )}
+
+              {/* 11. Young Double-Slit Interference 3D */}
+              {mode === 'young_interference_3d' && (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <Numeric3DControl
+                      label="Bước sóng λ"
+                      unit="μm"
+                      value={youngLambdaUm}
+                      min={0.38}
+                      max={0.75}
+                      step={0.01}
+                      accentClass="accent-rose-500"
+                      onChange={(v) => setYoungLambdaUm(v)}
+                    />
+                    <Numeric3DControl
+                      label="Khoảng cách 2 khe a"
+                      unit="mm"
+                      value={youngSlitMm}
+                      min={0.4}
+                      max={2.2}
+                      step={0.1}
+                      accentClass="accent-emerald-500"
+                      onChange={(v) => setYoungSlitMm(v)}
+                    />
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    Khoảng vân i = λD/a (D = 2m) = {((youngLambdaUm * 2.0) / Math.max(0.2, youngSlitMm)).toFixed(2)} mm · Vân sáng trung tâm nằm tại chính giữa màn quan sát!
                   </div>
                 </div>
               )}

@@ -13,15 +13,32 @@ import {
   Trophy,
   Zap,
   Code2,
-  BookOpen
+  BookOpen,
+  BarChart3,
+  Target,
+  AlertTriangle
 } from 'lucide-react';
-import { PersonalizedRoadmapResult, RoadmapNode, SubjectType, TutorContextPayload } from '../../types';
+import {
+  LessonAssessmentRecord,
+  LessonRoadmapRecommendationItem,
+  PersonalizedRoadmapResult,
+  RoadmapNode,
+  SubjectType,
+  TutorContextPayload
+} from '../../types';
 import { ROADMAP_NODES, WORKFLOW_STAGES } from '../../data/roadmapData';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNavigation } from '../../context/NavigationContext';
 import { FormattedText } from '../common/MathRenderer';
 import { db, doc, getDoc, setDoc, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { AI_ROADMAPS_STORAGE_KEY } from '../tutor/SocraticAITutor';
+import {
+  CloudLessonAssessmentSummary,
+  fetchCloudLessonAssessments,
+  LESSON_ASSESSMENT_UPDATED_EVENT,
+  loadAllLessonAssessments
+} from '../../lib/lessonProgressStore';
 
 interface LearningRoadmapProps {
   onBack: () => void;
@@ -40,6 +57,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
 }) => {
   const { user, firebaseUser } = useAuth();
   const { language } = useLanguage();
+  const { navigate } = useNavigation();
   const isEn = language === 'en';
 
   const [activeStageIdx, setActiveStageIdx] = useState<number>(0);
@@ -65,6 +83,11 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     }
   });
 
+  const [localLessonAssessments, setLocalLessonAssessments] = useState<LessonAssessmentRecord[]>(() =>
+    loadAllLessonAssessments(user?.uid || firebaseUser?.uid)
+  );
+  const [cloudLessonAssessments, setCloudLessonAssessments] = useState<CloudLessonAssessmentSummary[]>([]);
+
   useEffect(() => {
     const syncAiRoadmaps = () => {
       try {
@@ -75,6 +98,32 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     window.addEventListener('educlassroom:roadmap-updated', syncAiRoadmaps);
     return () => window.removeEventListener('educlassroom:roadmap-updated', syncAiRoadmaps);
   }, []);
+
+  useEffect(() => {
+    const uid = user?.uid || firebaseUser?.uid;
+    const syncAssessments = () => {
+      setLocalLessonAssessments(loadAllLessonAssessments(uid));
+    };
+    syncAssessments();
+    window.addEventListener(LESSON_ASSESSMENT_UPDATED_EVENT, syncAssessments);
+    return () => window.removeEventListener(LESSON_ASSESSMENT_UPDATED_EVENT, syncAssessments);
+  }, [user?.uid, firebaseUser?.uid]);
+
+  useEffect(() => {
+    if (!firebaseUser?.uid) {
+      setCloudLessonAssessments([]);
+      return;
+    }
+    let cancelled = false;
+    fetchCloudLessonAssessments(firebaseUser.uid).then((items) => {
+      if (!cancelled) {
+        setCloudLessonAssessments(items);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseUser?.uid]);
 
   // Load roadmap completion from Firestore if signed into Firebase
   useEffect(() => {
@@ -170,6 +219,181 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     return <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
   };
 
+  const savedLessonSummaries = useMemo(() => {
+    type UnifiedSummary = {
+      lessonKey: string;
+      subject: 'math' | 'physics' | 'cs';
+      lessonTitle: string;
+      grade?: string;
+      totalSteps: number;
+      completedSteps: number;
+      mcqCorrect: number;
+      mcqTotal: number;
+      essayGradedCount: number;
+      essayAvgScore: number;
+      overallMastery: number;
+      strongPoints: string[];
+      weakPoints: string[];
+      readinessLevel?: string;
+      summaryFeedback?: string;
+      recommendedRoadmap: LessonRoadmapRecommendationItem[];
+      recommendedAction?: string;
+      updatedAt: string;
+    };
+
+    const byKey = new Map<string, UnifiedSummary>();
+
+    for (const cloud of cloudLessonAssessments) {
+      byKey.set(cloud.lessonKey, {
+        lessonKey: cloud.lessonKey,
+        subject: cloud.subject,
+        lessonTitle: cloud.lessonTitle,
+        grade: cloud.grade,
+        totalSteps: cloud.totalSteps || 0,
+        completedSteps: cloud.completedSteps || 0,
+        mcqCorrect: cloud.mcqCorrect || 0,
+        mcqTotal: cloud.mcqTotal || 0,
+        essayGradedCount: cloud.essayGradedCount || 0,
+        essayAvgScore: cloud.essayAvgScore || 0,
+        overallMastery: cloud.overallMastery || 0,
+        strongPoints: cloud.strongStepTitles || [],
+        weakPoints: cloud.weakStepTitles || [],
+        readinessLevel: cloud.readinessLevel,
+        recommendedRoadmap: [],
+        recommendedAction: cloud.recommendedAction,
+        updatedAt: cloud.updatedAt || ''
+      });
+    }
+
+    for (const rec of localLessonAssessments) {
+      const stepEntries = Object.values(rec.stepResults || {});
+      let mcqCorrect = 0;
+      let mcqTotal = 0;
+      let essaySum = 0;
+      let essayCount = 0;
+      let completedSteps = 0;
+      const derivedStrong: string[] = [];
+      const derivedWeak: string[] = [];
+
+      for (const st of stepEntries) {
+        const checkedIndices = Object.keys(st.mcqChecked || {}).filter((k) => st.mcqChecked[Number(k)]);
+        let stCorrect = 0;
+        let stChecked = 0;
+        const quizList = st.customQuiz?.miniQuiz || [];
+        if (typeof st.mcqCheckedCount === 'number' && typeof st.mcqCorrectCount === 'number') {
+          stChecked = st.mcqCheckedCount;
+          stCorrect = st.mcqCorrectCount;
+          mcqTotal += stChecked;
+          mcqCorrect += stCorrect;
+        } else {
+          checkedIndices.forEach((k) => {
+            const qIdx = Number(k);
+            const qObj = quizList[qIdx];
+            stChecked += 1;
+            mcqTotal += 1;
+            if (qObj && st.mcqAnswers?.[qIdx] === qObj.correctIndex) {
+              mcqCorrect += 1;
+              stCorrect += 1;
+            }
+          });
+        }
+        const hasEssay = typeof st.essayEvaluation?.score === 'number';
+        if (hasEssay && st.essayEvaluation) {
+          essayCount += 1;
+          essaySum += st.essayEvaluation.score;
+        }
+        if (stChecked > 0 || hasEssay) {
+          completedSteps += 1;
+          const mcqRatio = stChecked > 0 ? stCorrect / stChecked : 0;
+          const essayRatio = hasEssay && st.essayEvaluation ? st.essayEvaluation.score / 10 : mcqRatio;
+          const combined = (mcqRatio + essayRatio) / 2;
+          if (combined >= 0.75) {
+            derivedStrong.push(st.stepTitle);
+          } else {
+            derivedWeak.push(st.stepTitle);
+          }
+        }
+      }
+
+      const existing = byKey.get(rec.lessonKey);
+      const essayAvg =
+        essayCount > 0 ? Math.round((essaySum / essayCount) * 10) / 10 : existing?.essayAvgScore || 0;
+      const mcqPct = mcqTotal > 0 ? (mcqCorrect / mcqTotal) * 100 : 0;
+      const essayPct = essayCount > 0 ? essayAvg * 10 : mcqPct;
+      const fallbackMastery =
+        mcqTotal > 0 || essayCount > 0
+          ? Math.max(0, Math.min(100, Math.round(mcqPct * 0.55 + essayPct * 0.45)))
+          : 0;
+      const computedMastery =
+        typeof rec.analysis?.overallMastery === 'number'
+          ? Math.round(rec.analysis.overallMastery)
+          : existing?.overallMastery ?? fallbackMastery;
+
+      if (!existing || (rec.updatedAt || '') >= (existing.updatedAt || '')) {
+        byKey.set(rec.lessonKey, {
+          lessonKey: rec.lessonKey,
+          subject: rec.subject,
+          lessonTitle: rec.lessonTitle,
+          grade: rec.grade || existing?.grade,
+          totalSteps: rec.totalSteps || existing?.totalSteps || 0,
+          completedSteps: Math.max(completedSteps, existing?.completedSteps || 0),
+          mcqCorrect: mcqTotal > 0 ? mcqCorrect : existing?.mcqCorrect || 0,
+          mcqTotal: mcqTotal > 0 ? mcqTotal : existing?.mcqTotal || 0,
+          essayGradedCount: Math.max(essayCount, existing?.essayGradedCount || 0),
+          essayAvgScore: essayAvg,
+          overallMastery: computedMastery,
+          strongPoints:
+            rec.analysis?.strongPoints && rec.analysis.strongPoints.length > 0
+              ? rec.analysis.strongPoints
+              : derivedStrong.length > 0
+              ? derivedStrong
+              : existing?.strongPoints || [],
+          weakPoints:
+            rec.analysis?.weakPoints && rec.analysis.weakPoints.length > 0
+              ? rec.analysis.weakPoints
+              : derivedWeak.length > 0
+              ? derivedWeak
+              : existing?.weakPoints || [],
+          readinessLevel: rec.analysis?.readinessLevel || existing?.readinessLevel,
+          summaryFeedback: rec.analysis?.summaryFeedback,
+          recommendedRoadmap: rec.analysis?.recommendedRoadmap || [],
+          recommendedAction: existing?.recommendedAction,
+          updatedAt: rec.updatedAt || existing?.updatedAt || ''
+        });
+      }
+    }
+
+    return Array.from(byKey.values()).sort((a, b) =>
+      (b.updatedAt || '').localeCompare(a.updatedAt || '')
+    );
+  }, [localLessonAssessments, cloudLessonAssessments]);
+
+  const handleOpenSavedLesson = (subject: 'math' | 'physics' | 'cs', lessonKey: string) => {
+    if (subject === 'math') {
+      navigate({
+        subject: 'math',
+        mathTab: 'lectures',
+        mathViewMode: 'lecture',
+        mathLectureId: lessonKey
+      });
+    } else if (subject === 'physics') {
+      navigate({
+        subject: 'physics',
+        physicsView: 'lecture',
+        physicsLessonId: lessonKey,
+        physicsTab: 'theory'
+      });
+    } else {
+      navigate({
+        subject: 'cs',
+        csViewMode: 'curriculum',
+        csSubView: 'lecture',
+        csLessonId: lessonKey,
+        csLessonTab: 'lecture'
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -229,6 +453,187 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
           </div>
         </div>
       </div>
+
+      {/* SAVED LESSON ASSESSMENTS & AI STUDY ROADMAP RECOMMENDATIONS */}
+      {savedLessonSummaries.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 border border-indigo-200/80 dark:border-indigo-900/70 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-indigo-500" />
+                <span>
+                  {isEn
+                    ? 'Saved Lesson Assessments & AI Recommendations'
+                    : 'Kết Quả Từng Bài Giảng Đã Lưu & Gợi Ý Lộ Trình AI'}
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {isEn
+                  ? 'Detailed per-section MCQ & mini-essay tracking, strengths/weaknesses analysis, and direct study links.'
+                  : 'Tổng hợp điểm Trắc nghiệm + Tự luận nhỏ theo từng phần nội dung/công thức để ôn đúng chỗ còn hổng.'}
+              </p>
+            </div>
+            <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+              {savedLessonSummaries.length} {isEn ? 'lessons tracked' : 'bài đã lưu kết quả'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {savedLessonSummaries.slice(0, 6).map((item) => {
+              const firstStepRec = item.recommendedRoadmap[0];
+              return (
+                <div
+                  key={item.lessonKey}
+                  className="p-4 rounded-xl bg-slate-50/90 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-3 flex flex-col justify-between"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                          {getSubjectIcon(item.subject)}
+                          <span>{getSubjectName(item.subject)}</span>
+                          {item.grade && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span>{item.grade}</span>
+                            </>
+                          )}
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5 line-clamp-2">
+                          {item.lessonTitle}
+                        </h3>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <span
+                          className={`inline-block px-2.5 py-1 rounded-lg text-xs font-mono font-extrabold tabular-nums ${
+                            item.overallMastery >= 80
+                              ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                              : item.overallMastery >= 55
+                              ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                              : 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
+                          }`}
+                        >
+                          {item.overallMastery}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar & Metrics */}
+                    <div className="space-y-1.5">
+                      <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            item.overallMastery >= 80
+                              ? 'bg-emerald-500'
+                              : item.overallMastery >= 55
+                              ? 'bg-amber-500'
+                              : 'bg-rose-500'
+                          }`}
+                          style={{ width: `${Math.max(4, item.overallMastery)}%` }}
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-600 dark:text-slate-400 tabular-nums">
+                        <span>
+                          Đã làm:{' '}
+                          <strong className="text-slate-900 dark:text-slate-200">
+                            {item.completedSteps}/{item.totalSteps || '?'}
+                          </strong>{' '}
+                          phần
+                        </span>
+                        {item.mcqTotal > 0 && (
+                          <span>
+                            TN:{' '}
+                            <strong className="text-indigo-600 dark:text-indigo-400">
+                              {item.mcqCorrect}/{item.mcqTotal}
+                            </strong>
+                          </span>
+                        )}
+                        {item.essayGradedCount > 0 && (
+                          <span>
+                            TL nhỏ:{' '}
+                            <strong className="text-emerald-600 dark:text-emerald-400">
+                              {item.essayAvgScore}/10
+                            </strong>{' '}
+                            ({item.essayGradedCount} câu)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {item.readinessLevel && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-800/60 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
+                        <Target className="w-3 h-3 shrink-0" />
+                        <span>{item.readinessLevel}</span>
+                      </div>
+                    )}
+
+                    {/* Strengths & Weaknesses */}
+                    {(item.strongPoints.length > 0 || item.weakPoints.length > 0) && (
+                      <div className="space-y-1.5 text-[11px]">
+                        {item.strongPoints.length > 0 && (
+                          <div className="flex items-start gap-1.5 text-emerald-700 dark:text-emerald-300">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            <span className="line-clamp-2">
+                              <strong>Nắm vững:</strong> {item.strongPoints.slice(0, 2).join('; ')}
+                            </span>
+                          </div>
+                        )}
+                        {item.weakPoints.length > 0 && (
+                          <div className="flex items-start gap-1.5 text-amber-700 dark:text-amber-300">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            <span className="line-clamp-2">
+                              <strong>Cần củng cố:</strong> {item.weakPoints.slice(0, 2).join('; ')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {(firstStepRec || item.recommendedAction) && (
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                          Gợi ý lộ trình tiếp theo:{' '}
+                        </span>
+                        {firstStepRec
+                          ? `${firstStepRec.title} — ${firstStepRec.action}`
+                          : item.recommendedAction}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/70 dark:border-slate-800">
+                    <button
+                      onClick={() => handleOpenSavedLesson(item.subject, item.lessonKey)}
+                      className="flex-1 min-w-[140px] py-2 px-3 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 text-xs font-bold flex items-center justify-center gap-1.5 transition-opacity"
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>{isEn ? 'Reopen Lesson & Review' : 'Mở Lại Bài Giảng & Xem Phân Tích'}</span>
+                    </button>
+
+                    {item.weakPoints.length > 0 && (
+                      <button
+                        onClick={() =>
+                          onOpenTutor({
+                            subject: item.subject,
+                            topicTitle: item.lessonTitle,
+                            grade: item.grade,
+                            problemStatement: `Hãy giúp em ôn lại các phần còn yếu trong bài "${item.lessonTitle}": ${item.weakPoints.join('; ')}.`
+                          })
+                        }
+                        className="py-2 px-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Ôn phần yếu với AI</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* PERSONALIZED AI ROADMAPS FROM MODE 3 (IF CREATED) */}
       {Object.values(aiRoadmaps).some(Boolean) && (

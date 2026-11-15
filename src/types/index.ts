@@ -53,7 +53,18 @@ export interface UserProfile {
 }
 
 // Math Types
-export type FunctionType = 'linear' | 'quadratic' | 'cubic' | 'rational' | 'trig_sin' | 'trig_cos' | 'exponential' | 'custom';
+export type FunctionType =
+  | 'linear'
+  | 'quadratic'
+  | 'cubic'
+  | 'rational'
+  | 'trig_sin'
+  | 'trig_cos'
+  | 'exponential'
+  | 'logarithmic'
+  | 'abs'
+  | 'sqrt'
+  | 'custom';
 
 export interface FunctionPlotConfig {
   id: string;
@@ -70,6 +81,9 @@ export interface FunctionPlotConfig {
   customExpr?: string;
   showTangent?: boolean;
   tangentX0?: number;
+  showIntegral?: boolean;
+  integralA?: number;
+  integralB?: number;
   visible: boolean;
 }
 
@@ -99,9 +113,34 @@ export interface GeoCircle {
 export type CurriculumTrack = 'khong_chuyen' | 'chuyen';
 export type SpecializedTier = 'Cơ bản' | 'Nâng cao' | 'Chuyên / HSG';
 
+export interface LectureStepMCQ {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+export interface LectureStepMiniEssay {
+  id: string;
+  question: string;
+  hint?: string;
+  rubricChecklist: string[];
+  sampleAnswer: string;
+}
+
+export interface LectureStepFormulaSection {
+  primaryFormula?: string;
+  secondaryFormulas?: string[];
+  variablesNote?: string;
+}
+
 export interface LectureStep {
   stepTitle: string;
   stepType?: 'intuition' | 'concept' | 'derivation' | 'example' | 'pitfall' | 'experiment';
+  conceptSection?: string;
+  formulaSection?: LectureStepFormulaSection;
+  deepDiveSection?: string;
   teacherExplanation: string;
   formulaHighlight?: string;
   workedExample?: {
@@ -115,6 +154,71 @@ export interface LectureStep {
     code: string;
   };
   keyTakeaway?: string;
+  miniQuiz?: LectureStepMCQ[];
+  miniEssay?: LectureStepMiniEssay;
+}
+
+export interface LectureStepEvaluation {
+  score: number; // 0 to 10
+  maxScore: number; // 10
+  isCorrectDirection: boolean;
+  strengths: string[];
+  mistakes: string[];
+  feedback: string;
+  gradedBy: 'ai' | 'self';
+}
+
+export interface LectureStepAiMessage {
+  id: string;
+  role: 'user' | 'tutor';
+  text: string;
+  timestamp: string;
+}
+
+export interface LectureStepSavedResult {
+  stepIndex: number;
+  stepTitle: string;
+  mcqAnswers: Record<number, number>;
+  mcqChecked: Record<number, boolean>;
+  mcqCorrectCount?: number;
+  mcqCheckedCount?: number;
+  essayAnswer: string;
+  essayEvaluation?: LectureStepEvaluation;
+  aiMessages?: LectureStepAiMessage[];
+  customQuiz?: {
+    miniQuiz: LectureStepMCQ[];
+    miniEssay: LectureStepMiniEssay;
+  };
+  updatedAt: string;
+}
+
+export interface LessonRoadmapRecommendationItem {
+  step: number;
+  title: string;
+  action: string;
+  targetType: 'review_step' | 'sim_2d' | 'sim_3d' | 'ai_tutor' | 'next_lesson' | 'exams' | 'arena';
+  stepIndex?: number;
+}
+
+export interface LessonProgressAnalysis {
+  overallMastery: number;
+  readinessLevel: string;
+  summaryFeedback: string;
+  strongPoints: string[];
+  weakPoints: string[];
+  recommendedRoadmap: LessonRoadmapRecommendationItem[];
+  analyzedAt: string;
+}
+
+export interface LessonAssessmentRecord {
+  lessonKey: string;
+  subject: 'math' | 'physics' | 'cs';
+  lessonTitle: string;
+  grade?: string;
+  totalSteps: number;
+  stepResults: Record<number, LectureStepSavedResult>;
+  analysis?: LessonProgressAnalysis;
+  updatedAt: string;
 }
 
 export interface MathEssayProblem {
@@ -152,7 +256,14 @@ export interface MathLecture {
   }[];
   essayProblems?: MathEssayProblem[];
   sim2dMode?: 'grapher' | 'geometry';
-  sim3dMode?: 'oxyz_vector' | 'sphere_plane' | 'pyramid_section' | 'revolution_solid';
+  sim3dMode?:
+    | 'oxyz_vector'
+    | 'sphere_plane'
+    | 'pyramid_section'
+    | 'revolution_solid'
+    | 'conic_sections_3d'
+    | 'line_plane_oxyz'
+    | 'integral_disks_3d';
   defaultGraphConfig?: Partial<FunctionPlotConfig>;
 }
 
@@ -170,7 +281,10 @@ export type PhysicsSimType =
   | 'kinematics_graphs'
   | 'thermal_gas'
   | 'electric_field'
-  | 'nuclear_decay';
+  | 'nuclear_decay'
+  | 'circular_motion'
+  | 'ac_rlc_circuit'
+  | 'young_interference';
 
 export type Physics3DMode =
   | 'pendulum_spring'
@@ -180,7 +294,10 @@ export type Physics3DMode =
   | 'bohr_atom'
   | 'optics_3d'
   | 'kinematics_3d'
-  | 'thermal_gas_3d';
+  | 'thermal_gas_3d'
+  | 'circular_motion_3d'
+  | 'ac_generator_3d'
+  | 'young_interference_3d';
 
 export interface PhysicsEssayExercise {
   id?: string;

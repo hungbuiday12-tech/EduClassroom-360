@@ -562,6 +562,15 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
         case 'nuclear_decay':
           drawNuclearDecay(ctx, w, h, t, isDark);
           break;
+        case 'circular_motion':
+          drawCircularMotion(ctx, w, h, t, isDark);
+          break;
+        case 'ac_rlc_circuit':
+          drawAcRlcCircuit(ctx, w, h, t, isDark);
+          break;
+        case 'young_interference':
+          drawYoungInterference(ctx, w, h, t, isDark);
+          break;
         default:
           drawSpring(ctx, w, h, t, isDark);
       }
@@ -2562,8 +2571,464 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     }
   };
 
+  // 14. Uniform Circular Motion & Centripetal Force (Lớp 10)
+  const drawCircularMotion = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const ov = overlaysRef.current;
+
+    const r = Math.max(0.2, p.radius ?? 2.0); // m
+    const omega = Math.max(0.2, p.omega ?? 2.5); // rad/s
+    const mass = Math.max(0.1, p.mass ?? 1.5); // kg
+
+    const v = omega * r;
+    const aHt = omega * omega * r;
+    const fHt = mass * aHt;
+    const period = (2 * Math.PI) / omega;
+
+    pushTelemetry({
+      metric1Label: 'Tốc độ dài v = ω·r',
+      metric1Val: `${v.toFixed(2)} m/s`,
+      metric2Label: 'Gia tốc hướng tâm a_ht',
+      metric2Val: `${aHt.toFixed(2)} m/s²`,
+      metric3Label: 'Lực hướng tâm F_ht · Chu kì T',
+      metric3Val: `${fHt.toFixed(1)} N · ${period.toFixed(2)} s`,
+      note: 'Trong chuyển động tròn đều: vectơ vận tốc v luôn tiếp tuyến quỹ đạo, còn gia tốc & lực hướng tâm luôn hướng vào tâm O.'
+    });
+
+    const cx = w * 0.42;
+    const cy = h * 0.52;
+    const rPx = Math.min(w * 0.28, h * 0.36) * Math.min(1.2, Math.max(0.45, r / 3.0));
+    const angle = omega * t;
+    const objX = cx + rPx * Math.cos(angle);
+    const objY = cy - rPx * Math.sin(angle);
+
+    // Orbital circle
+    ctx.save();
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.5)' : 'rgba(2, 132, 199, 0.45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rPx, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    //Swept sector & trail
+    if (ov.showTrace) {
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, rPx, -angle, -angle + Math.PI / 3, false);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Center O & radius arm
+    ctx.strokeStyle = isDark ? '#94a3b8' : '#475569';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(objX, objY);
+    ctx.stroke();
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`O (r=${r.toFixed(1)}m)`, cx + 8, cy + 16);
+
+    // Vector helpers
+    const drawVec = (x0: number, y0: number, dx: number, dy: number, color: string, label: string) => {
+      const len = Math.hypot(dx, dy);
+      if (len < 4) return;
+      const ang = Math.atan2(dy, dx);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x0 + dx, y0 + dy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x0 + dx, y0 + dy);
+      ctx.lineTo(x0 + dx - 10 * Math.cos(ang - Math.PI / 6), y0 + dy - 10 * Math.sin(ang - Math.PI / 6));
+      ctx.lineTo(x0 + dx - 10 * Math.cos(ang + Math.PI / 6), y0 + dy - 10 * Math.sin(ang + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(label, x0 + dx + 6, y0 + dy - 4);
+    };
+
+    if (ov.showVectors) {
+      // Tangent velocity vector (counter-clockwise)
+      const vScale = Math.min(85, Math.max(26, v * 8));
+      const tx = -Math.sin(angle) * vScale;
+      const ty = -Math.cos(angle) * vScale;
+      drawVec(objX, objY, tx, ty, '#10b981', 'v');
+
+      // Centripetal force F_ht toward center
+      const fScale = Math.min(rPx * 0.78, Math.max(24, fHt * 1.4));
+      const fx = -Math.cos(angle) * fScale;
+      const fy = Math.sin(angle) * fScale;
+      drawVec(objX, objY, fx, fy, '#ef4444', 'F_ht');
+    }
+
+    // Rotating mass ball
+    ctx.fillStyle = '#3b82f6';
+    ctx.beginPath();
+    ctx.arc(objX, objY, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Right-side real-time projection x(t) = r*cos(ωt) wave chart
+    if (ov.showRealtimeChart && w > 420) {
+      const gx = w * 0.72;
+      const gy = h * 0.52;
+      const gw = w * 0.24;
+      ctx.strokeStyle = isDark ? '#475569' : '#94a3b8';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(gx, gy - rPx);
+      ctx.lineTo(gx, gy + rPx);
+      ctx.moveTo(gx, gy);
+      ctx.lineTo(gx + gw, gy);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const dtBack = (i / 60) * 3.0;
+        const yProj = gy - rPx * Math.sin(omega * (t - dtBack));
+        const px = gx + (i / 60) * gw;
+        if (i === 0) ctx.moveTo(px, yProj);
+        else ctx.lineTo(px, yProj);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '10px monospace';
+      ctx.fillText('Hình chiếu y(t) = r·sin(ωt)', gx, gy - rPx - 8);
+    }
+  };
+
+  // 15. AC RLC Series Circuit, Fresnel Phasor & Oscilloscope (Lớp 12)
+  const drawAcRlcCircuit = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const ov = overlaysRef.current;
+
+    const uEff = Math.max(10, p.uEff ?? 120); // V
+    const freq = Math.max(10, p.freq ?? 50); // Hz
+    const resR = Math.max(5, p.resR ?? 40); // Ohm
+    const indL = Math.max(0.05, p.indL ?? 0.3); // H
+    const capC = Math.max(5, p.capC ?? 40); // uF -> convert to F
+
+    const omega = 2 * Math.PI * freq;
+    const zl = omega * indL;
+    const zc = 1 / (omega * capC * 1e-6);
+    const zTotal = Math.sqrt(resR * resR + (zl - zc) * (zl - zc));
+    const iEff = uEff / zTotal;
+    const phi = Math.atan2(zl - zc, resR);
+    const cosPhi = resR / zTotal;
+    const powerP = uEff * iEff * cosPhi;
+    const isResonance = Math.abs(zl - zc) < Math.max(4, resR * 0.12);
+
+    pushTelemetry({
+      metric1Label: 'Cảm kháng Z_L · Dung kháng Z_C',
+      metric1Val: `${zl.toFixed(1)} Ω · ${zc.toFixed(1)} Ω`,
+      metric2Label: 'Tổng trở Z · Dòng I hiệu dụng',
+      metric2Val: `${zTotal.toFixed(1)} Ω · ${iEff.toFixed(2)} A`,
+      metric3Label: 'Hệ số cos φ · Công suất P',
+      metric3Val: `${cosPhi.toFixed(2)} · ${powerP.toFixed(0)} W`,
+      note: isResonance
+        ? 'ĐANG CỘNG HƯỞNG ĐIỆN (Z_L ≈ Z_C): Tổng trở Z = R cực tiểu, I đạt cực đại và cos φ ≈ 1!'
+        : `Độ lệch pha φ = ${((phi * 180) / Math.PI).toFixed(1)}°. ${zl > zc ? 'Mạch có tính cảm kháng (u sớm pha hơn i).' : 'Mạch có tính dung kháng (u trễ pha hơn i).'}`
+    });
+
+    // Left: Schematic R-L-C loop
+    const boxLeft = 26;
+    const boxTop = 44;
+    const boxW = Math.min(w * 0.44, 320);
+    const boxH = h * 0.38;
+
+    ctx.strokeStyle = isDark ? '#64748b' : '#475569';
+    ctx.lineWidth = 2.2;
+    ctx.strokeRect(boxLeft, boxTop, boxW, boxH);
+
+    // AC Source circle at left vertical edge
+    ctx.fillStyle = isDark ? '#0f172a' : '#ffffff';
+    ctx.beginPath();
+    ctx.arc(boxLeft, boxTop + boxH / 2, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.stroke();
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('~', boxLeft, boxTop + boxH / 2 + 5);
+
+    // R, L, C components along top edge
+    const segW = boxW / 3;
+    // Resistor R
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(boxLeft + segW * 0.25, boxTop - 9, 44, 18);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('R', boxLeft + segW * 0.25 + 22, boxTop + 3);
+    // Inductor L
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(boxLeft + segW * 1.25, boxTop - 9, 44, 18);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('L', boxLeft + segW * 1.25 + 22, boxTop + 3);
+    // Capacitor C
+    ctx.fillStyle = '#a855f7';
+    ctx.fillRect(boxLeft + segW * 2.25, boxTop - 9, 44, 18);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('C', boxLeft + segW * 2.25 + 22, boxTop + 3);
+
+    // Animated AC electron drift along circuit wire
+    const driftPos = Math.sin(t * 4) * 18;
+    ctx.fillStyle = isResonance ? '#10b981' : '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(boxLeft + boxW / 2 + driftPos, boxTop + boxH, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (isResonance) {
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('⚡ CỘNG HƯỞNG ĐIỆN (Z_L = Z_C)', boxLeft, boxTop + boxH + 22);
+    }
+
+    // Bottom-left: Oscilloscope u(t) & i(t)
+    const oscX = 26;
+    const oscY = h * 0.78;
+    const oscW = Math.min(w * 0.48, 360);
+    const oscH = h * 0.16;
+    ctx.strokeStyle = isDark ? '#334155' : '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(oscX, oscY);
+    ctx.lineTo(oscX + oscW, oscY);
+    ctx.stroke();
+
+    const drawSine = (amp: number, phaseOffset: number, color: string) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 80; i++) {
+        const theta = (i / 80) * Math.PI * 4 - t * 4;
+        const px = oscX + (i / 80) * oscW;
+        const py = oscY - amp * Math.sin(theta + phaseOffset);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    };
+    drawSine(oscH, 0, '#f59e0b');
+    drawSine(oscH * Math.min(1.0, (iEff / Math.max(1, uEff / resR)) * 0.85), -phi, '#38bdf8');
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillText('u(t)', oscX, oscY - oscH - 4);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText('i(t)', oscX + 42, oscY - oscH - 4);
+
+    // Right: Fresnel Rotating Phasor Diagram
+    const phX = w * 0.74;
+    const phY = h * 0.56;
+    const phScale = Math.min(w * 0.18, h * 0.34) / Math.max(1, iEff * Math.max(resR, zl, zc));
+    const uR_px = Math.min(110, Math.max(25, iEff * resR * phScale));
+    const uL_px = Math.min(125, iEff * zl * phScale);
+    const uC_px = Math.min(125, iEff * zc * phScale);
+
+    // Axes
+    ctx.strokeStyle = isDark ? 'rgba(148,163,184,0.3)' : 'rgba(100,116,139,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(phX - 40, phY);
+    ctx.lineTo(phX + 120, phY);
+    ctx.moveTo(phX, phY - 120);
+    ctx.lineTo(phX, phY + 120);
+    ctx.stroke();
+
+    if (ov.showVectors) {
+      const drawArrow = (x1: number, y1: number, x2: number, y2: number, color: string, text: string) => {
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText(text, x2 + 6, y2 + 3);
+      };
+      drawArrow(phX, phY, phX + uR_px, phY, '#3b82f6', 'U_R (I)');
+      drawArrow(phX, phY, phX, phY - uL_px, '#10b981', 'U_L');
+      drawArrow(phX, phY, phX, phY + uC_px, '#a855f7', 'U_C');
+      drawArrow(phX, phY, phX + uR_px, phY - (uL_px - uC_px), '#f59e0b', 'U_AB');
+    }
+  };
+
+  // Helper: visible light wavelength (nm) -> CSS rgb
+  const wavelengthToColor = (nm: number): string => {
+    let r = 0, g = 0, b = 0;
+    if (nm >= 380 && nm < 440) {
+      r = -(nm - 440) / 60;
+      b = 1;
+    } else if (nm >= 440 && nm < 490) {
+      g = (nm - 440) / 50;
+      b = 1;
+    } else if (nm >= 490 && nm < 510) {
+      g = 1;
+      b = -(nm - 510) / 20;
+    } else if (nm >= 510 && nm < 580) {
+      r = (nm - 510) / 70;
+      g = 1;
+    } else if (nm >= 580 && nm < 645) {
+      r = 1;
+      g = -(nm - 645) / 65;
+    } else if (nm >= 645 && nm <= 780) {
+      r = 1;
+    }
+    return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
+  };
+
+  // 16. Young's Double-Slit Interference (Lớp 12)
+  const drawYoungInterference = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    t: number,
+    isDark: boolean
+  ) => {
+    const p = paramsRef.current;
+    const ov = overlaysRef.current;
+
+    const lambdaUm = Math.max(0.38, Math.min(0.76, p.lambda ?? 0.55)); // μm
+    const slitA = Math.max(0.2, p.slitA ?? 1.0); // mm
+    const screenD = Math.max(0.5, p.screenD ?? 2.0); // m
+    const fringeI = (lambdaUm * screenD) / slitA; // mm
+
+    const lightColor = wavelengthToColor(lambdaUm * 1000);
+
+    pushTelemetry({
+      metric1Label: 'Bước sóng λ · Màu sắc',
+      metric1Val: `${lambdaUm.toFixed(2)} μm (${Math.round(lambdaUm * 1000)} nm)`,
+      metric2Label: 'Khoảng vân i = λD/a',
+      metric2Val: `${fringeI.toFixed(2)} mm`,
+      metric3Label: 'Vân sáng bậc 1 · Vân tối 1',
+      metric3Val: `±${fringeI.toFixed(2)} · ±${(fringeI * 0.5).toFixed(2)} mm`,
+      note: 'Vân sáng: x_s = k·i (k ∈ Z). Vân tối: x_t = (k + 0.5)·i. Ánh sáng có λ càng lớn (đỏ) thì khoảng vân i càng rộng.'
+    });
+
+    const slitX = w * 0.22;
+    const screenX = w * 0.72;
+    const cy = h * 0.52;
+    const slitHalfGap = Math.max(16, Math.min(54, slitA * 22));
+    const s1Y = cy - slitHalfGap;
+    const s2Y = cy + slitHalfGap;
+
+    // Incident plane laser wave hitting slits
+    ctx.strokeStyle = lightColor;
+    ctx.lineWidth = 2;
+    for (let x = 22 + ((t * 45) % 18); x < slitX - 8; x += 18) {
+      ctx.globalAlpha = 0.45;
+      ctx.beginPath();
+      ctx.moveTo(x, cy - 65);
+      ctx.lineTo(x, cy + 65);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Double slit barrier wall
+    ctx.fillStyle = isDark ? '#475569' : '#334155';
+    ctx.fillRect(slitX - 4, 24, 8, s1Y - 28);
+    ctx.fillRect(slitX - 4, s1Y + 5, 8, s2Y - s1Y - 10);
+    ctx.fillRect(slitX - 4, s2Y + 5, 8, h - 24 - (s2Y + 5));
+
+    // Coherent wave arcs radiating from S1 and S2
+    const waveStep = Math.max(12, lambdaUm * 32);
+    const phaseShift = (t * 50) % waveStep;
+    ctx.strokeStyle = lightColor;
+    ctx.lineWidth = 1.3;
+    for (let rad = phaseShift; rad < screenX - slitX; rad += waveStep) {
+      ctx.globalAlpha = Math.max(0.08, 0.45 * (1 - rad / (screenX - slitX)));
+      ctx.beginPath();
+      ctx.arc(slitX, s1Y, rad, -Math.PI / 2.6, Math.PI / 2.6);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(slitX, s2Y, rad, -Math.PI / 2.6, Math.PI / 2.6);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Interference Screen Strip & Intensity Profile
+    const screenH = h - 56;
+    const screenTop = 28;
+    const pxPerMm = 26 / Math.max(0.5, fringeI / 1.1);
+    const stripW = 28;
+
+    for (let y = 0; y < screenH; y += 2) {
+      const distFromCenterMm = (y - screenH / 2) / pxPerMm;
+      const intensity = Math.pow(Math.cos((Math.PI * distFromCenterMm) / fringeI), 2);
+      ctx.fillStyle = lightColor;
+      ctx.globalAlpha = Math.max(0.04, intensity);
+      ctx.fillRect(screenX, screenTop + y, stripW, 2);
+    }
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = isDark ? '#94a3b8' : '#334155';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(screenX, screenTop, stripW, screenH);
+
+    // Intensity curve next to screen
+    if (ov.showRealtimeChart) {
+      const graphBaseX = screenX + stripW + 12;
+      const maxAmp = Math.min(72, w - graphBaseX - 18);
+      if (maxAmp > 20) {
+        ctx.strokeStyle = lightColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let y = 0; y < screenH; y += 2) {
+          const distFromCenterMm = (y - screenH / 2) / pxPerMm;
+          const intensity = Math.pow(Math.cos((Math.PI * distFromCenterMm) / fringeI), 2);
+          const gx = graphBaseX + intensity * maxAmp;
+          const gy = screenTop + y;
+          if (y === 0) ctx.moveTo(gx, gy);
+          else ctx.lineTo(gx, gy);
+        }
+        ctx.stroke();
+      }
+    }
+
+    // Labels
+    ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('S₁', slitX - 24, s1Y + 4);
+    ctx.fillText('S₂', slitX - 24, s2Y + 4);
+    ctx.fillText(`i = ${fringeI.toFixed(2)} mm`, screenX - 12, screenTop + screenH + 16);
+  };
+
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
+    <div className="space-y-6 animate-fadeIn pb-12 overflow-x-hidden">
       {activeView === 'catalog' && (
         <>
           {/* Header Banner */}
@@ -2597,10 +3062,10 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               </div>
 
               {/* 2-Zone Track Switcher */}
-              <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/70 shrink-0 self-start">
+              <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/70 max-w-full sm:shrink-0 self-start">
                 <button
                   onClick={() => setSelectedTrack('khong_chuyen')}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                  className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold whitespace-normal sm:whitespace-nowrap text-center transition-all ${
                     selectedTrack === 'khong_chuyen'
                       ? 'bg-blue-600 text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -2610,7 +3075,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                 </button>
                 <button
                   onClick={() => setSelectedTrack('chuyen')}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                  className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold whitespace-normal sm:whitespace-nowrap text-center transition-all ${
                     selectedTrack === 'chuyen'
                       ? 'bg-amber-600 text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -2907,6 +3372,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
           {activeTab === 'theory' && (
             <InteractiveLectureRoom
               lessonKey={lesson.id}
+              subject="physics"
+              grade={lesson.grade}
               subjectAccent={lesson.track === 'chuyen' ? 'amber' : 'blue'}
               kicker={
                 lesson.track === 'chuyen'
@@ -2917,6 +3384,14 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               subtitle={translate(lesson.description)}
               steps={buildPhysicsLectureSteps(lesson)}
               keyFormulas={lesson.keyFormulas}
+              onEarnXP={onScoreEarned}
+              onOpenSim2D={() => navigate({ physicsTab: 'simulation' })}
+              onOpenSim3D={() => navigate({ physicsTab: 'sim3d' })}
+              onNextLesson={
+                currentLessonIndex >= 0 && currentLessonIndex < filteredLessons.length - 1
+                  ? () => navigate({ physicsLessonId: filteredLessons[currentLessonIndex + 1].id })
+                  : undefined
+              }
               actions={[
                 {
                   label: 'Mở Phòng Thí Nghiệm 2D',
@@ -3338,6 +3813,20 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                               className="px-2.5 py-1 rounded-md font-bold bg-amber-600 text-white hover:bg-amber-700 transition-colors"
                             >
                               +1 Chu kì bán rã (T)
+                            </button>
+                          )}
+
+                          {lesson.simulationType === 'ac_rlc_circuit' && (
+                            <button
+                              onClick={() => {
+                                const L = Math.max(0.05, params.indL ?? 0.3);
+                                const C_uF = Math.max(5, params.capC ?? 40);
+                                const fRes = 1 / (2 * Math.PI * Math.sqrt(L * C_uF * 1e-6));
+                                setParams((prev) => ({ ...prev, freq: Number(fRes.toFixed(1)) }));
+                              }}
+                              className="px-2.5 py-1 rounded-md font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                            >
+                              Đặt cộng hưởng (Z_L = Z_C)
                             </button>
                           )}
                         </div>

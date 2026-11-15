@@ -11,7 +11,18 @@ import {
   Terminal,
   Sparkles,
   Plus,
-  Minus
+  Minus,
+  Search,
+  Replace,
+  X,
+  Undo2,
+  Redo2,
+  ChevronUp,
+  ChevronDown,
+  Hash,
+  Sliders,
+  HelpCircle,
+  Download
 } from 'lucide-react';
 
 export type SublimeSyntaxLang = 'cpp' | 'python' | 'text';
@@ -483,13 +494,170 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
   const [copied, setCopied] = useState<boolean>(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
+  // Undo / Redo stack (per editor session)
+  const [historyStack, setHistoryStack] = useState<{ past: string[]; future: string[] }>({
+    past: [],
+    future: []
+  });
+  const lastTrackedRef = useRef<string>(value);
+  useEffect(() => {
+    lastTrackedRef.current = value;
+  }, [value]);
+
+  const applyChangeWithHistory = useCallback(
+    (nextVal: string) => {
+      if (nextVal !== lastTrackedRef.current) {
+        setHistoryStack((prev) => ({
+          past: [...prev.past.slice(-60), lastTrackedRef.current],
+          future: []
+        }));
+        lastTrackedRef.current = nextVal;
+      }
+      onChange(nextVal);
+    },
+    [onChange]
+  );
+
+  const handleUndo = useCallback(() => {
+    setHistoryStack((prev) => {
+      if (prev.past.length === 0) return prev;
+      const previous = prev.past[prev.past.length - 1];
+      lastTrackedRef.current = previous;
+      onChange(previous);
+      return {
+        past: prev.past.slice(0, -1),
+        future: [value, ...prev.future.slice(0, 60)]
+      };
+    });
+  }, [onChange, value]);
+
+  const handleRedo = useCallback(() => {
+    setHistoryStack((prev) => {
+      if (prev.future.length === 0) return prev;
+      const next = prev.future[0];
+      lastTrackedRef.current = next;
+      onChange(next);
+      return {
+        past: [...prev.past.slice(-60), value],
+        future: prev.future.slice(1)
+      };
+    });
+  }, [onChange, value]);
+
+  // Inline Find & Replace + Goto Line + Preferences + Help state
+  const [showFindBar, setShowFindBar] = useState<boolean>(false);
+  const [showReplaceRow, setShowReplaceRow] = useState<boolean>(false);
+  const [findQuery, setFindQuery] = useState<string>('');
+  const [replaceQuery, setReplaceQuery] = useState<string>('');
+  const [matchCase, setMatchCase] = useState<boolean>(false);
+  const [findMatchIdx, setFindMatchIdx] = useState<number>(0);
+
+  const [showGotoBar, setShowGotoBar] = useState<boolean>(false);
+  const [gotoInput, setGotoInput] = useState<string>('');
+  const [showShortcutsModal, setShowShortcutsModal] = useState<boolean>(false);
+  const [showSnippetsDrawer, setShowSnippetsDrawer] = useState<boolean>(false);
+
+  // Preferences
+  const [tabWidth, setTabWidth] = useState<2 | 4>(4);
+  const [wordWrap, setWordWrap] = useState<boolean>(false);
+  const [showLineNumbers, setShowLineNumbers] = useState<boolean>(true);
+  const [showMinimap, setShowMinimap] = useState<boolean>(true);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const flashToast = useCallback((msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg((cur) => (cur === msg ? null : cur)), 1800);
+  }, []);
+
   const lines = useMemo(() => value.replace(/\r\n/g, '\n').split('\n'), [value]);
   const lineHeightPx = Math.round(fontSize * 1.6);
+  const indentUnit = ' '.repeat(tabWidth);
 
   const tokenizedLines = useMemo(
     () => lines.map((line) => tokenizeLineMonokai(line, language)),
     [lines, language]
   );
+
+  // Find matches indices
+  const findMatches = useMemo(() => {
+    if (!findQuery) return [] as { start: number; end: number }[];
+    const haystack = matchCase ? value : value.toLowerCase();
+    const needle = matchCase ? findQuery : findQuery.toLowerCase();
+    const res: { start: number; end: number }[] = [];
+    let pos = 0;
+    while (pos <= haystack.length - needle.length && res.length < 500) {
+      const idx = haystack.indexOf(needle, pos);
+      if (idx === -1) break;
+      res.push({ start: idx, end: idx + needle.length });
+      pos = idx + Math.max(1, needle.length);
+    }
+    return res;
+  }, [value, findQuery, matchCase]);
+
+  const jumpToRange = useCallback(
+    (start: number, end: number) => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      ta.focus();
+      ta.selectionStart = start;
+      ta.selectionEnd = end;
+      const lineIdx = value.slice(0, start).split('\n').length - 1;
+      setCursorPos({
+        line: lineIdx + 1,
+        col: start - value.lastIndexOf('\n', start - 1)
+      });
+      if (scrollerRef.current) {
+        const targetTop = Math.max(0, lineIdx * lineHeightPx - scrollerRef.current.clientHeight / 3);
+        scrollerRef.current.scrollTop = targetTop;
+        setScrollTop(targetTop);
+      }
+    },
+    [lineHeightPx, value]
+  );
+
+  const handleFindStep = (dir: 1 | -1) => {
+    if (findMatches.length === 0) return;
+    const nextIdx = (findMatchIdx + dir + findMatches.length) % findMatches.length;
+    setFindMatchIdx(nextIdx);
+    const hit = findMatches[nextIdx];
+    jumpToRange(hit.start, hit.end);
+  };
+
+  const handleReplaceCurrent = () => {
+    if (findMatches.length === 0) return;
+    const idx = Math.min(findMatchIdx, findMatches.length - 1);
+    const hit = findMatches[idx];
+    const nextVal = value.slice(0, hit.start) + replaceQuery + value.slice(hit.end);
+    applyChangeWithHistory(nextVal);
+    requestAnimationFrame(() => jumpToRange(hit.start, hit.start + replaceQuery.length));
+  };
+
+  const handleReplaceAll = () => {
+    if (!findQuery || findMatches.length === 0) return;
+    let out = '';
+    let last = 0;
+    for (const m of findMatches) {
+      out += value.slice(last, m.start) + replaceQuery;
+      last = m.end;
+    }
+    out += value.slice(last);
+    applyChangeWithHistory(out);
+    flashToast(`Đã thay thế ${findMatches.length} vị trí`);
+  };
+
+  const handleGotoLine = (lineNumStr?: string) => {
+    const raw = (lineNumStr ?? gotoInput).trim().replace(/^:/, '');
+    const target = Number(raw);
+    if (!Number.isFinite(target) || target < 1) return;
+    const clamped = Math.min(lines.length, Math.max(1, Math.floor(target)));
+    let offset = 0;
+    for (let i = 0; i < clamped - 1; i++) {
+      offset += lines[i].length + 1;
+    }
+    jumpToRange(offset, offset);
+    setShowGotoBar(false);
+    setGotoInput('');
+  };
 
   const updateCursorFromTarget = useCallback((target: HTMLTextAreaElement) => {
     const upto = target.value.slice(0, target.selectionStart);
@@ -513,13 +681,13 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
   const insertSnippet = (snippet: string, cursorBack = 0) => {
     const ta = textareaRef.current;
     if (!ta) {
-      onChange(value + snippet);
+      applyChangeWithHistory(value + snippet);
       return;
     }
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
     const nextVal = value.slice(0, start) + snippet + value.slice(end);
-    onChange(nextVal);
+    applyChangeWithHistory(nextVal);
     requestAnimationFrame(() => {
       ta.focus();
       const pos = start + snippet.length - cursorBack;
@@ -528,9 +696,278 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
     });
   };
 
+  // Line-based Edit actions shared by menu buttons & keyboard shortcuts
+  const getCurrentLineRange = () => {
+    const ta = textareaRef.current;
+    const pos = ta ? ta.selectionStart : 0;
+    const lineIdx = value.slice(0, pos).split('\n').length - 1;
+    return { ta, pos, lineIdx };
+  };
+
+  const duplicateCurrentLine = () => {
+    const { lineIdx } = getCurrentLineRange();
+    const arr = value.split('\n');
+    arr.splice(lineIdx + 1, 0, arr[lineIdx]);
+    applyChangeWithHistory(arr.join('\n'));
+  };
+
+  const deleteCurrentLine = () => {
+    const { lineIdx } = getCurrentLineRange();
+    const arr = value.split('\n');
+    if (arr.length <= 1) {
+      applyChangeWithHistory('');
+      return;
+    }
+    arr.splice(lineIdx, 1);
+    applyChangeWithHistory(arr.join('\n'));
+  };
+
+  const moveCurrentLine = (dir: -1 | 1) => {
+    const { lineIdx } = getCurrentLineRange();
+    const arr = value.split('\n');
+    const targetIdx = lineIdx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const tmp = arr[lineIdx];
+    arr[lineIdx] = arr[targetIdx];
+    arr[targetIdx] = tmp;
+    applyChangeWithHistory(arr.join('\n'));
+    setCursorPos((p) => ({ ...p, line: targetIdx + 1 }));
+  };
+
+  const joinWithNextLine = () => {
+    const { lineIdx } = getCurrentLineRange();
+    const arr = value.split('\n');
+    if (lineIdx >= arr.length - 1) return;
+    arr[lineIdx] = arr[lineIdx].trimEnd() + ' ' + arr[lineIdx + 1].trimStart();
+    arr.splice(lineIdx + 1, 1);
+    applyChangeWithHistory(arr.join('\n'));
+  };
+
+  const toggleCurrentLineComment = () => {
+    const { lineIdx } = getCurrentLineRange();
+    const arr = value.split('\n');
+    const prefix = language === 'python' ? '# ' : '// ';
+    const cur = arr[lineIdx];
+    if (cur.trimStart().startsWith(prefix.trim())) {
+      arr[lineIdx] = cur.replace(prefix, '').replace(prefix.trim(), '');
+    } else {
+      arr[lineIdx] = prefix + cur;
+    }
+    applyChangeWithHistory(arr.join('\n'));
+  };
+
+  const indentCurrentLine = (outdent = false) => {
+    const { lineIdx } = getCurrentLineRange();
+    const arr = value.split('\n');
+    if (!outdent) {
+      arr[lineIdx] = indentUnit + arr[lineIdx];
+    } else {
+      if (arr[lineIdx].startsWith(indentUnit)) arr[lineIdx] = arr[lineIdx].slice(tabWidth);
+      else arr[lineIdx] = arr[lineIdx].replace(/^\s+/, '');
+    }
+    applyChangeWithHistory(arr.join('\n'));
+  };
+
+  const transformSelectionOrLine = (mode: 'upper' | 'lower' | 'trim' | 'sort_lines') => {
+    if (mode === 'sort_lines') {
+      const sorted = [...lines].sort((a, b) => a.localeCompare(b));
+      applyChangeWithHistory(sorted.join('\n'));
+      flashToast('Đã sắp xếp các dòng A → Z');
+      return;
+    }
+    if (mode === 'trim') {
+      applyChangeWithHistory(lines.map((l) => l.replace(/\s+$/, '')).join('\n'));
+      flashToast('Đã xóa khoảng trắng dư cuối dòng');
+      return;
+    }
+    const ta = textareaRef.current;
+    if (!ta || ta.selectionStart === ta.selectionEnd) {
+      const { lineIdx } = getCurrentLineRange();
+      const arr = [...lines];
+      arr[lineIdx] = mode === 'upper' ? arr[lineIdx].toUpperCase() : arr[lineIdx].toLowerCase();
+      applyChangeWithHistory(arr.join('\n'));
+    } else {
+      const s = ta.selectionStart;
+      const e = ta.selectionEnd;
+      const sub = value.slice(s, e);
+      const rep = mode === 'upper' ? sub.toUpperCase() : sub.toLowerCase();
+      applyChangeWithHistory(value.slice(0, s) + rep + value.slice(e));
+    }
+  };
+
+  const selectCurrentLine = () => {
+    const { lineIdx } = getCurrentLineRange();
+    let start = 0;
+    for (let i = 0; i < lineIdx; i++) start += lines[i].length + 1;
+    const end = start + (lines[lineIdx]?.length || 0);
+    jumpToRange(start, end);
+  };
+
+  const selectCurrentWord = () => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    let s = pos;
+    let e = pos;
+    while (s > 0 && /[A-Za-z0-9_]/.test(value[s - 1])) s--;
+    while (e < value.length && /[A-Za-z0-9_]/.test(value[e])) e++;
+    jumpToRange(s, e);
+  };
+
+  const expandSelectionToBrackets = () => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const openChars = new Set(['(', '[', '{']);
+    const matchMap: Record<string, string> = { '(': ')', '[': ']', '{': '}' };
+    let depth = 0;
+    let openIdx = -1;
+    for (let i = pos - 1; i >= 0; i--) {
+      const ch = value[i];
+      if (ch === ')' || ch === ']' || ch === '}') depth++;
+      else if (openChars.has(ch)) {
+        if (depth === 0) {
+          openIdx = i;
+          break;
+        }
+        depth--;
+      }
+    }
+    if (openIdx === -1) return;
+    const closeCh = matchMap[value[openIdx]];
+    depth = 0;
+    for (let j = openIdx + 1; j < value.length; j++) {
+      if (value[j] === value[openIdx]) depth++;
+      else if (value[j] === closeCh) {
+        if (depth === 0) {
+          jumpToRange(openIdx, j + 1);
+          return;
+        }
+        depth--;
+      }
+    }
+  };
+
+  const handleDownloadFile = () => {
+    const ext = language === 'python' ? 'py' : language === 'cpp' ? 'cpp' : 'txt';
+    const fname = `solution_${Date.now()}.${ext}`;
+    const blob = new Blob([value], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    a.click();
+    URL.revokeObjectURL(url);
+    flashToast(`Đã tải về ${fname}`);
+  };
+
+  const cpSnippets = useMemo(
+    () =>
+      language === 'python'
+        ? [
+            {
+              label: 'Fast I/O (sys.stdin)',
+              code: 'import sys\ninput = sys.stdin.readline\n\ndef solve():\n    n = int(input())\n    arr = list(map(int, input().split()))\n    print(sum(arr))\n\nsolve()\n'
+            },
+            {
+              label: 'BFS Graph Template',
+              code: 'from collections import deque\n\ndef bfs(start, adj, n):\n    dist = [-1] * (n + 1)\n    q = deque([start])\n    dist[start] = 0\n    while q:\n        u = q.popleft()\n        for v in adj[u]:\n            if dist[v] == -1:\n                dist[v] = dist[u] + 1\n                q.append(v)\n    return dist\n'
+            },
+            {
+              label: 'Binary Search Template',
+              code: 'def binary_search_first(lo, hi, check):\n    ans = -1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if check(mid):\n            ans = mid\n            hi = mid - 1\n        else:\n            lo = mid + 1\n    return ans\n'
+            }
+          ]
+        : [
+            {
+              label: 'Fast I/O & Main',
+              code: '#include <bits/stdc++.h>\nusing namespace std;\nusing ll = long long;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    return 0;\n}\n'
+            },
+            {
+              label: 'BFS (Queue + Dist)',
+              code: 'vector<int> dist(n + 1, -1);\nqueue<int> q;\ndist[start] = 0;\nq.push(start);\nwhile (!q.empty()) {\n    int u = q.front(); q.pop();\n    for (int v : adj[u]) {\n        if (dist[v] == -1) {\n            dist[v] = dist[u] + 1;\n            q.push(v);\n        }\n    }\n}\n'
+            },
+            {
+              label: 'Dijkstra Shortest Path',
+              code: 'const long long INF = 1e18;\nvector<long long> d(n + 1, INF);\npriority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<>> pq;\nd[s] = 0;\npq.push({0, s});\nwhile (!pq.empty()) {\n    auto [du, u] = pq.top(); pq.pop();\n    if (du != d[u]) continue;\n    for (auto [v, w] : adj[u]) {\n        if (d[u] + w < d[v]) {\n            d[v] = d[u] + w;\n            pq.push({d[v], v});\n        }\n    }\n}\n'
+            },
+            {
+              label: 'Binary Search (Upper/Lower)',
+              code: 'long long lo = 0, hi = 1e18, ans = -1;\nwhile (lo <= hi) {\n    long long mid = lo + (hi - lo) / 2;\n    if (ok(mid)) {\n        ans = mid;\n        hi = mid - 1;\n    } else {\n        lo = mid + 1;\n    }\n}\n'
+            },
+            {
+              label: '0/1 Knapsack DP',
+              code: 'vector<long long> dp(W + 1, 0);\nfor (int i = 0; i < n; ++i) {\n    for (int j = W; j >= weight[i]; --j) {\n        dp[j] = max(dp[j], dp[j - weight[i]] + val[i]);\n    }\n}\n'
+            }
+          ],
+    [language]
+  );
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const ta = textareaRef.current;
     if (!ta) return;
+
+    // Undo / Redo: Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) handleRedo();
+      else handleUndo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+      e.preventDefault();
+      handleRedo();
+      return;
+    }
+
+    // Find & Replace: Ctrl+F / Ctrl+H
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+      e.preventDefault();
+      setShowFindBar(true);
+      setShowReplaceRow(false);
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') {
+      e.preventDefault();
+      setShowFindBar(true);
+      setShowReplaceRow(true);
+      return;
+    }
+
+    // Goto Line: Ctrl+G
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+      e.preventDefault();
+      setShowGotoBar((p) => !p);
+      return;
+    }
+
+    // Delete Line: Ctrl+Shift+K
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      deleteCurrentLine();
+      return;
+    }
+
+    // Select Line: Ctrl+L
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
+      e.preventDefault();
+      selectCurrentLine();
+      return;
+    }
+
+    // Move Line Up/Down: Ctrl+Shift+ArrowUp / ArrowDown
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault();
+      moveCurrentLine(e.key === 'ArrowUp' ? -1 : 1);
+      return;
+    }
+
+    // Join Lines: Ctrl+J
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
+      e.preventDefault();
+      joinWithNextLine();
+      return;
+    }
 
     // Build / Run: Ctrl+Enter, Cmd+Enter, or Ctrl+B
     if ((e.ctrlKey || e.metaKey) && (e.key === 'Enter' || e.key.toLowerCase() === 'b')) {
@@ -543,6 +980,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
       if (onSave) onSave();
+      flashToast('Đã lưu file tạm thời');
       return;
     }
 
@@ -557,12 +995,9 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
       const start = ta.selectionStart;
       const end = ta.selectionEnd;
-      if (start === end) {
+      if (start === end || e.shiftKey) {
         e.preventDefault();
-        const lineIdx = value.slice(0, start).split('\n').length - 1;
-        const arr = value.split('\n');
-        arr.splice(lineIdx + 1, 0, arr[lineIdx]);
-        onChange(arr.join('\n'));
+        duplicateCurrentLine();
         return;
       }
     }
@@ -570,17 +1005,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
     // Toggle comment: Ctrl+/
     if ((e.ctrlKey || e.metaKey) && e.key === '/') {
       e.preventDefault();
-      const start = ta.selectionStart;
-      const lineIdx = value.slice(0, start).split('\n').length - 1;
-      const arr = value.split('\n');
-      const prefix = language === 'python' ? '# ' : '// ';
-      const cur = arr[lineIdx];
-      if (cur.trimStart().startsWith(prefix.trim())) {
-        arr[lineIdx] = cur.replace(prefix, '').replace(prefix.trim(), '');
-      } else {
-        arr[lineIdx] = prefix + cur;
-      }
-      onChange(arr.join('\n'));
+      toggleCurrentLineComment();
       return;
     }
 
@@ -595,15 +1020,15 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
       const extra =
         (language === 'cpp' && trimmedEnd.endsWith('{')) ||
         (language === 'python' && trimmedEnd.endsWith(':'))
-          ? '    '
+          ? indentUnit
           : '';
       const after = value.slice(end);
       // Special `{}` brace expansion on Enter
       if (language === 'cpp' && before.endsWith('{') && after.startsWith('}')) {
         e.preventDefault();
-        const insert = `\n${baseIndent}    \n${baseIndent}`;
-        onChange(before + insert + after);
-        const caretPos = start + 1 + baseIndent.length + 4;
+        const insert = `\n${baseIndent}${indentUnit}\n${baseIndent}`;
+        applyChangeWithHistory(before + insert + after);
+        const caretPos = start + 1 + baseIndent.length + tabWidth;
         requestAnimationFrame(() => {
           ta.selectionStart = ta.selectionEnd = caretPos;
           updateCursorFromTarget(ta);
@@ -613,7 +1038,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
       if (baseIndent || extra) {
         e.preventDefault();
         const insert = '\n' + baseIndent + extra;
-        onChange(before + insert + after);
+        applyChangeWithHistory(before + insert + after);
         const caretPos = start + insert.length;
         requestAnimationFrame(() => {
           ta.selectionStart = ta.selectionEnd = caretPos;
@@ -623,24 +1048,19 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
       }
     }
 
-    // Tab / Shift+Tab (4 spaces)
+    // Tab / Shift+Tab
     if (e.key === 'Tab') {
       e.preventDefault();
       const start = ta.selectionStart;
       const end = ta.selectionEnd;
       if (!e.shiftKey) {
-        onChange(value.slice(0, start) + '    ' + value.slice(end));
+        applyChangeWithHistory(value.slice(0, start) + indentUnit + value.slice(end));
         requestAnimationFrame(() => {
-          ta.selectionStart = ta.selectionEnd = start + 4;
+          ta.selectionStart = ta.selectionEnd = start + tabWidth;
           updateCursorFromTarget(ta);
         });
       } else {
-        const arr = value.split('\n');
-        const lineIdx = value.slice(0, start).split('\n').length - 1;
-        if (arr[lineIdx].startsWith('    ')) {
-          arr[lineIdx] = arr[lineIdx].slice(4);
-          onChange(arr.join('\n'));
-        }
+        indentCurrentLine(true);
       }
       return;
     }
@@ -653,7 +1073,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
       if (start === end) {
         e.preventDefault();
         const close = pairs[e.key];
-        onChange(value.slice(0, start) + e.key + close + value.slice(end));
+        applyChangeWithHistory(value.slice(0, start) + e.key + close + value.slice(end));
         requestAnimationFrame(() => {
           ta.selectionStart = ta.selectionEnd = start + 1;
           updateCursorFromTarget(ta);
@@ -663,30 +1083,167 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      navigator.clipboard.writeText(value);
+      setCopied(true);
+      flashToast('Đã sao chép toàn bộ mã nguồn');
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
+
+  const handlePasteClipboard = async () => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      if (txt) insertSnippet(txt);
+    } catch {
+      flashToast('Dùng Ctrl+V để dán từ Clipboard');
+    }
   };
 
   const menuActions: Record<string, { label: string; shortcut?: string; action: () => void }[]> = {
     File: [
-      { label: 'Save File', shortcut: 'Ctrl+S', action: () => onSave?.() },
+      {
+        label: 'Save File',
+        shortcut: 'Ctrl+S',
+        action: () => {
+          onSave?.();
+          flashToast('Đã lưu code');
+        }
+      },
+      { label: 'Download Source (.cpp/.py)', action: handleDownloadFile },
       { label: 'Copy All Code', shortcut: 'Ctrl+C', action: handleCopy },
       ...(onReset ? [{ label: 'Reset Template', action: onReset }] : [])
     ],
-    Tools: [
-      { label: 'Build & Run', shortcut: 'Ctrl+B', action: () => onRun?.() },
-      ...(onToggleConsole ? [{ label: 'Toggle Build Output', action: onToggleConsole }] : [])
+    Edit: [
+      { label: 'Undo', shortcut: 'Ctrl+Z', action: handleUndo },
+      { label: 'Redo', shortcut: 'Ctrl+Y', action: handleRedo },
+      { label: 'Paste from Clipboard', shortcut: 'Ctrl+V', action: handlePasteClipboard },
+      { label: 'Duplicate Line', shortcut: 'Ctrl+D', action: duplicateCurrentLine },
+      { label: 'Delete Line', shortcut: 'Ctrl+Shift+K', action: deleteCurrentLine },
+      { label: 'Move Line Up', shortcut: 'Ctrl+Shift+↑', action: () => moveCurrentLine(-1) },
+      { label: 'Move Line Down', shortcut: 'Ctrl+Shift+↓', action: () => moveCurrentLine(1) },
+      { label: 'Join Lines', shortcut: 'Ctrl+J', action: joinWithNextLine },
+      { label: 'Toggle Comment', shortcut: 'Ctrl+/', action: toggleCurrentLineComment },
+      { label: 'Indent Line', shortcut: 'Tab', action: () => indentCurrentLine(false) },
+      { label: 'Unindent Line', shortcut: 'Shift+Tab', action: () => indentCurrentLine(true) },
+      { label: 'UPPERCASE Selection / Line', action: () => transformSelectionOrLine('upper') },
+      { label: 'lowercase Selection / Line', action: () => transformSelectionOrLine('lower') },
+      { label: 'Trim Trailing Whitespace', action: () => transformSelectionOrLine('trim') },
+      { label: 'Sort Lines (A → Z)', action: () => transformSelectionOrLine('sort_lines') }
+    ],
+    Selection: [
+      { label: 'Select All', shortcut: 'Ctrl+A', action: () => jumpToRange(0, value.length) },
+      { label: 'Select Current Line', shortcut: 'Ctrl+L', action: selectCurrentLine },
+      { label: 'Select Current Word', action: selectCurrentWord },
+      { label: 'Expand to Brackets', shortcut: '(){ }[]', action: expandSelectionToBrackets }
+    ],
+    Find: [
+      {
+        label: 'Find...',
+        shortcut: 'Ctrl+F',
+        action: () => {
+          setShowFindBar(true);
+          setShowReplaceRow(false);
+        }
+      },
+      {
+        label: 'Replace...',
+        shortcut: 'Ctrl+H',
+        action: () => {
+          setShowFindBar(true);
+          setShowReplaceRow(true);
+        }
+      },
+      { label: 'Find Next', shortcut: 'F3', action: () => handleFindStep(1) },
+      { label: 'Find Previous', shortcut: 'Shift+F3', action: () => handleFindStep(-1) }
     ],
     View: [
-      ...(onToggleSidebar ? [{ label: isSidebarOpen ? 'Hide Side Bar' : 'Show Side Bar', shortcut: 'Ctrl+K, Ctrl+B', action: onToggleSidebar }] : []),
-      ...(onToggleFullscreen ? [{ label: isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen', shortcut: 'F11', action: onToggleFullscreen }] : []),
+      ...(onToggleSidebar
+        ? [{ label: isSidebarOpen ? 'Hide Side Bar' : 'Show Side Bar', shortcut: 'Ctrl+K, B', action: onToggleSidebar }]
+        : []),
+      ...(onToggleConsole
+        ? [{ label: isConsoleOpen ? 'Hide Console' : 'Show Console', action: onToggleConsole }]
+        : []),
+      ...(onToggleFullscreen
+        ? [{ label: isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen', shortcut: 'F11', action: onToggleFullscreen }]
+        : []),
+      {
+        label: showMinimap ? 'Hide Minimap' : 'Show Minimap',
+        action: () => setShowMinimap((p) => !p)
+      },
+      {
+        label: showLineNumbers ? 'Hide Line Numbers' : 'Show Line Numbers',
+        action: () => setShowLineNumbers((p) => !p)
+      },
+      {
+        label: wordWrap ? 'Disable Word Wrap' : 'Enable Word Wrap',
+        action: () => setWordWrap((p) => !p)
+      },
       ...(onFontSizeChange
         ? [
             { label: 'Increase Font Size', shortcut: 'Ctrl++', action: () => onFontSizeChange(Math.min(22, fontSize + 1)) },
             { label: 'Decrease Font Size', shortcut: 'Ctrl+-', action: () => onFontSizeChange(Math.max(11, fontSize - 1)) }
           ]
         : [])
+    ],
+    Goto: [
+      {
+        label: 'Goto Line...',
+        shortcut: 'Ctrl+G',
+        action: () => setShowGotoBar(true)
+      },
+      { label: 'Jump to Top of File', action: () => jumpToRange(0, 0) },
+      { label: 'Jump to Bottom of File', action: () => jumpToRange(value.length, value.length) }
+    ],
+    Tools: [
+      { label: 'Build & Run', shortcut: 'Ctrl+B', action: () => onRun?.() },
+      ...(onToggleConsole ? [{ label: 'Toggle Build Output', action: onToggleConsole }] : []),
+      {
+        label: 'Insert CP Snippet...',
+        action: () => setShowSnippetsDrawer((p) => !p)
+      }
+    ],
+    Project: [
+      ...cpSnippets.map((s) => ({
+        label: `+ ${s.label}`,
+        action: () => insertSnippet(s.code)
+      })),
+      ...(onReset ? [{ label: 'Reset Workspace Template', action: onReset }] : [])
+    ],
+    Preferences: [
+      {
+        label: `Indentation: ${tabWidth === 4 ? '4 Spaces (✓)' : '4 Spaces'}`,
+        action: () => {
+          setTabWidth(4);
+          flashToast('Tab width: 4 spaces');
+        }
+      },
+      {
+        label: `Indentation: ${tabWidth === 2 ? '2 Spaces (✓)' : '2 Spaces'}`,
+        action: () => {
+          setTabWidth(2);
+          flashToast('Tab width: 2 spaces');
+        }
+      },
+      {
+        label: `Word Wrap: ${wordWrap ? 'ON' : 'OFF'}`,
+        action: () => setWordWrap((p) => !p)
+      },
+      {
+        label: `Minimap: ${showMinimap ? 'ON' : 'OFF'}`,
+        action: () => setShowMinimap((p) => !p)
+      }
+    ],
+    Help: [
+      {
+        label: 'Keyboard Shortcuts & Guide',
+        shortcut: 'F1',
+        action: () => setShowShortcutsModal(true)
+      },
+      {
+        label: 'Sublime Monokai C++/Python Reference',
+        action: () => setShowSnippetsDrawer(true)
+      }
     ]
   };
 
@@ -732,7 +1289,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
                   {mName}
                 </button>
                 {openMenu === mName && menuActions[mName] && (
-                  <div className="absolute left-0 top-full mt-0.5 w-52 bg-[#272822] border border-[#3e3d32] shadow-2xl py-1 z-50 rounded">
+                  <div className="absolute left-0 top-full mt-0.5 w-60 max-h-80 overflow-y-auto bg-[#272822] border border-[#3e3d32] shadow-2xl py-1 z-50 rounded">
                     {menuActions[mName].map((item, idx) => (
                       <button
                         key={idx}
@@ -740,10 +1297,10 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
                           setOpenMenu(null);
                           item.action();
                         }}
-                        className="w-full px-3 py-1.5 text-left text-[11px] text-[#f8f8f2] hover:bg-[#49483e] flex items-center justify-between"
+                        className="w-full px-3 py-1.5 text-left text-[11px] text-[#f8f8f2] hover:bg-[#49483e] flex items-center justify-between gap-2"
                       >
-                        <span>{item.label}</span>
-                        {item.shortcut && <span className="text-[#90908a] text-[10px]">{item.shortcut}</span>}
+                        <span className="truncate">{item.label}</span>
+                        {item.shortcut && <span className="text-[#90908a] text-[10px] shrink-0">{item.shortcut}</span>}
                       </button>
                     ))}
                   </div>
@@ -752,7 +1309,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
             ))}
           </div>
           <span className="lg:hidden text-[11px] font-mono text-[#a6e22e] font-semibold truncate">
-            Sublime Text 4 — Monokai
+            Sublime Text 4
           </span>
         </div>
 
@@ -848,6 +1405,278 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         </div>
       )}
 
+      {/* Compact Edit / Find / Snippets Toolbar (always accessible on mobile & quick-click on desktop) */}
+      <div className="bg-[#1b1c18] border-b border-[#11120f] px-2 py-1 flex items-center gap-1 overflow-x-auto scrollbar-none text-[11px]">
+        <button
+          type="button"
+          onClick={handleUndo}
+          disabled={historyStack.past.length === 0}
+          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] disabled:opacity-35 text-[#c8c8c0] flex items-center gap-1 shrink-0"
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo2 className="w-3 h-3" />
+          <span className="hidden sm:inline">Undo</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleRedo}
+          disabled={historyStack.future.length === 0}
+          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] disabled:opacity-35 text-[#c8c8c0] flex items-center gap-1 shrink-0"
+          title="Redo (Ctrl+Y)"
+        >
+          <Redo2 className="w-3 h-3" />
+          <span className="hidden sm:inline">Redo</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowFindBar((p) => !p);
+            setShowReplaceRow(false);
+          }}
+          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
+            showFindBar && !showReplaceRow
+              ? 'bg-[#e6db74] text-[#272822] font-bold'
+              : 'bg-[#272822] hover:bg-[#3e3d32] text-[#e6db74]'
+          }`}
+          title="Find (Ctrl+F)"
+        >
+          <Search className="w-3 h-3" />
+          <span>Find</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowFindBar(true);
+            setShowReplaceRow((p) => !p);
+          }}
+          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
+            showFindBar && showReplaceRow
+              ? 'bg-[#fd971f] text-[#272822] font-bold'
+              : 'bg-[#272822] hover:bg-[#3e3d32] text-[#fd971f]'
+          }`}
+          title="Replace (Ctrl+H)"
+        >
+          <Replace className="w-3 h-3" />
+          <span>Replace</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowGotoBar((p) => !p)}
+          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
+            showGotoBar ? 'bg-[#66d9ef] text-[#272822] font-bold' : 'bg-[#272822] hover:bg-[#3e3d32] text-[#66d9ef]'
+          }`}
+          title="Goto Line (Ctrl+G)"
+        >
+          <Hash className="w-3 h-3" />
+          <span>Goto</span>
+        </button>
+        <button
+          type="button"
+          onClick={duplicateCurrentLine}
+          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0] shrink-0"
+          title="Duplicate Line (Ctrl+D)"
+        >
+          Dup Line
+        </button>
+        <button
+          type="button"
+          onClick={toggleCurrentLineComment}
+          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0] shrink-0"
+          title="Comment (Ctrl+/)"
+        >
+          Comment
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowSnippetsDrawer((p) => !p)}
+          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
+            showSnippetsDrawer ? 'bg-[#a6e22e] text-[#272822] font-bold' : 'bg-[#272822] hover:bg-[#3e3d32] text-[#a6e22e]'
+          }`}
+        >
+          <Sparkles className="w-3 h-3" />
+          <span>Snippets</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setWordWrap((p) => !p)}
+          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
+            wordWrap ? 'bg-[#ae81ff] text-[#272822] font-bold' : 'bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0]'
+          }`}
+          title="Toggle Word Wrap"
+        >
+          <Sliders className="w-3 h-3" />
+          <span>{wordWrap ? 'Wrap: ON' : 'Wrap'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleDownloadFile}
+          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0] flex items-center gap-1 shrink-0"
+          title="Tải file code"
+        >
+          <Download className="w-3 h-3" />
+          <span className="hidden sm:inline">Save As</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowShortcutsModal(true)}
+          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0] flex items-center gap-1 shrink-0"
+          title="Phím tắt Sublime Text 4"
+        >
+          <HelpCircle className="w-3 h-3" />
+        </button>
+        {toastMsg && (
+          <span className="ml-auto px-2 py-0.5 rounded bg-[#a6e22e]/20 text-[#a6e22e] text-[10px] font-mono shrink-0">
+            {toastMsg}
+          </span>
+        )}
+      </div>
+
+      {/* Inline Collapsible Find & Replace Panel */}
+      {showFindBar && (
+        <div className="bg-[#1e1f1c] border-b border-[#3e3d32] px-2.5 py-2 space-y-1.5 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <input
+              type="text"
+              value={findQuery}
+              onChange={(e) => {
+                setFindQuery(e.target.value);
+                setFindMatchIdx(0);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleFindStep(e.shiftKey ? -1 : 1);
+                if (e.key === 'Escape') setShowFindBar(false);
+              }}
+              placeholder="Tìm trong file (Ctrl+F)..."
+              className="flex-1 min-w-[140px] px-2.5 py-1 rounded bg-[#272822] border border-[#3e3d32] text-[#f8f8f2] font-mono text-xs focus:outline-none focus:border-[#e6db74]"
+            />
+            <button
+              type="button"
+              onClick={() => setMatchCase((p) => !p)}
+              className={`px-2 py-1 rounded font-mono text-[10px] border ${
+                matchCase ? 'bg-[#e6db74] text-[#272822] border-[#e6db74] font-bold' : 'bg-[#272822] border-[#3e3d32] text-[#90908a]'
+              }`}
+              title="Phân biệt HOA/thường"
+            >
+              Aa
+            </button>
+            <span className="text-[10px] font-mono text-[#90908a] px-1">
+              {findMatches.length > 0 ? `${(findMatchIdx % findMatches.length) + 1}/${findMatches.length}` : '0/0'}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleFindStep(-1)}
+              className="p-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32]"
+              title="Tìm trước"
+            >
+              <ChevronUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFindStep(1)}
+              className="p-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32]"
+              title="Tìm tiếp"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowFindBar(false)}
+              className="p-1 rounded hover:bg-[#3e3d32] text-[#90908a] hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {showReplaceRow && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <input
+                type="text"
+                value={replaceQuery}
+                onChange={(e) => setReplaceQuery(e.target.value)}
+                placeholder="Thay thế bằng..."
+                className="flex-1 min-w-[140px] px-2.5 py-1 rounded bg-[#272822] border border-[#3e3d32] text-[#f8f8f2] font-mono text-xs focus:outline-none focus:border-[#fd971f]"
+              />
+              <button
+                type="button"
+                onClick={handleReplaceCurrent}
+                className="px-2.5 py-1 rounded bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2] text-[11px] font-semibold"
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                onClick={handleReplaceAll}
+                className="px-2.5 py-1 rounded bg-[#fd971f] text-[#272822] text-[11px] font-bold"
+              >
+                Replace All
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Inline Goto Line Bar */}
+      {showGotoBar && (
+        <div className="bg-[#1e1f1c] border-b border-[#3e3d32] px-2.5 py-1.5 flex items-center gap-2 text-xs">
+          <span className="font-mono text-[#66d9ef] text-[11px] shrink-0">Goto Line (1–{lines.length}):</span>
+          <input
+            type="number"
+            min={1}
+            max={lines.length}
+            value={gotoInput}
+            onChange={(e) => setGotoInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleGotoLine();
+              if (e.key === 'Escape') setShowGotoBar(false);
+            }}
+            placeholder=":line"
+            className="w-24 px-2 py-0.5 rounded bg-[#272822] border border-[#3e3d32] text-[#f8f8f2] font-mono text-xs focus:outline-none focus:border-[#66d9ef]"
+          />
+          <button
+            type="button"
+            onClick={() => handleGotoLine()}
+            className="px-2.5 py-0.5 rounded bg-[#66d9ef] text-[#272822] font-bold text-[11px]"
+          >
+            Đi tới
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowGotoBar(false)}
+            className="p-0.5 rounded hover:bg-[#3e3d32] text-[#90908a] ml-auto"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Snippets Quick Drawer */}
+      {showSnippetsDrawer && (
+        <div className="bg-[#1e1f1c] border-b border-[#3e3d32] px-2.5 py-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+          <span className="text-[#a6e22e] font-bold mr-1">Chèn Snippet ({language.toUpperCase()}):</span>
+          {cpSnippets.map((sn) => (
+            <button
+              key={sn.label}
+              type="button"
+              onClick={() => {
+                insertSnippet(sn.code);
+                setShowSnippetsDrawer(false);
+                flashToast(`Đã chèn ${sn.label}`);
+              }}
+              className="px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#f8f8f2] font-mono text-[10px]"
+            >
+              + {sn.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setShowSnippetsDrawer(false)}
+            className="ml-auto text-[#90908a] hover:text-white p-0.5"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Main Editor Canvas: Unified Scroll Container (Sticky Gutter + Grid Syntax Pre / Textarea) + Minimap */}
       <div className="relative flex-1 flex bg-[#272822] overflow-hidden min-h-0">
         <div
@@ -857,27 +1686,29 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
           className="relative flex-1 flex items-start overflow-auto bg-[#272822] min-w-0 min-h-0 overscroll-contain cursor-text"
         >
           {/* Sticky Line Numbers Gutter */}
-          <div
-            className="sticky left-0 z-30 w-12 sm:w-14 bg-[#272822] border-r border-[#3e3d32]/60 select-none shrink-0 py-3 pb-16 font-mono text-right pr-3 min-h-full"
-            style={{ fontSize: `${Math.max(11, fontSize - 1)}px`, lineHeight: `${lineHeightPx}px` }}
-          >
-            {Array.from({ length: Math.max(lines.length, 28) }, (_, idx) => {
-              const ln = idx + 1;
-              const isCurrent = cursorPos.line === ln;
-              return (
-                <div
-                  key={ln}
-                  className={isCurrent ? 'text-[#f8f8f2] font-bold bg-[#3e3d32] -mr-3 pr-3' : 'text-[#90908a]'}
-                  style={{ height: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` }}
-                >
-                  {ln}
-                </div>
-              );
-            })}
-          </div>
+          {showLineNumbers && (
+            <div
+              className="sticky left-0 z-30 w-11 sm:w-14 bg-[#272822] border-r border-[#3e3d32]/60 select-none shrink-0 py-3 pb-16 font-mono text-right pr-2.5 sm:pr-3 min-h-full"
+              style={{ fontSize: `${Math.max(11, fontSize - 1)}px`, lineHeight: `${lineHeightPx}px` }}
+            >
+              {Array.from({ length: Math.max(lines.length, 28) }, (_, idx) => {
+                const ln = idx + 1;
+                const isCurrent = cursorPos.line === ln;
+                return (
+                  <div
+                    key={ln}
+                    className={isCurrent ? 'text-[#f8f8f2] font-bold bg-[#3e3d32] -mr-2.5 sm:-mr-3 pr-2.5 sm:pr-3' : 'text-[#90908a]'}
+                    style={{ height: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` }}
+                  >
+                    {ln}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Code Viewport (Single Grid cell sizes 1:1 to exact code dimensions, zero scroll desync) */}
-          <div className="relative flex-1 min-w-max min-h-full grid bg-[#272822]">
+          <div className={`relative flex-1 min-h-full grid bg-[#272822] ${wordWrap ? 'min-w-0 w-full' : 'min-w-max'}`}>
             {/* Active Line Full-Width Highlight Band */}
             <div
               aria-hidden="true"
@@ -891,16 +1722,21 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
             {/* Syntax-Highlighted Monokai Pre Layer */}
             <pre
               aria-hidden="true"
-              className="col-start-1 row-start-1 pointer-events-none m-0 p-3 pb-16 font-mono z-10 whitespace-pre select-none"
+              className={`col-start-1 row-start-1 pointer-events-none m-0 p-3 pb-16 font-mono z-10 select-none ${
+                wordWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'
+              }`}
               style={{
                 fontSize: `${fontSize}px`,
                 lineHeight: `${lineHeightPx}px`,
-                tabSize: 4
+                tabSize: tabWidth
               }}
             >
               {tokenizedLines.map((tokens, lIdx) => (
-                <div key={lIdx} style={{ height: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` }}>
-                  {tokens.map((tok, tIdx) => (
+                <div
+                  key={lIdx}
+                  style={wordWrap ? { minHeight: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` } : { height: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` }}
+                >
+                  {tokens.length === 0 ? ' ' : tokens.map((tok, tIdx) => (
                     <span
                       key={tIdx}
                       style={{
@@ -921,7 +1757,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
               ref={textareaRef}
               value={value}
               onChange={(e) => {
-                onChange(e.target.value);
+                applyChangeWithHistory(e.target.value);
                 updateCursorFromTarget(e.target);
               }}
               onSelect={(e) => updateCursorFromTarget(e.currentTarget)}
@@ -933,11 +1769,13 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
               autoComplete="off"
               autoCorrect="off"
               placeholder={placeholder}
-              className="col-start-1 row-start-1 relative z-20 w-full h-full m-0 p-3 pb-16 font-mono bg-transparent text-transparent caret-[#f8f8f0] resize-none focus:outline-none overflow-hidden whitespace-pre selection:bg-[#49483e]/80 selection:text-transparent"
+              className={`col-start-1 row-start-1 relative z-20 w-full h-full m-0 p-3 pb-16 font-mono bg-transparent text-transparent caret-[#f8f8f0] resize-none focus:outline-none overflow-hidden selection:bg-[#49483e]/80 selection:text-transparent ${
+                wordWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'
+              }`}
               style={{
                 fontSize: `${fontSize}px`,
                 lineHeight: `${lineHeightPx}px`,
-                tabSize: 4,
+                tabSize: tabWidth,
                 WebkitTextFillColor: 'transparent'
               }}
             />
@@ -945,50 +1783,52 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         </div>
 
         {/* Authentic Sublime Text Minimap */}
-        <div className="hidden md:block relative w-20 bg-[#272822] border-l border-[#3e3d32]/40 p-1.5 select-none overflow-hidden shrink-0 pointer-events-none">
-          {/* Minimap viewport thumb */}
-          <div
-            className="absolute left-0 right-0 h-14 bg-[#f8f8f2]/10 border-y border-[#f8f8f2]/15 transition-all duration-75"
-            style={{ top: `${minimapOffsetPercent}%` }}
-          />
-          <div className="space-y-[2px] opacity-75">
-            {lines.slice(0, 120).map((ln, idx) => {
-              const trimmed = ln.trim();
-              if (!trimmed) return <div key={idx} className="h-[2px]" />;
-              let barColor = '#f8f8f2';
-              if (trimmed.startsWith('//') || trimmed.startsWith('# ') || trimmed.startsWith('/*')) {
-                barColor = '#75715e';
-              } else if (/^#include|^#define|^import\b|^from\b/.test(trimmed)) {
-                barColor = '#f92672';
-              } else if (/\b(int|long|vector|def|class|void|string|bool)\b/.test(trimmed)) {
-                barColor = '#66d9ef';
-              } else if (/["']/.test(trimmed)) {
-                barColor = '#e6db74';
-              } else if (/\b(return|if|else|for|while)\b/.test(trimmed)) {
-                barColor = '#f92672';
-              } else if (/\(.*\)/.test(trimmed)) {
-                barColor = '#a6e22e';
-              }
-              return (
-                <div
-                  key={idx}
-                  className="h-[2.5px] rounded-[1px]"
-                  style={{
-                    marginLeft: `${Math.min(18, (ln.length - ln.trimStart().length) * 1.2)}px`,
-                    width: `${Math.min(100, Math.max(12, trimmed.length * 1.9))}%`,
-                    backgroundColor: barColor
-                  }}
-                />
-              );
-            })}
+        {showMinimap && (
+          <div className="hidden md:block relative w-20 bg-[#272822] border-l border-[#3e3d32]/40 p-1.5 select-none overflow-hidden shrink-0 pointer-events-none">
+            {/* Minimap viewport thumb */}
+            <div
+              className="absolute left-0 right-0 h-14 bg-[#f8f8f2]/10 border-y border-[#f8f8f2]/15 transition-all duration-75"
+              style={{ top: `${minimapOffsetPercent}%` }}
+            />
+            <div className="space-y-[2px] opacity-75">
+              {lines.slice(0, 120).map((ln, idx) => {
+                const trimmed = ln.trim();
+                if (!trimmed) return <div key={idx} className="h-[2px]" />;
+                let barColor = '#f8f8f2';
+                if (trimmed.startsWith('//') || trimmed.startsWith('# ') || trimmed.startsWith('/*')) {
+                  barColor = '#75715e';
+                } else if (/^#include|^#define|^import\b|^from\b/.test(trimmed)) {
+                  barColor = '#f92672';
+                } else if (/\b(int|long|vector|def|class|void|string|bool)\b/.test(trimmed)) {
+                  barColor = '#66d9ef';
+                } else if (/["']/.test(trimmed)) {
+                  barColor = '#e6db74';
+                } else if (/\b(return|if|else|for|while)\b/.test(trimmed)) {
+                  barColor = '#f92672';
+                } else if (/\(.*\)/.test(trimmed)) {
+                  barColor = '#a6e22e';
+                }
+                return (
+                  <div
+                    key={idx}
+                    className="h-[2.5px] rounded-[1px]"
+                    style={{
+                      marginLeft: `${Math.min(18, (ln.length - ln.trimStart().length) * 1.2)}px`,
+                      width: `${Math.min(100, Math.max(12, trimmed.length * 1.9))}%`,
+                      backgroundColor: barColor
+                    }}
+                  />
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Mobile & iPad Quick Coding Key Bar (hidden on desktop lg+) */}
       <div className="lg:hidden bg-[#1e1f1c] border-t border-[#3e3d32] px-2 py-1.5 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
         {[
-          { label: 'Tab', insert: '    ', back: 0 },
+          { label: 'Tab', insert: indentUnit, back: 0 },
           { label: '{ }', insert: '{}', back: 1 },
           { label: '( )', insert: '()', back: 1 },
           { label: '[ ]', insert: '[]', back: 1 },
@@ -1014,17 +1854,29 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
       {/* Authentic Sublime Bottom Status Bar */}
       <div className="h-7 bg-[#1e1f1c] border-t border-[#141512] px-3 flex items-center justify-between text-[11px] font-mono text-[#90908a] shrink-0">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <span className="text-[#f8f8f2]">
-            Line {cursorPos.line}, Column {cursorPos.col}
-          </span>
-          <span className="hidden sm:inline">Spaces: 4</span>
+          <button
+            type="button"
+            onClick={() => setShowGotoBar((p) => !p)}
+            className="text-[#f8f8f2] hover:text-[#66d9ef]"
+            title="Nhảy tới dòng (Ctrl+G)"
+          >
+            Line {cursorPos.line}, Col {cursorPos.col}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTabWidth((w) => (w === 4 ? 2 : 4))}
+            className="hidden sm:inline hover:text-white"
+            title="Đổi khoảng cách Tab (2 hoặc 4 spaces)"
+          >
+            Spaces: {tabWidth}
+          </button>
           <span className="hidden md:inline">UTF-8</span>
           {statusRightExtra && <span className="hidden md:inline text-[#a6e22e] truncate">{statusRightExtra}</span>}
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4 shrink-0">
           <span className="text-[#66d9ef] font-semibold">
-            {language === 'cpp' ? 'C++20' : language === 'python' ? 'Python' : 'Plain Text'}
+            {language === 'cpp' ? 'C++20' : language === 'python' ? 'Python 3' : 'Plain Text'}
           </span>
           {onToggleConsole && (
             <button
@@ -1047,6 +1899,45 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
           )}
         </div>
       </div>
+
+      {/* Shortcuts Help Modal */}
+      {showShortcutsModal && (
+        <div
+          className="fixed inset-0 z-[140] bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setShowShortcutsModal(false)}
+        >
+          <div
+            className="w-full max-w-md bg-[#1e1f1c] border border-[#3e3d32] rounded-2xl p-5 text-[#f8f8f2] shadow-2xl space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#3e3d32] pb-2.5">
+              <h4 className="font-bold text-sm text-[#e6db74]">Phím tắt Sublime Text 4 IDE</h4>
+              <button onClick={() => setShowShortcutsModal(false)} className="text-[#90908a] hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs font-mono">
+              {[
+                ['Ctrl + B / Enter', 'Chạy thử (Build)'],
+                ['Ctrl + F / H', 'Tìm & Thay thế'],
+                ['Ctrl + G', 'Nhảy tới dòng'],
+                ['Ctrl + Z / Y', 'Undo / Redo'],
+                ['Ctrl + D', 'Nhân bản dòng'],
+                ['Ctrl + Shift + K', 'Xóa dòng hiện tại'],
+                ['Ctrl + /', 'Bật/tắt Comment'],
+                ['Ctrl + Shift + ↑/↓', 'Di chuyển dòng'],
+                ['Ctrl + J', 'Gộp dòng kế tiếp'],
+                ['F11', 'Toàn màn hình']
+              ].map(([k, desc]) => (
+                <React.Fragment key={k}>
+                  <span className="text-[#66d9ef]">{k}</span>
+                  <span className="text-[#d8d8d0] font-sans">{desc}</span>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

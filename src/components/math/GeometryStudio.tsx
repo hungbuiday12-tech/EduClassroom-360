@@ -65,7 +65,14 @@ export interface GeoPolygon {
 }
 
 type StudioMode = 'free_construction' | 'presets';
-type GeoPreset = 'pythagoras' | 'triangle_explorer' | 'circle_tangent' | 'spatial_pyramid';
+type GeoPreset =
+  | 'pythagoras'
+  | 'triangle_explorer'
+  | 'circle_tangent'
+  | 'inscribed_quad'
+  | 'vector_parallelogram'
+  | 'conic_ellipse'
+  | 'spatial_pyramid';
 type FreeTool =
   | 'select'
   | 'point'
@@ -175,6 +182,20 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
       { id: 'O', x: 300, y: 250, label: 'O', isFixed: true },
       { id: 'R', x: 420, y: 250, label: 'R' },
       { id: 'P', x: 520, y: 160, label: 'P' }
+    ],
+    inscribed_quad: [
+      { id: 'A', x: 210, y: 150, label: 'A' },
+      { id: 'B', x: 410, y: 150, label: 'B' },
+      { id: 'C', x: 430, y: 330, label: 'C' },
+      { id: 'D', x: 190, y: 330, label: 'D' }
+    ],
+    vector_parallelogram: [
+      { id: 'O', x: 180, y: 330, label: 'O' },
+      { id: 'A', x: 360, y: 330, label: 'A' },
+      { id: 'B', x: 260, y: 190, label: 'B' }
+    ],
+    conic_ellipse: [
+      { id: 'M', x: 410, y: 150, label: 'M' }
     ],
     spatial_pyramid: []
   });
@@ -916,6 +937,217 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
         ctx.fillText('D', proj[3].x - 14, proj[3].y + 14);
         ctx.fillStyle = '#ef4444';
         ctx.fillText('O (Tâm đáy)', centerO.x + 6, centerO.y - 6);
+      } else if (activePreset === 'inscribed_quad') {
+        const cx = width / 2;
+        const cy = height / 2;
+        const rad = Math.min(width, height) * 0.34;
+
+        // Circumcircle
+        ctx.fillStyle = 'rgba(14, 165, 233, 0.06)';
+        ctx.strokeStyle = '#0ea5e9';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Center O
+        ctx.fillStyle = '#0ea5e9';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.fillText('O', cx + 6, cy + 12);
+
+        // Snap vertices onto circle visually while keeping their angular position
+        const snapToCircle = (pt: { x: number; y: number }, fallbackAngle: number) => {
+          const ang = Math.atan2(pt.y - cy, pt.x - cx);
+          const a = Number.isFinite(ang) ? ang : fallbackAngle;
+          return { x: cx + rad * Math.cos(a), y: cy + rad * Math.sin(a) };
+        };
+
+        const rawA = activePts.find((p) => p.id === 'A') || { x: cx - 100, y: cy - 100 };
+        const rawB = activePts.find((p) => p.id === 'B') || { x: cx + 100, y: cy - 100 };
+        const rawC = activePts.find((p) => p.id === 'C') || { x: cx + 120, y: cy + 80 };
+        const rawD = activePts.find((p) => p.id === 'D') || { x: cx - 120, y: cy + 80 };
+
+        const qPts = [
+          { ...snapToCircle(rawA, -2.35), label: 'A' },
+          { ...snapToCircle(rawB, -0.78), label: 'B' },
+          { ...snapToCircle(rawC, 0.65), label: 'C' },
+          { ...snapToCircle(rawD, 2.45), label: 'D' }
+        ];
+
+        // Quadrilateral
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.14)';
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(qPts[0].x, qPts[0].y);
+        qPts.slice(1).forEach((pt) => ctx.lineTo(pt.x, pt.y));
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Diagonals
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(qPts[0].x, qPts[0].y);
+        ctx.lineTo(qPts[2].x, qPts[2].y);
+        ctx.moveTo(qPts[1].x, qPts[1].y);
+        ctx.lineTo(qPts[3].x, qPts[3].y);
+        ctx.stroke();
+        ctx.restore();
+
+        const angA = computeAngleDeg(qPts[3], qPts[0], qPts[1]);
+        const angB = computeAngleDeg(qPts[0], qPts[1], qPts[2]);
+        const angC = computeAngleDeg(qPts[1], qPts[2], qPts[3]);
+        const angD = computeAngleDeg(qPts[2], qPts[3], qPts[0]);
+
+        ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(`∠A=${angA.toFixed(1)}°`, qPts[0].x - 35, qPts[0].y - 12);
+        ctx.fillText(`∠B=${angB.toFixed(1)}°`, qPts[1].x + 8, qPts[1].y - 12);
+        ctx.fillText(`∠C=${angC.toFixed(1)}°`, qPts[2].x + 8, qPts[2].y + 18);
+        ctx.fillText(`∠D=${angD.toFixed(1)}°`, qPts[3].x - 52, qPts[3].y + 18);
+
+        ctx.fillStyle = '#10b981';
+        ctx.fillText(`∠A + ∠C = ${(angA + angC).toFixed(1)}° | ∠B + ∠D = ${(angB + angD).toFixed(1)}°`, 16, 26);
+      } else if (activePreset === 'vector_parallelogram') {
+        const pO = activePts.find((p) => p.id === 'O') || { x: 180, y: 330, label: 'O', id: 'O' };
+        const pA = activePts.find((p) => p.id === 'A') || { x: 360, y: 330, label: 'A', id: 'A' };
+        const pB = activePts.find((p) => p.id === 'B') || { x: 260, y: 190, label: 'B', id: 'B' };
+        const pC = { x: pA.x + (pB.x - pO.x), y: pA.y + (pB.y - pO.y) };
+
+        const drawArrow = (from: { x: number; y: number }, to: { x: number; y: number }, color: string, widthPx = 2.8) => {
+          const headLen = 11;
+          const angle = Math.atan2(to.y - from.y, to.x - from.x);
+          ctx.strokeStyle = color;
+          ctx.fillStyle = color;
+          ctx.lineWidth = widthPx;
+          ctx.beginPath();
+          ctx.moveTo(from.x, from.y);
+          ctx.lineTo(to.x, to.y);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(to.x, to.y);
+          ctx.lineTo(to.x - headLen * Math.cos(angle - Math.PI / 6), to.y - headLen * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(to.x - headLen * Math.cos(angle + Math.PI / 6), to.y - headLen * Math.sin(angle + Math.PI / 6));
+          ctx.closePath();
+          ctx.fill();
+        };
+
+        // Parallelogram dashed completion
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = isDark ? '#64748b' : '#94a3b8';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pC.x, pC.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Fill parallelogram
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(pO.x, pO.y);
+        ctx.lineTo(pA.x, pA.y);
+        ctx.lineTo(pC.x, pC.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.closePath();
+        ctx.fill();
+
+        drawArrow(pO, pA, '#3b82f6');
+        drawArrow(pO, pB, '#f59e0b');
+        drawArrow(pO, pC, '#10b981', 3.2);
+
+        const u = { x: (pA.x - pO.x) / 25, y: (pO.y - pA.y) / 25 };
+        const v = { x: (pB.x - pO.x) / 25, y: (pO.y - pB.y) / 25 };
+        const dot = u.x * v.x + u.y * v.y;
+        const theta = computeAngleDeg(pA, pO, pB);
+
+        ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(`C = O + OA + OB`, pC.x + 8, pC.y - 6);
+        ctx.fillStyle = '#10b981';
+        ctx.fillText(
+          `OA=(${u.x.toFixed(1)}; ${u.y.toFixed(1)}) · OB=(${v.x.toFixed(1)}; ${v.y.toFixed(1)}) · Tích vô hướng = ${dot.toFixed(2)} · ∠(OA,OB) = ${theta.toFixed(1)}°`,
+          16,
+          26
+        );
+      } else if (activePreset === 'conic_ellipse') {
+        const cx = width / 2;
+        const cy = height / 2;
+        const a = Math.min(width * 0.36, 185);
+        const b = Math.min(height * 0.28, 115);
+        const cFocus = Math.sqrt(Math.max(1, a * a - b * b));
+        const F1 = { x: cx - cFocus, y: cy };
+        const F2 = { x: cx + cFocus, y: cy };
+
+        const rawM = activePts.find((p) => p.id === 'M') || { x: cx + 70, y: cy - 85 };
+        const tAngle = Math.atan2((rawM.y - cy) / b, (rawM.x - cx) / a);
+        const M = { x: cx + a * Math.cos(tAngle), y: cy + b * Math.sin(tAngle) };
+
+        // Axes through center
+        ctx.save();
+        ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(100, 116, 139, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx - a - 30, cy);
+        ctx.lineTo(cx + a + 30, cy);
+        ctx.moveTo(cx, cy - b - 30);
+        ctx.lineTo(cx, cy + b + 30);
+        ctx.stroke();
+        ctx.restore();
+
+        // Ellipse curve
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.08)';
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, a, b, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Segments MF1 and MF2
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(F1.x, F1.y);
+        ctx.lineTo(M.x, M.y);
+        ctx.lineTo(F2.x, F2.y);
+        ctx.stroke();
+
+        // Foci F1, F2
+        [
+          { pt: F1, l: 'F₁(-c;0)' },
+          { pt: F2, l: 'F₂(c;0)' }
+        ].forEach((f) => {
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(f.pt.x, f.pt.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+          ctx.font = 'bold 11px "JetBrains Mono", monospace';
+          ctx.fillText(f.l, f.pt.x - 20, f.pt.y + 18);
+        });
+
+        const d1 = dist(M, F1) / 25;
+        const d2 = dist(M, F2) / 25;
+        const twoA = (2 * a) / 25;
+        ctx.fillStyle = '#a855f7';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(
+          `MF₁ = ${d1.toFixed(2)} cm · MF₂ = ${d2.toFixed(2)} cm · MF₁ + MF₂ = ${(d1 + d2).toFixed(2)} cm (= 2a = ${twoA.toFixed(2)} cm)`,
+          16,
+          26
+        );
       }
 
       // Draw vertex handles for 2D presets
@@ -1157,6 +1389,9 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
     }
 
     if (studioMode === 'presets') {
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
       setPresetPoints((prev) => {
         const curList = prev[activePreset] || [];
         const updated = curList.map((p) => {
@@ -1164,6 +1399,17 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
             if (activePreset === 'pythagoras') {
               if (p.id === 'A') return { ...p, y: Math.max(80, Math.min(my, 320)) };
               if (p.id === 'C') return { ...p, x: Math.max(260, Math.min(mx, 560)) };
+            }
+            if (activePreset === 'inscribed_quad') {
+              const rad = Math.min(rect.width, rect.height) * 0.34;
+              const ang = Math.atan2(my - cy, mx - cx);
+              return { ...p, x: cx + rad * Math.cos(ang), y: cy + rad * Math.sin(ang) };
+            }
+            if (activePreset === 'conic_ellipse' && p.id === 'M') {
+              const a = Math.min(rect.width * 0.36, 185);
+              const b = Math.min(rect.height * 0.28, 115);
+              const ang = Math.atan2((my - cy) / b, (mx - cx) / a);
+              return { ...p, x: cx + a * Math.cos(ang), y: cy + b * Math.sin(ang) };
             }
             return { ...p, x: mx, y: my };
           }
@@ -1468,47 +1714,28 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
         {/* Preset Sub-tabs Banner */}
         {studioMode === 'presets' && (
-          <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-200/60 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 overflow-x-auto">
-            <button
-              onClick={() => setActivePreset('pythagoras')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-                activePreset === 'pythagoras'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              Định lý Pythagoras
-            </button>
-            <button
-              onClick={() => setActivePreset('triangle_explorer')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-                activePreset === 'triangle_explorer'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              Tam giác & Trọng tâm G
-            </button>
-            <button
-              onClick={() => setActivePreset('circle_tangent')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-                activePreset === 'circle_tangent'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              Đường tròn & 2 Tiếp tuyến
-            </button>
-            <button
-              onClick={() => setActivePreset('spatial_pyramid')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
-                activePreset === 'spatial_pyramid'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              Hình không gian 3D (Chóp tứ giác đều)
-            </button>
+          <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-200/60 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 overflow-x-auto scrollbar-none">
+            {[
+              { id: 'pythagoras' as GeoPreset, label: 'Định lý Pythagoras' },
+              { id: 'triangle_explorer' as GeoPreset, label: 'Tam giác & Trọng tâm G' },
+              { id: 'circle_tangent' as GeoPreset, label: 'Đường tròn & 2 Tiếp tuyến' },
+              { id: 'inscribed_quad' as GeoPreset, label: 'Tứ giác nội tiếp' },
+              { id: 'vector_parallelogram' as GeoPreset, label: 'Vectơ & Tích vô hướng' },
+              { id: 'conic_ellipse' as GeoPreset, label: 'Elip & Hai tiêu điểm' },
+              { id: 'spatial_pyramid' as GeoPreset, label: 'Chóp tứ giác đều' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActivePreset(item.id)}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                  activePreset === item.id
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         )}
 
@@ -1735,6 +1962,48 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
                 </div>
                 <p className="text-slate-500">
                   Kéo điểm P hoặc điểm R (bán kính) để quan sát hai tiếp điểm T₁ và T₂ tự động bám sát đường tròn.
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'inscribed_quad' && (
+              <div className="space-y-3 text-xs">
+                <p className="text-slate-600 dark:text-slate-400">
+                  <strong>Tứ giác nội tiếp đường tròn (O):</strong> Bốn đỉnh A, B, C, D cùng nằm trên một đường tròn thì tổng hai góc đối nhau luôn bằng 180°.
+                </p>
+                <div className="p-3 bg-sky-50 dark:bg-sky-950/20 border border-sky-200/50 dark:border-sky-900/40 rounded-lg font-mono text-center text-sky-900 dark:text-sky-200 font-bold">
+                  ∠A + ∠C = ∠B + ∠D = 180°
+                </div>
+                <p className="text-slate-500">
+                  Kéo bất kỳ đỉnh A, B, C, D trượt quanh đường tròn (O) để kiểm chứng tổng hai góc đối luôn bảo toàn 180°.
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'vector_parallelogram' && (
+              <div className="space-y-3 text-xs">
+                <p className="text-slate-600 dark:text-slate-400">
+                  <strong>Quy tắc hình bình hành &amp; Tích vô hướng:</strong> Vectơ tổng <span className="font-mono font-semibold">OC = OA + OB</span> là đường chéo xuất phát từ O; tích vô hướng <span className="font-mono font-semibold">OA·OB = |OA|·|OB|·cos θ</span>.
+                </p>
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/40 rounded-lg font-mono text-center text-emerald-900 dark:text-emerald-200 font-bold">
+                  OA ⊥ OB ⇔ OA · OB = 0 (θ = 90°)
+                </div>
+                <p className="text-slate-500">
+                  Kéo điểm O, A hoặc B để quan sát hợp vectơ màu xanh lá và sự đổi dấu của tích vô hướng khi góc chuyển từ nhọn sang tù!
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'conic_ellipse' && (
+              <div className="space-y-3 text-xs">
+                <p className="text-slate-600 dark:text-slate-400">
+                  <strong>Định nghĩa đường Elip:</strong> Quỹ tích điểm M sao cho tổng khoảng cách đến hai tiêu điểm F₁, F₂ luôn không đổi và bằng trục lớn 2a:
+                </p>
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/40 rounded-lg font-mono text-center text-purple-900 dark:text-purple-200 font-bold">
+                  MF₁ + MF₂ = 2a (a² = b² + c²)
+                </div>
+                <p className="text-slate-500">
+                  Kéo điểm M trượt dọc chu vi Elip để kiểm chứng tổng MF₁ + MF₂ luôn giữ nguyên bằng 2a!
                 </p>
               </div>
             )}

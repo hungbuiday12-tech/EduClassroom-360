@@ -30,11 +30,18 @@ import {
   Check,
 } from 'lucide-react';
 
+import { EXAM_PAPERS } from '../../data/examData';
+import { MATH_LECTURES } from '../../data/curriculumData';
+import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
+import { CS_LESSONS } from '../../data/csLessonsData';
+
 interface VisitorLandingPageProps {
   onEnterAsGuest: () => void;
   isDark?: boolean;
   onToggleTheme?: () => void;
 }
+
+type LandingSpotlightKey = 'math' | 'physics' | 'cs' | 'exams';
 
 export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   onEnterAsGuest,
@@ -86,8 +93,79 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isCreatureMenuOpen]);
 
+  const [activeSpotlight, setActiveSpotlight] = useState<LandingSpotlightKey>('math');
   const activeCreature =
     CREATURE_THEME_OPTIONS.find((opt) => opt.id === creatureTheme) || CREATURE_THEME_OPTIONS[0];
+
+  const totalExams = EXAM_PAPERS.length;
+  const chuyenExams = EXAM_PAPERS.filter((e) => e.track === 'chuyen').length;
+  const khongChuyenExams = EXAM_PAPERS.filter((e) => e.track === 'khong_chuyen').length;
+  const totalLessons = MATH_LECTURES.length + PHYSICS_LESSONS.length + CS_LESSONS.length;
+
+  const spotlightDetails: Record<
+    LandingSpotlightKey,
+    {
+      label: string;
+      badge: string;
+      headline: string;
+      summary: string;
+      highlights: string[];
+      accentClass: string;
+    }
+  > = {
+    math: {
+      label: 'Toán 2D & 3D',
+      badge: `${MATH_LECTURES.length} chuyên đề VietJack 9–12`,
+      headline: 'Đồ thị giải tích Oxy, Hình học kéo thả & 7 mô hình Oxyz 3D',
+      summary:
+        'Khảo sát hàm đa thức, phân thức, mũ – lôgarit, trị tuyệt đối và tô miền tích phân xác định trực tiếp; tương tác hình tròn ngoại tiếp, tiếp tuyến, elip 2D cùng mặt nón Conic, đĩa tròn xoay và đường thẳng Oxyz 3D.',
+      highlights: [
+        'Tô bóng diện tích tích phân ∫ f(x)dx trực quan',
+        '7 cảnh 3D xoay tự do: Conic, Oxyz, Thiết diện chóp, Đĩa tích phân',
+        'Bài giảng 5 bước + 2 TN & 1 TL tự lưu phân tích lộ trình AI',
+      ],
+      accentClass: 'text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/10',
+    },
+    physics: {
+      label: 'Vật Lí 2D & 3D',
+      badge: `${PHYSICS_LESSONS.length} bài giảng · 10 Lab 2D & 11 mô hình 3D`,
+      headline: 'Phòng thí nghiệm Vật lí thời gian thực 60 FPS từ Lớp 9 đến 12',
+      summary:
+        'Điều chỉnh tự do tham số khối lượng, lò xo, bước sóng ánh sáng, mạch RLC nối tiếp hoặc tốc độ góc trên cả mặt phẳng 2D và không gian 3D tương tác để quan sát giản đồ Fresnel và vân giao thoa Y-âng.',
+      highlights: [
+        'Chuyển động tròn đều, Lực hướng tâm & Ném xiên 2D/3D',
+        'Mạch xoay chiều RLC, Cộng hưởng điện & Máy phát 3D',
+        'Giao thoa ánh sáng khe Y-âng đổi màu theo bước sóng λ',
+      ],
+      accentClass: 'text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10',
+    },
+    cs: {
+      label: 'Tin Học Sublime IDE',
+      badge: `${CS_LESSONS.length} lộ trình VNOI + Code Tự Do`,
+      headline: 'Trình soạn thảo Sublime Text 4 Monokai & Online Judge đa ngôn ngữ',
+      summary:
+        'Trang bị đầy đủ thanh thực đơn Edit/Selection/Find-Replace/Goto Line/Snippets C++ & Python chuẩn thi HSG, kèm chế độ gửi đề bài bằng ảnh hoặc file để tự động sinh bộ test ẩn chấm điểm tức thì.',
+      highlights: [
+        'Full Edit: Undo/Redo 60 bước, Duplicate/Move Line, Find & Replace',
+        'Thư viện Snippet CP (Fast I/O, Prefix Sum, BFS, DP) chèn 1 chạm',
+        'Chấm tự động C++ & Python với stdin/stdout và báo cáo test ẩn',
+      ],
+      accentClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+    },
+    exams: {
+      label: `${totalExams} Đề Thi Chuẩn`,
+      badge: `${chuyenExams} Chuyên & ${khongChuyenExams} Không Chuyên`,
+      headline: `Ngân hàng ${totalExams} đề thi quốc gia kèm đồng hồ bấm giờ & lời giải từng bước`,
+      summary:
+        'Số lượng đề hiển thị tự động cập nhật theo kho đề thực tế của hệ thống. Mỗi đề tích hợp đồng hồ đếm ngược, ghi chú đáp án từng câu, biểu điểm chi tiết và liên kết mở nhanh phòng mô phỏng.',
+      highlights: [
+        `Tự động đồng bộ đúng ${totalExams} bộ đề Toán · Lí · Tin`,
+        'Phân khu rõ Chuyên KHTN, Sư Phạm, Amsterdam & Tốt nghiệp THPT',
+        'Kết nối Đấu trường Online (1 lượt/ngày/môn) & Gia sư AI Socratic',
+      ],
+      accentClass: 'text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10',
+    },
+  };
 
   const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
@@ -226,29 +304,29 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
       {/* Top Navigation Bar */}
       <header className="relative z-20 border-b border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-slate-950/40 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-amber-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-              <Sparkles className="w-5 h-5" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-amber-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white block">
+            <div className="min-w-0">
+              <span className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 dark:text-white block truncate">
                 EduClassroom 360
               </span>
-              <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-300 block -mt-0.5">
+              <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-300 block -mt-0.5 truncate">
                 Galaxy Academic Edition
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <div className="relative" ref={creatureMenuRef}>
               <button
                 onClick={() => setIsCreatureMenuOpen(!isCreatureMenuOpen)}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-indigo-200/70 dark:border-white/15 bg-white/80 dark:bg-white/10 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-white/20 transition-colors cursor-pointer"
                 title="Chọn sinh vật nền tương tác"
               >
-                <Wand2 className="w-3.5 h-3.5" />
+                <Wand2 className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">{activeCreature.shortVi}</span>
               </button>
 
@@ -293,75 +371,153 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
             <button
               onClick={onEnterAsGuest}
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 text-white dark:bg-white/10 hover:bg-slate-800 dark:hover:bg-white/20 dark:text-white border border-transparent dark:border-white/15 transition-all flex items-center gap-1.5 shadow-sm"
+              className="px-3 sm:px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 text-white dark:bg-white/10 hover:bg-slate-800 dark:hover:bg-white/20 dark:text-white border border-transparent dark:border-white/15 transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
             >
-              <span>Vào trải nghiệm thử (Khách)</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Vào trải nghiệm thử (Khách)</span>
+              <span className="sm:hidden">Vào thử</span>
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </button>
           </div>
         </div>
       </header>
 
       {/* Grand Hero Section with Dedicated Auth Portal */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-16 flex flex-col justify-center">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-14 flex flex-col justify-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           
           {/* LEFT COLUMN: Academic Presentation */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-400/30 text-xs font-semibold text-indigo-700 dark:text-indigo-300 backdrop-blur-sm">
-              <Star className="w-3.5 h-3.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
-              <span>Cổng Giáo Dục & Khảo Thí Trực Quan Chuyên Sâu</span>
+          <div className="lg:col-span-7 space-y-5 min-w-0">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-400/30 text-xs font-semibold text-indigo-700 dark:text-indigo-300 backdrop-blur-sm max-w-full">
+              <Star className="w-3.5 h-3.5 shrink-0 text-amber-500 dark:text-amber-300 fill-amber-400" />
+              <span className="truncate sm:whitespace-normal">
+                Hệ Sinh Thái Học Tập Trực Quan 9–12 &amp; Chuyên Quốc Gia
+              </span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
               Khám Phá Vũ Trụ Mô Phỏng Lớp Học <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 dark:from-indigo-400 dark:via-purple-300 dark:to-amber-300">360°</span>
             </h1>
 
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
-              Nền tảng học tập đỉnh cao dành cho học sinh THCS, THPT Chuyên và Đội tuyển Olympic. Tích hợp trực quan đồ thị giải tích Oxy, phòng thí nghiệm vật lý 2D 60 FPS, trình chấm Online Judge C++/Python và 30 bộ đề thi chuẩn quốc gia.
+              Nền tảng học tập chuyên sâu dành cho học sinh THCS, THPT và Đội tuyển Chuyên với{' '}
+              <strong className="text-slate-900 dark:text-white">{totalLessons} bài giảng 5 bước</strong> theo chuẩn VietJack, phòng mô phỏng{' '}
+              <strong className="text-slate-900 dark:text-white">Toán · Vật lí 2D/3D 60 FPS</strong>, trình soạn thảo{' '}
+              <strong className="text-slate-900 dark:text-white">Sublime Text 4</strong> kèm Online Judge và kho{' '}
+              <strong className="text-slate-900 dark:text-white">{totalExams} đề thi</strong> cập nhật linh hoạt.
             </p>
 
-            {/* Feature Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-              <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md shadow-xs">
+            {/* Interactive 4-Pillar Quick Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setActiveSpotlight('math')}
+                className={`min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                  activeSpotlight === 'math'
+                    ? 'bg-white dark:bg-slate-900/90 border-blue-500 ring-2 ring-blue-500/20'
+                    : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-blue-400/60'
+                }`}
+              >
                 <Compass className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-1.5" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">Toán Học Oxy</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Vẽ đồ thị & hình học</p>
-              </div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">Toán 2D / Oxyz 3D</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
+                  {MATH_LECTURES.length} bài · 7 cảnh 3D
+                </p>
+              </button>
 
-              <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md shadow-xs">
+              <button
+                type="button"
+                onClick={() => setActiveSpotlight('physics')}
+                className={`min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                  activeSpotlight === 'physics'
+                    ? 'bg-white dark:bg-slate-900/90 border-amber-500 ring-2 ring-amber-500/20'
+                    : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400/60'
+                }`}
+              >
                 <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1.5" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">Vật Lý 2D</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">5 mô phỏng thời gian thực</p>
-              </div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">Vật Lý 2D &amp; 3D</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
+                  10 Lab 2D · 11 mẫu 3D
+                </p>
+              </button>
 
-              <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md shadow-xs">
+              <button
+                type="button"
+                onClick={() => setActiveSpotlight('cs')}
+                className={`min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                  activeSpotlight === 'cs'
+                    ? 'bg-white dark:bg-slate-900/90 border-emerald-500 ring-2 ring-emerald-500/20'
+                    : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-emerald-400/60'
+                }`}
+              >
                 <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-1.5" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">Tin Học Judge</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Chấm C++/Python tự động</p>
-              </div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">Tin Học Sublime 4</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
+                  {CS_LESSONS.length} bài · Judge C++/Py
+                </p>
+              </button>
 
-              <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md shadow-xs">
+              <button
+                type="button"
+                onClick={() => setActiveSpotlight('exams')}
+                className={`min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                  activeSpotlight === 'exams'
+                    ? 'bg-white dark:bg-slate-900/90 border-purple-500 ring-2 ring-purple-500/20'
+                    : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-purple-400/60'
+                }`}
+              >
                 <Award className="w-5 h-5 text-purple-600 dark:text-purple-400 mb-1.5" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">30 Đề Chuyên</h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Lời giải & tải file Word</p>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate tabular-nums">
+                  {totalExams} Đề Thi Chuẩn
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
+                  {chuyenExams} Chuyên · {khongChuyenExams} THPT
+                </p>
+              </button>
+            </div>
+
+            {/* Interactive Feature Spotlight Panel */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white/85 dark:bg-slate-900/75 border border-slate-200/90 dark:border-white/15 backdrop-blur-md shadow-sm space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold border ${spotlightDetails[activeSpotlight].accentClass}`}>
+                  {spotlightDetails[activeSpotlight].badge}
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Bấm từng thẻ phía trên để xem chi tiết tính năng
+                </span>
+              </div>
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug">
+                {spotlightDetails[activeSpotlight].headline}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                {spotlightDetails[activeSpotlight].summary}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                {spotlightDetails[activeSpotlight].highlights.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-1.5 text-[11px] text-slate-700 dark:text-slate-200 bg-slate-100/80 dark:bg-white/5 px-2.5 py-2 rounded-xl border border-slate-200/60 dark:border-white/10"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    <span className="leading-snug">{item}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Quick Guest Enter Action */}
-            <div className="pt-3 flex flex-wrap items-center gap-4">
+            <div className="pt-1 flex flex-wrap items-center gap-3 sm:gap-4">
               <button
                 onClick={onEnterAsGuest}
-                className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-2 group cursor-pointer"
+                className="w-full sm:w-auto px-5 sm:px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
               >
-                <Play className="w-4 h-4 fill-white" />
+                <Play className="w-4 h-4 fill-white shrink-0" />
                 <span>Vào Trực Tiếp Lớp Học (Không Cần Đăng Nhập)</span>
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight className="w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform" />
               </button>
 
               <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>Dữ liệu lưu an toàn trên máy bạn</span>
+                <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Lưu kết quả học &amp; phân tích lộ trình trực tiếp trên máy bạn</span>
               </span>
             </div>
           </div>
@@ -736,83 +892,83 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         </div>
 
         {/* 4 Core Pillars Overview Section */}
-        <div className="mt-16 sm:mt-24 pt-12 border-t border-slate-200/80 dark:border-white/10 space-y-8">
-          <div className="text-center max-w-xl mx-auto space-y-2">
+        <div className="mt-14 sm:mt-20 pt-10 border-t border-slate-200/80 dark:border-white/10 space-y-8">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
             <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
-              Hệ Sinh Thái Lớp Học Mô Phỏng 360°
+              Hệ Sinh Thái Lớp Học Mô Phỏng 360° Toàn Diện
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-300">
-              Công nghệ tương tác giải phóng trí tưởng tượng học thuật, giúp nắm bắt cốt lõi mọi định lý và quy luật.
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-300 leading-relaxed">
+              Mỗi bài giảng gồm 5 phần chuyên sâu (Khái niệm · Công thức · Giải thích sâu · Hỏi AI · 2 Trắc nghiệm &amp; 1 Tự luận), tự động lưu kết quả và phân tích lộ trình học thông minh.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             <div
               onClick={onEnterAsGuest}
-              className="p-5 rounded-3xl bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs"
+              className="p-5 rounded-3xl bg-white/85 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs min-w-0"
             >
               <div className="w-10 h-10 rounded-2xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Compass className="w-5 h-5" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
-                Toán Học Tương Tác
+                Toán Học 2D &amp; Oxyz 3D
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                Khảo sát biến thiên hàm số, tìm tiệm cận, tiếp tuyến đạo hàm và vẽ hình học phẳng có tọa độ chính xác.
+                Vẽ đồ thị đa thức, logarit, trị tuyệt đối, tô diện tích tích phân; dựng hình phẳng Conic/tứ giác nội tiếp và xoay 7 mô hình 3D trực quan.
               </p>
               <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1">
-                Xem phòng Toán →
+                Xem {MATH_LECTURES.length} bài Toán →
               </span>
             </div>
 
             <div
               onClick={onEnterAsGuest}
-              className="p-5 rounded-3xl bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs"
+              className="p-5 rounded-3xl bg-white/85 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs min-w-0"
             >
               <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Zap className="w-5 h-5" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
-                Phòng Lab Vật Lý 2D
+                Phòng Lab Vật Lý 2D &amp; 3D
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                Mô phỏng 60 FPS con lắc lò xo, khúc xạ ánh sáng theo định luật Snell, chuyển động ném xiên và giao thoa 2 nguồn sóng.
+                10 phòng thí nghiệm 2D và 11 cảnh 3D 60 FPS: Con lắc, chuyển động tròn, mạch xoay chiều RLC Fresnel, giao thoa khe Y-âng, từ trường Lorentz.
               </p>
               <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
-                Vào phòng thí nghiệm →
+                Khám phá {PHYSICS_LESSONS.length} bài Lí →
               </span>
             </div>
 
             <div
               onClick={onEnterAsGuest}
-              className="p-5 rounded-3xl bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs"
+              className="p-5 rounded-3xl bg-white/85 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs min-w-0"
             >
               <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Code2 className="w-5 h-5" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
-                Tin Học & Online Judge
+                Sublime Text 4 &amp; Online Judge
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                Luyện thuật toán chuyên Tin với bộ test ẩn, chấm tự động C++ và Python, kiểm tra giới hạn thời gian chạy mili-giây.
+                Trình soạn thảo Monokai đầy đủ Edit, Find/Replace, Goto Line, Snippet thi HSG; nộp bài C++/Python chấm test ẩn hoặc gửi đề tự do bằng ảnh/file.
               </p>
               <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                Luyện code ngay →
+                Luyện {CS_LESSONS.length} chuyên đề →
               </span>
             </div>
 
             <div
               onClick={onEnterAsGuest}
-              className="p-5 rounded-3xl bg-white/80 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs"
+              className="p-5 rounded-3xl bg-white/85 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs min-w-0"
             >
               <div className="w-10 h-10 rounded-2xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <FileText className="w-5 h-5" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
-                30 Đề Thi & Hướng Dẫn Giải
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors tabular-nums">
+                {totalExams} Đề Thi &amp; Hướng Dẫn Giải
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                Ngân hàng 30 đề thi chuyên Toán, Lí, Tin từ KHTN, Sư Phạm, Amsterdam, Lê Hồng Phong kèm tải file Word chuẩn.
+                Ngân hàng {totalExams} đề thi ({chuyenExams} Chuyên từ KHTN, Sư Phạm, Amsterdam, Lê Hồng Phong &amp; {khongChuyenExams} đề THPT) kèm lời giải chi tiết.
               </p>
               <span className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold flex items-center gap-1">
                 Khám phá đề thi →
@@ -826,14 +982,14 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       <footer className="relative z-10 border-t border-slate-200/80 dark:border-white/10 py-6 bg-white/60 dark:bg-slate-950/60 backdrop-blur-md text-xs text-slate-500 dark:text-slate-400 text-center">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span>EduClassroom 360 · Hệ thống giáo dục mô phỏng vũ trụ học thuật</span>
-          <div className="flex items-center gap-4 text-[11px]">
-            <span>Toán học Oxy</span>
-            <span>·</span>
-            <span>Vật lí 2D 60FPS</span>
-            <span>·</span>
-            <span>Online Judge Tin học</span>
-            <span>·</span>
-            <span>30 Đề Khảo Thí</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
+            <span>Toán 2D &amp; Oxyz 3D</span>
+            <span aria-hidden="true">·</span>
+            <span>Vật lí 2D/3D 60FPS</span>
+            <span aria-hidden="true">·</span>
+            <span>Sublime Text 4 Judge</span>
+            <span aria-hidden="true">·</span>
+            <span className="tabular-nums">{totalExams} Đề Khảo Thí</span>
           </div>
         </div>
       </footer>

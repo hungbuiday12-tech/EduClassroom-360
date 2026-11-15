@@ -42,6 +42,25 @@ interface MathLecturesProps {
   ) => void;
 }
 
+const get3DModeLabel = (mode?: Math3DMode): string => {
+  switch (mode) {
+    case 'conic_sections_3d':
+      return 'Mặt Nón Conic 3D';
+    case 'line_plane_oxyz':
+      return 'Đường & Mặt Oxyz 3D';
+    case 'integral_disks_3d':
+      return 'Tích Phân Đĩa Trụ 3D';
+    case 'sphere_plane':
+      return 'Mặt Cầu & Mặt Phẳng 3D';
+    case 'pyramid_section':
+      return 'Khối Chóp & Thiết Diện 3D';
+    case 'revolution_solid':
+      return 'Khối Tròn Xoay 3D';
+    default:
+      return 'Hệ Trục Oxyz 3D';
+  }
+};
+
 export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => {
   const { addXP } = useAuth();
   const { t } = useLanguage();
@@ -246,10 +265,10 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                 </div>
 
                 {/* 2-Zone Track Switcher */}
-                <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/70 shrink-0 self-start">
+                <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/70 max-w-full sm:shrink-0 self-start">
                   <button
                     onClick={() => setSelectedTrack('khong_chuyen')}
-                    className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                    className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold whitespace-normal sm:whitespace-nowrap text-center transition-all ${
                       selectedTrack === 'khong_chuyen'
                         ? 'bg-indigo-600 text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -259,7 +278,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   </button>
                   <button
                     onClick={() => setSelectedTrack('chuyen')}
-                    className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                    className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold whitespace-normal sm:whitespace-nowrap text-center transition-all ${
                       selectedTrack === 'chuyen'
                         ? 'bg-amber-600 text-white shadow-xs'
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -318,7 +337,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   </div>
                 )}
 
-                <div className="relative min-w-[240px] md:w-72">
+                <div className="relative w-full md:w-72">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
@@ -475,7 +494,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-xl transition-colors whitespace-nowrap"
                     >
                       <Box className="w-3.5 h-3.5" />
-                      <span>Mô phỏng 3D Oxyz</span>
+                      <span>{get3DModeLabel(activeLecture.sim3dMode)}</span>
                     </button>
                   </>
                 )}
@@ -540,6 +559,8 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
             {activeTab === 'theory' && (
               <InteractiveLectureRoom
                 lessonKey={activeLecture.id}
+                subject="math"
+                grade={activeLecture.gradeGroup || activeLecture.grade}
                 subjectAccent={activeLecture.track === 'chuyen' ? 'amber' : 'indigo'}
                 kicker={`${
                   activeLecture.track === 'chuyen'
@@ -554,6 +575,16 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                 keyFormulas={activeLecture.keyFormulas}
                 mnemonics={activeLecture.mnemonics}
                 commonTraps={activeLecture.commonTraps}
+                onEarnXP={(xp) => {
+                  try {
+                    addXP(xp);
+                  } catch {
+                    // ignore auth errors
+                  }
+                }}
+                onOpenSim2D={onNavigateTab ? handleOpen2DSim : undefined}
+                onOpenSim3D={onNavigateTab ? handleOpen3DSim : undefined}
+                onNextLesson={nextLecture ? () => handleOpenLecture(nextLecture.id) : undefined}
                 actions={[
                   ...(onNavigateTab
                     ? [
@@ -572,7 +603,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                             )
                         },
                         {
-                          label: 'Mô phỏng 3D Oxyz',
+                          label: `Mô phỏng 3D · ${get3DModeLabel(activeLecture.sim3dMode)}`,
                           onClick: handleOpen3DSim,
                           variant: 'amber' as const,
                           icon: <Box className="w-3.5 h-3.5" />

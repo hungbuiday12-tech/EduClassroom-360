@@ -1787,6 +1787,207 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       color: '#ec4899',
       name: 'y = e^(0.7x)'
     }
+  },
+  // ==========================================
+  // BỔ SUNG CHUYÊN SÂU LỚP 9 & LỚP 12 (VIETJACK GDPT 2018)
+  // ==========================================
+  {
+    id: 'math-9-8',
+    title: 'Hình học Trực quan Lớp 9: Hình Trụ, Hình Nón & Hình Cầu',
+    grade: 'Lớp 9 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Cơ bản',
+    readTimeMinutes: 9,
+    description: 'Kiến thức trọng tâm VietJack Toán 9 GDPT 2018: nhận diện đường sinh, bán kính đáy, trục đối xứng cùng công thức tính diện tích xung quanh, diện tích toàn phần và thể tích Hình trụ – Hình nón – Hình cầu kèm mô phỏng 3D trực quan.',
+    mnemonics: [
+      'Hình trụ tạo bởi hình chữ nhật quay quanh một cạnh: $S_{xq} = 2\\pi R h$, $V = \\pi R^2 h$.',
+      'Hình nón tạo bởi tam giác vuông quay quanh cạnh góc vuông: $l^2 = R^2 + h^2$, $V = \\frac{1}{3}\\pi R^2 h$.',
+      'Hình cầu: $S = 4\\pi R^2$, $V = \\frac{4}{3}\\pi R^3$ (mặt cắt qua tâm là đường tròn lớn bán kính $R$).'
+    ],
+    commonTraps: [
+      'Nhầm chiều cao $h$ với đường sinh $l$ khi tính diện tích xung quanh hình nón ($S_{xq} = \\pi R l$, không phải $\\pi R h$).',
+      'Quên cộng $2$ đáy khi tính diện tích toàn phần hình trụ ($S_{tp} = 2\\pi R h + 2\\pi R^2$).'
+    ],
+    theory: [
+      '1. Hình trụ: Khi quay hình chữ nhật $ABCD$ quanh cạnh cố định $AB$, ta được hình trụ có bán kính đáy $R = AD$ và chiều cao $h = AB$. Diện tích xung quanh $S_{xq} = 2\\pi R h$, diện tích toàn phần $S_{tp} = 2\\pi R h + 2\\pi R^2$, thể tích $V = \\pi R^2 h$.',
+      '2. Hình nón: Khi quay tam giác vuông $SOA$ quanh cạnh góc vuông $SO$, đường cao là $h = SO$, bán kính đáy $R = OA$, đường sinh $l = SA = \\sqrt{R^2 + h^2}$. Diện tích xung quanh $S_{xq} = \\pi R l$, thể tích $V = \\frac{1}{3}\\pi R^2 h$.',
+      '3. Hình cầu: Quay nửa hình tròn tâm $O$ bán kính $R$ quanh đường kính tạo ra mặt cầu bán kính $R$. Diện tích mặt cầu $S = 4\\pi R^2$, thể tích khối cầu $V = \\frac{4}{3}\\pi R^3$.'
+    ],
+    keyFormulas: [
+      '\\text{Trụ: } S_{xq} = 2\\pi R h, \\quad V = \\pi R^2 h',
+      '\\text{Nón: } l = \\sqrt{R^2 + h^2}, \\quad S_{xq} = \\pi R l, \\quad V = \\frac{1}{3}\\pi R^2 h',
+      '\\text{Cầu: } S = 4\\pi R^2, \\quad V = \\frac{4}{3}\\pi R^3'
+    ],
+    flashcards: [
+      {
+        front: 'Một hình nón có bán kính đáy $R = 6\\text{ cm}$, chiều cao $h = 8\\text{ cm}$. Đường sinh $l$ và thể tích $V$ bằng bao nhiêu?',
+        back: '$l = \\sqrt{6^2 + 8^2} = 10\\text{ cm}$; $V = \\frac{1}{3}\\pi \\cdot 36 \\cdot 8 = 96\\pi\\text{ cm}^3$.',
+        tip: 'Ghi nhớ bộ số Pytago $6 - 8 - 10$ để tính nhẩm nhanh đường sinh!'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Một hình trụ có bán kính đáy $R = 4\\text{ cm}$ và chiều cao $h = 5\\text{ cm}$. Thể tích của hình trụ đó là:',
+        options: ['A. $80\\pi\\text{ cm}^3$', 'B. $40\\pi\\text{ cm}^3$', 'C. $20\\pi\\text{ cm}^3$', 'D. $160\\pi\\text{ cm}^3$'],
+        correctIndex: 0,
+        explanation: 'Áp dụng công thức thể tích hình trụ: $V = \\pi R^2 h = \\pi \\cdot 4^2 \\cdot 5 = 80\\pi\\text{ cm}^3$.'
+      },
+      {
+        question: 'Diện tích mặt cầu có đường kính bằng $6\\text{ cm}$ là:',
+        options: ['A. $36\\pi\\text{ cm}^2$', 'B. $144\\pi\\text{ cm}^2$', 'C. $12\\pi\\text{ cm}^2$', 'D. $24\\pi\\text{ cm}^2$'],
+        correctIndex: 0,
+        explanation: 'Đường kính $d = 6\\text{ cm} \\implies$ bán kính $R = 3\\text{ cm}$. Vậy $S = 4\\pi R^2 = 4\\pi \\cdot 3^2 = 36\\pi\\text{ cm}^2$.'
+      }
+    ]
+  },
+  {
+    id: 'math-12-4',
+    title: 'Phương trình Đường thẳng, Góc & Khoảng cách trong Không gian Oxyz (Lớp 12)',
+    grade: 'Lớp 12 - Hình học',
+    category: 'Hình học',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 12,
+    description: 'Chuyên đề trọng tâm Oxyz lớp 12 theo VietJack: phương trình tham số và chính tắc của đường thẳng, xét vị trí tương đối hai đường thẳng, tính góc giữa đường thẳng – mặt phẳng và khoảng cách trong không gian Oxyz.',
+    mnemonics: [
+      'Đường thẳng cần 1 điểm đi qua $M_0(x_0; y_0; z_0)$ và 1 vectơ chỉ phương $\\vec{u} = (a; b; c)$.',
+      'Góc giữa đường thẳng $d$ ($\vec{u}$) và mặt phẳng $(P)$ ($\vec{n}$) dùng HÀM SIN: $\\sin(d, (P)) = |\\cos(\\vec{u}, \\vec{n})|$.',
+      'Hai đường thẳng chéo nhau khi $[\\vec{u}_1, \\vec{u}_2] \\cdot \\vec{M_1 M_2} \\neq 0$.'
+    ],
+    commonTraps: [
+      'Nhầm công thức $\\sin(d, (P))$ thành $\\cos(d, (P))$ dẫn đến sai góc phụ $90^\\circ - \\alpha$!',
+      'Quên đổi dấu tọa độ điểm $M_0(x_0; y_0; z_0)$ khi đọc phương trình chính tắc $\\frac{x - x_0}{a} = \\frac{y - y_0}{b} = \\frac{z - z_0}{c}$.'
+    ],
+    theory: [
+      '1. Phương trình tham số & chính tắc: Đường thẳng $d$ qua $M_0(x_0; y_0; z_0)$ có VTCP $\\vec{u} = (a; b; c)$ có phương trình tham số $\\begin{cases} x = x_0 + at \\\\ y = y_0 + bt \\\\ z = z_0 + ct \\end{cases}$ và phương trình chính tắc $\\frac{x - x_0}{a} = \\frac{y - y_0}{b} = \\frac{z - z_0}{c}$ (với $abc \\neq 0$).',
+      '2. Góc trong Oxyz: Góc giữa hai đường thẳng $\\cos(d_1, d_2) = \\frac{|\\vec{u}_1 \\cdot \\vec{u}_2|}{|\\vec{u}_1||\\vec{u}_2|}$; góc giữa đường thẳng và mặt phẳng $\\sin(d, (P)) = \\frac{|\\vec{u} \\cdot \\vec{n}|}{|\\vec{u}||\\vec{n}|}$; góc giữa hai mặt phẳng $\\cos((P), (Q)) = \\frac{|\\vec{n}_1 \\cdot \\vec{n}_2|}{|\\vec{n}_1||\\vec{n}_2|}$.',
+      '3. Khoảng cách từ điểm $M$ tới đường thẳng $\\Delta$ (qua $A$, VTCP $\\vec{u}$): $d(M, \\Delta) = \\frac{|[\\vec{AM}, \\vec{u}]|}{|\\vec{u}|}$.',
+      '4. Khoảng cách giữa hai đường thẳng chéo nhau $\\Delta_1, \\Delta_2$: $d(\\Delta_1, \\Delta_2) = \\frac{|[\\vec{u}_1, \\vec{u}_2] \\cdot \\vec{M_1 M_2}|}{|[\\vec{u}_1, \\vec{u}_2]|}$.'
+    ],
+    keyFormulas: [
+      '\\sin(d, (P)) = \\frac{|\\vec{u} \\cdot \\vec{n}|}{|\\vec{u}| \\cdot |\\vec{n}|}',
+      'd(M, \\Delta) = \\frac{|[\\vec{AM}, \\vec{u}]|}{|\\vec{u}|}',
+      'd(\\Delta_1, \\Delta_2) = \\frac{|[\\vec{u}_1, \\vec{u}_2] \\cdot \\vec{M_1 M_2}|}{|[\\vec{u}_1, \\vec{u}_2]|}'
+    ],
+    flashcards: [
+      {
+        front: 'Cho đường thẳng $d: \\frac{x - 2}{3} = \\frac{y + 1}{-2} = \\frac{z}{1}$. Hãy đọc 1 điểm đi qua và 1 vectơ chỉ phương của $d$?',
+        back: 'Đi qua $M_0(2; -1; 0)$ và có vectơ chỉ phương $\\vec{u} = (3; -2; 1)$.',
+        tip: 'Quan sát trực tiếp tương giao Đường & Mặt phẳng trên phòng thí nghiệm Đường & Mặt Oxyz 3D!'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Trong không gian $Oxyz$, vectơ nào dưới đây là một vectơ chỉ phương của đường thẳng $d: \\begin{cases} x = 1 - 2t \\\\ y = 3 + 4t \\\\ z = -1 + t \\end{cases}$?',
+        options: ['A. $\\vec{u} = (-2; 4; 1)$', 'B. $\\vec{u} = (1; 3; -1)$', 'C. $\\vec{u} = (2; 4; 1)$', 'D. $\\vec{u} = (-2; 3; 1)$'],
+        correctIndex: 0,
+        explanation: 'Hệ số đứng trước tham số $t$ lần lượt là $(-2; 4; 1)$, đó chính là tọa độ một vectơ chỉ phương của đường thẳng $d$.'
+      },
+      {
+        question: 'Trong không gian $Oxyz$, cho hai mặt phẳng $(P): x - 2y + 2z - 3 = 0$ và $(Q): 2x + 2y - z + 1 = 0$. Côsin của góc giữa hai mặt phẳng $(P)$ và $(Q)$ bằng:',
+        options: ['A. $\\frac{4}{9}$', 'B. $\\frac{2}{9}$', 'C. $\\frac{8}{9}$', 'D. $\\frac{1}{3}$'],
+        correctIndex: 0,
+        explanation: 'Hai VTPT là $\\vec{n}_P = (1; -2; 2)$ và $\\vec{n}_Q = (2; 2; -1)$. Ta có $\\cos((P), (Q)) = \\frac{|1\\cdot 2 + (-2)\\cdot 2 + 2(-1)|}{\\sqrt{1+4+4}\\cdot\\sqrt{4+4+1}} = \\frac{|-4|}{3 \\cdot 3} = \\frac{4}{9}$.'
+      }
+    ]
+  },
+  {
+    id: 'math-12-5',
+    title: 'Xác suất Có điều kiện & Công thức Bayes (CT Mới Lớp 12 GDPT 2018)',
+    grade: 'Lớp 12 - Xác suất',
+    category: 'Đại số & Xác suất',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 10,
+    description: 'Chuyên đề trọng tâm mới trong SGK Toán 12 (KNTT / CTST / Cánh Diều): khái niệm xác suất có điều kiện $P(A | B)$, công thức nhân xác suất, công thức xác suất toàn phần và công thức Bayes.',
+    mnemonics: [
+      'Xác suất có điều kiện: $P(A | B) = \\frac{P(A \\cap B)}{P(B)}$ (tính $A$ khi biết $B$ ĐÃ XẢY RA).',
+      'Xác suất toàn phần là phép tách $P(B)$ theo phân hoạch $A$ và $\\bar{A}$: $P(B) = P(A)P(B|A) + P(\\bar{A})P(B|\\bar{A})$.',
+      'Công thức Bayes giúp "đảo ngược nguyên nhân từ kết quả": $P(A | B) = \\frac{P(A)P(B|A)}{P(B)}$.'
+    ],
+    commonTraps: [
+      'Nhầm lẫn giữa $P(A | B)$ và $P(B | A)$ (hai xác suất có điều kiện này thường KHÁC NHAU!).',
+      'Quên dùng hệ thức $P(\\bar{A}) = 1 - P(A)$ khi tính nhánh thứ hai trong công thức xác suất toàn phần.'
+    ],
+    theory: [
+      '1. Xác suất có điều kiện: Cho hai biến cố $A, B$ với $P(B) > 0$. Xác suất của biến cố $A$ khi biết biến cố $B$ đã xảy ra là $P(A | B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{n(A \\cap B)}{n(B)}$.',
+      '2. Công thức nhân xác suất: Với mọi biến cố $A, B$, $P(A \\cap B) = P(B) \\cdot P(A | B) = P(A) \\cdot P(B | A)$.',
+      '3. Công thức xác suất toàn phần: Nếu $0 < P(A) < 1$ thì $P(B) = P(A)P(B | A) + P(\\bar{A})P(B | \\bar{A})$.',
+      '4. Công thức Bayes: Cho $P(A) > 0, P(B) > 0$. Khi đã quan sát thấy kết quả $B$, xác suất để nguyên nhân $A$ xảy ra là $P(A | B) = \\frac{P(A) \\cdot P(B | A)}{P(A)P(B | A) + P(\\bar{A})P(B | \\bar{A})}$.'
+    ],
+    keyFormulas: [
+      'P(A | B) = \\frac{P(A \\cap B)}{P(B)}',
+      'P(B) = P(A)P(B|A) + P(\\bar{A})P(B|\\bar{A})',
+      'P(A | B) = \\frac{P(A)P(B | A)}{P(B)}'
+    ],
+    flashcards: [
+      {
+        front: 'Khi hai biến cố $A, B$ độc lập ($P(B) > 0$) thì $P(A | B)$ bằng gì?',
+        back: '$P(A | B) = P(A)$ vì việc $B$ xảy ra hay không không ảnh hưởng tới xác suất của $A$.',
+        tip: 'Kiểm tra tính độc lập nhanh bằng so sánh $P(A | B) = P(A)$.'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Cho hai biến cố $A$ và $B$ có $P(A) = 0{,}5$, $P(B) = 0{,}4$ và $P(A \\cap B) = 0{,}2$. Giá trị của $P(A | B)$ là:',
+        options: ['A. $0{,}5$', 'B. $0{,}4$', 'C. $0{,}2$', 'D. $0{,}8$'],
+        correctIndex: 0,
+        explanation: 'Áp dụng công thức xác suất có điều kiện: $P(A | B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{0{,}2}{0{,}4} = 0{,}5$.'
+      },
+      {
+        question: 'Tỉ lệ người mắc bệnh X ở một vùng là $1\\%$. Một xét nghiệm cho kết quả dương tính đúng $95\\%$ đối với người mắc bệnh và dương tính giả $2\\%$ đối với người không mắc bệnh. Xác suất chọn ngẫu nhiên 1 người cho kết quả dương tính là:',
+        options: ['A. $0{,}0293$', 'B. $0{,}0095$', 'C. $0{,}0198$', 'D. $0{,}0500$'],
+        correctIndex: 0,
+        explanation: 'Theo công thức xác suất toàn phần: $P(+) = 0{,}01 \\cdot 0{,}95 + 0{,}99 \\cdot 0{,}02 = 0{,}0095 + 0{,}0198 = 0{,}0293$.'
+      }
+    ]
+  },
+  {
+    id: 'math-12-6',
+    title: 'Hàm số, Phương trình & Bất phương trình Mũ – Lôgarit Nâng cao (Lớp 12)',
+    grade: 'Lớp 12 - Giải tích',
+    category: 'Lượng giác & Mũ',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 11,
+    description: 'Hệ thống toàn diện VietJack Giải tích 12: đạo hàm hàm số mũ – lôgarit, tập xác định, phép đặt ẩn phụ, bất phương trình đổi chiều khi cơ số $0 < a < 1$ và phân tích đồ thị $y = \\ln(x), y = e^x$.',
+    mnemonics: [
+      'Cơ số $a > 1$: hàm đồng biến $\\implies$ bỏ $\\log_a$ hoặc $a^u$ GIỮ NGUYÊN CHIỀU bất đẳng thức.',
+      'Cơ số $0 < a < 1$: hàm nghịch biến $\\implies$ bỏ $\\log_a$ hoặc $a^u$ PHẢI ĐỔI CHIỀU bất đẳng thức!',
+      'Đặt ẩn phụ $t = a^x$ luôn nhớ điều kiện $t > 0$.'
+    ],
+    commonTraps: [
+      'Quên chặn dưới $f(x) > 0$ khi giải $\\log_a f(x) < b$ với cơ số $0 < a < 1$ (chỉ viết $f(x) > a^b$ vẫn đúng nhưng với $a > 1$: $\\log_a f(x) < b$ PHẢI viết $0 < f(x) < a^b$!).',
+      'Quên điều kiện $x > 0$ trước khi tách $\\log_a(x^2) = 2\\log_a x$.'
+    ],
+    theory: [
+      '1. Đạo hàm hàm mũ & logarit: $(e^x)\' = e^x$; $(a^x)\' = a^x \\ln a$; $(\\ln x)\' = \\frac{1}{x}$; $(\\log_a x)\' = \\frac{1}{x \\ln a}$ ($x > 0$). Với hàm hợp: $(a^u)\' = u\' \\cdot a^u \\ln a$ và $(\\log_a u)\' = \\frac{u\'}{u \\ln a}$.',
+      '2. Đồ thị hàm số $y = \\log_a x$ ($0 < a \\neq 1$): Tập xác định $(0; +\\infty)$, luôn đi qua điểm $(1; 0)$, nhận trục tung $Oy$ làm tiệm cận đứng. Đồng biến khi $a > 1$ và nghịch biến khi $0 < a < 1$.',
+      '3. Giải bất phương trình Mũ: $a^{f(x)} > a^{g(x)} \\iff f(x) > g(x)$ nếu $a > 1$, và $f(x) < g(x)$ nếu $0 < a < 1$.',
+      '4. Giải bất phương trình Logarit: Nếu $0 < a < 1$ thì $\\log_a f(x) \\ge b \\iff 0 < f(x) \\le a^b$.'
+    ],
+    keyFormulas: [
+      '(a^u)\' = u\' a^u \\ln a, \\quad (\\log_a u)\' = \\frac{u\'}{u \\ln a}',
+      '\\log_a f(x) > b \\iff \\begin{cases} f(x) > a^b & (a > 1) \\\\ 0 < f(x) < a^b & (0 < a < 1) \\end{cases}'
+    ],
+    flashcards: [
+      {
+        front: 'Tập xác định của hàm số $y = \\ln(4 - x^2)$ là gì?',
+        back: '$4 - x^2 > 0 \\iff -2 < x < 2$, tức tập xác định $D = (-2; 2)$.',
+        tip: 'Biểu thức bên trong $\\ln$ hoặc $\\log_a$ luôn phải lớn hơn hẳn $0$!'
+      }
+    ],
+    sampleProblems: [
+      {
+        question: 'Đạo hàm của hàm số $y = \\ln(x^2 + 1)$ là:',
+        options: ['A. $y\' = \\frac{2x}{x^2 + 1}$', 'B. $y\' = \\frac{1}{x^2 + 1}$', 'C. $y\' = \\frac{2x}{(x^2 + 1)\\ln 10}$', 'D. $y\' = 2x\\ln(x^2 + 1)$'],
+        correctIndex: 0,
+        explanation: 'Áp dụng công thức $(\\ln u)\' = \\frac{u\'}{u}$ với $u = x^2 + 1 \\implies y\' = \\frac{2x}{x^2 + 1}$.'
+      },
+      {
+        question: 'Tập nghiệm của bất phương trình $\\left(\\frac{1}{2}\\right)^{x - 1} > 4$ là:',
+        options: ['A. $(-\\infty; -1)$', 'B. $(-1; +\\infty)$', 'C. $(-\\infty; 3)$', 'D. $(3; +\\infty)$'],
+        correctIndex: 0,
+        explanation: 'Viết $4 = \\left(\\frac{1}{2}\\right)^{-2}$. Vì cơ số $\\frac{1}{2} < 1$ nên bất phương trình tương đương $x - 1 < -2 \\iff x < -1$.'
+      }
+    ]
   }
 ];
 

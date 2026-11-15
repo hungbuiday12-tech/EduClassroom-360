@@ -1752,6 +1752,581 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
     ]
   },
 
+  // ---------- BỔ SUNG ĐẦY ĐỦ CHƯƠNG TRÌNH VIETJACK LÍ 9–12 ----------
+  {
+    id: 'phys-9-energy-refract',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'Hệ thống kiến thức Lớp 9 · Quang học & Năng lượng Ánh sáng',
+    sourceTag: 'SGK KHTN 9 (KNTT / CTST / Cánh Diều) · VietJack',
+    lessonNumber: 18,
+    title: 'Tán sắc Ánh sáng qua Lăng kính, Màu sắc & Bảo toàn Năng lượng (Lớp 9)',
+    subtitle: 'Sự khúc xạ qua lăng kính, phân tích ánh sáng trắng thành quang phổ, hiệu ứng màu sắc và bảo toàn năng lượng',
+    description:
+      'Hoàn thiện chương trình KHTN 9 VietJack: giải thích hiện tượng tán sắc ánh sáng trắng qua lăng kính (từ đỏ đến tím), sự hấp thụ – phản xạ màu sắc của các vật và định luật bảo toàn năng lượng trong thực tiễn.',
+    theorySections: [
+      {
+        heading: '1. Hiện tượng Tán sắc ánh sáng qua Lăng kính',
+        content:
+          '• Khi chiếu chùm sáng trắng hẹp qua lăng kính thủy tinh, tia sáng bị lệch về phía đáy lăng kính và tách thành dải màu liên tục từ **Đỏ, Cam, Vàng, Lục, Lam, Chàm, Tím**.\n• Nguyên nhân: Chiết suất của thủy tinh đối với ánh sáng đơn sắc khác nhau là khác nhau ($n_{\\text{đỏ}} < n_{\\text{tím}}$), nên tia đỏ lệch ít nhất và tia tím lệch nhiều nhất.'
+      },
+      {
+        heading: '2. Ánh sáng đơn sắc & Màu sắc các vật',
+        content:
+          '• Ánh sáng đơn sắc là ánh sáng có một màu nhất định và không bị tán sắc khi truyền qua lăng kính.\n• Một vật có màu nào dưới ánh sáng trắng vì vật đó phản xạ mạnh ánh sáng màu đó và hấp thụ các màu còn lại (vật màu đen hấp thụ hầu hết ánh sáng).'
+      },
+      {
+        heading: '3. Năng lượng Tái tạo & Hiệu suất sử dụng Năng lượng',
+        content:
+          '• Năng lượng không tự sinh ra và không tự mất đi, chỉ chuyển hóa từ dạng này sang dạng khác hoặc truyền từ vật này sang vật khác.\n• Hiệu suất năng lượng: $H = \\frac{W_{\\text{có ích}}}{W_{\\text{toàn phần}}} \\cdot 100\\% < 100\\%$.'
+      }
+    ],
+    keyFormulas: [
+      'n_1 \\sin i = n_2 \\sin r \\quad (n_{\\text{đỏ}} < n_{\\text{tím}})',
+      'H = \\frac{W_{\\text{ích}}}{W_{\\text{tp}}} \\cdot 100\\%'
+    ],
+    simulationType: 'light_refraction',
+    sim3dType: 'optics_3d',
+    defaultParams: { n1: 1.0, n2: 1.52, angleIncidence: 40 },
+    paramBounds: {
+      n1: { min: 1.0, max: 1.8, step: 0.05, unit: '', label: 'Chiết suất n₁' },
+      n2: { min: 1.0, max: 2.4, step: 0.05, unit: '', label: 'Chiết suất lăng kính n₂' },
+      angleIncidence: { min: 0, max: 85, step: 1, unit: '°', label: 'Góc tới i' }
+    },
+    practiceExercises: [
+      {
+        source: 'VietJack · KHTN 9 KNTT',
+        question: 'Khi chiếu chùm ánh sáng trắng hẹp đi qua một lăng kính thủy tinh, tia sáng bị lệch về phía đáy ít nhất là tia màu:',
+        options: ['A. Đỏ', 'B. Vàng', 'C. Lục', 'D. Tím'],
+        correctIndex: 0,
+        explanation: 'Trong thủy tinh, ánh sáng đỏ có chiết suất nhỏ nhất ($n_{\\text{đỏ}} < \\dots < n_{\\text{tím}}$) nên bị khúc xạ lệch ít nhất, còn tia tím lệch nhiều nhất.'
+      },
+      {
+        source: 'Loigiaihay · KHTN 9 CTST',
+        question: 'Dưới ánh sáng mặt trời (ánh sáng trắng), một bông hoa hồng nhung có màu đỏ là do:',
+        options: [
+          'A. Cánh hoa phản xạ tốt ánh sáng đỏ và hấp thụ các ánh sáng màu khác',
+          'B. Cánh hoa tự phát ra ánh sáng đỏ',
+          'C. Cánh hoa hấp thụ toàn bộ ánh sáng đỏ',
+          'D. Cánh hoa truyền thẳng ánh sáng xanh'
+        ],
+        correctIndex: 0,
+        explanation: 'Vật màu đỏ phản xạ mạnh thành phần ánh sáng đỏ trong ánh sáng trắng chiếu tới mắt người quan sát.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'VietJack · Tự luận KHTN 9',
+        question: 'Chiếu một tia sáng đơn sắc từ không khí ($n_1 = 1$) vào thủy tinh chiết suất $n_2 = 1{,}5$ dưới góc tới $i = 45^\\circ$. Tính góc khúc xạ $r$ và góc lệch $D = |i - r|$ tại mặt phân cách.',
+        hints: ['Áp dụng định luật khúc xạ $\\sin r = \\frac{n_1}{n_2}\\sin i$.'],
+        solutionSteps: [
+          'Bước 1: $1 \\cdot \\sin 45^\\circ = 1{,}5 \\cdot \\sin r \\implies \\sin r = \\frac{\\sqrt{2}/2}{1{,}5} \\approx 0{,}4714$.',
+          'Bước 2: Suy ra $r \\approx 28{,}1^\\circ$ và góc lệch tia sáng $D = 45^\\circ - 28{,}1^\\circ = 16{,}9^\\circ$.'
+        ],
+        finalAnswer: '$r \\approx 28{,}1^\\circ$; góc lệch $D \\approx 16{,}9^\\circ$.'
+      }
+    ]
+  },
+
+  {
+    id: 'phys-10-circular',
+    track: 'khong_chuyen',
+    grade: 'Lớp 10',
+    stageLabel: 'Hệ thống kiến thức Lớp 10 · Chuyển động Tròn đều',
+    sourceTag: 'SGK Vật lí 10 (KNTT / CTST / Cánh Diều) · VietJack',
+    lessonNumber: 19,
+    title: 'Chuyển động Tròn đều, Gia tốc Hướng tâm & Lực Hướng tâm (Lớp 10)',
+    subtitle: 'Tốc độ góc ω, chu kì T, tần số f, tốc độ dài v = ωr và lực hướng tâm F_ht = mv²/r kèm mô phỏng 2D/3D',
+    description:
+      'Bài giảng VietJack Vật lí 10 về động học và động lực học chuyển động tròn đều: quan hệ giữa tốc độ dài và tốc độ góc, vectơ vận tốc tiếp tuyến, gia tốc hướng tâm và các tình huống lực hướng tâm thực tế (xe qua cầu, vệ tinh, con lắc nón).',
+    theorySections: [
+      {
+        heading: '1. Các đại lượng đặc trưng của Chuyển động Tròn đều',
+        content:
+          '• Tốc độ góc: $\\omega = \\frac{\\Delta \\theta}{\\Delta t}$ (rad/s). Quan hệ chu kì $T$ và tần số $f$: $\\omega = \\frac{2\\pi}{T} = 2\\pi f$.\n• Tốc độ dài (tiếp tuyến quỹ đạo): $v = \\omega R$. Dù độ lớn $v$ không đổi nhưng hướng của vectơ $\\vec{v}$ liên tục thay đổi theo phương tiếp tuyến.'
+      },
+      {
+        heading: '2. Gia tốc Hướng tâm & Lực Hướng tâm',
+        content:
+          '• Gia tốc hướng tâm luôn hướng vào tâm quỹ đạo tròn, đặc trưng cho sự thay đổi hướng của vận tốc: $a_{ht} = \\frac{v^2}{R} = \\omega^2 R$.\n• Theo định luật II Newton, hợp lực gây ra gia tốc hướng tâm gọi là lực hướng tâm: $F_{ht} = m a_{ht} = m \\frac{v^2}{R} = m\\omega^2 R$.'
+      },
+      {
+        heading: '3. Ứng dụng thực tế',
+        content:
+          '• Xe đi qua đoạn đường vòng nằm ngang: lực ma sát nghỉ đóng vai trò lực hướng tâm ($F_{msn} = m v^2 / R \\le \\mu m g \\implies v_{\\max} = \\sqrt{\\mu g R}$).\n• Vệ tinh quay quanh Trái Đất: lực hấp dẫn đóng vai trò lực hướng tâm.'
+      }
+    ],
+    keyFormulas: [
+      '\\omega = \\frac{2\\pi}{T} = 2\\pi f, \\quad v = \\omega R',
+      'a_{ht} = \\frac{v^2}{R} = \\omega^2 R',
+      'F_{ht} = m\\frac{v^2}{R} = m\\omega^2 R'
+    ],
+    simulationType: 'circular_motion',
+    sim3dType: 'circular_motion_3d',
+    defaultParams: { radius: 2.0, omega: 2.5, mass: 1.5 },
+    paramBounds: {
+      radius: { min: 0.8, max: 4.0, step: 0.2, unit: 'm', label: 'Bán kính quỹ đạo R' },
+      omega: { min: 0.5, max: 6.0, step: 0.2, unit: 'rad/s', label: 'Tốc độ góc ω' },
+      mass: { min: 0.5, max: 5.0, step: 0.5, unit: 'kg', label: 'Khối lượng vật m' }
+    },
+    practiceExercises: [
+      {
+        source: 'VietJack · Vật lí 10 KNTT',
+        question: 'Một đĩa tròn quay đều quanh trục với tốc độ $120\\text{ vòng/phút}$. Chu kì $T$ và tốc độ góc $\\omega$ của đĩa là:',
+        options: ['A. $T = 0{,}5\\text{ s}; \\omega = 4\\pi\\text{ rad/s}$', 'B. $T = 2\\text{ s}; \\omega = \\pi\\text{ rad/s}$', 'C. $T = 0{,}5\\text{ s}; \\omega = 2\\pi\\text{ rad/s}$', 'D. $T = 60\\text{ s}; \\omega = 120\\text{ rad/s}$'],
+        correctIndex: 0,
+        explanation: 'Tần số $f = \\frac{120}{60} = 2\\text{ Hz} \\implies T = \\frac{1}{f} = 0{,}5\\text{ s}$ và $\\omega = 2\\pi f = 4\\pi\\text{ rad/s}$.'
+      },
+      {
+        source: 'Loigiaihay · Lực hướng tâm 10',
+        question: 'Một ô tô khối lượng $1200\\text{ kg}$ chạy với tốc độ $10\\text{ m/s}$ trên đường vòng bán kính $50\\text{ m}$. Độ lớn lực hướng tâm tác dụng lên ô tô là:',
+        options: ['A. $2400\\text{ N}$', 'B. $240\\text{ N}$', 'C. $1200\\text{ N}$', 'D. $6000\\text{ N}$'],
+        correctIndex: 0,
+        explanation: '$F_{ht} = m\\frac{v^2}{R} = 1200 \\cdot \\frac{10^2}{50} = 2400\\text{ N}$.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'VietJack · Tự luận Vật lí 10',
+        question: 'Một vận động viên đạp xe trên đoạn đường vòng nằm ngang bán kính $R = 25\\text{ m}$, hệ số ma sát nghỉ cực đại giữa lốp và mặt đường là $\\mu = 0{,}4$ ($g = 10\\text{ m/s}^2$). Tính tốc độ tối đa để xe không bị trượt văng ra ngoài.',
+        hints: ['Lực ma sát nghỉ đóng vai trò lực hướng tâm: $m\\frac{v^2}{R} \\le \\mu mg$.'],
+        solutionSteps: [
+          'Bước 1: Điều kiện xe không bị trượt: $F_{ht} \\le F_{msn\\max} \\iff m\\frac{v^2}{R} \\le \\mu m g$.',
+          'Bước 2: Rút gọn $m$: $v_{\\max} = \\sqrt{\\mu g R} = \\sqrt{0{,}4 \\cdot 10 \\cdot 25} = \\sqrt{100} = 10\\text{ m/s} = 36\\text{ km/h}$.'
+        ],
+        finalAnswer: '$v_{\\max} = 10\\text{ m/s}$ ($36\\text{ km/h}$).'
+      }
+    ]
+  },
+
+  {
+    id: 'phys-10-torque-fluid',
+    track: 'khong_chuyen',
+    grade: 'Lớp 10',
+    stageLabel: 'Hệ thống kiến thức Lớp 10 · Cân bằng Vật rắn & Chất lỏng',
+    sourceTag: 'SGK Vật lí 10 (KNTT / CTST / Cánh Diều) · VietJack',
+    lessonNumber: 20,
+    title: 'Moment Lực, Ngẫu lực, Cân bằng Vật rắn & Áp suất Chất lỏng (Lớp 10)',
+    subtitle: 'Quy tắc moment lực M = F·d, điều kiện cân bằng tổng quát, khối lượng riêng và áp suất thủy tĩnh p = p₀ + ρgh',
+    description:
+      'Chương tĩnh học & chất lưu Vật lí 10 GDPT 2018: tính moment lực theo cánh tay đòn, áp dụng quy tắc tổng moment triệt tiêu giải bài toán đòn bẩy/thanh tựa và tính áp suất trong chất lỏng đứng yên.',
+    theorySections: [
+      {
+        heading: '1. Moment lực & Ngẫu lực',
+        content:
+          '• Moment lực đối với trục quay: $M = F \\cdot d$ (đơn vị $\\text{N}\\cdot\\text{m}$), trong đó $d$ là **cánh tay đòn** (khoảng cách vuông góc từ trục quay đến giá của lực).\n• Ngẫu lực là hệ hai lực song song, ngược chiều, có độ lớn bằng nhau tác dụng vào cùng một vật: $M_{\\text{ngẫu}} = F \\cdot d$.'
+      },
+      {
+        heading: '2. Điều kiện cân bằng tổng quát của Vật rắn',
+        content:
+          '• Điều kiện 1 (cân bằng tịnh tiến): Tổng tất cả các lực tác dụng bằng không ($\\sum \\vec{F} = \\vec{0}$).\n• Điều kiện 2 (cân bằng quay - Quy tắc Moment): Tổng các moment lực có xu hướng làm vật quay theo chiều kim đồng hồ bằng tổng các moment làm vật quay ngược chiều kim đồng hồ ($\\sum M_{\\text{thuận}} = \\sum M_{\\text{ngược}}$).'
+      },
+      {
+        heading: '3. Khối lượng riêng & Áp suất Chất lỏng',
+        content:
+          '• Khối lượng riêng $\\rho = \\frac{m}{V}$. Áp suất chất lỏng ở độ sâu $h$: $p = p_0 + \\rho g h$ (với $p_0$ là áp suất khí quyển mặt thoáng, $\\Delta p = \\rho g \\Delta h$).'
+      }
+    ],
+    keyFormulas: [
+      'M = F \\cdot d, \\quad \\sum M_{\\text{thuận}} = \\sum M_{\\text{ngược}}',
+      '\\sum \\vec{F} = \\vec{0}',
+      'p = p_0 + \\rho g h, \\quad \\Delta p = \\rho g \\Delta h'
+    ],
+    simulationType: 'kinematics_graphs',
+    sim3dType: 'kinematics_3d',
+    defaultParams: { v0: 4, accel: 2, duration: 8 },
+    paramBounds: {
+      v0: { min: 0, max: 15, step: 0.5, unit: 'm/s', label: 'Vận tốc đầu v₀' },
+      accel: { min: -4, max: 6, step: 0.5, unit: 'm/s²', label: 'Gia tốc a' },
+      duration: { min: 4, max: 14, step: 1, unit: 's', label: 'Thời gian t' }
+    },
+    practiceExercises: [
+      {
+        source: 'VietJack · Vật lí 10 · Moment lực',
+        question: 'Một lực có độ lớn $F = 20\\text{ N}$ tác dụng vào cờ lê, cánh tay đòn từ trục quay bu-lông tới giá của lực là $d = 25\\text{ cm}$. Moment của lực là:',
+        options: ['A. $5\\text{ N}\\cdot\\text{m}$', 'B. $500\\text{ N}\\cdot\\text{m}$', 'C. $0{,}8\\text{ N}\\cdot\\text{m}$', 'D. $80\\text{ N}\\cdot\\text{m}$'],
+        correctIndex: 0,
+        explanation: 'Đổi $d = 25\\text{ cm} = 0{,}25\\text{ m}$. Moment lực: $M = F \\cdot d = 20 \\cdot 0{,}25 = 5\\text{ N}\\cdot\\text{m}$.'
+      },
+      {
+        source: 'Loigiaihay · Áp suất thủy tĩnh 10',
+        question: 'Biết khối lượng riêng của nước biển là $\\rho = 1030\\text{ kg/m}^3$, $g = 10\\text{ m/s}^2$. Độ tăng áp suất chất lỏng khi lặn sâu thêm $10\\text{ m}$ là:',
+        options: ['A. $103\\,000\\text{ Pa}$', 'B. $10\\,300\\text{ Pa}$', 'C. $1\\,030\\text{ Pa}$', 'D. $103\\text{ Pa}$'],
+        correctIndex: 0,
+        explanation: '$\\Delta p = \\rho g \\Delta h = 1030 \\cdot 10 \\cdot 10 = 103\\,000\\text{ Pa}$.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'VietJack · Quy tắc Moment Vật lí 10',
+        question: 'Một thanh nhẹ $AB$ dài $1{,}2\\text{ m}$ đặt nằm ngang trên điểm tựa $O$ cách đầu $A$ một đoạn $0{,}4\\text{ m}$. Đầu $A$ treo vật $P_1 = 40\\text{ N}$. Cần treo vật $P_2$ có trọng lượng bao nhiêu ở đầu $B$ để thanh cân bằng nằm ngang?',
+        hints: ['Áp dụng $P_1 \\cdot OA = P_2 \\cdot OB$ với $OB = AB - OA = 0{,}8\\text{ m}$.'],
+        solutionSteps: [
+          'Bước 1: Cánh tay đòn từ $O$ tới $A$ là $d_1 = 0{,}4\\text{ m}$; tới $B$ là $d_2 = 1{,}2 - 0{,}4 = 0{,}8\\text{ m}$.',
+          'Bước 2: Quy tắc moment cân bằng quanh $O$: $P_1 d_1 = P_2 d_2 \\implies 40 \\cdot 0{,}4 = P_2 \\cdot 0{,}8 \\implies P_2 = 20\\text{ N}$.'
+        ],
+        finalAnswer: '$P_2 = 20\\text{ N}$.'
+      }
+    ]
+  },
+
+  {
+    id: 'phys-11-pendulum',
+    track: 'khong_chuyen',
+    grade: 'Lớp 11',
+    stageLabel: 'Hệ thống kiến thức Lớp 11 · Con lắc & Cộng hưởng cơ',
+    sourceTag: 'SGK Vật lí 11 (KNTT / CTST / Cánh Diều) · VietJack',
+    lessonNumber: 21,
+    title: 'Con lắc Đơn, Dao động Tắt dần & Hiện tượng Cộng hưởng Cơ (Lớp 11)',
+    subtitle: 'Chu kì con lắc đơn T = 2π√(l/g), dao động cưỡng bức và điều kiện xảy ra cộng hưởng cơ f = f₀',
+    description:
+      'Hoàn chỉnh chương Dao động Vật lí 11 theo VietJack: khảo sát chu kì con lắc đơn phụ thuộc chiều dài dây và gia tốc trọng trường, phân biệt dao động tắt dần – duy trì – cưỡng bức và ứng dụng phòng tránh cộng hưởng.',
+    theorySections: [
+      {
+        heading: '1. Con lắc đơn dao động điều hòa ($\alpha_0 \le 10^\circ$)',
+        content:
+          '• Tần số góc $\\omega = \\sqrt{\\frac{g}{l}}$, chu kì $T = 2\\pi\\sqrt{\\frac{l}{g}}$, tần số $f = \\frac{1}{2\\pi}\\sqrt{\\frac{g}{l}}$.\n• Chú ý: Chu kì con lắc đơn KHÔNG phụ thuộc vào khối lượng quả nặng $m$ và biên độ góc nhỏ $\\alpha_0$.'
+      },
+      {
+        heading: '2. Dao động Tắt dần & Dao động Duy trì',
+        content:
+          '• Dao động tắt dần có biên độ giảm dần theo thời gian do ma sát và lực cản môi trường (cơ năng chuyển thành nhiệt năng).\n• Dao động duy trì giữ biên độ không đổi bằng cách bù đúng phần năng lượng tiêu hao sau mỗi chu kì mà không làm thay đổi tần số riêng $f_0$.'
+      },
+      {
+        heading: '3. Dao động Cưỡng bức & Cộng hưởng cơ',
+        content:
+          '• Dao động cưỡng bức chịu tác dụng của ngoại lực tuần hoàn $F = F_0\\cos(\\Omega t)$, luôn có tần số bằng tần số ngoại lực $f = f_{\\text{ng}}$.\n• **Hiện tượng Cộng hưởng:** Khi tần số ngoại lực bằng tần số dao động riêng của hệ ($f_{\\text{ng}} = f_0$), biên độ dao động cưỡng bức tăng vọt lên giá trị cực đại.'
+      }
+    ],
+    keyFormulas: [
+      'T = 2\\pi\\sqrt{\\frac{l}{g}}, \\quad \\omega = \\sqrt{\\frac{g}{l}}',
+      'W = mgl(1 - \\cos\\alpha_0) \\approx \\frac{1}{2}mgl\\alpha_0^2',
+      'f_{\\text{cưỡng bức}} = f_0 \\implies \\text{Cộng hưởng } (A_{\\max})'
+    ],
+    simulationType: 'simple_pendulum',
+    sim3dType: 'pendulum_spring',
+    defaultParams: { length: 2.0, gravity: 9.8, theta0: 15 },
+    paramBounds: {
+      length: { min: 0.5, max: 4.0, step: 0.1, unit: 'm', label: 'Chiều dài dây l' },
+      gravity: { min: 1.6, max: 15.0, step: 0.2, unit: 'm/s²', label: 'Gia tốc g' },
+      theta0: { min: 5, max: 45, step: 1, unit: '°', label: 'Góc lệch ban đầu α₀' }
+    },
+    practiceExercises: [
+      {
+        source: 'VietJack · Vật lí 11 KNTT',
+        question: 'Tại nơi có $g = \\pi^2 \\approx 9{,}87\\text{ m/s}^2$, một con lắc đơn dài $l = 1\\text{ m}$ dao động nhỏ với chu kì là:',
+        options: ['A. $2\\text{ s}$', 'B. $1\\text{ s}$', 'C. $0{,}5\\text{ s}$', 'D. $4\\text{ s}$'],
+        correctIndex: 0,
+        explanation: '$T = 2\\pi\\sqrt{\\frac{l}{g}} = 2\\pi\\sqrt{\\frac{1}{\\pi^2}} = 2\\text{ s}$.'
+      },
+      {
+        source: 'Loigiaihay · Cộng hưởng cơ 11',
+        question: 'Một hành khách xách xô nước đi bộ với tần số bước $f_0$. Biết nước trong xô có chu kì dao động riêng $T = 0{,}8\\text{ s}$. Nước bị sóng sánh mạnh nhất (cộng hưởng) khi tần số bước chân của người đó bằng:',
+        options: ['A. $1{,}25\\text{ Hz}$', 'B. $0{,}8\\text{ Hz}$', 'C. $2{,}5\\text{ Hz}$', 'D. $1{,}0\\text{ Hz}$'],
+        correctIndex: 0,
+        explanation: 'Cộng hưởng xảy ra khi tần số bước chân bằng tần số riêng: $f = f_0 = \\frac{1}{T} = \\frac{1}{0{,}8} = 1{,}25\\text{ Hz}$.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'VietJack · Tự luận Con lắc đơn 11',
+        question: 'Tại cùng một vị trí, con lắc đơn chiều dài $l_1$ dao động nhỏ với chu kì $T_1 = 1{,}2\\text{ s}$, con lắc chiều dài $l_2$ có chu kì $T_2 = 1{,}6\\text{ s}$. Tính chu kì của con lắc đơn có chiều dài $l = l_1 + l_2$.',
+        hints: ['Vì $T \\propto \\sqrt{l} \\implies T^2 \\propto l$, do đó $T^2 = T_1^2 + T_2^2$.'],
+        solutionSteps: [
+          'Bước 1: Từ $T = 2\\pi\\sqrt{\\frac{l}{g}} \\implies l = \\frac{g}{4\\pi^2}T^2$.',
+          'Bước 2: Vì $l = l_1 + l_2 \\implies T^2 = T_1^2 + T_2^2 = 1{,}2^2 + 1{,}6^2 = 1{,}44 + 2{,}56 = 4{,}0 \\implies T = 2{,}0\\text{ s}$.'
+        ],
+        finalAnswer: '$T = 2{,}0\\text{ s}$.'
+      }
+    ]
+  },
+
+  {
+    id: 'phys-11-sound-standing',
+    track: 'khong_chuyen',
+    grade: 'Lớp 11',
+    stageLabel: 'Hệ thống kiến thức Lớp 11 · Sóng dừng & Sóng âm',
+    sourceTag: 'SGK Vật lí 11 (KNTT / CTST / Cánh Diều) · VietJack',
+    lessonNumber: 22,
+    title: 'Sóng dừng trên Dây, Giao thoa & Sóng âm (Lớp 11)',
+    subtitle: 'Điều kiện có sóng dừng với 2 đầu cố định hoặc 1 đầu tự do, khoảng cách nút – bụng và đặc trưng vật lí của âm',
+    description:
+      'Mở rộng toàn diện chương Sóng Vật lí 11 VietJack: sự phản xạ sóng, điều kiện hình thành bụng sóng và nút sóng trong sóng dừng trên dây đàn/ống sáo, bước sóng $\\lambda = v/f$ và mức cường độ âm.',
+    theorySections: [
+      {
+        heading: '1. Đặc điểm của Sóng dừng',
+        content:
+          '• Sóng dừng hình thành do giao thoa của sóng tới và sóng phản xạ trên cùng một phương truyền.\n• Khoảng cách giữa hai nút liên tiếp (hoặc hai bụng liên tiếp) là $\\frac{\\lambda}{2}$. Khoảng cách giữa một nút và một bụng kề nhau là $\\frac{\\lambda}{4}$.'
+      },
+      {
+        heading: '2. Điều kiện có Sóng dừng trên dây chiều dài l',
+        content:
+          '• **Hai đầu cố định:** $l = k\\frac{\\lambda}{2}$ ($k \\in \\mathbb{N}^*$ là số bó sóng/số bụng sóng; số nút = $k + 1$).\n• **Một đầu cố định, một đầu tự do:** $l = (2k + 1)\\frac{\\lambda}{4}$ (số bụng = số nút = $k + 1$).'
+      },
+      {
+        heading: '3. Sóng âm & Đặc trưng Vật lí – Sinh lí',
+        content:
+          '• Âm nghe được có tần số $16\\text{ Hz} \\le f \\le 20\\,000\\text{ Hz}$; hạ âm ($f < 16\\text{ Hz}$); siêu âm ($f > 20\\,000\\text{ Hz}$).\n• Độ cao gắn với **tần số** $f$; Độ to gắn với **mức cường độ âm** $L = 10\\lg\\frac{I}{I_0}$ (dB); Âm sắc gắn với **đồ thị dao động âm**.'
+      }
+    ],
+    keyFormulas: [
+      'l = k\\frac{\\lambda}{2} \\quad (\\text{2 đầu cố định})',
+      'l = (2k + 1)\\frac{\\lambda}{4} \\quad (\\text{1 đầu cố định, 1 đầu tự do})',
+      'I = \\frac{P}{4\\pi r^2}, \\quad L = 10\\lg\\frac{I}{I_0}'
+    ],
+    simulationType: 'wave_interference',
+    sim3dType: 'wave_ripple',
+    defaultParams: { freq: 2.5, wavelength: 1.4, sourceDist: 4.0 },
+    paramBounds: {
+      freq: { min: 0.8, max: 5.0, step: 0.2, unit: 'Hz', label: 'Tần số sóng f' },
+      wavelength: { min: 0.6, max: 3.0, step: 0.2, unit: 'm', label: 'Bước sóng λ' },
+      sourceDist: { min: 2.0, max: 8.0, step: 0.5, unit: 'm', label: 'Khoảng cách 2 nguồn S₁S₂' }
+    },
+    practiceExercises: [
+      {
+        source: 'VietJack · Sóng dừng 11',
+        question: 'Trên một sợi dây dài $l = 1{,}2\\text{ m}$ hai đầu cố định đang có sóng dừng với $3$ bó sóng (3 bụng sóng). Bước sóng $\\lambda$ của sóng trên dây là:',
+        options: ['A. $0{,}8\\text{ m}$', 'B. $0{,}4\\text{ m}$', 'C. $1{,}2\\text{ m}$', 'D. $0{,}6\\text{ m}$'],
+        correctIndex: 0,
+        explanation: 'Hai đầu cố định có $k = 3$ bó sóng: $l = k\\frac{\\lambda}{2} \\implies 1{,}2 = 3 \\cdot \\frac{\\lambda}{2} \\implies \\lambda = 0{,}8\\text{ m}$.'
+      },
+      {
+        source: 'Loigiaihay · Sóng âm 11',
+        question: 'Đặc trưng sinh lí nào của âm gắn liền với tần số của âm?',
+        options: ['A. Độ cao', 'B. Độ to', 'C. Âm sắc', 'D. Tốc độ truyền âm'],
+        correctIndex: 0,
+        explanation: 'Độ cao của âm phụ thuộc trực tiếp vào tần số âm (tần số càng lớn âm nghe càng cao/bổng).'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'VietJack · Tự luận Sóng dừng 11',
+        question: 'Một dây đàn ghi-ta dài $60\\text{ cm}$ hai đầu cố định phát ra âm cơ bản có tần số $f_1 = 220\\text{ Hz}$. Tính tốc độ truyền sóng $v$ trên dây đàn.',
+        hints: ['Âm cơ bản ứng với $k = 1$ bó sóng trên toàn chiều dài dây ($l = \\lambda/2$).'],
+        solutionSteps: [
+          'Bước 1: Với âm cơ bản ($k = 1$), hai đầu cố định nên $l = \\frac{\\lambda}{2} \\implies \\lambda = 2l = 1{,}2\\text{ m}$.',
+          'Bước 2: Tốc độ truyền sóng trên dây: $v = \\lambda f_1 = 1{,}2 \\cdot 220 = 264\\text{ m/s}$.'
+        ],
+        finalAnswer: '$v = 264\\text{ m/s}$.'
+      }
+    ]
+  },
+
+  {
+    id: 'phys-12-ac-rlc',
+    track: 'khong_chuyen',
+    grade: 'Lớp 12',
+    stageLabel: 'Hệ thống kiến thức Lớp 12 · Dòng điện Xoay chiều',
+    sourceTag: 'SGK Vật lí 12 (KNTT / CTST / Cánh Diều) · VietJack',
+    lessonNumber: 23,
+    title: 'Dòng điện Xoay chiều, Đoạn mạch RLC Nối tiếp & Cộng hưởng Điện (Lớp 12)',
+    subtitle: 'Cảm kháng Z_L, Dung kháng Z_C, Tổng trở Z, Giản đồ vectơ Fresnel, Hệ số công suất cos φ và Cộng hưởng Z_L = Z_C',
+    description:
+      'Chuyên đề trụ cột Điện xoay chiều Vật lí 12 VietJack: trực quan hóa giản đồ vectơ quay Fresnel và dao động kí $u(t), i(t)$ khi thay đổi tần số $f, R, L, C$, kiểm chứng hiện tượng cộng hưởng điện ($Z_L = Z_C, \\cos\\varphi = 1$).',
+    theorySections: [
+      {
+        heading: '1. Giá trị hiệu dụng & Cảm kháng – Dung kháng',
+        content:
+          '• Điện áp hiệu dụng $U = \\frac{U_0}{\\sqrt{2}}$, cường độ hiệu dụng $I = \\frac{I_0}{\\sqrt{2}}$ (cùng giá trị nhiệt lượng tỏa ra trong 1 chu kì như dòng không đổi tương đương).\n• Cảm kháng cuộn dây thuần cảm: $Z_L = \\omega L = 2\\pi f L$ ($u_L$ sớm pha $\\frac{\\pi}{2}$ so với $i$).\n• Dung kháng tụ điện: $Z_C = \\frac{1}{\\omega C} = \\frac{1}{2\\pi f C}$ ($u_C$ trễ pha $\\frac{\\pi}{2}$ so với $i$).'
+      },
+      {
+        heading: '2. Định luật Ôm mạch RLC nối tiếp & Giản đồ Fresnel',
+        content:
+          '• Tổng trở toàn mạch: $Z = \\sqrt{R^2 + (Z_L - Z_C)^2}$, cường độ hiệu dụng $I = \\frac{U}{Z}$.\n• Điện áp hiệu dụng toàn mạch: $U = \\sqrt{U_R^2 + (U_L - U_C)^2}$.\n• Độ lệch pha $\\varphi = \\varphi_u - \\varphi_i$ xác định qua $\\tan\\varphi = \\frac{Z_L - Z_C}{R}$ và hệ số công suất $\\cos\\varphi = \\frac{R}{Z}$.'
+      },
+      {
+        heading: '3. Công suất & Hiện tượng Cộng hưởng Điện',
+        content:
+          '• Công suất tiêu thụ: $P = U I \\cos\\varphi = I^2 R$.\n• Khi $Z_L = Z_C \\iff \\omega = \\frac{1}{\\sqrt{LC}}$ ($f = \\frac{1}{2\\pi\\sqrt{LC}}$), mạch xảy ra **Cộng hưởng điện**: $Z_{\\min} = R$, $I_{\\max} = \\frac{U}{R}$, $\\cos\\varphi = 1$ ($u, i$ cùng pha) và $P_{\\max} = \\frac{U^2}{R}$.'
+      }
+    ],
+    keyFormulas: [
+      'Z_L = \\omega L, \\quad Z_C = \\frac{1}{\\omega C}, \\quad Z = \\sqrt{R^2 + (Z_L - Z_C)^2}',
+      'I = \\frac{U}{Z}, \\quad \\tan\\varphi = \\frac{Z_L - Z_C}{R}, \\quad P = U I \\cos\\varphi',
+      '\\text{Cộng hưởng: } Z_L = Z_C \\iff f_0 = \\frac{1}{2\\pi\\sqrt{LC}}'
+    ],
+    simulationType: 'ac_rlc_circuit',
+    sim3dType: 'ac_generator_3d',
+    defaultParams: { uEff: 120, freq: 50, resR: 40, indL: 0.3, capC: 40 },
+    paramBounds: {
+      uEff: { min: 20, max: 240, step: 10, unit: 'V', label: 'Điện áp hiệu dụng U' },
+      freq: { min: 10, max: 120, step: 1, unit: 'Hz', label: 'Tần số dòng điện f' },
+      resR: { min: 10, max: 150, step: 5, unit: 'Ω', label: 'Điện trở thuần R' },
+      indL: { min: 0.05, max: 0.8, step: 0.01, unit: 'H', label: 'Độ tự cảm L' },
+      capC: { min: 10, max: 120, step: 2, unit: 'µF', label: 'Điện dung tụ C' }
+    },
+    practiceExercises: [
+      {
+        source: 'VietJack · Vật lí 12 · Mạch RLC',
+        question: 'Đặt điện áp xoay chiều $U = 100\\text{ V}$ vào hai đầu đoạn mạch RLC nối tiếp gồm $R = 30\\,\\Omega$, $Z_L = 70\\,\\Omega$, $Z_C = 30\\,\\Omega$. Tổng trở $Z$ và cường độ hiệu dụng $I$ của mạch là:',
+        options: ['A. $Z = 50\\,\\Omega; I = 2\\text{ A}$', 'B. $Z = 70\\,\\Omega; I = 1{,}43\\text{ A}$', 'C. $Z = 130\\,\\Omega; I = 0{,}77\\text{ A}$', 'D. $Z = 40\\,\\Omega; I = 2{,}5\\text{ A}$'],
+        correctIndex: 0,
+        explanation: 'Tổng trở $Z = \\sqrt{R^2 + (Z_L - Z_C)^2} = \\sqrt{30^2 + (70 - 30)^2} = \\sqrt{900 + 1600} = 50\\,\\Omega$. Cường độ hiệu dụng $I = \\frac{U}{Z} = \\frac{100}{50} = 2\\text{ A}$.'
+      },
+      {
+        source: 'Loigiaihay · Cộng hưởng điện 12',
+        question: 'Trong mạch RLC nối tiếp, khi xảy ra hiện tượng cộng hưởng điện thì đại lượng nào sau đây KHÔNG đạt giá trị cực đại?',
+        options: ['A. Tổng trở $Z$', 'B. Cường độ hiệu dụng $I$', 'C. Công suất tiêu thụ $P$', 'D. Hệ số công suất $\\cos\\varphi$'],
+        correctIndex: 0,
+        explanation: 'Khi cộng hưởng ($Z_L = Z_C$), tổng trở đạt giá trị CỰC TIỂU $Z_{\\min} = R$, nhờ đó $I, P, \\cos\\varphi$ đạt cực đại.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'VietJack · Tự luận RLC & Cộng hưởng',
+        question: 'Cho đoạn mạch RLC nối tiếp gồm $R = 50\\,\\Omega$, cuộn cảm thuần $L = \\frac{1}{\\pi}\\text{ H}$ và tụ điện $C = \\frac{10^{-4}}{\\pi}\\text{ F}$, đặt vào điện áp $u = 100\\sqrt{2}\\cos(100\\pi t)\\text{ V}$. Tính: a) $Z_L, Z_C, Z$; b) Cường độ dòng điện hiệu dụng $I$ và công suất $P$.',
+        hints: ['Với $\\omega = 100\\pi\\text{ rad/s}$, tính $Z_L = \\omega L = 100\\,\\Omega$ và $Z_C = \\frac{1}{\\omega C} = 100\\,\\Omega$.'],
+        solutionSteps: [
+          'a) Ta có $\\omega = 100\\pi\\text{ rad/s}$: $Z_L = 100\\pi \\cdot \\frac{1}{\\pi} = 100\\,\\Omega$; $Z_C = \\frac{1}{100\\pi \\cdot \\frac{10^{-4}}{\\pi}} = 100\\,\\Omega$. Vì $Z_L = Z_C$ nên mạch đang cộng hưởng: $Z = R = 50\\,\\Omega$.',
+          'b) Điện áp hiệu dụng $U = 100\\text{ V} \\implies I = \\frac{U}{Z} = \\frac{100}{50} = 2\\text{ A}$. Công suất $P = I^2 R = 2^2 \\cdot 50 = 200\\text{ W}$.'
+        ],
+        finalAnswer: 'a) $Z_L = Z_C = 100\\,\\Omega$, $Z = 50\\,\\Omega$; b) $I = 2\\text{ A}$, $P = 200\\text{ W}$.'
+      }
+    ]
+  },
+
+  {
+    id: 'phys-12-ac-gen',
+    track: 'khong_chuyen',
+    grade: 'Lớp 12',
+    stageLabel: 'Hệ thống kiến thức Lớp 12 · Máy phát điện & Truyền tải Điện năng',
+    sourceTag: 'SGK Vật lí 12 (KNTT / CTST / Cánh Diều) · VietJack',
+    lessonNumber: 24,
+    title: 'Máy phát điện Xoay chiều, Máy biến áp & Truyền tải Điện năng (Lớp 12)',
+    subtitle: 'Suất điện động cảm ứng quay trong từ trường e = ωNBS sin(ωt), tỉ số máy biến áp và giảm hao phí ΔP = P²R/U²',
+    description:
+      'Kết nối Cảm ứng điện từ sang Máy điện xoay chiều VietJack 12: quan sát khung dây quay 3D sinh dòng điện xoay chiều, công thức tần số $f = np$, máy biến áp lý tưởng và bài toán nâng điện áp truyền tải đi xa.',
+    theorySections: [
+      {
+        heading: '1. Nguyên tắc tạo dòng điện xoay chiều & Máy phát điện',
+        content:
+          '• Khung dây diện tích $S$, gồm $N$ vòng quay đều với tốc độ góc $\\omega$ trong từ trường đều $\\vec{B}$: Từ thông $\\Phi = NBS\\cos(\\omega t)$ sinh ra suất điện động xoay chiều $e = -\\Phi\' = \\omega N B S \\sin(\\omega t)$.\n• Tần số dòng điện do máy phát có $p$ cặp cực quay $n$ vòng/giây (vòng/s): $f = n \\cdot p$.'
+      },
+      {
+        heading: '2. Máy biến áp Lý tưởng',
+        content:
+          '• Hoạt động dựa trên hiện tượng cảm ứng điện từ để biến đổi điện áp xoay chiều (không biến đổi tần số $f$).\n• Công thức tỉ lệ giữa hai cuộn dây sơ cấp ($N_1$) và thứ cấp ($N_2$): $\\frac{U_1}{U_2} = \\frac{N_1}{N_2} = \\frac{I_2}{I_1}$ (bỏ qua hao phí).'
+      },
+      {
+        heading: '3. Truyền tải Điện năng đi xa',
+        content:
+          '• Công suất hao phí tỏa nhiệt trên đường dây điện trở $R$ khi truyền đi công suất $P$ ở điện áp $U$: $\\Delta P = I^2 R = \\frac{P^2 R}{U^2 \\cos^2\\varphi}$.\n• Để giảm hao phí tối ưu, người ta dùng máy tăng áp ở đầu phát: nếu tăng $U$ lên $k$ lần thì công suất hao phí $\\Delta P$ giảm đi $k^2$ lần!'
+      }
+    ],
+    keyFormulas: [
+      'E_0 = \\omega N B S, \\quad f = n \\cdot p \\quad (\\text{vòng/s})',
+      '\\frac{U_1}{U_2} = \\frac{N_1}{N_2} = \\frac{I_2}{I_1}',
+      '\\Delta P = \\frac{P^2 R}{U^2 \\cos^2\\varphi}'
+    ],
+    simulationType: 'magnetic_induction',
+    sim3dType: 'ac_generator_3d',
+    defaultParams: { bField: 0.8, speed: 3.0, area: 1.4 },
+    paramBounds: {
+      bField: { min: 0.2, max: 2.0, step: 0.1, unit: 'T', label: 'Từ trường B' },
+      speed: { min: 0.5, max: 6.0, step: 0.5, unit: 'rad/s', label: 'Tốc độ quay rôto ω' },
+      area: { min: 0.5, max: 2.5, step: 0.1, unit: 'm²', label: 'Diện tích khung dây' }
+    },
+    practiceExercises: [
+      {
+        source: 'VietJack · Vật lí 12 · Truyền tải điện',
+        question: 'Trong quá trình truyền tải điện năng đi xa, nếu tăng điện áp hiệu dụng ở trạm phát điện lên $5$ lần (giữ nguyên công suất truyền đi và hệ số công suất $\\cos\\varphi = 1$) thì công suất hao phí trên đường dây sẽ:',
+        options: ['A. Giảm $25$ lần', 'B. Giảm $5$ lần', 'C. Tăng $25$ lần', 'D. Giảm $10$ lần'],
+        correctIndex: 0,
+        explanation: 'Vì $\\Delta P = \\frac{P^2 R}{U^2}$ tỉ lệ nghịch với $U^2$, nên khi tăng $U$ lên $5$ lần thì $\\Delta P$ giảm $5^2 = 25$ lần.'
+      },
+      {
+        source: 'Loigiaihay · Máy biến áp 12',
+        question: 'Một máy biến áp lý tưởng có cuộn sơ cấp $1000$ vòng nối vào mạng điện $U_1 = 220\\text{ V}$. Để thu được điện áp thứ cấp $U_2 = 110\\text{ V}$, số vòng dây cuộn thứ cấp phải bằng:',
+        options: ['A. $500$ vòng', 'B. $2000$ vòng', 'C. $220$ vòng', 'D. $100$ vòng'],
+        correctIndex: 0,
+        explanation: '$\\frac{N_2}{N_1} = \\frac{U_2}{U_1} = \\frac{110}{220} = \\frac{1}{2} \\implies N_2 = 500$ vòng.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'VietJack · Tự luận Truyền tải điện năng 12',
+        question: 'Truyền đi một công suất điện $P = 200\\text{ kW}$ trên đường dây có tổng điện trở $R = 10\\,\\Omega$ với hệ số công suất $\\cos\\varphi = 1$. Tính công suất hao phí trên đường dây khi điện áp truyền tải là: a) $U_1 = 2\\text{ kV}$; b) $U_2 = 20\\text{ kV}$.',
+        hints: ['Đổi $P = 200\\,000\\text{ W}$, $U_1 = 2000\\text{ V}$, $U_2 = 20\\,000\\text{ V}$ rồi thay vào $\\Delta P = \\frac{P^2 R}{U^2}$.'],
+        solutionSteps: [
+          'a) Khi $U_1 = 2000\\text{ V}$: $\\Delta P_1 = \\frac{(2\\cdot 10^5)^2 \\cdot 10}{(2000)^2} = \\frac{4\\cdot 10^{11}}{4\\cdot 10^6} = 10^5\\text{ W} = 100\\text{ kW}$ (hao phí tới $50\\%$!).',
+          'b) Khi tăng áp lên $U_2 = 20\\,000\\text{ V}$ (tăng $10$ lần): $\\Delta P_2 = \\frac{\\Delta P_1}{10^2} = 1\\text{ kW}$ (chỉ còn $0{,}5\\%$!).'
+        ],
+        finalAnswer: 'a) $\\Delta P_1 = 100\\text{ kW}$; b) $\\Delta P_2 = 1\\text{ kW}$.'
+      }
+    ]
+  },
+
+  {
+    id: 'phys-12-young',
+    track: 'khong_chuyen',
+    grade: 'Lớp 12',
+    stageLabel: 'Hệ thống kiến thức Lớp 12 · Sóng Ánh sáng & Khe Y-âng',
+    sourceTag: 'SGK Vật lí 12 (KNTT / CTST / Cánh Diều) · VietJack',
+    lessonNumber: 25,
+    title: 'Giao thoa Ánh sáng Khe Y-âng, Tán sắc & Quang phổ (Lớp 12)',
+    subtitle: 'Khoảng vân i = λD/a, vị trí vân sáng – vân tối, giao thoa ánh sáng trắng và bước sóng vùng khả kiến (0,38 – 0,76 µm)',
+    description:
+      'Chuyên đề Sóng ánh sáng Vật lí 12 VietJack: mô phỏng trực tiếp giao thoa 2 khe Y-âng 2D & 3D theo thời gian thực khi thay đổi bước sóng $\\lambda$ (màu sắc biến thiên liên tục từ tím tới đỏ), khoảng cách hai khe $a$ và khoảng cách màn $D$.',
+    theorySections: [
+      {
+        heading: '1. Thí nghiệm Giao thoa Khe Y-âng (Young)',
+        content:
+          '• Hai chùm sáng kết hợp phát ra từ 2 khe hẹp $S_1, S_2$ (cách nhau $a$) giao thoa trên màn quan sát đặt cách mặt phẳng hai khe đoạn $D$ tạo hệ vân sáng – tối xen kẽ đều đặn.\n• Chứng tỏ ánh sáng có **bản chất sóng**.'
+      },
+      {
+        heading: '2. Công thức Khoảng vân & Vị trí Vân sáng / Vân tối',
+        content:
+          '• **Khoảng vân** (khoảng cách giữa 2 vân sáng hoặc 2 vân tối liên tiếp): $i = \\frac{\\lambda D}{a}$ (Mẹo đơn vị: đo $\\lambda$ bằng $\\mu\\text{m}$, $D$ bằng $\\text{m}$, $a$ bằng $\\text{mm}$ thì $i$ ra ngay $\\text{mm}$!).\n• Vị trí **vân sáng** bậc $k$: $x_s = k \\cdot i$ ($k \\in \\mathbb{Z}$; $k = 0$ là vân sáng trung tâm).\n• Vị trí **vân tối** thứ $k+1$: $x_t = \\left(k + \\frac{1}{2}\\right) i$.'
+      },
+      {
+        heading: '3. Giao thoa Ánh sáng Trắng & Dải Quang phổ',
+        content:
+          '• Chiếu ánh sáng trắng ($0{,}38\\,\\mu\\text{m} \\le \\lambda \\le 0{,}76\\,\\mu\\text{m}$) qua 2 khe: tại trung tâm $x = 0$ mọi màu trùng nhau thành vân sáng trắng; hai bên là các dải màu cầu vồng (tím trong, đỏ ngoài).'
+      }
+    ],
+    keyFormulas: [
+      'i = \\frac{\\lambda D}{a} \\quad (\\lambda \\text{ [\\mu m]}, D \\text{ [m]}, a \\text{ [mm]} \\implies i \\text{ [mm]})',
+      'x_{\\text{sáng}} = k i, \\quad x_{\\text{tối}} = \\left(k + \\frac{1}{2}\\right)i',
+      '\\Delta x = x_2 - x_1'
+    ],
+    simulationType: 'young_interference',
+    sim3dType: 'young_interference_3d',
+    defaultParams: { lambda: 0.55, slitA: 1.0, screenD: 2.0 },
+    paramBounds: {
+      lambda: { min: 0.38, max: 0.76, step: 0.01, unit: 'µm', label: 'Bước sóng λ' },
+      slitA: { min: 0.4, max: 2.5, step: 0.1, unit: 'mm', label: 'Khoảng cách 2 khe a' },
+      screenD: { min: 1.0, max: 3.5, step: 0.1, unit: 'm', label: 'Khoảng cách màn D' }
+    },
+    practiceExercises: [
+      {
+        source: 'VietJack · Vật lí 12 · Khe Y-âng',
+        question: 'Trong thí nghiệm Y-âng về giao thoa ánh sáng, hai khe cách nhau $a = 1\\text{ mm}$, màn cách hai khe $D = 2\\text{ m}$, chiếu sáng đơn sắc $\\lambda = 0{,}6\\,\\mu\\text{m}$. Khoảng vân $i$ và vị trí vân sáng bậc 3 là:',
+        options: ['A. $i = 1{,}2\\text{ mm}; x_3 = 3{,}6\\text{ mm}$', 'B. $i = 0{,}6\\text{ mm}; x_3 = 1{,}8\\text{ mm}$', 'C. $i = 2{,}4\\text{ mm}; x_3 = 7{,}2\\text{ mm}$', 'D. $i = 1{,}2\\text{ mm}; x_3 = 4{,}2\\text{ mm}$'],
+        correctIndex: 0,
+        explanation: 'Khoảng vân $i = \\frac{\\lambda D}{a} = \\frac{0{,}6 \\cdot 2}{1} = 1{,}2\\text{ mm}$. Vân sáng bậc 3 nằm ở $x_3 = 3i = 3{,}6\\text{ mm}$.'
+      },
+      {
+        source: 'Loigiaihay · Vị trí vân tối Y-âng',
+        question: 'Trong thí nghiệm giao thoa ánh sáng có khoảng vân $i = 0{,}8\\text{ mm}$. Vị trí của vân tối thứ 3 kể từ vân sáng trung tâm là:',
+        options: ['A. $\\pm 2{,}0\\text{ mm}$', 'B. $\\pm 2{,}4\\text{ mm}$', 'C. $\\pm 1{,}6\\text{ mm}$', 'D. $\\pm 2{,}8\\text{ mm}$'],
+        correctIndex: 0,
+        explanation: 'Vân tối thứ 3 ($k = 2$) ở vị trí $|x_t| = 2{,}5 i = 2{,}5 \\cdot 0{,}8 = 2{,}0\\text{ mm}$.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'VietJack · Tự luận Giao thoa ánh sáng 12',
+        question: 'Trong thí nghiệm Y-âng, khoảng cách hai khe là $a = 1{,}2\\text{ mm}$, khoảng cách tới màn $D = 1{,}5\\text{ m}$. Người ta đo được khoảng cách giữa $5$ vân sáng liên tiếp trên màn là $3{,}0\\text{ mm}$. Tính khoảng vân $i$ và bước sóng ánh sáng $\\lambda$.',
+        hints: ['Khoảng cách giữa $5$ vân sáng liên tiếp gồm $4$ khoảng vân ($4i = 3{,}0\\text{ mm}$).'],
+        solutionSteps: [
+          'Bước 1: Giữa $5$ vân sáng liên tiếp có $5 - 1 = 4$ khoảng vân: $4i = 3{,}0\\text{ mm} \\implies i = 0{,}75\\text{ mm}$.',
+          'Bước 2: Bước sóng ánh sáng: $\\lambda = \\frac{a \\cdot i}{D} = \\frac{1{,}2 \\cdot 0{,}75}{1{,}5} = 0{,}6\\,\\mu\\text{m}$ (ánh sáng vàng cam).'
+        ],
+        finalAnswer: '$i = 0{,}75\\text{ mm}$; $\\lambda = 0{,}6\\,\\mu\\text{m}$.'
+      }
+    ]
+  },
+
   // ============================================================================
   // KHU CHUYÊN VẬT LÍ — LỘ TRÌNH PHÂN TẦNG: CƠ BẢN -> NÂNG CAO -> CHUYÊN / HSG
   // ============================================================================

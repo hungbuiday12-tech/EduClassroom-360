@@ -16,6 +16,7 @@ import { SublimeEditor, MonokaiCodeBlock } from './SublimeEditor';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { FormattedText } from '../common/MathRenderer';
 import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
+import { buildCSLectureSteps } from '../../data/lectureStepsBuilder';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import {
@@ -264,7 +265,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
+    <div className="space-y-6 animate-fadeIn pb-12 overflow-x-hidden">
       {/* Header Banner */}
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -563,19 +564,26 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
           {lessonTab === 'lecture' && (
             <InteractiveLectureRoom
               lessonKey={currentLesson.id}
+              subject="cs"
+              grade={currentLesson.level}
               subjectAccent="blue"
               kicker={`${currentLesson.vnoiPhase || currentLesson.level} · Bài ${currentLesson.lessonNumber} · Thời lượng ~${currentLesson.estimatedMinutes} phút`}
               title={currentLesson.title}
               subtitle={currentLesson.topic}
-              steps={
-                currentLesson.lectureSteps && currentLesson.lectureSteps.length > 0
-                  ? currentLesson.lectureSteps
-                  : currentLesson.theory.map((tItem, idx) => ({
-                      stepTitle: `Phần ${idx + 1}: Kiến thức trọng tâm`,
-                      stepType: 'concept',
-                      teacherExplanation: tItem
-                    }))
-              }
+              steps={buildCSLectureSteps(currentLesson)}
+              onEarnXP={onScoreEarned}
+              onOpenSim2D={() => navigate({ csLessonTab: 'code' })}
+              onNextLesson={(() => {
+                const nextLesson = CS_LESSONS.find(
+                  (x) => x.lessonNumber === currentLesson.lessonNumber + 1
+                );
+                return nextLesson
+                  ? () => {
+                      setRevealedSolution(false);
+                      navigate({ csLessonId: nextLesson.id });
+                    }
+                  : undefined;
+              })()}
               actions={[
                 {
                   label: 'Xem Code Minh Họa C++/Python',
@@ -846,7 +854,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
 
             <div
               className={`flex flex-1 min-h-0 overflow-hidden border border-[#3e3d32] bg-[#272822] ${
-                isJudgeFullscreen ? 'border-0 rounded-none' : 'rounded-2xl min-h-[600px] lg:h-[78vh] shadow-2xl'
+                isJudgeFullscreen ? 'border-0 rounded-none' : 'rounded-2xl min-h-[460px] sm:min-h-[560px] lg:h-[78vh] shadow-2xl'
               }`}
             >
               {/* Left Column: Problem details & Sample cases */}

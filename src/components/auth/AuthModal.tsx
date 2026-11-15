@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { EXAM_PAPERS } from '../../data/examData';
 import {
   Sparkles,
   Lock,
@@ -223,7 +224,7 @@ export const AuthModal: React.FC = () => {
                 Chào mừng bạn đến với Lớp Học Mô Phỏng 360°
               </h2>
               <p className="text-xs text-indigo-200/80 mt-2 leading-relaxed">
-                Nền tảng học tập chuyên sâu tích hợp đồ họa tương tác thời gian thực, trình chấm bài chuẩn Olympic và ngân hàng 30 đề thi chuyên quốc gia.
+                Nền tảng học tập chuyên sâu tích hợp đồ họa tương tác thời gian thực, trình chấm bài chuẩn Olympic và ngân hàng {EXAM_PAPERS.length} đề thi chuẩn &amp; chuyên quốc gia.
               </p>
             </div>
 

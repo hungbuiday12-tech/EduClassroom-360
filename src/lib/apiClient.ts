@@ -3,6 +3,7 @@ export interface SafeApiResponse<T = any> {
   status: number;
   data: T | null;
   error?: string;
+  isStaticFallback?: boolean;
 }
 
 function normalizeErrorPayload(rawMessage: unknown): string {
@@ -38,6 +39,37 @@ function normalizeErrorPayload(rawMessage: unknown): string {
   return String(rawMessage);
 }
 
+function extractBalancedJson(raw: string): any | null {
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  if (!cleaned) return null;
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const firstObj = cleaned.indexOf('{');
+    const lastObj = cleaned.lastIndexOf('}');
+    if (firstObj !== -1 && lastObj > firstObj) {
+      try {
+        return JSON.parse(cleaned.slice(firstObj, lastObj + 1));
+      } catch {
+        // ignore
+      }
+    }
+    const firstArr = cleaned.indexOf('[');
+    const lastArr = cleaned.lastIndexOf(']');
+    if (firstArr !== -1 && lastArr > firstArr) {
+      try {
+        return JSON.parse(cleaned.slice(firstArr, lastArr + 1));
+      } catch {
+        // ignore
+      }
+    }
+    return null;
+  }
+}
+
 export async function safeFetchJson<T = any>(
   url: string,
   init: RequestInit = {},
@@ -65,31 +97,42 @@ export async function safeFetchJson<T = any>(
     const rawText = await res.text();
     const trimmed = rawText.trim();
 
-    // Guard against reverse proxy / Vite HTML fallback pages
+    // Guard against static-host 404.html / index.html SPA fallbacks (e.g. GitHub Pages / docs/)
     if (
       trimmed.startsWith('<') ||
       trimmed.toLowerCase().startsWith('<!doctype')
     ) {
+      const isProxyBusy = res.status === 502 || res.status === 503 || res.status === 504;
       return {
         ok: false,
-        status: res.status || 502,
+        status: res.status || 404,
         data: null,
-        error:
-          res.status === 504 || res.status === 502 || res.status === 503
-            ? 'Máy chủ AI đang xử lý chậm hoặc tạm quá tải, vui lòng bấm gửi lại sau vài giây.'
-            : 'Máy chủ trả về định dạng trang web thay vì JSON. Vui lòng thử lại.'
+        isStaticFallback: !isProxyBusy,
+        error: isProxyBusy
+          ? 'Máy chủ AI đang xử lý chậm hoặc tạm quá tải, vui lòng bấm gửi lại sau vài giây.'
+          : 'Đang chạy trên phiên bản web tĩnh không có máy chủ Node.'
+      };
+    }
+
+    if (res.status === 404 || res.status === 405 || res.status === 501) {
+      return {
+        ok: false,
+        status: res.status,
+        data: null,
+        isStaticFallback: true,
+        error: 'Endpoint backend không khả dụng trên bản tĩnh.'
       };
     }
 
     let parsed: any = null;
     if (trimmed.length > 0) {
-      try {
-        parsed = JSON.parse(trimmed);
-      } catch {
+      parsed = extractBalancedJson(trimmed);
+      if (parsed === null) {
         return {
           ok: false,
           status: res.status || 500,
           data: null,
+          isStaticFallback: res.status >= 500,
           error: 'Phản hồi từ máy chủ không đúng định dạng JSON. Vui lòng thử lại.'
         };
       }
@@ -125,6 +168,7 @@ export async function safeFetchJson<T = any>(
       ok: false,
       status: 0,
       data: null,
+      isStaticFallback: true,
       error: err?.message || 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng và thử lại.'
     };
   } finally {

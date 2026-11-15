@@ -1,4 +1,5 @@
 import { RoadmapNode, WorkflowStage } from '../types';
+import { EXAM_PAPERS } from './examData';
 
 export const WORKFLOW_STAGES: WorkflowStage[] = [
   {
@@ -86,8 +87,8 @@ export const WORKFLOW_STAGES: WorkflowStage[] = [
     id: 'arena',
     titleVi: '5. Thi Đề Chuẩn & Đấu Trường Xếp Hạng Tuần',
     titleEn: '5. Official Exam Papers & Weekly Online Arena',
-    subtitleVi: 'Thử sức với 60 Đề thi có đồng hồ bấm giờ và tham gia Đấu trường Online (1 lượt/ngày/môn) để leo Bảng xếp hạng tuần.',
-    subtitleEn: 'Take timed 60-paper practice sets and enter the Weekly Online Arena (1 attempt/day/subject) to climb the rankings.',
+    subtitleVi: `Thử sức với ${EXAM_PAPERS.length} Đề thi có đồng hồ bấm giờ và tham gia Đấu trường Online (1 lượt/ngày/môn) để leo Bảng xếp hạng tuần.`,
+    subtitleEn: `Take timed ${EXAM_PAPERS.length}-paper practice sets and enter the Weekly Online Arena (1 attempt/day/subject) to climb the rankings.`,
     actionChecklistVi: [
       'Mỗi ngày chọn Trắc nghiệm hoặc Tự luận để thi đấu 1 lượt/môn',
       'Nhận chấm điểm tự luận chi tiết hoặc điểm tốc độ trắc nghiệm',

@@ -19,7 +19,14 @@ import { useLanguage } from '../../context/LanguageContext';
 import { MathFormula } from '../common/MathRenderer';
 import { ViewportPortal } from '../common/ViewportPortal';
 
-export type Math3DMode = 'oxyz_vector' | 'sphere_plane' | 'pyramid_section' | 'revolution_solid';
+export type Math3DMode =
+  | 'oxyz_vector'
+  | 'sphere_plane'
+  | 'pyramid_section'
+  | 'revolution_solid'
+  | 'conic_sections_3d'
+  | 'line_plane_oxyz'
+  | 'integral_disks_3d';
 
 interface Math3DViewProps {
   initialMode?: Math3DMode;
@@ -59,6 +66,23 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   // Revolution solid mode
   const [revSegments, setRevSegments] = useState(32);
   const [revCurveType, setRevCurveType] = useState<'parabola' | 'sine' | 'cone'>('parabola');
+
+  // Conic sections 3D mode (Plane cutting double cone)
+  const [conicTiltDeg, setConicTiltDeg] = useState(25);
+  const [conicOffsetY, setConicOffsetY] = useState(1.2);
+
+  // Line & Plane in Oxyz mode
+  const [lineDirX, setLineDirX] = useState(1);
+  const [lineDirY, setLineDirY] = useState(1.5);
+  const [lineDirZ, setLineDirZ] = useState(2);
+  const [planeTiltDeg, setPlaneTiltDeg] = useState(15);
+
+  // Integral Riemann disks 3D mode
+  const [diskCount, setDiskCount] = useState(12);
+  const [diskFuncType, setDiskFuncType] = useState<'sqrt' | 'linear' | 'parabola'>('sqrt');
+
+  // WebGL context safety
+  const [contextLost, setContextLost] = useState(false);
 
   // Three.js scene refs
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -158,6 +182,18 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     };
     animate();
 
+    // WebGL context loss/restore safety
+    const canvasEl = renderer.domElement;
+    const onContextLost = (event: Event) => {
+      event.preventDefault();
+      setContextLost(true);
+    };
+    const onContextRestored = () => {
+      setContextLost(false);
+    };
+    canvasEl.addEventListener('webglcontextlost', onContextLost);
+    canvasEl.addEventListener('webglcontextrestored', onContextRestored);
+
     // Resize handler + ResizeObserver
     const handleResize = () => {
       if (!container || !renderer) return;
@@ -175,8 +211,17 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener('resize', handleResize);
+      canvasEl.removeEventListener('webglcontextlost', onContextLost);
+      canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
       resizeObserver?.disconnect();
       controls.dispose();
+      scene.traverse((obj: any) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach((m: any) => m.dispose());
+          else obj.material.dispose();
+        }
+      });
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -189,18 +234,20 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     const group = dynamicGroupRef.current;
     if (!group) return;
 
-    // Clear previous geometries and materials safely
+    // Clear previous geometries and materials recursively to prevent GPU leaks
     while (group.children.length > 0) {
       const child = group.children[0];
       group.remove(child);
-      if ((child as any).geometry) (child as any).geometry.dispose();
-      if ((child as any).material) {
-        if (Array.isArray((child as any).material)) {
-          (child as any).material.forEach((m: any) => m.dispose());
-        } else {
-          (child as any).material.dispose();
+      child.traverse((obj: any) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((m: any) => m.dispose());
+          } else {
+            obj.material.dispose();
+          }
         }
-      }
+      });
     }
 
     // Helper to create 3D Arrow Vector
@@ -468,7 +515,237 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       const axisMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
       group.add(new THREE.Mesh(axisGeo, axisMat));
     }
-  }, [mode, ux, uy, uz, vx, vy, vz, sphereRadius, planeDistance, cutHeightRatio, revSegments, revCurveType]);
+
+    // -------------------------------------------------------------
+    // MODE 5: Ba Đường Conic Từ Thiết Diện Mặt Nón Đôi (Lớp 10)
+    // -------------------------------------------------------------
+    else if (mode === 'conic_sections_3d') {
+      const coneH = 3.2;
+      const coneR = 2.4;
+      const coneMat = new THREE.MeshStandardMaterial({
+        color: 0x3b82f6,
+        transparent: true,
+        opacity: 0.28,
+        roughness: 0.25,
+        metalness: 0.3,
+        side: THREE.DoubleSide
+      });
+
+      // Upper cone (apex at origin, opening upwards)
+      const upperGeo = new THREE.ConeGeometry(coneR, coneH, 48, 1, true);
+      upperGeo.rotateX(Math.PI);
+      upperGeo.translate(0, coneH / 2, 0);
+      group.add(new THREE.Mesh(upperGeo, coneMat));
+
+      // Lower cone (apex at origin, opening downwards)
+      const lowerGeo = new THREE.ConeGeometry(coneR, coneH, 48, 1, true);
+      lowerGeo.translate(0, -coneH / 2, 0);
+      group.add(new THREE.Mesh(lowerGeo, coneMat));
+
+      // Wireframe ribs
+      const wireUpper = new THREE.LineSegments(
+        new THREE.WireframeGeometry(upperGeo),
+        new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.22 })
+      );
+      const wireLower = new THREE.LineSegments(
+        new THREE.WireframeGeometry(lowerGeo),
+        new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.22 })
+      );
+      group.add(wireUpper);
+      group.add(wireLower);
+
+      // Tilted cutting plane
+      const tiltRad = (conicTiltDeg * Math.PI) / 180;
+      const planeGeo = new THREE.PlaneGeometry(7.2, 7.2);
+      const planeMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.32,
+        side: THREE.DoubleSide
+      });
+      const cutPlane = new THREE.Mesh(planeGeo, planeMat);
+      cutPlane.rotation.x = Math.PI / 2 - tiltRad;
+      cutPlane.position.set(0, conicOffsetY, 0);
+      group.add(cutPlane);
+
+      // Compute intersection curve numerically: cone slope k = coneR / coneH = 0.75 (half-angle ~ 36.87 deg)
+      // Cone eq: x^2 + z^2 = (k * y)^2; Plane eq: y = conicOffsetY + Math.tan(tiltRad) * z (Wait: rotation.x = PI/2 - tiltRad tilts normal to (0, cos(tilt), sin(tilt)), so y*cos + z*sin = offset*cos -> y = conicOffsetY - z * Math.tan(tiltRad))
+      const slopeK = coneR / coneH;
+      const tanTilt = Math.tan(tiltRad);
+      const segs = 120;
+      const ptsUpper: THREE.Vector3[] = [];
+      const ptsLower: THREE.Vector3[] = [];
+
+      for (let i = 0; i <= segs; i++) {
+        const theta = (i / segs) * Math.PI * 2;
+        const cosT = Math.cos(theta);
+        const sinT = Math.sin(theta);
+        // If r = k*|y|, for upper branch y > 0: r = k*y, z = r*sinT = k*y*sinT => y = conicOffsetY / (1 + k*sinT*tanTilt)
+        const denomUp = 1 + slopeK * sinT * tanTilt;
+        if (Math.abs(denomUp) > 0.08) {
+          const yUp = conicOffsetY / denomUp;
+          if (yUp >= 0 && yUp <= coneH) {
+            const rUp = slopeK * yUp;
+            ptsUpper.push(new THREE.Vector3(rUp * cosT, yUp, rUp * sinT));
+          }
+        }
+        // Lower branch y < 0: r = -k*y, z = r*sinT = -k*y*sinT => y = conicOffsetY / (1 - k*sinT*tanTilt)
+        const denomLo = 1 - slopeK * sinT * tanTilt;
+        if (Math.abs(denomLo) > 0.08) {
+          const yLo = conicOffsetY / denomLo;
+          if (yLo <= 0 && yLo >= -coneH) {
+            const rLo = -slopeK * yLo;
+            ptsLower.push(new THREE.Vector3(rLo * cosT, yLo, rLo * sinT));
+          }
+        }
+      }
+
+      const drawCurveSegs = (pts: THREE.Vector3[], colorHex: number) => {
+        if (pts.length < 2) return;
+        const filtered: THREE.Vector3[] = [];
+        for (let i = 0; i < pts.length - 1; i++) {
+          if (pts[i].distanceTo(pts[i + 1]) < 1.2) {
+            filtered.push(pts[i], pts[i + 1]);
+          }
+        }
+        if (filtered.length >= 2) {
+          const geo = new THREE.BufferGeometry().setFromPoints(filtered);
+          group.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: colorHex })));
+        }
+      };
+      drawCurveSegs(ptsUpper, 0xfacc15);
+      drawCurveSegs(ptsLower, 0xf97316);
+    }
+
+    // -------------------------------------------------------------
+    // MODE 6: Đường Thẳng (d) & Mặt Phẳng (P) trong Oxyz (Lớp 12)
+    // -------------------------------------------------------------
+    else if (mode === 'line_plane_oxyz') {
+      const axisLen = 4.5;
+      group.add(create3DArrow(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), axisLen, 0xef4444, 0.025));
+      group.add(create3DArrow(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), axisLen, 0x10b981, 0.025));
+      group.add(create3DArrow(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), axisLen, 0x3b82f6, 0.025));
+
+      const tiltRad = (planeTiltDeg * Math.PI) / 180;
+      const planeGeo = new THREE.PlaneGeometry(7.5, 7.5);
+      const planeMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide
+      });
+      const planeMesh = new THREE.Mesh(planeGeo, planeMat);
+      planeMesh.rotation.x = Math.PI / 2 - tiltRad;
+      planeMesh.position.y = 0.8;
+      group.add(planeMesh);
+
+      // Normal vector n of plane (P)
+      const normalVec = new THREE.Vector3(0, Math.cos(tiltRad), Math.sin(tiltRad)).normalize();
+      group.add(create3DArrow(normalVec, new THREE.Vector3(0, 0.8, 0), 2.2, 0xf43f5e, 0.055));
+
+      // Line (d) with direction u = (lineDirX, lineDirZ, lineDirY)
+      const uVec = new THREE.Vector3(lineDirX, lineDirZ, lineDirY).normalize();
+      const basePt = new THREE.Vector3(-0.6, 1.4, -0.5);
+      const pStart = basePt.clone().addScaledVector(uVec, -4.5);
+      const pEnd = basePt.clone().addScaledVector(uVec, 4.5);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([pStart, pEnd]);
+      group.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xfacc15 })));
+
+      // Direction vector arrow u from basePt
+      group.add(create3DArrow(uVec, basePt, 2.0, 0xf59e0b, 0.06));
+
+      // Intersection point with plane: dot(pt - (0, 0.8, 0), n) = 0
+      const denom = uVec.dot(normalVec);
+      if (Math.abs(denom) > 0.02) {
+        const planeOrigin = new THREE.Vector3(0, 0.8, 0);
+        const tHit = planeOrigin.clone().sub(basePt).dot(normalVec) / denom;
+        const hitPt = basePt.clone().addScaledVector(uVec, tHit);
+        if (hitPt.length() < 8) {
+          const hitMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.14, 18, 18),
+            new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.4 })
+          );
+          hitMesh.position.copy(hitPt);
+          group.add(hitMesh);
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // MODE 7: Tích Phân Đĩa Trụ Riemann V = π∫[f(x)]²dx (Lớp 12)
+    // -------------------------------------------------------------
+    else if (mode === 'integral_disks_3d') {
+      const lengthX = 4.0;
+      const dx = lengthX / diskCount;
+      const evalR = (x: number) => {
+        if (diskFuncType === 'sqrt') return 0.4 + 0.85 * Math.sqrt(Math.max(0, x));
+        if (diskFuncType === 'linear') return 0.35 + 0.45 * x;
+        return 0.4 + 0.14 * x * x;
+      };
+
+      // Draw Riemann cylindrical disks along X axis
+      for (let i = 0; i < diskCount; i++) {
+        const xMid = (i + 0.5) * dx;
+        const r = evalR(xMid);
+        const diskGeo = new THREE.CylinderGeometry(r, r, dx * 0.94, 32);
+        diskGeo.rotateZ(Math.PI / 2);
+        const hueColor = new THREE.Color().setHSL(0.42 + (i / Math.max(1, diskCount)) * 0.16, 0.78, 0.48);
+        const diskMat = new THREE.MeshStandardMaterial({
+          color: hueColor,
+          transparent: true,
+          opacity: 0.68,
+          roughness: 0.25,
+          metalness: 0.2
+        });
+        const mesh = new THREE.Mesh(diskGeo, diskMat);
+        mesh.position.set(xMid - lengthX / 2, 1.8, 0);
+        group.add(mesh);
+      }
+
+      // Smooth outer profile envelope
+      const envPts: THREE.Vector2[] = [];
+      for (let i = 0; i <= 40; i++) {
+        const x = (i / 40) * lengthX;
+        envPts.push(new THREE.Vector2(evalR(x), x - lengthX / 2));
+      }
+      const envGeo = new THREE.LatheGeometry(envPts, 32);
+      envGeo.rotateZ(-Math.PI / 2);
+      const envWire = new THREE.LineSegments(
+        new THREE.WireframeGeometry(envGeo),
+        new THREE.LineBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.25 })
+      );
+      envWire.position.y = 1.8;
+      group.add(envWire);
+
+      // Central axis Ox
+      const axGeo = new THREE.CylinderGeometry(0.035, 0.035, 5.4, 8);
+      axGeo.rotateZ(Math.PI / 2);
+      const axMesh = new THREE.Mesh(axGeo, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      axMesh.position.y = 1.8;
+      group.add(axMesh);
+    }
+  }, [
+    mode,
+    ux,
+    uy,
+    uz,
+    vx,
+    vy,
+    vz,
+    sphereRadius,
+    planeDistance,
+    cutHeightRatio,
+    revSegments,
+    revCurveType,
+    conicTiltDeg,
+    conicOffsetY,
+    lineDirX,
+    lineDirY,
+    lineDirZ,
+    planeTiltDeg,
+    diskCount,
+    diskFuncType
+  ]);
 
   // Derived math calculations for display
   const uLen = Math.sqrt(ux * ux + uy * uy + uz * uz).toFixed(2);
@@ -511,44 +788,34 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
               {mode === 'sphere_plane' && t('math3d.sphere', 'Mặt Cầu & Mặt Phẳng Thiết Diện 3D', 'Sphere & Plane Intersection 3D')}
               {mode === 'pyramid_section' && t('math3d.pyramid', 'Khối Chóp & Mặt Cắt Thiết Diện Động', 'Pyramid & Dynamic Cross Section')}
               {mode === 'revolution_solid' && t('math3d.revolution', 'Khối Tròn Xoay & Tích Phân Thể Tích', 'Solids of Revolution & Integration')}
+              {mode === 'conic_sections_3d' && 'Ba Đường Conic từ Mặt Nón Đôi 3D (Elip · Parabol · Hypebol)'}
+              {mode === 'line_plane_oxyz' && 'Đường Thẳng & Mặt Phẳng Oxyz · Góc & Giao Điểm'}
+              {mode === 'integral_disks_3d' && 'Tích Phân Đĩa Trụ Riemann · Thể Tích Tròn Xoay'}
             </span>
           </div>
 
           <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
             {/* Mode Switcher Pills (scrollable on phones & iPads) */}
             <div className="flex items-center gap-1 p-1 bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-lg overflow-x-auto max-w-full scrollbar-none">
-              <button
-                onClick={() => setMode('oxyz_vector')}
-                className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                  mode === 'oxyz_vector' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                Vector Oxyz
-              </button>
-              <button
-                onClick={() => setMode('sphere_plane')}
-                className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                  mode === 'sphere_plane' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                Mặt Cầu
-              </button>
-              <button
-                onClick={() => setMode('pyramid_section')}
-                className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                  mode === 'pyramid_section' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                Thiết Diện Chóp
-              </button>
-              <button
-                onClick={() => setMode('revolution_solid')}
-                className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                  mode === 'revolution_solid' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                Khối Tròn Xoay
-              </button>
+              {[
+                { id: 'oxyz_vector' as Math3DMode, label: 'Vector Oxyz' },
+                { id: 'sphere_plane' as Math3DMode, label: 'Mặt Cầu' },
+                { id: 'pyramid_section' as Math3DMode, label: 'Thiết Diện Chóp' },
+                { id: 'revolution_solid' as Math3DMode, label: 'Khối Tròn Xoay' },
+                { id: 'conic_sections_3d' as Math3DMode, label: 'Mặt Nón Conic' },
+                { id: 'line_plane_oxyz' as Math3DMode, label: 'Đường & Mặt Oxyz' },
+                { id: 'integral_disks_3d' as Math3DMode, label: 'Đĩa Tích Phân' }
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setMode(m.id)}
+                  className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all shrink-0 ${
+                    mode === m.id ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
             </div>
 
             {/* Fullscreen Toggle */}
@@ -563,12 +830,17 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         </div>
 
         {/* 3D WebGL Canvas Container (Unobstructed middle stage on < lg, full height on lg+) */}
-        <div
-          ref={mountRef}
-          className={`w-full cursor-grab active:cursor-grabbing touch-none ${
-            isFullscreen ? 'flex-1 min-h-[240px] lg:h-full' : 'h-[270px] sm:h-[340px] lg:h-full'
-          }`}
-        />
+        <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[240px] lg:h-full' : 'h-[270px] sm:h-[340px] lg:h-full'}`}>
+          <div
+            ref={mountRef}
+            className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
+          />
+          {contextLost && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/90 text-slate-200 text-xs p-4 text-center">
+              Ngữ cảnh WebGL tạm ngưng. Vui lòng chuyển tab hoặc tải lại để khôi phục đồ họa 3D.
+            </div>
+          )}
+        </div>
 
         {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK (Below canvas on < lg, floating dock on lg+) */}
         <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 w-full lg:w-[96%] lg:max-w-3xl lg:pointer-events-none bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
@@ -876,6 +1148,148 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                   </div>
                 </div>
               )}
+
+              {/* Controls for Conic Sections 3D */}
+              {mode === 'conic_sections_3d' && (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-slate-300">Góc nghiêng mặt cắt α (°):</span>
+                        <span className="font-mono font-bold text-amber-400">{conicTiltDeg}°</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="80"
+                        step="1"
+                        value={conicTiltDeg}
+                        onChange={(e) => setConicTiltDeg(Number(e.target.value))}
+                        className="w-full accent-amber-500 h-1.5"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-slate-300">Độ dịch chuyển dọc trục y:</span>
+                        <span className="font-mono font-bold text-emerald-400">{conicOffsetY.toFixed(1)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="-2.0"
+                        max="2.2"
+                        step="0.1"
+                        value={conicOffsetY}
+                        onChange={(e) => setConicOffsetY(Number(e.target.value))}
+                        className="w-full accent-emerald-500 h-1.5"
+                      />
+                    </div>
+                  </div>
+                  <div className="p-2 bg-slate-950/60 rounded-xl text-xs flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-slate-400">Góc sinh hình nón θ ≈ 53.1° (mặt cắt chuẩn):</span>
+                    <span className="font-bold text-amber-300">
+                      {conicTiltDeg === 0
+                        ? 'Hình Tròn (α = 0°)'
+                        : conicTiltDeg < 52
+                        ? 'Đường Elip (0° < α < θ)'
+                        : conicTiltDeg <= 55
+                        ? 'Đường Parabol (α ≈ θ)'
+                        : 'Đường Hypebol 2 nhánh (α > θ)'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Controls for Line & Plane Oxyz */}
+              {mode === 'line_plane_oxyz' && (() => {
+                const tiltRad = (planeTiltDeg * Math.PI) / 180;
+                const nVec = new THREE.Vector3(0, Math.cos(tiltRad), Math.sin(tiltRad)).normalize();
+                const uVec = new THREE.Vector3(lineDirX, lineDirZ, lineDirY);
+                const lenU = uVec.length();
+                const sinPhi = lenU > 1e-4 ? Math.abs(uVec.dot(nVec)) / lenU : 0;
+                const phiDeg = (Math.asin(Math.min(1, sinPhi)) * 180) / Math.PI;
+                return (
+                  <div className="space-y-2.5 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div>
+                        <span className="text-slate-400 block mb-0.5">u_x: {lineDirX.toFixed(1)}</span>
+                        <input type="range" min="-3" max="3" step="0.2" value={lineDirX} onChange={(e) => setLineDirX(Number(e.target.value))} className="w-full accent-amber-500 h-1" />
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block mb-0.5">u_y: {lineDirY.toFixed(1)}</span>
+                        <input type="range" min="-3" max="3" step="0.2" value={lineDirY} onChange={(e) => setLineDirY(Number(e.target.value))} className="w-full accent-amber-500 h-1" />
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block mb-0.5">u_z: {lineDirZ.toFixed(1)}</span>
+                        <input type="range" min="-3" max="3" step="0.2" value={lineDirZ} onChange={(e) => setLineDirZ(Number(e.target.value))} className="w-full accent-amber-500 h-1" />
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block mb-0.5">Nghiêng (P): {planeTiltDeg}°</span>
+                        <input type="range" min="-45" max="45" step="1" value={planeTiltDeg} onChange={(e) => setPlaneTiltDeg(Number(e.target.value))} className="w-full accent-emerald-500 h-1" />
+                      </div>
+                    </div>
+                    <div className="p-2 bg-slate-950/60 rounded-xl flex flex-wrap items-center justify-between gap-2 font-mono text-[11px]">
+                      <span className="text-amber-300">u = ({lineDirX.toFixed(1)}, {lineDirY.toFixed(1)}, {lineDirZ.toFixed(1)})</span>
+                      <span className="text-emerald-300">sin φ = |u·n|/(|u||n|) = {sinPhi.toFixed(3)} ⇒ Góc (d,(P)) ≈ {phiDeg.toFixed(1)}°</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Controls for Integral Disks 3D */}
+              {mode === 'integral_disks_3d' && (() => {
+                const lengthX = 4.0;
+                const dx = lengthX / diskCount;
+                const evalR = (x: number) =>
+                  diskFuncType === 'sqrt'
+                    ? 0.4 + 0.85 * Math.sqrt(Math.max(0, x))
+                    : diskFuncType === 'linear'
+                    ? 0.35 + 0.45 * x
+                    : 0.4 + 0.14 * x * x;
+                let riemannV = 0;
+                for (let i = 0; i < diskCount; i++) {
+                  const r = evalR((i + 0.5) * dx);
+                  riemannV += Math.PI * r * r * dx;
+                }
+                return (
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {[
+                          { id: 'sqrt' as const, label: 'y = 0.4 + 0.85√x' },
+                          { id: 'linear' as const, label: 'Nón: y = 0.35 + 0.45x' },
+                          { id: 'parabola' as const, label: 'Loa: y = 0.4 + 0.14x²' }
+                        ].map((fn) => (
+                          <button
+                            key={fn.id}
+                            onClick={() => setDiskFuncType(fn.id)}
+                            className={`px-2.5 py-1 rounded-lg font-medium ${
+                              diskFuncType === fn.id ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 text-slate-300'
+                            }`}
+                          >
+                            {fn.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2 min-w-[160px]">
+                        <span className="text-slate-300 whitespace-nowrap">Số lát đĩa n = {diskCount}</span>
+                        <input
+                          type="range"
+                          min="4"
+                          max="40"
+                          step="1"
+                          value={diskCount}
+                          onChange={(e) => setDiskCount(Number(e.target.value))}
+                          className="w-28 accent-emerald-500 h-1.5"
+                        />
+                      </div>
+                    </div>
+                    <div className="p-2 bg-slate-950/60 rounded-xl font-mono text-[11px] flex flex-wrap items-center justify-between gap-2 text-emerald-300">
+                      <span>Tổng Riemann ({diskCount} đĩa): V ≈ {riemannV.toFixed(2)} đvtt</span>
+                      <span className="text-slate-400">Tăng n → ∞ để hội tụ về V = π∫[f(x)]²dx</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>

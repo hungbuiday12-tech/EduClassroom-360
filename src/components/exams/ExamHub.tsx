@@ -160,9 +160,25 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP,
     });
   }, [selectedTrack, selectedSubject, searchKeyword]);
 
-  // Counts for tabs
+  // Counts for tabs (dynamic from EXAM_PAPERS)
+  const totalExams = EXAM_PAPERS.length;
   const countChuyen = useMemo(() => EXAM_PAPERS.filter((e) => e.track === 'chuyen').length, []);
   const countKhongChuyen = useMemo(() => EXAM_PAPERS.filter((e) => e.track === 'khong_chuyen').length, []);
+  const subjectStats = useMemo(() => {
+    const calc = (subj: ExamSubject) => {
+      const items = EXAM_PAPERS.filter((e) => e.subject === subj);
+      return {
+        total: items.length,
+        chuyen: items.filter((e) => e.track === 'chuyen').length,
+        khongChuyen: items.filter((e) => e.track === 'khong_chuyen').length,
+      };
+    };
+    return {
+      math: calc('math'),
+      physics: calc('physics'),
+      cs: calc('cs'),
+    };
+  }, []);
 
   // Format timer seconds into hh:mm:ss
   const formatTime = (totalSec: number) => {
@@ -508,8 +524,8 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP,
         /* ============================================================ */
         <div className="space-y-6">
           {/* Header Banner */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 {onBack && (
                   <button
@@ -520,23 +536,23 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP,
                     <span>{t('nav.back_home', 'Quay lại Lớp học', 'Back to Classroom')}</span>
                   </button>
                 )}
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                  Ngân Hàng 60 Đề Thi Quốc Gia
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tabular-nums">
+                  Ngân Hàng {totalExams} Đề Thi Quốc Gia
                 </span>
-                <span className="text-xs text-slate-400 dark:text-slate-500">
-                  Phân định rõ ràng: 30 Đề Chuyên & 30 Đề Không Chuyên
+                <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+                  Phân định rõ ràng: {countChuyen} Đề Chuyên &amp; {countKhongChuyen} Đề Không Chuyên
                 </span>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                Thư Viện Đề Thi Chuyên & Tốt Nghiệp THPT (Full Đề)
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                Thư Viện Đề Thi Chuyên &amp; Tốt Nghiệp THPT (Full Đề)
               </h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                 Tất cả các đề đều được biên soạn trọn vẹn đầy đủ câu hỏi, tích hợp đồng hồ bấm giờ làm bài và hướng dẫn giải chi tiết cho từng câu.
               </p>
             </div>
 
             {/* Keyword Search Box */}
-            <div className="relative w-full md:w-72">
+            <div className="relative w-full md:w-72 shrink-0">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
@@ -552,38 +568,38 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP,
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <button
               onClick={() => setSelectedTrack('all')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all border ${
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all border ${
                 selectedTrack === 'all'
                   ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 font-bold'
                   : 'bg-white/70 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              <Layers className="w-4 h-4" />
-              <span>Tất cả lĩnh vực (60 đề)</span>
+              <Layers className="w-4 h-4 shrink-0" />
+              <span className="tabular-nums">Tất cả lĩnh vực ({totalExams} đề)</span>
             </button>
 
             <button
               onClick={() => setSelectedTrack('chuyen')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all border ${
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all border ${
                 selectedTrack === 'chuyen'
                   ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-white border-amber-500 shadow-md shadow-amber-500/20 font-bold'
                   : 'bg-white/70 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              <Award className="w-4 h-4 text-amber-300" />
-              <span>🏆 1. Đề Chuyên & Olympic ({countChuyen} đề)</span>
+              <Award className="w-4 h-4 text-amber-300 shrink-0" />
+              <span className="tabular-nums">1. Đề Chuyên &amp; Olympic ({countChuyen} đề)</span>
             </button>
 
             <button
               onClick={() => setSelectedTrack('khong_chuyen')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all border ${
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all border ${
                 selectedTrack === 'khong_chuyen'
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/20 font-bold'
                   : 'bg-white/70 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              <GraduationCap className="w-4 h-4" />
-              <span>🎯 2. Đề Không Chuyên & Tốt Nghiệp ({countKhongChuyen} đề)</span>
+              <GraduationCap className="w-4 h-4 shrink-0" />
+              <span className="tabular-nums">2. Đề Không Chuyên &amp; Tốt Nghiệp ({countKhongChuyen} đề)</span>
             </button>
           </div>
 
@@ -591,7 +607,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP,
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <button
               onClick={() => setSelectedSubject('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
                 selectedSubject === 'all'
                   ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -601,33 +617,39 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onNavigateToSubject, onEarnXP,
             </button>
             <button
               onClick={() => setSelectedSubject('math')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
                 selectedSubject === 'math'
                   ? 'bg-blue-600 text-white font-bold'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              <span>📐 Toán Học (20 đề: 10 Chuyên + 10 Không Chuyên)</span>
+              <span className="tabular-nums">
+                Toán Học ({subjectStats.math.total} đề: {subjectStats.math.chuyen} Chuyên + {subjectStats.math.khongChuyen} THPT)
+              </span>
             </button>
             <button
               onClick={() => setSelectedSubject('physics')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
                 selectedSubject === 'physics'
                   ? 'bg-amber-600 text-white font-bold'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              <span>⚡ Vật Lý (20 đề: 10 Chuyên + 10 Không Chuyên)</span>
+              <span className="tabular-nums">
+                Vật Lý ({subjectStats.physics.total} đề: {subjectStats.physics.chuyen} Chuyên + {subjectStats.physics.khongChuyen} THPT)
+              </span>
             </button>
             <button
               onClick={() => setSelectedSubject('cs')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
                 selectedSubject === 'cs'
                   ? 'bg-emerald-600 text-white font-bold'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              <span>💻 Tin Học (20 đề: 10 Chuyên + 10 Không Chuyên)</span>
+              <span className="tabular-nums">
+                Tin Học ({subjectStats.cs.total} đề: {subjectStats.cs.chuyen} Chuyên + {subjectStats.cs.khongChuyen} Cơ bản)
+              </span>
             </button>
           </div>
 

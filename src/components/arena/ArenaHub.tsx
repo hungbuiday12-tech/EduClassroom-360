@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { safeFetchJson } from '../../lib/apiClient';
+import { gradeLocalArenaEssay } from '../../lib/aiStaticFallback';
 import {
   ArrowLeft,
   Award,
@@ -231,20 +232,30 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
     syncLocalAttempts();
     fetchServerState();
 
-    const evtSource = new EventSource('/api/arena/stream');
-    evtSource.onopen = () => setIsStreamLive(true);
-    evtSource.onmessage = (event) => {
-      try {
-        const parsed = JSON.parse(event.data);
-        if (parsed.type === 'arena:update' && parsed.weekId === weekId && Array.isArray(parsed.leaderboard)) {
-          setServerLeaderboard(parsed.leaderboard);
-        }
-      } catch {}
-    };
-    evtSource.onerror = () => setIsStreamLive(false);
+    let evtSource: EventSource | null = null;
+    try {
+      if (typeof window !== 'undefined' && typeof EventSource !== 'undefined') {
+        evtSource = new EventSource('/api/arena/stream');
+        evtSource.onopen = () => setIsStreamLive(true);
+        evtSource.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(event.data);
+            if (parsed.type === 'arena:update' && parsed.weekId === weekId && Array.isArray(parsed.leaderboard)) {
+              setServerLeaderboard(parsed.leaderboard);
+            }
+          } catch {}
+        };
+        evtSource.onerror = () => {
+          setIsStreamLive(false);
+          evtSource?.close();
+        };
+      }
+    } catch {
+      setIsStreamLive(false);
+    }
 
     return () => {
-      evtSource.close();
+      evtSource?.close();
     };
   }, [weekId, syncLocalAttempts, fetchServerState]);
 
@@ -357,30 +368,88 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok || !res.data?.attempt) {
+    let savedAttempt: ArenaAttempt;
+    let myEntry: WeeklyLeaderboardEntry | undefined;
+
+    if (res.ok && res.data?.attempt) {
+      savedAttempt = res.data.attempt;
+      myEntry = res.data.myEntry;
+      if (Array.isArray(res.data.leaderboard)) {
+        setServerLeaderboard(res.data.leaderboard);
+      }
+    } else if (res.isStaticFallback || res.status === 0 || res.status === 404 || res.status === 405 || res.status >= 500) {
+      // Static-export fallback: compute attempt & weekly row locally
+      savedAttempt = {
+        ...payload,
+        id: `local_${payload.userId}_${payload.dateKey}_${payload.subject}`,
+        createdAt: new Date().toISOString()
+      };
+    } else {
       throw new Error(res.error || 'Không thể lưu điểm thi đấu hôm nay.');
     }
 
-    const data = res.data;
-    const savedAttempt: ArenaAttempt = data.attempt;
-
     // Persist locally
+    let allLocal: ArenaAttempt[] = [];
     try {
       const raw = localStorage.getItem(LOCAL_ATTEMPTS_KEY);
       const list: ArenaAttempt[] = raw ? JSON.parse(raw) : [];
-      const filtered = list.filter((a) => a.id !== savedAttempt.id);
-      filtered.push(savedAttempt);
-      localStorage.setItem(LOCAL_ATTEMPTS_KEY, JSON.stringify(filtered));
+      allLocal = list.filter(
+        (a) =>
+          a.id !== savedAttempt.id &&
+          !(a.userId === payload.userId && a.dateKey === payload.dateKey && a.subject === payload.subject)
+      );
+      allLocal.push(savedAttempt);
+      localStorage.setItem(LOCAL_ATTEMPTS_KEY, JSON.stringify(allLocal));
     } catch {}
+
+    if (!myEntry) {
+      const mineWeek = allLocal.filter((a) => a.userId === payload.userId && a.weekId === payload.weekId);
+      const calcSubj = (s: ArenaSubject) => {
+        const sub = mineWeek.filter((a) => a.subject === s);
+        if (sub.length === 0) return { best: null, avg: null, count: 0 };
+        const best = Math.max(...sub.map((a) => a.score));
+        const avg = Math.round((sub.reduce((acc, a) => acc + a.score, 0) / sub.length) * 10) / 10;
+        return { best, avg, count: sub.length };
+      };
+      const m = calcSubj('math');
+      const p = calcSubj('physics');
+      const c = calcSubj('cs');
+      const overallAvg =
+        mineWeek.length > 0
+          ? Math.round((mineWeek.reduce((acc, a) => acc + a.score, 0) / mineWeek.length) * 10) / 10
+          : payload.score;
+      myEntry = {
+        id: `${payload.weekId}_${payload.userId}`,
+        userId: payload.userId,
+        username: payload.username,
+        displayName: payload.displayName,
+        weekId: payload.weekId,
+        mathBest: m.best,
+        mathAvg: m.avg,
+        mathAttempts: m.count,
+        physicsBest: p.best,
+        physicsAvg: p.avg,
+        physicsAttempts: p.count,
+        csBest: c.best,
+        csAvg: c.avg,
+        csAttempts: c.count,
+        overallAvg,
+        totalAttempts: mineWeek.length,
+        totalTimeSec: mineWeek.reduce((acc, a) => acc + (a.durationSec || 0), 0),
+        updatedAt: new Date().toISOString()
+      };
+      setServerLeaderboard((prev) => [
+        ...prev.filter((row) => row.userId !== payload.userId),
+        myEntry!
+      ]);
+    }
 
     setUserAttemptsToday((prev) => ({ ...prev, [payload.subject]: savedAttempt }));
     setUserWeekAttempts((prev) => [...prev.filter((a) => a.id !== savedAttempt.id), savedAttempt]);
-    if (Array.isArray(data.leaderboard)) {
-      setServerLeaderboard(data.leaderboard);
-    }
 
     // Sync to Firestore if signed into Firebase
-    if (firebaseUser && data.myEntry) {
+    if (firebaseUser && myEntry) {
+      const data = { myEntry };
       const attemptId = `${firebaseUser.uid}_${payload.dateKey}_${payload.subject}`;
       try {
         await setDoc(doc(db, 'arena_attempts', attemptId), {
@@ -559,11 +628,17 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
         })
       });
 
-      if (!gradeRes.ok || !gradeRes.data?.evaluation) {
-        throw new Error(gradeRes.error || 'Không thể chấm bài tự luận lúc này.');
-      }
-
-      const evaluation: ArenaEssayEvaluation = gradeRes.data.evaluation;
+      const evaluation: ArenaEssayEvaluation =
+        gradeRes.ok && gradeRes.data?.evaluation
+          ? gradeRes.data.evaluation
+          : gradeLocalArenaEssay({
+              subject: activeMatch.subject,
+              title: essay.title,
+              prompt: essay.prompt,
+              rubricChecklist: essay.rubricChecklist,
+              referenceSolution: essay.referenceSolution,
+              studentAnswer: `${essayText}${extraCodeNote}`
+            });
       const durationSec = Math.max(10, Math.floor((Date.now() - activeMatch.startedAt) / 1000));
 
       const attempt = await commitAttemptToBackendAndFirestore({

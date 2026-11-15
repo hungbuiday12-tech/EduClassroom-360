@@ -839,7 +839,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
       {/* MAIN SPLIT-SCREEN IDE WORKSPACE */}
       <div
         className={`flex flex-1 min-h-0 overflow-hidden border border-[#3e3d32] bg-[#272822] ${
-          isFullscreen ? 'border-0 rounded-none' : 'rounded-2xl h-[76vh] min-h-[560px] shadow-2xl'
+          isFullscreen ? 'border-0 rounded-none' : 'rounded-2xl h-[70vh] sm:h-[76vh] min-h-[460px] sm:min-h-[560px] shadow-2xl'
         }`}
       >
         {/* LEFT PANEL: PROBLEM STATEMENT & TEST SUITE */}

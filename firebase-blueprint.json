@@ -183,6 +183,31 @@
         "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["userId", "displayName", "weekId", "overallAvg", "totalAttempts"]
+    },
+    "LessonAssessment": {
+      "title": "LessonAssessment",
+      "description": "Saved per-lesson lecture assessment summary, mastery score, and roadmap recommendation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "lessonKey": { "type": "string", "maxLength": 128 },
+        "subject": { "type": "string", "enum": ["math", "physics", "cs"] },
+        "lessonTitle": { "type": "string", "maxLength": 200 },
+        "grade": { "type": "string", "maxLength": 64 },
+        "totalSteps": { "type": "number" },
+        "completedSteps": { "type": "number" },
+        "mcqCorrect": { "type": "number" },
+        "mcqTotal": { "type": "number" },
+        "essayGradedCount": { "type": "number" },
+        "essayAvgScore": { "type": "number" },
+        "overallMastery": { "type": "number" },
+        "strongStepTitles": { "type": "array", "description": "Mastered step titles (max 20)" },
+        "weakStepTitles": { "type": "array", "description": "Weak step titles needing review (max 20)" },
+        "readinessLevel": { "type": "string", "maxLength": 160 },
+        "recommendedAction": { "type": "string", "maxLength": 400 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["userId", "lessonKey", "subject", "lessonTitle", "mcqCorrect", "mcqTotal", "overallMastery"]
     }
   },
   "firestore": {
@@ -205,6 +230,10 @@
     "/weekly_leaderboard/{entryId}": {
       "schema": "WeeklyLeaderboardEntry",
       "description": "Weekly leaderboard metrics keyed by weekId_uid"
+    },
+    "/lesson_assessments/{assessmentId}": {
+      "schema": "LessonAssessment",
+      "description": "Per-student saved lecture quiz & mini-essay progress and roadmap analysis"
     }
   }
 }

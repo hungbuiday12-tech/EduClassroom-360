@@ -16,6 +16,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { VisitorLandingPage } from './components/landing/VisitorLandingPage';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 import { useNavigation } from './context/NavigationContext';
+import { EXAM_PAPERS } from './data/examData';
 
 function MainApp() {
   const { location, navigate, selectSubject, goBack } = useNavigation();
@@ -136,7 +137,7 @@ function MainApp() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="relative min-h-screen flex flex-col bg-transparent text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200"
+          className="relative min-h-screen flex flex-col bg-transparent text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 overflow-x-hidden"
         >
           {/* Dynamic Cosmic Galaxy Background (active in both Light and Dark modes) */}
           <GalaxyBackground
@@ -157,7 +158,7 @@ function MainApp() {
           />
 
           {/* Main Viewport Container with Smooth Subject Transitions (no persistent transform/z-index trap) */}
-          <main className="relative flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <main className="relative flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-5 sm:py-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentSubject}
@@ -283,7 +284,7 @@ function MainApp() {
                   onClick={() => selectSubject('exams')}
                   className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold"
                 >
-                  Đề Thi (60 Đề)
+                  Đề Thi ({EXAM_PAPERS.length} Đề)
                 </button>
                 <button
                   onClick={() => selectSubject('arena')}

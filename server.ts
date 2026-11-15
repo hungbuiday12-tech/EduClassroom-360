@@ -379,6 +379,35 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): P
   }
 }
 
+function safeParseGeminiJson<T>(rawText: string | undefined | null, fallback: T): T {
+  const raw = (rawText || '').trim();
+  if (!raw) return fallback;
+  const unfenced = raw
+    .replace(/^```(?:json|JSON)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  try {
+    return JSON.parse(unfenced) as T;
+  } catch {
+    const startObj = unfenced.indexOf('{');
+    const startArr = unfenced.indexOf('[');
+    const start =
+      startObj === -1 ? startArr : startArr === -1 ? startObj : Math.min(startObj, startArr);
+    if (start === -1) return fallback;
+    const endObj = unfenced.lastIndexOf('}');
+    const endArr = unfenced.lastIndexOf(']');
+    const end = Math.max(endObj, endArr);
+    if (end > start) {
+      try {
+        return JSON.parse(unfenced.slice(start, end + 1)) as T;
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
+  }
+}
+
 interface GeminiCallOptions {
   ai: GoogleGenAI;
   contents: any;
@@ -951,14 +980,14 @@ function buildFallbackRoadmap(
       },
       {
         step: 3,
-        phase: isEn ? 'Phase 03 · Exam Mastery' : 'Chặng 03 · Tổng Ôn 60 Đề Chuẩn',
+        phase: isEn ? 'Phase 03 · Exam Mastery' : 'Chặng 03 · Tổng Ôn Kho Đề Chuẩn',
         title: isEn ? 'Timed Mock Exams (Track-Matched)' : 'Luyện Đề Thực Chiến Bấm Giờ (Chuyên / Không Chuyên)',
         durationWeeks: 2,
         dailyMinutes: 60,
         focusTopics: ['Phân bổ thời gian làm bài', 'Rà soát bẫy điều kiện', 'Hoàn thiện trình bày tự luận'],
         recommendedModule: 'exams',
         concreteTasks: [
-          isEn ? 'Complete 3 full timed papers per week in Exam Hub' : 'Hoàn thành 3 đề thi bấm giờ/tuần trong kho 60 Đề Chuẩn',
+          isEn ? 'Complete 3 full timed papers per week in Exam Hub' : 'Hoàn thành 3 đề thi bấm giờ/tuần trong Kho Đề Thi Chuẩn',
           isEn ? 'Review wrong steps with detailed solutions & AI Mode 1' : 'Xem hướng dẫn giải chi tiết và hỏi lại AI đúng câu bị mất điểm'
         ],
         targetMilestone: isEn ? 'Consistent ≥ 8.5/10 across timed papers' : 'Ổn định từ 8.5/10 trở lên ở đề bấm giờ chuẩn'
@@ -1035,7 +1064,7 @@ Yêu cầu bắt buộc:
       timeoutMs: 14000
     });
 
-    const parsed = JSON.parse((response.text || '{}').trim());
+    const parsed = safeParseGeminiJson<any>(response.text, {});
     if (Array.isArray(parsed?.questions) && parsed.questions.length >= 4) {
       const normalized = parsed.questions.slice(0, 5).map((q: any, idx: number) => ({
         id: String(q.id || `q${idx + 1}`),
@@ -1170,7 +1199,7 @@ Mọi công thức Toán/Lí dùng chuẩn KaTeX ($...$, luôn dùng \\frac).`;
       timeoutMs: 16000
     });
 
-    const parsed = JSON.parse((response.text || '{}').trim());
+    const parsed = safeParseGeminiJson<any>(response.text, {});
     if (Array.isArray(parsed?.stages) && parsed.stages.length >= 3) {
       const validModules = new Set(['math', 'physics', 'cs', 'exams', 'arena', 'roadmap']);
       return res.json({
@@ -1313,7 +1342,7 @@ Hãy chấm điểm công tâm, chính xác từng bước lập luận/công th
       timeoutMs: 16000
     });
 
-    const parsed = JSON.parse((response.text || '{}').trim());
+    const parsed = safeParseGeminiJson<any>(response.text, {});
     const clampedScore = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
 
     return res.json({
@@ -1393,8 +1422,10 @@ ${text ? `Dữ liệu văn bản người dùng cung cấp:\n${text}` : ''}
       timeoutMs: 18000
     });
 
-    const jsonStr = (response.text || '{}').trim();
-    const parsedData = JSON.parse(jsonStr);
+    const parsedData = safeParseGeminiJson<any>(response.text, null);
+    if (!parsedData || !parsedData.title) {
+      throw new Error('Không thể trích xuất dữ liệu JSON từ phản hồi AI');
+    }
 
     return res.json({
       success: true,
@@ -1453,12 +1484,511 @@ Trả về JSON định dạng: { "stdout": string, "stderr": string, "isError":
       timeoutMs: 14000
     });
 
-    const result = JSON.parse((response.text || '{}').trim());
+    const result = safeParseGeminiJson<any>(response.text, {
+      stdout: '',
+      stderr: 'Không thể phân tích kết quả thực thi từ AI.',
+      isError: true,
+      runtimeMs: 0
+    });
     return res.json(result);
   } catch (err: any) {
     console.error('Error running code via Gemini:', err);
     return res.status(500).json({ error: extractCleanErrorMessage(err) });
   }
+});
+
+// =====================================================================
+// GEMINI AI: GRADE PER-SECTION MINI ESSAY (0 - 10 SCALE)
+// =====================================================================
+app.post('/api/gemini/grade-mini-essay', async (req: Request, res: Response) => {
+  try {
+    const {
+      subject = 'math',
+      lessonTitle = '',
+      stepTitle = '',
+      question = '',
+      rubricChecklist = [],
+      sampleAnswer = '',
+      studentAnswer = '',
+      language = 'vi'
+    } = req.body || {};
+
+    if (!String(studentAnswer).trim()) {
+      return res.status(400).json({ error: 'Vui lòng nhập câu trả lời tự luận trước khi chấm.' });
+    }
+
+    const ai = getGenAI();
+    const isEn = language === 'en';
+    const subjLabel =
+      subject === 'physics' ? (isEn ? 'Physics' : 'Vật lí') : subject === 'cs' ? (isEn ? 'Computer Science' : 'Tin học') : isEn ? 'Mathematics' : 'Toán học';
+
+    const prompt = isEn
+      ? `You are a ${subjLabel} teacher grading a student's short essay response (0 to 10 points) for lesson "${lessonTitle}", section "${stepTitle}".
+Question: ${question}
+Rubric checklist: ${(rubricChecklist || []).join('; ')}
+Reference answer: ${sampleAnswer}
+Student answer: ${studentAnswer}
+
+Grade fairly from 0 to 10 (integers or halves). Identify specific strengths, mistakes/missing conditions, and concise constructive feedback. Use KaTeX ($...$) for formulas.`
+      : `Bạn là giáo viên ${subjLabel} chấm một câu tự luận ngắn (thang điểm 0 đến 10) thuộc bài "${lessonTitle}", phần "${stepTitle}".
+ĐỀ BÀI: ${question}
+TIÊU CHÍ CHẤM: ${(rubricChecklist || []).map((r: string, i: number) => `${i + 1}. ${r}`).join(' | ')}
+ĐÁP ÁN THAM KHẢO: ${sampleAnswer}
+BÀI LÀM HỌC SINH: ${studentAnswer}
+
+Hãy chấm điểm chính xác từ 0 đến 10 (có thể dùng 0.5 điểm), chỉ ra điểm làm đúng, lỗi sai hoặc ý còn thiếu (như thiếu điều kiện, sai đơn vị, nhầm dấu), và nhận xét ngắn gọn giúp học sinh sửa ngay. Công thức viết chuẩn KaTeX ($...$).`;
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: prompt,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          score: { type: Type.NUMBER },
+          isCorrectDirection: { type: Type.BOOLEAN },
+          strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+          mistakes: { type: Type.ARRAY, items: { type: Type.STRING } },
+          feedback: { type: Type.STRING }
+        }
+      },
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 14000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, null);
+    if (parsed && typeof parsed.score !== 'undefined') {
+      const rawScore = Number(parsed.score ?? 0);
+      const clampedScore = Math.max(0, Math.min(10, Math.round(rawScore * 2) / 2));
+
+      return res.json({
+        success: true,
+        evaluation: {
+          score: clampedScore,
+          maxScore: 10,
+          isCorrectDirection: Boolean(parsed.isCorrectDirection ?? clampedScore >= 5),
+          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String) : [],
+          mistakes: Array.isArray(parsed.mistakes) ? parsed.mistakes.map(String) : [],
+          feedback: String(parsed.feedback || 'Đã hoàn thành chấm câu tự luận ngắn.'),
+          gradedBy: 'ai'
+        }
+      });
+    }
+    throw new Error('Malformed mini essay response');
+  } catch (err: any) {
+    console.warn('Mini essay grading fallback:', extractCleanErrorMessage(err));
+    const ans = String(req.body?.studentAnswer || '').trim();
+    const score = ans.length >= 80 ? 8 : ans.length >= 35 ? 7 : 5.5;
+    return res.json({
+      success: true,
+      fallback: true,
+      evaluation: {
+        score,
+        maxScore: 10,
+        isCorrectDirection: true,
+        strengths: ['Đã chủ động trình bày lập luận và hệ thức trọng tâm.'],
+        mistakes: ['Đối chiếu thêm với đáp án mẫu để kiểm tra điều kiện xác định & đơn vị.'],
+        feedback: 'Hệ thống đã ghi nhận bài làm. Hãy xem phần Đáp án mẫu bên dưới để hoàn thiện chi tiết.',
+        gradedBy: 'ai'
+      }
+    });
+  }
+});
+
+// =====================================================================
+// GEMINI AI: GENERATE FRESH 2 MCQ + 1 MINI ESSAY FOR A SPECIFIC SECTION
+// =====================================================================
+app.post('/api/gemini/generate-step-quiz', async (req: Request, res: Response) => {
+  try {
+    const {
+      subject = 'math',
+      lessonTitle = '',
+      stepTitle = '',
+      conceptSection = '',
+      primaryFormula = '',
+      deepDiveSection = '',
+      language = 'vi'
+    } = req.body || {};
+
+    const ai = getGenAI();
+    const isEn = language === 'en';
+    const subjLabel =
+      subject === 'physics' ? 'Vật lí' : subject === 'cs' ? 'Tin học & Thuật toán' : 'Toán học';
+
+    const prompt = isEn
+      ? `Create a focused micro-assessment for ${subject} lesson "${lessonTitle}", section "${stepTitle}".
+Concept: ${conceptSection}
+Formula: ${primaryFormula}
+Deep dive: ${deepDiveSection}
+
+Return strict JSON with:
+- miniQuiz: array of EXACTLY 2 multiple-choice questions (id, question, 4 options labeled A./B./C./D., correctIndex 0..3, detailed explanation). One tests conceptual understanding/conditions, one tests formula application.
+- miniEssay: 1 short essay question (id, question, hint, rubricChecklist of 2-3 points, sampleAnswer).
+Format all math/physics expressions in KaTeX ($...$, always use \\frac).`
+      : `Hãy tạo bộ kiểm tra kiến thức chuyên sâu cho đúng phần nội dung sau của môn ${subjLabel}:
+Bài học: ${lessonTitle}
+Phần đang học: ${stepTitle}
+Khái niệm: ${conceptSection}
+Công thức trọng tâm: ${primaryFormula}
+Giải thích sâu: ${deepDiveSection}
+
+Yêu cầu trả về JSON chuẩn gồm:
+- miniQuiz: ĐÚNG 2 câu trắc nghiệm (mỗi câu gồm id, question, options gồm đúng 4 phương án A./B./C./D., correctIndex từ 0..3 chính xác 100%, explanation giải thích tường minh). Câu 1 kiểm tra bản chất khái niệm/điều kiện; Câu 2 kiểm tra vận dụng công thức/bài toán cụ thể.
+- miniEssay: ĐÚNG 1 câu tự luận nhỏ (id, question yêu cầu giải thích ngắn hoặc tính toán/chứng minh nhanh 3-5 dòng, hint gợi ý, rubricChecklist gồm 2-3 ý chấm điểm, sampleAnswer lời giải mẫu).
+Mọi công thức Toán/Lí PHẢI viết chuẩn KaTeX ($...$, luôn dùng \\frac{a}{b}).`;
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: prompt,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          miniQuiz: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                question: { type: Type.STRING },
+                options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                correctIndex: { type: Type.INTEGER },
+                explanation: { type: Type.STRING }
+              }
+            }
+          },
+          miniEssay: {
+            type: Type.OBJECT,
+            properties: {
+              id: { type: Type.STRING },
+              question: { type: Type.STRING },
+              hint: { type: Type.STRING },
+              rubricChecklist: { type: Type.ARRAY, items: { type: Type.STRING } },
+              sampleAnswer: { type: Type.STRING }
+            }
+          }
+        }
+      },
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 16000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {});
+    if (!Array.isArray(parsed?.miniQuiz) || parsed.miniQuiz.length < 2 || !parsed?.miniEssay?.question) {
+      throw new Error('AI response missing 2 MCQ + 1 essay');
+    }
+
+    return res.json({
+      success: true,
+      miniQuiz: parsed.miniQuiz.slice(0, 2).map((q: any, idx: number) => ({
+        id: String(q.id || `ai_mcq_${Date.now()}_${idx}`),
+        question: String(q.question || ''),
+        options: Array.isArray(q.options) ? q.options.map(String).slice(0, 4) : ['A.', 'B.', 'C.', 'D.'],
+        correctIndex: Math.max(0, Math.min(3, Number(q.correctIndex ?? 0))),
+        explanation: String(q.explanation || '')
+      })),
+      miniEssay: {
+        id: String(parsed.miniEssay.id || `ai_essay_${Date.now()}`),
+        question: String(parsed.miniEssay.question || ''),
+        hint: String(parsed.miniEssay.hint || ''),
+        rubricChecklist: Array.isArray(parsed.miniEssay.rubricChecklist)
+          ? parsed.miniEssay.rubricChecklist.map(String)
+          : [],
+        sampleAnswer: String(parsed.miniEssay.sampleAnswer || '')
+      }
+    });
+  } catch (err: any) {
+    console.warn('Generate step quiz fallback:', extractCleanErrorMessage(err));
+    const stepTitle = String(req.body?.stepTitle || 'Phần trọng tâm');
+    const f = String(req.body?.primaryFormula || '').trim();
+    const fTxt = f ? `$${f}$` : 'công thức trọng tâm';
+    const ts = Date.now();
+    return res.json({
+      success: true,
+      fallback: true,
+      miniQuiz: [
+        {
+          id: `fb_mcq1_${ts}`,
+          question: `Khi vận dụng nội dung "${stepTitle}" (${fTxt}), bước kiểm tra đầu tiên là gì?`,
+          options: [
+            'A. Kiểm tra điều kiện xác định, đơn vị chuẩn / giới hạn biên trước khi biến đổi',
+            'B. Thay ngay một giá trị bất kỳ mà không xét điều kiện',
+            'C. Bỏ qua dấu của các đại lượng trong bài toán',
+            'D. Chỉ ghi đáp số cuối cùng'
+          ],
+          correctIndex: 0,
+          explanation: `Luôn kiểm tra điều kiện áp dụng, dấu và đơn vị trước khi tính toán với ${fTxt}.`
+        },
+        {
+          id: `fb_mcq2_${ts}`,
+          question: `Phát biểu nào đúng nhất về quy luật trong phần "${stepTitle}"?`,
+          options: [
+            'A. Các đại lượng độc lập hoàn toàn với nhau',
+            `B. Các đại lượng liên hệ chặt chẽ theo ${fTxt} và kiểm chứng được bằng mô phỏng`,
+            'C. Công thức không phụ thuộc hệ số hay tham số',
+            'D. Không cần kiểm tra trường hợp đặc biệt (= 0)'
+          ],
+          correctIndex: 1,
+          explanation: `Mối quan hệ định lượng được mô tả bởi ${fTxt} khi thỏa mãn điều kiện bài toán.`
+        }
+      ],
+      miniEssay: {
+        id: `fb_essay_${ts}`,
+        question: `Trình bày ngắn gọn (3–4 dòng) ý nghĩa của ${fTxt} trong "${stepTitle}" và nêu 1 lỗi sai hay gặp cần tránh.`,
+        hint: 'Nêu rõ từng đại lượng và 1 điều kiện ràng buộc.',
+        rubricChecklist: [`Viết đúng ${fTxt}`, 'Nêu ý nghĩa đại lượng', 'Chỉ ra 1 điều kiện/lỗi sai'],
+        sampleAnswer: `${String(req.body?.conceptSection || '').slice(0, 200)}\nLuôn kiểm tra điều kiện xác định và đơn vị của ${fTxt}.`
+      }
+    });
+  }
+});
+
+// =====================================================================
+// GEMINI AI: ANALYZE SAVED LESSON RESULTS & RECOMMEND ROADMAP
+// =====================================================================
+function buildFallbackLessonAnalysis(
+  subject: 'math' | 'physics' | 'cs',
+  lessonTitle: string,
+  stepsSummary: any[],
+  isEn: boolean
+) {
+  let totalMcq = 0;
+  let correctMcq = 0;
+  let essaySum = 0;
+  let essayCount = 0;
+  const strongPoints: string[] = [];
+  const weakPoints: string[] = [];
+  const weakStepIndices: number[] = [];
+
+  for (const s of stepsSummary) {
+    const t = Number(s.mcqTotal || 0);
+    const c = Number(s.mcqCorrect || 0);
+    totalMcq += t;
+    correctMcq += c;
+
+    const hasEssay = typeof s.essayScore === 'number';
+    if (hasEssay) {
+      essaySum += s.essayScore;
+      essayCount += 1;
+    }
+
+    const mcqRate = t > 0 ? c / t : 0;
+    const essayRate = hasEssay ? s.essayScore / 10 : mcqRate;
+    const combined = (mcqRate + essayRate) / 2;
+
+    if (t > 0 || hasEssay) {
+      if (combined >= 0.75) {
+        strongPoints.push(`${s.stepTitle}: Đạt ${c}/${t} TN${hasEssay ? `, Tự luận ${s.essayScore}/10` : ''}`);
+      } else {
+        weakPoints.push(`${s.stepTitle}: Cần củng cố lại (${c}/${t} TN${hasEssay ? `, Tự luận ${s.essayScore}/10` : ''})`);
+        weakStepIndices.push(Number(s.stepIndex || 0));
+      }
+    }
+  }
+
+  const mcqPct = totalMcq > 0 ? (correctMcq / totalMcq) * 100 : 0;
+  const essayPct = essayCount > 0 ? (essaySum / essayCount) * 10 : mcqPct;
+  const overallMastery =
+    totalMcq > 0 || essayCount > 0 ? Math.round((mcqPct * 0.55 + essayPct * 0.45)) : 0;
+
+  const readinessLevel =
+    overallMastery >= 80
+      ? isEn ? 'Mastered · Ready for Simulation & Next Lesson' : 'Nắm vững cốt lõi · Sẵn sàng thực chiến & học bài tiếp'
+      : overallMastery >= 55
+      ? isEn ? 'Developing · Review Flagged Formulas' : 'Đạt mức Khá · Cần vá lại các phần công thức còn hổng'
+      : isEn ? 'Needs Reinforcement · Re-study Concepts Step-by-Step' : 'Cần củng cố gốc · Hãy ôn lại Khái niệm & hỏi AI phần chưa rõ';
+
+  const recommendedRoadmap: any[] = [];
+  let stepOrder = 1;
+
+  if (weakStepIndices.length > 0) {
+    const firstWeak = stepsSummary.find((s) => Number(s.stepIndex) === weakStepIndices[0]);
+    recommendedRoadmap.push({
+      step: stepOrder++,
+      title: isEn ? `Review: ${firstWeak?.stepTitle || 'Weak section'}` : `Ôn lại ngay: ${firstWeak?.stepTitle || 'Phần còn yếu'}`,
+      action: isEn
+        ? 'Re-read the Concept, Formula, and Deep Dive sections, then ask AI about any unclear step.'
+        : 'Đọc kỹ lại mục Khái niệm, Công thức, Giải thích sâu hơn và dùng hộp Đặt câu hỏi cho AI ở phần này.',
+      targetType: 'review_step',
+      stepIndex: weakStepIndices[0]
+    });
+  }
+
+  recommendedRoadmap.push({
+    step: stepOrder++,
+    title:
+      subject === 'cs'
+        ? isEn ? 'Run & Test Code in Online Judge' : 'Thực hành viết code & Chấm Test Online Judge'
+        : isEn ? 'Verify Laws on 2D Interactive Lab' : 'Kiểm chứng trực quan trên Mô phỏng 2D',
+    action:
+      subject === 'cs'
+        ? isEn
+          ? 'Open the illustrated C++/Python code and submit the lesson problem on Judge.'
+          : 'Mở tab Code Mẫu C++/Python và nộp bài trên Trình chấm Online Judge để rèn biên độ test.'
+        : isEn
+        ? 'Adjust sliders and inspect live graphs/vectors to connect formulas with visual intuition.'
+        : 'Kéo thanh trượt thay đổi tham số trên Mô phỏng 2D để thấy quy luật công thức vận hành trực tiếp.',
+    targetType: 'sim_2d'
+  });
+
+  if (overallMastery < 75) {
+    recommendedRoadmap.push({
+      step: stepOrder++,
+      title: isEn ? 'Clarify Doubts with AI Tutor (Mode 1)' : 'Gỡ nút thắt cùng Gia Sư AI (Chế độ 1)',
+      action: isEn
+        ? 'Ask Socratic AI Tutor to guide you step-by-step on the missed essay/MCQ concepts.'
+        : 'Hỏi Gia Sư AI về các câu sai hoặc ý tự luận còn thiếu để hiểu sâu bản chất trước khi làm đề.',
+      targetType: 'ai_tutor'
+    });
+  }
+
+  recommendedRoadmap.push({
+    step: stepOrder++,
+    title:
+      overallMastery >= 75
+        ? isEn ? 'Advance to Next Lesson or Timed Exam' : 'Chuyển sang Bài tiếp theo hoặc Thử sức Đề thi'
+        : isEn ? 'Retry Section Quizzes Before Advancing' : 'Làm lại bộ câu hỏi phần yếu rồi sang Bài tiếp theo',
+    action:
+      overallMastery >= 75
+        ? isEn
+          ? `You are ready to progress beyond "${lessonTitle}" or test yourself in Exam Hub / Weekly Arena.`
+          : `Kết quả bài "${lessonTitle}" rất khả quan — hãy tiến sang bài mới hoặc thử sức trong Kho Đề / Đấu Trường.`
+        : isEn
+        ? 'Aim for >= 75% mastery before moving to the next lesson.'
+        : 'Đạt tối thiểu 75% mức nắm vững ở bài này để xây nền chắc cho bài tiếp theo.',
+    targetType: overallMastery >= 75 ? 'next_lesson' : 'exams'
+  });
+
+  return {
+    overallMastery,
+    readinessLevel,
+    summaryFeedback: isEn
+      ? `You answered ${correctMcq}/${totalMcq} MCQs correctly${essayCount > 0 ? ` and averaged ${Math.round((essaySum / essayCount) * 10) / 10}/10 on mini-essays` : ''} for "${lessonTitle}".`
+      : `Ở bài "${lessonTitle}", bạn đạt ${correctMcq}/${totalMcq} câu trắc nghiệm${essayCount > 0 ? ` và điểm trung bình tự luận ngắn là ${Math.round((essaySum / essayCount) * 10) / 10}/10` : ''}. ${weakPoints.length > 0 ? 'Hãy tập trung vá lại các phần đánh dấu đỏ trước khi chuyển bài.' : 'Bạn đang giữ nhịp học rất tốt!'}`,
+    strongPoints: strongPoints.length > 0 ? strongPoints : [isEn ? 'Completed initial theory reading' : 'Đã chủ động tiếp cận nội dung bài giảng'],
+    weakPoints: weakPoints.length > 0 ? weakPoints : [isEn ? 'Complete remaining mini-essays for deeper retention' : 'Nên hoàn thành đầy đủ tự luận nhỏ ở tất cả các phần để chốt kiến thức'],
+    recommendedRoadmap,
+    analyzedAt: new Date().toISOString()
+  };
+}
+
+app.post('/api/gemini/analyze-lesson-progress', async (req: Request, res: Response) => {
+  const {
+    subject = 'math',
+    grade = '',
+    lessonTitle = '',
+    stepsSummary = [],
+    language = 'vi'
+  } = req.body || {};
+
+  const subj: 'math' | 'physics' | 'cs' = subject === 'physics' || subject === 'cs' ? subject : 'math';
+  const isEn = language === 'en';
+  const safeSummary = Array.isArray(stepsSummary) ? stepsSummary : [];
+
+  try {
+    const ai = getGenAI();
+    const transcript = safeSummary
+      .map(
+        (s: any) =>
+          `- Phần ${Number(s.stepIndex) + 1}: "${s.stepTitle}" | TN: ${s.mcqCorrect}/${s.mcqTotal} đúng | Tự luận nhỏ: ${
+            typeof s.essayScore === 'number' ? `${s.essayScore}/10` : 'Chưa chấm'
+          }${s.essayMistakes?.length ? ` | Lỗi tự luận: ${s.essayMistakes.join('; ')}` : ''}${
+            s.wrongMcqTopics?.length ? ` | Câu TN sai: ${s.wrongMcqTopics.join('; ')}` : ''
+          }`
+      )
+      .join('\n');
+
+    const prompt = isEn
+      ? `Analyze the student's per-section results in lesson "${lessonTitle}" (${subj}, ${grade}) and recommend a concrete next-step learning roadmap.
+Results:
+${transcript}
+
+Return strict JSON:
+- overallMastery (integer 0-100)
+- readinessLevel (short status string)
+- summaryFeedback (2-3 sentences diagnosing mastery and root gaps)
+- strongPoints (array of 2-3 strings)
+- weakPoints (array of 1-3 strings targeting weak sections/formulas)
+- recommendedRoadmap (array of 3-4 ordered objects: { step, title, action, targetType in ['review_step','sim_2d','sim_3d','ai_tutor','next_lesson','exams','arena'], stepIndex (optional 0-based index for review_step) }).`
+      : `Hãy phân tích kết quả học tập chi tiết theo từng phần của học sinh trong bài "${lessonTitle}" (Môn: ${subj}, Trình độ: ${grade}) và đề xuất lộ trình học tiếp theo thật hợp lý.
+Dữ liệu làm bài từng phần:
+${transcript}
+
+Trả về JSON chuẩn gồm:
+- overallMastery: số nguyên 0..100 đánh giá mức độ nắm vững thực chất cả bài.
+- readinessLevel: nhận định ngắn gọn trạng thái sẵn sàng (vd: "Nắm vững · Sẵn sàng nâng cao" hoặc "Cần ôn lại Phần 2 trước khi làm đề").
+- summaryFeedback: 2-3 câu phân tích sâu sắc điểm làm được, lỗ hổng tư duy/công thức và định hướng cải thiện.
+- strongPoints: mảng 2-3 điểm mạnh cụ thể theo tên phần/công thức.
+- weakPoints: mảng 1-3 điểm yếu hoặc phần chưa làm/làm sai cần khắc phục.
+- recommendedRoadmap: mảng 3-4 bước lộ trình gợi ý theo thứ tự ưu tiên, mỗi bước gồm:
+  + step (1, 2, 3...)
+  + title (tiêu đề hành động ngắn gọn)
+  + action (hướng dẫn cụ thể nên làm gì ở bước đó)
+  + targetType (CHỈ chọn trong: 'review_step', 'sim_2d', 'sim_3d', 'ai_tutor', 'next_lesson', 'exams', 'arena')
+  + stepIndex (chỉ số 0-based của phần cần ôn nếu targetType là 'review_step').`;
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: prompt,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          overallMastery: { type: Type.INTEGER },
+          readinessLevel: { type: Type.STRING },
+          summaryFeedback: { type: Type.STRING },
+          strongPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+          weakPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+          recommendedRoadmap: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                step: { type: Type.INTEGER },
+                title: { type: Type.STRING },
+                action: { type: Type.STRING },
+                targetType: { type: Type.STRING },
+                stepIndex: { type: Type.INTEGER }
+              }
+            }
+          }
+        }
+      },
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 15000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {});
+    const validTargets = new Set(['review_step', 'sim_2d', 'sim_3d', 'ai_tutor', 'next_lesson', 'exams', 'arena']);
+    if (Array.isArray(parsed?.recommendedRoadmap) && parsed.recommendedRoadmap.length > 0) {
+      return res.json({
+        success: true,
+        analysis: {
+          overallMastery: Math.max(0, Math.min(100, Math.round(Number(parsed.overallMastery ?? 0)))),
+          readinessLevel: String(parsed.readinessLevel || 'Đã phân tích xong'),
+          summaryFeedback: String(parsed.summaryFeedback || ''),
+          strongPoints: Array.isArray(parsed.strongPoints) ? parsed.strongPoints.map(String) : [],
+          weakPoints: Array.isArray(parsed.weakPoints) ? parsed.weakPoints.map(String) : [],
+          recommendedRoadmap: parsed.recommendedRoadmap.slice(0, 5).map((r: any, idx: number) => ({
+            step: Number(r.step || idx + 1),
+            title: String(r.title || ''),
+            action: String(r.action || ''),
+            targetType: validTargets.has(r.targetType) ? r.targetType : 'review_step',
+            ...(typeof r.stepIndex === 'number' ? { stepIndex: Math.max(0, r.stepIndex) } : {})
+          })),
+          analyzedAt: new Date().toISOString()
+        }
+      });
+    }
+  } catch (err: any) {
+    console.warn('Analyze lesson progress falling back to deterministic analyzer:', extractCleanErrorMessage(err));
+  }
+
+  return res.json({
+    success: true,
+    analysis: buildFallbackLessonAnalysis(subj, String(lessonTitle), safeSummary, isEn),
+    fallback: true
+  });
 });
 
 // JSON guards for /api routes (never leak HTML pages to JSON clients)

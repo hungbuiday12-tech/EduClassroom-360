@@ -3,7 +3,7 @@
 ## 1. Data Invariants
 - Each user profile `/users/{userId}` belongs strictly to `request.auth.uid`.
 - Users cannot elevate their own role (`role` cannot be modified to 'admin' without admin privileges).
-- Users can only read and write their own profile, `/study_progress/{progressId}`, and `/study_roadmap/{userId}`.
+- Users can only read and write their own profile, `/study_progress/{progressId}`, `/study_roadmap/{userId}`, and `/lesson_assessments/{assessmentId}` (with `overallMastery` in `[0, 100]` and immutable `userId` and `lessonKey`).
 - Daily arena attempts in `/arena_attempts/{attemptId}` are immutable once created (`allow update, delete: if false`) and strictly owned by `request.auth.uid` with scores constrained to `[0, 100]`.
 - Weekly leaderboard records in `/weekly_leaderboard/{entryId}` contain zero PII (no emails/phones), enforce score bounds `[0, 100]`, and only allow updates by the owning `request.auth.uid` with immutable `userId` and `weekId`.
 

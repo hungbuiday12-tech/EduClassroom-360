@@ -216,7 +216,7 @@ function MainApp() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="relative min-h-screen flex flex-col bg-transparent text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 overflow-x-hidden"
+          className="relative min-h-screen flex flex-col bg-transparent text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 overflow-x-clip"
         >
           {/* Dynamic Cosmic Galaxy Background (active in both Light and Dark modes) */}
           <GalaxyBackground

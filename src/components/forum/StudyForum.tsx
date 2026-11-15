@@ -107,6 +107,9 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const messageTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const selectedGroupIdRef = useRef<string>(selectedGroupId);
+  selectedGroupIdRef.current = selectedGroupId;
   const prevGroupIdRef = useRef<string>(selectedGroupId);
   const prevMsgCountRef = useRef<number>(0);
 
@@ -191,7 +194,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
               return sortGroupsList(next);
             });
           }
-          if (msg.groupId === selectedGroupId && (!msg.isAdminGroup || Boolean(user))) {
+          if (msg.groupId === selectedGroupIdRef.current && (!msg.isAdminGroup || Boolean(user))) {
             setMessages((prev) => {
               if (prev.some((m) => m.id === msg.id)) return prev;
               return [...prev, msg];
@@ -213,7 +216,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
     return () => {
       es.close();
     };
-  }, [selectedGroupId, user, sortGroupsList]);
+  }, [user, sortGroupsList]);
 
   // Fetch messages when selectedGroupId or auth state changes
   const fetchMessagesForGroup = useCallback(async () => {
@@ -300,7 +303,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
     return () => unsub();
   }, [selectedGroupId, user]);
 
-  // Scroll only INSIDE the messages container (never push the outer page/viewport down)
+  // Scroll only INSIDE the messages container without ever nudging the outer page viewport
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) {
@@ -314,14 +317,15 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
     prevGroupIdRef.current = selectedGroupId;
     prevMsgCountRef.current = messages.length;
 
-    if (groupChanged) {
-      container.scrollTop = container.scrollHeight;
-    } else if (msgAdded) {
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior: 'smooth'
-      });
-    }
+    if (!groupChanged && !msgAdded) return;
+
+    const rafId = window.requestAnimationFrame(() => {
+      if (container.scrollHeight > container.clientHeight) {
+        container.scrollTop = container.scrollHeight;
+      }
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
   }, [messages.length, selectedGroupId]);
 
   const handleOpenCreateGroup = () => {
@@ -431,6 +435,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (sendingMsg) return;
     setErrorMsg(null);
     setStatusMsg(null);
 
@@ -455,6 +460,17 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
 
     const cleanContent = messageInput.trim();
     if (!cleanContent) return;
+
+    const savedScrollX = typeof window !== 'undefined' ? window.scrollX : 0;
+    const savedScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+    const preserveOuterScroll = () => {
+      if (typeof window === 'undefined') return;
+      window.requestAnimationFrame(() => {
+        if (Math.abs(window.scrollY - savedScrollY) > 1 || Math.abs(window.scrollX - savedScrollX) > 1) {
+          window.scrollTo({ left: savedScrollX, top: savedScrollY, behavior: 'auto' });
+        }
+      });
+    };
 
     setSendingMsg(true);
     const msgId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -498,6 +514,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
         );
       }
       setMessageInput('');
+      messageTextareaRef.current?.focus({ preventScroll: true });
+      preserveOuterScroll();
 
       // Mirror to Firestore when Firebase Auth session matches
       if (auth.currentUser && auth.currentUser.uid === user.uid) {
@@ -549,6 +567,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
       }
     } finally {
       setSendingMsg(false);
+      preserveOuterScroll();
     }
   };
 
@@ -642,7 +661,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ overflowAnchor: 'none' }}>
       {/* Header Strip */}
       <div className="rounded-3xl bg-white/85 dark:bg-slate-900/82 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-5 sm:p-7 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.12)] dark:shadow-[0_18px_45px_-16px_rgba(0,0,0,0.55)]">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -750,7 +769,10 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
       {/* Main 12-Column Forum Split Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* LEFT COLUMN (4 cols): Groups Directory */}
-        <aside className="lg:col-span-4 rounded-3xl bg-white/85 dark:bg-slate-900/82 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-4 sm:p-5 flex flex-col gap-4 shadow-sm">
+        <aside
+          className="lg:col-span-4 rounded-3xl bg-white/85 dark:bg-slate-900/82 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-4 sm:p-5 flex flex-col gap-4 shadow-sm"
+          style={{ overflowAnchor: 'none' }}
+        >
           {/* Search */}
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -785,7 +807,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
           </div>
 
           {/* Groups List */}
-          <div className="space-y-2.5 overflow-y-auto max-h-[560px] pr-1">
+          <div className="space-y-2.5 overflow-y-auto max-h-[560px] pr-1" style={{ overflowAnchor: 'none' }}>
             {loadingGroups ? (
               <div className="py-10 text-center text-xs text-slate-400">
                 {isEn ? 'Loading groups...' : 'Đang tải danh sách nhóm...'}
@@ -864,7 +886,10 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
         </aside>
 
         {/* RIGHT COLUMN (8 cols): Discussion Room */}
-        <section className="lg:col-span-8 rounded-3xl bg-white/85 dark:bg-slate-900/82 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 flex flex-col h-[620px] lg:h-[680px] shadow-sm overflow-hidden">
+        <section
+          className="lg:col-span-8 rounded-3xl bg-white/85 dark:bg-slate-900/82 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 flex flex-col h-[620px] lg:h-[680px] shadow-sm overflow-hidden"
+          style={{ overflowAnchor: 'none' }}
+        >
           {selectedGroup ? (
             <>
               {/* Room Header */}
@@ -970,7 +995,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                   {/* Messages Feed */}
                   <div
                     ref={messagesContainerRef}
-                    className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5"
+                    className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3.5"
+                    style={{ overflowAnchor: 'none' }}
                   >
                     {loadingMessages ? (
                       <div className="py-12 text-center text-xs text-slate-400">
@@ -1104,6 +1130,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                       <form onSubmit={handleSendMessage} className="space-y-2">
                         <div className="flex items-end gap-2">
                           <textarea
+                            ref={messageTextareaRef}
                             rows={2}
                             maxLength={2000}
                             value={messageInput}
@@ -1127,8 +1154,12 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                           />
                           <button
                             type="submit"
-                            disabled={sendingMsg || !messageInput.trim()}
-                            className="px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap"
+                            aria-disabled={sendingMsg || !messageInput.trim()}
+                            className={`px-4 py-3 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 whitespace-nowrap transition-opacity ${
+                              sendingMsg || !messageInput.trim()
+                                ? 'opacity-50 cursor-not-allowed'
+                                : 'hover:bg-indigo-700 cursor-pointer'
+                            }`}
                           >
                             <Send className="w-4 h-4" />
                             <span>{isEn ? 'Send' : 'Gửi'}</span>

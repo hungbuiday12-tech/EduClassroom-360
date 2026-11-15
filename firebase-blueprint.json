@@ -208,6 +208,31 @@
         "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["userId", "lessonKey", "subject", "lessonTitle", "mcqCorrect", "mcqTotal", "overallMastery"]
+    },
+    "PlatformReview": {
+      "title": "PlatformReview",
+      "description": "Public user review, star rating, and helpful vote counter for the platform",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "maxLength": 40 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "avatarUrl": { "type": "string", "maxLength": 512 },
+        "rating": { "type": "number" },
+        "favoriteCategory": {
+          "type": "string",
+          "enum": ["simulations", "lectures_ai", "coding_exams", "interface", "general"]
+        },
+        "comment": { "type": "string", "maxLength": 800 },
+        "helpfulUserIds": {
+          "type": "array",
+          "description": "List of user IDs who upvoted this review (max 500)"
+        },
+        "helpfulCount": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["userId", "displayName", "rating", "favoriteCategory", "comment", "helpfulCount", "createdAt"]
     }
   },
   "firestore": {
@@ -234,6 +259,10 @@
     "/lesson_assessments/{assessmentId}": {
       "schema": "LessonAssessment",
       "description": "Per-student saved lecture quiz & mini-essay progress and roadmap analysis"
+    },
+    "/platform_reviews/{reviewId}": {
+      "schema": "PlatformReview",
+      "description": "Public user reviews, star ratings, favorite votes, and comments"
     }
   }
 }

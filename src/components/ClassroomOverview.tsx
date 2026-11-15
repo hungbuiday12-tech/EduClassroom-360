@@ -15,7 +15,9 @@ import {
   Sparkles,
   LogIn,
   Trophy,
-  GitBranch
+  GitBranch,
+  Settings,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -23,26 +25,32 @@ import { EXAM_PAPERS } from '../data/examData';
 import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
 import { CS_LESSONS } from '../data/csLessonsData';
+import { PlatformReviews } from './common/PlatformReviews';
 
 interface ClassroomOverviewProps {
   onNavigate: (subject: SubjectType) => void;
   xp: number;
   onOpenTutor?: (subject?: 'math' | 'physics' | 'cs', mode?: AITutorMode) => void;
+  onOpenSettings?: () => void;
 }
 
 export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   onNavigate,
   xp,
-  onOpenTutor
+  onOpenTutor,
+  onOpenSettings
 }) => {
   const { user, openAuthModal } = useAuth();
   const { t, language } = useLanguage();
   const isEn = language === 'en';
 
   const currentXP = user ? user.xp : xp;
+  const currentLevel = Math.floor(currentXP / 500) + 1;
+  const xpProgressPct = Math.min(((currentXP % 500) / 500) * 100, 100);
   const totalExams = EXAM_PAPERS.length;
   const chuyenExams = EXAM_PAPERS.filter((e) => e.track === 'chuyen').length;
   const standardExams = EXAM_PAPERS.filter((e) => e.track === 'khong_chuyen').length;
+  const totalLessons = MATH_LECTURES.length + PHYSICS_LESSONS.length + CS_LESSONS.length;
 
   // Pomodoro Timer State
   const [pomodoroSeconds, setPomodoroSeconds] = useState<number>(25 * 60);
@@ -124,8 +132,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       sub: isEn
         ? 'Algebra · Calculus · Plane & Oxyz 3D Geometry'
         : 'Đại số · Giải tích · Hình học & Oxyz 3D',
-      accent: 'border-indigo-200 dark:border-indigo-900/70 bg-indigo-50/40 dark:bg-indigo-950/20',
-      badge: 'bg-indigo-600 text-white',
+      accent:
+        'border-indigo-200/80 dark:border-indigo-500/25 bg-indigo-50/45 dark:bg-indigo-950/25',
+      badge: 'bg-indigo-600 text-white shadow-sm',
       btn: 'hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300',
       icon: <Compass className="w-4 h-4" />
     },
@@ -136,8 +145,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       sub: isEn
         ? 'Mechanics · Thermodynamics · RLC · Waves & Nuclear'
         : 'Cơ · Nhiệt · Điện RLC · Sóng & Hạt nhân',
-      accent: 'border-amber-200 dark:border-amber-900/70 bg-amber-50/40 dark:bg-amber-950/20',
-      badge: 'bg-amber-600 text-white',
+      accent:
+        'border-amber-200/80 dark:border-amber-500/25 bg-amber-50/45 dark:bg-amber-950/20',
+      badge: 'bg-amber-500 text-slate-950 shadow-sm',
       btn: 'hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-amber-800 dark:text-amber-300',
       icon: <Zap className="w-4 h-4" />
     },
@@ -148,8 +158,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       sub: isEn
         ? 'Competitive Algorithms · C++20 · Python 3 · Debug'
         : 'Thuật toán CP · C++20 · Python 3 · Debug',
-      accent: 'border-emerald-200 dark:border-emerald-900/70 bg-emerald-50/40 dark:bg-emerald-950/20',
-      badge: 'bg-emerald-600 text-white',
+      accent:
+        'border-emerald-200/80 dark:border-emerald-500/25 bg-emerald-50/45 dark:bg-emerald-950/20',
+      badge: 'bg-emerald-600 text-white shadow-sm',
       btn: 'hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300',
       icon: <Code2 className="w-4 h-4" />
     }
@@ -177,312 +188,644 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Smart Digital Blackboard Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white p-5 sm:p-8 border border-slate-800 shadow-xl">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.15),transparent_50%)] pointer-events-none" />
+    <div className="space-y-10">
+      {/* HERO: Architectural 12-Column Asymmetric Spatial Glass Command Center */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950/95 to-slate-900 text-white p-6 sm:p-10 ring-1 ring-inset ring-white/15 shadow-[0_28px_70px_-18px_rgba(15,23,42,0.65)]">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(56,189,248,0.18),transparent_52%),radial-gradient(ellipse_at_bottom_left,rgba(99,102,241,0.24),transparent_55%)] pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="max-w-2xl min-w-0">
-            <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold mb-2">
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Left 7 Cols: Editorial Headline + Quick-Launch Bar + Live Platform Metrics */}
+          <div className="lg:col-span-7 space-y-5 min-w-0">
+            <div className="flex items-center gap-2 text-sky-300 text-xs font-bold uppercase tracking-widest">
               <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
               <span>
                 {t(
                   'overview.badge',
-                  'Phòng học trực tuyến thông minh · Hệ thống mô phỏng đa môn',
-                  'Smart Virtual Classroom · Multi-Discipline Simulation'
+                  'Phòng học mô phỏng thông minh · Toán · Lí · Tin',
+                  'Smart Simulation Classroom · Math · Physics · CS'
                 )}
               </span>
             </div>
-            <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+
+            <h1 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-[1.15] text-balance">
               {t(
                 'overview.heroTitle',
                 'Bục giảng ảo: Khám phá trực quan Toán học, Vật lí & Tin học (Lớp 9 - 12)',
                 'Synapse Classroom: Math, Physics & Computer Science (Grades 9-12)'
               )}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+
+            <p className="text-xs sm:text-sm text-slate-300/95 leading-relaxed max-w-2xl">
               {t(
                 'overview.heroDesc',
-                'Trang bị các công cụ chuyên sâu: bài giảng 5 phần tích hợp đồ thị hàm số, hình học 2D & 7 cảnh Oxyz 3D (Toán), phòng thí nghiệm 2D/3D 60 FPS (Lí), và hệ thống giải đề Sublime Text 4 (Tin).',
-                'Equipped with specialized interactive tools: 5-step lectures with 2D/3D graphers and Oxyz geometry (Math), real-time 60fps 2D/3D labs (Physics), and Sublime Text 4 coding studio with online judge (CS).'
+                'Bài giảng 5 phần tích hợp đồ thị hàm số & 7 cảnh Oxyz 3D (Toán), phòng thí nghiệm 2D/3D 60 FPS (Lí), cùng IDE Sublime Text 4 + chấm code AI & 16 đồ thị thuật toán (Tin).',
+                '5-step lectures with 2D/3D graphers and Oxyz geometry (Math), real-time 60fps 2D/3D labs (Physics), and Sublime Text 4 coding studio with AI grading & 16 algorithm visualizers (CS).'
               )}
             </p>
 
-            <div className="flex flex-wrap items-center gap-2.5 mt-5">
+            {/* Quick-Launch Command Bar */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
-                onClick={() => onNavigate('roadmap')}
-                className="px-4 py-2 text-xs font-semibold text-slate-900 bg-white hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1.5"
-              >
-                <GitBranch className="w-3.5 h-3.5 text-indigo-600" />
-                <span>{t('overview.gotoRoadmap', 'Bản đồ Quy trình Học', 'Study Roadmap')}</span>
-              </button>
-              <button
-                onClick={() => onNavigate('arena')}
-                className="px-4 py-2 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-lg transition-colors flex items-center gap-1.5"
-              >
-                <Trophy className="w-3.5 h-3.5" />
-                <span>{t('overview.gotoArena', 'Thi đấu & BXH Tuần', 'Weekly Arena')}</span>
-              </button>
-              {onOpenTutor && (
-                <button
-                  onClick={() => onOpenTutor('math', 'explain_no_answer')}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>
-                    {t('overview.openTutor', '3 Trợ Lý AI (Toán · Lí · Tin)', '3 AI Tutors (Math · Physics · CS)')}
-                  </span>
-                </button>
-              )}
-              <button
+                type="button"
                 onClick={() => onNavigate('math')}
-                className="px-3.5 py-2 text-xs font-semibold text-white bg-slate-700/80 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-1.5"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/35 text-sky-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
               >
-                <span>{t('overview.gotoMath', 'Toán · Lí · Tin', 'Math · Physics · CS')}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <Compass className="w-3.5 h-3.5 text-sky-300" />
+                <span>{isEn ? 'Math 2D/3D' : 'Toán 2D/3D'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('physics')}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/35 text-amber-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <span>{isEn ? 'Physics Lab' : 'Lab Vật lí'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('cs')}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/35 text-emerald-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Code2 className="w-3.5 h-3.5 text-emerald-300" />
+                <span>{isEn ? 'Sublime IDE' : 'IDE Tin học'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('exams')}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+              >
+                <FileText className="w-3.5 h-3.5 text-indigo-300" />
+                <span>{isEn ? 'Exam Bank' : 'Kho Đề Thi'}</span>
+              </button>
+            </div>
+
+            {/* Clean Inline Key Metrics Bar */}
+            <div className="grid grid-cols-3 gap-4 pt-3 border-t border-white/10 max-w-lg">
+              <div>
+                <div className="font-display text-xl sm:text-2xl font-extrabold text-white tabular-nums">
+                  {totalLessons}
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {isEn ? 'Interactive Lessons' : 'Bài giảng tương tác'}
+                </div>
+              </div>
+              <div>
+                <div className="font-display text-xl sm:text-2xl font-extrabold text-sky-300 tabular-nums">
+                  60 FPS
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {isEn ? '2D/3D Physics & Graphs' : 'Mô phỏng 2D/3D'}
+                </div>
+              </div>
+              <div>
+                <div className="font-display text-xl sm:text-2xl font-extrabold text-amber-300 tabular-nums">
+                  {totalExams}
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {isEn ? 'Curated Exam Papers' : 'Đề thi chuẩn'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right 5 Cols: Frosted Mastery & XP Status Card */}
+          <div className="lg:col-span-5">
+            <div className="bg-white/[0.08] backdrop-blur-2xl ring-1 ring-inset ring-white/15 rounded-2xl p-5 sm:p-6 space-y-4 shadow-inner">
+              {user ? (
+                <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.displayName}
+                        className="w-11 h-11 rounded-full object-cover border border-sky-400/70 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-full bg-indigo-500/40 border border-indigo-400/70 flex items-center justify-center text-amber-300 font-display font-bold text-base shrink-0">
+                        {user.displayName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-xs text-sky-200/90 font-mono truncate">@{user.username}</div>
+                      <div className="text-sm font-display font-bold text-white truncate">
+                        {user.displayName}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-[10px] uppercase tracking-widest text-slate-400">
+                      {isEn ? 'Level' : 'Cấp độ'}
+                    </div>
+                    <div className="font-display text-xl font-extrabold text-amber-300 tabular-nums">
+                      Lv.{currentLevel}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10">
+                  <div>
+                    <div className="text-xs text-sky-200">
+                      {isEn ? 'Guest Mode Active' : 'Đang học thử'}
+                    </div>
+                    <div className="text-sm font-display font-bold text-white">
+                      {isEn ? 'Sign in to save records' : 'Lưu học bạ & đánh giá'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => openAuthModal('login')}
+                    className="px-4 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>{isEn ? 'Sign In' : 'Đăng nhập'}</span>
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-baseline text-xs">
+                  <span className="text-slate-300 font-medium">
+                    {isEn ? 'Accumulated Mastery' : 'Điểm kinh nghiệm (XP)'}
+                  </span>
+                  <span className="font-mono text-amber-300 font-bold text-sm tabular-nums">
+                    {currentXP} XP
+                  </span>
+                </div>
+                <div className="w-full bg-white/10 h-2.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-sky-400 via-indigo-400 to-amber-300 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${xpProgressPct}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-400 tabular-nums">
+                  <span>Lv.{currentLevel}</span>
+                  <span>
+                    {isEn
+                      ? `${500 - (currentXP % 500)} XP to Lv.${currentLevel + 1}`
+                      : `Còn ${500 - (currentXP % 500)} XP lên Lv.${currentLevel + 1}`}
+                  </span>
+                </div>
+              </div>
+
+              {onOpenSettings && (
+                <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-300 truncate">
+                    {user
+                      ? user.email
+                      : isEn
+                      ? 'Theme, Language & Account'
+                      : 'Tài khoản, Gmail & Giao diện'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={onOpenSettings}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/15 text-xs font-bold text-white transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-sky-300" />
+                    <span>{isEn ? 'Settings' : 'Cài đặt'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 1: 3 LARGE INTERACTIVE SUBJECTS BENTO (Toán · Vật lí · Tin học) */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 px-1">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+              {isEn ? 'INTERACTIVE SIMULATION STUDIOS' : 'PHÒNG THÍ NGHIỆM & MÔ PHỎNG'}
+            </div>
+            <h2 className="font-display text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-0.5">
+              {isEn ? 'Core STEM Disciplines (Grades 9–12)' : '3 Môn Học Trọng Tâm · Mô Phỏng Trực Quan'}
+            </h2>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
+            {isEn
+              ? 'Touch any studio frame to launch interactive 2D/3D visualizers and real-time grading.'
+              : 'Chạm vào từng khung môn học để mở đồ thị, thí nghiệm 3D 60 FPS hoặc trình chấm code.'}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* MATH CARD: Flowing Harmonic Wave + Orbital Geometry */}
+          <div
+            data-ripple="true"
+            onClick={() => onNavigate('math')}
+            className="group relative overflow-hidden bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/80 dark:border-sky-500/25 hover:border-sky-500 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 shadow-[0_12px_32px_-14px_rgba(14,165,233,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(14,165,233,0.32)] transition-all cursor-pointer flex flex-col justify-between gap-6"
+          >
+            {/* Math Custom Animated Wave & Coordinate Grid */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 360 120"
+              className="absolute inset-x-0 bottom-16 w-[200%] h-24 opacity-25 dark:opacity-35 pointer-events-none animate-wave-glide group-hover:opacity-55 transition-opacity"
+            >
+              <path
+                d="M0 60 Q45 10 90 60 T180 60 T270 60 T360 60"
+                fill="none"
+                stroke="#0ea5e9"
+                strokeWidth="2.5"
+              />
+              <path
+                d="M0 72 Q45 110 90 72 T180 72 T270 72 T360 72"
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="1.8"
+                strokeDasharray="4 4"
+              />
+            </svg>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 120 120"
+              className="absolute right-4 top-4 w-24 h-24 opacity-20 dark:opacity-30 pointer-events-none animate-orbit-slow"
+            >
+              <circle cx="60" cy="60" r="42" fill="none" stroke="#38bdf8" strokeWidth="1.4" strokeDasharray="5 5" />
+              <polygon points="60,22 93,79 27,79" fill="none" stroke="#6366f1" strokeWidth="1.5" />
+            </svg>
+
+            <div className="relative z-10 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200/80 dark:border-sky-800/70 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
+                <Compass className="w-6 h-6" />
+              </div>
+              <h3 className="font-display text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {isEn
+                  ? `Interactive Math (${MATH_LECTURES.length})`
+                  : `Toán học tương tác (${MATH_LECTURES.length} bài)`}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                {isEn
+                  ? 'Plot polynomials, logarithms, absolute values & integrals; interactive 2D geometry & 7 spatial Oxyz 3D scenes.'
+                  : 'Vẽ đồ thị đa thức, logarit, trị tuyệt đối, tô diện tích tích phân; hình học kéo thả & 7 mô hình Oxyz 3D trực quan.'}
+              </p>
+            </div>
+
+            <div className="relative z-10 pt-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate('math');
+                }}
+                className="w-full px-5 py-3.5 rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>{isEn ? 'Open 2D & Oxyz 3D Lab' : 'Vào Toán · Đồ thị & Oxyz 3D'}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
 
-          {/* Student Status Badge / Level */}
-          <div className="shrink-0 w-full lg:w-auto lg:min-w-[260px] bg-white/10 backdrop-blur-md border border-white/10 rounded-xl p-4 sm:p-5">
-            {user ? (
-              <div className="flex items-center gap-3 mb-3">
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt={user.displayName}
-                    className="w-10 h-10 rounded-full object-cover border border-indigo-400"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-indigo-500/30 border border-indigo-400 flex items-center justify-center text-amber-300 font-bold text-sm">
-                    {user.displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <div className="text-xs text-indigo-200">@{user.username}</div>
-                  <div className="text-sm font-bold text-white truncate max-w-[140px]">
-                    {user.displayName}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-white/10">
-                <div>
-                  <div className="text-xs text-indigo-200">
-                    {isEn ? 'Not signed in' : 'Chưa đăng nhập'}
-                  </div>
-                  <div className="text-xs font-semibold text-white">
-                    {isEn ? 'Save progress & grades' : 'Lưu học bạ & bài làm'}
-                  </div>
-                </div>
-                <button
-                  onClick={() => openAuthModal('login')}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Sign In' : 'Đăng nhập'}</span>
-                </button>
-              </div>
-            )}
+          {/* PHYSICS CARD: Animated Flowing Electric Current & Circuit Sparks */}
+          <div
+            data-ripple="true"
+            onClick={() => onNavigate('physics')}
+            className="group relative overflow-hidden bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-amber-300/80 dark:border-amber-500/25 hover:border-amber-400 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 shadow-[0_12px_32px_-14px_rgba(245,158,11,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(245,158,11,0.32)] transition-all cursor-pointer flex flex-col justify-between gap-6"
+          >
+            {/* Physics Custom Animated Electric Current SVG Circuit */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 320 200"
+              className="absolute inset-0 w-full h-full opacity-30 dark:opacity-45 pointer-events-none group-hover:opacity-75 transition-opacity"
+            >
+              <path
+                d="M16 32 H130 L146 18 L162 46 L178 18 L194 32 H304 V168 H16 Z"
+                fill="none"
+                stroke="#f59e0b"
+                strokeWidth="1.6"
+                strokeOpacity="0.35"
+              />
+              <path
+                d="M16 32 H130 L146 18 L162 46 L178 18 L194 32 H304 V168 H16 Z"
+                fill="none"
+                stroke="#fbbf24"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+                className="animate-electric-flow"
+              />
+              <path
+                d="M210 70 L236 62 L226 84 L268 74 L250 102 L292 92"
+                fill="none"
+                stroke="#38bdf8"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="animate-electric-flow-fast"
+              />
+              <circle cx="304" cy="32" r="4" fill="#fbbf24" />
+              <circle cx="16" cy="168" r="4" fill="#38bdf8" />
+            </svg>
 
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-mono">
-                <span className="text-slate-300">
-                  {isEn ? 'Experience Points:' : 'Điểm kinh nghiệm:'}
-                </span>
-                <span className="text-amber-300 font-bold tabular-nums">{currentXP} XP</span>
+            <div className="relative z-10 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/80 dark:border-amber-800/70 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
+                <Zap className="w-6 h-6" />
               </div>
-              <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-amber-400 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(((currentXP % 500) / 500) * 100, 100)}%` }}
-                />
-              </div>
-              <div className="text-[11px] text-slate-400 text-right">
+              <h3 className="font-display text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 {isEn
-                  ? `${500 - (currentXP % 500)} XP to next level`
-                  : `${500 - (currentXP % 500)} XP nữa để lên cấp tiếp theo`}
+                  ? `Experimental Physics (${PHYSICS_LESSONS.length})`
+                  : `Vật lí thực nghiệm (${PHYSICS_LESSONS.length} bài)`}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                {isEn
+                  ? '10 2D labs & 11 real-time 60 FPS 3D simulations: pendulums, circular motion, RLC AC phasors, Young wave interference.'
+                  : 'Phòng Lab 2D & 11 mô phỏng 3D 60 FPS: Dòng điện Ôm, con lắc, chuyển động tròn, mạch RLC Fresnel, giao thoa Y-âng.'}
+              </p>
+            </div>
+
+            <div className="relative z-10 pt-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate('physics');
+                }}
+                className="w-full px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-sm font-extrabold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Zap className="w-4 h-4" />
+                <span>{isEn ? 'Open Physics Labs' : 'Vào Phòng Thí Nghiệm Lí'}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* CS CARD: Animated Code Data Sweep & Algorithmic Graph Nodes */}
+          <div
+            data-ripple="true"
+            onClick={() => onNavigate('cs')}
+            className="group relative overflow-hidden bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-emerald-300/80 dark:border-emerald-500/25 hover:border-emerald-500 hover:-translate-y-0.5 rounded-3xl p-6 sm:p-7 shadow-[0_12px_32px_-14px_rgba(16,185,129,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(16,185,129,0.32)] transition-all cursor-pointer flex flex-col justify-between gap-6"
+          >
+            {/* CS Custom Animated Code Stream + Dijkstra Graph Edge Pulse */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 320 200"
+              className="absolute inset-0 w-full h-full opacity-25 dark:opacity-40 pointer-events-none group-hover:opacity-65 transition-opacity"
+            >
+              <path
+                d="M195 36 L252 64 L218 112 L286 96"
+                fill="none"
+                stroke="#10b981"
+                strokeWidth="2.4"
+                className="animate-electric-flow"
+              />
+              <path
+                d="M195 36 L286 96"
+                fill="none"
+                stroke="#34d399"
+                strokeWidth="1.5"
+                strokeDasharray="4 4"
+              />
+              <circle cx="195" cy="36" r="5" fill="#10b981" />
+              <circle cx="252" cy="64" r="5" fill="#38bdf8" />
+              <circle cx="218" cy="112" r="5" fill="#10b981" />
+              <circle cx="286" cy="96" r="6" fill="#fbbf24" />
+            </svg>
+            <div className="pointer-events-none absolute right-6 top-0 w-24 h-full overflow-hidden opacity-25 dark:opacity-35">
+              <div className="animate-matrix-sweep font-mono text-[10px] font-bold text-emerald-500 leading-tight select-none">
+                0101101<br />DP[i][j]<br />BFS(u)<br />1010011
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* 3 Interactive Disciplines Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Math Card */}
-        <div
-          onClick={() => onNavigate('math')}
-          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 rounded-2xl p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-              <Compass className="w-5 h-5" />
+            <div className="relative z-10 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
+                <Code2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-display text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {isEn
+                  ? `Computer Science (${CS_LESSONS.length})`
+                  : `Tin học Sublime 4 (${CS_LESSONS.length} bài)`}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                {isEn
+                  ? 'Sublime Text 4 style IDE, automated C++20 & Python 3 judge, and 16 interactive visualizers (Oxy, Strings, Arrays, DP, Binary Search, Dijkstra).'
+                  : 'Trình soạn thảo Sublime Text 4, chấm bài C++/Python + phân tích lỗi AI và 16 đồ thị mô phỏng (Oxy, Xâu, Mảng, DP, Dijkstra).'}
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              {isEn
-                ? `Interactive Math (${MATH_LECTURES.length} lessons)`
-                : `Toán học tương tác (${MATH_LECTURES.length} bài)`}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isEn
-                ? 'Plot polynomials, logarithms, absolute values & integrals; interactive 2D geometry & 7 spatial Oxyz 3D scenes.'
-                : 'Vẽ đồ thị đa thức, logarit, trị tuyệt đối, tô diện tích tích phân; hình học kéo thả & 7 mô hình Oxyz 3D trực quan.'}
-            </p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-blue-600 dark:text-blue-400">
-            <span>{isEn ? 'Open 2D & Oxyz 3D Lab' : 'Mở công cụ vẽ Oxy & 3D'}</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
 
-        {/* Physics Card */}
-        <div
-          onClick={() => onNavigate('physics')}
-          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500 rounded-2xl p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-              <Zap className="w-5 h-5" />
+            <div className="relative z-10 pt-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate('cs');
+                }}
+                className="w-full px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Code2 className="w-4 h-4" />
+                <span>{isEn ? 'Open Code Judge Lab' : 'Vào Tin Học & Code Judge'}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              {isEn
-                ? `Experimental Physics (${PHYSICS_LESSONS.length} lessons)`
-                : `Vật lí thực nghiệm (${PHYSICS_LESSONS.length} bài)`}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isEn
-                ? '10 2D labs & 11 real-time 60 FPS 3D simulations: pendulums, circular motion, RLC AC phasors, Young wave interference.'
-                : '10 phòng Lab 2D & 11 mô phỏng 3D 60 FPS: Con lắc, chuyển động tròn, mạch xoay chiều RLC Fresnel, giao thoa Y-âng.'}
-            </p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400">
-            <span>{isEn ? 'Open Physics Labs' : 'Mở phòng thí nghiệm'}</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
+      </section>
 
-        {/* CS Card */}
-        <div
-          onClick={() => onNavigate('cs')}
-          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 rounded-2xl p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between"
-        >
+      {/* SECTION 2: 3 LARGE PLATFORM FEATURE FRAMES (Roadmap · Arena · Tri-AI) */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 px-1">
           <div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-              <Code2 className="w-5 h-5" />
+            <div className="text-[11px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400">
+              {isEn ? 'GUIDED ECOSYSTEM' : 'HỆ SINH THÁI HỌC TẬP & THI ĐẤU'}
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              {isEn
-                ? `Computer Science Studio (${CS_LESSONS.length} modules)`
-                : `Tin học Sublime 4 (${CS_LESSONS.length} bài)`}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isEn
-                ? 'Sublime Text 4 style IDE, automated C++20 & Python 3 judge, and 16 interactive visualizers (Oxy, Strings, Arrays, DP, Binary Search, Dijkstra).'
-                : 'Trình soạn thảo Sublime Text 4, chấm bài C++/Python tự động và 16 mô phỏng trực quan (Oxy, Xâu, Mảng 1D/2D, DP, Chặt nhị phân, Dijkstra).'}
-            </p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-            <span>{isEn ? 'Open Code Judge Lab' : 'Mở Code Judge Lab'}</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-      </div>
-
-      {/* 3 Core Learning Support Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Roadmap */}
-        <div
-          onClick={() => onNavigate('roadmap')}
-          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 rounded-2xl p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4">
-              <GitBranch className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              {isEn ? '5-Step Learning Process Map' : 'Bản đồ Qui trình Học tập 5 Bước'}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isEn
-                ? 'Structured Math · Physics · CS progression from Grade 9 to 12 with prerequisites and mastery tracking.'
-                : 'Lộ trình từng chặng Toán · Lí · Tin từ Lớp 9 đến Lớp 12 có kiến thức tiên quyết và theo dõi tiến độ.'}
-            </p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-            <span>{isEn ? 'Open Roadmap' : 'Mở Bản đồ Lộ trình'}</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            <h2 className="font-display text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-0.5">
+              {isEn ? 'Roadmap, Weekly Arena & AI Tutors' : 'Lộ Trình Chuẩn, Đấu Trường Tuần & Gia Sư AI'}
+            </h2>
           </div>
         </div>
 
-        {/* Socratic AI Tutor Quick Card */}
-        <div
-          onClick={() => onOpenTutor?.('math', 'explain_no_answer')}
-          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-violet-500 rounded-2xl p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-4">
-              <Sparkles className="w-5 h-5" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Frame 1: Study Roadmap */}
+          <div
+            data-ripple="true"
+            onClick={() => onNavigate('roadmap')}
+            className="group relative overflow-hidden rounded-3xl border border-indigo-200/80 dark:border-indigo-500/25 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 p-6 sm:p-7 min-h-[245px] shadow-[0_12px_32px_-14px_rgba(99,102,241,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(99,102,241,0.3)] hover:border-indigo-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-5"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 320 180"
+              className="absolute right-0 top-0 w-56 h-40 opacity-20 dark:opacity-30 pointer-events-none transition-opacity group-hover:opacity-45"
+            >
+              <path
+                d="M40 140 Q120 40 200 100 T300 35"
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="2.5"
+                className="animate-electric-flow"
+              />
+              <circle cx="40" cy="140" r="5" fill="#6366f1" />
+              <circle cx="155" cy="76" r="5" fill="#818cf8" />
+              <circle cx="240" cy="72" r="6" fill="#4f46e5" />
+              <circle cx="300" cy="35" r="5" fill="#a855f7" />
+            </svg>
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="group-hover-sheen absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-indigo-400/15 to-transparent -translate-x-full" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              {isEn ? '3 Specialized Gemini AI Tutors' : '3 Trợ Lý Gemini AI Chuyên Môn'}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isEn
-                ? 'Independent AI tutors for Math, Physics & CS with 3 modes each: Guided Hints, Full Solution, and Roadmap Test.'
-                : 'Mỗi môn Toán · Vật lí · Tin học có 1 AI độc lập với 3 chế độ: Giảng không lộ đáp án, Giải chi tiết, và Test lộ trình ngành.'}
-            </p>
+
+            <div className="relative z-10 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/70 dark:border-indigo-800/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <GitBranch className="w-6 h-6" />
+              </div>
+              <h3 className="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {isEn ? '5-Step Learning Process Map' : 'Bản đồ Quy trình Học 5 Bước'}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                {isEn
+                  ? 'Structured Math · Physics · CS progression from Grade 9 to 12 with prerequisites and mastery tracking.'
+                  : 'Lộ trình từng chặng Toán · Lí · Tin từ Lớp 9 đến Lớp 12 có kiến thức tiên quyết và theo dõi tiến độ hoàn thành.'}
+              </p>
+            </div>
+
+            <div className="relative z-10 pt-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate('roadmap');
+                }}
+                className="w-full px-5 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <GitBranch className="w-4 h-4" />
+                <span>{t('overview.gotoRoadmap', 'Mở Bản đồ Quy trình Học', 'Open Study Roadmap')}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-violet-600 dark:text-violet-400">
-            <span>{isEn ? 'Launch 3-AI System' : 'Mở Hệ thống 3 AI ngay'}</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+
+          {/* Frame 2: Weekly Arena & Leaderboard */}
+          <div
+            data-ripple="true"
+            onClick={() => onNavigate('arena')}
+            className="group relative overflow-hidden rounded-3xl border border-amber-300/80 dark:border-amber-500/25 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 p-6 sm:p-7 min-h-[245px] shadow-[0_12px_32px_-14px_rgba(245,158,11,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(245,158,11,0.3)] hover:border-amber-400 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-5"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 220 220"
+              className="absolute -right-8 -top-8 w-52 h-52 opacity-20 dark:opacity-25 pointer-events-none animate-orbit-slow group-hover:opacity-45"
+            >
+              <circle
+                cx="110"
+                cy="110"
+                r="76"
+                fill="none"
+                stroke="#f59e0b"
+                strokeWidth="1.8"
+                strokeDasharray="10 8"
+              />
+              <circle
+                cx="110"
+                cy="110"
+                r="52"
+                fill="none"
+                stroke="#fbbf24"
+                strokeWidth="1.5"
+                strokeDasharray="6 6"
+              />
+              <circle cx="110" cy="34" r="4" fill="#fbbf24" />
+              <circle cx="186" cy="110" r="4" fill="#f59e0b" />
+            </svg>
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="group-hover-sheen absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-amber-400/20 to-transparent -translate-x-full" />
+            </div>
+
+            <div className="relative z-10 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/80 dark:border-amber-800/70 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Trophy className="w-6 h-6" />
+              </div>
+              <h3 className="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {isEn ? 'Weekly Arena & Live Rankings' : 'Thi đấu & BXH Tuần Trực Tuyến'}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                {isEn
+                  ? 'Compete in MCQ or AI-graded Essay rounds (1 attempt/day/subject) with real-time weekly rankings.'
+                  : 'Thi Trắc nghiệm hoặc Tự luận AI chấm (1 lần/ngày/môn). Bảng xếp hạng trực tuyến theo từng môn & Điểm Trung Bình.'}
+              </p>
+            </div>
+
+            <div className="relative z-10 pt-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate('arena');
+                }}
+                className="w-full px-5 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-sm font-extrabold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Trophy className="w-4 h-4" />
+                <span>{t('overview.gotoArena', 'Vào Thi đấu & BXH Tuần', 'Enter Weekly Arena')}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* Frame 3: 3 AI Tutors */}
+          <div
+            data-ripple="true"
+            onClick={() => onOpenTutor?.('math', 'explain_no_answer')}
+            className="group relative overflow-hidden rounded-3xl border border-violet-300/80 dark:border-violet-500/25 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 p-6 sm:p-7 min-h-[245px] shadow-[0_12px_32px_-14px_rgba(139,92,246,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(139,92,246,0.3)] hover:border-violet-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-5"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 260 170"
+              className="absolute right-0 top-0 w-52 h-40 opacity-20 dark:opacity-30 pointer-events-none group-hover:opacity-45 transition-opacity"
+            >
+              <line x1="80" y1="45" x2="180" y2="35" stroke="#8b5cf6" strokeWidth="1.8" className="animate-electric-flow" />
+              <line x1="180" y1="35" x2="145" y2="120" stroke="#ec4899" strokeWidth="1.8" className="animate-electric-flow-fast" />
+              <line x1="80" y1="45" x2="145" y2="120" stroke="#6366f1" strokeWidth="1.8" className="animate-electric-flow" />
+              <circle cx="80" cy="45" r="7" fill="#6366f1" />
+              <circle cx="180" cy="35" r="7" fill="#f59e0b" />
+              <circle cx="145" cy="120" r="7" fill="#10b981" />
+            </svg>
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="group-hover-sheen absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-violet-400/20 to-transparent -translate-x-full" />
+            </div>
+
+            <div className="relative z-10 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/60 border border-violet-200/80 dark:border-violet-800/70 text-violet-600 dark:text-violet-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {isEn ? '3 Specialized AI Tutors' : '3 Trợ Lý AI (Toán · Lí · Tin)'}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                {isEn
+                  ? 'Independent AI tutors for Math, Physics & CS with Guided Hints, Full Solution, and Diagnostic Roadmap modes.'
+                  : '3 Gia sư AI độc lập cho từng môn với 3 chế độ thực chiến: Giảng gợi mở, Giải 4 bước, và Test năng lực vẽ lộ trình.'}
+              </p>
+            </div>
+
+            <div className="relative z-10 pt-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenTutor?.('math', 'explain_no_answer');
+                }}
+                className="w-full px-5 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{t('overview.openTutor', 'Mở 3 Trợ Lý AI (Toán - Lí - Tin)', 'Launch 3 AI Tutors')}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Weekly Online Competition & Leaderboard */}
-        <div
-          onClick={() => onNavigate('arena')}
-          className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500 rounded-2xl p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-              {isEn ? 'Weekly Arena & Leaderboard' : 'Thi đấu Online & Xếp hạng Tuần'}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isEn
-                ? 'Compete in MCQ or AI-graded Essay rounds (1 attempt/day/subject) with real-time weekly rankings.'
-                : 'Thi Trắc nghiệm hoặc Tự luận (1 lần/ngày/môn). Bảng xếp hạng trực tuyến theo từng môn và Điểm Trung Bình.'}
-            </p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400">
-            <span>{isEn ? 'Enter Weekly Arena' : 'Vào Đấu trường Tuần'}</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-      </div>
-
-      {/* Dedicated 3 Subject AI Assistants × 3 Modes Section */}
+      {/* SECTION 3: Dedicated 3 Subject AI Assistants × 3 Modes */}
       {onOpenTutor && (
-        <div className="rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3.5">
+        <section className="rounded-3xl bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 p-6 sm:p-7 shadow-[0_14px_42px_-16px_rgba(15,23,42,0.12)] space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200/70 dark:border-white/10">
             <div>
-              <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
                 <Sparkles className="w-4 h-4" />
                 <span>
                   {isEn
-                    ? '3 Independent Gemini AI Tutors · 3 Study Modes Each'
-                    : '3 Gia sư Gemini AI Độc Lập · Mỗi AI 3 Chế Độ Thực Chiến'}
+                    ? '3 Independent AI Tutors · 3 Study Modes Each'
+                    : '3 Gia Sư AI Độc Lập · Mỗi AI 3 Chế Độ Thực Chiến'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                 {isEn
-                  ? 'Real-time Gemini AI streaming. Pick a subject tutor and mode below, or press Left Ctrl + D (Math), Left Ctrl + F (Physics), Left Ctrl + G (CS).'
-                  : 'Kết nối trực tiếp Gemini AI (stream thời gian thực). Chọn AI bên dưới hoặc dùng phím tắt Ctrl(trái)+D (Toán), Ctrl(trái)+F (Lí), Ctrl(trái)+G (Tin).'}
+                  ? 'Real-time AI streaming. Pick a subject tutor and mode below, or press Left Ctrl + D (Math), Left Ctrl + F (Physics), Left Ctrl + G (CS).'
+                  : 'Chọn nhanh AI theo từng môn bên dưới hoặc dùng phím tắt Ctrl(trái)+D (Toán), Ctrl(trái)+F (Lí), Ctrl(trái)+G (Tin).'}
               </p>
             </div>
           </div>
@@ -491,17 +834,17 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             {aiCards.map((item) => (
               <div
                 key={item.subj}
-                className={`rounded-xl border p-4 flex flex-col justify-between gap-3 ${item.accent}`}
+                className={`rounded-2xl border p-4 sm:p-5 flex flex-col justify-between gap-3.5 ${item.accent}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2.5 min-w-0">
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${item.badge}`}
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.badge}`}
                     >
                       {item.icon}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-white leading-tight">
+                      <h4 className="font-display text-base font-extrabold text-slate-900 dark:text-white leading-tight">
                         {item.title}
                       </h4>
                       <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
@@ -509,47 +852,48 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                       </p>
                     </div>
                   </div>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 shrink-0">
+                  <kbd className="px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 shrink-0">
                     {item.shortcut}
                   </kbd>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {aiModes.map((m) => (
                     <button
                       key={m.mode}
                       type="button"
                       onClick={() => onOpenTutor(item.subj, m.mode)}
-                      className={`w-full text-left px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-[11px] font-bold flex items-center justify-between gap-2 transition-colors ${item.btn}`}
+                      className={`w-full text-left px-3.5 py-2.5 rounded-xl bg-white/95 dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/10 text-xs font-bold flex items-center justify-between gap-2 transition-colors cursor-pointer ${item.btn}`}
                     >
                       <span className="truncate">{m.label}</span>
-                      <ArrowRight className="w-3 h-3 shrink-0" />
+                      <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                     </button>
                   ))}
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Featured Exam Bank Banner */}
-      <div
+      {/* SECTION 4: Featured Exam Bank Banner */}
+      <section
+        data-ripple="true"
         onClick={() => onNavigate('exams')}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 p-5 sm:p-6 shadow-lg cursor-pointer hover:border-indigo-400 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border border-indigo-500/35 p-6 sm:p-8 shadow-xl cursor-pointer hover:border-sky-400/70 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6"
       >
-        <div className="space-y-1.5 max-w-2xl min-w-0">
-          <div className="text-xs font-semibold text-cyan-400">
+        <div className="space-y-2 max-w-2xl min-w-0">
+          <div className="text-xs font-bold uppercase tracking-widest text-cyan-400 tabular-nums">
             {isEn
               ? `2025 - 2026 Exam Archive · ${chuyenExams} Specialized & ${standardExams} Standard`
               : `Kho Đề Thi Chuẩn 2025 - 2026 · ${chuyenExams} Chuyên & ${standardExams} Không Chuyên`}
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-white tracking-tight tabular-nums">
+          <h3 className="font-display text-lg sm:text-2xl font-extrabold text-white tracking-tight tabular-nums">
             {isEn
               ? `${totalExams} Full Exam Bank, AI Photo Grading & Step-by-Step Solutions`
               : `Kho ${totalExams} Đề Thi, Nộp Ảnh Chấm Điểm AI & Giải Chi Tiết (Toán · Lí · Tin)`}
           </h3>
-          <p className="text-xs text-slate-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
             {isEn
               ? 'Official and specialized Olympiad exams with built-in timer, handwritten photo submission for AI grading (0–10), and interactive follow-up Q&A.'
               : 'Tuyển tập đề thi từ KHTN, Sư Phạm, Amsterdam, Lê Hồng Phong và 20 tỉnh thành... kèm đồng hồ bấm giờ, nộp ảnh để AI chấm điểm và hỏi đáp phần chưa hiểu.'}
@@ -561,55 +905,101 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             e.stopPropagation();
             onNavigate('exams');
           }}
-          className="shrink-0 w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 whitespace-nowrap"
+          className="shrink-0 w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 to-sky-400 hover:from-cyan-300 hover:to-sky-300 text-slate-950 font-extrabold text-sm transition-all shadow-md flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
         >
           <span>{isEn ? `Explore ${totalExams} exams` : `Khám phá ${totalExams} đề thi`}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
-      </div>
+      </section>
 
-      {/* Classroom Utilities: Focus Timer (Pomodoro) & Quick Notebook */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Pomodoro Focus Timer */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+      {/* SECTION 5: Classroom Focus Utilities (Circular SVG Pomodoro & Quick Notebook) */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Pomodoro Focus Timer with SVG Circular Progress Ring */}
+        <div className="lg:col-span-5 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-7 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Clock className="w-4 h-4 text-indigo-500" />
-                {isEn ? 'Study Focus Timer (Pomodoro)' : 'Đồng hồ tập trung học tập (Pomodoro)'}
+                {isEn ? 'Study Focus Timer (Pomodoro)' : 'Đồng hồ tập trung (Pomodoro)'}
               </h3>
-              <span className="text-xs text-slate-400">
-                {isEn ? '25 min session' : 'Phiên 25 phút'}
+              <span className="text-xs text-slate-400 font-mono">
+                {isEn ? '25m' : '25 phút'}
               </span>
             </div>
 
-            <div className="text-center py-6">
-              <div className="text-5xl font-mono font-extrabold tracking-wider text-slate-900 dark:text-slate-100 tabular-nums">
-                {formatTimer(pomodoroSeconds)}
+            <div className="flex flex-col items-center justify-center py-3">
+              <div className="relative w-44 h-44 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 140 140" aria-hidden="true">
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="58"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    className="text-slate-200/80 dark:text-slate-800"
+                  />
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="58"
+                    fill="none"
+                    stroke={isTimerRunning ? '#f59e0b' : '#6366f1'}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 58}
+                    strokeDashoffset={(2 * Math.PI * 58) * (1 - pomodoroSeconds / (25 * 60))}
+                    className="transition-[stroke-dashoffset,stroke] duration-500 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">
+                    {formatTimer(pomodoroSeconds)}
+                  </div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mt-1">
+                    {isTimerRunning
+                      ? isEn
+                        ? 'Focusing'
+                        : 'Đang tập trung'
+                      : isEn
+                      ? 'Ready'
+                      : 'Sẵn sàng'}
+                  </span>
+                </div>
               </div>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center">
                 {isTimerRunning
-                  ? isEn ? 'Focus session in progress' : 'Đang trong phiên tập trung làm bài'
-                  : isEn ? 'Ready to start studying' : 'Sẵn sàng bắt đầu buổi học'}
+                  ? isEn
+                    ? 'Focus session in progress'
+                    : 'Đang trong phiên tập trung làm bài'
+                  : isEn
+                  ? 'Ready to start studying'
+                  : 'Sẵn sàng bắt đầu buổi học'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-center gap-3 pt-4 border-t border-slate-200/70 dark:border-white/10">
             <button
               onClick={toggleTimer}
-              className={`px-5 py-2 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5 transition-colors ${
-                isTimerRunning ? 'bg-amber-600 hover:bg-amber-700' : 'bg-indigo-600 hover:bg-indigo-700'
+              className={`px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white flex items-center gap-2 transition-colors cursor-pointer ${
+                isTimerRunning
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
               }`}
             >
               {isTimerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               {isTimerRunning
-                ? isEn ? 'Pause' : 'Tạm dừng'
-                : isEn ? 'Start Focus' : 'Bắt đầu học'}
+                ? isEn
+                  ? 'Pause'
+                  : 'Tạm dừng'
+                : isEn
+                ? 'Start Focus'
+                : 'Bắt đầu học'}
             </button>
             <button
               onClick={resetTimer}
-              className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
               title={isEn ? 'Reset 25 min' : 'Đặt lại 25 phút'}
             >
               <RotateCcw className="w-4 h-4" />
@@ -618,13 +1008,13 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </div>
 
         {/* Quick Classroom Notes */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs flex flex-col">
+        <div className="lg:col-span-7 bg-white/80 dark:bg-slate-900/72 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-7 shadow-xs flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-indigo-500" />
               {isEn ? 'Personal Study Quick Notes' : 'Sổ tay ghi chú bài học cá nhân'}
             </h3>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-400 font-mono tabular-nums">
               {notes.length} {isEn ? 'notes' : 'ghi chú'}
             </span>
           </div>
@@ -640,13 +1030,13 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   ? 'Write a quick formula or study reminder...'
                   : 'Ghi lại công thức hoặc mẹo học nhanh...'
               }
-              className="flex-1 text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <button
               onClick={handleAddNote}
-              className="px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shrink-0 flex items-center gap-1"
+              className="px-4 py-2.5 text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               {isEn ? 'Save' : 'Lưu'}
             </button>
           </div>
@@ -655,15 +1045,15 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             {notes.map((n) => (
               <div
                 key={n.id}
-                className="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3 text-xs"
+                className="p-3 bg-slate-50/85 dark:bg-slate-800/45 rounded-xl border border-slate-200/70 dark:border-white/10 flex items-start justify-between gap-3 text-xs"
               >
                 <div className="flex-1">
                   <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{n.text}</p>
-                  <span className="text-[10px] text-slate-400 mt-1 block">{n.date}</span>
+                  <span className="text-[10px] text-slate-400 font-mono mt-1 block">{n.date}</span>
                 </div>
                 <button
                   onClick={() => handleDeleteNote(n.id)}
-                  className="text-slate-400 hover:text-red-500 p-1 transition-colors"
+                  className="text-slate-400 hover:text-red-500 p-1 transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -671,7 +1061,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* SECTION 6: Community Reviews, Star Ratings & Favorite Votes */}
+      <PlatformReviews />
     </div>
   );
 };

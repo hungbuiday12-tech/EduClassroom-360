@@ -237,5 +237,48 @@ service cloud.firestore {
                        ]);
       allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
+
+    // Validation for PlatformReview entity (public non-PII read, signed-in create/vote, owner delete)
+    function isValidPlatformReview(data) {
+      return data.keys().hasAll(['userId', 'displayName', 'rating', 'favoriteCategory', 'comment', 'helpfulCount', 'createdAt']) &&
+             data.keys().hasOnly([
+               'userId', 'username', 'displayName', 'avatarUrl',
+               'rating', 'favoriteCategory', 'comment',
+               'helpfulUserIds', 'helpfulCount', 'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.favoriteCategory in ['simulations', 'lectures_ai', 'coding_exams', 'interface', 'general'] &&
+             data.comment is string && data.comment.size() >= 3 && data.comment.size() <= 800 &&
+             data.helpfulCount is number && data.helpfulCount >= 0 && data.helpfulCount <= 50000 &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('username' in data) || (data.username is string && data.username.size() <= 40)) &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 512)) &&
+             (!('helpfulUserIds' in data) || (data.helpfulUserIds is list && data.helpfulUserIds.size() <= 500)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // PlatformReviews Collection (public read for all users, signed-in create/helpful vote, owner delete)
+    match /platform_reviews/{reviewId} {
+      allow get: if true;
+      allow list: if resource.data.rating >= 1 && resource.data.rating <= 5;
+      allow create: if isSignedIn() &&
+                       isValidId(reviewId) &&
+                       isValidPlatformReview(incoming()) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().helpfulCount == 0;
+      allow update: if isSignedIn() &&
+                       isValidId(reviewId) &&
+                       isValidPlatformReview(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (existing().userId == request.auth.uid &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'favoriteCategory', 'comment', 'updatedAt'])) ||
+                         (incoming().diff(existing()).affectedKeys().hasOnly(['helpfulUserIds', 'helpfulCount', 'updatedAt']))
+                       );
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
   }
 }

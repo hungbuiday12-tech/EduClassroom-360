@@ -1,11 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SubjectType } from '../types';
-import { Sun, Moon, Award, User, LogOut, LogIn, ChevronDown, Sparkles, Globe, Wand2, Check, ArrowLeft } from 'lucide-react';
+import {
+  Sun,
+  Moon,
+  Award,
+  LogOut,
+  LogIn,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Globe,
+  Wand2,
+  Check,
+  ArrowLeft,
+  Compass,
+  Zap,
+  Code2,
+  Atom,
+  Settings,
+  GitBranch,
+  FileText,
+  Trophy
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../context/BackgroundContext';
 import { useNavigation, getLocationLabel } from '../context/NavigationContext';
 import { BrandLogo } from './common/BrandLogo';
+import { MATH_LECTURES } from '../data/curriculumData';
+import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
+import { CS_LESSONS } from '../data/csLessonsData';
 
 interface HeaderProps {
   currentSubject: SubjectType;
@@ -14,6 +38,7 @@ interface HeaderProps {
   onToggleTheme: () => void;
   xp: number;
   onReturnToLanding?: () => void;
+  onOpenSettings: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,149 +48,203 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   xp,
   onReturnToLanding,
+  onOpenSettings
 }) => {
   const { user, openAuthModal, logout } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
+  const isEn = language === 'en';
   const { creatureTheme, setCreatureTheme } = useBackgroundTheme();
   const { canGoBack, previousLocation, goBack, goClassroom } = useNavigation();
+
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCreatureMenuOpen, setIsCreatureMenuOpen] = useState(false);
+  const [isSubjectMenuOpen, setIsSubjectMenuOpen] = useState(false);
+
   const creatureMenuRef = useRef<HTMLDivElement | null>(null);
+  const subjectMenuRef = useRef<HTMLDivElement | null>(null);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!isCreatureMenuOpen) return;
+    if (!isCreatureMenuOpen && !isSubjectMenuOpen && !isUserMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (creatureMenuRef.current && !creatureMenuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (isCreatureMenuOpen && creatureMenuRef.current && !creatureMenuRef.current.contains(target)) {
         setIsCreatureMenuOpen(false);
+      }
+      if (isSubjectMenuOpen && subjectMenuRef.current && !subjectMenuRef.current.contains(target)) {
+        setIsSubjectMenuOpen(false);
+      }
+      if (isUserMenuOpen && userMenuRef.current && !userMenuRef.current.contains(target)) {
+        setIsUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isCreatureMenuOpen]);
+  }, [isCreatureMenuOpen, isSubjectMenuOpen, isUserMenuOpen]);
 
   const activeCreature =
     CREATURE_THEME_OPTIONS.find((opt) => opt.id === creatureTheme) || CREATURE_THEME_OPTIONS[0];
-  const prevLabel = previousLocation ? getLocationLabel(previousLocation, language) : t('nav.classroom', 'Lớp học', 'Classroom');
+  const prevLabel = previousLocation
+    ? getLocationLabel(previousLocation, language)
+    : t('nav.classroom', 'Lớp học', 'Classroom');
+
+  const isSubjectActive =
+    currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs';
+
+  const subjectItems = [
+    {
+      id: 'math' as const,
+      title: isEn ? 'Mathematics' : 'Toán học',
+      subtitle: isEn
+        ? `${MATH_LECTURES.length} lectures · Oxy & Oxyz 3D models`
+        : `${MATH_LECTURES.length} bài giảng · Đồ thị Oxy & 7 mô hình Oxyz 3D`,
+      icon: <Compass className="w-5 h-5 text-sky-500 dark:text-sky-400" />,
+      iconBox: 'bg-sky-500/15 border-sky-500/30',
+      activeRow:
+        'bg-sky-500/10 dark:bg-sky-500/15 border-sky-500/50 text-sky-700 dark:text-sky-300'
+    },
+    {
+      id: 'physics' as const,
+      title: isEn ? 'Physics' : 'Vật lí',
+      subtitle: isEn
+        ? `${PHYSICS_LESSONS.length} lessons · 2D Lab & 11 3D simulations`
+        : `${PHYSICS_LESSONS.length} bài thí nghiệm 2D & 11 mô phỏng 3D trực quan`,
+      icon: <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400" />,
+      iconBox: 'bg-amber-500/15 border-amber-500/30',
+      activeRow:
+        'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/50 text-amber-700 dark:text-amber-300'
+    },
+    {
+      id: 'cs' as const,
+      title: isEn ? 'Computer Science' : 'Tin học',
+      subtitle: isEn
+        ? `${CS_LESSONS.length} VNOI modules · Sublime 4 & Algo Graphs`
+        : `${CS_LESSONS.length} bài VNOI · Sublime 4 & Đồ thị Thuật toán`,
+      icon: <Code2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />,
+      iconBox: 'bg-emerald-500/15 border-emerald-500/30',
+      activeRow:
+        'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/50 text-emerald-700 dark:text-emerald-300'
+    }
+  ];
+
+  const activeSubjectMeta = subjectItems.find((item) => item.id === currentSubject);
+
+  const renderSubjectDropdownPanel = () => (
+    <div className="absolute left-0 mt-2.5 w-76 sm:w-84 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 rounded-2xl shadow-[0_20px_50px_-12px_rgba(15,23,42,0.28)] dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.75)] p-2 z-50">
+      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+        {isEn ? 'CORE INTERACTIVE SUBJECTS' : 'MÔN HỌC CHUẨN & MÔ PHỎNG'}
+      </div>
+      <div className="space-y-1 mt-1">
+        {subjectItems.map((item) => {
+          const selected = currentSubject === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                onSelectSubject(item.id);
+                setIsSubjectMenuOpen(false);
+              }}
+              className={`w-full flex items-start gap-3 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                selected
+                  ? item.activeRow
+                  : 'border-transparent hover:bg-slate-100/90 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200'
+              }`}
+            >
+              <div
+                className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 mt-0.5 ${item.iconBox}`}
+              >
+                {item.icon}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-extrabold leading-tight">{item.title}</span>
+                  {selected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                  {item.subtitle}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   return (
-    <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 h-14 sm:h-16">
-        {/* Zone 1: Back History button + Brand Wordmark */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+    <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-950/82 backdrop-blur-2xl border-b border-slate-200/75 dark:border-white/10 shadow-[0_6px_30px_-18px_rgba(15,23,42,0.18)]">
+      {/* ROW 1: Brand + Utility Cluster pushed right next to Synapse on the left | Settings & Auth on the right */}
+      <div className="w-full px-3 sm:px-5 lg:px-7 flex items-center justify-between gap-2 sm:gap-3 h-14 sm:h-15">
+        {/* Left Cluster: Back + Brand + VI/EN + XP + Creatures + Theme */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
           {canGoBack && (
             <button
               onClick={goBack}
-              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-700 dark:hover:text-indigo-300 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-xs shrink-0"
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-700 dark:hover:text-indigo-300 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-xs shrink-0 cursor-pointer"
               title={`${language === 'en' ? 'Back to' : 'Quay lại trang trước'}: ${prevLabel}`}
               aria-label={`Quay lại ${prevLabel}`}
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline whitespace-nowrap">{language === 'en' ? 'Back' : 'Quay lại'}</span>
+              <span className="hidden md:inline whitespace-nowrap">
+                {language === 'en' ? 'Back' : 'Quay lại'}
+              </span>
             </button>
           )}
+
           <button
             onClick={goClassroom}
-            className="flex items-center gap-2 text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap truncate max-w-[160px] sm:max-w-none hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1 sm:px-1.5 py-1 rounded-lg shrink-0"
+            className="flex items-center gap-2 text-base sm:text-xl font-display font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1 py-1 rounded-xl shrink-0 cursor-pointer"
           >
             <BrandLogo sizeClass="w-7 h-7 sm:w-8 sm:h-8" />
             <span>Synapse</span>
           </button>
-        </div>
 
-        {/* Zone 2: Concise single-line nav links */}
-        <nav className="hidden xl:flex items-center gap-3.5 text-sm font-medium min-w-0">
-          <button
-            onClick={() => onSelectSubject('roadmap')}
-            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
-              currentSubject === 'roadmap'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            {t('nav.roadmap', 'Lộ trình học', 'Roadmap')}
-          </button>
-          <button
-            onClick={() => onSelectSubject('math')}
-            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
-              currentSubject === 'math'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            {t('subject.math', 'Toán học', 'Math')}
-          </button>
-          <button
-            onClick={() => onSelectSubject('physics')}
-            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
-              currentSubject === 'physics'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            {t('subject.physics', 'Vật lí', 'Physics')}
-          </button>
-          <button
-            onClick={() => onSelectSubject('cs')}
-            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
-              currentSubject === 'cs'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            {t('subject.cs', 'Tin học', 'CS')}
-          </button>
-          <button
-            onClick={() => onSelectSubject('exams')}
-            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
-              currentSubject === 'exams'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            {language === 'en' ? 'Exams' : 'Đề Thi'}
-          </button>
-          <button
-            onClick={() => onSelectSubject('arena')}
-            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
-              currentSubject === 'arena'
-                ? 'text-amber-600 dark:text-amber-400 font-bold bg-amber-50/70 dark:bg-amber-950/40'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            {t('nav.arena', 'Thi Đấu & BXH', 'Weekly Arena')}
-          </button>
-        </nav>
+          <span
+            aria-hidden="true"
+            className="hidden sm:block h-5 w-px bg-slate-200/90 dark:bg-white/15 mx-0.5 shrink-0"
+          />
 
-        {/* Zone 3: Actions + User Profile & Language/Theme switcher */}
-        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
-          {/* Language Switcher Button (VI | EN) */}
+          {/* VI / EN pushed directly next to Synapse */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-200/90 dark:border-white/10 bg-slate-50/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             title={language === 'vi' ? 'Switch interface to English' : 'Chuyển giao diện sang Tiếng Việt'}
           >
-            <Globe className="w-3.5 h-3.5 text-indigo-500 hidden xs:block sm:block" />
-            <span className={language === 'vi' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-400'}>
+            <Globe className="w-3.5 h-3.5 text-indigo-500 hidden sm:block" />
+            <span
+              className={
+                language === 'vi' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-400'
+              }
+            >
               VI
             </span>
             <span className="text-slate-300 dark:text-slate-600">/</span>
-            <span className={language === 'en' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-400'}>
+            <span
+              className={
+                language === 'en' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-400'
+              }
+            >
               EN
             </span>
           </button>
 
-          {/* XP Pill */}
-          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/50 rounded-lg text-[11px] sm:text-xs font-mono font-semibold text-amber-700 dark:text-amber-300">
-            <Award className="w-3.5 h-3.5 text-amber-500" />
+          {/* XP Counter pushed right beside VI/EN */}
+          <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 bg-amber-50/90 dark:bg-amber-950/45 border border-amber-200/80 dark:border-amber-800/60 rounded-xl text-[11px] sm:text-xs font-mono font-bold text-amber-700 dark:text-amber-300 shrink-0 whitespace-nowrap">
+            <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span className="tabular-nums">{user ? user.xp : xp} XP</span>
           </div>
 
-          {/* Background Creature Theme Selector */}
-          <div className="relative" ref={creatureMenuRef}>
+          {/* Interactive Background Creature Theme Selector */}
+          <div className="relative shrink-0" ref={creatureMenuRef}>
             <button
               onClick={() => setIsCreatureMenuOpen(!isCreatureMenuOpen)}
-              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-semibold rounded-xl border border-indigo-200/70 dark:border-indigo-800/70 bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer whitespace-nowrap"
-              title={language === 'vi' ? 'Chọn sinh vật nền tương tác' : 'Choose interactive background creature'}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-semibold rounded-xl border border-indigo-200/80 dark:border-indigo-500/30 bg-indigo-50/85 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer whitespace-nowrap"
+              title={
+                language === 'vi'
+                  ? 'Chọn sinh vật nền tương tác'
+                  : 'Choose interactive background creature'
+              }
             >
               <Wand2 className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
               <span className="hidden md:inline">
@@ -175,9 +254,9 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {isCreatureMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-50 text-xs">
+              <div className="absolute left-0 mt-2 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200 dark:border-white/15 rounded-2xl shadow-xl p-1.5 z-50 text-xs max-h-[75vh] overflow-y-auto">
                 <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 mb-1">
-                  {language === 'vi' ? 'Nền Tương Tác (Chuột / Nảy)' : 'Interactive Background'}
+                  {language === 'vi' ? 'Nền Sinh Vật Tương Tác' : 'Interactive Creatures'}
                 </div>
                 {CREATURE_THEME_OPTIONS.map((opt) => {
                   const selected = opt.id === creatureTheme;
@@ -203,10 +282,10 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Theme button */}
+          {/* Sun / Moon Theme Toggle pushed next to Creatures */}
           <button
             onClick={onToggleTheme}
-            className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            className="p-2 text-slate-600 dark:text-slate-300 bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer shrink-0"
             title={
               language === 'en'
                 ? isDark
@@ -216,16 +295,30 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'Chuyển sang chế độ Sáng (Light)'
                 : 'Chuyển sang chế độ Tối (Dark)'
             }
+            aria-label={isDark ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối'}
           >
             {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
           </button>
+        </div>
 
-          {/* Authentication State */}
+        {/* Right Cluster: Settings Button + User Account / Sign In */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Dedicated Settings Trigger */}
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200/90 dark:border-white/15 bg-white/90 dark:bg-slate-900/85 hover:border-indigo-400/70 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            title={isEn ? 'Account, Gmail, Password & Preferences' : 'Cài đặt tài khoản, Gmail, mật khẩu & giao diện'}
+          >
+            <Settings className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+            <span className="hidden sm:inline">{isEn ? 'Settings' : 'Cài đặt'}</span>
+          </button>
+
           {user ? (
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-xs"
+                className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-white/10 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition-colors text-xs cursor-pointer"
               >
                 {user.avatarUrl ? (
                   <img
@@ -238,37 +331,45 @@ export const Header: React.FC<HeaderProps> = ({
                     {user.displayName.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span className="font-semibold text-slate-800 dark:text-slate-200 hidden sm:inline max-w-[100px] truncate">
+                <span className="font-semibold text-slate-800 dark:text-slate-200 hidden md:inline max-w-[110px] truncate">
                   {user.displayName}
                 </span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
 
-              {/* User dropdown popup */}
               {isUserMenuOpen && (
-                <div
-                  className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-100"
-                  onClick={() => setIsUserMenuOpen(false)}
-                >
+                <div className="absolute right-0 mt-2 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200 dark:border-white/15 rounded-2xl shadow-xl py-2 z-50 text-xs">
                   <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800">
                     <p className="font-bold text-slate-900 dark:text-slate-100 truncate">
                       {user.displayName}
                     </p>
-                    <p className="text-[11px] font-mono text-slate-400 truncate">
-                      @{user.username}
-                    </p>
+                    <p className="text-[11px] font-mono text-slate-400 truncate">@{user.username}</p>
                     <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium mt-0.5 truncate">
                       {user.email}
                     </p>
                   </div>
 
-                  <div className="px-2 py-1">
+                  <div className="px-2 pt-1.5 space-y-1">
                     <button
+                      type="button"
                       onClick={() => {
+                        setIsUserMenuOpen(false);
+                        onOpenSettings();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 font-semibold transition-colors cursor-pointer"
+                    >
+                      <Settings className="w-4 h-4 text-indigo-500" />
+                      <span>{isEn ? 'Account & Gmail Settings' : 'Cài đặt tài khoản & Gmail'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
                         logout();
                         if (onReturnToLanding) onReturnToLanding();
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition-colors cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>{t('nav.logout', 'Đăng xuất', 'Sign Out')}</span>
@@ -278,12 +379,16 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {onReturnToLanding && (
                 <button
                   onClick={onReturnToLanding}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-semibold text-xs transition-colors"
-                  title={language === 'en' ? 'Return to Welcome Portal' : 'Quay lại Trang Cổng Chào Mừng Galaxy'}
+                  className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
+                  title={
+                    language === 'en'
+                      ? 'Return to Welcome Portal'
+                      : 'Quay lại Trang Cổng Chào Mừng Galaxy'
+                  }
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>{t('nav.landing', 'Trang Chào Mừng', 'Welcome Portal')}</span>
@@ -291,7 +396,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
               <button
                 onClick={() => openAuthModal('login')}
-                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 font-semibold text-[11px] sm:text-xs shadow-xs transition-colors whitespace-nowrap"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 font-bold text-[11px] sm:text-xs shadow-xs transition-colors whitespace-nowrap cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>{t('nav.login', 'Đăng Nhập', 'Sign In')}</span>
@@ -301,45 +406,75 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Mobile & Compact Laptop Navigation bar */}
-      <div className="xl:hidden flex items-center justify-start sm:justify-center px-3 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto text-xs font-medium gap-2">
+      {/* ROW 2: Enlarged Primary Navigation Strip anchored at the OUTER LEFT EDGE */}
+      <nav
+        aria-label={isEn ? 'Primary navigation' : 'Điều hướng chính'}
+        className="w-full border-t border-slate-200/70 dark:border-white/10 bg-slate-50/75 dark:bg-slate-900/60 px-3 sm:px-5 lg:px-7 py-2 sm:py-2.5 flex flex-wrap items-center justify-start gap-2 sm:gap-3"
+      >
         <button
           onClick={() => onSelectSubject('roadmap')}
-          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'roadmap' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
+          className={`flex items-center gap-2 whitespace-nowrap shrink-0 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-xl text-[13px] sm:text-[15px] font-bold transition-all cursor-pointer ${
+            currentSubject === 'roadmap'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/90 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200/80 dark:hover:border-white/10'
+          }`}
         >
-          {t('nav.roadmap', 'Lộ trình', 'Roadmap')}
+          <GitBranch className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0" />
+          <span>{t('nav.roadmap', 'Lộ trình học', 'Roadmap')}</span>
         </button>
-        <button
-          onClick={() => onSelectSubject('math')}
-          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'math' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
-        >
-          {t('subject.math', 'Toán học', 'Math')}
-        </button>
-        <button
-          onClick={() => onSelectSubject('physics')}
-          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'physics' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
-        >
-          {t('subject.physics', 'Vật lí', 'Physics')}
-        </button>
-        <button
-          onClick={() => onSelectSubject('cs')}
-          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'cs' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
-        >
-          {t('subject.cs', 'Tin học', 'CS')}
-        </button>
+
+        {/* Merged 3-Subject Dropdown (Toán · Lí · Tin) */}
+        <div className="relative shrink-0" ref={subjectMenuRef}>
+          <button
+            type="button"
+            onClick={() => setIsSubjectMenuOpen((prev) => !prev)}
+            className={`flex items-center gap-2 whitespace-nowrap shrink-0 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-xl border text-[13px] sm:text-[15px] font-bold transition-all cursor-pointer ${
+              isSubjectActive || isSubjectMenuOpen
+                ? 'border-sky-500/60 bg-sky-500/15 text-sky-700 dark:text-sky-300 shadow-xs'
+                : 'border-slate-200/90 dark:border-white/15 bg-white/85 dark:bg-slate-800/70 text-slate-800 dark:text-slate-100 hover:border-sky-400/70 hover:bg-sky-50/60 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Atom className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-sky-500 dark:text-sky-400 shrink-0" />
+            <span>
+              {activeSubjectMeta
+                ? activeSubjectMeta.title
+                : isEn
+                ? 'STEM Subjects'
+                : 'Môn học'}
+            </span>
+            {isSubjectMenuOpen ? (
+              <ChevronUp className="w-4 h-4 opacity-80" />
+            ) : (
+              <ChevronDown className="w-4 h-4 opacity-80" />
+            )}
+          </button>
+          {isSubjectMenuOpen && renderSubjectDropdownPanel()}
+        </div>
+
         <button
           onClick={() => onSelectSubject('exams')}
-          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'exams' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
+          className={`flex items-center gap-2 whitespace-nowrap shrink-0 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-xl text-[13px] sm:text-[15px] font-bold transition-all cursor-pointer ${
+            currentSubject === 'exams'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/90 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200/80 dark:hover:border-white/10'
+          }`}
         >
-          {language === 'en' ? 'Exams' : 'Đề Thi'}
+          <FileText className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0" />
+          <span>{language === 'en' ? 'Exams' : 'Đề Thi'}</span>
         </button>
+
         <button
           onClick={() => onSelectSubject('arena')}
-          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'arena' ? 'text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/50' : 'text-slate-500 dark:text-slate-400'}`}
+          className={`flex items-center gap-2 whitespace-nowrap shrink-0 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-xl text-[13px] sm:text-[15px] font-bold transition-all cursor-pointer ${
+            currentSubject === 'arena'
+              ? 'bg-amber-400 text-slate-950 shadow-sm'
+              : 'text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/90 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200/80 dark:hover:border-white/10'
+          }`}
         >
-          {t('nav.arena', 'Thi Đấu & BXH', 'Arena')}
+          <Trophy className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0" />
+          <span>{t('nav.arena', 'Thi Đấu & BXH', 'Weekly Arena')}</span>
         </button>
-      </div>
+      </nav>
     </header>
   );
 };

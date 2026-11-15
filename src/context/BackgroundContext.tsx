@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useState } from 'react';
 
-export type BackgroundCreatureTheme = 'koi' | 'dragon' | 'birds' | 'butterflies' | 'galaxy';
+export type BackgroundCreatureTheme =
+  | 'koi'
+  | 'dragon'
+  | 'birds'
+  | 'butterflies'
+  | 'jellyfish'
+  | 'turtles'
+  | 'fireflies'
+  | 'all'
+  | 'galaxy';
 
 export interface CreatureThemeOption {
   id: BackgroundCreatureTheme;
@@ -12,32 +21,60 @@ export interface CreatureThemeOption {
 
 export const CREATURE_THEME_OPTIONS: CreatureThemeOption[] = [
   {
+    id: 'all',
+    labelVi: 'Hệ Sinh Thái Tổng Hợp (Nhiều Loài)',
+    labelEn: 'Full Ecosystem (All Creatures)',
+    shortVi: 'Nhiều loài',
+    shortEn: 'All Mix'
+  },
+  {
     id: 'koi',
-    labelVi: 'Cá Koi Thiên Hà',
+    labelVi: 'Cá Koi Thiên Hà (Nâng cấp)',
     labelEn: 'Cosmic Koi Fish',
     shortVi: 'Cá Koi',
     shortEn: 'Koi Fish'
   },
   {
+    id: 'jellyfish',
+    labelVi: 'Sứa Phát Sáng Biển Sâu',
+    labelEn: 'Bioluminescent Jellyfish',
+    shortVi: 'Sứa sáng',
+    shortEn: 'Jellyfish'
+  },
+  {
+    id: 'turtles',
+    labelVi: 'Rùa Biển Tinh Tú',
+    labelEn: 'Celestial Sea Turtles',
+    shortVi: 'Rùa biển',
+    shortEn: 'Sea Turtles'
+  },
+  {
     id: 'dragon',
-    labelVi: 'Rồng Vũ Trụ',
+    labelVi: 'Rồng Vũ Trụ & Ngọc Sáng',
     labelEn: 'Celestial Dragon',
     shortVi: 'Rồng',
     shortEn: 'Dragon'
   },
   {
     id: 'birds',
-    labelVi: 'Đàn Chim Hải Âu',
+    labelVi: 'Đàn Chim Hải Âu & Phượng',
     labelEn: 'Soaring Birds',
     shortVi: 'Chim',
     shortEn: 'Birds'
   },
   {
     id: 'butterflies',
-    labelVi: 'Bướm Tinh Tú',
+    labelVi: 'Bướm Tinh Tú Lấp Lánh',
     labelEn: 'Starlight Butterflies',
     shortVi: 'Bướm',
     shortEn: 'Butterflies'
+  },
+  {
+    id: 'fireflies',
+    labelVi: 'Đom Đóm Rừng Sao',
+    labelEn: 'Starlight Fireflies',
+    shortVi: 'Đom đóm',
+    shortEn: 'Fireflies'
   },
   {
     id: 'galaxy',
@@ -48,6 +85,18 @@ export const CREATURE_THEME_OPTIONS: CreatureThemeOption[] = [
   }
 ];
 
+const VALID_THEMES: BackgroundCreatureTheme[] = [
+  'koi',
+  'dragon',
+  'birds',
+  'butterflies',
+  'jellyfish',
+  'turtles',
+  'fireflies',
+  'all',
+  'galaxy'
+];
+
 interface BackgroundContextValue {
   creatureTheme: BackgroundCreatureTheme;
   setCreatureTheme: (theme: BackgroundCreatureTheme) => void;
@@ -56,7 +105,7 @@ interface BackgroundContextValue {
 const STORAGE_KEY = 'educlassroom_bg_creature';
 
 const BackgroundContext = createContext<BackgroundContextValue>({
-  creatureTheme: 'koi',
+  creatureTheme: 'all',
   setCreatureTheme: () => {}
 });
 
@@ -64,11 +113,11 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [creatureTheme, setCreatureThemeState] = useState<BackgroundCreatureTheme>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY) as BackgroundCreatureTheme | null;
-      if (saved && ['koi', 'dragon', 'birds', 'butterflies', 'galaxy'].includes(saved)) {
+      if (saved && VALID_THEMES.includes(saved)) {
         return saved;
       }
     } catch {}
-    return 'koi';
+    return 'all';
   });
 
   const setCreatureTheme = (theme: BackgroundCreatureTheme) => {

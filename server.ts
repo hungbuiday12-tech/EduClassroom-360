@@ -213,6 +213,146 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+// =====================================================================
+// PERSISTENT COMMUNITY REVIEWS & RATINGS STORE (.reviews_db.json)
+// =====================================================================
+type ReviewCategory = 'simulations' | 'lectures_ai' | 'coding_exams' | 'interface' | 'general';
+
+interface PlatformReviewRecord {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  rating: number;
+  favoriteCategory: ReviewCategory;
+  comment: string;
+  helpfulUserIds: string[];
+  helpfulCount: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface ReviewsDatabase {
+  reviews: PlatformReviewRecord[];
+}
+
+const REVIEWS_DB_PATH = path.resolve(process.cwd(), '.reviews_db.json');
+
+function loadReviewsDb(): ReviewsDatabase {
+  try {
+    if (fs.existsSync(REVIEWS_DB_PATH)) {
+      const raw = fs.readFileSync(REVIEWS_DB_PATH, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.reviews)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read .reviews_db.json, initializing clean store:', err);
+  }
+  return { reviews: [] };
+}
+
+function saveReviewsDb(data: ReviewsDatabase) {
+  try {
+    fs.writeFileSync(REVIEWS_DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to persist .reviews_db.json:', err);
+  }
+}
+
+let reviewsDb: ReviewsDatabase = loadReviewsDb();
+
+app.get('/api/reviews', (_req: Request, res: Response) => {
+  const sorted = [...reviewsDb.reviews].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  return res.json({ reviews: sorted });
+});
+
+app.post('/api/reviews', (req: Request, res: Response) => {
+  const { id, userId, username, displayName, avatarUrl, rating, favoriteCategory, comment } = req.body || {};
+
+  if (!userId || !displayName || typeof rating !== 'number' || !comment) {
+    return res.status(400).json({ error: 'Thiếu thông tin đánh giá bắt buộc.' });
+  }
+
+  const cleanComment = String(comment).trim();
+  if (cleanComment.length < 3 || cleanComment.length > 800) {
+    return res.status(400).json({ error: 'Nội dung bình luận cần từ 3 đến 800 ký tự.' });
+  }
+
+  const clampedRating = Math.max(1, Math.min(5, Math.round(rating)));
+  const validCategories: ReviewCategory[] = ['simulations', 'lectures_ai', 'coding_exams', 'interface', 'general'];
+  const cleanCat: ReviewCategory = validCategories.includes(favoriteCategory) ? favoriteCategory : 'general';
+  const cleanUserId = String(userId).slice(0, 128);
+  const nowIso = new Date().toISOString();
+
+  const record: PlatformReviewRecord = {
+    id: id ? String(id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 128) : `rev_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    userId: cleanUserId,
+    username: String(username || 'hocvien').slice(0, 40),
+    displayName: String(displayName).slice(0, 100),
+    avatarUrl: avatarUrl ? String(avatarUrl).slice(0, 512) : undefined,
+    rating: clampedRating,
+    favoriteCategory: cleanCat,
+    comment: cleanComment,
+    helpfulUserIds: [],
+    helpfulCount: 0,
+    createdAt: nowIso,
+    updatedAt: nowIso
+  };
+
+  reviewsDb.reviews.unshift(record);
+  saveReviewsDb(reviewsDb);
+
+  return res.status(201).json({ success: true, review: record });
+});
+
+app.post('/api/reviews/:id/vote', (req: Request, res: Response) => {
+  const reviewId = String(req.params.id || '').trim();
+  const userId = String(req.body?.userId || '').trim().slice(0, 128);
+
+  if (!reviewId || !userId) {
+    return res.status(400).json({ error: 'Cần đăng nhập để bình chọn hữu ích.' });
+  }
+
+  const target = reviewsDb.reviews.find((r) => r.id === reviewId);
+  if (!target) {
+    return res.status(404).json({ error: 'Không tìm thấy đánh giá.' });
+  }
+
+  const idx = target.helpfulUserIds.indexOf(userId);
+  if (idx >= 0) {
+    target.helpfulUserIds.splice(idx, 1);
+  } else {
+    target.helpfulUserIds.push(userId);
+  }
+  target.helpfulCount = target.helpfulUserIds.length;
+  target.updatedAt = new Date().toISOString();
+  saveReviewsDb(reviewsDb);
+
+  return res.json({ success: true, review: target });
+});
+
+app.delete('/api/reviews/:id', (req: Request, res: Response) => {
+  const reviewId = String(req.params.id || '').trim();
+  const userId = String(req.query.userId || req.body?.userId || '').trim();
+
+  const idx = reviewsDb.reviews.findIndex((r) => r.id === reviewId);
+  if (idx < 0) {
+    return res.status(404).json({ error: 'Không tìm thấy đánh giá.' });
+  }
+  if (!userId || reviewsDb.reviews[idx].userId !== userId) {
+    return res.status(403).json({ error: 'Bạn chỉ có thể xóa đánh giá của chính mình.' });
+  }
+
+  reviewsDb.reviews.splice(idx, 1);
+  saveReviewsDb(reviewsDb);
+  return res.json({ success: true, id: reviewId });
+});
+
 app.get('/api/arena/stream', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');

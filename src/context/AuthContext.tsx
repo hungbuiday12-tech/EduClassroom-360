@@ -9,6 +9,11 @@ import {
   sendPasswordResetEmail,
   signOut,
   updateProfile,
+  updateEmail,
+  verifyBeforeUpdateEmail,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   onAuthStateChanged,
   doc,
   getDoc,
@@ -32,6 +37,12 @@ interface AuthContextType {
   loginWithUsernameOrEmail: (identifier: string, password: string) => Promise<void>;
   registerAccount: (username: string, email: string, password: string, displayName?: string) => Promise<void>;
   sendResetPasswordMail: (email: string) => Promise<void>;
+  updateAccountProfile: (updates: { displayName?: string; avatarUrl?: string }) => Promise<void>;
+  updateAccountEmail: (
+    newEmail: string,
+    currentPassword?: string
+  ) => Promise<{ status: 'updated' | 'verification_sent'; message: string }>;
+  changeAccountPassword: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   addXP: (amount: number) => Promise<void>;
 }
@@ -46,6 +57,7 @@ interface StoredAccount {
   username: string;
   displayName: string;
   email: string;
+  avatarUrl?: string;
   password: string;
   role: 'student' | 'teacher' | 'admin';
   xp: number;
@@ -333,6 +345,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: matchedWithPassword.username,
         displayName: matchedWithPassword.displayName,
         email: matchedWithPassword.email,
+        avatarUrl: matchedWithPassword.avatarUrl,
         role: matchedWithPassword.role,
         xp: matchedWithPassword.xp || 150,
         createdAt: matchedWithPassword.createdAt,
@@ -367,6 +380,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             username: base?.username || emailToTry.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_'),
             displayName: base?.displayName || res.user.displayName || rawId,
             email: res.user.email || emailToTry,
+            avatarUrl: base?.avatarUrl || res.user.photoURL || undefined,
             password,
             role: base?.role || 'student',
             xp: base?.xp || 150,
@@ -403,6 +417,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: sanitized,
         displayName: googlePlaceholder?.displayName || rawId,
         email: targetEmail,
+        avatarUrl: googlePlaceholder?.avatarUrl,
         password,
         role: googlePlaceholder?.role || 'student',
         xp: googlePlaceholder?.xp || 150,
@@ -414,6 +429,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: newAcc.username,
         displayName: newAcc.displayName,
         email: newAcc.email,
+        avatarUrl: newAcc.avatarUrl,
         role: newAcc.role,
         xp: newAcc.xp,
         createdAt: newAcc.createdAt,
@@ -549,6 +565,197 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Update Account Profile (Display Name / Avatar)
+  const updateAccountProfile = async (updates: { displayName?: string; avatarUrl?: string }) => {
+    if (!user) throw new Error('Bạn cần đăng nhập để thiết lập tài khoản.');
+    const nextDisplayName =
+      typeof updates.displayName === 'string' && updates.displayName.trim()
+        ? updates.displayName.trim().slice(0, 100)
+        : user.displayName;
+    const nextAvatar =
+      typeof updates.avatarUrl === 'string' ? updates.avatarUrl.trim().slice(0, 512) : user.avatarUrl;
+
+    const updatedProfile: UserProfile = {
+      ...user,
+      displayName: nextDisplayName,
+      avatarUrl: nextAvatar || undefined,
+    };
+    setUser(updatedProfile);
+    localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(updatedProfile));
+
+    const accounts = getStoredAccounts();
+    const idx = accounts.findIndex((a) => a.uid === user.uid || a.username === user.username);
+    if (idx !== -1) {
+      accounts[idx] = {
+        ...accounts[idx],
+        displayName: nextDisplayName,
+        avatarUrl: nextAvatar || undefined,
+      };
+      localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts));
+    }
+
+    if (auth.currentUser) {
+      try {
+        await updateProfile(auth.currentUser, {
+          displayName: nextDisplayName,
+          ...(nextAvatar ? { photoURL: nextAvatar } : {}),
+        });
+      } catch {}
+      try {
+        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+          displayName: nextDisplayName,
+          avatarUrl: nextAvatar || '',
+          updatedAt: new Date().toISOString(),
+        });
+      } catch {}
+    }
+  };
+
+  // Update Account Gmail / Email
+  const updateAccountEmail = async (
+    newEmail: string,
+    currentPassword?: string
+  ): Promise<{ status: 'updated' | 'verification_sent'; message: string }> => {
+    if (!user) throw new Error('Bạn cần đăng nhập để đổi Gmail / Email.');
+    const cleanEmail = newEmail.trim();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      throw new Error('Địa chỉ Gmail / Email không hợp lệ.');
+    }
+
+    const accounts = getStoredAccounts();
+    const duplicate = accounts.find(
+      (a) =>
+        a.email.toLowerCase() === cleanEmail.toLowerCase() &&
+        a.uid !== user.uid &&
+        a.username.toLowerCase() !== user.username.toLowerCase()
+    );
+    if (duplicate) {
+      throw new Error('Gmail / Email này đã được tài khoản khác sử dụng.');
+    }
+
+    let verificationSent = false;
+
+    if (auth.currentUser) {
+      if (currentPassword && auth.currentUser.email) {
+        try {
+          const cred = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+          await reauthenticateWithCredential(auth.currentUser, cred);
+        } catch (reauthErr: any) {
+          if (reauthErr?.code === 'auth/wrong-password' || reauthErr?.code === 'auth/invalid-credential') {
+            throw new Error('Mật khẩu hiện tại không đúng để xác thực đổi Gmail.');
+          }
+        }
+      }
+
+      try {
+        await updateEmail(auth.currentUser, cleanEmail);
+      } catch (err: any) {
+        if (err?.code === 'auth/operation-not-allowed') {
+          try {
+            await verifyBeforeUpdateEmail(auth.currentUser, cleanEmail);
+            verificationSent = true;
+          } catch {}
+        } else if (err?.code === 'auth/requires-recent-login') {
+          throw new Error('Vui lòng nhập mật khẩu hiện tại (hoặc đăng nhập lại) để cập nhật Gmail trên Firebase.');
+        } else if (err?.code === 'auth/email-already-in-use') {
+          throw new Error('Gmail này đang gắn với một tài khoản Firebase khác.');
+        }
+      }
+    }
+
+    const updatedProfile: UserProfile = {
+      ...user,
+      email: cleanEmail,
+    };
+    setUser(updatedProfile);
+    localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(updatedProfile));
+
+    const idx = accounts.findIndex((a) => a.uid === user.uid || a.username === user.username);
+    if (idx !== -1) {
+      accounts[idx] = { ...accounts[idx], email: cleanEmail };
+      localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts));
+    }
+
+    if (verificationSent) {
+      return {
+        status: 'verification_sent',
+        message: `Đã gửi liên kết xác nhận tới ${cleanEmail} và cập nhật hồ sơ của bạn.`,
+      };
+    }
+
+    return {
+      status: 'updated',
+      message: `Đã cập nhật Gmail / Email thành ${cleanEmail}.`,
+    };
+  };
+
+  // Change Account Password
+  const changeAccountPassword = async (currentPassword: string, newPassword: string) => {
+    if (!user) throw new Error('Bạn cần đăng nhập để thay đổi mật khẩu.');
+    if (!newPassword || newPassword.length < 4) {
+      throw new Error('Mật khẩu mới phải có tối thiểu 4 ký tự.');
+    }
+
+    const accounts = getStoredAccounts();
+    const idx = accounts.findIndex((a) => a.uid === user.uid || a.username === user.username);
+    if (idx !== -1) {
+      const existingAcc = accounts[idx];
+      if (
+        existingAcc.password &&
+        existingAcc.password !== GOOGLE_OAUTH_PLACEHOLDER_PW &&
+        currentPassword &&
+        existingAcc.password !== currentPassword
+      ) {
+        throw new Error('Mật khẩu hiện tại không chính xác.');
+      }
+    }
+
+    if (auth.currentUser) {
+      const hasPasswordProvider = auth.currentUser.providerData?.some(
+        (p) => p.providerId === 'password'
+      );
+      if (hasPasswordProvider) {
+        if (currentPassword && auth.currentUser.email) {
+          try {
+            const cred = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+            await reauthenticateWithCredential(auth.currentUser, cred);
+          } catch (reauthErr: any) {
+            if (reauthErr?.code === 'auth/wrong-password' || reauthErr?.code === 'auth/invalid-credential') {
+              throw new Error('Mật khẩu hiện tại không chính xác.');
+            }
+          }
+        }
+        try {
+          await updatePassword(auth.currentUser, newPassword);
+        } catch (err: any) {
+          if (err?.code === 'auth/weak-password') {
+            throw new Error('Mật khẩu Firebase yêu cầu tối thiểu 6 ký tự.');
+          }
+          if (err?.code === 'auth/requires-recent-login') {
+            throw new Error('Vui lòng nhập đúng mật khẩu hiện tại để xác thực đổi mật khẩu.');
+          }
+        }
+      }
+    }
+
+    if (idx !== -1) {
+      accounts[idx] = { ...accounts[idx], password: newPassword };
+      localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts));
+    } else {
+      saveStoredAccount({
+        uid: user.uid,
+        username: user.username,
+        displayName: user.displayName,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        password: newPassword,
+        role: user.role,
+        xp: user.xp,
+        createdAt: user.createdAt,
+      });
+    }
+  };
+
   // Logout
   const logout = async () => {
     try {
@@ -600,6 +807,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithUsernameOrEmail,
         registerAccount,
         sendResetPasswordMail,
+        updateAccountProfile,
+        updateAccountEmail,
+        changeAccountPassword,
         logout,
         addXP,
       }}

@@ -8,6 +8,11 @@ import {
   sendPasswordResetEmail,
   signOut,
   updateProfile,
+  updateEmail,
+  verifyBeforeUpdateEmail,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
@@ -110,6 +115,11 @@ export {
   sendPasswordResetEmail,
   signOut,
   updateProfile,
+  updateEmail,
+  verifyBeforeUpdateEmail,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   onAuthStateChanged,
   doc,
   getDoc,

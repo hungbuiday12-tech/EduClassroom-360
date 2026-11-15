@@ -13,8 +13,10 @@ import { ArenaHub } from './components/arena/ArenaHub';
 import { SocraticAITutor } from './components/tutor/SocraticAITutor';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
+import { SettingsModal } from './components/settings/SettingsModal';
 import { VisitorLandingPage } from './components/landing/VisitorLandingPage';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
+import { WaterRippleLayer } from './components/common/WaterRippleLayer';
 import { useNavigation } from './context/NavigationContext';
 import { useLanguage } from './context/LanguageContext';
 import { EXAM_PAPERS } from './data/examData';
@@ -58,6 +60,7 @@ function MainApp() {
   });
 
   const { user, addXP, loading } = useAuth();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Guest explore mode state: allows unauthenticated visitors to explore the classroom
   const [isGuestExploring, setIsGuestExploring] = useState<boolean>(() => {
@@ -186,7 +189,9 @@ function MainApp() {
   }, [navigate, user]);
 
   return (
-    <AnimatePresence mode="wait">
+    <>
+      <WaterRippleLayer />
+      <AnimatePresence mode="wait">
       {!loading && !user && !isGuestExploring ? (
         <motion.div
           key="visitor-landing-view"
@@ -227,10 +232,11 @@ function MainApp() {
             onToggleTheme={handleToggleTheme}
             xp={activeXP}
             onReturnToLanding={handleReturnToLanding}
+            onOpenSettings={() => setIsSettingsOpen(true)}
           />
 
           {/* Main Viewport Container with Smooth Subject Transitions (no persistent transform/z-index trap) */}
-          <main className="relative flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-5 sm:py-8">
+          <main className="relative flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-5 lg:px-7 py-6 sm:py-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentSubject}
@@ -246,6 +252,7 @@ function MainApp() {
                     onOpenTutor={(subj, mode) =>
                       handleOpenTutor({ subject: subj || 'math', mode })
                     }
+                    onOpenSettings={() => setIsSettingsOpen(true)}
                   />
                 )}
 
@@ -289,12 +296,12 @@ function MainApp() {
             </AnimatePresence>
           </main>
 
-          {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Compact 3-AI Floating Launcher */}
+          {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Modern Floating 3-AI Dock */}
           {!isTutorOpen && (
-            <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[85] flex items-center gap-1 p-1 rounded-full bg-slate-900/95 dark:bg-slate-950/95 border border-indigo-500/40 shadow-2xl backdrop-blur-md">
+            <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/90 dark:bg-slate-900/92 border border-white/15 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-2xl">
               <button
                 onClick={() => handleOpenTutor({ subject: 'math' })}
-                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors"
+                className="px-3 sm:px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                 title={isEn ? 'Open Math AI (Left Ctrl + D)' : 'Mở AI Toán Học (Ctrl trái + D)'}
               >
                 <Compass className="w-3.5 h-3.5 shrink-0" />
@@ -302,7 +309,7 @@ function MainApp() {
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'physics' })}
-                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-amber-600 hover:bg-amber-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors"
+                className="px-3 sm:px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer"
                 title={isEn ? 'Open Physics AI (Left Ctrl + F)' : 'Mở AI Vật Lí (Ctrl trái + F)'}
               >
                 <Zap className="w-3.5 h-3.5 shrink-0" />
@@ -310,7 +317,7 @@ function MainApp() {
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'cs' })}
-                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors"
+                className="px-3 sm:px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                 title={isEn ? 'Open CS AI (Left Ctrl + G)' : 'Mở AI Tin Học (Ctrl trái + G)'}
               >
                 <Code2 className="w-3.5 h-3.5 shrink-0" />
@@ -343,11 +350,20 @@ function MainApp() {
           {/* Welcome Screen & Authentication Modal for in-app login */}
           <AuthModal />
 
+          {/* Account, Gmail, Password & Theme Settings Modal */}
+          <SettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            isDark={isDark}
+            onToggleTheme={handleToggleTheme}
+            onReturnToLanding={handleReturnToLanding}
+          />
+
           {/* Clean Editorial Footer */}
-          <footer className="relative z-10 mt-auto border-t border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+          <footer className="relative z-10 mt-auto border-t border-slate-200/70 dark:border-white/10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-2xl py-6">
+            <div className="max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-7 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                <span className="font-display font-bold text-slate-900 dark:text-white tracking-tight">
                   Synapse
                 </span>
                 <span aria-hidden="true">·</span>
@@ -361,46 +377,53 @@ function MainApp() {
               <div className="flex flex-wrap items-center gap-4">
                 <button
                   onClick={() => selectSubject('roadmap')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 >
                   {isEn ? 'Roadmap' : 'Lộ trình học'}
                 </button>
                 <button
                   onClick={() => selectSubject('math')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 >
                   {isEn ? 'Mathematics' : 'Toán học'}
                 </button>
                 <button
                   onClick={() => selectSubject('physics')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 >
                   {isEn ? 'Physics 2D/3D' : 'Vật lí 2D'}
                 </button>
                 <button
                   onClick={() => selectSubject('cs')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 >
                   {isEn ? 'Computer Science' : 'Tin học'}
                 </button>
                 <button
                   onClick={() => selectSubject('exams')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold"
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold cursor-pointer"
                 >
                   {isEn ? `Exams (${EXAM_PAPERS.length})` : `Đề Thi (${EXAM_PAPERS.length} Đề)`}
                 </button>
                 <button
                   onClick={() => selectSubject('arena')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-amber-600 dark:text-amber-400 font-semibold"
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-amber-600 dark:text-amber-400 font-semibold cursor-pointer"
                 >
                   {isEn ? 'Weekly Arena' : 'Thi Đấu & BXH Tuần'}
+                </button>
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold cursor-pointer"
+                >
+                  {isEn ? 'Settings' : 'Cài đặt'}
                 </button>
               </div>
             </div>
           </footer>
         </motion.div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </>
   );
 }
 

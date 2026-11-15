@@ -22,6 +22,7 @@ import { SublimeEditor, MonokaiCodeBlock } from './SublimeEditor';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { FormattedText } from '../common/MathRenderer';
 import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
+import { LectureThumbnail } from '../common/LectureThumbnail';
 import { buildCSLectureSteps } from '../../data/lectureStepsBuilder';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
@@ -672,19 +673,29 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 className="group text-left bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-4"
               >
                 <div className="space-y-2.5">
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                    <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-                      Bài {l.lessonNumber}
-                    </span>
-                    <span aria-hidden="true">·</span>
-                    <span>{l.vnoiPhase || l.level}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="tabular-nums">{l.estimatedMinutes}p</span>
-                  </div>
+                  <div className="flex items-start gap-3">
+                    <LectureThumbnail
+                      subject="cs"
+                      id={l.id}
+                      lessonNumber={l.lessonNumber}
+                      category={l.vnoiPhase || l.level}
+                    />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                          Bài {l.lessonNumber}
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span>{l.vnoiPhase || l.level}</span>
+                        <span aria-hidden="true">·</span>
+                        <span className="tabular-nums">{l.estimatedMinutes}p</span>
+                      </div>
 
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
-                    {l.title}
-                  </h3>
+                      <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
+                        {l.title}
+                      </h3>
+                    </div>
+                  </div>
 
                   <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
                     {l.topic}

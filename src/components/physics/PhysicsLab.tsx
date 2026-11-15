@@ -42,6 +42,7 @@ import { Physics3DView } from './Physics3DView';
 import { useLanguage } from '../../context/LanguageContext';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
+import { LectureThumbnail } from '../common/LectureThumbnail';
 import { buildPhysicsLectureSteps } from '../../data/lectureStepsBuilder';
 import { useNavigation } from '../../context/NavigationContext';
 
@@ -3171,16 +3172,26 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   className="group cursor-pointer bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 hover:border-blue-400/70 dark:hover:border-blue-500/60 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4"
                 >
                   <div className="space-y-2.5">
-                    <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                      <span className={`font-bold uppercase tracking-wider ${isPro ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                        {isPro ? `Chuyên Lí · ${l.tier || 'Nâng cao'}` : `${l.grade} · Bài ${l.lessonNumber}`}
-                      </span>
-                      <span className="font-mono">{l.practiceExercises.length} TN + {(l.essayExercises || []).length} TL</span>
-                    </div>
+                    <div className="flex items-start gap-3">
+                      <LectureThumbnail
+                        subject="physics"
+                        id={l.id}
+                        category={l.grade}
+                        simType={l.simulationType}
+                      />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                          <span className={`font-bold uppercase tracking-wider ${isPro ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                            {isPro ? `Chuyên Lí · ${l.tier || 'Nâng cao'}` : `${l.grade} · Bài ${l.lessonNumber}`}
+                          </span>
+                          <span className="font-mono shrink-0 tabular-nums">{l.practiceExercises.length} TN + {(l.essayExercises || []).length} TL</span>
+                        </div>
 
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
-                      {translate(l.title)}
-                    </h3>
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
+                          {translate(l.title)}
+                        </h3>
+                      </div>
+                    </div>
 
                     <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
                       {translate(l.description)}

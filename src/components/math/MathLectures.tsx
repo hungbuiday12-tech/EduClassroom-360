@@ -32,6 +32,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { MathFormula, FormattedText } from '../common/MathRenderer';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
+import { LectureThumbnail } from '../common/LectureThumbnail';
 import { buildMathLectureSteps } from '../../data/lectureStepsBuilder';
 import { useNavigation } from '../../context/NavigationContext';
 
@@ -383,30 +384,41 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                     onClick={() => handleOpenLecture(lec.id)}
                     className="group p-5 rounded-2xl border border-slate-200/85 dark:border-slate-800/85 bg-white/90 dark:bg-slate-900/90 hover:border-indigo-400 dark:hover:border-indigo-500 text-left transition-all shadow-xs hover:shadow-md flex flex-col justify-between gap-4"
                   >
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span
-                          className={`font-bold ${
-                            lec.track === 'chuyen'
-                              ? 'text-amber-600 dark:text-amber-400'
-                              : 'text-indigo-600 dark:text-indigo-400'
-                          }`}
-                        >
-                          {lec.track === 'chuyen' && lec.tier ? `Chuyên · ${lec.tier}` : lec.gradeGroup || lec.grade}
-                        </span>
-                        <span aria-hidden="true">·</span>
-                        <span>{lec.category || 'Toán học'}</span>
-                        {lec.readTimeMinutes && (
-                          <>
+                    <div className="space-y-2.5">
+                      <div className="flex items-start gap-3">
+                        <LectureThumbnail
+                          subject="math"
+                          id={lec.id}
+                          category={lec.category}
+                          sim2dMode={lec.sim2dMode}
+                          sim3dMode={lec.sim3dMode}
+                        />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span
+                              className={`font-bold ${
+                                lec.track === 'chuyen'
+                                  ? 'text-amber-600 dark:text-amber-400'
+                                  : 'text-indigo-600 dark:text-indigo-400'
+                              }`}
+                            >
+                              {lec.track === 'chuyen' && lec.tier ? `Chuyên · ${lec.tier}` : lec.gradeGroup || lec.grade}
+                            </span>
                             <span aria-hidden="true">·</span>
-                            <span className="tabular-nums">{lec.readTimeMinutes} phút</span>
-                          </>
-                        )}
-                      </div>
+                            <span>{lec.category || 'Toán học'}</span>
+                            {lec.readTimeMinutes && (
+                              <>
+                                <span aria-hidden="true">·</span>
+                                <span className="tabular-nums">{lec.readTimeMinutes} phút</span>
+                              </>
+                            )}
+                          </div>
 
-                      <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {lec.title}
-                      </h3>
+                          <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            {lec.title}
+                          </h3>
+                        </div>
+                      </div>
 
                       <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
                         <FormattedText text={lec.description} />

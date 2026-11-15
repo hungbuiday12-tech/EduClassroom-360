@@ -305,7 +305,7 @@
     },
     "/forum_groups/{groupId}": {
       "schema": "ForumGroup",
-      "description": "Study forum discussion groups plus mandatory official announcement group managed by Admin TanHung"
+      "description": "Study forum discussion groups plus mandatory official announcement group managed by Admin Synapse"
     },
     "/forum_groups/{groupId}/messages/{messageId}": {
       "schema": "ForumMessage",

@@ -263,7 +263,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
   const handleGoogleDirect = () => {
     loginWithGoogleDirectly(
-      regEmail || identifier || 'hungbuiday12@gmail.com',
+      regEmail || identifier || 'hocsinh.chuyen@gmail.com',
       regFullName || 'Học viên Chuyên'
     );
   };

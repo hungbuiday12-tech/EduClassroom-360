@@ -393,7 +393,8 @@ interface ForumDatabase {
 
 const FORUM_DB_PATH = path.resolve(process.cwd(), '.forum_db.json');
 const MANDATORY_ADMIN_GROUP_ID = 'official-announcements';
-const FORUM_ADMIN_EMAIL = 'hungbuiday12@gmail.com';
+const FORUM_ADMIN_EMAIL = 'synapse.admin@educlassroom360.vn';
+const FORUM_ADMIN_AVATAR = '/assets/aistudio/image_0883e005.png';
 
 function isForumAdminIdentity(email?: unknown, _username?: unknown): boolean {
   return String(email || '').trim().toLowerCase() === FORUM_ADMIN_EMAIL;
@@ -409,17 +410,17 @@ function buildDefaultForumSeed(): ForumDatabase {
     groups: [
       {
         id: MANDATORY_ADMIN_GROUP_ID,
-        name: 'Thông báo Chính thức · Admin TanHung',
+        name: 'Thông báo Chính thức · Admin Synapse',
         description:
-          'Nhóm bắt buộc của toàn hệ thống Synapse. Chỉ tài khoản Admin TanHung (hungbuiday12@gmail.com) có quyền đăng thông báo cập nhật hoạt động của web.',
+          'Nhóm bắt buộc của toàn hệ thống Synapse. Chỉ tài khoản Admin Synapse mới có quyền đăng thông báo cập nhật hoạt động của web.',
         subject: 'announcements',
         isMandatoryAdminGroup: true,
-        creatorId: 'demo_user_3',
-        creatorName: 'TanHung',
-        creatorUsername: 'TanHung',
+        creatorId: 'admin_synapse',
+        creatorName: 'Synapse',
+        creatorUsername: 'Synapse',
         messageCount: 1,
         lastMessagePreview:
-          'Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°. Mọi thông báo bảo trì, sự kiện thi đấu & nâng cấp tính năng sẽ được cập nhật tại đây.',
+          'Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°! Mọi thông báo bảo trì, sự kiện thi đấu & nâng cấp tính năng sẽ được Admin Synapse cập nhật tại đây.',
         lastMessageAt: t1,
         createdAt: t1
       },
@@ -461,12 +462,13 @@ function buildDefaultForumSeed(): ForumDatabase {
         id: 'msg_seed_admin_1',
         groupId: MANDATORY_ADMIN_GROUP_ID,
         isAdminGroup: true,
-        senderId: 'demo_user_3',
-        senderName: 'TanHung',
-        senderUsername: 'TanHung',
+        senderId: 'admin_synapse',
+        senderName: 'Synapse',
+        senderUsername: 'Synapse',
+        senderAvatar: FORUM_ADMIN_AVATAR,
         senderRole: 'admin',
         content:
-          'Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°!\n\nĐây là kênh thông báo chính thức do Admin **TanHung** (`hungbuiday12@gmail.com`) quản lí để cập nhật lịch thi đấu hàng tuần, các mô phỏng 2D/3D mới và hoạt động của website.\n\n• Các bạn có thể tạo nhóm học tập riêng để cùng nhau trao đổi bài tập Toán, Vật lí, Tin học và hỗ trợ công thức KaTeX dạng `$a^2 + b^2 = c^2$`.',
+          'Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°!\n\nĐây là kênh thông báo chính thức do tài khoản Admin **Synapse** quản lí để cập nhật lịch thi đấu hàng tuần, các mô phỏng 2D/3D mới và hoạt động của website.\n\n• Các bạn có thể tạo nhóm học tập riêng để cùng nhau trao đổi bài tập Toán, Vật lí, Tin học và hỗ trợ công thức KaTeX dạng `$a^2 + b^2 = c^2$`.',
         createdAt: t1
       },
       {
@@ -511,14 +513,38 @@ function ensureMandatoryAdminGroup(data: ForumDatabase): ForumDatabase {
       g.id === MANDATORY_ADMIN_GROUP_ID
         ? {
             ...g,
+            name: seed.groups[0].name,
+            description: seed.groups[0].description,
             isMandatoryAdminGroup: true,
             subject: 'announcements',
-            creatorName: 'TanHung',
-            creatorUsername: 'TanHung'
+            creatorId: 'admin_synapse',
+            creatorName: 'Synapse',
+            creatorUsername: 'Synapse',
+            lastMessagePreview:
+              g.lastMessagePreview && g.lastMessagePreview.includes('Admin **TanHung**')
+                ? seed.groups[0].lastMessagePreview
+                : g.lastMessagePreview
           }
         : g
     );
   }
+
+  data.messages = data.messages.map((m) => {
+    if (m.id === 'msg_seed_admin_1') {
+      return seed.messages[0];
+    }
+    if (m.groupId === MANDATORY_ADMIN_GROUP_ID && m.senderRole === 'admin') {
+      return {
+        ...m,
+        senderId: 'admin_synapse',
+        senderName: 'Synapse',
+        senderUsername: 'Synapse',
+        senderAvatar: FORUM_ADMIN_AVATAR
+      };
+    }
+    return m;
+  });
+
   return data;
 }
 
@@ -528,7 +554,9 @@ function loadForumDb(): ForumDatabase {
       const raw = fs.readFileSync(FORUM_DB_PATH, 'utf8');
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.groups) && Array.isArray(parsed.messages)) {
-        return ensureMandatoryAdminGroup(parsed);
+        const normalized = ensureMandatoryAdminGroup(parsed);
+        saveForumDb(normalized);
+        return normalized;
       }
     }
   } catch (err) {
@@ -577,7 +605,7 @@ function getSortedGroupsForClient(isAuthenticated: boolean): ForumGroupRecord[] 
     g.isMandatoryAdminGroup
       ? {
           ...g,
-          lastMessagePreview: 'Đăng nhập để vào nhóm thông báo do Admin TanHung quản lí.'
+          lastMessagePreview: 'Đăng nhập để vào nhóm thông báo do Admin Synapse quản lí.'
         }
       : g
   );
@@ -678,7 +706,7 @@ app.get('/api/forum/groups/:groupId/messages', (req: Request, res: Response) => 
 
   if (group.isMandatoryAdminGroup && !userId) {
     return res.status(401).json({
-      error: 'Chỉ tài khoản đã đăng nhập mới có thể vào nhóm do Admin TanHung quản lí.'
+      error: 'Chỉ tài khoản đã đăng nhập mới có thể vào nhóm do Admin Synapse quản lí.'
     });
   }
 
@@ -715,7 +743,7 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
   if (group.isMandatoryAdminGroup && !isAdminSender) {
     return res.status(403).json({
       error:
-        'Chỉ tài khoản Admin TanHung (hungbuiday12@gmail.com) được phép gửi tin nhắn thông báo trong nhóm bắt buộc này.'
+        'Chỉ tài khoản Admin Synapse mới được phép gửi tin nhắn thông báo trong nhóm bắt buộc này.'
     });
   }
 
@@ -740,13 +768,17 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
     groupId,
     isAdminGroup: group.isMandatoryAdminGroup,
     senderId: String(senderId).slice(0, 128),
-    senderName: String(isAdminSender ? 'TanHung' : senderName).slice(0, 100),
+    senderName: String(isAdminSender ? 'Synapse' : senderName).slice(0, 100),
     senderUsername: isAdminSender
-      ? 'TanHung'
+      ? 'Synapse'
       : senderUsername
       ? String(senderUsername).slice(0, 40)
       : undefined,
-    senderAvatar: senderAvatar ? String(senderAvatar).slice(0, 512) : undefined,
+    senderAvatar: isAdminSender
+      ? FORUM_ADMIN_AVATAR
+      : senderAvatar
+      ? String(senderAvatar).slice(0, 512)
+      : undefined,
     senderRole: resolvedRole,
     content: cleanContent,
     createdAt: nowIso
@@ -818,7 +850,7 @@ app.delete('/api/forum/groups/:groupId/messages/:messageId', (req: Request, res:
   const targetMsg = forumDb.messages[msgIdx];
   const isAdmin = isForumAdminIdentity(userEmail);
   if (targetMsg.isAdminGroup && !isAdmin) {
-    return res.status(403).json({ error: 'Chỉ Admin TanHung có thể quản lý tin nhắn trong nhóm bắt buộc.' });
+    return res.status(403).json({ error: 'Chỉ Admin Synapse có thể quản lý tin nhắn trong nhóm bắt buộc.' });
   }
   if (targetMsg.senderId !== userId && !isAdmin) {
     return res.status(403).json({ error: 'Bạn chỉ có thể xóa tin nhắn của chính mình.' });

@@ -2,15 +2,15 @@
   "groups": [
     {
       "id": "official-announcements",
-      "name": "Thông báo Chính thức · Admin TanHung",
-      "description": "Nhóm bắt buộc của toàn hệ thống Synapse. Chỉ tài khoản Admin TanHung (hungbuiday12@gmail.com) có quyền đăng thông báo cập nhật hoạt động của web.",
+      "name": "Thông báo Chính thức · Admin Synapse",
+      "description": "Nhóm bắt buộc của toàn hệ thống Synapse. Chỉ tài khoản Admin Synapse mới có quyền đăng thông báo cập nhật hoạt động của web.",
       "subject": "announcements",
       "isMandatoryAdminGroup": true,
-      "creatorId": "demo_user_3",
-      "creatorName": "TanHung",
-      "creatorUsername": "TanHung",
+      "creatorId": "admin_synapse",
+      "creatorName": "Synapse",
+      "creatorUsername": "Synapse",
       "messageCount": 1,
-      "lastMessagePreview": "Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°! Đây là kênh thông báo chính thức do Admin **TanHung** (`hungbuiday12@gmail.com`) quản lí để cập nhật lị",
+      "lastMessagePreview": "Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°! Đây là kênh thông báo chính thức do tài khoản Admin **Synapse** quản lí để cập nhật lịch thi đấu hàng t",
       "lastMessageAt": "2026-11-15T00:00:00.000Z",
       "createdAt": "2026-11-15T00:00:00.000Z"
     },
@@ -48,11 +48,12 @@
       "id": "msg_seed_admin_1",
       "groupId": "official-announcements",
       "isAdminGroup": true,
-      "senderId": "demo_user_3",
-      "senderName": "TanHung",
-      "senderUsername": "TanHung",
+      "senderId": "admin_synapse",
+      "senderName": "Synapse",
+      "senderUsername": "Synapse",
+      "senderAvatar": "/assets/aistudio/image_0883e005.png",
       "senderRole": "admin",
-      "content": "Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°!\n\nĐây là kênh thông báo chính thức do Admin **TanHung** (`hungbuiday12@gmail.com`) quản lí để cập nhật lịch thi đấu hàng tuần, các mô phỏng 2D/3D mới và hoạt động của website.\n\n• Các bạn có thể tạo nhóm học tập riêng để cùng nhau trao đổi bài tập Toán, Vật lí, Tin học và hỗ trợ công thức KaTeX dạng `$a^2 + b^2 = c^2$`.",
+      "content": "Chào mừng các bạn đến với Diễn đàn Học tập Synapse 360°!\n\nĐây là kênh thông báo chính thức do tài khoản Admin **Synapse** quản lí để cập nhật lịch thi đấu hàng tuần, các mô phỏng 2D/3D mới và hoạt động của website.\n\n• Các bạn có thể tạo nhóm học tập riêng để cùng nhau trao đổi bài tập Toán, Vật lí, Tin học và hỗ trợ công thức KaTeX dạng `$a^2 + b^2 = c^2$`.",
       "createdAt": "2026-11-15T00:00:00.000Z"
     },
     {

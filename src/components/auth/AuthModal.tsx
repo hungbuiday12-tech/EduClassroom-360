@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, SYNAPSE_ADMIN_EMAIL } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { EXAM_PAPERS } from '../../data/examData';
 import { BrandLogo } from '../common/BrandLogo';
@@ -97,7 +97,7 @@ export const AuthModal: React.FC = () => {
   const handleQuickGoogleFallback = () => {
     const candidate = (regEmail || identifier || '').trim();
     const safeEmail =
-      candidate && candidate.toLowerCase() !== 'hungbuiday12@gmail.com'
+      candidate && candidate.toLowerCase() !== SYNAPSE_ADMIN_EMAIL
         ? candidate
         : 'hocsinh.chuyen@gmail.com';
     loginWithGoogleDirectly(safeEmail, regFullName || 'Học viên Chuyên');
@@ -463,7 +463,7 @@ export const AuthModal: React.FC = () => {
                           required
                           value={resetEmail}
                           onChange={(e) => setResetEmail(e.target.value)}
-                          placeholder="hungbuiday12@gmail.com"
+                          placeholder="ten.ban@gmail.com"
                           className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                       </div>

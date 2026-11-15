@@ -21,11 +21,11 @@
 11. Injecting PII (`email`) or ghost fields into `/weekly_leaderboard` or `/arena_attempts`.
 12. Attempting to bypass schema with unknown arbitrary ghost keys.
 13. Unauthenticated guest attempting to read/enter `/forum_groups/official-announcements` or its nested `/messages`.
-14. Non-admin signed-in student attempting to post a message inside `/forum_groups/official-announcements` or spoof `isMandatoryAdminGroup: true` on a new group.
-15. Email spoofing attempt where `request.auth.token.email == 'hungbuiday12@gmail.com'` with `email_verified == false`.
+14. Non-admin signed-in student (including regular user `TanHung`) attempting to post a message inside `/forum_groups/official-announcements` or spoof `isMandatoryAdminGroup: true` on a new group.
+15. Email spoofing attempt where `request.auth.token.email == 'synapse.admin@educlassroom360.vn'` with `email_verified == false`.
 
 ## 3. Forum Data Invariants
-- `/forum_groups/official-announcements` is the mandatory Admin announcement group (`isMandatoryAdminGroup: true`) managed strictly by Admin `TanHung` (`hungbuiday12@gmail.com` with `email_verified == true`), and can never be deleted or modified by regular users.
+- `/forum_groups/official-announcements` is the mandatory Admin announcement group (`isMandatoryAdminGroup: true`) managed strictly by Admin `Synapse` (`synapse.admin@educlassroom360.vn` with `email_verified == true` or verified `/admins/{uid}` record), and can never be deleted or modified by regular users.
 - Only signed-in users (`isSignedIn()`) may enter the mandatory Admin group, create new `/forum_groups/{groupId}` rooms (`isMandatoryAdminGroup: false`), or create `/forum_groups/{groupId}/messages/{messageId}` records.
-- Only Admin `TanHung` (`hungbuiday12@gmail.com` verified) can send messages into `/forum_groups/official-announcements`.
+- Only Admin `Synapse` can send messages into `/forum_groups/official-announcements`; user `TanHung` (`hungbuiday12@gmail.com`) is a standard student user.
 - Group and message documents store zero user PII (no raw user email addresses).

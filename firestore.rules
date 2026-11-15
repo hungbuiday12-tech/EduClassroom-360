@@ -284,7 +284,10 @@ service cloud.firestore {
     function isForumAdmin() {
       return isSignedIn() &&
              request.auth.token.email_verified == true &&
-             request.auth.token.email == 'hungbuiday12@gmail.com';
+             (
+               request.auth.token.email == 'synapse.admin@educlassroom360.vn' ||
+               exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+             );
     }
 
     function isValidForumGroup(data) {
@@ -356,7 +359,7 @@ service cloud.firestore {
                        groupId != 'official-announcements' &&
                        (existing().creatorId == request.auth.uid || isForumAdmin());
 
-      // Nested Group Messages (Master Gate checks parent group + TanHung admin-only rule on official-announcements)
+      // Nested Group Messages (Master Gate checks parent group + Synapse admin-only rule on official-announcements)
       match /messages/{messageId} {
         allow get: if isSignedIn() || existing().isAdminGroup == false;
         allow list: if isSignedIn() || resource.data.isAdminGroup == false;

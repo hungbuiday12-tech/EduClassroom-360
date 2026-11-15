@@ -389,7 +389,9 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-white/10 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition-colors text-xs cursor-pointer"
               >
-                {user.avatarUrl ? (
+                {user.role === 'admin' ? (
+                  <BrandLogo sizeClass="w-6 h-6 rounded-full" />
+                ) : user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
                     alt={user.displayName}

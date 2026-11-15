@@ -17,10 +17,11 @@ import {
   BookOpen
 } from 'lucide-react';
 import { ForumGroup, ForumMessage, ForumSubject, UserProfile } from '../../types';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, SYNAPSE_ADMIN_EMAIL, SYNAPSE_LOGO_AVATAR } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { safeFetchJson } from '../../lib/apiClient';
 import { FormattedText } from '../common/MathRenderer';
+import { BrandLogo } from '../common/BrandLogo';
 import {
   auth,
   db,
@@ -38,7 +39,7 @@ import {
 } from '../../lib/firebase';
 
 const MANDATORY_ADMIN_GROUP_ID = 'official-announcements';
-const FORUM_ADMIN_EMAIL = 'hungbuiday12@gmail.com';
+const FORUM_ADMIN_EMAIL = SYNAPSE_ADMIN_EMAIL;
 
 export function isForumAdminUser(user: UserProfile | null): boolean {
   if (!user) return false;
@@ -180,7 +181,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                 if (g.isMandatoryAdminGroup && !user) {
                   return {
                     ...payload.group,
-                    lastMessagePreview: 'Đăng nhập để vào nhóm thông báo do Admin TanHung quản lí.'
+                    lastMessagePreview: 'Đăng nhập để vào nhóm thông báo do Admin Synapse quản lí.'
                   };
                 }
                 return payload.group;
@@ -425,8 +426,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
     if (isSelectedMandatoryAdmin && !isAdmin) {
       setErrorMsg(
         isEn
-          ? 'Only Admin TanHung (hungbuiday12@gmail.com) is allowed to post in the mandatory announcement group.'
-          : 'Chỉ tài khoản Admin TanHung (hungbuiday12@gmail.com) được phép gửi tin nhắn thông báo hoạt động web.'
+          ? 'Only Admin Synapse is allowed to post in the mandatory announcement group.'
+          : 'Chỉ tài khoản Admin Synapse được phép gửi tin nhắn thông báo hoạt động web.'
       );
       return;
     }
@@ -450,10 +451,10 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
         body: JSON.stringify({
           id: msgId,
           senderId: user.uid,
-          senderName: isAdmin ? 'TanHung' : user.displayName,
-          senderUsername: isAdmin ? 'TanHung' : user.username,
+          senderName: isAdmin ? 'Synapse' : user.displayName,
+          senderUsername: isAdmin ? 'Synapse' : user.username,
           senderEmail: user.email,
-          senderAvatar: user.avatarUrl || '',
+          senderAvatar: isAdmin ? SYNAPSE_LOGO_AVATAR : user.avatarUrl || '',
           senderRole: isAdmin ? 'admin' : user.role,
           content: cleanContent
         })
@@ -489,8 +490,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                 subject: 'announcements',
                 isMandatoryAdminGroup: true,
                 creatorId: user.uid,
-                creatorName: 'TanHung',
-                creatorUsername: 'TanHung',
+                creatorName: 'Synapse',
+                creatorUsername: 'Synapse',
                 messageCount: apiRes.data.group?.messageCount || 1,
                 lastMessagePreview: cleanContent.slice(0, 160),
                 lastMessageAt: nowIso,
@@ -504,9 +505,13 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
             groupId: selectedGroupId,
             isAdminGroup: Boolean(isSelectedMandatoryAdmin),
             senderId: user.uid,
-            senderName: isAdmin ? 'TanHung' : user.displayName,
-            senderUsername: isAdmin ? 'TanHung' : user.username,
-            ...(user.avatarUrl ? { senderAvatar: user.avatarUrl } : {}),
+            senderName: isAdmin ? 'Synapse' : user.displayName,
+            senderUsername: isAdmin ? 'Synapse' : user.username,
+            ...(isAdmin
+              ? { senderAvatar: SYNAPSE_LOGO_AVATAR }
+              : user.avatarUrl
+              ? { senderAvatar: user.avatarUrl }
+              : {}),
             senderRole: isAdmin ? 'admin' : user.role,
             content: cleanContent,
             createdAt: nowIso
@@ -642,7 +647,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-3xl leading-relaxed">
               {isEn
-                ? 'Join topic study groups to discuss Math, Physics, and Computer Science with KaTeX support. Only signed-in users can create groups, message, or enter the mandatory Admin TanHung channel.'
+                ? 'Join topic study groups to discuss Math, Physics, and Computer Science with KaTeX support. Only signed-in users can create groups, message, or enter the mandatory Admin Synapse channel.'
                 : 'Tạo nhóm trao đổi kiến thức Toán, Vật lí, Tin học và theo dõi thông báo hoạt động web chính thức. Chỉ tài khoản đã đăng nhập mới có thể tạo nhóm, nhắn tin và vào nhóm Admin quản lí.'}
             </p>
           </div>
@@ -672,11 +677,10 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
         {/* Role & Auth status note */}
         <div className="mt-4 pt-3.5 border-t border-slate-200/70 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
           <div className="flex flex-wrap items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+            <BrandLogo sizeClass="w-5 h-5" />
             <span>
               {isEn ? 'Official Web Admin:' : 'Quản trị kênh thông báo bắt buộc:'}{' '}
-              <strong className="text-slate-900 dark:text-white">TanHung</strong>{' '}
-              <span className="font-mono text-[11px]">({FORUM_ADMIN_EMAIL})</span>
+              <strong className="text-slate-900 dark:text-white">Synapse</strong>
             </span>
             {isAdmin && (
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">
@@ -794,7 +798,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
                         {isMandatory ? (
-                          <Megaphone className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <BrandLogo sizeClass="w-5 h-5" />
                         ) : (
                           <Users className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
                         )}
@@ -812,8 +816,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                       <span className={isMandatory ? 'text-amber-700 dark:text-amber-300 font-bold' : 'font-semibold'}>
                         {isMandatory
                           ? isEn
-                            ? 'Mandatory · Admin TanHung'
-                            : 'Bắt buộc · Admin TanHung'
+                            ? 'Mandatory · Admin Synapse'
+                            : 'Bắt buộc · Admin Synapse'
                           : getSubjectLabel(grp.subject)}
                       </span>
                       <span aria-hidden="true">·</span>
@@ -847,7 +851,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
                     {isSelectedMandatoryAdmin ? (
-                      <ShieldCheck className="w-5 h-5 text-amber-500 shrink-0" />
+                      <BrandLogo sizeClass="w-6 h-6" />
                     ) : (
                       <BookOpen className="w-5 h-5 text-indigo-500 shrink-0" />
                     )}
@@ -901,8 +905,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                       {isEn
-                        ? `This mandatory announcement channel is managed by Admin TanHung (${FORUM_ADMIN_EMAIL}). Please sign in to view web activity notices and participate in study groups.`
-                        : `Đây là nhóm thông báo bắt buộc do Admin TanHung (${FORUM_ADMIN_EMAIL}) quản lí. Vui lòng đăng nhập để xem thông báo hoạt động của web, tạo nhóm mới hoặc nhắn tin thảo luận.`}
+                        ? 'This mandatory announcement channel is managed by Admin Synapse. Please sign in to view web activity notices and participate in study groups.'
+                        : 'Đây là nhóm thông báo bắt buộc do tài khoản Admin Synapse quản lí. Vui lòng đăng nhập để xem thông báo hoạt động của web, tạo nhóm mới hoặc nhắn tin thảo luận.'}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
@@ -936,8 +940,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                       <Megaphone className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                       <span>
                         {isEn
-                          ? `Read-only announcement channel: Only Admin TanHung (${FORUM_ADMIN_EMAIL}) can publish web activity updates here.`
-                          : `Quy định kênh thông báo: Chỉ tài khoản Admin TanHung (${FORUM_ADMIN_EMAIL}) được phép gửi tin nhắn thông báo hoạt động của web.`}
+                          ? 'Read-only announcement channel: Only Admin Synapse can publish web activity updates here.'
+                          : 'Quy định kênh thông báo: Chỉ tài khoản Admin Synapse được phép gửi tin nhắn thông báo hoạt động của web.'}
                       </span>
                     </div>
                   )}
@@ -953,7 +957,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                         {isSelectedMandatoryAdmin
                           ? isEn
                             ? 'No announcements yet.'
-                            : 'Chưa có thông báo mới từ Admin TanHung.'
+                            : 'Chưa có thông báo mới từ Admin Synapse.'
                           : isEn
                           ? 'No messages yet. Start the discussion!'
                           : 'Nhóm chưa có tin nhắn nào. Hãy bắt đầu cuộc trao đổi!'}
@@ -980,7 +984,9 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-2.5 min-w-0">
-                                {msg.senderAvatar ? (
+                                {isMsgAdmin ? (
+                                  <BrandLogo sizeClass="w-8 h-8 rounded-full border-amber-300 dark:border-amber-500/60" />
+                                ) : msg.senderAvatar ? (
                                   <img
                                     src={msg.senderAvatar}
                                     alt={msg.senderName}
@@ -988,13 +994,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                                     className="w-8 h-8 rounded-full object-cover border border-slate-300 dark:border-slate-600 shrink-0"
                                   />
                                 ) : (
-                                  <div
-                                    className={`w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${
-                                      isMsgAdmin
-                                        ? 'bg-amber-500 text-slate-950'
-                                        : 'bg-indigo-600 text-white'
-                                    }`}
-                                  >
+                                  <div className="w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center shrink-0 bg-indigo-600 text-white">
                                     {msg.senderName.charAt(0).toUpperCase()}
                                   </div>
                                 )}
@@ -1073,8 +1073,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                         <Lock className="w-4 h-4 text-amber-500 shrink-0" />
                         <span>
                           {isEn
-                            ? `Messaging disabled: Only Admin TanHung (${FORUM_ADMIN_EMAIL}) can send announcements here.`
-                            : `Khung chat chỉ đọc: Chỉ tài khoản Admin TanHung (${FORUM_ADMIN_EMAIL}) được phép gửi thông báo tại nhóm này.`}
+                            ? 'Messaging disabled: Only Admin Synapse can send announcements here.'
+                            : 'Khung chat chỉ đọc: Chỉ tài khoản Admin Synapse được phép gửi thông báo tại nhóm này.'}
                         </span>
                       </div>
                     ) : (
@@ -1094,8 +1094,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                             placeholder={
                               isSelectedMandatoryAdmin
                                 ? isEn
-                                  ? 'Write an official web announcement as Admin TanHung...'
-                                  : 'Nhập thông báo chính thức về hoạt động của web (Admin TanHung)...'
+                                  ? 'Write an official web announcement as Admin Synapse...'
+                                  : 'Nhập thông báo chính thức về hoạt động của web (Admin Synapse)...'
                                 : isEn
                                 ? 'Write a message or formula ($a^2+b^2=c^2$) · Enter to send...'
                                 : 'Nhập tin nhắn trao đổi (hỗ trợ KaTeX dạng $x^2 + y^2 = R^2$) · Enter để gửi...'

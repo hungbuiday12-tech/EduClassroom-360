@@ -52,6 +52,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const LOCAL_USER_KEY = 'educlassroom_user_profile_cache';
 const LOCAL_ACCOUNTS_KEY = 'educlassroom_registered_accounts_db';
 
+export const SYNAPSE_ADMIN_EMAIL = 'synapse.admin@educlassroom360.vn';
+export const SYNAPSE_LOGO_AVATAR = `${(
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.BASE_URL) || '/'
+).replace(/\/?$/, '/')}assets/aistudio/image_0883e005.png`;
+
 interface StoredAccount {
   uid: string;
   username: string;
@@ -91,8 +96,8 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     displayName: 'TanHung',
     email: 'hungbuiday12@gmail.com',
     password: '123456',
-    role: 'admin',
-    xp: 9999,
+    role: 'student',
+    xp: 480,
     createdAt: '2026-01-01T00:00:00.000Z',
   },
   {
@@ -103,6 +108,17 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     password: '123456',
     role: 'teacher',
     xp: 999,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    uid: 'admin_synapse',
+    username: 'Synapse',
+    displayName: 'Synapse',
+    email: SYNAPSE_ADMIN_EMAIL,
+    avatarUrl: SYNAPSE_LOGO_AVATAR,
+    password: 'Synapse@2026',
+    role: 'admin',
+    xp: 9999,
     createdAt: '2026-01-01T00:00:00.000Z',
   },
 ];
@@ -127,10 +143,23 @@ const getStoredAccounts = (): StoredAccount[] => {
         (c) => c.email.toLowerCase() === def.email.toLowerCase()
       );
 
-      // Keep admin account TanHung (hungbuiday12@gmail.com) synchronized if an older cached student entry exists
+      // Restore TanHung (hungbuiday12@gmail.com) back to regular student role if previously tagged admin
       if (
         existingByEmail !== -1 &&
-        combined[existingByEmail].email.toLowerCase() === 'hungbuiday12@gmail.com'
+        combined[existingByEmail].email.toLowerCase() === 'hungbuiday12@gmail.com' &&
+        combined[existingByEmail].role === 'admin'
+      ) {
+        combined[existingByEmail] = {
+          ...combined[existingByEmail],
+          role: 'student',
+        };
+        continue;
+      }
+
+      // Keep official Synapse admin account synchronized with logo avatar
+      if (
+        existingByEmail !== -1 &&
+        combined[existingByEmail].email.toLowerCase() === SYNAPSE_ADMIN_EMAIL
       ) {
         combined[existingByEmail] = {
           ...def,
@@ -183,7 +212,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(() => {
     try {
       const cached = localStorage.getItem(LOCAL_USER_KEY);
-      return cached ? JSON.parse(cached) : null;
+      if (!cached) return null;
+      const parsed: UserProfile = JSON.parse(cached);
+      // Restore cached TanHung session back to regular student if it was cached as admin previously
+      if (
+        parsed?.email?.toLowerCase() === 'hungbuiday12@gmail.com' &&
+        parsed.role === 'admin'
+      ) {
+        const restored = { ...parsed, role: 'student' as const };
+        localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(restored));
+        return restored;
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -200,46 +240,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const userDocRef = doc(db, 'users', fbUser.uid);
           const snap = await getDoc(userDocRef);
+          const isSynapseAdmin =
+            (fbUser.email || '').trim().toLowerCase() === SYNAPSE_ADMIN_EMAIL;
           if (snap.exists()) {
             const data = snap.data();
-            const isDesignatedAdmin =
-              (fbUser.email || '').trim().toLowerCase() === 'hungbuiday12@gmail.com';
             const profile: UserProfile = {
               uid: fbUser.uid,
-              username: isDesignatedAdmin
-                ? 'TanHung'
+              username: isSynapseAdmin
+                ? 'Synapse'
                 : data.username || fbUser.email?.split('@')[0] || 'hocsinh',
-              displayName: isDesignatedAdmin
-                ? data.displayName || fbUser.displayName || 'TanHung'
+              displayName: isSynapseAdmin
+                ? 'Synapse'
                 : data.displayName || fbUser.displayName || 'Học viên Chuyên',
               email: fbUser.email || '',
-              avatarUrl: fbUser.photoURL || undefined,
-              role: isDesignatedAdmin ? 'admin' : data.role || 'student',
+              avatarUrl: isSynapseAdmin
+                ? SYNAPSE_LOGO_AVATAR
+                : fbUser.photoURL || data.avatarUrl || undefined,
+              role: isSynapseAdmin ? 'admin' : data.role || 'student',
               xp: data.xp || 150,
               createdAt: data.createdAt || new Date().toISOString(),
             };
             setUser(profile);
             localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(profile));
           } else {
-            const isDesignatedAdmin =
-              (fbUser.email || '').trim().toLowerCase() === 'hungbuiday12@gmail.com';
             const rawPrefix = (fbUser.email?.split('@')[0] || 'student_' + fbUser.uid.slice(0, 6))
               .replace(/[^a-zA-Z0-9_]/g, '_')
               .slice(0, 30);
-            const initialUsername = isDesignatedAdmin
-              ? 'TanHung'
+            const initialUsername = isSynapseAdmin
+              ? 'Synapse'
               : rawPrefix.length >= 3
               ? rawPrefix
               : `u_${rawPrefix}`.padEnd(3, '0').slice(0, 30);
             const newProfile: UserProfile = {
               uid: fbUser.uid,
               username: initialUsername,
-              displayName: isDesignatedAdmin
-                ? 'TanHung'
+              displayName: isSynapseAdmin
+                ? 'Synapse'
                 : (fbUser.displayName || 'Học sinh Chuyên').slice(0, 100),
               email: (fbUser.email || '').slice(0, 128),
-              avatarUrl: fbUser.photoURL ? fbUser.photoURL.slice(0, 512) : undefined,
-              role: isDesignatedAdmin ? 'admin' : 'student',
+              avatarUrl: isSynapseAdmin
+                ? SYNAPSE_LOGO_AVATAR
+                : fbUser.photoURL
+                ? fbUser.photoURL.slice(0, 512)
+                : undefined,
+              role: isSynapseAdmin ? 'admin' : 'student',
               xp: 150,
               createdAt: new Date().toISOString(),
             };
@@ -259,22 +303,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch {
           if (fbUser.email) {
-            const isDesignatedAdmin = fbUser.email.trim().toLowerCase() === 'hungbuiday12@gmail.com';
+            const isSynapseAdmin = fbUser.email.trim().toLowerCase() === SYNAPSE_ADMIN_EMAIL;
             const rawPrefix = fbUser.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 30);
-            const fallbackUsername = isDesignatedAdmin
-              ? 'TanHung'
+            const fallbackUsername = isSynapseAdmin
+              ? 'Synapse'
               : rawPrefix.length >= 3
               ? rawPrefix
               : `u_${rawPrefix}`.padEnd(3, '0').slice(0, 30);
             const fallback: UserProfile = {
               uid: fbUser.uid,
               username: fallbackUsername,
-              displayName: isDesignatedAdmin
-                ? 'TanHung'
+              displayName: isSynapseAdmin
+                ? 'Synapse'
                 : (fbUser.displayName || 'Học sinh Chuyên').slice(0, 100),
               email: fbUser.email.slice(0, 128),
-              avatarUrl: fbUser.photoURL ? fbUser.photoURL.slice(0, 512) : undefined,
-              role: isDesignatedAdmin ? 'admin' : 'student',
+              avatarUrl: isSynapseAdmin
+                ? SYNAPSE_LOGO_AVATAR
+                : fbUser.photoURL
+                ? fbUser.photoURL.slice(0, 512)
+                : undefined,
+              role: isSynapseAdmin ? 'admin' : 'student',
               xp: 150,
               createdAt: new Date().toISOString(),
             };
@@ -292,7 +340,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const cached = localStorage.getItem(LOCAL_USER_KEY);
         if (cached) {
           try {
-            setUser(JSON.parse(cached));
+            const parsed: UserProfile = JSON.parse(cached);
+            if (
+              parsed?.email?.toLowerCase() === 'hungbuiday12@gmail.com' &&
+              parsed.role === 'admin'
+            ) {
+              const restored = { ...parsed, role: 'student' as const };
+              localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(restored));
+              setUser(restored);
+            } else {
+              setUser(parsed);
+            }
           } catch {
             setUser(null);
           }
@@ -328,11 +386,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Direct 1-click Google Login fallback (bypasses domain authorization barrier for regular learner accounts; never grants admin)
+  // Direct 1-click Google Login fallback (bypasses domain authorization barrier for regular learner accounts; never grants Synapse admin)
   const loginWithGoogleDirectly = (customEmail?: string, customName?: string) => {
     const requested = (customEmail || '').trim();
     const email =
-      requested && requested.toLowerCase() !== 'hungbuiday12@gmail.com'
+      requested && requested.toLowerCase() !== SYNAPSE_ADMIN_EMAIL
         ? requested
         : 'hocsinh.chuyen@gmail.com';
     const existing = getStoredAccounts().find(
@@ -341,7 +399,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const username =
       existing?.username || email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
     const displayName =
-      customName && customName.trim().toLowerCase() !== 'tanhung'
+      customName && customName.trim().toLowerCase() !== 'synapse'
         ? customName
         : existing?.displayName || 'Học Viên Google';
     const profile: UserProfile = {
@@ -349,7 +407,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       username,
       displayName,
       email: existing?.email || email,
-      avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`,
+      avatarUrl: existing?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`,
       role: existing?.role === 'teacher' ? 'teacher' : 'student',
       xp: existing?.xp || 200,
       createdAt: existing?.createdAt || new Date().toISOString(),
@@ -441,11 +499,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw err;
     }
 
-    // 4. Smart-enroll or upgrade Google-placeholder local profile when password has >= 4 chars (never auto-enroll admin)
+    // 4. Smart-enroll or upgrade Google-placeholder local profile when password has >= 4 chars (never auto-enroll Synapse admin)
     if (
       password.length >= 4 &&
-      cleanId !== 'hungbuiday12@gmail.com' &&
-      cleanId !== 'tanhung'
+      cleanId !== SYNAPSE_ADMIN_EMAIL &&
+      cleanId !== 'synapse'
     ) {
       const googlePlaceholder = matches.find((a) => a.password === GOOGLE_OAUTH_PLACEHOLDER_PW);
       const sanitized = (
@@ -503,10 +561,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const shownName = displayName?.trim() || username;
 
     if (
-      sanitizedUsername.toLowerCase() === 'tanhung' ||
-      validEmail.toLowerCase() === 'hungbuiday12@gmail.com'
+      sanitizedUsername.toLowerCase() === 'synapse' ||
+      validEmail.toLowerCase() === SYNAPSE_ADMIN_EMAIL
     ) {
-      const err = new Error('Tài khoản hoặc email Admin đã được bảo vệ và không thể đăng ký mới.');
+      const err = new Error('Tài khoản hoặc email Admin Synapse đã được bảo vệ và không thể đăng ký mới.');
       (err as any).code = 'auth/email-already-in-use';
       throw err;
     }
@@ -675,10 +733,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (
-      cleanEmail.toLowerCase() === 'hungbuiday12@gmail.com' &&
-      user.email.toLowerCase() !== 'hungbuiday12@gmail.com'
+      cleanEmail.toLowerCase() === SYNAPSE_ADMIN_EMAIL &&
+      user.email.toLowerCase() !== SYNAPSE_ADMIN_EMAIL
     ) {
-      throw new Error('Địa chỉ Gmail Admin này không thể gán cho tài khoản khác.');
+      throw new Error('Địa chỉ Email Admin Synapse này không thể gán cho tài khoản khác.');
     }
 
     const accounts = getStoredAccounts();

@@ -233,6 +233,22 @@ async function fetchJsonOnce<T = any>(
 
     if (trimmed.startsWith('<') || trimmed.toLowerCase().startsWith('<!doctype')) {
       const isProxyBusy = res.status === 502 || res.status === 503 || res.status === 504;
+      const isAuthGate =
+        res.url.includes('__cookie_check') ||
+        res.url.includes('accounts.google.com') ||
+        /_aistudio-iframe|__cookie_check/i.test(trimmed);
+
+      if (isAuthGate) {
+        return {
+          ok: false,
+          status: 401,
+          data: null,
+          isStaticFallback: false,
+          error:
+            'Phiên truy cập bị chặn cookie bên thứ ba hoặc đã hết hạn. Hãy tải lại trang (F5) hoặc mở ứng dụng ở tab mới để dùng Gemini AI.'
+        };
+      }
+
       return {
         ok: false,
         status: res.status || 404,
@@ -240,7 +256,7 @@ async function fetchJsonOnce<T = any>(
         isStaticFallback: !isProxyBusy,
         error: isProxyBusy
           ? 'Máy chủ AI đang xử lý chậm hoặc tạm quá tải, vui lòng bấm gửi lại sau vài giây.'
-          : 'Origin hiện tại không có máy chủ API Node.'
+          : 'Không tìm thấy máy chủ AI tại địa chỉ hiện tại.'
       };
     }
 
@@ -250,7 +266,7 @@ async function fetchJsonOnce<T = any>(
         status: res.status,
         data: null,
         isStaticFallback: true,
-        error: 'Endpoint backend không khả dụng trên origin hiện tại.'
+        error: 'Endpoint backend không khả dụng trên địa chỉ hiện tại.'
       };
     }
 
@@ -332,12 +348,21 @@ export async function safeFetchJson<T = any>(
       }
     }
 
-    // Try discovering a healthy local/remote backend (e.g. Electron/local server at 127.0.0.1:3000)
+    // Try discovering a healthy local/remote backend
     const discoveredBase = await probeHealthyBackendBase();
     if (discoveredBase) {
       const normalizedPath = url.startsWith('/') ? url : `/${url}`;
       return await fetchJsonOnce<T>(`${discoveredBase}${normalizedPath}`, init, timeoutMs);
     }
+
+    return {
+      ok: false,
+      status: firstRes.status,
+      data: null,
+      isStaticFallback: true,
+      error:
+        'Chưa kết nối được tới máy chủ AI trực tuyến. Bản web tĩnh hiện tại chưa có backend đi kèm — hãy Publish/Deploy ứng dụng hoặc cấu hình VITE_API_BASE_URL tới máy chủ server.ts đang hoạt động.'
+    };
   }
 
   return firstRes;

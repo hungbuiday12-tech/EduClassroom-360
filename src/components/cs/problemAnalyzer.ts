@@ -1,4 +1,4 @@
-import { CodeLanguage, CodingProblem, TestCase } from '../../types';
+import { CodeLanguage, CodingProblem, TestCase, TestDifficultyTier } from '../../types';
 import { executeCode } from './codeRunner';
 import { safeFetchJson } from '../../lib/apiClient';
 
@@ -488,11 +488,45 @@ function inferAlgorithm(
   return candidates[0] || 'unknown';
 }
 
+const TIER_ORDER: Record<TestDifficultyTier, number> = {
+  'Cơ bản': 1,
+  'Trung bình': 2,
+  'Nâng cao': 3,
+  'Thử thách': 4
+};
+
+function inferTierByIndex(idx: number, total: number): TestDifficultyTier {
+  if (total <= 1) return 'Cơ bản';
+  const ratio = idx / Math.max(1, total - 1);
+  if (ratio <= 0.34) return 'Cơ bản';
+  if (ratio <= 0.67) return 'Trung bình';
+  if (ratio < 1) return 'Nâng cao';
+  return 'Thử thách';
+}
+
+function normalizeTierLabel(raw?: any, idx = 0, total = 6): TestDifficultyTier {
+  const s = String(raw || '').trim();
+  if (s === 'Cơ bản' || s === 'Trung bình' || s === 'Nâng cao' || s === 'Thử thách') {
+    return s;
+  }
+  const low = s.toLowerCase();
+  if (low.includes('easy') || low.includes('de') || low.includes('dễ')) return 'Cơ bản';
+  if (low.includes('med') || low.includes('trung')) return 'Trung bình';
+  if (low.includes('hard') || low.includes('nang') || low.includes('nâng')) return 'Nâng cao';
+  if (low.includes('challenge') || low.includes('thu') || low.includes('thử')) return 'Thử thách';
+  return inferTierByIndex(idx, total);
+}
+
+interface GeneratedTestSeed {
+  input: string;
+  difficulty: TestDifficultyTier;
+}
+
 /**
- * Generate varied, boundary-covering hidden test inputs matching the input format / algorithm
+ * Generate hidden test inputs ordered strictly by progressive difficulty:
+ * Cơ bản -> Trung bình -> Nâng cao -> Thử thách
  */
-function generateHiddenInputs(kind: AlgorithmKind, sampleInput?: string): string[] {
-  // Detect sample shape if kind is unknown
+function generateHiddenInputs(kind: AlgorithmKind, sampleInput?: string): GeneratedTestSeed[] {
   const lines = (sampleInput || '').trim().split('\n').map((l) => l.trim()).filter(Boolean);
   const firstTokens = (lines[0] || '').split(/\s+/).filter(Boolean);
 
@@ -502,30 +536,86 @@ function generateHiddenInputs(kind: AlgorithmKind, sampleInput?: string): string
     case 'prod_ab':
     case 'sum_prod_ab':
       return [
-        '0 0',
-        '1 -1',
-        '42 58',
-        '-125 375',
-        '1000000 2000000',
-        '1000000000 1000000000'
+        { input: '2 3', difficulty: 'Cơ bản' },
+        { input: '12 18', difficulty: 'Cơ bản' },
+        { input: '15 -5', difficulty: 'Trung bình' },
+        { input: '0 0', difficulty: 'Nâng cao' },
+        { input: '-125 375', difficulty: 'Nâng cao' },
+        { input: '1000000000 1000000000', difficulty: 'Thử thách' }
       ];
     case 'gcd_ab':
     case 'lcm_ab':
-      return ['12 18', '7 13', '100 25', '1 99', '36 48', '144 96'];
+      return [
+        { input: '6 9', difficulty: 'Cơ bản' },
+        { input: '12 18', difficulty: 'Cơ bản' },
+        { input: '7 13', difficulty: 'Trung bình' },
+        { input: '1 99', difficulty: 'Nâng cao' },
+        { input: '36 48', difficulty: 'Nâng cao' },
+        { input: '1440 960', difficulty: 'Thử thách' }
+      ];
     case 'prime_check':
-      return ['1', '2', '4', '17', '97', '100', '9973'];
+      return [
+        { input: '5', difficulty: 'Cơ bản' },
+        { input: '6', difficulty: 'Cơ bản' },
+        { input: '17', difficulty: 'Trung bình' },
+        { input: '2', difficulty: 'Nâng cao' },
+        { input: '1', difficulty: 'Nâng cao' },
+        { input: '9973', difficulty: 'Thử thách' }
+      ];
     case 'count_primes':
-      return ['1', '2', '10', '30', '100', '1000'];
+      return [
+        { input: '5', difficulty: 'Cơ bản' },
+        { input: '10', difficulty: 'Cơ bản' },
+        { input: '30', difficulty: 'Trung bình' },
+        { input: '1', difficulty: 'Nâng cao' },
+        { input: '100', difficulty: 'Nâng cao' },
+        { input: '1000', difficulty: 'Thử thách' }
+      ];
     case 'factorial':
-      return ['0', '1', '5', '7', '10', '12'];
+      return [
+        { input: '3', difficulty: 'Cơ bản' },
+        { input: '5', difficulty: 'Cơ bản' },
+        { input: '7', difficulty: 'Trung bình' },
+        { input: '0', difficulty: 'Nâng cao' },
+        { input: '10', difficulty: 'Nâng cao' },
+        { input: '12', difficulty: 'Thử thách' }
+      ];
     case 'fibonacci':
-      return ['0', '1', '2', '8', '15', '35'];
+      return [
+        { input: '4', difficulty: 'Cơ bản' },
+        { input: '8', difficulty: 'Cơ bản' },
+        { input: '15', difficulty: 'Trung bình' },
+        { input: '0', difficulty: 'Nâng cao' },
+        { input: '25', difficulty: 'Nâng cao' },
+        { input: '35', difficulty: 'Thử thách' }
+      ];
     case 'sum_1_to_n':
-      return ['1', '5', '10', '100', '1000', '100000'];
+      return [
+        { input: '5', difficulty: 'Cơ bản' },
+        { input: '10', difficulty: 'Cơ bản' },
+        { input: '100', difficulty: 'Trung bình' },
+        { input: '1', difficulty: 'Nâng cao' },
+        { input: '1000', difficulty: 'Nâng cao' },
+        { input: '100000', difficulty: 'Thử thách' }
+      ];
     case 'digit_sum':
-      return ['0', '9', '12345', '99999', '1000000007', '847291'];
+      return [
+        { input: '12', difficulty: 'Cơ bản' },
+        { input: '1234', difficulty: 'Cơ bản' },
+        { input: '9051', difficulty: 'Trung bình' },
+        { input: '0', difficulty: 'Nâng cao' },
+        { input: '99999', difficulty: 'Nâng cao' },
+        { input: '1000000007', difficulty: 'Thử thách' }
+      ];
     case 'max_ab':
-      return ['3 5', '10 2 8', '-5 -2 -9', '0 0 1', '15 42 7 29', '100 99 101'];
+      return [
+        { input: '3 5', difficulty: 'Cơ bản' },
+        { input: '4 9 2', difficulty: 'Cơ bản' },
+        { input: '10 2 8', difficulty: 'Trung bình' },
+        { input: '0 0 1', difficulty: 'Nâng cao' },
+        { input: '-5 -2 -9', difficulty: 'Nâng cao' },
+        { input: '15 42 7 29 101 88', difficulty: 'Thử thách' }
+      ];
     case 'array_sum':
     case 'array_max':
     case 'array_min':
@@ -536,51 +626,88 @@ function generateHiddenInputs(kind: AlgorithmKind, sampleInput?: string): string
     case 'kadane_max_subarray':
     case 'lis':
       return [
-        '1\n7',
-        '4\n5 5 5 5',
-        '5\n1 2 3 4 5',
-        '6\n9 4 7 2 8 1',
-        '7\n-3 5 -1 4 -2 6 -1',
-        '10\n12 3 19 8 3 15 27 8 1 20'
+        { input: '3\n2 4 6', difficulty: 'Cơ bản' },
+        { input: '5\n1 2 3 4 5', difficulty: 'Cơ bản' },
+        { input: '6\n9 4 7 2 8 1', difficulty: 'Trung bình' },
+        { input: '4\n5 5 5 5', difficulty: 'Nâng cao' },
+        { input: '1\n7', difficulty: 'Nâng cao' },
+        { input: '10\n12 -3 19 8 -3 15 27 8 -1 20', difficulty: 'Thử thách' }
       ];
     case 'bin_search':
       return [
-        '1 10\n10',
-        '5 1\n2 4 6 8 10',
-        '6 5\n2 4 5 5 5 8',
-        '7 99\n1 5 12 25 60 99 105',
-        '5 2\n2 4 6 8 10'
+        { input: '5 6\n2 4 6 8 10', difficulty: 'Cơ bản' },
+        { input: '4 8\n1 3 8 12', difficulty: 'Cơ bản' },
+        { input: '5 1\n2 4 6 8 10', difficulty: 'Trung bình' },
+        { input: '6 5\n2 4 5 5 5 8', difficulty: 'Nâng cao' },
+        { input: '1 10\n10', difficulty: 'Nâng cao' },
+        { input: '8 99\n1 5 12 25 60 99 99 105', difficulty: 'Thử thách' }
       ];
     case 'knapsack':
       return [
-        '1 5\n5 10',
-        '2 3\n4 10\n5 20',
-        '4 7\n1 1\n3 4\n4 5\n5 7',
-        '5 10\n2 3\n3 4\n4 5\n5 8\n9 10'
+        { input: '2 5\n2 3\n3 4', difficulty: 'Cơ bản' },
+        { input: '3 6\n1 2\n3 5\n4 6', difficulty: 'Cơ bản' },
+        { input: '4 7\n1 1\n3 4\n4 5\n5 7', difficulty: 'Trung bình' },
+        { input: '2 3\n4 10\n5 20', difficulty: 'Nâng cao' },
+        { input: '5 10\n2 3\n3 4\n4 5\n5 8\n9 10', difficulty: 'Thử thách' }
       ];
     case 'palindrome':
-      return ['a', 'aba', 'abba', 'abc', 'RaceCar', 'hello world'];
+      return [
+        { input: 'aba', difficulty: 'Cơ bản' },
+        { input: 'abc', difficulty: 'Cơ bản' },
+        { input: 'abba', difficulty: 'Trung bình' },
+        { input: 'a', difficulty: 'Nâng cao' },
+        { input: 'RaceCar', difficulty: 'Nâng cao' },
+        { input: 'hello world', difficulty: 'Thử thách' }
+      ];
     case 'string_reverse':
     case 'word_count':
-      return ['hello', 'lap trinh c++', 'a b c d', 'Sublime Text Monokai', 'olympic tin hoc'];
+      return [
+        { input: 'hello', difficulty: 'Cơ bản' },
+        { input: 'abc def', difficulty: 'Cơ bản' },
+        { input: 'lap trinh c++', difficulty: 'Trung bình' },
+        { input: 'a b c d', difficulty: 'Nâng cao' },
+        { input: 'Sublime Text Monokai', difficulty: 'Thử thách' }
+      ];
     default: {
-      // Fallback matching sample shape if available
       if (lines.length === 1 && firstTokens.length === 1 && !isNaN(Number(firstTokens[0]))) {
-        return ['1', '5', '10', '25', '100'];
+        return [
+          { input: '3', difficulty: 'Cơ bản' },
+          { input: '5', difficulty: 'Cơ bản' },
+          { input: '10', difficulty: 'Trung bình' },
+          { input: '1', difficulty: 'Nâng cao' },
+          { input: '100', difficulty: 'Thử thách' }
+        ];
       }
       if (lines.length === 1 && firstTokens.length === 2 && !isNaN(Number(firstTokens[0]))) {
-        return ['1 1', '3 5', '10 20', '7 13', '100 50'];
+        return [
+          { input: '2 3', difficulty: 'Cơ bản' },
+          { input: '4 7', difficulty: 'Cơ bản' },
+          { input: '10 20', difficulty: 'Trung bình' },
+          { input: '1 1', difficulty: 'Nâng cao' },
+          { input: '100 50', difficulty: 'Thử thách' }
+        ];
       }
       if (lines.length >= 2 && firstTokens.length === 1 && !isNaN(Number(firstTokens[0]))) {
-        return ['1\n1', '3\n1 2 3', '5\n5 4 3 2 1', '6\n2 9 4 1 7 3'];
+        return [
+          { input: '3\n1 2 3', difficulty: 'Cơ bản' },
+          { input: '4\n2 4 6 8', difficulty: 'Cơ bản' },
+          { input: '5\n5 4 3 2 1', difficulty: 'Trung bình' },
+          { input: '1\n5', difficulty: 'Nâng cao' },
+          { input: '7\n2 9 4 1 7 3 8', difficulty: 'Thử thách' }
+        ];
       }
-      return ['1\n0', '2\n1 2', '5\n1 2 3 4 5'];
+      return [
+        { input: '2\n1 2', difficulty: 'Cơ bản' },
+        { input: '4\n1 2 3 4', difficulty: 'Trung bình' },
+        { input: '1\n0', difficulty: 'Nâng cao' },
+        { input: '6\n1 2 3 4 5 6', difficulty: 'Thử thách' }
+      ];
     }
   }
 }
 
 /**
- * Full problem analysis & verified test suite generation
+ * Full problem analysis & verified progressive test suite generation
  */
 export async function analyzeProblemAndGenerateTests(
   req: AnalyzeProblemRequest
@@ -618,7 +745,8 @@ export async function analyzeProblemAndGenerateTests(
               input: String(tc.input ?? ''),
               expectedOutput: String(tc.expectedOutput ?? ''),
               isSample: true,
-              explanation: tc.explanation
+              explanation: tc.explanation,
+              difficulty: 'Cơ bản' as TestDifficultyTier
             }))
           : [];
 
@@ -630,18 +758,25 @@ export async function analyzeProblemAndGenerateTests(
                 input: s.input,
                 expectedOutput: s.expectedOutput,
                 isSample: true,
-                explanation: s.explanation || 'Test mẫu do bạn cung cấp'
+                explanation: s.explanation || 'Test mẫu do bạn cung cấp',
+                difficulty: 'Cơ bản' as TestDifficultyTier
               }))
             : aiSamples;
 
-        let hiddenCases: TestCase[] = Array.isArray(data.problem.hiddenCases)
-          ? data.problem.hiddenCases.map((tc: any, idx: number) => ({
-              id: mergedSamples.length + idx + 1,
-              input: String(tc.input ?? ''),
-              expectedOutput: String(tc.expectedOutput ?? ''),
-              isSample: false
-            }))
-          : [];
+        const rawHidden = Array.isArray(data.problem.hiddenCases) ? data.problem.hiddenCases : [];
+        let hiddenCases: TestCase[] = rawHidden
+          .map((tc: any, idx: number) => ({
+            id: mergedSamples.length + idx + 1,
+            input: String(tc.input ?? ''),
+            expectedOutput: String(tc.expectedOutput ?? ''),
+            isSample: false,
+            difficulty: normalizeTierLabel(tc.difficulty, idx, rawHidden.length)
+          }))
+          .sort(
+            (a: TestCase, b: TestCase) =>
+              TIER_ORDER[a.difficulty || 'Trung bình'] - TIER_ORDER[b.difficulty || 'Trung bình']
+          )
+          .map((tc: TestCase, idx: number) => ({ ...tc, id: mergedSamples.length + idx + 1 }));
 
         // If user provided AC Reference Code or AI returned referencePython/referenceCpp, verify hiddenCases outputs!
         const oracleCode = req.referenceCode?.trim() || data.problem.referencePython || data.problem.referenceCpp;
@@ -687,7 +822,7 @@ export async function analyzeProblemAndGenerateTests(
           source: 'ai',
           referenceCpp: data.problem.referenceCpp,
           referencePython: data.problem.referencePython,
-          diagnosticNote: `AI đã phân tích đề bài và tạo ${mergedSamples.length} test mẫu + ${hiddenCases.length} test ẩn chuẩn xác.`
+          diagnosticNote: `AI đã tạo ${mergedSamples.length} test mẫu + ${hiddenCases.length} test ẩn theo độ khó tăng dần (Cơ bản ➜ Thử thách).`
         };
       }
     }
@@ -700,7 +835,7 @@ export async function analyzeProblemAndGenerateTests(
     throw new Error(aiError || 'Không thể đọc đề bài từ ảnh bằng Gemini AI lúc này. Vui lòng thử lại.');
   }
 
-  // 2. Local Structured Analysis + Smart Test Generator
+  // 2. Local Structured Analysis + Progressive Test Generator
   const sections = parseStructuredSections(req.text, req.fileName);
   const inferredKind = inferAlgorithm(req.text, combinedSamples);
 
@@ -711,7 +846,8 @@ export async function analyzeProblemAndGenerateTests(
           input: s.input,
           expectedOutput: s.expectedOutput,
           isSample: true,
-          explanation: s.explanation || 'Test mẫu từ đề bài'
+          explanation: s.explanation || 'Test mẫu từ đề bài',
+          difficulty: 'Cơ bản' as TestDifficultyTier
         }))
       : [
           {
@@ -723,25 +859,27 @@ export async function analyzeProblemAndGenerateTests(
                 inferredKind === 'sum_ab' ? '3 5' : inferredKind === 'palindrome' ? 'radar' : '5\n1 2 3 4 5'
               ) || '15',
             isSample: true,
-            explanation: 'Test mẫu khởi tạo tự động'
+            explanation: 'Test mẫu cơ bản',
+            difficulty: 'Cơ bản'
           }
         ];
 
-  const hiddenRawInputs = generateHiddenInputs(inferredKind, sampleCases[0]?.input);
+  const hiddenSeeds = generateHiddenInputs(inferredKind, sampleCases[0]?.input);
   const hiddenCases: TestCase[] = [];
 
-  // 2A. If user supplied a Reference AC solution, run it on every generated hidden test!
+  // 2A. If user supplied a Reference AC solution, run it on every generated progressive hidden test!
   if (req.referenceCode && req.referenceCode.trim()) {
     const lang = req.referenceLang || 'cpp';
-    for (let i = 0; i < hiddenRawInputs.length; i++) {
-      const inp = hiddenRawInputs[i];
-      const res = await executeCode('ORACLE', lang, req.referenceCode, inp);
+    for (let i = 0; i < hiddenSeeds.length; i++) {
+      const seed = hiddenSeeds[i];
+      const res = await executeCode('ORACLE', lang, req.referenceCode, seed.input);
       if (!res.isError) {
         hiddenCases.push({
           id: sampleCases.length + i + 1,
-          input: inp,
+          input: seed.input,
           expectedOutput: res.stdout.trim(),
-          isSample: false
+          isSample: false,
+          difficulty: seed.difficulty
         });
       }
     }
@@ -764,21 +902,22 @@ export async function analyzeProblemAndGenerateTests(
         pythonTemplate: lang === 'python' ? req.referenceCode : ''
       },
       source: 'local-oracle',
-      diagnosticNote: `Đã dùng Code AC tham chiếu để sinh ${hiddenCases.length} test ẩn với đáp án chính xác 100%.`
+      diagnosticNote: `Đã dùng Code AC tham chiếu sinh ${hiddenCases.length} test ẩn độ khó tăng dần (Cơ bản ➜ Thử thách).`
     };
   }
 
   // 2B. Use inferred algorithmic solver
   if (inferredKind !== 'unknown') {
-    for (let i = 0; i < hiddenRawInputs.length; i++) {
-      const inp = hiddenRawInputs[i];
-      const out = runAlgorithmSolver(inferredKind, inp);
+    for (let i = 0; i < hiddenSeeds.length; i++) {
+      const seed = hiddenSeeds[i];
+      const out = runAlgorithmSolver(inferredKind, seed.input);
       if (out !== null) {
         hiddenCases.push({
           id: sampleCases.length + i + 1,
-          input: inp,
+          input: seed.input,
           expectedOutput: out,
-          isSample: false
+          isSample: false,
+          difficulty: seed.difficulty
         });
       }
     }
@@ -801,12 +940,11 @@ export async function analyzeProblemAndGenerateTests(
         pythonTemplate: ''
       },
       source: 'local-inferred',
-      diagnosticNote: `Đã nhận diện dạng bài (${inferredKind}) và tự động tạo ${hiddenCases.length} bộ test kiểm thử biên.`
+      diagnosticNote: `Đã nhận diện dạng bài (${inferredKind}) và tạo ${hiddenCases.length} test độ khó tăng dần (Cơ bản ➜ Thử thách).`
     };
   }
 
   // 2C. Custom unknown problem without Gemini API & without Reference AC code:
-  // Preserve user's sample cases faithfully instead of fabricating fake '0' hidden tests!
   return {
     problem: {
       id: `CUSTOM_${Date.now()}`,
@@ -826,6 +964,230 @@ export async function analyzeProblemAndGenerateTests(
     },
     source: 'template',
     diagnosticNote:
-      'Đã trích xuất đề bài và các test mẫu bạn cung cấp. Bạn có thể bấm "+ Thêm Test" ở cột trái hoặc đính kèm Code AC để sinh thêm test ẩn tự động.'
+      'Đã trích xuất đề bài và test mẫu. Bạn có thể thêm test từng mức độ (Cơ bản ➜ Thử thách) ở cột trái.'
+  };
+}
+
+export const LESSON_HIDDEN_TEST_CASES: Record<
+  string,
+  Array<{ input: string; expectedOutput: string; difficulty: TestDifficultyTier }>
+> = {
+  CS_P1: [
+    { input: '2 3', expectedOutput: '5\n6', difficulty: 'Cơ bản' },
+    { input: '10 25', expectedOutput: '35\n250', difficulty: 'Cơ bản' },
+    { input: '-5 12', expectedOutput: '7\n-60', difficulty: 'Trung bình' },
+    { input: '0 0', expectedOutput: '0\n0', difficulty: 'Nâng cao' },
+    { input: '1000000000 -1000000000', expectedOutput: '0\n-1000000000000000000', difficulty: 'Thử thách' }
+  ],
+  CS_P2: [
+    { input: '5', expectedOutput: '3', difficulty: 'Cơ bản' },
+    { input: '10', expectedOutput: '4', difficulty: 'Cơ bản' },
+    { input: '30', expectedOutput: '10', difficulty: 'Trung bình' },
+    { input: '1', expectedOutput: '0', difficulty: 'Nâng cao' },
+    { input: '1000', expectedOutput: '168', difficulty: 'Thử thách' }
+  ],
+  CS_P3: [
+    { input: '5\n1 2 2 3 4', expectedOutput: '2 2', difficulty: 'Cơ bản' },
+    { input: '4\n7 7 7 3', expectedOutput: '7 3', difficulty: 'Cơ bản' },
+    { input: '5\n4 4 2 2 9', expectedOutput: '2 2', difficulty: 'Trung bình' },
+    { input: '1\n5', expectedOutput: '5 1', difficulty: 'Nâng cao' },
+    { input: '8\n9 1 3 1 9 3 1 9', expectedOutput: '1 3', difficulty: 'Thử thách' }
+  ],
+  CS_P4: [
+    { input: '5', expectedOutput: '10', difficulty: 'Cơ bản' },
+    { input: '6', expectedOutput: '4', difficulty: 'Trung bình' },
+    { input: '1', expectedOutput: '1', difficulty: 'Nâng cao' },
+    { input: '3', expectedOutput: '0', difficulty: 'Nâng cao' },
+    { input: '8', expectedOutput: '92', difficulty: 'Thử thách' }
+  ],
+  CS_P5: [
+    { input: '3 1\n2 3 5', expectedOutput: '10', difficulty: 'Cơ bản' },
+    { input: '3 3\n4 9 2', expectedOutput: '9', difficulty: 'Cơ bản' },
+    { input: '5 2\n1 2 3 4 5', expectedOutput: '9', difficulty: 'Trung bình' },
+    { input: '6 3\n1 4 4 2 3 5', expectedOutput: '8', difficulty: 'Nâng cao' },
+    { input: '7 3\n7 2 5 10 8 1 6', expectedOutput: '15', difficulty: 'Thử thách' }
+  ],
+  CS_P6: [
+    { input: '4 10\n1 2 3 4', expectedOutput: '4', difficulty: 'Cơ bản' },
+    { input: '5 7\n2 1 3 1 4', expectedOutput: '4', difficulty: 'Cơ bản' },
+    { input: '6 6\n3 1 2 1 1 5', expectedOutput: '4', difficulty: 'Trung bình' },
+    { input: '5 3\n4 5 6 7 8', expectedOutput: '0', difficulty: 'Nâng cao' },
+    { input: '8 9\n5 1 2 1 2 1 2 8', expectedOutput: '6', difficulty: 'Thử thách' }
+  ],
+  CS_P7: [
+    { input: '4\n1 2 3 4', expectedOutput: '4', difficulty: 'Cơ bản' },
+    { input: '5\n3 1 4 2 5', expectedOutput: '3', difficulty: 'Cơ bản' },
+    { input: '6\n5 2 8 6 3 6', expectedOutput: '3', difficulty: 'Trung bình' },
+    { input: '4\n5 4 3 2', expectedOutput: '1', difficulty: 'Nâng cao' },
+    { input: '8\n10 9 2 5 3 7 101 18', expectedOutput: '4', difficulty: 'Thử thách' }
+  ],
+  CS_P8: [
+    { input: '3 2\n1 2 5\n2 3 3', expectedOutput: '0 5 8', difficulty: 'Cơ bản' },
+    { input: '4 4\n1 2 2\n2 3 3\n1 3 10\n3 4 1', expectedOutput: '0 2 5 6', difficulty: 'Trung bình' },
+    { input: '3 1\n1 2 5', expectedOutput: '0 5 -1', difficulty: 'Nâng cao' },
+    { input: '5 6\n1 2 1000000000\n2 3 1000000000\n3 4 1000000000\n1 5 5\n5 4 5\n4 3 5', expectedOutput: '0 1000000000 15 10 5', difficulty: 'Thử thách' }
+  ],
+  CS_P9: [
+    { input: '3 2\n1 5 2\n2 1 3\n2 1 2', expectedOutput: '5\n5', difficulty: 'Cơ bản' },
+    { input: '3 2\n10 20 15\n1 1 25\n2 1 2', expectedOutput: '25', difficulty: 'Trung bình' },
+    { input: '4 3\n5 2 8 1\n2 1 4\n1 3 0\n2 2 4', expectedOutput: '8\n2', difficulty: 'Nâng cao' },
+    { input: '5 4\n-5 -2 -9 -1 -4\n2 1 3\n1 3 -1\n2 2 5\n2 1 5', expectedOutput: '-2\n-1\n-1', difficulty: 'Thử thách' }
+  ],
+  CS_P10: [
+    { input: '2 5', expectedOutput: '32', difficulty: 'Cơ bản' },
+    { input: '3 4', expectedOutput: '81', difficulty: 'Cơ bản' },
+    { input: '2 30', expectedOutput: '73741817', difficulty: 'Trung bình' },
+    { input: '5 0', expectedOutput: '1', difficulty: 'Nâng cao' },
+    { input: '123456789 987654321', expectedOutput: '652541198', difficulty: 'Thử thách' }
+  ],
+  CS_P11: [
+    { input: '()', expectedOutput: 'YES', difficulty: 'Cơ bản' },
+    { input: '((()))', expectedOutput: 'YES', difficulty: 'Cơ bản' },
+    { input: '([{}])', expectedOutput: 'YES', difficulty: 'Trung bình' },
+    { input: '((]', expectedOutput: 'NO', difficulty: 'Nâng cao' },
+    { input: '}{', expectedOutput: 'NO', difficulty: 'Thử thách' }
+  ],
+  CS_P12: [
+    { input: 'aaaaa\na', expectedOutput: '5', difficulty: 'Cơ bản' },
+    { input: 'hello\nworld', expectedOutput: '0', difficulty: 'Cơ bản' },
+    { input: 'ababcababa\naba', expectedOutput: '3', difficulty: 'Trung bình' },
+    { input: 'ababab\nabab', expectedOutput: '2', difficulty: 'Nâng cao' },
+    { input: 'mississippi\nissi', expectedOutput: '2', difficulty: 'Thử thách' }
+  ]
+};
+
+export interface CodeMistakeItem {
+  location: string;
+  issue: string;
+  explanation: string;
+  fixHint: string;
+}
+
+export interface CodeMistakeAnalysis {
+  summary: string;
+  mistakes: CodeMistakeItem[];
+  simpleSampleCode: string;
+  simpleCodeExplanation: string;
+  complexityNote: string;
+  source: 'ai' | 'local';
+}
+
+export interface AnalyzeCodeMistakeRequest {
+  problemTitle: string;
+  problemDescription: string;
+  inputFormat?: string;
+  outputFormat?: string;
+  language: CodeLanguage;
+  userCode: string;
+  score: number;
+  failedTests: Array<{
+    index: number;
+    status: string;
+    input: string;
+    expected: string;
+    actual: string;
+  }>;
+  fallbackSampleCpp?: string;
+  fallbackSamplePython?: string;
+}
+
+export async function analyzeCodeMistakeWithAI(
+  req: AnalyzeCodeMistakeRequest
+): Promise<CodeMistakeAnalysis> {
+  try {
+    const res = await safeFetchJson<any>(
+      '/api/gemini/analyze-code-mistake',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          problemTitle: req.problemTitle,
+          problemDescription: req.problemDescription,
+          inputFormat: req.inputFormat,
+          outputFormat: req.outputFormat,
+          language: req.language,
+          userCode: req.userCode,
+          score: req.score,
+          failedTests: req.failedTests
+        })
+      },
+      28000
+    );
+
+    if (res.ok && res.data?.success && res.data.analysis) {
+      const a = res.data.analysis;
+      return {
+        summary: String(a.summary || ''),
+        mistakes: Array.isArray(a.mistakes) ? a.mistakes : [],
+        simpleSampleCode: String(a.simpleSampleCode || ''),
+        simpleCodeExplanation: String(a.simpleCodeExplanation || ''),
+        complexityNote: String(a.complexityNote || ''),
+        source: 'ai'
+      };
+    }
+  } catch {
+    // Fall back to deterministic diagnostics below
+  }
+
+  // Deterministic local fallback diagnostics
+  const mistakes: CodeMistakeItem[] = [];
+  const firstFail = req.failedTests[0];
+  const codeTrim = req.userCode.trim();
+
+  if (req.language === 'cpp') {
+    if (!codeTrim.includes('main(')) {
+      mistakes.push({
+        location: 'Hàm main()',
+        issue: 'Thiếu hàm int main()',
+        explanation: 'Chương trình C++ bắt buộc phải có hàm int main() làm điểm bắt đầu thực thi.',
+        fixHint: 'Thêm int main() { ... return 0; } bao quanh phần xử lý.'
+      });
+    }
+    if (/\bint\s+[a-zA-Z_]/g.test(codeTrim) && (firstFail?.expected?.length || 0) >= 10) {
+      mistakes.push({
+        location: 'Khai báo kiểu biến int',
+        issue: 'Nguy cơ tràn số (Integer Overflow)',
+        explanation: 'Kiểu int chỉ chứa tối đa khoảng 2·10⁹. Với giá trị lớn hơn, phép cộng/nhân bị sai dấu hoặc tràn.',
+        fixHint: 'Chuyển các biến tính toán sang long long.'
+      });
+    }
+  }
+
+  if (firstFail) {
+    mistakes.push({
+      location: `Test #${firstFail.index} (${firstFail.status})`,
+      issue:
+        firstFail.status === 'Runtime Error'
+          ? 'Lỗi cú pháp hoặc thực thi'
+          : 'Kết quả in ra không khớp đáp án mong đợi',
+      explanation:
+        firstFail.status === 'Runtime Error'
+          ? `Chương trình gặp lỗi: ${firstFail.actual || 'Runtime Error'}.`
+          : `Với đầu vào "${firstFail.input.replace(/\n/g, ' ')}", chương trình của bạn in ra "${
+              firstFail.actual || '(trống)'
+            }" trong khi đáp án đúng là "${firstFail.expected}".`,
+      fixHint: 'Kiểm tra lại thứ tự đọc dữ liệu đầu vào, công thức tính và điều kiện biên.'
+    });
+  }
+
+  const fallbackSample =
+    req.language === 'python'
+      ? req.fallbackSamplePython ||
+        `import sys\n\ndef solve():\n    data = sys.stdin.read().split()\n    if not data:\n        return\n    # Xử lý dữ liệu từ data và in kết quả chuẩn\n\nsolve()`
+      : req.fallbackSampleCpp ||
+        `#include <iostream>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Đọc input chuẩn xác và kiểm tra tràn số long long\n    return 0;\n}`;
+
+  return {
+    summary: firstFail
+      ? `Bài làm đạt ${req.score}/100 điểm và bị sai ở ${req.failedTests.length} test (bắt đầu từ Test #${firstFail.index}: ${firstFail.status}).`
+      : req.score === 100
+      ? 'Xuất sắc! Bài làm đạt 100/100 điểm và vượt qua toàn bộ bộ test.'
+      : 'Hãy kiểm tra lại logic xử lý các trường hợp biên và định dạng dữ liệu xuất.',
+    mistakes,
+    simpleSampleCode: fallbackSample,
+    simpleCodeExplanation:
+      'Đoạn code mẫu trên đọc dữ liệu an toàn theo đúng định dạng chuẩn và xử lý trọn vẹn các trường hợp biên.',
+    complexityNote: 'Đảm bảo đọc/ghi nhanh và dùng kiểu 64-bit khi số liệu lớn.',
+    source: 'local'
   };
 }

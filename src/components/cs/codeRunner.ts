@@ -2036,7 +2036,8 @@ export async function judgeProblem(
         expected: tc.expectedOutput,
         actual: exec.stderr,
         runtimeMs: exec.runtimeMs,
-        status: exec.stderr.includes('TLE') ? 'Time Limit Exceeded' : 'Runtime Error'
+        status: exec.stderr.includes('TLE') ? 'Time Limit Exceeded' : 'Runtime Error',
+        difficulty: tc.difficulty
       });
       continue;
     }
@@ -2054,7 +2055,8 @@ export async function judgeProblem(
       expected: expectedTrimmed,
       actual: actualTrimmed,
       runtimeMs: exec.runtimeMs,
-      status: passed ? 'Accepted' : 'Wrong Answer'
+      status: passed ? 'Accepted' : 'Wrong Answer',
+      difficulty: tc.difficulty
     });
   }
 

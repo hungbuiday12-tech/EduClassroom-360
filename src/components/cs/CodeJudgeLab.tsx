@@ -11,6 +11,12 @@ import {
   CSLevel
 } from '../../types';
 import { executeCode, judgeProblem } from './codeRunner';
+import {
+  analyzeCodeMistakeWithAI,
+  CodeMistakeAnalysis,
+  LESSON_HIDDEN_TEST_CASES
+} from './problemAnalyzer';
+import { CodeMistakeAnalysisPanel } from './CodeMistakeAnalysisPanel';
 import { SublimeStudio } from './SublimeStudio';
 import { SublimeEditor, MonokaiCodeBlock } from './SublimeEditor';
 import { ViewportPortal } from '../common/ViewportPortal';
@@ -19,6 +25,8 @@ import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
 import { buildCSLectureSteps } from '../../data/lectureStepsBuilder';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { AlgorithmVisualizer } from './AlgorithmVisualizer';
+import { AlgoId, LESSON_TO_ALGO_MAP } from './visualizer/types';
 import {
   Play,
   Send,
@@ -40,12 +48,54 @@ import {
   ArrowRight,
   ArrowLeft,
   Maximize2,
-  Minimize2
+  Minimize2,
+  GitBranch
 } from 'lucide-react';
 
 interface CodeJudgeLabProps {
   onScoreEarned?: (xp: number) => void;
   onBack?: () => void;
+}
+
+const DEFAULT_PRACTICE_CPP = `#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    // Tự viết code C++ giải bài tập tại đây...
+    
+    return 0;
+}`;
+
+const DEFAULT_PRACTICE_PYTHON = `import sys
+
+def solve():
+    data = sys.stdin.read().split()
+    if not data:
+        return
+    # Tự viết code Python giải bài tập tại đây...
+
+if __name__ == '__main__':
+    solve()
+`;
+
+interface LessonPracticeRunState {
+  customIn: string;
+  customOut: string;
+  customErr: string;
+  runtimeMs: number | null;
+  isRunning: boolean;
+  isJudging: boolean;
+  results: TestResult[] | null;
+  score: number | null;
+  verdict: string | null;
+  mistakeAnalysis: CodeMistakeAnalysis | null;
+  isAnalyzingMistake: boolean;
+  submitted: boolean;
+  awardedXp: number;
 }
 
 export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBack }) => {
@@ -83,10 +133,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
     );
   }, [selectedLessonId, filteredLessons]);
 
-  // Code language for curriculum illustrated code
+  // Code language for curriculum illustrated code & practice editor
   const [curriculumLang, setCurriculumLang] = useState<CodeLanguage>('cpp');
   const [revealedSolution, setRevealedSolution] = useState<boolean>(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [lessonCodeMap, setLessonCodeMap] = useState<Record<string, { cpp: string; python: string }>>({});
+  const [lessonPracticeMap, setLessonPracticeMap] = useState<Record<string, LessonPracticeRunState>>({});
 
   // Helper to convert CSLesson practice problem to CodingProblem
   const toCodingProblem = (p: CSLesson['practiceProblem']): CodingProblem => ({
@@ -105,11 +157,18 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       input: s.input,
       expectedOutput: s.output,
       isSample: true,
-      explanation: s.explanation
+      explanation: s.explanation,
+      difficulty: 'Cơ bản'
     })),
-    hiddenCases: [],
-    cppTemplate: p.fullSolutionCpp,
-    pythonTemplate: p.fullSolutionPython
+    hiddenCases: (LESSON_HIDDEN_TEST_CASES[p.id] || []).map((tc, idx) => ({
+      id: p.sampleCases.length + idx + 1,
+      input: tc.input,
+      expectedOutput: tc.expectedOutput,
+      isSample: false,
+      difficulty: tc.difficulty
+    })),
+    cppTemplate: DEFAULT_PRACTICE_CPP,
+    pythonTemplate: DEFAULT_PRACTICE_PYTHON
   });
 
   // -----------------------------------------------------------------
@@ -264,6 +323,194 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
     }
   };
 
+  // Per-lesson inline self-coding helpers
+  const getLessonCode = (probId: string, lang: CodeLanguage): string => {
+    const entry = lessonCodeMap[probId];
+    if (entry) return lang === 'cpp' ? entry.cpp : entry.python;
+    return lang === 'cpp' ? DEFAULT_PRACTICE_CPP : DEFAULT_PRACTICE_PYTHON;
+  };
+
+  const setLessonCode = (probId: string, lang: CodeLanguage, value: string) => {
+    setLessonCodeMap((prev) => {
+      const existing = prev[probId] || {
+        cpp: DEFAULT_PRACTICE_CPP,
+        python: DEFAULT_PRACTICE_PYTHON
+      };
+      return {
+        ...prev,
+        [probId]: {
+          ...existing,
+          [lang]: value
+        }
+      };
+    });
+  };
+
+  const getLessonPracticeState = (prob: CSLesson['practiceProblem']): LessonPracticeRunState => {
+    return (
+      lessonPracticeMap[prob.id] || {
+        customIn: prob.sampleCases[0]?.input || '',
+        customOut: '',
+        customErr: '',
+        runtimeMs: null,
+        isRunning: false,
+        isJudging: false,
+        results: null,
+        score: null,
+        verdict: null,
+        mistakeAnalysis: null,
+        isAnalyzingMistake: false,
+        submitted: false,
+        awardedXp: 0
+      }
+    );
+  };
+
+  const updateLessonPracticeState = (
+    prob: CSLesson['practiceProblem'],
+    patch: Partial<LessonPracticeRunState>
+  ) => {
+    setLessonPracticeMap((prev) => {
+      const current = prev[prob.id] || {
+        customIn: prob.sampleCases[0]?.input || '',
+        customOut: '',
+        customErr: '',
+        runtimeMs: null,
+        isRunning: false,
+        isJudging: false,
+        results: null,
+        score: null,
+        verdict: null,
+        mistakeAnalysis: null,
+        isAnalyzingMistake: false,
+        submitted: false,
+        awardedXp: 0
+      };
+      return {
+        ...prev,
+        [prob.id]: { ...current, ...patch }
+      };
+    });
+  };
+
+  const handleRunLessonCustom = async () => {
+    const prob = currentLesson.practiceProblem;
+    const state = getLessonPracticeState(prob);
+    const codeToRun = getLessonCode(prob.id, curriculumLang);
+
+    updateLessonPracticeState(prob, {
+      isRunning: true,
+      customOut: 'Đang biên dịch và thực thi...',
+      customErr: ''
+    });
+
+    const res = await executeCode(prob.id, curriculumLang, codeToRun, state.customIn);
+    updateLessonPracticeState(prob, {
+      isRunning: false,
+      customOut: res.stdout,
+      customErr: res.stderr,
+      runtimeMs: res.runtimeMs
+    });
+  };
+
+  const runLessonMistakeAnalysis = async (
+    prob: CSLesson['practiceProblem'],
+    lang: CodeLanguage,
+    codeToAnalyze: string,
+    score: number,
+    results: TestResult[]
+  ) => {
+    updateLessonPracticeState(prob, { isAnalyzingMistake: true });
+    const failed = results
+      .map((r, idx) => ({ ...r, testNumber: idx + 1 }))
+      .filter((r) => !r.passed)
+      .map((r) => ({
+        index: r.testNumber,
+        input: r.input,
+        expected: r.expected,
+        actual: r.actual,
+        status: r.status
+      }));
+
+    try {
+      const analysis = await analyzeCodeMistakeWithAI({
+        problemTitle: prob.title,
+        problemDescription: prob.description,
+        inputFormat: prob.inputFormat,
+        outputFormat: prob.outputFormat,
+        language: lang,
+        userCode: codeToAnalyze,
+        score,
+        failedTests: failed,
+        fallbackSampleCpp: prob.fullSolutionCpp,
+        fallbackSamplePython: prob.fullSolutionPython
+      });
+      updateLessonPracticeState(prob, { mistakeAnalysis: analysis, isAnalyzingMistake: false });
+    } catch {
+      updateLessonPracticeState(prob, { isAnalyzingMistake: false });
+    }
+  };
+
+  const handleSubmitLessonPractice = async () => {
+    const prob = currentLesson.practiceProblem;
+    const codingProb = toCodingProblem(prob);
+    const codeToJudge = getLessonCode(prob.id, curriculumLang);
+    const prevState = getLessonPracticeState(prob);
+
+    updateLessonPracticeState(prob, {
+      isJudging: true,
+      results: null,
+      mistakeAnalysis: null
+    });
+
+    const result = await judgeProblem(codingProb, curriculumLang, codeToJudge);
+    const targetXp = result.score === 100 ? 100 : result.score > 0 ? Math.floor(result.score * 0.4) : 0;
+    const xpDelta = Math.max(0, targetXp - prevState.awardedXp);
+
+    updateLessonPracticeState(prob, {
+      isJudging: false,
+      results: result.results,
+      score: result.score,
+      verdict: result.verdict,
+      submitted: true,
+      awardedXp: Math.max(prevState.awardedXp, targetXp)
+    });
+
+    // Automatically reveal sample & optimal solution right after submission
+    setRevealedSolution(true);
+
+    const newSub: SubmissionRecord = {
+      id: Date.now().toString(),
+      problemId: codingProb.id,
+      problemTitle: codingProb.title,
+      language: curriculumLang,
+      passedCount: result.passedCount,
+      totalCount: result.totalCount,
+      score: result.score,
+      status:
+        result.verdict === 'Accepted'
+          ? 'Accepted'
+          : result.score > 0
+          ? 'Partial'
+          : 'Wrong Answer',
+      submittedAt: new Date().toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    };
+    setSubmissions((prev) => [newSub, ...prev]);
+
+    if (result.score === 100) {
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+    }
+    if (xpDelta > 0 && onScoreEarned) {
+      onScoreEarned(xpDelta);
+    }
+
+    void runLessonMistakeAnalysis(prob, curriculumLang, codeToJudge, result.score, result.results);
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn pb-12 overflow-x-hidden">
       {/* Header Banner */}
@@ -337,6 +584,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
             <Sparkles className="w-4 h-4 text-amber-600" />
             <span>{t('cs.tab.custom', '3. Tự Do Giải Đề (Sublime Studio)', '3. Free Problem Solver')}</span>
           </button>
+          <button
+            onClick={() => navigate({ csViewMode: 'visualizer' })}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+              viewMode === 'visualizer'
+                ? 'bg-sky-600 text-white shadow-sm font-semibold'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <GitBranch className="w-4 h-4" />
+            <span>{t('cs.tab.visualizer', '4. Đồ Thị & Mô Phỏng Thuật Toán', '4. Algorithm Visualizer')}</span>
+          </button>
         </div>
       </div>
 
@@ -348,15 +606,24 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
           {/* VNOI Phase Filter Bar */}
           <div className="bg-white/85 dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
-                  Bản Đồ Học Tập Tin Học Theo Lộ Trình VNOI Roadmap ({CS_LESSONS.length} Bài Giảng Chuyên Đề)
-                </h2>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                  Bấm vào bất kỳ bài nào dưới đây để mở ngay giao diện Giảng bài chi tiết từng bước, Code mẫu và Bài tập tự chấm.
-                </p>
+              <div className="flex items-start gap-2.5">
+                <button
+                  onClick={onBack || goBack}
+                  className="mt-0.5 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0 whitespace-nowrap"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Quay lại</span>
+                </button>
+                <div>
+                  <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                    Bản Đồ Học Tập Tin Học Theo Lộ Trình VNOI Roadmap ({CS_LESSONS.length} Bài Giảng Chuyên Đề)
+                  </h2>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                    Bấm vào bất kỳ bài nào dưới đây để mở ngay giao diện Giảng bài chi tiết từng bước, Code mẫu và Bài tập tự chấm.
+                  </p>
+                </div>
               </div>
-              <span className="text-xs font-mono text-slate-500 dark:text-slate-400 tabular-nums">
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400 tabular-nums shrink-0">
                 5 Giai đoạn · 12 Chuyên đề cốt lõi
               </span>
             </div>
@@ -556,6 +823,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                   <Award className="w-3.5 h-3.5" />
                   <span>3. Bài Tập &amp; Chấm Code</span>
                 </button>
+                <button
+                  onClick={() => navigate({ csLessonTab: 'visualizer' })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                    lessonTab === 'visualizer'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <GitBranch className="w-3.5 h-3.5" />
+                  <span>4. Mô Phỏng Trực Quan</span>
+                </button>
               </div>
             </div>
           </div>
@@ -572,7 +850,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               subtitle={currentLesson.topic}
               steps={buildCSLectureSteps(currentLesson)}
               onEarnXP={onScoreEarned}
-              onOpenSim2D={() => navigate({ csLessonTab: 'code' })}
+              onOpenSim2D={() => navigate({ csLessonTab: 'visualizer' })}
               onNextLesson={(() => {
                 const nextLesson = CS_LESSONS.find(
                   (x) => x.lessonNumber === currentLesson.lessonNumber + 1
@@ -613,7 +891,14 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               return (
                 <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
                   <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        onClick={() => navigate({ csLessonTab: 'lecture' })}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shrink-0 whitespace-nowrap"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Quay lại Bài giảng</span>
+                      </button>
                       <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <div>
                         <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
@@ -668,128 +953,342 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               );
             })()}
 
-          {/* LESSON TAB 3: CONSOLIDATION PROBLEM + ONLINE JUDGE */}
-          {lessonTab === 'practice' && (
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-amber-500" />
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Bài Tập Thực Hành Chuẩn VNOI: {currentLesson.practiceProblem.title}
-                  </h3>
-                </div>
+          {/* LESSON TAB 3: INTERACTIVE SELF-CODING PRACTICE + GRADING + SAMPLE/OPTIMAL REVEAL */}
+          {lessonTab === 'practice' &&
+            (() => {
+              const prob = currentLesson.practiceProblem;
+              const pState = getLessonPracticeState(prob);
+              const hiddenTests = LESSON_HIDDEN_TEST_CASES[prob.id] || [];
+              const totalTestsCount = prob.sampleCases.length + hiddenTests.length;
+              const currentPracticeCode = getLessonCode(prob.id, curriculumLang);
+              const isSolutionShown = revealedSolution || pState.submitted;
 
-                <button
-                  onClick={() => handleLoadIntoJudge(currentLesson.practiceProblem)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/20 whitespace-nowrap"
-                >
-                  <Zap className="w-4 h-4" />
-                  <span>Nạp Bài Vào Trình Chấm Online Judge</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
-                <p className="leading-relaxed">{currentLesson.practiceProblem.description}</p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
-                  <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="font-semibold text-slate-900 dark:text-white mb-1">
-                      Định dạng Input:
-                    </div>
-                    <div className="font-mono text-slate-600 dark:text-slate-300">
-                      {currentLesson.practiceProblem.inputFormat}
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="font-semibold text-slate-900 dark:text-white mb-1">
-                      Định dạng Output:
-                    </div>
-                    <div className="font-mono text-slate-600 dark:text-slate-300">
-                      {currentLesson.practiceProblem.outputFormat}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                  Độ khó: {currentLesson.practiceProblem.difficulty} · Thời gian: 1.0s · Bộ nhớ: 256MB
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-900 dark:text-white">
-                  Ví dụ mẫu (Sample Cases):
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {currentLesson.practiceProblem.sampleCases.map((sc, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-slate-900 text-slate-100 rounded-xl p-3 font-mono text-xs space-y-1.5"
-                    >
-                      <div className="text-slate-400 text-[10px] uppercase font-bold">
-                        Ví dụ {idx + 1}
+              return (
+                <div className="space-y-5">
+                  <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <button
+                          onClick={() => navigate({ csLessonTab: 'lecture' })}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                          <span>Quay lại Bài giảng</span>
+                        </button>
+                        <Award className="w-5 h-5 text-amber-500 shrink-0" />
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                          Bài Tập Tự Code: {prob.title}
+                        </h3>
                       </div>
+
+                      <button
+                        onClick={() => handleLoadIntoJudge(prob)}
+                        className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all whitespace-nowrap"
+                      >
+                        <Maximize2 className="w-3.5 h-3.5" />
+                        <span>Mở trong Online Judge toàn màn hình</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                      <FormattedText text={prob.description} />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+                        <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                          <div className="font-semibold text-slate-900 dark:text-white mb-1">
+                            Định dạng Input:
+                          </div>
+                          <div className="font-mono text-slate-600 dark:text-slate-300 whitespace-pre-line">
+                            {prob.inputFormat}
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                          <div className="font-semibold text-slate-900 dark:text-white mb-1">
+                            Định dạng Output:
+                          </div>
+                          <div className="font-mono text-slate-600 dark:text-slate-300 whitespace-pre-line">
+                            {prob.outputFormat}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                        Độ khó: {prob.difficulty} · Bộ test: {prob.sampleCases.length} mẫu + {hiddenTests.length} test ẩn ({totalTestsCount} tests) · Thời gian: 1.0s
+                      </div>
+                    </div>
+
+                    {/* Sample Cases */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">
+                        Ví dụ mẫu (Sample Cases):
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {prob.sampleCases.map((sc, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-slate-900 text-slate-100 rounded-xl p-3 font-mono text-xs space-y-1.5"
+                          >
+                            <div className="flex items-center justify-between text-slate-400 text-[10px] uppercase font-bold">
+                              <span>Ví dụ {idx + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => updateLessonPracticeState(prob, { customIn: sc.input })}
+                                className="text-sky-400 hover:underline normal-case font-semibold"
+                              >
+                                Nạp vào Stdin chạy thử
+                              </button>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Input:</span>
+                              <pre className="text-emerald-400 whitespace-pre-wrap">{sc.input.trim()}</pre>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Output:</span>
+                              <pre className="text-amber-400 whitespace-pre-wrap">{sc.output.trim()}</pre>
+                            </div>
+                            {sc.explanation && (
+                              <div className="text-slate-400 text-[11px] font-sans pt-1 border-t border-slate-800">
+                                {sc.explanation}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Embedded Self-Coding Workspace */}
+                    <div className="rounded-2xl overflow-hidden border border-[#3e3d32] bg-[#272822] shadow-xl">
+                      <div className="h-[340px] sm:h-[380px] flex flex-col">
+                        <SublimeEditor
+                          value={currentPracticeCode}
+                          onChange={(val) => setLessonCode(prob.id, curriculumLang, val)}
+                          language={curriculumLang}
+                          tabs={[
+                            { id: 'cpp', label: 'main.cpp', language: 'cpp', dirty: currentPracticeCode !== DEFAULT_PRACTICE_CPP },
+                            { id: 'python', label: 'solution.py', language: 'python', dirty: currentPracticeCode !== DEFAULT_PRACTICE_PYTHON }
+                          ]}
+                          activeTabId={curriculumLang}
+                          onSelectTab={(id) => setCurriculumLang(id as CodeLanguage)}
+                          fontSize={fontSize}
+                          onFontSizeChange={setFontSize}
+                          onRun={handleRunLessonCustom}
+                          onReset={() =>
+                            setLessonCode(
+                              prob.id,
+                              curriculumLang,
+                              curriculumLang === 'cpp' ? DEFAULT_PRACTICE_CPP : DEFAULT_PRACTICE_PYTHON
+                            )
+                          }
+                          placeholder={
+                            curriculumLang === 'python'
+                              ? '# Tự viết code Python 3 tại đây và bấm Nộp Bài...'
+                              : '// Tự viết code C++ tại đây và bấm Nộp Bài...'
+                          }
+                          statusRightExtra={pState.score !== null ? `Score: ${pState.score}/100` : undefined}
+                        />
+                      </div>
+
+                      {/* Action Bar */}
+                      <div className="bg-[#1e1f1c] border-t border-[#3e3d32] px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleRunLessonCustom}
+                            disabled={pState.isRunning || pState.isJudging}
+                            className="px-3.5 py-1.5 rounded-lg bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2] text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                          >
+                            <Play className="w-3.5 h-3.5 text-[#66d9ef]" />
+                            <span>{pState.isRunning ? 'Đang chạy...' : 'Chạy Thử (Stdin)'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleSubmitLessonPractice}
+                            disabled={pState.isRunning || pState.isJudging}
+                            className="px-4 py-1.5 rounded-lg bg-[#a6e22e] hover:bg-[#b8f242] text-[#272822] text-xs font-bold flex items-center gap-1.5 shadow transition-all disabled:opacity-50"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>
+                              {pState.isJudging
+                                ? 'Đang chấm...'
+                                : `Nộp Bài & Chấm Điểm (${totalTestsCount} tests)`}
+                            </span>
+                          </button>
+                        </div>
+
+                        {pState.score !== null && (
+                          <span
+                            className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold tabular-nums ${
+                              pState.score === 100
+                                ? 'bg-[#a6e22e]/20 text-[#a6e22e]'
+                                : pState.score > 0
+                                ? 'bg-[#e6db74]/20 text-[#e6db74]'
+                                : 'bg-[#f92672]/20 text-[#f92672]'
+                            }`}
+                          >
+                            {pState.verdict} · {pState.score}/100 điểm
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Stdin / Output Console */}
+                      <div className="bg-[#171814] border-t border-[#3e3d32] p-3 grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs text-[#f8f8f2]">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold uppercase text-[#90908a]">
+                            Input chạy thử (Stdin):
+                          </span>
+                          <textarea
+                            value={pState.customIn}
+                            onChange={(e) => updateLessonPracticeState(prob, { customIn: e.target.value })}
+                            rows={3}
+                            className="w-full p-2 bg-[#272822] border border-[#3e3d32] rounded-lg text-xs text-[#f8f8f2] focus:outline-none focus:border-[#66d9ef] resize-none"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between text-[10px] font-bold uppercase text-[#90908a]">
+                            <span>Output chương trình:</span>
+                            {pState.runtimeMs !== null && (
+                              <span className="text-[#66d9ef] tabular-nums">{pState.runtimeMs}ms</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-h-[76px] max-h-[110px] p-2 bg-[#272822] border border-[#3e3d32] rounded-lg overflow-y-auto whitespace-pre-wrap">
+                            {pState.customErr ? (
+                              <span className="text-[#f92672]">{pState.customErr}</span>
+                            ) : pState.customOut ? (
+                              <span className="text-[#a6e22e]">{pState.customOut}</span>
+                            ) : (
+                              <span className="text-[#75715e]">// Kết quả chạy thử sẽ hiện tại đây...</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Grading Verdict, Failed Tests & AI Mistake Diagnosis (Published on Submission) */}
+                    {(pState.results || pState.isJudging) && (
                       <div>
-                        <span className="text-slate-500">Input:</span>
-                        <pre className="text-emerald-400">{sc.input.trim()}</pre>
+                        {pState.isJudging && !pState.results ? (
+                          <div className="p-5 rounded-2xl bg-slate-100 dark:bg-slate-800/70 text-center text-xs font-mono text-blue-600 dark:text-blue-400">
+                            Đang chấm bài tập qua {totalTestsCount} test cases...
+                          </div>
+                        ) : (
+                          <CodeMistakeAnalysisPanel
+                            darkSurface={false}
+                            score={pState.score}
+                            verdict={pState.verdict}
+                            results={pState.results}
+                            language={curriculumLang}
+                            analysis={pState.mistakeAnalysis}
+                            isAnalyzingMistake={pState.isAnalyzingMistake}
+                            onRetryAnalyze={() => {
+                              if (!pState.results || pState.score === null) return;
+                              void runLessonMistakeAnalysis(
+                                prob,
+                                curriculumLang,
+                                currentPracticeCode,
+                                pState.score,
+                                pState.results
+                              );
+                            }}
+                            onApplySampleCode={(sample) => setLessonCode(prob.id, curriculumLang, sample)}
+                          />
+                        )}
                       </div>
-                      <div>
-                        <span className="text-slate-500">Output:</span>
-                        <pre className="text-amber-400">{sc.output.trim()}</pre>
-                      </div>
-                      {sc.explanation && (
-                        <div className="text-slate-400 text-[11px] font-sans pt-1 border-t border-slate-800">
-                          {sc.explanation}
+                    )}
+
+                    {/* Sample & Optimal VNOI Solution (Automatically Revealed Upon Submission, or Manual Toggle) */}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setRevealedSolution(!isSolutionShown)}
+                        className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5"
+                      >
+                        <span>
+                          {isSolutionShown
+                            ? 'Ẩn code mẫu / lời giải tối ưu chuẩn VNOI'
+                            : 'Xem gợi ý & code mẫu tối ưu chuẩn VNOI'}
+                        </span>
+                      </button>
+
+                      {isSolutionShown && (
+                        <div className="mt-3 p-5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-4 animate-fadeIn">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                              Code Mẫu / Tối Ưu Chuẩn VNOI &amp; Chiến Lược Giải:
+                            </h4>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setCurriculumLang('cpp')}
+                                className={`px-2.5 py-1 rounded text-[11px] font-bold ${
+                                  curriculumLang === 'cpp'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                }`}
+                              >
+                                C++
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCurriculumLang('python')}
+                                className={`px-2.5 py-1 rounded text-[11px] font-bold ${
+                                  curriculumLang === 'python'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                }`}
+                              >
+                                Python
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setLessonCode(
+                                    prob.id,
+                                    curriculumLang,
+                                    curriculumLang === 'cpp' ? prob.fullSolutionCpp : prob.fullSolutionPython
+                                  )
+                                }
+                                className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold"
+                              >
+                                Nạp Code Tối Ưu Vào Editor
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                            <FormattedText text={prob.solutionAnalysis} />
+                          </div>
+
+                          <MonokaiCodeBlock
+                            code={curriculumLang === 'cpp' ? prob.fullSolutionCpp : prob.fullSolutionPython}
+                            language={curriculumLang}
+                            title={curriculumLang === 'cpp' ? 'optimal_solution.cpp' : 'optimal_solution.py'}
+                            onCopy={() =>
+                              handleCopy(curriculumLang === 'cpp' ? prob.fullSolutionCpp : prob.fullSolutionPython)
+                            }
+                            copied={
+                              copiedText ===
+                              (curriculumLang === 'cpp' ? prob.fullSolutionCpp : prob.fullSolutionPython)
+                            }
+                            maxHeightClass="max-h-[360px]"
+                          />
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  onClick={() => setRevealedSolution(!revealedSolution)}
-                  className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5"
-                >
-                  <span>
-                    {revealedSolution
-                      ? 'Ẩn lời giải chi tiết & source code mẫu'
-                      : 'Xem lời giải chi tiết & source code mẫu chuẩn AC'}
-                  </span>
-                </button>
-
-                {revealedSolution && (
-                  <div className="mt-3 p-5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-4 animate-fadeIn">
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                        Phân tích thuật toán &amp; Chiến lược tối ưu:
-                      </h4>
-                      <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
-                        <FormattedText text={currentLesson.practiceProblem.solutionAnalysis} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white block">
-                        Source code mẫu giải thuật ({curriculumLang === 'cpp' ? 'C++' : 'Python'}):
-                      </span>
-                      <MonokaiCodeBlock
-                        code={
-                          curriculumLang === 'cpp'
-                            ? currentLesson.practiceProblem.fullSolutionCpp
-                            : currentLesson.practiceProblem.fullSolutionPython
-                        }
-                        language={curriculumLang}
-                        title={curriculumLang === 'cpp' ? 'solution.cpp' : 'solution.py'}
-                        maxHeightClass="max-h-[360px]"
-                      />
-                    </div>
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
+              );
+            })()}
+
+          {/* LESSON TAB 4: ALGORITHM VISUALIZER */}
+          {lessonTab === 'visualizer' && (
+            <AlgorithmVisualizer
+              initialAlgoId={LESSON_TO_ALGO_MAP[currentLesson.id] || 'coord_hull'}
+              embeddedLessonTitle={currentLesson.title}
+              onBack={() => navigate({ csLessonTab: 'lecture' })}
+              onScoreEarned={onScoreEarned}
+            />
           )}
         </div>
       )}
@@ -811,11 +1310,21 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               <div className="bg-[#171814] border-b border-[#3e3d32] px-3 py-2 flex items-center justify-between gap-2 shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
                   <button
+                    onClick={() => {
+                      setIsJudgeFullscreen(false);
+                      goBack();
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#f8f8f2] text-xs font-bold flex items-center gap-1.5 shrink-0"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Quay lại</span>
+                  </button>
+                  <button
                     onClick={() => setIsJudgeFullscreen(false)}
                     className="px-3 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#66d9ef] text-xs font-bold flex items-center gap-1.5 shrink-0"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Quay lại / Thu nhỏ (Esc)</span>
+                    <Minimize2 className="w-3.5 h-3.5" />
+                    <span>Thu nhỏ (Esc)</span>
                   </button>
                   <span className="text-xs font-bold text-white truncate hidden sm:inline">
                     {currentProblem.title}
@@ -1164,8 +1673,11 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                                     : 'bg-[#f92672]/10 border-[#f92672]/30 text-[#f92672]'
                                 }`}
                               >
-                                <div className="flex items-center justify-between font-bold">
-                                  <span>Test #{tIdx + 1}</span>
+                                <div className="flex items-center justify-between font-bold gap-2">
+                                  <span>
+                                    Test #{tIdx + 1}
+                                    {tr.difficulty ? ` · ${tr.difficulty}` : ''}
+                                  </span>
                                   <span>{tr.passed ? 'ACCEPTED' : tr.status}</span>
                                 </div>
                                 {!tr.passed && (
@@ -1244,6 +1756,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
         <SublimeStudio
           onScoreEarned={onScoreEarned}
           onBack={goBack}
+        />
+      )}
+
+      {/* ============================================================= */}
+      {/* MODE 4: ĐỒ THỊ & MÔ PHỎNG THUẬT TOÁN TRỰC QUAN               */}
+      {/* ============================================================= */}
+      {viewMode === 'visualizer' && (
+        <AlgorithmVisualizer
+          initialAlgoId={(location.csAlgoId as AlgoId) || 'coord_hull'}
+          onBack={goBack}
+          onScoreEarned={onScoreEarned}
         />
       )}
     </div>

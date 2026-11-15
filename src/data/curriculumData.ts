@@ -2270,14 +2270,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     outputFormat: 'In ra một số nguyên duy nhất là tổng a + b.',
     constraints: ['-10^9 <= a, b <= 10^9'],
     sampleCases: [
-      { id: 1, input: '3 5', expectedOutput: '8', isSample: true, explanation: '3 + 5 = 8' },
-      { id: 2, input: '-10 25', expectedOutput: '15', isSample: true, explanation: '-10 + 25 = 15' }
+      { id: 1, input: '3 5', expectedOutput: '8', isSample: true, explanation: '3 + 5 = 8', difficulty: 'Cơ bản' },
+      { id: 2, input: '-10 25', expectedOutput: '15', isSample: true, explanation: '-10 + 25 = 15', difficulty: 'Cơ bản' }
     ],
     hiddenCases: [
-      { id: 3, input: '0 0', expectedOutput: '0' },
-      { id: 4, input: '-1000 -2000', expectedOutput: '-3000' },
-      { id: 5, input: '999999999 1', expectedOutput: '1000000000' },
-      { id: 6, input: '-500000000 500000000', expectedOutput: '0' }
+      { id: 3, input: '12 8', expectedOutput: '20', difficulty: 'Cơ bản' },
+      { id: 4, input: '0 0', expectedOutput: '0', difficulty: 'Trung bình' },
+      { id: 5, input: '-1000 -2000', expectedOutput: '-3000', difficulty: 'Trung bình' },
+      { id: 6, input: '-500000000 500000000', expectedOutput: '0', difficulty: 'Nâng cao' },
+      { id: 7, input: '999999999 1', expectedOutput: '1000000000', difficulty: 'Thử thách' }
     ],
     cppTemplate: `#include <iostream>
 using namespace std;
@@ -2315,15 +2316,16 @@ if __name__ == '__main__':
     outputFormat: 'In ra "YES" hoặc "NO" (chữ in hoa).',
     constraints: ['1 <= N <= 10^9'],
     sampleCases: [
-      { id: 1, input: '7', expectedOutput: 'YES', isSample: true, explanation: '7 chỉ chia hết cho 1 và 7' },
-      { id: 2, input: '1', expectedOutput: 'NO', isSample: true, explanation: '1 không phải số nguyên tố' },
-      { id: 3, input: '12', expectedOutput: 'NO', isSample: true, explanation: '12 chia hết cho 2, 3, 4, 6' }
+      { id: 1, input: '7', expectedOutput: 'YES', isSample: true, explanation: '7 chỉ chia hết cho 1 và 7', difficulty: 'Cơ bản' },
+      { id: 2, input: '1', expectedOutput: 'NO', isSample: true, explanation: '1 không phải số nguyên tố', difficulty: 'Cơ bản' },
+      { id: 3, input: '12', expectedOutput: 'NO', isSample: true, explanation: '12 chia hết cho 2, 3, 4, 6', difficulty: 'Cơ bản' }
     ],
     hiddenCases: [
-      { id: 4, input: '2', expectedOutput: 'YES' },
-      { id: 5, input: '97', expectedOutput: 'YES' },
-      { id: 6, input: '1000000', expectedOutput: 'NO' },
-      { id: 7, input: '1000000007', expectedOutput: 'YES' }
+      { id: 4, input: '5', expectedOutput: 'YES', difficulty: 'Cơ bản' },
+      { id: 5, input: '97', expectedOutput: 'YES', difficulty: 'Trung bình' },
+      { id: 6, input: '2', expectedOutput: 'YES', difficulty: 'Nâng cao' },
+      { id: 7, input: '1000000', expectedOutput: 'NO', difficulty: 'Nâng cao' },
+      { id: 8, input: '1000000007', expectedOutput: 'YES', difficulty: 'Thử thách' }
     ],
     cppTemplate: `#include <iostream>
 using namespace std;
@@ -2381,15 +2383,16 @@ if __name__ == '__main__':
     outputFormat: 'In ra giá trị F(n) mod 1000000007.',
     constraints: ['0 <= n <= 10^6'],
     sampleCases: [
-      { id: 1, input: '0', expectedOutput: '0', isSample: true },
-      { id: 2, input: '6', expectedOutput: '8', isSample: true, explanation: 'F(0)=0, F(1)=1, F(2)=1, F(3)=2, F(4)=3, F(5)=5, F(6)=8' },
-      { id: 3, input: '10', expectedOutput: '55', isSample: true }
+      { id: 1, input: '0', expectedOutput: '0', isSample: true, difficulty: 'Cơ bản' },
+      { id: 2, input: '6', expectedOutput: '8', isSample: true, explanation: 'F(0)=0, F(1)=1, F(2)=1, F(3)=2, F(4)=3, F(5)=5, F(6)=8', difficulty: 'Cơ bản' },
+      { id: 3, input: '10', expectedOutput: '55', isSample: true, difficulty: 'Cơ bản' }
     ],
     hiddenCases: [
-      { id: 4, input: '1', expectedOutput: '1' },
-      { id: 5, input: '20', expectedOutput: '6765' },
-      { id: 6, input: '50', expectedOutput: '586268941' },
-      { id: 7, input: '100', expectedOutput: '687995182' }
+      { id: 4, input: '4', expectedOutput: '3', difficulty: 'Cơ bản' },
+      { id: 5, input: '20', expectedOutput: '6765', difficulty: 'Trung bình' },
+      { id: 6, input: '1', expectedOutput: '1', difficulty: 'Nâng cao' },
+      { id: 7, input: '50', expectedOutput: '586268941', difficulty: 'Nâng cao' },
+      { id: 8, input: '100', expectedOutput: '687995182', difficulty: 'Thử thách' }
     ],
     cppTemplate: `#include <iostream>
 using namespace std;
@@ -2446,14 +2449,15 @@ if __name__ == '__main__':
     outputFormat: 'In ra chỉ số của phần tử X đầu tiên tìm thấy (1-based index) hoặc -1.',
     constraints: ['1 <= N <= 10^5', '-10^9 <= X, A[i] <= 10^9'],
     sampleCases: [
-      { id: 1, input: '5 7\n1 3 5 7 9', expectedOutput: '4', isSample: true, explanation: 'Số 7 nằm ở vị trí thứ 4' },
-      { id: 2, input: '4 4\n1 2 3 5', expectedOutput: '-1', isSample: true, explanation: 'Không có số 4 trong mảng' }
+      { id: 1, input: '5 7\n1 3 5 7 9', expectedOutput: '4', isSample: true, explanation: 'Số 7 nằm ở vị trí thứ 4', difficulty: 'Cơ bản' },
+      { id: 2, input: '4 4\n1 2 3 5', expectedOutput: '-1', isSample: true, explanation: 'Không có số 4 trong mảng', difficulty: 'Cơ bản' }
     ],
     hiddenCases: [
-      { id: 3, input: '6 5\n2 4 5 5 5 8', expectedOutput: '3' },
-      { id: 4, input: '1 10\n10', expectedOutput: '1' },
-      { id: 5, input: '5 1\n2 4 6 8 10', expectedOutput: '-1' },
-      { id: 6, input: '7 99\n1 5 12 25 60 99 105', expectedOutput: '6' }
+      { id: 3, input: '4 8\n2 5 8 10', expectedOutput: '3', difficulty: 'Cơ bản' },
+      { id: 4, input: '5 1\n2 4 6 8 10', expectedOutput: '-1', difficulty: 'Trung bình' },
+      { id: 5, input: '6 5\n2 4 5 5 5 8', expectedOutput: '3', difficulty: 'Nâng cao' },
+      { id: 6, input: '1 10\n10', expectedOutput: '1', difficulty: 'Nâng cao' },
+      { id: 7, input: '7 99\n1 5 12 25 60 99 105', expectedOutput: '6', difficulty: 'Thử thách' }
     ],
     cppTemplate: `#include <iostream>
 #include <vector>
@@ -2520,15 +2524,16 @@ if __name__ == '__main__':
     outputFormat: 'In ra "YES" hoặc "NO".',
     constraints: ['Độ dài chuỗi 1 <= |S| <= 10^5'],
     sampleCases: [
-      { id: 1, input: 'radar', expectedOutput: 'YES', isSample: true },
-      { id: 2, input: 'hello', expectedOutput: 'NO', isSample: true },
-      { id: 3, input: 'A man a plan a canal Panama', expectedOutput: 'YES', isSample: true }
+      { id: 1, input: 'radar', expectedOutput: 'YES', isSample: true, difficulty: 'Cơ bản' },
+      { id: 2, input: 'hello', expectedOutput: 'NO', isSample: true, difficulty: 'Cơ bản' },
+      { id: 3, input: 'A man a plan a canal Panama', expectedOutput: 'YES', isSample: true, difficulty: 'Trung bình' }
     ],
     hiddenCases: [
-      { id: 4, input: 'a', expectedOutput: 'YES' },
-      { id: 5, input: 'abccba', expectedOutput: 'YES' },
-      { id: 6, input: 'coding is fun', expectedOutput: 'NO' },
-      { id: 7, input: 'Was it a car or a cat I saw', expectedOutput: 'YES' }
+      { id: 4, input: 'aba', expectedOutput: 'YES', difficulty: 'Cơ bản' },
+      { id: 5, input: 'abccba', expectedOutput: 'YES', difficulty: 'Trung bình' },
+      { id: 6, input: 'a', expectedOutput: 'YES', difficulty: 'Nâng cao' },
+      { id: 7, input: 'coding is fun', expectedOutput: 'NO', difficulty: 'Nâng cao' },
+      { id: 8, input: 'Was it a car or a cat I saw', expectedOutput: 'YES', difficulty: 'Thử thách' }
     ],
     cppTemplate: `#include <iostream>
 #include <string>
@@ -2586,12 +2591,13 @@ if __name__ == '__main__':
     outputFormat: 'In ra một số nguyên là tổng giá trị lớn nhất đạt được.',
     constraints: ['1 <= N <= 100', '1 <= W <= 1000', '1 <= w_i, v_i <= 1000'],
     sampleCases: [
-      { id: 1, input: '3 50\n10 60\n20 100\n30 120', expectedOutput: '220', isSample: true, explanation: 'Chọn món 2 (20kg, 100) và món 3 (30kg, 120): tổng khối lượng 50, giá trị 220.' }
+      { id: 1, input: '3 50\n10 60\n20 100\n30 120', expectedOutput: '220', isSample: true, explanation: 'Chọn món 2 (20kg, 100) và món 3 (30kg, 120): tổng khối lượng 50, giá trị 220.', difficulty: 'Cơ bản' }
     ],
     hiddenCases: [
-      { id: 2, input: '4 7\n1 1\n3 4\n4 5\n5 7', expectedOutput: '9' },
-      { id: 3, input: '2 3\n4 10\n5 20', expectedOutput: '0' },
-      { id: 4, input: '5 10\n2 3\n3 4\n4 5\n5 8\n9 10', expectedOutput: '15' }
+      { id: 2, input: '2 5\n2 3\n3 4', expectedOutput: '7', difficulty: 'Cơ bản' },
+      { id: 3, input: '4 7\n1 1\n3 4\n4 5\n5 7', expectedOutput: '9', difficulty: 'Trung bình' },
+      { id: 4, input: '2 3\n4 10\n5 20', expectedOutput: '0', difficulty: 'Nâng cao' },
+      { id: 5, input: '5 10\n2 3\n3 4\n4 5\n5 8\n9 10', expectedOutput: '15', difficulty: 'Thử thách' }
     ],
     cppTemplate: `#include <iostream>
 #include <vector>

@@ -432,12 +432,15 @@ export interface CSLesson {
   };
 }
 
+export type TestDifficultyTier = 'Cơ bản' | 'Trung bình' | 'Nâng cao' | 'Thử thách';
+
 export interface TestCase {
   id: number;
   input: string;
   expectedOutput: string;
   isSample?: boolean;
   explanation?: string;
+  difficulty?: TestDifficultyTier;
 }
 
 export interface CodingProblem {
@@ -465,6 +468,7 @@ export interface TestResult {
   actual: string;
   runtimeMs: number;
   status: 'Accepted' | 'Wrong Answer' | 'Time Limit Exceeded' | 'Runtime Error';
+  difficulty?: TestDifficultyTier;
 }
 
 export interface SubmissionRecord {

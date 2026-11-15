@@ -380,8 +380,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               {isEn
-                ? 'Sublime Text 4 style IDE (Find/Replace, CP snippets) with automated C++20 & Python 3 judge and hidden edge tests.'
-                : 'Trình soạn thảo Sublime Text 4 (Edit, Find/Replace, Snippet CP), chấm bài C++/Python tự động với test ẩn.'}
+                ? 'Sublime Text 4 style IDE, automated C++20 & Python 3 judge, and 16 interactive visualizers (Oxy, Strings, Arrays, DP, Binary Search, Dijkstra).'
+                : 'Trình soạn thảo Sublime Text 4, chấm bài C++/Python tự động và 16 mô phỏng trực quan (Oxy, Xâu, Mảng 1D/2D, DP, Chặt nhị phân, Dijkstra).'}
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400">

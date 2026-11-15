@@ -11,10 +11,11 @@ export interface NavLocation {
   physicsView: 'catalog' | 'lecture';
   physicsLessonId: string;
   physicsTab: 'theory' | 'simulation' | 'sim3d' | 'practice';
-  csViewMode: 'curriculum' | 'judge' | 'custom';
+  csViewMode: 'curriculum' | 'judge' | 'custom' | 'visualizer';
   csSubView: 'roadmap' | 'lecture';
   csLessonId: string;
-  csLessonTab: 'lecture' | 'code' | 'practice';
+  csLessonTab: 'lecture' | 'code' | 'practice' | 'visualizer';
+  csAlgoId?: string;
   examId: string | null;
   tutorOpen: boolean;
   tutorSubject: SubjectType;
@@ -32,6 +33,7 @@ const DEFAULT_LOCATION: NavLocation = {
   csSubView: 'roadmap',
   csLessonId: 'cs-1',
   csLessonTab: 'lecture',
+  csAlgoId: 'coord_hull',
   examId: null,
   tutorOpen: false,
   tutorSubject: 'math'
@@ -63,11 +65,14 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       }
       return isEn ? 'Physics' : 'Vật lí';
     case 'cs':
+      if (loc.csViewMode === 'visualizer') return isEn ? 'Algorithm Graph & Sim' : 'Đồ thị & Mô phỏng Thuật toán';
       if (loc.csViewMode === 'judge') return 'Online Judge';
       if (loc.csViewMode === 'custom') return 'Sublime Studio';
-      return loc.csSubView === 'lecture'
-        ? isEn ? 'VNOI Lecture' : 'Bài giảng Tin học'
-        : isEn ? 'CS · VNOI Roadmap' : 'Tin học · VNOI';
+      if (loc.csSubView === 'lecture') {
+        if (loc.csLessonTab === 'visualizer') return isEn ? 'CS Simulation' : 'Mô phỏng Thuật toán';
+        return isEn ? 'VNOI Lecture' : 'Bài giảng Tin học';
+      }
+      return isEn ? 'CS · VNOI Roadmap' : 'Tin học · VNOI';
     case 'exams':
       return loc.examId
         ? isEn ? 'Exam Paper' : 'Đề thi chi tiết'
@@ -92,6 +97,7 @@ function isSameLocation(a: NavLocation, b: NavLocation): boolean {
     a.csSubView === b.csSubView &&
     a.csLessonId === b.csLessonId &&
     a.csLessonTab === b.csLessonTab &&
+    a.csAlgoId === b.csAlgoId &&
     a.examId === b.examId &&
     a.tutorOpen === b.tutorOpen &&
     a.tutorSubject === b.tutorSubject

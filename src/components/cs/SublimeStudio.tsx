@@ -1,17 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import {
   CodeLanguage,
   CodingProblem,
   TestCase,
+  TestDifficultyTier,
   TestResult
 } from '../../types';
 import { executeCode, compareOutputs } from './codeRunner';
 import {
   analyzeProblemAndGenerateTests,
+  analyzeCodeMistakeWithAI,
+  CodeMistakeAnalysis,
   extractSamplesFromText,
   UserSamplePair
 } from './problemAnalyzer';
+import { CodeMistakeAnalysisPanel } from './CodeMistakeAnalysisPanel';
 import { SublimeEditor, SublimeTabItem } from './SublimeEditor';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { useLanguage } from '../../context/LanguageContext';
@@ -113,6 +117,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
   const [editingTestId, setEditingTestId] = useState<number | null>(null);
   const [editTestInput, setEditTestInput] = useState<string>('');
   const [editTestOutput, setEditTestOutput] = useState<string>('');
+  const [editTestTier, setEditTestTier] = useState<TestDifficultyTier>('Trung bình');
 
   // Runner & Judge State
   const [customOutput, setCustomOutput] = useState<string>('');
@@ -124,6 +129,9 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
   const [judgeResults, setJudgeResults] = useState<TestResult[] | null>(null);
   const [judgeScore, setJudgeScore] = useState<number | null>(null);
   const [judgeVerdict, setJudgeVerdict] = useState<string | null>(null);
+  const [mistakeAnalysis, setMistakeAnalysis] = useState<CodeMistakeAnalysis | null>(null);
+  const [isAnalyzingMistake, setIsAnalyzingMistake] = useState<boolean>(false);
+  const resultSectionRef = useRef<HTMLDivElement | null>(null);
 
   // Escape exits fullscreen cleanly
   useEffect(() => {
@@ -233,6 +241,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
       setJudgeResults(null);
       setJudgeScore(null);
       setJudgeVerdict(null);
+      setMistakeAnalysis(null);
       setShowUploadModal(false);
       setIsSidebarOpen(true);
       setMobilePane('problem');
@@ -274,16 +283,59 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
     setCustomRuntimeMs(res.runtimeMs);
   };
 
+  const runMistakeAnalysis = async (
+    targetProblem: CodingProblem,
+    langToAnalyze: CodeLanguage,
+    codeToAnalyze: string,
+    finalScore: number,
+    results: TestResult[]
+  ) => {
+    setIsAnalyzingMistake(true);
+    const failed = results
+      .map((r, i) => ({ ...r, testNumber: i + 1 }))
+      .filter((r) => !r.passed)
+      .map((r) => ({
+        index: r.testNumber,
+        input: r.input,
+        expected: r.expected,
+        actual: r.actual,
+        status: r.status
+      }));
+
+    try {
+      const analysisRes = await analyzeCodeMistakeWithAI({
+        problemTitle: targetProblem.title,
+        problemDescription: targetProblem.description,
+        inputFormat: targetProblem.inputFormat,
+        outputFormat: targetProblem.outputFormat,
+        language: langToAnalyze,
+        userCode: codeToAnalyze,
+        score: finalScore,
+        failedTests: failed
+      });
+      setMistakeAnalysis(analysisRes);
+    } finally {
+      setIsAnalyzingMistake(false);
+    }
+  };
+
   // Judge All Test Cases
   const handleJudgeAll = async () => {
     if (!problem) return;
+    const allCases = [...problem.sampleCases, ...problem.hiddenCases];
+    if (allCases.length === 0) {
+      setIsConsoleOpen(true);
+      setConsoleTab('judge');
+      return;
+    }
+
     setIsJudging(true);
     setIsConsoleOpen(true);
     setConsoleTab('judge');
     setMobilePane('console');
     setJudgeResults(null);
+    setMistakeAnalysis(null);
 
-    const allCases = [...problem.sampleCases, ...problem.hiddenCases];
     const results: TestResult[] = [];
     let passed = 0;
 
@@ -302,7 +354,8 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
           expected: tc.expectedOutput,
           actual: res.stderr,
           runtimeMs: res.runtimeMs,
-          status: res.stderr.includes('TLE') ? 'Time Limit Exceeded' : 'Runtime Error'
+          status: res.stderr.includes('TLE') ? 'Time Limit Exceeded' : 'Runtime Error',
+          difficulty: tc.difficulty || (tc.isSample ? 'Cơ bản' : undefined)
         });
         continue;
       }
@@ -317,7 +370,8 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
         expected: tc.expectedOutput,
         actual: res.stdout,
         runtimeMs: res.runtimeMs,
-        status: isPass ? 'Accepted' : 'Wrong Answer'
+        status: isPass ? 'Accepted' : 'Wrong Answer',
+        difficulty: tc.difficulty || (tc.isSample ? 'Cơ bản' : undefined)
       });
     }
 
@@ -335,17 +389,35 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
     } else if (finalScore > 0) {
       onScoreEarned?.(Math.floor(finalScore * 0.5));
     }
+
+    if (!isFullscreen) {
+      setTimeout(() => {
+        resultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 120);
+    }
+
+    void runMistakeAnalysis(problem, langToRun, codeToRun, finalScore, results);
   };
 
   // Sidebar Test Case CRUD
   const handleAddCustomTest = () => {
     if (!problem) return;
     const newId = Date.now();
+    const currentHiddenCount = problem.hiddenCases.length;
+    const autoTier: TestDifficultyTier =
+      currentHiddenCount === 0
+        ? 'Cơ bản'
+        : currentHiddenCount === 1
+        ? 'Trung bình'
+        : currentHiddenCount === 2
+        ? 'Nâng cao'
+        : 'Thử thách';
     const newTc: TestCase = {
       id: newId,
       input: customInput || '1\n0',
       expectedOutput: customOutput.trim() || '0',
-      isSample: false
+      isSample: false,
+      difficulty: autoTier
     };
     setProblem({
       ...problem,
@@ -354,13 +426,16 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
     setEditingTestId(newId);
     setEditTestInput(newTc.input);
     setEditTestOutput(newTc.expectedOutput);
+    setEditTestTier(autoTier);
   };
 
   const handleSaveEditedTest = (testId: number) => {
     if (!problem) return;
     const updateList = (list: TestCase[]) =>
       list.map((tc) =>
-        tc.id === testId ? { ...tc, input: editTestInput, expectedOutput: editTestOutput } : tc
+        tc.id === testId
+          ? { ...tc, input: editTestInput, expectedOutput: editTestOutput, difficulty: editTestTier }
+          : tc
       );
     setProblem({
       ...problem,
@@ -381,7 +456,58 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
 
   const allTests = problem ? [...problem.sampleCases, ...problem.hiddenCases] : [];
 
+  const createCustomBlankProblem = (samples?: UserSamplePair[]): CodingProblem => {
+    const validSamples = (samples || []).filter(
+      (s) => s.input.trim().length > 0 || s.expectedOutput.trim().length > 0
+    );
+    const finalSamples: TestCase[] =
+      validSamples.length > 0
+        ? validSamples.map((s, idx) => ({
+            id: idx + 1,
+            input: s.input,
+            expectedOutput: s.expectedOutput,
+            isSample: true
+          }))
+        : [
+            {
+              id: Date.now(),
+              input: '2 3',
+              expectedOutput: '5',
+              isSample: true
+            }
+          ];
+
+    const firstLine = rawText.trim().split('\n')[0]?.trim();
+    return {
+      id: 'CUSTOM_FREE_' + Date.now(),
+      title: firstLine ? firstLine.slice(0, 80) : 'Đề Tự Tạo & Bộ Test Tùy Chỉnh',
+      category: 'Tự tạo',
+      difficulty: 'Medium',
+      timeLimit: '1.0s',
+      memoryLimit: '256MB',
+      description:
+        rawText.trim() ||
+        'Bài tập tự do. Bạn có thể bấm "Thêm test" hoặc biểu tượng Sửa ở cột bên trái để tự tạo bộ test chấm bài, hoặc bấm "Đổi đề" để AI sinh bộ test ẩn.',
+      inputFormat: 'Theo bộ test tự tạo.',
+      outputFormat: 'Theo đáp án mong đợi của từng test.',
+      constraints: ['Thời gian: 1.0s', 'Bộ nhớ: 256MB'],
+      sampleCases: finalSamples,
+      hiddenCases: [],
+      cppTemplate: DEFAULT_CLEAN_CPP,
+      pythonTemplate: DEFAULT_CLEAN_PYTHON
+    };
+  };
+
   const handleDismissModal = () => {
+    if (!problem) {
+      const fallbackProblem = createCustomBlankProblem(userSamples);
+      setProblem(fallbackProblem);
+      setAnalysisSource('template');
+      setDiagnosticNote('Đã khởi tạo đề & bộ test tự tạo — bạn có thể thêm/sửa test bên trái rồi bấm Nộp Chấm.');
+      if (fallbackProblem.sampleCases[0]?.input) {
+        setCustomInput(fallbackProblem.sampleCases[0].input);
+      }
+    }
     setShowUploadModal(false);
   };
 
@@ -683,7 +809,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                   onClick={handleDismissModal}
                   className="px-3.5 py-2.5 rounded-xl bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#f8f8f2] font-semibold text-xs transition-colors"
                 >
-                  Vào Code Tự Do
+                  Vào Code &amp; Tạo Test Tự Do
                 </button>
                 <button
                   type="button"
@@ -722,12 +848,24 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
           {isFullscreen && (
             <div className="bg-[#171814] border-b border-[#3e3d32] px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
               <div className="flex items-center gap-2 min-w-0">
+                {onBack && (
+                  <button
+                    onClick={() => {
+                      setIsFullscreen(false);
+                      onBack();
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#f8f8f2] text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Quay lại</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setIsFullscreen(false)}
                   className="px-3 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#66d9ef] text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Quay lại / Thu nhỏ (Esc)</span>
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  <span>Thu nhỏ (Esc)</span>
                 </button>
                 <span className="text-xs font-bold text-white truncate hidden sm:inline">
                   {problem ? problem.title : 'Sublime Text 4 Studio — Code Tự Do'}
@@ -935,7 +1073,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2 mb-1.5">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex flex-wrap items-center gap-1.5">
                                 <span className="font-bold font-mono text-white">Test #{idx + 1}</span>
                                 <span
                                   className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${
@@ -946,6 +1084,11 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                                 >
                                   {tc.isSample ? 'Mẫu' : 'Ẩn'}
                                 </span>
+                                {(tc.difficulty || tc.isSample) && (
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold bg-[#3e3d32] text-[#e6db74]">
+                                    {tc.difficulty || 'Cơ bản'}
+                                  </span>
+                                )}
                                 {lastResult && (
                                   <span
                                     className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
@@ -979,6 +1122,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                                       setEditingTestId(tc.id);
                                       setEditTestInput(tc.input);
                                       setEditTestOutput(tc.expectedOutput);
+                                      setEditTestTier(tc.difficulty || (tc.isSample ? 'Cơ bản' : 'Trung bình'));
                                     }
                                   }}
                                   className="p-1 rounded hover:bg-[#3e3d32] text-[#90908a] hover:text-white"
@@ -998,6 +1142,16 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
 
                             {isEditing ? (
                               <div className="space-y-1.5 mt-2">
+                                <select
+                                  value={editTestTier}
+                                  onChange={(e) => setEditTestTier(e.target.value as TestDifficultyTier)}
+                                  className="w-full p-1.5 bg-[#171814] border border-[#3e3d32] rounded text-[10px] font-semibold text-[#e6db74]"
+                                >
+                                  <option value="Cơ bản">Mức 1: Cơ bản</option>
+                                  <option value="Trung bình">Mức 2: Trung bình</option>
+                                  <option value="Nâng cao">Mức 3: Nâng cao (Biên)</option>
+                                  <option value="Thử thách">Mức 4: Thử thách (Giới hạn lớn)</option>
+                                </select>
                                 <textarea
                                   value={editTestInput}
                                   onChange={(e) => setEditTestInput(e.target.value)}
@@ -1133,7 +1287,11 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
           {(isConsoleOpen || mobilePane === 'console') && (
             <div
               className={`${
-                mobilePane === 'console' ? 'flex-1 md:flex-none md:h-48' : 'hidden md:flex md:h-48'
+                mobilePane === 'console'
+                  ? 'flex-1 md:flex-none md:h-52'
+                  : isFullscreen && consoleTab === 'judge'
+                  ? 'hidden md:flex md:h-80'
+                  : 'hidden md:flex md:h-48'
               } bg-[#171814] border-t border-[#3e3d32] flex-col font-mono text-xs text-[#f8f8f2] shrink-0 overflow-hidden`}
             >
               <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#3e3d32] bg-[#1e1f1c]">
@@ -1186,33 +1344,65 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5">
+                <div className="flex-1 overflow-y-auto p-2.5 space-y-2 font-sans">
                   {judgeResults && judgeResults.length > 0 ? (
-                    judgeResults.map((tr, i) => (
-                      <div
-                        key={i}
-                        className={`p-2 rounded-lg border text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-                          tr.passed
-                            ? 'bg-[#a6e22e]/10 border-[#a6e22e]/30 text-[#a6e22e]'
-                            : 'bg-[#f92672]/10 border-[#f92672]/30 text-[#f92672]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 font-bold shrink-0">
-                          {tr.passed ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                          <span>Test #{i + 1}: {tr.status}</span>
-                          <span className="text-[10px] font-normal text-[#90908a]">({tr.runtimeMs}ms)</span>
-                        </div>
-                        {!tr.passed && (
-                          <div className="text-[10px] text-[#f8f8f2] truncate">
-                            Exp: <span className="text-[#a6e22e]">{tr.expected.replace(/\n/g, ' ')}</span> | Got:{' '}
-                            <span className="text-[#f92672]">{tr.actual.replace(/\n/g, ' ')}</span>
+                    isFullscreen ? (
+                      <CodeMistakeAnalysisPanel
+                        darkSurface={true}
+                        score={judgeScore}
+                        verdict={judgeVerdict}
+                        results={judgeResults}
+                        language={activeFile === 'solution.py' ? 'python' : selectedLang}
+                        analysis={mistakeAnalysis}
+                        isAnalyzingMistake={isAnalyzingMistake}
+                        onRetryAnalyze={() => {
+                          if (!problem || !judgeResults || judgeScore === null) return;
+                          const lang = activeFile === 'solution.py' ? 'python' : selectedLang;
+                          const codeToAnalyze = lang === 'python' ? pyCode : cppCode;
+                          void runMistakeAnalysis(problem, lang, codeToAnalyze, judgeScore, judgeResults);
+                        }}
+                        onApplySampleCode={(sample) => {
+                          const lang = activeFile === 'solution.py' ? 'python' : selectedLang;
+                          if (lang === 'python') {
+                            setPyCode(sample);
+                            setActiveFile('solution.py');
+                            setSelectedLang('python');
+                          } else {
+                            setCppCode(sample);
+                            setActiveFile('main.cpp');
+                            setSelectedLang('cpp');
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="space-y-1.5 font-mono">
+                        {judgeResults.map((tr, i) => (
+                          <div
+                            key={i}
+                            className={`p-2 rounded-lg border text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                              tr.passed
+                                ? 'bg-[#a6e22e]/10 border-[#a6e22e]/30 text-[#a6e22e]'
+                                : 'bg-[#f92672]/10 border-[#f92672]/30 text-[#f92672]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 font-bold shrink-0">
+                              {tr.passed ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                              <span>Test #{i + 1}: {tr.status}</span>
+                              <span className="text-[10px] font-normal text-[#90908a]">({tr.runtimeMs}ms)</span>
+                            </div>
+                            {!tr.passed && (
+                              <div className="text-[10px] text-[#f8f8f2] truncate">
+                                Exp: <span className="text-[#a6e22e]">{tr.expected.replace(/\n/g, ' ')}</span> | Got:{' '}
+                                <span className="text-[#f92672]">{tr.actual.replace(/\n/g, ' ')}</span>
+                              </div>
+                            )}
                           </div>
-                        )}
+                        ))}
                       </div>
-                    ))
+                    )
                   ) : (
-                    <div className="text-center py-6 text-[#75715e]">
-                      Bấm "Nộp Chấm" để chạy kiểm tra toàn bộ test cases.
+                    <div className="text-center py-6 text-[#75715e] font-mono">
+                      Bấm "Nộp Chấm" để chạy kiểm tra toàn bộ test cases và phân tích lỗi AI.
                     </div>
                   )}
                 </div>
@@ -1221,6 +1411,45 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
           )}
         </div>
       </div>
+
+          {/* BELOW IDE: DETAILED SCORE, FAILED TESTS & AI CODE MISTAKE ANALYSIS */}
+          {!isFullscreen && (judgeResults || isJudging) && (
+            <div ref={resultSectionRef} className="pt-2">
+              {isJudging && !judgeResults ? (
+                <div className="bg-[#1e1f1c] border border-[#3e3d32] rounded-2xl p-6 text-center text-xs text-[#66d9ef] font-mono">
+                  Đang chấm bài trên {allTests.length} test cases...
+                </div>
+              ) : (
+                <CodeMistakeAnalysisPanel
+                  darkSurface={true}
+                  score={judgeScore}
+                  verdict={judgeVerdict}
+                  results={judgeResults}
+                  language={activeFile === 'solution.py' ? 'python' : selectedLang}
+                  analysis={mistakeAnalysis}
+                  isAnalyzingMistake={isAnalyzingMistake}
+                  onRetryAnalyze={() => {
+                    if (!problem || !judgeResults || judgeScore === null) return;
+                    const lang = activeFile === 'solution.py' ? 'python' : selectedLang;
+                    const codeToAnalyze = lang === 'python' ? pyCode : cppCode;
+                    void runMistakeAnalysis(problem, lang, codeToAnalyze, judgeScore, judgeResults);
+                  }}
+                  onApplySampleCode={(sample) => {
+                    const lang = activeFile === 'solution.py' ? 'python' : selectedLang;
+                    if (lang === 'python') {
+                      setPyCode(sample);
+                      setActiveFile('solution.py');
+                      setSelectedLang('python');
+                    } else {
+                      setCppCode(sample);
+                      setActiveFile('main.cpp');
+                      setSelectedLang('cpp');
+                    }
+                  }}
+                />
+              )}
+            </div>
+          )}
         </div>
       </ViewportPortal>
     </>

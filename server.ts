@@ -469,7 +469,7 @@ async function callGeminiWithFallback({
         contents,
         config: buildConfig('gemini-4-hydrogen')
       }),
-      Math.min(timeoutMs, 16000),
+      timeoutMs,
       'gemini-4-hydrogen'
     );
   } catch (err1: any) {
@@ -1557,7 +1557,7 @@ app.post('/api/gemini/analyze-problem', async (req: Request, res: Response) => {
     }
 
     const promptText = `
-Bạn là Giám thị trưởng và Chuyên gia chấm thi Tin học quốc tế (IOI / ICPC / VNOI).
+Bạn là Giám thị trưởng và Chuyên gia thiết kế bộ test Tin học (VNOI / ICPC).
 Nhiệm vụ của bạn:
 1. Đọc và phân tích kỹ lưỡng đề bài được cung cấp qua hình ảnh (OCR) hoặc văn bản.
 2. Tách rõ:
@@ -1566,13 +1566,14 @@ Nhiệm vụ của bạn:
    - inputFormat: Quy cách dữ liệu đầu vào.
    - outputFormat: Quy cách dữ liệu đầu ra.
    - constraints: Các ràng buộc thời gian, bộ nhớ, giá trị N, A[i].
-3. RẤT QUAN TRỌNG: Hãy TỰ GIẢI bài toán này một cách chính xác tuyệt đối, sau đó sinh bộ Test Cases:
-   - sampleCases: Các test mẫu theo đúng đề bài (hoặc 1-2 test cơ bản) với explanation chi tiết.
-   - hiddenCases: Sinh 5 đến 7 test ẩn kiểm tra các trường hợp biên nghiêm ngặt:
-     + Giá trị cực tiểu (e.g. N nhỏ nhất, 0, số âm nếu cho phép).
-     + Giá trị cực đại (boundary case).
-     + Trường hợp đặc biệt (các phần tử bằng nhau, mảng đã sắp xếp, v.v.).
-   - MỖI TEST CASE PHẢI CÓ 'input' VÀ 'expectedOutput' ĐƯỢC BẠN TÍNH TOÁN ĐÚNG 100%! Không được bịa đặt output ngẫu nhiên!
+3. RẤT QUAN TRỌNG: Hãy TỰ GIẢI bài toán này một cách chính xác tuyệt đối, sau đó sinh bộ Test Cases theo **BẬC THANG ĐỘ KHÓ TĂNG DẦN** (tuyệt đối KHÔNG dồn các test quá khó hoặc đánh đố ngay từ đầu):
+   - sampleCases (2 test, difficulty: "Cơ bản"): Dữ liệu rất nhỏ, đơn giản, giúp người học hiểu đề và thử ngay ý tưởng cơ bản.
+   - hiddenCases (6 test SẮP XẾP TĂNG DẦN ĐỘ KHÓ TỪ DỄ ĐẾN KHÓ):
+     + Test ẩn 1 & 2 (difficulty: "Cơ bản"): Dữ liệu nhỏ, số dương đẹp (ví dụ N = 2..5), không gài bẫy, code viết đúng logic chính là qua ngay.
+     + Test ẩn 3 & 4 (difficulty: "Trung bình"): Dữ liệu cỡ vừa (N = 5..12), thêm số âm / phần tử trùng / trường hợp không tìm thấy hoặc rẽ nhánh phụ.
+     + Test ẩn 5 (difficulty: "Nâng cao"): Trường hợp biên tinh tế (N = 1, giá trị 0, mảng đảo ngược hoặc nhiều đáp án hòa nhau).
+     + Test ẩn 6 (difficulty: "Thử thách"): Giá trị lớn hoặc kích thước sát giới hạn (kiểm tra kiểu 64-bit long long và độ phức tạp thuật toán).
+   - MỖI TEST CASE PHẢI CÓ 'input', 'expectedOutput' ĐƯỢC BẠN TÍNH TOÁN ĐÚNG 100%, và 'difficulty' thuộc đúng 1 trong 4 nhãn: "Cơ bản", "Trung bình", "Nâng cao", "Thử thách".
 4. Đưa ra mã nguồn tham khảo (referenceCpp và referencePython) giải đúng bài toán này.
 
 ${text ? `Dữ liệu văn bản người dùng cung cấp:\n${text}` : ''}
@@ -1583,7 +1584,7 @@ ${text ? `Dữ liệu văn bản người dùng cung cấp:\n${text}` : ''}
     const response = await callGeminiWithFallback({
       ai,
       contents: { parts },
-      systemInstruction: `You are an elite competitive programming judge. Extract the problem from user input (OCR/text) and output strict JSON with keys: title (string), description (string), inputFormat (string), outputFormat (string), constraints (array of strings), sampleCases (array of objects { id, input, expectedOutput, isSample: true, explanation }), hiddenCases (array of objects { id, input, expectedOutput, isSample: false }), referenceCpp (string), referencePython (string). Ensure expectedOutput is 100% mathematically and algorithmically accurate.`,
+      systemInstruction: `You are an elite competitive programming judge. Extract the problem from user input (OCR/text) and output strict JSON with keys: title (string), description (string), inputFormat (string), outputFormat (string), constraints (array of strings), sampleCases (array of objects { id, input, expectedOutput, isSample: true, difficulty: "Cơ bản", explanation }), hiddenCases (array of 6 objects strictly ordered from easiest to hardest: { id, input, expectedOutput, isSample: false, difficulty: "Cơ bản" | "Trung bình" | "Nâng cao" | "Thử thách" }), referenceCpp (string), referencePython (string). Ensure expectedOutput is 100% mathematically and algorithmically accurate.`,
       responseMimeType: 'application/json',
       thinkingLevel: ThinkingLevel.LOW,
       timeoutMs: 35000
@@ -1660,6 +1661,111 @@ Trả về JSON định dạng: { "stdout": string, "stderr": string, "isError":
     return res.json(result);
   } catch (err: any) {
     console.error('Error running code via Gemini:', err);
+    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+  }
+});
+
+/**
+ * API: Analyze failed tests & mistakes in student code using AI, explain clearly and provide simple sample code
+ */
+app.post('/api/gemini/analyze-code-mistake', async (req: Request, res: Response) => {
+  try {
+    const {
+      problemTitle = 'Bài toán lập trình',
+      problemDescription = '',
+      inputFormat = '',
+      outputFormat = '',
+      language = 'cpp',
+      userCode = '',
+      score = 0,
+      failedTests = []
+    } = req.body;
+
+    if (!userCode || !String(userCode).trim()) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp mã nguồn để AI phân tích.' });
+    }
+
+    const ai = getGenAI();
+    const langName = language === 'python' ? 'Python 3' : 'C++17/20';
+
+    const failedBlock = Array.isArray(failedTests) && failedTests.length > 0
+      ? failedTests
+          .slice(0, 5)
+          .map(
+            (ft: any, i: number) =>
+              `Test sai #${ft.index ?? i + 1} (${ft.status || 'Wrong Answer'}):\n` +
+              `- Input:\n${String(ft.input ?? '').slice(0, 400)}\n` +
+              `- Đáp án đúng (Expected):\n${String(ft.expected ?? '').slice(0, 300)}\n` +
+              `- Output của bạn (Actual):\n${String(ft.actual ?? '').slice(0, 300)}`
+          )
+          .join('\n\n')
+      : 'Người dùng muốn đánh giá logic và tối ưu mã nguồn.';
+
+    const prompt = `
+Bạn là Gia sư Lập trình & Giám khảo Tin học (VNOI / HSG).
+Học sinh vừa nộp bài cho đề: "${problemTitle}" (Điểm: ${score}/100, Ngôn ngữ: ${langName}).
+
+Mô tả đề bài:
+${String(problemDescription).slice(0, 2000)}
+${inputFormat ? `\nInput Format: ${inputFormat}` : ''}
+${outputFormat ? `\nOutput Format: ${outputFormat}` : ''}
+
+Mã nguồn của học sinh (${langName}):
+\`\`\`${language}
+${String(userCode).slice(0, 5000)}
+\`\`\`
+
+Các test bị sai / lỗi thực thi:
+${failedBlock}
+
+Yêu cầu phân tích:
+1. Chỉ rõ chỗ sai / nguyên nhân gây ra lỗi hoặc sai đáp án (ví dụ: sai logic, thiếu xử lý biên, tràn số int -> long long, sai vòng lặp, đọc sai input, lỗi cú pháp...).
+2. Giải thích thật dễ hiểu cho học sinh biết vì sao code hiện tại tạo ra Output như trên thay vì Expected.
+3. Đưa ra **simpleSampleCode**: Một đoạn code mẫu **ĐƠN GIẢN, NGẮN GỌN, DỄ HIỂU NHẤT** bằng ${langName} (có chú thích tiếng Việt súc tích ở các bước chính) để học sinh dễ học theo và chạy đúng 100% các test trên.
+4. Viết **simpleCodeExplanation** giải thích ngắn gọn cách hoạt động của code mẫu đơn giản đó.
+`;
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: prompt,
+      systemInstruction:
+        'You are a patient Vietnamese competitive programming mentor. Diagnose exact mistakes in the student code against failed tests and output clean JSON strictly following the schema.',
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          summary: { type: Type.STRING },
+          mistakes: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                location: { type: Type.STRING },
+                issue: { type: Type.STRING },
+                explanation: { type: Type.STRING },
+                fixHint: { type: Type.STRING }
+              },
+              required: ['location', 'issue', 'explanation', 'fixHint']
+            }
+          },
+          simpleSampleCode: { type: Type.STRING },
+          simpleCodeExplanation: { type: Type.STRING },
+          complexityNote: { type: Type.STRING }
+        },
+        required: ['summary', 'mistakes', 'simpleSampleCode', 'simpleCodeExplanation', 'complexityNote']
+      },
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 26000
+    });
+
+    const analysis = safeParseGeminiJson<any>(response.text, null);
+    if (!analysis || !analysis.summary) {
+      throw new Error('Không thể phân tích cấu trúc phản hồi từ AI.');
+    }
+
+    return res.json({ success: true, analysis });
+  } catch (err: any) {
+    console.error('Error analyzing code mistake with Gemini:', err);
     return res.status(500).json({ error: extractCleanErrorMessage(err) });
   }
 });
@@ -2051,7 +2157,7 @@ async function startServer() {
   if (isDev) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true, hmr: process.env.DISABLE_HMR !== 'true' },
+      server: { middlewareMode: true, hmr: process.env.DISABLE_HMR !== 'true', allowedHosts: true },
       appType: 'spa'
     });
     app.use(vite.middlewares);

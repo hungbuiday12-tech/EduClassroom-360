@@ -369,7 +369,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           language
         })
       },
-      38000
+      65000
     );
 
     setGradingEssayStep(null);
@@ -452,7 +452,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           language
         })
       },
-      38000
+      65000
     );
 
     setRefreshingQuizStep(null);
@@ -551,7 +551,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           false
         );
       },
-      42000
+      70000
     );
 
     setAiLoadingStep(null);
@@ -645,7 +645,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           language
         })
       },
-      40000
+      65000
     );
 
     setIsAnalyzingLesson(false);

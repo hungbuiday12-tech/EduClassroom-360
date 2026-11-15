@@ -469,7 +469,7 @@ async function callGeminiWithFallback({
         contents,
         config: buildConfig('gemini-4-hydrogen')
       }),
-      Math.min(timeoutMs, 18000),
+      Math.min(timeoutMs, 16000),
       'gemini-4-hydrogen'
     );
   } catch (err1: any) {
@@ -479,34 +479,17 @@ async function callGeminiWithFallback({
     console.warn('Primary gemini-4-hydrogen transient issue, falling back:', err1?.message || err1);
   }
 
-  // Attempt 2: Fast fallback to gemini-3.1-flash-lite after brief backoff
-  await new Promise((r) => setTimeout(r, 400));
-  try {
-    return await withTimeout(
-      ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
-        contents,
-        config: buildConfig('gemini-3.1-flash-lite')
-      }),
-      Math.min(timeoutMs, 18000),
-      'gemini-3.1-flash-lite'
-    );
-  } catch (err2: any) {
-    if (!isTransientGeminiError(err2)) {
-      throw err2;
-    }
-    // Attempt 3: One final retry on gemini-3.1-flash-lite
-    await new Promise((r) => setTimeout(r, 600));
-    return await withTimeout(
-      ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
-        contents,
-        config: buildConfig('gemini-3.1-flash-lite')
-      }),
-      Math.min(timeoutMs, 18000),
-      'gemini-3.1-flash-lite-retry'
-    );
-  }
+  // Attempt 2: Fast fallback to gemini-3.1-flash-lite
+  await new Promise((r) => setTimeout(r, 250));
+  return await withTimeout(
+    ai.models.generateContent({
+      model: 'gemini-3.1-flash-lite',
+      contents,
+      config: buildConfig('gemini-3.1-flash-lite')
+    }),
+    Math.min(timeoutMs, 18000),
+    'gemini-3.1-flash-lite'
+  );
 }
 
 // =====================================================================
@@ -706,35 +689,38 @@ app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
         config: {
           systemInstruction,
           thinkingConfig: {
-            thinkingLevel:
-              modelName === 'gemini-3.1-flash-lite' ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW
+            thinkingLevel: ThinkingLevel.MINIMAL
           }
         }
       });
 
-      const stream = await withTimeout(
-        chat.sendMessageStream({
+      const streamTask = async () => {
+        const stream = await chat.sendMessageStream({
           message:
             lastMessageParts.length === 1 && lastMessageParts[0].text
               ? lastMessageParts[0].text
               : lastMessageParts
-        }),
-        20000,
+        });
+
+        let fullText = '';
+        for await (const chunk of stream) {
+          const piece = chunk.text || '';
+          if (piece) {
+            fullText += piece;
+            sendSse({ delta: piece });
+          }
+        }
+        if (!fullText.trim()) {
+          throw new Error(`Empty stream response from ${modelName}`);
+        }
+        return fullText;
+      };
+
+      return await withTimeout(
+        streamTask(),
+        modelName === 'gemini-4-hydrogen' ? 22000 : 25000,
         `stream-${modelName}`
       );
-
-      let fullText = '';
-      for await (const chunk of stream) {
-        const piece = chunk.text || '';
-        if (piece) {
-          fullText += piece;
-          sendSse({ delta: piece });
-        }
-      }
-      if (!fullText.trim()) {
-        throw new Error(`Empty stream response from ${modelName}`);
-      }
-      return fullText;
     };
 
     let finalReply = '';
@@ -1064,8 +1050,8 @@ ${answerTranscript}`;
               contents: prompt,
               systemInstruction,
               responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.LOW,
-              timeoutMs: 18000
+              thinkingLevel: ThinkingLevel.MINIMAL,
+              timeoutMs: 16000
             })
           : await withTimeout(
               ai.models.generateContent({
@@ -1428,8 +1414,8 @@ Hãy chấm điểm chính xác từ 0 đến 10 (có thể dùng 0.5 điểm), 
           feedback: { type: Type.STRING }
         }
       },
-      thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 32000
+      thinkingLevel: ThinkingLevel.MINIMAL,
+      timeoutMs: 18000
     });
 
     const parsed = safeParseGeminiJson<any>(response.text, null);
@@ -1545,8 +1531,8 @@ Trả về ĐÚNG 2 câu trắc nghiệm (câu 1 kiểm tra bản chất/điều
               contents: prompt,
               systemInstruction,
               responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.LOW,
-              timeoutMs: 18000
+              thinkingLevel: ThinkingLevel.MINIMAL,
+              timeoutMs: 16000
             })
           : await withTimeout(
               ai.models.generateContent({
@@ -1691,8 +1677,8 @@ ${transcript}`;
               contents: prompt,
               systemInstruction,
               responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.LOW,
-              timeoutMs: 18000
+              thinkingLevel: ThinkingLevel.MINIMAL,
+              timeoutMs: 16000
             })
           : await withTimeout(
               ai.models.generateContent({

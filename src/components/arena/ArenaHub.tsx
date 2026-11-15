@@ -625,7 +625,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
           mimeType: essayImage?.mimeType,
           language
         })
-      }, 42000);
+      }, 65000);
 
       if (!gradeRes.ok || !gradeRes.data?.evaluation) {
         throw new Error(

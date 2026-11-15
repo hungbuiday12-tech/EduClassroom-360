@@ -604,7 +604,7 @@ export async function analyzeProblemAndGenerateTests(
           mimeType: req.mimeType || undefined
         })
       },
-      38000
+      65000
     );
 
     if (!res.ok) {

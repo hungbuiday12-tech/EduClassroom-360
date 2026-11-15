@@ -12,6 +12,19 @@ const DEFAULT_REMOTE_API_BASE =
 
 const STORAGE_KEY = 'educlassroom_api_base_url';
 let sessionRemoteBase: string | null = null;
+let warmUpStarted = false;
+
+export function warmUpBackend(): void {
+  if (warmUpStarted || typeof window === 'undefined') return;
+  warmUpStarted = true;
+  try {
+    void fetch(resolveApiUrl('/api/health'), { method: 'GET' }).catch(() => {});
+  } catch {}
+}
+
+if (typeof window !== 'undefined') {
+  warmUpBackend();
+}
 
 function getStoredApiBase(): string | null {
   try {
@@ -325,7 +338,7 @@ async function fetchJsonOnce<T = any>(
 export async function safeFetchJson<T = any>(
   url: string,
   init: RequestInit = {},
-  timeoutMs = 28000
+  timeoutMs = 65000
 ): Promise<SafeApiResponse<T>> {
   const primaryUrl = resolveApiUrl(url);
   const firstRes = await fetchJsonOnce<T>(primaryUrl, init, timeoutMs);
@@ -375,7 +388,7 @@ export async function streamTutorChat(
     language?: string;
   },
   onDelta: (accumulatedText: string) => void,
-  timeoutMs = 42000
+  timeoutMs = 70000
 ): Promise<{ ok: boolean; reply?: string; error?: string; isStaticFallback?: boolean }> {
   const tryNonStreamFallback = async (): Promise<{
     ok: boolean;
@@ -390,7 +403,7 @@ export async function streamTutorChat(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       },
-      timeoutMs
+      Math.max(45000, timeoutMs)
     );
     if (jsonFallback.ok && jsonFallback.data?.reply) {
       onDelta(jsonFallback.data.reply);

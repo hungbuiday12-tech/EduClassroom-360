@@ -487,7 +487,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           language
         })
       },
-      38000
+      65000
     );
 
     setDiagLoadingQuiz(false);
@@ -545,7 +545,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           language
         })
       },
-      42000
+      65000
     );
 
     setDiagLoadingRoadmap(false);

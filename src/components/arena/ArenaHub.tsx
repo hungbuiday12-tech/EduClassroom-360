@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { safeFetchJson } from '../../lib/apiClient';
-import { gradeLocalArenaEssay } from '../../lib/aiStaticFallback';
 import {
   ArrowLeft,
   Award,
@@ -626,19 +625,16 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
           mimeType: essayImage?.mimeType,
           language
         })
-      });
+      }, 42000);
 
-      const evaluation: ArenaEssayEvaluation =
-        gradeRes.ok && gradeRes.data?.evaluation
-          ? gradeRes.data.evaluation
-          : gradeLocalArenaEssay({
-              subject: activeMatch.subject,
-              title: essay.title,
-              prompt: essay.prompt,
-              rubricChecklist: essay.rubricChecklist,
-              referenceSolution: essay.referenceSolution,
-              studentAnswer: `${essayText}${extraCodeNote}`
-            });
+      if (!gradeRes.ok || !gradeRes.data?.evaluation) {
+        throw new Error(
+          gradeRes.error ||
+            'Gemini AI chưa chấm được bài tự luận lúc này. Vui lòng thử nộp lại sau giây lát.'
+        );
+      }
+
+      const evaluation: ArenaEssayEvaluation = gradeRes.data.evaluation;
       const durationSec = Math.max(10, Math.floor((Date.now() - activeMatch.startedAt) / 1000));
 
       const attempt = await commitAttemptToBackendAndFirestore({

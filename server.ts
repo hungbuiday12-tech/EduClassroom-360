@@ -489,11 +489,227 @@ async function callGeminiWithFallback({
 }
 
 // =====================================================================
-// GEMINI AI: 3 SUBJECT AIs (TOÁN · LÍ · TIN) x 3 MODES
-// Mode 1 ('explain_no_answer'): Giải đáp thắc mắc, phân tích đề, giảng cụ thể, KHÔNG đưa đáp án
-// Mode 2 ('full_solution'): Tóm tắt đề, nêu cách làm, đưa ra lời giải + kết quả cụ thể
-// Mode 3 ('diagnostic_roadmap'): Hỏi chuyên môn & chuyên ngành -> tạo sơ đồ học tập cá nhân hóa
+// GEMINI AI: 3 DEDICATED SUBJECT AIs (TOÁN · LÍ · TIN) x 3 MODES
+// Uses real @google/genai ai.chats + SSE streaming & strict mode instructions
 // =====================================================================
+function buildTutorSystemInstruction(
+  subjKey: 'math' | 'physics' | 'cs',
+  modeKey: 'explain_no_answer' | 'full_solution' | 'diagnostic_roadmap',
+  isEn: boolean,
+  context?: { topicTitle?: string; grade?: string; problemStatement?: string }
+): string {
+  const persona =
+    subjKey === 'math'
+      ? isEn
+        ? 'EduMath AI — Senior Mathematics Specialist AI (Algebra, Calculus, 2D/3D Oxyz Geometry, Combinatorics & Olympiad Math for Grades 9–12)'
+        : 'AI Toán Học — Chuyên gia Toán học THCS/THPT & Chuyên Toán (Đại số, Giải tích, Hình học Oxy/Oxyz, Tổ hợp & Xác suất Lớp 9–12)'
+      : subjKey === 'physics'
+      ? isEn
+        ? 'EduPhysics AI — Senior Physics Specialist AI (Mechanics, Electricity & Magnetism, Oscillations & Waves, Optics, Quantum & Nuclear Physics for Grades 9–12 & 2D/3D Labs)'
+        : 'AI Vật Lí — Chuyên gia Vật Lí THCS/THPT & Thí nghiệm 2D/3D (Cơ học, Điện từ, Dao động & Sóng, Quang học, Hạt nhân Lớp 9–12)'
+      : isEn
+      ? 'EduCode AI — Senior Computer Science & Competitive Programming AI (C++20 STL, Python 3, VNOI/IOI/ICPC, Big-O Time/Space, Graphs, DP, Segment Tree & Edge Test Analysis)'
+      : 'AI Tin Học — Chuyên gia Thuật toán & Lập trình thi đấu (C++20 STL, Python 3, VNOI/IOI/ICPC, Big-O, Quy hoạch động, Đồ thị, CTDL & Test biên)';
+
+  const domainFocusVi =
+    subjKey === 'math'
+      ? 'Luôn kiểm tra điều kiện xác định, miền giá trị, tập nghiệm, đạo hàm/dấu và biểu diễn hình học trực quan khi giải thích.'
+      : subjKey === 'physics'
+      ? 'Luôn kiểm tra hệ quy chiếu, chiều dương, véc-tơ lực, đơn vị chuẩn SI (m, kg, s, A, V, Ω) và bản chất định luật bảo toàn.'
+      : 'Luôn kiểm tra giới hạn $N$, độ phức tạp thời gian/bộ nhớ $\\mathcal{O}(\\dots)$, tràn số `long long` ($10^9 \\times 10^9$), và test biên ($N=0, 1$).';
+
+  const domainFocusEn =
+    subjKey === 'math'
+      ? 'Always verify domain conditions, edge cases, derivatives/signs, and geometric intuition.'
+      : subjKey === 'physics'
+      ? 'Always check reference frames, sign conventions, vectors, SI units (m, kg, s, A, V, Ω), and conservation laws.'
+      : 'Always check input constraints $N$, Big-O Time/Space complexity, 64-bit `long long` overflow, and edge tests ($N=0, 1$).';
+
+  const katexRuleVi =
+    'Mọi công thức Toán/Lí/Độ phức tạp PHẢI viết chuẩn KaTeX ($...$ nội dòng hoặc $$...$$ khối riêng, luôn dùng \\frac{a}{b}, \\sqrt{}, \\vec{}, \\Delta — tuyệt đối không viết frac thiếu dấu gạch chéo).';
+  const katexRuleEn =
+    'Format ALL math/physics/complexity expressions in KaTeX ($...$ inline or $$...$$ block; always write \\frac{a}{b}, never raw frac).';
+
+  const contextLines = [
+    context?.topicTitle ? `Chủ đề / Bài học hiện tại: ${context.topicTitle}` : '',
+    context?.grade ? `Khối lớp / Trình độ: ${context.grade}` : '',
+    context?.problemStatement ? `Nội dung / Đề bài tham chiếu:\n${context.problemStatement}` : ''
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  let modeRules = '';
+  if (modeKey === 'explain_no_answer') {
+    modeRules = isEn
+      ? `OPERATING MODE 1: CLARIFY DOUBTS & GUIDED EXPLANATION (NO FINAL ANSWER).
+STRICT RULES:
+1. NEVER reveal the final numeric answer, final multiple-choice option letter (A/B/C/D), or complete solution code — even if the student insists.
+2. Briefly analyze what the problem gives and what it asks for, then identify the core concept/theorem/algorithm needed.
+3. If the student hasn't specified which part confuses them, ask clearly which exact step, formula, or condition they are stuck on. Once they specify, explain that exact concept/step deeply and clearly with 1 small analogous example.
+4. End with 1 short guiding question so the student attempts the next step themselves.`
+      : `CHẾ ĐỘ 1: GIẢI ĐÁP THẮC MẮC & GIẢNG CHỖ CHƯA HIỂU (TUYỆT ĐỐI KHÔNG ĐƯA KẾT QUẢ CUỐI).
+NGUYÊN TẮC BẮT BUỘC:
+1. TUYỆT ĐỐI KHÔNG tiết lộ đáp án số cuối, chữ cái trắc nghiệm (A/B/C/D) hay toàn bộ code hoàn chỉnh — kể cả khi học sinh nài nỉ.
+2. Phân tích rõ đề bài đang cho giả thiết gì, hỏi gì và cần kiến thức / công thức / thuật toán cốt lõi nào.
+3. Nếu học sinh chưa nêu rõ chỗ vướng, hãy hỏi lại xem em đang chưa hiểu cụ thể ở phần nào. Khi học sinh đã chỉ ra phần chưa hiểu, hãy giảng thật kỹ, trực quan đúng bước đó (có thể lấy 1 ví dụ minh họa nhỏ tương tự).
+4. Kết thúc bằng 1 câu hỏi gợi mở để học sinh tự suy nghĩ và làm tiếp bước kế tiếp.`;
+  } else if (modeKey === 'full_solution') {
+    modeRules = isEn
+      ? `OPERATING MODE 2: PROBLEM SUMMARY, METHOD & COMPLETE DETAILED SOLUTION.
+STRUCTURE YOUR RESPONSE CLEARLY:
+1. **Problem Summary**: Concisely list given data, constraints, and target to find.
+2. **Method & Strategy**: Explain why this theorem/formula/algorithm works.
+3. **Step-by-Step Detailed Solution**: Show every derivation step cleanly${
+          subjKey === 'cs' ? ' plus clean C++20 / Python 3 code with comments and Big-O complexity' : ''
+        }.
+4. **Final Result & Pitfalls**: State the exact final answer clearly and common mistakes to avoid.`
+      : `CHẾ ĐỘ 2: TÓM TẮT ĐỀ, NÊU CÁCH LÀM & ĐƯA RA LỜI GIẢI CỤ THỂ.
+TRÌNH BÀY RÕ RÀNG THEO 4 PHẦN:
+1. **Tóm tắt & Phân tích đề bài**: Liệt kê giả thiết, điều kiện ràng buộc và đại lượng cần tìm.
+2. **Phương pháp & Hướng giải**: Giải thích lý do chọn công thức, định lí hay thuật toán này.
+3. **Lời giải chi tiết từng bước**: Biến đổi tường minh, giải thích từng bước${
+          subjKey === 'cs'
+            ? ' (kèm mã nguồn C++20 hoặc Python 3 chuẩn thi đấu, có chú thích rõ ràng và phân tích độ phức tạp Time/Space)'
+            : ''
+        }.
+4. **Kết luận đáp án cuối cùng & Lưu ý**: Chốt rõ kết quả cuối và các bẫy dễ mất điểm.`;
+  } else {
+    modeRules = isEn
+      ? `OPERATING MODE 3: SKILL DIAGNOSIS, MAJOR ORIENTATION & STUDY ROADMAP ADVISOR.
+Act as a senior academic mentor for ${subjKey.toUpperCase()}. Evaluate strengths/gaps from the student's questions, recommend concrete milestones, study hours/day, specific topics, and how ${subjKey.toUpperCase()} connects to their target university major.`
+      : `CHẾ ĐỘ 3: ĐÁNH GIÁ TRÌNH ĐỘ, ĐỊNH HƯỚNG CHUYÊN NGÀNH & TƯ VẤN SƠ ĐỒ HỌC TẬP.
+Đóng vai cố vấn học thuật chuyên sâu môn ${
+          subjKey === 'math' ? 'Toán học' : subjKey === 'physics' ? 'Vật lí' : 'Tin học'
+        }. Phân tích điểm mạnh/yếu từ chia sẻ của học sinh, gợi ý lộ trình học từng tuần, số phút mỗi ngày, chuyên đề trọng tâm và định hướng gắn với chuyên ngành tương lai.`;
+  }
+
+  return [
+    persona,
+    isEn ? domainFocusEn : domainFocusVi,
+    modeRules,
+    isEn ? katexRuleEn : katexRuleVi,
+    contextLines ? `\n[Ngữ cảnh bài học hiện tại]\n${contextLines}` : ''
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function buildGeminiChatHistoryAndLastTurn(messages: any[]) {
+  const cleanMessages = messages.filter(
+    (m: any) => m && (String(m.text || '').trim().length > 0 || m.imageBase64)
+  );
+  const firstUserIdx = cleanMessages.findIndex((m: any) => m.role === 'user');
+  const trimmed = firstUserIdx >= 0 ? cleanMessages.slice(firstUserIdx) : cleanMessages;
+
+  const toParts = (msg: any) => {
+    const parts: any[] = [];
+    if (msg.imageBase64) {
+      const cleanBase64 = String(msg.imageBase64).replace(/^data:[^;]+;base64,/, '');
+      parts.push({
+        inlineData: {
+          mimeType: msg.mimeType || 'image/png',
+          data: cleanBase64
+        }
+      });
+    }
+    if (String(msg.text || '').trim() || parts.length === 0) {
+      parts.push({ text: String(msg.text || '') });
+    }
+    return parts;
+  };
+
+  if (trimmed.length === 0) {
+    return { history: [], lastMessageParts: [{ text: '' }] };
+  }
+
+  const history = trimmed.slice(0, -1).map((msg: any) => ({
+    role: msg.role === 'tutor' ? ('model' as const) : ('user' as const),
+    parts: toParts(msg)
+  }));
+
+  const lastMessageParts = toParts(trimmed[trimmed.length - 1]);
+  return { history, lastMessageParts };
+}
+
+app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  const sendSse = (payload: Record<string, any>) => {
+    try {
+      res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    } catch {
+      // client closed
+    }
+  };
+
+  try {
+    const { messages, context, language } = req.body || {};
+    if (!Array.isArray(messages) || messages.length === 0) {
+      sendSse({ error: 'Vui lòng nhập câu hỏi hoặc nội dung cần trợ giảng hỗ trợ.' });
+      return res.end();
+    }
+
+    const ai = getGenAI();
+    const isEn = language === 'en';
+    const subjKey: 'math' | 'physics' | 'cs' =
+      context?.subject === 'physics' || context?.subject === 'cs' ? context.subject : 'math';
+    const modeKey: 'explain_no_answer' | 'full_solution' | 'diagnostic_roadmap' =
+      context?.mode === 'full_solution' || context?.mode === 'diagnostic_roadmap'
+        ? context.mode
+        : 'explain_no_answer';
+
+    const systemInstruction = buildTutorSystemInstruction(subjKey, modeKey, isEn, context);
+    const { history, lastMessageParts } = buildGeminiChatHistoryAndLastTurn(messages);
+
+    const runStreamWithModel = async (modelName: string) => {
+      const chat = ai.chats.create({
+        model: modelName,
+        history,
+        config: {
+          systemInstruction,
+          thinkingConfig: {
+            thinkingLevel:
+              modelName === 'gemini-3.1-flash-lite' ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW
+          }
+        }
+      });
+
+      const stream = await chat.sendMessageStream({
+        message: lastMessageParts.length === 1 && lastMessageParts[0].text ? lastMessageParts[0].text : lastMessageParts
+      });
+
+      let fullText = '';
+      for await (const chunk of stream) {
+        const piece = chunk.text || '';
+        if (piece) {
+          fullText += piece;
+          sendSse({ delta: piece });
+        }
+      }
+      return fullText;
+    };
+
+    let finalReply = '';
+    try {
+      finalReply = await runStreamWithModel('gemini-4-hydrogen');
+    } catch (err1: any) {
+      if (!isTransientGeminiError(err1)) throw err1;
+      console.warn('Primary stream transient error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
+      finalReply = await runStreamWithModel('gemini-3.1-flash-lite');
+    }
+
+    sendSse({ done: true, reply: finalReply.trim() });
+    return res.end();
+  } catch (err: any) {
+    console.error('Error in /api/gemini/tutor/stream:', err);
+    sendSse({ error: extractCleanErrorMessage(err) });
+    return res.end();
+  }
+});
+
 app.post('/api/gemini/tutor', async (req: Request, res: Response) => {
   try {
     const { messages, context, language } = req.body;
@@ -504,116 +720,56 @@ app.post('/api/gemini/tutor', async (req: Request, res: Response) => {
 
     const ai = getGenAI();
     const isEn = language === 'en';
-    const subjKey = context?.subject === 'physics' || context?.subject === 'cs' ? context.subject : 'math';
-    const modeKey =
+    const subjKey: 'math' | 'physics' | 'cs' =
+      context?.subject === 'physics' || context?.subject === 'cs' ? context.subject : 'math';
+    const modeKey: 'explain_no_answer' | 'full_solution' | 'diagnostic_roadmap' =
       context?.mode === 'full_solution' || context?.mode === 'diagnostic_roadmap'
         ? context.mode
         : 'explain_no_answer';
 
-    const subjectPersonaVi =
-      subjKey === 'math'
-        ? 'AI Chuyên Gia Toán Học (Đại số, Giải tích, Hình học Oxy/Oxyz, Lớp 9-12 & Chuyên Toán)'
-        : subjKey === 'physics'
-        ? 'AI Chuyên Gia Vật Lí (Cơ học, Điện học, Quang học, Sóng & Lượng tử, Lớp 9-12 & Thí nghiệm)'
-        : 'AI Chuyên Gia Tin Học & Thuật Toán (C++, Python, CTDL, Quy hoạch động, Đồ thị & Online Judge)';
+    const systemInstruction = buildTutorSystemInstruction(subjKey, modeKey, isEn, context);
+    const { history, lastMessageParts } = buildGeminiChatHistoryAndLastTurn(messages);
 
-    const subjectPersonaEn =
-      subjKey === 'math'
-        ? 'Mathematics Specialist AI (Algebra, Calculus, 2D/3D Geometry, Grades 9-12 & Olympiad Math)'
-        : subjKey === 'physics'
-        ? 'Physics Specialist AI (Mechanics, Electricity, Optics, Waves & Quantum, Grades 9-12 & Labs)'
-        : 'Computer Science & Algorithms AI (C++, Python, Data Structures, DP, Graphs & Competitive Coding)';
+    const runChatWithModel = async (modelName: string) => {
+      const chat = ai.chats.create({
+        model: modelName,
+        history,
+        config: {
+          systemInstruction,
+          thinkingConfig: {
+            thinkingLevel:
+              modelName === 'gemini-3.1-flash-lite' ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW
+          }
+        }
+      });
+      return await withTimeout(
+        chat.sendMessage({
+          message:
+            lastMessageParts.length === 1 && lastMessageParts[0].text
+              ? lastMessageParts[0].text
+              : lastMessageParts
+        }),
+        35000,
+        `tutor-${modelName}`
+      );
+    };
 
-    const katexRuleVi = `Mọi công thức Toán/Lí PHẢI viết chuẩn KaTeX ($...$ nội dòng hoặc $$...$$ khối riêng, luôn dùng \\frac{a}{b}, \\sqrt{}, \\vec{}, \\Delta — tuyệt đối không viết 'frac' thiếu dấu gạch chéo).`;
-    const katexRuleEn = `Format ALL math/physics formulas using KaTeX ($...$ inline or $$...$$ block; always write \\frac{a}{b}, never raw 'frac').`;
-
-    let systemInstruction = '';
-
-    if (modeKey === 'explain_no_answer') {
-      systemInstruction = isEn
-        ? `You are the ${subjectPersonaEn} operating in MODE 1: Clarify Doubts & Guided Explanation (NO FINAL ANSWER).
-RULES (STRICTLY OBEY):
-1. NEVER reveal the final numeric answer, final choice letter, or complete solution code.
-2. Analyze what the problem asks, identify key hypotheses/constraints, and ASK which exact step or concept the student does not understand.
-3. Explain that unclear concept/step deeply and intuitively with 1 small analogous micro-example.
-4. End with 1 guiding question so the student attempts the next step.
-5. ${katexRuleEn}`
-        : `Bạn là ${subjectPersonaVi} đang hoạt động ở CHẾ ĐỘ 1: Giải Đáp Thắc Mắc & Giảng Chỗ Chưa Hiểu (KHÔNG ĐƯA KẾT QUẢ).
-NGUYÊN TẮC BẮT BUỘC (TUÂN THỦ 100%):
-1. TUYỆT ĐỐI KHÔNG đưa ra đáp án cuối cùng, kết quả số cuối, phương án trắc nghiệm (A/B/C/D) hay toàn bộ code hoàn chỉnh — kể cả khi học sinh nài nỉ.
-2. Phân tích rõ đề bài: cho giả thiết gì, yêu cầu tìm gì, cần định lý/công thức/thuật toán nào.
-3. Nếu học sinh chưa nói rõ vướng ở đâu, hãy **hỏi lại xem em đang chưa hiểu cụ thể ở phần nào**. Khi học sinh đã chỉ ra chỗ chưa hiểu, hãy **giảng thật kỹ, trực quan và cụ thể đúng bước đó** (kèm 1 ví dụ minh họa nhỏ nếu cần).
-4. Kết thúc bằng 1 câu hỏi gợi mở để học sinh tự làm tiếp bước kế tiếp.
-5. ${katexRuleVi}`;
-    } else if (modeKey === 'full_solution') {
-      systemInstruction = isEn
-        ? `You are the ${subjectPersonaEn} operating in MODE 2: Problem Summary, Method & Complete Detailed Solution.
-STRUCTURE YOUR RESPONSE CLEARLY:
-1. **Problem Summary**: Concisely list Given data & Target to find.
-2. **Core Method & Idea**: Explain why this theorem/formula/algorithm is chosen.
-3. **Step-by-Step Detailed Solution**: Show every algebraic transformation, physical law substitution, or complete clean ${subjKey === 'cs' ? 'C++ / Python code with complexity analysis' : 'derivation'}.
-4. **Final Result**: State the clear final answer/output and key pitfalls to avoid.
-5. ${katexRuleEn}`
-        : `Bạn là ${subjectPersonaVi} đang hoạt động ở CHẾ ĐỘ 2: Tóm Tắt Đề, Nêu Cách Làm & Đưa Ra Lời Giải Cụ Thể.
-HÃY TRÌNH BÀY RÕ RÀNG THEO ĐÚNG 4 MỤC SAU:
-1. **Tóm tắt & Phân tích đề bài**: Liệt kê giả thiết đã cho, điều kiện ràng buộc và đại lượng cần tìm.
-2. **Phương pháp & Hướng giải**: Giải thích rõ tư duy chọn công thức, định lí hay thuật toán phù hợp.
-3. **Lời giải chi tiết từng bước**: Biến đổi tường minh, giải thích từng dòng suy luận${subjKey === 'cs' ? ' (nếu là bài lập trình hãy kèm code C++ hoặc Python sạch, có chú thích và độ phức tạp Time/Space)' : ''}.
-4. **Kết luận đáp án cuối cùng**: Chốt rõ kết quả cuối và lưu ý lỗi sai thường gặp.
-5. ${katexRuleVi}`;
-    } else {
-      systemInstruction = isEn
-        ? `You are the ${subjectPersonaEn} operating in MODE 3: Skill Assessment & Personalized Learning Roadmap Advisor.
-Help the student refine their study roadmap, evaluate their skill gaps in ${subjKey}, suggest concrete weekly milestones, practice exercises, and major alignment advice. ${katexRuleEn}`
-        : `Bạn là ${subjectPersonaVi} đang hoạt động ở CHẾ ĐỘ 3: Tư Vấn Kỹ Năng, Định Hướng Chuyên Ngành & Sơ Đồ Học Tập.
-Hãy phân tích điểm mạnh/yếu, tư vấn chuyên ngành, và gợi ý lộ trình ôn luyện chi tiết theo tuần, bài tập trọng tâm và chiến lược bứt phá điểm số cho học sinh. ${katexRuleVi}`;
+    let response;
+    try {
+      response = await runChatWithModel('gemini-4-hydrogen');
+    } catch (err1: any) {
+      if (!isTransientGeminiError(err1)) throw err1;
+      console.warn('Primary chat transient error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
+      response = await runChatWithModel('gemini-3.1-flash-lite');
     }
 
-    const contextHeader = [
-      context?.topicTitle ? `Chủ đề / Bài học: ${context.topicTitle}` : '',
-      context?.grade ? `Khối lớp / Trình độ: ${context.grade}` : '',
-      context?.problemStatement ? `Đề bài tham chiếu:\n${context.problemStatement}` : ''
-    ]
-      .filter(Boolean)
-      .join('\n');
-
-    const contents = messages.map((msg: any, idx: number) => {
-      const parts: any[] = [];
-      if (msg.imageBase64) {
-        const cleanBase64 = String(msg.imageBase64).replace(/^data:[^;]+;base64,/, '');
-        parts.push({
-          inlineData: {
-            mimeType: msg.mimeType || 'image/png',
-            data: cleanBase64
-          }
-        });
-      }
-      const textVal =
-        idx === 0 && contextHeader && msg.role === 'user'
-          ? `[Ngữ cảnh lớp học]\n${contextHeader}\n\n[Học sinh hỏi]\n${msg.text}`
-          : String(msg.text || '');
-      parts.push({ text: textVal });
-
-      return {
-        role: msg.role === 'tutor' ? 'model' : 'user',
-        parts
-      };
-    });
-
-    const response = await callGeminiWithFallback({
-      ai,
-      contents,
-      systemInstruction,
-      thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 16000
-    });
-
     const reply = (response.text || '').trim();
+    if (!reply) {
+      throw new Error('Gemini chưa trả về nội dung phản hồi. Vui lòng thử gửi lại.');
+    }
     return res.json({
       success: true,
-      reply:
-        reply ||
-        'Thầy/Cô đang lắng nghe đây. Em hãy gửi đề bài hoặc nói rõ phần kiến thức em cần hỗ trợ nhé!'
+      reply
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/tutor:', err);
@@ -1061,32 +1217,31 @@ Yêu cầu bắt buộc:
         }
       },
       thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 14000
+      timeoutMs: 35000
     });
 
     const parsed = safeParseGeminiJson<any>(response.text, {});
-    if (Array.isArray(parsed?.questions) && parsed.questions.length >= 4) {
-      const normalized = parsed.questions.slice(0, 5).map((q: any, idx: number) => ({
-        id: String(q.id || `q${idx + 1}`),
-        category: q.category === 'specialization' || idx >= 3 ? 'specialization' : 'knowledge',
-        topicTag: String(q.topicTag || `Chuyên đề ${idx + 1}`),
-        question: String(q.question || ''),
-        options: Array.isArray(q.options) && q.options.length >= 2 ? q.options.map(String).slice(0, 4) : ['A', 'B', 'C', 'D'],
-        ...(q.category !== 'specialization' && idx < 3
-          ? { correctIndex: Math.max(0, Math.min(3, Number(q.correctIndex ?? 0))) }
-          : {})
-      }));
-      return res.json({ success: true, questions: normalized });
+    if (!Array.isArray(parsed?.questions) || parsed.questions.length < 4) {
+      throw new Error('Gemini chưa trả về đủ 5 câu hỏi đánh giá. Vui lòng bấm tạo lại.');
     }
-  } catch (err: any) {
-    console.warn('Diagnostic quiz falling back to curated bank:', extractCleanErrorMessage(err));
-  }
 
-  return res.json({
-    success: true,
-    questions: buildFallbackDiagnosticQuestions(subj, String(grade), isEn),
-    fallback: true
-  });
+    const normalized = parsed.questions.slice(0, 5).map((q: any, idx: number) => ({
+      id: String(q.id || `q${idx + 1}`),
+      category: q.category === 'specialization' || idx >= 3 ? 'specialization' : 'knowledge',
+      topicTag: String(q.topicTag || `Chuyên đề ${idx + 1}`),
+      question: String(q.question || ''),
+      options: Array.isArray(q.options) && q.options.length >= 2 ? q.options.map(String).slice(0, 4) : ['A', 'B', 'C', 'D'],
+      ...(q.category !== 'specialization' && idx < 3
+        ? { correctIndex: Math.max(0, Math.min(3, Number(q.correctIndex ?? 0))) }
+        : {})
+    }));
+    return res.json({ success: true, questions: normalized });
+  } catch (err: any) {
+    console.error('Error in /api/gemini/diagnostic-quiz:', err);
+    return res.status(500).json({
+      error: extractCleanErrorMessage(err)
+    });
+  }
 });
 
 app.post('/api/gemini/diagnostic-roadmap', async (req: Request, res: Response) => {
@@ -1195,59 +1350,50 @@ Mọi công thức Toán/Lí dùng chuẩn KaTeX ($...$, luôn dùng \\frac).`;
           }
         }
       },
-      thinkingLevel: ThinkingLevel.MEDIUM,
-      timeoutMs: 16000
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 38000
     });
 
     const parsed = safeParseGeminiJson<any>(response.text, {});
-    if (Array.isArray(parsed?.stages) && parsed.stages.length >= 3) {
-      const validModules = new Set(['math', 'physics', 'cs', 'exams', 'arena', 'roadmap']);
-      return res.json({
-        success: true,
-        roadmap: {
-          subject: subj,
-          grade: String(grade),
-          targetMajor: String(targetMajor),
-          estimatedLevel: String(parsed.estimatedLevel || ''),
-          knowledgeScore,
-          knowledgeCorrect,
-          knowledgeTotal,
-          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String) : [],
-          weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.map(String) : [],
-          majorAdvice: String(parsed.majorAdvice || ''),
-          dailyScheduleSummary: String(parsed.dailyScheduleSummary || ''),
-          stages: parsed.stages.slice(0, 5).map((st: any, i: number) => ({
-            step: Number(st.step || i + 1),
-            phase: String(st.phase || `Chặng 0${i + 1}`),
-            title: String(st.title || ''),
-            durationWeeks: Math.max(1, Number(st.durationWeeks || 2)),
-            dailyMinutes: Math.max(20, Number(st.dailyMinutes || 45)),
-            focusTopics: Array.isArray(st.focusTopics) ? st.focusTopics.map(String) : [],
-            recommendedModule: validModules.has(st.recommendedModule) ? st.recommendedModule : subj,
-            concreteTasks: Array.isArray(st.concreteTasks) ? st.concreteTasks.map(String) : [],
-            targetMilestone: String(st.targetMilestone || '')
-          })),
-          createdAt: new Date().toISOString()
-        }
-      });
+    if (!Array.isArray(parsed?.stages) || parsed.stages.length < 3) {
+      throw new Error('Gemini chưa trả về đầy đủ sơ đồ lộ trình. Vui lòng thử tạo lại.');
     }
-  } catch (err: any) {
-    console.warn('Diagnostic roadmap falling back to structured generator:', extractCleanErrorMessage(err));
-  }
 
-  return res.json({
-    success: true,
-    roadmap: buildFallbackRoadmap(
-      subj,
-      String(grade),
-      String(targetMajor),
-      knowledgeCorrect,
-      knowledgeTotal,
-      specSummary,
-      isEn
-    ),
-    fallback: true
-  });
+    const validModules = new Set(['math', 'physics', 'cs', 'exams', 'arena', 'roadmap']);
+    return res.json({
+      success: true,
+      roadmap: {
+        subject: subj,
+        grade: String(grade),
+        targetMajor: String(targetMajor),
+        estimatedLevel: String(parsed.estimatedLevel || ''),
+        knowledgeScore,
+        knowledgeCorrect,
+        knowledgeTotal,
+        strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String) : [],
+        weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.map(String) : [],
+        majorAdvice: String(parsed.majorAdvice || ''),
+        dailyScheduleSummary: String(parsed.dailyScheduleSummary || ''),
+        stages: parsed.stages.slice(0, 5).map((st: any, i: number) => ({
+          step: Number(st.step || i + 1),
+          phase: String(st.phase || `Chặng 0${i + 1}`),
+          title: String(st.title || ''),
+          durationWeeks: Math.max(1, Number(st.durationWeeks || 2)),
+          dailyMinutes: Math.max(20, Number(st.dailyMinutes || 45)),
+          focusTopics: Array.isArray(st.focusTopics) ? st.focusTopics.map(String) : [],
+          recommendedModule: validModules.has(st.recommendedModule) ? st.recommendedModule : subj,
+          concreteTasks: Array.isArray(st.concreteTasks) ? st.concreteTasks.map(String) : [],
+          targetMilestone: String(st.targetMilestone || '')
+        })),
+        createdAt: new Date().toISOString()
+      }
+    });
+  } catch (err: any) {
+    console.error('Error in /api/gemini/diagnostic-roadmap:', err);
+    return res.status(500).json({
+      error: extractCleanErrorMessage(err)
+    });
+  }
 });
 
 // =====================================================================
@@ -1338,8 +1484,8 @@ Hãy chấm điểm công tâm, chính xác từng bước lập luận/công th
           suggestedStudyTip: { type: Type.STRING, description: 'Gợi ý ôn tập bước tiếp theo' }
         }
       },
-      thinkingLevel: ThinkingLevel.MEDIUM,
-      timeoutMs: 16000
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 35000
     });
 
     const parsed = safeParseGeminiJson<any>(response.text, {});
@@ -1418,8 +1564,8 @@ ${text ? `Dữ liệu văn bản người dùng cung cấp:\n${text}` : ''}
       contents: { parts },
       systemInstruction: `You are an elite competitive programming judge. Extract the problem from user input (OCR/text) and output strict JSON with keys: title (string), description (string), inputFormat (string), outputFormat (string), constraints (array of strings), sampleCases (array of objects { id, input, expectedOutput, isSample: true, explanation }), hiddenCases (array of objects { id, input, expectedOutput, isSample: false }), referenceCpp (string), referencePython (string). Ensure expectedOutput is 100% mathematically and algorithmically accurate.`,
       responseMimeType: 'application/json',
-      thinkingLevel: ThinkingLevel.MEDIUM,
-      timeoutMs: 18000
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 35000
     });
 
     const parsedData = safeParseGeminiJson<any>(response.text, null);
@@ -1553,44 +1699,33 @@ Hãy chấm điểm chính xác từ 0 đến 10 (có thể dùng 0.5 điểm), 
         }
       },
       thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 14000
+      timeoutMs: 32000
     });
 
     const parsed = safeParseGeminiJson<any>(response.text, null);
-    if (parsed && typeof parsed.score !== 'undefined') {
-      const rawScore = Number(parsed.score ?? 0);
-      const clampedScore = Math.max(0, Math.min(10, Math.round(rawScore * 2) / 2));
-
-      return res.json({
-        success: true,
-        evaluation: {
-          score: clampedScore,
-          maxScore: 10,
-          isCorrectDirection: Boolean(parsed.isCorrectDirection ?? clampedScore >= 5),
-          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String) : [],
-          mistakes: Array.isArray(parsed.mistakes) ? parsed.mistakes.map(String) : [],
-          feedback: String(parsed.feedback || 'Đã hoàn thành chấm câu tự luận ngắn.'),
-          gradedBy: 'ai'
-        }
-      });
+    if (!parsed || typeof parsed.score === 'undefined') {
+      throw new Error('Gemini chưa trả về điểm chấm hợp lệ. Vui lòng bấm chấm lại.');
     }
-    throw new Error('Malformed mini essay response');
-  } catch (err: any) {
-    console.warn('Mini essay grading fallback:', extractCleanErrorMessage(err));
-    const ans = String(req.body?.studentAnswer || '').trim();
-    const score = ans.length >= 80 ? 8 : ans.length >= 35 ? 7 : 5.5;
+
+    const rawScore = Number(parsed.score ?? 0);
+    const clampedScore = Math.max(0, Math.min(10, Math.round(rawScore * 2) / 2));
+
     return res.json({
       success: true,
-      fallback: true,
       evaluation: {
-        score,
+        score: clampedScore,
         maxScore: 10,
-        isCorrectDirection: true,
-        strengths: ['Đã chủ động trình bày lập luận và hệ thức trọng tâm.'],
-        mistakes: ['Đối chiếu thêm với đáp án mẫu để kiểm tra điều kiện xác định & đơn vị.'],
-        feedback: 'Hệ thống đã ghi nhận bài làm. Hãy xem phần Đáp án mẫu bên dưới để hoàn thiện chi tiết.',
+        isCorrectDirection: Boolean(parsed.isCorrectDirection ?? clampedScore >= 5),
+        strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String) : [],
+        mistakes: Array.isArray(parsed.mistakes) ? parsed.mistakes.map(String) : [],
+        feedback: String(parsed.feedback || 'Đã hoàn thành chấm câu tự luận ngắn.'),
         gradedBy: 'ai'
       }
+    });
+  } catch (err: any) {
+    console.error('Error in /api/gemini/grade-mini-essay:', err);
+    return res.status(500).json({
+      error: extractCleanErrorMessage(err)
     });
   }
 });
@@ -1670,12 +1805,12 @@ Mọi công thức Toán/Lí PHẢI viết chuẩn KaTeX ($...$, luôn dùng \\f
         }
       },
       thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 16000
+      timeoutMs: 35000
     });
 
     const parsed = safeParseGeminiJson<any>(response.text, {});
     if (!Array.isArray(parsed?.miniQuiz) || parsed.miniQuiz.length < 2 || !parsed?.miniEssay?.question) {
-      throw new Error('AI response missing 2 MCQ + 1 essay');
+      throw new Error('Gemini chưa tạo đủ 2 câu trắc nghiệm + 1 tự luận. Vui lòng thử lại.');
     }
 
     return res.json({
@@ -1698,47 +1833,9 @@ Mọi công thức Toán/Lí PHẢI viết chuẩn KaTeX ($...$, luôn dùng \\f
       }
     });
   } catch (err: any) {
-    console.warn('Generate step quiz fallback:', extractCleanErrorMessage(err));
-    const stepTitle = String(req.body?.stepTitle || 'Phần trọng tâm');
-    const f = String(req.body?.primaryFormula || '').trim();
-    const fTxt = f ? `$${f}$` : 'công thức trọng tâm';
-    const ts = Date.now();
-    return res.json({
-      success: true,
-      fallback: true,
-      miniQuiz: [
-        {
-          id: `fb_mcq1_${ts}`,
-          question: `Khi vận dụng nội dung "${stepTitle}" (${fTxt}), bước kiểm tra đầu tiên là gì?`,
-          options: [
-            'A. Kiểm tra điều kiện xác định, đơn vị chuẩn / giới hạn biên trước khi biến đổi',
-            'B. Thay ngay một giá trị bất kỳ mà không xét điều kiện',
-            'C. Bỏ qua dấu của các đại lượng trong bài toán',
-            'D. Chỉ ghi đáp số cuối cùng'
-          ],
-          correctIndex: 0,
-          explanation: `Luôn kiểm tra điều kiện áp dụng, dấu và đơn vị trước khi tính toán với ${fTxt}.`
-        },
-        {
-          id: `fb_mcq2_${ts}`,
-          question: `Phát biểu nào đúng nhất về quy luật trong phần "${stepTitle}"?`,
-          options: [
-            'A. Các đại lượng độc lập hoàn toàn với nhau',
-            `B. Các đại lượng liên hệ chặt chẽ theo ${fTxt} và kiểm chứng được bằng mô phỏng`,
-            'C. Công thức không phụ thuộc hệ số hay tham số',
-            'D. Không cần kiểm tra trường hợp đặc biệt (= 0)'
-          ],
-          correctIndex: 1,
-          explanation: `Mối quan hệ định lượng được mô tả bởi ${fTxt} khi thỏa mãn điều kiện bài toán.`
-        }
-      ],
-      miniEssay: {
-        id: `fb_essay_${ts}`,
-        question: `Trình bày ngắn gọn (3–4 dòng) ý nghĩa của ${fTxt} trong "${stepTitle}" và nêu 1 lỗi sai hay gặp cần tránh.`,
-        hint: 'Nêu rõ từng đại lượng và 1 điều kiện ràng buộc.',
-        rubricChecklist: [`Viết đúng ${fTxt}`, 'Nêu ý nghĩa đại lượng', 'Chỉ ra 1 điều kiện/lỗi sai'],
-        sampleAnswer: `${String(req.body?.conceptSection || '').slice(0, 200)}\nLuôn kiểm tra điều kiện xác định và đơn vị của ${fTxt}.`
-      }
+    console.error('Error in /api/gemini/generate-step-quiz:', err);
+    return res.status(500).json({
+      error: extractCleanErrorMessage(err)
     });
   }
 });
@@ -1955,40 +2052,39 @@ Trả về JSON chuẩn gồm:
         }
       },
       thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 15000
+      timeoutMs: 35000
     });
 
     const parsed = safeParseGeminiJson<any>(response.text, {});
     const validTargets = new Set(['review_step', 'sim_2d', 'sim_3d', 'ai_tutor', 'next_lesson', 'exams', 'arena']);
-    if (Array.isArray(parsed?.recommendedRoadmap) && parsed.recommendedRoadmap.length > 0) {
-      return res.json({
-        success: true,
-        analysis: {
-          overallMastery: Math.max(0, Math.min(100, Math.round(Number(parsed.overallMastery ?? 0)))),
-          readinessLevel: String(parsed.readinessLevel || 'Đã phân tích xong'),
-          summaryFeedback: String(parsed.summaryFeedback || ''),
-          strongPoints: Array.isArray(parsed.strongPoints) ? parsed.strongPoints.map(String) : [],
-          weakPoints: Array.isArray(parsed.weakPoints) ? parsed.weakPoints.map(String) : [],
-          recommendedRoadmap: parsed.recommendedRoadmap.slice(0, 5).map((r: any, idx: number) => ({
-            step: Number(r.step || idx + 1),
-            title: String(r.title || ''),
-            action: String(r.action || ''),
-            targetType: validTargets.has(r.targetType) ? r.targetType : 'review_step',
-            ...(typeof r.stepIndex === 'number' ? { stepIndex: Math.max(0, r.stepIndex) } : {})
-          })),
-          analyzedAt: new Date().toISOString()
-        }
-      });
+    if (!Array.isArray(parsed?.recommendedRoadmap) || parsed.recommendedRoadmap.length === 0) {
+      throw new Error('Gemini chưa tạo được phân tích lộ trình. Vui lòng thử lại.');
     }
-  } catch (err: any) {
-    console.warn('Analyze lesson progress falling back to deterministic analyzer:', extractCleanErrorMessage(err));
-  }
 
-  return res.json({
-    success: true,
-    analysis: buildFallbackLessonAnalysis(subj, String(lessonTitle), safeSummary, isEn),
-    fallback: true
-  });
+    return res.json({
+      success: true,
+      analysis: {
+        overallMastery: Math.max(0, Math.min(100, Math.round(Number(parsed.overallMastery ?? 0)))),
+        readinessLevel: String(parsed.readinessLevel || 'Đã phân tích xong'),
+        summaryFeedback: String(parsed.summaryFeedback || ''),
+        strongPoints: Array.isArray(parsed.strongPoints) ? parsed.strongPoints.map(String) : [],
+        weakPoints: Array.isArray(parsed.weakPoints) ? parsed.weakPoints.map(String) : [],
+        recommendedRoadmap: parsed.recommendedRoadmap.slice(0, 5).map((r: any, idx: number) => ({
+          step: Number(r.step || idx + 1),
+          title: String(r.title || ''),
+          action: String(r.action || ''),
+          targetType: validTargets.has(r.targetType) ? r.targetType : 'review_step',
+          ...(typeof r.stepIndex === 'number' ? { stepIndex: Math.max(0, r.stepIndex) } : {})
+        })),
+        analyzedAt: new Date().toISOString()
+      }
+    });
+  } catch (err: any) {
+    console.error('Error in /api/gemini/analyze-lesson-progress:', err);
+    return res.status(500).json({
+      error: extractCleanErrorMessage(err)
+    });
+  }
 });
 
 // JSON guards for /api routes (never leak HTML pages to JSON clients)

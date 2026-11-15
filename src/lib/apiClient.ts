@@ -175,3 +175,118 @@ export async function safeFetchJson<T = any>(
     clearTimeout(timeoutId);
   }
 }
+
+export async function streamTutorChat(
+  payload: {
+    messages: { role: string; text: string; imageBase64?: string; mimeType?: string }[];
+    context: Record<string, any>;
+    language?: string;
+  },
+  onDelta: (accumulatedText: string) => void,
+  timeoutMs = 42000
+): Promise<{ ok: boolean; reply?: string; error?: string; isStaticFallback?: boolean }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch('/api/gemini/tutor/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+
+    if (!res.ok || !res.body || !contentType.includes('text/event-stream')) {
+      // If static HTML was returned (GitHub Pages with no Node server)
+      const txt = await res.text().catch(() => '');
+      const trimmed = txt.trim();
+      if (trimmed.startsWith('<') || trimmed.toLowerCase().startsWith('<!doctype')) {
+        return {
+          ok: false,
+          isStaticFallback: true,
+          error: 'Chế độ AI trực tiếp cần máy chủ Node có GEMINI_API_KEY.'
+        };
+      }
+      // Try standard /api/gemini/tutor endpoint cleanly
+      const jsonFallback = await safeFetchJson<{ success?: boolean; reply?: string; error?: string }>(
+        '/api/gemini/tutor',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        },
+        timeoutMs
+      );
+      if (jsonFallback.ok && jsonFallback.data?.reply) {
+        onDelta(jsonFallback.data.reply);
+        return { ok: true, reply: jsonFallback.data.reply };
+      }
+      return {
+        ok: false,
+        isStaticFallback: jsonFallback.isStaticFallback,
+        error: jsonFallback.error || `Không nhận được phản hồi từ Gemini (HTTP ${res.status}).`
+      };
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let accumulated = '';
+    let streamError: string | undefined;
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() || '';
+
+      for (const evt of events) {
+        const lines = evt.split('\n');
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const rawJson = line.slice(5).trim();
+          if (!rawJson) continue;
+          try {
+            const parsed = JSON.parse(rawJson);
+            if (parsed.error) {
+              streamError = normalizeErrorPayload(parsed.error);
+            } else if (typeof parsed.delta === 'string') {
+              accumulated += parsed.delta;
+              onDelta(accumulated);
+            } else if (parsed.done && typeof parsed.reply === 'string' && !accumulated) {
+              accumulated = parsed.reply;
+              onDelta(accumulated);
+            }
+          } catch {
+            // ignore partial SSE JSON frames
+          }
+        }
+      }
+    }
+
+    if (streamError && !accumulated) {
+      return { ok: false, error: streamError };
+    }
+    if (!accumulated.trim()) {
+      return {
+        ok: false,
+        error: streamError || 'Gemini chưa trả về nội dung phản hồi. Vui lòng thử lại.'
+      };
+    }
+    return { ok: true, reply: accumulated.trim() };
+  } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      return { ok: false, error: 'Kết nối AI bị quá thời gian (timeout). Vui lòng thử lại.' };
+    }
+    return {
+      ok: false,
+      error: normalizeErrorPayload(err?.message) || 'Lỗi kết nối tới máy chủ Gemini AI.'
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+

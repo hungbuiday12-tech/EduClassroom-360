@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles } from 'lucide-react';
+import { Compass, Zap, Code2 } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
 import { Header } from './components/Header';
 import { ClassroomOverview } from './components/ClassroomOverview';
@@ -171,7 +171,9 @@ function MainApp() {
                   <ClassroomOverview
                     onNavigate={selectSubject}
                     xp={activeXP}
-                    onOpenTutor={() => handleOpenTutor({ subject: 'math' })}
+                    onOpenTutor={(subj, mode) =>
+                      handleOpenTutor({ subject: subj || 'math', mode })
+                    }
                   />
                 )}
 
@@ -215,23 +217,48 @@ function MainApp() {
             </AnimatePresence>
           </main>
 
-          {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Compact Mobile Floating Trigger */}
+          {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Compact 3-AI Floating Launcher */}
           {!isTutorOpen && (
-            <button
-              onClick={() => handleOpenTutor()}
-              className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[85] px-3 py-2 sm:px-4 sm:py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xl flex items-center gap-1.5 sm:gap-2 transition-all"
-              title="Mở Trợ Giảng AI 3 Môn · 3 Chế Độ"
-            >
-              <Sparkles className="w-4 h-4 shrink-0" />
-              <span className="sm:hidden">AI 3 Chế Độ</span>
-              <span className="hidden sm:inline">Gia Sư AI (Toán · Lí · Tin)</span>
-            </button>
+            <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[85] flex items-center gap-1 p-1 rounded-full bg-slate-900/95 dark:bg-slate-950/95 border border-indigo-500/40 shadow-2xl backdrop-blur-md">
+              <button
+                onClick={() => handleOpenTutor({ subject: 'math' })}
+                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="Mở AI Toán Học (3 Chế Độ)"
+              >
+                <Compass className="w-3.5 h-3.5 shrink-0" />
+                <span>AI Toán</span>
+              </button>
+              <button
+                onClick={() => handleOpenTutor({ subject: 'physics' })}
+                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-amber-600 hover:bg-amber-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="Mở AI Vật Lí (3 Chế Độ)"
+              >
+                <Zap className="w-3.5 h-3.5 shrink-0" />
+                <span>AI Lí</span>
+              </button>
+              <button
+                onClick={() => handleOpenTutor({ subject: 'cs' })}
+                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors"
+                title="Mở AI Tin Học (3 Chế Độ)"
+              >
+                <Code2 className="w-3.5 h-3.5 shrink-0" />
+                <span>AI Tin</span>
+              </button>
+            </div>
           )}
           <SocraticAITutor
             isOpen={isTutorOpen}
             onClose={goBack}
             onBack={goBack}
-            context={tutorContext}
+            context={{
+              ...tutorContext,
+              subject:
+                location.tutorSubject === 'physics' ||
+                location.tutorSubject === 'cs' ||
+                location.tutorSubject === 'math'
+                  ? location.tutorSubject
+                  : tutorContext.subject
+            }}
             onChangeSubject={(subj) => {
               setTutorContext((prev) => ({ ...prev, subject: subj }));
               navigate({ tutorSubject: subj }, { replace: true });

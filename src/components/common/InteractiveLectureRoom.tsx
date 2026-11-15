@@ -40,13 +40,7 @@ import {
 } from '../../types';
 import { FormattedText, MathFormula } from './MathRenderer';
 import { MonokaiCodeBlock } from '../cs/SublimeEditor';
-import { safeFetchJson } from '../../lib/apiClient';
-import {
-  gradeLocalMiniEssay,
-  generateLocalStepQuiz,
-  analyzeLocalLessonProgress,
-  buildLocalTutorReply
-} from '../../lib/aiStaticFallback';
+import { safeFetchJson, streamTutorChat } from '../../lib/apiClient';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
@@ -375,24 +369,22 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           language
         })
       },
-      20000
+      38000
     );
 
     setGradingEssayStep(null);
 
-    const evaluation =
-      res.ok && res.data?.evaluation
-        ? res.data.evaluation
-        : gradeLocalMiniEssay({
-            subject,
-            lessonTitle: title,
-            stepTitle: step.stepTitle,
-            question: essaySpec.question,
-            rubricChecklist: essaySpec.rubricChecklist,
-            sampleAnswer: essaySpec.sampleAnswer,
-            studentAnswer,
-            language
-          });
+    if (!res.ok || !res.data?.evaluation) {
+      setEssayErrorByStep((prev) => ({
+        ...prev,
+        [stepIdx]:
+          res.error ||
+          'Không kết nối được tới Gemini AI để chấm bài tự luận. Vui lòng thử lại sau giây lát.'
+      }));
+      return;
+    }
+
+    const evaluation = res.data.evaluation;
 
     updateStepSaved(stepIdx, step, (prev) => ({
       ...prev,
@@ -460,23 +452,22 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           language
         })
       },
-      22000
+      38000
     );
 
     setRefreshingQuizStep(null);
 
-    const generated =
-      res.ok && res.data?.miniQuiz && res.data?.miniEssay
-        ? { miniQuiz: res.data.miniQuiz, miniEssay: res.data.miniEssay }
-        : generateLocalStepQuiz({
-            subject,
-            lessonTitle: title,
-            stepTitle: step.stepTitle,
-            conceptSection: step.conceptSection || step.teacherExplanation,
-            primaryFormula: step.formulaSection?.primaryFormula || step.formulaHighlight || '',
-            deepDiveSection: step.deepDiveSection || '',
-            language
-          });
+    if (!res.ok || !res.data?.miniQuiz || !res.data?.miniEssay) {
+      setQuizGenErrorByStep((prev) => ({
+        ...prev,
+        [stepIdx]:
+          res.error ||
+          'Gemini AI chưa tạo được bộ câu hỏi mới lúc này. Vui lòng thử lại.'
+      }));
+      return;
+    }
+
+    const generated = { miniQuiz: res.data.miniQuiz, miniEssay: res.data.miniEssay };
 
     updateStepSaved(stepIdx, step, (prev) => ({
       ...prev,
@@ -528,53 +519,70 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
       .filter(Boolean)
       .join('\n\n');
 
-    const res = await safeFetchJson<{ success: boolean; reply: string }>(
-      '/api/gemini/tutor',
+    const tutorMsgId = `ai_${Date.now()}`;
+    const tutorTimestamp = new Date().toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const streamRes = await streamTutorChat(
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: nextMsgs.map((m) => ({ role: m.role, text: m.text })),
-          context: {
-            subject,
-            mode,
-            topicTitle: `${title} — ${step.stepTitle}`,
-            grade,
-            problemStatement
-          },
-          language
-        })
+        messages: nextMsgs.map((m) => ({ role: m.role, text: m.text })),
+        context: {
+          subject,
+          mode,
+          topicTitle: `${title} — ${step.stepTitle}`,
+          grade,
+          problemStatement
+        },
+        language
       },
-      22000
+      (accumulated) => {
+        const partialMsg: LectureStepAiMessage = {
+          id: tutorMsgId,
+          role: 'tutor',
+          text: accumulated,
+          timestamp: tutorTimestamp
+        };
+        updateStepSaved(
+          stepIdx,
+          step,
+          (prev) => ({ ...prev, aiMessages: [...nextMsgs, partialMsg] }),
+          false
+        );
+      },
+      42000
     );
 
     setAiLoadingStep(null);
 
-    const replyText =
-      res.ok && res.data?.reply
-        ? res.data.reply
-        : buildLocalTutorReply({
-            messages: nextMsgs.map((m) => ({ role: m.role, text: m.text })),
-            context: {
-              subject,
-              mode,
-              topicTitle: `${title} — ${step.stepTitle}`,
-              grade,
-              problemStatement
-            },
-            language
-          });
+    const finalReply = streamRes.reply ?? '';
+    if (!streamRes.ok || !finalReply.trim()) {
+      updateStepSaved(
+        stepIdx,
+        step,
+        (prev) => ({ ...prev, aiMessages: nextMsgs }),
+        false
+      );
+      setAiErrorByStep((prev) => ({
+        ...prev,
+        [stepIdx]:
+          streamRes.error ||
+          'Gemini AI chưa phản hồi được câu hỏi này. Vui lòng thử lại.'
+      }));
+      return;
+    }
 
-    const tutorMsg: LectureStepAiMessage = {
-      id: `ai_${Date.now()}`,
+    const finalTutorMsg: LectureStepAiMessage = {
+      id: tutorMsgId,
       role: 'tutor',
-      text: replyText,
-      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      text: finalReply,
+      timestamp: tutorTimestamp
     };
     updateStepSaved(
       stepIdx,
       step,
-      (prev) => ({ ...prev, aiMessages: [...nextMsgs, tutorMsg] }),
+      (prev) => ({ ...prev, aiMessages: [...nextMsgs, finalTutorMsg] }),
       false
     );
   };
@@ -637,21 +645,19 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           language
         })
       },
-      22000
+      40000
     );
 
     setIsAnalyzingLesson(false);
 
-    const analysisData =
-      res.ok && res.data?.analysis
-        ? res.data.analysis
-        : analyzeLocalLessonProgress({
-            subject,
-            grade,
-            lessonTitle: title,
-            stepsSummary,
-            language
-          });
+    if (!res.ok || !res.data?.analysis) {
+      setAnalysisError(
+        res.error ||
+          'Không kết nối được tới Gemini AI để phân tích lộ trình. Vui lòng thử lại.'
+      );
+      setViewLayout('analytics');
+      return;
+    }
 
     const nextRecord: LessonAssessmentRecord = {
       ...assessmentRecord,
@@ -660,7 +666,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
       lessonTitle: title,
       grade,
       totalSteps: safeSteps.length,
-      analysis: analysisData,
+      analysis: res.data.analysis,
       updatedAt: new Date().toISOString()
     };
     persistRecord(nextRecord, true);

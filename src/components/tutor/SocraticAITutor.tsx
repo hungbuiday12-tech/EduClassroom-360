@@ -32,17 +32,19 @@ import {
 import { useLanguage } from '../../context/LanguageContext';
 import { FormattedText } from '../common/MathRenderer';
 import { ViewportPortal } from '../common/ViewportPortal';
-import { safeFetchJson } from '../../lib/apiClient';
-import {
-  buildLocalTutorReply,
-  buildLocalDiagnosticQuiz,
-  buildLocalDiagnosticRoadmap
-} from '../../lib/aiStaticFallback';
+import { safeFetchJson, streamTutorChat } from '../../lib/apiClient';
 import { useNavigation, getLocationLabel } from '../../context/NavigationContext';
 
 export const AI_ROADMAPS_STORAGE_KEY = 'educlassroom_ai_roadmaps_v1';
 
 type AISubjectKey = 'math' | 'physics' | 'cs';
+
+interface SubjectDiagConfig {
+  grade: string;
+  major: string;
+  selfLevel: string;
+  customGoal: string;
+}
 
 interface SocraticAITutorProps {
   isOpen: boolean;
@@ -53,21 +55,47 @@ interface SocraticAITutorProps {
   onNavigateSubject?: (subj: SubjectType) => void;
 }
 
-const MAJOR_OPTIONS_VI = [
-  'CNTT, Trí tuệ nhân tạo & Khoa học dữ liệu',
-  'Kỹ thuật, Cơ điện tử, Điện - Tự động hóa',
-  'Kinh tế, Tài chính định lượng & Quản trị',
-  'Khoa học Tự nhiên / Chuyên - Học sinh Giỏi',
-  'Y - Dược / Công nghệ Sinh học'
-];
+const MAJOR_OPTIONS_BY_SUBJ_VI: Record<AISubjectKey, string[]> = {
+  math: [
+    'Đội tuyển Chuyên Toán / HSG / Đánh giá năng lực 9+',
+    'Công nghệ thông tin, Trí tuệ nhân tạo & Khoa học dữ liệu',
+    'Kinh tế, Tài chính định lượng & Khoa học quản lý',
+    'Kỹ thuật, Kiến trúc & Cơ điện tử'
+  ],
+  physics: [
+    'Đội tuyển Chuyên Lí / HSG / Mục tiêu 9+ THPT QG',
+    'Kỹ thuật Điện - Tự động hóa - Robotics',
+    'Vi mạch bán dẫn - Vật lí kỹ thuật & AI phần cứng',
+    'Hàng không - Cơ khí chế tạo - Năng lượng'
+  ],
+  cs: [
+    'Lập trình thi đấu (Chuyên Tin / HSG QG / VNOI / ICPC)',
+    'Trí tuệ nhân tạo (AI), Machine Learning & Khoa học dữ liệu',
+    'Kỹ thuật phần mềm & Phát triển Hệ thống Web/App',
+    'An toàn thông tin & Hệ thống nhúng'
+  ]
+};
 
-const MAJOR_OPTIONS_EN = [
-  'Computer Science, AI & Data Science',
-  'Engineering, Mechatronics & Automation',
-  'Economics, Quantitative Finance & Management',
-  'Natural Sciences / Olympiad & Gifted Track',
-  'Medicine, Pharmacy & Biotechnology'
-];
+const MAJOR_OPTIONS_BY_SUBJ_EN: Record<AISubjectKey, string[]> = {
+  math: [
+    'Olympiad / Gifted Math / Top University Entrance',
+    'Computer Science, AI & Data Science',
+    'Economics, Quantitative Finance & Management',
+    'Engineering & Architecture'
+  ],
+  physics: [
+    'High-School Physics Olympiad / Top University Exam',
+    'Electrical, Automation & Robotics Engineering',
+    'Semiconductors, Microchips & Applied Physics',
+    'Aerospace, Mechanical & Energy Engineering'
+  ],
+  cs: [
+    'Competitive Programming (HSG / IOI / VNOI / ICPC)',
+    'Artificial Intelligence & Data Science',
+    'Software Engineering & Full-Stack Systems',
+    'Cybersecurity & Systems Architecture'
+  ]
+};
 
 function normalizeSubject(subj?: SubjectType): AISubjectKey {
   if (subj === 'physics' || subj === 'cs') return subj;
@@ -178,11 +206,41 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [pendingImage, setPendingImage] = useState<{ base64: string; mimeType: string } | null>(null);
 
-  // Mode 3 Diagnostic & Personalized Roadmap states (per subject)
-  const [diagGrade, setDiagGrade] = useState<string>('Lớp 12');
-  const [diagMajor, setDiagMajor] = useState<string>(() => (isEn ? MAJOR_OPTIONS_EN[0] : MAJOR_OPTIONS_VI[0]));
-  const [diagSelfLevel, setDiagSelfLevel] = useState<string>('Khá');
-  const [diagCustomGoal, setDiagCustomGoal] = useState<string>('');
+  // Mode 3 Diagnostic & Personalized Roadmap states — independent per Subject AI
+  const [diagConfigBySubj, setDiagConfigBySubj] = useState<Record<AISubjectKey, SubjectDiagConfig>>(() => ({
+    math: {
+      grade: 'Lớp 12',
+      major: isEn ? MAJOR_OPTIONS_BY_SUBJ_EN.math[0] : MAJOR_OPTIONS_BY_SUBJ_VI.math[0],
+      selfLevel: 'Khá',
+      customGoal: ''
+    },
+    physics: {
+      grade: 'Lớp 12',
+      major: isEn ? MAJOR_OPTIONS_BY_SUBJ_EN.physics[0] : MAJOR_OPTIONS_BY_SUBJ_VI.physics[0],
+      selfLevel: 'Khá',
+      customGoal: ''
+    },
+    cs: {
+      grade: 'Lớp 12',
+      major: isEn ? MAJOR_OPTIONS_BY_SUBJ_EN.cs[0] : MAJOR_OPTIONS_BY_SUBJ_VI.cs[0],
+      selfLevel: 'Khá',
+      customGoal: ''
+    }
+  }));
+
+  const activeDiagConfig = diagConfigBySubj[activeSubject];
+  const diagGrade = activeDiagConfig.grade;
+  const diagMajor = activeDiagConfig.major;
+  const diagSelfLevel = activeDiagConfig.selfLevel;
+  const diagCustomGoal = activeDiagConfig.customGoal;
+
+  const updateActiveDiagConfig = (patch: Partial<SubjectDiagConfig>) => {
+    setDiagConfigBySubj((prev) => ({
+      ...prev,
+      [activeSubject]: { ...prev[activeSubject], ...patch }
+    }));
+  };
+
   const [diagQuestionsBySubj, setDiagQuestionsBySubj] = useState<Record<AISubjectKey, DiagnosticQuestion[]>>({
     math: [],
     physics: [],
@@ -248,6 +306,9 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   const diagQuestions = diagQuestionsBySubj[activeSubject] || [];
   const diagAnswers = diagAnswersBySubj[activeSubject] || {};
   const activeRoadmap = roadmapsBySubj[activeSubject] || null;
+  const activeMajorOptions = isEn
+    ? MAJOR_OPTIONS_BY_SUBJ_EN[activeSubject]
+    : MAJOR_OPTIONS_BY_SUBJ_VI[activeSubject];
 
   const quickChips =
     activeMode === 'explain_no_answer'
@@ -256,13 +317,27 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             'I do not understand what the problem is asking',
             'Which theorem or formula applies here?',
             'I am stuck on this middle step',
-            'Is my starting direction correct?'
+            'Check if my starting idea is on the right track'
+          ]
+        : activeSubject === 'cs'
+        ? [
+            'Em chưa hiểu yêu cầu bài toán & ràng buộc dữ liệu N',
+            'Bài này nên dùng cấu trúc dữ liệu hay thuật toán nào?',
+            'Code em bị sai test biên hoặc TLE ở đoạn này',
+            'Xem giúp hướng tiếp cận của em đúng chưa (chưa đưa code)'
+          ]
+        : activeSubject === 'physics'
+        ? [
+            'Em chưa hình dung được hiện tượng và các lực tác dụng',
+            'Bài này chọn công thức hay định luật bảo toàn nào?',
+            'Em bị vướng ở bước đổi đơn vị SI / xét dấu',
+            'Kiểm tra giúp hướng lập phương trình của em'
           ]
         : [
             'Em chưa hiểu đề bài đang hỏi gì',
-            'Em chưa biết dùng công thức hay định lý nào',
-            'Em bị kẹt ở bước biến đổi trung gian này',
-            'Thầy/cô xem hướng làm em tự nghĩ đúng chưa'
+            'Bài này cần dùng định lý, công thức hay phép biến đổi nào?',
+            'Em bị kẹt ở bước tìm điều kiện / biến đổi trung gian này',
+            'Xem hướng làm em tự nghĩ đúng chưa (đừng giải hết)'
           ]
       : activeMode === 'full_solution'
       ? isEn
@@ -271,10 +346,16 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             'Solve step-by-step and state the final answer',
             'Write clean C++/Python solution with complexity'
           ]
+        : activeSubject === 'cs'
+        ? [
+            'Tóm tắt đề, nêu thuật toán tối ưu và viết code C++20 chuẩn',
+            'Viết lời giải Python 3 sạch và phân tích độ phức tạp Big-O',
+            'Phân tích các test biên dễ sai và đưa code hoàn chỉnh'
+          ]
         : [
-            'Tóm tắt đề, nêu cách làm và giải chi tiết ra đáp số',
-            'Giải thích từng bước biến đổi đến kết quả cuối',
-            'Viết code C++ / Python chuẩn và phân tích độ phức tạp'
+            'Tóm tắt đề, nêu cách làm và giải chi tiết ra đáp số cuối',
+            'Trình bày lời giải từng bước chuẩn tự luận + lưu ý bẫy',
+            'Giải thích hướng tư duy và kiểm chứng lại kết quả'
           ]
       : isEn
       ? [
@@ -284,7 +365,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         ]
       : [
           'Điều chỉnh sơ đồ xuống còn 30 phút/ngày',
-          'Chuyên ngành này cần ưu tiên chuyên đề nào nhất?',
+          `Với môn ${activeSubject === 'math' ? 'Toán' : activeSubject === 'physics' ? 'Vật lí' : 'Tin học'}, nên ưu tiên chuyên đề nào?`,
           'Gợi ý 3 bài học đầu tiên em nên mở ngay hôm nay'
         ];
 
@@ -306,6 +387,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     if (!textToSend && !pendingImage) return;
     if (isLoading) return;
 
+    const targetThreadKey = threadKey;
     const userMsg: TutorMessage = {
       id: `u_${Date.now()}`,
       role: 'user',
@@ -315,7 +397,15 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     };
 
     const nextHistory = [...currentMessages, userMsg];
-    setThreads((prev) => ({ ...prev, [threadKey]: nextHistory }));
+    const tutorMsgId = `t_${Date.now() + 1}`;
+    const placeholderTutorMsg: TutorMessage = {
+      id: tutorMsgId,
+      role: 'tutor',
+      text: '',
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setThreads((prev) => ({ ...prev, [targetThreadKey]: [...nextHistory, placeholderTutorMsg] }));
     if (!overrideText) setInputText('');
     const imageToSend = pendingImage;
     setPendingImage(null);
@@ -331,52 +421,49 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           : {})
       }));
 
-      const res = await safeFetchJson<{ success?: boolean; reply?: string; error?: string }>(
-        '/api/gemini/tutor',
+      const streamRes = await streamTutorChat(
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: apiMessages,
-            context: {
-              ...context,
-              subject: activeSubject,
-              mode: activeMode
-            },
-            language
-          })
+          messages: apiMessages,
+          context: {
+            ...context,
+            subject: activeSubject,
+            mode: activeMode
+          },
+          language
+        },
+        (accumulatedText) => {
+          setThreads((prev) => {
+            const list = prev[targetThreadKey] || [];
+            return {
+              ...prev,
+              [targetThreadKey]: list.map((m) =>
+                m.id === tutorMsgId ? { ...m, text: accumulatedText } : m
+              )
+            };
+          });
         }
       );
 
-      let replyText = res.data?.reply;
-      if (!res.ok || !replyText) {
-        if (res.isStaticFallback || res.status === 0 || res.status === 404 || res.status === 405 || res.status >= 500) {
-          replyText = buildLocalTutorReply({
-            messages: nextHistory.map((m) => ({ role: m.role, text: m.text })),
-            context: {
-              ...context,
-              subject: activeSubject,
-              mode: activeMode
-            },
-            language
-          });
-        } else {
-          throw new Error(res.error || 'Lỗi phản hồi từ Trợ giảng AI');
-        }
+      if (!streamRes.ok || !streamRes.reply) {
+        // Remove empty placeholder message so error shows cleanly
+        setThreads((prev) => ({
+          ...prev,
+          [targetThreadKey]: (prev[targetThreadKey] || []).filter((m) => m.id !== tutorMsgId)
+        }));
+        throw new Error(streamRes.error || 'Gemini AI không thể phản hồi lúc này. Vui lòng thử lại.');
       }
 
-      const tutorMsg: TutorMessage = {
-        id: `t_${Date.now()}`,
-        role: 'tutor',
-        text: replyText,
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-      };
-      setThreads((prev) => ({
-        ...prev,
-        [threadKey]: [...(prev[threadKey] || nextHistory), tutorMsg]
-      }));
+      setThreads((prev) => {
+        const list = prev[targetThreadKey] || [];
+        return {
+          ...prev,
+          [targetThreadKey]: list.map((m) =>
+            m.id === tutorMsgId ? { ...m, text: streamRes.reply! } : m
+          )
+        };
+      });
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Không thể kết nối AI Trợ Giảng. Vui lòng thử lại.');
+      setErrorMsg(err?.message || 'Không thể kết nối Gemini AI. Vui lòng kiểm tra kết nối và thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -399,23 +486,18 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           selfLevel: diagSelfLevel,
           language
         })
-      }
+      },
+      38000
     );
 
     setDiagLoadingQuiz(false);
 
-    let questions = res.ok && Array.isArray(res.data?.questions) ? res.data.questions : null;
-    if (!questions || questions.length === 0) {
-      questions = buildLocalDiagnosticQuiz({
-        subject: activeSubject,
-        grade: diagGrade,
-        targetMajor: diagMajor,
-        selfLevel: diagSelfLevel,
-        language
-      });
+    if (!res.ok || !Array.isArray(res.data?.questions) || res.data.questions.length === 0) {
+      setDiagError(res.error || 'Gemini AI chưa tạo được bộ câu hỏi. Vui lòng bấm thử lại.');
+      return;
     }
 
-    setDiagQuestionsBySubj((prev) => ({ ...prev, [activeSubject]: questions! }));
+    setDiagQuestionsBySubj((prev) => ({ ...prev, [activeSubject]: res.data!.questions! }));
     setDiagAnswersBySubj((prev) => ({ ...prev, [activeSubject]: {} }));
   };
 
@@ -462,23 +544,18 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           customGoal: diagCustomGoal,
           language
         })
-      }
+      },
+      42000
     );
 
     setDiagLoadingRoadmap(false);
 
-    let createdRoadmap = res.ok && res.data?.roadmap ? res.data.roadmap : null;
-    if (!createdRoadmap) {
-      createdRoadmap = buildLocalDiagnosticRoadmap({
-        subject: activeSubject,
-        grade: diagGrade,
-        targetMajor: diagMajor,
-        quizAnswers,
-        customGoal: diagCustomGoal,
-        language
-      });
+    if (!res.ok || !res.data?.roadmap) {
+      setDiagError(res.error || 'Gemini AI chưa hoàn thành sơ đồ lộ trình. Vui lòng bấm thử lại.');
+      return;
     }
 
+    const createdRoadmap = res.data.roadmap;
     setRoadmapsBySubj((prev) => {
       const next = { ...prev, [activeSubject]: createdRoadmap };
       try {
@@ -683,7 +760,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                   </span>
                   <select
                     value={diagGrade}
-                    onChange={(e) => setDiagGrade(e.target.value)}
+                    onChange={(e) => updateActiveDiagConfig({ grade: e.target.value })}
                     className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs"
                   >
                     {['Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((g) => (
@@ -700,7 +777,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                   </span>
                   <select
                     value={diagSelfLevel}
-                    onChange={(e) => setDiagSelfLevel(e.target.value)}
+                    onChange={(e) => updateActiveDiagConfig({ selfLevel: e.target.value })}
                     className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs"
                   >
                     <option value="Cần xây lại gốc">{isEn ? 'Foundational' : 'Cần xây lại gốc'}</option>
@@ -717,10 +794,10 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                 </span>
                 <select
                   value={diagMajor}
-                  onChange={(e) => setDiagMajor(e.target.value)}
+                  onChange={(e) => updateActiveDiagConfig({ major: e.target.value })}
                   className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs"
                 >
-                  {(isEn ? MAJOR_OPTIONS_EN : MAJOR_OPTIONS_VI).map((m) => (
+                  {activeMajorOptions.map((m) => (
                     <option key={m} value={m}>
                       {m}
                     </option>
@@ -731,7 +808,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
               <input
                 type="text"
                 value={diagCustomGoal}
-                onChange={(e) => setDiagCustomGoal(e.target.value)}
+                onChange={(e) => updateActiveDiagConfig({ customGoal: e.target.value })}
                 placeholder={
                   isEn
                     ? 'Optional goal (e.g., 9+ entrance exam, master DP graphs...)'
@@ -962,9 +1039,11 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           </div>
         )}
 
-        {/* Messages Feed (Active in all 3 modes; acts as follow-up refinement chat in Mode 3) */}
+        {/* Messages Feed (Active in all 3 modes; streams Gemini tokens live!) */}
         <div className="space-y-3">
-          {currentMessages.map((msg) => (
+          {currentMessages
+            .filter((msg) => msg.text.length > 0 || Boolean(msg.imagePreview))
+            .map((msg) => (
             <div
               key={msg.id}
               className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
@@ -997,20 +1076,22 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             </div>
           ))}
 
-          {isLoading && (
+          {isLoading &&
+            !(currentMessages[currentMessages.length - 1]?.role === 'tutor' &&
+              currentMessages[currentMessages.length - 1]?.text.length > 0) && (
             <div className="flex items-start">
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl rounded-bl-sm px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
                 {activeMode === 'full_solution'
                   ? isEn
-                    ? 'Preparing full problem summary & detailed solution...'
-                    : 'AI đang tóm tắt đề và trình bày lời giải chi tiết...'
+                    ? `${activeMeta.nameEn} is preparing full summary & detailed solution...`
+                    : `${activeMeta.nameVi} đang tóm tắt đề và giải chi tiết...`
                   : activeMode === 'diagnostic_roadmap'
                   ? isEn
-                    ? 'Updating your study advice...'
-                    : 'AI đang tinh chỉnh lộ trình cho em...'
+                    ? `${activeMeta.nameEn} is updating your study advice...`
+                    : `${activeMeta.nameVi} đang tinh chỉnh lộ trình cho em...`
                   : isEn
-                  ? 'Reviewing your exact unclear step...'
-                  : 'AI đang phân tích kỹ phần em chưa hiểu...'}
+                  ? `${activeMeta.nameEn} is analyzing your unclear step...`
+                  : `${activeMeta.nameVi} đang phân tích kỹ phần em chưa hiểu...`}
               </div>
             </div>
           )}

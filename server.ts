@@ -405,6 +405,8 @@ function buildDefaultForumSeed(): ForumDatabase {
   const t1 = new Date(now.getTime()).toISOString();
   const t2 = new Date(now.getTime() + 60_000).toISOString();
   const t3 = new Date(now.getTime() + 120_000).toISOString();
+  const t4 = new Date(now.getTime() + 180_000).toISOString();
+  const t5 = new Date(now.getTime() + 240_000).toISOString();
 
   return {
     groups: [
@@ -441,6 +443,22 @@ function buildDefaultForumSeed(): ForumDatabase {
         createdAt: t2
       },
       {
+        id: 'physics-mechanics-waves',
+        name: 'CLB Vật Lí 2D/3D · Cơ Học & Sóng Điện Từ',
+        description:
+          'Thảo luận mô phỏng 2D/3D, bài tập Cơ học, Dao động điều hòa, Sóng cơ, Điện xoay chiều và Quang học.',
+        subject: 'physics',
+        isMandatoryAdminGroup: false,
+        creatorId: 'demo_user_3',
+        creatorName: 'Trần Minh Khoa',
+        creatorUsername: 'chuyenli2026',
+        messageCount: 1,
+        lastMessagePreview:
+          'Chào các bạn! Nếu gặp vướng mắc phần con lắc lò xo, ném xiên hay mạch $RLC$ nối tiếp ($Z = \\sqrt{R^2 + (Z_L - Z_C)^2}$), hãy nhắn vào đây nhé.',
+        lastMessageAt: t4,
+        createdAt: t4
+      },
+      {
         id: 'cs-vnoi-algorithms',
         name: 'Nhóm Thuật Toán C++ & Luyện Thi VNOI',
         description:
@@ -455,6 +473,22 @@ function buildDefaultForumSeed(): ForumDatabase {
           'Mọi người nhớ kiểm tra tràn số `long long` với các bài có $N \\le 10^5$ và trọng số $10^9$ nha!',
         lastMessageAt: t3,
         createdAt: t3
+      },
+      {
+        id: 'general-study-lounge',
+        name: 'Góc Thảo Luận Chung & Chia Sẻ Kinh Nghiệm',
+        description:
+          'Nơi trao đổi phương pháp tự học hiệu quả, hỏi đáp sử dụng Synapse, tìm bạn đồng hành và chia sẻ tài liệu ôn thi.',
+        subject: 'general',
+        isMandatoryAdminGroup: false,
+        creatorId: 'demo_user_4',
+        creatorName: 'Lê Thảo Vy',
+        creatorUsername: 'synapse_study',
+        messageCount: 1,
+        lastMessagePreview:
+          'Xin chào cả lớp! Mọi người có thể chia sẻ mẹo học tập, lịch ôn thi hoặc đặt câu hỏi chung tại đây nhé.',
+        lastMessageAt: t5,
+        createdAt: t5
       }
     ],
     messages: [
@@ -484,6 +518,18 @@ function buildDefaultForumSeed(): ForumDatabase {
         createdAt: t2
       },
       {
+        id: 'msg_seed_physics_1',
+        groupId: 'physics-mechanics-waves',
+        isAdminGroup: false,
+        senderId: 'demo_user_3',
+        senderName: 'Trần Minh Khoa',
+        senderUsername: 'chuyenli2026',
+        senderRole: 'student',
+        content:
+          'Chào các bạn! Nếu gặp vướng mắc phần con lắc lò xo, chuyển động ném xiên hay mạch $RLC$ nối tiếp ($Z = \\sqrt{R^2 + (Z_L - Z_C)^2}$), hãy nhắn vào đây để cùng phân tích nhé.',
+        createdAt: t4
+      },
+      {
         id: 'msg_seed_cs_1',
         groupId: 'cs-vnoi-algorithms',
         isAdminGroup: false,
@@ -494,6 +540,18 @@ function buildDefaultForumSeed(): ForumDatabase {
         content:
           'Mọi người nhớ kiểm tra tràn số `long long` với các bài có $N \\le 10^5$ và trọng số $10^9$ nha!',
         createdAt: t3
+      },
+      {
+        id: 'msg_seed_general_1',
+        groupId: 'general-study-lounge',
+        isAdminGroup: false,
+        senderId: 'demo_user_4',
+        senderName: 'Lê Thảo Vy',
+        senderUsername: 'synapse_study',
+        senderRole: 'student',
+        content:
+          'Xin chào cả lớp! Mọi người có thể chia sẻ mẹo học tập, lịch ôn thi hoặc đặt câu hỏi chung ngoài khuôn khổ từng môn ở đây nhé.',
+        createdAt: t5
       }
     ]
   };
@@ -527,6 +585,26 @@ function ensureMandatoryAdminGroup(data: ForumDatabase): ForumDatabase {
           }
         : g
     );
+  }
+
+  // Ensure default Physics & General Discussion groups exist when none exist for those categories
+  const defaultExtraSpecs = [
+    { groupId: 'physics-mechanics-waves', subject: 'physics', msgId: 'msg_seed_physics_1' },
+    { groupId: 'general-study-lounge', subject: 'general', msgId: 'msg_seed_general_1' }
+  ] as const;
+
+  for (const spec of defaultExtraSpecs) {
+    const hasSubjectGroup = data.groups.some((g) => g.subject === spec.subject);
+    if (!hasSubjectGroup) {
+      const seedGroup = seed.groups.find((g) => g.id === spec.groupId);
+      const seedMsg = seed.messages.find((m) => m.id === spec.msgId);
+      if (seedGroup) {
+        data.groups.push(seedGroup);
+      }
+      if (seedMsg && !data.messages.some((m) => m.id === seedMsg.id)) {
+        data.messages.push(seedMsg);
+      }
+    }
   }
 
   data.messages = data.messages.map((m) => {

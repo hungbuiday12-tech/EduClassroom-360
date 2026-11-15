@@ -106,7 +106,9 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const prevGroupIdRef = useRef<string>(selectedGroupId);
+  const prevMsgCountRef = useRef<number>(0);
 
   const selectedGroup = useMemo(
     () => groups.find((g) => g.id === selectedGroupId) || null,
@@ -298,9 +300,28 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
     return () => unsub();
   }, [selectedGroupId, user]);
 
-  // Scroll to bottom when new message arrives
+  // Scroll only INSIDE the messages container (never push the outer page/viewport down)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const container = messagesContainerRef.current;
+    if (!container) {
+      prevGroupIdRef.current = selectedGroupId;
+      prevMsgCountRef.current = messages.length;
+      return;
+    }
+
+    const groupChanged = prevGroupIdRef.current !== selectedGroupId;
+    const msgAdded = messages.length > prevMsgCountRef.current;
+    prevGroupIdRef.current = selectedGroupId;
+    prevMsgCountRef.current = messages.length;
+
+    if (groupChanged) {
+      container.scrollTop = container.scrollHeight;
+    } else if (msgAdded) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages.length, selectedGroupId]);
 
   const handleOpenCreateGroup = () => {
@@ -843,7 +864,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
         </aside>
 
         {/* RIGHT COLUMN (8 cols): Discussion Room */}
-        <section className="lg:col-span-8 rounded-3xl bg-white/85 dark:bg-slate-900/82 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 flex flex-col min-h-[580px] max-h-[720px] shadow-sm overflow-hidden">
+        <section className="lg:col-span-8 rounded-3xl bg-white/85 dark:bg-slate-900/82 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 flex flex-col h-[620px] lg:h-[680px] shadow-sm overflow-hidden">
           {selectedGroup ? (
             <>
               {/* Room Header */}
@@ -947,7 +968,10 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                   )}
 
                   {/* Messages Feed */}
-                  <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
+                  <div
+                    ref={messagesContainerRef}
+                    className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5"
+                  >
                     {loadingMessages ? (
                       <div className="py-12 text-center text-xs text-slate-400">
                         {isEn ? 'Loading messages...' : 'Đang tải nội dung trao đổi...'}
@@ -1044,7 +1068,6 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                         );
                       })
                     )}
-                    <div ref={messagesEndRef} />
                   </div>
 
                   {/* Composer / Gate Footer */}

@@ -41,6 +41,34 @@
       "lastMessagePreview": "Mọi người nhớ kiểm tra tràn số `long long` với các bài có $N \\le 10^5$ và trọng số $10^9$ nha!",
       "lastMessageAt": "2026-11-15T00:02:00.000Z",
       "createdAt": "2026-11-15T00:02:00.000Z"
+    },
+    {
+      "id": "physics-mechanics-waves",
+      "name": "CLB Vật Lí 2D/3D · Cơ Học & Sóng Điện Từ",
+      "description": "Thảo luận mô phỏng 2D/3D, bài tập Cơ học, Dao động điều hòa, Sóng cơ, Điện xoay chiều và Quang học.",
+      "subject": "physics",
+      "isMandatoryAdminGroup": false,
+      "creatorId": "demo_user_3",
+      "creatorName": "Trần Minh Khoa",
+      "creatorUsername": "chuyenli2026",
+      "messageCount": 1,
+      "lastMessagePreview": "Chào các bạn! Nếu gặp vướng mắc phần con lắc lò xo, ném xiên hay mạch $RLC$ nối tiếp ($Z = \\sqrt{R^2 + (Z_L - Z_C)^2}$), hãy nhắn vào đây nhé.",
+      "lastMessageAt": "2026-11-15T00:03:00.000Z",
+      "createdAt": "2026-11-15T00:03:00.000Z"
+    },
+    {
+      "id": "general-study-lounge",
+      "name": "Góc Thảo Luận Chung & Chia Sẻ Kinh Nghiệm",
+      "description": "Nơi trao đổi phương pháp tự học hiệu quả, hỏi đáp sử dụng Synapse, tìm bạn đồng hành và chia sẻ tài liệu ôn thi.",
+      "subject": "general",
+      "isMandatoryAdminGroup": false,
+      "creatorId": "demo_user_4",
+      "creatorName": "Lê Thảo Vy",
+      "creatorUsername": "synapse_study",
+      "messageCount": 1,
+      "lastMessagePreview": "Xin chào cả lớp! Mọi người có thể chia sẻ mẹo học tập, lịch ôn thi hoặc đặt câu hỏi chung tại đây nhé.",
+      "lastMessageAt": "2026-11-15T00:04:00.000Z",
+      "createdAt": "2026-11-15T00:04:00.000Z"
     }
   ],
   "messages": [
@@ -68,6 +96,17 @@
       "createdAt": "2026-11-15T00:01:00.000Z"
     },
     {
+      "id": "msg_seed_physics_1",
+      "groupId": "physics-mechanics-waves",
+      "isAdminGroup": false,
+      "senderId": "demo_user_3",
+      "senderName": "Trần Minh Khoa",
+      "senderUsername": "chuyenli2026",
+      "senderRole": "student",
+      "content": "Chào các bạn! Nếu gặp vướng mắc phần con lắc lò xo, chuyển động ném xiên hay mạch $RLC$ nối tiếp ($Z = \\sqrt{R^2 + (Z_L - Z_C)^2}$), hãy nhắn vào đây để cùng phân tích nhé.",
+      "createdAt": "2026-11-15T00:03:00.000Z"
+    },
+    {
       "id": "msg_seed_cs_1",
       "groupId": "cs-vnoi-algorithms",
       "isAdminGroup": false,
@@ -77,6 +116,17 @@
       "senderRole": "student",
       "content": "Mọi người nhớ kiểm tra tràn số `long long` với các bài có $N \\le 10^5$ và trọng số $10^9$ nha!",
       "createdAt": "2026-11-15T00:02:00.000Z"
+    },
+    {
+      "id": "msg_seed_general_1",
+      "groupId": "general-study-lounge",
+      "isAdminGroup": false,
+      "senderId": "demo_user_4",
+      "senderName": "Lê Thảo Vy",
+      "senderUsername": "synapse_study",
+      "senderRole": "student",
+      "content": "Xin chào cả lớp! Mọi người có thể chia sẻ mẹo học tập, lịch ôn thi hoặc đặt câu hỏi chung ngoài khuôn khổ từng môn ở đây nhé.",
+      "createdAt": "2026-11-15T00:04:00.000Z"
     }
   ]
 }

@@ -11,7 +11,7 @@ const DEFAULT_REMOTE_API_BASE =
   'https://ais-pre-2cajz7v7fqng2hy3peejkj-489067186717.asia-southeast1.run.app';
 
 const STORAGE_KEY = 'educlassroom_api_base_url';
-let sessionForceRemote = false;
+let sessionRemoteBase: string | null = null;
 
 function getStoredApiBase(): string | null {
   try {
@@ -39,10 +39,10 @@ function getStoredApiBase(): string | null {
   return null;
 }
 
-export function isPackagedOrStaticOrigin(): boolean {
+function isNonHttpPackagedProtocol(): boolean {
   if (typeof window === 'undefined') return false;
-  const { protocol, hostname, port } = window.location;
-  if (
+  const { protocol } = window.location;
+  return (
     protocol === 'file:' ||
     protocol === 'capacitor:' ||
     protocol === 'ionic:' ||
@@ -50,19 +50,20 @@ export function isPackagedOrStaticOrigin(): boolean {
     protocol === 'app:' ||
     protocol === 'chrome-extension:' ||
     protocol === 'ms-appx:'
-  ) {
-    return true;
-  }
+  );
+}
+
+export function isPackagedOrStaticOrigin(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (isNonHttpPackagedProtocol()) return true;
+  const { hostname } = window.location;
   if (hostname.endsWith('.github.io')) return true;
-  if (hostname === 'tauri.localhost' || hostname.endsWith('.localhost')) return true;
-  if ((hostname === 'localhost' || hostname === '127.0.0.1') && port !== '3000') {
-    return true;
-  }
+  if (hostname === 'tauri.localhost') return true;
   return false;
 }
 
 export function getRemoteApiBase(): string {
-  return getStoredApiBase() || DEFAULT_REMOTE_API_BASE;
+  return sessionRemoteBase || getStoredApiBase() || DEFAULT_REMOTE_API_BASE;
 }
 
 export function resolveApiUrl(path: string, forceRemote = false): string {
@@ -71,10 +72,60 @@ export function resolveApiUrl(path: string, forceRemote = false): string {
   const envConfigured = Boolean((import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim());
   const storedBase = getStoredApiBase();
 
-  if (forceRemote || sessionForceRemote || envConfigured || storedBase || isPackagedOrStaticOrigin()) {
-    return `${storedBase || DEFAULT_REMOTE_API_BASE}${normalizedPath}`;
+  // Only bypass same-origin when explicitly configured, already switched to a verified remote base,
+  // or running inside a non-HTTP packaged container (file://, capacitor://, tauri://, etc.)
+  if (
+    forceRemote ||
+    sessionRemoteBase ||
+    envConfigured ||
+    storedBase ||
+    isNonHttpPackagedProtocol()
+  ) {
+    return `${getRemoteApiBase()}${normalizedPath}`;
   }
+
+  // On all http:// and https:// origins, always try same-origin /api/* first
   return normalizedPath;
+}
+
+async function probeHealthyBackendBase(): Promise<string | null> {
+  const candidates: string[] = [];
+  const stored = getStoredApiBase();
+  if (stored) candidates.push(stored);
+  candidates.push(DEFAULT_REMOTE_API_BASE);
+  candidates.push('http://127.0.0.1:3000');
+  candidates.push('http://localhost:3000');
+  if (typeof window !== 'undefined' && (window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:')) {
+    candidates.push('http://10.0.2.2:3000');
+  }
+
+  const seen = new Set<string>();
+  for (const base of candidates) {
+    const cleanBase = base.replace(/\/+$/, '');
+    if (!cleanBase || seen.has(cleanBase)) continue;
+    seen.add(cleanBase);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1800);
+    try {
+      const res = await fetch(`${cleanBase}/api/health`, {
+        method: 'GET',
+        signal: controller.signal
+      });
+      if (res.ok) {
+        const json = await res.json().catch(() => null);
+        if (json?.ok) {
+          sessionRemoteBase = cleanBase;
+          return cleanBase;
+        }
+      }
+    } catch {
+      // candidate unreachable
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return null;
 }
 
 function buildNetworkErrorMessage(raw: string): string {
@@ -82,7 +133,7 @@ function buildNetworkErrorMessage(raw: string): string {
     return 'Không kết nối được tới máy chủ AI backend. Nếu bạn đang chạy bản Web tĩnh (GitHub Pages), file APK hoặc EXE, hãy đảm bảo máy chủ Node (server.ts) đã được Publish/deploy và cấu hình đúng URL backend (VITE_API_BASE_URL).';
   }
   if (/http2|protocol/i.test(raw)) {
-    return 'Kết nối truyền dữ liệu bị gián đoạn tạm thời. Đang hoặc vui lòng thử gửi lại sau giây lát.';
+    return 'Kết nối truyền dữ liệu bị gián đoạn tạm thời. Vui lòng thử gửi lại sau giây lát.';
   }
   return 'Không thể kết nối tới máy chủ AI. Vui lòng kiểm tra kết nối mạng và thử gửi lại.';
 }
@@ -263,19 +314,29 @@ export async function safeFetchJson<T = any>(
   const primaryUrl = resolveApiUrl(url);
   const firstRes = await fetchJsonOnce<T>(primaryUrl, init, timeoutMs);
 
-  // Only fall back to remote backend if current host actually returned static HTML / 404 / 405
-  if (!firstRes.ok && firstRes.isStaticFallback && !/^https?:\/\//i.test(primaryUrl)) {
+  // If same-origin served static HTML/404, or a packaged app failed network connection, probe remote/local backends
+  const shouldProbeRemote =
+    (!firstRes.ok && firstRes.isStaticFallback && !/^https?:\/\//i.test(primaryUrl)) ||
+    (!firstRes.ok && firstRes.status === 0 && isPackagedOrStaticOrigin());
+
+  if (shouldProbeRemote) {
     const remoteUrl = resolveApiUrl(url, true);
     if (remoteUrl !== primaryUrl) {
       const remoteRes = await fetchJsonOnce<T>(remoteUrl, init, timeoutMs);
       if (remoteRes.ok) {
-        sessionForceRemote = true;
+        sessionRemoteBase = getRemoteApiBase();
         return remoteRes;
       }
-      // Do not replace a clean origin message with a CORS failure if remote is also unreachable
-      if (remoteRes.status !== 0) {
+      if (remoteRes.status !== 0 && !remoteRes.isStaticFallback) {
         return remoteRes;
       }
+    }
+
+    // Try discovering a healthy local/remote backend (e.g. Electron/local server at 127.0.0.1:3000)
+    const discoveredBase = await probeHealthyBackendBase();
+    if (discoveredBase) {
+      const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+      return await fetchJsonOnce<T>(`${discoveredBase}${normalizedPath}`, init, timeoutMs);
     }
   }
 
@@ -381,14 +442,12 @@ export async function streamTutorChat(
       return { ok: false, error: streamError };
     }
 
-    // Stream closed cleanly without tokens — retry via standard JSON POST
     clearTimeout(timer);
     return await tryNonStreamFallback();
   } catch (err: any) {
     if (err?.name === 'AbortError') {
       return { ok: false, error: 'Kết nối AI bị quá thời gian (timeout). Vui lòng thử lại.' };
     }
-    // If SSE stream failed (e.g. HTTP/2 proxy reset or WebView stream issue), fall back to standard JSON POST
     clearTimeout(timer);
     return await tryNonStreamFallback();
   } finally {

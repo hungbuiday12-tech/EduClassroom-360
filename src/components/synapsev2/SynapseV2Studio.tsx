@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -14,14 +14,18 @@ import {
   Cpu,
   Disc,
   Dna,
+  Download,
   Eye,
   EyeOff,
   Flame,
+  Gauge,
+  Grid,
   Infinity as InfinityIcon,
   Layers,
   LayoutGrid,
   Maximize2,
   Minimize2,
+  Music,
   Orbit,
   Pause,
   Play,
@@ -30,6 +34,7 @@ import {
   Rocket,
   RotateCcw,
   Satellite,
+  Scissors,
   Search,
   Server,
   Share2,
@@ -39,11 +44,13 @@ import {
   Sun,
   Volume2,
   VolumeX,
-  Waves
+  Waves,
+  Zap
 } from 'lucide-react';
 import { SubjectType } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { useAudio } from '../../context/AudioContext';
 import {
   buildCitadelEnvironment,
   buildCosmicSkyDome,
@@ -67,35 +74,49 @@ interface SynapseV2StudioProps {
   onEarnXP?: (xp: number) => void;
 }
 
-type CameraPresetId = 'overview' | 'core' | 'zenith' | 'drone';
+type CameraPresetId = 'overview' | 'core' | 'zenith' | 'drone' | 'side' | 'lowAngle';
+type RenderStyleId = 'pbr' | 'wireframe' | 'xray';
+type LightingMoodId = 'cosmic' | 'studio' | 'solar';
 
 const CAMERA_PRESETS: Record<
   CameraPresetId,
   { pos: [number, number, number]; target: [number, number, number]; labelVi: string; labelEn: string }
 > = {
+  drone: {
+    pos: [11.2, 4.4, 11.2],
+    target: [0, 0.7, 0],
+    labelVi: 'Quỹ đạo',
+    labelEn: 'Orbit'
+  },
   overview: {
     pos: [12.5, 6.2, 13.8],
     target: [0, 0.5, 0],
-    labelVi: 'Toàn cảnh Đài',
-    labelEn: 'Citadel Overview'
+    labelVi: 'Toàn cảnh',
+    labelEn: 'Overview'
   },
   core: {
     pos: [5.4, 2.1, 5.8],
     target: [0, 0.65, 0],
-    labelVi: 'Cận cảnh Lõi',
-    labelEn: 'Core Close-Up'
+    labelVi: 'Cận lõi',
+    labelEn: 'Core'
   },
   zenith: {
     pos: [0.1, 17.5, 6.2],
     target: [0, 0, 0],
-    labelVi: 'Góc nhìn Từ đỉnh',
-    labelEn: 'Zenith Aerial'
+    labelVi: 'Từ đỉnh',
+    labelEn: 'Zenith'
   },
-  drone: {
-    pos: [11.2, 4.4, 11.2],
-    target: [0, 0.7, 0],
-    labelVi: 'Drone Quỹ đạo',
-    labelEn: 'Auto-Orbit Drone'
+  side: {
+    pos: [14.0, 1.4, 0.2],
+    target: [0, 1.0, 0],
+    labelVi: 'Mặt ngang',
+    labelEn: 'Side'
+  },
+  lowAngle: {
+    pos: [7.8, 0.65, 8.2],
+    target: [0, 2.1, 0],
+    labelVi: 'Góc ngước',
+    labelEn: 'Hero Low'
   }
 };
 
@@ -141,6 +162,12 @@ function renderMonumentIcon(id: MonumentId, className = 'w-4 h-4') {
       return <ShieldCheck className={`${className} text-violet-300 icon-anim-branch`} />;
     case 'graph_dijkstra_citadel':
       return <Share2 className={`${className} text-amber-300 icon-anim-list`} />;
+    case 'lhc_collider':
+      return <Atom className={`${className} text-sky-400 icon-anim-atom`} />;
+    case 'laser_interferometer':
+      return <Waves className={`${className} text-emerald-400 icon-anim-wave`} />;
+    case 'tesla_electromagnet':
+      return <Zap className={`${className} text-purple-400 icon-anim-zap`} />;
     default:
       return <Orbit className={`${className} text-cyan-400 icon-anim-cosmos`} />;
   }
@@ -154,6 +181,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { location, navigate } = useNavigation();
+  const { bgSound, setBgSound, isBgPlaying, toggleBgPlaying } = useAudio();
 
   // Synced with NavigationContext so clicking 'Lớp học ảo · Synapse v2' in Header always returns to 12-Chamber home
   const studioMode = location.synapseMode || 'catalog';
@@ -170,19 +198,27 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     [activeId]
   );
 
-  // Simulation parameters
+  // Simulation parameters & comprehensive monument controls
   const [primaryParam, setPrimaryParam] = useState<number>(activeDef.primaryRange[2]);
   const [secondaryParam, setSecondaryParam] = useState<number>(activeDef.secondaryRange[2]);
   const [explodeFactor, setExplodeFactor] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [timeScale, setTimeScale] = useState<number>(1.0);
+  const [orbitSpeed, setOrbitSpeed] = useState<number>(1.0);
+  const [autoOrbitEnabled, setAutoOrbitEnabled] = useState<boolean>(true);
+  const [cameraFov, setCameraFov] = useState<number>(46);
+  const [renderStyle, setRenderStyle] = useState<RenderStyleId>('pbr');
+  const [lightingMood, setLightingMood] = useState<LightingMoodId>('cosmic');
+  const [sliceEnabled, setSliceEnabled] = useState<boolean>(false);
+  const [sliceHeight, setSliceHeight] = useState<number>(3.5);
+  const [showPlatform, setShowPlatform] = useState<boolean>(true);
   const [cameraPreset, setCameraPreset] = useState<CameraPresetId>('drone');
   const [isDockOpen, setIsDockOpen] = useState<boolean>(true);
+  const [isAdvancedDockOpen, setIsAdvancedDockOpen] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [contextLost, setContextLost] = useState<boolean>(false);
   const [webglError, setWebglError] = useState<boolean>(false);
   const [visitedWonders, setVisitedWonders] = useState<MonumentId[]>(['dyson']);
-  const [isAmbientOn, setIsAmbientOn] = useState<boolean>(false);
 
   // Ensure fullscreen exits & parameters stay synced when returning to catalog or navigating Back/Forward
   useEffect(() => {
@@ -271,91 +307,80 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const desiredCamPosRef = useRef<THREE.Vector3>(new THREE.Vector3(...CAMERA_PRESETS.drone.pos));
   const desiredTargetRef = useRef<THREE.Vector3>(new THREE.Vector3(...CAMERA_PRESETS.drone.target));
 
+  const autoOrbitRef = useRef<{ enabled: boolean; speed: number }>({
+    enabled: autoOrbitEnabled,
+    speed: orbitSpeed
+  });
+  autoOrbitRef.current = { enabled: autoOrbitEnabled, speed: orbitSpeed };
+
   const applyCameraPreset = (preset: CameraPresetId) => {
     setCameraPreset(preset);
+    if (preset === 'drone') {
+      setAutoOrbitEnabled(true);
+    }
     const cfg = CAMERA_PRESETS[preset];
     desiredCamPosRef.current.set(...cfg.pos);
     desiredTargetRef.current.set(...cfg.target);
     cameraLerpingRef.current = true;
   };
 
-  // Optional procedural harmonic Web Audio cosmic drone
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const audioGainRef = useRef<GainNode | null>(null);
+  const resetCurrentMonument = useCallback(() => {
+    setPrimaryParam(activeDef.primaryRange[2]);
+    setSecondaryParam(activeDef.secondaryRange[2]);
+    setExplodeFactor(0);
+    setTimeScale(1);
+    setOrbitSpeed(1);
+    setAutoOrbitEnabled(true);
+    setCameraFov(46);
+    setRenderStyle('pbr');
+    setLightingMood('cosmic');
+    setSliceEnabled(false);
+    setSliceHeight(3.5);
+    setShowPlatform(true);
+    setIsPaused(false);
+    applyCameraPreset('drone');
+  }, [activeDef]);
 
-  const toggleAmbientAudio = () => {
-    try {
-      if (!isAmbientOn) {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = audioCtxRef.current || new AudioCtx();
-        audioCtxRef.current = ctx;
-        if (ctx.state === 'suspended') {
-          ctx.resume();
-        }
-        if (!audioGainRef.current) {
-          const master = ctx.createGain();
-          master.gain.setValueAtTime(0.001, ctx.currentTime);
-          master.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 0.8);
-          master.connect(ctx.destination);
-          audioGainRef.current = master;
-
-          const freqs = [110, 164.81, 220, 277.18];
-          freqs.forEach((f, idx) => {
-            const osc = ctx.createOscillator();
-            osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
-            osc.frequency.setValueAtTime(f, ctx.currentTime);
-            const g = ctx.createGain();
-            g.gain.value = idx === 0 ? 0.45 : 0.16;
-            osc.connect(g);
-            g.connect(master);
-            osc.start();
-          });
-        } else {
-          audioGainRef.current.gain.setTargetAtTime(0.055, ctx.currentTime, 0.25);
-        }
-        setIsAmbientOn(true);
-      } else {
-        if (audioCtxRef.current && audioGainRef.current) {
-          audioGainRef.current.gain.setTargetAtTime(0.0001, audioCtxRef.current.currentTime, 0.2);
-        }
-        setIsAmbientOn(false);
-      }
-    } catch {
-      setIsAmbientOn(false);
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      try {
-        if (audioCtxRef.current) {
-          audioCtxRef.current.close();
-          audioCtxRef.current = null;
-          audioGainRef.current = null;
-        }
-      } catch {}
-    };
-  }, []);
-
-  // Keyboard shortcuts ('H' to toggle HUD dock, 'Escape' to exit fullscreen)
+  // Keyboard shortcuts ('H' toggle HUD, 'Space' play/pause, 'R' reset, 'Escape' exit fullscreen)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
+        return;
+      }
       if (e.key === 'Escape' && isFullscreen) {
         setIsFullscreen(false);
-      } else if (e.key.toLowerCase() === 'h' && studioMode === 'stage') {
-        setIsDockOpen((prev) => !prev);
+      } else if (studioMode === 'stage') {
+        const lower = e.key.toLowerCase();
+        if (lower === 'h') {
+          setIsDockOpen((prev) => !prev);
+        } else if (e.code === 'Space') {
+          e.preventDefault();
+          setIsPaused((p) => !p);
+        } else if (lower === 'r') {
+          resetCurrentMonument();
+        }
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isFullscreen, studioMode]);
+  }, [isFullscreen, studioMode, resetCurrentMonument]);
 
   // Persistent Three.js Scene & Renderer Refs
   const sceneRef = useRef<THREE.Scene | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const citadelGroupRef = useRef<THREE.Group | null>(null);
+  const lightsRef = useRef<{
+    hemi: THREE.HemisphereLight;
+    key: THREE.DirectionalLight;
+    rim: THREE.DirectionalLight;
+    magenta: THREE.DirectionalLight;
+    core: THREE.PointLight;
+  } | null>(null);
+  const clipPlaneRef = useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, -1, 0), 3.5));
+  const materialOrigRef = useRef<
+    WeakMap<THREE.Material, { wireframe: boolean; transparent: boolean; opacity: number; side: THREE.Side }>
+  >(new WeakMap());
   const monumentSlotRef = useRef<THREE.Group | null>(null);
   const activeBuiltRef = useRef<BuiltMonument | null>(null);
   const isSoftwareGlRef = useRef<boolean>(false);
@@ -399,6 +424,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
+    renderer.localClippingEnabled = true;
+    rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -417,6 +444,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
     const camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 200);
     camera.position.set(...CAMERA_PRESETS.drone.pos);
+    cameraRef.current = camera;
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = !isSoftwareGl;
@@ -449,6 +477,13 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     const coreAccentLight = new THREE.PointLight(0x6366f1, 2.4, 26, 1.4);
     coreAccentLight.position.set(0, 1.5, 0);
     scene.add(coreAccentLight);
+    lightsRef.current = {
+      hemi: hemiLight,
+      key: keyLight,
+      rim: rimLight,
+      magenta: magentaFillLight,
+      core: coreAccentLight
+    };
 
     const glowTex = createGlowSpriteTexture();
     const bgStarsCount = isSoftwareGl ? 600 : 1600;
@@ -487,6 +522,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     const shadowTex = createContactShadowTexture();
     const citadel = buildCitadelEnvironment(circuitTex, shadowTex, isSoftwareGl);
     scene.add(citadel.group);
+    citadelGroupRef.current = citadel.group;
 
     const monumentSlot = new THREE.Group();
     scene.add(monumentSlot);
@@ -577,8 +613,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
         if (camera.position.distanceTo(desiredCamPosRef.current) < 0.05) {
           cameraLerpingRef.current = false;
         }
-      } else if (presetRef.current === 'drone' && params.timeScale > 0) {
-        const rotAngle = rawDelta * 0.14 * Math.min(1.5, params.timeScale);
+      } else if (autoOrbitRef.current.enabled && autoOrbitRef.current.speed > 0.01) {
+        const rotAngle = rawDelta * 0.16 * autoOrbitRef.current.speed;
         const cx = camera.position.x - controls.target.x;
         const cz = camera.position.z - controls.target.z;
         const cosA = Math.cos(rotAngle);
@@ -626,8 +662,52 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       }
       monumentSlotRef.current = null;
       activeBuiltRef.current = null;
+      rendererRef.current = null;
+      cameraRef.current = null;
+      citadelGroupRef.current = null;
+      lightsRef.current = null;
+      sceneRef.current = null;
     };
   }, [studioMode]);
+
+  // Apply Render Material Style (PBR / Wireframe / X-Ray Glass) cleanly on monument meshes
+  const applyRenderStyleToMonument = useCallback((root: THREE.Object3D | null, style: RenderStyleId) => {
+    if (!root) return;
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh && !(obj as THREE.Line).isLine) return;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mats.forEach((mat) => {
+        if (!mat) return;
+        let orig = materialOrigRef.current.get(mat);
+        if (!orig) {
+          orig = {
+            wireframe: 'wireframe' in mat ? Boolean((mat as THREE.MeshStandardMaterial).wireframe) : false,
+            transparent: Boolean(mat.transparent),
+            opacity: typeof mat.opacity === 'number' ? mat.opacity : 1,
+            side: mat.side
+          };
+          materialOrigRef.current.set(mat, orig);
+        }
+        if (style === 'pbr') {
+          if ('wireframe' in mat) (mat as THREE.MeshStandardMaterial).wireframe = orig.wireframe;
+          mat.transparent = orig.transparent;
+          mat.opacity = orig.opacity;
+          mat.side = orig.side;
+        } else if (style === 'wireframe') {
+          if ('wireframe' in mat) (mat as THREE.MeshStandardMaterial).wireframe = true;
+          mat.transparent = true;
+          mat.opacity = Math.max(0.45, Math.min(0.95, orig.opacity));
+        } else if (style === 'xray') {
+          if ('wireframe' in mat) (mat as THREE.MeshStandardMaterial).wireframe = false;
+          mat.transparent = true;
+          mat.opacity = Math.min(0.36, orig.opacity);
+          mat.side = THREE.DoubleSide;
+        }
+        mat.needsUpdate = true;
+      });
+    });
+  }, []);
 
   // Swap Active Monument inside the persistent WebGL stage cleanly
   useEffect(() => {
@@ -642,9 +722,91 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     }
 
     const nextBuilt = buildMonument(activeId, isSoftwareGlRef.current);
+    applyRenderStyleToMonument(nextBuilt.root, renderStyle);
     slot.add(nextBuilt.root);
     activeBuiltRef.current = nextBuilt;
-  }, [activeId, studioMode]);
+  }, [activeId, studioMode, applyRenderStyleToMonument]);
+
+  // Live updates for FOV, RenderStyle, LightingMood, Cross-Section Slice Plane, and Citadel Platform
+  useEffect(() => {
+    if (studioMode !== 'stage') return;
+    applyRenderStyleToMonument(activeBuiltRef.current?.root || null, renderStyle);
+  }, [renderStyle, studioMode, applyRenderStyleToMonument]);
+
+  useEffect(() => {
+    const cam = cameraRef.current;
+    if (!cam) return;
+    cam.fov = cameraFov;
+    cam.updateProjectionMatrix();
+  }, [cameraFov]);
+
+  useEffect(() => {
+    const r = rendererRef.current;
+    if (!r) return;
+    clipPlaneRef.current.constant = sliceHeight;
+    r.clippingPlanes = sliceEnabled ? [clipPlaneRef.current] : [];
+  }, [sliceEnabled, sliceHeight, studioMode]);
+
+  useEffect(() => {
+    if (citadelGroupRef.current) {
+      citadelGroupRef.current.visible = showPlatform;
+    }
+  }, [showPlatform, studioMode]);
+
+  useEffect(() => {
+    const sc = sceneRef.current;
+    const r = rendererRef.current;
+    const l = lightsRef.current;
+    if (!sc || !r || !l) return;
+
+    if (lightingMood === 'cosmic') {
+      sc.background = new THREE.Color(0x07102a);
+      sc.fog = new THREE.FogExp2(0x091436, 0.0105);
+      l.hemi.color.setHex(0xbae6fd);
+      l.hemi.intensity = 0.82;
+      l.key.color.setHex(0xfff4e0);
+      l.key.intensity = 2.25;
+      l.rim.color.setHex(0x38bdf8);
+      l.rim.intensity = 1.65;
+      l.magenta.intensity = 0.95;
+      r.toneMappingExposure = 1.15;
+    } else if (lightingMood === 'studio') {
+      sc.background = new THREE.Color(0x0f172a);
+      sc.fog = new THREE.FogExp2(0x0f172a, 0.005);
+      l.hemi.color.setHex(0xffffff);
+      l.hemi.intensity = 1.35;
+      l.key.color.setHex(0xf8fafc);
+      l.key.intensity = 2.85;
+      l.rim.color.setHex(0x7dd3fc);
+      l.rim.intensity = 1.35;
+      l.magenta.intensity = 0.45;
+      r.toneMappingExposure = 1.32;
+    } else {
+      sc.background = new THREE.Color(0x160f24);
+      sc.fog = new THREE.FogExp2(0x1e1330, 0.009);
+      l.hemi.color.setHex(0xfef08a);
+      l.hemi.intensity = 0.95;
+      l.key.color.setHex(0xfbbf24);
+      l.key.intensity = 3.1;
+      l.rim.color.setHex(0xf97316);
+      l.rim.intensity = 1.85;
+      l.magenta.intensity = 0.7;
+      r.toneMappingExposure = 1.22;
+    }
+  }, [lightingMood, studioMode]);
+
+  const handleCaptureSnapshot = () => {
+    const r = rendererRef.current;
+    const sc = sceneRef.current;
+    const cam = cameraRef.current;
+    if (!r || !sc || !cam) return;
+    r.render(sc, cam);
+    const dataUrl = r.domElement.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `synapse-3d-${activeDef.id}.png`;
+    a.click();
+  };
 
   const telemetry = useMemo(
     () =>
@@ -726,7 +888,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   </span>
                   <span className="text-slate-500" aria-hidden="true">·</span>
                   <span className="inline-flex items-center gap-1.5 text-xs font-mono text-emerald-300 font-bold tabular-nums">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                     {visitedWonders.length}/{totalChambers} {isEn ? 'Chambers Unlocked' : 'Công trình đã thám hiểm'}
                   </span>
                 </div>
@@ -739,8 +901,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
                 <p className="text-sm text-sky-100/85 leading-relaxed">
                   {isEn
-                    ? `Explore ${totalChambers} real-time procedural WebGL 3D simulations spanning space science (James Webb, Wormhole, Pulsar, Solar Sail), computer science (Exascale Torus, Superscalar CPU, ZK-Merkle, Dijkstra Graph), quantum tech, and relativistic physics.`
-                    : `Hệ thống ${totalChambers} đại công trình mô phỏng 3D WebGL thời gian thực vượt bậc: từ Khoa học Vũ trụ (Kính James Webb, Lỗ Sâu Morris-Thorne, Sao Neutron Pulsar, Cánh Buồm Ánh Sáng) đến Khoa học Vi tính (Siêu Máy Tính Exascale, Vi Xử Lí Đường Ống 5 Tầng, Mạng Khối ZK-Merkle, Đồ Thị Dijkstra 3D) cùng Vật lí và Toán học đa chiều.`}
+                    ? `Explore ${totalChambers} real-time procedural WebGL 3D simulations spanning physics (CERN LHC Collider, Quantum Double-Slit Laser, Tesla Resonant Coil, Tokamak), space science (James Webb, Wormhole, Pulsar), computer science (Exascale Torus, Superscalar CPU, ZK-Merkle, Dijkstra Graph), and higher-dimensional math.`
+                    : `Hệ thống ${totalChambers} đại công trình mô phỏng 3D WebGL thời gian thực vượt bậc: từ Vật lí & Năng lượng (Máy Gia Tốc LHC, Giao Thoa Kế Laser Khe Kép, Tháp Cộng Hưởng Tesla, Lò Tokamak), Khoa học Vũ trụ (Kính James Webb, Lỗ Sâu Morris-Thorne, Pulsar) đến Khoa học Vi tính (Siêu Máy Tính Exascale, CPU 5 Tầng, ZK-Merkle, Dijkstra 3D) và Toán học đa chiều.`}
                 </p>
 
                 {/* Quantum Exploration Progress Bar */}
@@ -1003,35 +1165,57 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             </div>
           </div>
 
-          {/* Right Quick Actions: Audio + Camera Presets + Hide Dock + Fullscreen */}
+          {/* Right Quick Actions: Music (Minecraft/Cosmic) + Camera Presets + Snapshot + Hide Dock + Fullscreen */}
           <div className="pointer-events-auto flex items-center gap-1.5 flex-wrap">
             <button
               type="button"
-              onClick={toggleAmbientAudio}
-              className={`group flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
-                isAmbientOn
-                  ? 'bg-emerald-500/20 border-emerald-400/70 text-emerald-300'
+              onClick={() => {
+                if (!isBgPlaying || bgSound === 'off') {
+                  setBgSound('minecraft_calm');
+                } else {
+                  toggleBgPlaying();
+                }
+              }}
+              className={`group flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                isBgPlaying && bgSound !== 'off'
+                  ? 'bg-emerald-500/25 border-emerald-400/70 text-emerald-200'
                   : 'bg-slate-950/92 border-white/15 text-slate-200 hover:border-cyan-400/60'
               }`}
-              title={isEn ? 'Cosmic Resonance Audio' : 'Âm thanh Cộng hưởng Vũ trụ'}
+              title={isEn ? 'Play Minecraft Calm Piano / Background Audio' : 'Bật/Tắt Nhạc nền Minecraft & Không gian'}
             >
-              {isAmbientOn ? (
-                <Volume2 className="w-4 h-4 icon-anim-wave" />
+              {isBgPlaying && bgSound !== 'off' ? (
+                <Volume2 className="w-4 h-4 icon-anim-wave text-emerald-300" />
               ) : (
                 <VolumeX className="w-4 h-4 text-slate-400" />
               )}
               <span className="hidden md:inline">
-                {isEn ? 'Cosmic Audio' : 'Âm thanh 3D'}
+                {isBgPlaying && bgSound === 'minecraft_calm'
+                  ? 'Minecraft Piano'
+                  : isBgPlaying && bgSound !== 'off'
+                  ? isEn ? 'Audio On' : 'Đang phát nhạc'
+                  : isEn ? 'Minecraft Music' : 'Nhạc Minecraft'}
               </span>
             </button>
 
-            <div className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-slate-950/92 border border-white/15">
+            <button
+              type="button"
+              onClick={() =>
+                setBgSound(bgSound === 'minecraft_calm' ? 'cosmic_drone' : 'minecraft_calm')
+              }
+              className="hidden sm:flex items-center gap-1 px-2.5 py-2 rounded-xl bg-slate-950/92 border border-white/15 hover:border-cyan-400/60 text-[11px] font-bold text-slate-200 cursor-pointer whitespace-nowrap"
+              title={isEn ? 'Switch Music Track (Minecraft / Cosmic)' : 'Đổi nhạc (Minecraft Piano / Vũ trụ)'}
+            >
+              <Music className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{bgSound === 'minecraft_calm' ? 'Vũ trụ' : 'Minecraft'}</span>
+            </button>
+
+            <div className="hidden xl:flex items-center gap-1 p-1 rounded-xl bg-slate-950/92 border border-white/15">
               {(Object.keys(CAMERA_PRESETS) as CameraPresetId[]).map((pid) => (
                 <button
                   key={pid}
                   type="button"
                   onClick={() => applyCameraPreset(pid)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                  className={`px-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap ${
                     cameraPreset === pid
                       ? 'bg-cyan-500 text-slate-950'
                       : 'text-slate-300 hover:bg-white/10'
@@ -1045,8 +1229,17 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
             <button
               type="button"
+              onClick={handleCaptureSnapshot}
+              className="p-2 rounded-xl bg-slate-950/92 border border-white/15 hover:border-cyan-400/60 text-slate-200 cursor-pointer"
+              title={isEn ? 'Save 3D Snapshot PNG' : 'Chụp ảnh PNG Đại công trình'}
+            >
+              <Download className="w-4 h-4 text-cyan-300" />
+            </button>
+
+            <button
+              type="button"
               onClick={() => setIsDockOpen((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/92 border border-white/15 hover:border-cyan-400/60 text-xs font-bold text-slate-200 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/92 border border-white/15 hover:border-cyan-400/60 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap"
               title={isEn ? 'Toggle Control Console (H)' : 'Thu gọn/Mở bảng điều khiển (Phím H)'}
             >
               {isDockOpen ? (
@@ -1139,11 +1332,45 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                {/* Parameter Quick Presets */}
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.05] border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrimaryParam(activeDef.primaryRange[0]);
+                      setSecondaryParam(activeDef.secondaryRange[0]);
+                    }}
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold text-slate-300 hover:bg-white/10 cursor-pointer"
+                  >
+                    Min
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrimaryParam(activeDef.primaryRange[2]);
+                      setSecondaryParam(activeDef.secondaryRange[2]);
+                    }}
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold text-cyan-300 hover:bg-cyan-500/20 cursor-pointer"
+                  >
+                    {isEn ? 'Nominal' : 'Chuẩn'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrimaryParam(activeDef.primaryRange[1]);
+                      setSecondaryParam(activeDef.secondaryRange[1]);
+                    }}
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold text-amber-300 hover:bg-amber-500/20 cursor-pointer"
+                  >
+                    Max
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setIsPaused((p) => !p)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white cursor-pointer whitespace-nowrap"
                 >
                   {isPaused ? (
                     <Play className="w-3.5 h-3.5 text-emerald-400" />
@@ -1155,16 +1382,22 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setPrimaryParam(activeDef.primaryRange[2]);
-                    setSecondaryParam(activeDef.secondaryRange[2]);
-                    setExplodeFactor(0);
-                    setTimeScale(1);
-                    setIsPaused(false);
-                    applyCameraPreset('drone');
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-200 cursor-pointer"
-                  title={isEn ? 'Reset parameters' : 'Đặt lại thông số'}
+                  onClick={() => setIsAdvancedDockOpen((v) => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer border whitespace-nowrap ${
+                    isAdvancedDockOpen
+                      ? 'bg-indigo-500/25 border-indigo-400/60 text-indigo-200'
+                      : 'bg-white/10 border-transparent text-slate-200 hover:bg-white/20'
+                  }`}
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>{isEn ? 'Pro Controls' : 'Điều khiển Chi tiết'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={resetCurrentMonument}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap"
+                  title={isEn ? 'Reset all (R)' : 'Đặt lại toàn bộ (Phím R)'}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>{isEn ? 'Reset' : 'Đặt lại'}</span>
@@ -1174,7 +1407,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate(activeDef.relatedSubject)}
-                    className="group flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-extrabold cursor-pointer transition-colors"
+                    className="group flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap"
                   >
                     <span>{isEn ? activeDef.relatedLabelEn : activeDef.relatedLabelVi}</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -1192,6 +1425,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
               </div>
             </div>
 
+            {/* Primary Simulation Sliders & Telemetry */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
               <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div className="space-y-1.5 bg-white/[0.04] border border-white/10 rounded-2xl p-3">
@@ -1238,7 +1472,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 <div className="space-y-1.5 bg-white/[0.04] border border-white/10 rounded-2xl p-3">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="font-semibold text-slate-300 truncate">
-                      {isEn ? 'Exploded Cutaway' : 'Mặt cắt / Tách lớp 3D'}
+                      {isEn ? 'Exploded Cutaway' : 'Tách lớp 3D'}
                     </span>
                     <span className="font-mono font-extrabold text-purple-300 tabular-nums shrink-0">
                       {Math.round(explodeFactor * 100)}%
@@ -1283,6 +1517,175 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Comprehensive Monument Engineering Row (Speed, Orbit, FOV, Render Style, Mood, Cross-Section Slice, Platform) */}
+            {isAdvancedDockOpen && (
+              <div className="pt-3 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5 items-center">
+                {/* Time Scale */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2.5 space-y-1">
+                  <div className="flex items-center justify-between text-[10px] text-slate-300">
+                    <span className="inline-flex items-center gap-1 font-semibold">
+                      <Gauge className="w-3 h-3 text-emerald-400" />
+                      {isEn ? 'Sim Speed' : 'Tốc độ mô phỏng'}
+                    </span>
+                    <span className="font-mono font-bold text-emerald-300 tabular-nums">
+                      {timeScale.toFixed(1)}x
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.2}
+                    max={3.0}
+                    step={0.1}
+                    value={timeScale}
+                    onChange={(e) => setTimeScale(Number(e.target.value))}
+                    className="w-full accent-emerald-400 cursor-pointer"
+                  />
+                </div>
+
+                {/* Auto-Orbit Toggle & Speed */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2.5 space-y-1">
+                  <div className="flex items-center justify-between text-[10px] text-slate-300">
+                    <button
+                      type="button"
+                      onClick={() => setAutoOrbitEnabled((v) => !v)}
+                      className={`font-bold cursor-pointer ${
+                        autoOrbitEnabled ? 'text-cyan-300' : 'text-slate-400'
+                      }`}
+                    >
+                      {autoOrbitEnabled ? (isEn ? 'Orbit: ON' : 'Tự xoay: BẬT') : isEn ? 'Orbit: OFF' : 'Tự xoay: TẮT'}
+                    </button>
+                    <span className="font-mono text-cyan-300 tabular-nums">{orbitSpeed.toFixed(1)}x</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.2}
+                    max={3.0}
+                    step={0.1}
+                    value={orbitSpeed}
+                    onChange={(e) => {
+                      setOrbitSpeed(Number(e.target.value));
+                      if (!autoOrbitEnabled) setAutoOrbitEnabled(true);
+                    }}
+                    className="w-full accent-cyan-400 cursor-pointer"
+                  />
+                </div>
+
+                {/* Camera FOV */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2.5 space-y-1">
+                  <div className="flex items-center justify-between text-[10px] text-slate-300">
+                    <span className="font-semibold">{isEn ? 'Lens FOV' : 'Góc ống kính FOV'}</span>
+                    <span className="font-mono font-bold text-sky-300 tabular-nums">{cameraFov}°</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={28}
+                    max={72}
+                    step={1}
+                    value={cameraFov}
+                    onChange={(e) => setCameraFov(Number(e.target.value))}
+                    className="w-full accent-sky-400 cursor-pointer"
+                  />
+                </div>
+
+                {/* Material / Render Style */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2 space-y-1">
+                  <div className="text-[10px] font-semibold text-slate-400">
+                    {isEn ? 'Material Shader' : 'Chế độ Vật liệu'}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {(
+                      [
+                        { id: 'pbr', label: 'PBR' },
+                        { id: 'xray', label: 'X-Ray' },
+                        { id: 'wireframe', label: 'Lưới' }
+                      ] as const
+                    ).map((st) => (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() => setRenderStyle(st.id)}
+                        className={`py-1 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${
+                          renderStyle === st.id
+                            ? 'bg-cyan-500 text-slate-950'
+                            : 'bg-white/5 text-slate-300 hover:bg-white/15'
+                        }`}
+                      >
+                        {st.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Lighting Mood */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2 space-y-1">
+                  <div className="text-[10px] font-semibold text-slate-400">
+                    {isEn ? 'Lighting Studio' : 'Ánh sáng Không gian'}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {(
+                      [
+                        { id: 'cosmic', label: isEn ? 'Space' : 'Vũ trụ' },
+                        { id: 'studio', label: 'Lab' },
+                        { id: 'solar', label: isEn ? 'Solar' : 'Vàng' }
+                      ] as const
+                    ).map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setLightingMood(m.id)}
+                        className={`py-1 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${
+                          lightingMood === m.id
+                            ? 'bg-amber-400 text-slate-950'
+                            : 'bg-white/5 text-slate-300 hover:bg-white/15'
+                        }`}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cross-Section Slice Plane & Citadel Floor */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2.5 space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => setSliceEnabled((v) => !v)}
+                      className={`inline-flex items-center gap-1 font-bold cursor-pointer ${
+                        sliceEnabled ? 'text-rose-300' : 'text-slate-300'
+                      }`}
+                    >
+                      <Scissors className="w-3 h-3" />
+                      <span>{sliceEnabled ? `${sliceHeight.toFixed(1)}m` : isEn ? 'Slice OFF' : 'Mặt cắt TẮT'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPlatform((v) => !v)}
+                      className={`inline-flex items-center gap-1 font-bold cursor-pointer ${
+                        showPlatform ? 'text-emerald-300' : 'text-slate-500'
+                      }`}
+                      title={isEn ? 'Toggle Citadel Floor' : 'Bật/Tắt Sàn Đài 3D'}
+                    >
+                      <Grid className="w-3 h-3" />
+                      <span>{showPlatform ? (isEn ? 'Floor' : 'Sàn') : isEn ? 'No Floor' : 'Ẩn sàn'}</span>
+                    </button>
+                  </div>
+                  <input
+                    type="range"
+                    min={-1.5}
+                    max={6.5}
+                    step={0.1}
+                    value={sliceHeight}
+                    onChange={(e) => {
+                      setSliceHeight(Number(e.target.value));
+                      if (!sliceEnabled) setSliceEnabled(true);
+                    }}
+                    className="w-full accent-rose-400 cursor-pointer"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

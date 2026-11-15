@@ -12,6 +12,7 @@ import { LearningRoadmap } from './components/roadmap/LearningRoadmap';
 import { ArenaHub } from './components/arena/ArenaHub';
 import { StudyForum } from './components/forum/StudyForum';
 import { SynapseV2Studio } from './components/synapsev2/SynapseV2Studio';
+import { SpatialGesture3DLab } from './components/spatial3d/SpatialGesture3DLab';
 import { SocraticAITutor } from './components/tutor/SocraticAITutor';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
@@ -307,6 +308,14 @@ function MainApp() {
                     onEarnXP={handleEarnXP}
                   />
                 )}
+
+                {currentSubject === 'spatial_3d' && (
+                  <SpatialGesture3DLab
+                    onBack={goBack}
+                    onNavigate={selectSubject}
+                    onEarnXP={handleEarnXP}
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
           </main>
@@ -315,7 +324,7 @@ function MainApp() {
           <FloatingFocusTimer />
 
           {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Modern Floating 3-AI Dock */}
-          {!isTutorOpen && currentSubject !== 'synapse_v2' && (
+          {!isTutorOpen && currentSubject !== 'synapse_v2' && currentSubject !== 'spatial_3d' && (
             <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/90 dark:bg-slate-900/92 border border-white/15 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-md">
               <button
                 onClick={() => handleOpenTutor({ subject: 'math' })}
@@ -441,6 +450,12 @@ function MainApp() {
                 >
                   <Orbit className="w-3.5 h-3.5 shrink-0 icon-anim-cosmos" />
                   <span>{isEn ? 'Virtual Campus · Synapse v2' : 'Lớp học ảo · Synapse v2'}</span>
+                </button>
+                <button
+                  onClick={() => selectSubject('spatial_3d')}
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-teal-600 dark:text-teal-400 font-bold cursor-pointer"
+                >
+                  {isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D'}
                 </button>
                 <button
                   onClick={() => setIsSettingsOpen(true)}

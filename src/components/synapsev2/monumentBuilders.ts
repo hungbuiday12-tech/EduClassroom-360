@@ -11,6 +11,7 @@ import {
 } from './synapseCatalog';
 import { buildExtraMonument } from './buildersExtra';
 import { buildExpansionMonument } from './buildersExpansion';
+import { buildPhysicsExpansionMonument } from './buildersPhysics';
 
 export type {
   BuiltMonument,
@@ -1416,7 +1417,8 @@ export function buildMonument(id: MonumentId, isSoftwareGl: boolean): BuiltMonum
     default: {
       const extra =
         buildExtraMonument(id, isSoftwareGl) ||
-        buildExpansionMonument(id, isSoftwareGl);
+        buildExpansionMonument(id, isSoftwareGl) ||
+        buildPhysicsExpansionMonument(id, isSoftwareGl);
       return extra || buildDysonMonument(isSoftwareGl);
     }
   }

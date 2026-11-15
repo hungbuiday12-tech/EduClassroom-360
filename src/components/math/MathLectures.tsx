@@ -199,24 +199,32 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
     navigate({ mathViewMode: 'lecture', mathLectureId: lecId });
   };
 
-  const handleOpen2DSim = () => {
+  const handleOpen2DSimForLecture = (lec: MathLecture) => {
     if (!onNavigateTab) return;
-    if (activeLecture.sim2dMode === 'geometry') {
+    if (lec.sim2dMode === 'geometry') {
       onNavigateTab('geometry');
       return;
     }
-    const fallbackConfig: Partial<FunctionPlotConfig> = activeLecture.defaultGraphConfig || {
+    const fallbackConfig: Partial<FunctionPlotConfig> = lec.defaultGraphConfig || {
       type: 'quadratic',
       params: { a: 1, b: -2, c: -3, d: 0 },
       color: '#4f46e5',
-      name: activeLecture.title.split(':')[0]
+      name: lec.title.split(':')[0]
     };
     onNavigateTab('grapher', { graphConfig: fallbackConfig });
   };
 
-  const handleOpen3DSim = () => {
+  const handleOpen3DSimForLecture = (lec: MathLecture) => {
     if (!onNavigateTab) return;
-    onNavigateTab('math3d', { mode3d: activeLecture.sim3dMode || 'oxyz_vector' });
+    onNavigateTab('math3d', { mode3d: lec.sim3dMode || 'oxyz_vector' });
+  };
+
+  const handleOpen2DSim = () => {
+    handleOpen2DSimForLecture(activeLecture);
+  };
+
+  const handleOpen3DSim = () => {
+    handleOpen3DSimForLecture(activeLecture);
   };
 
   const khongChuyenCount = MATH_LECTURES.filter((l) => (l.track || 'khong_chuyen') === 'khong_chuyen').length;
@@ -250,7 +258,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
         {/* Top Banner, Track Switcher & Search Controls (Shown in Catalog Mode) */}
         {viewMode === 'catalog' && (
           <>
-            <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+            <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 sm:p-6 shadow-xs space-y-5">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -263,31 +271,166 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                     <span className="tabular-nums">{chuyenCount} chuyên đề Chuyên Toán</span>
                   </div>
                   <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 mt-1">
-                    Chọn Chuyên Đề Để Mở Lớp Giảng Bài Chi Tiết &amp; Mô Phỏng 2D/3D
+                    Chọn Khung Chương Trình &amp; Chuyên Đề Toán Học Tương Tác
                   </h2>
                 </div>
 
-                {/* 2-Zone Track Switcher */}
-                <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/70 max-w-full sm:shrink-0 self-start">
+                {/* Quick 2D / 3D Simulation Launch Buttons */}
+                {onNavigateTab && (
+                  <div className="flex flex-wrap items-center gap-2 shrink-0 self-start lg:self-center">
+                    <button
+                      type="button"
+                      data-ripple="true"
+                      onClick={() => handleOpen2DSimForLecture(filteredLectures[0] || activeLecture)}
+                      className="group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap cursor-pointer"
+                    >
+                      <LineChart className="w-4 h-4 icon-anim-wave" />
+                      <span>Mô phỏng 2D</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-ripple="true"
+                      onClick={() => handleOpen3DSimForLecture(filteredLectures[0] || activeLecture)}
+                      className="group sim-btn-3d cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-sm whitespace-nowrap cursor-pointer"
+                    >
+                      <Box className="w-4 h-4 icon-anim-3d-cube" />
+                      <span>Mô phỏng 3D</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 2 Separate Animated Framed Track Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Khung 1: Khu Không Chuyên (GDPT 9-12) */}
+                <div
+                  style={
+                    {
+                      '--math-accent': '#4f46e5',
+                      '--math-secondary': '#38bdf8'
+                    } as React.CSSProperties
+                  }
+                  className={`math-zone-frame group ${
+                    selectedTrack === 'khong_chuyen'
+                      ? 'math-zone-active shadow-[0_14px_34px_-12px_rgba(79,70,229,0.45)]'
+                      : 'shadow-xs'
+                  }`}
+                >
+                  <div aria-hidden="true" className="math-geo-ring" />
                   <button
+                    type="button"
+                    data-ripple="true"
                     onClick={() => setSelectedTrack('khong_chuyen')}
-                    className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold whitespace-normal sm:whitespace-nowrap text-center transition-all ${
+                    className={`relative z-10 w-full h-full text-left rounded-[1.15rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
                       selectedTrack === 'khong_chuyen'
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                        ? 'bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 text-white'
+                        : 'bg-slate-50/95 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800'
                     }`}
                   >
-                    Khu Không Chuyên (GDPT 9–12)
+                    <span aria-hidden="true" className="math-grid-sheen" />
+                    <div className="relative z-10 flex items-start gap-3.5 min-w-0">
+                      <div
+                        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                          selectedTrack === 'khong_chuyen'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                        }`}
+                      >
+                        <Compass className="w-6 h-6 icon-anim-compass" />
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="text-sm sm:text-base font-extrabold leading-snug">
+                          Khu Không Chuyên (GDPT 9–12)
+                        </div>
+                        <div
+                          className={`text-xs leading-relaxed ${
+                            selectedTrack === 'khong_chuyen'
+                              ? 'text-indigo-100'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          Lớp 9 · Lớp 10 · Lớp 11 · Lớp 12 · {khongChuyenCount} bài Đồ thị &amp; Hình học
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative z-10 shrink-0 flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                      {selectedTrack === 'khong_chuyen' ? (
+                        <span className="inline-flex items-center gap-1 text-white">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Đang mở</span>
+                        </span>
+                      ) : (
+                        <span className="text-indigo-600 dark:text-indigo-400 group-hover:translate-x-0.5 transition-transform">
+                          Chọn khu →
+                        </span>
+                      )}
+                    </div>
                   </button>
+                </div>
+
+                {/* Khung 2: Khu Chuyên Toán (CB -> NC -> Chuyên) */}
+                <div
+                  style={
+                    {
+                      '--math-accent': '#d97706',
+                      '--math-secondary': '#f59e0b'
+                    } as React.CSSProperties
+                  }
+                  className={`math-zone-frame group ${
+                    selectedTrack === 'chuyen'
+                      ? 'math-zone-active shadow-[0_14px_34px_-12px_rgba(217,119,6,0.45)]'
+                      : 'shadow-xs'
+                  }`}
+                >
+                  <div aria-hidden="true" className="math-geo-ring" />
                   <button
+                    type="button"
+                    data-ripple="true"
                     onClick={() => setSelectedTrack('chuyen')}
-                    className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold whitespace-normal sm:whitespace-nowrap text-center transition-all ${
+                    className={`relative z-10 w-full h-full text-left rounded-[1.15rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
                       selectedTrack === 'chuyen'
-                        ? 'bg-amber-600 text-white shadow-xs'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                        ? 'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-slate-950'
+                        : 'bg-slate-50/95 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800'
                     }`}
                   >
-                    Khu Chuyên Toán (CB → NC → Chuyên)
+                    <span aria-hidden="true" className="math-grid-sheen" />
+                    <div className="relative z-10 flex items-start gap-3.5 min-w-0">
+                      <div
+                        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                          selectedTrack === 'chuyen'
+                            ? 'bg-slate-950/15 text-slate-950'
+                            : 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
+                        }`}
+                      >
+                        <Award className="w-6 h-6 icon-anim-award" />
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="text-sm sm:text-base font-extrabold leading-snug">
+                          Khu Chuyên Toán (CB → NC → Chuyên)
+                        </div>
+                        <div
+                          className={`text-xs leading-relaxed ${
+                            selectedTrack === 'chuyen'
+                              ? 'text-slate-900/85 font-medium'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          Cơ bản → Nâng cao → HSG / Olympic · {chuyenCount} chuyên đề
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative z-10 shrink-0 flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                      {selectedTrack === 'chuyen' ? (
+                        <span className="inline-flex items-center gap-1 text-slate-950">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Đang mở</span>
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform">
+                          Chọn khu →
+                        </span>
+                      )}
+                    </div>
                   </button>
                 </div>
               </div>
@@ -372,72 +515,119 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
               )}
             </div>
 
-            {/* Catalog Grid of Math Lectures */}
+            {/* Catalog Grid of Animated Framed Math Lectures */}
             {filteredLectures.length === 0 ? (
               <div className="p-10 text-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 text-xs text-slate-500">
                 Không tìm thấy chuyên đề phù hợp bộ lọc hiện tại.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredLectures.map((lec) => (
-                  <button
-                    key={lec.id}
-                    type="button"
-                    onClick={() => handleOpenLecture(lec.id)}
-                    className="group p-5 rounded-2xl border border-slate-200/85 dark:border-slate-800/85 bg-white/90 dark:bg-slate-900/90 hover:border-indigo-400 dark:hover:border-indigo-500 text-left transition-all shadow-xs hover:shadow-md flex flex-col justify-between gap-4"
-                  >
-                    <div className="space-y-2.5">
-                      <div className="flex items-start gap-3">
-                        <LectureThumbnail
-                          subject="math"
-                          id={lec.id}
-                          category={lec.category}
-                          sim2dMode={lec.sim2dMode}
-                          sim3dMode={lec.sim3dMode}
-                        />
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                            <span
-                              className={`font-bold ${
-                                lec.track === 'chuyen'
-                                  ? 'text-amber-600 dark:text-amber-400'
-                                  : 'text-indigo-600 dark:text-indigo-400'
-                              }`}
-                            >
-                              {lec.track === 'chuyen' && lec.tier ? `Chuyên · ${lec.tier}` : lec.gradeGroup || lec.grade}
-                            </span>
-                            <span aria-hidden="true">·</span>
-                            <span>{lec.category || 'Toán học'}</span>
-                            {lec.readTimeMinutes && (
-                              <>
+                {filteredLectures.map((lec) => {
+                  const isChuyen = lec.track === 'chuyen';
+                  return (
+                    <div
+                      key={lec.id}
+                      style={
+                        {
+                          '--math-accent': isChuyen ? '#f59e0b' : '#4f46e5',
+                          '--math-secondary': isChuyen ? '#f97316' : '#0ea5e9'
+                        } as React.CSSProperties
+                      }
+                      className="math-card-frame group shadow-xs hover:shadow-[0_18px_40px_-14px_rgba(79,70,229,0.38)]"
+                    >
+                      <div aria-hidden="true" className="math-geo-ring" />
+                      <div
+                        onClick={() => handleOpenLecture(lec.id)}
+                        className="relative z-10 h-full cursor-pointer p-5 rounded-[1.15rem] bg-white/95 dark:bg-slate-900/95 text-left transition-colors flex flex-col justify-between gap-4 overflow-hidden"
+                      >
+                        <span aria-hidden="true" className="math-grid-sheen" />
+                        <div className="relative z-10 space-y-2.5">
+                          <div className="flex items-start gap-3">
+                            <LectureThumbnail
+                              subject="math"
+                              id={lec.id}
+                              category={lec.category}
+                              sim2dMode={lec.sim2dMode}
+                              sim3dMode={lec.sim3dMode}
+                            />
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                <span
+                                  className={`font-bold ${
+                                    isChuyen
+                                      ? 'text-amber-600 dark:text-amber-400'
+                                      : 'text-indigo-600 dark:text-indigo-400'
+                                  }`}
+                                >
+                                  {isChuyen && lec.tier ? `Chuyên · ${lec.tier}` : lec.gradeGroup || lec.grade}
+                                </span>
                                 <span aria-hidden="true">·</span>
-                                <span className="tabular-nums">{lec.readTimeMinutes} phút</span>
-                              </>
-                            )}
+                                <span>{lec.category || 'Toán học'}</span>
+                                {lec.readTimeMinutes && (
+                                  <>
+                                    <span aria-hidden="true">·</span>
+                                    <span className="tabular-nums">{lec.readTimeMinutes} phút</span>
+                                  </>
+                                )}
+                              </div>
+
+                              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {lec.title}
+                              </h3>
+                            </div>
                           </div>
 
-                          <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                            {lec.title}
-                          </h3>
+                          <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                            <FormattedText text={lec.description} />
+                          </div>
+                        </div>
+
+                        <div className="relative z-10 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                          {onNavigateTab ? (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                data-ripple="true"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpen2DSimForLecture(lec);
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/60 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+                              >
+                                {lec.sim2dMode === 'geometry' ? (
+                                  <Compass className="w-3 h-3 icon-anim-compass" />
+                                ) : (
+                                  <LineChart className="w-3 h-3 icon-anim-wave" />
+                                )}
+                                <span>Mô phỏng 2D</span>
+                              </button>
+                              <button
+                                type="button"
+                                data-ripple="true"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpen3DSimForLecture(lec);
+                                }}
+                                className="sim-btn-3d inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/60 hover:bg-sky-600 hover:text-white dark:hover:bg-sky-600 dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+                              >
+                                <Box className="w-3 h-3 icon-anim-3d-cube" />
+                                <span>Mô phỏng 3D</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-slate-500 dark:text-slate-400 tabular-nums">
+                              {lec.sampleProblems.length} TN · {(lec.essayProblems || []).length} TL
+                            </span>
+                          )}
+                          <span className="font-bold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1 whitespace-nowrap">
+                            <span>Vào bài</span>
+                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                          </span>
                         </div>
                       </div>
-
-                      <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                        <FormattedText text={lec.description} />
-                      </div>
                     </div>
-
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400 tabular-nums">
-                        {lec.sampleProblems.length} TN · {(lec.essayProblems || []).length} TL
-                      </span>
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1 whitespace-nowrap">
-                        <span>Vào lớp giảng bài</span>
-                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -488,16 +678,16 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   <>
                     <button
                       onClick={handleOpen2DSim}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors whitespace-nowrap"
+                      className="group flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors whitespace-nowrap"
                     >
                       {activeLecture.sim2dMode === 'geometry' ? (
                         <>
-                          <Compass className="w-3.5 h-3.5" />
+                          <Compass className="w-3.5 h-3.5 icon-anim-compass" />
                           <span>Mô phỏng 2D · Hình học</span>
                         </>
                       ) : (
                         <>
-                          <LineChart className="w-3.5 h-3.5" />
+                          <LineChart className="w-3.5 h-3.5 icon-anim-wave" />
                           <span>Mô phỏng 2D · Đồ thị</span>
                         </>
                       )}
@@ -505,10 +695,10 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
 
                     <button
                       onClick={handleOpen3DSim}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-xl transition-colors whitespace-nowrap"
+                      className="group sim-btn-3d flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-xl transition-colors whitespace-nowrap"
                     >
-                      <Box className="w-3.5 h-3.5" />
-                      <span>{get3DModeLabel(activeLecture.sim3dMode)}</span>
+                      <Box className="w-3.5 h-3.5 icon-anim-3d-cube" />
+                      <span>Mô phỏng 3D · {get3DModeLabel(activeLecture.sim3dMode)}</span>
                     </button>
                   </>
                 )}

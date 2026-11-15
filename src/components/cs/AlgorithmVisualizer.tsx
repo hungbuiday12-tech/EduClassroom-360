@@ -635,35 +635,47 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
     });
   };
 
-  // Status badge label (dual-coded text, no decorative pulse)
+  // Status label (dual-coded text, dark cyber HUD contrast)
   const statusLabel = (() => {
     switch (currentStep.statusTag) {
       case 'init':
-        return { text: 'Khởi tạo', cls: 'text-slate-600 dark:text-slate-300' };
+        return { text: 'KHỞI TẠO', cls: 'text-slate-300' };
       case 'compare':
-        return { text: 'So sánh / Kiểm tra', cls: 'text-sky-600 dark:text-sky-400' };
+        return { text: 'SO SÁNH / KIỂM TRA', cls: 'text-cyan-300' };
       case 'update':
-        return { text: 'Cập nhật trạng thái', cls: 'text-amber-600 dark:text-amber-400' };
+        return { text: 'CẬP NHẬT TRẠNG THÁI', cls: 'text-amber-300' };
       case 'discard':
-        return { text: 'Loại bỏ nhánh', cls: 'text-rose-600 dark:text-rose-400' };
+        return { text: 'LOẠI BỎ NHÁNH', cls: 'text-rose-400' };
       case 'backtrack':
-        return { text: 'Quay lui (Backtrack)', cls: 'text-orange-600 dark:text-orange-400' };
+        return { text: 'QUAY LUI (BACKTRACK)', cls: 'text-orange-400' };
       case 'done':
-        return { text: 'Hoàn tất kết quả', cls: 'text-emerald-600 dark:text-emerald-400' };
+        return { text: 'HOÀN TẤT KẾT QUẢ', cls: 'text-emerald-400' };
       default:
-        return { text: 'Thực thi', cls: 'text-slate-600 dark:text-slate-300' };
+        return { text: 'THỰC THI', cls: 'text-slate-300' };
     }
   })();
 
   // -------------------------------------------------------------------
-  // Parameter Controls Strip tailored to active AlgoId
+  // Parameter Controls Strip tailored to active AlgoId (Cyber HUD Style)
   // -------------------------------------------------------------------
+  const cyberInputCls =
+    'px-2.5 py-1.5 rounded-lg border border-cyan-500/30 bg-[#020710] text-xs font-mono text-emerald-100 placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none';
+  const cyberBtnCls =
+    'px-2.5 py-1.5 rounded-lg border border-cyan-500/25 bg-[#081529] text-xs font-medium text-cyan-200 hover:border-emerald-400/60 hover:text-white transition-colors cursor-pointer';
+  const cyberSegWrapCls = 'flex items-center gap-1 p-1 rounded-lg bg-[#020710] border border-cyan-500/20';
+  const cyberSegBtnCls = (active: boolean) =>
+    `px-2.5 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+      active
+        ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+        : 'text-slate-300 hover:text-white'
+    }`;
+
   const renderInputControls = () => {
     switch (algoId) {
       case 'coord_hull':
         return (
           <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0">
+            <label className="text-xs font-semibold text-cyan-200/85 shrink-0">
               Điểm (x,y; ...):
             </label>
             <input
@@ -674,7 +686,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 const parsed = parsePointsInput(e.target.value);
                 if (parsed.length > 0) setHullPoints(parsed);
               }}
-              className="flex-1 min-w-[210px] px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-mono text-slate-800 dark:text-slate-100"
+              className={`flex-1 min-w-[210px] ${cyberInputCls}`}
             />
             <button
               type="button"
@@ -683,7 +695,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 setHullText(DEFAULT_HULL_POINTS.map((p) => `${p.x},${p.y}`).join('; '));
                 setStepIdx(0);
               }}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+              className={cyberBtnCls}
             >
               Mẫu chuẩn
             </button>
@@ -702,7 +714,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 setHullText(colinear.map((p) => `${p.x},${p.y}`).join('; '));
                 setStepIdx(0);
               }}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+              className={cyberBtnCls}
             >
               Có điểm thẳng hàng
             </button>
@@ -713,7 +725,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 setHullPoints(next);
                 setHullText(next.map((p) => `${p.x},${p.y}`).join('; '));
               }}
-              className="px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+              className="px-2.5 py-1.5 rounded-lg border border-rose-500/35 bg-rose-950/30 text-xs font-medium text-rose-300 hover:bg-rose-900/40 cursor-pointer"
             >
               Xóa điểm cuối
             </button>
@@ -724,7 +736,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         return (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <span className="text-xs font-semibold text-cyan-200/85">
                 Mỗi dòng 1 đoạn thẳng (x1, y1, x2, y2):
               </span>
               <div className="flex items-center gap-1.5">
@@ -734,7 +746,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setSegText(DEFAULT_SEGMENTS.map((s) => `${s.x1},${s.y1},${s.x2},${s.y2}`).join('\n'));
                     setStepIdx(0);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium"
+                  className={cyberBtnCls}
                 >
                   Mẫu cắt chữ X
                 </button>
@@ -744,7 +756,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setSegText('1,2,8,2\n2,6,9,1\n3,1,6,7\n5,4,10,6');
                     setStepIdx(0);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium"
+                  className={cyberBtnCls}
                 >
                   Nhiều giao điểm
                 </button>
@@ -754,7 +766,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
               rows={2}
               value={segText}
               onChange={(e) => setSegText(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-mono text-slate-800 dark:text-slate-100"
+              className={`w-full ${cyberInputCls}`}
             />
           </div>
         );
@@ -763,7 +775,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         return (
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">Văn bản T:</span>
+              <span className="font-semibold text-cyan-200/85">Văn bản T:</span>
               <input
                 type="text"
                 value={kmpText}
@@ -771,11 +783,11 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setKmpText(e.target.value.toUpperCase());
                   setStepIdx(0);
                 }}
-                className="w-48 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-48 ${cyberInputCls}`}
               />
             </label>
             <label className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">Mẫu P:</span>
+              <span className="font-semibold text-cyan-200/85">Mẫu P:</span>
               <input
                 type="text"
                 value={kmpPattern}
@@ -783,7 +795,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setKmpPattern(e.target.value.toUpperCase());
                   setStepIdx(0);
                 }}
-                className="w-36 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-36 ${cyberInputCls}`}
               />
             </label>
             <button
@@ -793,7 +805,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 setKmpPattern('ABABAC');
                 setStepIdx(0);
               }}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium"
+              className={cyberBtnCls}
             >
               Mẫu lặp tiền tố
             </button>
@@ -804,7 +816,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         return (
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">Xâu S:</span>
+              <span className="font-semibold text-cyan-200/85">Xâu S:</span>
               <input
                 type="text"
                 value={palStr}
@@ -812,7 +824,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setPalStr(e.target.value.toUpperCase());
                   setStepIdx(0);
                 }}
-                className="w-48 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-48 ${cyberInputCls}`}
               />
             </label>
             <button
@@ -821,7 +833,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 setPalStr('ABBAACAA');
                 setStepIdx(0);
               }}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium"
+              className={cyberBtnCls}
             >
               Mẫu tâm chẵn ABBA
             </button>
@@ -832,7 +844,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         return (
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs flex-1 min-w-[200px]">
-              <span className="font-semibold text-slate-600 dark:text-slate-300 shrink-0">Mảng a[]:</span>
+              <span className="font-semibold text-cyan-200/85 shrink-0">Mảng a[]:</span>
               <input
                 type="text"
                 value={prefixArrText}
@@ -840,29 +852,29 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setPrefixArrText(e.target.value);
                   setStepIdx(0);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-full ${cyberInputCls}`}
               />
             </label>
             <label className="flex items-center gap-1 text-xs">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">L:</span>
+              <span className="font-semibold text-cyan-200/85">L:</span>
               <input
                 type="number"
                 min={0}
                 max={15}
                 value={queryL}
                 onChange={(e) => setQueryL(Number(e.target.value))}
-                className="w-14 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs tabular-nums"
+                className={`w-14 tabular-nums ${cyberInputCls}`}
               />
             </label>
             <label className="flex items-center gap-1 text-xs">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">R:</span>
+              <span className="font-semibold text-cyan-200/85">R:</span>
               <input
                 type="number"
                 min={0}
                 max={15}
                 value={queryR}
                 onChange={(e) => setQueryR(Number(e.target.value))}
-                className="w-14 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs tabular-nums"
+                className={`w-14 tabular-nums ${cyberInputCls}`}
               />
             </label>
           </div>
@@ -872,7 +884,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         return (
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs flex-1 min-w-[200px]">
-              <span className="font-semibold text-slate-600 dark:text-slate-300 shrink-0">Mảng a[]:</span>
+              <span className="font-semibold text-cyan-200/85 shrink-0">Mảng a[]:</span>
               <input
                 type="text"
                 value={tpArrText}
@@ -880,11 +892,11 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setTpArrText(e.target.value);
                   setStepIdx(0);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-full ${cyberInputCls}`}
               />
             </label>
             <label className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">Tổng tối đa S:</span>
+              <span className="font-semibold text-cyan-200/85">Tổng tối đa S:</span>
               <input
                 type="number"
                 min={1}
@@ -894,7 +906,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setTpTargetS(Math.max(1, Number(e.target.value)));
                   setStepIdx(0);
                 }}
-                className="w-16 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs tabular-nums"
+                className={`w-16 tabular-nums ${cyberInputCls}`}
               />
             </label>
           </div>
@@ -903,7 +915,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
       case 'array_sort_stack':
         return (
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800">
+            <div className={cyberSegWrapCls}>
               {(
                 [
                   { id: 'monostack', label: 'Stack Đơn Điệu' },
@@ -918,18 +930,14 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setSortMode(m.id);
                     setStepIdx(0);
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
-                    sortMode === m.id
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  className={cyberSegBtnCls(sortMode === m.id)}
                 >
                   {m.label}
                 </button>
               ))}
             </div>
             <label className="flex items-center gap-1.5 text-xs flex-1 min-w-[180px]">
-              <span className="font-semibold text-slate-600 dark:text-slate-300 shrink-0">Mảng:</span>
+              <span className="font-semibold text-cyan-200/85 shrink-0">Mảng:</span>
               <input
                 type="text"
                 value={sortArrText}
@@ -937,7 +945,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setSortArrText(e.target.value);
                   setStepIdx(0);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-full ${cyberInputCls}`}
               />
             </label>
           </div>
@@ -946,7 +954,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
       case 'binary_search':
         return (
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800">
+            <div className={cyberSegWrapCls}>
               <button
                 type="button"
                 onClick={() => {
@@ -954,9 +962,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setBsArrText('7, 2, 5, 10, 8, 4, 6');
                   setStepIdx(0);
                 }}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                  bsMode === 'answer' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
-                }`}
+                className={cyberSegBtnCls(bsMode === 'answer')}
               >
                 Chặt Kết Quả (Đồ thị f(mid))
               </button>
@@ -967,15 +973,13 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setBsArrText('2, 5, 8, 12, 16, 23, 38, 56, 72, 91');
                   setStepIdx(0);
                 }}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                  bsMode === 'array' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
-                }`}
+                className={cyberSegBtnCls(bsMode === 'array')}
               >
                 Chặt Mảng lower_bound
               </button>
             </div>
             <label className="flex items-center gap-1.5 text-xs flex-1 min-w-[180px]">
-              <span className="font-semibold text-slate-600 dark:text-slate-300 shrink-0">Mảng:</span>
+              <span className="font-semibold text-cyan-200/85 shrink-0">Mảng:</span>
               <input
                 type="text"
                 value={bsArrText}
@@ -983,12 +987,12 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setBsArrText(e.target.value);
                   setStepIdx(0);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-full ${cyberInputCls}`}
               />
             </label>
             {bsMode === 'array' ? (
               <label className="flex items-center gap-1.5 text-xs">
-                <span className="font-semibold text-slate-600 dark:text-slate-300">Target:</span>
+                <span className="font-semibold text-cyan-200/85">Target:</span>
                 <input
                   type="number"
                   value={bsTarget}
@@ -996,12 +1000,12 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setBsTarget(Number(e.target.value));
                     setStepIdx(0);
                   }}
-                  className="w-16 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs tabular-nums"
+                  className={`w-16 tabular-nums ${cyberInputCls}`}
                 />
               </label>
             ) : (
               <label className="flex items-center gap-1.5 text-xs">
-                <span className="font-semibold text-slate-600 dark:text-slate-300">Số đoạn K:</span>
+                <span className="font-semibold text-cyan-200/85">Số đoạn K:</span>
                 <input
                   type="number"
                   min={1}
@@ -1011,7 +1015,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setBsKParts(Math.max(1, Number(e.target.value)));
                     setStepIdx(0);
                   }}
-                  className="w-14 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs tabular-nums"
+                  className={`w-14 tabular-nums ${cyberInputCls}`}
                 />
               </label>
             )}
@@ -1021,7 +1025,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
       case 'matrix_grid':
         return (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800">
+            <div className={cyberSegWrapCls}>
               {(
                 [
                   { id: 'bfs', label: 'BFS Mê Cung' },
@@ -1036,9 +1040,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setGridMode(m.id);
                     setStepIdx(0);
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                    gridMode === m.id ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
-                  }`}
+                  className={cyberSegBtnCls(gridMode === m.id)}
                 >
                   {m.label}
                 </button>
@@ -1053,7 +1055,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                       setGridWalls(INITIAL_WALLS);
                       setStepIdx(0);
                     }}
-                    className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-medium"
+                    className={cyberBtnCls}
                   >
                     Mê cung mẫu
                   </button>
@@ -1063,7 +1065,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                       setGridWalls(Array.from({ length: 5 }, () => Array(7).fill(false)));
                       setStepIdx(0);
                     }}
-                    className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-medium"
+                    className={cyberBtnCls}
                   >
                     Xóa hết tường
                   </button>
@@ -1080,7 +1082,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     );
                     setStepIdx(0);
                   }}
-                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-medium"
+                  className={cyberBtnCls}
                 >
                   Ngẫu nhiên trọng số
                 </button>
@@ -1093,7 +1095,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         return (
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs flex-1 min-w-[200px]">
-              <span className="font-semibold text-slate-600 dark:text-slate-300 shrink-0">
+              <span className="font-semibold text-cyan-200/85 shrink-0">
                 Đồ vật (w:v):
               </span>
               <input
@@ -1103,11 +1105,11 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setKnapText(e.target.value);
                   setStepIdx(0);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-full ${cyberInputCls}`}
               />
             </label>
             <label className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">Sức chứa W:</span>
+              <span className="font-semibold text-cyan-200/85">Sức chứa W:</span>
               <input
                 type="number"
                 min={2}
@@ -1117,7 +1119,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setKnapW(Math.max(2, Math.min(12, Number(e.target.value))));
                   setStepIdx(0);
                 }}
-                className="w-16 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs tabular-nums"
+                className={`w-16 tabular-nums ${cyberInputCls}`}
               />
             </label>
           </div>
@@ -1127,7 +1129,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         return (
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs flex-1">
-              <span className="font-semibold text-slate-600 dark:text-slate-300 shrink-0">Dãy số a[]:</span>
+              <span className="font-semibold text-cyan-200/85 shrink-0">Dãy số a[]:</span>
               <input
                 type="text"
                 value={lisArrText}
@@ -1135,7 +1137,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setLisArrText(e.target.value);
                   setStepIdx(0);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-full ${cyberInputCls}`}
               />
             </label>
             <button
@@ -1144,7 +1146,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 setLisArrText('10, 9, 2, 5, 3, 7, 101, 18');
                 setStepIdx(0);
               }}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-medium"
+              className={cyberBtnCls}
             >
               Mẫu LeetCode 300
             </button>
@@ -1155,7 +1157,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         return (
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">Xâu A:</span>
+              <span className="font-semibold text-cyan-200/85">Xâu A:</span>
               <input
                 type="text"
                 value={lcsA}
@@ -1163,11 +1165,11 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setLcsA(e.target.value.toUpperCase());
                   setStepIdx(0);
                 }}
-                className="w-32 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-32 ${cyberInputCls}`}
               />
             </label>
             <label className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-slate-600 dark:text-slate-300">Xâu B:</span>
+              <span className="font-semibold text-cyan-200/85">Xâu B:</span>
               <input
                 type="text"
                 value={lcsB}
@@ -1175,7 +1177,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setLcsB(e.target.value.toUpperCase());
                   setStepIdx(0);
                 }}
-                className="w-32 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-32 ${cyberInputCls}`}
               />
             </label>
           </div>
@@ -1185,7 +1187,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         return (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800">
+              <div className={cyberSegWrapCls}>
                 {(
                   [
                     { id: 'dijkstra', label: 'Dijkstra' },
@@ -1201,9 +1203,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                       setGraphSubAlgo(g.id);
                       setStepIdx(0);
                     }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                      graphSubAlgo === g.id ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
-                    }`}
+                    className={cyberSegBtnCls(graphSubAlgo === g.id)}
                   >
                     {g.label}
                   </button>
@@ -1213,14 +1213,14 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
               {graphSubAlgo !== 'kruskal' && (
                 <>
                   <label className="flex items-center gap-1 text-xs">
-                    <span className="font-semibold text-slate-600 dark:text-slate-300">Từ S:</span>
+                    <span className="font-semibold text-cyan-200/85">Từ S:</span>
                     <select
                       value={graphStart}
                       onChange={(e) => {
                         setGraphStart(e.target.value);
                         setStepIdx(0);
                       }}
-                      className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                      className={cyberInputCls}
                     >
                       {parsedGraph.nodes.map((n) => (
                         <option key={n.id} value={n.id}>
@@ -1230,14 +1230,14 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     </select>
                   </label>
                   <label className="flex items-center gap-1 text-xs">
-                    <span className="font-semibold text-slate-600 dark:text-slate-300">Đến T:</span>
+                    <span className="font-semibold text-cyan-200/85">Đến T:</span>
                     <select
                       value={graphTarget}
                       onChange={(e) => {
                         setGraphTarget(e.target.value);
                         setStepIdx(0);
                       }}
-                      className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                      className={cyberInputCls}
                     >
                       {parsedGraph.nodes.map((n) => (
                         <option key={n.id} value={n.id}>
@@ -1254,9 +1254,9 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                         setGraphDirected(e.target.checked);
                         setStepIdx(0);
                       }}
-                      className="rounded border-slate-300"
+                      className="rounded border-cyan-500/40 bg-[#020710] accent-emerald-400"
                     />
-                    <span className="font-medium text-slate-700 dark:text-slate-300">Có hướng</span>
+                    <span className="font-medium text-cyan-100">Có hướng</span>
                   </label>
                 </>
               )}
@@ -1270,20 +1270,20 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setGraphTarget('F');
                   setStepIdx(0);
                 }}
-                className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-medium"
+                className={cyberBtnCls}
               >
                 Mẫu 6 đỉnh
               </button>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0">
+              <span className="text-xs font-semibold text-cyan-200/85 shrink-0">
                 Cạnh (u v w):
               </span>
               <textarea
                 rows={2}
                 value={graphEdgeText}
                 onChange={(e) => setGraphEdgeText(e.target.value)}
-                className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`flex-1 ${cyberInputCls}`}
               />
             </div>
           </div>
@@ -1292,16 +1292,14 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
       case 'tree_segtree':
         return (
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800">
+            <div className={cyberSegWrapCls}>
               <button
                 type="button"
                 onClick={() => {
                   setSegOp('query');
                   setStepIdx(0);
                 }}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                  segOp === 'query' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
-                }`}
+                className={cyberSegBtnCls(segOp === 'query')}
               >
                 Truy vấn đoạn [L, R]
               </button>
@@ -1311,15 +1309,13 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setSegOp('update');
                   setStepIdx(0);
                 }}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                  segOp === 'update' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
-                }`}
+                className={cyberSegBtnCls(segOp === 'update')}
               >
                 Cập nhật điểm a[idx]
               </button>
             </div>
             <label className="flex items-center gap-1.5 text-xs flex-1 min-w-[160px]">
-              <span className="font-semibold text-slate-600 dark:text-slate-300 shrink-0">Mảng:</span>
+              <span className="font-semibold text-cyan-200/85 shrink-0">Mảng:</span>
               <input
                 type="text"
                 value={segArrText}
@@ -1327,11 +1323,11 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setSegArrText(e.target.value);
                   setStepIdx(0);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs"
+                className={`w-full ${cyberInputCls}`}
               />
             </label>
             {segOp === 'query' ? (
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-xs text-cyan-200/85">
                 <label className="flex items-center gap-1">
                   <span>L:</span>
                   <input
@@ -1340,7 +1336,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     max={7}
                     value={segQL}
                     onChange={(e) => setSegQL(Number(e.target.value))}
-                    className="w-12 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono tabular-nums"
+                    className={`w-12 tabular-nums ${cyberInputCls}`}
                   />
                 </label>
                 <label className="flex items-center gap-1">
@@ -1351,12 +1347,12 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     max={7}
                     value={segQR}
                     onChange={(e) => setSegQR(Number(e.target.value))}
-                    className="w-12 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono tabular-nums"
+                    className={`w-12 tabular-nums ${cyberInputCls}`}
                   />
                 </label>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-xs text-cyan-200/85">
                 <label className="flex items-center gap-1">
                   <span>idx:</span>
                   <input
@@ -1365,7 +1361,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     max={7}
                     value={segUpdIdx}
                     onChange={(e) => setSegUpdIdx(Number(e.target.value))}
-                    className="w-12 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono tabular-nums"
+                    className={`w-12 tabular-nums ${cyberInputCls}`}
                   />
                 </label>
                 <label className="flex items-center gap-1">
@@ -1374,7 +1370,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     type="number"
                     value={segUpdVal}
                     onChange={(e) => setSegUpdVal(Number(e.target.value))}
-                    className="w-16 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono tabular-nums"
+                    className={`w-16 tabular-nums ${cyberInputCls}`}
                   />
                 </label>
               </div>
@@ -1385,7 +1381,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
       case 'backtrack_nqueens':
         return (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <span className="text-xs font-semibold text-cyan-200/85">
               Kích thước bàn cờ N×N:
             </span>
             {[4, 5, 6, 7].map((n) => (
@@ -1396,10 +1392,10 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setQueensN(n);
                   setStepIdx(0);
                 }}
-                className={`px-3 py-1 rounded-lg text-xs font-bold font-mono tabular-nums ${
+                className={`px-3 py-1 rounded-lg text-xs font-bold font-mono tabular-nums cursor-pointer transition-colors ${
                   queensN === n
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950'
+                    : 'bg-[#081529] border border-cyan-500/25 text-cyan-200 hover:border-emerald-400/60'
                 }`}
               >
                 {n}×{n}
@@ -1411,16 +1407,14 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
       case 'number_sieve':
         return (
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800">
+            <div className={cyberSegWrapCls}>
               <button
                 type="button"
                 onClick={() => {
                   setNumMode('sieve');
                   setStepIdx(0);
                 }}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                  numMode === 'sieve' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
-                }`}
+                className={cyberSegBtnCls(numMode === 'sieve')}
               >
                 Sàng Eratosthenes
               </button>
@@ -1430,16 +1424,14 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   setNumMode('binpow');
                   setStepIdx(0);
                 }}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                  numMode === 'binpow' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
-                }`}
+                className={cyberSegBtnCls(numMode === 'binpow')}
               >
                 Lũy Thừa Nhị Phân
               </button>
             </div>
             {numMode === 'sieve' ? (
               <label className="flex items-center gap-2 text-xs">
-                <span className="font-semibold text-slate-600 dark:text-slate-300">Giới hạn N:</span>
+                <span className="font-semibold text-cyan-200/85">Giới hạn N:</span>
                 <input
                   type="range"
                   min={15}
@@ -1449,18 +1441,19 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setSieveN(Number(e.target.value));
                     setStepIdx(0);
                   }}
+                  className="accent-emerald-400 cursor-pointer"
                 />
-                <span className="font-mono font-bold tabular-nums w-6">{sieveN}</span>
+                <span className="font-mono font-bold tabular-nums w-6 text-emerald-300">{sieveN}</span>
               </label>
             ) : (
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-xs text-cyan-200/85">
                 <label className="flex items-center gap-1">
                   <span>a:</span>
                   <input
                     type="number"
                     value={powA}
                     onChange={(e) => setPowA(Number(e.target.value))}
-                    className="w-14 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono tabular-nums"
+                    className={`w-14 tabular-nums ${cyberInputCls}`}
                   />
                 </label>
                 <label className="flex items-center gap-1">
@@ -1471,7 +1464,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     max={255}
                     value={powB}
                     onChange={(e) => setPowB(Number(e.target.value))}
-                    className="w-14 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono tabular-nums"
+                    className={`w-14 tabular-nums ${cyberInputCls}`}
                   />
                 </label>
                 <label className="flex items-center gap-1">
@@ -1481,7 +1474,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     min={2}
                     value={powM}
                     onChange={(e) => setPowM(Math.max(2, Number(e.target.value)))}
-                    className="w-16 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono tabular-nums"
+                    className={`w-16 tabular-nums ${cyberInputCls}`}
                   />
                 </label>
               </div>
@@ -1760,25 +1753,47 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
   }
 
   // =========================================================================
-  // VIEW 2: INTERACTIVE STEP-BY-STEP ALGORITHM WORKBENCH STAGE
+  // VIEW 2: INTERACTIVE STEP-BY-STEP ALGORITHM WORKBENCH STAGE (CYBER HUD)
   // =========================================================================
+  const activePalette = ALGO_THEME_PALETTE[algoId];
+
   const mainShell = (
     <div
+      style={
+        {
+          '--algo-accent': activePalette.accent,
+          '--algo-secondary': activePalette.secondary
+        } as React.CSSProperties
+      }
       className={`space-y-4 ${
         isFullscreen
-          ? 'fixed inset-0 z-50 bg-slate-100 dark:bg-slate-950 p-4 sm:p-6 overflow-y-auto'
+          ? 'fixed inset-0 z-50 bg-[#020813] p-4 sm:p-6 overflow-y-auto'
           : ''
       }`}
     >
-      {/* Sleek Single-Row Workbench Header Bar */}
-      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Sleek Cybernetic HUD Header Bar */}
+      <div
+        className="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-[#040b18] via-[#061224] to-[#08172e] text-white border shadow-[0_18px_50px_-15px_rgba(6,182,212,0.35)]"
+        style={{ borderColor: `${activePalette.accent}48` }}
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-25"
+          style={{
+            backgroundImage: `radial-gradient(circle at 12% 30%, ${activePalette.accent}33 0%, transparent 45%), linear-gradient(to right, rgba(56,189,248,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(56,189,248,0.08) 1px, transparent 1px)`,
+            backgroundSize: '100% 100%, 24px 24px, 24px 24px'
+          }}
+        />
+        <span className="pointer-events-none absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-emerald-400/70 rounded-tl-xs" />
+        <span className="pointer-events-none absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-cyan-400/70 rounded-tr-xs" />
+
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2.5">
             {onBack && !isFullscreen && embeddedLessonTitle && (
               <button
                 type="button"
                 onClick={onBack}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer whitespace-nowrap"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white/10 text-slate-200 hover:bg-white/15 cursor-pointer whitespace-nowrap"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Bài giảng</span>
@@ -1790,28 +1805,32 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 setIsFullscreen(false);
                 setVizViewMode('gallery');
               }}
-              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer whitespace-nowrap"
+              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/45 text-emerald-300 transition-colors cursor-pointer whitespace-nowrap"
             >
               <LayoutGrid className="w-3.5 h-3.5 icon-anim-list" />
               <span>{ALGO_CATALOG.length} Khung Thuật Toán</span>
             </button>
             <div>
-              <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <span className="font-bold text-blue-600 dark:text-blue-400">
+              <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
+                <span className="font-extrabold tracking-wider" style={{ color: activePalette.accent }}>
+                  {activePalette.codeTag}
+                </span>
+                <span className="text-slate-500" aria-hidden="true">·</span>
+                <span className="font-bold text-cyan-200/90">
                   {currentMeta.shortTag}
                 </span>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span className="text-slate-500" aria-hidden="true">·</span>
+                <span className="text-emerald-300 font-semibold tabular-nums">
                   {currentMeta.complexity}
                 </span>
                 {embeddedLessonTitle && (
                   <>
-                    <span aria-hidden="true">·</span>
-                    <span className="truncate max-w-[260px]">{embeddedLessonTitle}</span>
+                    <span className="text-slate-500" aria-hidden="true">·</span>
+                    <span className="truncate max-w-[260px] text-slate-300">{embeddedLessonTitle}</span>
                   </>
                 )}
               </div>
-              <h2 className="font-display text-base sm:text-lg font-extrabold text-slate-900 dark:text-white mt-0.5">
+              <h2 className="font-display text-base sm:text-lg font-extrabold text-white mt-0.5">
                 {currentMeta.titleVi}
               </h2>
             </div>
@@ -1821,7 +1840,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
             <select
               value={algoId}
               onChange={(e) => handleSelectAlgo(e.target.value as AlgoId, true)}
-              className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-100 max-w-[260px]"
+              className="px-3 py-1.5 rounded-xl border border-cyan-500/35 bg-[#020710] text-xs font-bold text-emerald-100 focus:border-emerald-400 focus:outline-none max-w-[260px] cursor-pointer"
             >
               {ALGO_CATALOG.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -1833,7 +1852,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
               type="button"
               onClick={() => setIsFullscreen((f) => !f)}
               title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
-              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+              className="p-2 rounded-xl border border-cyan-500/30 bg-[#081529] text-cyan-200 hover:border-emerald-400/60 hover:text-white cursor-pointer"
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
@@ -1841,26 +1860,51 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
         </div>
       </div>
 
-      {/* Two-Zone Sandbox Layout: 65% Stage + 35% Trace Deck */}
+      {/* Two-Zone Sandbox Layout: 65% Cyber Stage + 35% Terminal Trace Deck */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        {/* LEFT ZONE: Interactive Input Bar + Visual Stage + Playback Transport */}
+        {/* LEFT ZONE: Cyber Input Bar + Holographic Visual Stage + Playback Transport */}
         <div className="lg:col-span-8 space-y-4">
           {/* Custom Inputs & Presets */}
-          <div className="bg-white/90 dark:bg-slate-900/90 rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <div className="rounded-2xl p-3.5 sm:p-4 bg-[#061121] border border-cyan-500/25 shadow-xs space-y-2.5 text-slate-200">
+            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-300/90">
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>Dữ Liệu Đầu Vào &amp; Tùy Chỉnh Trực Tiếp</span>
+              <span>INPUT_STREAM · Dữ Liệu Đầu Vào &amp; Tùy Chỉnh Trực Tiếp</span>
             </div>
             {renderInputControls()}
           </div>
 
-          {/* Primary Visual Stage */}
-          <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
-            {renderVisualStage()}
+          {/* Primary Holographic Visual Stage */}
+          <div
+            className="relative overflow-hidden rounded-2xl p-4 sm:p-5 algo-stage-grid text-white border shadow-[0_22px_60px_-18px_rgba(6,182,212,0.38)]"
+            style={{ borderColor: `${activePalette.accent}45` }}
+          >
+            {/* Sweeping Terminal Scan Beam */}
+            <div
+              aria-hidden="true"
+              className="holo-scan-beam pointer-events-none absolute inset-x-0 h-14 opacity-30"
+              style={{
+                background: `linear-gradient(180deg, transparent 0%, ${activePalette.accent}26 50%, transparent 100%)`
+              }}
+            />
+
+            {/* Crisp Corner HUD Reticles */}
+            <span className="pointer-events-none absolute top-2.5 left-2.5 w-3.5 h-3.5 border-t-2 border-l-2 border-emerald-400/70 rounded-tl-xs" />
+            <span className="pointer-events-none absolute top-2.5 right-2.5 w-3.5 h-3.5 border-t-2 border-r-2 border-cyan-400/70 rounded-tr-xs" />
+            <span className="pointer-events-none absolute bottom-2.5 left-2.5 w-3.5 h-3.5 border-b-2 border-l-2 border-cyan-400/60 rounded-bl-xs" />
+            <span className="pointer-events-none absolute bottom-2.5 right-2.5 w-3.5 h-3.5 border-b-2 border-r-2 border-emerald-400/60 rounded-br-xs" />
+
+            <div className="relative z-10">{renderVisualStage()}</div>
+
+            <div className="relative z-10 mt-3 pt-2 border-t border-cyan-500/15 flex items-center justify-between font-mono text-[10px] text-slate-400">
+              <span className="text-emerald-300/85 font-bold">
+                {activePalette.codeTag} · INTERACTIVE TRACE STAGE
+              </span>
+              <span className="text-cyan-300/85 tabular-nums">{currentMeta.complexity}</span>
+            </div>
           </div>
 
-          {/* Playback Scrubber Bar */}
-          <div className="bg-white/90 dark:bg-slate-900/90 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-3">
+          {/* Cyber Playback Scrubber Bar */}
+          <div className="rounded-2xl p-3.5 bg-[#061121] border border-cyan-500/25 text-white shadow-xs space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <button
@@ -1870,7 +1914,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setStepIdx(0);
                   }}
                   title="Về bước đầu"
-                  className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  className="p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 hover:border-emerald-400/60 hover:text-white cursor-pointer"
                 >
                   <ChevronFirst className="w-4 h-4" />
                 </button>
@@ -1882,7 +1926,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   }}
                   disabled={stepIdx <= 0}
                   title="Lùi 1 bước"
-                  className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-40 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  className="p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 disabled:opacity-35 hover:border-emerald-400/60 hover:text-white cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -1892,7 +1936,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     if (stepIdx >= steps.length - 1) setStepIdx(0);
                     setIsPlaying((p) => !p);
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-xs font-extrabold shadow-[0_8px_24px_-4px_rgba(16,185,129,0.55)] transition-all cursor-pointer"
                 >
                   {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   <span>{isPlaying ? 'Tạm dừng' : stepIdx >= steps.length - 1 ? 'Chạy lại' : 'Chạy tự động'}</span>
@@ -1905,7 +1949,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   }}
                   disabled={stepIdx >= steps.length - 1}
                   title="Tiến 1 bước"
-                  className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-40 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  className="p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 disabled:opacity-35 hover:border-emerald-400/60 hover:text-white cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -1916,7 +1960,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setStepIdx(Math.max(0, steps.length - 1));
                   }}
                   title="Tới bước cuối"
-                  className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  className="p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 hover:border-emerald-400/60 hover:text-white cursor-pointer"
                 >
                   <ChevronLast className="w-4 h-4" />
                 </button>
@@ -1927,7 +1971,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setStepIdx(0);
                   }}
                   title="Đặt lại"
-                  className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                  className="p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-slate-400 hover:text-white cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -1935,23 +1979,23 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
 
               {/* Speed & Step Counter */}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800">
+                <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[#020710] border border-cyan-500/20">
                   {[0.5, 1, 2, 4].map((spd) => (
                     <button
                       key={spd}
                       type="button"
                       onClick={() => setSpeed(spd)}
-                      className={`px-2 py-1 rounded-md text-[11px] font-mono font-bold tabular-nums ${
+                      className={`px-2 py-1 rounded-md text-[11px] font-mono font-bold tabular-nums cursor-pointer ${
                         speed === spd
-                          ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                          : 'text-slate-500 dark:text-slate-400'
+                          ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/40'
+                          : 'text-slate-400 hover:text-white'
                       }`}
                     >
                       {spd}x
                     </button>
                   ))}
                 </div>
-                <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200 tabular-nums">
+                <span className="text-xs font-mono font-bold text-cyan-200 tabular-nums">
                   Bước {Math.min(stepIdx + 1, Math.max(1, steps.length))} / {Math.max(1, steps.length)}
                 </span>
               </div>
@@ -1966,53 +2010,55 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 setIsPlaying(false);
                 setStepIdx(Number(e.target.value));
               }}
-              className="w-full accent-blue-600 cursor-pointer"
+              className="w-full accent-emerald-400 cursor-pointer"
             />
           </div>
         </div>
 
-        {/* RIGHT ZONE: Step Explanation, Formula, Watch Table, Pseudocode */}
+        {/* RIGHT ZONE: Terminal Step Explanation, Variable Watch & Pseudocode */}
         <div className="lg:col-span-4 space-y-4">
           {/* Step Explanation */}
-          <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-2.5">
+          <div className="relative rounded-2xl p-4 bg-[#061121] border border-cyan-500/25 text-white shadow-xs space-y-2.5">
+            <span className="pointer-events-none absolute top-2 right-2 w-2.5 h-2.5 border-t-2 border-r-2 border-cyan-400/60" />
             <div className="flex items-center justify-between text-[11px] font-mono">
-              <span className={`font-bold ${statusLabel.cls}`}>{statusLabel.text}</span>
-              <span className="text-slate-400 tabular-nums">#{currentStep.stepIndex + 1}</span>
+              <span className={`font-bold tracking-wider ${statusLabel.cls}`}>{statusLabel.text}</span>
+              <span className="text-cyan-300/75 tabular-nums">STEP #{currentStep.stepIndex + 1}</span>
             </div>
-            <h3 className="text-sm font-extrabold text-slate-900 dark:text-white leading-snug">
+            <h3 className="text-sm font-extrabold text-white leading-snug">
               {currentStep.title}
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               {currentStep.description}
             </p>
             {currentStep.formula && (
-              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-[11px] text-sky-700 dark:text-sky-300 break-words">
+              <div className="p-2.5 rounded-xl bg-[#020710] border border-emerald-500/25 font-mono text-[11px] text-emerald-300 break-words">
                 {currentStep.formula}
               </div>
             )}
           </div>
 
           {/* Variable Watch Table */}
-          <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-2.5">
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
-              Trạng Thái Biến (Variable Watch)
+          <div className="rounded-2xl p-4 bg-[#061121] border border-emerald-500/25 text-white shadow-xs space-y-2.5">
+            <div className="flex items-center justify-between text-xs font-mono font-bold text-emerald-300">
+              <span>WATCH_VARIABLES</span>
+              <span className="text-[10px] text-slate-400">LIVE STATE</span>
             </div>
             {currentStep.variables && currentStep.variables.length > 0 ? (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 font-mono text-xs tabular-nums">
+              <div className="divide-y divide-cyan-500/15 font-mono text-xs tabular-nums rounded-xl bg-[#020710] border border-cyan-500/20 px-3 py-1">
                 {currentStep.variables.map((v, idx) => (
                   <div key={idx} className="py-1.5 flex items-start justify-between gap-3">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0">{v.name}</span>
+                    <span className="text-slate-400 shrink-0">{v.name}</span>
                     <span
                       className={`text-right font-bold break-all ${
                         v.highlight === 'success'
-                          ? 'text-emerald-600 dark:text-emerald-400'
+                          ? 'text-emerald-400'
                           : v.highlight === 'warn'
-                          ? 'text-rose-600 dark:text-rose-400'
+                          ? 'text-rose-400'
                           : v.highlight === 'active'
-                          ? 'text-amber-600 dark:text-amber-400'
+                          ? 'text-amber-300'
                           : v.highlight === 'info'
-                          ? 'text-sky-600 dark:text-sky-400'
-                          : 'text-slate-800 dark:text-slate-200'
+                          ? 'text-cyan-300'
+                          : 'text-slate-100'
                       }`}
                     >
                       {v.value}
@@ -2021,15 +2067,15 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-slate-400 italic">Chưa có biến theo dõi.</div>
+              <div className="text-xs text-slate-500 italic">Chưa có biến theo dõi.</div>
             )}
           </div>
 
-          {/* Pseudocode Trace */}
-          <div className="bg-slate-950 text-slate-200 rounded-2xl p-4 border border-slate-800 shadow-xs space-y-2">
+          {/* Pseudocode Trace Terminal */}
+          <div className="bg-[#020710] text-slate-200 rounded-2xl p-4 border border-cyan-500/25 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-              <span className="font-bold text-slate-200">Mã Giả Thuật Toán</span>
-              <span>{currentMeta.complexity}</span>
+              <span className="font-bold text-emerald-300">PSEUDOCODE TRACE</span>
+              <span className="text-cyan-300 tabular-nums">{currentMeta.complexity}</span>
             </div>
             <div className="space-y-0.5 font-mono text-[11px] leading-relaxed overflow-x-auto">
               {currentMeta.pseudocode.map((line, lIdx) => {
@@ -2037,21 +2083,24 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 return (
                   <div
                     key={lIdx}
-                    className={`px-2 py-0.5 rounded flex items-start gap-2 whitespace-pre ${
+                    className={`px-2 py-0.5 rounded flex items-start gap-2 whitespace-pre border-l-2 ${
                       isActive
-                        ? 'bg-amber-500/20 text-amber-300 font-bold'
-                        : 'text-slate-300/90'
+                        ? 'bg-emerald-500/15 border-emerald-400 text-emerald-300 font-bold'
+                        : 'border-transparent text-slate-300/85'
                     }`}
                   >
                     <span className="text-slate-500 select-none w-4 shrink-0 text-right tabular-nums">
                       {lIdx + 1}
                     </span>
                     <span>{line}</span>
+                    {isActive && (
+                      <span className="algo-cursor-blink inline-block w-1.5 h-3.5 bg-emerald-400 ml-1 self-center" />
+                    )}
                   </div>
                 );
               })}
             </div>
-            <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+            <div className="pt-2 border-t border-cyan-500/15 text-[11px] text-slate-400 leading-relaxed">
               {currentMeta.summaryVi}
             </div>
           </div>

@@ -13,6 +13,7 @@ export type ClickSoundId =
 
 export type BgSoundId =
   | 'off'
+  | 'minecraft_calm'
   | 'cosmic_drone'
   | 'soft_rain'
   | 'lofi_chords'
@@ -54,6 +55,13 @@ export const BG_SOUND_OPTIONS: SoundOption<BgSoundId>[] = [
     labelEn: 'Silence (Off)',
     descVi: 'Yên tĩnh tuyệt đối',
     descEn: 'Complete silence'
+  },
+  {
+    id: 'minecraft_calm',
+    labelVi: 'Nhạc nền Minecraft (Piano Êm)',
+    labelEn: 'Minecraft Calm Piano',
+    descVi: 'Giai điệu piano nỉ ấm áp & pad không gian thư giãn như C418',
+    descEn: 'Warm felt-piano & ambient pad inspired by classic block-world soundtracks'
   },
   {
     id: 'cosmic_drone',
@@ -511,6 +519,129 @@ class SoundEngine {
       this.bgCleanupFns.push(() => {
         try { oscL.stop(); oscL.disconnect(); } catch {}
         try { oscR.stop(); oscR.disconnect(); } catch {}
+      });
+    } else if (id === 'minecraft_calm') {
+      // Procedural C418-inspired felt piano + warm soft ambient pad + lush feedback delay
+      const delay = ctx.createDelay(1.5);
+      delay.delayTime.value = 0.42;
+      const delayFb = ctx.createGain();
+      delayFb.gain.value = 0.34;
+      const delayFilter = ctx.createBiquadFilter();
+      delayFilter.type = 'lowpass';
+      delayFilter.frequency.value = 1250;
+      const wetGain = ctx.createGain();
+      wetGain.gain.value = 0.42;
+      const dryGain = ctx.createGain();
+      dryGain.gain.value = 0.92;
+
+      delay.connect(delayFilter);
+      delayFilter.connect(delayFb);
+      delayFb.connect(delay);
+      delayFilter.connect(wetGain);
+      wetGain.connect(master);
+      dryGain.connect(master);
+
+      // Gentle breathing background pad (F2 + C3 + G3)
+      const padOscs: OscillatorNode[] = [];
+      [87.31, 130.81, 196.0].forEach((pf, idx) => {
+        const osc = ctx.createOscillator();
+        const pfFilter = ctx.createBiquadFilter();
+        const pg = ctx.createGain();
+        osc.type = idx === 0 ? 'sine' : 'triangle';
+        osc.frequency.value = pf;
+        osc.detune.value = (idx - 1) * 3;
+        pfFilter.type = 'lowpass';
+        pfFilter.frequency.value = 380;
+        pg.gain.value = 0.085 / (idx + 1);
+        osc.connect(pfFilter).connect(pg).connect(master);
+        osc.start();
+        padOscs.push(osc);
+      });
+
+      const playFeltNote = (freq: number, velocity = 0.16, duration = 3.2) => {
+        if (!this.bgMasterGain || this.activeBgId !== 'minecraft_calm') return;
+        const start = ctx.currentTime + 0.02;
+
+        // Warm hammer body + soft overtone
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const toneFilter = ctx.createBiquadFilter();
+        const env = ctx.createGain();
+
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(freq, start);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(freq * 2, start);
+
+        const overtoneGain = ctx.createGain();
+        overtoneGain.gain.setValueAtTime(0.16, start);
+
+        toneFilter.type = 'lowpass';
+        toneFilter.frequency.setValueAtTime(1950, start);
+        toneFilter.frequency.exponentialRampToValueAtTime(480, start + duration * 0.85);
+
+        env.gain.setValueAtTime(0.0001, start);
+        env.gain.linearRampToValueAtTime(velocity, start + 0.032);
+        env.gain.exponentialRampToValueAtTime(velocity * 0.35, start + 0.65);
+        env.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+        osc1.connect(toneFilter);
+        osc2.connect(overtoneGain).connect(toneFilter);
+        toneFilter.connect(env);
+        env.connect(dryGain);
+        env.connect(delay);
+
+        osc1.start(start);
+        osc2.start(start);
+        osc1.stop(start + duration + 0.08);
+        osc2.stop(start + duration + 0.08);
+      };
+
+      // Atmospheric progression inspired by classic ambient piano themes (Fmaj7 -> Cmaj7 -> Am7 -> G6)
+      // Each step is [bassOrChordNotes, melodyNote | null, velocity]
+      const sequence: Array<{ notes: number[]; vel: number; dur: number }> = [
+        { notes: [174.61, 261.63], vel: 0.14, dur: 3.4 }, // F3 + C4
+        { notes: [329.63], vel: 0.12, dur: 2.6 },         // E4
+        { notes: [440.0], vel: 0.13, dur: 3.0 },          // A4
+        { notes: [392.0], vel: 0.11, dur: 2.5 },          // G4
+        { notes: [130.81, 261.63], vel: 0.14, dur: 3.6 }, // C3 + C4
+        { notes: [329.63], vel: 0.12, dur: 2.8 },         // E4
+        { notes: [392.0], vel: 0.12, dur: 2.8 },          // G4
+        { notes: [493.88], vel: 0.1, dur: 3.2 },          // B4
+        { notes: [220.0, 329.63], vel: 0.14, dur: 3.5 },  // A3 + E4
+        { notes: [523.25], vel: 0.12, dur: 3.0 },         // C5
+        { notes: [493.88], vel: 0.11, dur: 2.6 },         // B4
+        { notes: [440.0], vel: 0.12, dur: 3.0 },          // A4
+        { notes: [196.0, 293.66], vel: 0.14, dur: 3.5 },  // G3 + D4
+        { notes: [392.0], vel: 0.12, dur: 2.8 },          // G4
+        { notes: [329.63], vel: 0.11, dur: 3.0 },         // E4
+        { notes: [], vel: 0, dur: 0 }                     // Gentle breath pause
+      ];
+
+      let step = 0;
+      const tick = () => {
+        if (!this.bgMasterGain || this.activeBgId !== 'minecraft_calm') return;
+        const item = sequence[step % sequence.length];
+        step++;
+        item.notes.forEach((f, idx) => {
+          playFeltNote(f, item.vel * (idx === 0 ? 1 : 0.82), item.dur);
+        });
+      };
+
+      tick();
+      const timer = window.setInterval(tick, 1050);
+      this.bgCleanupFns.push(() => {
+        window.clearInterval(timer);
+        padOscs.forEach((o) => {
+          try { o.stop(); o.disconnect(); } catch {}
+        });
+        try {
+          delay.disconnect();
+          delayFb.disconnect();
+          delayFilter.disconnect();
+          wetGain.disconnect();
+          dryGain.disconnect();
+        } catch {}
       });
     }
   }

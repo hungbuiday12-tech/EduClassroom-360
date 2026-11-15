@@ -35,18 +35,20 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
 
       return (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
-            <span>Ma trận gốc A[r][c] &amp; Bù-Trừ Cộng dồn 2D · Bấm ô để đổi góc hình chữ nhật</span>
-            <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+            <span className="font-mono text-[11px] text-cyan-200/85">
+              PREFIX_2D_MATRIX · Bấm ô để đổi góc hình chữ nhật
+            </span>
+            <span className="font-mono text-[11px] text-emerald-400 font-bold tabular-nums">
               Vùng ({r1 - 1},{c1 - 1}) → ({r2 - 1},{c2 - 1})
             </span>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {/* Matrix A */}
-            <div className="space-y-1.5">
-              <div className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                Ma trận A (0-based)
+            <div className="rounded-xl border border-cyan-500/25 bg-[#040b18] p-3.5 space-y-2">
+              <div className="text-xs font-mono font-bold text-cyan-200">
+                MA TRẬN A (0-BASED)
               </div>
               <div className="overflow-x-auto">
                 <table className="border-collapse font-mono text-xs tabular-nums">
@@ -63,19 +65,19 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                           const inCorner = r1b < r1 && c1b < c1;
 
                           let cls =
-                            'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300';
+                            'bg-[#081529] border-cyan-500/20 text-slate-300 hover:border-cyan-400/60';
                           if (inTarget) {
                             cls =
-                              'bg-emerald-500/20 border-emerald-500 text-emerald-800 dark:text-emerald-200 font-bold';
+                              'bg-emerald-500/20 border-emerald-400 text-emerald-300 font-bold shadow-[0_0_12px_rgba(16,185,129,0.28)]';
                           } else if (phase >= 3 && inCorner) {
                             cls =
-                              'bg-sky-500/20 border-sky-500 text-sky-800 dark:text-sky-200';
+                              'bg-cyan-500/20 border-cyan-400 text-cyan-200';
                           } else if (phase >= 2 && (inTop || inLeft)) {
                             cls =
-                              'bg-rose-500/15 border-rose-400 text-rose-700 dark:text-rose-300';
+                              'bg-rose-500/18 border-rose-400/70 text-rose-300';
                           } else if (phase === 1 && inTotal) {
                             cls =
-                              'bg-indigo-500/15 border-indigo-400 text-indigo-700 dark:text-indigo-300';
+                              'bg-indigo-500/20 border-indigo-400/70 text-indigo-300';
                           }
 
                           return (
@@ -83,7 +85,7 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onSelectRectCell?.(r, c)}
-                                className={`w-10 h-10 rounded-md border flex items-center justify-center transition-colors ${cls}`}
+                                className={`w-10 h-10 rounded-md border flex items-center justify-center transition-all cursor-pointer ${cls}`}
                               >
                                 {weights[r]?.[c] ?? 0}
                               </button>
@@ -98,9 +100,9 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
             </div>
 
             {/* Prefix Matrix P */}
-            <div className="space-y-1.5">
-              <div className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                Bảng Cộng dồn P[1..{R}][1..{C}]
+            <div className="rounded-xl border border-cyan-500/25 bg-[#040b18] p-3.5 space-y-2">
+              <div className="text-xs font-mono font-bold text-cyan-200">
+                BẢNG CỘNG DỒN P[1..{R}][1..{C}]
               </div>
               <div className="overflow-x-auto">
                 <table className="border-collapse font-mono text-xs tabular-nums">
@@ -120,12 +122,12 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                                 <div
                                   className={`w-10 h-10 rounded-md border flex items-center justify-center ${
                                     isMain
-                                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 font-bold text-emerald-700 dark:text-emerald-300'
+                                      ? 'border-emerald-400 bg-emerald-500/20 font-bold text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
                                       : isSub
-                                      ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/50 font-bold text-rose-700 dark:text-rose-300'
+                                      ? 'border-rose-400 bg-rose-500/20 font-bold text-rose-300'
                                       : isAdd
-                                      ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/50 font-bold text-sky-700 dark:text-sky-300'
-                                      : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                      ? 'border-cyan-400 bg-cyan-500/20 font-bold text-cyan-300'
+                                      : 'border-cyan-500/15 bg-[#081529] text-slate-300'
                                   }`}
                                 >
                                   {P[r]?.[c] ?? 0}
@@ -156,21 +158,21 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
 
     return (
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
-          <span>
-            Bấm vào ô bất kỳ (trừ S và T) để bật/tắt tường cản (#)
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+          <span className="font-mono text-[11px] text-cyan-200/85">
+            GRID_PATHFINDER · Bấm ô bất kỳ (trừ S và T) để bật/tắt tường cản (#)
           </span>
           <div className="flex flex-wrap items-center gap-3 font-mono text-[11px]">
-            <span className="text-sky-600 dark:text-sky-400">■ S (Xuất phát)</span>
-            <span className="text-amber-600 dark:text-amber-400">■ T (Đích)</span>
-            <span className="text-emerald-600 dark:text-emerald-400">■ Đường ngắn nhất</span>
+            <span className="text-sky-400">■ S (Xuất phát)</span>
+            <span className="text-amber-400">■ T (Đích)</span>
+            <span className="text-emerald-400">■ Đường ngắn nhất</span>
           </div>
         </div>
 
         <div className="overflow-x-auto pb-1">
-          <div className="inline-block p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+          <div className="relative inline-block p-3 rounded-xl border border-cyan-500/30 bg-[#040b18] shadow-[inset_0_0_32px_rgba(6,182,212,0.08)]">
             {Array.from({ length: R }).map((_, r) => (
-              <div key={r} className="flex gap-1 mb-1 last:mb-0">
+              <div key={r} className="flex gap-1.5 mb-1.5 last:mb-0">
                 {Array.from({ length: C }).map((__, c) => {
                   const isWall = walls[r]?.[c];
                   const isStart = r === start.r && c === start.c;
@@ -182,23 +184,23 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                   const dVal = dist[r]?.[c];
 
                   let cellCls =
-                    'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200';
+                    'bg-[#081529] border-cyan-500/20 text-slate-300 hover:border-cyan-400/60';
                   if (isWall) {
-                    cellCls = 'bg-slate-800 dark:bg-slate-700 border-slate-900 text-slate-400';
+                    cellCls = 'bg-[#020610] border-slate-700/70 text-slate-600';
                   } else if (isStart) {
-                    cellCls = 'bg-sky-600 border-sky-700 text-white font-bold';
+                    cellCls = 'bg-sky-500/25 border-sky-400 text-sky-200 font-bold shadow-[0_0_12px_rgba(56,189,248,0.35)]';
                   } else if (isEnd) {
-                    cellCls = 'bg-amber-500 border-amber-600 text-slate-950 font-bold';
+                    cellCls = 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold shadow-[0_0_12px_rgba(251,191,36,0.35)]';
                   } else if (onPath) {
-                    cellCls = 'bg-emerald-500 border-emerald-600 text-white font-bold';
+                    cellCls = 'bg-emerald-500/25 border-emerald-400 text-emerald-200 font-bold shadow-[0_0_14px_rgba(16,185,129,0.4)]';
                   } else if (isCurrent) {
-                    cellCls = 'bg-indigo-600 border-indigo-700 text-white font-bold';
+                    cellCls = 'bg-indigo-500/30 border-indigo-400 text-indigo-200 font-bold shadow-[0_0_12px_rgba(129,140,248,0.4)]';
                   } else if (isVisited) {
                     cellCls =
-                      'bg-sky-50 dark:bg-sky-950/50 border-sky-400/60 text-sky-700 dark:text-sky-300';
+                      'bg-cyan-500/12 border-cyan-500/45 text-cyan-200';
                   } else if (inFrontier) {
                     cellCls =
-                      'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-700 dark:text-amber-300';
+                      'bg-amber-500/12 border-amber-400/50 text-amber-300';
                   }
 
                   return (
@@ -206,7 +208,7 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                       key={`${r}-${c}`}
                       type="button"
                       onClick={() => onToggleWall?.(r, c)}
-                      className={`w-12 h-12 rounded-lg border flex flex-col items-center justify-center font-mono transition-colors ${cellCls}`}
+                      className={`w-12 h-12 rounded-lg border flex flex-col items-center justify-center font-mono transition-all cursor-pointer ${cellCls}`}
                     >
                       <span className="text-[11px] font-bold">
                         {isWall ? '#' : isStart ? 'S' : isEnd ? 'T' : st.mode === 'dijkstra' ? `w=${weights[r]?.[c] ?? 1}` : ''}
@@ -240,27 +242,29 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
 
     return (
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
-          <span>Bảng DP Cái Túi dp[i][w] · i = xét đến vật thứ i, w = sức chứa</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+          <span className="font-mono text-[11px] text-amber-200/85">
+            KNAPSACK_DP[i][w] · i = vật thứ i, w = sức chứa còn lại
+          </span>
           {chosen.length > 0 && (
-            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="font-mono font-bold text-emerald-400">
               Vật đã chọn: {chosen.map((x) => `#${x}`).join(', ')}
             </span>
           )}
         </div>
 
-        <div className="overflow-x-auto pb-2">
+        <div className="overflow-x-auto pb-2 rounded-xl border border-amber-500/25 bg-[#040b18] p-3">
           <table className="border-collapse font-mono text-xs tabular-nums min-w-max">
             <thead>
               <tr>
-                <th className="p-1.5 text-left text-[11px] text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                <th className="p-1.5 text-left text-[11px] text-slate-400 border-b border-cyan-500/20">
                   Vật \ w
                 </th>
                 {Array.from({ length: W + 1 }, (_, w) => (
                   <th
                     key={w}
-                    className={`w-10 p-1.5 text-center border-b border-slate-200 dark:border-slate-800 ${
-                      w === st.curW ? 'text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-500'
+                    className={`w-10 p-1.5 text-center border-b border-cyan-500/20 ${
+                      w === st.curW ? 'text-amber-300 font-bold' : 'text-slate-400'
                     }`}
                   >
                     {w}
@@ -271,7 +275,7 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
             <tbody>
               {dp.map((row, i) => (
                 <tr key={i}>
-                  <td className="p-1.5 pr-3 text-[11px] font-semibold text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap">
+                  <td className="p-1.5 pr-3 text-[11px] font-semibold text-cyan-200/90 border-r border-cyan-500/20 whitespace-nowrap">
                     {i === 0 ? 'i=0 (Rỗng)' : `#${i} (w=${items[i - 1]?.w}, v=${items[i - 1]?.v})`}
                   </td>
                   {row.map((val, w) => {
@@ -284,12 +288,12 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                         <div
                           className={`w-10 h-9 rounded-md border flex items-center justify-center transition-colors ${
                             isCur
-                              ? 'border-amber-500 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 font-extrabold'
+                              ? 'border-amber-400 bg-amber-500/25 text-amber-200 font-extrabold shadow-[0_0_12px_rgba(251,191,36,0.35)]'
                               : isTrace
-                              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-bold'
+                              ? 'border-emerald-400 bg-emerald-500/20 text-emerald-300 font-bold'
                               : isDep
-                              ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 font-bold'
-                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300'
+                              ? 'border-cyan-400 bg-cyan-500/20 text-cyan-200 font-bold'
+                              : 'border-cyan-500/15 bg-[#081529] text-slate-300'
                           }`}
                         >
                           {val}
@@ -319,29 +323,29 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
     return (
       <div className="space-y-5">
         <div className="overflow-x-auto pb-2">
-          <div className="inline-flex items-end gap-2 min-w-max h-48 pt-6 px-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="inline-flex items-end gap-2 min-w-max h-48 pt-6 px-3.5 bg-[#040b18] rounded-xl border border-indigo-500/30 shadow-[inset_0_0_32px_rgba(129,140,248,0.08)]">
             {arr.map((v, idx) => {
               const hPct = Math.max(15, Math.round((Math.abs(v) / maxVal) * 76));
               const isCurr = idx === st.idx;
               const inLis = lisIndices.includes(idx);
               return (
                 <div key={idx} className="w-11 h-full flex flex-col items-center justify-end gap-1">
-                  <span className="text-[11px] font-mono font-bold tabular-nums text-slate-700 dark:text-slate-200">
+                  <span className="text-[11px] font-mono font-bold tabular-nums text-cyan-100">
                     {v}
                   </span>
                   <div
                     style={{ height: `${hPct}%` }}
-                    className={`w-8 rounded-t-lg transition-all ${
+                    className={`w-8 rounded-t-lg transition-all border ${
                       isCurr
-                        ? 'bg-amber-500'
+                        ? 'bg-amber-400/90 border-amber-200 shadow-[0_0_14px_rgba(251,191,36,0.5)]'
                         : inLis
-                        ? 'bg-emerald-500'
+                        ? 'bg-emerald-400/90 border-emerald-200 shadow-[0_0_14px_rgba(52,211,153,0.45)]'
                         : idx < (st.idx ?? 0)
-                        ? 'bg-sky-500/70'
-                        : 'bg-slate-300 dark:bg-slate-700'
+                        ? 'bg-cyan-500/75 border-cyan-300/60'
+                        : 'bg-slate-700/70 border-slate-500/40'
                     }`}
                   />
-                  <span className="text-[10px] font-mono text-slate-500 tabular-nums pb-1">
+                  <span className="text-[10px] font-mono text-indigo-300/80 tabular-nums pb-1">
                     dp={dp[idx]}
                   </span>
                 </div>
@@ -351,8 +355,8 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-            Mảng tails[] (Độ dài LIS hiện tại = {tails.length})
+          <div className="text-xs font-mono font-semibold text-cyan-200">
+            TAILS[] MONOTONIC ARRAY (LIS LEN = {tails.length})
           </div>
           <div className="flex flex-wrap gap-1.5">
             {tails.length > 0 ? (
@@ -361,8 +365,8 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                   key={idx}
                   className={`w-12 py-1.5 rounded-lg border text-center font-mono tabular-nums ${
                     idx === st.replacedPos
-                      ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-bold'
-                      : 'border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold'
+                      ? 'border-amber-400 bg-amber-500/20 text-amber-200 font-bold shadow-[0_0_10px_rgba(251,191,36,0.3)]'
+                      : 'border-emerald-400/70 bg-emerald-500/15 text-emerald-300 font-bold'
                   }`}
                 >
                   <div className="text-[9px] text-slate-400">len {idx + 1}</div>
@@ -370,7 +374,7 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                 </div>
               ))
             ) : (
-              <span className="text-xs font-mono text-slate-400">tails[] đang rỗng</span>
+              <span className="text-xs font-mono text-slate-500">tails[] đang rỗng</span>
             )}
           </div>
         </div>
@@ -389,30 +393,32 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
 
     return (
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
-          <span>Ma trận DP LCS · Khớp ký tự lấy chéo trên-trái (↖ +1)</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+          <span className="font-mono text-[11px] text-pink-200/85">
+            LCS_DP_MATRIX · Khớp ký tự lấy chéo trên-trái (↖ +1)
+          </span>
           {st.lcsStr && (
-            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="font-mono font-bold text-emerald-400">
               LCS = "{st.lcsStr}"
             </span>
           )}
         </div>
 
-        <div className="overflow-x-auto pb-2">
+        <div className="overflow-x-auto pb-2 rounded-xl border border-pink-500/25 bg-[#040b18] p-3">
           <table className="border-collapse font-mono text-xs tabular-nums min-w-max">
             <thead>
               <tr>
-                <th className="w-10 h-9 border-b border-slate-200 dark:border-slate-800 text-slate-400">
+                <th className="w-10 h-9 border-b border-cyan-500/20 text-slate-400">
                   A \ B
                 </th>
-                <th className="w-10 h-9 border-b border-slate-200 dark:border-slate-800 text-slate-400">
+                <th className="w-10 h-9 border-b border-cyan-500/20 text-slate-400">
                   ∅
                 </th>
                 {B.split('').map((ch, j) => (
                   <th
                     key={j}
-                    className={`w-10 h-9 border-b border-slate-200 dark:border-slate-800 font-bold ${
-                      j + 1 === st.curJ ? 'text-sky-600 dark:text-sky-400' : 'text-slate-700 dark:text-slate-200'
+                    className={`w-10 h-9 border-b border-cyan-500/20 font-bold ${
+                      j + 1 === st.curJ ? 'text-cyan-300' : 'text-slate-200'
                     }`}
                   >
                     {ch}
@@ -424,8 +430,8 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
               {dp.map((row, i) => (
                 <tr key={i}>
                   <td
-                    className={`w-10 h-9 text-center font-bold border-r border-slate-200 dark:border-slate-800 ${
-                      i === st.curI ? 'text-sky-600 dark:text-sky-400' : 'text-slate-700 dark:text-slate-200'
+                    className={`w-10 h-9 text-center font-bold border-r border-cyan-500/20 ${
+                      i === st.curI ? 'text-cyan-300' : 'text-slate-200'
                     }`}
                   >
                     {i === 0 ? '∅' : A[i - 1]}
@@ -438,12 +444,12 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                         <div
                           className={`w-10 h-9 rounded-md border flex items-center justify-center ${
                             isCur
-                              ? 'border-amber-500 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 font-extrabold'
+                              ? 'border-amber-400 bg-amber-500/25 text-amber-200 font-extrabold shadow-[0_0_10px_rgba(251,191,36,0.35)]'
                               : trace?.matched
-                              ? 'border-emerald-500 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold'
+                              ? 'border-emerald-400 bg-emerald-500/20 text-emerald-300 font-bold'
                               : trace
-                              ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300'
-                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300'
+                              ? 'border-cyan-400 bg-cyan-500/18 text-cyan-200'
+                              : 'border-cyan-500/15 bg-[#081529] text-slate-300'
                           }`}
                         >
                           {val}
@@ -480,10 +486,10 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
 
     return (
       <div className="space-y-3">
-        <div className="text-xs text-slate-600 dark:text-slate-400">
-          Bàn cờ Quay lui {N}×{N} · Các ô đỏ nhạt đang nằm trong tầm chiếu của Hậu đã đặt
+        <div className="font-mono text-[11px] text-orange-200/85">
+          BACKTRACK_BOARD {N}×{N} · Các ô đỏ sẫm đang nằm trong tầm chiếu của Hậu đã đặt
         </div>
-        <div className="inline-block p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-950">
+        <div className="inline-block p-3 rounded-xl border border-orange-500/30 bg-[#040b18] shadow-[inset_0_0_32px_rgba(249,115,22,0.08)]">
           {Array.from({ length: N }).map((_, r) => (
             <div key={r} className="flex">
               {Array.from({ length: N }).map((__, c) => {
@@ -493,27 +499,27 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
                 const attacked = !hasQueen && isAttackedByPlaced(r, c);
 
                 let bg = darkSquare
-                  ? 'bg-slate-200 dark:bg-slate-800'
-                  : 'bg-white dark:bg-slate-900';
+                  ? 'bg-[#071326] border-cyan-500/15'
+                  : 'bg-[#0d1f3a] border-cyan-500/20';
                 if (hasQueen) {
                   bg = st.solved
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-sky-500 text-white';
+                    ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200 shadow-[inset_0_0_12px_rgba(16,185,129,0.45)]'
+                    : 'bg-cyan-500/30 border-cyan-400 text-cyan-200 shadow-[inset_0_0_12px_rgba(34,211,238,0.4)]';
                 } else if (isTrying && st.conflict) {
-                  bg = 'bg-rose-500/80 text-white';
+                  bg = 'bg-rose-500/35 border-rose-400 text-rose-200';
                 } else if (attacked) {
                   bg = darkSquare
-                    ? 'bg-rose-100/70 dark:bg-rose-950/40'
-                    : 'bg-rose-50/70 dark:bg-rose-950/25';
+                    ? 'bg-rose-950/55 border-rose-500/25'
+                    : 'bg-rose-900/40 border-rose-500/25';
                 }
 
                 return (
                   <div
                     key={`${r}-${c}`}
-                    className={`w-11 h-11 sm:w-12 sm:h-12 border border-slate-300/60 dark:border-slate-700/60 flex items-center justify-center transition-colors ${bg}`}
+                    className={`w-11 h-11 sm:w-12 sm:h-12 border flex items-center justify-center transition-colors ${bg}`}
                   >
                     {hasQueen ? (
-                      <Crown className="w-5 h-5" />
+                      <Crown className="w-5 h-5 drop-shadow-[0_0_6px_rgba(34,211,238,0.65)]" />
                     ) : isTrying && st.conflict ? (
                       <span className="font-mono font-bold text-xs">✕</span>
                     ) : null}

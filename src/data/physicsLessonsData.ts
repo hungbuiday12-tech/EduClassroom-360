@@ -3014,5 +3014,347 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
         finalAnswer: '$\\varepsilon = 4{,}00\\text{ eV}$; hiệu điện thế hãm $U_h = 1{,}72\\text{ V}$.'
       }
     ]
+  },
+  {
+    id: 'phys-9-induction-ac',
+    lessonNumber: 26,
+    title: 'Cảm ứng Điện từ, Dòng điện Xoay chiều & Máy biến áp Lớp 9',
+    subtitle: 'KHTN 9 · Điều kiện xuất hiện dòng điện cảm ứng & Truyền tải điện năng đi xa',
+    grade: 'Lớp 9',
+    track: 'khong_chuyen',
+    stageLabel: 'Điện Từ Học · KHTN Lớp 9 (CT Mới)',
+    sourceTag: 'Chuẩn SGK KHTN 9 (KNTT / CTST / Cánh Diều) · Lab 2D & 3D',
+    description:
+      'Khảo sát sự biến thiên số đường sức từ qua cuộn dây kín tạo dòng điện cảm ứng, nguyên tắc tạo dòng điện xoay chiều và công thức máy biến áp giảm hao phí truyền tải điện.',
+    theorySections: [
+      {
+        heading: '1. Hiện tượng Cảm ứng điện từ & Dòng điện cảm ứng',
+        content:
+          '• Khi số đường sức từ xuyên qua tiết diện $S$ của một cuộn dây dẫn kín **biến thiên** (tăng hoặc giảm), trong cuộn dây xuất hiện dòng điện cảm ứng.\n• Nếu đảo cực nam châm hoặc đổi từ đưa vào sang rút ra, chiều dòng điện cảm ứng bị đảo ngược → sinh ra **dòng điện xoay chiều**.'
+      },
+      {
+        heading: '2. Máy biến áp & Truyền tải điện năng đi xa',
+        content:
+          '• Công thức máy biến áp lý tưởng: $\\frac{U_1}{U_2} = \\frac{N_1}{N_2}$ ($N_1, N_2$ là số vòng cuộn sơ cấp và thứ cấp).\n• Công suất hao phí do tỏa nhiệt trên đường dây tải điện: $\\Delta P = R_{\\text{dây}} \\cdot \\frac{P^2}{U^2}$. Muốn giảm hao phí $n^2$ lần, ta dùng máy tăng áp để tăng hiệu điện thế $U$ lên $n$ lần trước khi truyền tải!'
+      }
+    ],
+    keyFormulas: [
+      '\\frac{U_1}{U_2} = \\frac{N_1}{N_2}',
+      '\\Delta P_{\\text{hao phí}} = I^2 R = \\frac{P^2 R}{U^2}'
+    ],
+    simulationType: 'magnetic_induction',
+    sim3dType: 'ac_generator_3d',
+    defaultParams: { turns: 20, B: 1.4, velocity: 4.5 },
+    paramBounds: {
+      turns: { min: 5, max: 40, step: 1, unit: 'vòng', label: 'Số vòng dây N' },
+      B: { min: 0.4, max: 3.0, step: 0.1, unit: 'T', label: 'Cảm ứng từ B' },
+      velocity: { min: 1.0, max: 10.0, step: 0.5, unit: 'm/s', label: 'Tốc độ di chuyển nam châm' }
+    },
+    practiceExercises: [
+      {
+        source: 'KHTN 9 · Máy biến áp',
+        question:
+          'Một máy biến áp có cuộn sơ cấp $500$ vòng đặt vào hiệu điện thế $220\\text{ V}$. Muốn lấy ra hiệu điện thế $11\\text{ V}$ ở cuộn thứ cấp thì số vòng cuộn thứ cấp là:',
+        options: ['A. 25 vòng', 'B. 10 000 vòng', 'C. 50 vòng', 'D. 100 vòng'],
+        correctIndex: 0,
+        explanation:
+          'Áp dụng $\\frac{N_2}{N_1} = \\frac{U_2}{U_1} \\Rightarrow N_2 = 500 \\cdot \\frac{11}{220} = 25$ vòng.'
+      },
+      {
+        source: 'KHTN 9 · Truyền tải điện',
+        question:
+          'Khi tăng hiệu điện thế ở nơi phát điện lên $10$ lần (giữ nguyên công suất phát và điện trở dây), công suất hao phí trên đường dây tải điện sẽ:',
+        options: ['A. Giảm 100 lần', 'B. Giảm 10 lần', 'C. Tăng 100 lần', 'D. Không đổi'],
+        correctIndex: 0,
+        explanation: 'Vì $\\Delta P = \\frac{P^2 R}{U^2}$ tỉ lệ nghịch với $U^2$, tăng $U$ lên $10$ lần thì hao phí giảm $10^2 = 100$ lần.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'Tự luận KHTN 9 · Truyền tải điện năng',
+        question:
+          'Một trạm phát điện truyền đi công suất $P = 100\\text{ kW}$ trên đường dây có tổng điện trở $R = 8\\,\\Omega$. Tính công suất hao phí khi truyền ở $U_1 = 2\\text{ kV}$ và khi dùng máy tăng áp lên $U_2 = 20\\text{ kV}$.',
+        hints: ['Áp dụng $\\Delta P = \\frac{P^2 R}{U^2}$ (nhớ đổi $100\\text{ kW} = 10^5\\text{ W}$ và kV sang V).'],
+        solutionSteps: [
+          'Bước 1: Ở $U_1 = 2000\\text{ V}$: $\\Delta P_1 = \\frac{(10^5)^2 \\cdot 8}{2000^2} = \\frac{8\\cdot 10^{10}}{4\\cdot 10^6} = 20\\,000\\text{ W} = 20\\text{ kW}$.',
+          'Bước 2: Ở $U_2 = 20\\,000\\text{ V}$ (tăng 10 lần): $\\Delta P_2 = \\frac{20\\text{ kW}}{10^2} = 0{,}2\\text{ kW} = 200\\text{ W}$.'
+        ],
+        finalAnswer: 'Hao phí giảm từ $20\\text{ kW}$ xuống còn $0{,}2\\text{ kW}$ (200 W).'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-power-bill',
+    lessonNumber: 27,
+    title: 'Động năng, Thế năng & Hiệu suất Máy cơ đơn giản (KHTN 9)',
+    subtitle: 'KHTN 9 · Chuyển hóa cơ năng, Mặt phẳng nghiêng, Ròng rọc & Hiệu suất H',
+    grade: 'Lớp 9',
+    track: 'khong_chuyen',
+    stageLabel: 'Cơ Học Tổng Hợp · KHTN Lớp 9 (CT Mới)',
+    sourceTag: 'Chuẩn SGK KHTN 9 · Mô phỏng Cơ năng 2D & 3D',
+    description:
+      'Phân tích sâu công có ích $A_{\\text{ích}} = P\\cdot h$, công toàn phần $A_{\\text{tp}} = F\\cdot s$, hiệu suất máy cơ $H = \\frac{A_{\\text{ích}}}{A_{\\text{tp}}}\\cdot 100\\%$ và bài toán chuyển hóa động – thế năng.',
+    theorySections: [
+      {
+        heading: '1. Công có ích, Công toàn phần & Hiệu suất',
+        content:
+          '• Khi kéo vật khối lượng $m$ lên độ cao $h$ bằng mặt phẳng nghiêng dài $l$ với lực kéo $F$: công có ích $A_i = P \\cdot h = 10mh$, công toàn phần $A_{tp} = F \\cdot l$.\n• Công hao phí do ma sát: $A_{hp} = F_{ms} \\cdot l = A_{tp} - A_i$. Hiệu suất: $H = \\frac{A_i}{A_{tp}} \\cdot 100\\%$.'
+      },
+      {
+        heading: '2. Sự chuyển hóa giữa Động năng và Thế năng',
+        content:
+          '• Công thức Động năng $W_{\\text{đ}} = \\frac{1}{2}mv^2$ và Thế năng trọng trường $W_t = P \\cdot h$.\n• Khi vật rơi từ độ cao $h_0$: thế năng giảm dần, động năng tăng dần; nếu không có lực cản thì tổng $W = W_{\\text{đ}} + W_t$ không đổi.'
+      }
+    ],
+    keyFormulas: [
+      'A_i = P \\cdot h, \\quad A_{tp} = F \\cdot s',
+      'H = \\frac{A_i}{A_{tp}} \\cdot 100\\%',
+      'W = \\frac{1}{2}mv^2 + mgh'
+    ],
+    simulationType: 'free_fall_energy',
+    sim3dType: 'projectile_3d',
+    defaultParams: { height: 25, mass: 3, gravity: 9.8 },
+    paramBounds: {
+      height: { min: 5, max: 45, step: 1, unit: 'm', label: 'Độ cao h' },
+      mass: { min: 0.5, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng m' },
+      gravity: { min: 1.6, max: 15, step: 0.2, unit: 'm/s²', label: 'Gia tốc g' }
+    },
+    practiceExercises: [
+      {
+        source: 'KHTN 9 · Hiệu suất mặt phẳng nghiêng',
+        question:
+          'Dùng mặt phẳng nghiêng dài $4\\text{ m}$ kéo đều một thùng hàng nặng $600\\text{ N}$ lên cao $1{,}2\\text{ m}$ với lực kéo $F = 240\\text{ N}$. Hiệu suất của mặt phẳng nghiêng là:',
+        options: ['A. 75%', 'B. 80%', 'C. 60%', 'D. 62,5%'],
+        correctIndex: 0,
+        explanation:
+          'Công có ích $A_i = 600 \\cdot 1{,}2 = 720\\text{ J}$; công toàn phần $A_{tp} = 240 \\cdot 4 = 960\\text{ J}$. Hiệu suất $H = \\frac{720}{960} \\cdot 100\\% = 75\\%$.'
+      },
+      {
+        source: 'KHTN 9 · Động năng & Thế năng',
+        question: 'Một ô tô khối lượng $1{,}2\\text{ tấn}$ chạy với tốc độ $10\\text{ m/s}$ trên đường ngang có động năng bằng:',
+        options: ['A. 60 kJ', 'B. 120 kJ', 'C. 6 kJ', 'D. 600 J'],
+        correctIndex: 0,
+        explanation: '$W_{\\text{đ}} = \\frac{1}{2}mv^2 = 0{,}5 \\cdot 1200 \\cdot 10^2 = 60\\,000\\text{ J} = 60\\text{ kJ}$.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'Tự luận KHTN 9 · Cơ năng & Ma sát',
+        question:
+          'Kéo đều một vật khối lượng $50\\text{ kg}$ lên sàn xe cao $1{,}5\\text{ m}$ bằng tấm ván dài $5\\text{ m}$ ($g = 10\\text{ m/s}^2$). Biết lực ma sát giữa vật và ván là $F_{ms} = 50\\text{ N}$. Tính lực kéo $F$ và hiệu suất tấm ván.',
+        hints: ['Tính $A_i = 10mh$, $A_{hp} = F_{ms} \\cdot l$, suy ra $A_{tp} = A_i + A_{hp} = F \\cdot l$.'],
+        solutionSteps: [
+          'Bước 1: Công có ích $A_i = 50 \\cdot 10 \\cdot 1{,}5 = 750\\text{ J}$.',
+          'Bước 2: Công thắng ma sát $A_{hp} = 50 \\cdot 5 = 250\\text{ J}$.',
+          'Bước 3: Công toàn phần $A_{tp} = 750 + 250 = 1000\\text{ J} \\Rightarrow F = \\frac{1000}{5} = 200\\text{ N}$.',
+          'Bước 4: Hiệu suất $H = \\frac{750}{1000} \\cdot 100\\% = 75\\%$.'
+        ],
+        finalAnswer: 'Lực kéo $F = 200\\text{ N}$, hiệu suất $H = 75\\%$.'
+      }
+    ]
+  },
+  {
+    id: 'phys-10-momentum',
+    lessonNumber: 28,
+    title: 'Động lượng, Xung lượng & Định luật Bảo toàn Động lượng (Vật lí 10)',
+    subtitle: 'Vật lí 10 · Phân tích va chạm đàn hồi – va chạm mềm & Chuyển động bằng phản lực',
+    grade: 'Lớp 10',
+    track: 'khong_chuyen',
+    stageLabel: 'Động Lượng & Va Chạm · Vật Lí 10 (CT Mới)',
+    sourceTag: 'Chuẩn SGK Vật lí 10 KNTT / CTST · Đồ thị Động học 2D & 3D',
+    description:
+      'Làm chủ vectơ động lượng $\\vec{p} = m\\vec{v}$, liên hệ xung lượng lực $\\vec{F}\\Delta t = \\Delta\\vec{p}$, bài toán bắn súng/tên lửa phản lực và phân biệt va chạm mềm với va chạm đàn hồi.',
+    theorySections: [
+      {
+        heading: '1. Động lượng & Xung lượng của lực',
+        content:
+          '• Động lượng là đại lượng vectơ: $\\vec{p} = m\\vec{v}$ (đơn vị $\\text{kg}\\cdot\\text{m/s}$ hay $\\text{N}\\cdot\\text{s}$).\n• Độ biến thiên động lượng bằng xung lượng của hợp lực tác dụng: $\\Delta\\vec{p} = \\vec{p}_2 - \\vec{p}_1 = \\vec{F}\\cdot\\Delta t$.'
+      },
+      {
+        heading: '2. Định luật Bảo toàn Động lượng & Va chạm',
+        content:
+          '• Với **hệ kín** (tổng ngoại lực bằng $\\vec{0}$ hoặc nội lực lớn vượt trội trong thời gian ngắn): $\\vec{p}_1 + \\vec{p}_2 = \\vec{p}_1\' + \\vec{p}_2\'$.\n• **Va chạm mềm** (hai vật dính vào nhau sau va chạm): $m_1\\vec{v}_1 + m_2\\vec{v}_2 = (m_1 + m_2)\\vec{V}$ (cơ năng giảm thành nhiệt).'
+      }
+    ],
+    keyFormulas: [
+      '\\vec{p} = m\\vec{v}, \\quad \\vec{F}\\Delta t = \\Delta\\vec{p}',
+      'm_1\\vec{v}_1 + m_2\\vec{v}_2 = (m_1 + m_2)\\vec{V} \\quad (\\text{Va chạm mềm})'
+    ],
+    simulationType: 'kinematics_graphs',
+    sim3dType: 'kinematics_3d',
+    defaultParams: { vizMode: 2, v0: 6, accel: -1.2, angleDeg: 0, f1: 20, f2: 20 },
+    paramBounds: {
+      vizMode: { min: 1, max: 2, step: 1, unit: '(1:d-t | 2:v-t)', label: 'Chế độ đồ thị' },
+      v0: { min: 1, max: 12, step: 0.5, unit: 'm/s', label: 'Vận tốc đầu v₀' },
+      accel: { min: -3.0, max: 3.0, step: 0.2, unit: 'm/s²', label: 'Gia tốc hãm / xung lực' }
+    },
+    practiceExercises: [
+      {
+        source: 'SGK Vật lí 10 · Va chạm mềm',
+        question:
+          'Viên bi 1 khối lượng $m_1 = 2\\text{ kg}$ chuyển động với tốc độ $v_1 = 6\\text{ m/s}$ đến va chạm mềm với viên bi 2 khối lượng $m_2 = 4\\text{ kg}$ đang đứng yên. Vận tốc hai viên bi ngay sau va chạm là:',
+        options: ['A. 2 m/s', 'B. 3 m/s', 'C. 4 m/s', 'D. 1,5 m/s'],
+        correctIndex: 0,
+        explanation: 'Bảo toàn động lượng: $m_1 v_1 = (m_1 + m_2)V \\Rightarrow V = \\frac{2 \\cdot 6}{2 + 4} = 2\\text{ m/s}$.'
+      },
+      {
+        source: 'SGK Vật lí 10 · Xung lượng lực',
+        question:
+          'Một quả bóng khối lượng $0{,}5\\text{ kg}$ bay tới đập vuông góc vào tường với tốc độ $10\\text{ m/s}$ và bật ngược lại cùng tốc độ $10\\text{ m/s}$. Độ lớn độ biến thiên động lượng của bóng là:',
+        options: ['A. 10 kg·m/s', 'B. 0 kg·m/s', 'C. 5 kg·m/s', 'D. 20 kg·m/s'],
+        correctIndex: 0,
+        explanation:
+          'Chọn chiều dương hướng ra khỏi tường: $p_1 = -0{,}5\\cdot 10 = -5$; $p_2 = +5$. Do đó $|\\Delta p| = |5 - (-5)| = 10\\text{ kg}\\cdot\\text{m/s}$.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'Tự luận Vật lí 10 · Chuyển động phản lực',
+        question:
+          'Một khẩu đại bác khối lượng $M = 800\\text{ kg}$ đặt trên mặt phẳng ngang không ma sát, bắn đi một viên đạn khối lượng $m = 4\\text{ kg}$ theo phương ngang với tốc độ $v = 600\\text{ m/s}$. Tính vận tốc giật lùi của đại bác ngay khi đạn rời nòng.',
+        hints: ['Hệ (đại bác + đạn) kín theo phương ngang, ban đầu tổng động lượng bằng $0$.'],
+        solutionSteps: [
+          'Bước 1: Áp dụng bảo toàn động lượng theo phương ngang: $M\\vec{V} + m\\vec{v} = \\vec{0}$.',
+          'Bước 2: Chiếu theo chiều bắn: $M V_x + m v = 0 \\Rightarrow V_x = -\\frac{m v}{M} = -\\frac{4 \\cdot 600}{800} = -3\\text{ m/s}$.'
+        ],
+        finalAnswer: 'Đại bác giật lùi ngược chiều bắn với tốc độ $3\\text{ m/s}$.'
+      }
+    ]
+  },
+  {
+    id: 'phys-11-capacitor',
+    lessonNumber: 29,
+    title: 'Điện thế, Hiệu điện thế & Tụ điện – Năng lượng Điện trường (Vật lí 11)',
+    subtitle: 'Vật lí 11 · Công của lực điện A = qEd, điện dung C = Q/U và ghép tụ điện',
+    grade: 'Lớp 11',
+    track: 'khong_chuyen',
+    stageLabel: 'Điện Trường & Tụ Điện · Vật Lí 11 (CT Mới)',
+    sourceTag: 'Chuẩn SGK Vật lí 11 KNTT / CTST · Trường Tĩnh điện 2D & 3D',
+    description:
+      'Khám phá sự không phụ thuộc hình dạng đường đi của công lực điện $A_{MN} = qEd$, hiệu điện thế $U_{MN} = V_M - V_N$, điện dung của tụ điện phẳng và năng lượng tích trữ $W = \\frac{1}{2}CU^2$.',
+    theorySections: [
+      {
+        heading: '1. Công của lực điện & Hiệu điện thế',
+        content:
+          '• Trong điện trường đều $\\vec{E}$, công của lực điện khi dịch chuyển điện tích $q$ từ $M$ đến $N$ chỉ phụ thuộc vị trí đầu và cuối: $A_{MN} = q E d$ ($d = \\overline{M\'N\'}$ là hình chiếu độ dịch chuyển lên phương đường sức).\n• Hiệu điện thế giữa $M$ và $N$: $U_{MN} = V_M - V_N = \\frac{A_{MN}}{q} = E \\cdot d$.'
+      },
+      {
+        heading: '2. Tụ điện & Năng lượng điện trường',
+        content:
+          '• Điện dung đặc trưng cho khả năng tích điện của tụ ở một hiệu điện thế: $C = \\frac{Q}{U}$ (đơn vị Fara, $1\\,\\mu\\text{F} = 10^{-6}\\text{ F}$, $1\\text{ nF} = 10^{-9}\\text{ F}$).\n• Năng lượng điện trường bên trong tụ điện: $W = \\frac{1}{2}QU = \\frac{1}{2}CU^2 = \\frac{Q^2}{2C}$.'
+      }
+    ],
+    keyFormulas: [
+      'A_{MN} = q E d = q U_{MN}',
+      'Q = C \\cdot U, \\quad W = \\frac{1}{2}CU^2 = \\frac{1}{2}QU'
+    ],
+    simulationType: 'electric_field',
+    sim3dType: 'lorentz_helix',
+    defaultParams: { q1: 6, q2: -6, dist: 160 },
+    paramBounds: {
+      q1: { min: -10, max: 10, step: 1, unit: 'μC', label: 'Điện tích bản dương q₁' },
+      q2: { min: -10, max: 10, step: 1, unit: 'μC', label: 'Điện tích bản âm q₂' },
+      dist: { min: 60, max: 260, step: 10, unit: 'mm', label: 'Khoảng cách d' }
+    },
+    practiceExercises: [
+      {
+        source: 'SGK Vật lí 11 KNTT · Năng lượng tụ điện',
+        question:
+          'Một tụ điện có điện dung $C = 20\\,\\mu\\text{F}$ được tích điện dưới hiệu điện thế $U = 100\\text{ V}$. Năng lượng điện trường trong tụ là:',
+        options: ['A. 0,1 J', 'B. 0,2 J', 'C. 1,0 mJ', 'D. 200 J'],
+        correctIndex: 0,
+        explanation:
+          '$W = \\frac{1}{2}CU^2 = 0{,}5 \\cdot 20\\cdot 10^{-6} \\cdot 100^2 = 10^{-5} \\cdot 10^4 = 0{,}1\\text{ J}$.'
+      },
+      {
+        source: 'SGK Vật lí 11 · Công lực điện',
+        question:
+          'Electron ($q = -1{,}6\\cdot 10^{-19}\\text{ C}$) di chuyển ngược chiều đường sức điện trường đều $E = 1000\\text{ V/m}$ một đoạn $d = 5\\text{ cm}$. Công của lực điện là:',
+        options: ['A. $+8\\cdot 10^{-18}\\text{ J}$', 'B. $-8\\cdot 10^{-18}\\text{ J}$', 'C. $+8\\cdot 10^{-16}\\text{ J}$', 'D. $0\\text{ J}$'],
+        correctIndex: 0,
+        explanation:
+          'Ngược chiều đường sức nên $d = -0{,}05\\text{ m}$. Do đó $A = q E d = (-1{,}6\\cdot 10^{-19}) \\cdot 1000 \\cdot (-0{,}05) = +8\\cdot 10^{-18}\\text{ J}$.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'Tự luận Vật lí 11 · Gia tốc hạt mang điện trong tụ phẳng',
+        question:
+          'Hai bản kim loại phẳng song song đặt cách nhau $d = 2\\text{ cm}$ trong chân không, hiệu điện thế giữa hai bản là $U = 200\\text{ V}$. Tính cường độ điện trường giữa hai bản và công làm dịch chuyển điện tích $q = 4\\cdot 10^{-8}\\text{ C}$ từ bản dương sang bản âm.',
+        hints: ['Dùng $E = U / d$ (đổi $d = 0{,}02\\text{ m}$) và $A = qU$.'],
+        solutionSteps: [
+          'Bước 1: Cường độ điện trường đều giữa hai bản: $E = \\frac{U}{d} = \\frac{200}{0{,}02} = 10\\,000\\text{ V/m}$.',
+          'Bước 2: Công của lực điện khi đi từ bản dương sang bản âm: $A = q U = 4\\cdot 10^{-8} \\cdot 200 = 8\\cdot 10^{-6}\\text{ J} = 8\\,\\mu\\text{J}$.'
+        ],
+        finalAnswer: '$E = 10^4\\text{ V/m}$, $A = 8\\cdot 10^{-6}\\text{ J}$.'
+      }
+    ]
+  },
+  {
+    id: 'phys-11-resonance',
+    lessonNumber: 30,
+    title: 'Dao động Tắt dần, Cưỡng bức & Cộng hưởng Cơ học (Vật lí 11)',
+    subtitle: 'Vật lí 11 · Nguyên nhân tắt dần, điều kiện cộng hưởng f = f₀ và ứng dụng kỹ thuật',
+    grade: 'Lớp 11',
+    track: 'khong_chuyen',
+    stageLabel: 'Dao Động Cơ · Vật Lí 11 (CT Mới)',
+    sourceTag: 'Chuẩn SGK Vật lí 11 KNTT / CTST · Lab Con Lắc Ma Sát 2D & 3D',
+    description:
+      'Khảo sát hiện tượng biên độ giảm dần do lực ma sát/lực cản môi trường, dao động cưỡng bức ổn định dưới ngoại lực tuần hoàn và điều kiện xảy ra cộng hưởng cực đại.',
+    theorySections: [
+      {
+        heading: '1. Dao động Tắt dần & Dao động Duy trì',
+        content:
+          '• **Dao động tắt dần** có biên độ và cơ năng giảm dần theo thời gian do ma sát và lực cản môi trường (ma sát càng lớn, tắt dần càng nhanh).\n• **Dao động duy trì**: Bù đúng phần năng lượng tiêu hao sau mỗi chu kỳ bằng nguồn bên trong hệ, giữ nguyên tần số riêng $f_0$ và biên độ ổn định (như đồng hồ quả lắc).'
+      },
+      {
+        heading: '2. Dao động Cưỡng bức & Hiện tượng Cộng hưởng',
+        content:
+          '• Dao động dưới tác dụng ngoại lực cưỡng bức tuần hoàn $F = F_0\\cos(\\omega t)$ có tần số bằng đúng tần số ngoại lực $f$.\n• **Cộng hưởng**: Khi $f = f_0$ (hoặc $\\omega = \\omega_0 = \\sqrt{k/m}$), biên độ dao động cưỡng bức đạt giá trị **cực đại**!'
+      }
+    ],
+    keyFormulas: [
+      'f_{\\text{cưỡng bức}} = f_{\\text{ngoại lực}}',
+      'f = f_0 = \\frac{1}{2\\pi}\\sqrt{\\frac{k}{m}} \\quad (\\text{Điều kiện Cộng hưởng})'
+    ],
+    simulationType: 'spring_pendulum',
+    sim3dType: 'pendulum_spring',
+    defaultParams: { m: 1.2, k: 48, A: 14 },
+    paramBounds: {
+      m: { min: 0.2, max: 5.0, step: 0.2, unit: 'kg', label: 'Khối lượng m' },
+      k: { min: 10, max: 120, step: 5, unit: 'N/m', label: 'Độ cứng k' },
+      A: { min: 4, max: 24, step: 1, unit: 'cm', label: 'Biên độ ban đầu A' }
+    },
+    practiceExercises: [
+      {
+        source: 'SGK Vật lí 11 · Cộng hưởng cơ',
+        question:
+          'Một con lắc lò xo có khối lượng $m = 0{,}4\\text{ kg}$, độ cứng $k = 40\\text{ N/m}$ ($\\pi^2 \\approx 10$). Để xảy ra cộng hưởng thì tần số của ngoại lực cưỡng bức phải xấp xỉ:',
+        options: ['A. 1,59 Hz', 'B. 0,63 Hz', 'C. 10 Hz', 'D. 3,18 Hz'],
+        correctIndex: 0,
+        explanation:
+          'Tần số riêng $f_0 = \\frac{1}{2\\pi}\\sqrt{\\frac{k}{m}} = \\frac{1}{2\\pi}\\sqrt{100} = \\frac{10}{2\\pi} \\approx 1{,}59\\text{ Hz}$.'
+      },
+      {
+        source: 'SGK Vật lí 11 · Dao động tắt dần',
+        question: 'Trong dao động tắt dần của một con lắc, đại lượng nào sau đây KHÔNG đổi hoặc giảm chậm nhất theo thời gian?',
+        options: ['A. Biên độ giảm dần và cơ năng giảm dần', 'B. Biên độ tăng dần', 'C. Cơ năng bảo toàn', 'D. Gia tốc luôn bằng 0'],
+        correctIndex: 0,
+        explanation: 'Do ma sát sinh công âm nên cả biên độ lẫn cơ năng đều giảm dần theo thời gian.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: 'Tự luận Vật lí 11 · Cộng hưởng xe lửa qua mối nối ray',
+        question:
+          'Một toa tàu có chu kì dao động riêng của hệ giảm xóc là $T_0 = 0{,}8\\text{ s}$ chạy trên đường ray có chiều dài mỗi thanh ray là $L = 12\\text{ m}$. Tính tốc độ của đoàn tàu để toa tàu bị xóc mạnh nhất (cộng hưởng).',
+        hints: ['Thời gian đi hết một thanh ray $t = \\frac{L}{v}$ bằng đúng chu kì riêng $T_0$.'],
+        solutionSteps: [
+          'Bước 1: Mỗi lần bánh xe qua chỗ nối ray chịu một xung lực kích thích, chu kì kích thích là $T = \\frac{L}{v}$.',
+          'Bước 2: Để xảy ra cộng hưởng (xóc mạnh nhất) thì $T = T_0 \\Rightarrow \\frac{12}{v} = 0{,}8 \\Rightarrow v = \\frac{12}{0{,}8} = 15\\text{ m/s} = 54\\text{ km/h}$.'
+        ],
+        finalAnswer: '$v = 15\\text{ m/s}$ ($54\\text{ km/h}$).'
+      }
+    ]
   }
 ];

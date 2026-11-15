@@ -59,6 +59,8 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
         : isEn
         ? 'Virtual Campus · Synapse v2'
         : 'Lớp học ảo · Synapse v2';
+    case 'spatial_3d':
+      return isEn ? 'Spatial 3D Gesture Lab' : 'Học cảm giác 3D';
     case 'roadmap':
       return isEn ? 'Study Roadmap' : 'Lộ trình học';
     case 'math':

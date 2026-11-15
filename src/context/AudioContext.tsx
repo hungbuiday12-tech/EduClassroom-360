@@ -126,7 +126,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const toggleBgPlaying = useCallback(() => {
     if (bgSound === 'off') {
-      setBgSoundState('cosmic_drone');
+      setBgSoundState('minecraft_calm');
       setIsBgPlaying(true);
     } else {
       setIsBgPlaying((prev) => !prev);

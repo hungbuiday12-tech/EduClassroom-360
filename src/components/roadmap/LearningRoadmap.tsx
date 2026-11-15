@@ -9,6 +9,7 @@ import {
   HelpCircle,
   Layers,
   Play,
+  Pause,
   Sparkles,
   Trophy,
   Zap,
@@ -16,7 +17,15 @@ import {
   BookOpen,
   BarChart3,
   Target,
-  AlertTriangle
+  AlertTriangle,
+  CalendarDays,
+  SlidersHorizontal,
+  Download,
+  Printer,
+  Search,
+  StickyNote,
+  RefreshCw,
+  Award
 } from 'lucide-react';
 import {
   LessonAssessmentRecord,
@@ -47,7 +56,42 @@ interface LearningRoadmapProps {
   onEarnXP?: (xp: number) => void;
 }
 
+type StudyGoalId = 'foundation' | 'entrance_10' | 'thpt_qg' | 'olympiad';
+type StudyPaceId = 'steady' | 'balanced' | 'intensive';
+type ReadinessFilter = 'all' | 'ready' | 'completed' | 'locked';
+
+interface StudentPlanProfile {
+  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  goal: StudyGoalId;
+  focusSubjects: Array<'math' | 'physics' | 'cs'>;
+  hoursPerWeek: number;
+  pace: StudyPaceId;
+}
+
 const LOCAL_ROADMAP_KEY = 'educlassroom_roadmap_completed_v1';
+const LOCAL_PLAN_PROFILE_KEY = 'synapse_student_plan_profile_v1';
+const LOCAL_NODE_NOTES_KEY = 'synapse_roadmap_node_notes_v1';
+
+const DEFAULT_PROFILE: StudentPlanProfile = {
+  grade: 'Lớp 10',
+  goal: 'foundation',
+  focusSubjects: ['math', 'physics', 'cs'],
+  hoursPerWeek: 10,
+  pace: 'balanced'
+};
+
+const WEEK_DAYS_VI = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+const WEEK_DAYS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const GRADE_ORDER: Record<string, number> = {
+  'Lớp 9': 1,
+  'Cơ bản': 1,
+  'Lớp 10': 2,
+  'Trung cấp': 2,
+  'Lớp 11': 3,
+  'Lớp 12': 4,
+  'Nâng cao / HSG': 4
+};
 
 export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
   onBack,
@@ -61,9 +105,39 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
   const isEn = language === 'en';
 
   const [activeStageIdx, setActiveStageIdx] = useState<number>(0);
+  const [autoPlayWorkflow, setAutoPlayWorkflow] = useState<boolean>(false);
   const [subjectFilter, setSubjectFilter] = useState<'all' | 'math' | 'physics' | 'cs'>('all');
   const [gradeFilter, setGradeFilter] = useState<string>('all');
+  const [readinessFilter, setReadinessFilter] = useState<ReadinessFilter>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedNodeId, setSelectedNodeId] = useState<string>(ROADMAP_NODES[0].id);
+
+  const [planProfile, setPlanProfile] = useState<StudentPlanProfile>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_PLAN_PROFILE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<StudentPlanProfile>;
+        return {
+          ...DEFAULT_PROFILE,
+          ...parsed,
+          focusSubjects:
+            Array.isArray(parsed.focusSubjects) && parsed.focusSubjects.length > 0
+              ? parsed.focusSubjects
+              : DEFAULT_PROFILE.focusSubjects
+        };
+      }
+    } catch {}
+    return DEFAULT_PROFILE;
+  });
+
+  const [nodeNotes, setNodeNotes] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_NODE_NOTES_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const [completedNodeIds, setCompletedNodeIds] = useState<string[]>(() => {
     try {
@@ -87,6 +161,28 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     loadAllLessonAssessments(user?.uid || firebaseUser?.uid)
   );
   const [cloudLessonAssessments, setCloudLessonAssessments] = useState<CloudLessonAssessmentSummary[]>([]);
+
+  // Persist student profile & notes locally
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_PLAN_PROFILE_KEY, JSON.stringify(planProfile));
+    } catch {}
+  }, [planProfile]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_NODE_NOTES_KEY, JSON.stringify(nodeNotes));
+    } catch {}
+  }, [nodeNotes]);
+
+  // Workflow walkthrough animation timer
+  useEffect(() => {
+    if (!autoPlayWorkflow) return;
+    const id = window.setInterval(() => {
+      setActiveStageIdx((prev) => (prev + 1) % WORKFLOW_STAGES.length);
+    }, 3200);
+    return () => window.clearInterval(id);
+  }, [autoPlayWorkflow]);
 
   useEffect(() => {
     const syncAiRoadmaps = () => {
@@ -184,39 +280,6 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     if (!exists && onEarnXP) {
       onEarnXP(30);
     }
-  };
-
-  const filteredNodes = useMemo(() => {
-    return ROADMAP_NODES.filter((n) => {
-      const matchSubj = subjectFilter === 'all' || n.subject === subjectFilter;
-      const matchGrade = gradeFilter === 'all' || n.grade === gradeFilter;
-      return matchSubj && matchGrade;
-    });
-  }, [subjectFilter, gradeFilter]);
-
-  const activeNode =
-    ROADMAP_NODES.find((n) => n.id === selectedNodeId) || filteredNodes[0] || ROADMAP_NODES[0];
-
-  const activeStage = WORKFLOW_STAGES[activeStageIdx] || WORKFLOW_STAGES[0];
-  const progressPercent = Math.round((completedNodeIds.length / ROADMAP_NODES.length) * 100);
-
-  const recommendedNextNode =
-    ROADMAP_NODES.find(
-      (n) =>
-        !completedNodeIds.includes(n.id) &&
-        n.prerequisites.every((pre) => completedNodeIds.includes(pre))
-    ) || ROADMAP_NODES[0];
-
-  const getSubjectName = (subj: 'math' | 'physics' | 'cs') => {
-    if (subj === 'math') return isEn ? 'Mathematics' : 'Toán học';
-    if (subj === 'physics') return isEn ? 'Physics' : 'Vật lí';
-    return isEn ? 'Computer Science' : 'Tin học';
-  };
-
-  const getSubjectIcon = (subj: 'math' | 'physics' | 'cs') => {
-    if (subj === 'math') return <Compass className="w-4 h-4 text-sky-600 dark:text-sky-400" />;
-    if (subj === 'physics') return <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
-    return <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
   };
 
   const savedLessonSummaries = useMemo(() => {
@@ -368,38 +431,275 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     );
   }, [localLessonAssessments, cloudLessonAssessments]);
 
-  const handleOpenSavedLesson = (subject: 'math' | 'physics' | 'cs', lessonKey: string) => {
+  // Map mastery gaps from saved assessments
+  const weakSubjectBoost = useMemo(() => {
+    const scores: Record<'math' | 'physics' | 'cs', number> = { math: 0, physics: 0, cs: 0 };
+    savedLessonSummaries.forEach((s) => {
+      if (s.overallMastery < 65 || s.weakPoints.length > 0) {
+        scores[s.subject] += 1;
+      }
+    });
+    return scores;
+  }, [savedLessonSummaries]);
+
+  // Smart Prioritized Study Queue & Weekly Timetable Generator
+  const generatedPlan = useMemo(() => {
+    const targetGradeNum = GRADE_ORDER[planProfile.grade] || 2;
+    const focusSet = new Set(planProfile.focusSubjects);
+
+    const scoredNodes = ROADMAP_NODES.filter((n) => focusSet.has(n.subject))
+      .map((node) => {
+        const isDone = completedNodeIds.includes(node.id);
+        const prereqReady = node.prerequisites.every((p) => completedNodeIds.includes(p));
+        const nodeGradeNum = GRADE_ORDER[node.grade] || 2;
+
+        // Compute priority score
+        let priority = 0;
+        if (!isDone) priority += 100;
+        if (prereqReady && !isDone) priority += 40;
+        if (nodeGradeNum === targetGradeNum) priority += 35;
+        else if (nodeGradeNum < targetGradeNum && !isDone) priority += 22; // patch foundation first
+
+        if (planProfile.goal === 'entrance_10' && nodeGradeNum === 1) priority += 35;
+        if (planProfile.goal === 'thpt_qg' && nodeGradeNum >= 3) priority += 32;
+        if (planProfile.goal === 'olympiad' && (node.subject === 'cs' || nodeGradeNum >= 3)) priority += 28;
+
+        priority += (weakSubjectBoost[node.subject] || 0) * 10;
+        priority -= node.order * 1.5;
+
+        const masteryMatch = savedLessonSummaries.find((s) => s.lessonKey === node.targetLessonId);
+        const reason =
+          masteryMatch && masteryMatch.overallMastery < 70
+            ? isEn
+              ? `Low mastery (${masteryMatch.overallMastery}%) — priority review`
+              : `Độ vững ${masteryMatch.overallMastery}% — cần củng cố ngay`
+            : !isDone && prereqReady
+            ? isEn
+              ? 'Prerequisites met — ready now'
+              : 'Đã đủ nền tảng — học ngay'
+            : !isDone
+            ? isEn
+              ? 'Upcoming milestone'
+              : 'Chặng kế tiếp theo tuyến'
+            : isEn
+            ? 'Mastered — quick spaced review'
+            : 'Đã xong — ôn nhắc lại 15p';
+
+        return { node, isDone, prereqReady, priority, reason };
+      })
+      .sort((a, b) => b.priority - a.priority);
+
+    const paceMultiplier = planProfile.pace === 'steady' ? 0.85 : planProfile.pace === 'intensive' ? 1.15 : 1.0;
+    const targetWeeklyMinutes = Math.round(planProfile.hoursPerWeek * 60);
+    const activeQueue = scoredNodes.filter((x) => !x.isDone);
+    const pool = activeQueue.length > 0 ? activeQueue : scoredNodes;
+
+    // Distribute across 7 days balanced
+    const days: Array<{
+      dayIndex: number;
+      dayLabel: string;
+      sessions: Array<{
+        id: string;
+        node: RoadmapNode;
+        minutes: number;
+        focusLabel: string;
+        isReview: boolean;
+      }>;
+      totalMinutes: number;
+    }> = (isEn ? WEEK_DAYS_EN : WEEK_DAYS_VI).map((dayLabel, idx) => ({
+      dayIndex: idx,
+      dayLabel,
+      sessions: [],
+      totalMinutes: 0
+    }));
+
+    let accumulatedMinutes = 0;
+    let cursor = 0;
+    const maxPerDay = Math.max(45, Math.ceil(targetWeeklyMinutes / 5));
+
+    // Day rotation so every active day gets crisp sessions without overloading Sunday
+    const daySequence = [0, 2, 4, 1, 3, 5, 6];
+    let safety = 0;
+    while (accumulatedMinutes < targetWeeklyMinutes && pool.length > 0 && safety < 28) {
+      safety++;
+      const entry = pool[cursor % pool.length];
+      const baseMins = Math.round(entry.node.estimatedMinutes * paceMultiplier);
+      const sessionMins = Math.min(60, Math.max(25, baseMins));
+      const daySlotIdx = daySequence[(safety - 1) % daySequence.length];
+      const dayBucket = days[daySlotIdx];
+
+      if (dayBucket.totalMinutes + sessionMins <= maxPerDay + 20 || safety > 14) {
+        const isReview = entry.isDone || safety > pool.length;
+        dayBucket.sessions.push({
+          id: `${entry.node.id}-${safety}`,
+          node: entry.node,
+          minutes: isReview ? Math.min(30, sessionMins) : sessionMins,
+          focusLabel: isReview
+            ? isEn
+              ? 'Spaced Practice + Arena'
+              : 'Luyện đề & Củng cố'
+            : entry.reason,
+          isReview
+        });
+        dayBucket.totalMinutes += isReview ? Math.min(30, sessionMins) : sessionMins;
+        accumulatedMinutes += isReview ? Math.min(30, sessionMins) : sessionMins;
+      }
+      cursor++;
+    }
+
+    const remainingMinutes = ROADMAP_NODES.filter(
+      (n) => focusSet.has(n.subject) && !completedNodeIds.includes(n.id)
+    ).reduce((acc, n) => acc + n.estimatedMinutes, 0);
+
+    const estimatedWeeksToFinish = Math.max(
+      1,
+      Math.ceil(remainingMinutes / Math.max(120, targetWeeklyMinutes))
+    );
+
+    return {
+      priorityQueue: pool.slice(0, 6),
+      days,
+      accumulatedMinutes,
+      estimatedWeeksToFinish,
+      remainingHours: Math.round((remainingMinutes / 60) * 10) / 10
+    };
+  }, [planProfile, completedNodeIds, weakSubjectBoost, savedLessonSummaries, isEn]);
+
+  const filteredNodes = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return ROADMAP_NODES.filter((n) => {
+      const matchSubj = subjectFilter === 'all' || n.subject === subjectFilter;
+      const matchGrade = gradeFilter === 'all' || n.grade === gradeFilter;
+      const isDone = completedNodeIds.includes(n.id);
+      const isReady = !isDone && n.prerequisites.every((p) => completedNodeIds.includes(p));
+      const matchReadiness =
+        readinessFilter === 'all' ||
+        (readinessFilter === 'completed' && isDone) ||
+        (readinessFilter === 'ready' && isReady) ||
+        (readinessFilter === 'locked' && !isDone && !isReady);
+      const matchQuery =
+        !q ||
+        n.title.toLowerCase().includes(q) ||
+        n.titleEn.toLowerCase().includes(q) ||
+        n.goal.toLowerCase().includes(q);
+      return matchSubj && matchGrade && matchReadiness && matchQuery;
+    });
+  }, [subjectFilter, gradeFilter, readinessFilter, searchQuery, completedNodeIds]);
+
+  const activeNode =
+    ROADMAP_NODES.find((n) => n.id === selectedNodeId) || filteredNodes[0] || ROADMAP_NODES[0];
+
+  const activeStage = WORKFLOW_STAGES[activeStageIdx] || WORKFLOW_STAGES[0];
+  const progressPercent = Math.round((completedNodeIds.length / ROADMAP_NODES.length) * 100);
+
+  const subjectMasteryStats = useMemo(() => {
+    return (['math', 'physics', 'cs'] as const).map((subj) => {
+      const nodes = ROADMAP_NODES.filter((n) => n.subject === subj);
+      const done = nodes.filter((n) => completedNodeIds.includes(n.id)).length;
+      const pct = nodes.length > 0 ? Math.round((done / nodes.length) * 100) : 0;
+      return { subj, done, total: nodes.length, pct };
+    });
+  }, [completedNodeIds]);
+
+  const recommendedNextNode =
+    ROADMAP_NODES.find(
+      (n) =>
+        !completedNodeIds.includes(n.id) &&
+        n.prerequisites.every((pre) => completedNodeIds.includes(pre))
+    ) || ROADMAP_NODES[0];
+
+  const getSubjectName = (subj: 'math' | 'physics' | 'cs') => {
+    if (subj === 'math') return isEn ? 'Mathematics' : 'Toán học';
+    if (subj === 'physics') return isEn ? 'Physics' : 'Vật lí';
+    return isEn ? 'Computer Science' : 'Tin học';
+  };
+
+  const getSubjectIcon = (subj: 'math' | 'physics' | 'cs') => {
+    if (subj === 'math') return <Compass className="w-4 h-4 text-sky-600 dark:text-sky-400" />;
+    if (subj === 'physics') return <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
+    return <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
+  };
+
+  const handleOpenSavedLesson = (subject: 'math' | 'physics' | 'cs', lessonKey?: string) => {
     if (subject === 'math') {
       navigate({
         subject: 'math',
         mathTab: 'lectures',
-        mathViewMode: 'lecture',
-        mathLectureId: lessonKey
+        mathViewMode: lessonKey ? 'lecture' : 'catalog',
+        ...(lessonKey ? { mathLectureId: lessonKey } : {})
       });
     } else if (subject === 'physics') {
       navigate({
         subject: 'physics',
-        physicsView: 'lecture',
-        physicsLessonId: lessonKey,
+        physicsView: lessonKey ? 'lecture' : 'catalog',
+        ...(lessonKey ? { physicsLessonId: lessonKey } : {}),
         physicsTab: 'theory'
       });
     } else {
       navigate({
         subject: 'cs',
         csViewMode: 'curriculum',
-        csSubView: 'lecture',
-        csLessonId: lessonKey,
+        csSubView: lessonKey ? 'lecture' : 'roadmap',
+        ...(lessonKey ? { csLessonId: lessonKey } : {}),
         csLessonTab: 'lecture'
       });
     }
   };
 
+  const toggleFocusSubject = (subj: 'math' | 'physics' | 'cs') => {
+    setPlanProfile((prev) => {
+      const exists = prev.focusSubjects.includes(subj);
+      if (exists && prev.focusSubjects.length === 1) return prev; // Keep at least 1 subject active
+      return {
+        ...prev,
+        focusSubjects: exists
+          ? prev.focusSubjects.filter((s) => s !== subj)
+          : [...prev.focusSubjects, subj]
+      };
+    });
+  };
+
+  const handleExportPlanJson = () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      profile: planProfile,
+      progressPercent,
+      completedNodes: completedNodeIds,
+      weeklySchedule: generatedPlan.days.map((d) => ({
+        day: d.dayLabel,
+        totalMinutes: d.totalMinutes,
+        sessions: d.sessions.map((s) => ({
+          title: s.node.title,
+          subject: s.node.subject,
+          grade: s.node.grade,
+          minutes: s.minutes
+        }))
+      }))
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `synapse-lo-trinh-${planProfile.grade.replace(/\s+/g, '-')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const ringRadius = 32;
+  const ringCirc = 2 * Math.PI * ringRadius;
+  const ringOffset = ringCirc * (1 - progressPercent / 100);
+
+  const uniqueGrades = useMemo(
+    () => Array.from(new Set(ROADMAP_NODES.map((n) => n.grade))),
+    []
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-2">
+      {/* Header Banner with Animated SVG Mastery Gauge */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs relative overflow-hidden">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+          <div className="space-y-2.5">
             <button
               onClick={onBack}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
@@ -410,29 +710,84 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
 
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
               {isEn
-                ? 'Procedural Learning Roadmap (Grades 9–12)'
-                : 'Bản Đồ Hướng Dẫn Học Tập Theo Qui Trình (Lớp 9 – 12)'}
+                ? 'Smart Study Planner & Procedural Learning Roadmap (Grades 9–12)'
+                : 'Lộ Trình Học Thông Minh & Sơ Đồ Qui Trình (Lớp 9 – 12)'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
               {isEn
-                ? 'Follow the 5-step mastery loop and connected subject path from foundational concepts to weekly arena competitions.'
-                : 'Đi theo qui trình 5 bước khép kín cho từng chuyên đề và sơ đồ cây kiến thức liên môn Toán · Lí · Tin từ nền tảng đến Thi đấu tuần.'}
+                ? 'Automatically build a balanced weekly schedule tailored to your grade, target exam, and mastery diagnostics across Math, Physics, and CS.'
+                : 'Tự động lập thời khóa biểu tuần tối ưu theo lớp học, mục tiêu kỳ thi và kết quả đánh giá năng lực Toán · Lí · Tin.'}
             </p>
+
+            {/* Per-Subject Inline Mastery Strip */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-xs text-slate-600 dark:text-slate-300 tabular-nums">
+              {subjectMasteryStats.map((st, idx) => (
+                <React.Fragment key={st.subj}>
+                  {idx > 0 && <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">·</span>}
+                  <span className="inline-flex items-center gap-1.5">
+                    {getSubjectIcon(st.subj)}
+                    <span className="font-semibold">{getSubjectName(st.subj)}:</span>
+                    <strong className="font-mono text-slate-900 dark:text-white">
+                      {st.done}/{st.total}
+                    </strong>
+                    <span className="text-slate-400">({st.pct}%)</span>
+                  </span>
+                </React.Fragment>
+              ))}
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 min-w-[200px]">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-                <span>{isEn ? 'Overall Mastery' : 'Tiến độ lộ trình'}</span>
-                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
-                  {completedNodeIds.length}/{ROADMAP_NODES.length} ({progressPercent}%)
+            {/* Animated SVG Ring + Shimmer Progress */}
+            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 flex items-center gap-3.5 min-w-[230px]">
+              <div className="relative w-18 h-18 shrink-0 flex items-center justify-center">
+                <svg className="w-18 h-18 -rotate-90" viewBox="0 0 80 80" aria-hidden="true">
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r={ringRadius}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="6"
+                    className="text-slate-200 dark:text-slate-800"
+                  />
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r={ringRadius}
+                    fill="none"
+                    stroke="url(#roadmapGaugeGrad)"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={ringCirc}
+                    strokeDashoffset={ringOffset}
+                    className="transition-all duration-700 ease-out"
+                  />
+                  <defs>
+                    <linearGradient id="roadmapGaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span className="absolute text-xs font-mono font-extrabold text-slate-900 dark:text-white tabular-nums">
+                  {progressPercent}%
                 </span>
               </div>
-              <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-indigo-600 transition-all duration-300"
-                  style={{ width: `${progressPercent}%` }}
-                />
+
+              <div className="flex-1 space-y-1.5">
+                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {isEn ? 'Overall Mastery' : 'Tiến độ toàn chặng'}
+                </div>
+                <div className="text-sm font-mono font-extrabold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                  {completedNodeIds.length}/{ROADMAP_NODES.length} {isEn ? 'nodes' : 'chặng'}
+                </div>
+                <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500 roadmap-shimmer-bar transition-all duration-500"
+                    style={{ width: `${Math.max(4, progressPercent)}%` }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -450,6 +805,286 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
               <Sparkles className="w-4 h-4" />
               <span>{isEn ? 'AI Mode 3: Build My Roadmap' : 'AI Chế Độ 3: Tạo Sơ Đồ Riêng'}</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 00: PERSONALIZED SMART STUDY PLAN GENERATOR & WEEKLY TIMETABLE */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5 roadmap-card-enter">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-indigo-500" />
+              <span>
+                {isEn
+                  ? '00. Personalized Study Plan & Weekly Schedule Generator'
+                  : '00. Thiết Lập Lộ Trình & Thời Khóa Biểu Tuần Cá Nhân Hóa'}
+              </span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {isEn
+                ? 'Adjust your grade, target exam, priority subjects, and weekly hours — the schedule updates live.'
+                : 'Chọn lớp hiện tại, mục tiêu ôn thi, môn ưu tiên và quỹ giờ/tuần — hệ thống tự xếp lịch học hợp lí theo năng lực.'}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleExportPlanJson}
+              className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Export Plan' : 'Xuất Lộ Trình'}</span>
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Print' : 'In Lịch'}</span>
+            </button>
+            <button
+              onClick={() => setPlanProfile(DEFAULT_PROFILE)}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-xs font-semibold text-slate-600 dark:text-slate-300 inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Reset' : 'Mặc định'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Profile Configurator Controls */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 bg-slate-50 dark:bg-slate-950/70 p-4 rounded-xl border border-slate-200/80 dark:border-slate-800">
+          {/* Grade */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <SlidersHorizontal className="w-3 h-3 text-indigo-500" />
+              <span>{isEn ? 'Current Grade' : 'Khối lớp hiện tại'}</span>
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(['Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setPlanProfile((p) => ({ ...p, grade: g }))}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                    planProfile.grade === g
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Goal */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+              {isEn ? 'Learning Goal' : 'Mục tiêu trọng tâm'}
+            </label>
+            <select
+              value={planProfile.goal}
+              onChange={(e) => setPlanProfile((p) => ({ ...p, goal: e.target.value as StudyGoalId }))}
+              className="w-full py-2 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500"
+            >
+              <option value="foundation">{isEn ? 'GDPT Core Mastery' : 'Nắm chắc nền tảng GDPT'}</option>
+              <option value="entrance_10">{isEn ? 'Grade 10 Entrance Exam' : 'Ôn thi Tuyển sinh vào 10'}</option>
+              <option value="thpt_qg">{isEn ? 'National High School Exam' : 'Ôn thi Tốt nghiệp THPT QG'}</option>
+              <option value="olympiad">{isEn ? 'Specialized / Olympiad (VNOI)' : 'Thi Chuyên & HSG (VNOI)'}</option>
+            </select>
+          </div>
+
+          {/* Focus Subjects */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+              {isEn ? 'Focus Subjects' : 'Môn ưu tiên'}
+            </label>
+            <div className="flex items-center gap-1.5">
+              {(
+                [
+                  { id: 'math', label: isEn ? 'Math' : 'Toán' },
+                  { id: 'physics', label: isEn ? 'Phys' : 'Lí' },
+                  { id: 'cs', label: isEn ? 'CS' : 'Tin' }
+                ] as const
+              ).map((s) => {
+                const active = planProfile.focusSubjects.includes(s.id);
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => toggleFocusSubject(s.id)}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                      active
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Weekly Hours Slider */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
+              <span>{isEn ? 'Weekly Budget' : 'Quỹ giờ / tuần'}</span>
+              <span className="font-mono text-indigo-600 dark:text-indigo-400 tabular-nums">
+                {planProfile.hoursPerWeek}h ({generatedPlan.accumulatedMinutes}p)
+              </span>
+            </div>
+            <input
+              type="range"
+              min={4}
+              max={28}
+              step={1}
+              value={planProfile.hoursPerWeek}
+              onChange={(e) => setPlanProfile((p) => ({ ...p, hoursPerWeek: Number(e.target.value) }))}
+              className="w-full accent-indigo-600 cursor-pointer mt-2"
+            />
+            <div className="flex justify-between text-[10px] text-slate-400 tabular-nums">
+              <span>4h</span>
+              <span>16h</span>
+              <span>28h</span>
+            </div>
+          </div>
+
+          {/* Pace + Summary */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+              {isEn ? 'Study Pace' : 'Nhịp độ học'}
+            </label>
+            <div className="grid grid-cols-3 gap-1">
+              {(
+                [
+                  { id: 'steady', label: isEn ? 'Steady' : 'Chậm chắc' },
+                  { id: 'balanced', label: isEn ? 'Normal' : 'Cân bằng' },
+                  { id: 'intensive', label: isEn ? 'Fast' : 'Tăng tốc' }
+                ] as const
+              ).map((pc) => (
+                <button
+                  key={pc.id}
+                  onClick={() => setPlanProfile((p) => ({ ...p, pace: pc.id }))}
+                  className={`py-2 px-1 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap ${
+                    planProfile.pace === pc.id
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  {pc.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Weekly Summary Strip + Priority Queue */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Top Priority Queue (4 cols) */}
+          <div className="lg:col-span-4 space-y-2.5 bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                <Award className="w-3.5 h-3.5 text-amber-500" />
+                <span>{isEn ? 'Top Priority Milestones' : 'Thứ Tự Ưu Tiên Tuần Này'}</span>
+              </h3>
+              <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 tabular-nums">
+                ~{generatedPlan.estimatedWeeksToFinish} {isEn ? 'wks left' : 'tuần hoàn tất'}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {generatedPlan.priorityQueue.map((item, idx) => (
+                <div
+                  key={item.node.id}
+                  style={{ animationDelay: `${idx * 45}ms` }}
+                  className="roadmap-card-enter p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-colors flex items-start justify-between gap-2"
+                >
+                  <div
+                    onClick={() => setSelectedNodeId(item.node.id)}
+                    className="min-w-0 cursor-pointer flex-1"
+                  >
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                        #{idx + 1}
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span>{getSubjectName(item.node.subject)}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{item.node.grade}</span>
+                    </div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-slate-100 line-clamp-1 mt-0.5">
+                      {isEn ? item.node.titleEn : item.node.title}
+                    </div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      {item.reason}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleOpenSavedLesson(item.node.subject, item.node.targetLessonId)}
+                    className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white text-[10px] font-bold shrink-0 transition-colors"
+                  >
+                    {isEn ? 'Study' : 'Học'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 7-Day Interactive Timetable Grid (8 cols) */}
+          <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5">
+            {generatedPlan.days.map((day, dIdx) => (
+              <div
+                key={day.dayIndex}
+                style={{ animationDelay: `${dIdx * 40}ms` }}
+                className="roadmap-card-enter p-3 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex flex-col justify-between gap-2"
+              >
+                <div>
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/70 dark:border-slate-800">
+                    <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100">
+                      {day.dayLabel}
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                      {day.totalMinutes}p
+                    </span>
+                  </div>
+
+                  {day.sessions.length === 0 ? (
+                    <p className="text-[11px] text-slate-400 italic py-2">
+                      {isEn ? 'Light review / rest day' : 'Nghỉ ngơi hoặc đấu Arena 15p'}
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {day.sessions.map((sess) => (
+                        <button
+                          key={sess.id}
+                          onClick={() => handleOpenSavedLesson(sess.node.subject, sess.node.targetLessonId)}
+                          className="w-full text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500 transition-all group"
+                        >
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                            <span className="inline-flex items-center gap-1 font-semibold">
+                              {getSubjectIcon(sess.node.subject)}
+                              <span>{sess.node.grade}</span>
+                            </span>
+                            <span className="font-mono tabular-nums">{sess.minutes}p</span>
+                          </div>
+                          <div className="text-[11px] font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 line-clamp-2 mt-0.5 leading-snug">
+                            {isEn ? sess.node.titleEn : sess.node.title}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {day.sessions.length > 0 && (
+                  <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1">
+                    <span>{day.sessions[0].isReview ? (isEn ? 'Consolidate' : 'Củng cố') : isEn ? 'New Skill' : 'Kiến thức mới'}</span>
+                    <ArrowRight className="w-3 h-3 text-slate-400" />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -519,11 +1154,10 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                       </div>
                     </div>
 
-                    {/* Progress Bar & Metrics */}
                     <div className="space-y-1.5">
                       <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div
-                          className={`h-full transition-all duration-300 ${
+                          className={`h-full transition-all duration-500 ${
                             item.overallMastery >= 80
                               ? 'bg-emerald-500'
                               : item.overallMastery >= 55
@@ -568,7 +1202,6 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                       </div>
                     )}
 
-                    {/* Strengths & Weaknesses */}
                     {(item.strongPoints.length > 0 || item.weakPoints.length > 0) && (
                       <div className="space-y-1.5 text-[11px]">
                         {item.strongPoints.length > 0 && (
@@ -635,7 +1268,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
         </div>
       )}
 
-      {/* PERSONALIZED AI ROADMAPS FROM MODE 3 (IF CREATED) */}
+      {/* PERSONALIZED AI ROADMAPS FROM MODE 3 */}
       {Object.values(aiRoadmaps).some(Boolean) && (
         <div className="bg-white dark:bg-slate-900 border border-emerald-300/70 dark:border-emerald-800/70 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -708,7 +1341,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
         </div>
       )}
 
-      {/* SECTION 1: 5-STEP PROCEDURAL LEARNING WORKFLOW */}
+      {/* SECTION 1: ANIMATED 5-STEP PROCEDURAL LEARNING WORKFLOW */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
@@ -717,53 +1350,107 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {isEn
-                ? 'Click each step in the flow diagram below to inspect concrete study actions and launch tools directly.'
-                : 'Bấm vào từng bước trên sơ đồ qui trình bên dưới để xem hướng dẫn thực hiện và mở nhanh công cụ tương ứng.'}
+                ? 'Click each step or enable the animated cycle walkthrough to follow the study loop.'
+                : 'Bấm từng bước hoặc bật chế độ Trình diễn Luồng học để xem dòng chuyển hóa kiến thức.'}
             </p>
           </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-            ~70 {isEn ? 'min / full cycle' : 'phút / chu trình trọn vẹn'}
-          </span>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setAutoPlayWorkflow((v) => !v)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                autoPlayWorkflow
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              {autoPlayWorkflow ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span>{autoPlayWorkflow ? (isEn ? 'Pause Tour' : 'Dừng Minh Họa') : isEn ? 'Animate Loop' : 'Chạy Minh Họa Luồng'}</span>
+            </button>
+            <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+              ~75 {isEn ? 'min / cycle' : 'phút / chu trình'}
+            </span>
+          </div>
         </div>
 
-        {/* Connected 5-step horizontal diagram */}
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 relative">
-          {WORKFLOW_STAGES.map((stage, idx) => {
-            const isActive = activeStageIdx === idx;
-            return (
-              <button
-                key={stage.id}
-                onClick={() => setActiveStageIdx(idx)}
-                className={`relative text-left p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-2 ${
-                  isActive
-                    ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-500 text-slate-900 dark:text-white shadow-sm'
-                    : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`w-7 h-7 rounded-lg font-mono text-xs font-bold flex items-center justify-center ${
-                      isActive
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    0{stage.stepNumber}
-                  </span>
-                  <span className="text-[11px] font-mono text-slate-400 tabular-nums">
-                    {stage.estimatedMinutes}p
-                  </span>
-                </div>
-                <div className="text-xs font-bold leading-snug">
-                  {isEn ? stage.titleEn : stage.titleVi}
-                </div>
-              </button>
-            );
-          })}
+        {/* Connected 5-step diagram with animated SVG energy connector */}
+        <div className="relative">
+          {/* Desktop Animated SVG Line behind cards */}
+          <svg
+            className="hidden sm:block absolute left-[10%] right-[10%] top-1/2 -translate-y-1/2 w-[80%] h-8 pointer-events-none z-0"
+            preserveAspectRatio="none"
+            viewBox="0 0 800 32"
+            aria-hidden="true"
+          >
+            <line
+              x1="0"
+              y1="16"
+              x2="800"
+              y2="16"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="text-slate-200 dark:text-slate-800"
+            />
+            <line
+              x1="0"
+              y1="16"
+              x2={Math.max(40, ((activeStageIdx + 0.5) / WORKFLOW_STAGES.length) * 800)}
+              y2="16"
+              stroke="#6366f1"
+              strokeWidth="3"
+              strokeLinecap="round"
+              className="roadmap-connector-flow transition-all duration-500"
+            />
+          </svg>
+
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 relative z-10">
+            {WORKFLOW_STAGES.map((stage, idx) => {
+              const isActive = activeStageIdx === idx;
+              const isPassed = idx < activeStageIdx;
+              return (
+                <button
+                  key={stage.id}
+                  onClick={() => {
+                    setAutoPlayWorkflow(false);
+                    setActiveStageIdx(idx);
+                  }}
+                  className={`relative overflow-hidden text-left p-3.5 rounded-xl border transition-all duration-300 flex flex-col justify-between gap-2 ${
+                    isActive
+                      ? 'bg-indigo-50 dark:bg-indigo-950/80 border-indigo-500 text-slate-900 dark:text-white shadow-md scale-[1.02] roadmap-beam-sweep'
+                      : isPassed
+                      ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-400/50 text-slate-800 dark:text-slate-200'
+                      : 'bg-slate-50 dark:bg-slate-950/90 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`w-7 h-7 rounded-lg font-mono text-xs font-bold flex items-center justify-center transition-all duration-300 ${
+                        isActive
+                          ? 'bg-indigo-600 text-white roadmap-node-aura'
+                          : isPassed
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {isPassed ? '✓' : `0${stage.stepNumber}`}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400 tabular-nums">
+                      {stage.estimatedMinutes}p
+                    </span>
+                  </div>
+                  <div className="text-xs font-bold leading-snug">
+                    {isEn ? stage.titleEn : stage.titleVi}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Active Stage Detail Card */}
-        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <div
+          key={activeStage.id}
+          className="roadmap-card-enter bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5"
+        >
           <div className="space-y-2.5 flex-1">
             <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
               {isEn ? activeStage.titleEn : activeStage.titleVi}
@@ -781,7 +1468,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             </ul>
           </div>
 
-          <div className="shrink-0 flex flex-wrap gap-2">
+          <div className="shrink-0 flex flex-wrap items-center gap-2">
             {activeStage.id === 'tutor' ? (
               <button
                 onClick={() =>
@@ -791,7 +1478,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                     grade: activeNode.grade
                   })
                 }
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 transition-colors whitespace-nowrap"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>{isEn ? 'Open Socratic AI Tutor' : 'Mở Gia Sư AI Ngay'}</span>
@@ -799,7 +1486,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             ) : (
               <button
                 onClick={() => onNavigateSubject(activeStage.targetSubject)}
-                className="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold flex items-center gap-2 transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold flex items-center gap-2 transition-colors whitespace-nowrap"
               >
                 <Play className="w-3.5 h-3.5" />
                 <span>
@@ -814,25 +1501,40 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
+            <button
+              onClick={() => setActiveStageIdx((i) => (i + 1) % WORKFLOW_STAGES.length)}
+              className="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors whitespace-nowrap"
+            >
+              {isEn ? 'Next Step →' : 'Bước kế tiếp →'}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Next Recommended Milestone Banner */}
-      <div className="bg-slate-900 dark:bg-indigo-950/60 border border-slate-800 dark:border-indigo-900 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
+      <div className="bg-slate-900 dark:bg-indigo-950/60 border border-slate-800 dark:border-indigo-900 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden roadmap-beam-sweep">
+        <div className="space-y-1 relative z-10">
           <div className="text-xs text-indigo-300 font-semibold">
             {isEn ? 'Recommended Next Step' : 'Đề xuất chặng tiếp theo dành cho bạn'} · {getSubjectName(recommendedNextNode.subject)} · {recommendedNextNode.grade}
           </div>
           <div className="text-sm sm:text-base font-bold">{recommendedNextNode.title}</div>
         </div>
-        <button
-          onClick={() => setSelectedNodeId(recommendedNextNode.id)}
-          className="px-4 py-2 rounded-xl bg-white text-slate-900 hover:bg-slate-100 text-xs font-bold shrink-0 flex items-center gap-1.5"
-        >
-          <span>{isEn ? 'Inspect Step' : 'Xem hướng dẫn chặng này'}</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-2 shrink-0 relative z-10">
+          <button
+            onClick={() => handleOpenSavedLesson(recommendedNextNode.subject, recommendedNextNode.targetLessonId)}
+            className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap"
+          >
+            <Play className="w-3.5 h-3.5" />
+            <span>{isEn ? 'Start Lesson' : 'Học Ngay Bài Này'}</span>
+          </button>
+          <button
+            onClick={() => setSelectedNodeId(recommendedNextNode.id)}
+            className="px-4 py-2 rounded-xl bg-white text-slate-900 hover:bg-slate-100 text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap"
+          >
+            <span>{isEn ? 'Inspect Step' : 'Xem hướng dẫn'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* SECTION 2: INTERACTIVE SUBJECT ROADMAP TREE + INSPECTOR */}
@@ -871,89 +1573,172 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             </div>
           </div>
 
-          {/* Connected Vertical Flow Nodes */}
+          {/* Search + Grade + Readiness Toolbar */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={isEn ? 'Filter topics...' : 'Tìm nhanh chuyên đề...'}
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <select
+              value={gradeFilter}
+              onChange={(e) => setGradeFilter(e.target.value)}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500"
+            >
+              <option value="all">{isEn ? 'All Grades / Levels' : 'Tất cả Khối lớp / Cấp độ'}</option>
+              {uniqueGrades.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={readinessFilter}
+              onChange={(e) => setReadinessFilter(e.target.value as ReadinessFilter)}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500"
+            >
+              <option value="all">{isEn ? 'All Statuses' : 'Mọi trạng thái'}</option>
+              <option value="ready">{isEn ? 'Ready to Learn' : 'Sẵn sàng học'}</option>
+              <option value="completed">{isEn ? 'Mastered' : 'Đã thông thạo'}</option>
+              <option value="locked">{isEn ? 'Needs Prereq' : 'Cần học chặng trước'}</option>
+            </select>
+          </div>
+
+          {/* Connected Vertical Flow Nodes with Animated SVG Energy Rail */}
           <div className="relative pl-6 space-y-3">
-            {/* Vertical Connector Line */}
-            <div className="absolute left-3 top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-800" />
+            <svg
+              className="absolute left-[11px] top-4 bottom-4 w-2 h-[calc(100%-2rem)] pointer-events-none"
+              preserveAspectRatio="none"
+              viewBox="0 0 8 100"
+              aria-hidden="true"
+            >
+              <line
+                x1="4"
+                y1="0"
+                x2="4"
+                y2="100"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-slate-200 dark:text-slate-800"
+              />
+              <line
+                x1="4"
+                y1="0"
+                x2="4"
+                y2="100"
+                stroke="#6366f1"
+                strokeWidth="2.5"
+                className="roadmap-connector-flow opacity-65"
+              />
+            </svg>
 
-            {filteredNodes.map((node) => {
-              const isCompleted = completedNodeIds.includes(node.id);
-              const isSelected = activeNode.id === node.id;
-              const prereqMet = node.prerequisites.every((p) => completedNodeIds.includes(p));
+            {filteredNodes.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                {isEn
+                  ? 'No milestones match the current filters.'
+                  : 'Không có chặng nào khớp với bộ lọc hiện tại.'}
+              </div>
+            ) : (
+              filteredNodes.map((node, idx) => {
+                const isCompleted = completedNodeIds.includes(node.id);
+                const isSelected = activeNode.id === node.id;
+                const prereqMet = node.prerequisites.every((p) => completedNodeIds.includes(p));
+                const hasNote = Boolean(nodeNotes[node.id]?.trim());
 
-              return (
-                <div key={node.id} className="relative">
-                  {/* Connector Dot */}
-                  <button
-                    onClick={() => toggleNodeComplete(node)}
-                    title={isCompleted ? 'Bỏ đánh dấu hoàn thành' : 'Đánh dấu đã thông thạo (+30 XP)'}
-                    className={`absolute -left-6 top-4 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors ${
-                      isCompleted
-                        ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : isSelected
-                        ? 'bg-indigo-600 border-indigo-600 text-white'
-                        : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-400 hover:border-indigo-500'
-                    }`}
-                  >
-                    {isCompleted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3 h-3" />}
-                  </button>
-
-                  {/* Node Card */}
+                return (
                   <div
-                    onClick={() => setSelectedNodeId(node.id)}
-                    className={`ml-3 p-4 rounded-xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-500'
-                        : 'bg-slate-50/70 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
+                    key={node.id}
+                    style={{ animationDelay: `${Math.min(idx, 10) * 35}ms` }}
+                    className="relative roadmap-card-enter"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      <div className="flex items-center gap-1.5">
-                        {getSubjectIcon(node.subject)}
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">
-                          {getSubjectName(node.subject)}
-                        </span>
-                        <span aria-hidden="true">·</span>
-                        <span>{node.grade}</span>
-                        <span aria-hidden="true">·</span>
-                        <span className="tabular-nums">{node.estimatedMinutes}p</span>
-                      </div>
-                      <span
-                        className={`font-semibold ${
-                          isCompleted
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : prereqMet
-                            ? 'text-indigo-600 dark:text-indigo-400'
-                            : 'text-slate-400'
-                        }`}
-                      >
-                        {isCompleted
-                          ? isEn
-                            ? 'Mastered'
-                            : 'Đã thông thạo'
-                          : prereqMet
-                          ? isEn
-                            ? 'Ready'
-                            : 'Sẵn sàng học'
-                          : isEn
-                          ? 'Needs prereq'
-                          : 'Nên học chặng trước'}
-                      </span>
-                    </div>
+                    {/* Connector Dot */}
+                    <button
+                      onClick={() => toggleNodeComplete(node)}
+                      title={isCompleted ? 'Bỏ đánh dấu hoàn thành' : 'Đánh dấu đã thông thạo (+30 XP)'}
+                      className={`absolute -left-6 top-4 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                        isCompleted
+                          ? 'bg-emerald-600 border-emerald-600 text-white'
+                          : isSelected
+                          ? 'bg-indigo-600 border-indigo-600 text-white roadmap-node-aura'
+                          : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-400 hover:border-indigo-500'
+                      }`}
+                    >
+                      {isCompleted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3 h-3" />}
+                    </button>
 
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      {isEn ? node.titleEn : node.title}
-                    </h3>
+                    {/* Node Card */}
+                    <div
+                      onClick={() => setSelectedNodeId(node.id)}
+                      className={`ml-3 p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-50/75 dark:bg-indigo-950/35 border-indigo-500 shadow-xs'
+                          : 'bg-slate-50/70 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        <div className="flex items-center gap-1.5">
+                          {getSubjectIcon(node.subject)}
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">
+                            {getSubjectName(node.subject)}
+                          </span>
+                          <span aria-hidden="true">·</span>
+                          <span>{node.grade}</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="tabular-nums">{node.estimatedMinutes}p</span>
+                          {hasNote && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <StickyNote className="w-3 h-3 text-amber-500" />
+                            </>
+                          )}
+                        </div>
+                        <span
+                          className={`font-semibold ${
+                            isCompleted
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : prereqMet
+                              ? 'text-indigo-600 dark:text-indigo-400'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {isCompleted
+                            ? isEn
+                              ? 'Mastered'
+                              : 'Đã thông thạo'
+                            : prereqMet
+                            ? isEn
+                              ? 'Ready'
+                              : 'Sẵn sàng học'
+                            : isEn
+                            ? 'Needs prereq'
+                            : 'Nên học chặng trước'}
+                        </span>
+                      </div>
+
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        {isEn ? node.titleEn : node.title}
+                      </h3>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
         {/* Right: Step Execution Inspector */}
         <div className="lg:col-span-5">
-          <div className="sticky top-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
+          <div
+            key={activeNode.id}
+            className="roadmap-card-enter sticky top-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5"
+          >
             <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
               <div className="flex items-center gap-1.5">
                 {getSubjectIcon(activeNode.subject)}
@@ -1038,15 +1823,39 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
               </ul>
             </div>
 
+            {/* Personal Study Notes per Milestone */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <StickyNote className="w-3.5 h-3.5 text-amber-500" />
+                <span>{isEn ? 'Personal Note for This Milestone:' : 'Ghi chú cá nhân cho chặng này:'}</span>
+              </label>
+              <textarea
+                rows={2}
+                value={nodeNotes[activeNode.id] || ''}
+                onChange={(e) =>
+                  setNodeNotes((prev) => ({
+                    ...prev,
+                    [activeNode.id]: e.target.value
+                  }))
+                }
+                placeholder={
+                  isEn
+                    ? 'Note tricky formulas, mistakes, or exam dates...'
+                    : 'Ghi lại công thức hay nhầm, lỗi sai vừa gặp hoặc lịch ôn lại...'
+                }
+                className="w-full p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 resize-none"
+              />
+            </div>
+
             {/* Action Buttons */}
             <div className="pt-2 space-y-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
-                  onClick={() => onNavigateSubject(activeNode.subject)}
+                  onClick={() => handleOpenSavedLesson(activeNode.subject, activeNode.targetLessonId)}
                   className="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Play className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Open Subject Lesson' : 'Vào Học Chặng Này'}</span>
+                  <span>{isEn ? 'Open Target Lesson' : 'Vào Đúng Bài Giảng'}</span>
                 </button>
 
                 <button
@@ -1089,8 +1898,8 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             {!user && (
               <p className="text-[11px] text-slate-400 text-center">
                 {isEn
-                  ? 'Progress saved locally. Sign in to sync across devices.'
-                  : 'Tiến độ đang lưu trên trình duyệt. Đăng nhập để đồng bộ lên đám mây.'}
+                  ? 'Progress & notes saved locally. Sign in to sync across devices.'
+                  : 'Tiến độ & ghi chú đang lưu trên trình duyệt. Đăng nhập để đồng bộ lên đám mây.'}
               </p>
             )}
           </div>

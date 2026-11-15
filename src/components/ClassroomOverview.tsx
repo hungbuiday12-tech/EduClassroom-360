@@ -26,7 +26,8 @@ import {
   MessageSquare,
   ListOrdered,
   ChevronDown,
-  Orbit
+  Orbit,
+  Hand
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -311,6 +312,14 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               >
                 <Orbit className="w-4 h-4 text-cyan-200 icon-anim-cosmos" />
                 <span>{isEn ? 'Synapse v2 Campus' : 'Lớp học ảo · Synapse v2'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('spatial_3d')}
+                className="group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-teal-500 via-cyan-500 to-sky-500 hover:from-teal-400 hover:to-sky-400 border border-cyan-300/70 text-slate-950 text-xs sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap shadow-md shadow-teal-500/25"
+              >
+                <Hand className="w-4 h-4 text-slate-950" />
+                <span>{isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D'}</span>
               </button>
               <button
                 type="button"
@@ -674,17 +683,17 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </div>
             <div className="space-y-1.5 min-w-0">
               <div className="text-[11px] font-mono font-extrabold uppercase tracking-[0.2em] text-cyan-300">
-                {isEn ? 'SYNAPSE V2 · 20 FUTURISTIC 3D HOLOGRAPHIC CHAMBERS' : 'LỚP HỌC ẢO · SYNAPSE V2 · 20 ĐẠI CÔNG TRÌNH TƯƠNG LAI'}
+                {isEn ? 'SYNAPSE V2 · 23 FUTURISTIC 3D HOLOGRAPHIC CHAMBERS' : 'LỚP HỌC ẢO · SYNAPSE V2 · 23 ĐẠI CÔNG TRÌNH TƯƠNG LAI'}
               </div>
               <h2 className="font-display text-xl sm:text-2xl font-black tracking-tight text-white">
                 {isEn
-                  ? 'Explore 20 Futuristic 3D Space Science, Computer Science & Physics Megastructures'
-                  : 'Bước vào 20 Khung Lớp Học Ảo Vũ Trụ, Khoa Học Vi Tính & Đại Công Trình 3D'}
+                  ? 'Explore 23 Futuristic 3D Physics, Space Science, Computer Science & Math Megastructures'
+                  : 'Bước vào 23 Khung Lớp Học Ảo Vật Lí, Vũ Trụ, Khoa Học Vi Tính & Đại Công Trình 3D'}
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
                 {isEn
-                  ? 'James Webb Observatory · Traversable Wormhole · Pulsar Magnetar · Interstellar Solar Sail · Exascale 3D Torus Supercomputer · Superscalar CPU Pipeline · ZK-Merkle Lattice · Dijkstra 3D Graph · Dyson Black Hole · Tokamak Fusion & Quantum Cryostat.'
-                  : 'Kính James Webb · Lỗ Sâu Morris-Thorne · Sao Neutron Pulsar · Cánh Buồm Laser Oort · Siêu Máy Tính Exascale · CPU 5 Tầng Đường Ống · Mạng Khối ZK-Merkle · Đồ Thị Dijkstra 3D · Hố Đen Dyson · Lò Nhiệt Hạch Tokamak & Máy Tính Lượng Tử.'}
+                  ? 'CERN LHC Collider · Quantum Double-Slit Laser · Resonant Tesla Coil · James Webb Observatory · Traversable Wormhole · Exascale Torus · Superscalar CPU · ZK-Merkle · Dijkstra 3D · Dyson Black Hole & Tokamak Fusion.'
+                  : 'Máy Gia Tốc LHC · Giao Thoa Kế Laser Khe Kép · Tháp Cộng Hưởng Tesla · Kính James Webb · Lỗ Sâu Morris-Thorne · Siêu Máy Tính Exascale · CPU 5 Tầng · ZK-Merkle · Dijkstra 3D · Hố Đen Dyson & Lò Nhiệt Hạch Tokamak.'}
               </p>
             </div>
           </div>
@@ -699,6 +708,51 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           >
             <Orbit className="w-4 h-4 icon-anim-cosmos" />
             <span>{isEn ? 'Launch Synapse v2 World' : 'Khởi động Lớp học ảo · Synapse v2'}</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      </section>
+
+      {/* GATEWAY: HỌC CẢM GIÁC 3D · WEBCAM HAND-GESTURE & OXYZ LAB */}
+      <section
+        data-ripple="true"
+        onClick={() => onNavigate('spatial_3d')}
+        className="group relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-teal-950 to-slate-900 text-white p-6 sm:p-7 border border-teal-400/45 hover:border-cyan-300/90 shadow-[0_20px_55px_-16px_rgba(20,184,166,0.35)] cursor-pointer transition-all"
+      >
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="flex items-start sm:items-center gap-4 min-w-0">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500/30 to-cyan-500/35 border border-teal-300/50 flex items-center justify-center shrink-0">
+              <Hand className="w-7 h-7 text-teal-300" />
+            </div>
+            <div className="space-y-1 min-w-0">
+              <div className="text-[11px] font-mono font-extrabold uppercase tracking-[0.18em] text-teal-300">
+                {isEn
+                  ? 'SPATIAL 3D GESTURE LAB · WEBCAM & VIRTUAL HAND SENSOR'
+                  : 'KHU VỰC MỚI · HỌC CẢM GIÁC 3D · QUÉT CỬ CHỈ NGÓN TAY WEBCAM'}
+              </div>
+              <h2 className="font-display text-lg sm:text-xl font-black tracking-tight text-white">
+                {isEn
+                  ? 'Sculpt Oxyz Geometry, Slice Cross-Sections & Control 10 Modern 3D Simulations with Your Fingers'
+                  : 'Quét Cử Chỉ Ngón Tay Để Vẽ Hình Học Không Gian Oxyz, Cắt Thiết Diện & Điều Khiển 10 Mô Phỏng 3D'}
+              </h2>
+              <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
+                {isEn
+                  ? '1-Finger Draw · Pinch Scale · 2-Finger Slice Plane · 3-Finger Morph · 5-Finger Orbit & Explode · Export .OBJ & PNG (supports both live Webcam and Touch Gesture Pad).'
+                  : '1 ngón vẽ ống 3D · Chụm ngón kéo tỷ lệ · 2 ngón cắt thiết diện · 3 ngón biến hình 10 khối · Xòe 5 ngón xoay & tách lớp · Hỗ trợ cả Webcam thực tế lẫn Bàn di 3D ảo.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onNavigate('spatial_3d');
+            }}
+            className="sheen-btn shrink-0 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 hover:from-teal-300 hover:to-sky-300 text-slate-950 font-black text-sm shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+          >
+            <Hand className="w-4 h-4" />
+            <span>{isEn ? 'Open Spatial 3D Lab' : 'Vào Học cảm giác 3D'}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>

@@ -34,7 +34,8 @@ import {
   Trash2,
   Compass,
   ArrowRightLeft,
-  Eye
+  Eye,
+  Atom
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MathFormula, FormattedText } from '../common/MathRenderer';
@@ -3482,8 +3483,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     <div className="space-y-6 animate-fadeIn pb-12 overflow-x-hidden">
       {activeView === 'catalog' && (
         <>
-          {/* Header Banner */}
-          <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
+          {/* Header Banner & 2-Zone Framed Selector */}
+          <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -3499,40 +3500,171 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   <span className="font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
                     Vật Lí 9 – 12 &amp; Bồi Dưỡng Chuyên
                   </span>
-                  <span>·</span>
-                  <span>Giảng bài từng bước + Thí nghiệm 2D/3D tương tác</span>
-                  <span>·</span>
-                  <span>VietJack / Loigiaihay</span>
+                  <span aria-hidden="true">·</span>
+                  <span>Giảng bài từng bước · Thí nghiệm 2D/3D tương tác</span>
                 </div>
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                   Hệ Thống Bài Giảng &amp; Phòng Thí Nghiệm Vật Lí
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  Chọn một chuyên đề bên dưới để vào giao diện lớp giảng bài chi tiết từng bước, thực hành mô phỏng 2D/3D tùy chỉnh số liệu tự do và làm bài tập củng cố.
+                  Chọn khung chương trình bên dưới rồi mở bài giảng, Mô phỏng 2D hoặc Mô phỏng 3D tương tác theo thời gian thực.
                 </p>
               </div>
 
-              {/* 2-Zone Track Switcher */}
-              <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/70 max-w-full sm:shrink-0 self-start">
+              {/* Quick 2D / 3D Simulation Launch Buttons */}
+              <div className="flex flex-wrap items-center gap-2 shrink-0 self-start lg:self-center">
                 <button
-                  onClick={() => setSelectedTrack('khong_chuyen')}
-                  className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold whitespace-normal sm:whitespace-nowrap text-center transition-all ${
-                    selectedTrack === 'khong_chuyen'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => handleOpenLesson(filteredLessons[0] || lesson, 'simulation')}
+                  className="group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm whitespace-nowrap cursor-pointer"
                 >
-                  Khu Không Chuyên (GDPT 9–12)
+                  <Zap className="w-4 h-4 icon-anim-zap" />
+                  <span>Mô phỏng 2D</span>
                 </button>
                 <button
-                  onClick={() => setSelectedTrack('chuyen')}
-                  className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold whitespace-normal sm:whitespace-nowrap text-center transition-all ${
-                    selectedTrack === 'chuyen'
-                      ? 'bg-amber-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => handleOpenLesson(filteredLessons[0] || lesson, 'sim3d')}
+                  className="group sim-btn-3d cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm whitespace-nowrap cursor-pointer"
+                >
+                  <Box className="w-4 h-4 icon-anim-3d-cube" />
+                  <span>Mô phỏng 3D</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2 Separate Animated Framed Track Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Khung 1: Khu Không Chuyên (GDPT 9-12) */}
+              <div
+                style={
+                  {
+                    '--phy-accent': '#0284c7',
+                    '--phy-secondary': '#38bdf8'
+                  } as React.CSSProperties
+                }
+                className={`physics-zone-frame group ${
+                  selectedTrack === 'khong_chuyen'
+                    ? 'physics-zone-active shadow-[0_14px_34px_-12px_rgba(2,132,199,0.45)]'
+                    : 'shadow-xs'
+                }`}
+              >
+                <div aria-hidden="true" className="physics-orbit-ring" />
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => setSelectedTrack('khong_chuyen')}
+                  className={`relative z-10 w-full h-full text-left rounded-[1.15rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
+                    selectedTrack === 'khong_chuyen'
+                      ? 'bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-600 text-white'
+                      : 'bg-slate-50/95 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800'
                   }`}
                 >
-                  Khu Chuyên Lí (CB → NC → Chuyên)
+                  <span aria-hidden="true" className="physics-energy-sweep" />
+                  <div className="relative z-10 flex items-start gap-3.5 min-w-0">
+                    <div
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                        selectedTrack === 'khong_chuyen'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400'
+                      }`}
+                    >
+                      <Atom className="w-6 h-6 icon-anim-atom" />
+                    </div>
+                    <div className="min-w-0 space-y-1">
+                      <div className="text-sm sm:text-base font-extrabold leading-snug">
+                        Khu Không Chuyên (GDPT 9–12)
+                      </div>
+                      <div
+                        className={`text-xs leading-relaxed ${
+                          selectedTrack === 'khong_chuyen'
+                            ? 'text-sky-100'
+                            : 'text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        Lớp 9 · Lớp 10 · Lớp 11 · Lớp 12 · {PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học chuẩn SGK
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative z-10 shrink-0 flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                    {selectedTrack === 'khong_chuyen' ? (
+                      <span className="inline-flex items-center gap-1 text-white">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Đang mở</span>
+                      </span>
+                    ) : (
+                      <span className="text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                        Chọn khu →
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </div>
+
+              {/* Khung 2: Khu Chuyên Lí (CB -> NC -> Chuyên) */}
+              <div
+                style={
+                  {
+                    '--phy-accent': '#d97706',
+                    '--phy-secondary': '#f97316'
+                  } as React.CSSProperties
+                }
+                className={`physics-zone-frame group ${
+                  selectedTrack === 'chuyen'
+                    ? 'physics-zone-active shadow-[0_14px_34px_-12px_rgba(217,119,6,0.45)]'
+                    : 'shadow-xs'
+                }`}
+              >
+                <div aria-hidden="true" className="physics-orbit-ring" />
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => setSelectedTrack('chuyen')}
+                  className={`relative z-10 w-full h-full text-left rounded-[1.15rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
+                    selectedTrack === 'chuyen'
+                      ? 'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-slate-950'
+                      : 'bg-slate-50/95 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span aria-hidden="true" className="physics-energy-sweep" />
+                  <div className="relative z-10 flex items-start gap-3.5 min-w-0">
+                    <div
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                        selectedTrack === 'chuyen'
+                          ? 'bg-slate-950/15 text-slate-950'
+                          : 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
+                      }`}
+                    >
+                      <Zap className="w-6 h-6 icon-anim-zap" />
+                    </div>
+                    <div className="min-w-0 space-y-1">
+                      <div className="text-sm sm:text-base font-extrabold leading-snug">
+                        Khu Chuyên Lí (CB → NC → Chuyên)
+                      </div>
+                      <div
+                        className={`text-xs leading-relaxed ${
+                          selectedTrack === 'chuyen'
+                            ? 'text-slate-900/85 font-medium'
+                            : 'text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        Cơ bản → Nâng cao → HSG Quốc Gia · {PHYSICS_LESSONS.filter((l) => l.track === 'chuyen').length} chuyên đề
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative z-10 shrink-0 flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                    {selectedTrack === 'chuyen' ? (
+                      <span className="inline-flex items-center gap-1 text-slate-950">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Đang mở</span>
+                      </span>
+                    ) : (
+                      <span className="text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform">
+                        Chọn khu →
+                      </span>
+                    )}
+                  </div>
                 </button>
               </div>
             </div>
@@ -3611,70 +3743,86 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
             )}
           </div>
 
-          {/* 3-Column Lesson Cards Catalog */}
+          {/* 3-Column Animated Framed Physics Lesson Cards Catalog */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredLessons.map((l) => {
               const isPro = l.track === 'chuyen';
               return (
                 <div
                   key={l.id}
-                  onClick={() => handleOpenLesson(l, 'theory')}
-                  className="group cursor-pointer bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 hover:border-blue-400/70 dark:hover:border-blue-500/60 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                  style={
+                    {
+                      '--phy-accent': isPro ? '#f59e0b' : '#0ea5e9',
+                      '--phy-secondary': isPro ? '#ef4444' : '#38bdf8'
+                    } as React.CSSProperties
+                  }
+                  className="physics-card-frame group shadow-sm hover:shadow-[0_18px_40px_-14px_rgba(14,165,233,0.38)]"
                 >
-                  <div className="space-y-2.5">
-                    <div className="flex items-start gap-3">
-                      <LectureThumbnail
-                        subject="physics"
-                        id={l.id}
-                        category={l.grade}
-                        simType={l.simulationType}
-                      />
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                          <span className={`font-bold uppercase tracking-wider ${isPro ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                            {isPro ? `Chuyên Lí · ${l.tier || 'Nâng cao'}` : `${l.grade} · Bài ${l.lessonNumber}`}
-                          </span>
-                          <span className="font-mono shrink-0 tabular-nums">{l.practiceExercises.length} TN + {(l.essayExercises || []).length} TL</span>
+                  <div aria-hidden="true" className="physics-orbit-ring" />
+                  <div
+                    onClick={() => handleOpenLesson(l, 'theory')}
+                    className="relative z-10 h-full cursor-pointer bg-white/95 dark:bg-slate-900/95 rounded-[1.15rem] p-5 flex flex-col justify-between gap-4 overflow-hidden"
+                  >
+                    <span aria-hidden="true" className="physics-energy-sweep" />
+                    <div className="relative z-10 space-y-2.5">
+                      <div className="flex items-start gap-3">
+                        <LectureThumbnail
+                          subject="physics"
+                          id={l.id}
+                          category={l.grade}
+                          simType={l.simulationType}
+                        />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className={`font-bold uppercase tracking-wider ${isPro ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                              {isPro ? `Chuyên Lí · ${l.tier || 'Nâng cao'}` : `${l.grade} · Bài ${l.lessonNumber}`}
+                            </span>
+                            <span className="font-mono shrink-0 tabular-nums">{l.practiceExercises.length} TN + {(l.essayExercises || []).length} TL</span>
+                          </div>
+
+                          <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
+                            {translate(l.title)}
+                          </h3>
                         </div>
-
-                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
-                          {translate(l.title)}
-                        </h3>
                       </div>
+
+                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                        {translate(l.description)}
+                      </p>
                     </div>
 
-                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                      {translate(l.description)}
-                    </p>
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenLesson(l, 'simulation');
-                        }}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
-                      >
-                        Lab 2D
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenLesson(l, 'sim3d');
-                        }}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors"
-                      >
-                        Lab 3D
-                      </button>
+                    <div className="relative z-10 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          data-ripple="true"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenLesson(l, 'simulation');
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/60 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+                        >
+                          <Zap className="w-3 h-3 icon-anim-zap" />
+                          <span>Mô phỏng 2D</span>
+                        </button>
+                        <button
+                          type="button"
+                          data-ripple="true"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenLesson(l, 'sim3d');
+                          }}
+                          className="sim-btn-3d inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 hover:bg-amber-500 hover:text-slate-950 dark:hover:bg-amber-500 dark:hover:text-slate-950 transition-colors whitespace-nowrap cursor-pointer"
+                        >
+                          <Box className="w-3 h-3 icon-anim-3d-cube" />
+                          <span>Mô phỏng 3D</span>
+                        </button>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform whitespace-nowrap">
+                        <span>Vào bài</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </span>
                     </div>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
-                      <span>Vào giảng bài</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </span>
                   </div>
                 </div>
               );
@@ -3751,25 +3899,25 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                 </button>
                 <button
                   onClick={() => navigate({ physicsTab: 'simulation' })}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                  className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                     activeTab === 'simulation'
                       ? 'bg-blue-600 text-white shadow-sm font-semibold'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>{t('sim.2d', '2. Lab 2D', '2. 2D Lab')}</span>
+                  <Zap className="w-3.5 h-3.5 icon-anim-zap" />
+                  <span>{t('sim.2d', '2. Mô phỏng 2D', '2. 2D Sim')}</span>
                 </button>
                 <button
                   onClick={() => navigate({ physicsTab: 'sim3d' })}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                  className={`group sim-btn-3d flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                     activeTab === 'sim3d'
                       ? 'bg-amber-600 text-white shadow-sm font-semibold'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Box className="w-3.5 h-3.5" />
-                  <span>{t('sim.3d', '3. Lab 3D', '3. 3D Lab')}</span>
+                  <Box className="w-3.5 h-3.5 icon-anim-3d-cube" />
+                  <span>{t('sim.3d', '3. Mô phỏng 3D', '3. 3D Sim')}</span>
                 </button>
                 <button
                   onClick={() => navigate({ physicsTab: 'practice' })}

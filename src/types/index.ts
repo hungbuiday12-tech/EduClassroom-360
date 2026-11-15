@@ -1,4 +1,4 @@
-export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'math' | 'physics' | 'cs' | 'exams' | 'arena' | 'forum';
+export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'cs' | 'exams' | 'arena' | 'forum';
 
 export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
 

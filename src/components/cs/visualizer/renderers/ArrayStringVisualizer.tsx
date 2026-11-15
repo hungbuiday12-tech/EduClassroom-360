@@ -36,15 +36,15 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
         {/* LPS Pi Array */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-slate-700 dark:text-slate-200">
-              Bảng hàm tiền tố π (LPS) cho mẫu P = "{P}"
+            <span className="font-mono font-semibold text-emerald-200">
+              KMP_PI_TABLE · Hàm tiền tố π cho P = "{P}"
             </span>
-            <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="font-mono text-[11px] text-cyan-300">
               {phase === 'pi' ? 'Đang tính π[i]' : 'Đã hoàn tất π'}
             </span>
           </div>
           <div className="overflow-x-auto pb-1">
-            <div className="inline-flex gap-1.5 min-w-max">
+            <div className="inline-flex gap-1.5 min-w-max p-2.5 rounded-xl border border-emerald-500/25 bg-[#040b18]">
               {P.split('').map((ch, idx) => {
                 const isActive = phase === 'pi' && (idx === i || idx === j);
                 return (
@@ -52,17 +52,17 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                     key={`pi-${idx}`}
                     className={`w-10 rounded-lg border text-center py-1.5 font-mono transition-colors ${
                       idx === i && phase === 'pi'
-                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/50'
+                        ? 'border-cyan-400 bg-cyan-500/20 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
                         : idx === j && phase === 'pi'
-                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/50'
-                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'
+                        ? 'border-amber-400 bg-amber-500/20 shadow-[0_0_10px_rgba(251,191,36,0.3)]'
+                        : 'border-emerald-500/20 bg-[#081529]'
                     }`}
                   >
                     <div className="text-[10px] text-slate-400 tabular-nums">{idx}</div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white">{ch}</div>
+                    <div className="text-sm font-bold text-white">{ch}</div>
                     <div
                       className={`text-xs font-bold tabular-nums mt-0.5 ${
-                        isActive ? 'text-sky-600 dark:text-sky-400' : 'text-emerald-600 dark:text-emerald-400'
+                        isActive ? 'text-cyan-300' : 'text-emerald-400'
                       }`}
                     >
                       {pi[idx] ?? 0}
@@ -75,21 +75,21 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
         </div>
 
         {/* Text T and Aligned Sliding Pattern P */}
-        <div className="space-y-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+        <div className="space-y-2 pt-3 border-t border-cyan-500/20">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="font-semibold text-slate-700 dark:text-slate-200">
-              Đối chiếu Văn bản T và Xâu mẫu P trượt theo π
+            <span className="font-mono font-semibold text-cyan-200">
+              TEXT_SCANNER · Đối chiếu T và xâu mẫu P trượt theo π
             </span>
-            <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">
+            <span className="font-mono text-emerald-400 font-semibold tabular-nums">
               Đã khớp: {matches.length} vị trí {matches.length ? `(${matches.join(', ')})` : ''}
             </span>
           </div>
 
-          <div className="overflow-x-auto pb-2">
+          <div className="overflow-x-auto pb-2 rounded-xl border border-cyan-500/25 bg-[#040b18] p-3">
             <div className="inline-block min-w-max space-y-2">
               {/* Text T row */}
               <div className="flex items-center gap-1">
-                <span className="w-7 text-[11px] font-mono font-bold text-slate-500 shrink-0">T:</span>
+                <span className="w-7 text-[11px] font-mono font-bold text-cyan-300 shrink-0">T:</span>
                 {T.split('').map((ch, idx) => {
                   const inMatchedSpan = matches.some((mStart) => idx >= mStart && idx < mStart + P.length);
                   const isCurrI = phase !== 'pi' && idx === i;
@@ -99,11 +99,11 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                       className={`w-8 h-11 rounded-md border flex flex-col items-center justify-center font-mono transition-colors ${
                         isCurrI
                           ? st.compareOk === false
-                            ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300'
-                            : 'border-sky-500 bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300'
+                            ? 'border-rose-400 bg-rose-500/20 text-rose-200'
+                            : 'border-cyan-400 bg-cyan-500/20 text-cyan-200'
                           : inMatchedSpan
-                          ? 'border-emerald-500/70 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200'
+                          ? 'border-emerald-400/80 bg-emerald-500/20 text-emerald-300'
+                          : 'border-cyan-500/20 bg-[#081529] text-slate-200'
                       }`}
                     >
                       <span className="text-[9px] text-slate-400 tabular-nums">{idx}</span>
@@ -116,7 +116,7 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
               {/* Sliding Pattern P row */}
               {phase !== 'pi' && (
                 <div className="flex items-center gap-1">
-                  <span className="w-7 text-[11px] font-mono font-bold text-amber-600 dark:text-amber-400 shrink-0">
+                  <span className="w-7 text-[11px] font-mono font-bold text-amber-400 shrink-0">
                     P:
                   </span>
                   {Array.from({ length: shiftOffset }).map((_, sp) => (
@@ -130,10 +130,10 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                         key={`p-${pIdx}`}
                         className={`w-8 h-9 rounded-md border flex items-center justify-center font-mono text-xs font-bold transition-colors ${
                           activeJ
-                            ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
+                            ? 'border-amber-400 bg-amber-500/25 text-amber-200 shadow-[0_0_10px_rgba(251,191,36,0.3)]'
                             : prefixMatched
-                            ? 'border-emerald-500/60 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300'
-                            : 'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/70 text-slate-500'
+                            ? 'border-emerald-400/60 bg-emerald-500/18 text-emerald-300'
+                            : 'border-slate-700 bg-[#061121] text-slate-400'
                         }`}
                       >
                         {ch}
@@ -160,17 +160,17 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
     const bestR: number = st.bestR ?? 0;
 
     return (
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <span className="font-semibold text-slate-700 dark:text-slate-200">
-            Mở rộng từ tâm · Tốt nhất hiện tại: "{S.slice(bestL, bestR + 1)}" (dài {bestR - bestL + 1})
+          <span className="font-mono font-semibold text-fuchsia-200">
+            PALINDROME_EXPAND · Tốt nhất: "{S.slice(bestL, bestR + 1)}" (len {bestR - bestL + 1})
           </span>
-          <span className="font-mono text-slate-500 dark:text-slate-400">
+          <span className={`font-mono font-bold ${st.match ? 'text-emerald-400' : 'text-rose-400'}`}>
             {st.match ? 'KHỚP ĐỐI XỨNG' : 'KHÔNG KHỚP'}
           </span>
         </div>
 
-        <div className="overflow-x-auto py-3">
+        <div className="overflow-x-auto rounded-xl border border-purple-500/25 bg-[#040b18] p-4">
           <div className="inline-flex gap-1.5 min-w-max">
             {S.split('').map((ch, idx) => {
               const isPointer = idx === l || idx === r;
@@ -178,26 +178,26 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
               const inBest = idx >= bestL && idx <= bestR;
               return (
                 <div key={idx} className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-mono font-bold h-4 text-sky-600 dark:text-sky-400">
+                  <span className="text-[10px] font-mono font-bold h-4 text-cyan-300">
                     {idx === l && idx === r ? 'L,R' : idx === l ? 'L' : idx === r ? 'R' : ''}
                   </span>
                   <div
                     className={`w-10 h-12 rounded-lg border-2 flex flex-col items-center justify-center font-mono transition-colors ${
                       isPointer
                         ? st.match
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
-                          : 'border-rose-500 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300'
+                          ? 'border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.35)]'
+                          : 'border-rose-400 bg-rose-500/20 text-rose-200 shadow-[0_0_12px_rgba(244,63,94,0.35)]'
                         : inWindow
-                        ? 'border-sky-400 bg-sky-50/70 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300'
+                        ? 'border-purple-400 bg-purple-500/20 text-purple-200'
                         : inBest
-                        ? 'border-amber-400/70 bg-amber-50/50 dark:bg-amber-950/20 text-slate-800 dark:text-slate-100'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200'
+                        ? 'border-amber-400/70 bg-amber-500/15 text-amber-200'
+                        : 'border-cyan-500/20 bg-[#081529] text-slate-200'
                     }`}
                   >
                     <span className="text-sm font-extrabold">{ch}</span>
                     <span className="text-[9px] text-slate-400 tabular-nums">{idx}</span>
                   </div>
-                  <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400 h-3">
+                  <span className="text-[9px] font-mono text-amber-400 h-3">
                     {inBest ? '★' : ''}
                   </span>
                 </div>
@@ -219,18 +219,18 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
 
     return (
       <div className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
-          <span>Biểu đồ cột Mảng a[i] &amp; Đoạn cực đại Kadane</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+          <span className="font-mono text-[11px] text-amber-200/85">KADANE_SIGNAL · Biểu đồ a[i] &amp; Đoạn cực đại</span>
           <div className="flex items-center gap-3 font-mono text-[11px]">
-            <span className="text-sky-600 dark:text-sky-400">■ Đoạn đang xét</span>
-            <span className="text-emerald-600 dark:text-emerald-400">■ Best Kadane</span>
-            {st.showQuery && <span className="text-amber-600 dark:text-amber-400">■ Truy vấn [L..R]</span>}
+            <span className="text-cyan-400">■ Đoạn đang xét</span>
+            <span className="text-emerald-400">■ Best Kadane</span>
+            {st.showQuery && <span className="text-amber-400">■ Truy vấn [L..R]</span>}
           </div>
         </div>
 
         {/* Bar chart supporting negative & positive values */}
         <div className="overflow-x-auto pb-2">
-          <div className="inline-flex items-center gap-1.5 min-w-max h-48 px-2 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="inline-flex items-center gap-1.5 min-w-max h-48 px-3 bg-[#040b18] rounded-xl border border-amber-500/25 shadow-[inset_0_0_32px_rgba(245,158,11,0.06)]">
             {arr.map((v, idx) => {
               const pct = Math.max(12, Math.round((Math.abs(v) / maxAbs) * 70));
               const inBest = st.bestR >= st.bestL && idx >= st.bestL && idx <= st.bestR;
@@ -239,22 +239,21 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
               const inQuery = st.showQuery && idx >= st.qL && idx <= st.qR;
 
               const barColor = isCurr
-                ? 'bg-amber-500'
+                ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
                 : inBest
-                ? 'bg-emerald-500'
+                ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.45)]'
                 : inCur
-                ? 'bg-sky-500'
+                ? 'bg-cyan-400'
                 : v < 0
-                ? 'bg-rose-400/75 dark:bg-rose-500/60'
-                : 'bg-slate-400/80 dark:bg-slate-600';
+                ? 'bg-rose-500/75'
+                : 'bg-slate-600/80';
 
               return (
                 <div key={idx} className="w-11 h-full flex flex-col items-center justify-center relative">
-                  {/* Upper positive half */}
                   <div className="h-1/2 w-full flex flex-col items-center justify-end pb-0.5">
                     {v >= 0 && (
                       <>
-                        <span className="text-[10px] font-mono font-bold tabular-nums text-slate-700 dark:text-slate-200">
+                        <span className="text-[10px] font-mono font-bold tabular-nums text-cyan-100">
                           {v}
                         </span>
                         <div
@@ -266,9 +265,7 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                       </>
                     )}
                   </div>
-                  {/* Zero baseline */}
-                  <div className="w-full h-px bg-slate-300 dark:bg-slate-700" />
-                  {/* Lower negative half */}
+                  <div className="w-full h-px bg-cyan-500/35" />
                   <div className="h-1/2 w-full flex flex-col items-center justify-start pt-0.5">
                     {v < 0 && (
                       <>
@@ -278,7 +275,7 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                             inQuery ? 'ring-2 ring-amber-400' : ''
                           }`}
                         />
-                        <span className="text-[10px] font-mono font-bold tabular-nums text-rose-600 dark:text-rose-400">
+                        <span className="text-[10px] font-mono font-bold tabular-nums text-rose-400">
                           {v}
                         </span>
                       </>
@@ -295,8 +292,8 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
 
         {/* Prefix Sum Array Row */}
         <div className="space-y-1.5">
-          <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-            Mảng Cộng Dồn pref[0..{arr.length}] (pref[i+1] = pref[i] + a[i])
+          <div className="text-xs font-mono font-semibold text-cyan-200">
+            PREFIX_ARRAY pref[0..{arr.length}] (pref[i+1] = pref[i] + a[i])
           </div>
           <div className="overflow-x-auto pb-1">
             <div className="inline-flex gap-1.5 min-w-max">
@@ -307,10 +304,10 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                     key={`pref-${idx}`}
                     className={`w-11 py-1.5 rounded-lg border text-center font-mono tabular-nums ${
                       highlightQueryBound
-                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+                        ? 'border-amber-400 bg-amber-500/20 text-amber-300 font-bold'
                         : idx === st.idx + 1
-                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200'
+                        ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-bold'
+                        : 'border-cyan-500/20 bg-[#040b18] text-slate-200'
                     }`}
                   >
                     <div className="text-[9px] text-slate-400">p[{idx}]</div>
@@ -340,21 +337,21 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
       <div className="space-y-5">
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-slate-700 dark:text-slate-200">
-              Tổng cửa sổ [L..R] = {curSum} / Giới hạn S = {S}
+            <span className="font-mono font-semibold text-cyan-200 tabular-nums">
+              WINDOW_SUM [L..R] = {curSum} / LIMIT S = {S}
             </span>
             <span
               className={`font-mono font-bold ${
-                curSum > S ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                curSum > S ? 'text-rose-400' : 'text-emerald-400'
               }`}
             >
-              {curSum > S ? 'VƯỢT NGƯỠNG (Cần tăng L)' : 'HỢP LỆ (≤ S)'}
+              {curSum > S ? 'VƯỢT NGƯỠNG (Tăng L)' : 'HỢP LỆ (≤ S)'}
             </span>
           </div>
-          <div className="h-2.5 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+          <div className="h-2.5 w-full rounded-full bg-[#040b18] border border-cyan-500/25 overflow-hidden">
             <div
               className={`h-full transition-all ${
-                curSum > S ? 'bg-rose-500' : 'bg-emerald-500'
+                curSum > S ? 'bg-rose-500 shadow-[0_0_10px_#f43f5e]' : 'bg-emerald-400 shadow-[0_0_10px_#34d399]'
               }`}
               style={{ width: `${Math.min(100, Math.round((curSum / Math.max(1, S)) * 100))}%` }}
             />
@@ -362,29 +359,29 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
         </div>
 
         <div className="overflow-x-auto pb-2">
-          <div className="inline-flex items-end gap-2 min-w-max h-48 pt-6 px-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="inline-flex items-end gap-2 min-w-max h-48 pt-6 px-3.5 bg-[#040b18] rounded-xl border border-cyan-500/25">
             {arr.map((v, idx) => {
               const inWindow = R >= L && idx >= L && idx <= R;
               const inBest = st.bestR >= st.bestL && st.bestL >= 0 && idx >= st.bestL && idx <= st.bestR;
               const hPct = Math.max(15, Math.round((v / maxVal) * 78));
               return (
                 <div key={idx} className="w-11 h-full flex flex-col items-center justify-end gap-1">
-                  <div className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 h-4">
+                  <div className="text-[10px] font-mono font-bold text-cyan-300 h-4">
                     {idx === L && idx === R ? 'L,R' : idx === L ? 'L' : idx === R ? 'R' : ''}
                   </div>
-                  <div className="text-[11px] font-mono font-bold tabular-nums text-slate-700 dark:text-slate-200">
+                  <div className="text-[11px] font-mono font-bold tabular-nums text-white">
                     {v}
                   </div>
                   <div
                     style={{ height: `${hPct}%` }}
-                    className={`w-8 rounded-t-lg transition-all ${
+                    className={`w-8 rounded-t-lg transition-all border ${
                       inWindow
                         ? curSum > S
-                          ? 'bg-rose-500'
-                          : 'bg-sky-500'
+                          ? 'bg-rose-500/85 border-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.45)]'
+                          : 'bg-cyan-400/90 border-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.45)]'
                         : inBest
-                        ? 'bg-emerald-500/75'
-                        : 'bg-slate-300 dark:bg-slate-700'
+                        ? 'bg-emerald-400/80 border-emerald-200'
+                        : 'bg-slate-700/70 border-slate-600/50'
                     }`}
                   />
                   <div className="text-[10px] font-mono text-slate-400 tabular-nums pb-1">[{idx}]</div>
@@ -410,7 +407,7 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className={mode === 'monostack' ? 'lg:col-span-8' : 'lg:col-span-12'}>
             <div className="overflow-x-auto pb-2">
-              <div className="inline-flex items-end gap-1.5 min-w-max h-52 pt-6 px-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="inline-flex items-end gap-1.5 min-w-max h-52 pt-6 px-3.5 bg-[#040b18] rounded-xl border border-rose-500/25">
                 {arr.map((v, idx) => {
                   const hPct = Math.max(14, Math.round((Math.abs(v) / maxVal) * 78));
                   const isCurr = idx === st.idx || idx === st.jPtr;
@@ -421,21 +418,21 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                     typeof st.l === 'number' && typeof st.r === 'number' && idx >= st.l && idx <= st.r;
 
                   const barCls = isPivot
-                    ? 'bg-amber-500'
+                    ? 'bg-amber-400 border-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.45)]'
                     : isCurr
-                    ? 'bg-sky-500'
+                    ? 'bg-cyan-400 border-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.45)]'
                     : inStack || isSorted
-                    ? 'bg-emerald-500'
+                    ? 'bg-emerald-400 border-emerald-200 shadow-[0_0_10px_rgba(52,211,153,0.4)]'
                     : inRange
-                    ? 'bg-indigo-400 dark:bg-indigo-500/70'
-                    : 'bg-slate-300 dark:bg-slate-700';
+                    ? 'bg-indigo-400/80 border-indigo-300'
+                    : 'bg-slate-700/75 border-slate-600/50';
 
                   return (
                     <div key={idx} className="w-10 h-full flex flex-col items-center justify-end gap-1">
-                      <span className="text-[11px] font-mono font-bold tabular-nums text-slate-700 dark:text-slate-200">
+                      <span className="text-[11px] font-mono font-bold tabular-nums text-white">
                         {v}
                       </span>
-                      <div style={{ height: `${hPct}%` }} className={`w-7 rounded-t-md transition-all ${barCls}`} />
+                      <div style={{ height: `${hPct}%` }} className={`w-7 rounded-t-md border transition-all ${barCls}`} />
                       <span className="text-[10px] font-mono text-slate-400 tabular-nums pb-1">[{idx}]</span>
                     </div>
                   );
@@ -445,23 +442,23 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
           </div>
 
           {mode === 'monostack' && (
-            <div className="lg:col-span-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 p-3 flex flex-col justify-between">
-              <div className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">
-                Ngăn xếp Đơn điệu (Top ở trên)
+            <div className="lg:col-span-4 bg-[#040b18] rounded-xl border border-cyan-500/25 p-3 flex flex-col justify-between">
+              <div className="text-xs font-mono font-bold text-cyan-200 mb-2">
+                MONOTONIC STACK (TOP ↑)
               </div>
               <div className="flex flex-col-reverse gap-1.5 min-h-[120px] justify-start">
                 {(st.stack as number[] | undefined)?.length ? (
                   (st.stack as number[]).map((sIdx) => (
                     <div
                       key={`st-${sIdx}`}
-                      className="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/50 text-xs font-mono flex items-center justify-between text-emerald-700 dark:text-emerald-300 tabular-nums"
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-400/50 text-xs font-mono flex items-center justify-between text-emerald-300 tabular-nums"
                     >
                       <span>idx {sIdx}</span>
                       <span className="font-bold">val = {arr[sIdx]}</span>
                     </div>
                   ))
                 ) : (
-                  <div className="text-xs text-slate-400 text-center py-6 font-mono">Stack rỗng</div>
+                  <div className="text-xs text-slate-500 text-center py-6 font-mono">Stack rỗng</div>
                 )}
               </div>
             </div>
@@ -471,14 +468,14 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
         {mode === 'monostack' && Array.isArray(st.ans) && (
           <div className="overflow-x-auto pb-1">
             <div className="inline-flex gap-1.5 min-w-max items-center">
-              <span className="text-xs font-mono font-bold text-slate-500 mr-1">ans[]:</span>
+              <span className="text-xs font-mono font-bold text-cyan-300 mr-1">ans[]:</span>
               {(st.ans as number[]).map((aVal, idx) => (
                 <div
                   key={`ans-${idx}`}
                   className={`w-10 py-1 rounded border text-center font-mono text-xs tabular-nums ${
                     idx === st.idx
-                      ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 font-bold text-sky-700 dark:text-sky-300'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300'
+                      ? 'border-cyan-400 bg-cyan-500/20 font-bold text-cyan-200'
+                      : 'border-cyan-500/20 bg-[#040b18] text-slate-200'
                   }`}
                 >
                   {aVal}
@@ -499,18 +496,18 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
       const arr: number[] = st.arr || [];
       return (
         <div className="space-y-4">
-          <div className="text-xs text-slate-600 dark:text-slate-400">
-            Tìm <span className="font-mono font-bold text-slate-900 dark:text-white">lower_bound({st.target})</span> — phần tử đầu tiên ≥ {st.target}
+          <div className="font-mono text-xs text-lime-200">
+            LOWER_BOUND({st.target}) — phần tử đầu tiên ≥ {st.target}
           </div>
-          <div className="overflow-x-auto pb-2">
-            <div className="inline-flex gap-1.5 min-w-max pt-5">
+          <div className="overflow-x-auto pb-2 rounded-xl border border-lime-500/25 bg-[#040b18] p-3.5">
+            <div className="inline-flex gap-1.5 min-w-max pt-3">
               {arr.map((v, idx) => {
                 const inRange = idx >= st.lo && idx <= st.hi;
                 const isMid = idx === st.mid;
                 const isAns = idx === st.ansIdx;
                 return (
                   <div key={idx} className="flex flex-col items-center gap-1">
-                    <span className="text-[10px] font-mono font-bold h-4 text-sky-600 dark:text-sky-400">
+                    <span className="text-[10px] font-mono font-bold h-4 text-cyan-300">
                       {[
                         idx === st.lo ? 'lo' : '',
                         idx === st.mid ? 'mid' : '',
@@ -522,18 +519,18 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                     <div
                       className={`w-12 h-14 rounded-xl border-2 flex flex-col items-center justify-center font-mono tabular-nums transition-all ${
                         isMid
-                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 scale-105'
+                          ? 'border-amber-400 bg-amber-500/20 text-amber-200 scale-105 shadow-[0_0_14px_rgba(251,191,36,0.35)]'
                           : isAns
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                          ? 'border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-[0_0_12px_rgba(52,211,153,0.3)]'
                           : inRange
-                          ? 'border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white'
-                          : 'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/40 text-slate-400 opacity-50'
+                          ? 'border-lime-400/50 bg-[#081529] text-white'
+                          : 'border-slate-800 bg-[#030812] text-slate-600 opacity-50'
                       }`}
                     >
                       <span className="text-sm font-extrabold">{v}</span>
                       <span className="text-[9px] text-slate-400">[{idx}]</span>
                     </div>
-                    <span className="text-[9px] font-mono text-slate-500 h-3">
+                    <span className="text-[9px] font-mono text-slate-400 h-3">
                       {!inRange && !isAns ? 'LOẠI' : isAns ? 'ỨNG VIÊN' : ''}
                     </span>
                   </div>
@@ -561,16 +558,32 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <span className="font-semibold text-slate-700 dark:text-slate-200">
-            Đồ thị hàm đơn điệu f(mid) = Số đoạn cần chia (Mục tiêu f(mid) ≤ K = {K})
+          <span className="font-mono font-semibold text-lime-200">
+            MONOTONIC_PLOT f(mid) ≤ K = {K}
           </span>
-          <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400">
+          <span className="font-mono text-[11px] text-emerald-400 tabular-nums">
             Vùng nghiệm: [lo={st.lo}, hi={st.hi}] · ans={st.bestAns}
           </span>
         </div>
 
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-hidden">
+        <div className="relative rounded-xl border border-lime-500/30 bg-[#040b18] overflow-hidden">
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto max-h-[260px]">
+            <defs>
+              <pattern id="bs-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+                <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#0d223f" strokeWidth="0.9" />
+              </pattern>
+              <filter id="bs-glow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <rect width={W} height={H} fill="#040b18" />
+            <rect width={W} height={H} fill="url(#bs-grid)" />
+
             {/* Active search range [lo, hi] band */}
             {typeof st.lo === 'number' && typeof st.hi === 'number' && st.lo <= st.hi && (
               <rect
@@ -578,13 +591,13 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                 y={PAD / 2}
                 width={Math.max(2, px(Math.min(maxX, st.hi)) - px(Math.max(minX, st.lo)))}
                 height={H - PAD * 1.5}
-                fill="rgba(14, 165, 233, 0.1)"
+                fill="rgba(132, 204, 22, 0.1)"
               />
             )}
 
             {/* Axes */}
-            <line x1={PAD} y1={H - PAD} x2={W - PAD / 2} y2={H - PAD} stroke="#64748b" strokeWidth={1.5} />
-            <line x1={PAD} y1={PAD / 2} x2={PAD} y2={H - PAD} stroke="#64748b" strokeWidth={1.5} />
+            <line x1={PAD} y1={H - PAD} x2={W - PAD / 2} y2={H - PAD} stroke="#38bdf8" strokeOpacity={0.55} strokeWidth={1.5} />
+            <line x1={PAD} y1={PAD / 2} x2={PAD} y2={H - PAD} stroke="#38bdf8" strokeOpacity={0.55} strokeWidth={1.5} />
 
             {/* Threshold line y = K */}
             <line
@@ -592,11 +605,11 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
               y1={py(K)}
               x2={W - PAD / 2}
               y2={py(K)}
-              stroke="#10b981"
-              strokeWidth={1.5}
+              stroke="#34d399"
+              strokeWidth={1.6}
               strokeDasharray="5 4"
             />
-            <text x={W - PAD} y={py(K) - 5} textAnchor="end" className="fill-emerald-600 dark:fill-emerald-400 text-[10px] font-bold font-mono">
+            <text x={W - PAD} y={py(K) - 5} textAnchor="end" className="fill-emerald-400 text-[10px] font-bold font-mono">
               Giới hạn K = {K}
             </text>
 
@@ -605,8 +618,9 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
               <polyline
                 points={curve.map((p) => `${px(p.x)},${py(p.segs)}`).join(' ')}
                 fill="none"
-                stroke="#6366f1"
-                strokeWidth={2.5}
+                stroke="#84cc16"
+                strokeWidth={2.6}
+                filter="url(#bs-glow)"
               />
             )}
 
@@ -617,16 +631,17 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                   cx={px(tp.mid)}
                   cy={py(tp.segs)}
                   r={tp.mid === st.mid ? 6.5 : 4.5}
-                  fill={tp.ok ? '#10b981' : '#e11d48'}
-                  stroke="#ffffff"
-                  strokeWidth={1.5}
+                  fill={tp.ok ? '#34d399' : '#fb7185'}
+                  stroke="#040b18"
+                  strokeWidth={1.6}
+                  filter={tp.mid === st.mid ? 'url(#bs-glow)' : undefined}
                 />
                 {tp.mid === st.mid && (
                   <text
                     x={px(tp.mid)}
                     y={py(tp.segs) - 10}
                     textAnchor="middle"
-                    className="fill-slate-900 dark:fill-white text-[10px] font-bold font-mono"
+                    className="fill-amber-300 text-[10px] font-bold font-mono tabular-nums"
                   >
                     mid={tp.mid} ({tp.segs})
                   </text>
@@ -634,7 +649,7 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
               </g>
             ))}
 
-            <text x={W / 2} y={H - 8} textAnchor="middle" className="fill-slate-500 text-[10px] font-mono">
+            <text x={W / 2} y={H - 8} textAnchor="middle" className="fill-cyan-300/75 text-[10px] font-mono tabular-nums">
               Ngưỡng tổng tối đa mỗi đoạn (mid: {minX} → {maxX})
             </text>
           </svg>
@@ -643,19 +658,19 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
         {/* Live Partition Preview */}
         {Array.isArray(st.groups) && st.groups.length > 0 && (
           <div className="space-y-1.5">
-            <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-              Cách chia mảng khi mid = {st.mid} ({st.groups.length} đoạn):
+            <div className="text-xs font-mono font-semibold text-cyan-200">
+              PARTITION WHEN mid = {st.mid} ({st.groups.length} đoạn):
             </div>
             <div className="flex flex-wrap gap-2">
               {(st.groups as number[][]).map((grp, gIdx) => (
                 <div
                   key={gIdx}
-                  className="px-3 py-2 rounded-xl border border-sky-300 dark:border-sky-800 bg-sky-50/70 dark:bg-sky-950/30 font-mono text-xs flex items-center gap-2"
+                  className="px-3 py-2 rounded-xl border border-lime-500/35 bg-[#040b18] font-mono text-xs flex items-center gap-2"
                 >
-                  <span className="text-slate-800 dark:text-slate-100 font-semibold">
+                  <span className="text-slate-100 font-semibold">
                     [{grp.join(', ')}]
                   </span>
-                  <span className="text-sky-700 dark:text-sky-300 font-bold tabular-nums">
+                  <span className="text-lime-300 font-bold tabular-nums">
                     Σ={grp.reduce((a, b) => a + b, 0)}
                   </span>
                 </div>
@@ -675,24 +690,24 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
       const bits: string[] = st.bits || [];
       return (
         <div className="space-y-4">
-          <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-            Tính {st.origA}^{st.origB} mod {st.m} · Duyệt từ bit thấp (LSB) → bit cao (MSB)
+          <div className="text-xs font-mono font-semibold text-purple-200 tabular-nums">
+            MODULAR_EXP · {st.origA}^{st.origB} mod {st.m} · Duyệt LSB → MSB
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 p-3.5 rounded-xl border border-purple-500/25 bg-[#040b18]">
             {bits.map((bit, idx) => (
               <div
                 key={idx}
                 className={`w-14 py-2 rounded-xl border-2 text-center font-mono transition-all ${
                   idx === st.bitIdx
-                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40'
+                    ? 'border-amber-400 bg-amber-500/20 text-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.35)]'
                     : idx < st.bitIdx
-                    ? 'border-emerald-500/60 bg-emerald-50/50 dark:bg-emerald-950/20'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
+                    ? 'border-emerald-400/70 bg-emerald-500/15 text-emerald-200'
+                    : 'border-purple-500/25 bg-[#081529] text-slate-300'
                 }`}
               >
                 <div className="text-[10px] text-slate-400">2^{idx}</div>
-                <div className="text-base font-extrabold text-slate-900 dark:text-white">{bit}</div>
-                <div className="text-[9px] font-semibold text-slate-500">
+                <div className="text-base font-extrabold text-white">{bit}</div>
+                <div className="text-[9px] font-semibold text-cyan-300">
                   {bit === '1' ? 'NHÂN' : 'BỎ'}
                 </div>
               </div>
@@ -708,15 +723,15 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
 
     return (
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
-          <span>Lưới Sàng Eratosthenes 2..{N}</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+          <span className="font-mono text-[11px] text-purple-200/85">SIEVE_MATRIX 2..{N}</span>
           <div className="flex items-center gap-3 font-mono text-[11px]">
-            <span className="text-emerald-600 dark:text-emerald-400">■ Nguyên tố</span>
-            <span className="text-amber-600 dark:text-amber-400">■ p đang sàng</span>
-            <span className="text-rose-500">■ Hợp số (đã gạch)</span>
+            <span className="text-emerald-400">■ Nguyên tố</span>
+            <span className="text-amber-400">■ p đang sàng</span>
+            <span className="text-rose-400">■ Hợp số (gạch)</span>
           </div>
         </div>
-        <div className="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-10 gap-1.5">
+        <div className="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-10 gap-1.5 p-3 rounded-xl border border-purple-500/25 bg-[#040b18]">
           {Array.from({ length: N - 1 }, (_, k) => k + 2).map((num) => {
             const s = status[num] || 'unmarked';
             const isP = num === st.p;
@@ -726,14 +741,14 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                 key={num}
                 className={`py-2 rounded-lg border text-center font-mono text-xs font-bold tabular-nums transition-colors ${
                   isP
-                    ? 'border-amber-500 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200'
+                    ? 'border-amber-400 bg-amber-500/25 text-amber-200 shadow-[0_0_10px_rgba(251,191,36,0.35)]'
                     : justCrossed
-                    ? 'border-rose-500 bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 line-through'
+                    ? 'border-rose-400 bg-rose-500/25 text-rose-300 line-through'
                     : s === 'prime'
-                    ? 'border-emerald-500/70 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                    ? 'border-emerald-400/75 bg-emerald-500/18 text-emerald-300'
                     : s === 'crossed'
-                    ? 'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 text-slate-400 line-through'
-                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200'
+                    ? 'border-slate-800 bg-[#020710] text-slate-600 line-through'
+                    : 'border-cyan-500/20 bg-[#081529] text-slate-200'
                 }`}
               >
                 {num}
@@ -770,27 +785,44 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
 
     return (
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
-          <span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+          <span className="font-mono text-[11px] text-emerald-200/90 tabular-nums">
             {st.op === 'query'
-              ? `Truy vấn Sum[${st.L}..${st.R}] · Tổng hiện tại = ${st.total ?? 0}`
-              : `Cập nhật a[${st.idx}] = ${st.updVal}`}
+              ? `SEGTREE_QUERY Sum[${st.L}..${st.R}] · Tổng = ${st.total ?? 0}`
+              : `SEGTREE_UPDATE a[${st.idx}] = ${st.updVal}`}
           </span>
           <div className="flex flex-wrap items-center gap-3 font-mono text-[11px]">
-            <span className="text-emerald-600 dark:text-emerald-400">● COVER/UPDATED</span>
-            <span className="text-amber-600 dark:text-amber-400">● SPLIT</span>
-            <span className="text-rose-500">● SKIP</span>
+            <span className="text-emerald-400">● COVER/UPDATED</span>
+            <span className="text-amber-400">● SPLIT</span>
+            <span className="text-rose-400">● SKIP</span>
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto">
+        <div className="relative rounded-xl border border-emerald-500/30 bg-[#040b18] overflow-x-auto">
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[560px] h-auto max-h-[340px]">
+            <defs>
+              <pattern id="segtree-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+                <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#0d223f" strokeWidth="0.9" />
+              </pattern>
+              <filter id="segtree-glow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="2.4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <rect width={W} height={H} fill="#040b18" />
+            <rect width={W} height={H} fill="url(#segtree-grid)" />
+
             {/* Edges */}
             {nodeList.map((nd) => {
               if (nd.node === 1) return null;
               const parentId = Math.floor(nd.node / 2);
               const p1 = getPos(parentId);
               const p2 = getPos(nd.node);
+              const isLit = nd.status === 'cover' || nd.status === 'updated' || nd.status === 'split';
               return (
                 <line
                   key={`e-${nd.node}`}
@@ -798,9 +830,15 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                   y1={p1.y}
                   x2={p2.x}
                   y2={p2.y}
-                  stroke="#94a3b8"
-                  strokeOpacity={0.5}
-                  strokeWidth={1.5}
+                  stroke={
+                    nd.status === 'cover' || nd.status === 'updated'
+                      ? '#34d399'
+                      : nd.status === 'split'
+                      ? '#fbbf24'
+                      : '#1e3a5f'
+                  }
+                  strokeOpacity={isLit ? 0.85 : 0.7}
+                  strokeWidth={isLit ? 2 : 1.4}
                 />
               );
             })}
@@ -808,14 +846,23 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
             {/* Nodes */}
             {nodeList.map((nd) => {
               const { x, y } = getPos(nd.node);
-              const fill =
-                nd.status === 'cover' || nd.status === 'updated'
-                  ? '#10b981'
-                  : nd.status === 'split'
-                  ? '#f59e0b'
-                  : nd.status === 'skip'
-                  ? '#e11d48'
-                  : '#334155';
+              const isCover = nd.status === 'cover' || nd.status === 'updated';
+              const isSplit = nd.status === 'split';
+              const isSkip = nd.status === 'skip';
+              const fill = isCover
+                ? '#064e3b'
+                : isSplit
+                ? '#78350f'
+                : isSkip
+                ? '#4c0519'
+                : '#081529';
+              const stroke = isCover
+                ? '#34d399'
+                : isSplit
+                ? '#fbbf24'
+                : isSkip
+                ? '#fb7185'
+                : '#38bdf8';
 
               return (
                 <g key={`n-${nd.node}`}>
@@ -826,8 +873,9 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                     height={40}
                     rx={8}
                     fill={fill}
-                    stroke="#ffffff"
-                    strokeWidth={1.5}
+                    stroke={stroke}
+                    strokeWidth={isCover || isSplit ? 2 : 1.3}
+                    filter={isCover || isSplit ? 'url(#segtree-glow)' : undefined}
                   />
                   <text
                     x={x}
@@ -841,7 +889,7 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                     x={x}
                     y={y + 11}
                     textAnchor="middle"
-                    className="fill-white/85 text-[9px] font-mono tabular-nums"
+                    className="fill-cyan-200/80 text-[9px] font-mono tabular-nums"
                   >
                     [{nd.l}..{nd.r}]
                   </text>
@@ -853,7 +901,7 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
 
         {/* Base array */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-mono font-bold text-slate-500 mr-1">a[]:</span>
+          <span className="text-xs font-mono font-bold text-cyan-300 mr-1">a[]:</span>
           {arr.map((v, idx) => {
             const inQuery = st.op === 'query' && idx >= st.L && idx <= st.R;
             const isUpd = st.op === 'update' && idx === st.idx;
@@ -862,8 +910,8 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                 key={`st-arr-${idx}`}
                 className={`w-11 py-1.5 rounded-lg border text-center font-mono tabular-nums ${
                   isUpd || inQuery
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200'
+                    ? 'border-emerald-400 bg-emerald-500/20 text-emerald-300 font-bold'
+                    : 'border-cyan-500/20 bg-[#040b18] text-slate-200'
                 }`}
               >
                 <div className="text-[9px] text-slate-400">[{idx}]</div>

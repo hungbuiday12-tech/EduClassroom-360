@@ -27,7 +27,8 @@ import {
   VolumeX,
   Gauge,
   MessageSquare,
-  Orbit
+  Orbit,
+  Hand
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -586,6 +587,22 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Orbit className="w-4 h-4 sm:w-[18px] sm:h-[18px] icon-anim-cosmos shrink-0" />
           <span>{isEn ? 'Virtual Campus · Synapse v2' : 'Lớp học ảo · Synapse v2'}</span>
+        </button>
+
+        {/* Spatial 3D Hand-Gesture Learning Lab */}
+        <button
+          onClick={() => {
+            onSelectSubject('spatial_3d');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className={`group sheen-btn flex items-center gap-2 whitespace-nowrap shrink-0 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold border transition-all cursor-pointer ${
+            currentSubject === 'spatial_3d'
+              ? 'bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-slate-950 border-cyan-300 shadow-md shadow-cyan-500/30'
+              : 'bg-gradient-to-r from-cyan-500/12 via-teal-500/12 to-emerald-500/12 dark:from-cyan-500/20 dark:to-emerald-500/20 border-cyan-400/50 text-cyan-800 dark:text-cyan-200 hover:border-cyan-400 hover:from-cyan-500 hover:to-emerald-500 hover:text-slate-950'
+          }`}
+        >
+          <Hand className="w-4 h-4 sm:w-[18px] sm:h-[18px] shrink-0" />
+          <span>{isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D'}</span>
         </button>
 
         <button

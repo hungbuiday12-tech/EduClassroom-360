@@ -2151,6 +2151,424 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     ],
     sim2dMode: 'geometry',
     sim3dMode: 'circle_theorems_3d'
+  },
+  {
+    id: 'math-9-11',
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 9',
+    title: 'Bất đẳng thức Cô-si (AM-GM) & Tìm Giá trị Lớn nhất – Nhỏ nhất thi vào 10',
+    grade: 'Lớp 9 · Đại số',
+    category: 'Đại số',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 16,
+    description:
+      'Chuyên đề lấy điểm 9–10 trong đề tuyển sinh lớp 10: bất đẳng thức AM-GM cho 2 số và 3 số dương, kỹ thuật chọn điểm rơi và tách hằng số tìm GTNN, GTLN.',
+    mnemonics: [
+      'AM-GM 2 số dương: $a + b \\ge 2\\sqrt{ab}$, dấu "=" xảy ra khi và chỉ khi $a = b$.',
+      'Kỹ thuật điểm rơi: dự đoán dấu "=" tại $x = x_0$, tách hệ số để hai số hạng bằng nhau tại $x_0$.'
+    ],
+    commonTraps: [
+      'Áp dụng Cô-si cho số âm hoặc bằng 0 ở mẫu thức mà quên kiểm tra điều kiện dương.',
+      'Đánh giá hai phần riêng lẻ nhưng dấu "=" không xảy ra đồng thời tại cùng một giá trị biến.'
+    ],
+    theory: [
+      '1. Bất đẳng thức AM-GM (Cô-si) cho 2 số không âm $a, b \\ge 0$: $\\frac{a + b}{2} \\ge \\sqrt{ab} \\iff a + b \\ge 2\\sqrt{ab}$ hay $ab \\le \\frac{(a+b)^2}{4}$. Dấu "=" xảy ra $\\iff a = b$.',
+      '2. Bất đẳng thức Cô-si cộng mẫu (Engel / Cauchy-Schwarz dạng phân thức): Với $a, b, x, y > 0$: $\\frac{a^2}{x} + \\frac{b^2}{y} \\ge \\frac{(a+b)^2}{x+y}$, đặc biệt $\\frac{1}{x} + \\frac{1}{y} \\ge \\frac{4}{x+y}$.',
+      '3. Kỹ thuật chọn điểm rơi với hàm $P = mx + \\frac{n}{x}$ ($x \\ge x_0$): Nếu cực trị đạt tại biên $x = x_0$, ta tách $mx = k x + (m - k)x$ sao cho $k x_0 = \\frac{n}{x_0} \\implies k = \\frac{n}{x_0^2}$.',
+      '4. Bất đẳng thức Bunhiacopxki (Cauchy-Schwarz) 2 cặp số: $(a^2+b^2)(x^2+y^2) \\ge (ax+by)^2$, dấu "=" khi $\\frac{a}{x} = \\frac{b}{y}$.'
+    ],
+    keyFormulas: [
+      'a + b \\ge 2\\sqrt{ab} \\quad (a, b \\ge 0)',
+      '\\frac{1}{a} + \\frac{1}{b} \\ge \\frac{4}{a+b} \\quad (a, b > 0)',
+      '(a^2 + b^2)(x^2 + y^2) \\ge (ax + by)^2'
+    ],
+    flashcards: [
+      {
+        front: 'Cho $x > 0$. Giá trị nhỏ nhất của $P = x + \\frac{9}{x}$ là bao nhiêu và đạt khi nào?',
+        back: 'Theo AM-GM: $x + \\frac{9}{x} \\ge 2\\sqrt{x \\cdot \\frac{9}{x}} = 6$. Dấu "=" khi $x = \\frac{9}{x} \\iff x = 3$.',
+        tip: 'Kiểm tra ngay điều kiện $x > 0$ trước khi áp dụng.'
+      },
+      {
+        front: 'Cho $a, b > 0$ thỏa mãn $a + b = 4$. Tìm GTLN của tích $ab$.',
+        back: '$ab \\le \\frac{(a+b)^2}{4} = \\frac{16}{4} = 4$, đạt tại $a = b = 2$.',
+        tip: 'Tổng không đổi thì tích lớn nhất khi hai số bằng nhau.'
+      }
+    ],
+    sampleProblems: [
+      {
+        source: 'Đề Tuyển sinh 10 · Điểm rơi cơ bản',
+        question: 'Cho $x \\ge 2$. Giá trị nhỏ nhất của biểu thức $A = x + \\frac{1}{x}$ là:',
+        options: ['A. $2$', 'B. $\\frac{5}{2}$', 'C. $3$', 'D. $\\frac{3}{2}$'],
+        correctIndex: 1,
+        explanation:
+          'Dấu "=" tại biên $x = 2$, nên tách $A = \\left(\\frac{1}{4}x + \\frac{1}{x}\\right) + \\frac{3}{4}x \\ge 2\\sqrt{\\frac{1}{4}} + \\frac{3}{4}\\cdot 2 = 1 + \\frac{3}{2} = \\frac{5}{2}$. Dấu "=" khi $x = 2$.'
+      },
+      {
+        source: 'Đề Tuyển sinh 10 · Cauchy-Schwarz',
+        question: 'Cho hai số thực dương $x, y$ thỏa mãn $x + y = 6$. Giá trị nhỏ nhất của $S = \\frac{1}{x} + \\frac{4}{y}$ là:',
+        options: ['A. $\\frac{3}{2}$', 'B. $2$', 'C. $\\frac{9}{6}$', 'D. $\\frac{5}{6}$'],
+        correctIndex: 0,
+        explanation:
+          'Áp dụng Engel: $\\frac{1^2}{x} + \\frac{2^2}{y} \\ge \\frac{(1+2)^2}{x+y} = \\frac{9}{6} = \\frac{3}{2}$. Dấu "=" khi $x = 2, y = 4$.'
+      }
+    ],
+    essayProblems: [
+      {
+        source: 'Đề Tuyển sinh 10 · Cực trị Đại số',
+        question: 'Cho $x, y > 0$ thỏa mãn $x + y \\le 1$. Tìm giá trị nhỏ nhất của biểu thức $P = x + y + \\frac{1}{x} + \\frac{1}{y}$.',
+        hints: ['Dự đoán điểm rơi tại $x = y = \\frac{1}{2}$ (khi đó $\\frac{1}{x} = 2 = 4x$).'],
+        solutionSteps: [
+          'Bước 1: Áp dụng $\\frac{1}{x} + \\frac{1}{y} \\ge \\frac{4}{x+y}$, ta được $P \\ge (x+y) + \\frac{4}{x+y}$. Đặt $t = x + y \\in (0; 1]$.',
+          'Bước 2: Tách $P \\ge \\left(t + \\frac{1}{t}\\right) + \\frac{3}{t}$. Với mọi $t > 0$, $t + \\frac{1}{t} \\ge 2$ (AM-GM).',
+          'Bước 3: Vì $0 < t \\le 1$ nên $\\frac{3}{t} \\ge 3$. Cộng vế: $P \\ge 2 + 3 = 5$.',
+          'Bước 4: Dấu "=" xảy ra khi $t = 1$ và $x = y$, tức $x = y = \\frac{1}{2}$.'
+        ],
+        finalAnswer: '$\\min P = 5$ khi $x = y = \\frac{1}{2}$.'
+      }
+    ],
+    sim2dMode: 'grapher',
+    sim3dMode: 'integral_disks_3d',
+    defaultGraphConfig: {
+      type: 'rational',
+      params: { a: 1, b: 0, c: 1, d: 0 },
+      color: '#10b981',
+      name: 'Minh họa hàm số bậc 1 / phân thức'
+    }
+  },
+  {
+    id: 'math-9-12',
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 9',
+    title: 'Giải Bài toán Bằng Cách Lập Phương trình & Hệ Phương trình (Chuyển động – Năng suất)',
+    grade: 'Lớp 9 · Đại số',
+    category: 'Đại số',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 15,
+    description:
+      'Phương pháp lập bảng 3 bước chuẩn mực giải mọi dạng toán thực tế thi vào 10: chuyển động trên đường bộ/dòng nước, làm chung công việc, phần trăm và hình học.',
+    mnemonics: [
+      '3 bước vàng: (1) Chọn ẩn + đơn vị + ĐK chặt chẽ; (2) Biểu diễn các đại lượng theo ẩn; (3) Lập PT/HPT, giải và đối chiếu ĐK.',
+      'Chuyển động dòng nước: $v_{\\text{xuôi}} = v_{\\text{thực}} + v_{\\text{nước}}$, $v_{\\text{ngược}} = v_{\\text{thực}} - v_{\\text{nước}}$.'
+    ],
+    commonTraps: [
+      'Quên đổi đơn vị thời gian (ví dụ 20 phút $= \\frac{1}{3}$ giờ, không phải $0{,}2$ giờ!).',
+      'Bài toán làm chung công việc: cộng nhầm thời gian thay vì cộng năng suất $\\frac{1}{x} + \\frac{1}{y}$.'
+    ],
+    theory: [
+      '1. Toán chuyển động: Quãng đường $S = v \\cdot t$, thời gian $t = \\frac{S}{v}$. Khi có chênh lệch thời gian $\\Delta t$, thường lập phương trình dạng $\\frac{S}{v_1} - \\frac{S}{v_2} = \\Delta t$.',
+      '2. Toán chuyển động trên dòng nước: $v_{\\text{xuôi}} = v_{\\text{tàu}} + v_{\\text{nước}}$, $v_{\\text{ngược}} = v_{\\text{tàu}} - v_{\\text{nước}}$ với điều kiện $v_{\\text{tàu}} > v_{\\text{nước}} > 0$.',
+      '3. Toán năng suất (làm chung – làm riêng): Coi toàn bộ công việc là $1$ đơn vị. Nếu đội I làm một mình xong trong $x$ ngày và đội II xong trong $y$ ngày ($x, y > 0$) thì mỗi ngày làm chung được $\\frac{1}{x} + \\frac{1}{y}$ công việc.',
+      '4. Toán phần trăm & lãi suất: Giá sau khi tăng $a\\%$ là $A(1 + \\frac{a}{100})$; giảm $a\\%$ là $A(1 - \\frac{a}{100})$.'
+    ],
+    keyFormulas: [
+      'S = v \\cdot t \\implies t_1 - t_2 = \\frac{S}{v_1} - \\frac{S}{v_2}',
+      '\\frac{1}{x} + \\frac{1}{y} = \\frac{1}{T_{\\text{chung}}}',
+      'v_{\\text{xuôi}} - v_{\\text{ngược}} = 2 v_{\\text{dòng nước}}'
+    ],
+    flashcards: [
+      {
+        front: 'Hai vòi nước cùng chảy vào bể cạn sau $6\\text{ giờ}$ đầy bể. Gọi thời gian vòi I, II chảy riêng lần lượt là $x, y$ (giờ). Phương trình đúng là gì?',
+        back: '$\\frac{1}{x} + \\frac{1}{y} = \\frac{1}{6}$ (với điều kiện $x, y > 6$).',
+        tip: 'Đặt ẩn phụ $u = \\frac{1}{x}, v = \\frac{1}{y}$ để đưa về hệ bậc nhất cực gọn.'
+      },
+      {
+        front: 'Một ca nô đi xuôi dòng với vận tốc riêng $24\\text{ km/h}$, nước chảy $4\\text{ km/h}$. Vận tốc ngược dòng của ca nô là?',
+        back: '$v_{\\text{ngược}} = 24 - 4 = 20\\text{ km/h}$.',
+        tip: 'Vận tốc xuôi là $24+4 = 28\\text{ km/h}$.'
+      }
+    ],
+    sampleProblems: [
+      {
+        source: 'Đề Tuyển sinh 10 · Toán chuyển động',
+        question:
+          'Một ô tô đi từ A đến B dài $120\\text{ km}$. Khi về, ô tô tăng vận tốc thêm $10\\text{ km/h}$ nên thời gian về ít hơn thời gian đi là $24\\text{ phút}$. Vận tốc lúc đi của ô tô là:',
+        options: ['A. $50\\text{ km/h}$', 'B. $40\\text{ km/h}$', 'C. $60\\text{ km/h}$', 'D. $45\\text{ km/h}$'],
+        correctIndex: 0,
+        explanation:
+          'Đổi $24\\text{ phút} = \\frac{2}{5}\\text{ h}$. Gọi $v > 0$ là vận tốc đi: $\\frac{120}{v} - \\frac{120}{v+10} = \\frac{2}{5} \\iff v(v+10) = 3000 \\implies v = 50\\text{ km/h}$.'
+      },
+      {
+        source: 'Đề Tuyển sinh 10 · Năng suất chung',
+        question:
+          'Hai đội công nhân cùng làm một đoạn đường trong $12\\text{ ngày}$ thì xong. Nếu đội I làm trong $4\\text{ ngày}$ rồi nghỉ, đội II làm tiếp $14\\text{ ngày}$ nữa thì xong. Đội I làm riêng xong công việc trong:',
+        options: ['A. $20\\text{ ngày}$', 'B. $30\\text{ ngày}$', 'C. $18\\text{ ngày}$', 'D. $24\\text{ ngày}$'],
+        correctIndex: 1,
+        explanation:
+          'Hệ: $\\frac{1}{x}+\\frac{1}{y}=\\frac{1}{12}$ và $\\frac{4}{x}+\\frac{14}{y}=1$. Giải ra $\\frac{1}{y} = \\frac{1}{20} \\implies \\frac{1}{x} = \\frac{1}{30} \\implies x = 30\\text{ ngày}$.'
+      }
+    ],
+    essayProblems: [
+      {
+        source: 'Đề Tuyển sinh 10 · Bài toán thực tế',
+        question:
+          'Một mảnh vườn hình chữ nhật có chu vi $62\\text{ m}$. Nếu tăng chiều dài thêm $2\\text{ m}$ và giảm chiều rộng đi $1\\text{ m}$ thì diện tích mảnh vườn tăng thêm $12\\text{ m}^2$. Tính kích thước ban đầu của mảnh vườn.',
+        hints: ['Nửa chu vi là $x + y = 31$. Viết diện tích mới $(x+2)(y-1) = xy + 12$.'],
+        solutionSteps: [
+          'Bước 1: Gọi chiều dài là $x$ (m), chiều rộng là $y$ (m), ĐK: $31 > x > y > 1$.',
+          'Bước 2: Chu vi $2(x+y)=62 \\implies x + y = 31$ (1).',
+          'Bước 3: Diện tích mới: $(x+2)(y-1) = xy + 12 \\iff -x + 2y = 14$ (2).',
+          'Bước 4: Cộng (1) và (2): $3y = 45 \\implies y = 15\\text{ m}$, suy ra $x = 31 - 15 = 16\\text{ m}$ (thỏa mãn).'
+        ],
+        finalAnswer: 'Chiều dài $16\\text{ m}$, chiều rộng $15\\text{ m}$.'
+      }
+    ],
+    sim2dMode: 'grapher',
+    sim3dMode: 'oxyz_vector',
+    defaultGraphConfig: {
+      type: 'linear',
+      params: { a: 1, b: 10, c: 0, d: 0 },
+      color: '#38bdf8',
+      name: 'Đồ thị quãng đường theo thời gian S = vt'
+    }
+  },
+  {
+    id: 'math-10-7',
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 10',
+    title: 'Quy tắc Đếm, Hoán vị – Chỉnh hợp – Tổ hợp & Nhị thức Newton (CT Mới 10)',
+    grade: 'Lớp 10 · Đại số tổ hợp',
+    category: 'Đại số & Xác suất',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 16,
+    description:
+      'Làm chủ quy tắc cộng – nhân, phân biệt rạch ròi Hoán vị $P_n$, Chỉnh hợp $A_n^k$ và Tổ hợp $C_n^k$, cùng công thức khai triển Nhị thức Newton $(a+b)^n$ với $n \\le 5$.',
+    mnemonics: [
+      'Cộng khi chia các trường hợp rời nhau; Nhân khi thực hiện các công đoạn liên tiếp.',
+      'Có xếp thứ tự (chức vụ, số tự nhiên, hàng ngang) dùng $A_n^k$; Chỉ chọn nhóm không thứ tự dùng $C_n^k$.'
+    ],
+    commonTraps: [
+      'Đếm trùng cấu hình khi dùng quy tắc cộng hoặc quên loại số có chữ số $0$ đứng đầu.',
+      'Nhầm $A_n^k = \\frac{n!}{(n-k)!}$ với $C_n^k = \\frac{n!}{k!(n-k)!}$.'
+    ],
+    theory: [
+      '1. Quy tắc Cộng & Nhân: Một công việc hoàn thành bởi 1 trong $k$ phương án độc lập có $n_1 + n_2 + \\dots + n_k$ cách. Hoàn thành qua $k$ bước liên tiếp có $n_1 \\cdot n_2 \\cdots n_k$ cách.',
+      '2. Hoán vị $P_n$: Số cách sắp xếp $n$ phần tử phân biệt vào $n$ vị trí là $P_n = n! = 1\\cdot 2\\cdots n$ ($0! = 1$).',
+      '3. Chỉnh hợp $A_n^k$: Chọn $k$ phần tử từ $n$ phần tử và **có sắp thứ tự**: $A_n^k = \\frac{n!}{(n-k)!}$.',
+      '4. Tổ hợp $C_n^k$: Chọn $k$ phần tử từ $n$ phần tử **không phân biệt thứ tự**: $C_n^k = \\frac{n!}{k!(n-k)!} = C_n^{n-k}$.',
+      '5. Nhị thức Newton: $(a+b)^n = \\sum_{k=0}^n C_n^k a^{n-k} b^k$ (gồm $n+1$ số hạng; ví dụ $n=4, 5$ trong SGK Toán 10 mới).'
+    ],
+    keyFormulas: [
+      'P_n = n!, \\quad A_n^k = \\frac{n!}{(n-k)!}, \\quad C_n^k = \\frac{n!}{k!(n-k)!}',
+      'C_n^k = C_n^{n-k}, \\quad C_n^k + C_n^{k+1} = C_{n+1}^{k+1}',
+      '(a+b)^5 = a^5 + 5a^4b + 10a^3b^2 + 10a^2b^3 + 5ab^4 + b^5'
+    ],
+    flashcards: [
+      {
+        front: 'Từ $6$ học sinh, có bao nhiêu cách chọn $1$ lớp trưởng, $1$ lớp phó và $1$ bí thư (mỗi người chỉ giữ $1$ chức)?',
+        back: 'Có phân biệt chức vụ (thứ tự), nên có $A_6^3 = 6 \\cdot 5 \\cdot 4 = 120$ cách.',
+        tip: 'Nếu chỉ chọn 3 bạn đi trực nhật (không phân vai) thì dùng $C_6^3 = 20$.'
+      },
+      {
+        front: 'Hệ số của $x^3$ trong khai triển $(2x - 1)^5$ bằng bao nhiêu?',
+        back: 'Số hạng chứa $x^3$ ứng với $k=2$: $C_5^2 (2x)^3 (-1)^2 = 10 \\cdot 8 x^3 = 80x^3$. Hệ số là $80$.',
+        tip: 'Nhớ nâng cả hằng số $2$ lên lũy thừa $3$!'
+      }
+    ],
+    sampleProblems: [
+      {
+        source: 'SGK Toán 10 KNTT · Tổ hợp',
+        question: 'Một lớp có $18$ nam và $22$ nữ. Số cách chọn ra $1$ bạn nam và $1$ bạn nữ làm MC cho buổi lễ là:',
+        options: ['A. $40$', 'B. $396$', 'C. $792$', 'D. $18$'],
+        correctIndex: 1,
+        explanation: 'Chọn nam có $18$ cách, chọn nữ có $22$ cách. Theo quy tắc nhân: $18 \\cdot 22 = 396$ cách.'
+      },
+      {
+        source: 'SGK Toán 10 CTST · Chỉnh hợp số tự nhiên',
+        question: 'Từ các chữ số $1, 2, 3, 4, 5, 6$, lập được bao nhiêu số tự nhiên có $3$ chữ số đôi một khác nhau?',
+        options: ['A. $120$', 'B. $20$', 'C. $216$', 'D. $720$'],
+        correctIndex: 0,
+        explanation: 'Mỗi số là một chỉnh hợp chập $3$ của $6$ chữ số: $A_6^3 = 6 \\cdot 5 \\cdot 4 = 120$ số.'
+      }
+    ],
+    essayProblems: [
+      {
+        source: 'Toán 10 · Đếm bằng phần bù',
+        question: 'Một hộp có $6$ bi đỏ và $4$ bi xanh. Lấy ngẫu nhiên đồng thời $4$ bi. Có bao nhiêu cách lấy được ít nhất $1$ bi đỏ?',
+        hints: ['Tính tổng số cách lấy $4$ bi bất kỳ $C_{10}^4$, trừ đi số cách chỉ toàn bi xanh $C_4^4$.'],
+        solutionSteps: [
+          'Bước 1: Tổng số cách chọn $4$ bi bất kỳ từ $10$ bi: $C_{10}^4 = 210$ cách.',
+          'Bước 2: Số cách chọn $4$ bi mà KHÔNG có bi đỏ nào (cả 4 đều xanh): $C_4^4 = 1$ cách.',
+          'Bước 3: Số cách thỏa mãn yêu cầu: $210 - 1 = 209$ cách.'
+        ],
+        finalAnswer: '$209$ cách.'
+      }
+    ],
+    sim2dMode: 'grapher',
+    sim3dMode: 'pyramid_section',
+    defaultGraphConfig: {
+      type: 'quadratic',
+      params: { a: 0.5, b: -0.5, c: 0, d: 0 },
+      color: '#a855f7',
+      name: 'Hàm bậc hai C_n^2 = n(n-1)/2'
+    }
+  },
+  {
+    id: 'math-10-8',
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 10',
+    title: 'Ba Đường Conic (Elip, Hypebol, Parabol) trong Mặt phẳng Tọa độ Oxy',
+    grade: 'Lớp 10 · Hình học tọa độ',
+    category: 'Hình học',
+    difficulty: 'Vận dụng',
+    readTimeMinutes: 16,
+    description:
+      'Phương trình chính tắc của Elip, Hypebol, Parabol; cách xác định tiêu điểm, tiêu cự, bán trục lớn/nhỏ và trực quan hóa 3D mặt nón cắt bởi mặt phẳng.',
+    mnemonics: [
+      'Elip ($a>b>0$): $\\frac{x^2}{a^2}+\\frac{y^2}{b^2}=1$, $a^2 = b^2 + c^2$.',
+      'Hypebol: $\\frac{x^2}{a^2}-\\frac{y^2}{b^2}=1$, $c^2 = a^2 + b^2$ (Chú ý $c$ là cạnh huyền lớn nhất!).',
+      'Parabol chính tắc: $y^2 = 2px$ ($p>0$), tiêu điểm $F(\\frac{p}{2}; 0)$, đường chuẩn $\\Delta: x = -\\frac{p}{2}$.'
+    ],
+    commonTraps: [
+      'Nhầm lẫn quan hệ $a, b, c$ giữa Elip ($a$ lớn nhất: $a^2=b^2+c^2$) và Hypebol ($c$ lớn nhất: $c^2=a^2+b^2$).',
+      'Quên chia $2$ khi đọc $2p$ trong phương trình Parabol $y^2 = 2px$ để tìm tiêu điểm $F(p/2; 0)$.'
+    ],
+    theory: [
+      '1. Elip $(E)$: Tập hợp điểm $M$ sao cho $MF_1 + MF_2 = 2a$ ($2a > 2c = F_1F_2$). Phương trình chính tắc: $\\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1$ ($b^2 = a^2 - c^2$). Trục lớn $2a$, trục nhỏ $2b$, tiêu cự $2c$, tâm sai $e = \\frac{c}{a} < 1$.',
+      '2. Hypebol $(H)$: Tập hợp điểm $M$ sao cho $|MF_1 - MF_2| = 2a$ ($2a < 2c$). Phương trình chính tắc: $\\frac{x^2}{a^2} - \\frac{y^2}{b^2} = 1$ ($c^2 = a^2 + b^2$). Tâm sai $e = \\frac{c}{a} > 1$.',
+      '3. Parabol $(P)$: Tập hợp điểm $M$ cách đều tiêu điểm $F(\\frac{p}{2}; 0)$ và đường chuẩn $\\Delta: x = -\\frac{p}{2}$. Phương trình chính tắc: $y^2 = 2px$ ($p > 0$).',
+      '4. Ý nghĩa 3D: Cả ba đường Elip, Parabol, Hypebol đều sinh ra khi dùng một mặt phẳng cắt mặt nón tròn xoay theo các góc nghiêng khác nhau.'
+    ],
+    keyFormulas: [
+      '(E): \\frac{x^2}{a^2}+\\frac{y^2}{b^2}=1, \\quad c=\\sqrt{a^2-b^2}',
+      '(H): \\frac{x^2}{a^2}-\\frac{y^2}{b^2}=1, \\quad c=\\sqrt{a^2+b^2}',
+      '(P): y^2 = 2px, \\quad F\\left(\\frac{p}{2};0\\right), \\quad \\Delta: x = -\\frac{p}{2}'
+    ],
+    flashcards: [
+      {
+        front: 'Cho Elip $(E): \\frac{x^2}{25} + \\frac{y^2}{9} = 1$. Tiêu cự $2c$ của $(E)$ bằng bao nhiêu?',
+        back: '$a^2 = 25, b^2 = 9 \\implies c = \\sqrt{25 - 9} = 4 \\implies$ tiêu cự $2c = 8$.',
+        tip: 'Hai tiêu điểm là $F_1(-4;0)$ và $F_2(4;0)$.'
+      },
+      {
+        front: 'Cho Parabol $(P): y^2 = 8x$. Tọa độ tiêu điểm $F$ là?',
+        back: '$2p = 8 \\implies p = 4 \\implies \\frac{p}{2} = 2$. Vậy $F(2; 0)$.',
+        tip: 'Đường chuẩn của $(P)$ là $x = -2$.'
+      }
+    ],
+    sampleProblems: [
+      {
+        source: 'SGK Toán 10 KNTT · Đường Elip',
+        question: 'Elip có độ dài trục lớn bằng $10$ và tiêu cự bằng $6$ có phương trình chính tắc là:',
+        options: [
+          'A. $\\frac{x^2}{25} + \\frac{y^2}{16} = 1$',
+          'B. $\\frac{x^2}{100} + \\frac{y^2}{36} = 1$',
+          'C. $\\frac{x^2}{25} + \\frac{y^2}{9} = 1$',
+          'D. $\\frac{x^2}{16} + \\frac{y^2}{25} = 1$'
+        ],
+        correctIndex: 0,
+        explanation: '$2a = 10 \\implies a = 5$; $2c = 6 \\implies c = 3$. Do đó $b^2 = a^2 - c^2 = 25 - 9 = 16$. Phương trình là $\\frac{x^2}{25} + \\frac{y^2}{16} = 1$.'
+      },
+      {
+        source: 'SGK Toán 10 · Hypebol',
+        question: 'Hypebol $(H): \\frac{x^2}{16} - \\frac{y^2}{9} = 1$ có hai tiêu điểm là:',
+        options: ['A. $(\\pm 5; 0)$', 'B. $(\\pm \\sqrt{7}; 0)$', 'C. $(0; \\pm 5)$', 'D. $(\\pm 4; 0)$'],
+        correctIndex: 0,
+        explanation: 'Với Hypebol: $c^2 = a^2 + b^2 = 16 + 9 = 25 \\implies c = 5$. Hai tiêu điểm là $F_{1,2}(\\pm 5; 0)$.'
+      }
+    ],
+    essayProblems: [
+      {
+        source: 'Toán 10 · Thiết kế cổng vòm Elip',
+        question:
+          'Một cổng vòm hình nửa Elip có chiều rộng chân cổng là $12\\text{ m}$ và chiều cao ở chính giữa là $4\\text{ m}$. Một xe tải rộng $6\\text{ m}$ muốn đi qua chính giữa cổng thì chiều cao tối đa của xe là bao nhiêu?',
+        hints: ['Đặt hệ trục tại tâm đáy cổng: $2a = 12 \\implies a=6$, $b=4$. Thay $x = 3$ (nửa chiều rộng xe) để tìm $y$.'],
+        solutionSteps: [
+          'Bước 1: Phương trình nửa Elip trên: $\\frac{x^2}{36} + \\frac{y^2}{16} = 1$ ($y \\ge 0$).',
+          'Bước 2: Xe rộng $6\\text{ m}$ đi chính giữa nên mép xe ứng với $x = \\pm 3$.',
+          'Bước 3: Thay $x = 3$: $\\frac{9}{36} + \\frac{y^2}{16} = 1 \\implies \\frac{y^2}{16} = \\frac{3}{4} \\implies y = 2\\sqrt{3} \\approx 3{,}46\\text{ m}$.'
+        ],
+        finalAnswer: 'Chiều cao tối đa của xe tải là $2\\sqrt{3}\\text{ m} \\approx 3{,}46\\text{ m}$.'
+      }
+    ],
+    sim2dMode: 'geometry',
+    sim3dMode: 'conic_sections_3d'
+  },
+  {
+    id: 'math-11-9',
+    track: 'khong_chuyen',
+    gradeGroup: 'Lớp 11',
+    title: 'Quy tắc Tính Đạo hàm, Đạo hàm Hàm hợp & Tiếp tuyến Đồ thị (Lớp 11)',
+    grade: 'Lớp 11 · Giải tích',
+    category: 'Giải tích',
+    difficulty: 'Thông hiểu',
+    readTimeMinutes: 17,
+    description:
+      'Bảng đạo hàm sơ cấp chuẩn xác, quy tắc tính đạo hàm tích/thương/hàm hợp $f(u(x))$, ý nghĩa vật lí (vận tốc tức thời) và phương trình tiếp tuyến $y = f\'(x_0)(x - x_0) + f(x_0)$.',
+    mnemonics: [
+      'Đạo hàm hàm hợp: $(f(u))\' = f\'(u) \\cdot u\'$ — luôn nhân thêm $u\'$ ở đuôi!',
+      'Phân thức bậc nhất: $\\left(\\frac{ax+b}{cx+d}\\right)\' = \\frac{ad - bc}{(cx+d)^2}$ (tính nhanh bằng định thức chéo).'
+    ],
+    commonTraps: [
+      'Quên nhân $u\'$ khi lấy đạo hàm của $\\sin(2x+1)$, $\\sqrt{u}$ hay $(ax+b)^n$.',
+      'Nhầm hệ số góc tiếp tuyến $k = f\'(x_0)$ với giá trị tung độ tiếp điểm $y_0 = f(x_0)$.'
+    ],
+    theory: [
+      '1. Định nghĩa & Ý nghĩa: $f\'(x_0) = \\lim_{\\Delta x \\to 0}\\frac{f(x_0+\\Delta x)-f(x_0)}{\\Delta x}$ là hệ số góc của tiếp tuyến tại $M(x_0; f(x_0))$ và là vận tốc tức thời $v(t) = s\'(t)$ (gia tốc $a(t) = v\'(t) = s\'\'(t)$).',
+      '2. Các quy tắc: $(u\\pm v)\' = u\' \\pm v\'$; $(uv)\' = u\'v + uv\'$; $\\left(\\frac{u}{v}\\right)\' = \\frac{u\'v - uv\'}{v^2}$.',
+      '3. Bảng đạo hàm hàm hợp thường gặp: $(u^n)\' = n u^{n-1} u\'$; $(\\sqrt{u})\' = \\frac{u\'}{2\\sqrt{u}}$; $(\\sin u)\' = u\'\\cos u$; $(\\cos u)\' = -u\'\\sin u$; $(e^u)\' = u\'e^u$; $(\\ln u)\' = \\frac{u\'}{u}$.',
+      '4. Phương trình tiếp tuyến tại tiếp điểm $M(x_0; y_0)$: $y = f\'(x_0)(x - x_0) + y_0$. Nếu đề cho tiếp tuyến song song $y = kx + b$ thì giải $f\'(x_0) = k$ (nhớ loại tiếp tuyến trùng đường thẳng đã cho).'
+    ],
+    keyFormulas: [
+      '(u \\cdot v)\' = u\'v + uv\', \\quad \\left(\\frac{u}{v}\\right)\' = \\frac{u\'v - uv\'}{v^2}',
+      '(\\sqrt{u})\' = \\frac{u\'}{2\\sqrt{u}}, \\quad (\\sin u)\' = u\'\\cos u, \\quad (\\cos u)\' = -u\'\\sin u',
+      'y_{\\text{tiếp tuyến}} = f\'(x_0)(x - x_0) + f(x_0)'
+    ],
+    flashcards: [
+      {
+        front: 'Đạo hàm của hàm số $y = \\sqrt{x^2 + 1}$ là?',
+        back: '$y\' = \\frac{(x^2+1)\'}{2\\sqrt{x^2+1}} = \\frac{2x}{2\\sqrt{x^2+1}} = \\frac{x}{\\sqrt{x^2+1}}$.',
+        tip: 'Rút gọn số 2 ở tử và mẫu ngay.'
+      },
+      {
+        front: 'Viết công thức gia tốc tức thời theo quãng đường $s(t)$?',
+        back: 'Vận tốc $v(t) = s\'(t)$; gia tốc $a(t) = v\'(t) = s\'\'(t)$ (đạo hàm cấp hai).',
+        tip: 'Ứng dụng trực tiếp vào bài toán chuyển động trong Vật lí 10–11.'
+      }
+    ],
+    sampleProblems: [
+      {
+        source: 'SGK Toán 11 KNTT · Đạo hàm hàm hợp',
+        question: 'Đạo hàm của hàm số $y = \\sin(3x - \\frac{\\pi}{4})$ là:',
+        options: [
+          'A. $3\\cos\\left(3x - \\frac{\\pi}{4}\\right)$',
+          'B. $\\cos\\left(3x - \\frac{\\pi}{4}\\right)$',
+          'C. $-3\\cos\\left(3x - \\frac{\\pi}{4}\\right)$',
+          'D. $-3\\sin\\left(3x - \\frac{\\pi}{4}\\right)$'
+        ],
+        correctIndex: 0,
+        explanation: 'Áp dụng $(\\sin u)\' = u\'\\cos u$ với $u = 3x - \\frac{\\pi}{4}$, $u\' = 3$, suy ra $y\' = 3\\cos(3x - \\frac{\\pi}{4})$.'
+      },
+      {
+        source: 'SGK Toán 11 · Tiếp tuyến đồ thị',
+        question: 'Phương trình tiếp tuyến của đồ thị $(C): y = x^3 - 3x + 1$ tại điểm có hoành độ $x_0 = 2$ là:',
+        options: ['A. $y = 9x - 15$', 'B. $y = 9x + 3$', 'C. $y = 3x - 3$', 'D. $y = 9x - 21$'],
+        correctIndex: 0,
+        explanation: '$y_0 = 2^3 - 6 + 1 = 3$; $y\' = 3x^2 - 3 \\implies k = y\'(2) = 9$. Tiếp tuyến: $y = 9(x - 2) + 3 = 9x - 15$.'
+      }
+    ],
+    essayProblems: [
+      {
+        source: 'Toán 11 · Tiếp tuyến song song đường thẳng',
+        question:
+          'Viết phương trình tiếp tuyến của đồ thị hàm số $y = \\frac{x + 1}{x - 1}$ biết tiếp tuyến đó song song với đường thẳng $\\Delta: 2x + y - 5 = 0$.',
+        hints: ['Viết $\\Delta: y = -2x + 5$ nên $f\'(x_0) = -2$.'],
+        solutionSteps: [
+          'Bước 1: Đường thẳng $\\Delta$ có hệ số góc $k = -2$. Đạo hàm $y\' = \\frac{-1 - 1}{(x-1)^2} = \\frac{-2}{(x-1)^2}$.',
+          'Bước 2: Tiếp tuyến song song $\\Delta \\implies f\'(x_0) = -2 \\iff \\frac{-2}{(x_0-1)^2} = -2 \\iff (x_0-1)^2 = 1 \\iff x_0 = 2$ hoặc $x_0 = 0$.',
+          'Bước 3: Với $x_0 = 2 \\implies y_0 = 3$: tiếp tuyến $y = -2(x-2)+3 = -2x + 7$ (thỏa mãn $\\ne \\Delta$).',
+          'Bước 4: Với $x_0 = 0 \\implies y_0 = -1$: tiếp tuyến $y = -2x - 1$ (thỏa mãn).'
+        ],
+        finalAnswer: 'Có hai tiếp tuyến: $y = -2x + 7$ và $y = -2x - 1$.'
+      }
+    ],
+    sim2dMode: 'grapher',
+    sim3dMode: 'integral_disks_3d',
+    defaultGraphConfig: {
+      type: 'cubic',
+      params: { a: 1, b: 0, c: -3, d: 1 },
+      color: '#f59e0b',
+      name: 'y = x³ - 3x + 1 & Tiếp tuyến tại x₀'
+    }
   }
 ];
 

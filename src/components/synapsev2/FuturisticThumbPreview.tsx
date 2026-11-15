@@ -318,6 +318,57 @@ export const FuturisticThumbPreview: React.FC<FuturisticThumbPreviewProps> = ({
             ))}
           </g>
         );
+      case 'lhc_collider':
+        return (
+          <g>
+            <circle cx="160" cy="76" r="46" fill="none" stroke="#38bdf8" strokeWidth="2" strokeDasharray="6 4" className="holo-orbit-cw" />
+            <circle cx="160" cy="76" r="30" fill="none" stroke="#f59e0b" strokeWidth="1.8" />
+            <line x1="48" y1="76" x2="148" y2="76" stroke="#38bdf8" strokeWidth="2.4" className="holo-dash" />
+            <line x1="272" y1="76" x2="172" y2="76" stroke="#f43f5e" strokeWidth="2.4" className="holo-dash" />
+            <path d="M 160 76 Q 190 42 224 44" fill="none" stroke="#34d399" strokeWidth="1.6" className="holo-dash" />
+            <path d="M 160 76 Q 130 110 96 106" fill="none" stroke="#fbbf24" strokeWidth="1.6" className="holo-dash" />
+            <path d="M 160 76 Q 192 108 228 112" fill="none" stroke="#f472b6" strokeWidth="1.6" className="holo-dash" />
+            <circle cx="160" cy="76" r="9" fill="#fef08a" fillOpacity="0.75" className="holo-ring-pulse" />
+          </g>
+        );
+      case 'laser_interferometer':
+        return (
+          <g>
+            <rect x="44" y="68" width="34" height="16" rx="3" fill="#1e293b" stroke="#34d399" strokeWidth="1.6" />
+            <line x1="78" y1="76" x2="132" y2="76" stroke="#10b981" strokeWidth="2.8" className="holo-dash" />
+            <line x1="132" y1="34" x2="132" y2="62" stroke="#94a3b8" strokeWidth="3.2" />
+            <line x1="132" y1="70" x2="132" y2="82" stroke="#94a3b8" strokeWidth="3.2" />
+            <line x1="132" y1="90" x2="132" y2="118" stroke="#94a3b8" strokeWidth="3.2" />
+            <path d="M 134 66 Q 176 42 246 42" fill="none" stroke="#34d399" strokeWidth="1.6" className="holo-dash" />
+            <path d="M 134 86 Q 176 110 246 110" fill="none" stroke="#22d3ee" strokeWidth="1.6" className="holo-dash" />
+            <path d="M 134 66 Q 186 76 246 76" fill="none" stroke="#10b981" strokeWidth="2" className="holo-dash" />
+            {[42, 58, 76, 94, 110].map((y, idx) => (
+              <rect
+                key={y}
+                x="248"
+                y={y - 5}
+                width="6"
+                height="10"
+                rx="2"
+                fill={idx === 2 ? '#10b981' : '#22d3ee'}
+                fillOpacity={idx === 2 ? 0.95 : 0.65}
+                className="holo-ring-pulse"
+              />
+            ))}
+          </g>
+        );
+      case 'tesla_electromagnet':
+        return (
+          <g>
+            <rect x="148" y="64" width="24" height="58" rx="3" fill="#ea580c" fillOpacity="0.28" stroke="#fb923c" strokeWidth="1.8" />
+            <ellipse cx="160" cy="54" rx="28" ry="10" fill="#cbd5e1" fillOpacity="0.32" stroke="#e2e8f0" strokeWidth="2" />
+            <ellipse cx="160" cy="122" rx="44" ry="10" fill="none" stroke="#f59e0b" strokeWidth="1.8" />
+            <polyline points="134,52 104,38 88,54 68,46" fill="none" stroke="#c084fc" strokeWidth="2.2" className="holo-dash" />
+            <polyline points="186,52 216,36 232,54 252,44" fill="none" stroke="#38bdf8" strokeWidth="2.2" className="holo-dash" />
+            <ellipse cx="160" cy="86" rx="56" ry="30" fill="none" stroke="#38bdf8" strokeWidth="1.3" strokeDasharray="4 4" className="holo-orbit-cw" />
+            <circle cx="160" cy="54" r="7" fill="#c084fc" className="holo-ring-pulse" />
+          </g>
+        );
     }
   };
 

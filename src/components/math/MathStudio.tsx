@@ -84,47 +84,47 @@ export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
         <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
           <button
             onClick={() => setActiveTab('lectures')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+            className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
               activeTab === 'lectures'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+            <BookOpen className="w-3.5 h-3.5 text-amber-500 icon-anim-book" />
             <span>{t('math.tab.lectures', 'Bài giảng & Bài tập', 'Lectures & Practice')}</span>
           </button>
           <button
             onClick={() => setActiveTab('grapher')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+            className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
               activeTab === 'grapher'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            <LineChart className="w-3.5 h-3.5 text-indigo-500" />
-            <span>{t('math.tab.grapher', 'Đồ thị Oxy 2D', '2D Grapher')}</span>
+            <LineChart className="w-3.5 h-3.5 text-indigo-500 icon-anim-wave" />
+            <span>{t('math.tab.grapher', 'Mô phỏng 2D · Đồ thị', '2D Grapher')}</span>
           </button>
           <button
             onClick={() => setActiveTab('geometry')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+            className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
               activeTab === 'geometry'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            <Shapes className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{t('math.tab.geometry', 'Hình học phẳng 2D', '2D Geometry')}</span>
+            <Shapes className="w-3.5 h-3.5 text-emerald-500 icon-anim-compass" />
+            <span>{t('math.tab.geometry', 'Mô phỏng 2D · Hình học', '2D Geometry')}</span>
           </button>
           <button
             onClick={() => setActiveTab('math3d')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+            className={`group sim-btn-3d flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
               activeTab === 'math3d'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            <Box className="w-3.5 h-3.5 text-blue-500" />
-            <span>{t('math.tab.3d', 'Mô phỏng 3D Oxyz', '3D Oxyz Spatial')}</span>
+            <Box className="w-3.5 h-3.5 text-blue-500 icon-anim-3d-cube" />
+            <span>{t('math.tab.3d', 'Mô phỏng 3D · Oxyz', '3D Oxyz Spatial')}</span>
           </button>
         </div>
       </div>

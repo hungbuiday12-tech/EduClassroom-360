@@ -20,7 +20,10 @@ export type MonumentId =
   | 'supercomputer_torus'
   | 'cpu_pipeline_core'
   | 'blockchain_zk_lattice'
-  | 'graph_dijkstra_citadel';
+  | 'graph_dijkstra_citadel'
+  | 'lhc_collider'
+  | 'laser_interferometer'
+  | 'tesla_electromagnet';
 
 export type MonumentCategory = 'cosmos' | 'cs' | 'physics' | 'math' | 'future_tech';
 
@@ -682,6 +685,96 @@ export const MONUMENT_CATALOG: MonumentDefinition[] = [
     relatedSubject: 'cs',
     relatedLabelVi: 'Mở Mô phỏng Đồ thị 2D/3D',
     relatedLabelEn: 'Open Graph Algo Visualizer'
+  },
+  {
+    id: 'lhc_collider',
+    index: 21,
+    code: '21 · CERN LHC ATLAS',
+    category: 'physics',
+    categoryLabelVi: 'Vật lí & Năng lượng',
+    categoryLabelEn: 'Physics & Energy',
+    tierBadge: 'Particle Accelerator 3D',
+    titleVi: 'Máy Gia Tốc Hạt Lớn LHC & Buồng Va Chạm Toroidal',
+    titleEn: 'Large Hadron Collider & Toroidal Particle Detector',
+    subtitleVi: 'Chùm proton 14 TeV · 8 Cuộn nam châm siêu dẫn & Vệt phân rã Higgs',
+    subtitleEn: '14 TeV Proton Beams · 8 Superconducting Toroids & Higgs Decay Tracks',
+    descriptionVi:
+      'Mô phỏng máy gia tốc hạt va chạm trực diện hai chùm proton ngược chiều qua hệ thống 8 cuộn nam châm siêu dẫn D-coil, quan sát quỹ đạo hạt uốn cong theo lực Lorentz q(v×B).',
+    descriptionEn:
+      'Interactive particle collider accelerating counter-rotating proton bunches into head-on collisions inside 8 superconducting toroid magnets curving decay trajectories.',
+    accentHex: '#38bdf8',
+    secondaryHex: '#f43f5e',
+    primaryLabelVi: 'Năng lượng Va chạm',
+    primaryLabelEn: 'Beam Energy',
+    primaryUnit: 'TeV',
+    primaryRange: [2, 14, 13],
+    secondaryLabelVi: 'Từ trường Siêu dẫn B',
+    secondaryLabelEn: 'Toroidal Magnetic Field',
+    secondaryUnit: 'T',
+    secondaryRange: [2, 12, 8],
+    relatedSubject: 'physics',
+    relatedLabelVi: 'Mở Phòng Thí Nghiệm Vật lí',
+    relatedLabelEn: 'Open Physics Simulation Lab'
+  },
+  {
+    id: 'laser_interferometer',
+    index: 22,
+    code: '22 · QUANTUM OPTICS',
+    category: 'physics',
+    categoryLabelVi: 'Vật lí & Năng lượng',
+    categoryLabelEn: 'Physics & Energy',
+    tierBadge: 'Wave-Particle Optics Bench',
+    titleVi: 'Giao Thoa Kế Laser & Thí Nghiệm Khe Kép Lượng Tử',
+    titleEn: 'Laser Interferometer & Quantum Double-Slit Bench',
+    subtitleVi: 'Sóng giao thoa 3D thời gian thực · Phổ bước sóng λ (400–700nm)',
+    subtitleEn: 'Live 3D Wave Superposition · Tunable Wavelength λ & Interference Fringes',
+    descriptionVi:
+      'Bàn quang học chính xác với tia laser đơn sắc thay đổi màu sắc theo bước sóng λ, đi qua khe kép d tạo mặt sóng giao thoa 3D và các vân sáng/tối trên màn hứng.',
+    descriptionEn:
+      'Precision optical bench emitting tunable laser wavelengths through an adjustable double-slit aperture to generate real-time 3D wave interference and detector fringes.',
+    accentHex: '#10b981',
+    secondaryHex: '#22d3ee',
+    primaryLabelVi: 'Bước sóng Laser (λ)',
+    primaryLabelEn: 'Laser Wavelength (λ)',
+    primaryUnit: 'nm',
+    primaryRange: [400, 700, 532],
+    secondaryLabelVi: 'Khoảng cách 2 khe (d)',
+    secondaryLabelEn: 'Slit Separation (d)',
+    secondaryUnit: 'µm',
+    secondaryRange: [10, 60, 28],
+    relatedSubject: 'physics',
+    relatedLabelVi: 'Mở Mô phỏng Sóng & Quang học',
+    relatedLabelEn: 'Open Wave & Optics Lab'
+  },
+  {
+    id: 'tesla_electromagnet',
+    index: 23,
+    code: '23 · TESLA RESONANT',
+    category: 'physics',
+    categoryLabelVi: 'Vật lí & Năng lượng',
+    categoryLabelEn: 'Physics & Energy',
+    tierBadge: 'High-Voltage EM Tower',
+    titleVi: 'Tháp Cộng Hưởng Tesla & Trường Điện Từ Cao Áp',
+    titleEn: 'Resonant Tesla Coil & High-Voltage EM Field Tower',
+    subtitleVi: 'Cảm ứng LC cộng hưởng · Hồ quang Plasma & Đường sức lưỡng cực',
+    subtitleEn: 'LC Resonant Induction · Jagged Plasma Arcs & Dipole EM Flux Lines',
+    descriptionVi:
+      'Biến áp cộng hưởng cao áp với cuộn sơ cấp đồng phẳng, tháp thứ cấp và vành phóng điện cực đại tạo tia sét plasma cao áp và quỹ đạo ion dọc đường sức điện từ.',
+    descriptionEn:
+      'High-voltage resonant transformer featuring copper primary pancake windings, quartz-shielded secondary tower, live branching plasma discharges, and dipole EM flux.',
+    accentHex: '#a855f7',
+    secondaryHex: '#38bdf8',
+    primaryLabelVi: 'Tần số Cộng hưởng LC',
+    primaryLabelEn: 'Resonant Frequency',
+    primaryUnit: 'kHz',
+    primaryRange: [50, 400, 180],
+    secondaryLabelVi: 'Hiệu điện thế Đỉnh',
+    secondaryLabelEn: 'Peak Discharge Voltage',
+    secondaryUnit: 'kV',
+    secondaryRange: [50, 500, 320],
+    relatedSubject: 'physics',
+    relatedLabelVi: 'Mở Mô phỏng Điện Từ học',
+    relatedLabelEn: 'Open Electromagnetism Lab'
   }
 ];
 
@@ -1065,6 +1158,65 @@ export function computeTelemetry(id: MonumentId, p: SynapseV2Params): MonumentTe
         metric3Value: `O(E log V) · ${wave}%`,
         statusVi: 'SÓNG DIJKSTRA ĐANG TÌM CÂY KHUNG MST',
         statusEn: 'DIJKSTRA SHORTEST-PATH WAVE ACTIVE'
+      };
+    }
+    case 'lhc_collider': {
+      const tev = Math.round(p.primaryParam);
+      const bT = Math.round(p.secondaryParam);
+      const lorentzGamma = Math.round((tev * 1000) / 0.938 / 2);
+      const bendR = ((tev * 3.3356) / Math.max(1, bT) / 2).toFixed(2);
+      return {
+        metric1LabelVi: 'Hệ số Tương đối (γ)',
+        metric1LabelEn: 'Lorentz Factor (γ)',
+        metric1Value: `${lorentzGamma.toLocaleString()}`,
+        metric2LabelVi: 'Bán kính Larmor (B)',
+        metric2LabelEn: 'Dipole Bend Radius',
+        metric2Value: `${bendR} km`,
+        metric3LabelVi: 'Vận tốc Chùm Proton',
+        metric3LabelEn: 'Proton Velocity',
+        metric3Value: '0.99999999 c',
+        statusVi: tev >= 12 ? 'VA CHẠM NĂNG LƯỢNG CAO · HIGGS PEAK' : 'ĐỒNG BỘ GIA TỐC SYNCHROTRON',
+        statusEn: tev >= 12 ? 'HIGH-ENERGY COLLISION · HIGGS PEAK' : 'SYNCHROTRON BEAM LOCKED'
+      };
+    }
+    case 'laser_interferometer': {
+      const lambdaNm = Math.round(p.primaryParam);
+      const slitUm = Math.round(p.secondaryParam);
+      const photonEv = (1239.84 / Math.max(1, lambdaNm)).toFixed(2);
+      const fringeAngle = (((lambdaNm * 1e-3) / Math.max(1, slitUm)) * (180 / Math.PI)).toFixed(2);
+      const freqThz = Math.round(299792 / Math.max(1, lambdaNm));
+      return {
+        metric1LabelVi: 'Năng lượng Photon (hf)',
+        metric1LabelEn: 'Photon Energy (hf)',
+        metric1Value: `${photonEv} eV`,
+        metric2LabelVi: 'Góc Vân Giao Thoa Δθ',
+        metric2LabelEn: 'Fringe Spacing Δθ',
+        metric2Value: `${fringeAngle}°`,
+        metric3LabelVi: 'Tần số Sóng Ánh sáng',
+        metric3LabelEn: 'Optical Frequency',
+        metric3Value: `${freqThz} THz`,
+        statusVi: 'GIAO THOA SÓNG ĐỒNG BỘ · VÂN RÕ NÉT',
+        statusEn: 'COHERENT INTERFERENCE LOCKED'
+      };
+    }
+    case 'tesla_electromagnet': {
+      const khz = Math.round(p.primaryParam);
+      const kv = Math.round(p.secondaryParam);
+      const arcDistM = (kv / 300).toFixed(2);
+      const eFieldKvM = Math.round(kv * 2.4);
+      const powerMw = ((kv * khz) / 950).toFixed(1);
+      return {
+        metric1LabelVi: 'Cường độ Điện trường',
+        metric1LabelEn: 'Peak Electric Field',
+        metric1Value: `${eFieldKvM} kV/m`,
+        metric2LabelVi: 'Tầm Phóng Hồ quang',
+        metric2LabelEn: 'Arc Discharge Span',
+        metric2Value: `${arcDistM} m`,
+        metric3LabelVi: 'Công suất Xung Cộng hưởng',
+        metric3LabelEn: 'Peak Pulse Power',
+        metric3Value: `${powerMw} MW`,
+        statusVi: kv >= 350 ? 'PHÓNG ĐIỆN PLASMA VƯỢT NGƯỠNG' : 'CỘNG HƯỞNG LC ỔN ĐỊNH',
+        statusEn: kv >= 350 ? 'HIGH-VOLTAGE CORONA BREAKDOWN' : 'LC RESONANCE SYNCHRONIZED'
       };
     }
   }

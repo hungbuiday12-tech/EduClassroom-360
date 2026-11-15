@@ -48,9 +48,9 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 flex items-center justify-between gap-1.5 sm:gap-4 lg:gap-6 h-14 sm:h-16">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 h-14 sm:h-16">
         {/* Zone 1: Back History button + Brand Wordmark */}
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {canGoBack && (
             <button
               onClick={goBack}
@@ -59,44 +59,34 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label={`Quay lại ${prevLabel}`}
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{language === 'en' ? 'Back' : 'Quay lại'}</span>
+              <span className="hidden sm:inline whitespace-nowrap">{language === 'en' ? 'Back' : 'Quay lại'}</span>
             </button>
           )}
           <button
             onClick={goClassroom}
-            className="text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 truncate max-w-[130px] sm:max-w-none hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1 sm:px-1.5 py-1 rounded-lg"
+            className="text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap truncate max-w-[130px] sm:max-w-none hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1 sm:px-1.5 py-1 rounded-lg shrink-0"
           >
             EduClassroom 360
           </button>
         </div>
 
         {/* Zone 2: Concise single-line nav links */}
-        <nav className="hidden lg:flex items-center gap-4 text-sm font-medium">
+        <nav className="hidden xl:flex items-center gap-3.5 text-sm font-medium min-w-0">
           <button
-            onClick={goClassroom}
+            onClick={() => onSelectSubject('roadmap')}
             className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
-              currentSubject === 'overview'
+              currentSubject === 'roadmap'
                 ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            {t('nav.classroom', 'Lớp học', 'Classroom')}
-          </button>
-          <button
-            onClick={() => onSelectSubject('roadmap')}
-            className={`whitespace-nowrap shrink-0 transition-colors ${
-              currentSubject === 'roadmap'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
-          >
-            {t('nav.roadmap', 'Lộ trình', 'Roadmap')}
+            {t('nav.roadmap', 'Lộ trình học', 'Roadmap')}
           </button>
           <button
             onClick={() => onSelectSubject('math')}
-            className={`whitespace-nowrap shrink-0 transition-colors ${
+            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
               currentSubject === 'math'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
@@ -104,9 +94,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectSubject('physics')}
-            className={`whitespace-nowrap shrink-0 transition-colors ${
+            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
               currentSubject === 'physics'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
@@ -114,9 +104,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectSubject('cs')}
-            className={`whitespace-nowrap shrink-0 transition-colors ${
+            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
               currentSubject === 'cs'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
@@ -124,19 +114,19 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectSubject('exams')}
-            className={`whitespace-nowrap shrink-0 transition-colors ${
+            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
               currentSubject === 'exams'
-                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+                ? 'text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50/70 dark:bg-indigo-950/40'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            {t('nav.exams', 'Đề Thi', 'Exams')}
+            {language === 'en' ? 'Exams' : 'Đề Thi'}
           </button>
           <button
             onClick={() => onSelectSubject('arena')}
-            className={`whitespace-nowrap shrink-0 transition-colors ${
+            className={`whitespace-nowrap shrink-0 px-2 py-1 rounded-lg transition-colors ${
               currentSubject === 'arena'
-                ? 'text-amber-600 dark:text-amber-400 font-bold'
+                ? 'text-amber-600 dark:text-amber-400 font-bold bg-amber-50/70 dark:bg-amber-950/40'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
@@ -301,47 +291,41 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Mobile Navigation bar */}
-      <div className="lg:hidden flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto text-xs font-medium gap-2">
-        <button
-          onClick={goClassroom}
-          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'overview' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
-        >
-          {t('nav.classroom', 'Lớp học', 'Classroom')}
-        </button>
+      {/* Mobile & Compact Laptop Navigation bar */}
+      <div className="xl:hidden flex items-center justify-start sm:justify-center px-3 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-x-auto text-xs font-medium gap-2">
         <button
           onClick={() => onSelectSubject('roadmap')}
-          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'roadmap' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
+          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'roadmap' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
         >
           {t('nav.roadmap', 'Lộ trình', 'Roadmap')}
         </button>
         <button
           onClick={() => onSelectSubject('math')}
-          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'math' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
+          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'math' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
         >
           {t('subject.math', 'Toán học', 'Math')}
         </button>
         <button
           onClick={() => onSelectSubject('physics')}
-          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'physics' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
+          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'physics' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
         >
           {t('subject.physics', 'Vật lí', 'Physics')}
         </button>
         <button
           onClick={() => onSelectSubject('cs')}
-          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'cs' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
+          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'cs' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
         >
           {t('subject.cs', 'Tin học', 'CS')}
         </button>
         <button
           onClick={() => onSelectSubject('exams')}
-          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'exams' ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}
+          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'exams' ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-500 dark:text-slate-400'}`}
         >
-          {t('nav.exams', 'Đề Thi', 'Exams')}
+          {language === 'en' ? 'Exams' : 'Đề Thi'}
         </button>
         <button
           onClick={() => onSelectSubject('arena')}
-          className={`px-2 py-1 whitespace-nowrap ${currentSubject === 'arena' ? 'text-amber-600 font-bold' : 'text-slate-500'}`}
+          className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 ${currentSubject === 'arena' ? 'text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/50' : 'text-slate-500 dark:text-slate-400'}`}
         >
           {t('nav.arena', 'Thi Đấu & BXH', 'Arena')}
         </button>

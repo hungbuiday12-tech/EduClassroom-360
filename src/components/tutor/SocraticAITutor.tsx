@@ -19,7 +19,10 @@ import {
   Clock,
   ArrowRight,
   BrainCircuit,
-  FileCheck2
+  FileCheck2,
+  Copy,
+  Check,
+  Bot
 } from 'lucide-react';
 import {
   AITutorMode,
@@ -129,9 +132,15 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         nameEn: 'Physics AI',
         badgeVi: 'Cơ · Điện · Quang · Lượng tử',
         badgeEn: 'Mechanics · Optics · Quantum',
-        colorClass: 'bg-amber-600 text-white border-amber-500',
-        softClass: 'bg-amber-500/15 text-amber-300 border-amber-400/30',
-        icon: <Zap className="w-3.5 h-3.5" />
+        colorClass: 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/25',
+        softClass: 'bg-amber-500/20 text-amber-300 border-amber-400/40',
+        headerGrad: 'from-slate-950 via-amber-950/90 to-slate-900',
+        auroraOrb: 'bg-[radial-gradient(ellipse_at_top_right,rgba(245,158,11,0.28),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(249,115,22,0.18),transparent_60%)]',
+        userBubble: 'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 text-white shadow-md shadow-amber-500/25',
+        sendBtn: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-lg shadow-amber-500/30',
+        accentRing: 'focus-within:ring-amber-400/60 focus-within:border-amber-400',
+        avatarRing: 'ring-amber-400/50 bg-gradient-to-br from-amber-500 to-orange-600 text-white',
+        icon: <Zap className="w-4 h-4" />
       };
     }
     if (subj === 'cs') {
@@ -140,9 +149,15 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         nameEn: 'CS & Code AI',
         badgeVi: 'Thuật toán · C++ · Python',
         badgeEn: 'Algorithms · C++ · Python',
-        colorClass: 'bg-emerald-600 text-white border-emerald-500',
-        softClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
-        icon: <Code2 className="w-3.5 h-3.5" />
+        colorClass: 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white border-emerald-400 shadow-md shadow-emerald-500/25',
+        softClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40',
+        headerGrad: 'from-slate-950 via-emerald-950/90 to-slate-900',
+        auroraOrb: 'bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.28),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(20,184,166,0.2),transparent_60%)]',
+        userBubble: 'bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-md shadow-emerald-500/25',
+        sendBtn: 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30',
+        accentRing: 'focus-within:ring-emerald-400/60 focus-within:border-emerald-400',
+        avatarRing: 'ring-emerald-400/50 bg-gradient-to-br from-emerald-500 to-teal-600 text-white',
+        icon: <Code2 className="w-4 h-4" />
       };
     }
     return {
@@ -150,9 +165,15 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       nameEn: 'Math AI',
       badgeVi: 'Đại số · Giải tích · Oxyz',
       badgeEn: 'Algebra · Calculus · Oxyz',
-      colorClass: 'bg-indigo-600 text-white border-indigo-500',
-      softClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-400/30',
-      icon: <Compass className="w-3.5 h-3.5" />
+      colorClass: 'bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 text-white border-indigo-400 shadow-md shadow-indigo-500/25',
+      softClass: 'bg-indigo-500/20 text-sky-300 border-indigo-400/40',
+      headerGrad: 'from-slate-950 via-indigo-950/95 to-slate-900',
+      auroraOrb: 'bg-[radial-gradient(ellipse_at_top_right,rgba(56,189,248,0.26),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(99,102,241,0.24),transparent_60%)]',
+      userBubble: 'bg-gradient-to-br from-indigo-600 via-violet-600 to-sky-600 text-white shadow-md shadow-indigo-500/25',
+      sendBtn: 'bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white shadow-lg shadow-indigo-500/30',
+      accentRing: 'focus-within:ring-indigo-400/60 focus-within:border-indigo-400',
+      avatarRing: 'ring-indigo-400/50 bg-gradient-to-br from-indigo-500 to-violet-600 text-white',
+      icon: <Compass className="w-4 h-4" />
     };
   };
 
@@ -262,6 +283,19 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   const [diagLoadingQuiz, setDiagLoadingQuiz] = useState(false);
   const [diagLoadingRoadmap, setDiagLoadingRoadmap] = useState(false);
   const [diagError, setDiagError] = useState<string | null>(null);
+  const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+
+  const handleCopyMessage = (msgId: string, text: string) => {
+    try {
+      navigator.clipboard?.writeText(text);
+      setCopiedMsgId(msgId);
+      window.setTimeout(() => {
+        setCopiedMsgId((prev) => (prev === msgId ? null : prev));
+      }, 1800);
+    } catch {
+      // Ignore clipboard failure
+    }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -612,13 +646,15 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     <div
       className={
         isFullscreen
-          ? 'fixed inset-0 z-[115] w-screen h-[100dvh] bg-white dark:bg-slate-950 flex flex-col overflow-hidden'
-          : 'fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] sm:w-[490px] md:w-[540px] h-[min(690px,86dvh)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden'
+          ? 'fixed inset-0 z-[115] w-screen h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden'
+          : 'fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] sm:w-[510px] md:w-[570px] h-[min(730px,88dvh)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/15 rounded-3xl shadow-[0_28px_80px_-16px_rgba(15,23,42,0.45)] dark:shadow-[0_28px_80px_-16px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden ring-1 ring-inset ring-white/50 dark:ring-white/10'
       }
     >
-      {/* Top Header */}
-      <div className="px-3 sm:px-4 py-2.5 bg-slate-900 dark:bg-slate-950 text-white border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+      {/* Top Modern Glass Aurora Header */}
+      <div className={`relative overflow-hidden px-3.5 sm:px-5 py-3 bg-gradient-to-r ${activeMeta.headerGrad} text-white border-b border-white/10 flex items-center justify-between gap-2.5 shrink-0`}>
+        <div aria-hidden="true" className={`absolute inset-0 pointer-events-none ${activeMeta.auroraOrb}`} />
+
+        <div className="relative z-10 flex items-center gap-2.5 min-w-0">
           <button
             onClick={() => {
               if (isFullscreen) {
@@ -630,39 +666,50 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                 onClose();
               }
             }}
-            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-indigo-600 border border-slate-700 text-xs font-bold text-sky-300 hover:text-white flex items-center gap-1 shrink-0 transition-colors"
+            className="group sheen-btn px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold text-sky-200 hover:text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
             title={isEn ? `Back to ${backLabel}` : `Quay lại ${backLabel}`}
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
             <span className="max-w-[130px] truncate">
               {isEn ? `Back (${backLabel})` : `Quay lại (${backLabel})`}
             </span>
           </button>
-          <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${activeMeta.softClass}`}>
-            {activeMeta.icon}
+
+          <div className="relative shrink-0">
+            <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center shadow-lg ${activeMeta.softClass}`}>
+              {activeMeta.icon}
+            </div>
+            <span
+              aria-hidden="true"
+              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-slate-950 animate-pulse"
+            />
           </div>
+
           <div className="min-w-0">
-            <h3 className="text-xs sm:text-sm font-bold truncate">
-              {isEn ? `${activeMeta.nameEn} · 3-Mode Assistant` : `${activeMeta.nameVi} · Trợ Giảng 3 Chế Độ`}
-            </h3>
-            <p className="text-[11px] text-slate-400 truncate">
-              {isEn ? activeMeta.badgeEn : activeMeta.badgeVi}
+            <div className="flex items-center gap-2">
+              <h3 className="font-display text-sm sm:text-base font-extrabold tracking-tight truncate">
+                {isEn ? `${activeMeta.nameEn} · Smart Tutor` : `${activeMeta.nameVi} · Trợ Giảng 3 Chế Độ`}
+              </h3>
+            </div>
+            <p className="text-[11px] text-slate-300/90 truncate flex items-center gap-1.5">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+              <span>{isEn ? activeMeta.badgeEn : activeMeta.badgeVi}</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="relative z-10 flex items-center gap-1.5 shrink-0">
           <button
             onClick={handleReset}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/15 border border-white/10 transition-all cursor-pointer"
             title={isEn ? 'Reset current conversation' : 'Làm mới cuộc trò chuyện'}
           >
             <RotateCcw className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
+            className="p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/15 border border-white/10 transition-all cursor-pointer"
+            title={isFullscreen ? 'Thu nhỏ' : 'Mở toàn màn hình'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -671,7 +718,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
               setIsFullscreen(false);
               onClose();
             }}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl text-slate-300 hover:text-rose-300 bg-white/5 hover:bg-rose-500/20 border border-white/10 transition-all cursor-pointer"
             title={isEn ? 'Close' : 'Đóng'}
           >
             <X className="w-4 h-4" />
@@ -680,8 +727,8 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       </div>
 
       {/* 3 Dedicated Subject AI Switcher */}
-      <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0">
-        <div className="grid grid-cols-3 gap-1.5 w-full">
+      <div className="px-3.5 sm:px-5 py-2.5 bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-white/10 shrink-0">
+        <div className={`grid grid-cols-3 gap-2 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           {(['math', 'physics', 'cs'] as AISubjectKey[]).map((subj) => {
             const meta = getAiPersonaMeta(subj);
             const selected = activeSubject === subj;
@@ -690,17 +737,18 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             return (
               <button
                 key={subj}
+                data-ripple="true"
                 onClick={() => handleSwitchSubject(subj)}
                 title={isEn ? `Shortcut: Left ${shortcut}` : `Phím tắt: ${shortcut.replace('Ctrl(L)', 'Ctrl trái')}`}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap ${
+                className={`group sheen-btn flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-2xl text-xs sm:text-[13px] font-bold border transition-all whitespace-nowrap cursor-pointer ${
                   selected
                     ? meta.colorClass
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                    : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border-slate-200/90 dark:border-white/10 hover:border-indigo-400/70 hover:bg-white dark:hover:bg-slate-800'
                 }`}
               >
-                {meta.icon}
+                <span className="group-hover:scale-110 transition-transform">{meta.icon}</span>
                 <span>{isEn ? meta.nameEn : meta.nameVi}</span>
-                <span className={`hidden sm:inline text-[9px] font-mono opacity-80 ${selected ? 'text-white/90' : 'text-slate-400'}`}>
+                <span className={`hidden sm:inline text-[10px] font-mono px-1.5 py-0.5 rounded-md ${selected ? 'bg-black/15 text-white' : 'bg-slate-200/70 dark:bg-white/10 text-slate-500 dark:text-slate-400'}`}>
                   {shortKey}
                 </span>
               </button>
@@ -710,492 +758,569 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       </div>
 
       {/* 3 Pedagogical AI Modes Switcher */}
-      <div className="px-3 py-2 bg-white dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 space-y-1.5 shrink-0">
-        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none">
-          {modeTabs.map((m) => {
-            const selected = activeMode === m.id;
-            return (
-              <button
-                key={m.id}
-                onClick={() => {
-                  setActiveMode(m.id);
-                  setErrorMsg(null);
-                }}
-                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap shrink-0 border transition-colors ${
-                  selected
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-transparent hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                {isEn ? m.shortEn : m.shortVi}
-              </button>
-            );
-          })}
+      <div className="px-3.5 sm:px-5 py-2.5 bg-slate-50/90 dark:bg-slate-900/70 border-b border-slate-200/80 dark:border-white/10 shrink-0">
+        <div className={`space-y-1.5 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+            {modeTabs.map((m) => {
+              const selected = activeMode === m.id;
+              const modeIcon =
+                m.id === 'explain_no_answer' ? (
+                  <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+                ) : m.id === 'full_solution' ? (
+                  <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                ) : (
+                  <GitBranch className="w-3.5 h-3.5 shrink-0" />
+                );
+              return (
+                <button
+                  key={m.id}
+                  data-ripple="true"
+                  onClick={() => {
+                    setActiveMode(m.id);
+                    setErrorMsg(null);
+                  }}
+                  className={`group sheen-btn flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap border transition-all cursor-pointer ${
+                    selected
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-sm'
+                      : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-indigo-400/60 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span className="group-hover:scale-110 transition-transform">{modeIcon}</span>
+                  <span className="truncate">{isEn ? m.shortEn : m.shortVi}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug flex items-center gap-1.5 px-0.5">
+            <Sparkles className="w-3 h-3 text-indigo-500 shrink-0" />
+            <span>{isEn ? activeModeMeta.descEn : activeModeMeta.descVi}</span>
+          </p>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-          {isEn ? activeModeMeta.descEn : activeModeMeta.descVi}
-        </p>
       </div>
 
       {/* MAIN BODY: Mode 3 includes interactive Skill Diagnosis & Visual Flowchart + optional chat */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-4 space-y-4 bg-slate-50/60 dark:bg-slate-950/60">
-        {activeMode === 'diagnostic_roadmap' && (
-          <div className="space-y-3.5">
-            {/* Step 1: Configuration Card */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3 shadow-xs">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
-                  <BrainCircuit className="w-4 h-4 text-indigo-500 shrink-0" />
-                  <span>
-                    {isEn
-                      ? `Configure ${activeMeta.nameEn} Skill & Major Assessment`
-                      : `Thiết Lập Đánh Giá Năng Lực ${activeMeta.nameVi}`}
-                  </span>
+      <div className="relative flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 bg-gradient-to-b from-slate-50/90 via-white/70 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900/95 dark:to-indigo-950/30">
+        <div className={`space-y-4 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
+          {activeMode === 'diagnostic_roadmap' && (
+            <div className="space-y-3.5">
+              {/* Step 1: Configuration Card */}
+              <div className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-indigo-200/80 dark:border-indigo-500/25 rounded-2xl p-4 space-y-3.5 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                    <div className="w-7 h-7 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                      <BrainCircuit className="w-4 h-4 shrink-0" />
+                    </div>
+                    <span>
+                      {isEn
+                        ? `Configure ${activeMeta.nameEn} Skill & Major Assessment`
+                        : `Thiết Lập Đánh Giá Năng Lực ${activeMeta.nameVi}`}
+                    </span>
+                  </div>
+                  {activeRoadmap && (
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {isEn ? 'Saved' : 'Đã có sơ đồ'}
+                    </span>
+                  )}
                 </div>
-                {activeRoadmap && (
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    {isEn ? 'Saved' : 'Đã có sơ đồ'}
-                  </span>
-                )}
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                <label className="space-y-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                  <label className="space-y-1">
+                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                      {isEn ? 'Grade Level' : 'Khối lớp hiện tại'}
+                    </span>
+                    <select
+                      value={diagGrade}
+                      onChange={(e) => updateActiveDiagConfig({ grade: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      {['Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="space-y-1">
+                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                      {isEn ? 'Self-Assessed Level' : 'Tự đánh giá trình độ'}
+                    </span>
+                    <select
+                      value={diagSelfLevel}
+                      onChange={(e) => updateActiveDiagConfig({ selfLevel: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="Cần xây lại gốc">{isEn ? 'Foundational' : 'Cần xây lại gốc'}</option>
+                      <option value="Trung bình">{isEn ? 'Average' : 'Trung bình'}</option>
+                      <option value="Khá">{isEn ? 'Good / Intermediate' : 'Khá'}</option>
+                      <option value="Giỏi / Ôn Chuyên">{isEn ? 'Advanced / Olympiad' : 'Giỏi / Ôn Chuyên - HSG'}</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label className="block space-y-1 text-xs">
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                    {isEn ? 'Grade Level' : 'Khối lớp hiện tại'}
+                    {isEn ? 'Target Specialization / Major' : 'Chuyên ngành / Định hướng lựa chọn'}
                   </span>
                   <select
-                    value={diagGrade}
-                    onChange={(e) => updateActiveDiagConfig({ grade: e.target.value })}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs"
+                    value={diagMajor}
+                    onChange={(e) => updateActiveDiagConfig({ major: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    {['Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((g) => (
-                      <option key={g} value={g}>
-                        {g}
+                    {activeMajorOptions.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
                       </option>
                     ))}
                   </select>
                 </label>
 
-                <label className="space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                    {isEn ? 'Self-Assessed Level' : 'Tự đánh giá trình độ'}
-                  </span>
-                  <select
-                    value={diagSelfLevel}
-                    onChange={(e) => updateActiveDiagConfig({ selfLevel: e.target.value })}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs"
-                  >
-                    <option value="Cần xây lại gốc">{isEn ? 'Foundational' : 'Cần xây lại gốc'}</option>
-                    <option value="Trung bình">{isEn ? 'Average' : 'Trung bình'}</option>
-                    <option value="Khá">{isEn ? 'Good / Intermediate' : 'Khá'}</option>
-                    <option value="Giỏi / Ôn Chuyên">{isEn ? 'Advanced / Olympiad' : 'Giỏi / Ôn Chuyên - HSG'}</option>
-                  </select>
-                </label>
-              </div>
-
-              <label className="block space-y-1 text-xs">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  {isEn ? 'Target Specialization / Major' : 'Chuyên ngành / Định hướng lựa chọn'}
-                </span>
-                <select
-                  value={diagMajor}
-                  onChange={(e) => updateActiveDiagConfig({ major: e.target.value })}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs"
-                >
-                  {activeMajorOptions.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <input
-                type="text"
-                value={diagCustomGoal}
-                onChange={(e) => updateActiveDiagConfig({ customGoal: e.target.value })}
-                placeholder={
-                  isEn
-                    ? 'Optional goal (e.g., 9+ entrance exam, master DP graphs...)'
-                    : 'Mục tiêu riêng (VD: Thi đỗ chuyên Toán, đạt 9+ THPT QG, làm chủ Quy hoạch động...)'
-                }
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs"
-              />
-
-              <button
-                onClick={handleGenerateQuiz}
-                disabled={diagLoadingQuiz}
-                className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>
-                  {diagLoadingQuiz
-                    ? isEn
-                      ? 'Generating Diagnostic & Major Questions...'
-                      : 'AI đang tạo câu hỏi chuyên môn & chuyên ngành...'
-                    : diagQuestions.length > 0
-                    ? isEn
-                      ? 'Regenerate 5 Assessment Questions'
-                      : 'Tạo lại bộ 5 câu hỏi chuyên môn & chuyên ngành'
-                    : isEn
-                    ? 'Create 5 Skill & Major Questions'
-                    : 'Tạo Bộ Câu Hỏi Chuyên Môn & Chọn Chuyên Ngành'}
-                </span>
-              </button>
-            </div>
-
-            {diagError && (
-              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300">
-                {diagError}
-              </div>
-            )}
-
-            {/* Step 2: Interactive 5-Question Quiz */}
-            {diagQuestions.length > 0 && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                    {isEn ? 'Answer 5 Questions Below:' : 'Hoàn thành 5 câu hỏi đánh giá:'}
-                  </span>
-                  <span className="text-[11px] font-mono text-slate-500 tabular-nums">
-                    {Object.keys(diagAnswers).length}/{diagQuestions.length}
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  {diagQuestions.map((q, idx) => (
-                    <div
-                      key={q.id}
-                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 space-y-2"
-                    >
-                      <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="font-semibold">
-                          Câu {idx + 1} · {q.category === 'specialization' ? (isEn ? 'Major & Style' : 'Định hướng chuyên ngành') : (isEn ? 'Subject Skill' : 'Kiến thức chuyên môn')}
-                        </span>
-                        <span className="truncate">{q.topicTag}</span>
-                      </div>
-                      <div className="text-xs font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
-                        <FormattedText text={q.question} />
-                      </div>
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {q.options.map((opt, optIdx) => {
-                          const picked = diagAnswers[q.id] === optIdx;
-                          return (
-                            <button
-                              key={optIdx}
-                              onClick={() =>
-                                setDiagAnswersBySubj((prev) => ({
-                                  ...prev,
-                                  [activeSubject]: { ...(prev[activeSubject] || {}), [q.id]: optIdx }
-                                }))
-                              }
-                              className={`text-left px-3 py-2 rounded-lg text-xs border transition-colors flex items-start gap-2 ${
-                                picked
-                                  ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-900 dark:text-indigo-200 font-semibold'
-                                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
-                              }`}
-                            >
-                              <span className="font-mono font-bold shrink-0">
-                                {String.fromCharCode(65 + optIdx)}.
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <FormattedText text={opt} />
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <input
+                  type="text"
+                  value={diagCustomGoal}
+                  onChange={(e) => updateActiveDiagConfig({ customGoal: e.target.value })}
+                  placeholder={
+                    isEn
+                      ? 'Optional goal (e.g., 9+ entrance exam, master DP graphs...)'
+                      : 'Mục tiêu riêng (VD: Thi đỗ chuyên Toán, đạt 9+ THPT QG, làm chủ Quy hoạch động...)'
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
 
                 <button
-                  onClick={handleBuildRoadmap}
-                  disabled={diagLoadingRoadmap}
-                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  onClick={handleGenerateQuiz}
+                  disabled={diagLoadingQuiz}
+                  className={`group sheen-btn w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer ${activeMeta.sendBtn}`}
                 >
-                  <GitBranch className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                   <span>
-                    {diagLoadingRoadmap
+                    {diagLoadingQuiz
                       ? isEn
-                        ? 'Analyzing Skills & Building Flowchart...'
-                        : 'Đang phân tích kỹ năng & vẽ sơ đồ học tập...'
+                        ? 'Generating Diagnostic & Major Questions...'
+                        : 'AI đang tạo câu hỏi chuyên môn & chuyên ngành...'
+                      : diagQuestions.length > 0
+                      ? isEn
+                        ? 'Regenerate 5 Assessment Questions'
+                        : 'Tạo lại bộ 5 câu hỏi chuyên môn & chuyên ngành'
                       : isEn
-                      ? 'Analyze Skills & Generate Study Roadmap'
-                      : 'Phân Tích Trình Độ & Tạo Sơ Đồ Học Tập'}
+                      ? 'Create 5 Skill & Major Questions'
+                      : 'Tạo Bộ Câu Hỏi Chuyên Môn & Chọn Chuyên Ngành'}
                   </span>
                 </button>
               </div>
-            )}
 
-            {/* Step 3: Visual Personalized Roadmap Diagram */}
-            {activeRoadmap && (
-              <div className="bg-white dark:bg-slate-900 border border-emerald-300/70 dark:border-emerald-800/70 rounded-xl p-4 space-y-4 shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200 dark:border-slate-800">
-                  <div>
-                    <div className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                      <FileCheck2 className="w-4 h-4" />
-                      <span>
-                        {isEn ? 'Personalized Study Flowchart' : 'Sơ Đồ Lộ Trình Học Tập Cá Nhân Hóa'}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      {activeRoadmap.grade} · {activeRoadmap.targetMajor}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-extrabold font-mono text-indigo-600 dark:text-indigo-400 tabular-nums">
-                      {activeRoadmap.knowledgeCorrect}/{activeRoadmap.knowledgeTotal} ({activeRoadmap.knowledgeScore}%)
-                    </div>
-                    <div className="text-[10px] text-slate-500">{activeRoadmap.estimatedLevel}</div>
-                  </div>
+              {diagError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300">
+                  {diagError}
                 </div>
+              )}
 
-                {/* Strengths & Weaknesses */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                  <div className="p-2.5 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 space-y-1">
-                    <div className="font-bold text-emerald-800 dark:text-emerald-300">
-                      {isEn ? 'Strengths' : 'Điểm mạnh'}
-                    </div>
-                    {activeRoadmap.strengths.map((s, i) => (
-                      <div key={i} className="text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-1.5">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" />
-                        <span><FormattedText text={s} /></span>
+              {/* Step 2: Interactive 5-Question Quiz */}
+              {diagQuestions.length > 0 && (
+                <div className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/15 rounded-2xl p-4 space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                      {isEn ? 'Answer 5 Questions Below:' : 'Hoàn thành 5 câu hỏi đánh giá:'}
+                    </span>
+                    <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                      {Object.keys(diagAnswers).length}/{diagQuestions.length}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {diagQuestions.map((q, idx) => (
+                      <div
+                        key={q.id}
+                        className="p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-950/75 border border-slate-200/80 dark:border-white/10 space-y-2.5"
+                      >
+                        <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                            Câu {idx + 1} · {q.category === 'specialization' ? (isEn ? 'Major & Style' : 'Định hướng chuyên ngành') : (isEn ? 'Subject Skill' : 'Kiến thức chuyên môn')}
+                          </span>
+                          <span className="truncate">{q.topicTag}</span>
+                        </div>
+                        <div className="text-xs sm:text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
+                          <FormattedText text={q.question} />
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {q.options.map((opt, optIdx) => {
+                            const picked = diagAnswers[q.id] === optIdx;
+                            return (
+                              <button
+                                key={optIdx}
+                                data-ripple="true"
+                                onClick={() =>
+                                  setDiagAnswersBySubj((prev) => ({
+                                    ...prev,
+                                    [activeSubject]: { ...(prev[activeSubject] || {}), [q.id]: optIdx }
+                                  }))
+                                }
+                                className={`group text-left px-3.5 py-2.5 rounded-xl text-xs border transition-all flex items-start gap-2.5 cursor-pointer ${
+                                  picked
+                                    ? 'bg-indigo-50 dark:bg-indigo-950/70 border-indigo-500 text-indigo-900 dark:text-indigo-200 font-semibold shadow-xs'
+                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400/70 hover:bg-indigo-50/30 dark:hover:bg-slate-800'
+                                }`}
+                              >
+                                <span
+                                  className={`w-5 h-5 rounded-lg font-mono text-[11px] font-bold flex items-center justify-center shrink-0 transition-colors ${
+                                    picked
+                                      ? 'bg-indigo-600 text-white'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50'
+                                  }`}
+                                >
+                                  {String.fromCharCode(65 + optIdx)}
+                                </span>
+                                <span className="min-w-0 flex-1 pt-0.5">
+                                  <FormattedText text={opt} />
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     ))}
                   </div>
-                  <div className="p-2.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50 space-y-1">
-                    <div className="font-bold text-amber-800 dark:text-amber-300">
-                      {isEn ? 'Gaps to Fix' : 'Điểm cần bù đắp'}
+
+                  <button
+                    onClick={handleBuildRoadmap}
+                    disabled={diagLoadingRoadmap}
+                    className="sheen-btn w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-500/25 transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    <GitBranch className="w-4 h-4" />
+                    <span>
+                      {diagLoadingRoadmap
+                        ? isEn
+                          ? 'Analyzing Skills & Building Flowchart...'
+                          : 'Đang phân tích kỹ năng & vẽ sơ đồ học tập...'
+                        : isEn
+                        ? 'Analyze Skills & Generate Study Roadmap'
+                        : 'Phân Tích Trình Độ & Tạo Sơ Đồ Học Tập'}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {/* Step 3: Visual Personalized Roadmap Diagram */}
+              {activeRoadmap && (
+                <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-emerald-300/80 dark:border-emerald-500/35 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-white/10">
+                    <div>
+                      <div className="text-xs sm:text-sm font-extrabold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                        <FileCheck2 className="w-4 h-4" />
+                        <span>
+                          {isEn ? 'Personalized Study Flowchart' : 'Sơ Đồ Lộ Trình Học Tập Cá Nhân Hóa'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        {activeRoadmap.grade} · {activeRoadmap.targetMajor}
+                      </p>
                     </div>
-                    {activeRoadmap.weaknesses.map((w, i) => (
-                      <div key={i} className="text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-1.5">
-                        <Target className="w-3 h-3 text-amber-600 shrink-0 mt-0.5" />
-                        <span><FormattedText text={w} /></span>
+                    <div className="text-right">
+                      <div className="text-sm sm:text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400 tabular-nums">
+                        {activeRoadmap.knowledgeCorrect}/{activeRoadmap.knowledgeTotal} ({activeRoadmap.knowledgeScore}%)
+                      </div>
+                      <div className="text-[10px] font-semibold text-slate-500">{activeRoadmap.estimatedLevel}</div>
+                    </div>
+                  </div>
+
+                  {/* Strengths & Weaknesses */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/35 border border-emerald-200/80 dark:border-emerald-900/60 space-y-1.5">
+                      <div className="font-extrabold text-emerald-800 dark:text-emerald-300">
+                        {isEn ? 'Strengths' : 'Điểm mạnh'}
+                      </div>
+                      {activeRoadmap.strengths.map((s, i) => (
+                        <div key={i} className="text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span><FormattedText text={s} /></span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/35 border border-amber-200/80 dark:border-amber-900/60 space-y-1.5">
+                      <div className="font-extrabold text-amber-800 dark:text-amber-300">
+                        {isEn ? 'Gaps to Fix' : 'Điểm cần bù đắp'}
+                      </div>
+                      {activeRoadmap.weaknesses.map((w, i) => (
+                        <div key={i} className="text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-1.5">
+                          <Target className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <span><FormattedText text={w} /></span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/35 border border-indigo-200/80 dark:border-indigo-900/60 text-[11px] text-slate-700 dark:text-slate-300 space-y-1.5">
+                    <div>
+                      <strong className="text-indigo-700 dark:text-indigo-300">
+                        {isEn ? 'Major Strategy: ' : 'Tư vấn chuyên ngành: '}
+                      </strong>
+                      <FormattedText text={activeRoadmap.majorAdvice} />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                      <Clock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                      <span>{activeRoadmap.dailyScheduleSummary}</span>
+                    </div>
+                  </div>
+
+                  {/* Connected Visual Stages Flowchart */}
+                  <div className="space-y-3">
+                    {activeRoadmap.stages.map((st, idx) => (
+                      <div key={st.step} className="relative pl-7">
+                        {idx < activeRoadmap.stages.length - 1 && (
+                          <div className="absolute left-3 top-7 bottom-0 w-0.5 bg-gradient-to-b from-indigo-500 via-sky-400 to-indigo-200 dark:to-indigo-800/80" />
+                        )}
+                        <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-gradient-to-br from-indigo-600 to-sky-500 text-white text-[11px] font-extrabold flex items-center justify-center shadow-sm">
+                          {st.step}
+                        </div>
+                        <div className="p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-950/80 border border-slate-200/90 dark:border-white/10 hover:border-indigo-400/60 transition-colors space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-1">
+                            <span className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400">
+                              {st.phase}
+                            </span>
+                            <span className="text-[11px] font-mono text-slate-500 tabular-nums">
+                              {st.durationWeeks} {isEn ? 'wks' : 'tuần'} · {st.dailyMinutes}p/{isEn ? 'day' : 'ngày'}
+                            </span>
+                          </div>
+                          <div className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-slate-100">{st.title}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            {st.focusTopics.join(' · ')}
+                          </div>
+                          <ul className="space-y-1 pt-0.5">
+                            {st.concreteTasks.map((task, ti) => (
+                              <li key={ti} className="text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                <span><FormattedText text={task} /></span>
+                              </li>
+                            ))}
+                          </ul>
+                          <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                              Mục tiêu: {st.targetMilestone}
+                            </span>
+                            {onNavigateSubject && (
+                              <button
+                                onClick={() => onNavigateSubject(st.recommendedModule)}
+                                className="group sheen-btn px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold flex items-center gap-1 hover:bg-indigo-600 dark:hover:bg-indigo-100 transition-all cursor-pointer"
+                              >
+                                <span>{isEn ? 'Open Module' : 'Học ngay'}</span>
+                                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
+              )}
+            </div>
+          )}
 
-                <div className="p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-900/50 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
-                  <div>
-                    <strong className="text-indigo-700 dark:text-indigo-300">
-                      {isEn ? 'Major Strategy: ' : 'Tư vấn chuyên ngành: '}
-                    </strong>
-                    <FormattedText text={activeRoadmap.majorAdvice} />
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                    <Clock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                    <span>{activeRoadmap.dailyScheduleSummary}</span>
-                  </div>
-                </div>
-
-                {/* Connected Visual Stages Flowchart */}
-                <div className="space-y-2.5">
-                  {activeRoadmap.stages.map((st, idx) => (
-                    <div key={st.step} className="relative pl-6">
-                      {idx < activeRoadmap.stages.length - 1 && (
-                        <div className="absolute left-2.5 top-6 bottom-0 w-0.5 bg-indigo-200 dark:bg-indigo-800/80" />
-                      )}
-                      <div className="absolute left-0 top-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
-                        {st.step}
-                      </div>
-                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <div className="flex flex-wrap items-center justify-between gap-1">
-                          <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                            {st.phase}
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-500 tabular-nums">
-                            {st.durationWeeks} {isEn ? 'wks' : 'tuần'} · {st.dailyMinutes}p/{isEn ? 'day' : 'ngày'}
-                          </span>
-                        </div>
-                        <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{st.title}</div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                          {st.focusTopics.join(' · ')}
-                        </div>
-                        <ul className="space-y-1 pt-0.5">
-                          {st.concreteTasks.map((task, ti) => (
-                            <li key={ti} className="text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-1.5">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
-                              <span><FormattedText text={task} /></span>
-                            </li>
-                          ))}
-                        </ul>
-                        <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
-                            Mục tiêu: {st.targetMilestone}
-                          </span>
-                          {onNavigateSubject && (
-                            <button
-                              onClick={() => onNavigateSubject(st.recommendedModule)}
-                              className="px-2.5 py-1 rounded-md bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold flex items-center gap-1 hover:opacity-90"
-                            >
-                              <span>{isEn ? 'Open Module' : 'Học ngay'}</span>
-                              <ArrowRight className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Messages Feed (Active in all 3 modes; streams Gemini tokens live!) */}
-        <div className="space-y-3">
-          {currentMessages
-            .filter((msg) => msg.text.length > 0 || Boolean(msg.imagePreview))
-            .map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-            >
+          {/* Messages Feed (Active in all 3 modes; streams Gemini tokens live!) */}
+          <div className="space-y-4">
+            {currentMessages
+              .filter((msg) => msg.text.length > 0 || Boolean(msg.imagePreview))
+              .map((msg) => (
               <div
-                className={`max-w-[90%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-[13px] leading-relaxed shadow-xs ${
-                  msg.role === 'user'
-                    ? 'bg-indigo-600 text-white rounded-br-sm'
-                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-sm'
-                }`}
+                key={msg.id}
+                className={`animate-msg-in flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
               >
-                {msg.imagePreview && (
-                  <img
-                    src={msg.imagePreview}
-                    alt="Uploaded question"
-                    className="max-h-40 rounded-lg mb-2 border border-white/20 object-contain"
-                  />
-                )}
-                {msg.role === 'user' ? (
-                  <div className="whitespace-pre-wrap">{msg.text}</div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <FormattedText text={msg.text} />
+                <div className={`flex items-end gap-2 max-w-[92%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                  {msg.role === 'tutor' && (
+                    <div className={`w-7 h-7 rounded-xl ring-2 flex items-center justify-center shrink-0 mb-0.5 shadow-sm ${activeMeta.avatarRing}`}>
+                      <Bot className="w-4 h-4" />
+                    </div>
+                  )}
+                  <div
+                    className={`group relative rounded-2xl px-4 py-3 text-xs sm:text-[13.5px] leading-relaxed ${
+                      msg.role === 'user'
+                        ? `${activeMeta.userBubble} rounded-br-sm`
+                        : 'bg-white/95 dark:bg-slate-800/90 backdrop-blur-md border border-slate-200/90 dark:border-white/12 text-slate-800 dark:text-slate-100 rounded-bl-sm shadow-sm'
+                    }`}
+                  >
+                    {msg.imagePreview && (
+                      <img
+                        src={msg.imagePreview}
+                        alt="Uploaded question"
+                        className="max-h-44 rounded-xl mb-2.5 border border-white/25 object-contain shadow-xs"
+                      />
+                    )}
+                    {msg.role === 'user' ? (
+                      <div className="whitespace-pre-wrap">{msg.text}</div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <FormattedText text={msg.text} />
+                      </div>
+                    )}
+                    {msg.role === 'tutor' && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopyMessage(msg.id, msg.text)}
+                        className="mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 bg-slate-100/80 dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition-colors cursor-pointer"
+                        title={isEn ? 'Copy response' : 'Sao chép nội dung'}
+                      >
+                        {copiedMsgId === msg.id ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-500" />
+                            <span className="text-emerald-600 dark:text-emerald-400">
+                              {isEn ? 'Copied' : 'Đã chép'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>{isEn ? 'Copy' : 'Sao chép'}</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
+                <span className={`text-[10px] text-slate-400 mt-1 tabular-nums ${msg.role === 'tutor' ? 'pl-10' : 'pr-1'}`}>
+                  {msg.role === 'tutor' ? (isEn ? activeMeta.nameEn : activeMeta.nameVi) : 'Em'} · {msg.timestamp}
+                </span>
               </div>
-              <span className="text-[10px] text-slate-400 mt-1 px-1 tabular-nums">
-                {msg.role === 'tutor' ? (isEn ? activeMeta.nameEn : activeMeta.nameVi) : 'Em'} · {msg.timestamp}
-              </span>
-            </div>
-          ))}
+            ))}
 
-          {isLoading &&
-            !(currentMessages[currentMessages.length - 1]?.role === 'tutor' &&
-              currentMessages[currentMessages.length - 1]?.text.length > 0) && (
-            <div className="flex items-start">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl rounded-bl-sm px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-                {activeMode === 'full_solution'
-                  ? isEn
-                    ? `${activeMeta.nameEn} is preparing full summary & detailed solution...`
-                    : `${activeMeta.nameVi} đang tóm tắt đề và giải chi tiết...`
-                  : activeMode === 'diagnostic_roadmap'
-                  ? isEn
-                    ? `${activeMeta.nameEn} is updating your study advice...`
-                    : `${activeMeta.nameVi} đang tinh chỉnh lộ trình cho em...`
-                  : isEn
-                  ? `${activeMeta.nameEn} is analyzing your unclear step...`
-                  : `${activeMeta.nameVi} đang phân tích kỹ phần em chưa hiểu...`}
+            {isLoading &&
+              !(currentMessages[currentMessages.length - 1]?.role === 'tutor' &&
+                currentMessages[currentMessages.length - 1]?.text.length > 0) && (
+              <div className="animate-msg-in flex items-end gap-2">
+                <div className={`w-7 h-7 rounded-xl ring-2 flex items-center justify-center shrink-0 mb-0.5 shadow-sm ${activeMeta.avatarRing}`}>
+                  <Bot className="w-4 h-4 animate-pulse" />
+                </div>
+                <div className="bg-white/95 dark:bg-slate-800/90 border border-slate-200 dark:border-white/15 rounded-2xl rounded-bl-sm px-4 py-3 text-xs text-slate-600 dark:text-slate-300 shadow-sm flex items-center gap-3">
+                  <div className="flex items-center gap-1 shrink-0" aria-hidden="true">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 typing-dot" />
+                    <span className="w-2 h-2 rounded-full bg-sky-500 typing-dot-2" />
+                    <span className="w-2 h-2 rounded-full bg-purple-500 typing-dot-3" />
+                  </div>
+                  <span>
+                    {activeMode === 'full_solution'
+                      ? isEn
+                        ? `${activeMeta.nameEn} is preparing full summary & detailed solution...`
+                        : `${activeMeta.nameVi} đang tóm tắt đề và giải chi tiết...`
+                      : activeMode === 'diagnostic_roadmap'
+                      ? isEn
+                        ? `${activeMeta.nameEn} is updating your study advice...`
+                        : `${activeMeta.nameVi} đang tinh chỉnh lộ trình cho em...`
+                      : isEn
+                      ? `${activeMeta.nameEn} is analyzing your unclear step...`
+                      : `${activeMeta.nameVi} đang phân tích kỹ phần em chưa hiểu...`}
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between gap-2">
-              <span>{errorMsg}</span>
-              <button
-                onClick={() => setErrorMsg(null)}
-                className="text-[11px] font-bold underline shrink-0"
-              >
-                {isEn ? 'Dismiss' : 'Đóng'}
-              </button>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+            {errorMsg && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between gap-2 shadow-xs">
+                <span>{errorMsg}</span>
+                <button
+                  onClick={() => setErrorMsg(null)}
+                  className="text-[11px] font-bold underline shrink-0 cursor-pointer"
+                >
+                  {isEn ? 'Dismiss' : 'Đóng'}
+                </button>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 
       {/* Quick Chips */}
-      <div className="px-3 py-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-          <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />
-          <span>{isEn ? 'Quick prompts:' : 'Gợi ý nhanh:'}</span>
-        </div>
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {quickChips.map((prompt, i) => (
-            <button
-              key={i}
-              onClick={() => handleSend(prompt)}
-              disabled={isLoading}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 border border-slate-200 dark:border-slate-700 text-[11px] font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap shrink-0 transition-colors disabled:opacity-50"
-            >
-              {prompt}
-            </button>
-          ))}
+      <div className="px-3.5 sm:px-5 py-2.5 bg-white/90 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-white/10 shrink-0">
+        <div className={`${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+            <span>{isEn ? 'Quick prompts:' : 'Gợi ý hỏi nhanh:'}</span>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {quickChips.map((prompt, i) => (
+              <button
+                key={i}
+                data-ripple="true"
+                onClick={() => handleSend(prompt)}
+                disabled={isLoading}
+                className="sheen-btn px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 hover:bg-indigo-50 dark:hover:bg-indigo-950/70 border border-slate-200/90 dark:border-white/10 hover:border-indigo-400/70 text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap shrink-0 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 space-y-2 shrink-0">
-        {pendingImage && (
-          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs">
-            <span className="text-slate-700 dark:text-slate-300 truncate">
-              {isEn ? 'Attached photo of problem/step' : 'Đã đính kèm ảnh bài tập / bước giải'}
-            </span>
-            <button
-              onClick={() => setPendingImage(null)}
-              className="text-rose-500 hover:underline text-[11px] font-semibold ml-2"
+      {/* Modern Floating Input Composer */}
+      <div className="px-3.5 sm:px-5 py-3 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-white/10 shrink-0">
+        <div className={`space-y-2.5 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
+          {pendingImage && (
+            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-500/30 text-xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img
+                  src={`data:${pendingImage.mimeType};base64,${pendingImage.base64}`}
+                  alt="Preview"
+                  className="w-9 h-9 rounded-lg object-cover border border-indigo-300/60 shrink-0"
+                />
+                <span className="text-indigo-900 dark:text-indigo-200 font-semibold truncate">
+                  {isEn ? 'Attached photo of problem/step' : 'Đã đính kèm ảnh bài tập / bước giải'}
+                </span>
+              </div>
+              <button
+                onClick={() => setPendingImage(null)}
+                className="text-rose-500 hover:underline text-[11px] font-bold ml-2 shrink-0 cursor-pointer"
+              >
+                {isEn ? 'Remove' : 'Xóa'}
+              </button>
+            </div>
+          )}
+
+          <div className={`flex items-end gap-2 p-1.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/15 shadow-inner transition-all focus-within:ring-2 ${activeMeta.accentRing}`}>
+            <label
+              data-ripple="true"
+              className="p-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200/80 dark:border-white/10 cursor-pointer shrink-0 transition-all active:scale-95"
+              title={isEn ? 'Attach problem photo' : 'Gửi ảnh đề bài hoặc bước làm'}
             >
-              {isEn ? 'Remove' : 'Xóa'}
+              <ImageIcon className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+              <input type="file" accept="image/*" onChange={handleImagePick} className="hidden" />
+            </label>
+
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              rows={2}
+              placeholder={
+                activeMode === 'full_solution'
+                  ? isEn
+                    ? 'Paste a problem to get summary, method & full solution...'
+                    : 'Dán đề bài để AI tóm tắt, nêu cách làm và xuất lời giải chi tiết...'
+                  : activeMode === 'diagnostic_roadmap'
+                  ? isEn
+                    ? 'Ask to refine your study roadmap...'
+                    : 'Hỏi thêm để AI tinh chỉnh sơ đồ học tập cho em...'
+                  : isEn
+                  ? 'Describe the step or concept you do not understand...'
+                  : 'Nhập đề bài hoặc nói rõ em đang chưa hiểu bước/công thức nào...'
+              }
+              className="flex-1 px-2.5 py-2 bg-transparent text-xs sm:text-[13px] text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none resize-none"
+            />
+
+            <button
+              onClick={() => handleSend()}
+              disabled={isLoading || (!inputText.trim() && !pendingImage)}
+              className={`sheen-btn p-3 rounded-xl shrink-0 transition-all disabled:opacity-40 cursor-pointer ${activeMeta.sendBtn}`}
+              title={isEn ? 'Send to AI Tutor' : 'Gửi câu hỏi'}
+            >
+              <Send className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
             </button>
           </div>
-        )}
-
-        <div className="flex items-end gap-2">
-          <label
-            className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer shrink-0 transition-colors"
-            title={isEn ? 'Attach problem photo' : 'Gửi ảnh đề bài hoặc bước làm'}
-          >
-            <ImageIcon className="w-4 h-4" />
-            <input type="file" accept="image/*" onChange={handleImagePick} className="hidden" />
-          </label>
-
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            rows={2}
-            placeholder={
-              activeMode === 'full_solution'
-                ? isEn
-                  ? 'Paste a problem to get summary, method & full solution...'
-                  : 'Dán đề bài để AI tóm tắt, nêu cách làm và xuất lời giải chi tiết...'
-                : activeMode === 'diagnostic_roadmap'
-                ? isEn
-                  ? 'Ask to refine your study roadmap...'
-                  : 'Hỏi thêm để AI tinh chỉnh sơ đồ học tập cho em...'
-                : isEn
-                ? 'Describe the step or concept you do not understand...'
-                : 'Nhập đề bài hoặc nói rõ em đang chưa hiểu bước/công thức nào...'
-            }
-            className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 resize-none"
-          />
-
-          <button
-            onClick={() => handleSend()}
-            disabled={isLoading || (!inputText.trim() && !pendingImage)}
-            className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 transition-colors disabled:opacity-40"
-            title={isEn ? 'Send to AI Tutor' : 'Gửi câu hỏi'}
-          >
-            <Send className="w-4 h-4" />
-          </button>
         </div>
       </div>
     </div>

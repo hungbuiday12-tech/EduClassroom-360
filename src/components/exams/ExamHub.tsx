@@ -687,6 +687,30 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                       </div>
                     )}
 
+                    {q.simulationLink && (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (q.simulationLink?.type === 'math') {
+                              const tab = q.simulationLink.targetId as 'grapher' | 'geometry' | 'math3d';
+                              navigate({ subject: 'math', mathTab: tab });
+                            } else if (q.simulationLink?.type === 'physics') {
+                              navigate({ subject: 'physics', physicsView: 'catalog' });
+                            } else if (q.simulationLink?.type === 'cs') {
+                              navigate({ subject: 'cs', csViewMode: 'visualizer' });
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 text-[11px] font-bold hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors cursor-pointer whitespace-nowrap"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                          <span>
+                            {isEn ? `Open 2D/3D Lab: ${q.simulationLink.label}` : `Mở mô phỏng 2D/3D: ${q.simulationLink.label}`}
+                          </span>
+                        </button>
+                      </div>
+                    )}
+
                     {/* Student Scratchpad */}
                     <div className="pt-2">
                       <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">

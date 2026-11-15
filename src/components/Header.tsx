@@ -193,18 +193,18 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/88 dark:bg-slate-950/88 backdrop-blur-md border-b border-indigo-200/60 dark:border-indigo-500/20 shadow-[0_10px_35px_-16px_rgba(79,70,229,0.25)]">
-      {/* ROW 1: Brand + Utility Cluster pushed right next to Synapse on the left | Settings & Auth on the right */}
-      <div className="w-full px-3 sm:px-5 lg:px-7 flex items-center justify-between gap-2 sm:gap-3 h-14 sm:h-15">
+      {/* ROW 1: Enlarged Utility Cluster next to Synapse | Enlarged Controls & Auth on the right */}
+      <div className="w-full px-3 sm:px-5 lg:px-7 py-2 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 min-h-[66px] sm:min-h-[74px]">
         {/* Left Cluster: Back + Brand + VI/EN + XP + Creatures + Theme */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 min-w-0">
           {canGoBack && (
             <button
               onClick={goBack}
-              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-700 dark:hover:text-indigo-300 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-xs shrink-0 cursor-pointer"
+              className="group sheen-btn flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-slate-100/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-100 border border-slate-200/90 dark:border-white/15 hover:bg-indigo-50 dark:hover:bg-indigo-950/70 hover:text-indigo-700 dark:hover:text-indigo-300 hover:border-indigo-400/80 shadow-xs shrink-0 cursor-pointer"
               title={`${language === 'en' ? 'Back to' : 'Quay lại trang trước'}: ${prevLabel}`}
               aria-label={`Quay lại ${prevLabel}`}
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden md:inline whitespace-nowrap">
                 {language === 'en' ? 'Back' : 'Quay lại'}
               </span>
@@ -213,27 +213,27 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={goClassroom}
-            className="flex items-center gap-2 text-base sm:text-xl font-display font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1 py-1 rounded-xl shrink-0 cursor-pointer"
+            className="flex items-center gap-2 text-lg sm:text-2xl font-display font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-1.5 py-1 rounded-2xl shrink-0 cursor-pointer"
           >
-            <BrandLogo sizeClass="w-7 h-7 sm:w-8 sm:h-8" />
+            <BrandLogo sizeClass="w-8 h-8 sm:w-9 sm:h-9" />
             <span>Synapse</span>
           </button>
 
           <span
             aria-hidden="true"
-            className="hidden sm:block h-5 w-px bg-slate-200/90 dark:bg-white/15 mx-0.5 shrink-0"
+            className="hidden sm:block h-6 w-px bg-slate-200/90 dark:bg-white/15 mx-0.5 shrink-0"
           />
 
-          {/* VI / EN pushed directly next to Synapse */}
+          {/* Enlarged VI / EN button */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-200/90 dark:border-white/10 bg-slate-50/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            className="group sheen-btn flex items-center gap-1.5 px-3.5 sm:px-4.5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-2xl border border-indigo-200/90 dark:border-white/15 bg-slate-50/95 dark:bg-slate-800/90 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:border-indigo-400 shadow-xs transition-all cursor-pointer shrink-0 whitespace-nowrap"
             title={language === 'vi' ? 'Switch interface to English' : 'Chuyển giao diện sang Tiếng Việt'}
           >
-            <Globe className="w-3.5 h-3.5 text-indigo-500 hidden sm:block" />
+            <Globe className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-indigo-500 group-hover:rotate-12 transition-transform" />
             <span
               className={
-                language === 'vi' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-400'
+                language === 'vi' ? 'text-indigo-600 dark:text-indigo-300 font-black' : 'text-slate-400'
               }
             >
               VI
@@ -241,35 +241,38 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-slate-300 dark:text-slate-600">/</span>
             <span
               className={
-                language === 'en' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-400'
+                language === 'en' ? 'text-indigo-600 dark:text-indigo-300 font-black' : 'text-slate-400'
               }
             >
               EN
             </span>
           </button>
 
-          {/* XP Counter pushed right beside VI/EN */}
-          <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 bg-amber-50/90 dark:bg-amber-950/45 border border-amber-200/80 dark:border-amber-800/60 rounded-xl text-[11px] sm:text-xs font-mono font-bold text-amber-700 dark:text-amber-300 shrink-0 whitespace-nowrap">
-            <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          {/* Enlarged XP Counter */}
+          <div
+            data-ripple="true"
+            className="sheen-btn flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 bg-amber-50/95 dark:bg-amber-950/50 border border-amber-300/80 dark:border-amber-700/60 rounded-2xl text-xs sm:text-sm font-mono font-extrabold text-amber-700 dark:text-amber-300 shrink-0 whitespace-nowrap shadow-xs cursor-default"
+          >
+            <Award className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-amber-500 shrink-0" />
             <span className="tabular-nums">{user ? user.xp : xp} XP</span>
           </div>
 
-          {/* Interactive Background Creature Theme Selector */}
+          {/* Enlarged Interactive Background Creature Theme Selector */}
           <div className="relative shrink-0" ref={creatureMenuRef}>
             <button
               onClick={() => setIsCreatureMenuOpen(!isCreatureMenuOpen)}
-              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-semibold rounded-xl border border-indigo-200/80 dark:border-indigo-500/30 bg-indigo-50/85 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer whitespace-nowrap"
+              className="group sheen-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-2xl border border-indigo-200/90 dark:border-indigo-500/35 bg-indigo-50/90 dark:bg-indigo-950/55 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/65 hover:border-indigo-400 shadow-xs transition-all cursor-pointer whitespace-nowrap"
               title={
                 language === 'vi'
                   ? 'Chọn sinh vật nền tương tác'
                   : 'Choose interactive background creature'
               }
             >
-              <Wand2 className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+              <Wand2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-indigo-500 dark:text-indigo-300 group-hover:rotate-12 transition-transform shrink-0" />
               <span className="hidden md:inline">
                 {language === 'vi' ? activeCreature.shortVi : activeCreature.shortEn}
               </span>
-              <ChevronDown className="w-3 h-3 opacity-70" />
+              <ChevronDown className="w-3.5 h-3.5 opacity-75 group-hover:translate-y-0.5 transition-transform" />
             </button>
 
             {isCreatureMenuOpen && (
@@ -301,10 +304,10 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Sun / Moon Theme Toggle pushed next to Creatures */}
+          {/* Enlarged Sun / Moon Theme Toggle */}
           <button
             onClick={onToggleTheme}
-            className="p-2 text-slate-600 dark:text-slate-300 bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer shrink-0"
+            className="group sheen-btn p-2.5 sm:px-3.5 sm:py-2.5 text-slate-600 dark:text-slate-200 bg-slate-50/95 dark:bg-slate-800/90 border border-slate-200/90 dark:border-white/15 hover:bg-amber-50 dark:hover:bg-slate-700 hover:border-amber-300/70 rounded-2xl shadow-xs transition-all cursor-pointer shrink-0 flex items-center gap-1.5 text-xs sm:text-sm font-bold"
             title={
               language === 'en'
                 ? isDark
@@ -316,27 +319,31 @@ export const Header: React.FC<HeaderProps> = ({
             }
             aria-label={isDark ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối'}
           >
-            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+            {isDark ? (
+              <Sun className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-amber-400 group-hover:rotate-45 transition-transform" />
+            ) : (
+              <Moon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-indigo-600 group-hover:-rotate-12 transition-transform" />
+            )}
           </button>
         </div>
 
-        {/* Right Cluster: Quick Ambient Audio Toggle + Settings Button + User Account / Sign In */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Quick Background Soundscape Toggle */}
+        {/* Right Cluster: Enlarged Audio Toggle + FPS + Settings + User Account / Sign In */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Enlarged Background Soundscape Toggle */}
           <button
             type="button"
             onClick={toggleBgPlaying}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs ${
+            className={`group sheen-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl border text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs ${
               isBgPlaying && bgSound !== 'off'
-                ? 'border-emerald-400/70 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
-                : 'border-slate-200/90 dark:border-white/15 bg-white/90 dark:bg-slate-900/85 text-slate-600 dark:text-slate-300 hover:border-indigo-400/60'
+                ? 'border-emerald-400/80 bg-emerald-50 dark:bg-emerald-950/55 text-emerald-700 dark:text-emerald-300'
+                : 'border-slate-200/90 dark:border-white/15 bg-white/95 dark:bg-slate-900/90 text-slate-700 dark:text-slate-200 hover:border-indigo-400/70'
             }`}
             title={isEn ? 'Toggle background ambient sound' : 'Bật/tắt âm thanh nền học tập'}
           >
             {isBgPlaying && bgSound !== 'off' ? (
-              <Volume2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <Volume2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-emerald-500 group-hover:scale-110 transition-transform shrink-0" />
             ) : (
-              <VolumeX className="w-4 h-4 text-slate-400 shrink-0" />
+              <VolumeX className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-slate-400 group-hover:scale-110 transition-transform shrink-0" />
             )}
             <span className="hidden lg:inline">
               {isBgPlaying && bgSound !== 'off'
@@ -349,16 +356,16 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* Quick FPS / Graphics Performance Mode Cycler */}
+          {/* Enlarged FPS / Graphics Performance Mode Cycler */}
           <button
             type="button"
             onClick={cyclePerfMode}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shadow-xs ${
+            className={`group sheen-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl border text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs ${
               perfMode === 'smooth'
-                ? 'border-sky-400/70 bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300'
+                ? 'border-sky-400/80 bg-sky-50 dark:bg-sky-950/55 text-sky-700 dark:text-sky-300'
                 : perfMode === 'balanced'
-                ? 'border-indigo-300/80 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300'
-                : 'border-amber-300/80 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
+                ? 'border-indigo-300/90 bg-indigo-50 dark:bg-indigo-950/45 text-indigo-700 dark:text-indigo-300'
+                : 'border-amber-300/90 bg-amber-50 dark:bg-amber-950/45 text-amber-800 dark:text-amber-300'
             }`}
             title={
               isEn
@@ -366,20 +373,20 @@ export const Header: React.FC<HeaderProps> = ({
                 : `Chế độ đồ họa / FPS: ${activePerf.labelVi} (bấm để đổi)`
             }
           >
-            <Gauge className="w-4 h-4 shrink-0" />
+            <Gauge className="w-4 h-4 sm:w-[18px] sm:h-[18px] group-hover:rotate-12 transition-transform shrink-0" />
             <span className="hidden xl:inline">
               {isEn ? activePerf.shortEn : activePerf.shortVi}
             </span>
           </button>
 
-          {/* Dedicated Settings Trigger */}
+          {/* Enlarged Settings Trigger */}
           <button
             type="button"
             onClick={onOpenSettings}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200/90 dark:border-white/15 bg-white/90 dark:bg-slate-900/85 hover:border-indigo-400/70 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="group sheen-btn flex items-center gap-2 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-2xl border border-slate-200/90 dark:border-white/15 bg-white/95 dark:bg-slate-900/90 hover:border-indigo-400/80 hover:bg-indigo-50/80 dark:hover:bg-indigo-950/60 text-slate-700 dark:text-slate-100 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title={isEn ? 'Account, Audio, Gmail & Preferences' : 'Cài đặt âm thanh, tài khoản & giao diện'}
           >
-            <Settings className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+            <Settings className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-indigo-500 dark:text-indigo-400 group-hover:rotate-45 transition-transform duration-300 shrink-0" />
             <span className="hidden sm:inline">{isEn ? 'Settings' : 'Cài đặt'}</span>
           </button>
 
@@ -387,25 +394,25 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-white/10 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition-colors text-xs cursor-pointer"
+                className="sheen-btn flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-2xl bg-slate-100/95 dark:bg-slate-800/95 border border-slate-200/90 dark:border-white/15 hover:bg-slate-200/85 dark:hover:bg-slate-700 transition-colors text-xs sm:text-sm cursor-pointer shadow-xs"
               >
                 {user.role === 'admin' ? (
-                  <BrandLogo sizeClass="w-6 h-6 rounded-full" />
+                  <BrandLogo sizeClass="w-7 h-7 rounded-full" />
                 ) : user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
                     alt={user.displayName}
-                    className="w-6 h-6 rounded-full object-cover border border-slate-300 dark:border-slate-600"
+                    className="w-7 h-7 rounded-full object-cover border border-slate-300 dark:border-slate-600"
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-[11px] flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">
                     {user.displayName.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span className="font-semibold text-slate-800 dark:text-slate-200 hidden md:inline max-w-[110px] truncate">
+                <span className="font-bold text-slate-800 dark:text-slate-100 hidden md:inline max-w-[125px] truncate">
                   {user.displayName}
                 </span>
-                <ChevronDown className="w-3 h-3 text-slate-400" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
               {isUserMenuOpen && (
@@ -450,26 +457,26 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-2">
               {onReturnToLanding && (
                 <button
                   onClick={onReturnToLanding}
-                  className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
+                  className="group sheen-btn hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/65 border border-indigo-200/90 dark:border-indigo-700 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/70 font-bold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap shadow-xs"
                   title={
                     language === 'en'
                       ? 'Return to Welcome Portal'
                       : 'Quay lại Trang Cổng Chào Mừng Galaxy'
                   }
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <Sparkles className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
                   <span>{t('nav.landing', 'Trang Chào Mừng', 'Welcome Portal')}</span>
                 </button>
               )}
               <button
                 onClick={() => openAuthModal('login')}
-                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 font-bold text-[11px] sm:text-xs shadow-xs transition-colors whitespace-nowrap cursor-pointer"
+                className="group sheen-btn flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-indigo-600 dark:hover:bg-indigo-100 font-bold text-xs sm:text-sm shadow-sm transition-all whitespace-nowrap cursor-pointer"
               >
-                <LogIn className="w-3.5 h-3.5" />
+                <LogIn className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 <span>{t('nav.login', 'Đăng Nhập', 'Sign In')}</span>
               </button>
             </div>

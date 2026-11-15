@@ -23,7 +23,9 @@ import {
   Volume2,
   VolumeX,
   PanelBottomOpen,
-  MessageSquare
+  MessageSquare,
+  ListOrdered,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -36,6 +38,11 @@ import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
 import { CS_LESSONS } from '../data/csLessonsData';
 import { PlatformReviews } from './common/PlatformReviews';
+import {
+  LectureDirectorySection,
+  DirectorySubjectFilter,
+  LectureDirectoryTarget
+} from './common/LectureDirectorySection';
 
 interface ClassroomOverviewProps {
   onNavigate: (subject: SubjectType) => void;
@@ -52,7 +59,55 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 }) => {
   const { user, openAuthModal } = useAuth();
   const { t, language } = useLanguage();
-  const { reviewScrollTick, requestScrollToReviews } = useNavigation();
+  const { reviewScrollTick, requestScrollToReviews, navigate } = useNavigation();
+  const [directorySubject, setDirectorySubject] = useState<DirectorySubjectFilter>('all');
+
+  const scrollToSection = (sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const scrollToLectureDirectory = (subj: DirectorySubjectFilter = 'all') => {
+    setDirectorySubject(subj);
+    window.setTimeout(() => {
+      const el = document.getElementById('classroom-lecture-directory');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 30);
+  };
+
+  const handleSelectLectureFromDirectory = (target: LectureDirectoryTarget) => {
+    if (target.subject === 'math') {
+      navigate({
+        subject: 'math',
+        mathTab: 'lectures',
+        mathViewMode: 'lecture',
+        mathLectureId: target.lectureId,
+        tutorOpen: false
+      });
+    } else if (target.subject === 'physics') {
+      navigate({
+        subject: 'physics',
+        physicsView: 'lecture',
+        physicsLessonId: target.lectureId,
+        physicsTab: 'theory',
+        tutorOpen: false
+      });
+    } else {
+      navigate({
+        subject: 'cs',
+        csViewMode: 'curriculum',
+        csSubView: 'lecture',
+        csLessonId: target.lectureId,
+        csLessonTab: 'lecture',
+        tutorOpen: false
+      });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const {
     studyFormat,
     setStudyFormat,
@@ -247,53 +302,63 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </p>
 
             {/* Quick-Launch Command Bar */}
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => onNavigate('math')}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/35 text-sky-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                className="group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/40 hover:border-sky-300/80 text-sky-100 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap"
               >
-                <Compass className="w-3.5 h-3.5 text-sky-300" />
+                <Compass className="w-4 h-4 text-sky-300 group-hover:rotate-12 transition-transform" />
                 <span>{isEn ? 'Math 2D/3D' : 'Toán 2D/3D'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => onNavigate('physics')}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/35 text-amber-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                className="group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/40 hover:border-amber-300/80 text-amber-100 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap"
               >
-                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <Zap className="w-4 h-4 text-amber-300 group-hover:scale-110 transition-transform" />
                 <span>{isEn ? 'Physics Lab' : 'Lab Vật lí'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => onNavigate('cs')}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/35 text-emerald-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                className="group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/40 hover:border-emerald-300/80 text-emerald-100 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap"
               >
-                <Code2 className="w-3.5 h-3.5 text-emerald-300" />
+                <Code2 className="w-4 h-4 text-emerald-300 group-hover:scale-110 transition-transform" />
                 <span>{isEn ? 'Sublime IDE' : 'IDE Tin học'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => onNavigate('exams')}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                className="group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/12 hover:bg-white/25 border border-white/20 hover:border-white/45 text-white text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap"
               >
-                <FileText className="w-3.5 h-3.5 text-indigo-300" />
+                <FileText className="w-4 h-4 text-indigo-300 group-hover:scale-110 transition-transform" />
                 <span>{isEn ? 'Exam Bank' : 'Kho Đề Thi'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => onNavigate('forum')}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-500/30 to-sky-500/25 hover:from-indigo-500/45 hover:to-sky-500/40 border border-indigo-300/45 text-sky-100 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                className="group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-500/30 to-sky-500/25 hover:from-indigo-500/50 hover:to-sky-500/45 border border-indigo-300/45 text-sky-100 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap"
               >
-                <MessageSquare className="w-3.5 h-3.5 text-sky-300" />
+                <MessageSquare className="w-4 h-4 text-sky-300 group-hover:scale-110 transition-transform" />
                 <span>{isEn ? 'Study Forum' : 'Diễn đàn học tập'}</span>
               </button>
               <button
                 type="button"
-                onClick={requestScrollToReviews}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400/25 to-rose-400/20 hover:from-amber-400/35 hover:to-rose-400/30 border border-amber-300/45 text-amber-200 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                onClick={() => scrollToLectureDirectory('all')}
+                className="group sheen-btn flex items-center gap-2 px-4.5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600/85 to-purple-600/85 hover:from-indigo-500 hover:to-purple-500 border border-indigo-300/60 text-white text-xs sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap shadow-md shadow-indigo-500/30"
+                title={isEn ? 'Scroll to Lecture Directory' : 'Cuộn xuống Danh sách bài giảng'}
               >
-                <Star className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                <ListOrdered className="w-4 h-4 text-sky-200 group-hover:scale-110 transition-transform" />
+                <span>{isEn ? 'Table of Contents' : 'Mục lục'}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-sky-200 group-hover:translate-y-0.5 transition-transform" />
+              </button>
+              <button
+                type="button"
+                onClick={requestScrollToReviews}
+                className="group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400/25 to-rose-400/20 hover:from-amber-400/40 hover:to-rose-400/35 border border-amber-300/45 text-amber-100 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Star className="w-4 h-4 text-amber-300 fill-amber-300 group-hover:rotate-12 transition-transform" />
                 <span>{isEn ? 'Ratings & Votes' : 'Đánh giá & Bình chọn'}</span>
               </button>
             </div>
@@ -426,6 +491,163 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* TABLE OF CONTENTS (MỤC LỤC TRANG CHÍNH) */}
+      <section className="rounded-3xl bg-white/85 dark:bg-slate-900/76 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-indigo-200/80 dark:border-indigo-500/25 p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-white/10">
+          <div className="flex items-center gap-2">
+            <ListOrdered className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <h2 className="font-display text-sm sm:text-base font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+              {isEn ? 'Table of Contents · Jump to Lectures' : 'Mục Lục Trang Chính · Cuộn Nhanh Xuống Bài Giảng'}
+            </h2>
+          </div>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {isEn
+              ? 'Click any entry to scroll smoothly down to the lecture list or classroom tools'
+              : 'Bấm vào mục lục để cuộn xuống xem ngay danh sách bài giảng & các khu vực học tập'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => scrollToLectureDirectory('all')}
+            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-50 via-sky-50/70 to-indigo-50 dark:from-indigo-950/60 dark:via-slate-900/80 dark:to-indigo-950/50 hover:from-indigo-100 hover:to-sky-100 dark:hover:from-indigo-900/70 dark:hover:to-indigo-950/80 border border-indigo-300/80 dark:border-indigo-500/40 hover:border-indigo-500 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+            />
+            <div className="relative z-10 min-w-0">
+              <span className="font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400 block">
+                01 · {isEn ? 'ALL LECTURES' : 'DANH SÁCH BÀI GIẢNG'}
+              </span>
+              <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-200 truncate block transition-colors">
+                {isEn ? `View All ${totalLessons} Lectures` : `Xem toàn bộ ${totalLessons} bài giảng`}
+              </span>
+            </div>
+            <span className="relative z-10 w-8 h-8 rounded-xl bg-indigo-600/10 dark:bg-indigo-400/15 group-hover:bg-indigo-600 text-indigo-600 dark:text-indigo-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+              <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => scrollToLectureDirectory('math')}
+            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-200/85 dark:border-white/10 hover:border-sky-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+            />
+            <div className="relative z-10 min-w-0">
+              <span className="font-mono text-[11px] font-bold text-sky-600 dark:text-sky-400 block">
+                02 · {isEn ? 'MATHEMATICS' : 'TOÁN HỌC'}
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-300 truncate block transition-colors">
+                {isEn ? `Math (${MATH_LECTURES.length} lessons)` : `Bài giảng Toán (${MATH_LECTURES.length} bài)`}
+              </span>
+            </div>
+            <span className="relative z-10 w-8 h-8 rounded-xl bg-sky-500/10 group-hover:bg-sky-500 text-sky-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+              <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => scrollToLectureDirectory('physics')}
+            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-slate-200/85 dark:border-white/10 hover:border-amber-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+            />
+            <div className="relative z-10 min-w-0">
+              <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 block">
+                03 · {isEn ? 'PHYSICS' : 'VẬT LÍ'}
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
+                {isEn ? `Physics (${PHYSICS_LESSONS.length} labs)` : `Bài giảng Vật lí (${PHYSICS_LESSONS.length} bài)`}
+              </span>
+            </div>
+            <span className="relative z-10 w-8 h-8 rounded-xl bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+              <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => scrollToLectureDirectory('cs')}
+            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-emerald-50 dark:hover:bg-emerald-950/45 border border-slate-200/85 dark:border-white/10 hover:border-emerald-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+            />
+            <div className="relative z-10 min-w-0">
+              <span className="font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block">
+                04 · {isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC'}
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
+                {isEn ? `CS & VNOI (${CS_LESSONS.length} modules)` : `Bài giảng Tin học (${CS_LESSONS.length} bài)`}
+              </span>
+            </div>
+            <span className="relative z-10 w-8 h-8 rounded-xl bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+              <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => scrollToSection('classroom-exams-banner')}
+            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-purple-50 dark:hover:bg-purple-950/45 border border-slate-200/85 dark:border-white/10 hover:border-purple-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+            />
+            <div className="relative z-10 min-w-0">
+              <span className="font-mono text-[11px] font-bold text-purple-600 dark:text-purple-400 block">
+                05 · {isEn ? 'EXAM ARCHIVE' : 'KHO ĐỀ THI'}
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-300 truncate block transition-colors">
+                {isEn ? `${totalExams} Official Exams` : `${totalExams} Đề thi & AI chấm`}
+              </span>
+            </div>
+            <span className="relative z-10 w-8 h-8 rounded-xl bg-purple-500/12 group-hover:bg-purple-600 text-purple-600 dark:text-purple-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+              <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => scrollToSection('classroom-utilities')}
+            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-indigo-50 dark:hover:bg-indigo-950/45 border border-slate-200/85 dark:border-white/10 hover:border-indigo-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+            />
+            <div className="relative z-10 min-w-0">
+              <span className="font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400 block">
+                06 · {isEn ? 'STUDY UTILITIES' : 'TIỆN ÍCH HỌC TẬP'}
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-300 truncate block transition-colors">
+                {isEn ? 'Focus Timer & Quick Notes' : 'Đồng hồ tập trung & Sổ tay'}
+              </span>
+            </div>
+            <span className="relative z-10 w-8 h-8 rounded-xl bg-indigo-500/12 group-hover:bg-indigo-600 text-indigo-600 dark:text-indigo-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+              <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+            </span>
+          </button>
         </div>
       </section>
 
@@ -917,9 +1139,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
       {/* SECTION 4: Featured Exam Bank Banner */}
       <section
+        id="classroom-exams-banner"
         data-ripple="true"
         onClick={() => onNavigate('exams')}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border border-indigo-500/35 p-6 sm:p-8 shadow-xl cursor-pointer hover:border-sky-400/70 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6"
+        className="scroll-mt-24 relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border border-indigo-500/35 p-6 sm:p-8 shadow-xl cursor-pointer hover:border-sky-400/70 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6"
       >
         <div className="space-y-2 max-w-2xl min-w-0">
           <div className="text-xs font-bold uppercase tracking-widest text-cyan-400 tabular-nums">
@@ -935,7 +1158,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
             {isEn
               ? 'Official and specialized Olympiad exams with built-in timer, handwritten photo submission for AI grading (0–10), and interactive follow-up Q&A.'
-              : 'Tuyển tập đề thi từ KHTN, Sư Phạm, Amsterdam, Lê Hồng Phong và 20 tỉnh thành... kèm đồng hồ bấm giờ, nộp ảnh để AI chấm điểm và hỏi đáp phần chưa hiểu.'}
+              : 'Tuyển tập đề thi từ KHTN, Sư Phạm, Amsterdam, Lê Hồng Phong và nhiều tỉnh thành... kèm đồng hồ bấm giờ, nộp ảnh để AI chấm điểm và hỏi đáp phần chưa hiểu.'}
           </p>
         </div>
 
@@ -952,7 +1175,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       </section>
 
       {/* SECTION 5: Classroom Focus Utilities (Synced Study-Format Pomodoro + Bells + Quick Notebook) */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <section id="classroom-utilities" className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Focus Timer synced with Bottom-Left Floating Widget */}
         <div className="lg:col-span-5 bg-white/82 dark:bg-slate-900/74 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-indigo-200/80 dark:border-indigo-500/25 rounded-[2rem] p-6 sm:p-7 shadow-xs flex flex-col justify-between space-y-4">
           <div className="space-y-4">
@@ -1216,7 +1439,15 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </div>
       </section>
 
-      {/* SECTION 6: Community Reviews, Star Ratings & Favorite Votes */}
+      {/* SECTION 6: Complete Lecture Directory (Target of Mục lục) */}
+      <LectureDirectorySection
+        id="classroom-lecture-directory"
+        subjectFilter={directorySubject}
+        onSubjectFilterChange={setDirectorySubject}
+        onSelectLecture={handleSelectLectureFromDirectory}
+      />
+
+      {/* SECTION 7: Community Reviews, Star Ratings & Favorite Votes */}
       <div className="cv-auto">
         <PlatformReviews id="platform-reviews" />
       </div>

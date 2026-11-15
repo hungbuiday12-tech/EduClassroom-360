@@ -31,10 +31,18 @@ import {
   Wand2,
   Check,
   Volume2,
-  VolumeX
+  VolumeX,
+  ListOrdered,
+  ChevronDown
 } from 'lucide-react';
 import { useAudio } from '../../context/AudioContext';
+import { useNavigation } from '../../context/NavigationContext';
 import { PlatformReviews } from '../common/PlatformReviews';
+import {
+  LectureDirectorySection,
+  DirectorySubjectFilter,
+  LectureDirectoryTarget
+} from '../common/LectureDirectorySection';
 
 import { EXAM_PAPERS } from '../../data/examData';
 import { MATH_LECTURES } from '../../data/curriculumData';
@@ -63,13 +71,63 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
+  const { navigate } = useNavigation();
   const isEn = language === 'en';
+  const [directorySubject, setDirectorySubject] = useState<DirectorySubjectFilter>('all');
 
   const scrollToVisitorReviews = () => {
     const el = document.getElementById('visitor-platform-reviews');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  const scrollToLectureDirectory = (subj: DirectorySubjectFilter = 'all') => {
+    setDirectorySubject(subj);
+    window.setTimeout(() => {
+      const el = document.getElementById('visitor-lecture-directory');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 30);
+  };
+
+  const scrollToVisitorSection = (sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleOpenLectureFromVisitor = (target: LectureDirectoryTarget) => {
+    if (target.subject === 'math') {
+      navigate({
+        subject: 'math',
+        mathTab: 'lectures',
+        mathViewMode: 'lecture',
+        mathLectureId: target.lectureId,
+        tutorOpen: false
+      });
+    } else if (target.subject === 'physics') {
+      navigate({
+        subject: 'physics',
+        physicsView: 'lecture',
+        physicsLessonId: target.lectureId,
+        physicsTab: 'theory',
+        tutorOpen: false
+      });
+    } else {
+      navigate({
+        subject: 'cs',
+        csViewMode: 'curriculum',
+        csSubView: 'lecture',
+        csLessonId: target.lectureId,
+        csLessonTab: 'lecture',
+        tutorOpen: false
+      });
+    }
+    onEnterAsGuest();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Auth Card Modes on Landing: 'login' | 'register' | 'forgot'
@@ -360,29 +418,29 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       {/* Dynamic 60fps Galaxy Background (Works in both Dark Deep Space & Light Celestial Aurora) */}
       <GalaxyBackground interactive={true} intensity="vibrant" isDark={isDark} />
 
-      {/* Top Navigation Bar */}
-      <header className="relative z-20 border-b border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-slate-950/40 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <BrandLogo sizeClass="w-8 h-8 sm:w-9 sm:h-9" />
+      {/* Top Navigation Bar (Enlarged VI/EN row with lively interactions) */}
+      <header className="relative z-20 border-b border-slate-200/80 dark:border-white/10 bg-white/75 dark:bg-slate-950/50 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 min-h-[68px] sm:min-h-[78px] flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <BrandLogo sizeClass="w-9 h-9 sm:w-10 sm:h-10" />
             <div className="min-w-0">
-              <span className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 dark:text-white block truncate">
+              <span className="text-base sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white block truncate">
                 Synapse
               </span>
-              <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-300 block -mt-0.5 truncate">
+              <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-300 block -mt-0.5 truncate">
                 Galaxy Academic Edition
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
             <button
               type="button"
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-white/15 bg-white/80 dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/20 transition-colors cursor-pointer"
+              className="group sheen-btn flex items-center gap-1.5 px-3.5 sm:px-4.5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-2xl border border-indigo-200/90 dark:border-white/20 bg-white/90 dark:bg-white/10 text-slate-800 dark:text-slate-100 hover:bg-indigo-50 dark:hover:bg-white/20 hover:border-indigo-400 shadow-xs transition-all cursor-pointer whitespace-nowrap"
               title={isEn ? 'Chuyển sang Tiếng Việt' : 'Switch to English'}
             >
-              <Globe className="w-3.5 h-3.5 text-indigo-500" />
+              <Globe className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-indigo-500 group-hover:rotate-12 transition-transform" />
               <span className={!isEn ? 'text-indigo-600 dark:text-indigo-300 font-black' : 'opacity-60'}>VI</span>
               <span className="opacity-40">/</span>
               <span className={isEn ? 'text-indigo-600 dark:text-indigo-300 font-black' : 'opacity-60'}>EN</span>
@@ -391,10 +449,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             <div className="relative" ref={creatureMenuRef}>
               <button
                 onClick={() => setIsCreatureMenuOpen(!isCreatureMenuOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-indigo-200/70 dark:border-white/15 bg-white/80 dark:bg-white/10 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-white/20 transition-colors cursor-pointer"
+                className="group sheen-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-2xl border border-indigo-200/80 dark:border-white/20 bg-white/90 dark:bg-white/10 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-white/20 hover:border-indigo-400 shadow-xs transition-all cursor-pointer whitespace-nowrap"
                 title={isEn ? 'Choose interactive background creature' : 'Chọn sinh vật nền tương tác'}
               >
-                <Wand2 className="w-3.5 h-3.5 shrink-0" />
+                <Wand2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] group-hover:rotate-12 transition-transform shrink-0" />
                 <span className="hidden sm:inline">{isEn ? activeCreature.shortEn : activeCreature.shortVi}</span>
               </button>
 
@@ -429,44 +487,62 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
             <button
               type="button"
+              onClick={() => scrollToLectureDirectory('all')}
+              className="group sheen-btn flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-extrabold rounded-2xl border border-indigo-400/80 dark:border-indigo-400/50 bg-indigo-600/12 dark:bg-indigo-500/25 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+              title={isEn ? 'Table of Contents · Jump to Lectures' : 'Mục lục · Cuộn xuống Danh sách bài giảng'}
+            >
+              <ListOrdered className="w-4 h-4 sm:w-[18px] sm:h-[18px] group-hover:scale-110 transition-transform shrink-0" />
+              <span>{isEn ? 'Contents' : 'Mục lục'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={scrollToVisitorReviews}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-xl border border-amber-300/80 dark:border-amber-400/35 bg-amber-50/90 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer whitespace-nowrap"
+              className="group sheen-btn flex items-center gap-2 px-3.5 sm:px-4.5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-2xl border border-amber-300/90 dark:border-amber-400/40 bg-amber-50/95 dark:bg-amber-950/45 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               title={isEn ? 'Scroll to Reviews & Votes' : 'Cuộn xuống Đánh giá & Bình chọn'}
             >
-              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400 shrink-0" />
+              <Star className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-amber-500 fill-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
               <span className="hidden md:inline">{isEn ? 'Reviews' : 'Đánh giá & Bình chọn'}</span>
             </button>
 
             <button
               type="button"
               onClick={toggleBgPlaying}
-              className={`p-2 rounded-xl border transition-colors cursor-pointer ${
+              className={`group sheen-btn p-2.5 sm:p-3 rounded-2xl border shadow-xs transition-all cursor-pointer ${
                 isBgPlaying && bgSound !== 'off'
-                  ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
-                  : 'border-slate-200 dark:border-white/15 bg-white/80 dark:bg-white/10 text-slate-500 dark:text-slate-300'
+                  ? 'border-emerald-400/70 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
+                  : 'border-slate-200 dark:border-white/20 bg-white/90 dark:bg-white/10 text-slate-600 dark:text-slate-200 hover:border-indigo-400'
               }`}
               title={isEn ? 'Toggle background music' : 'Bật/tắt âm thanh nền'}
             >
-              {isBgPlaying && bgSound !== 'off' ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              {isBgPlaying && bgSound !== 'off' ? (
+                <Volume2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] group-hover:scale-110 transition-transform" />
+              ) : (
+                <VolumeX className="w-4 h-4 sm:w-[18px] sm:h-[18px] group-hover:scale-110 transition-transform" />
+              )}
             </button>
 
             {onToggleTheme && (
               <button
                 onClick={onToggleTheme}
-                className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10 rounded-xl transition-colors"
+                className="group sheen-btn p-2.5 sm:p-3 text-slate-600 dark:text-slate-200 bg-white/90 dark:bg-white/10 border border-slate-200 dark:border-white/20 hover:bg-amber-50 dark:hover:bg-white/20 rounded-2xl shadow-xs transition-all cursor-pointer"
                 title={isEn ? (isDark ? 'Switch to Light' : 'Switch to Dark') : isDark ? 'Chuyển sang chế độ Sáng' : 'Chuyển sang chế độ Tối'}
               >
-                {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+                {isDark ? (
+                  <Sun className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-amber-400 group-hover:rotate-45 transition-transform" />
+                ) : (
+                  <Moon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-indigo-600 group-hover:-rotate-12 transition-transform" />
+                )}
               </button>
             )}
 
             <button
               onClick={onEnterAsGuest}
-              className="px-3 sm:px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 text-white dark:bg-white/10 hover:bg-slate-800 dark:hover:bg-white/20 dark:text-white border border-transparent dark:border-white/15 transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+              className="group sheen-btn px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-indigo-600 dark:hover:bg-indigo-100 border border-transparent transition-all flex items-center gap-2 shadow-md whitespace-nowrap cursor-pointer"
             >
               <span className="hidden sm:inline">{isEn ? 'Explore as Guest' : 'Vào trải nghiệm thử (Khách)'}</span>
               <span className="sm:hidden">{isEn ? 'Try Now' : 'Vào thử'}</span>
-              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform shrink-0" />
             </button>
           </div>
         </div>
@@ -633,9 +709,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             <div className="pt-1 flex flex-wrap items-center gap-3">
               <button
                 onClick={onEnterAsGuest}
-                className="w-full sm:w-auto px-5 sm:px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                className="sheen-btn w-full sm:w-auto px-6 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 group cursor-pointer"
               >
-                <Play className="w-4 h-4 fill-white shrink-0" />
+                <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform shrink-0" />
                 <span>{isEn ? 'Enter Classroom Directly (Guest Mode)' : 'Vào Trực Tiếp Lớp Học (Không Cần Đăng Nhập)'}</span>
                 <ChevronRight className="w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -643,9 +719,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <button
                 type="button"
                 onClick={scrollToVisitorReviews}
-                className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-white/90 dark:bg-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-amber-300/80 dark:border-amber-400/35 text-amber-800 dark:text-amber-200 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                className="group sheen-btn w-full sm:w-auto px-5 py-4 rounded-2xl bg-white/95 dark:bg-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-amber-300/90 dark:border-amber-400/40 text-amber-800 dark:text-amber-200 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap"
               >
-                <Star className="w-4 h-4 text-amber-500 fill-amber-400 shrink-0" />
+                <Star className="w-4 h-4 text-amber-500 fill-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
                 <span>{isEn ? 'Ratings & Votes' : 'Đánh giá & Bình chọn'}</span>
               </button>
 
@@ -1049,8 +1125,211 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
           </div>
         </div>
 
+        {/* GIANT UNIFIED CENTERPIECE "MỤC LỤC" GATEWAY BUTTON */}
+        <div className="mt-10 sm:mt-14">
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => scrollToLectureDirectory('all')}
+            className="group relative overflow-hidden w-full rounded-3xl p-5 sm:p-7 bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 hover:from-indigo-500 hover:via-violet-500 hover:to-sky-500 text-white border border-white/25 animate-pulse-halo transition-all duration-300 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 text-left cursor-pointer active:scale-[0.97]"
+          >
+            {/* Moving specular sweep */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[160%] group-hover-sheen"
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(255,255,255,0.18),transparent_55%)] opacity-80 group-hover:opacity-100 transition-opacity"
+            />
+
+            <div className="relative z-10 flex items-center gap-4 sm:gap-5 min-w-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/18 backdrop-blur-md border border-white/30 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                <ListOrdered className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <div className="text-[11px] sm:text-xs font-mono font-extrabold uppercase tracking-[0.2em] text-sky-100">
+                  {isEn ? 'UNIFIED DIRECTORY · ONE-CLICK ACCESS' : 'MỤC LỤC TOÀN HỆ THỐNG · TRUY CẬP NHANH'}
+                </div>
+                <div className="font-display text-lg sm:text-2xl lg:text-3xl font-black tracking-tight text-white leading-tight">
+                  {isEn
+                    ? `MỤC LỤC · EXPLORE ALL ${totalLessons} INTERACTIVE LECTURES`
+                    : `MỤC LỤC · KHÁM PHÁ NGAY ${totalLessons} BÀI GIẢNG TRỰC QUAN`}
+                </div>
+                <p className="text-xs sm:text-sm text-indigo-100/95 font-medium truncate">
+                  {isEn
+                    ? `Math (${MATH_LECTURES.length}) · Physics (${PHYSICS_LESSONS.length}) · CS (${CS_LESSONS.length}) · ${totalExams} Official Exam Papers`
+                    : `Toán học (${MATH_LECTURES.length} bài) · Vật lí (${PHYSICS_LESSONS.length} bài) · Tin học (${CS_LESSONS.length} bài) · ${totalExams} Đề thi chuẩn`}
+                </p>
+              </div>
+            </div>
+
+            <div className="relative z-10 flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-white text-indigo-700 font-extrabold text-xs sm:text-sm shadow-lg shrink-0 group-hover:bg-sky-50 group-hover:scale-105 transition-all whitespace-nowrap">
+              <span>{isEn ? 'Scroll to Lectures' : 'Cuộn xuống xem ngay'}</span>
+              <ChevronDown className="w-5 h-5 text-indigo-600 animate-bounce" />
+            </div>
+          </button>
+        </div>
+
+        {/* TABLE OF CONTENTS (MỤC LỤC) BAR */}
+        <section className="mt-6 sm:mt-8 rounded-3xl bg-white/85 dark:bg-slate-900/75 backdrop-blur-md border border-indigo-200/80 dark:border-indigo-500/25 p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <ListOrdered className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <h2 className="font-display text-sm sm:text-base font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+                {isEn ? 'Table of Contents · Quick Navigation' : 'Mục Lục · Điều Hướng Nhanh Từng Môn'}
+              </h2>
+            </div>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {isEn
+                ? 'Click any entry below to scroll directly to the lecture directory'
+                : 'Bấm vào từng mục bên dưới để lọc & cuộn thẳng xuống danh sách bài giảng'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => scrollToLectureDirectory('all')}
+              className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/55 hover:bg-indigo-100 dark:hover:bg-indigo-900/65 border border-indigo-300/80 dark:border-indigo-500/40 hover:border-indigo-500 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+              />
+              <div className="relative z-10 min-w-0">
+                <span className="font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400 block">
+                  01 · {isEn ? 'FULL DIRECTORY' : 'TOÀN BỘ BÀI GIẢNG'}
+                </span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-200 truncate block transition-colors">
+                  {isEn ? `All Lectures (${totalLessons} lessons)` : `Danh sách bài giảng (${totalLessons} bài)`}
+                </span>
+              </div>
+              <span className="relative z-10 w-8 h-8 rounded-xl bg-indigo-600/10 group-hover:bg-indigo-600 text-indigo-600 dark:text-indigo-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => scrollToLectureDirectory('math')}
+              className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-200/85 dark:border-white/10 hover:border-sky-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+              />
+              <div className="relative z-10 min-w-0">
+                <span className="font-mono text-[11px] font-bold text-sky-600 dark:text-sky-400 block">
+                  02 · {isEn ? 'MATHEMATICS' : 'TOÁN HỌC'}
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-300 truncate block transition-colors">
+                  {isEn ? `Math Lectures (${MATH_LECTURES.length})` : `Bài giảng Toán (${MATH_LECTURES.length} bài)`}
+                </span>
+              </div>
+              <span className="relative z-10 w-8 h-8 rounded-xl bg-sky-500/10 group-hover:bg-sky-500 text-sky-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => scrollToLectureDirectory('physics')}
+              className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-slate-200/85 dark:border-white/10 hover:border-amber-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+              />
+              <div className="relative z-10 min-w-0">
+                <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 block">
+                  03 · {isEn ? 'PHYSICS' : 'VẬT LÍ'}
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
+                  {isEn ? `Physics Labs & Lessons (${PHYSICS_LESSONS.length})` : `Bài giảng Vật lí (${PHYSICS_LESSONS.length} bài)`}
+                </span>
+              </div>
+              <span className="relative z-10 w-8 h-8 rounded-xl bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => scrollToLectureDirectory('cs')}
+              className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-emerald-50 dark:hover:bg-emerald-950/45 border border-slate-200/85 dark:border-white/10 hover:border-emerald-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+              />
+              <div className="relative z-10 min-w-0">
+                <span className="font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block">
+                  04 · {isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC'}
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
+                  {isEn ? `CS & VNOI Modules (${CS_LESSONS.length})` : `Bài giảng Tin học (${CS_LESSONS.length} bài)`}
+                </span>
+              </div>
+              <span className="relative z-10 w-8 h-8 rounded-xl bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => scrollToVisitorSection('visitor-ecosystem')}
+              className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-purple-50 dark:hover:bg-purple-950/45 border border-slate-200/85 dark:border-white/10 hover:border-purple-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+              />
+              <div className="relative z-10 min-w-0">
+                <span className="font-mono text-[11px] font-bold text-purple-600 dark:text-purple-400 block">
+                  05 · {isEn ? 'ECOSYSTEM & EXAMS' : 'HỆ SINH THÁI & ĐỀ THI'}
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-300 truncate block transition-colors">
+                  {isEn ? `4 Pillars & ${totalExams} Exams` : `4 Phòng Lab & ${totalExams} Đề thi`}
+                </span>
+              </div>
+              <span className="relative z-10 w-8 h-8 rounded-xl bg-purple-500/12 group-hover:bg-purple-600 text-purple-600 dark:text-purple-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={scrollToVisitorReviews}
+              className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/65 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-slate-200/85 dark:border-white/10 hover:border-amber-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.96] shadow-xs"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+              />
+              <div className="relative z-10 min-w-0">
+                <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 block">
+                  06 · {isEn ? 'COMMUNITY' : 'CỘNG ĐỒNG'}
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
+                  {isEn ? 'Platform Ratings & Votes' : 'Đánh giá & Bình chọn'}
+                </span>
+              </div>
+              <span className="relative z-10 w-8 h-8 rounded-xl bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-110">
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </button>
+          </div>
+        </section>
+
         {/* 4 Core Pillars Overview Section */}
-        <div className="mt-14 sm:mt-20 pt-10 border-t border-slate-200/80 dark:border-white/10 space-y-8">
+        <div id="visitor-ecosystem" className="scroll-mt-24 mt-12 sm:mt-16 pt-10 border-t border-slate-200/80 dark:border-white/10 space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
               {isEn
@@ -1147,8 +1426,20 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
           </div>
         </div>
 
+        {/* Full Lecture Directory on Welcome Page */}
+        <div className="mt-12 sm:mt-16">
+          <LectureDirectorySection
+            id="visitor-lecture-directory"
+            subjectFilter={directorySubject}
+            onSubjectFilterChange={setDirectorySubject}
+            onSelectLecture={handleOpenLectureFromVisitor}
+            actionHintVi="Bấm vào bất kỳ bài giảng nào để vào ngay lớp học mô phỏng 5 bước (không cần đăng nhập)."
+            actionHintEn="Click any lecture below to launch directly into its 5-step simulation classroom (no sign-in required)."
+          />
+        </div>
+
         {/* Community Reviews & Ratings Section on Landing */}
-        <div className="mt-14 sm:mt-16">
+        <div className="mt-12 sm:mt-16">
           <PlatformReviews id="visitor-platform-reviews" />
         </div>
       </main>

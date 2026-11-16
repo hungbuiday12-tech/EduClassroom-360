@@ -241,10 +241,10 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
         }
       >
         {isFocusMode && (
-          <div className="sticky top-0 z-20 mb-4 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-indigo-200 dark:border-indigo-800 shadow-md backdrop-blur-md">
+          <div className="sticky top-0 z-20 mb-4 flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-white/95 dark:bg-slate-900/95 border border-blue-200 dark:border-sky-800 shadow-md backdrop-blur-md">
             <button
               onClick={() => setIsFocusMode(false)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors whitespace-nowrap"
+              className="cs-deck-btn flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-blue-700 text-white hover:bg-blue-800 transition-colors whitespace-nowrap"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Quay lại chế độ thường (Esc)</span>
@@ -258,11 +258,11 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
         {/* Top Banner, Track Switcher & Search Controls (Shown in Catalog Mode) */}
         {viewMode === 'catalog' && (
           <>
-            <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 sm:p-6 shadow-xs space-y-5">
+            <div className="sci-frame sci-blueprint-bg bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/90 dark:border-slate-800/90 rounded-xl p-4 sm:p-6 shadow-xs space-y-5">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                    <span className="font-bold text-blue-700 dark:text-sky-400 uppercase tracking-wider">
                       Toán Học 9–12 &amp; Bồi Dưỡng Chuyên
                     </span>
                     <span aria-hidden="true">·</span>
@@ -282,7 +282,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       type="button"
                       data-ripple="true"
                       onClick={() => handleOpen2DSimForLecture(filteredLectures[0] || activeLecture)}
-                      className="group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm whitespace-nowrap cursor-pointer"
+                      className="group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-md text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white shadow-sm whitespace-nowrap cursor-pointer"
                     >
                       <LineChart className="w-4 h-4 icon-anim-wave" />
                       <span>Mô phỏng 2D</span>
@@ -291,7 +291,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       type="button"
                       data-ripple="true"
                       onClick={() => handleOpen3DSimForLecture(filteredLectures[0] || activeLecture)}
-                      className="group sim-btn-3d cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-sm whitespace-nowrap cursor-pointer"
+                      className="group sim-btn-3d cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-md text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-sm whitespace-nowrap cursor-pointer"
                     >
                       <Box className="w-4 h-4 icon-anim-3d-cube" />
                       <span>Mô phỏng 3D</span>
@@ -306,13 +306,13 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                 <div
                   style={
                     {
-                      '--math-accent': '#4f46e5',
-                      '--math-secondary': '#38bdf8'
+                      '--math-accent': '#1d4ed8',
+                      '--math-secondary': '#0ea5e9'
                     } as React.CSSProperties
                   }
                   className={`math-zone-frame group ${
                     selectedTrack === 'khong_chuyen'
-                      ? 'math-zone-active shadow-[0_14px_34px_-12px_rgba(79,70,229,0.45)]'
+                      ? 'math-zone-active shadow-[0_14px_34px_-12px_rgba(29,78,216,0.38)]'
                       : 'shadow-xs'
                   }`}
                 >
@@ -321,19 +321,19 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                     type="button"
                     data-ripple="true"
                     onClick={() => setSelectedTrack('khong_chuyen')}
-                    className={`relative z-10 w-full h-full text-left rounded-[1.15rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
+                    className={`relative z-10 w-full h-full text-left rounded-[0.5rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
                       selectedTrack === 'khong_chuyen'
-                        ? 'bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 text-white'
+                        ? 'bg-gradient-to-br from-blue-700 via-blue-600 to-sky-600 text-white'
                         : 'bg-slate-50/95 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800'
                     }`}
                   >
                     <span aria-hidden="true" className="math-grid-sheen" />
                     <div className="relative z-10 flex items-start gap-3.5 min-w-0">
                       <div
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                        className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
                           selectedTrack === 'khong_chuyen'
                             ? 'bg-white/20 text-white'
-                            : 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                            : 'bg-sky-100 dark:bg-sky-950/60 text-blue-700 dark:text-sky-400'
                         }`}
                       >
                         <Compass className="w-6 h-6 icon-anim-compass" />
@@ -345,7 +345,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                         <div
                           className={`text-xs leading-relaxed ${
                             selectedTrack === 'khong_chuyen'
-                              ? 'text-indigo-100'
+                              ? 'text-sky-100'
                               : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >
@@ -360,7 +360,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                           <span>Đang mở</span>
                         </span>
                       ) : (
-                        <span className="text-indigo-600 dark:text-indigo-400 group-hover:translate-x-0.5 transition-transform">
+                        <span className="text-blue-700 dark:text-sky-400 group-hover:translate-x-0.5 transition-transform">
                           Chọn khu →
                         </span>
                       )}
@@ -387,7 +387,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                     type="button"
                     data-ripple="true"
                     onClick={() => setSelectedTrack('chuyen')}
-                    className={`relative z-10 w-full h-full text-left rounded-[1.15rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
+                    className={`relative z-10 w-full h-full text-left rounded-[0.5rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
                       selectedTrack === 'chuyen'
                         ? 'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-slate-950'
                         : 'bg-slate-50/95 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800'
@@ -396,7 +396,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                     <span aria-hidden="true" className="math-grid-sheen" />
                     <div className="relative z-10 flex items-start gap-3.5 min-w-0">
                       <div
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                        className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
                           selectedTrack === 'chuyen'
                             ? 'bg-slate-950/15 text-slate-950'
                             : 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
@@ -452,9 +452,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       <button
                         key={g.id}
                         onClick={() => setSelectedGrade(g.id)}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all ${
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap transition-all ${
                           selectedGrade === g.id
-                            ? 'bg-indigo-600 text-white shadow-xs'
+                            ? 'bg-blue-700 text-white shadow-xs'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
@@ -529,16 +529,16 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       key={lec.id}
                       style={
                         {
-                          '--math-accent': isChuyen ? '#f59e0b' : '#4f46e5',
-                          '--math-secondary': isChuyen ? '#f97316' : '#0ea5e9'
+                          '--math-accent': isChuyen ? '#f59e0b' : '#0284c7',
+                          '--math-secondary': isChuyen ? '#f97316' : '#2563eb'
                         } as React.CSSProperties
                       }
-                      className="math-card-frame group shadow-xs hover:shadow-[0_18px_40px_-14px_rgba(79,70,229,0.38)]"
+                      className="math-card-frame group shadow-xs hover:shadow-[0_18px_40px_-14px_rgba(2,132,199,0.34)]"
                     >
                       <div aria-hidden="true" className="math-geo-ring" />
                       <div
                         onClick={() => handleOpenLecture(lec.id)}
-                        className="relative z-10 h-full cursor-pointer p-5 rounded-[1.15rem] bg-white/95 dark:bg-slate-900/95 text-left transition-colors flex flex-col justify-between gap-4 overflow-hidden"
+                        className="relative z-10 h-full cursor-pointer p-5 rounded-[0.65rem] bg-white/95 dark:bg-slate-900/95 text-left transition-colors flex flex-col justify-between gap-4 overflow-hidden"
                       >
                         <span aria-hidden="true" className="math-grid-sheen" />
                         <div className="relative z-10 space-y-2.5">
@@ -556,7 +556,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                                   className={`font-bold ${
                                     isChuyen
                                       ? 'text-amber-600 dark:text-amber-400'
-                                      : 'text-indigo-600 dark:text-indigo-400'
+                                      : 'text-blue-700 dark:text-sky-400'
                                   }`}
                                 >
                                   {isChuyen && lec.tier ? `Chuyên · ${lec.tier}` : lec.gradeGroup || lec.grade}
@@ -571,7 +571,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                                 )}
                               </div>
 
-                              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug group-hover:text-blue-700 dark:group-hover:text-sky-400 transition-colors">
                                 {lec.title}
                               </h3>
                             </div>

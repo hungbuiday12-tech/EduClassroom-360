@@ -2097,7 +2097,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   return (
     <div
       ref={stageContainerRef}
-      className={`relative w-full overflow-hidden rounded-3xl border border-cyan-500/30 bg-[#050914] text-slate-100 shadow-2xl select-none ${
+      className={`relative w-full overflow-hidden rounded-xl border border-sky-500/35 bg-[#050914] text-slate-100 shadow-2xl select-none ${
         isFullscreen ? 'h-screen rounded-none border-0' : 'h-[calc(100vh-128px)] min-h-[640px]'
       }`}
     >
@@ -2132,7 +2132,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               <button
                 type="button"
                 onClick={onBack}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/95 border border-slate-700/80 hover:border-cyan-400 text-xs font-bold text-slate-100 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-slate-700/80 hover:border-sky-400 text-xs font-bold text-slate-100 transition-colors cursor-pointer whitespace-nowrap shrink-0"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>{isEn ? 'Back' : 'Quay lại'}</span>
@@ -2140,13 +2140,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             )}
 
             {/* Clean 2D vs 3D Segmented Space Switcher */}
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-950/95 border border-cyan-500/40">
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-950/95 border border-sky-500/40">
               <button
                 type="button"
                 onClick={() => setSpaceMode('2d')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   spaceMode === '2d'
-                    ? 'bg-cyan-500 text-slate-950'
+                    ? 'bg-sky-500 text-slate-950'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
@@ -2156,9 +2156,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               <button
                 type="button"
                 onClick={() => setSpaceMode('3d')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   spaceMode === '3d'
-                    ? 'bg-cyan-500 text-slate-950'
+                    ? 'bg-sky-500 text-slate-950'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
@@ -2168,9 +2168,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             </div>
 
             {/* Active Mode Subtitle + Gesture Status */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-950/95 border border-slate-700/80 text-xs">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-950/95 border border-slate-700/80 text-xs">
               <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
+                className="w-2.5 h-2.5 rounded-xs shrink-0"
                 style={{ backgroundColor: currentGestureMeta.accent }}
               />
               <span className="font-bold text-white whitespace-nowrap">
@@ -2183,7 +2183,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   : activeMode.titleVi}
               </span>
               <span className="text-slate-400">·</span>
-              <span className="font-semibold text-cyan-300 whitespace-nowrap">
+              <span className="font-semibold text-sky-300 whitespace-nowrap">
                 {isEn ? currentGestureMeta.labelEn : currentGestureMeta.labelVi}
               </span>
               {frozen && (
@@ -2200,10 +2200,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               type="button"
               onClick={cameraActive ? stopCamera : startCamera}
               disabled={cameraLoading}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                 cameraActive
                   ? 'bg-emerald-600 border-emerald-400 text-white'
-                  : 'bg-cyan-500 hover:bg-cyan-400 border-cyan-300 text-slate-950'
+                  : 'bg-sky-500 hover:bg-sky-400 border-sky-300 text-slate-950'
               }`}
             >
               {cameraActive ? <VideoOff className="w-3.5 h-3.5" /> : <Video className="w-3.5 h-3.5" />}
@@ -2225,10 +2225,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             <button
               type="button"
               onClick={handleToggleMusic}
-              className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-bold cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md border text-xs font-bold cursor-pointer whitespace-nowrap shrink-0 ${
                 isBgPlaying && bgSound !== 'off'
                   ? 'bg-emerald-950/95 border-emerald-400/70 text-emerald-300'
-                  : 'bg-slate-950/95 border-slate-700/80 text-slate-200 hover:border-cyan-400'
+                  : 'bg-slate-950/95 border-slate-700/80 text-slate-200 hover:border-sky-400'
               }`}
               title={isEn ? 'Toggle Minecraft / Study Music' : 'Bật/Tắt nhạc nền Minecraft Piano'}
             >
@@ -2245,10 +2245,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             <button
               type="button"
               onClick={() => setFrozen((v) => !v)}
-              className={`p-2 rounded-xl border text-xs font-bold cursor-pointer ${
+              className={`p-2 rounded-md border text-xs font-bold cursor-pointer ${
                 frozen
                   ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                  : 'bg-slate-950/95 border-slate-700/80 text-slate-200 hover:border-cyan-400'
+                  : 'bg-slate-950/95 border-slate-700/80 text-slate-200 hover:border-sky-400'
               }`}
               title={isEn ? 'Pause / Freeze (Space)' : 'Đóng băng / Chạy (Phím Space)'}
             >
@@ -2258,7 +2258,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             <button
               type="button"
               onClick={handleResetView}
-              className="p-2 rounded-xl bg-slate-950/95 border border-slate-700/80 hover:border-cyan-400 text-slate-200 cursor-pointer"
+              className="p-2 rounded-md bg-slate-950/95 border border-slate-700/80 hover:border-sky-400 text-slate-200 cursor-pointer"
               title={isEn ? 'Reset View (R)' : 'Đặt lại góc nhìn (Phím R)'}
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -2267,7 +2267,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             <button
               type="button"
               onClick={() => setHudHidden(true)}
-              className="p-2 rounded-xl bg-slate-950/95 border border-slate-700/80 hover:border-cyan-400 text-slate-200 cursor-pointer"
+              className="p-2 rounded-md bg-slate-950/95 border border-slate-700/80 hover:border-sky-400 text-slate-200 cursor-pointer"
               title={isEn ? 'Hide HUD (H)' : 'Ẩn giao diện (Phím H)'}
             >
               <EyeOff className="w-3.5 h-3.5" />
@@ -2276,7 +2276,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             <button
               type="button"
               onClick={handleToggleFullscreen}
-              className="p-2 rounded-xl bg-slate-950/95 border border-slate-700/80 hover:border-cyan-400 text-slate-200 cursor-pointer"
+              className="p-2 rounded-md bg-slate-950/95 border border-slate-700/80 hover:border-sky-400 text-slate-200 cursor-pointer"
               title={isEn ? 'Fullscreen' : 'Toàn màn hình'}
             >
               {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -2290,7 +2290,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         <button
           type="button"
           onClick={() => setHudHidden(false)}
-          className="absolute top-3 right-3 z-30 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/95 border border-cyan-400/60 text-xs font-bold text-cyan-300 cursor-pointer"
+          className="absolute top-3 right-3 z-30 flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-sky-400/60 text-xs font-bold text-sky-300 cursor-pointer"
         >
           <Eye className="w-3.5 h-3.5" />
           <span>{isEn ? 'Show HUD (H)' : 'Hiện Bảng Điều Khiển (H)'}</span>
@@ -2423,7 +2423,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           <button
             type="button"
             onClick={() => setDockCollapsed((v) => !v)}
-            className="flex items-center gap-1.5 px-4 py-1 rounded-t-xl bg-slate-950/95 border border-b-0 border-slate-700/80 text-[11px] font-bold text-slate-300 hover:text-cyan-300 cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-1 rounded-t-md bg-slate-950/95 border border-b-0 border-slate-700/80 text-[11px] font-bold text-slate-300 hover:text-sky-300 cursor-pointer"
           >
             {dockCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             <span>
@@ -2438,7 +2438,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           </button>
 
           {!dockCollapsed && (
-            <div className="w-full rounded-2xl bg-slate-950/95 border border-slate-700/85 shadow-2xl p-3 space-y-2.5">
+            <div className="w-full rounded-xl bg-slate-950/95 border border-slate-700/85 shadow-2xl p-3 space-y-2.5">
               {/* Dock Tabs + Quick Action Shortcuts */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -2467,9 +2467,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                         key={tab.id}
                         type="button"
                         onClick={() => setDockTab(tab.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                           active
-                            ? 'bg-cyan-500 text-slate-950'
+                            ? 'bg-sky-500 text-slate-950'
                             : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
                         }`}
                       >
@@ -2546,9 +2546,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                           key={m.id}
                           type="button"
                           onClick={() => setMode2D(m.id)}
-                          className={`text-left p-2 rounded-xl border transition-all cursor-pointer ${
+                          className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
                             active
-                              ? 'bg-cyan-500/20 border-cyan-400 text-white'
+                              ? 'bg-sky-500/20 border-sky-400 text-white'
                               : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
                           }`}
                         >
@@ -2605,9 +2605,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                           key={m.id}
                           type="button"
                           onClick={() => setModeId(m.id)}
-                          className={`text-left p-2 rounded-xl border transition-all cursor-pointer ${
+                          className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
                             active
-                              ? 'bg-cyan-500/20 border-cyan-400 text-white'
+                              ? 'bg-sky-500/20 border-sky-400 text-white'
                               : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
                           }`}
                         >
@@ -2656,9 +2656,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                               setFrozen((v) => !v);
                             }
                           }}
-                          className={`text-left p-2 rounded-xl border transition-all cursor-pointer ${
+                          className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
                             active
-                              ? 'bg-slate-800 border-cyan-400 text-white'
+                              ? 'bg-slate-800 border-sky-400 text-white'
                               : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
                           }`}
                         >
@@ -2783,19 +2783,19 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       />
                     </div>
 
-                    <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                    <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
                       <div className="flex items-center justify-between font-bold text-slate-200">
                         <button
                           type="button"
                           onClick={() => setSliceEnabled((v) => !v)}
                           className={`flex items-center gap-1 cursor-pointer ${
-                            sliceEnabled ? 'text-purple-300' : 'text-slate-400'
+                            sliceEnabled ? 'text-teal-300' : 'text-slate-400'
                           }`}
                         >
                           <Scissors className="w-3.5 h-3.5" />
                           <span>{sliceEnabled ? (isEn ? 'Slice ON' : 'Mặt Cắt BẬT') : isEn ? 'Slice OFF' : 'Mặt Cắt TẮT'}</span>
                         </button>
-                        <span className="font-mono text-purple-300">{sliceY.toFixed(2)}m</span>
+                        <span className="font-mono text-teal-300">{sliceY.toFixed(2)}m</span>
                       </div>
                       <input
                         type="range"
@@ -2807,7 +2807,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                           if (!sliceEnabled) setSliceEnabled(true);
                           setSliceY(Number(e.target.value));
                         }}
-                        className="w-full accent-purple-400"
+                        className="w-full accent-teal-400"
                       />
                     </div>
                   </div>
@@ -2895,9 +2895,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                           key={opt.id}
                           type="button"
                           onClick={() => setFinish(opt.id)}
-                          className={`px-3 py-1.5 rounded-xl border font-bold cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-md border font-bold cursor-pointer ${
                             finish === opt.id
-                              ? 'bg-cyan-500 text-slate-950 border-cyan-300'
+                              ? 'bg-sky-500 text-slate-950 border-sky-300'
                               : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-600'
                           }`}
                         >
@@ -2912,6 +2912,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       <button
                         key={pal.id}
                         type="button"
+                        data-circle="true"
                         onClick={() => setPaletteId(pal.id)}
                         className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${
                           paletteId === pal.id ? 'border-white scale-110' : 'border-slate-700'
@@ -2928,7 +2929,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                         <button
                           type="button"
                           onClick={() => setShowAxes((v) => !v)}
-                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border font-bold cursor-pointer ${
+                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md border font-bold cursor-pointer ${
                             showAxes
                               ? 'bg-sky-500/20 border-sky-400 text-sky-300'
                               : 'bg-slate-900 border-slate-800 text-slate-400'
@@ -2941,7 +2942,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                         <button
                           type="button"
                           onClick={() => setAutoSpin((v) => !v)}
-                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border font-bold cursor-pointer ${
+                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md border font-bold cursor-pointer ${
                             autoSpin
                               ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
                               : 'bg-slate-900 border-slate-800 text-slate-400'
@@ -2956,9 +2957,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     <button
                       type="button"
                       onClick={handleSnapshot}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-100 font-bold cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-sky-400 text-slate-100 font-bold cursor-pointer"
                     >
-                      <Camera className="w-3.5 h-3.5 text-cyan-300" />
+                      <Camera className="w-3.5 h-3.5 text-sky-300" />
                       <span>PNG</span>
                     </button>
 
@@ -2966,7 +2967,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       <button
                         type="button"
                         onClick={handleExportOBJ}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-100 font-bold cursor-pointer"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-sky-400 text-slate-100 font-bold cursor-pointer"
                       >
                         <FileDown className="w-3.5 h-3.5 text-amber-300" />
                         <span>.OBJ</span>

@@ -1549,7 +1549,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
     return (
       <div className="space-y-6 pb-8">
         {/* Informatics Command Header Banner */}
-        <section className="relative overflow-hidden rounded-3xl border border-emerald-400/35 bg-gradient-to-br from-[#030b17] via-[#061326] to-[#0a192f] text-white p-6 sm:p-8 shadow-[0_24px_80px_-20px_rgba(16,185,129,0.42)]">
+        <section className="relative overflow-hidden rounded-xl sci-frame sci-blueprint-bg border border-emerald-400/35 bg-gradient-to-br from-[#030b17] via-[#061326] to-[#0a192f] text-white p-6 sm:p-8 shadow-[0_24px_80px_-20px_rgba(16,185,129,0.36)]">
           {/* Matrix Grid + Laser Sweep */}
           <div
             aria-hidden="true"
@@ -1576,7 +1576,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   <button
                     type="button"
                     onClick={onBack}
-                    className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-emerald-500/25 border border-white/20 hover:border-emerald-400/60 text-xs font-bold text-slate-100 transition-colors cursor-pointer"
+                    className="group flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-emerald-500/25 border border-white/20 hover:border-emerald-400/60 text-xs font-bold text-slate-100 transition-colors cursor-pointer"
                   >
                     <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                     <span>Quay lại</span>
@@ -1602,7 +1602,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => handleSelectAlgo(algoId, true)}
-                className="group cs-deck-btn px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-extrabold text-sm shadow-[0_14px_34px_-6px_rgba(16,185,129,0.68)] flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                className="group cs-deck-btn px-6 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 text-slate-950 font-extrabold text-sm shadow-[0_12px_28px_-6px_rgba(16,185,129,0.55)] flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
               >
                 <Cpu className="w-4 h-4 icon-anim-code" />
                 <span>Mở Phòng Mô Phỏng Đang Chọn</span>
@@ -1624,9 +1624,9 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     key={cat.id}
                     type="button"
                     onClick={() => setCategory(cat.id)}
-                    className={`group cs-deck-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer border transition-all ${
+                    className={`group cs-deck-btn px-3.5 py-2 rounded-md text-xs font-bold whitespace-nowrap cursor-pointer border transition-all ${
                       selected
-                        ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 border-emerald-200 shadow-[0_8px_20px_-4px_rgba(16,185,129,0.65)]'
+                        ? 'bg-gradient-to-r from-emerald-500 to-sky-500 text-slate-950 border-emerald-200 shadow-[0_8px_20px_-4px_rgba(16,185,129,0.55)]'
                         : 'bg-slate-900/75 text-slate-200 border-emerald-500/25 hover:bg-emerald-950/60 hover:text-white hover:border-emerald-400/60'
                     }`}
                   >
@@ -1643,7 +1643,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm KMP, Dijkstra, DP, O(N log N)..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950/80 border border-emerald-400/30 focus:border-emerald-300 focus:outline-none text-xs text-white placeholder:text-slate-400"
+                className="w-full pl-10 pr-4 py-2 rounded-md bg-slate-950/80 border border-emerald-400/30 focus:border-emerald-300 focus:outline-none text-xs text-white placeholder:text-slate-400"
               />
             </div>
           </div>
@@ -1673,7 +1673,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   type="button"
                   data-ripple="true"
                   onClick={() => handleSelectAlgo(item.id, true)}
-                  className="relative z-10 w-full h-full flex flex-col justify-between text-left rounded-[1.28rem] bg-gradient-to-br from-[#061121] via-[#071528] to-[#0a1a31] text-white overflow-hidden cursor-pointer"
+                  className="relative z-10 w-full h-full flex flex-col justify-between text-left rounded-[0.55rem] bg-gradient-to-br from-[#061121] via-[#071528] to-[#0a1a31] text-white overflow-hidden cursor-pointer"
                 >
                   <div>
                     {/* Live Animated Informatics SVG Schematic */}
@@ -1703,7 +1703,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                       </p>
 
                       {/* Mini Terminal Pseudocode Preview */}
-                      <div className="mt-2 rounded-xl bg-[#020710] border border-emerald-500/20 px-3 py-2 font-mono text-[10.5px] leading-relaxed text-emerald-300/85 overflow-hidden">
+                      <div className="mt-2 rounded-md bg-[#020710] border border-emerald-500/20 px-3 py-2 font-mono text-[10.5px] leading-relaxed text-emerald-300/85 overflow-hidden">
                         {snippet.map((line, lineIdx) => (
                           <div key={lineIdx} className="truncate">
                             <span className="text-slate-600 select-none mr-2">{lineIdx + 1}</span>

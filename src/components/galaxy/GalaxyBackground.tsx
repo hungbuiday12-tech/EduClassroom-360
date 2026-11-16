@@ -148,56 +148,84 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
 
       const bgGrad = bctx.createLinearGradient(0, 0, cw, ch);
       if (darkMode) {
-        bgGrad.addColorStop(0, '#030712');
-        bgGrad.addColorStop(0.4, '#090d1f');
-        bgGrad.addColorStop(0.8, '#0b0f2a');
-        bgGrad.addColorStop(1, '#020617');
+        bgGrad.addColorStop(0, '#040914');
+        bgGrad.addColorStop(0.42, '#071122');
+        bgGrad.addColorStop(0.78, '#0b182e');
+        bgGrad.addColorStop(1, '#030712');
       } else {
-        bgGrad.addColorStop(0, '#e0e7ff');
-        bgGrad.addColorStop(0.35, '#c7d2fe');
-        bgGrad.addColorStop(0.7, '#ddd6fe');
-        bgGrad.addColorStop(1, '#fbcfe8');
+        bgGrad.addColorStop(0, '#f8fafc');
+        bgGrad.addColorStop(0.38, '#f0f7ff');
+        bgGrad.addColorStop(0.72, '#e6f1fc');
+        bgGrad.addColorStop(1, '#eef5fb');
       }
       bctx.fillStyle = bgGrad;
       bctx.fillRect(0, 0, cw, ch);
 
-      // Nebula Cloud 1
-      const n1x = cw * 0.25;
-      const n1y = ch * 0.35;
-      const grad1 = bctx.createRadialGradient(n1x, n1y, 8, n1x, n1y, cw * 0.45);
+      // Nebula Cloud 1 (Academic Cobalt / Cerulean Depth)
+      const n1x = cw * 0.24;
+      const n1y = ch * 0.34;
+      const grad1 = bctx.createRadialGradient(n1x, n1y, 8, n1x, n1y, cw * 0.46);
       if (darkMode) {
         grad1.addColorStop(
           0,
-          intensity === 'vibrant' ? 'rgba(79, 70, 229, 0.22)' : 'rgba(79, 70, 229, 0.09)'
+          intensity === 'vibrant' ? 'rgba(29, 78, 216, 0.18)' : 'rgba(29, 78, 216, 0.08)'
         );
-        grad1.addColorStop(0.5, 'rgba(124, 58, 237, 0.10)');
+        grad1.addColorStop(0.5, 'rgba(2, 132, 199, 0.09)');
         grad1.addColorStop(1, 'rgba(0, 0, 0, 0)');
       } else {
-        grad1.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
-        grad1.addColorStop(0.5, 'rgba(168, 85, 247, 0.22)');
+        grad1.addColorStop(0, 'rgba(56, 189, 248, 0.14)');
+        grad1.addColorStop(0.55, 'rgba(37, 99, 235, 0.08)');
         grad1.addColorStop(1, 'rgba(255, 255, 255, 0)');
       }
       bctx.fillStyle = grad1;
       bctx.fillRect(0, 0, cw, ch);
 
-      // Nebula Cloud 2
-      const n2x = cw * 0.75;
-      const n2y = ch * 0.65;
-      const grad2 = bctx.createRadialGradient(n2x, n2y, 10, n2x, n2y, cw * 0.42);
+      // Nebula Cloud 2 (Scholarly Teal-Emerald / Sapphire Balance)
+      const n2x = cw * 0.78;
+      const n2y = ch * 0.68;
+      const grad2 = bctx.createRadialGradient(n2x, n2y, 10, n2x, n2y, cw * 0.44);
       if (darkMode) {
         grad2.addColorStop(
           0,
-          intensity === 'vibrant' ? 'rgba(236, 72, 153, 0.14)' : 'rgba(236, 72, 153, 0.06)'
+          intensity === 'vibrant' ? 'rgba(13, 148, 136, 0.13)' : 'rgba(13, 148, 136, 0.05)'
         );
-        grad2.addColorStop(0.5, 'rgba(59, 130, 246, 0.09)');
+        grad2.addColorStop(0.5, 'rgba(14, 165, 233, 0.08)');
         grad2.addColorStop(1, 'rgba(0, 0, 0, 0)');
       } else {
-        grad2.addColorStop(0, 'rgba(236, 72, 153, 0.30)');
-        grad2.addColorStop(0.5, 'rgba(14, 165, 233, 0.24)');
+        grad2.addColorStop(0, 'rgba(13, 148, 136, 0.11)');
+        grad2.addColorStop(0.5, 'rgba(14, 165, 233, 0.09)');
         grad2.addColorStop(1, 'rgba(255, 255, 255, 0)');
       }
       bctx.fillStyle = grad2;
       bctx.fillRect(0, 0, cw, ch);
+
+      // Pre-baked Scientific Blueprint Grid & Calibration Crosshairs (Zero per-frame CPU overhead)
+      const minorStep = 36;
+      const majorStep = minorStep * 4;
+      bctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.045)' : 'rgba(2, 132, 199, 0.055)';
+      bctx.lineWidth = 1;
+      bctx.beginPath();
+      for (let gx = 0; gx < cw; gx += minorStep) {
+        bctx.moveTo(gx, 0);
+        bctx.lineTo(gx, ch);
+      }
+      for (let gy = 0; gy < ch; gy += minorStep) {
+        bctx.moveTo(0, gy);
+        bctx.lineTo(cw, gy);
+      }
+      bctx.stroke();
+
+      bctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.10)' : 'rgba(37, 99, 235, 0.095)';
+      bctx.beginPath();
+      for (let gx = 0; gx < cw; gx += majorStep) {
+        for (let gy = 0; gy < ch; gy += majorStep) {
+          bctx.moveTo(gx - 4, gy);
+          bctx.lineTo(gx + 4, gy);
+          bctx.moveTo(gx, gy - 4);
+          bctx.lineTo(gx, gy + 4);
+        }
+      }
+      bctx.stroke();
 
       bgCacheDark = darkMode;
       bgCacheW = width;
@@ -278,21 +306,21 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
     let panicUntilMs = 0;
 
     const darkStarColors = [
-      '#ffffff',
-      '#c7d2fe',
-      '#e0e7ff',
+      '#f8fafc',
+      '#bae6fd',
+      '#93c5fd',
       '#fde68a',
-      '#f472b6',
-      '#a78bfa'
+      '#6ee7b7',
+      '#cbd5e1'
     ];
 
     const lightStarColors = [
-      '#6366f1',
+      '#1d4ed8',
       '#0284c7',
-      '#9333ea',
-      '#d97706',
-      '#db2777',
-      '#0d9488'
+      '#0f766e',
+      '#b45309',
+      '#0369a1',
+      '#475569'
     ];
 
     const maxStars = isLowPower ? 85 : isBalanced ? 125 : 165;
@@ -1179,8 +1207,30 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         ctx.drawImage(bgCacheCanvas, 0, 0, width, height);
       }
 
+      // 1b. Subtle Rotating Scientific Astrolabe / Orbital Telemetry Arcs
+      if (!isLowPower) {
+        ctx.save();
+        const astroX = width * 0.86 - offsetX * 0.45;
+        const astroY = height * 0.24 - offsetY * 0.45;
+        const baseR = Math.min(width, height) * 0.19;
+        ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.09)' : 'rgba(2, 132, 199, 0.085)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.arc(astroX, astroY, baseR, nowSec * 0.08, nowSec * 0.08 + Math.PI * 1.45);
+        ctx.stroke();
+
+        ctx.setLineDash([4, 10]);
+        ctx.strokeStyle = darkMode ? 'rgba(16, 185, 129, 0.09)' : 'rgba(13, 148, 136, 0.08)';
+        ctx.beginPath();
+        ctx.arc(astroX, astroY, baseR * 0.72, -nowSec * 0.11, -nowSec * 0.11 + Math.PI * 1.65);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
       // 2. STARS & CRYSTAL PARTICLES (No template string allocations!)
-      const alphaMultiplier = darkMode ? 1 : 1.3;
+      const alphaMultiplier = darkMode ? 1 : 0.85;
       const savedAlpha = ctx.globalAlpha;
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
@@ -1198,7 +1248,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         const renderX = s.x - offsetX * (s.size * 0.3);
         const renderY = s.y - offsetY * (s.size * 0.3);
         const col = darkMode ? s.colorDark : s.colorLight;
-        const finalAlpha = Math.max(0.35, Math.min(s.alpha * alphaMultiplier, 1));
+        const finalAlpha = Math.max(0.28, Math.min(s.alpha * alphaMultiplier, 0.95));
 
         ctx.globalAlpha = finalAlpha;
         ctx.fillStyle = col;
@@ -1210,7 +1260,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           ctx.arc(renderX, renderY, s.size, 0, Math.PI * 2);
           ctx.fill();
           if (s.alpha > 0.45 && !isLowPower) {
-            stampGlow(renderX, renderY, s.size * 2.6, col, 0.35);
+            stampGlow(renderX, renderY, s.size * 2.5, col, 0.32);
           }
         }
       }
@@ -1235,13 +1285,13 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         ctx.beginPath();
         ctx.moveTo(tailX, tailY);
         ctx.lineTo(ss.x, ss.y);
-        ctx.strokeStyle = darkMode ? '#c7d2fe' : '#6366f1';
-        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = darkMode ? '#7dd3fc' : '#0284c7';
+        ctx.lineWidth = 1.6;
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(ss.x, ss.y, 2.2, 0, Math.PI * 2);
-        ctx.fillStyle = darkMode ? '#ffffff' : '#4f46e5';
+        ctx.arc(ss.x, ss.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = darkMode ? '#ffffff' : '#1d4ed8';
         ctx.fill();
         ctx.restore();
       }

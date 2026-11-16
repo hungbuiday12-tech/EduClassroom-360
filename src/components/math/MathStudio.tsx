@@ -46,14 +46,14 @@ export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <button
               onClick={handleBackAction}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-xs whitespace-nowrap"
+              className="cs-deck-btn flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-xs whitespace-nowrap"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{t('nav.back_prev', 'Quay lại trang trước', 'Back')}</span>
             </button>
             <button
               onClick={goClassroom}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-100/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+              className="cs-deck-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-100/90 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
             >
               <Home className="w-3.5 h-3.5" />
               <span>{t('nav.classroom', 'Lớp học', 'Classroom')}</span>
@@ -61,7 +61,7 @@ export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
             {activeTab !== 'lectures' && (
               <button
                 onClick={() => navigate({ mathTab: 'lectures', mathViewMode: 'catalog' })}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors whitespace-nowrap"
+                className="cs-deck-btn flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium text-blue-700 dark:text-sky-300 bg-sky-50/90 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors whitespace-nowrap"
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>{t('math.goto_lectures', 'Kho Bài giảng', 'Lectures')}</span>
@@ -81,10 +81,10 @@ export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+        <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 rounded-lg">
           <button
             onClick={() => setActiveTab('lectures')}
-            className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+            className={`group cs-deck-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap transition-colors ${
               activeTab === 'lectures'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
@@ -95,35 +95,35 @@ export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
           </button>
           <button
             onClick={() => setActiveTab('grapher')}
-            className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+            className={`group cs-deck-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap transition-colors ${
               activeTab === 'grapher'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            <LineChart className="w-3.5 h-3.5 text-indigo-500 icon-anim-wave" />
+            <LineChart className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 icon-anim-wave" />
             <span>{t('math.tab.grapher', 'Mô phỏng 2D · Đồ thị', '2D Grapher')}</span>
           </button>
           <button
             onClick={() => setActiveTab('geometry')}
-            className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+            className={`group cs-deck-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap transition-colors ${
               activeTab === 'geometry'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            <Shapes className="w-3.5 h-3.5 text-emerald-500 icon-anim-compass" />
+            <Shapes className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 icon-anim-compass" />
             <span>{t('math.tab.geometry', 'Mô phỏng 2D · Hình học', '2D Geometry')}</span>
           </button>
           <button
             onClick={() => setActiveTab('math3d')}
-            className={`group sim-btn-3d flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
+            className={`group sim-btn-3d cs-deck-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap transition-colors ${
               activeTab === 'math3d'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            <Box className="w-3.5 h-3.5 text-blue-500 icon-anim-3d-cube" />
+            <Box className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 icon-anim-3d-cube" />
             <span>{t('math.tab.3d', 'Mô phỏng 3D · Oxyz', '3D Oxyz Spatial')}</span>
           </button>
         </div>

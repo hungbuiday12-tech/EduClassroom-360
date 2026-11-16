@@ -325,10 +325,10 @@ function MainApp() {
 
           {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Modern Floating 3-AI Dock */}
           {!isTutorOpen && currentSubject !== 'synapse_v2' && currentSubject !== 'spatial_3d' && (
-            <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/90 dark:bg-slate-900/92 border border-white/15 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-md">
+            <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex items-center gap-1.5 p-1.5 rounded-lg bg-slate-950/92 dark:bg-slate-900/94 border border-sky-500/25 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-md">
               <button
                 onClick={() => handleOpenTutor({ subject: 'math' })}
-                className="group px-3 sm:px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                className="group cs-deck-btn px-3 sm:px-3.5 py-2 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                 title={isEn ? 'Open Math AI (Left Ctrl + D)' : 'Mở AI Toán Học (Ctrl trái + D)'}
               >
                 <Compass className="w-3.5 h-3.5 shrink-0 icon-anim-compass" />
@@ -336,7 +336,7 @@ function MainApp() {
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'physics' })}
-                className="group px-3 sm:px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                className="group cs-deck-btn px-3 sm:px-3.5 py-2 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                 title={isEn ? 'Open Physics AI (Left Ctrl + F)' : 'Mở AI Vật Lí (Ctrl trái + F)'}
               >
                 <Zap className="w-3.5 h-3.5 shrink-0 icon-anim-zap" />
@@ -344,7 +344,7 @@ function MainApp() {
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'cs' })}
-                className="group px-3 sm:px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                className="group cs-deck-btn px-3 sm:px-3.5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                 title={isEn ? 'Open CS AI (Left Ctrl + G)' : 'Mở AI Tin Học (Ctrl trái + G)'}
               >
                 <Code2 className="w-3.5 h-3.5 shrink-0 icon-anim-code" />
@@ -428,7 +428,7 @@ function MainApp() {
                 </button>
                 <button
                   onClick={() => selectSubject('exams')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-indigo-600 dark:text-indigo-400 font-semibold cursor-pointer"
+                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-blue-600 dark:text-sky-400 font-semibold cursor-pointer"
                 >
                   {isEn ? `Exams (${EXAM_PAPERS.length})` : `Đề Thi (${EXAM_PAPERS.length} Đề)`}
                 </button>

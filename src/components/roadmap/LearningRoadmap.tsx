@@ -697,12 +697,12 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner with Animated SVG Mastery Gauge */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs relative overflow-hidden">
+      <div className="sci-frame sci-blueprint-bg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-xs relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
           <div className="space-y-2.5">
             <button
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="cs-deck-btn inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-blue-700 dark:text-sky-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{isEn ? 'Back to Classroom' : 'Quay lại Lớp học'}</span>
@@ -739,7 +739,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
             {/* Animated SVG Ring + Shimmer Progress */}
-            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 flex items-center gap-3.5 min-w-[230px]">
+            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 flex items-center gap-3.5 min-w-[230px]">
               <div className="relative w-18 h-18 shrink-0 flex items-center justify-center">
                 <svg className="w-18 h-18 -rotate-90" viewBox="0 0 80 80" aria-hidden="true">
                   <circle
@@ -765,8 +765,8 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                   />
                   <defs>
                     <linearGradient id="roadmapGaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#10b981" />
+                      <stop offset="0%" stopColor="#0284c7" />
+                      <stop offset="100%" stopColor="#059669" />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -779,12 +779,12 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                 <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {isEn ? 'Overall Mastery' : 'Tiến độ toàn chặng'}
                 </div>
-                <div className="text-sm font-mono font-extrabold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                <div className="text-sm font-mono font-extrabold text-blue-700 dark:text-sky-400 tabular-nums">
                   {completedNodeIds.length}/{ROADMAP_NODES.length} {isEn ? 'nodes' : 'chặng'}
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-sm overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500 roadmap-shimmer-bar transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-blue-600 via-sky-500 to-emerald-500 roadmap-shimmer-bar transition-all duration-500"
                     style={{ width: `${Math.max(4, progressPercent)}%` }}
                   />
                 </div>
@@ -800,7 +800,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                   grade: activeNode.grade
                 })
               }
-              className="px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors whitespace-nowrap shrink-0"
+              className="cs-deck-btn px-4 py-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors whitespace-nowrap shrink-0"
             >
               <Sparkles className="w-4 h-4" />
               <span>{isEn ? 'AI Mode 3: Build My Roadmap' : 'AI Chế Độ 3: Tạo Sơ Đồ Riêng'}</span>
@@ -810,11 +810,11 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
       </div>
 
       {/* SECTION 00: PERSONALIZED SMART STUDY PLAN GENERATOR & WEEKLY TIMETABLE */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5 roadmap-card-enter">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-xs space-y-5 roadmap-card-enter">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-indigo-500" />
+              <CalendarDays className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               <span>
                 {isEn
                   ? '00. Personalized Study Plan & Weekly Schedule Generator'
@@ -831,21 +831,21 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleExportPlanJson}
-              className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5" />
               <span>{isEn ? 'Export Plan' : 'Xuất Lộ Trình'}</span>
             </button>
             <button
               onClick={() => window.print()}
-              className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>{isEn ? 'Print' : 'In Lịch'}</span>
             </button>
             <button
               onClick={() => setPlanProfile(DEFAULT_PROFILE)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-400 text-xs font-semibold text-slate-600 dark:text-slate-300 inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:border-sky-400 text-xs font-semibold text-slate-600 dark:text-slate-300 inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>{isEn ? 'Reset' : 'Mặc định'}</span>
@@ -854,11 +854,11 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
         </div>
 
         {/* Profile Configurator Controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 bg-slate-50 dark:bg-slate-950/70 p-4 rounded-xl border border-slate-200/80 dark:border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 bg-slate-50 dark:bg-slate-950/70 p-4 rounded-lg border border-slate-200/80 dark:border-slate-800">
           {/* Grade */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-              <SlidersHorizontal className="w-3 h-3 text-indigo-500" />
+              <SlidersHorizontal className="w-3 h-3 text-sky-600 dark:text-sky-400" />
               <span>{isEn ? 'Current Grade' : 'Khối lớp hiện tại'}</span>
             </label>
             <div className="grid grid-cols-2 gap-1.5">
@@ -866,10 +866,10 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                 <button
                   key={g}
                   onClick={() => setPlanProfile((p) => ({ ...p, grade: g }))}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                  className={`py-1.5 px-2 rounded-md text-xs font-bold transition-colors whitespace-nowrap ${
                     planProfile.grade === g
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400'
+                      ? 'bg-blue-700 text-white'
+                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-400'
                   }`}
                 >
                   {g}
@@ -886,7 +886,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             <select
               value={planProfile.goal}
               onChange={(e) => setPlanProfile((p) => ({ ...p, goal: e.target.value as StudyGoalId }))}
-              className="w-full py-2 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500"
+              className="w-full py-2 px-2.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-sky-500"
             >
               <option value="foundation">{isEn ? 'GDPT Core Mastery' : 'Nắm chắc nền tảng GDPT'}</option>
               <option value="entrance_10">{isEn ? 'Grade 10 Entrance Exam' : 'Ôn thi Tuyển sinh vào 10'}</option>
@@ -913,7 +913,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                   <button
                     key={s.id}
                     onClick={() => toggleFocusSubject(s.id)}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                    className={`flex-1 py-2 rounded-md text-xs font-bold transition-colors whitespace-nowrap ${
                       active
                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
                         : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500'
@@ -930,7 +930,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
               <span>{isEn ? 'Weekly Budget' : 'Quỹ giờ / tuần'}</span>
-              <span className="font-mono text-indigo-600 dark:text-indigo-400 tabular-nums">
+              <span className="font-mono text-blue-700 dark:text-sky-400 tabular-nums">
                 {planProfile.hoursPerWeek}h ({generatedPlan.accumulatedMinutes}p)
               </span>
             </div>
@@ -941,7 +941,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
               step={1}
               value={planProfile.hoursPerWeek}
               onChange={(e) => setPlanProfile((p) => ({ ...p, hoursPerWeek: Number(e.target.value) }))}
-              className="w-full accent-indigo-600 cursor-pointer mt-2"
+              className="w-full accent-blue-700 cursor-pointer mt-2"
             />
             <div className="flex justify-between text-[10px] text-slate-400 tabular-nums">
               <span>4h</span>

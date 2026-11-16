@@ -843,14 +843,14 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
         <FuturisticCosmicBackdrop />
         <div className="relative z-10 space-y-7 pb-14">
           {/* Futuristic Quantum Command Header Banner */}
-          <section className="relative overflow-hidden rounded-[2rem] border border-cyan-400/45 bg-gradient-to-br from-[#0a163b]/88 via-[#0c1438]/90 to-[#190f3d]/88 text-white p-6 sm:p-8 shadow-[0_26px_90px_-18px_rgba(6,182,212,0.52)] backdrop-blur-md">
+          <section className="sci-scan-bar relative overflow-hidden rounded-xl border border-sky-400/45 bg-gradient-to-br from-[#06132b]/92 via-[#091b3a]/92 to-[#0b2540]/92 text-white p-6 sm:p-8 shadow-[0_26px_90px_-18px_rgba(2,132,199,0.45)] backdrop-blur-md">
             {/* Animated Holographic Horizon Grid + Sweeping Scan Beam */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 opacity-40"
               style={{
                 backgroundImage:
-                  'radial-gradient(circle at 14% 18%, rgba(34,211,238,0.34) 0%, transparent 45%), radial-gradient(circle at 88% 72%, rgba(168,85,247,0.32) 0%, transparent 48%), linear-gradient(to right, rgba(56,189,248,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(56,189,248,0.12) 1px, transparent 1px)',
+                  'radial-gradient(circle at 14% 18%, rgba(56,189,248,0.32) 0%, transparent 45%), radial-gradient(circle at 88% 72%, rgba(20,184,166,0.28) 0%, transparent 48%), linear-gradient(to right, rgba(56,189,248,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(56,189,248,0.12) 1px, transparent 1px)',
                 backgroundSize: '100% 100%, 100% 100%, 30px 30px, 30px 30px'
               }}
             />
@@ -864,10 +864,10 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             />
 
             {/* Corner Cyber Reticles */}
-            <span className="pointer-events-none absolute top-3.5 left-3.5 w-5 h-5 border-t-2 border-l-2 border-cyan-400/75 rounded-tl-md" />
-            <span className="pointer-events-none absolute top-3.5 right-3.5 w-5 h-5 border-t-2 border-r-2 border-cyan-400/75 rounded-tr-md" />
-            <span className="pointer-events-none absolute bottom-3.5 left-3.5 w-5 h-5 border-b-2 border-l-2 border-violet-400/75 rounded-bl-md" />
-            <span className="pointer-events-none absolute bottom-3.5 right-3.5 w-5 h-5 border-b-2 border-r-2 border-violet-400/75 rounded-br-md" />
+            <span className="pointer-events-none absolute top-3.5 left-3.5 w-5 h-5 border-t-2 border-l-2 border-sky-400/75" />
+            <span className="pointer-events-none absolute top-3.5 right-3.5 w-5 h-5 border-t-2 border-r-2 border-sky-400/75" />
+            <span className="pointer-events-none absolute bottom-3.5 left-3.5 w-5 h-5 border-b-2 border-l-2 border-teal-400/75" />
+            <span className="pointer-events-none absolute bottom-3.5 right-3.5 w-5 h-5 border-b-2 border-r-2 border-teal-400/75" />
 
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-3.5 max-w-3xl">
@@ -876,14 +876,14 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                     <button
                       type="button"
                       onClick={onBack}
-                      className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-cyan-500/25 border border-white/20 hover:border-cyan-400/60 text-xs font-bold text-slate-100 transition-colors cursor-pointer"
+                      className="cs-deck-btn group flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-white/10 hover:bg-sky-500/25 border border-white/20 hover:border-sky-400/60 text-xs font-bold text-slate-100 transition-colors cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                       <span>{isEn ? 'Back' : 'Quay lại'}</span>
                     </button>
                   )}
-                  <span className="inline-flex items-center gap-2 text-xs font-mono font-extrabold uppercase tracking-[0.22em] text-cyan-300">
-                    <Orbit className="w-4 h-4 text-cyan-300 icon-anim-cosmos" />
+                  <span className="inline-flex items-center gap-2 text-xs font-mono font-extrabold uppercase tracking-[0.22em] text-sky-300">
+                    <Orbit className="w-4 h-4 text-sky-300 icon-anim-cosmos" />
                     {isEn ? 'SYNAPSE V2 · ORBITAL OBSERVATORY' : 'LỚP HỌC ẢO · SYNAPSE V2'}
                   </span>
                   <span className="text-slate-500" aria-hidden="true">·</span>
@@ -893,7 +893,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   </span>
                 </div>
 
-                <h1 className="font-display text-2xl sm:text-4xl lg:text-[2.6rem] font-extrabold tracking-tight bg-gradient-to-r from-white via-cyan-100 to-indigo-200 bg-clip-text text-transparent leading-tight">
+                <h1 className="font-display text-2xl sm:text-4xl lg:text-[2.6rem] font-extrabold tracking-tight bg-gradient-to-r from-white via-sky-100 to-teal-200 bg-clip-text text-transparent leading-tight">
                   {isEn
                     ? `${totalChambers} Futuristic Holographic 3D Chambers`
                     : `${totalChambers} Đại Công Trình & Phòng Học Ảo Tương Lai`}
@@ -907,13 +907,13 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
                 {/* Quantum Exploration Progress Bar */}
                 <div className="pt-1 max-w-md space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-cyan-200/90">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-sky-200/90">
                     <span>{isEn ? 'CAMPUS EXPLORATION MATRIX' : 'TIẾN ĐỘ KHÁM PHÁ VŨ TRỤ ẢO'}</span>
                     <span className="font-bold text-emerald-300 tabular-nums">{unlockedPct}%</span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-slate-900/80 border border-cyan-500/30 overflow-hidden">
+                  <div className="h-2 w-full rounded-sm bg-slate-900/80 border border-sky-500/30 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-sky-400 to-violet-400 transition-all duration-500"
+                      className="h-full rounded-sm bg-gradient-to-r from-sky-400 via-cyan-400 to-emerald-400 transition-all duration-500"
                       style={{ width: `${Math.max(8, unlockedPct)}%` }}
                     />
                   </div>
@@ -924,11 +924,11 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 {/* Animated Orbital Astrolabe Emblem */}
                 <div
                   aria-hidden="true"
-                  className="hidden lg:flex items-center justify-center relative w-24 h-24 rounded-full border border-cyan-400/35 bg-cyan-950/35 shadow-[0_0_35px_rgba(34,211,238,0.25)]"
+                  className="hidden lg:flex items-center justify-center relative w-24 h-24 rounded-full border border-sky-400/35 bg-sky-950/35 shadow-[0_0_35px_rgba(56,189,248,0.22)]"
                 >
                   <svg viewBox="0 0 100 100" className="w-20 h-20">
                     <circle cx="50" cy="50" r="40" fill="none" stroke="#38bdf8" strokeWidth="1.2" strokeDasharray="5 6" className="holo-orbit-cw" />
-                    <ellipse cx="50" cy="50" rx="34" ry="13" fill="none" stroke="#a855f7" strokeWidth="1.6" className="holo-orbit-ccw" />
+                    <ellipse cx="50" cy="50" rx="34" ry="13" fill="none" stroke="#14b8a6" strokeWidth="1.6" className="holo-orbit-ccw" />
                     <ellipse cx="50" cy="50" rx="34" ry="13" transform="rotate(60 50 50)" fill="none" stroke="#22d3ee" strokeWidth="1.4" />
                     <circle cx="50" cy="50" r="7" fill="#38bdf8" className="holo-ring-pulse" />
                   </svg>
@@ -938,21 +938,21 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   type="button"
                   data-ripple="true"
                   onClick={() => handleSelectMonument(activeId, true)}
-                  className="group cs-deck-btn px-7 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-400 to-indigo-400 text-slate-950 font-extrabold text-sm shadow-[0_14px_38px_-6px_rgba(34,211,238,0.75)] flex items-center justify-center gap-2.5 cursor-pointer whitespace-nowrap"
+                  className="group cs-deck-btn px-7 py-3 rounded-md bg-gradient-to-r from-sky-400 via-cyan-400 to-teal-400 text-slate-950 font-extrabold text-sm shadow-[0_14px_38px_-6px_rgba(56,189,248,0.55)] flex items-center justify-center gap-2.5 cursor-pointer whitespace-nowrap"
                 >
                   <Play className="w-4 h-4 fill-slate-950 icon-anim-wave" />
                   <span>{isEn ? 'Launch 3D Observatory' : 'Vào Ngay Không Gian 3D'}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
 
-                <div className="text-xs font-mono text-cyan-200/90 text-right tabular-nums">
+                <div className="text-xs font-mono text-sky-200/90 text-right tabular-nums">
                   +25 XP {isEn ? 'per newly explored chamber' : 'khi mở mỗi công trình mới'}
                 </div>
               </div>
             </div>
 
             {/* Filter & Search Toolbar */}
-            <div className="relative z-10 mt-6 pt-5 border-t border-cyan-400/20 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="relative z-10 mt-6 pt-5 border-t border-sky-400/20 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 {categories.map((cat) => {
                   const selected = categoryFilter === cat.id;
@@ -961,10 +961,10 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                       key={cat.id}
                       type="button"
                       onClick={() => setCategoryFilter(cat.id)}
-                      className={`group cs-deck-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer border transition-all ${
+                      className={`group cs-deck-btn px-4 py-2 rounded-md text-xs font-bold whitespace-nowrap cursor-pointer border transition-all ${
                         selected
-                          ? 'bg-gradient-to-r from-cyan-400 to-sky-400 text-slate-950 border-cyan-200 shadow-[0_8px_24px_-4px_rgba(34,211,238,0.75)]'
-                          : 'bg-sky-950/55 text-sky-100 border-cyan-400/20 hover:bg-cyan-950/75 hover:text-white hover:border-cyan-400/60'
+                          ? 'bg-gradient-to-r from-sky-400 to-cyan-400 text-slate-950 border-sky-200 shadow-[0_8px_24px_-4px_rgba(56,189,248,0.55)]'
+                          : 'bg-sky-950/55 text-sky-100 border-sky-400/20 hover:bg-sky-950/75 hover:text-white hover:border-sky-400/60'
                       }`}
                     >
                       {isEn ? cat.en : cat.vi}
@@ -974,7 +974,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
               </div>
 
               <div className="relative w-full lg:w-72">
-                <Search className="w-4 h-4 text-cyan-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-sky-300 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -984,7 +984,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                       ? `Search ${totalChambers} holographic labs...`
                       : `Tìm ${totalChambers} đại công trình tương lai...`
                   }
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/65 border border-cyan-400/30 focus:border-cyan-300 focus:outline-none text-xs text-white placeholder:text-slate-400"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-md bg-slate-950/65 border border-sky-400/30 focus:border-sky-300 focus:outline-none text-xs text-white placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -1013,7 +1013,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                     type="button"
                     data-ripple="true"
                     onClick={() => handleSelectMonument(item.id, true)}
-                    className="relative z-10 w-full h-full flex flex-col justify-between text-left rounded-[1.42rem] bg-gradient-to-br from-[#0a1536] via-[#08102b] to-[#130d31] text-white overflow-hidden cursor-pointer"
+                    className="relative z-10 w-full h-full flex flex-col justify-between text-left rounded-[0.68rem] bg-gradient-to-br from-[#071429] via-[#061124] to-[#0a1c36] text-white overflow-hidden cursor-pointer"
                   >
                     <div>
                       {/* Live Animated Holographic Artwork Header */}
@@ -1028,7 +1028,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                         <div className="flex items-center justify-between gap-2 text-[11px] font-mono">
                           <div className="flex items-center gap-1.5 min-w-0">
                             {renderMonumentIcon(item.id, 'w-4 h-4 shrink-0')}
-                            <span className="font-extrabold text-cyan-300 truncate">{item.code}</span>
+                            <span className="font-extrabold text-sky-300 truncate">{item.code}</span>
                             <span className="text-slate-500" aria-hidden="true">·</span>
                             <span className="text-sky-200/75 truncate">
                               {isEn ? item.categoryLabelEn : item.categoryLabelVi}
@@ -1045,7 +1045,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                           )}
                         </div>
 
-                        <h3 className="font-display text-base sm:text-lg font-extrabold text-white group-hover:text-cyan-300 transition-colors leading-snug">
+                        <h3 className="font-display text-base sm:text-lg font-extrabold text-white group-hover:text-sky-300 transition-colors leading-snug">
                           {isEn ? item.titleEn : item.titleVi}
                         </h3>
 
@@ -1055,16 +1055,16 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
                         {/* Futuristic Telemetry Spec Bar */}
                         <div className="pt-2 grid grid-cols-2 gap-2 text-[11px] font-mono">
-                          <div className="rounded-xl bg-sky-950/45 border border-cyan-400/20 px-2.5 py-1.5 truncate">
+                          <div className="rounded-md bg-sky-950/45 border border-sky-400/20 px-2.5 py-1.5 truncate">
                             <span className="text-sky-300/70 block text-[9px] uppercase">
                               {isEn ? item.primaryLabelEn : item.primaryLabelVi}
                             </span>
-                            <span className="text-cyan-300 font-bold tabular-nums">
+                            <span className="text-sky-300 font-bold tabular-nums">
                               {item.primaryRange[0]}–{item.primaryRange[1]} {item.primaryUnit}
                             </span>
                           </div>
-                          <div className="rounded-xl bg-indigo-950/45 border border-indigo-400/20 px-2.5 py-1.5 truncate">
-                            <span className="text-indigo-200/70 block text-[9px] uppercase">
+                          <div className="rounded-md bg-teal-950/40 border border-teal-400/20 px-2.5 py-1.5 truncate">
+                            <span className="text-teal-200/70 block text-[9px] uppercase">
                               {isEn ? item.secondaryLabelEn : item.secondaryLabelVi}
                             </span>
                             <span className="text-amber-300 font-bold tabular-nums">
@@ -1076,11 +1076,11 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                     </div>
 
                     {/* Card Footer Launch Bar */}
-                    <div className="px-5 py-3.5 border-t border-cyan-400/15 bg-gradient-to-r from-cyan-500/[0.06] to-violet-500/[0.08] flex items-center justify-between gap-2 text-xs">
+                    <div className="px-5 py-3.5 border-t border-sky-400/15 bg-gradient-to-r from-sky-500/[0.06] to-teal-500/[0.08] flex items-center justify-between gap-2 text-xs">
                       <span className="font-mono text-[11px] text-sky-200/75 truncate">
                         {item.tierBadge} · 3D Cutaway
                       </span>
-                      <span className="inline-flex items-center gap-1.5 font-extrabold text-cyan-300 group-hover:text-white transition-colors shrink-0">
+                      <span className="inline-flex items-center gap-1.5 font-extrabold text-sky-300 group-hover:text-white transition-colors shrink-0">
                         <span>{isEn ? 'Launch 3D' : 'Khởi chạy 3D'}</span>
                         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </span>
@@ -1103,9 +1103,9 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       {!isFullscreen && <FuturisticCosmicBackdrop />}
       <div
         className={
-          isFullscreen
+        isFullscreen
             ? 'fixed inset-0 z-[120] bg-[#07102a] text-white flex flex-col overflow-hidden'
-            : 'relative z-10 w-full min-h-[700px] h-[calc(100vh-146px)] rounded-3xl overflow-hidden border border-cyan-400/50 bg-[#07102a] text-white shadow-[0_28px_90px_-14px_rgba(34,211,238,0.52)]'
+            : 'relative z-10 w-full min-h-[700px] h-[calc(100vh-146px)] rounded-xl overflow-hidden border border-sky-400/50 bg-[#07102a] text-white shadow-[0_28px_90px_-14px_rgba(2,132,199,0.45)]'
         }
       >
         {/* Full-Viewport 3D Observatory Canvas */}
@@ -1117,8 +1117,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
         {/* Fallback UI if WebGL Unavailable or Context Lost */}
         {(webglError || contextLost) && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/95 p-6 text-center">
-            <div className="max-w-md space-y-3 rounded-2xl border border-cyan-500/40 bg-slate-900 p-6">
-              <Orbit className="w-10 h-10 text-cyan-400 mx-auto" />
+            <div className="max-w-md space-y-3 rounded-xl border border-sky-500/40 bg-slate-900 p-6">
+              <Orbit className="w-10 h-10 text-sky-400 mx-auto" />
               <h3 className="font-display text-lg font-bold text-white">
                 {isEn ? 'Reconnecting WebGL Observatory...' : 'Đang khôi phục Không gian 3D WebGL...'}
               </h3>
@@ -1135,28 +1135,28 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
         <div className="relative z-20 pointer-events-none p-3 sm:p-4 flex flex-col gap-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Catalog Back + Brand Title */}
-            <div className="pointer-events-auto flex items-center gap-2 sm:gap-3 bg-slate-950/92 border border-cyan-400/30 rounded-2xl px-3 py-2 shadow-lg">
+            <div className="pointer-events-auto flex items-center gap-2 sm:gap-3 bg-slate-950/92 border border-sky-400/30 rounded-lg px-3 py-2 shadow-lg">
               <button
                 type="button"
                 onClick={() => {
                   setIsFullscreen(false);
                   navigate({ subject: 'synapse_v2', synapseMode: 'catalog' });
                 }}
-                className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/50 text-cyan-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
                 title={
                   isEn
                     ? `Return to ${MONUMENT_CATALOG.length} Virtual Chambers`
                     : `Quay lại ${MONUMENT_CATALOG.length} Khung Lớp Học Ảo`
                 }
               >
-                <LayoutGrid className="w-3.5 h-3.5 text-cyan-300" />
+                <LayoutGrid className="w-3.5 h-3.5 text-sky-300" />
                 <span>
                   {isEn ? `${MONUMENT_CATALOG.length} Chambers` : `${MONUMENT_CATALOG.length} Khung Ảo`}
                 </span>
               </button>
-            <Orbit className="w-5 h-5 text-cyan-400 icon-anim-cosmos shrink-0 hidden sm:inline" />
+            <Orbit className="w-5 h-5 text-sky-400 icon-anim-cosmos shrink-0 hidden sm:inline" />
             <div>
-              <div className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-cyan-300">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-sky-300">
                 {activeDef.code}
               </div>
               <h1 className="font-display text-xs sm:text-sm font-extrabold text-white leading-tight">
@@ -1176,10 +1176,10 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   toggleBgPlaying();
                 }
               }}
-              className={`group flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`group flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
                 isBgPlaying && bgSound !== 'off'
                   ? 'bg-emerald-500/25 border-emerald-400/70 text-emerald-200'
-                  : 'bg-slate-950/92 border-white/15 text-slate-200 hover:border-cyan-400/60'
+                  : 'bg-slate-950/92 border-white/15 text-slate-200 hover:border-sky-400/60'
               }`}
               title={isEn ? 'Play Minecraft Calm Piano / Background Audio' : 'Bật/Tắt Nhạc nền Minecraft & Không gian'}
             >
@@ -1202,22 +1202,22 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
               onClick={() =>
                 setBgSound(bgSound === 'minecraft_calm' ? 'cosmic_drone' : 'minecraft_calm')
               }
-              className="hidden sm:flex items-center gap-1 px-2.5 py-2 rounded-xl bg-slate-950/92 border border-white/15 hover:border-cyan-400/60 text-[11px] font-bold text-slate-200 cursor-pointer whitespace-nowrap"
+              className="hidden sm:flex items-center gap-1 px-2.5 py-2 rounded-md bg-slate-950/92 border border-white/15 hover:border-sky-400/60 text-[11px] font-bold text-slate-200 cursor-pointer whitespace-nowrap"
               title={isEn ? 'Switch Music Track (Minecraft / Cosmic)' : 'Đổi nhạc (Minecraft Piano / Vũ trụ)'}
             >
-              <Music className="w-3.5 h-3.5 text-cyan-400" />
+              <Music className="w-3.5 h-3.5 text-sky-400" />
               <span>{bgSound === 'minecraft_calm' ? 'Vũ trụ' : 'Minecraft'}</span>
             </button>
 
-            <div className="hidden xl:flex items-center gap-1 p-1 rounded-xl bg-slate-950/92 border border-white/15">
+            <div className="hidden xl:flex items-center gap-1 p-1 rounded-lg bg-slate-950/92 border border-white/15">
               {(Object.keys(CAMERA_PRESETS) as CameraPresetId[]).map((pid) => (
                 <button
                   key={pid}
                   type="button"
                   onClick={() => applyCameraPreset(pid)}
-                  className={`px-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                  className={`px-2 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap ${
                     cameraPreset === pid
-                      ? 'bg-cyan-500 text-slate-950'
+                      ? 'bg-sky-500 text-slate-950'
                       : 'text-slate-300 hover:bg-white/10'
                   }`}
                 >
@@ -1230,22 +1230,22 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             <button
               type="button"
               onClick={handleCaptureSnapshot}
-              className="p-2 rounded-xl bg-slate-950/92 border border-white/15 hover:border-cyan-400/60 text-slate-200 cursor-pointer"
+              className="p-2 rounded-md bg-slate-950/92 border border-white/15 hover:border-sky-400/60 text-slate-200 cursor-pointer"
               title={isEn ? 'Save 3D Snapshot PNG' : 'Chụp ảnh PNG Đại công trình'}
             >
-              <Download className="w-4 h-4 text-cyan-300" />
+              <Download className="w-4 h-4 text-sky-300" />
             </button>
 
             <button
               type="button"
               onClick={() => setIsDockOpen((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/92 border border-white/15 hover:border-cyan-400/60 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/92 border border-white/15 hover:border-sky-400/60 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap"
               title={isEn ? 'Toggle Control Console (H)' : 'Thu gọn/Mở bảng điều khiển (Phím H)'}
             >
               {isDockOpen ? (
-                <EyeOff className="w-4 h-4 text-cyan-400" />
+                <EyeOff className="w-4 h-4 text-sky-400" />
               ) : (
-                <Eye className="w-4 h-4 text-cyan-400" />
+                <Eye className="w-4 h-4 text-sky-400" />
               )}
               <span className="hidden sm:inline">
                 {isDockOpen
@@ -1261,7 +1261,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             <button
               type="button"
               onClick={() => setIsFullscreen((v) => !v)}
-              className="p-2 rounded-xl bg-slate-950/92 border border-white/15 hover:border-cyan-400/60 text-slate-200 cursor-pointer"
+              className="p-2 rounded-md bg-slate-950/92 border border-white/15 hover:border-sky-400/60 text-slate-200 cursor-pointer"
               title={isEn ? 'Toggle Fullscreen' : 'Toàn màn hình'}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -1279,15 +1279,15 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => handleSelectMonument(m.id, false)}
-                className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl border text-left transition-all shrink-0 cursor-pointer ${
+                className={`group flex items-center gap-2 px-3 py-1.5 rounded-md border text-left transition-all shrink-0 cursor-pointer ${
                   selected
-                    ? 'bg-indigo-950/95 border-cyan-400 text-white shadow-lg'
+                    ? 'bg-sky-950/95 border-sky-400 text-white shadow-lg'
                     : 'bg-slate-950/88 border-white/12 text-slate-300 hover:border-white/35 hover:text-white'
                 }`}
               >
                 {renderMonumentIcon(m.id, 'w-3.5 h-3.5 shrink-0')}
                 <div className="leading-tight">
-                  <div className="text-[9px] font-mono text-cyan-300/90 font-bold">
+                  <div className="text-[9px] font-mono text-sky-300/90 font-bold">
                     #{String(m.index).padStart(2, '0')}
                   </div>
                   <div className="text-[11px] font-extrabold whitespace-nowrap">
@@ -1306,15 +1306,15 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
           <button
             type="button"
             onClick={() => setIsDockOpen(true)}
-            className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-950/95 border border-cyan-400/50 text-xs font-bold text-cyan-200 hover:bg-indigo-950 shadow-lg cursor-pointer"
+            className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-950/95 border border-sky-400/50 text-xs font-bold text-sky-200 hover:bg-sky-950 shadow-lg cursor-pointer"
           >
-            <ChevronUp className="w-4 h-4 text-cyan-400" />
+            <ChevronUp className="w-4 h-4 text-sky-400" />
             <span>
               {isEn ? 'Expand Engineering Console (H)' : 'Mở Bảng Điều Khiển Đại Công Trình (H)'}
             </span>
           </button>
         ) : (
-          <div className="pointer-events-auto w-full max-w-6xl rounded-3xl bg-slate-950/94 border border-white/15 shadow-2xl p-4 sm:p-5 space-y-4">
+          <div className="pointer-events-auto w-full max-w-6xl rounded-xl bg-slate-950/94 border border-white/15 shadow-2xl p-4 sm:p-5 space-y-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-white/10">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-cyan-300">

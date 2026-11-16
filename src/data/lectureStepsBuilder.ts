@@ -788,12 +788,17 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
     return null;
   };
 
-  // Group or expand theory points into well-paced content/formula sections (4 to 6 parts)
+  // Group or expand theory points into well-paced content/formula sections (minimum 3 parts)
   const theoryItems = lecture.theory && lecture.theory.length > 0 ? lecture.theory : [lecture.description];
-  const partCount = Math.max(theoryItems.length, Math.min(4, lecture.keyFormulas.length));
+  const partCount = Math.max(3, theoryItems.length, Math.min(4, lecture.keyFormulas.length));
 
   for (let idx = 0; idx < partCount; idx++) {
-    const rawTheory = theoryItems[idx] || lecture.description;
+    const hasTheoryItem = idx < theoryItems.length;
+    const rawTheory = hasTheoryItem
+      ? theoryItems[idx]
+      : lecture.mnemonics?.[0]
+      ? `${lecture.description}\n• ${lecture.mnemonics[0]}`
+      : lecture.description;
     const inlineFormulas = extractInlineFormulas(rawTheory);
     const primaryFormula =
       lecture.keyFormulas[idx] || inlineFormulas[0] || lecture.keyFormulas[0];
@@ -802,7 +807,9 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
       ...lecture.keyFormulas.filter((f) => f !== primaryFormula && !inlineFormulas.includes(f))
     ].slice(0, 2);
 
-    const rawTitle = rawTheory.includes(':')
+    const rawTitle = !hasTheoryItem
+      ? `${idx + 1}. Tổng hợp Vận dụng & Ghi nhớ trọng tâm`
+      : rawTheory.includes(':')
       ? rawTheory.split(':')[0].replace(/\*\*/g, '').trim()
       : `Nội dung trọng tâm ${idx + 1}`;
     const stepTitle =

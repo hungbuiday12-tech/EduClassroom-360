@@ -73,6 +73,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedTier, setSelectedTier] = useState<'all' | SpecializedTier>('all');
+  const [selectedChapter, setSelectedChapter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const { location, navigate } = useNavigation();
@@ -99,20 +100,78 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
   // Copy Formula State
   const [copiedFormula, setCopiedFormula] = useState<string | null>(null);
 
-  // Categories list for Không Chuyên
+  // Categories list for Không Chuyên (GDPT 2018)
   const categories = [
     { id: 'all', label: t('cat.all', 'Tất cả chuyên đề', 'All Topics') },
     { id: 'Đại số', label: t('cat.alg', 'Đại số & Hàm số (9–10)', 'Algebra (9–10)') },
     { id: 'Giải tích', label: t('cat.calc', 'Giải tích (11–12)', 'Calculus (11–12)') },
     { id: 'Hình học', label: t('cat.geo', 'Hình học (9–12)', 'Geometry (9–12)') },
     { id: 'Lượng giác & Mũ', label: t('cat.trig', 'Lượng giác, Mũ & Log', 'Trig, Exp & Log') },
-    { id: 'Số phức', label: t('cat.complex', 'Số phức', 'Complex Numbers') },
-    { id: 'Đại số & Xác suất', label: t('cat.prob', 'Xác suất & Tổ hợp', 'Probability') }
+    { id: 'Đại số & Xác suất', label: t('cat.prob', 'Thống kê, Tổ hợp & Xác suất', 'Statistics & Probability') }
   ];
 
-  // Filtered lectures
+  const gradeCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      'Lớp 9': 0,
+      'Lớp 10': 0,
+      'Lớp 11': 0,
+      'Lớp 12': 0
+    };
+    MATH_LECTURES.forEach((lec) => {
+      if ((lec.track || 'khong_chuyen') !== 'khong_chuyen') return;
+      const g =
+        lec.gradeGroup ||
+        (lec.grade.includes('Lớp 9')
+          ? 'Lớp 9'
+          : lec.grade.includes('Lớp 10')
+            ? 'Lớp 10'
+            : lec.grade.includes('Lớp 11')
+              ? 'Lớp 11'
+              : lec.grade.includes('Lớp 12')
+                ? 'Lớp 12'
+                : '');
+      if (g && g in counts) counts[g] += 1;
+    });
+    return counts;
+  }, []);
+
+  const availableChapters = useMemo(() => {
+    const seen = new Set<string>();
+    const list: string[] = [];
+    MATH_LECTURES.forEach((lec) => {
+      const lecTrack = lec.track || 'khong_chuyen';
+      if (lecTrack !== selectedTrack) return;
+      if (selectedTrack === 'khong_chuyen') {
+        const matchesGrade =
+          selectedGrade === 'all' ||
+          lec.gradeGroup === selectedGrade ||
+          lec.grade.includes(selectedGrade);
+        const matchesCategory =
+          selectedCategory === 'all' || lec.category === selectedCategory;
+        if (!matchesGrade || !matchesCategory) return;
+      } else {
+        const matchesTier = selectedTier === 'all' || lec.tier === selectedTier;
+        if (!matchesTier) return;
+      }
+      if (lec.stageLabel && !seen.has(lec.stageLabel)) {
+        seen.add(lec.stageLabel);
+        list.push(lec.stageLabel);
+      }
+    });
+    return list;
+  }, [selectedTrack, selectedGrade, selectedCategory, selectedTier]);
+
+  // Filtered and chronologically sorted lectures
   const filteredLectures = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const getGradeRank = (lec: MathLecture): number => {
+      if (lec.gradeGroup === 'Lớp 9' || lec.grade.includes('Lớp 9')) return 9;
+      if (lec.gradeGroup === 'Lớp 10' || lec.grade.includes('Lớp 10')) return 10;
+      if (lec.gradeGroup === 'Lớp 11' || lec.grade.includes('Lớp 11')) return 11;
+      if (lec.gradeGroup === 'Lớp 12' || lec.grade.includes('Lớp 12')) return 12;
+      return 99;
+    };
+
     return MATH_LECTURES.filter((lec) => {
       const lecTrack = lec.track || 'khong_chuyen';
       if (lecTrack !== selectedTrack) return false;
@@ -130,14 +189,28 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
         if (!matchesTier) return false;
       }
 
+      if (selectedChapter !== 'all' && lec.stageLabel !== selectedChapter) {
+        return false;
+      }
+
       if (!q) return true;
       return (
         lec.title.toLowerCase().includes(q) ||
         lec.description.toLowerCase().includes(q) ||
+        (lec.stageLabel ? lec.stageLabel.toLowerCase().includes(q) : false) ||
         lec.keyFormulas.some((f) => f.toLowerCase().includes(q))
       );
+    }).sort((a, b) => {
+      if (selectedTrack === 'khong_chuyen') {
+        const ga = getGradeRank(a);
+        const gb = getGradeRank(b);
+        if (ga !== gb) return ga - gb;
+      }
+      const na = a.lessonNumber ?? 999;
+      const nb = b.lessonNumber ?? 999;
+      return na - nb;
     });
-  }, [selectedTrack, selectedGrade, selectedCategory, selectedTier, searchQuery]);
+  }, [selectedTrack, selectedGrade, selectedCategory, selectedTier, selectedChapter, searchQuery]);
 
   // Ensure activeLecture always matches current track/filter
   const activeLecture: MathLecture = useMemo(() => {
@@ -320,7 +393,10 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   <button
                     type="button"
                     data-ripple="true"
-                    onClick={() => setSelectedTrack('khong_chuyen')}
+                    onClick={() => {
+                      setSelectedTrack('khong_chuyen');
+                      setSelectedChapter('all');
+                    }}
                     className={`relative z-10 w-full h-full text-left rounded-[0.5rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
                       selectedTrack === 'khong_chuyen'
                         ? 'bg-gradient-to-br from-blue-700 via-blue-600 to-sky-600 text-white'
@@ -340,7 +416,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       </div>
                       <div className="min-w-0 space-y-1">
                         <div className="text-sm sm:text-base font-extrabold leading-snug">
-                          Khu Không Chuyên (GDPT 9–12)
+                          Khu GDPT 2018 (Lớp 9–12)
                         </div>
                         <div
                           className={`text-xs leading-relaxed ${
@@ -349,7 +425,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                               : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >
-                          Lớp 9 · Lớp 10 · Lớp 11 · Lớp 12 · {khongChuyenCount} bài Đồ thị &amp; Hình học
+                          Lớp 9 · Lớp 10 · Lớp 11 · Lớp 12 · {khongChuyenCount} bài chuẩn BGD
                         </div>
                       </div>
                     </div>
@@ -368,7 +444,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   </button>
                 </div>
 
-                {/* Khung 2: Khu Chuyên Toán (CB -> NC -> Chuyên) */}
+                {/* Khung 2: Khu Chuyên Toán & Chuyên đề GDPT 2018 */}
                 <div
                   style={
                     {
@@ -386,7 +462,10 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   <button
                     type="button"
                     data-ripple="true"
-                    onClick={() => setSelectedTrack('chuyen')}
+                    onClick={() => {
+                      setSelectedTrack('chuyen');
+                      setSelectedChapter('all');
+                    }}
                     className={`relative z-10 w-full h-full text-left rounded-[0.5rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
                       selectedTrack === 'chuyen'
                         ? 'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-slate-950'
@@ -406,7 +485,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       </div>
                       <div className="min-w-0 space-y-1">
                         <div className="text-sm sm:text-base font-extrabold leading-snug">
-                          Khu Chuyên Toán (CB → NC → Chuyên)
+                          Khu Chuyên Toán &amp; Chuyên đề GDPT 2018
                         </div>
                         <div
                           className={`text-xs leading-relaxed ${
@@ -415,7 +494,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                               : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >
-                          Cơ bản → Nâng cao → HSG / Olympic · {chuyenCount} chuyên đề
+                          9 Chuyên đề 10–12 + Bồi dưỡng HSG / Olympic · {chuyenCount} chuyên đề
                         </div>
                       </div>
                     </div>
@@ -443,15 +522,18 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       {t('grade.label', 'Khối lớp:', 'Grade:')}
                     </span>
                     {[
-                      { id: 'all', label: t('grade.all', 'Tất cả (9–12)', 'All (9–12)') },
-                      { id: 'Lớp 9', label: t('grade.9', 'Lớp 9', 'Grade 9') },
-                      { id: 'Lớp 10', label: t('grade.10', 'Lớp 10', 'Grade 10') },
-                      { id: 'Lớp 11', label: t('grade.11', 'Lớp 11', 'Grade 11') },
-                      { id: 'Lớp 12', label: t('grade.12', 'Lớp 12', 'Grade 12') }
+                      { id: 'all', label: t('grade.all', `Tất cả (${khongChuyenCount})`, `All (${khongChuyenCount})`) },
+                      { id: 'Lớp 9', label: `${t('grade.9', 'Lớp 9', 'Grade 9')} (${gradeCounts['Lớp 9']})` },
+                      { id: 'Lớp 10', label: `${t('grade.10', 'Lớp 10', 'Grade 10')} (${gradeCounts['Lớp 10']})` },
+                      { id: 'Lớp 11', label: `${t('grade.11', 'Lớp 11', 'Grade 11')} (${gradeCounts['Lớp 11']})` },
+                      { id: 'Lớp 12', label: `${t('grade.12', 'Lớp 12', 'Grade 12')} (${gradeCounts['Lớp 12']})` }
                     ].map((g) => (
                       <button
                         key={g.id}
-                        onClick={() => setSelectedGrade(g.id)}
+                        onClick={() => {
+                          setSelectedGrade(g.id);
+                          setSelectedChapter('all');
+                        }}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap transition-all ${
                           selectedGrade === g.id
                             ? 'bg-blue-700 text-white shadow-xs'
@@ -470,7 +552,10 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                     {(['all', 'Cơ bản', 'Nâng cao', 'Chuyên / HSG'] as const).map((tier) => (
                       <button
                         key={tier}
-                        onClick={() => setSelectedTier(tier)}
+                        onClick={() => {
+                          setSelectedTier(tier);
+                          setSelectedChapter('all');
+                        }}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all ${
                           selectedTier === tier
                             ? 'bg-amber-600 text-white shadow-xs'
@@ -501,7 +586,10 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   {categories.map((cat) => (
                     <button
                       key={cat.id}
-                      onClick={() => setSelectedCategory(cat.id)}
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        setSelectedChapter('all');
+                      }}
                       className={`px-2.5 py-1 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
                         selectedCategory === cat.id
                           ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
@@ -509,6 +597,44 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       }`}
                     >
                       {cat.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Chapter GDPT 2018 Filter Strip */}
+              {availableChapters.length > 0 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-2 border-t border-slate-100/80 dark:border-slate-800/70">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 mr-1">
+                    Chương GDPT 2018:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedChapter('all')}
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md whitespace-nowrap transition-all ${
+                      selectedChapter === 'all'
+                        ? selectedTrack === 'chuyen'
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-blue-700 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Tất cả chương ({availableChapters.length})
+                  </button>
+                  {availableChapters.map((chap) => (
+                    <button
+                      key={chap}
+                      type="button"
+                      onClick={() => setSelectedChapter(chap)}
+                      className={`px-2.5 py-1 text-[11px] font-medium rounded-md whitespace-nowrap transition-all ${
+                        selectedChapter === chap
+                          ? selectedTrack === 'chuyen'
+                            ? 'bg-amber-600 text-white shadow-xs'
+                            : 'bg-blue-700 text-white shadow-xs'
+                          : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {chap}
                     </button>
                   ))}
                 </div>
@@ -570,6 +696,12 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                                   </>
                                 )}
                               </div>
+
+                              {lec.stageLabel && (
+                                <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+                                  {lec.stageLabel}
+                                </div>
+                              )}
 
                               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug group-hover:text-blue-700 dark:group-hover:text-sky-400 transition-colors">
                                 {lec.title}

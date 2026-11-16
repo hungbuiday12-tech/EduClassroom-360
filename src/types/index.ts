@@ -291,6 +291,9 @@ export interface MathLecture {
   track?: CurriculumTrack;
   gradeGroup?: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12' | 'Chuyên Toán';
   tier?: SpecializedTier;
+  lessonNumber?: number;
+  stageLabel?: string;
+  sourceTag?: string;
   title: string;
   grade: string;
   category?: 'Giải tích' | 'Hình học' | 'Đại số & Xác suất' | 'Lượng giác & Mũ' | 'Số phức' | 'Đại số' | 'Số học & Tổ hợp';

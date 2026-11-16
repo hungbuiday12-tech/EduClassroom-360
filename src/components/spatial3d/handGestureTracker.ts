@@ -1,3 +1,5 @@
+import { FilesetResolver, HandLandmarker, NormalizedLandmark } from '@mediapipe/tasks-vision';
+
 export type HandGestureId =
   | 'none'
   | 'point_1'
@@ -5,28 +7,40 @@ export type HandGestureId =
   | 'slice_2'
   | 'morph_3'
   | 'palm_5'
+  | 'two_hand_10'
   | 'fist_0';
 
 export interface HandTipPoint {
-  x: number; // normalized [0..1]
+  id: number; // 1..10 fixed finger slot
+  handIndex: 0 | 1;
+  fingerName: 'Cái' | 'Trỏ' | 'Giữa' | 'Áp út' | 'Út';
+  x: number; // normalized [0..1], already mirrored if mirror=true
   y: number; // normalized [0..1]
-  angle: number;
-  distRatio: number;
+  z: number; // relative depth from wrist
+  extended: boolean;
 }
 
 export interface HandTrackingFrame {
   detected: boolean;
+  ready: boolean;
+  engine: 'mediapipe' | 'initializing' | 'error';
+  errorMessage?: string;
+  handCount: number;
   gesture: HandGestureId;
-  fingerCount: number;
-  cursorX: number; // normalized [0..1], mirrored if mirror=true
+  fingerCount: number; // extended fingers across 1 or 2 hands (0..10)
+  trackedTipCount: number; // total visible fingertip sensors (0, 5, or 10)
+  cursorX: number; // normalized [0..1]
   cursorY: number; // normalized [0..1]
-  pinchRatio: number; // 0..1 (higher = closer pinch / compact)
-  spreadScale: number; // 0.35..1.8 based on palm area / span
+  pinchRatio: number; // 0..1
+  hand1Pinching: boolean;
+  hand2Pinching: boolean;
+  hand1Index: { x: number; y: number } | null;
+  hand2Index: { x: number; y: number } | null;
+  handTiltAngle: number; // wrist -> middle MCP roll angle (radians)
+  twoHandSpan: number; // normalized distance between two hands when handCount === 2
+  twoHandAngle: number; // angle between left & right hands (radians)
   confidence: number; // 0..1
-  palmRadius: number; // normalized radius
-  skinCoverage: number; // 0..1 fraction of ROI matching skin
-  tips: HandTipPoint[];
-  bbox: { minX: number; minY: number; maxX: number; maxY: number } | null;
+  tips: HandTipPoint[]; // up to 10 fingertip sensors locked to each fingertip
 }
 
 export interface GestureMeta {
@@ -43,597 +57,444 @@ export const GESTURE_DEFINITIONS: GestureMeta[] = [
   {
     id: 'point_1',
     fingers: '1',
-    labelVi: '1 Ngón · Vẽ Laser Oxyz',
-    labelEn: '1 Finger · Oxyz Draw',
-    actionVi: 'Di chuyển tia laser & vẽ nét ống 3D trong không gian Oxyz',
-    actionEn: 'Move laser cursor & sculpt 3D tubes in Oxyz space',
+    labelVi: '1 Ngón · Vẽ & Chạm Điểm',
+    labelEn: '1 Finger · Draw & Plot',
+    actionVi: '2D: Ghim điểm & vẽ tự do · 3D: Vẽ ống Neon & dẫn tay Robot',
+    actionEn: '2D: Plot & freehand draw · 3D: Sculpt Neon tubes & guide Robot Arm',
     accent: '#22d3ee'
   },
   {
     id: 'pinch',
     fingers: '👌',
-    labelVi: 'Chụm Ngón · Kéo Dãn Tỷ Lệ',
-    labelEn: 'Pinch · Scale & Stretch',
-    actionVi: 'Thay đổi tỷ lệ phóng đại & chiều cao/biên độ khối hình theo tay',
-    actionEn: 'Stretch 3D scale & height/amplitude with hand motion',
+    labelVi: 'Chụm Ngón · Gắp & Điều Tốc',
+    labelEn: 'Pinch · Grab & Modulate',
+    actionVi: '2D: Kéo đỉnh đa giác & compa · 3D: Đặt khối kiến tạo & tăng tua/gió',
+    actionEn: '2D: Drag vertices & shapes · 3D: Stamp 3D blocks & throttle RPM/speed',
     accent: '#f59e0b'
   },
   {
     id: 'slice_2',
     fingers: '2',
-    labelVi: '2 Ngón · Mặt Cắt Thiết Diện',
-    labelEn: '2 Fingers · Cross-Section',
-    actionVi: 'Kích hoạt & trượt mặt phẳng cắt xuyên khối 3D theo trục Y',
-    actionEn: 'Activate & sweep horizontal clipping plane along Y axis',
+    labelVi: '2 Ngón · Đo Góc & Cắt Lớp',
+    labelEn: '2 Fingers · Measure & Slice',
+    actionVi: '2D: Quét tiếp tuyến & tia cắt · 3D: Trượt mặt cắt ngang xuyên vật thể',
+    actionEn: '2D: Sweep secant/tangent · 3D: Slide cross-section clipping plane',
     accent: '#a855f7'
   },
   {
     id: 'morph_3',
     fingers: '3',
-    labelVi: '3 Ngón · Thu Phóng Lõi',
-    labelEn: '3 Fingers · Focus Zoom',
-    actionVi: 'Thu phóng nhẹ & tách lớp tập trung quan sát lõi mô hình hiện tại',
-    actionEn: 'Smoothly zoom and inspect core layers of the current simulation',
+    labelVi: '3 Ngón · Tách Lớp Cấu Trúc',
+    labelEn: '3 Fingers · Explode Layers',
+    actionVi: '2D: Đổi bậc đối xứng · 3D: Mở bung vỏ máy & tách lớp nội thất',
+    actionEn: '2D: Cycle radial symmetry · 3D: Explode engine/hull layers smoothly',
     accent: '#ec4899'
   },
   {
     id: 'palm_5',
     fingers: '5',
-    labelVi: 'Xòe 5 Ngón · Xoay & Tách Lớp',
-    labelEn: 'Open Palm · Orbit & Explode',
-    actionVi: 'Xoay mô hình 360° theo chiều ngang & tách lớp cấu trúc theo chiều dọc',
-    actionEn: 'Orbit model 360° horizontally & explode structural layers vertically',
+    labelVi: '5 Ngón · Xoay Quỹ Đạo 360°',
+    labelEn: '5 Fingers · 360° Orbit',
+    actionVi: '2D: Xoay & trượt hệ trục · 3D: Xoay 360° toàn bộ mô hình thực tế',
+    actionEn: '2D: Rotate & pan canvas · 3D: Smoothly orbit 3D model 360°',
     accent: '#10b981'
+  },
+  {
+    id: 'two_hand_10',
+    fingers: '10',
+    labelVi: '10 Ngón (2 Tay) · Compa & Thu Phóng',
+    labelEn: '10 Fingers (2 Hands) · Dual Control',
+    actionVi: '2D: Compa 2 tay, 2 vector u & v · 3D: Thu phóng, nghiêng & vẽ đối xứng kép',
+    actionEn: '2D: 2-hand compass & dual vectors · 3D: Zoom, tilt & dual-beam sculpt',
+    accent: '#38bdf8'
   },
   {
     id: 'fist_0',
     fingers: '0',
     labelVi: 'Nắm Tay · Khóa Đo Đạc',
     labelEn: 'Fist · Freeze & Inspect',
-    actionVi: 'Đóng băng chuyển động để quan sát thông số V, S & góc nhìn cố định',
-    actionEn: 'Lock rotation & parameters to inspect volume, area, and geometry',
+    actionVi: 'Đóng băng tức thì để đọc thông số, công thức & chụp ảnh nét',
+    actionEn: 'Freeze motion instantly to inspect formulas & capture crisp shots',
     accent: '#64748b'
   }
 ];
 
-interface SkinRange {
-  cbMin: number;
-  cbMax: number;
-  crMin: number;
-  crMax: number;
-  yMin: number;
+const FINGERTIP_INDICES = [4, 8, 12, 16, 20] as const;
+const FINGER_PIP_INDICES = [3, 6, 10, 14, 18] as const;
+const FINGER_MCP_INDICES = [2, 5, 9, 13, 17] as const;
+const FINGER_NAMES: ('Cái' | 'Trỏ' | 'Giữa' | 'Áp út' | 'Út')[] = [
+  'Cái',
+  'Trỏ',
+  'Giữa',
+  'Áp út',
+  'Út'
+];
+
+function dist2D(a: NormalizedLandmark, b: NormalizedLandmark): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-const DEFAULT_SKIN_RANGE: SkinRange = {
-  cbMin: 76,
-  cbMax: 132,
-  crMin: 132,
-  crMax: 178,
-  yMin: 36
-};
+function isFingerExtended(hand: NormalizedLandmark[], fingerSlot: number): boolean {
+  const wrist = hand[0];
+  const mcp = hand[FINGER_MCP_INDICES[fingerSlot]];
+  const pip = hand[FINGER_PIP_INDICES[fingerSlot]];
+  const tip = hand[FINGERTIP_INDICES[fingerSlot]];
+  if (!wrist || !mcp || !pip || !tip) return false;
+
+  if (fingerSlot === 0) {
+    const pinkyMcp = hand[17];
+    if (!pinkyMcp) return false;
+    return dist2D(tip, pinkyMcp) > dist2D(pip, pinkyMcp) * 1.18;
+  }
+
+  const dTipWrist = dist2D(tip, wrist);
+  const dPipWrist = dist2D(pip, wrist);
+  const dMcpWrist = dist2D(mcp, wrist);
+  return dTipWrist > dPipWrist * 1.07 && dTipWrist > dMcpWrist * 1.25;
+}
 
 export class HandGestureTracker {
-  private readonly width = 160;
-  private readonly height = 120;
-  private canvas: HTMLCanvasElement;
-  private ctx: CanvasRenderingContext2D;
-  private mask: Uint8Array;
-  private smoothMask: Uint8Array;
-  private labels: Int32Array;
-  private bfsQueue: Int32Array;
+  private landmarker: HandLandmarker | null = null;
+  private initPromise: Promise<void> | null = null;
+  private engineState: 'mediapipe' | 'initializing' | 'error' = 'initializing';
+  private errorMessage: string | undefined;
 
-  private skinRange: SkinRange = { ...DEFAULT_SKIN_RANGE };
-  private smoothX = 0.5;
-  private smoothY = 0.5;
-  private smoothSpread = 1.0;
-  private smoothPinch = 0.2;
-  private hasFix = false;
+  private lastVideoTime = -1;
+  private lastTimestampMs = 0;
+
+  // Per-tip smoothed coordinates for 10 finger slots (1..10)
+  private smoothedTips: Map<number, { x: number; y: number; z: number }> = new Map();
+  private smoothCursorX = 0.5;
+  private smoothCursorY = 0.5;
+  private smoothSpan = 0.45;
+  private smoothTwoHandAngle = 0;
+  private smoothTiltAngle = 0;
+  private hasCursorFix = false;
 
   private candidateGesture: HandGestureId = 'none';
   private candidateStreak = 0;
   private stableGesture: HandGestureId = 'none';
   private missFrames = 0;
+  private lastResultFrame: HandTrackingFrame | null = null;
 
-  constructor() {
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
-    const context = this.canvas.getContext('2d', { willReadFrequently: true });
-    if (!context) {
-      throw new Error('Could not initialize 2D canvas context for HandGestureTracker');
+  public async ensureInitialized(): Promise<boolean> {
+    if (this.landmarker) {
+      this.engineState = 'mediapipe';
+      return true;
     }
-    this.ctx = context;
-    this.mask = new Uint8Array(this.width * this.height);
-    this.smoothMask = new Uint8Array(this.width * this.height);
-    this.labels = new Int32Array(this.width * this.height);
-    this.bfsQueue = new Int32Array(this.width * this.height);
+    if (this.initPromise) {
+      await this.initPromise;
+      return Boolean(this.landmarker);
+    }
+
+    this.engineState = 'initializing';
+    this.initPromise = (async () => {
+      const base = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL || './';
+      const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+      const localWasmPath = `${normalizedBase}mediapipe/wasm`;
+      const localModelPath = `${normalizedBase}mediapipe/hand_landmarker.task`;
+
+      const createLandmarker = async (wasmPath: string, modelPath: string, delegate: 'GPU' | 'CPU') => {
+        const vision = await FilesetResolver.forVisionTasks(wasmPath);
+        return HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: modelPath,
+            delegate
+          },
+          runningMode: 'VIDEO',
+          numHands: 2,
+          minHandDetectionConfidence: 0.55,
+          minHandPresenceConfidence: 0.55,
+          minTrackingConfidence: 0.55
+        });
+      };
+
+      try {
+        try {
+          this.landmarker = await createLandmarker(localWasmPath, localModelPath, 'GPU');
+        } catch {
+          this.landmarker = await createLandmarker(localWasmPath, localModelPath, 'CPU');
+        }
+        this.engineState = 'mediapipe';
+        this.errorMessage = undefined;
+      } catch (localErr) {
+        try {
+          const cdnWasm = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm';
+          const cdnModel =
+            'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+          this.landmarker = await createLandmarker(cdnWasm, cdnModel, 'CPU');
+          this.engineState = 'mediapipe';
+          this.errorMessage = undefined;
+        } catch (cdnErr) {
+          this.engineState = 'error';
+          this.errorMessage =
+            cdnErr instanceof Error
+              ? cdnErr.message
+              : localErr instanceof Error
+              ? localErr.message
+              : 'Failed to load HandLandmarker';
+        }
+      }
+    })();
+
+    await this.initPromise;
+    return Boolean(this.landmarker);
   }
 
-  public resetCalibration(): void {
-    this.skinRange = { ...DEFAULT_SKIN_RANGE };
+  public resetSmoothing(): void {
+    this.smoothedTips.clear();
+    this.hasCursorFix = false;
     this.stableGesture = 'none';
     this.candidateGesture = 'none';
     this.candidateStreak = 0;
-    this.hasFix = false;
-  }
-
-  public calibrateCenter(video: HTMLVideoElement, mirror: boolean): boolean {
-    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
-      return false;
-    }
-
-    this.drawVideoFrame(video, mirror);
-    const { data } = this.ctx.getImageData(0, 0, this.width, this.height);
-
-    // Sample a central 36x36 calibration box where the user holds their palm
-    const x0 = Math.floor(this.width * 0.5 - 18);
-    const x1 = Math.floor(this.width * 0.5 + 18);
-    const y0 = Math.floor(this.height * 0.5 - 18);
-    const y1 = Math.floor(this.height * 0.5 + 18);
-
-    const cbSamples: number[] = [];
-    const crSamples: number[] = [];
-    const ySamples: number[] = [];
-
-    for (let y = y0; y < y1; y++) {
-      for (let x = x0; x < x1; x++) {
-        const idx = (y * this.width + x) * 4;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-        if (luma < 28) continue;
-        const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
-        const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
-        ySamples.push(luma);
-        cbSamples.push(cb);
-        crSamples.push(cr);
-      }
-    }
-
-    if (cbSamples.length < 40) return false;
-
-    const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-    const std = (arr: number[], m: number) =>
-      Math.sqrt(arr.reduce((acc, v) => acc + (v - m) * (v - m), 0) / arr.length);
-
-    const cbMean = mean(cbSamples);
-    const crMean = mean(crSamples);
-    const yMean = mean(ySamples);
-    const cbPad = Math.max(15, std(cbSamples, cbMean) * 2.6);
-    const crPad = Math.max(15, std(crSamples, crMean) * 2.6);
-
-    this.skinRange = {
-      cbMin: Math.max(60, cbMean - cbPad),
-      cbMax: Math.min(148, cbMean + cbPad),
-      crMin: Math.max(120, crMean - crPad),
-      crMax: Math.min(198, crMean + crPad),
-      yMin: Math.max(24, yMean * 0.38)
-    };
-    return true;
-  }
-
-  private drawVideoFrame(video: HTMLVideoElement, mirror: boolean): void {
-    this.ctx.save();
-    if (mirror) {
-      this.ctx.translate(this.width, 0);
-      this.ctx.scale(-1, 1);
-    }
-    this.ctx.drawImage(video, 0, 0, this.width, this.height);
-    this.ctx.restore();
+    this.lastResultFrame = null;
   }
 
   public process(
     video: HTMLVideoElement,
     options: { mirror: boolean; sensitivity: number; smoothing: number }
   ): HandTrackingFrame {
-    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+    if (!this.landmarker) {
+      if (!this.initPromise) {
+        void this.ensureInitialized();
+      }
       return this.emptyFrame();
     }
 
-    const { mirror, sensitivity, smoothing } = options;
-    this.drawVideoFrame(video, mirror);
-    const img = this.ctx.getImageData(0, 0, this.width, this.height).data;
-
-    const w = this.width;
-    const h = this.height;
-    const total = w * h;
-    const tol = (1.0 - sensitivity) * -12; // sensitivity 1.5 expands tolerance by +6
-    const cbMin = this.skinRange.cbMin - Math.max(-8, tol);
-    const cbMax = this.skinRange.cbMax + Math.max(-8, tol);
-    const crMin = this.skinRange.crMin - Math.max(-8, tol);
-    const crMax = this.skinRange.crMax + Math.max(-8, tol);
-    const yMin = Math.max(36, this.skinRange.yMin - (sensitivity - 1) * 12);
-
-    let rawCount = 0;
-    for (let i = 0; i < total; i++) {
-      const p = i * 4;
-      const r = img[p];
-      const g = img[p + 1];
-      const b = img[p + 2];
-      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-      const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
-      const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
-
-      // Strict skin chrominance check (excludes white/gray walls, lamps, and random non-skin motion)
-      const chromaSpread = r - Math.min(g, b);
-      const isSkin =
-        luma >= yMin &&
-        luma <= 242 &&
-        cb >= cbMin &&
-        cb <= cbMax &&
-        cr >= crMin &&
-        cr <= crMax &&
-        r > g * 0.96 &&
-        r > b * 1.05 &&
-        chromaSpread >= 10;
-
-      this.mask[i] = isSkin ? 1 : 0;
-      if (isSkin) rawCount++;
+    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+      return this.lastResultFrame || this.emptyFrame();
     }
 
-    // 3x3 majority denoise pass
-    this.smoothMask.fill(0);
-    for (let y = 1; y < h - 1; y++) {
-      const row = y * w;
-      for (let x = 1; x < w - 1; x++) {
-        const idx = row + x;
-        const neighbors =
-          this.mask[idx - w - 1] +
-          this.mask[idx - w] +
-          this.mask[idx - w + 1] +
-          this.mask[idx - 1] +
-          this.mask[idx] +
-          this.mask[idx + 1] +
-          this.mask[idx + w - 1] +
-          this.mask[idx + w] +
-          this.mask[idx + w + 1];
-        this.smoothMask[idx] = neighbors >= 5 ? 1 : 0;
-      }
+    if (video.currentTime === this.lastVideoTime && this.lastResultFrame) {
+      return this.lastResultFrame;
     }
+    this.lastVideoTime = video.currentTime;
 
-    // Connected-component labeling to isolate ONLY the single hand blob (ignores face/background)
-    this.labels.fill(0);
-    let currentLabel = 0;
-    let bestLabel = 0;
-    let bestScore = -1e9;
-    let bestArea = 0;
-    let bestSumX = 0;
-    let bestSumY = 0;
-    let bestMinX = w;
-    let bestMaxX = 0;
-    let bestMinY = h;
-    let bestMaxY = 0;
+    const nowMs = Math.max(this.lastTimestampMs + 1, performance.now());
+    this.lastTimestampMs = nowMs;
 
-    const anchorX = this.hasFix ? this.smoothX * w : w * 0.5;
-    const anchorY = this.hasFix ? this.smoothY * h : h * 0.56;
+    const result = this.landmarker.detectForVideo(video, nowMs);
+    const hands = result.landmarks || [];
 
-    for (let y = 1; y < h - 1; y++) {
-      const row = y * w;
-      for (let x = 1; x < w - 1; x++) {
-        const startIdx = row + x;
-        if (this.smoothMask[startIdx] !== 1 || this.labels[startIdx] !== 0) continue;
-
-        currentLabel++;
-        let head = 0;
-        let tail = 0;
-        this.bfsQueue[tail++] = startIdx;
-        this.labels[startIdx] = currentLabel;
-
-        let area = 0;
-        let cSumX = 0;
-        let cSumY = 0;
-        let cMinX = x;
-        let cMaxX = x;
-        let cMinY = y;
-        let cMaxY = y;
-
-        while (head < tail) {
-          const cur = this.bfsQueue[head++];
-          const cy = Math.floor(cur / w);
-          const cx = cur - cy * w;
-          area++;
-          cSumX += cx;
-          cSumY += cy;
-          if (cx < cMinX) cMinX = cx;
-          if (cx > cMaxX) cMaxX = cx;
-          if (cy < cMinY) cMinY = cy;
-          if (cy > cMaxY) cMaxY = cy;
-
-          const nLeft = cur - 1;
-          if (cx > 1 && this.smoothMask[nLeft] === 1 && this.labels[nLeft] === 0) {
-            this.labels[nLeft] = currentLabel;
-            this.bfsQueue[tail++] = nLeft;
-          }
-          const nRight = cur + 1;
-          if (cx < w - 2 && this.smoothMask[nRight] === 1 && this.labels[nRight] === 0) {
-            this.labels[nRight] = currentLabel;
-            this.bfsQueue[tail++] = nRight;
-          }
-          const nUp = cur - w;
-          if (cy > 1 && this.smoothMask[nUp] === 1 && this.labels[nUp] === 0) {
-            this.labels[nUp] = currentLabel;
-            this.bfsQueue[tail++] = nUp;
-          }
-          const nDown = cur + w;
-          if (cy < h - 2 && this.smoothMask[nDown] === 1 && this.labels[nDown] === 0) {
-            this.labels[nDown] = currentLabel;
-            this.bfsQueue[tail++] = nDown;
-          }
-        }
-
-        // Filter out tiny specks and giant wall/lighting backgrounds
-        if (area < 170 || area > total * 0.45) continue;
-
-        const centX = cSumX / area;
-        const centY = cSumY / area;
-        const distPenalty = Math.hypot(centX - anchorX, centY - anchorY) * 14;
-        // Prefer typical foreground hand sizes (400..4500 px) near locked anchor
-        const score = Math.min(area, 4200) - distPenalty;
-
-        if (score > bestScore) {
-          bestScore = score;
-          bestLabel = currentLabel;
-          bestArea = area;
-          bestSumX = cSumX;
-          bestSumY = cSumY;
-          bestMinX = cMinX;
-          bestMaxX = cMaxX;
-          bestMinY = cMinY;
-          bestMaxY = cMaxY;
-        }
-      }
-    }
-
-    const cleanCount = bestArea;
-    const minX = bestMinX;
-    const maxX = bestMaxX;
-    const minY = bestMinY;
-    const maxY = bestMaxY;
-
-    const skinCoverage = cleanCount / total;
-    if (bestLabel === 0 || cleanCount < 170 || rawCount < 140) {
+    if (hands.length === 0) {
       this.missFrames++;
-      if (this.missFrames > 6) {
+      if (this.missFrames > 5) {
+        this.smoothedTips.clear();
         this.stableGesture = 'none';
         this.candidateStreak = 0;
-        this.hasFix = false;
+        this.hasCursorFix = false;
       }
-      return {
-        ...this.emptyFrame(),
-        skinCoverage,
-        cursorX: this.smoothX,
-        cursorY: this.smoothY
-      };
+      const empty = this.emptyFrame();
+      this.lastResultFrame = empty;
+      return empty;
     }
 
     this.missFrames = 0;
+    const { mirror, sensitivity, smoothing } = options;
+    const tipAlpha = Math.max(0.28, Math.min(0.88, 1.0 - smoothing * 0.58));
 
-    // Initial centroid & trimmed core palm center strictly inside selected hand blob
-    const cx0 = bestSumX / cleanCount;
-    const cy0 = bestSumY / cleanCount;
-    const bw = Math.max(12, maxX - minX);
-    const bh = Math.max(12, maxY - minY);
+    const indexedHands = hands.slice(0, 2).map((lmList, rawIdx) => {
+      const wristX = mirror ? 1 - lmList[0].x : lmList[0].x;
+      const score = result.handedness?.[rawIdx]?.[0]?.score ?? 0.9;
+      return { lmList, wristX, score };
+    });
+    indexedHands.sort((a, b) => a.wristX - b.wristX);
 
-    let coreSumX = 0;
-    let coreSumY = 0;
-    let coreWeight = 0;
-    for (let y = minY; y <= maxY; y++) {
-      const row = y * w;
-      for (let x = minX; x <= maxX; x++) {
-        if (this.labels[row + x] !== bestLabel) continue;
-        const dyNorm = (y - minY) / bh;
-        const weight = dyNorm < 0.72 ? 1.0 : 0.25;
-        coreSumX += x * weight;
-        coreSumY += y * weight;
-        coreWeight += weight;
+    const tips: HandTipPoint[] = [];
+    let totalExtended = 0;
+    let confSum = 0;
+    let hand1Pinching = false;
+    let hand2Pinching = false;
+    let maxPinchRatio = 0;
+    let handTiltAngle = this.smoothTiltAngle;
+
+    const pinchThreshold = 0.048 + (sensitivity - 1) * 0.02;
+
+    indexedHands.forEach((hEntry, hIdx) => {
+      const handIdx = (hIdx === 0 ? 0 : 1) as 0 | 1;
+      const lms = hEntry.lmList;
+      confSum += hEntry.score;
+
+      if (hIdx === 0 && lms[0] && lms[9]) {
+        const wx = mirror ? 1 - lms[0].x : lms[0].x;
+        const wy = lms[0].y;
+        const mx = mirror ? 1 - lms[9].x : lms[9].x;
+        const my = lms[9].y;
+        handTiltAngle = Math.atan2(mx - wx, wy - my);
+      }
+
+      const thumbTip = lms[4];
+      const indexTip = lms[8];
+      const thumbIndexDist = dist2D(thumbTip, indexTip);
+      const handScaleRef = Math.max(0.08, dist2D(lms[0], lms[9]));
+      const normPinchDist = thumbIndexDist / handScaleRef;
+      const pinchRatio = Math.max(0, Math.min(1, 1 - normPinchDist * 1.45));
+      if (pinchRatio > maxPinchRatio) maxPinchRatio = pinchRatio;
+      const isPinch = thumbIndexDist < pinchThreshold || normPinchDist < 0.34;
+      if (isPinch) {
+        if (handIdx === 0) hand1Pinching = true;
+        else hand2Pinching = true;
+      }
+
+      for (let f = 0; f < 5; f++) {
+        const lm = lms[FINGERTIP_INDICES[f]];
+        if (!lm) continue;
+
+        const rawX = Math.max(0.01, Math.min(0.99, mirror ? 1 - lm.x : lm.x));
+        const rawY = Math.max(0.01, Math.min(0.99, lm.y));
+        const rawZ = lm.z ?? 0;
+
+        const slotId = handIdx * 5 + f + 1;
+        const prev = this.smoothedTips.get(slotId);
+        const sx = prev ? prev.x + (rawX - prev.x) * tipAlpha : rawX;
+        const sy = prev ? prev.y + (rawY - prev.y) * tipAlpha : rawY;
+        const sz = prev ? prev.z + (rawZ - prev.z) * tipAlpha : rawZ;
+        this.smoothedTips.set(slotId, { x: sx, y: sy, z: sz });
+
+        const ext = isFingerExtended(lms, f);
+        if (ext) totalExtended++;
+
+        tips.push({
+          id: slotId,
+          handIndex: handIdx,
+          fingerName: FINGER_NAMES[f],
+          x: sx,
+          y: sy,
+          z: sz,
+          extended: ext
+        });
+      }
+    });
+
+    if (indexedHands.length < 2) {
+      for (let id = 6; id <= 10; id++) {
+        this.smoothedTips.delete(id);
       }
     }
 
-    const palmCx = coreWeight > 0 ? coreSumX / coreWeight : cx0;
-    const palmCy = coreWeight > 0 ? coreSumY / coreWeight : cy0;
+    const h1IndexTip = tips.find((t) => t.id === 2) || null;
+    const h2IndexTip = tips.find((t) => t.id === 7) || null;
+    const hand1Index = h1IndexTip ? { x: h1IndexTip.x, y: h1IndexTip.y } : null;
+    const hand2Index = h2IndexTip ? { x: h2IndexTip.x, y: h2IndexTip.y } : null;
 
-    // Estimate palm radius via 48 angular rays strictly from pixels in the selected hand blob
-    const numBins = 48;
-    const maxRay = new Float32Array(numBins);
-    const rayTipX = new Float32Array(numBins);
-    const rayTipY = new Float32Array(numBins);
+    let rawGesture: HandGestureId = 'palm_5';
+    let twoHandSpan = 0.45;
+    let twoHandAngle = this.smoothTwoHandAngle;
+    const anyPinch = hand1Pinching || hand2Pinching;
 
-    for (let y = minY; y <= maxY; y++) {
-      const row = y * w;
-      for (let x = minX; x <= maxX; x++) {
-        if (this.labels[row + x] !== bestLabel) continue;
-        const dx = x - palmCx;
-        const dy = y - palmCy;
-        const dist = Math.hypot(dx, dy);
-        let angle = Math.atan2(dy, dx); // -PI..PI
-        if (angle < 0) angle += Math.PI * 2;
-        const bin = Math.min(numBins - 1, Math.floor((angle / (Math.PI * 2)) * numBins));
-        if (dist > maxRay[bin]) {
-          maxRay[bin] = dist;
-          rayTipX[bin] = x;
-          rayTipY[bin] = y;
-        }
+    if (indexedHands.length === 2) {
+      if (h1IndexTip && h2IndexTip) {
+        twoHandSpan = Math.hypot(h1IndexTip.x - h2IndexTip.x, h1IndexTip.y - h2IndexTip.y);
+        twoHandAngle = Math.atan2(h2IndexTip.y - h1IndexTip.y, h2IndexTip.x - h1IndexTip.x);
       }
-    }
-
-    // Ignore narrow downward wrist arc (angle around +PI/2) so thumb on sides is always tracked
-    const upperRays: number[] = [];
-    for (let b = 0; b < numBins; b++) {
-      const angle = ((b + 0.5) / numBins) * Math.PI * 2;
-      const isWrist = angle > Math.PI * 0.39 && angle < Math.PI * 0.61;
-      if (!isWrist && maxRay[b] > 2) {
-        upperRays.push(maxRay[b]);
-      }
-    }
-
-    const sortedRays = [...upperRays].sort((a, b) => a - b);
-    const medianRay =
-      sortedRays.length > 0 ? sortedRays[Math.floor(sortedRays.length * 0.38)] : Math.min(bw, bh) * 0.28;
-    const palmRadiusPx = Math.max(8, medianRay);
-
-    // Light 3-tap circular smoothing on radial envelope to suppress pixel noise
-    const smoothRay = new Float32Array(numBins);
-    for (let b = 0; b < numBins; b++) {
-      const p = maxRay[(b - 1 + numBins) % numBins];
-      const c = maxRay[b];
-      const n = maxRay[(b + 1) % numBins];
-      smoothRay[b] = p * 0.2 + c * 0.6 + n * 0.2;
-    }
-
-    // Detect up to 5 prominent fingertip peaks
-    const candidateBins: { bin: number; score: number }[] = [];
-    const peakThreshold = palmRadiusPx * 1.26;
-
-    for (let b = 0; b < numBins; b++) {
-      const angle = ((b + 0.5) / numBins) * Math.PI * 2;
-      const isWrist = angle > Math.PI * 0.39 && angle < Math.PI * 0.61;
-      if (isWrist) continue;
-
-      const prev = smoothRay[(b - 1 + numBins) % numBins];
-      const cur = smoothRay[b];
-      const next = smoothRay[(b + 1) % numBins];
-      if (cur >= peakThreshold && cur >= prev && cur >= next) {
-        // Compute local valley depth within +-3 bins to reject flat blobs
-        let localMin = cur;
-        for (let k = -3; k <= 3; k++) {
-          if (k === 0) continue;
-          const v = smoothRay[(b + k + numBins) % numBins];
-          if (v < localMin) localMin = v;
-        }
-        const prominence = cur - localMin;
-        if (prominence >= palmRadiusPx * 0.13) {
-          candidateBins.push({ bin: b, score: maxRay[b] });
-        }
-      }
-    }
-
-    // Non-maximum suppression: merge peaks closer than 3 angular bins (~22.5 deg)
-    const peakBins: number[] = [];
-    for (const cand of candidateBins) {
-      const last = peakBins[peakBins.length - 1];
-      if (last !== undefined && Math.abs(cand.bin - last) <= 3) {
-        if (maxRay[cand.bin] > maxRay[last]) peakBins[peakBins.length - 1] = cand.bin;
+      if (totalExtended >= 6) {
+        rawGesture = 'two_hand_10';
+      } else if (totalExtended === 0) {
+        rawGesture = 'fist_0';
+      } else if (hand1Pinching && hand2Pinching) {
+        rawGesture = 'pinch';
       } else {
-        peakBins.push(cand.bin);
+        rawGesture = 'two_hand_10';
+      }
+    } else {
+      const indexExt = tips[1]?.extended ?? false;
+      const middleExt = tips[2]?.extended ?? false;
+      const ringExt = tips[3]?.extended ?? false;
+      const pinkyExt = tips[4]?.extended ?? false;
+
+      if (totalExtended === 0 && !anyPinch) {
+        rawGesture = 'fist_0';
+      } else if (anyPinch && !middleExt && !ringExt && !pinkyExt) {
+        rawGesture = 'pinch';
+      } else if (totalExtended === 1 || (indexExt && !middleExt && !ringExt && !pinkyExt)) {
+        rawGesture = 'point_1';
+      } else if (totalExtended === 2) {
+        rawGesture = anyPinch ? 'pinch' : 'slice_2';
+      } else if (totalExtended === 3) {
+        rawGesture = 'morph_3';
+      } else {
+        rawGesture = 'palm_5';
       }
     }
 
-    // Wrap-around merge check between last and first bin
-    if (peakBins.length > 1 && numBins - peakBins[peakBins.length - 1] + peakBins[0] <= 3) {
-      const first = peakBins[0];
-      const last = peakBins[peakBins.length - 1];
-      if (maxRay[last] > maxRay[first]) peakBins[0] = last;
-      peakBins.pop();
+    if (rawGesture === this.candidateGesture) {
+      this.candidateStreak++;
+    } else {
+      this.candidateGesture = rawGesture;
+      this.candidateStreak = 1;
     }
 
-    // Keep top 5 strongest fingertip sensors, ordered left-to-right for stable 1..5 IDs
-    const topFiveBins = [...peakBins]
-      .sort((a, b) => maxRay[b] - maxRay[a])
-      .slice(0, 5)
-      .sort((a, b) => rayTipX[a] - rayTipX[b]);
+    if (this.candidateStreak >= 4) {
+      this.stableGesture = rawGesture;
+    } else if (this.stableGesture === 'none') {
+      this.stableGesture = rawGesture;
+    }
 
-    const tips: HandTipPoint[] = topFiveBins.map((b) => ({
-      x: rayTipX[b] / w,
-      y: rayTipY[b] / h,
-      angle: ((b + 0.5) / numBins) * Math.PI * 2,
-      distRatio: maxRay[b] / palmRadiusPx
-    }));
-
-    const fingerCount = tips.length;
-    const aspectRatio = bh / bw;
-    const compactness = cleanCount / (bw * bh);
-
-    // Primary 3D control anchor driven directly by active fingertip sensors
-    let targetX = palmCx / w;
-    let targetY = palmCy / h;
-    if (fingerCount > 0) {
+    let targetCursorX = 0.5;
+    let targetCursorY = 0.5;
+    if (indexedHands.length === 2) {
+      const h1 = h1IndexTip || tips[0];
+      const h2 = h2IndexTip || tips[5];
+      if (h1 && h2) {
+        targetCursorX = (h1.x + h2.x) * 0.5;
+        targetCursorY = (h1.y + h2.y) * 0.5;
+      }
+    } else if (this.stableGesture === 'point_1' && tips[1]) {
+      targetCursorX = tips[1].x;
+      targetCursorY = tips[1].y;
+    } else if (this.stableGesture === 'pinch' && tips[0] && tips[1]) {
+      targetCursorX = (tips[0].x + tips[1].x) * 0.5;
+      targetCursorY = (tips[0].y + tips[1].y) * 0.5;
+    } else if (tips.length > 0) {
       let sx = 0;
       let sy = 0;
       for (const t of tips) {
         sx += t.x;
         sy += t.y;
       }
-      targetX = sx / fingerCount;
-      targetY = sy / fingerCount;
+      targetCursorX = sx / tips.length;
+      targetCursorY = sy / tips.length;
     }
 
-    // Pinch ratio estimate
-    let rawPinch = 0.2;
-    if (fingerCount === 0 && compactness > 0.54 && aspectRatio < 1.38) {
-      rawPinch = 0.85;
-    } else if (fingerCount === 2 && tips.length === 2) {
-      const tipDist = Math.hypot(tips[0].x - tips[1].x, tips[0].y - tips[1].y);
-      rawPinch = Math.max(0, Math.min(1, 1 - tipDist * 3.1));
-    }
-
-    // Classify raw gesture strictly from fingertip count & spacing
-    let detectedGesture: HandGestureId = 'palm_5';
-    if (fingerCount >= 4) {
-      detectedGesture = 'palm_5';
-    } else if (fingerCount === 3) {
-      detectedGesture = 'morph_3';
-    } else if (fingerCount === 2) {
-      const tipDist = Math.hypot(tips[0].x - tips[1].x, tips[0].y - tips[1].y);
-      detectedGesture = tipDist < 0.11 ? 'pinch' : 'slice_2';
-    } else if (fingerCount === 1) {
-      const tip = tips[0];
-      detectedGesture = tip.distRatio < 1.55 && compactness > 0.62 ? 'pinch' : 'point_1';
+    if (!this.hasCursorFix) {
+      this.smoothCursorX = targetCursorX;
+      this.smoothCursorY = targetCursorY;
+      this.smoothSpan = twoHandSpan;
+      this.smoothTwoHandAngle = twoHandAngle;
+      this.smoothTiltAngle = handTiltAngle;
+      this.hasCursorFix = true;
     } else {
-      detectedGesture = compactness > 0.64 ? 'fist_0' : 'pinch';
+      this.smoothCursorX += (targetCursorX - this.smoothCursorX) * tipAlpha;
+      this.smoothCursorY += (targetCursorY - this.smoothCursorY) * tipAlpha;
+      this.smoothSpan += (twoHandSpan - this.smoothSpan) * 0.35;
+      this.smoothTwoHandAngle += (twoHandAngle - this.smoothTwoHandAngle) * 0.3;
+      this.smoothTiltAngle += (handTiltAngle - this.smoothTiltAngle) * 0.3;
     }
 
-    // Stronger temporal hysteresis (6 frames) so fingertip count/gesture never flickers
-    if (detectedGesture === this.candidateGesture) {
-      this.candidateStreak++;
-    } else {
-      this.candidateGesture = detectedGesture;
-      this.candidateStreak = 1;
-    }
-
-    if (this.candidateStreak >= 6) {
-      this.stableGesture = detectedGesture;
-    } else if (this.stableGesture === 'none') {
-      this.stableGesture = detectedGesture;
-    }
-
-    // Exponential smoothing
-    const alpha = Math.max(0.08, Math.min(0.65, 1.0 - smoothing * 0.78));
-    if (!this.hasFix) {
-      this.smoothX = targetX;
-      this.smoothY = targetY;
-      this.smoothPinch = rawPinch;
-      this.smoothSpread = Math.max(0.45, Math.min(1.65, (bw / w) * 2.5));
-      this.hasFix = true;
-    } else {
-      this.smoothX += (targetX - this.smoothX) * alpha;
-      this.smoothY += (targetY - this.smoothY) * alpha;
-      this.smoothPinch += (rawPinch - this.smoothPinch) * 0.25;
-      const targetSpread = Math.max(0.45, Math.min(1.75, (Math.max(bw, bh) / w) * 2.4));
-      this.smoothSpread += (targetSpread - this.smoothSpread) * 0.2;
-    }
-
-    const confidence = Math.min(0.98, Math.max(0.35, cleanCount / 1600 + (fingerCount > 0 ? 0.25 : 0.12)));
-
-    return {
+    const frame: HandTrackingFrame = {
       detected: true,
+      ready: true,
+      engine: this.engineState,
+      handCount: indexedHands.length,
       gesture: this.stableGesture,
-      fingerCount,
-      cursorX: Math.max(0.02, Math.min(0.98, this.smoothX)),
-      cursorY: Math.max(0.02, Math.min(0.98, this.smoothY)),
-      pinchRatio: this.smoothPinch,
-      spreadScale: this.smoothSpread,
-      confidence,
-      palmRadius: palmRadiusPx / w,
-      skinCoverage,
-      tips,
-      bbox: {
-        minX: minX / w,
-        minY: minY / h,
-        maxX: maxX / w,
-        maxY: maxY / h
-      }
+      fingerCount: totalExtended,
+      trackedTipCount: tips.length,
+      cursorX: this.smoothCursorX,
+      cursorY: this.smoothCursorY,
+      pinchRatio: maxPinchRatio,
+      hand1Pinching,
+      hand2Pinching,
+      hand1Index,
+      hand2Index,
+      handTiltAngle: this.smoothTiltAngle,
+      twoHandSpan: this.smoothSpan,
+      twoHandAngle: this.smoothTwoHandAngle,
+      confidence: Math.min(0.99, confSum / indexedHands.length),
+      tips
     };
+
+    this.lastResultFrame = frame;
+    return frame;
   }
 
   public drawOverlay(
@@ -647,58 +508,70 @@ export class HandGestureTracker {
     const ch = overlayCanvas.height;
     ctx.clearRect(0, 0, cw, ch);
 
-    // Show calibration guide only when no hand is currently detected
     if (!frame.detected) {
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeRect(cw * 0.38, ch * 0.32, cw * 0.24, ch * 0.36);
-      ctx.setLineDash([]);
       return;
     }
 
-    // Sensors strictly on the 5 fingertips ONLY (no bounding box, no palm core, no wrist bones)
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    frame.tips.slice(0, 5).forEach((tip, idx) => {
+    for (const tip of frame.tips) {
       const tx = tip.x * cw;
       const ty = tip.y * ch;
+      const ringColor = tip.handIndex === 0 ? activeColor : '#34d399';
 
-      // Outer precision sensor halo
-      ctx.strokeStyle = activeColor;
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.arc(tx, ty, 7.5, 0, Math.PI * 2);
-      ctx.stroke();
+      if (tip.extended) {
+        ctx.strokeStyle = ringColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(tx, ty, 7.5, 0, Math.PI * 2);
+        ctx.stroke();
 
-      // Inner solid glowing fingertip sensor core
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(tx, ty, 3.2, 0, Math.PI * 2);
-      ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(tx, ty, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = 'rgba(203, 213, 225, 0.72)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(tx, ty, 5.2, 0, Math.PI * 2);
+        ctx.stroke();
 
-      // Crisp fingertip sensor number (1..5)
-      ctx.fillStyle = activeColor;
-      ctx.fillText(String(idx + 1), tx, Math.max(8, ty - 12));
-    });
+        ctx.fillStyle = ringColor;
+        ctx.beginPath();
+        ctx.arc(tx, ty, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = tip.extended ? '#ffffff' : 'rgba(203, 213, 225, 0.85)';
+      ctx.fillText(String(tip.id), tx, Math.max(8, ty - 12));
+    }
   }
 
   private emptyFrame(): HandTrackingFrame {
     return {
       detected: false,
+      ready: Boolean(this.landmarker),
+      engine: this.engineState,
+      errorMessage: this.errorMessage,
+      handCount: 0,
       gesture: 'none',
       fingerCount: 0,
-      cursorX: 0.5,
-      cursorY: 0.5,
+      trackedTipCount: 0,
+      cursorX: this.smoothCursorX,
+      cursorY: this.smoothCursorY,
       pinchRatio: 0,
-      spreadScale: 1,
+      hand1Pinching: false,
+      hand2Pinching: false,
+      hand1Index: null,
+      hand2Index: null,
+      handTiltAngle: this.smoothTiltAngle,
+      twoHandSpan: this.smoothSpan,
+      twoHandAngle: this.smoothTwoHandAngle,
       confidence: 0,
-      palmRadius: 0.1,
-      skinCoverage: 0,
-      tips: [],
-      bbox: null
+      tips: []
     };
   }
 }

@@ -13,6 +13,15 @@
   --font-display: 'Lexend', 'Be Vietnam Pro', system-ui, sans-serif;
   --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --accent-primary: #0284c7;
+  --accent-primary-light: #0ea5e9;
+  --accent-secondary: #14b8a6;
+  --accent-soft: rgba(14, 165, 233, 0.14);
+  --accent-ring: rgba(56, 189, 248, 0.38);
+  --hero-grad-from: #0284c7;
+  --hero-grad-via: #0ea5e9;
+  --hero-grad-to: #14b8a6;
+  --accent-contrast: #ffffff;
 }
 
 @layer base {
@@ -1598,3 +1607,43 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.6);
 }
+
+/* Dynamic Palette & Frameless Hero Typography Utilities */
+.text-accent-gradient {
+  background-image: linear-gradient(125deg, var(--hero-grad-from), var(--hero-grad-via), var(--hero-grad-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-accent-solid {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: var(--accent-contrast);
+}
+
+.border-accent-soft {
+  border-color: var(--accent-ring);
+}
+
+.hero-blend-shadow {
+  text-shadow: 0 2px 24px rgba(248, 250, 252, 0.85), 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+
+.dark .hero-blend-shadow {
+  text-shadow: 0 4px 28px rgba(2, 6, 23, 0.88), 0 1px 6px rgba(2, 6, 23, 0.72);
+}
+
+.cursor-dodge-token {
+  display: inline-block;
+  will-change: transform;
+  transform: translate3d(var(--dodge-x, 0px), var(--dodge-y, 0px), 0) rotate(var(--dodge-rot, 0deg));
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms ease, text-shadow 180ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-dodge-token {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+

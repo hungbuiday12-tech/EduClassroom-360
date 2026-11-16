@@ -114,7 +114,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
   className = ''
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { creatureTheme, perfMode, bgStyle } = useBackgroundTheme();
+  const { creatureTheme, perfMode, bgStyle, activePalette } = useBackgroundTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -130,6 +130,255 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       typeof isDark === 'boolean'
         ? isDark
         : document.documentElement.classList.contains('dark');
+
+    const [pR_d, pG_d, pB_d] = activePalette.particleRgbDark;
+    const [pR_l, pG_l, pB_l] = activePalette.particleRgbLight;
+
+    // Dedicated Interactive Molecular Particle Lattice ('molecules')
+    if (bgStyle === 'molecules') {
+      let darkMode = resolveDarkMode();
+      let lastTick = performance.now();
+      const targetMs = TARGET_FRAME_MS[perfMode];
+      const low = perfMode === 'smooth';
+      const molCount = low
+        ? Math.min(34, Math.max(20, Math.floor((width * height) / 36000)))
+        : perfMode === 'balanced'
+        ? Math.min(52, Math.max(28, Math.floor((width * height) / 24000)))
+        : Math.min(72, Math.max(36, Math.floor((width * height) / 17000)));
+
+      const atoms = Array.from({ length: molCount }, (_, i) => {
+        const radius = 3.2 + (i % 4) * 1.45;
+        return {
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.72,
+          vy: (Math.random() - 0.5) * 0.72,
+          r: radius,
+          electrons: (i % 3) + 1,
+          orbitPhase: Math.random() * Math.PI * 2,
+          orbitSpeed: (0.018 + (i % 4) * 0.007) * (i % 2 === 0 ? 1 : -1),
+          pulse: Math.random() * Math.PI * 2,
+          variant: i % 3
+        };
+      });
+
+      const shocks: Array<{ x: number; y: number; r: number; maxR: number; a: number }> = [];
+      const ptr = { x: -9999, y: -9999, active: false };
+
+      const onResizeMol = () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      };
+      const onPtrMoveMol = (e: PointerEvent) => {
+        if (!interactive) return;
+        ptr.x = e.clientX;
+        ptr.y = e.clientY;
+        ptr.active = true;
+      };
+      const onPtrLeaveMol = () => {
+        ptr.active = false;
+      };
+      const onPtrDownMol = (e: PointerEvent) => {
+        if (!interactive) return;
+        shocks.push({ x: e.clientX, y: e.clientY, r: 8, maxR: 220, a: 0.65 });
+        for (const a of atoms) {
+          const dx = a.x - e.clientX;
+          const dy = a.y - e.clientY;
+          const dist = Math.hypot(dx, dy) || 1;
+          if (dist < 240) {
+            const push = ((240 - dist) / 240) * 5.2;
+            a.vx += (dx / dist) * push;
+            a.vy += (dy / dist) * push;
+          }
+        }
+      };
+      const classObs = new MutationObserver(() => {
+        darkMode = resolveDarkMode();
+      });
+      classObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      window.addEventListener('resize', onResizeMol);
+      window.addEventListener('pointermove', onPtrMoveMol, { passive: true });
+      window.addEventListener('pointerleave', onPtrLeaveMol);
+      window.addEventListener('pointerdown', onPtrDownMol, { passive: true, capture: true });
+
+      const renderMolecules = (now: number) => {
+        animationFrameId = requestAnimationFrame(renderMolecules);
+        if (document.hidden) {
+          lastTick = now;
+          return;
+        }
+        if (targetMs > 0 && now - lastTick < targetMs) return;
+        const dt = Math.min(48, now - lastTick) / 16.667;
+        lastTick = now;
+        const t = now * 0.001;
+
+        const [rA, gA, bA] = darkMode ? [pR_d, pG_d, pB_d] : [pR_l, pG_l, pB_l];
+        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+        if (darkMode) {
+          bgGrad.addColorStop(0, '#040814');
+          bgGrad.addColorStop(0.5, '#091224');
+          bgGrad.addColorStop(1, '#040916');
+        } else {
+          bgGrad.addColorStop(0, '#f8fbff');
+          bgGrad.addColorStop(0.5, '#eef5fd');
+          bgGrad.addColorStop(1, '#f4f9ff');
+        }
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Soft cursor magnetic field aura
+        if (ptr.active) {
+          const halo = ctx.createRadialGradient(ptr.x, ptr.y, 4, ptr.x, ptr.y, 190);
+          halo.addColorStop(0, `rgba(${rA},${gA},${bA},${darkMode ? 0.14 : 0.1})`);
+          halo.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = halo;
+          ctx.fillRect(ptr.x - 190, ptr.y - 190, 380, 380);
+        }
+
+        const bondDist = width < 640 ? 125 : 168;
+        const repelRadius = 170;
+
+        for (let i = 0; i < atoms.length; i++) {
+          const a = atoms[i];
+          if (ptr.active) {
+            const dx = a.x - ptr.x;
+            const dy = a.y - ptr.y;
+            const d = Math.hypot(dx, dy);
+            if (d > 1 && d < repelRadius) {
+              const force = ((repelRadius - d) / repelRadius) * 0.55 * dt;
+              a.vx += (dx / d) * force;
+              a.vy += (dy / d) * force;
+            }
+          }
+
+          // Gentle Brownian drift + damping back to steady speed
+          a.vx *= Math.pow(0.985, dt);
+          a.vy *= Math.pow(0.985, dt);
+          const speed = Math.hypot(a.vx, a.vy);
+          if (speed < 0.25) {
+            a.vx += Math.cos(t * 0.9 + a.pulse) * 0.015 * dt;
+            a.vy += Math.sin(t * 0.8 + a.pulse) * 0.015 * dt;
+          } else if (speed > 4.8) {
+            a.vx = (a.vx / speed) * 4.8;
+            a.vy = (a.vy / speed) * 4.8;
+          }
+
+          a.x += a.vx * dt;
+          a.y += a.vy * dt;
+          if (a.x < 16) {
+            a.x = 16;
+            a.vx = Math.abs(a.vx);
+          } else if (a.x > width - 16) {
+            a.x = width - 16;
+            a.vx = -Math.abs(a.vx);
+          }
+          if (a.y < 16) {
+            a.y = 16;
+            a.vy = Math.abs(a.vy);
+          } else if (a.y > height - 16) {
+            a.y = height - 16;
+            a.vy = -Math.abs(a.vy);
+          }
+          a.orbitPhase += a.orbitSpeed * dt;
+        }
+
+        // Covalent bonds
+        for (let i = 0; i < atoms.length; i++) {
+          const a = atoms[i];
+          for (let j = i + 1; j < atoms.length; j++) {
+            const b = atoms[j];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < bondDist) {
+              const frac = 1 - dist / bondDist;
+              const alpha = frac * (darkMode ? 0.42 : 0.26);
+              ctx.strokeStyle = `rgba(${rA},${gA},${bA},${alpha.toFixed(3)})`;
+              ctx.lineWidth = 0.7 + frac * 1.4;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.stroke();
+
+              // Double-bond parallel shimmer on close pairs
+              if (!low && frac > 0.62 && (i + j) % 3 === 0) {
+                const nx = (-dy / (dist || 1)) * 3.5;
+                const ny = (dx / (dist || 1)) * 3.5;
+                ctx.beginPath();
+                ctx.moveTo(a.x + nx, a.y + ny);
+                ctx.lineTo(b.x + nx, b.y + ny);
+                ctx.strokeStyle = `rgba(${rA},${gA},${bA},${(alpha * 0.5).toFixed(3)})`;
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+              }
+            }
+          }
+        }
+
+        // Draw atomic nuclei + electron orbitals
+        for (const a of atoms) {
+          const glow = 0.75 + 0.25 * Math.sin(t * 2.1 + a.pulse);
+          const shellR = a.r * 2.5;
+          if (!low) {
+            ctx.strokeStyle = `rgba(${rA},${gA},${bA},${darkMode ? 0.22 : 0.16})`;
+            ctx.lineWidth = 0.9;
+            ctx.beginPath();
+            ctx.ellipse(a.x, a.y, shellR, shellR * 0.46, a.orbitPhase * 0.35, 0, Math.PI * 2);
+            ctx.stroke();
+
+            for (let e = 0; e < a.electrons; e++) {
+              const ang = a.orbitPhase + (e * Math.PI * 2) / a.electrons;
+              const ex = a.x + Math.cos(ang) * shellR;
+              const ey = a.y + Math.sin(ang) * shellR * 0.46;
+              const rot = a.orbitPhase * 0.35;
+              const rx = a.x + (ex - a.x) * Math.cos(rot) - (ey - a.y) * Math.sin(rot);
+              const ry = a.y + (ex - a.x) * Math.sin(rot) + (ey - a.y) * Math.cos(rot);
+              ctx.fillStyle = darkMode ? '#ffffff' : activePalette.primary;
+              ctx.beginPath();
+              ctx.arc(rx, ry, 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
+          // Nucleus core
+          ctx.fillStyle = `rgba(${rA},${gA},${bA},${(glow * (darkMode ? 0.88 : 0.72)).toFixed(3)})`;
+          ctx.beginPath();
+          ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = darkMode ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.9)';
+          ctx.beginPath();
+          ctx.arc(a.x - a.r * 0.25, a.y - a.r * 0.25, a.r * 0.34, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Excitation shockwaves
+        for (let i = shocks.length - 1; i >= 0; i--) {
+          const s = shocks[i];
+          s.r += 3.6 * dt;
+          s.a -= 0.018 * dt;
+          if (s.a <= 0 || s.r >= s.maxR) {
+            shocks.splice(i, 1);
+            continue;
+          }
+          ctx.strokeStyle = `rgba(${rA},${gA},${bA},${s.a.toFixed(3)})`;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      };
+
+      animationFrameId = requestAnimationFrame(renderMolecules);
+      return () => {
+        cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('resize', onResizeMol);
+        window.removeEventListener('pointermove', onPtrMoveMol);
+        window.removeEventListener('pointerleave', onPtrLeaveMol);
+        window.removeEventListener('pointerdown', onPtrDownMol, { capture: true });
+        classObs.disconnect();
+      };
+    }
 
     // Dynamic animated modes for Minimal Ambient Drift, Studio Dot Wave, and Live Blueprint STEM
     if (
@@ -338,12 +587,17 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       };
     }
 
-    const effectiveCreatureTheme = bgStyle === 'aurora_clean' ? 'galaxy' : creatureTheme;
+    const effectiveCreatureTheme: BackgroundCreatureTheme =
+      bgStyle === 'aurora_clean'
+        ? 'galaxy'
+        : bgStyle === 'constellations' && creatureTheme === 'all'
+        ? 'galaxy'
+        : creatureTheme;
 
     const isLowPower = perfMode === 'smooth';
     const isBalanced = perfMode === 'balanced';
 
-    // Pre-baked offscreen background + nebula canvas (regenerated ONLY on resize/theme change)
+    // Pre-baked offscreen background + atmospheric gradient canvas (regenerated ONLY on resize/theme/style change)
     let bgCacheCanvas: HTMLCanvasElement | null = document.createElement('canvas');
     let bgCacheDark: boolean | null = null;
     let bgCacheW = 0;
@@ -351,7 +605,6 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
 
     const rebuildBgCache = (darkMode: boolean) => {
       if (!bgCacheCanvas) return;
-      // Render background gradient + nebula at 0.5x resolution for super-fast GPU drawImage
       const cacheScale = 0.5;
       const cw = Math.max(64, Math.floor(width * cacheScale));
       const ch = Math.max(64, Math.floor(height * cacheScale));
@@ -361,7 +614,53 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       if (!bctx) return;
 
       const bgGrad = bctx.createLinearGradient(0, 0, cw, ch);
-      if (darkMode) {
+      if (bgStyle === 'ecosystem') {
+        if (darkMode) {
+          bgGrad.addColorStop(0, '#031512');
+          bgGrad.addColorStop(0.45, '#062823');
+          bgGrad.addColorStop(0.8, '#083335');
+          bgGrad.addColorStop(1, '#031018');
+        } else {
+          bgGrad.addColorStop(0, '#f2fbf7');
+          bgGrad.addColorStop(0.42, '#e3f7ee');
+          bgGrad.addColorStop(0.78, '#dcf4f6');
+          bgGrad.addColorStop(1, '#edf9f5');
+        }
+      } else if (bgStyle === 'ocean') {
+        if (darkMode) {
+          bgGrad.addColorStop(0, '#04233b');
+          bgGrad.addColorStop(0.45, '#03172b');
+          bgGrad.addColorStop(0.85, '#020d1c');
+          bgGrad.addColorStop(1, '#010712');
+        } else {
+          bgGrad.addColorStop(0, '#e0f7fe');
+          bgGrad.addColorStop(0.42, '#cff0fc');
+          bgGrad.addColorStop(0.78, '#dff6f8');
+          bgGrad.addColorStop(1, '#eefafc');
+        }
+      } else if (bgStyle === 'sky') {
+        if (darkMode) {
+          bgGrad.addColorStop(0, '#060c24');
+          bgGrad.addColorStop(0.45, '#0e1f47');
+          bgGrad.addColorStop(0.8, '#132d52');
+          bgGrad.addColorStop(1, '#091529');
+        } else {
+          bgGrad.addColorStop(0, '#cfeafe');
+          bgGrad.addColorStop(0.45, '#e2f2ff');
+          bgGrad.addColorStop(0.82, '#f2f8ff');
+          bgGrad.addColorStop(1, '#fafdff');
+        }
+      } else if (bgStyle === 'constellations') {
+        if (darkMode) {
+          bgGrad.addColorStop(0, '#020510');
+          bgGrad.addColorStop(0.5, '#070e26');
+          bgGrad.addColorStop(1, '#030714');
+        } else {
+          bgGrad.addColorStop(0, '#f3f7ff');
+          bgGrad.addColorStop(0.5, '#e9f0fc');
+          bgGrad.addColorStop(1, '#f7f9ff');
+        }
+      } else if (darkMode) {
         bgGrad.addColorStop(0, '#040914');
         bgGrad.addColorStop(0.42, '#071122');
         bgGrad.addColorStop(0.78, '#0b182e');
@@ -375,71 +674,64 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       bctx.fillStyle = bgGrad;
       bctx.fillRect(0, 0, cw, ch);
 
-      // Nebula Cloud 1 (Academic Cobalt / Cerulean Depth)
-      const n1x = cw * 0.24;
-      const n1y = ch * 0.34;
-      const grad1 = bctx.createRadialGradient(n1x, n1y, 8, n1x, n1y, cw * 0.46);
-      if (darkMode) {
-        grad1.addColorStop(
-          0,
-          intensity === 'vibrant' ? 'rgba(29, 78, 216, 0.18)' : 'rgba(29, 78, 216, 0.08)'
-        );
-        grad1.addColorStop(0.5, 'rgba(2, 132, 199, 0.09)');
-        grad1.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      } else {
-        grad1.addColorStop(0, 'rgba(56, 189, 248, 0.14)');
-        grad1.addColorStop(0.55, 'rgba(37, 99, 235, 0.08)');
-        grad1.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      }
+      const [rA, gA, bA] = darkMode ? [pR_d, pG_d, pB_d] : [pR_l, pG_l, pB_l];
+
+      // Primary Atmospheric Glow tinted with active color palette
+      const n1x = cw * 0.25;
+      const n1y = ch * 0.32;
+      const grad1 = bctx.createRadialGradient(n1x, n1y, 8, n1x, n1y, cw * 0.48);
+      grad1.addColorStop(0, `rgba(${rA},${gA},${bA},${darkMode ? (intensity === 'vibrant' ? 0.22 : 0.1) : 0.15})`);
+      grad1.addColorStop(0.55, `rgba(${rA},${gA},${bA},${darkMode ? 0.08 : 0.06})`);
+      grad1.addColorStop(1, 'rgba(0,0,0,0)');
       bctx.fillStyle = grad1;
       bctx.fillRect(0, 0, cw, ch);
 
-      // Nebula Cloud 2 (Scholarly Teal-Emerald / Sapphire Balance)
+      // Secondary Glow Pool
       const n2x = cw * 0.78;
       const n2y = ch * 0.68;
-      const grad2 = bctx.createRadialGradient(n2x, n2y, 10, n2x, n2y, cw * 0.44);
-      if (darkMode) {
-        grad2.addColorStop(
-          0,
-          intensity === 'vibrant' ? 'rgba(13, 148, 136, 0.13)' : 'rgba(13, 148, 136, 0.05)'
-        );
-        grad2.addColorStop(0.5, 'rgba(14, 165, 233, 0.08)');
-        grad2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      const grad2 = bctx.createRadialGradient(n2x, n2y, 10, n2x, n2y, cw * 0.45);
+      if (bgStyle === 'ecosystem') {
+        grad2.addColorStop(0, darkMode ? 'rgba(16, 185, 129, 0.18)' : 'rgba(52, 211, 153, 0.14)');
+      } else if (bgStyle === 'ocean') {
+        grad2.addColorStop(0, darkMode ? 'rgba(45, 212, 191, 0.16)' : 'rgba(6, 182, 212, 0.14)');
+      } else if (bgStyle === 'sky') {
+        grad2.addColorStop(0, darkMode ? 'rgba(56, 189, 248, 0.16)' : 'rgba(251, 191, 36, 0.12)');
       } else {
-        grad2.addColorStop(0, 'rgba(13, 148, 136, 0.11)');
-        grad2.addColorStop(0.5, 'rgba(14, 165, 233, 0.09)');
-        grad2.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        grad2.addColorStop(0, `rgba(${rA},${gA},${bA},${darkMode ? 0.14 : 0.11})`);
       }
+      grad2.addColorStop(1, 'rgba(0,0,0,0)');
       bctx.fillStyle = grad2;
       bctx.fillRect(0, 0, cw, ch);
 
-      // Pre-baked Scientific Blueprint Grid & Calibration Crosshairs (Zero per-frame CPU overhead)
-      const minorStep = 36;
-      const majorStep = minorStep * 4;
-      bctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.045)' : 'rgba(2, 132, 199, 0.055)';
-      bctx.lineWidth = 1;
-      bctx.beginPath();
-      for (let gx = 0; gx < cw; gx += minorStep) {
-        bctx.moveTo(gx, 0);
-        bctx.lineTo(gx, ch);
-      }
-      for (let gy = 0; gy < ch; gy += minorStep) {
-        bctx.moveTo(0, gy);
-        bctx.lineTo(cw, gy);
-      }
-      bctx.stroke();
-
-      bctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.10)' : 'rgba(37, 99, 235, 0.095)';
-      bctx.beginPath();
-      for (let gx = 0; gx < cw; gx += majorStep) {
-        for (let gy = 0; gy < ch; gy += majorStep) {
-          bctx.moveTo(gx - 4, gy);
-          bctx.lineTo(gx + 4, gy);
-          bctx.moveTo(gx, gy - 4);
-          bctx.lineTo(gx, gy + 4);
+      // Subtle blueprint grid ONLY for cosmic_galaxy/aurora_clean so ecosystem/ocean/sky/constellations feel crisp & organic
+      if (bgStyle === 'cosmic_galaxy' || bgStyle === 'aurora_clean') {
+        const minorStep = 36;
+        const majorStep = minorStep * 4;
+        bctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.045)' : 'rgba(2, 132, 199, 0.055)';
+        bctx.lineWidth = 1;
+        bctx.beginPath();
+        for (let gx = 0; gx < cw; gx += minorStep) {
+          bctx.moveTo(gx, 0);
+          bctx.lineTo(gx, ch);
         }
+        for (let gy = 0; gy < ch; gy += minorStep) {
+          bctx.moveTo(0, gy);
+          bctx.lineTo(cw, gy);
+        }
+        bctx.stroke();
+
+        bctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.10)' : 'rgba(37, 99, 235, 0.095)';
+        bctx.beginPath();
+        for (let gx = 0; gx < cw; gx += majorStep) {
+          for (let gy = 0; gy < ch; gy += majorStep) {
+            bctx.moveTo(gx - 4, gy);
+            bctx.lineTo(gx + 4, gy);
+            bctx.moveTo(gx, gy - 4);
+            bctx.lineTo(gx, gy + 4);
+          }
+        }
+        bctx.stroke();
       }
-      bctx.stroke();
 
       bgCacheDark = darkMode;
       bgCacheW = width;
@@ -718,35 +1010,205 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       };
     };
 
+    // Scene-specific ambient props (clouds, ocean bubbles, botanical leaves, constellation maps)
+    const skyClouds = Array.from({ length: isLowPower ? 5 : 9 }, (_, i) => ({
+      x: (i / 9) * width * 1.15,
+      y: height * (0.1 + ((i * 37) % 62) / 100),
+      scale: 0.75 + (i % 3) * 0.35,
+      speed: 0.18 + (i % 4) * 0.08,
+      alpha: 0.28 + (i % 3) * 0.09
+    }));
+
+    const oceanBubbles = Array.from({ length: isLowPower ? 18 : 34 }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: 1.5 + Math.random() * 4.2,
+      vy: -(0.35 + Math.random() * 0.75),
+      sway: Math.random() * Math.PI * 2,
+      alpha: 0.25 + Math.random() * 0.4
+    }));
+
+    const ecoLeaves = Array.from({ length: isLowPower ? 12 : 22 }, (_, i) => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.3) * 0.35,
+      vy: 0.16 + Math.random() * 0.25,
+      size: 4 + (i % 4) * 2,
+      rot: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.015,
+      tint: i % 3
+    }));
+
+    // Curated astronomical constellations mapped cleanly to normalized [0..1] viewport regions
+    const constellationCatalog: Array<{
+      name: string;
+      ox: number;
+      oy: number;
+      scale: number;
+      stars: Array<[number, number, number]>;
+      edges: Array<[number, number]>;
+    }> = [
+      {
+        name: 'Orion',
+        ox: 0.18,
+        oy: 0.34,
+        scale: 0.15,
+        stars: [
+          [-0.45, -0.75, 2.8],
+          [0.35, -0.72, 2.4],
+          [-0.22, -0.05, 2.5],
+          [0.02, -0.02, 2.5],
+          [0.24, 0.02, 2.5],
+          [-0.38, 0.76, 2.6],
+          [0.44, 0.72, 2.9]
+        ],
+        edges: [
+          [0, 2],
+          [1, 4],
+          [0, 1],
+          [2, 3],
+          [3, 4],
+          [2, 5],
+          [4, 6],
+          [5, 6]
+        ]
+      },
+      {
+        name: 'Cassiopeia',
+        ox: 0.52,
+        oy: 0.18,
+        scale: 0.14,
+        stars: [
+          [-0.75, -0.22, 2.5],
+          [-0.35, 0.32, 2.7],
+          [0.02, -0.08, 2.4],
+          [0.38, 0.36, 2.6],
+          [0.76, -0.24, 2.5]
+        ],
+        edges: [
+          [0, 1],
+          [1, 2],
+          [2, 3],
+          [3, 4]
+        ]
+      },
+      {
+        name: 'Ursa Major',
+        ox: 0.8,
+        oy: 0.32,
+        scale: 0.16,
+        stars: [
+          [-0.78, -0.35, 2.4],
+          [-0.44, -0.22, 2.3],
+          [-0.14, -0.04, 2.5],
+          [0.18, 0.04, 2.5],
+          [0.14, 0.42, 2.4],
+          [0.56, 0.44, 2.7],
+          [0.64, 0.04, 2.8]
+        ],
+        edges: [
+          [0, 1],
+          [1, 2],
+          [2, 3],
+          [3, 4],
+          [4, 5],
+          [5, 6],
+          [6, 3]
+        ]
+      },
+      {
+        name: 'Cygnus',
+        ox: 0.74,
+        oy: 0.76,
+        scale: 0.14,
+        stars: [
+          [0, -0.68, 2.9],
+          [0, -0.1, 2.6],
+          [0, 0.65, 2.5],
+          [-0.68, -0.08, 2.4],
+          [0.68, -0.05, 2.4]
+        ],
+        edges: [
+          [0, 1],
+          [1, 2],
+          [3, 1],
+          [1, 4]
+        ]
+      },
+      {
+        name: 'Lyra',
+        ox: 0.25,
+        oy: 0.76,
+        scale: 0.12,
+        stars: [
+          [-0.36, -0.58, 3.0],
+          [0.16, -0.4, 2.2],
+          [0.32, 0.18, 2.3],
+          [-0.12, 0.44, 2.4],
+          [-0.24, -0.04, 2.2]
+        ],
+        edges: [
+          [0, 1],
+          [1, 4],
+          [4, 0],
+          [1, 2],
+          [2, 3],
+          [3, 4]
+        ]
+      }
+    ];
+
     if (effectiveCreatureTheme !== 'galaxy') {
       if (effectiveCreatureTheme === 'all') {
         const isSmall = width < 640;
-        const mix: Array<{ kind: ConcreteCreatureKind; count: number }> = isLowPower
-          ? [
-              { kind: 'koi', count: isSmall ? 1 : 2 },
-              { kind: 'jellyfish', count: isSmall ? 1 : 2 },
-              { kind: 'turtles', count: 1 },
-              { kind: 'butterflies', count: isSmall ? 1 : 2 },
-              { kind: 'birds', count: isSmall ? 1 : 2 },
-              { kind: 'fireflies', count: isSmall ? 2 : 3 }
-            ]
-          : isBalanced
-          ? [
-              { kind: 'koi', count: isSmall ? 2 : 2 },
-              { kind: 'jellyfish', count: isSmall ? 1 : 2 },
-              { kind: 'turtles', count: isSmall ? 1 : 2 },
-              { kind: 'butterflies', count: isSmall ? 2 : 2 },
-              { kind: 'birds', count: isSmall ? 1 : 2 },
-              { kind: 'fireflies', count: isSmall ? 3 : 4 }
-            ]
-          : [
-              { kind: 'koi', count: isSmall ? 2 : 3 },
-              { kind: 'jellyfish', count: isSmall ? 2 : 3 },
-              { kind: 'turtles', count: isSmall ? 1 : 2 },
-              { kind: 'butterflies', count: isSmall ? 2 : 3 },
-              { kind: 'birds', count: isSmall ? 2 : 3 },
-              { kind: 'fireflies', count: isSmall ? 4 : 6 }
-            ];
+        let mix: Array<{ kind: ConcreteCreatureKind; count: number }>;
+        if (bgStyle === 'ocean') {
+          mix = [
+            { kind: 'jellyfish', count: isLowPower ? 3 : isSmall ? 4 : 5 },
+            { kind: 'turtles', count: isLowPower ? 2 : isSmall ? 2 : 3 },
+            { kind: 'koi', count: isLowPower ? 2 : isSmall ? 2 : 3 }
+          ];
+        } else if (bgStyle === 'sky') {
+          mix = [
+            { kind: 'birds', count: isLowPower ? 4 : isSmall ? 5 : 7 },
+            { kind: 'butterflies', count: isLowPower ? 2 : isSmall ? 3 : 4 }
+          ];
+        } else if (bgStyle === 'ecosystem') {
+          mix = [
+            { kind: 'koi', count: isLowPower ? 2 : isSmall ? 2 : 3 },
+            { kind: 'butterflies', count: isLowPower ? 2 : isSmall ? 3 : 4 },
+            { kind: 'birds', count: isLowPower ? 2 : isSmall ? 2 : 3 },
+            { kind: 'fireflies', count: isLowPower ? 3 : isSmall ? 4 : 6 },
+            { kind: 'turtles', count: isLowPower ? 1 : 2 }
+          ];
+        } else {
+          mix = isLowPower
+            ? [
+                { kind: 'koi', count: isSmall ? 1 : 2 },
+                { kind: 'jellyfish', count: isSmall ? 1 : 2 },
+                { kind: 'turtles', count: 1 },
+                { kind: 'butterflies', count: isSmall ? 1 : 2 },
+                { kind: 'birds', count: isSmall ? 1 : 2 },
+                { kind: 'fireflies', count: isSmall ? 2 : 3 }
+              ]
+            : isBalanced
+            ? [
+                { kind: 'koi', count: isSmall ? 2 : 2 },
+                { kind: 'jellyfish', count: isSmall ? 1 : 2 },
+                { kind: 'turtles', count: isSmall ? 1 : 2 },
+                { kind: 'butterflies', count: isSmall ? 2 : 2 },
+                { kind: 'birds', count: isSmall ? 1 : 2 },
+                { kind: 'fireflies', count: isSmall ? 3 : 4 }
+              ]
+            : [
+                { kind: 'koi', count: isSmall ? 2 : 3 },
+                { kind: 'jellyfish', count: isSmall ? 2 : 3 },
+                { kind: 'turtles', count: isSmall ? 1 : 2 },
+                { kind: 'butterflies', count: isSmall ? 2 : 3 },
+                { kind: 'birds', count: isSmall ? 2 : 3 },
+                { kind: 'fireflies', count: isSmall ? 4 : 6 }
+              ];
+        }
         mix.forEach((group) => {
           for (let i = 0; i < group.count; i++) {
             creatures.push(createCreature(group.kind, i));
@@ -1421,8 +1883,224 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         ctx.drawImage(bgCacheCanvas, 0, 0, width, height);
       }
 
-      // 1b. Subtle Rotating Scientific Astrolabe / Orbital Telemetry Arcs
-      if (!isLowPower) {
+      // 1b. Scene-specific Atmospheric Overlays (Ecosystem, Ocean, Sky, Constellations, Cosmic)
+      const [rP, gP, bP] = darkMode ? [pR_d, pG_d, pB_d] : [pR_l, pG_l, pB_l];
+      if (bgStyle === 'ecosystem') {
+        // Gentle drifting botanical leaves / petals reacting softly to cursor
+        for (const lf of ecoLeaves) {
+          if (interactive && mouse.lastMouseMoveAt > 0) {
+            const dx = lf.x - mouse.targetX;
+            const dy = lf.y - mouse.targetY;
+            const d = Math.hypot(dx, dy);
+            if (d > 1 && d < 120) {
+              lf.x += (dx / d) * 1.4 * dtScale;
+              lf.y += (dy / d) * 1.4 * dtScale;
+            }
+          }
+          lf.x += (lf.vx + Math.sin(nowSec * 0.7 + lf.rot) * 0.18) * dtScale;
+          lf.y += lf.vy * dtScale;
+          lf.rot += lf.rotSpeed * dtScale;
+          if (lf.y > height + 20) {
+            lf.y = -18;
+            lf.x = Math.random() * width;
+          }
+          if (lf.x < -20) lf.x = width + 18;
+          else if (lf.x > width + 20) lf.x = -18;
+
+          ctx.save();
+          ctx.translate(lf.x, lf.y);
+          ctx.rotate(lf.rot);
+          ctx.fillStyle =
+            lf.tint === 0
+              ? darkMode
+                ? 'rgba(52, 211, 153, 0.34)'
+                : 'rgba(16, 185, 129, 0.28)'
+              : lf.tint === 1
+              ? darkMode
+                ? 'rgba(45, 212, 191, 0.3)'
+                : 'rgba(13, 148, 136, 0.22)'
+              : darkMode
+              ? 'rgba(253, 224, 71, 0.28)'
+              : 'rgba(245, 158, 11, 0.24)';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, lf.size * 1.35, lf.size * 0.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      } else if (bgStyle === 'ocean') {
+        // Volumetric light shafts ("god rays") from ocean surface
+        ctx.save();
+        for (let ray = 0; ray < (isLowPower ? 3 : 5); ray++) {
+          const rx = width * (0.14 + ray * 0.2) + Math.sin(nowSec * 0.35 + ray) * 45;
+          const rw = width * 0.08 + ray * 12;
+          const beam = ctx.createLinearGradient(rx, 0, rx + rw * 0.7, height * 0.88);
+          beam.addColorStop(0, darkMode ? 'rgba(56, 189, 248, 0.11)' : 'rgba(255, 255, 255, 0.34)');
+          beam.addColorStop(0.55, darkMode ? 'rgba(45, 212, 191, 0.04)' : 'rgba(186, 230, 253, 0.12)');
+          beam.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = beam;
+          ctx.beginPath();
+          ctx.moveTo(rx - rw * 0.35, 0);
+          ctx.lineTo(rx + rw * 0.45, 0);
+          ctx.lineTo(rx + rw * 1.55, height);
+          ctx.lineTo(rx + rw * 0.25, height);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Gentle sine ocean current ribbons
+        ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.1)';
+        ctx.lineWidth = 1.4;
+        for (let band = 0; band < 3; band++) {
+          const baseY = height * (0.28 + band * 0.24);
+          ctx.beginPath();
+          for (let x = 0; x <= width; x += 28) {
+            const wy = baseY + Math.sin(x * 0.006 + nowSec * (0.65 + band * 0.18) + band) * 22;
+            if (x === 0) ctx.moveTo(x, wy);
+            else ctx.lineTo(x, wy);
+          }
+          ctx.stroke();
+        }
+
+        // Rising bubbles (dodging cursor subtly)
+        for (const b of oceanBubbles) {
+          if (interactive && mouse.lastMouseMoveAt > 0) {
+            const dx = b.x - mouse.targetX;
+            const dy = b.y - mouse.targetY;
+            const d = Math.hypot(dx, dy);
+            if (d > 1 && d < 110) {
+              b.x += (dx / d) * 1.5 * dtScale;
+            }
+          }
+          b.y += b.vy * dtScale;
+          b.x += Math.sin(nowSec * 1.8 + b.sway) * 0.35 * dtScale;
+          if (b.y < -16) {
+            b.y = height + 16;
+            b.x = Math.random() * width;
+          }
+          ctx.globalAlpha = b.alpha;
+          ctx.strokeStyle = darkMode ? '#bae6fd' : '#0284c7';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else if (bgStyle === 'sky') {
+        ctx.save();
+        if (darkMode) {
+          // Flowing twilight aurora curtains
+          for (let a = 0; a < 2; a++) {
+            const aurGrad = ctx.createLinearGradient(0, height * 0.12, width, height * 0.45);
+            aurGrad.addColorStop(0, `rgba(${rP},${gP},${bP},0.0)`);
+            aurGrad.addColorStop(0.5, a === 0 ? 'rgba(56, 189, 248, 0.13)' : 'rgba(52, 211, 153, 0.1)');
+            aurGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = aurGrad;
+            ctx.beginPath();
+            const topY = height * (0.16 + a * 0.11);
+            ctx.moveTo(0, topY);
+            for (let x = 0; x <= width; x += 36) {
+              ctx.lineTo(x, topY + Math.sin(x * 0.004 + nowSec * 0.4 + a) * 34);
+            }
+            ctx.lineTo(width, topY + 120);
+            ctx.lineTo(0, topY + 120);
+            ctx.closePath();
+            ctx.fill();
+          }
+        } else {
+          // Warm diffused sun halo in upper-right sky
+          const sunX = width * 0.84 - offsetX * 0.5;
+          const sunY = height * 0.16 - offsetY * 0.5;
+          const sun = ctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, width * 0.28);
+          sun.addColorStop(0, 'rgba(254, 249, 195, 0.72)');
+          sun.addColorStop(0.35, 'rgba(253, 224, 71, 0.22)');
+          sun.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = sun;
+          ctx.fillRect(0, 0, width, height);
+        }
+
+        // Parallax drifting cloud clusters
+        for (const cl of skyClouds) {
+          cl.x += cl.speed * dtScale;
+          if (cl.x > width + 220) cl.x = -220;
+          const cx = cl.x - offsetX * 0.6;
+          const cy = cl.y - offsetY * 0.4;
+          ctx.fillStyle = darkMode
+            ? `rgba(148, 163, 184, ${(cl.alpha * 0.25).toFixed(2)})`
+            : `rgba(255, 255, 255, ${cl.alpha.toFixed(2)})`;
+          const s = cl.scale * 46;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, s * 1.45, s * 0.62, 0, 0, Math.PI * 2);
+          ctx.ellipse(cx - s * 0.75, cy + s * 0.12, s * 0.95, s * 0.48, 0, 0, Math.PI * 2);
+          ctx.ellipse(cx + s * 0.82, cy + s * 0.1, s * 1.05, s * 0.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      } else if (bgStyle === 'constellations') {
+        ctx.save();
+        const minDim = Math.min(width, height);
+        const starPoints: Array<{ x: number; y: number }> = [];
+
+        for (const con of constellationCatalog) {
+          const cx = con.ox * width - offsetX * 0.65;
+          const cy = con.oy * height - offsetY * 0.65;
+          const sc = minDim * con.scale;
+          const pts = con.stars.map(([sx, sy, mag]) => {
+            const px = cx + sx * sc;
+            const py = cy + sy * sc;
+            starPoints.push({ x: px, y: py });
+            return { x: px, y: py, mag };
+          });
+
+          // Constellation skeleton lines
+          ctx.strokeStyle = darkMode
+            ? `rgba(${rP},${gP},${bP},0.34)`
+            : `rgba(${rP},${gP},${bP},0.28)`;
+          ctx.lineWidth = 1.15;
+          ctx.beginPath();
+          for (const [a, b] of con.edges) {
+            ctx.moveTo(pts[a].x, pts[a].y);
+            ctx.lineTo(pts[b].x, pts[b].y);
+          }
+          ctx.stroke();
+
+          // Constellation stars with crisp glow
+          for (let si = 0; si < pts.length; si++) {
+            const p = pts[si];
+            const tw = 0.75 + 0.25 * Math.sin(nowSec * 2.2 + si * 1.3);
+            stampGlow(p.x, p.y, p.mag * 3.8, darkMode ? activePalette.primaryLight : activePalette.primary, tw * 0.55, true);
+            ctx.fillStyle = darkMode ? '#ffffff' : activePalette.primary;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.mag, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Subtle astronomical label
+          ctx.font = '500 10px "JetBrains Mono", monospace';
+          ctx.fillStyle = darkMode
+            ? `rgba(${rP},${gP},${bP},0.48)`
+            : `rgba(${rP},${gP},${bP},0.55)`;
+          ctx.fillText(con.name.toUpperCase(), cx - 18, cy + sc * 0.92);
+        }
+
+        // Dynamic filament links from cursor to nearby constellation stars
+        if (interactive && mouse.lastMouseMoveAt > 0) {
+          const linkRadius = 195;
+          for (const sp of starPoints) {
+            const d = Math.hypot(sp.x - mouse.targetX, sp.y - mouse.targetY);
+            if (d < linkRadius) {
+              const frac = 1 - d / linkRadius;
+              ctx.strokeStyle = `rgba(${rP},${gP},${bP},${(frac * 0.52).toFixed(3)})`;
+              ctx.lineWidth = 0.8 + frac * 0.9;
+              ctx.beginPath();
+              ctx.moveTo(sp.x, sp.y);
+              ctx.lineTo(mouse.targetX, mouse.targetY);
+              ctx.stroke();
+            }
+          }
+        }
+        ctx.restore();
+      } else if (!isLowPower) {
+        // Subtle Rotating Scientific Astrolabe / Orbital Telemetry Arcs for cosmic_galaxy & aurora_clean
         ctx.save();
         const astroX = width * 0.86 - offsetX * 0.45;
         const astroY = height * 0.24 - offsetY * 0.45;
@@ -1722,7 +2400,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       glowSpriteCache.clear();
       bgCacheCanvas = null;
     };
-  }, [interactive, intensity, isDark, creatureTheme, perfMode, bgStyle]);
+  }, [interactive, intensity, isDark, creatureTheme, perfMode, bgStyle, activePalette.id]);
 
   return (
     <canvas

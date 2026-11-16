@@ -41,6 +41,8 @@ import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
 import { CS_LESSONS } from '../data/csLessonsData';
 import { PlatformReviews } from './common/PlatformReviews';
+import { CursorDodgeText } from './common/CursorDodgeText';
+import { AppearanceStudioBar } from './common/AppearanceStudioBar';
 import {
   LectureDirectorySection,
   DirectorySubjectFilter,
@@ -288,71 +290,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
   return (
     <div className="space-y-10">
-      {/* HERO: Centered Modern Academic STEM Atelier */}
-      <section className="sci-frame relative overflow-hidden rounded-lg bg-gradient-to-b from-[#0b1730] via-[#0f2144] to-[#091328] text-white px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 border border-sky-400/25 shadow-[0_24px_64px_-20px_rgba(15,23,42,0.72)]">
-        {/* Precision Blueprint Drafting Grid & Subtle Focal Glow */}
-        <div className="absolute inset-0 sci-blueprint-bg opacity-40 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.18),transparent_60%),radial-gradient(ellipse_at_bottom,rgba(14,165,233,0.12),transparent_55%)] pointer-events-none" />
-
-        {/* Left Educational Schematic: Coordinate Parabola & Harmonic Wave (Desktop) */}
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 240 260"
-          className="hidden lg:block absolute left-4 top-6 w-52 h-56 opacity-40 pointer-events-none"
-        >
-          <line x1="28" y1="220" x2="220" y2="220" stroke="#38bdf8" strokeWidth="1" strokeOpacity="0.45" />
-          <line x1="44" y1="20" x2="44" y2="236" stroke="#38bdf8" strokeWidth="1" strokeOpacity="0.45" />
-          <path
-            d="M44 195 Q110 25 196 175"
-            fill="none"
-            stroke="#38bdf8"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            className="animate-electric-flow"
-          />
-          <path
-            d="M32 135 Q70 88 108 135 T184 135 T224 135"
-            fill="none"
-            stroke="#2dd4bf"
-            strokeWidth="1.6"
-            strokeDasharray="5 5"
-            className="sci-oscilloscope-path"
-          />
-          <circle cx="114" cy="96" r="4.5" fill="#fbbf24" />
-          <line x1="64" y1="96" x2="176" y2="96" stroke="#fbbf24" strokeWidth="1.2" strokeDasharray="3 3" strokeOpacity="0.7" />
-          <text x="196" y="212" fill="#7dd3fc" fontSize="10" fontFamily="monospace">Oxy</text>
-          <text x="122" y="88" fill="#fde68a" fontSize="10" fontFamily="monospace">f'(x)=0</text>
-        </svg>
-
-        {/* Right Educational Schematic: Bohr Atom & Logic Circuit Graph (Desktop) */}
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 240 260"
-          className="hidden lg:block absolute right-4 top-6 w-52 h-56 opacity-40 pointer-events-none"
-        >
-          <g className="physics-anim-orbit" style={{ transformOrigin: '132px 108px' }}>
-            <ellipse cx="132" cy="108" rx="68" ry="26" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
-            <ellipse cx="132" cy="108" rx="68" ry="26" transform="rotate(60 132 108)" fill="none" stroke="#fbbf24" strokeWidth="1.4" />
-            <ellipse cx="132" cy="108" rx="68" ry="26" transform="rotate(-60 132 108)" fill="none" stroke="#34d399" strokeWidth="1.4" />
-          </g>
-          <circle cx="132" cy="108" r="8" fill="#f59e0b" />
-          <circle cx="200" cy="108" r="3.5" fill="#38bdf8" />
-          <circle cx="96" cy="52" r="3.5" fill="#34d399" />
-          <path
-            d="M42 214 L92 184 L148 214 L204 188"
-            fill="none"
-            stroke="#34d399"
-            strokeWidth="1.8"
-            className="animate-electric-flow"
-          />
-          <circle cx="92" cy="184" r="4" fill="#34d399" />
-          <circle cx="148" cy="214" r="4" fill="#38bdf8" />
-          <circle cx="204" cy="188" r="4" fill="#fbbf24" />
-        </svg>
-
-        {/* Centered Academic Hero Content */}
+      {/* FRAMELESS BLENDED HERO STAGE: Typography floats directly over the animated scene */}
+      <section className="relative bg-transparent border-0 shadow-none px-2 sm:px-6 pt-4 pb-8 sm:pt-8 sm:pb-12">
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
-          <div className="text-xs sm:text-sm font-medium tracking-wider text-sky-300">
+          <div className="text-xs sm:text-sm font-semibold tracking-wider text-accent-gradient hero-blend-shadow">
             {t(
               'overview.badge',
               'Học viện Mô phỏng Trực quan · Toán · Vật lí · Tin học (Lớp 9 – 12)',
@@ -360,29 +301,32 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             )}
           </div>
 
-          <h1 className="font-display text-3xl sm:text-4xl lg:text-[2.7rem] font-semibold tracking-tight text-white leading-[1.18] text-balance max-w-3xl mx-auto">
-            {t(
+          <CursorDodgeText
+            as="h1"
+            text={t(
               'overview.heroTitle',
               'Bục giảng ảo: Khám phá trực quan Toán học, Vật lí & Tin học (Lớp 9 – 12)',
               'Synapse Classroom: Math, Physics & Computer Science (Grades 9–12)'
             )}
-          </h1>
+            highlightWords={['toán', 'học', 'vật', 'lí', 'tin', 'synapse', 'math', 'physics', 'computer', 'science']}
+            className="font-display text-3xl sm:text-5xl lg:text-[3.15rem] font-semibold tracking-tight text-slate-900 dark:text-white leading-[1.16] text-balance max-w-3xl mx-auto hero-blend-shadow"
+          />
 
-          <p className="text-sm sm:text-base font-normal text-slate-300 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-200 leading-relaxed max-w-2xl mx-auto hero-blend-shadow">
             {t(
               'overview.heroDesc',
-              'Bài giảng 5 phần tích hợp đồ thị hàm số & 7 cảnh Oxyz 3D (Toán), phòng thí nghiệm 2D/3D 60 FPS (Lí), cùng IDE Sublime Text 4 + chấm code AI & 16 đồ thị thuật toán (Tin).',
-              '5-step lectures with 2D/3D graphers and Oxyz geometry (Math), real-time 60fps 2D/3D labs (Physics), and Sublime Text 4 coding studio with AI grading & 16 algorithm visualizers (CS).'
+              'Bài giảng chia nhiều phần (Khái niệm · Công thức · Giải thích sâu · AI · Luyện tập) cùng đồ thị hàm số & Oxyz 3D (Toán), mô phỏng 2D/3D (Lí) và IDE Sublime Text 4 (Tin).',
+              'Multi-part interactive lectures (Concept · Formula · Deep Dive · AI · Practice) with 2D/3D graphers & Oxyz (Math), 2D/3D simulations (Physics), and Sublime Text 4 IDE (CS).'
             )}
           </p>
 
-          {/* 2 Primary Large Square Educational Action Buttons Centered */}
+          {/* Primary Action Buttons */}
           <div className="flex flex-wrap items-center justify-center gap-3.5 pt-1">
             <button
               type="button"
               data-ripple="true"
               onClick={() => scrollToLectureDirectory('all')}
-              className="group cs-deck-btn min-h-[52px] px-7 py-3.5 rounded bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm sm:text-base font-semibold shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
+              className="group cs-deck-btn min-h-[50px] px-7 py-3.5 rounded bg-accent-solid text-sm sm:text-base font-semibold shadow-lg flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
             >
               <BookOpen className="w-5 h-5 icon-anim-book shrink-0" />
               <span>
@@ -395,56 +339,59 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               type="button"
               data-ripple="true"
               onClick={() => onNavigate('physics_sims')}
-              className="group cs-deck-btn min-h-[52px] px-7 py-3.5 rounded bg-white/10 hover:bg-white/18 border border-white/25 hover:border-sky-300/60 text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
+              className="group cs-deck-btn min-h-[50px] px-7 py-3.5 rounded bg-white/60 dark:bg-slate-900/50 backdrop-blur-md border border-slate-300/75 dark:border-white/20 hover:border-sky-400 text-slate-900 dark:text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
             >
-              <Atom className="w-5 h-5 text-amber-300 icon-anim-atom shrink-0" />
+              <Atom className="w-5 h-5 text-amber-500 dark:text-amber-300 icon-anim-atom shrink-0" />
               <span>{isEn ? 'Open 2D/3D Simulations' : 'Mở Phòng Mô phỏng 2D/3D'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
             </button>
           </div>
 
-          {/* Centered Academic Metrics & Learner Mastery Bar */}
-          <div className="mt-6 pt-6 border-t border-white/12 grid grid-cols-1 md:grid-cols-12 gap-5 items-center text-left">
+          {/* Live Dynamic Background, Creature, Font, Color Palette & Cursor-Dodge Studio Bar */}
+          <AppearanceStudioBar />
+
+          {/* Frameless Inline Academic Metrics & Learner Mastery Strip */}
+          <div className="mt-4 pt-5 border-t border-slate-300/50 dark:border-white/12 grid grid-cols-1 md:grid-cols-12 gap-5 items-center text-left">
             <div className="md:col-span-7 grid grid-cols-3 gap-4 text-center md:text-left">
-              <div className="group/stat rounded px-2 py-1 hover:bg-white/[0.04] transition-colors">
-                <div className="font-display text-2xl sm:text-3xl font-semibold text-white tabular-nums">
+              <div className="group/stat px-2 py-1">
+                <div className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tabular-nums hero-blend-shadow">
                   {totalLessons}
                 </div>
-                <div className="text-xs text-slate-300 mt-0.5">
-                  {isEn ? 'Interactive Lessons' : 'Bài giảng tương tác'}
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5 hero-blend-shadow">
+                  {isEn ? 'Interactive Lessons' : 'Bài giảng nhiều phần'}
                 </div>
               </div>
-              <div className="group/stat rounded px-2 py-1 hover:bg-white/[0.04] transition-colors">
-                <div className="font-display text-2xl sm:text-3xl font-semibold text-sky-300 tabular-nums">
+              <div className="group/stat px-2 py-1">
+                <div className="font-display text-2xl sm:text-3xl font-semibold text-accent-gradient tabular-nums">
                   60 FPS
                 </div>
-                <div className="text-xs text-slate-300 mt-0.5">
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5 hero-blend-shadow">
                   {isEn ? '2D/3D Physics & Graphs' : 'Mô phỏng 2D/3D'}
                 </div>
               </div>
-              <div className="group/stat rounded px-2 py-1 hover:bg-white/[0.04] transition-colors">
-                <div className="font-display text-2xl sm:text-3xl font-semibold text-amber-300 tabular-nums">
+              <div className="group/stat px-2 py-1">
+                <div className="font-display text-2xl sm:text-3xl font-semibold text-amber-600 dark:text-amber-300 tabular-nums hero-blend-shadow">
                   {totalExams}
                 </div>
-                <div className="text-xs text-slate-300 mt-0.5">
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5 hero-blend-shadow">
                   {isEn ? 'Curated Exam Papers' : 'Đề thi chuẩn'}
                 </div>
               </div>
             </div>
 
-            <div className="md:col-span-5 sci-scan-bar rounded bg-white/[0.07] border border-white/15 px-4 py-3.5 flex items-center justify-between gap-3">
+            <div className="md:col-span-5 rounded bg-white/55 dark:bg-slate-950/45 backdrop-blur-md border border-slate-300/60 dark:border-white/15 px-4 py-3 flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex items-center justify-between gap-2 text-xs">
-                  <span className="font-semibold text-white truncate">
+                  <span className="font-semibold text-slate-900 dark:text-white truncate">
                     {user ? user.displayName : isEn ? 'Guest Learner' : 'Học sinh thử nghiệm'}
                   </span>
-                  <span className="font-mono font-semibold text-amber-300 tabular-nums shrink-0">
+                  <span className="font-mono font-semibold text-amber-600 dark:text-amber-300 tabular-nums shrink-0">
                     Lv.{currentLevel} · {currentXP} XP
                   </span>
                 </div>
-                <div className="w-full bg-white/12 h-2 rounded-sm overflow-hidden">
+                <div className="w-full bg-slate-200/80 dark:bg-white/12 h-2 rounded-sm overflow-hidden">
                   <div
-                    className="roadmap-shimmer-bar bg-gradient-to-r from-sky-400 via-teal-300 to-emerald-400 h-full rounded-sm transition-all duration-500"
+                    className="roadmap-shimmer-bar bg-accent-solid h-full rounded-sm transition-all duration-500"
                     style={{ width: `${xpProgressPct}%` }}
                   />
                 </div>
@@ -456,9 +403,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                     type="button"
                     data-ripple="true"
                     onClick={onOpenSettings}
-                    className="group cs-deck-btn min-h-[42px] px-3.5 py-2 rounded bg-white/12 hover:bg-white/22 border border-white/15 text-xs font-semibold text-white transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
+                    className="group cs-deck-btn min-h-[40px] px-3.5 py-2 rounded bg-white/75 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 border border-slate-300/70 dark:border-white/15 text-xs font-semibold text-slate-900 dark:text-white transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
                   >
-                    <Settings className="w-4 h-4 text-sky-300 icon-anim-gear" />
+                    <Settings className="w-4 h-4 text-sky-600 dark:text-sky-300 icon-anim-gear" />
                     <span>{isEn ? 'Settings' : 'Cài đặt'}</span>
                   </button>
                 )
@@ -467,7 +414,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   type="button"
                   data-ripple="true"
                   onClick={() => openAuthModal('login')}
-                  className="group cs-deck-btn min-h-[42px] px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
+                  className="group cs-deck-btn min-h-[40px] px-4 py-2 rounded bg-accent-solid text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
                 >
                   <LogIn className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                   <span>{isEn ? 'Sign In' : 'Đăng nhập'}</span>

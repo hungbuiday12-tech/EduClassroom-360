@@ -214,7 +214,10 @@ export const Header: React.FC<HeaderProps> = ({
                         type="button"
                         onClick={() => {
                           setBgStyle(opt.id, true);
-                          if (opt.id !== 'cosmic_galaxy') {
+                          const supportsCreatures = ['ecosystem', 'ocean', 'sky', 'constellations', 'cosmic_galaxy'].includes(
+                            opt.id
+                          );
+                          if (!supportsCreatures) {
                             setIsBgMenuOpen(false);
                           }
                         }}
@@ -235,10 +238,10 @@ export const Header: React.FC<HeaderProps> = ({
                     );
                   })}
 
-                  {bgStyle === 'cosmic_galaxy' && (
+                  {['ecosystem', 'ocean', 'sky', 'constellations', 'cosmic_galaxy'].includes(bgStyle) && (
                     <div className="pt-1.5 mt-1 border-t border-slate-200/80 dark:border-slate-800 space-y-1">
                       <div className="px-2.5 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-400">
-                        {isEn ? 'Galaxy Creatures' : 'Sinh vật nền Vũ trụ'}
+                        {isEn ? 'Interactive Creatures' : 'Sinh vật chuyển động'}
                       </div>
                       {CREATURE_THEME_OPTIONS.map((c) => {
                         const selected = c.id === creatureTheme;

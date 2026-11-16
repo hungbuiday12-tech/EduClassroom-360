@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../../context/BackgroundContext';
 import { BrandLogo } from '../common/BrandLogo';
+import { CursorDodgeText } from '../common/CursorDodgeText';
+import { AppearanceStudioBar } from '../common/AppearanceStudioBar';
 import {
   Sparkles,
   Compass,
@@ -683,23 +685,16 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </span>
             </div>
 
-            <h1 className="font-display text-2xl sm:text-4xl lg:text-[2.9rem] font-semibold text-slate-900 dark:text-white tracking-tight leading-[1.15]">
-              {isEn ? (
-                <>
-                  Explore the 360° Interactive STEM{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-sky-600 to-teal-600 dark:from-sky-400 dark:via-cyan-300 dark:to-emerald-300">
-                    Observatory
-                  </span>
-                </>
-              ) : (
-                <>
-                  Khám Phá Vũ Trụ Học Tập Trực Quan{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-sky-600 to-teal-600 dark:from-sky-400 dark:via-cyan-300 dark:to-emerald-300">
-                    Synapse 360°
-                  </span>
-                </>
-              )}
-            </h1>
+            <CursorDodgeText
+              as="h1"
+              text={
+                isEn
+                  ? 'Explore the 360° Interactive STEM Observatory'
+                  : 'Khám Phá Vũ Trụ Học Tập Trực Quan Synapse 360°'
+              }
+              highlightWords={['observatory', 'synapse', '360°', 'trực', 'quan']}
+              className="font-display text-2xl sm:text-4xl lg:text-[2.95rem] font-semibold text-slate-900 dark:text-white tracking-tight leading-[1.15] hero-blend-shadow"
+            />
 
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
               {isEn ? (
@@ -870,6 +865,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 ))}
               </div>
             </div>
+
+            {/* Live Dynamic Scene, Font, Palette & Cursor Dodge Bar */}
+            <AppearanceStudioBar compact />
 
             {/* Quick Guest Enter Action + Synapse v2 + Spatial 3D + All Features Scroll */}
             <div className="pt-1 flex flex-wrap items-center gap-3">

@@ -25,7 +25,10 @@ import {
   Bell,
   MousePointerClick,
   Play,
-  Gauge
+  Gauge,
+  Type,
+  Palette,
+  MousePointer2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -33,7 +36,9 @@ import {
   useBackgroundTheme,
   CREATURE_THEME_OPTIONS,
   PERFORMANCE_MODE_OPTIONS,
-  BACKGROUND_STYLE_OPTIONS
+  BACKGROUND_STYLE_OPTIONS,
+  FONT_PRESET_OPTIONS,
+  COLOR_PALETTE_OPTIONS
 } from '../../context/BackgroundContext';
 import { useAudio } from '../../context/AudioContext';
 import {
@@ -78,8 +83,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const isEn = language === 'en';
-  const { creatureTheme, setCreatureTheme, perfMode, setPerfMode, bgStyle, setBgStyle } =
-    useBackgroundTheme();
+  const {
+    creatureTheme,
+    setCreatureTheme,
+    perfMode,
+    setPerfMode,
+    bgStyle,
+    setBgStyle,
+    fontPreset,
+    setFontPreset,
+    colorPalette,
+    setColorPalette,
+    dodgeEnabled,
+    setDodgeEnabled,
+    dodgeIntensity,
+    setDodgeIntensity
+  } = useBackgroundTheme();
   const {
     clickSound,
     setClickSound,
@@ -789,7 +808,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
 
-              {bgStyle === 'cosmic_galaxy' && (
+              {(bgStyle === 'ecosystem' ||
+                bgStyle === 'ocean' ||
+                bgStyle === 'sky' ||
+                bgStyle === 'constellations' ||
+                bgStyle === 'cosmic_galaxy') && (
                 <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
@@ -797,7 +820,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <span>
                         {isEn
                           ? 'Interactive Background Creatures'
-                          : 'Sinh vật nền tương tác (chế độ Vũ trụ)'}
+                          : 'Sinh vật nền tương tác'}
                       </span>
                     </div>
                   </div>
@@ -822,6 +845,126 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Typography & Font Family Selector */}
+              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                  <Type className="w-4 h-4 text-sky-500" />
+                  <span>{isEn ? 'Typography & Font Style' : 'Phông Chữ Hệ Thống'}</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {FONT_PRESET_OPTIONS.map((f) => {
+                    const selected = f.id === fontPreset;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setFontPreset(f.id)}
+                        className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
+                          selected
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
+                        }`}
+                      >
+                        <div className="text-sm font-bold" style={{ fontFamily: f.displayFont }}>
+                          {f.sampleText}
+                        </div>
+                        <div className={`text-[11px] mt-0.5 ${selected ? 'text-sky-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                          {isEn ? f.labelEn : f.labelVi}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Color Palette Selector */}
+              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                  <Palette className="w-4 h-4 text-sky-500" />
+                  <span>{isEn ? 'Accent Color Palette' : 'Bảng Màu Chủ Đạo'}</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {COLOR_PALETTE_OPTIONS.map((pal) => {
+                    const selected = pal.id === colorPalette;
+                    return (
+                      <button
+                        key={pal.id}
+                        type="button"
+                        onClick={() => setColorPalette(pal.id)}
+                        className={`px-3 py-2.5 rounded-lg border text-left text-xs font-semibold transition-all cursor-pointer flex items-center gap-2.5 ${
+                          selected
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-transparent shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
+                        }`}
+                      >
+                        <span
+                          data-circle="true"
+                          className="w-5 h-5 rounded-full shrink-0 border border-white/40"
+                          style={{ background: pal.swatch }}
+                        />
+                        <span>{isEn ? pal.labelEn : pal.labelVi}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Cursor Dodge Interaction Toggle */}
+              <div className="p-4 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <MousePointer2 className="w-4 h-4 text-sky-500" />
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white">
+                      {isEn ? 'Hero Cursor-Dodge Text Effect' : 'Hiệu ứng Chữ "Né Chuột" Trang Chính'}
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {isEn ? 'Words smoothly repel away from mouse pointer' : 'Các chữ tự động dạt ra mượt mà khi di chuột gần'}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDodgeEnabled(true);
+                      setDodgeIntensity('gentle');
+                    }}
+                    className={`px-3 py-1.5 rounded border text-xs font-semibold cursor-pointer ${
+                      dodgeEnabled && dodgeIntensity === 'gentle'
+                        ? 'bg-sky-600 text-white border-sky-600'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                    }`}
+                  >
+                    {isEn ? 'Gentle' : 'Nhẹ'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDodgeEnabled(true);
+                      setDodgeIntensity('lively');
+                    }}
+                    className={`px-3 py-1.5 rounded border text-xs font-semibold cursor-pointer ${
+                      dodgeEnabled && dodgeIntensity === 'lively'
+                        ? 'bg-sky-600 text-white border-sky-600'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                    }`}
+                  >
+                    {isEn ? 'Lively' : 'Mạnh'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDodgeEnabled(false)}
+                    className={`px-3 py-1.5 rounded border text-xs font-semibold cursor-pointer ${
+                      !dodgeEnabled
+                        ? 'bg-slate-800 text-white border-slate-800'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10'
+                    }`}
+                  >
+                    {isEn ? 'Off' : 'Tắt'}
+                  </button>
+                </div>
+              </div>
 
               {/* FPS & Graphics Performance Tier */}
               <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">

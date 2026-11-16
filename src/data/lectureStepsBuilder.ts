@@ -11,6 +11,42 @@ import {
   SpecializedTier
 } from '../types';
 import { PHYSICS_CUSTOM_LECTURE_STEPS } from './physicsLectureSteps';
+import { PHYSICS_CUSTOM_LECTURE_STEPS_9_10 } from './physicsLectureSteps9_10';
+import { PHYSICS_CUSTOM_LECTURE_STEPS_11 } from './physicsLectureSteps11';
+import { PHYSICS_CUSTOM_LECTURE_STEPS_12 } from './physicsLectureSteps12';
+import { PHYSICS_CUSTOM_LECTURE_STEPS_PRO } from './physicsLectureStepsPro';
+import { CS_CUSTOM_LECTURE_STEPS } from './csLectureSteps';
+import { MATH_CUSTOM_LECTURE_STEPS_CORE } from './mathLectureStepsCore';
+import { MATH_CUSTOM_LECTURE_STEPS_CORE2 } from './mathLectureStepsCore2';
+import { MATH_CUSTOM_LECTURE_STEPS_CORE3 } from './mathLectureStepsCore3';
+import { MATH_CUSTOM_LECTURE_STEPS_9A } from './mathLectureSteps9A';
+import { MATH_CUSTOM_LECTURE_STEPS_9B } from './mathLectureSteps9B';
+import { MATH_CUSTOM_LECTURE_STEPS_10 } from './mathLectureSteps10';
+import { MATH_CUSTOM_LECTURE_STEPS_11A } from './mathLectureSteps11A';
+import { MATH_CUSTOM_LECTURE_STEPS_11B } from './mathLectureSteps11B';
+import { MATH_CUSTOM_LECTURE_STEPS_12 } from './mathLectureSteps12';
+import { MATH_CUSTOM_LECTURE_STEPS_PRO } from './mathLectureStepsPro';
+
+const ALL_PHYSICS_CUSTOM_STEPS: Record<string, LectureStep[]> = {
+  ...PHYSICS_CUSTOM_LECTURE_STEPS,
+  ...PHYSICS_CUSTOM_LECTURE_STEPS_9_10,
+  ...PHYSICS_CUSTOM_LECTURE_STEPS_11,
+  ...PHYSICS_CUSTOM_LECTURE_STEPS_12,
+  ...PHYSICS_CUSTOM_LECTURE_STEPS_PRO
+};
+
+const ALL_MATH_CUSTOM_STEPS: Record<string, LectureStep[]> = {
+  ...MATH_CUSTOM_LECTURE_STEPS_CORE,
+  ...MATH_CUSTOM_LECTURE_STEPS_CORE2,
+  ...MATH_CUSTOM_LECTURE_STEPS_CORE3,
+  ...MATH_CUSTOM_LECTURE_STEPS_9A,
+  ...MATH_CUSTOM_LECTURE_STEPS_9B,
+  ...MATH_CUSTOM_LECTURE_STEPS_10,
+  ...MATH_CUSTOM_LECTURE_STEPS_11A,
+  ...MATH_CUSTOM_LECTURE_STEPS_11B,
+  ...MATH_CUSTOM_LECTURE_STEPS_12,
+  ...MATH_CUSTOM_LECTURE_STEPS_PRO
+};
 
 interface PedagogicalContext {
   track?: CurriculumTrack;
@@ -408,7 +444,7 @@ function buildSectionMiniEssay(
 // ============================================================================
 
 export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
-  const custom = PHYSICS_CUSTOM_LECTURE_STEPS[lesson.id];
+  const custom = ALL_PHYSICS_CUSTOM_STEPS[lesson.id];
   if (custom && custom.length > 0) {
     return custom.map((st, idx) => {
       const primaryFormula = st.formulaSection?.primaryFormula || st.formulaHighlight || lesson.keyFormulas[idx];
@@ -677,8 +713,12 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
   };
   const isChuyenMath = pedCtx.track === 'chuyen';
 
-  if (lecture.lectureSteps && lecture.lectureSteps.length > 0) {
-    return lecture.lectureSteps.map((st, idx) => {
+  const customMathSteps = ALL_MATH_CUSTOM_STEPS[lecture.id];
+  const resolvedLectureSteps =
+    customMathSteps && customMathSteps.length > 0 ? customMathSteps : lecture.lectureSteps;
+
+  if (resolvedLectureSteps && resolvedLectureSteps.length > 0) {
+    return resolvedLectureSteps.map((st, idx) => {
       const primaryFormula = st.formulaSection?.primaryFormula || st.formulaHighlight || lecture.keyFormulas[idx];
       const conceptSection = st.conceptSection || st.teacherExplanation;
       const deepDiveSection =
@@ -881,62 +921,94 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
 // ============================================================================
 
 export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
-  const baseSteps: LectureStep[] =
-    lesson.lectureSteps && lesson.lectureSteps.length > 0
-      ? lesson.lectureSteps
-      : lesson.theory.map((tItem, idx) => {
-          const cleanTitle = tItem.includes(':')
-            ? tItem.split(':')[0].replace(/\*\*/g, '').replace(/^\d+\.\s*/, '').trim()
-            : `Kiến thức cốt lõi ${idx + 1}`;
-          const codeEx = lesson.codeExamples[idx % Math.max(1, lesson.codeExamples.length)];
+  const customCSSteps = CS_CUSTOM_LECTURE_STEPS[lesson.id];
+  const hasCustomCS = Boolean(customCSSteps && customCSSteps.length > 0);
+  const baseSteps: LectureStep[] = hasCustomCS
+    ? customCSSteps
+    : lesson.lectureSteps && lesson.lectureSteps.length > 0
+    ? lesson.lectureSteps
+    : lesson.theory.map((tItem, idx) => {
+        const cleanTitle = tItem.includes(':')
+          ? tItem.split(':')[0].replace(/\*\*/g, '').replace(/^\d+\.\s*/, '').trim()
+          : `Kiến thức cốt lõi ${idx + 1}`;
+        const codeEx = lesson.codeExamples[idx % Math.max(1, lesson.codeExamples.length)];
 
-          return {
-            stepTitle: `${idx + 1}. ${cleanTitle.length > 62 ? `Nội dung phần ${idx + 1}` : cleanTitle}`,
-            stepType: idx === 0 ? 'concept' : 'derivation',
-            teacherExplanation: tItem,
-            codeSnippet: codeEx
-              ? {
-                  language: codeEx.language,
-                  title: codeEx.title,
-                  code: codeEx.code
-                }
-              : undefined,
-            keyTakeaway:
-              codeEx?.explanation ||
-              `Độ phức tạp mục tiêu: Time ${lesson.complexity.time}, Space ${lesson.complexity.space}.`
-          };
-        });
+        return {
+          stepTitle: `${idx + 1}. ${cleanTitle.length > 62 ? `Nội dung phần ${idx + 1}` : cleanTitle}`,
+          stepType: idx === 0 ? 'concept' : 'derivation',
+          teacherExplanation: tItem,
+          codeSnippet: codeEx
+            ? {
+                language: codeEx.language,
+                title: codeEx.title,
+                code: codeEx.code
+              }
+            : undefined,
+          keyTakeaway:
+            codeEx?.explanation ||
+            `Độ phức tạp mục tiêu: Time ${lesson.complexity.time}, Space ${lesson.complexity.space}.`
+        };
+      });
 
-  // Add a dedicated worked-example step from practiceProblem if none of the steps has a workedExample
-  const enrichedInput: LectureStep[] = [...baseSteps];
+  // Attach workedExample & reference code from practiceProblem cleanly
+  const enrichedInput: LectureStep[] = baseSteps.map((st, idx) => {
+    const codeEx = lesson.codeExamples?.[idx % Math.max(1, lesson.codeExamples?.length || 1)];
+    if (!st.codeSnippet && codeEx) {
+      return {
+        ...st,
+        codeSnippet: {
+          language: codeEx.language,
+          title: codeEx.title,
+          code: codeEx.code
+        }
+      };
+    }
+    return st;
+  });
+
   if (!enrichedInput.some((s) => s.workedExample) && lesson.practiceProblem) {
     const sample = lesson.practiceProblem.sampleCases?.[0];
-    enrichedInput.push({
-      stepTitle: `${enrichedInput.length + 1}. Phân tích Bài toán Áp dụng: ${lesson.practiceProblem.title}`,
-      stepType: 'example',
-      teacherExplanation: `${lesson.practiceProblem.description}\n\n**Phân tích thuật toán chuẩn**: ${lesson.practiceProblem.solutionAnalysis}`,
-      workedExample: {
-        problem: lesson.practiceProblem.description,
-        steps: [
-          `Bước 1 (Đọc hiểu I/O): Input: ${lesson.practiceProblem.inputFormat} | Output: ${lesson.practiceProblem.outputFormat}`,
-          ...(sample
-            ? [
-                `Bước 2 (Chạy tay test mẫu): Input "${sample.input}" → Output "${sample.output}"${
-                  sample.explanation ? ` (${sample.explanation})` : ''
-                }`
-              ]
-            : []),
-          `Bước 3 (Phân tích & Tối ưu): ${lesson.practiceProblem.solutionAnalysis}`
-        ],
-        answer: `Time Complexity: ${lesson.complexity.time} · Space Complexity: ${lesson.complexity.space}`
-      },
-      codeSnippet: {
-        language: 'cpp',
-        title: `Lời giải tham khảo C++ (${lesson.practiceProblem.title})`,
-        code: lesson.practiceProblem.fullSolutionCpp
-      },
-      keyTakeaway: `Luôn tự chạy tay trên test mẫu và kiểm tra giới hạn ${lesson.complexity.time} trước khi nhấn Nộp bài.`
-    });
+    const worked = {
+      problem: lesson.practiceProblem.description,
+      steps: [
+        `Bước 1 (Đọc hiểu I/O): Input: ${lesson.practiceProblem.inputFormat} | Output: ${lesson.practiceProblem.outputFormat}`,
+        ...(sample
+          ? [
+              `Bước 2 (Chạy tay test mẫu): Input "${sample.input}" → Output "${sample.output}"${
+                sample.explanation ? ` (${sample.explanation})` : ''
+              }`
+            ]
+          : []),
+        `Bước 3 (Phân tích & Tối ưu): ${lesson.practiceProblem.solutionAnalysis}`
+      ],
+      answer: `Time Complexity: ${lesson.complexity.time} · Space Complexity: ${lesson.complexity.space}`
+    };
+
+    if (hasCustomCS && enrichedInput.length > 0) {
+      const lastIdx = enrichedInput.length - 1;
+      enrichedInput[lastIdx] = {
+        ...enrichedInput[lastIdx],
+        workedExample: worked,
+        codeSnippet: enrichedInput[lastIdx].codeSnippet || {
+          language: 'cpp',
+          title: `Lời giải tham khảo C++ (${lesson.practiceProblem.title})`,
+          code: lesson.practiceProblem.fullSolutionCpp
+        }
+      };
+    } else {
+      enrichedInput.push({
+        stepTitle: `${enrichedInput.length + 1}. Phân tích Bài toán Áp dụng: ${lesson.practiceProblem.title}`,
+        stepType: 'example',
+        teacherExplanation: `${lesson.practiceProblem.description}\n\n**Phân tích thuật toán chuẩn**: ${lesson.practiceProblem.solutionAnalysis}`,
+        workedExample: worked,
+        codeSnippet: {
+          language: 'cpp',
+          title: `Lời giải tham khảo C++ (${lesson.practiceProblem.title})`,
+          code: lesson.practiceProblem.fullSolutionCpp
+        },
+        keyTakeaway: `Luôn tự chạy tay trên test mẫu và kiểm tra giới hạn ${lesson.complexity.time} trước khi nhấn Nộp bài.`
+      });
+    }
   }
 
   return enrichedInput.map((st, idx) => {

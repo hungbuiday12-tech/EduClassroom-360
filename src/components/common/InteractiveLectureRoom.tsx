@@ -596,6 +596,156 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
     [assessmentRecord, safeSteps]
   );
 
+  const buildLocalLessonAnalysis = (): LessonProgressAnalysis => {
+    const metrics = computeAssessmentMetrics(assessmentRecord, safeSteps);
+    const strongPoints: string[] = [];
+    const weakPoints: string[] = [];
+    const weakIndices: number[] = [];
+    const unattemptedIndices: number[] = [];
+
+    safeSteps.forEach((st, idx) => {
+      const saved = assessmentRecord.stepResults?.[idx];
+      const quiz = saved?.customQuiz?.miniQuiz || st.miniQuiz || [];
+      let checked = 0;
+      let correct = 0;
+      quiz.forEach((q, qIdx) => {
+        if (saved?.mcqChecked?.[qIdx]) {
+          checked += 1;
+          if (saved.mcqAnswers?.[qIdx] === q.correctIndex) correct += 1;
+        }
+      });
+      const essayScore = saved?.essayEvaluation?.score;
+      const hasEssay = typeof essayScore === 'number';
+
+      if (checked === 0 && !hasEssay) {
+        unattemptedIndices.push(idx);
+        return;
+      }
+
+      const mcqRatio = checked > 0 ? correct / checked : 0;
+      const essayRatio = hasEssay ? essayScore / 10 : mcqRatio;
+      const combined =
+        checked > 0 && hasEssay ? mcqRatio * 0.55 + essayRatio * 0.45 : checked > 0 ? mcqRatio : essayRatio;
+
+      if (combined >= 0.7) {
+        strongPoints.push(
+          `Nắm vững "${st.stepTitle}" (TN đúng ${correct}/${checked || quiz.length}${
+            hasEssay ? `, Tự luận ${essayScore}/10` : ''
+          }).`
+        );
+      } else {
+        weakIndices.push(idx);
+        weakPoints.push(
+          `Cần củng cố "${st.stepTitle}" (TN đúng ${correct}/${checked || quiz.length}${
+            hasEssay ? `, Tự luận ${essayScore}/10` : ', chưa hoàn thành tự luận'
+          }).`
+        );
+      }
+    });
+
+    if (strongPoints.length === 0) {
+      strongPoints.push(
+        metrics.completedSteps === 0
+          ? 'Em đã bắt đầu xem bài giảng — hãy làm ngay 2 câu trắc nghiệm + 1 câu tự luận ở mục đầu tiên để ghi nhận điểm mạnh.'
+          : 'Em đã chủ động thực hành và lưu kết quả tự đánh giá trong bài giảng này.'
+      );
+    }
+
+    if (weakPoints.length === 0 && unattemptedIndices.length > 0) {
+      weakPoints.push(
+        `Còn ${unattemptedIndices.length} nội dung chưa làm bài thực hành (bắt đầu từ "${safeSteps[unattemptedIndices[0]].stepTitle}").`
+      );
+    } else if (weakPoints.length === 0) {
+      weakPoints.push('Chưa phát hiện lỗ hổng lớn; em nên thử thêm bài vận dụng cao hoặc đề thi chuẩn để giữ phong độ.');
+    }
+
+    const overallMastery =
+      metrics.completedSteps > 0 ? metrics.overallMastery : 0;
+
+    const readinessLevel =
+      metrics.completedSteps === 0
+        ? 'Mới khởi động — Cần hoàn thành bài tập từng phần'
+        : overallMastery >= 80
+        ? 'Nắm vững kiến thức — Sẵn sàng nâng cao & thi đấu'
+        : overallMastery >= 55
+        ? 'Đạt mức khá — Cần ôn lại các nội dung còn sai'
+        : 'Cần củng cố nền tảng Khái niệm & Công thức';
+
+    const summaryFeedback =
+      metrics.completedSteps === 0
+        ? `Em chưa nộp câu trắc nghiệm hay tự luận nào trong bài "${title}". Hãy hoàn thành tối thiểu 2 câu trắc nghiệm và 1 câu tự luận ngắn ở mỗi phần để hệ thống chấm điểm chính xác năng lực của em.`
+        : `Em đã hoàn thành ${metrics.completedSteps}/${safeSteps.length} phần của bài "${title}", đạt ${metrics.mcqCorrect}/${metrics.mcqTotal} câu trắc nghiệm${
+            metrics.essayGradedCount > 0 ? ` và điểm tự luận trung bình ${metrics.essayAvgScore}/10` : ''
+          } (mức thành thạo ${overallMastery}%). ${
+            weakIndices.length > 0
+              ? `Ưu tiên xem lại kỹ phần công thức và giải thích sâu hơn ở ${weakIndices.length} mục còn yếu trước khi chuyển bài mới.`
+              : 'Phong độ hiện tại rất tốt, hãy kiểm chứng thêm trên mô phỏng hoặc luyện đề chuẩn.'
+          }`;
+
+    const firstReviewIdx = weakIndices[0] ?? unattemptedIndices[0] ?? 0;
+    const recommendedRoadmap: LessonProgressAnalysis['recommendedRoadmap'] = [
+      weakIndices.length > 0
+        ? {
+            step: 1,
+            title: 'Ôn kỹ và làm lại phần còn hổng',
+            action: `Quay lại mục "${safeSteps[firstReviewIdx].stepTitle}", đọc kỹ phần Công thức & Giải thích sâu hơn rồi làm lại trắc nghiệm/tự luận.`,
+            targetType: 'review_step',
+            stepIndex: firstReviewIdx
+          }
+        : unattemptedIndices.length > 0
+        ? {
+            step: 1,
+            title: 'Hoàn tất các phần bài giảng còn lại',
+            action: `Tiếp tục mục "${safeSteps[firstReviewIdx].stepTitle}" và hoàn thành đủ 2 câu trắc nghiệm + 1 câu tự luận nhỏ.`,
+            targetType: 'review_step',
+            stepIndex: firstReviewIdx
+          }
+        : {
+            step: 1,
+            title: 'Kiểm chứng công thức bằng trực quan',
+            action:
+              subject === 'cs'
+                ? 'Mở trình chấm code C++/Python để tự cài đặt lại thuật toán vừa học.'
+                : 'Mở phòng Mô phỏng 2D và thay đổi thử từng tham số để kiểm chứng quy luật.',
+            targetType: subject === 'cs' ? 'ai_tutor' : 'sim_2d'
+          },
+      {
+        step: 2,
+        title:
+          subject === 'cs'
+            ? 'Thảo luận test biên với Gia sư AI Tin học'
+            : 'Thực hành Mô phỏng 2D/3D để khắc sâu bản chất',
+        action:
+          subject === 'cs'
+            ? 'Đặt câu hỏi về trường hợp biên (N=0, tràn số, độ phức tạp) với AI gợi mở.'
+            : 'Quan sát trực quan hiện tượng/đồ thị để hiểu rõ vì sao công thức lại có dạng như vậy.',
+        targetType: subject === 'cs' ? 'ai_tutor' : onOpenSim2D || actions[0] ? 'sim_2d' : 'ai_tutor'
+      },
+      {
+        step: 3,
+        title:
+          overallMastery >= 75
+            ? 'Thử sức Bộ đề & Đấu trường xếp hạng'
+            : 'Hỏi đáp 1-1 với AI Tutor trước khi qua bài mới',
+        action:
+          overallMastery >= 75
+            ? 'Áp dụng kiến thức bài học vào bộ đề kiểm tra hoặc chuyển sang bài tiếp theo trong lộ trình.'
+            : 'Hỏi AI giải thích lại đúng chỗ em còn phân vân, sau đó nâng mức thành thạo lên trên 75%.',
+        targetType: overallMastery >= 75 ? (onOpenExams ? 'exams' : 'next_lesson') : 'ai_tutor'
+      }
+    ];
+
+    return {
+      overallMastery,
+      readinessLevel,
+      summaryFeedback,
+      strongPoints,
+      weakPoints,
+      recommendedRoadmap,
+      analyzedAt: new Date().toISOString()
+    };
+  };
+
   const handleAnalyzeLessonProgress = async () => {
     setIsAnalyzingLesson(true);
     setAnalysisError(null);
@@ -651,14 +801,8 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
 
     setIsAnalyzingLesson(false);
 
-    if (!res.ok || !res.data?.analysis) {
-      setAnalysisError(
-        res.error ||
-          'Không kết nối được tới Gemini AI để phân tích lộ trình. Vui lòng thử lại.'
-      );
-      setViewLayout('analytics');
-      return;
-    }
+    const resolvedAnalysis =
+      res.ok && res.data?.analysis ? res.data.analysis : buildLocalLessonAnalysis();
 
     const nextRecord: LessonAssessmentRecord = {
       ...assessmentRecord,
@@ -667,7 +811,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
       lessonTitle: title,
       grade,
       totalSteps: safeSteps.length,
-      analysis: res.data.analysis,
+      analysis: resolvedAnalysis,
       updatedAt: new Date().toISOString()
     };
     persistRecord(nextRecord, true);

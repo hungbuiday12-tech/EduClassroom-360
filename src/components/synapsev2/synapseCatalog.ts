@@ -23,7 +23,14 @@ export type MonumentId =
   | 'graph_dijkstra_citadel'
   | 'lhc_collider'
   | 'laser_interferometer'
-  | 'tesla_electromagnet';
+  | 'tesla_electromagnet'
+  | 'lidar_autonomous_core'
+  | 'solar_thermal_tower'
+  | 'mri_tomography_ring'
+  | 'sagnac_ring_gyro'
+  | 'metamaterial_cloak'
+  | 'acoustic_levitation'
+  | 'photonic_tensor_core';
 
 export type MonumentCategory = 'cosmos' | 'cs' | 'physics' | 'math' | 'future_tech';
 
@@ -775,6 +782,216 @@ export const MONUMENT_CATALOG: MonumentDefinition[] = [
     relatedSubject: 'physics',
     relatedLabelVi: 'Mở Mô phỏng Điện Từ học',
     relatedLabelEn: 'Open Electromagnetism Lab'
+  },
+  {
+    id: 'lidar_autonomous_core',
+    index: 24,
+    code: '24 · LIDAR SLAM CORE',
+    category: 'future_tech',
+    categoryLabelVi: 'Công nghệ Tương lai',
+    categoryLabelEn: 'Future Tech',
+    tierBadge: '3D Point-Cloud SLAM',
+    titleVi: 'Lõi Cảm Biến LiDAR Đa Tia & Quét Bản Đồ SLAM 3D',
+    titleEn: 'Autonomous LiDAR Turret & 3D SLAM Point-Cloud Core',
+    subtitleVi: 'Quét laser 360° thời gian thực · Tái dựng đám mây điểm địa hình 3D',
+    subtitleEn: 'Real-Time 360° Multi-Beam Laser · Live Volumetric SLAM Reconstruction',
+    descriptionVi:
+      'Cụm tháp gương lục giác quay tốc độ cao phát hai quạt tia laser đồng thời quét và kích hoạt đám mây điểm 3D xung quanh, mô phỏng mắt nhìn xe tự hành.',
+    descriptionEn:
+      'High-RPM hexagonal mirror turret projecting dual volumetric laser sheets across an instanced 3D spatial point-cloud field for autonomous robotics.',
+    accentHex: '#06b6d4',
+    secondaryHex: '#22d3ee',
+    primaryLabelVi: 'Tốc độ Quét LiDAR',
+    primaryLabelEn: 'Scanner RPM',
+    primaryUnit: 'rpm',
+    primaryRange: [60, 600, 240],
+    secondaryLabelVi: 'Số Kênh Laser',
+    secondaryLabelEn: 'Laser Channels',
+    secondaryUnit: 'ch',
+    secondaryRange: [16, 128, 64],
+    relatedSubject: 'cs',
+    relatedLabelVi: 'Mở Mô phỏng Hình học & CS',
+    relatedLabelEn: 'Open CS & Geometry Lab'
+  },
+  {
+    id: 'solar_thermal_tower',
+    index: 25,
+    code: '25 · HELIOSTAT CSP',
+    category: 'physics',
+    categoryLabelVi: 'Vật lí & Năng lượng',
+    categoryLabelEn: 'Physics & Energy',
+    tierBadge: 'Molten-Salt Concentrator',
+    titleVi: 'Tháp Nhiệt Mặt Trời & Cánh Đồng Gương Heliostat Hội Tụ',
+    titleEn: 'Concentrated Solar Power Tower & Tracking Heliostat Field',
+    subtitleVi: 'Quang học phản xạ định hướng · Nhiệt năng muối nóng chảy sạch',
+    subtitleEn: 'Specular Heliostat Tracking · Molten-Salt Thermal Receiver Crown',
+    descriptionVi:
+      '36 gương phản xạ đồng tâm tự động xoay theo góc chiếu Mặt Trời để hội tụ chùm tia năng lượng lên đỉnh tháp muối nóng chảy phát điện sạch.',
+    descriptionEn:
+      '36 concentric solar-tracking heliostat mirrors dynamically concentrating photon beams onto an incandescent molten-salt central receiver crown.',
+    accentHex: '#f59e0b',
+    secondaryHex: '#fde047',
+    primaryLabelVi: 'Góc Chiếu Mặt Trời',
+    primaryLabelEn: 'Solar Elevation',
+    primaryUnit: '°',
+    primaryRange: [15, 85, 52],
+    secondaryLabelVi: 'Công suất Nhiệt Đỉnh',
+    secondaryLabelEn: 'Thermal Output',
+    secondaryUnit: 'MW',
+    secondaryRange: [100, 900, 480],
+    relatedSubject: 'physics',
+    relatedLabelVi: 'Mở Mô phỏng Quang & Nhiệt',
+    relatedLabelEn: 'Open Optics & Thermal Lab'
+  },
+  {
+    id: 'mri_tomography_ring',
+    index: 26,
+    code: '26 · 7T MRI SCANNER',
+    category: 'physics',
+    categoryLabelVi: 'Vật lí & Y sinh',
+    categoryLabelEn: 'Physics & BioTech',
+    tierBadge: 'Superconducting Cryo Bore',
+    titleVi: 'Máy Chụp Cộng Hưởng Từ Siêu Dẫn 7-Tesla & Lát Cắt 3D',
+    titleEn: '7-Tesla Superconducting MRI Gantry & Larmor Tomography',
+    subtitleVi: 'Cộng hưởng từ hạt nhân (NMR) · Lát cắt ảnh sóng RF thời gian thực',
+    subtitleEn: 'Nuclear Magnetic Resonance · Real-Time RF Spin Precession Slices',
+    descriptionVi:
+      'Khoang nam châm siêu dẫn 4 vòng ghép rời cho phép xem cấu tạo cuộn dây gradient bên trong cùng mặt cắt cộng hưởng từ Larmor chuyển động.',
+    descriptionEn:
+      'Segmented 7-Tesla superconducting magnet bore featuring an animated motorized scan cradle and oscillating RF Larmor resonance imaging planes.',
+    accentHex: '#0284c7',
+    secondaryHex: '#38bdf8',
+    primaryLabelVi: 'Từ trường Siêu dẫn B₀',
+    primaryLabelEn: 'Magnetic Flux B₀',
+    primaryUnit: 'T',
+    primaryRange: [1.5, 11.7, 7.0],
+    secondaryLabelVi: 'Tần số Larmor RF',
+    secondaryLabelEn: 'RF Larmor Freq',
+    secondaryUnit: 'MHz',
+    secondaryRange: [64, 500, 298],
+    relatedSubject: 'physics',
+    relatedLabelVi: 'Mở Mô phỏng Từ trường',
+    relatedLabelEn: 'Open Magnetic Field Lab'
+  },
+  {
+    id: 'sagnac_ring_gyro',
+    index: 27,
+    code: '27 · SAGNAC OPTICS',
+    category: 'math',
+    categoryLabelVi: 'Toán học & Định vị',
+    categoryLabelEn: 'Math & Inertial Nav',
+    tierBadge: '3-Axis Gimbal Interferometer',
+    titleVi: 'Con Quay Hồi Chuyển Laser Sagnac 3 Trục Gimbal',
+    titleEn: '3-Axis Gimbal Ring Laser Gyroscope & Sagnac Phase Meter',
+    subtitleVi: 'Hình học quay SO(3) & Độ lệch pha giao thoa hai chùm laser ngược chiều',
+    subtitleEn: 'SO(3) Euler Gimbal Precession · Counter-Propagating Laser Phase Shift',
+    descriptionVi:
+      'Hệ 3 vòng gimbal đồng tâm quay theo phép quay SO(3) với cuộn sợi quang lục giác dẫn 2 chùm xung photon ngược chiều đo vận tốc góc tuyệt đối.',
+    descriptionEn:
+      'Precision 3-axis inertial gimbal cradling an optical loop where counter-propagating photon packets accumulate a relativistic Sagnac phase shift.',
+    accentHex: '#fbbf24',
+    secondaryHex: '#f43f5e',
+    primaryLabelVi: 'Vận tốc Góc Quay Ω',
+    primaryLabelEn: 'Angular Rate Ω',
+    primaryUnit: 'rad/s',
+    primaryRange: [1, 40, 14],
+    secondaryLabelVi: 'Chiều dài Sợi quang L',
+    secondaryLabelEn: 'Fiber Loop Length L',
+    secondaryUnit: 'm',
+    secondaryRange: [200, 3000, 1200],
+    relatedSubject: 'math',
+    relatedLabelVi: 'Mở Không gian Oxyz 3D',
+    relatedLabelEn: 'Open Oxyz 3D Math Lab'
+  },
+  {
+    id: 'metamaterial_cloak',
+    index: 28,
+    code: '28 · NEGATIVE INDEX',
+    category: 'future_tech',
+    categoryLabelVi: 'Công nghệ Tương lai',
+    categoryLabelEn: 'Future Tech',
+    tierBadge: 'Transformation Optics Shell',
+    titleVi: 'Áo Tàng Hình Siêu Vật Liệu Chiết Suất Âm (Metamaterial)',
+    titleEn: 'Negative-Index Metamaterial Cloak & EM Stream Bending',
+    subtitleVi: 'Quang học biến đổi · Uốn cong sóng điện từ quanh lõi trung tâm',
+    subtitleEn: 'Transformation Optics · Split-Ring Lattice Bending EM Wavefronts',
+    descriptionVi:
+      'Lớp vỏ siêu vật liệu cộng hưởng vòng hở nhiều tầng uốn dòng hạt sóng điện từ vòng qua khối lõi đen mà không gây tán xạ phía sau.',
+    descriptionEn:
+      'Multi-shell split-ring metamaterial cloak smoothly guiding electromagnetic wave streams around a concealed core with near-zero wake scatter.',
+    accentHex: '#10b981',
+    secondaryHex: '#38bdf8',
+    primaryLabelVi: 'Chiết suất Âm (n)',
+    primaryLabelEn: 'Negative Index (n)',
+    primaryUnit: 'n',
+    primaryRange: [-3.0, -0.2, -1.4],
+    secondaryLabelVi: 'Tần số Sóng Viba',
+    secondaryLabelEn: 'Microwave Freq',
+    secondaryUnit: 'GHz',
+    secondaryRange: [2, 24, 10],
+    relatedSubject: 'physics',
+    relatedLabelVi: 'Mở Mô phỏng Khúc xạ & Sóng',
+    relatedLabelEn: 'Open Refraction & Wave Lab'
+  },
+  {
+    id: 'acoustic_levitation',
+    index: 29,
+    code: '29 · ULTRASONIC TRAP',
+    category: 'physics',
+    categoryLabelVi: 'Vật lí & Sóng âm',
+    categoryLabelEn: 'Physics & Acoustics',
+    tierBadge: 'Standing-Wave Trap',
+    titleVi: 'Bẫy Sóng Dừng Siêu Âm & Nâng Lơ Lửng Hạt Tinh Thể 3D',
+    titleEn: 'Phased Ultrasonic Standing-Wave Cavity & Acoustic Levitation',
+    subtitleVi: 'Giao thoa sóng dừng cực đại/cực tiểu · Cân bằng trọng lực bằng áp suất âm',
+    subtitleEn: 'Harmonic Pressure Nodes · Gravity Counterbalance via Acoustic Force',
+    descriptionVi:
+      'Hai bản phát sóng siêu âm đối diện tạo trường sóng dừng thẳng đứng với các nút áp suất rõ rệt, giữ 6 giọt tinh thể lơ lửng ổn định giữa không trung.',
+    descriptionEn:
+      'Opposed ultrasonic transducer plates generating vertical standing pressure nodes that suspend six crystalline droplets in mid-air.',
+    accentHex: '#06b6d4',
+    secondaryHex: '#fef08a',
+    primaryLabelVi: 'Tần số Siêu âm',
+    primaryLabelEn: 'Ultrasonic Freq',
+    primaryUnit: 'kHz',
+    primaryRange: [20, 80, 40],
+    secondaryLabelVi: 'Áp suất Sóng đứng',
+    secondaryLabelEn: 'Acoustic Pressure',
+    secondaryUnit: 'kPa',
+    secondaryRange: [10, 120, 65],
+    relatedSubject: 'physics',
+    relatedLabelVi: 'Mở Mô phỏng Sóng dừng',
+    relatedLabelEn: 'Open Standing Wave Lab'
+  },
+  {
+    id: 'photonic_tensor_core',
+    index: 30,
+    code: '30 · OPTICAL NPU',
+    category: 'cs',
+    categoryLabelVi: 'Tin học & Kiến trúc',
+    categoryLabelEn: 'CS & Optical Computing',
+    tierBadge: 'Silicon Photonics Mesh',
+    titleVi: 'Bộ Xử Lý Tensor Quang Học Mach-Zehnder 4×4 (Optical NPU)',
+    titleEn: 'Silicon Photonics 4×4 Mach-Zehnder Tensor Crossbar NPU',
+    subtitleVi: 'Tính toán ma trận bằng xung ánh sáng đa bước sóng WDM · Độ trễ pico-giây',
+    subtitleEn: 'WDM Multi-Wavelength Optical Matrix Compute · Picosecond Latency',
+    descriptionVi:
+      'Chip silicon nitride tích hợp lưới 16 bộ giao thoa Mach-Zehnder nhân ma trận trọng số đồng thời bằng các xung laser đa bước sóng WDM.',
+    descriptionEn:
+      'Integrated silicon-nitride 4×4 Mach-Zehnder interferometer array performing parallel optical matrix multiplication with multi-wavelength laser pulses.',
+    accentHex: '#f59e0b',
+    secondaryHex: '#38bdf8',
+    primaryLabelVi: 'Xung nhịp Quang học',
+    primaryLabelEn: 'Optical Clock',
+    primaryUnit: 'GHz',
+    primaryRange: [20, 200, 100],
+    secondaryLabelVi: 'Kênh Đa bước sóng WDM',
+    secondaryLabelEn: 'WDM Channels',
+    secondaryUnit: 'λ',
+    secondaryRange: [4, 32, 16],
+    relatedSubject: 'cs',
+    relatedLabelVi: 'Mở Tin học & Thuật toán',
+    relatedLabelEn: 'Open CS & Algorithms'
   }
 ];
 
@@ -1217,6 +1434,134 @@ export function computeTelemetry(id: MonumentId, p: SynapseV2Params): MonumentTe
         metric3Value: `${powerMw} MW`,
         statusVi: kv >= 350 ? 'PHÓNG ĐIỆN PLASMA VƯỢT NGƯỠNG' : 'CỘNG HƯỞNG LC ỔN ĐỊNH',
         statusEn: kv >= 350 ? 'HIGH-VOLTAGE CORONA BREAKDOWN' : 'LC RESONANCE SYNCHRONIZED'
+      };
+    }
+    case 'lidar_autonomous_core': {
+      const rpm = Math.round(p.primaryParam);
+      const ch = Math.round(p.secondaryParam);
+      const ptsSec = ((rpm / 60) * ch * 1800).toFixed(0);
+      const hz = (rpm / 60).toFixed(1);
+      return {
+        metric1LabelVi: 'Mật độ Đám mây Điểm',
+        metric1LabelEn: 'Point-Cloud Rate',
+        metric1Value: `${Number(ptsSec).toLocaleString()} pts/s`,
+        metric2LabelVi: 'Tần số Quét Khung',
+        metric2LabelEn: 'Frame Sweep Rate',
+        metric2Value: `${hz} Hz`,
+        metric3LabelVi: 'Độ phân giải Kênh',
+        metric3LabelEn: 'Laser Channel Array',
+        metric3Value: `${ch} Ch · 120 m`,
+        statusVi: rpm >= 360 ? 'QUÉT SLAM 3D TỐC ĐỘ CAO' : 'ĐỒNG BỘ BẢN ĐỒ ĐIỂM 3D',
+        statusEn: rpm >= 360 ? 'HIGH-RPM SLAM LOCK' : '3D POINT-CLOUD STREAMING'
+      };
+    }
+    case 'solar_thermal_tower': {
+      const elev = Math.round(p.primaryParam);
+      const mw = Math.round(p.secondaryParam);
+      const saltTempC = Math.round(380 + (mw / 900) * 210);
+      const homes = Math.round(mw * 420);
+      return {
+        metric1LabelVi: 'Nhiệt độ Muối nóng chảy',
+        metric1LabelEn: 'Molten Salt Temp',
+        metric1Value: `${saltTempC} °C`,
+        metric2LabelVi: 'Góc Hội tụ Heliostat',
+        metric2LabelEn: 'Heliostat Tracking',
+        metric2Value: `${elev}° · 36 Mirrors`,
+        metric3LabelVi: 'Sản lượng Cấp điện',
+        metric3LabelEn: 'Grid Capacity',
+        metric3Value: `${homes.toLocaleString()} hộ`,
+        statusVi: mw >= 600 ? 'HỘI TỤ QUANG NHIỆT CỰC ĐẠI' : 'LƯU TRỮ NHIỆT NĂNG SẠCH',
+        statusEn: mw >= 600 ? 'PEAK SOLAR FLUX RECEIVER' : 'HELIOSTAT ARRAY TRACKING'
+      };
+    }
+    case 'mri_tomography_ring': {
+      const b0 = p.primaryParam.toFixed(1);
+      const larmor = Math.round(p.secondaryParam);
+      const snr = (Number(b0) * 18.4).toFixed(0);
+      return {
+        metric1LabelVi: 'Từ trường Lõi Siêu dẫn',
+        metric1LabelEn: 'Cryo Bore Field B₀',
+        metric1Value: `${b0} Tesla`,
+        metric2LabelVi: 'Tần số Cộng hưởng Larmor',
+        metric2LabelEn: 'Larmor Precession',
+        metric2Value: `${larmor} MHz`,
+        metric3LabelVi: 'Tỷ lệ Tín hiệu/Nhiễu',
+        metric3LabelEn: 'Voxel SNR Gain',
+        metric3Value: `${snr} dB · 0.2 mm`,
+        statusVi: 'LÀM MÁT HELI LỎNG 4.2 K · QUÉT LÁT CẮT',
+        statusEn: '4.2 K SUPERCONDUCTING · SCANNING'
+      };
+    }
+    case 'sagnac_ring_gyro': {
+      const omega = Math.round(p.primaryParam);
+      const lenM = Math.round(p.secondaryParam);
+      const deltaPhi = ((omega * lenM) * 0.00042).toFixed(3);
+      return {
+        metric1LabelVi: 'Độ lệch Pha Sagnac ΔΦ',
+        metric1LabelEn: 'Sagnac Phase Shift ΔΦ',
+        metric1Value: `${deltaPhi} rad`,
+        metric2LabelVi: 'Tốc độ Quay Inertial',
+        metric2LabelEn: 'Angular Rate Ω',
+        metric2Value: `${omega} rad/s`,
+        metric3LabelVi: 'Chiều dài Vòng quang',
+        metric3LabelEn: 'Optical Path L',
+        metric3Value: `${lenM.toLocaleString()} m`,
+        statusVi: '3 TRỤC GIMBAL SO(3) KHÓA PHA QUANG',
+        statusEn: '3-AXIS SO(3) INTERFEROMETER LOCKED'
+      };
+    }
+    case 'metamaterial_cloak': {
+      const nVal = p.primaryParam.toFixed(2);
+      const ghz = Math.round(p.secondaryParam);
+      const scatterDb = (-38 - Math.abs(p.primaryParam) * 9).toFixed(1);
+      return {
+        metric1LabelVi: 'Chỉ số Khúc xạ Âm',
+        metric1LabelEn: 'Effective Index (n)',
+        metric1Value: `n = ${nVal}`,
+        metric2LabelVi: 'Suy hao Tán xạ Ngược',
+        metric2LabelEn: 'Radar Cross-Section',
+        metric2Value: `${scatterDb} dB`,
+        metric3LabelVi: 'Dải Tần Viba Cộng hưởng',
+        metric3LabelEn: 'Resonant Band',
+        metric3Value: `${ghz} GHz`,
+        statusVi: 'UỐN CONG BỨC XẠ ĐẲNG HƯỚNG · TÀNG HÌNH',
+        statusEn: 'TRANSFORMATION OPTICS CLOAK ACTIVE'
+      };
+    }
+    case 'acoustic_levitation': {
+      const khz = Math.round(p.primaryParam);
+      const kpa = Math.round(p.secondaryParam);
+      const lambdaMm = (343 / Math.max(1, khz)).toFixed(2);
+      return {
+        metric1LabelVi: 'Bước sóng Siêu âm λ',
+        metric1LabelEn: 'Acoustic Wavelength',
+        metric1Value: `${lambdaMm} mm`,
+        metric2LabelVi: 'Biên độ Áp suất Bụng',
+        metric2LabelEn: 'Peak Node Pressure',
+        metric2Value: `${kpa} kPa`,
+        metric3LabelVi: 'Số Điểm Nút Sóng dừng',
+        metric3LabelEn: 'Trapped Pressure Nodes',
+        metric3Value: `6 Nodes · ${khz} kHz`,
+        statusVi: 'CÂN BẰNG BỨC XẠ ÂM · NÂNG LƠ LỬNG 6 HẠT',
+        statusEn: '6 DROPLETS SUSPENDED IN NODE TRAP'
+      };
+    }
+    case 'photonic_tensor_core': {
+      const ghz = Math.round(p.primaryParam);
+      const wdm = Math.round(p.secondaryParam);
+      const tops = ((ghz * wdm * 16) / 1000).toFixed(1);
+      return {
+        metric1LabelVi: 'Thông lượng Tensor Quang',
+        metric1LabelEn: 'Photonic Compute',
+        metric1Value: `${tops} PetaOP/s`,
+        metric2LabelVi: 'Kênh Bước sóng WDM',
+        metric2LabelEn: 'WDM Optical Lanes',
+        metric2Value: `${wdm} λ · 4×4 MZI`,
+        metric3LabelVi: 'Độ trễ Lan truyền Chip',
+        metric3LabelEn: 'Optical Matrix Latency',
+        metric3Value: `${(120 / Math.max(10, ghz)).toFixed(2)} ps`,
+        statusVi: 'GIAO THOA KẾ MACH-ZEHNDER ĐỒNG BỘ',
+        statusEn: '4×4 MZI PHOTONIC MESH ACTIVE'
       };
     }
   }

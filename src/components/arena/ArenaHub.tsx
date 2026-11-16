@@ -40,6 +40,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { FormattedText } from '../common/MathRenderer';
+import { VoiceMicButton } from '../common/VoiceMicButton';
 import { compareOutputs, runCppInSandbox, runPythonInSandbox } from '../cs/codeRunner';
 import {
   collection,
@@ -1046,9 +1047,17 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                           ))}
                         </div>
                       )}
+                      <VoiceMicButton
+                        language={language}
+                        size="sm"
+                        showLabel={true}
+                        onTranscript={(spoken) =>
+                          setEssayText((prev) => (prev.trim() ? `${prev.trim()} ${spoken}` : spoken))
+                        }
+                      />
                       <button
                         onClick={() => setShowEssayPreview(!showEssayPreview)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1"
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>{showEssayPreview ? 'Soạn thảo' : 'Xem trước KaTeX'}</span>

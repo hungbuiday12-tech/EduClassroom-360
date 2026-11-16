@@ -10,11 +10,180 @@ export type HandGestureId =
   | 'two_hand_10'
   | 'fist_0';
 
+export type HandControlMode = 'auto' | 'right_only' | 'left_only' | 'two_hands_split';
+export type PointerSource = 'index' | 'middle' | 'pinch_mid' | 'palm_center';
+export type GraphicsQuality = 'light' | 'high';
+
+export type GestureAction3D =
+  | 'draw_neon'
+  | 'pinch_stamp_scale'
+  | 'slice_plane'
+  | 'explode_layers'
+  | 'orbit_rotate'
+  | 'dual_zoom_tilt'
+  | 'freeze_lock'
+  | 'auto_spin_toggle'
+  | 'none';
+
+export type GestureAction2D =
+  | 'plot_draw'
+  | 'grab_drag'
+  | 'sweep_tangent'
+  | 'cycle_symmetry'
+  | 'rotate_pan'
+  | 'dual_compass'
+  | 'freeze_lock'
+  | 'none';
+
+export type ActiveGestureKey = Exclude<HandGestureId, 'none'>;
+
+export interface GestureSettings {
+  handMode: HandControlMode;
+  pointerSource: PointerSource;
+  sensitivityX: number; // 0.5 .. 2.0
+  sensitivityY: number; // 0.5 .. 2.0
+  pinchSensitivity: number; // 0.6 .. 1.6
+  fingerExtendSensitivity: number; // 0.6 .. 1.5
+  smoothing: number; // 0.1 .. 0.9
+  deadzone: number; // 0.000 .. 0.045
+  stabilityFrames: number; // 1 .. 8
+  trackingFps: 12 | 20 | 30;
+  mirrorCamera: boolean;
+  invertX: boolean;
+  invertY: boolean;
+  graphicsQuality: GraphicsQuality;
+  gestureActions3D: Record<ActiveGestureKey, GestureAction3D>;
+  gestureActions2D: Record<ActiveGestureKey, GestureAction2D>;
+}
+
+export const DEFAULT_GESTURE_SETTINGS: GestureSettings = {
+  handMode: 'auto',
+  pointerSource: 'index',
+  sensitivityX: 1.05,
+  sensitivityY: 1.05,
+  pinchSensitivity: 1.05,
+  fingerExtendSensitivity: 1.0,
+  smoothing: 0.55,
+  deadzone: 0.008,
+  stabilityFrames: 4,
+  trackingFps: 20,
+  mirrorCamera: true,
+  invertX: false,
+  invertY: false,
+  graphicsQuality: 'light',
+  gestureActions3D: {
+    point_1: 'draw_neon',
+    pinch: 'pinch_stamp_scale',
+    slice_2: 'slice_plane',
+    morph_3: 'explode_layers',
+    palm_5: 'orbit_rotate',
+    two_hand_10: 'dual_zoom_tilt',
+    fist_0: 'freeze_lock'
+  },
+  gestureActions2D: {
+    point_1: 'plot_draw',
+    pinch: 'grab_drag',
+    slice_2: 'sweep_tangent',
+    morph_3: 'cycle_symmetry',
+    palm_5: 'rotate_pan',
+    two_hand_10: 'dual_compass',
+    fist_0: 'freeze_lock'
+  }
+};
+
+export interface GesturePresetSpec {
+  id: string;
+  labelVi: string;
+  labelEn: string;
+  descVi: string;
+  descEn: string;
+  patch: Partial<GestureSettings>;
+}
+
+export const GESTURE_PRESETS: GesturePresetSpec[] = [
+  {
+    id: 'smooth_learn',
+    labelVi: 'Mượt mà Học tập',
+    labelEn: 'Smooth Study',
+    descVi: 'Chống rung cao, 20 FPS, nhẹ GPU',
+    descEn: 'High anti-jitter, 20 FPS, light GPU',
+    patch: {
+      sensitivityX: 1.0,
+      sensitivityY: 1.0,
+      pinchSensitivity: 1.0,
+      fingerExtendSensitivity: 1.0,
+      smoothing: 0.65,
+      deadzone: 0.012,
+      stabilityFrames: 5,
+      trackingFps: 20,
+      graphicsQuality: 'light'
+    }
+  },
+  {
+    id: 'fast_creative',
+    labelVi: 'Sáng tạo Nhanh',
+    labelEn: 'Fast Creative',
+    descVi: 'Phản hồi tức thì, nhạy rộng 30 FPS',
+    descEn: 'Instant response, wide range 30 FPS',
+    patch: {
+      sensitivityX: 1.45,
+      sensitivityY: 1.45,
+      pinchSensitivity: 1.25,
+      fingerExtendSensitivity: 1.15,
+      smoothing: 0.28,
+      deadzone: 0.004,
+      stabilityFrames: 2,
+      trackingFps: 30,
+      graphicsQuality: 'light'
+    }
+  },
+  {
+    id: 'precision_measure',
+    labelVi: 'Đo đạc Chính xác',
+    labelEn: 'Precision Lab',
+    descVi: 'Deadzone khóa tâm, kéo đỉnh chuẩn từng mm',
+    descEn: 'Locked deadzone, crisp vertex precision',
+    patch: {
+      sensitivityX: 0.85,
+      sensitivityY: 0.85,
+      pinchSensitivity: 0.9,
+      fingerExtendSensitivity: 0.95,
+      smoothing: 0.72,
+      deadzone: 0.018,
+      stabilityFrames: 6,
+      trackingFps: 20
+    }
+  }
+];
+
+export const ACTION_3D_OPTIONS: { id: GestureAction3D; labelVi: string; labelEn: string }[] = [
+  { id: 'draw_neon', labelVi: 'Vẽ ống Neon 3D / Dẫn IK', labelEn: 'Sculpt Neon / Drive IK' },
+  { id: 'pinch_stamp_scale', labelVi: 'Đặt khối / Chỉnh tỷ lệ & RPM', labelEn: 'Stamp Block / Scale & RPM' },
+  { id: 'slice_plane', labelVi: 'Kéo mặt cắt ngang 3D', labelEn: 'Slide 3D Clipping Plane' },
+  { id: 'explode_layers', labelVi: 'Mở bung tách lớp mô hình', labelEn: 'Explode Model Layers' },
+  { id: 'orbit_rotate', labelVi: 'Xoay 360° & Tách nhẹ', labelEn: '360° Orbit & Soft Explode' },
+  { id: 'dual_zoom_tilt', labelVi: 'Thu phóng & Nghiêng 2 tay', labelEn: '2-Hand Zoom & Tilt' },
+  { id: 'freeze_lock', labelVi: 'Khóa / Đóng băng thông số', labelEn: 'Freeze & Inspect' },
+  { id: 'auto_spin_toggle', labelVi: 'Bật / Tắt Tự xoay', labelEn: 'Toggle Auto-Spin' },
+  { id: 'none', labelVi: 'Không gán thao tác', labelEn: 'Disabled' }
+];
+
+export const ACTION_2D_OPTIONS: { id: GestureAction2D; labelVi: string; labelEn: string }[] = [
+  { id: 'plot_draw', labelVi: 'Vẽ nét tự do / Kính vạn hoa', labelEn: 'Freehand / Kaleido Draw' },
+  { id: 'grab_drag', labelVi: 'Gắp & Kéo đỉnh / Mảnh Tangram', labelEn: 'Grab & Drag Vertices / Tiles' },
+  { id: 'sweep_tangent', labelVi: 'Quét góc / Cắt tuyến', labelEn: 'Sweep Angle / Secant' },
+  { id: 'cycle_symmetry', labelVi: 'Đổi bậc đối xứng (4/6/8/12)', labelEn: 'Cycle Symmetry Order' },
+  { id: 'rotate_pan', labelVi: 'Xoay bảng trục Oxy', labelEn: 'Rotate Oxy Canvas' },
+  { id: 'dual_compass', labelVi: 'Compa 2 tay & 2 Vector u, v', labelEn: '2-Hand Compass & Dual Vectors' },
+  { id: 'freeze_lock', labelVi: 'Khóa / Đóng băng hình', labelEn: 'Freeze Canvas' },
+  { id: 'none', labelVi: 'Không gán thao tác', labelEn: 'Disabled' }
+];
+
 export interface HandTipPoint {
   id: number; // 1..10 fixed finger slot
   handIndex: 0 | 1;
   fingerName: 'Cái' | 'Trỏ' | 'Giữa' | 'Áp út' | 'Út';
-  x: number; // normalized [0..1], already mirrored if mirror=true
+  x: number; // normalized [0..1], mirrored & mapped with sensitivity/invert
   y: number; // normalized [0..1]
   z: number; // relative depth from wrist
   extended: boolean;
@@ -44,7 +213,7 @@ export interface HandTrackingFrame {
 }
 
 export interface GestureMeta {
-  id: HandGestureId;
+  id: ActiveGestureKey;
   fingers: string;
   labelVi: string;
   labelEn: string;
@@ -134,23 +303,50 @@ function dist2D(a: NormalizedLandmark, b: NormalizedLandmark): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-function isFingerExtended(hand: NormalizedLandmark[], fingerSlot: number): boolean {
+function clamp01(v: number): number {
+  return Math.max(0.01, Math.min(0.99, v));
+}
+
+function isFingerExtended(
+  hand: NormalizedLandmark[],
+  fingerSlot: number,
+  extendSensitivity = 1.0
+): boolean {
   const wrist = hand[0];
   const mcp = hand[FINGER_MCP_INDICES[fingerSlot]];
   const pip = hand[FINGER_PIP_INDICES[fingerSlot]];
   const tip = hand[FINGERTIP_INDICES[fingerSlot]];
   if (!wrist || !mcp || !pip || !tip) return false;
 
+  // Higher extendSensitivity (up to 1.5) lowers required extension ratio cleanly
+  const ratioScale = Math.max(0.84, Math.min(1.16, 1.0 - (extendSensitivity - 1.0) * 0.22));
+
   if (fingerSlot === 0) {
     const pinkyMcp = hand[17];
     if (!pinkyMcp) return false;
-    return dist2D(tip, pinkyMcp) > dist2D(pip, pinkyMcp) * 1.18;
+    return dist2D(tip, pinkyMcp) > dist2D(pip, pinkyMcp) * (1.18 * ratioScale);
   }
 
   const dTipWrist = dist2D(tip, wrist);
   const dPipWrist = dist2D(pip, wrist);
   const dMcpWrist = dist2D(mcp, wrist);
-  return dTipWrist > dPipWrist * 1.07 && dTipWrist > dMcpWrist * 1.25;
+  return dTipWrist > dPipWrist * (1.07 * ratioScale) && dTipWrist > dMcpWrist * (1.25 * ratioScale);
+}
+
+export interface TrackerProcessOptions {
+  mirror: boolean;
+  sensitivity?: number;
+  sensitivityX?: number;
+  sensitivityY?: number;
+  pinchSensitivity?: number;
+  fingerExtendSensitivity?: number;
+  smoothing: number;
+  deadzone?: number;
+  stabilityFrames?: number;
+  handMode?: HandControlMode;
+  pointerSource?: PointerSource;
+  invertX?: boolean;
+  invertY?: boolean;
 }
 
 export class HandGestureTracker {
@@ -250,10 +446,7 @@ export class HandGestureTracker {
     this.lastResultFrame = null;
   }
 
-  public process(
-    video: HTMLVideoElement,
-    options: { mirror: boolean; sensitivity: number; smoothing: number }
-  ): HandTrackingFrame {
+  public process(video: HTMLVideoElement, options: TrackerProcessOptions): HandTrackingFrame {
     if (!this.landmarker) {
       if (!this.initPromise) {
         void this.ensureInitialized();
@@ -290,15 +483,61 @@ export class HandGestureTracker {
     }
 
     this.missFrames = 0;
-    const { mirror, sensitivity, smoothing } = options;
-    const tipAlpha = Math.max(0.28, Math.min(0.88, 1.0 - smoothing * 0.58));
+    const mirror = options.mirror;
+    const sensX = options.sensitivityX ?? options.sensitivity ?? 1.05;
+    const sensY = options.sensitivityY ?? options.sensitivity ?? 1.05;
+    const pinchSens = options.pinchSensitivity ?? options.sensitivity ?? 1.05;
+    const extendSens = options.fingerExtendSensitivity ?? 1.0;
+    const smoothing = options.smoothing;
+    const deadzone = options.deadzone ?? 0.008;
+    const stabilityFrames = Math.max(1, Math.min(8, Math.round(options.stabilityFrames ?? 4)));
+    const handMode: HandControlMode = options.handMode ?? 'auto';
+    const pointerSource: PointerSource = options.pointerSource ?? 'index';
+    const invertX = options.invertX ?? false;
+    const invertY = options.invertY ?? false;
 
-    const indexedHands = hands.slice(0, 2).map((lmList, rawIdx) => {
+    const tipAlpha = Math.max(0.22, Math.min(0.92, 1.0 - smoothing * 0.62));
+
+    let indexedHands = hands.slice(0, 2).map((lmList, rawIdx) => {
       const wristX = mirror ? 1 - lmList[0].x : lmList[0].x;
-      const score = result.handedness?.[rawIdx]?.[0]?.score ?? 0.9;
-      return { lmList, wristX, score };
+      const handednessInfo = result.handedness?.[rawIdx]?.[0];
+      const score = handednessInfo?.score ?? 0.9;
+      const category = handednessInfo?.categoryName ?? '';
+      return { lmList, wristX, score, category };
     });
     indexedHands.sort((a, b) => a.wristX - b.wristX);
+
+    if (handMode === 'right_only' && indexedHands.length > 0) {
+      if (indexedHands.length === 2) {
+        indexedHands = [indexedHands[1]];
+      } else {
+        const only = indexedHands[0];
+        const isRightScreen = only.wristX >= 0.32 || (mirror ? only.category === 'Left' : only.category === 'Right');
+        if (!isRightScreen) indexedHands = [];
+      }
+    } else if (handMode === 'left_only' && indexedHands.length > 0) {
+      if (indexedHands.length === 2) {
+        indexedHands = [indexedHands[0]];
+      } else {
+        const only = indexedHands[0];
+        const isLeftScreen = only.wristX <= 0.68 || (mirror ? only.category === 'Right' : only.category === 'Left');
+        if (!isLeftScreen) indexedHands = [];
+      }
+    }
+
+    if (indexedHands.length === 0) {
+      const empty = this.emptyFrame();
+      this.lastResultFrame = empty;
+      return empty;
+    }
+
+    const mapCoord = (nx: number, ny: number): { x: number; y: number } => {
+      let mx = clamp01(0.5 + (nx - 0.5) * sensX);
+      let my = clamp01(0.5 + (ny - 0.5) * sensY);
+      if (invertX) mx = 1 - mx;
+      if (invertY) my = 1 - my;
+      return { x: mx, y: my };
+    };
 
     const tips: HandTipPoint[] = [];
     let totalExtended = 0;
@@ -307,10 +546,13 @@ export class HandGestureTracker {
     let hand2Pinching = false;
     let maxPinchRatio = 0;
     let handTiltAngle = this.smoothTiltAngle;
+    let palmCenterH1: { x: number; y: number } | null = null;
 
-    const pinchThreshold = 0.048 + (sensitivity - 1) * 0.02;
+    const pinchThreshold = 0.048 + (pinchSens - 1) * 0.022;
+    const normPinchThreshold = 0.34 * (0.85 + pinchSens * 0.15);
 
-    indexedHands.forEach((hEntry, hIdx) => {
+    for (let hIdx = 0; hIdx < indexedHands.length; hIdx++) {
+      const hEntry = indexedHands[hIdx];
       const handIdx = (hIdx === 0 ? 0 : 1) as 0 | 1;
       const lms = hEntry.lmList;
       confSum += hEntry.score;
@@ -321,6 +563,7 @@ export class HandGestureTracker {
         const mx = mirror ? 1 - lms[9].x : lms[9].x;
         const my = lms[9].y;
         handTiltAngle = Math.atan2(mx - wx, wy - my);
+        palmCenterH1 = mapCoord((wx + mx) * 0.5, (wy + my) * 0.5);
       }
 
       const thumbTip = lms[4];
@@ -330,7 +573,7 @@ export class HandGestureTracker {
       const normPinchDist = thumbIndexDist / handScaleRef;
       const pinchRatio = Math.max(0, Math.min(1, 1 - normPinchDist * 1.45));
       if (pinchRatio > maxPinchRatio) maxPinchRatio = pinchRatio;
-      const isPinch = thumbIndexDist < pinchThreshold || normPinchDist < 0.34;
+      const isPinch = thumbIndexDist < pinchThreshold || normPinchDist < normPinchThreshold;
       if (isPinch) {
         if (handIdx === 0) hand1Pinching = true;
         else hand2Pinching = true;
@@ -340,18 +583,19 @@ export class HandGestureTracker {
         const lm = lms[FINGERTIP_INDICES[f]];
         if (!lm) continue;
 
-        const rawX = Math.max(0.01, Math.min(0.99, mirror ? 1 - lm.x : lm.x));
-        const rawY = Math.max(0.01, Math.min(0.99, lm.y));
+        const baseX = mirror ? 1 - lm.x : lm.x;
+        const baseY = lm.y;
+        const mapped = mapCoord(baseX, baseY);
         const rawZ = lm.z ?? 0;
 
         const slotId = handIdx * 5 + f + 1;
         const prev = this.smoothedTips.get(slotId);
-        const sx = prev ? prev.x + (rawX - prev.x) * tipAlpha : rawX;
-        const sy = prev ? prev.y + (rawY - prev.y) * tipAlpha : rawY;
+        const sx = prev ? prev.x + (mapped.x - prev.x) * tipAlpha : mapped.x;
+        const sy = prev ? prev.y + (mapped.y - prev.y) * tipAlpha : mapped.y;
         const sz = prev ? prev.z + (rawZ - prev.z) * tipAlpha : rawZ;
         this.smoothedTips.set(slotId, { x: sx, y: sy, z: sz });
 
-        const ext = isFingerExtended(lms, f);
+        const ext = isFingerExtended(lms, f, extendSens);
         if (ext) totalExtended++;
 
         tips.push({
@@ -364,7 +608,7 @@ export class HandGestureTracker {
           extended: ext
         });
       }
-    });
+    }
 
     if (indexedHands.length < 2) {
       for (let id = 6; id <= 10; id++) {
@@ -372,7 +616,9 @@ export class HandGestureTracker {
       }
     }
 
+    const h1ThumbTip = tips.find((t) => t.id === 1) || null;
     const h1IndexTip = tips.find((t) => t.id === 2) || null;
+    const h1MiddleTip = tips.find((t) => t.id === 3) || null;
     const h2IndexTip = tips.find((t) => t.id === 7) || null;
     const hand1Index = h1IndexTip ? { x: h1IndexTip.x, y: h1IndexTip.y } : null;
     const hand2Index = h2IndexTip ? { x: h2IndexTip.x, y: h2IndexTip.y } : null;
@@ -387,12 +633,15 @@ export class HandGestureTracker {
         twoHandSpan = Math.hypot(h1IndexTip.x - h2IndexTip.x, h1IndexTip.y - h2IndexTip.y);
         twoHandAngle = Math.atan2(h2IndexTip.y - h1IndexTip.y, h2IndexTip.x - h1IndexTip.x);
       }
-      if (totalExtended >= 6) {
-        rawGesture = 'two_hand_10';
-      } else if (totalExtended === 0) {
+      if (totalExtended === 0) {
         rawGesture = 'fist_0';
       } else if (hand1Pinching && hand2Pinching) {
         rawGesture = 'pinch';
+      } else if (handMode === 'two_hands_split') {
+        // In split mode, allow single-hand sub-gestures or two_hand_10 when wide open
+        rawGesture = totalExtended >= 7 ? 'two_hand_10' : hand1Pinching || hand2Pinching ? 'pinch' : 'point_1';
+      } else if (totalExtended >= 6) {
+        rawGesture = 'two_hand_10';
       } else {
         rawGesture = 'two_hand_10';
       }
@@ -424,7 +673,7 @@ export class HandGestureTracker {
       this.candidateStreak = 1;
     }
 
-    if (this.candidateStreak >= 4) {
+    if (this.candidateStreak >= stabilityFrames) {
       this.stableGesture = rawGesture;
     } else if (this.stableGesture === 'none') {
       this.stableGesture = rawGesture;
@@ -432,19 +681,28 @@ export class HandGestureTracker {
 
     let targetCursorX = 0.5;
     let targetCursorY = 0.5;
-    if (indexedHands.length === 2) {
+    if (indexedHands.length === 2 && handMode !== 'two_hands_split') {
       const h1 = h1IndexTip || tips[0];
       const h2 = h2IndexTip || tips[5];
       if (h1 && h2) {
         targetCursorX = (h1.x + h2.x) * 0.5;
         targetCursorY = (h1.y + h2.y) * 0.5;
       }
-    } else if (this.stableGesture === 'point_1' && tips[1]) {
-      targetCursorX = tips[1].x;
-      targetCursorY = tips[1].y;
-    } else if (this.stableGesture === 'pinch' && tips[0] && tips[1]) {
-      targetCursorX = (tips[0].x + tips[1].x) * 0.5;
-      targetCursorY = (tips[0].y + tips[1].y) * 0.5;
+    } else if (pointerSource === 'middle' && h1MiddleTip) {
+      targetCursorX = h1MiddleTip.x;
+      targetCursorY = h1MiddleTip.y;
+    } else if (pointerSource === 'pinch_mid' && h1ThumbTip && h1IndexTip) {
+      targetCursorX = (h1ThumbTip.x + h1IndexTip.x) * 0.5;
+      targetCursorY = (h1ThumbTip.y + h1IndexTip.y) * 0.5;
+    } else if (pointerSource === 'palm_center' && palmCenterH1) {
+      targetCursorX = palmCenterH1.x;
+      targetCursorY = palmCenterH1.y;
+    } else if (this.stableGesture === 'pinch' && h1ThumbTip && h1IndexTip) {
+      targetCursorX = (h1ThumbTip.x + h1IndexTip.x) * 0.5;
+      targetCursorY = (h1ThumbTip.y + h1IndexTip.y) * 0.5;
+    } else if (h1IndexTip) {
+      targetCursorX = h1IndexTip.x;
+      targetCursorY = h1IndexTip.y;
     } else if (tips.length > 0) {
       let sx = 0;
       let sy = 0;
@@ -464,8 +722,11 @@ export class HandGestureTracker {
       this.smoothTiltAngle = handTiltAngle;
       this.hasCursorFix = true;
     } else {
-      this.smoothCursorX += (targetCursorX - this.smoothCursorX) * tipAlpha;
-      this.smoothCursorY += (targetCursorY - this.smoothCursorY) * tipAlpha;
+      const moveDist = Math.hypot(targetCursorX - this.smoothCursorX, targetCursorY - this.smoothCursorY);
+      if (moveDist > deadzone) {
+        this.smoothCursorX += (targetCursorX - this.smoothCursorX) * tipAlpha;
+        this.smoothCursorY += (targetCursorY - this.smoothCursorY) * tipAlpha;
+      }
       this.smoothSpan += (twoHandSpan - this.smoothSpan) * 0.35;
       this.smoothTwoHandAngle += (twoHandAngle - this.smoothTwoHandAngle) * 0.3;
       this.smoothTiltAngle += (handTiltAngle - this.smoothTiltAngle) * 0.3;

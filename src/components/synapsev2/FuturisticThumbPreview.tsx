@@ -369,6 +369,90 @@ export const FuturisticThumbPreview: React.FC<FuturisticThumbPreviewProps> = ({
             <circle cx="160" cy="54" r="7" fill="#c084fc" className="holo-ring-pulse" />
           </g>
         );
+      case 'lidar_autonomous_core':
+        return (
+          <g>
+            <rect x="142" y="64" width="36" height="28" rx="4" fill="#0f172a" stroke="#22d3ee" strokeWidth="2" />
+            <path d="M 160 76 L 268 42 L 268 110 Z" fill="#06b6d4" fillOpacity="0.24" stroke="#22d3ee" strokeWidth="1.2" />
+            <path d="M 160 76 L 52 42 L 52 110 Z" fill="#06b6d4" fillOpacity="0.16" stroke="#38bdf8" strokeWidth="1.2" />
+            <circle cx="240" cy="58" r="3" fill="#38bdf8" />
+            <circle cx="256" cy="78" r="3" fill="#22d3ee" />
+            <circle cx="234" cy="96" r="3" fill="#67e8f9" />
+            <circle cx="76" cy="68" r="3" fill="#22d3ee" />
+            <circle cx="68" cy="90" r="3" fill="#38bdf8" />
+          </g>
+        );
+      case 'solar_thermal_tower':
+        return (
+          <g>
+            <polygon points="152,126 168,126 164,54 156,54" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
+            <rect x="150" y="38" width="20" height="18" rx="2" fill="#f59e0b" stroke="#fde047" strokeWidth="2" />
+            <circle cx="160" cy="46" r="14" fill="#fde047" fillOpacity="0.22" className="holo-ring-pulse" />
+            {[74, 102, 128, 192, 218, 246].map((x) => (
+              <g key={x}>
+                <line x1={x} y1="124" x2="160" y2="47" stroke="#fde047" strokeWidth="1.3" strokeOpacity="0.7" className="holo-dash" />
+                <line x1={x - 9} y1="126" x2={x + 9} y2="122" stroke="#93c5fd" strokeWidth="3" strokeLinecap="round" />
+              </g>
+            ))}
+          </g>
+        );
+      case 'mri_tomography_ring':
+        return (
+          <g>
+            <circle cx="160" cy="76" r="44" fill="none" stroke="#cbd5e1" strokeWidth="10" strokeOpacity="0.35" />
+            <circle cx="160" cy="76" r="32" fill="none" stroke="#0284c7" strokeWidth="4" />
+            <circle cx="160" cy="76" r="20" fill="none" stroke="#38bdf8" strokeWidth="1.8" strokeDasharray="5 4" className="holo-orbit-cw" />
+            <rect x="128" y="96" width="64" height="8" rx="2" fill="#38bdf8" fillOpacity="0.7" />
+          </g>
+        );
+      case 'sagnac_ring_gyro':
+        return (
+          <g>
+            <ellipse cx="160" cy="76" rx="52" ry="44" fill="none" stroke="#fbbf24" strokeWidth="2.4" className="holo-orbit-cw" />
+            <ellipse cx="160" cy="76" rx="40" ry="26" fill="none" stroke="#94a3b8" strokeWidth="2" className="holo-orbit-ccw" />
+            <polygon points="160,46 186,61 186,91 160,106 134,91 134,61" fill="none" stroke="#f59e0b" strokeWidth="2.2" />
+            <circle cx="186" cy="61" r="4" fill="#38bdf8" className="holo-ring-pulse" />
+            <circle cx="134" cy="91" r="4" fill="#f43f5e" className="holo-ring-pulse" />
+          </g>
+        );
+      case 'metamaterial_cloak':
+        return (
+          <g>
+            <circle cx="160" cy="76" r="15" fill="#0f172a" stroke="#10b981" strokeWidth="2" />
+            <circle cx="160" cy="76" r="28" fill="none" stroke="#10b981" strokeWidth="1.6" strokeDasharray="6 4" className="holo-orbit-cw" />
+            <circle cx="160" cy="76" r="38" fill="none" stroke="#34d399" strokeWidth="1.2" strokeDasharray="4 4" className="holo-orbit-ccw" />
+            <path d="M 48 56 Q 112 56 160 32 Q 208 56 272 56" fill="none" stroke="#38bdf8" strokeWidth="1.8" className="holo-dash" />
+            <path d="M 48 96 Q 112 96 160 120 Q 208 96 272 96" fill="none" stroke="#38bdf8" strokeWidth="1.8" className="holo-dash" />
+          </g>
+        );
+      case 'acoustic_levitation':
+        return (
+          <g>
+            <rect x="112" y="26" width="96" height="10" rx="3" fill="#334155" stroke="#06b6d4" strokeWidth="1.6" />
+            <rect x="112" y="116" width="96" height="10" rx="3" fill="#334155" stroke="#06b6d4" strokeWidth="1.6" />
+            {[46, 62, 78, 94, 108].map((y, idx) => (
+              <g key={y}>
+                <ellipse cx="160" cy={y} rx={idx % 2 === 0 ? 32 : 24} ry="4" fill="#38bdf8" fillOpacity="0.22" stroke="#38bdf8" strokeWidth="1" />
+                <circle cx="160" cy={y} r="4.5" fill="#fef08a" className="holo-ring-pulse" />
+              </g>
+            ))}
+          </g>
+        );
+      case 'photonic_tensor_core':
+        return (
+          <g>
+            <rect x="92" y="34" width="136" height="84" rx="6" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.8" />
+            {[50, 68, 86, 104].map((y) => (
+              <line key={`h-${y}`} x1="100" y1={y} x2="220" y2={y} stroke="#0284c7" strokeWidth="1.6" className="holo-dash" />
+            ))}
+            {[116, 145, 175, 204].map((x) => (
+              <line key={`v-${x}`} x1={x} y1="42" x2={x} y2="112" stroke="#38bdf8" strokeWidth="1.6" className="holo-dash" />
+            ))}
+            <circle cx="145" cy="68" r="4.5" fill="#f59e0b" />
+            <circle cx="175" cy="86" r="4.5" fill="#f59e0b" />
+            <circle cx="116" cy="104" r="4.5" fill="#38bdf8" />
+          </g>
+        );
     }
   };
 
@@ -431,10 +515,10 @@ export const FuturisticThumbPreview: React.FC<FuturisticThumbPreviewProps> = ({
       {/* Top HUD Micro-Readout */}
       <div className="pointer-events-none absolute top-2.5 left-5 right-5 flex items-center justify-between text-[10px] font-mono font-bold text-cyan-200/90">
         <span className="inline-flex items-center gap-1.5 tracking-widest">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
           WEBGL · PBR 60FPS
         </span>
-        <span className="tracking-wider text-sky-200/90">QUANTUM HUD</span>
+        <span className="tracking-wider text-sky-200/90">SYNAPSE 3D</span>
       </div>
     </div>
   );

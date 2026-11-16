@@ -27,6 +27,7 @@ import {
   Plus,
   RotateCcw,
   Scissors,
+  Settings2,
   Sliders,
   Sparkles,
   Undo2,
@@ -39,10 +40,19 @@ import { SubjectType } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAudio } from '../../context/AudioContext';
 import {
+  ACTION_2D_OPTIONS,
+  ACTION_3D_OPTIONS,
+  DEFAULT_GESTURE_SETTINGS,
   GESTURE_DEFINITIONS,
+  GESTURE_PRESETS,
+  GestureAction2D,
+  GestureAction3D,
+  GestureSettings,
+  HandControlMode,
   HandGestureId,
   HandGestureTracker,
-  HandTrackingFrame
+  HandTrackingFrame,
+  PointerSource
 } from './handGestureTracker';
 import {
   SPATIAL_2D_MODES,
@@ -77,7 +87,31 @@ export type SpatialModeId =
 export type MaterialFinishId = 'ceramic' | 'crystal' | 'wireframe' | 'gold';
 export type CreativeBrushId = 'tube' | 'cube' | 'sphere' | 'pyramid' | 'torus';
 type SpaceMode = '3d' | '2d';
-type DockTabId = 'gesture' | 'shapes' | 'params' | 'style';
+type DockTabId = 'gesture' | 'shapes' | 'params' | 'style' | 'settings';
+
+const GESTURE_SETTINGS_STORAGE_KEY = 'synapse_spatial_gesture_settings_v1';
+
+function loadGestureSettings(): GestureSettings {
+  try {
+    const raw = localStorage.getItem(GESTURE_SETTINGS_STORAGE_KEY);
+    if (!raw) return DEFAULT_GESTURE_SETTINGS;
+    const parsed = JSON.parse(raw) as Partial<GestureSettings>;
+    return {
+      ...DEFAULT_GESTURE_SETTINGS,
+      ...parsed,
+      gestureActions3D: {
+        ...DEFAULT_GESTURE_SETTINGS.gestureActions3D,
+        ...(parsed.gestureActions3D || {})
+      },
+      gestureActions2D: {
+        ...DEFAULT_GESTURE_SETTINGS.gestureActions2D,
+        ...(parsed.gestureActions2D || {})
+      }
+    };
+  } catch {
+    return DEFAULT_GESTURE_SETTINGS;
+  }
+}
 
 interface SpatialModeMeta {
   id: SpatialModeId;
@@ -366,15 +400,30 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [markerCount, setMarkerCount] = useState<number>(0);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // Camera & Hand Gesture Tracking states
+  // Camera & Hand Gesture Tracking states (persisted user settings)
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [cameraLoading, setCameraLoading] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [mirrorCamera, setMirrorCamera] = useState<boolean>(true);
-  const [sensitivity, setSensitivity] = useState<number>(1.05);
-  const [smoothing, setSmoothing] = useState<number>(0.55);
+  const [gestureSettings, setGestureSettings] = useState<GestureSettings>(() => loadGestureSettings());
   const [virtualGesture, setVirtualGesture] = useState<HandGestureId>('palm_5');
   const [showVirtualPad, setShowVirtualPad] = useState<boolean>(true);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(GESTURE_SETTINGS_STORAGE_KEY, JSON.stringify(gestureSettings));
+    } catch {}
+  }, [gestureSettings]);
+
+  const updateGestureSetting = useCallback(
+    <K extends keyof GestureSettings>(key: K, val: GestureSettings[K]) => {
+      setGestureSettings((prev) => ({ ...prev, [key]: val }));
+    },
+    []
+  );
+
+  const mirrorCamera = gestureSettings.mirrorCamera;
+  const sensitivity = gestureSettings.pinchSensitivity;
+  const smoothing = gestureSettings.smoothing;
 
   const initialFrame: HandTrackingFrame = {
     detected: false,
@@ -436,6 +485,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     mirrorCamera,
     sensitivity,
     smoothing,
+    gestureSettings,
     virtualGesture
   });
   paramsRef.current = {
@@ -458,6 +508,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     mirrorCamera,
     sensitivity,
     smoothing,
+    gestureSettings,
     virtualGesture
   };
 
@@ -1123,21 +1174,35 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     [buildMaterials, disposeModel]
   );
 
-  // Dedicated Unified MediaPipe Hand-Tracking Loop (drives both 2D & 3D spaces seamlessly)
+  // Dedicated Unified MediaPipe Hand-Tracking Loop (FPS-throttled per gestureSettings.trackingFps)
   useEffect(() => {
     if (!cameraActive) return;
     let rafId = 0;
     let cancelled = false;
+    let lastInferMs = 0;
     let lastPush = 0;
 
     const scanHands = (nowMs: number) => {
       if (cancelled) return;
       const cfg = paramsRef.current;
-      if (videoRef.current && trackerRef.current) {
+      const gs = cfg.gestureSettings;
+      const minIntervalMs = 1000 / Math.max(10, gs.trackingFps || 20);
+
+      if (videoRef.current && trackerRef.current && nowMs - lastInferMs >= minIntervalMs) {
+        lastInferMs = nowMs;
         const res = trackerRef.current.process(videoRef.current, {
-          mirror: cfg.mirrorCamera,
-          sensitivity: cfg.sensitivity,
-          smoothing: cfg.smoothing
+          mirror: gs.mirrorCamera,
+          handMode: gs.handMode,
+          pointerSource: gs.pointerSource,
+          sensitivityX: gs.sensitivityX,
+          sensitivityY: gs.sensitivityY,
+          pinchSensitivity: gs.pinchSensitivity,
+          fingerExtendSensitivity: gs.fingerExtendSensitivity,
+          smoothing: gs.smoothing,
+          deadzone: gs.deadzone,
+          stabilityFrames: gs.stabilityFrames,
+          invertX: gs.invertX,
+          invertY: gs.invertY
         });
         handFrameRef.current = res;
 
@@ -1146,7 +1211,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           trackerRef.current.drawOverlay(overlayCanvasRef.current, res, pal.css);
         }
 
-        if (nowMs - lastPush > 85) {
+        if (nowMs - lastPush > 110) {
           lastPush = nowMs;
           setHandFrame(res);
         }
@@ -1177,17 +1242,20 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 160);
     camera.position.set(6.4, 4.8, 7.6);
 
+    const isLightPref = paramsRef.current.gestureSettings.graphicsQuality === 'light';
     const renderer = new THREE.WebGLRenderer({
-      antialias: !softwareGl,
+      antialias: !softwareGl && !isLightPref,
       powerPreference: 'high-performance',
       preserveDrawingBuffer: false
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(softwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(
+      softwareGl || isLightPref ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio, 2)
+    );
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
-    renderer.shadowMap.enabled = !softwareGl;
+    renderer.shadowMap.enabled = !softwareGl && !isLightPref;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.localClippingEnabled = true;
     mount.appendChild(renderer.domElement);
@@ -1209,7 +1277,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
     const keyLight = new THREE.DirectionalLight(0xfff5e4, 2.2);
     keyLight.position.set(6.5, 11, 7.5);
-    keyLight.castShadow = !softwareGl;
+    keyLight.castShadow = !softwareGl && !isLightPref;
     keyLight.shadow.mapSize.set(1024, 1024);
     keyLight.shadow.camera.left = -6;
     keyLight.shadow.camera.right = 6;
@@ -1491,11 +1559,20 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           cursorNormY = 1 - smoothTargetRef.current.cursorY / 3.8;
         }
 
+        const mapped3DAction: GestureAction3D =
+          currentGesture === 'none'
+            ? 'none'
+            : cfg.gestureSettings.gestureActions3D[currentGesture] ?? 'none';
+
+        const shouldPushUi = elapsed - lastUiPush > 0.12;
+        if (shouldPushUi) lastUiPush = elapsed;
+
         const isPinchActive =
           activeControl &&
-          (currentGesture === 'pinch' || (handDetected && (res.hand1Pinching || res.hand2Pinching)));
+          (mapped3DAction === 'pinch_stamp_scale' ||
+            (handDetected && (res.hand1Pinching || res.hand2Pinching) && mapped3DAction !== 'none'));
 
-        if (activeControl) {
+        if (activeControl && mapped3DAction !== 'none') {
           const targetX = (cursorNormX - 0.5) * 6.4;
           const targetY = THREE.MathUtils.clamp((1 - cursorNormY) * 3.8, 0.25, 3.9);
           const targetZ = Math.sin((cursorNormX - 0.5) * Math.PI) * 1.4;
@@ -1503,14 +1580,21 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           smoothTargetRef.current.cursorY = targetY;
           smoothTargetRef.current.cursorZ = targetZ;
 
-          if (currentGesture === 'fist_0') {
+          if (mapped3DAction === 'freeze_lock') {
             if (!cfg.frozen) setFrozen(true);
           } else if (cfg.frozen) {
             setFrozen(false);
           }
 
+          if (mapped3DAction === 'auto_spin_toggle' && shouldPushUi) {
+            setAutoSpin((v) => !v);
+          }
+
           // 1-Finger OR 2-Hand Symmetrical Dual Neon Tube Sculpting
-          if (currentGesture === 'point_1' || (cfg.modeId === 'freehand_oxyz' && currentGesture === 'two_hand_10')) {
+          if (
+            mapped3DAction === 'draw_neon' ||
+            (cfg.modeId === 'freehand_oxyz' && mapped3DAction === 'dual_zoom_tilt')
+          ) {
             if (handDetected && res.handCount === 2 && res.hand1Index && res.hand2Index) {
               const p1x = (res.hand1Index.x - 0.5) * 6.4;
               const p1y = THREE.MathUtils.clamp((1 - res.hand1Index.y) * 3.8, 0.25, 3.9);
@@ -1526,7 +1610,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               if (runtime.activeStrokePointsH2.length > 0) finalizeStrokeChannel(true);
             }
 
-            if (elapsed - lastUiPush > 0.1) {
+            if (shouldPushUi) {
               setOxyzCursor({ x: targetX, y: targetY, z: targetZ });
             }
           } else {
@@ -1534,14 +1618,16 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             if (runtime.activeStrokePointsH2.length > 0) finalizeStrokeChannel(true);
           }
 
-          // Pinch gesture: Modulate Scale/Height/RPM OR Stamp 3D architectural blocks!
-          if (currentGesture === 'pinch') {
+          // Pinch / Stamp gesture: Modulate Scale/Height/RPM OR Stamp 3D architectural blocks!
+          if (mapped3DAction === 'pinch_stamp_scale') {
             const nextScale = THREE.MathUtils.clamp(0.55 + (1 - cursorNormY) * 1.15, 0.5, 1.75);
             const nextHeight = THREE.MathUtils.clamp(0.55 + cursorNormX * 1.25, 0.5, 1.85);
             smoothTargetRef.current.scale = nextScale;
             smoothTargetRef.current.height = nextHeight;
-            setScaleVal(+nextScale.toFixed(2));
-            setHeightVal(+nextHeight.toFixed(2));
+            if (shouldPushUi) {
+              setScaleVal(+nextScale.toFixed(2));
+              setHeightVal(+nextHeight.toFixed(2));
+            }
 
             const nowMs = performance.now();
             if (
@@ -1554,37 +1640,45 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          if (currentGesture === 'slice_2') {
+          if (mapped3DAction === 'slice_plane') {
             if (!cfg.sliceEnabled) setSliceEnabled(true);
             const nextSlice = THREE.MathUtils.clamp((1 - cursorNormY) * 3.8 + 0.1, 0.15, 4.1);
             smoothTargetRef.current.sliceY = nextSlice;
-            setSliceY(+nextSlice.toFixed(2));
+            if (shouldPushUi) {
+              setSliceY(+nextSlice.toFixed(2));
+            }
           }
 
-          if (currentGesture === 'palm_5') {
+          if (mapped3DAction === 'orbit_rotate') {
             const nextRot = (cursorNormX - 0.5) * Math.PI * 2.4;
             const nextExp = THREE.MathUtils.clamp((1 - cursorNormY) * 1.25, 0, 1.2);
             smoothTargetRef.current.rotOffset = nextRot;
             smoothTargetRef.current.explode = nextExp;
-            setExplodeVal(+nextExp.toFixed(2));
+            if (shouldPushUi) {
+              setExplodeVal(+nextExp.toFixed(2));
+            }
           }
 
-          if (currentGesture === 'two_hand_10') {
+          if (mapped3DAction === 'dual_zoom_tilt') {
             const nextScale = THREE.MathUtils.clamp(0.5 + twoHandSpanVal * 1.55, 0.55, 1.75);
             const nextRot = (cursorNormX - 0.5) * Math.PI * 2.2;
             const nextTilt = handDetected ? THREE.MathUtils.clamp(res.twoHandAngle * 0.55, -0.55, 0.55) : 0;
             smoothTargetRef.current.scale = nextScale;
             smoothTargetRef.current.rotOffset = nextRot;
             smoothTargetRef.current.tiltOffset = nextTilt;
-            setScaleVal(+nextScale.toFixed(2));
+            if (shouldPushUi) {
+              setScaleVal(+nextScale.toFixed(2));
+            }
           } else {
             smoothTargetRef.current.tiltOffset = 0;
           }
 
-          if (currentGesture === 'morph_3') {
+          if (mapped3DAction === 'explode_layers') {
             const focusExp = THREE.MathUtils.clamp((1 - cursorNormY) * 1.15, 0.1, 1.15);
             smoothTargetRef.current.explode = focusExp;
-            setExplodeVal(+focusExp.toFixed(2));
+            if (shouldPushUi) {
+              setExplodeVal(+focusExp.toFixed(2));
+            }
           }
 
           if (!awardFlagRef.current && onEarnXP) {
@@ -1793,6 +1887,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const softwareGl = isSoftwareWebGL();
     rebuildModel(rt, modeId, finish, activePalette, softwareGl);
   }, [modeId, finish, activePalette, rebuildModel]);
+
+  useEffect(() => {
+    const rt = runtimeRef.current;
+    if (!rt) return;
+    const softwareGl = isSoftwareWebGL();
+    const isLight = gestureSettings.graphicsQuality === 'light';
+    rt.renderer.setPixelRatio(
+      softwareGl || isLight ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio, 2)
+    );
+    rt.renderer.shadowMap.enabled = !softwareGl && !isLight;
+  }, [gestureSettings.graphicsQuality]);
 
   // Resize WebGL properly whenever toggling back from 2D -> 3D
   useEffect(() => {
@@ -2119,6 +2224,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             virtualGesture={virtualGesture}
             frozen={frozen}
             handFrameRef={handFrameRef}
+            gestureSettings={gestureSettings}
             onMetricsChange={setMetrics2D}
           />
         </div>
@@ -2446,18 +2552,19 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     [
                       {
                         id: 'shapes',
-                        labelVi: spaceMode === '2d' ? '6 Xưởng Hình Học 2D' : '15 Mô Hình 3D Tiên Tiến',
-                        labelEn: spaceMode === '2d' ? '6 2D Geometry Labs' : '15 Advanced 3D Creations',
+                        labelVi: spaceMode === '2d' ? '6 Xưởng Hình Học 2D' : '15 Mô Hình 3D',
+                        labelEn: spaceMode === '2d' ? '6 2D Labs' : '15 3D Models',
                         icon: Box
                       },
-                      { id: 'gesture', labelVi: '7 Cử Chỉ Tay & Cam', labelEn: '7 Hand Gestures', icon: Hand },
+                      { id: 'gesture', labelVi: '7 Cử Chỉ Tay', labelEn: '7 Gestures', icon: Hand },
                       {
                         id: 'params',
-                        labelVi: spaceMode === '2d' ? 'Công Cụ Dựng Hình' : 'Sáng Tạo & Cắt Lớp',
-                        labelEn: spaceMode === '2d' ? '2D Tools' : 'Sculpt & Params',
+                        labelVi: spaceMode === '2d' ? 'Công Cụ 2D' : 'Sáng Tạo & Cắt',
+                        labelEn: spaceMode === '2d' ? '2D Tools' : 'Sculpt & Cut',
                         icon: Sliders
                       },
-                      { id: 'style', labelVi: 'Chất Liệu & Xuất File', labelEn: 'Finish & Export', icon: Sparkles }
+                      { id: 'settings', labelVi: 'Cài Đặt Cảm Biến & Phím', labelEn: 'Sensor & Action Map', icon: Settings2 },
+                      { id: 'style', labelVi: 'Chất Liệu & Xuất', labelEn: 'Finish & Export', icon: Sparkles }
                     ] as const
                   ).map((tab) => {
                     const Icon = tab.icon;
@@ -2674,41 +2781,41 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     })}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 items-center text-[11px]">
-                    <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 items-center text-[11px]">
+                    <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1.5 rounded-md border border-slate-800">
                       <span className="text-slate-300 font-semibold">
-                        {isEn ? 'Pinch Sensitivity' : 'Độ nhạy Chụm'} ({sensitivity.toFixed(2)}x)
+                        {isEn ? 'Pinch Sensitivity' : 'Độ nhạy Chụm'} ({gestureSettings.pinchSensitivity.toFixed(2)}x)
                       </span>
                       <input
                         type="range"
                         min={0.6}
-                        max={1.5}
+                        max={1.6}
                         step={0.05}
-                        value={sensitivity}
-                        onChange={(e) => setSensitivity(Number(e.target.value))}
+                        value={gestureSettings.pinchSensitivity}
+                        onChange={(e) => updateGestureSetting('pinchSensitivity', Number(e.target.value))}
                         className="w-24 accent-cyan-400"
                       />
                     </div>
-                    <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                    <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1.5 rounded-md border border-slate-800">
                       <span className="text-slate-300 font-semibold">
-                        {isEn ? '10-Tip Smoothing' : 'Độ mượt 10 Ngón'} ({Math.round(smoothing * 100)}%)
+                        {isEn ? '10-Tip Smoothing' : 'Độ mượt 10 Ngón'} ({Math.round(gestureSettings.smoothing * 100)}%)
                       </span>
                       <input
                         type="range"
                         min={0.1}
                         max={0.9}
                         step={0.05}
-                        value={smoothing}
-                        onChange={(e) => setSmoothing(Number(e.target.value))}
+                        value={gestureSettings.smoothing}
+                        onChange={(e) => updateGestureSetting('smoothing', Number(e.target.value))}
                         className="w-24 accent-cyan-400"
                       />
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setMirrorCamera((v) => !v)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer ${
-                          mirrorCamera
+                        onClick={() => updateGestureSetting('mirrorCamera', !gestureSettings.mirrorCamera)}
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-bold cursor-pointer ${
+                          gestureSettings.mirrorCamera
                             ? 'bg-cyan-500/15 border-cyan-400/60 text-cyan-300'
                             : 'bg-slate-900 border-slate-700 text-slate-300'
                         }`}
@@ -2722,10 +2829,364 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                           trackerRef.current?.resetSmoothing();
                           showToast(isEn ? 'Reset 10-finger tracker lock' : 'Đã đặt lại khóa 10 đầu ngón');
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-xs font-bold text-slate-300 cursor-pointer"
+                        className="px-3 py-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-slate-500 text-xs font-bold text-slate-300 cursor-pointer"
                       >
                         {isEn ? 'Reset Lock' : 'Reset Khóa'}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setDockTab('settings')}
+                        className="px-3 py-1.5 rounded-md bg-sky-500/15 border border-sky-400/60 text-xs font-bold text-sky-300 hover:bg-sky-500/25 cursor-pointer"
+                      >
+                        {isEn ? 'Tune All' : 'Cài đặt sâu'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: FULL SENSOR SENSITIVITY, HAND MODE & CUSTOM ACTION REMAPPING */}
+              {dockTab === 'settings' && (
+                <div className="space-y-2.5 max-h-[210px] overflow-y-auto pr-1 text-[11px]">
+                  {/* Presets & Reset */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 px-3 py-2 rounded-md border border-slate-800">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-bold text-slate-300 mr-1">
+                        {isEn ? 'Quick Presets:' : 'Cấu hình nhanh:'}
+                      </span>
+                      {GESTURE_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => {
+                            setGestureSettings((prev) => ({ ...prev, ...preset.patch }));
+                            showToast(
+                              isEn ? `Applied preset: ${preset.labelEn}` : `Đã áp dụng: ${preset.labelVi}`
+                            );
+                          }}
+                          className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-sky-500/20 border border-slate-700 hover:border-sky-400 text-slate-200 font-semibold cursor-pointer"
+                          title={isEn ? preset.descEn : preset.descVi}
+                        >
+                          {isEn ? preset.labelEn : preset.labelVi}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGestureSettings(DEFAULT_GESTURE_SETTINGS);
+                        trackerRef.current?.resetSmoothing();
+                        showToast(isEn ? 'Restored defaults' : 'Đã khôi phục mặc định');
+                      }}
+                      className="px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 hover:border-rose-400 text-rose-300 font-bold cursor-pointer"
+                    >
+                      {isEn ? 'Reset Defaults' : 'Mặc định'}
+                    </button>
+                  </div>
+
+                  {/* Hand Mode, Pointer Source, FPS, Graphics Quality & Axes Invert */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <label className="block font-bold text-slate-300">
+                        {isEn ? 'Hand Tracking Mode' : 'Phương thức tay'}
+                      </label>
+                      <select
+                        value={gestureSettings.handMode}
+                        onChange={(e) => updateGestureSetting('handMode', e.target.value as HandControlMode)}
+                        className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-700 text-slate-100 font-semibold"
+                      >
+                        <option value="auto">{isEn ? 'Auto (1–2 Hands)' : 'Tự động (1 hoặc 2 tay)'}</option>
+                        <option value="right_only">{isEn ? 'Right Hand Only' : 'Chỉ dùng Tay Phải'}</option>
+                        <option value="left_only">{isEn ? 'Left Hand Only' : 'Chỉ dùng Tay Trái'}</option>
+                        <option value="two_hands_split">{isEn ? '2 Hands Split Control' : '2 Tay Tách Độc Lập'}</option>
+                      </select>
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <label className="block font-bold text-slate-300">
+                        {isEn ? 'Pointer Anchor' : 'Điểm neo con trỏ'}
+                      </label>
+                      <select
+                        value={gestureSettings.pointerSource}
+                        onChange={(e) => updateGestureSetting('pointerSource', e.target.value as PointerSource)}
+                        className="w-full px-2 py-1 rounded-md bg-slate-950 border border-slate-700 text-slate-100 font-semibold"
+                      >
+                        <option value="index">{isEn ? 'Index Fingertip (#2)' : 'Đầu ngón Trỏ'}</option>
+                        <option value="middle">{isEn ? 'Middle Fingertip (#3)' : 'Đầu ngón Giữa'}</option>
+                        <option value="pinch_mid">{isEn ? 'Pinch Midpoint (Thumb-Index)' : 'Trung điểm Cái–Trỏ'}</option>
+                        <option value="palm_center">{isEn ? 'Palm Center' : 'Tâm Lòng Bàn Tay'}</option>
+                      </select>
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <label className="block font-bold text-slate-300">
+                        {isEn ? 'AI Camera Rate' : 'Tần số quét Camera AI'}
+                      </label>
+                      <div className="grid grid-cols-3 gap-1">
+                        {([12, 20, 30] as const).map((fps) => (
+                          <button
+                            key={fps}
+                            type="button"
+                            onClick={() => updateGestureSetting('trackingFps', fps)}
+                            className={`py-1 rounded-md border font-bold cursor-pointer ${
+                              gestureSettings.trackingFps === fps
+                                ? 'bg-sky-500 text-slate-950 border-sky-300'
+                                : 'bg-slate-950 border-slate-700 text-slate-300'
+                            }`}
+                          >
+                            {fps} FPS
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <label className="block font-bold text-slate-300">
+                        {isEn ? '3D Graphics Quality' : 'Chất lượng đồ họa 3D'}
+                      </label>
+                      <div className="grid grid-cols-2 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => updateGestureSetting('graphicsQuality', 'light')}
+                          className={`py-1 rounded-md border font-bold cursor-pointer ${
+                            gestureSettings.graphicsQuality === 'light'
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                              : 'bg-slate-950 border-slate-700 text-slate-300'
+                          }`}
+                        >
+                          {isEn ? 'Smooth FPS' : 'Nhẹ (Mượt)'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateGestureSetting('graphicsQuality', 'high')}
+                          className={`py-1 rounded-md border font-bold cursor-pointer ${
+                            gestureSettings.graphicsQuality === 'high'
+                              ? 'bg-sky-500 text-slate-950 border-sky-300'
+                              : 'bg-slate-950 border-slate-700 text-slate-300'
+                          }`}
+                        >
+                          {isEn ? 'High Detail' : 'Sắc nét'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Precision Sensitivity & Stability Sliders */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-300">
+                        <span>{isEn ? 'X Sensitivity' : 'Độ nhạy Ngang X'}</span>
+                        <span className="font-mono text-cyan-300">{gestureSettings.sensitivityX.toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={2.0}
+                        step={0.05}
+                        value={gestureSettings.sensitivityX}
+                        onChange={(e) => updateGestureSetting('sensitivityX', Number(e.target.value))}
+                        className="w-full accent-cyan-400"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-300">
+                        <span>{isEn ? 'Y Sensitivity' : 'Độ nhạy Dọc Y'}</span>
+                        <span className="font-mono text-cyan-300">{gestureSettings.sensitivityY.toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={2.0}
+                        step={0.05}
+                        value={gestureSettings.sensitivityY}
+                        onChange={(e) => updateGestureSetting('sensitivityY', Number(e.target.value))}
+                        className="w-full accent-cyan-400"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-300">
+                        <span>{isEn ? 'Pinch Trigger' : 'Độ nhạy Chụm'}</span>
+                        <span className="font-mono text-amber-300">{gestureSettings.pinchSensitivity.toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.6}
+                        max={1.6}
+                        step={0.05}
+                        value={gestureSettings.pinchSensitivity}
+                        onChange={(e) => updateGestureSetting('pinchSensitivity', Number(e.target.value))}
+                        className="w-full accent-amber-400"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-300">
+                        <span>{isEn ? 'Extend Threshold' : 'Độ nhạy Duỗi Ngón'}</span>
+                        <span className="font-mono text-emerald-300">{gestureSettings.fingerExtendSensitivity.toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.6}
+                        max={1.5}
+                        step={0.05}
+                        value={gestureSettings.fingerExtendSensitivity}
+                        onChange={(e) => updateGestureSetting('fingerExtendSensitivity', Number(e.target.value))}
+                        className="w-full accent-emerald-400"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-300">
+                        <span>{isEn ? 'Smoothing' : 'Độ mượt chuyển động'}</span>
+                        <span className="font-mono text-sky-300">{Math.round(gestureSettings.smoothing * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.1}
+                        max={0.9}
+                        step={0.05}
+                        value={gestureSettings.smoothing}
+                        onChange={(e) => updateGestureSetting('smoothing', Number(e.target.value))}
+                        className="w-full accent-sky-400"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-300">
+                        <span>{isEn ? 'Deadzone' : 'Vùng chết chống rung'}</span>
+                        <span className="font-mono text-sky-300">{(gestureSettings.deadzone * 100).toFixed(1)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={0.04}
+                        step={0.002}
+                        value={gestureSettings.deadzone}
+                        onChange={(e) => updateGestureSetting('deadzone', Number(e.target.value))}
+                        className="w-full accent-sky-400"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-300">
+                        <span>{isEn ? 'Hold Frames' : 'Số khung ổn định'}</span>
+                        <span className="font-mono text-purple-300">{gestureSettings.stabilityFrames}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={8}
+                        step={1}
+                        value={gestureSettings.stabilityFrames}
+                        onChange={(e) => updateGestureSetting('stabilityFrames', Number(e.target.value))}
+                        className="w-full accent-purple-400"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 flex flex-col justify-between gap-1">
+                      <span className="font-semibold text-slate-300">{isEn ? 'Axis & Mirror' : 'Đảo trục & Gương'}</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => updateGestureSetting('mirrorCamera', !gestureSettings.mirrorCamera)}
+                          className={`flex-1 py-1 rounded-md border font-bold cursor-pointer ${
+                            gestureSettings.mirrorCamera
+                              ? 'bg-sky-500/20 border-sky-400 text-sky-300'
+                              : 'bg-slate-950 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          {isEn ? 'Mir' : 'Gương'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateGestureSetting('invertX', !gestureSettings.invertX)}
+                          className={`flex-1 py-1 rounded-md border font-bold cursor-pointer ${
+                            gestureSettings.invertX
+                              ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                              : 'bg-slate-950 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          Đảo X
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateGestureSetting('invertY', !gestureSettings.invertY)}
+                          className={`flex-1 py-1 rounded-md border font-bold cursor-pointer ${
+                            gestureSettings.invertY
+                              ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                              : 'bg-slate-950 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          Đảo Y
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Per-Gesture Custom Action Remapping Table */}
+                  <div className="bg-slate-900 p-2.5 rounded-md border border-slate-800 space-y-2">
+                    <div className="font-bold text-slate-200">
+                      {isEn
+                        ? 'Custom Gesture Action Mapping (Per-Operation Preference)'
+                        : 'Gán chức năng tùy chỉnh cho từng thao tác tay (3D & 2D)'}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {GESTURE_DEFINITIONS.map((g) => (
+                        <div
+                          key={g.id}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-slate-950/90 px-2.5 py-1.5 rounded-md border border-slate-800"
+                        >
+                          <div className="flex items-center gap-1.5 min-w-[140px]">
+                            <span
+                              className="w-2 h-2 rounded-xs shrink-0"
+                              style={{ backgroundColor: g.accent }}
+                            />
+                            <span className="font-bold text-slate-200 truncate">
+                              {isEn ? g.labelEn.split('·')[0] : g.labelVi.split('·')[0]}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-1">
+                            <select
+                              value={gestureSettings.gestureActions3D[g.id]}
+                              onChange={(e) => {
+                                const val = e.target.value as GestureAction3D;
+                                setGestureSettings((prev) => ({
+                                  ...prev,
+                                  gestureActions3D: { ...prev.gestureActions3D, [g.id]: val }
+                                }));
+                              }}
+                              aria-label={`3D action for ${g.id}`}
+                              className="flex-1 min-w-0 px-1.5 py-1 rounded-md bg-slate-900 border border-slate-700 text-sky-200 text-[10px] font-semibold"
+                            >
+                              {ACTION_3D_OPTIONS.map((opt) => (
+                                <option key={opt.id} value={opt.id}>
+                                  3D: {isEn ? opt.labelEn : opt.labelVi}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={gestureSettings.gestureActions2D[g.id]}
+                              onChange={(e) => {
+                                const val = e.target.value as GestureAction2D;
+                                setGestureSettings((prev) => ({
+                                  ...prev,
+                                  gestureActions2D: { ...prev.gestureActions2D, [g.id]: val }
+                                }));
+                              }}
+                              aria-label={`2D action for ${g.id}`}
+                              className="flex-1 min-w-0 px-1.5 py-1 rounded-md bg-slate-900 border border-slate-700 text-emerald-200 text-[10px] font-semibold"
+                            >
+                              {ACTION_2D_OPTIONS.map((opt) => (
+                                <option key={opt.id} value={opt.id}>
+                                  2D: {isEn ? opt.labelEn : opt.labelVi}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

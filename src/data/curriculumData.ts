@@ -561,12 +561,11 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       'Nhầm lẫn giữa quy tắc lật đồ thị của $y = |f(x)|$ (lật qua Ox) và $y = f(|x|)$ (đối xứng qua Oy).'
     ],
     theory: [
-      '1. Hàm số $y = |f(x)|$: Là hàm số luôn không âm. Đồ thị nhận được bằng cách giữ nguyên phần đồ thị $y = f(x)$ nằm phía trên trục hoành, lấy đối xứng phần nằm phía dưới qua trục hoành rồi xóa bỏ phần dưới.',
-      '2. Công thức giải nhanh số điểm cực trị của $y = |f(x)|$: $N = a + b$, trong đó:',
-      '   - $a$ là số điểm cực trị của hàm số $f(x)$.',
-      '   - $b$ là số nghiệm đơn (hoặc bội lẻ) của phương trình $f(x) = 0$.',
-      '3. Hàm số $y = f(|x|)$: Là hàm số chẵn. Đồ thị nhận trục Oy làm trục đối xứng. Được vẽ bằng cách bỏ phần bên trái Oy, giữ nguyên phần bên phải Oy và lấy đối xứng phần bên phải qua Oy.',
-      '4. Số điểm cực trị của $y = f(|x|)$: $N = 2k + 1$, trong đó $k$ là số điểm cực trị dương của hàm số $f(x)$ ($x_i > 0$).'
+      '1. Hàm số $y = |f(x)|$: Vì giá trị tuyệt đối luôn $\\ge 0$, phần đồ thị nằm phía trên trục $Ox$ được giữ nguyên, còn phần nằm dưới trục $Ox$ bị "lật đối xứng" ngược lên trên.',
+      '2. Tại sao $N_{|f(x)|} = a + b$? Các điểm cực trị cũ của $f(x)$ ($a$ điểm) vẫn giữ nguyên (dù lật lên hay giữ nguyên). Ngoài ra, mỗi chỗ đồ thị $f(x)$ cắt xuyên qua trục $Ox$ ($b$ nghiệm đơn) khi bị lật lên sẽ tạo thành một "đáy chữ V nhọn" — đó chính là điểm cực tiểu mới!',
+      '   - $a$: số điểm cực trị của hàm số $f(x)$.\n   - $b$: số nghiệm đơn (cắt xuyên $Ox$) của phương trình $f(x) = 0$ (điểm tiếp xúc không tạo góc nhọn nên không tính).',
+      '3. Hàm số $y = f(|x|)$: Là hàm số chẵn nên đối xứng qua trục tung $Oy$ (giữ nguyên nhánh bên phải $Oy$, xóa nhánh bên trái rồi lấy đối xứng nhánh phải sang).',
+      '4. Số điểm cực trị của $y = f(|x|)$: $N = 2k + 1$, với $k$ là số điểm cực trị có hoành độ dương ($x_i > 0$) của $f(x)$ (cộng thêm $1$ điểm cực trị gãy nhọn tại $x = 0$).'
     ],
     keyFormulas: [
       'N_{|f(x)|} = a + b',
@@ -1365,12 +1364,12 @@ const BASE_MATH_LECTURES: MathLecture[] = [
   // ==========================================
   {
     id: 'math-10-3',
-    title: 'Mệnh đề, Tập hợp & Hệ Bất phương trình Bậc nhất Hai ẩn (Tối ưu Tuyến tính)',
+    title: 'Mệnh đề, Tập hợp & Hệ Bất phương trình Bậc nhất Hai ẩn (Bài toán Tối ưu)',
     grade: 'Lớp 10 - Đại số',
     category: 'Đại số',
     difficulty: 'Thông hiểu',
     readTimeMinutes: 10,
-    description: 'Mệnh đề chứa biến, phủ định $\\forall \\leftrightarrow \\exists$, các phép toán tập hợp và ứng dụng miền nghiệm đa giác lồi giải bài toán quy hoạch tuyến tính tìm lợi nhuận lớn nhất.',
+    description: 'Mệnh đề chứa biến, cách phủ định $\\forall \\leftrightarrow \\exists$, các phép toán tập hợp và cách vẽ miền nghiệm đa giác để giải bài toán thực tế tìm lợi nhuận lớn nhất / chi phí nhỏ nhất.',
     mnemonics: [
       'Phủ định: $\\forall x \\in X, P(x) \\xrightarrow{\\text{phủ định}} \\exists x \\in X, \\overline{P(x)}$.',
       'Kiểm tra miền nghiệm của $ax + by \\le c$: thay điểm gốc $O(0; 0)$ (nếu đường thẳng không đi qua $O$); nếu đúng thì lấy nửa mặt phẳng chứa $O$.',
@@ -1382,9 +1381,9 @@ const BASE_MATH_LECTURES: MathLecture[] = [
     ],
     theory: [
       '1. Mệnh đề kéo theo $P \\Rightarrow Q$: Chỉ sai khi $P$ đúng và $Q$ sai. Mệnh đề đảo là $Q \\Rightarrow P$. Hai mệnh đề $P, Q$ tương đương ($P \\Leftrightarrow Q$) khi cả chiều thuận và đảo đều đúng.',
-      '2. Các phép toán trên tập hợp: Hợp $A \\cup B$ (thuộc A hoặc B), Giao $A \\cap B$ (thuộc cả A và B), Hiệu $A \\setminus B$ (thuộc A nhưng không thuộc B). Công thức lực lượng: $n(A \\cup B) = n(A) + n(B) - n(A \\cap B)$.',
-      '3. Bất phương trình bậc nhất hai ẩn $ax + by \\le c$: Nghiệm biểu diễn là một nửa mặt phẳng bờ là đường thẳng $ax + by = c$.',
-      '4. Bài toán kinh tế / quy hoạch tuyến tính: Thiết lập hệ bất phương trình ràng buộc nguyên liệu/thời gian, vẽ miền đa giác lồi và tính giá trị hàm mục tiêu $F(x, y)$ tại tất cả các đỉnh.'
+      '2. Các phép toán trên tập hợp: Hợp $A \\cup B$ (thuộc A hoặc B), Giao $A \\cap B$ (thuộc cả A và B), Hiệu $A \\setminus B$ (thuộc A nhưng không thuộc B). Công thức đếm phần tử: $n(A \\cup B) = n(A) + n(B) - n(A \\cap B)$.',
+      '3. Bất phương trình bậc nhất hai ẩn $ax + by \\le c$: Nghiệm là một nửa mặt phẳng có bờ là đường thẳng $ax + by = c$.',
+      '4. Bài toán kinh tế / tối ưu thực tế: Chuyển các điều kiện nguyên liệu, thời gian thành hệ bất phương trình bậc nhất hai ẩn, vẽ miền nghiệm hình đa giác rồi tính giá trị $F(x, y)$ tại tất cả các đỉnh để tìm giá trị lớn nhất hoặc nhỏ nhất.'
     ],
     keyFormulas: [
       'n(A \\cup B) = n(A) + n(B) - n(A \\cap B)',
@@ -2172,10 +2171,10 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       'Đánh giá hai phần riêng lẻ nhưng dấu "=" không xảy ra đồng thời tại cùng một giá trị biến.'
     ],
     theory: [
-      '1. Bất đẳng thức AM-GM (Cô-si) cho 2 số không âm $a, b \\ge 0$: $\\frac{a + b}{2} \\ge \\sqrt{ab} \\iff a + b \\ge 2\\sqrt{ab}$ hay $ab \\le \\frac{(a+b)^2}{4}$. Dấu "=" xảy ra $\\iff a = b$.',
-      '2. Bất đẳng thức Cô-si cộng mẫu (Engel / Cauchy-Schwarz dạng phân thức): Với $a, b, x, y > 0$: $\\frac{a^2}{x} + \\frac{b^2}{y} \\ge \\frac{(a+b)^2}{x+y}$, đặc biệt $\\frac{1}{x} + \\frac{1}{y} \\ge \\frac{4}{x+y}$.',
-      '3. Kỹ thuật chọn điểm rơi với hàm $P = mx + \\frac{n}{x}$ ($x \\ge x_0$): Nếu cực trị đạt tại biên $x = x_0$, ta tách $mx = k x + (m - k)x$ sao cho $k x_0 = \\frac{n}{x_0} \\implies k = \\frac{n}{x_0^2}$.',
-      '4. Bất đẳng thức Bunhiacopxki (Cauchy-Schwarz) 2 cặp số: $(a^2+b^2)(x^2+y^2) \\ge (ax+by)^2$, dấu "=" khi $\\frac{a}{x} = \\frac{b}{y}$.'
+      '1. Bất đẳng thức Cô-si (AM-GM) cho 2 số không âm $a, b \\ge 0$: Xuất phát từ $(\\sqrt{a} - \\sqrt{b})^2 \\ge 0$, ta có $a + b \\ge 2\\sqrt{ab}$ hay $ab \\le \\frac{(a+b)^2}{4}$. Dấu "=" xảy ra $\\iff a = b$.',
+      '2. Hệ quả cộng mẫu thường dùng thi vào 10: Với $x, y > 0$, từ $(x+y)\\left(\\frac{1}{x}+\\frac{1}{y}\\right) \\ge 4$ suy ra $\\frac{1}{x} + \\frac{1}{y} \\ge \\frac{4}{x+y}$ (mở rộng nâng cao có dạng $\\frac{a^2}{x} + \\frac{b^2}{y} \\ge \\frac{(a+b)^2}{x+y}$).',
+      '3. Kỹ thuật chọn điểm rơi với $P = mx + \\frac{n}{x}$ ($x \\ge x_0$): Khi dấu "=" tự nhiên nằm ngoài vùng cho phép, dự đoán cực trị tại biên $x = x_0$ rồi tách $mx = kx + (m - k)x$ sao cho $k x_0 = \\frac{n}{x_0} \\implies k = \\frac{n}{x_0^2}$.',
+      '4. Bất đẳng thức Bunhiacopxki (tham khảo mở rộng): $(a^2+b^2)(x^2+y^2) \\ge (ax+by)^2$ (chứng minh nhanh bằng cách chuyển vế thu được $(ay - bx)^2 \\ge 0$), dấu "=" khi $\\frac{a}{x} = \\frac{b}{y}$.'
     ],
     keyFormulas: [
       'a + b \\ge 2\\sqrt{ab} \\quad (a, b \\ge 0)',

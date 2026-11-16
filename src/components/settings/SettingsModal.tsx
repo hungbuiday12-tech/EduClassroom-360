@@ -32,7 +32,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import {
   useBackgroundTheme,
   CREATURE_THEME_OPTIONS,
-  PERFORMANCE_MODE_OPTIONS
+  PERFORMANCE_MODE_OPTIONS,
+  BACKGROUND_STYLE_OPTIONS
 } from '../../context/BackgroundContext';
 import { useAudio } from '../../context/AudioContext';
 import {
@@ -77,7 +78,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const isEn = language === 'en';
-  const { creatureTheme, setCreatureTheme, perfMode, setPerfMode } = useBackgroundTheme();
+  const { creatureTheme, setCreatureTheme, perfMode, setPerfMode, bgStyle, setBgStyle } =
+    useBackgroundTheme();
   const {
     clickSound,
     setClickSound,
@@ -247,7 +249,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     },
     {
       id: 'appearance',
-      label: isEn ? 'UI & Creatures' : 'Giao diện & Sinh vật',
+      label: isEn ? 'Theme & PC Spec' : 'Giao diện nền & Cấu hình',
       icon: <SlidersHorizontal className="w-4 h-4" />
     },
     {
@@ -728,36 +730,101 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
-                <div className="flex items-center justify-between">
+              {/* PC-Spec Background Style Selector */}
+              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
-                    <Wand2 className="w-4 h-4 text-indigo-500" />
-                    <span>{isEn ? 'Interactive Background Creatures' : 'Sinh vật nền tương tác (Sóng nước & Hoảng loạn 2s)'}</span>
+                    <Sparkles className="w-4 h-4 text-sky-500" />
+                    <span>
+                      {isEn
+                        ? 'Workspace Background Style (By PC Specs)'
+                        : 'Chế độ Nền Tùy Chỉnh Theo Cấu Hình Máy'}
+                    </span>
                   </div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {isEn ? 'Auto-tunes Canvas load' : 'Tự động tối ưu tải GPU/CPU'}
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {CREATURE_THEME_OPTIONS.map((opt) => {
-                    const selected = opt.id === creatureTheme;
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {BACKGROUND_STYLE_OPTIONS.map((opt) => {
+                    const selected = opt.id === bgStyle;
                     return (
                       <button
                         key={opt.id}
                         type="button"
-                        onClick={() => setCreatureTheme(opt.id)}
-                        className={`px-3 py-2.5 rounded-xl border text-left text-xs font-semibold transition-all cursor-pointer ${
+                        onClick={() => setBgStyle(opt.id, true)}
+                        className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex items-start gap-3 ${
                           selected
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-indigo-400'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-white/10 hover:border-sky-400'
                         }`}
                       >
-                        {isEn ? opt.labelEn : opt.labelVi}
+                        <span
+                          aria-hidden="true"
+                          className="w-8 h-8 rounded-md border border-white/25 shrink-0 mt-0.5 shadow-inner"
+                          style={{ background: opt.previewGradient }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold leading-snug">
+                            {isEn ? opt.labelEn : opt.labelVi}
+                          </div>
+                          <div
+                            className={`text-[10px] font-semibold mt-0.5 ${
+                              selected ? 'text-sky-100' : 'text-sky-600 dark:text-sky-400'
+                            }`}
+                          >
+                            {isEn ? opt.specBadgeEn : opt.specBadgeVi}
+                          </div>
+                          <div
+                            className={`text-[11px] mt-1 leading-snug ${
+                              selected ? 'text-blue-50/90' : 'text-slate-500 dark:text-slate-400'
+                            }`}
+                          >
+                            {isEn ? opt.descEn : opt.descVi}
+                          </div>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
+              {bgStyle === 'cosmic_galaxy' && (
+                <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                      <Wand2 className="w-4 h-4 text-sky-500" />
+                      <span>
+                        {isEn
+                          ? 'Interactive Background Creatures'
+                          : 'Sinh vật nền tương tác (chế độ Vũ trụ)'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {CREATURE_THEME_OPTIONS.map((opt) => {
+                      const selected = opt.id === creatureTheme;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setCreatureTheme(opt.id)}
+                          className={`px-3 py-2 rounded-lg border text-left text-xs font-semibold transition-all cursor-pointer ${
+                            selected
+                              ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
+                          }`}
+                        >
+                          {isEn ? opt.labelEn : opt.labelVi}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* FPS & Graphics Performance Tier */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                   <Gauge className="w-4 h-4 text-sky-500" />
                   <span>{isEn ? 'FPS & Graphics Performance Mode' : 'Tối ưu FPS & Chất lượng Đồ họa'}</span>
@@ -770,7 +837,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={opt.id}
                         type="button"
                         onClick={() => setPerfMode(opt.id)}
-                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                        className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                           selected
                             ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'

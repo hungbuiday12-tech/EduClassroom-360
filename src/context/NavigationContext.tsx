@@ -1,14 +1,18 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { SubjectType } from '../types';
+import { Physics3DMode, PhysicsDomainId, PhysicsSimType, SubjectType } from '../types';
 import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
+import { PHYSICS_DOMAINS } from '../data/physicsDomainsData';
 
 export interface NavLocation {
   subject: SubjectType;
   mathTab: 'lectures' | 'grapher' | 'geometry' | 'math3d';
   mathViewMode: 'catalog' | 'lecture';
   mathLectureId: string;
-  physicsView: 'catalog' | 'lecture';
+  physicsView: 'catalog' | 'lecture' | 'sim2d_hub' | 'sim3d_hub';
+  physicsDomain: PhysicsDomainId;
+  physicsSim2D: PhysicsSimType;
+  physicsSim3D: Physics3DMode;
   physicsLessonId: string;
   physicsTab: 'theory' | 'simulation' | 'sim3d' | 'practice';
   csViewMode: 'curriculum' | 'judge' | 'custom' | 'visualizer';
@@ -29,6 +33,9 @@ const DEFAULT_LOCATION: NavLocation = {
   mathViewMode: 'catalog',
   mathLectureId: MATH_LECTURES[0]?.id || '',
   physicsView: 'catalog',
+  physicsDomain: 'mechanics',
+  physicsSim2D: 'kinematics_graphs',
+  physicsSim3D: 'kinematics_3d',
   physicsLessonId: PHYSICS_LESSONS[0]?.id || '',
   physicsTab: 'theory',
   csViewMode: 'curriculum',
@@ -70,7 +77,17 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       return loc.mathViewMode === 'lecture'
         ? isEn ? 'Math Lecture' : 'Bài giảng Toán'
         : isEn ? 'Mathematics' : 'Toán học';
-    case 'physics':
+    case 'physics_sims':
+      return isEn ? 'Physics 2D & 3D Simulations' : 'Mô phỏng Vật lí 2D & 3D';
+    case 'physics': {
+      const domainName =
+        PHYSICS_DOMAINS.find((d) => d.id === loc.physicsDomain)?.shortName || 'Vật lí';
+      if (loc.physicsView === 'sim2d_hub') {
+        return isEn ? `2D Lab · ${domainName}` : `Mô phỏng 2D · ${domainName}`;
+      }
+      if (loc.physicsView === 'sim3d_hub') {
+        return isEn ? `3D Lab · ${domainName}` : `Mô phỏng 3D · ${domainName}`;
+      }
       if (loc.physicsView === 'lecture') {
         if (loc.physicsTab === 'simulation') return isEn ? 'Physics 2D Lab' : 'Lab Vật lí 2D';
         if (loc.physicsTab === 'sim3d') return isEn ? 'Physics 3D Lab' : 'Lab Vật lí 3D';
@@ -78,6 +95,7 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
         return isEn ? 'Physics Lecture' : 'Bài giảng Vật lí';
       }
       return isEn ? 'Physics' : 'Vật lí';
+    }
     case 'cs':
       if (loc.csViewMode === 'visualizer') return isEn ? 'Algorithm Graph & Sim' : 'Đồ thị & Mô phỏng Thuật toán';
       if (loc.csViewMode === 'judge') return 'Online Judge';
@@ -107,6 +125,9 @@ function isSameLocation(a: NavLocation, b: NavLocation): boolean {
     a.mathViewMode === b.mathViewMode &&
     a.mathLectureId === b.mathLectureId &&
     a.physicsView === b.physicsView &&
+    a.physicsDomain === b.physicsDomain &&
+    a.physicsSim2D === b.physicsSim2D &&
+    a.physicsSim3D === b.physicsSim3D &&
     a.physicsLessonId === b.physicsLessonId &&
     a.physicsTab === b.physicsTab &&
     a.csViewMode === b.csViewMode &&
@@ -132,6 +153,9 @@ interface NavigationContextValue {
   goClassroom: () => void;
   reviewScrollTick: number;
   requestScrollToReviews: () => void;
+  directoryScrollTick: number;
+  directoryFilterRequest: 'all' | 'math' | 'physics' | 'cs';
+  requestScrollToDirectory: (filter?: 'all' | 'math' | 'physics' | 'cs') => void;
 }
 
 const NavigationContext = createContext<NavigationContextValue | null>(null);
@@ -140,6 +164,8 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [location, setLocation] = useState<NavLocation>(DEFAULT_LOCATION);
   const [historyStack, setHistoryStack] = useState<NavLocation[]>([]);
   const [reviewScrollTick, setReviewScrollTick] = useState<number>(0);
+  const [directoryScrollTick, setDirectoryScrollTick] = useState<number>(0);
+  const [directoryFilterRequest, setDirectoryFilterRequest] = useState<'all' | 'math' | 'physics' | 'cs'>('all');
 
   const locationRef = useRef<NavLocation>(location);
   const stackRef = useRef<NavLocation[]>(historyStack);
@@ -278,6 +304,18 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setReviewScrollTick((n) => n + 1);
   }, [navigate]);
 
+  const requestScrollToDirectory = useCallback(
+    (filter: 'all' | 'math' | 'physics' | 'cs' = 'all') => {
+      const prev = locationRef.current;
+      setDirectoryFilterRequest(filter);
+      if (prev.subject !== 'overview' || prev.tutorOpen) {
+        navigate({ subject: 'overview', tutorOpen: false });
+      }
+      setDirectoryScrollTick((n) => n + 1);
+    },
+    [navigate]
+  );
+
   const previousLocation =
     historyStack.length > 0 ? historyStack[historyStack.length - 1] : null;
   const canGoBack =
@@ -294,7 +332,10 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         goBack,
         goClassroom,
         reviewScrollTick,
-        requestScrollToReviews
+        requestScrollToReviews,
+        directoryScrollTick,
+        directoryFilterRequest,
+        requestScrollToDirectory
       }}
     >
       {children}

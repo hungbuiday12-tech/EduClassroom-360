@@ -1,13 +1,23 @@
 import {
   CSLesson,
+  CSLevel,
+  CurriculumTrack,
   LectureStep,
   LectureStepFormulaSection,
   LectureStepMCQ,
   LectureStepMiniEssay,
   MathLecture,
-  PhysicsLesson
+  PhysicsLesson,
+  SpecializedTier
 } from '../types';
 import { PHYSICS_CUSTOM_LECTURE_STEPS } from './physicsLectureSteps';
+
+interface PedagogicalContext {
+  track?: CurriculumTrack;
+  tier?: SpecializedTier;
+  grade?: string;
+  csLevel?: CSLevel;
+}
 
 // ============================================================================
 // SHARED HELPERS FOR EXTRACTING FORMULAS, CONCEPTS & BUILDING STEP QUIZZES
@@ -97,26 +107,56 @@ function buildVariablesNote(
   subject: 'math' | 'physics' | 'cs',
   formula: string | undefined,
   extraContext: string,
-  commonTrap?: string
+  commonTrap?: string,
+  ctx?: PedagogicalContext
 ): string {
   const lines: string[] = [];
+  const isChuyen = ctx?.track === 'chuyen';
+  const gradeText = ctx?.grade || '';
+
   if (subject === 'math') {
-    lines.push('• Kiểm tra điều kiện xác định của ẩn/biến, mẫu số ($\\ne 0$), biểu thức trong căn ($\\ge 0$) hoặc cơ số ($> 0, \\ne 1$) trước khi áp dụng.');
-    if (formula && /[a-zA-Z]/.test(formula)) {
-      lines.push('• Chú ý phân biệt tham số ($m$, $a$, $b$, $c$) với biến số độc lập ($x$, $t$); xét riêng trường hợp hệ số bậc cao nhất bằng $0$ nếu có tham số.');
+    if (isChuyen) {
+      lines.push(
+        '• Thiết lập chặt chẽ miền xác định, điều kiện đẳng thức hoặc giả thiết tham số ngay từ đầu; kiểm tra biến đổi có tương đương hoàn toàn hay chỉ là hệ quả.'
+      );
+      if (formula && /[a-zA-Z]/.test(formula)) {
+        lines.push(
+          '• Biện luận đầy đủ các trường hợp suy biến (hệ số bậc cao bằng $0$, trường hợp biên) và kiểm tra dấu bằng khi đánh giá cực trị.'
+        );
+      }
+    } else if (gradeText.includes('9')) {
+      lines.push('• Nhớ đặt điều kiện có nghĩa trước khi giải (mẫu thức $\\ne 0$, biểu thức trong căn bậc hai $\\ge 0$, ẩn biểu diễn độ dài/số lượng $> 0$).');
+      if (formula && /[a-zA-Z]/.test(formula)) {
+        lines.push('• Phân biệt rõ ẩn cần tìm ($x, y$) và hệ số đã cho; thử thay lại nghiệm vào phương trình ban đầu để chắc chắn không sai dấu.');
+      }
+    } else {
+      lines.push('• Đặt điều kiện xác định rõ ràng (mẫu số $\\ne 0$, trong căn $\\ge 0$, biểu thức logarit $> 0$) trước khi biến đổi công thức.');
+      if (formula && /[a-zA-Z]/.test(formula)) {
+        lines.push('• Phân biệt biến số ($x, t$) với tham số ($m, a$); nếu tham số đi cùng bậc cao nhất nhớ xét riêng trường hợp hệ số đó bằng $0$.');
+      }
     }
   } else if (subject === 'physics') {
-    lines.push('• Đổi đồng nhất toàn bộ đại lượng sang hệ đo lường chuẩn SI ($\\text{m}$, $\\text{kg}$, $\\text{s}$, $\\text{N}$, $\\text{J}$, $\\text{W}$, $\\text{A}$, $\\text{V}$, $\\Omega$) trước khi bấm máy.');
-    lines.push('• Chú ý quy ước dấu đại số theo chiều dương đã chọn (đặc biệt với vận tốc, gia tốc, li độ và nhiệt lượng).');
+    if (isChuyen) {
+      lines.push('• Quy đổi đồng nhất toàn bộ đại lượng về hệ SI; xác định rõ hệ quy chiếu (quán tính hay phi quán tính) và phương trình liên kết trước khi chiếu vectơ.');
+      lines.push('• Kiểm tra thứ nguyên của biểu thức kết quả và xét các trường hợp giới hạn đặc biệt để tự kiểm chứng đáp án.');
+    } else {
+      lines.push('• Đổi các số liệu đề bài về đơn vị chuẩn trước khi thay số (ví dụ: $\\text{cm} \\to \\text{m}$, $\\text{g} \\to \\text{kg}$, $\\text{phút/giờ} \\to \\text{s}$, $\\text{km/h} \\div 3{,}6 \\to \\text{m/s}$).');
+      lines.push('• Chú ý dấu cộng/trừ theo chiều dương đã chọn: vật đi ngược chiều dương thì vận tốc mang dấu âm, vật tỏa nhiệt hoặc sinh công cần xét đúng quy ước.');
+    }
   } else {
-    lines.push('• Đánh giá giới hạn $N$ và giá trị lớn nhất của biến trung gian (dùng `long long` trong C++ nếu vượt $2\\cdot 10^9$).');
-    lines.push('• Kiểm tra các trường hợp biên: $N = 0$, $N = 1$, mảng toàn số âm, phần tử trùng nhau hoặc đồ thị không liên thông.');
+    if (ctx?.csLevel === 'Cơ bản') {
+      lines.push('• Đọc kỹ kiểu dữ liệu và giới hạn đầu vào: nếu tích hoặc tổng có thể vượt $2\\cdot 10^9$ hãy dùng `long long` (C++) hoặc số nguyên chuẩn trong Python.');
+      lines.push('• Thử chạy tay với các bộ test nhỏ nhất ($N = 0$, $N = 1$, mảng toàn số bằng nhau) để chắc chắn vòng lặp không bị tràn chỉ số.');
+    } else {
+      lines.push('• Đánh giá giới hạn $N$ và giá trị lớn nhất của biến trung gian (dùng `long long` trong C++ nếu vượt $2\\cdot 10^9$ hoặc lấy modulo đúng bước).');
+      lines.push('• Kiểm tra các trường hợp biên: $N = 0$, $N = 1$, mảng toàn số âm, phần tử trùng nhau hoặc đồ thị không liên thông.');
+    }
   }
 
   if (commonTrap) {
-    lines.push(`• Lưu ý bẫy hay gặp: ${commonTrap}`);
+    lines.push(`• Lưu ý hay sai: ${commonTrap}`);
   } else if (extraContext && extraContext.length < 180) {
-    lines.push(`• Trọng tâm: ${extraContext}`);
+    lines.push(`• Trọng tâm cần nhớ: ${extraContext}`);
   }
 
   return lines.join('\n');
@@ -416,7 +456,11 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
         formulaSection: st.formulaSection || (primaryFormula ? {
           primaryFormula,
           secondaryFormulas: lesson.keyFormulas.filter((f) => f !== primaryFormula).slice(0, 2),
-          variablesNote: buildVariablesNote('physics', primaryFormula, lesson.subtitle, st.keyTakeaway)
+          variablesNote: buildVariablesNote('physics', primaryFormula, lesson.subtitle, st.keyTakeaway, {
+            track: lesson.track,
+            tier: lesson.tier,
+            grade: lesson.grade
+          })
         } : undefined),
         deepDiveSection,
         miniQuiz: mcqs,
@@ -431,6 +475,11 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
   const essaysPool = lesson.essayExercises || [];
   let mcqCursor = 0;
   let essayCursor = 0;
+  const pedCtx: PedagogicalContext = {
+    track: lesson.track,
+    tier: lesson.tier,
+    grade: lesson.grade
+  };
 
   const takeNextPracticeMCQ = (stepIdx: number, slot: number): LectureStepMCQ | null => {
     if (mcqCursor >= mcqsPool.length) return null;
@@ -456,6 +505,13 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
     };
   };
 
+  const tierGuidance =
+    lesson.tier === 'Cơ bản'
+      ? 'Bậc Cơ bản Chuyên (cầu nối từ SGK lên tư duy phân tích hệ nhiều vật / mạch điện)'
+      : lesson.tier === 'Chuyên / HSG'
+      ? 'Bậc Chuyên / HSG (bài toán tổng hợp nhiều giai đoạn, cực trị vật lí & biện luận chặt)'
+      : 'Bậc Nâng cao Chuyên (kỹ thuật biến đổi mô hình và phương trình liên kết)';
+
   // Part 1..K from theorySections (each section is a dedicated Concept + Formula + Deep Dive part)
   lesson.theorySections.forEach((sec, idx) => {
     const inlineFormulas = extractInlineFormulas(sec.content);
@@ -468,16 +524,22 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
     const sentences = sec.content.split('\n').map((s) => s.trim()).filter(Boolean);
     const conceptSection =
       sentences.length > 0
-        ? `${sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join('\n')}\n\n• **Phạm vi bài học**: ${
+        ? `${sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join('\n')}\n\n• **Định hướng học phần này**: ${
             lesson.track === 'chuyen'
-              ? `Khu Chuyên Lí (${lesson.tier || 'Nâng cao'}) · ${lesson.grade}`
-              : `${lesson.grade} · Chương trình GDPT`
+              ? `Khu Chuyên Lí · ${tierGuidance} (${lesson.grade}).`
+              : `${lesson.grade} · Chuẩn chương trình phổ thông (hiểu bản chất hiện tượng trước rồi mới thay số tính toán).`
           }`
         : sec.content;
 
-    const deepDiveSection = `${sec.content}\n\n**Giải thích sâu & Lưu ý vận dụng**:\n• Xác định chính xác đối tượng khảo sát, hệ quy chiếu và chiều dương trước khi viết biểu thức đại số.\n• Đối chiếu đơn vị toàn bộ đại lượng về chuẩn SI trước khi thay số và kiểm tra tính hợp lý vật lí của đáp số.`;
+    const deepDiveSection =
+      lesson.track === 'chuyen'
+        ? `${sec.content}\n\n**Phân tích Chuyên sâu & Phương pháp giải bài Chuyên**:\n• Xây dựng mô hình vật lí đầy đủ (chọn hệ quy chiếu, phân tích điều kiện biên/ràng buộc hình học hoặc nút mạch) trước khi lập phương trình.\n• Kiểm tra thứ nguyên công thức kết quả và xét trường hợp giới hạn đặc biệt để tự kiểm chứng.`
+        : `${sec.content}\n\n**Cách hiểu nhanh & Mẹo làm bài ${lesson.grade}**:\n• Tóm tắt các đại lượng đề bài đã cho và đổi ngay về đơn vị chuẩn ($\\text{m}$, $\\text{kg}$, $\\text{s}$, $\\text{V}$, $\\text{A}$, $\\Omega$) để không bị lệch kết quả.\n• Hình dung hiện tượng thực tế hoặc vẽ nhanh sơ đồ minh họa để xác định đúng chiều chuyển động / dấu của đại lượng rồi mới áp dụng công thức.`;
 
-    const keyTakeaway = `Nắm vững ý nghĩa vật lí và điều kiện áp dụng của mục "${stripLeadingNumber(sec.heading)}".`;
+    const keyTakeaway =
+      lesson.track === 'chuyen'
+        ? `Nắm chắc điều kiện giới hạn và cách lập phương trình tổng quát cho mục "${stripLeadingNumber(sec.heading)}".`
+        : `Hiểu rõ ý nghĩa từng đại lượng và đổi đúng đơn vị khi áp dụng phần "${stripLeadingNumber(sec.heading)}".`;
 
     const q1 =
       takeNextPracticeMCQ(idx, 1) ||
@@ -517,7 +579,7 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
       formulaSection: {
         primaryFormula,
         secondaryFormulas,
-        variablesNote: buildVariablesNote('physics', primaryFormula, lesson.subtitle)
+        variablesNote: buildVariablesNote('physics', primaryFormula, lesson.subtitle, undefined, pedCtx)
       },
       deepDiveSection,
       teacherExplanation: sec.content,
@@ -542,8 +604,14 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
     .join(', ');
   const expIdx = rawSteps.length;
   const expFormula = lesson.keyFormulas[0];
-  const expConcept = `Thực nghiệm 2D & 3D giúp kiểm chứng trực tiếp mối liên hệ định lượng giữa các đại lượng trong bài "${lesson.title.split(':')[0]}" thông qua thay đổi các tham số: ${paramNames}.`;
-  const expDeepDive = `• Áp dụng phương pháp **biến kiểm soát**: mỗi lần chỉ thay đổi một tham số đầu vào (giữ nguyên các tham số còn lại) và bấm **Ghi mẫu đo** để lập bảng số liệu.\n• Bật **Vector**, **Dấu vết quỹ đạo** hoặc **Đồ thị thời gian thực** để liên hệ trực giác hình ảnh với công thức lý thuyết.`;
+  const expConcept =
+    lesson.track === 'chuyen'
+      ? `Thí nghiệm mô phỏng 2D & 3D giúp kiểm chứng định lượng các hệ thức và điểm giới hạn trong "${lesson.title.split(':')[0]}" bằng cách thay đổi: ${paramNames}.`
+      : `Thực hành trên mô phỏng 2D & 3D giúp em trực tiếp nhìn thấy sự thay đổi của bài "${lesson.title.split(':')[0]}" khi kéo chỉnh: ${paramNames}.`;
+  const expDeepDive =
+    lesson.track === 'chuyen'
+      ? `• Áp dụng phương pháp **biến kiểm soát**: thay đổi từng tham số một (giữ nguyên các biến còn lại) và bấm **Ghi mẫu đo** để lập bảng đối chiếu với công thức lý thuyết.\n• Bật **Vector**, **Dấu vết quỹ đạo** hoặc **Đồ thị thời gian thực** để kiểm tra dấu hiệu cực trị và giới hạn mô hình.`
+      : `• Thử thay đổi **từng thanh trượt một** (giữ nguyên các thông số còn lại) rồi bấm **Ghi mẫu đo** để quan sát trực quan đại lượng tăng hay giảm.\n• Bật **Vector** hoặc **Đồ thị** ngay trên màn hình thí nghiệm để hiểu vì sao công thức lại có dạng như vậy.`;
 
   rawSteps.push({
     stepTitle: `${expIdx + 1}. Thực hành Kiểm chứng trên Thí nghiệm 2D & Mô hình 3D`,
@@ -553,13 +621,15 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
       ? {
           primaryFormula: expFormula,
           secondaryFormulas: lesson.keyFormulas.slice(1, 3),
-          variablesNote: `Các thông số điều chỉnh được trong Lab 2D: ${paramNames}.`
+          variablesNote: `Các thông số điều chỉnh được trong phòng thí nghiệm ảo: ${paramNames}.`
         }
       : undefined,
     deepDiveSection: expDeepDive,
     teacherExplanation: expDeepDive,
     keyTakeaway:
-      'Ghi lại ít nhất 3 mẫu đo với tham số khác nhau để tự kiểm chứng quy luật tỉ lệ thuận/nghịch trong công thức.',
+      lesson.track === 'chuyen'
+        ? 'Ghi lại ít nhất 3 mẫu đo để đối chiếu sai số và kiểm chứng quy luật hàm số trong công thức.'
+        : 'Ghi lại ít nhất 3 mẫu đo khác nhau để tự thấy mối liên hệ tăng – giảm giữa các đại lượng trong bài.',
     miniQuiz: [
       takeNextPracticeMCQ(expIdx, 1) ||
         buildFormulaCheckMCQ(
@@ -568,7 +638,7 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
           expFormula,
           lesson.keyFormulas,
           'physics',
-          'Phương pháp biến kiểm soát: thay đổi từng biến độc lập để đo phản ứng hệ.'
+          'Khi khảo sát thí nghiệm, chỉ thay đổi từng thông số một để nhận ra đúng quy luật phụ thuộc.'
         ),
       takeNextPracticeMCQ(expIdx, 2) ||
         buildConditionCheckMCQ(
@@ -576,7 +646,7 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
           'Kiểm chứng thí nghiệm 2D',
           expConcept,
           'physics',
-          'Luôn giữ cố định các biến còn lại khi khảo sát sự phụ thuộc theo một đại lượng.'
+          'Luôn giữ cố định các thông số còn lại khi khảo sát sự thay đổi của một đại lượng.'
         )
     ],
     miniEssay:
@@ -600,6 +670,13 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
 // ============================================================================
 
 export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
+  const pedCtx: PedagogicalContext = {
+    track: lecture.track || 'khong_chuyen',
+    tier: lecture.tier,
+    grade: lecture.gradeGroup || lecture.grade
+  };
+  const isChuyenMath = pedCtx.track === 'chuyen';
+
   if (lecture.lectureSteps && lecture.lectureSteps.length > 0) {
     return lecture.lectureSteps.map((st, idx) => {
       const primaryFormula = st.formulaSection?.primaryFormula || st.formulaHighlight || lecture.keyFormulas[idx];
@@ -614,7 +691,7 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
         formulaSection: st.formulaSection || (primaryFormula ? {
           primaryFormula,
           secondaryFormulas: lecture.keyFormulas.filter((f) => f !== primaryFormula).slice(0, 2),
-          variablesNote: buildVariablesNote('math', primaryFormula, lecture.description, lecture.commonTraps?.[idx])
+          variablesNote: buildVariablesNote('math', primaryFormula, lecture.description, lecture.commonTraps?.[idx], pedCtx)
         } : undefined),
         deepDiveSection,
         miniQuiz:
@@ -698,20 +775,41 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
     const mnemonic = lecture.mnemonics?.[idx % Math.max(1, lecture.mnemonics?.length || 1)];
     const trap = lecture.commonTraps?.[idx % Math.max(1, lecture.commonTraps?.length || 1)];
 
-    const conceptSection = `${rawTheory}\n\n• **Mục tiêu tư duy phần này**: Nắm rõ định nghĩa, điều kiện tồn tại và ý nghĩa hình học/đại số trước khi biến đổi biểu thức.`;
-    const deepDiveSection = [
-      `**Phân tích chuyên sâu & Cách nhận dạng bài toán**:`,
-      mnemonic ? `• **Mẹo nhớ bản chất**: ${mnemonic}` : `• Luôn liên hệ biểu thức đại số với hình dáng đồ thị hoặc mô hình hình học để kiểm tra nhanh tính hợp lý.`,
-      trap ? `• **Cảnh báo lỗi sai hay gặp**: ${trap}` : `• Kiểm tra kỹ các giá trị biên (hệ số bằng $0$, nghiệm kép, điều kiện mẫu số và căn thức).`,
-      idx === 0 && lecture.description ? `• **Tổng quan chuyên đề**: ${lecture.description}` : ''
-    ]
-      .filter(Boolean)
-      .join('\n');
+    const mathTierLabel =
+      lecture.tier === 'Cơ bản'
+        ? 'Chuyên Toán · Bậc Cơ bản (luyện nền tảng chứng minh & biến đổi chuẩn)'
+        : lecture.tier === 'Chuyên / HSG'
+        ? 'Chuyên Toán · Bậc Chuyên / HSG (biện luận sâu, cực trị & bất biến Olympiad)'
+        : 'Chuyên Toán · Bậc Nâng cao (kỹ thuật biến đổi & tách ghép đa bước)';
+
+    const conceptSection = isChuyenMath
+      ? `${rawTheory}\n\n• **Định hướng ${mathTierLabel}**: Nắm vững giả thiết cần và đủ, cấu trúc chứng minh và điều kiện xảy ra dấu bằng trước khi biến đổi.`
+      : `${rawTheory}\n\n• **Trọng tâm ${lecture.grade}**: Hiểu rõ ý nghĩa của công thức và đặt đúng điều kiện xác định trước khi bắt tay vào tính toán.`;
+
+    const deepDiveSection = isChuyenMath
+      ? [
+          `**Phân tích Chuyên sâu & Chiến thuật giải đề Chuyên / HSG**:`,
+          mnemonic ? `• **Ý tưởng then chốt**: ${mnemonic}` : `• Tìm đại lượng bất biến, đánh giá điểm rơi hoặc liên hệ hình học để rút gọn phép biến đổi.`,
+          trap ? `• **Lỗi mất điểm thường gặp**: ${trap}` : `• Kiểm tra kỹ điều kiện áp dụng bất đẳng thức/đồng dư và biện luận mọi trường hợp suy biến.`,
+          idx === 0 && lecture.description ? `• **Tổng quan chuyên đề**: ${lecture.description}` : ''
+        ]
+          .filter(Boolean)
+          .join('\n')
+      : [
+          `**Giải thích dễ hiểu & Mẹo làm bài thi THPT**:`,
+          mnemonic ? `• **Mẹo nhớ nhanh**: ${mnemonic}` : `• Vẽ nhanh hình minh họa hoặc thử một vài giá trị số cụ thể để hình dung quy luật trước khi giải tổng quát.`,
+          trap ? `• **Cẩn thận lỗi hay nhầm**: ${trap}` : `• Đừng quên kiểm tra điều kiện xác định (mẫu khác $0$, căn không âm) và đối chiếu nghiệm sau khi giải.`,
+          idx === 0 && lecture.description ? `• **Nội dung chính của bài**: ${lecture.description}` : ''
+        ]
+          .filter(Boolean)
+          .join('\n');
 
     const keyTakeaway =
       mnemonic ||
       trap ||
-      'Luôn ghi điều kiện xác định và kiểm tra trường hợp đặc biệt ngay dòng đầu tiên của bài giải.';
+      (isChuyenMath
+        ? 'Kiểm tra chặt chẽ điều kiện tương đương, trường hợp suy biến và dấu đẳng thức ở mỗi bước.'
+        : 'Viết điều kiện xác định ngay dòng đầu tiên và kiểm tra lại kết quả trước khi chọn đáp án.');
 
     const workedExample =
       idx === partCount - 1 && essaysPool[0]
@@ -762,7 +860,7 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
         ? {
             primaryFormula,
             secondaryFormulas,
-            variablesNote: buildVariablesNote('math', primaryFormula, lecture.description, trap)
+            variablesNote: buildVariablesNote('math', primaryFormula, lecture.description, trap, pedCtx)
           }
         : undefined,
       deepDiveSection,
@@ -851,9 +949,14 @@ export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
       complexityFormula;
 
     const conceptSection = st.conceptSection || st.teacherExplanation;
-    const deepDiveSection =
-      st.deepDiveSection ||
-      `${st.teacherExplanation}\n\n**Phân tích sâu & Bẫy cài đặt thi đấu**:\n• Kiểm tra giới hạn dữ liệu (đặc biệt phép nhân cần \`long long\` hoặc modulo) và độ phức tạp \`${lesson.complexity.time}\` so với ngưỡng $10^8$ phép tính/giây.\n• Rà soát các test biên ($N=0, N=1$, số âm, phần tử trùng lặp) trước khi chạy Online Judge.`;
+    const csDeepDiveHint =
+      lesson.level === 'Cơ bản'
+        ? `**Hướng dẫn cài đặt & Lưu ý nhập môn (${lesson.level})**:\n• Chạy tay từng bước thuật toán với 1 bộ dữ liệu nhỏ để hiểu rõ biến chạy thay đổi thế nào.\n• Chú ý kiểu dữ liệu (\`long long\` nếu số vượt $2\\cdot 10^9$) và trường hợp biên ($N = 0, N = 1$).`
+        : lesson.level === 'Trung cấp'
+        ? `**Tối ưu thuật toán & Lưu ý thực hành (${lesson.level})**:\n• Đối chiếu độ phức tạp \`${lesson.complexity.time}\` với giới hạn $N$ của đề bài để chọn thuật toán đủ nhanh dưới $1\\text{ giây}$.\n• Kiểm tra khởi tạo mảng/giá trị ban đầu và các trường hợp biên ($N = 1$, phần tử trùng lặp, số âm).`
+        : `**Phân tích chuyên sâu & Bẫy thi HSG Tin học (${lesson.level})**:\n• Kiểm soát chặt độ phức tạp \`${lesson.complexity.time}\` (ngưỡng $\\approx 10^8$ phép tính/giây), bộ nhớ \`${lesson.complexity.space}\` và phép nhân/cộng cần \`long long\` hoặc modulo.\n• Kiểm tra mọi test biên: đồ thị không liên thông, chu trình âm, $N = 0/1$ và dùng Fast I/O tránh TLE.`;
+
+    const deepDiveSection = st.deepDiveSection || `${st.teacherExplanation}\n\n${csDeepDiveHint}`;
 
     const mcqs: LectureStepMCQ[] =
       st.miniQuiz && st.miniQuiz.length >= 2
@@ -898,7 +1001,9 @@ export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
       formulaSection: st.formulaSection || {
         primaryFormula,
         secondaryFormulas: inlineFormulas.filter((f) => f !== primaryFormula).slice(0, 2),
-        variablesNote: buildVariablesNote('cs', primaryFormula, lesson.topic, st.keyTakeaway)
+        variablesNote: buildVariablesNote('cs', primaryFormula, lesson.topic, st.keyTakeaway, {
+          csLevel: lesson.level
+        })
       },
       deepDiveSection,
       miniQuiz: mcqs,

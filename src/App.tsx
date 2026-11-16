@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Compass, Zap, Code2, Orbit } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
 import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
 import { ClassroomOverview } from './components/ClassroomOverview';
 import { MathStudio } from './components/math/MathStudio';
 import { PhysicsLab } from './components/physics/PhysicsLab';
+import { PhysicsDomainsPage } from './components/physics/PhysicsDomainsPage';
 import { CodeJudgeLab } from './components/cs/CodeJudgeLab';
 import { ExamHub } from './components/exams/ExamHub';
 import { LearningRoadmap } from './components/roadmap/LearningRoadmap';
@@ -35,16 +37,20 @@ function MainApp() {
   isTutorOpenRef.current = isTutorOpen;
   const leftCtrlDownRef = useRef(false);
   const rightCtrlDownRef = useRef(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [tutorContext, setTutorContext] = useState<TutorContextPayload>({
     subject: 'math'
   });
 
   const handleOpenTutor = (ctx?: TutorContextPayload) => {
-    const targetSubj: SubjectType =
-      ctx?.subject ||
-      (currentSubject === 'physics' || currentSubject === 'cs' || currentSubject === 'math'
-        ? currentSubject
-        : 'math');
+    const fallbackSubj: SubjectType =
+      currentSubject === 'physics' || currentSubject === 'physics_sims'
+        ? 'physics'
+        : currentSubject === 'cs'
+        ? 'cs'
+        : 'math';
+    const targetSubj: SubjectType = ctx?.subject || fallbackSubj;
     setTutorContext(
       ctx || {
         subject: targetSubj
@@ -52,6 +58,23 @@ function MainApp() {
     );
     navigate({ tutorOpen: true, tutorSubject: targetSubj });
   };
+
+  useEffect(() => {
+    const onOpenTutorEvent = (e: Event) => {
+      const detail = (e as CustomEvent<TutorContextPayload>).detail;
+      if (detail) {
+        handleOpenTutor(detail);
+      }
+    };
+    window.addEventListener('educlassroom:open-tutor-with-payload', onOpenTutorEvent);
+    return () =>
+      window.removeEventListener('educlassroom:open-tutor-with-payload', onOpenTutorEvent);
+  });
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-w', sidebarCollapsed ? '78px' : '272px');
+  }, [sidebarCollapsed]);
+
   const [isDark, setIsDark] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       try {
@@ -214,140 +237,226 @@ function MainApp() {
       ) : (
         <motion.div
           key="classroom-main-view"
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -16 }}
-          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="relative min-h-screen flex flex-col bg-transparent text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 overflow-x-clip"
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          className="relative min-h-screen flex bg-transparent text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 overflow-x-clip"
         >
-          {/* Dynamic Cosmic Galaxy Background (active in both Light and Dark modes) */}
+          {/* Customizable Background Canvas (by PC Spec) */}
           <GalaxyBackground
             interactive={true}
             intensity="vibrant"
             isDark={isDark}
-            className={isDark ? 'opacity-70' : 'opacity-100'}
+            className={isDark ? 'opacity-75' : 'opacity-100'}
           />
 
-          {/* Top Bar Contract Navigation */}
-          <Header
+          {/* Left Vertical Navigation Sidebar */}
+          <Sidebar
             currentSubject={currentSubject}
             onSelectSubject={selectSubject}
-            isDark={isDark}
-            onToggleTheme={handleToggleTheme}
-            xp={activeXP}
-            onReturnToLanding={handleReturnToLanding}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+            mobileOpen={mobileMenuOpen}
+            onCloseMobile={() => setMobileMenuOpen(false)}
             onOpenSettings={() => setIsSettingsOpen(true)}
           />
 
-          {/* Main Viewport Container with Smooth Subject Transitions (no persistent transform/z-index trap) */}
-          <main className="relative z-10 flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-5 lg:px-7 py-6 sm:py-8">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentSubject}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              >
-                {currentSubject === 'overview' && (
-                  <ClassroomOverview
-                    onNavigate={selectSubject}
-                    xp={activeXP}
-                    onOpenTutor={(subj, mode) =>
-                      handleOpenTutor({ subject: subj || 'math', mode })
-                    }
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                  />
-                )}
+          {/* Right Main Workspace Column */}
+          <div
+            className={`relative z-10 flex-1 min-w-0 flex flex-col transition-[padding] duration-200 ${
+              sidebarCollapsed ? 'lg:pl-[78px]' : 'lg:pl-[272px]'
+            }`}
+          >
+            {/* Single-Row Top Utility Bar */}
+            <Header
+              currentSubject={currentSubject}
+              onSelectSubject={selectSubject}
+              isDark={isDark}
+              onToggleTheme={handleToggleTheme}
+              xp={activeXP}
+              onReturnToLanding={handleReturnToLanding}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onOpenMobileMenu={() => setMobileMenuOpen(true)}
+            />
 
-                {currentSubject === 'roadmap' && (
-                  <LearningRoadmap
-                    onBack={goBack}
-                    onNavigateSubject={selectSubject}
-                    onOpenTutor={handleOpenTutor}
-                    onEarnXP={handleEarnXP}
-                  />
-                )}
+            {/* Main Viewport Container */}
+            <main className="flex-1 max-w-[1400px] w-full mx-auto px-3 sm:px-5 lg:px-7 py-5 sm:py-7">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentSubject}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  {currentSubject === 'overview' && (
+                    <ClassroomOverview
+                      onNavigate={selectSubject}
+                      xp={activeXP}
+                      onOpenTutor={(subj, mode) =>
+                        handleOpenTutor({ subject: subj || 'math', mode })
+                      }
+                      onOpenSettings={() => setIsSettingsOpen(true)}
+                    />
+                  )}
 
-                {currentSubject === 'math' && (
-                  <MathStudio onBack={goBack} />
-                )}
+                  {currentSubject === 'roadmap' && (
+                    <LearningRoadmap
+                      onBack={goBack}
+                      onNavigateSubject={selectSubject}
+                      onOpenTutor={handleOpenTutor}
+                      onEarnXP={handleEarnXP}
+                    />
+                  )}
 
-                {currentSubject === 'physics' && (
-                  <PhysicsLab onBack={goBack} onScoreEarned={handleEarnXP} />
-                )}
+                  {currentSubject === 'math' && (
+                    <MathStudio onBack={goBack} />
+                  )}
 
-                {currentSubject === 'cs' && (
-                  <CodeJudgeLab onScoreEarned={handleEarnXP} onBack={goBack} />
-                )}
+                  {currentSubject === 'physics' && (
+                    <PhysicsLab onBack={goBack} onScoreEarned={handleEarnXP} />
+                  )}
 
-                {currentSubject === 'exams' && (
-                  <ExamHub
-                    onNavigateToSubject={selectSubject}
-                    onEarnXP={handleEarnXP}
-                    onBack={goBack}
-                  />
-                )}
+                  {currentSubject === 'physics_sims' && (
+                    <PhysicsDomainsPage onBack={goBack} />
+                  )}
 
-                {currentSubject === 'arena' && (
-                  <ArenaHub
-                    onBack={goBack}
-                    onEarnXP={handleEarnXP}
-                    onOpenTutor={handleOpenTutor}
-                  />
-                )}
+                  {currentSubject === 'cs' && (
+                    <CodeJudgeLab onScoreEarned={handleEarnXP} onBack={goBack} />
+                  )}
 
-                {currentSubject === 'forum' && (
-                  <StudyForum onBack={goBack} />
-                )}
+                  {currentSubject === 'exams' && (
+                    <ExamHub
+                      onNavigateToSubject={selectSubject}
+                      onEarnXP={handleEarnXP}
+                      onBack={goBack}
+                    />
+                  )}
 
-                {currentSubject === 'synapse_v2' && (
-                  <SynapseV2Studio
-                    onBack={goBack}
-                    onNavigate={selectSubject}
-                    onEarnXP={handleEarnXP}
-                  />
-                )}
+                  {currentSubject === 'arena' && (
+                    <ArenaHub
+                      onBack={goBack}
+                      onEarnXP={handleEarnXP}
+                      onOpenTutor={handleOpenTutor}
+                    />
+                  )}
 
-                {currentSubject === 'spatial_3d' && (
-                  <SpatialGesture3DLab
-                    onBack={goBack}
-                    onNavigate={selectSubject}
-                    onEarnXP={handleEarnXP}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </main>
+                  {currentSubject === 'forum' && (
+                    <StudyForum onBack={goBack} />
+                  )}
+
+                  {currentSubject === 'synapse_v2' && (
+                    <SynapseV2Studio
+                      onBack={goBack}
+                      onNavigate={selectSubject}
+                      onEarnXP={handleEarnXP}
+                    />
+                  )}
+
+                  {currentSubject === 'spatial_3d' && (
+                    <SpatialGesture3DLab
+                      onBack={goBack}
+                      onNavigate={selectSubject}
+                      onEarnXP={handleEarnXP}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </main>
+
+            {/* Clean Editorial Footer */}
+            <footer className="mt-auto border-t border-slate-200/75 dark:border-slate-800/90 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md py-5">
+              <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-7 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="font-display font-bold text-slate-900 dark:text-white tracking-tight">
+                    Synapse
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span>
+                    {isEn
+                      ? 'Interactive Academic STEM Studio (Grades 9–12)'
+                      : 'Hệ thống lớp học & mô phỏng STEM tương tác (Lớp 9–12)'}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4">
+                  <button
+                    onClick={() => selectSubject('roadmap')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  >
+                    {isEn ? 'Roadmap' : 'Lộ trình học'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('math')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  >
+                    {isEn ? 'Mathematics' : 'Toán học'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('physics_sims')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold text-blue-600 dark:text-sky-400 cursor-pointer"
+                  >
+                    {isEn ? 'Physics 2D/3D' : 'Mô phỏng Vật lí'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('cs')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  >
+                    {isEn ? 'CS & Code' : 'Tin học'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('exams')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  >
+                    {isEn ? `Exams (${EXAM_PAPERS.length})` : `Đề Thi (${EXAM_PAPERS.length})`}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('synapse_v2')}
+                    className="inline-flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold cursor-pointer"
+                  >
+                    <Orbit className="w-3.5 h-3.5 shrink-0" />
+                    <span>Synapse v2 (30)</span>
+                  </button>
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold cursor-pointer"
+                  >
+                    {isEn ? 'Settings' : 'Cài đặt'}
+                  </button>
+                </div>
+              </div>
+            </footer>
+          </div>
 
           {/* Persistent Bottom-Left Mini Focus Timer & Ambient Audio Widget */}
           <FloatingFocusTimer />
 
-          {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Modern Floating 3-AI Dock */}
+          {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Clean Bottom-Right 3-AI Dock */}
           {!isTutorOpen && currentSubject !== 'synapse_v2' && currentSubject !== 'spatial_3d' && (
-            <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex items-center gap-1.5 p-1.5 rounded-lg bg-slate-950/92 dark:bg-slate-900/94 border border-sky-500/25 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-md">
+            <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex items-center gap-1.5 p-1.5 rounded-xl bg-slate-950/92 dark:bg-slate-900/95 border border-slate-800 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-md">
               <button
                 onClick={() => handleOpenTutor({ subject: 'math' })}
-                className="group cs-deck-btn px-3 sm:px-3.5 py-2 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                 title={isEn ? 'Open Math AI (Left Ctrl + D)' : 'Mở AI Toán Học (Ctrl trái + D)'}
               >
-                <Compass className="w-3.5 h-3.5 shrink-0 icon-anim-compass" />
+                <Compass className="w-3.5 h-3.5 shrink-0" />
                 <span>{isEn ? 'Math AI' : 'AI Toán'}</span>
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'physics' })}
-                className="group cs-deck-btn px-3 sm:px-3.5 py-2 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer"
                 title={isEn ? 'Open Physics AI (Left Ctrl + F)' : 'Mở AI Vật Lí (Ctrl trái + F)'}
               >
-                <Zap className="w-3.5 h-3.5 shrink-0 icon-anim-zap" />
+                <Zap className="w-3.5 h-3.5 shrink-0" />
                 <span>{isEn ? 'Physics AI' : 'AI Lí'}</span>
               </button>
               <button
                 onClick={() => handleOpenTutor({ subject: 'cs' })}
-                className="group cs-deck-btn px-3 sm:px-3.5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                 title={isEn ? 'Open CS AI (Left Ctrl + G)' : 'Mở AI Tin Học (Ctrl trái + G)'}
               >
-                <Code2 className="w-3.5 h-3.5 shrink-0 icon-anim-code" />
+                <Code2 className="w-3.5 h-3.5 shrink-0" />
                 <span>{isEn ? 'CS AI' : 'AI Tin'}</span>
               </button>
             </div>
@@ -385,87 +494,6 @@ function MainApp() {
             onToggleTheme={handleToggleTheme}
             onReturnToLanding={handleReturnToLanding}
           />
-
-          {/* Clean Editorial Footer */}
-          <footer className="relative z-10 mt-auto border-t border-slate-200/70 dark:border-white/10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md py-6">
-            <div className="max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-7 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
-              <div className="flex items-center gap-2">
-                <span className="font-display font-bold text-slate-900 dark:text-white tracking-tight">
-                  Synapse
-                </span>
-                <span aria-hidden="true">·</span>
-                <span>
-                  {isEn
-                    ? 'Interactive Academic STEM Simulation Galaxy'
-                    : 'Hệ thống lớp học mô phỏng vũ trụ học thuật Galaxy'}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-4">
-                <button
-                  onClick={() => selectSubject('roadmap')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                >
-                  {isEn ? 'Roadmap' : 'Lộ trình học'}
-                </button>
-                <button
-                  onClick={() => selectSubject('math')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                >
-                  {isEn ? 'Mathematics' : 'Toán học'}
-                </button>
-                <button
-                  onClick={() => selectSubject('physics')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                >
-                  {isEn ? 'Physics 2D/3D' : 'Vật lí 2D'}
-                </button>
-                <button
-                  onClick={() => selectSubject('cs')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                >
-                  {isEn ? 'Computer Science' : 'Tin học'}
-                </button>
-                <button
-                  onClick={() => selectSubject('exams')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-blue-600 dark:text-sky-400 font-semibold cursor-pointer"
-                >
-                  {isEn ? `Exams (${EXAM_PAPERS.length})` : `Đề Thi (${EXAM_PAPERS.length} Đề)`}
-                </button>
-                <button
-                  onClick={() => selectSubject('arena')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-amber-600 dark:text-amber-400 font-semibold cursor-pointer"
-                >
-                  {isEn ? 'Weekly Arena' : 'Thi Đấu & BXH Tuần'}
-                </button>
-                <button
-                  onClick={() => selectSubject('forum')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-sky-600 dark:text-sky-400 font-semibold cursor-pointer"
-                >
-                  {isEn ? 'Study Forum' : 'Diễn đàn học tập'}
-                </button>
-                <button
-                  onClick={() => selectSubject('synapse_v2')}
-                  className="group inline-flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-cyan-600 dark:text-cyan-400 font-bold cursor-pointer"
-                >
-                  <Orbit className="w-3.5 h-3.5 shrink-0 icon-anim-cosmos" />
-                  <span>{isEn ? 'Virtual Campus · Synapse v2' : 'Lớp học ảo · Synapse v2'}</span>
-                </button>
-                <button
-                  onClick={() => selectSubject('spatial_3d')}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors text-teal-600 dark:text-teal-400 font-bold cursor-pointer"
-                >
-                  {isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D'}
-                </button>
-                <button
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold cursor-pointer"
-                >
-                  {isEn ? 'Settings' : 'Cài đặt'}
-                </button>
-              </div>
-            </div>
-          </footer>
         </motion.div>
       )}
       </AnimatePresence>

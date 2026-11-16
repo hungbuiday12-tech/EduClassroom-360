@@ -168,6 +168,20 @@ function renderMonumentIcon(id: MonumentId, className = 'w-4 h-4') {
       return <Waves className={`${className} text-emerald-400 icon-anim-wave`} />;
     case 'tesla_electromagnet':
       return <Zap className={`${className} text-purple-400 icon-anim-zap`} />;
+    case 'lidar_autonomous_core':
+      return <Radar className={`${className} text-cyan-400 icon-anim-cosmos`} />;
+    case 'solar_thermal_tower':
+      return <Sun className={`${className} text-amber-400 icon-anim-star`} />;
+    case 'mri_tomography_ring':
+      return <Disc className={`${className} text-sky-400 icon-anim-cosmos`} />;
+    case 'sagnac_ring_gyro':
+      return <Orbit className={`${className} text-amber-300 icon-anim-compass`} />;
+    case 'metamaterial_cloak':
+      return <ShieldCheck className={`${className} text-emerald-400 icon-anim-branch`} />;
+    case 'acoustic_levitation':
+      return <Waves className={`${className} text-cyan-300 icon-anim-wave`} />;
+    case 'photonic_tensor_core':
+      return <Cpu className={`${className} text-amber-400 icon-anim-code`} />;
     default:
       return <Orbit className={`${className} text-cyan-400 icon-anim-cosmos`} />;
   }

@@ -20,6 +20,7 @@ import { SublimeEditor, SublimeTabItem } from './SublimeEditor';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { useLanguage } from '../../context/LanguageContext';
 import { FormattedText } from '../common/MathRenderer';
+import { VoiceMicButton } from '../common/VoiceMicButton';
 import {
   Play,
   Send,
@@ -182,6 +183,32 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
     reader.onload = () => setUploadedImagePreview(reader.result as string);
     reader.readAsDataURL(file);
   };
+
+  // Paste screenshot (Ctrl+V) inside Sublime Upload Modal
+  useEffect(() => {
+    if (!showUploadModal) return;
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            setInputMode('image');
+            setUploadedFileName(file.name || 'pasted-problem.png');
+            setUploadedMimeType(file.type || 'image/png');
+            const reader = new FileReader();
+            reader.onload = () => setUploadedImagePreview(reader.result as string);
+            reader.readAsDataURL(file);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [showUploadModal]);
 
   // Text/Code File Upload Handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -603,10 +630,18 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                     Nội dung đề bài (Tiêu đề, Mô tả, Input/Output):
                   </label>
                   <div className="flex items-center gap-2">
+                    <VoiceMicButton
+                      language={uiLang}
+                      size="sm"
+                      showLabel={true}
+                      onTranscript={(spoken) =>
+                        setRawText((prev) => (prev.trim() ? `${prev.trim()} ${spoken}` : spoken))
+                      }
+                    />
                     <button
                       type="button"
                       onClick={loadDemoToModal}
-                      className="text-[11px] px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#e6db74]"
+                      className="text-[11px] px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#e6db74] cursor-pointer"
                     >
                       Nạp ví dụ mẫu
                     </button>
@@ -614,7 +649,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                       <button
                         type="button"
                         onClick={handleAutoExtractSamples}
-                        className="text-[11px] px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#a6e22e]"
+                        className="text-[11px] px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#a6e22e] cursor-pointer"
                       >
                         Tự tách Sample từ đề
                       </button>
@@ -624,7 +659,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                 <textarea
                   value={rawText}
                   onChange={(e) => setRawText(e.target.value)}
-                  placeholder="Ví dụ: Cho mảng gồm N số nguyên. Tìm tổng dãy con liên tiếp lớn nhất..."
+                  placeholder="Ví dụ: Cho mảng gồm N số nguyên... (Hỗ trợ Ctrl+V dán ảnh đề hoặc bấm Giọng nói)"
                   rows={5}
                   className="w-full px-3.5 py-2.5 bg-[#272822] border border-[#3e3d32] rounded-xl font-mono text-xs text-[#f8f8f2] focus:outline-none focus:border-[#66d9ef]"
                 />

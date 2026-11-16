@@ -12,6 +12,7 @@ import {
 import { buildExtraMonument } from './buildersExtra';
 import { buildExpansionMonument } from './buildersExpansion';
 import { buildPhysicsExpansionMonument } from './buildersPhysics';
+import { buildMegastructureMonument } from './buildersMegastructures';
 
 export type {
   BuiltMonument,
@@ -1418,7 +1419,8 @@ export function buildMonument(id: MonumentId, isSoftwareGl: boolean): BuiltMonum
       const extra =
         buildExtraMonument(id, isSoftwareGl) ||
         buildExpansionMonument(id, isSoftwareGl) ||
-        buildPhysicsExpansionMonument(id, isSoftwareGl);
+        buildPhysicsExpansionMonument(id, isSoftwareGl) ||
+        buildMegastructureMonument(id, isSoftwareGl);
       return extra || buildDysonMonument(isSoftwareGl);
     }
   }

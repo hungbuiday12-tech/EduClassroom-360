@@ -66,12 +66,12 @@ export const FloatingFocusTimer: React.FC = () => {
   const ringCircumference = 2 * Math.PI * ringRadius;
 
   return (
-    <div className="fixed bottom-3 left-3 sm:bottom-5 sm:left-5 z-[85] flex flex-col items-start gap-2.5">
+    <div className="fixed bottom-3 left-3 sm:bottom-5 sm:left-5 lg:left-[calc(var(--sidebar-w,248px)+16px)] z-[85] flex flex-col items-start gap-2.5 transition-[left] duration-200">
       {/* Expanded Mini-Chat Style Focus Panel */}
       {isWidgetOpen && (
-        <div className="w-[318px] sm:w-[348px] max-w-[calc(100vw-24px)] rounded-2xl bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-200/90 dark:border-white/15 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.55)] overflow-hidden text-xs">
+        <div className="w-[318px] sm:w-[348px] max-w-[calc(100vw-24px)] rounded-xl bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.55)] overflow-hidden text-xs">
           {/* Panel Header */}
-          <div className="px-4 py-3 bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 text-white flex items-center justify-between gap-2">
+          <div className="px-4 py-3 bg-slate-900 dark:bg-slate-900 border-b border-slate-800 text-white flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <Clock className="w-4 h-4 shrink-0" />
               <div className="min-w-0">

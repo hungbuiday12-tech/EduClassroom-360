@@ -3,27 +3,29 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-display: 'Lora', Georgia, serif;
-  --font-sans: 'Merriweather', Georgia, serif;
-  --font-serif: 'Lora', 'Merriweather', Georgia, serif;
+  --font-display: 'Lexend', 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
 :root {
-  --font-display: 'Lora', Georgia, serif;
-  --font-sans: 'Merriweather', Georgia, serif;
+  --font-display: 'Lexend', 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
   body {
     font-family: var(--font-sans);
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-weight: 400;
+    letter-spacing: 0.005em;
   }
 
   h1, h2, h3, h4, .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.015em;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     text-wrap: balance;
   }
 
@@ -31,26 +33,29 @@
     font-family: var(--font-mono);
   }
 
-  /* Tactile floating hover-lift & crisp architectural square buttons */
+  /* Tactile floating hover-lift & crisp architectural square buttons (4px sharp corner) */
   button:not([data-circle]),
   [role="button"]:not([data-circle]) {
-    border-radius: 0.375rem;
+    border-radius: 0.25rem;
   }
 
+  button[class*="rounded-md"]:not([data-circle]),
+  button[class*="rounded-lg"]:not([data-circle]),
   button[class*="rounded-xl"]:not([data-circle]),
+  [role="button"][class*="rounded-lg"]:not([data-circle]),
   [role="button"][class*="rounded-xl"]:not([data-circle]) {
-    border-radius: 0.375rem;
+    border-radius: 0.25rem;
   }
 
   button[class*="rounded-2xl"]:not([data-circle]),
   button[class*="rounded-3xl"]:not([data-circle]),
   [role="button"][class*="rounded-2xl"]:not([data-circle]) {
-    border-radius: 0.4375rem;
+    border-radius: 0.3125rem;
   }
 
   button[class*="rounded-full"]:not([data-circle]):not(.w-6):not(.w-7):not(.w-8),
   [role="button"][class*="rounded-full"]:not([data-circle]) {
-    border-radius: 0.375rem;
+    border-radius: 0.25rem;
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -272,18 +277,32 @@
   background-image:
     linear-gradient(to right, rgba(2, 132, 199, 0.065) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(2, 132, 199, 0.065) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background-size: 36px 36px;
+  animation: sci-grid-pan 18s linear infinite;
 }
 .dark .sci-blueprint-bg {
   background-image:
-    linear-gradient(to right, rgba(56, 189, 248, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
+    linear-gradient(to right, rgba(56, 189, 248, 0.085) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.085) 1px, transparent 1px);
+  background-size: 36px 36px;
 }
 
-/* Precision Architectural Corner Caliper Frame for Scientific Cards & Primary Buttons */
+@keyframes sci-corner-breathe {
+  0%, 100% { opacity: 0.42; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes sci-border-glide {
+  0% { transform: translateX(-115%); opacity: 0; }
+  20% { opacity: 0.75; }
+  80% { opacity: 0.75; }
+  100% { transform: translateX(220%); opacity: 0; }
+}
+
+/* Precision Live Architectural Frame: animated corner calipers & perimeter sweep */
 .sci-frame {
   position: relative;
+  overflow: hidden;
 }
 .sci-frame::before {
   content: '';
@@ -292,16 +311,28 @@
   border-radius: inherit;
   padding: 1px;
   background:
-    linear-gradient(to right, rgba(14, 165, 233, 0.55) 10px, transparent 10px) 0 0 / 100% 2px no-repeat,
-    linear-gradient(to bottom, rgba(14, 165, 233, 0.55) 10px, transparent 10px) 0 0 / 2px 100% no-repeat,
-    linear-gradient(to left, rgba(14, 165, 233, 0.55) 10px, transparent 10px) 100% 100% / 100% 2px no-repeat,
-    linear-gradient(to top, rgba(14, 165, 233, 0.55) 10px, transparent 10px) 100% 100% / 2px 100% no-repeat;
-  opacity: 0.35;
+    linear-gradient(to right, rgba(14, 165, 233, 0.65) 14px, transparent 14px) 0 0 / 100% 2px no-repeat,
+    linear-gradient(to bottom, rgba(14, 165, 233, 0.65) 14px, transparent 14px) 0 0 / 2px 100% no-repeat,
+    linear-gradient(to left, rgba(14, 165, 233, 0.65) 14px, transparent 14px) 100% 100% / 100% 2px no-repeat,
+    linear-gradient(to top, rgba(14, 165, 233, 0.65) 14px, transparent 14px) 100% 100% / 2px 100% no-repeat;
   pointer-events: none;
-  transition: opacity 220ms ease;
+  animation: sci-corner-breathe 3.6s ease-in-out infinite;
+  z-index: 3;
+}
+.sci-frame::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 42%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.7), rgba(45, 212, 191, 0.55), transparent);
+  pointer-events: none;
+  animation: sci-border-glide 6.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 3;
 }
 .sci-frame:hover::before {
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .animate-electric-flow {
@@ -590,6 +621,38 @@
 .group:hover .icon-anim-book {
   animation: none;
   transform: rotate(-8deg) scale(1.22);
+}
+
+@keyframes icon-grid-pulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.1) rotate(4deg); }
+}
+
+.icon-anim-grid {
+  display: inline-flex;
+  transform-origin: center;
+  animation: icon-grid-pulse 3.1s ease-in-out infinite;
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-grid {
+  animation: none;
+  transform: rotate(90deg) scale(1.18);
+}
+
+@keyframes icon-hand-wave {
+  0%, 100% { transform: rotate(-6deg) translateY(0px); }
+  50% { transform: rotate(10deg) translateY(-1.5px); }
+}
+
+.icon-anim-hand {
+  display: inline-flex;
+  transform-origin: bottom center;
+  animation: icon-hand-wave 2.4s ease-in-out infinite;
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.group:hover .icon-anim-hand {
+  animation: none;
+  transform: rotate(16deg) scale(1.22);
 }
 
 /* Kinetic Deck Button: larger specular sweep, glow edge, and spring lift */
@@ -1201,6 +1264,8 @@
   .icon-anim-award,
   .icon-anim-list,
   .icon-anim-book,
+  .icon-anim-grid,
+  .icon-anim-hand,
   .icon-anim-gear,
   .holo-conic-ring,
   .holo-scan-beam,
@@ -1329,16 +1394,15 @@
   animation: roadmapShimmerBar 3s linear infinite;
 }
 
-/* Smooth FPS GPU Compositor Optimizations: reduce heavy 24-40px backdrop-blur fill-rate over 60fps Canvas */
-[data-perf="smooth"] .backdrop-blur-2xl,
-[data-perf="smooth"] .backdrop-blur-xl {
-  -webkit-backdrop-filter: blur(8px) !important;
-  backdrop-filter: blur(8px) !important;
+/* Smooth FPS GPU Compositor Optimizations: trim heavy backdrop-blur repaints while keeping live frame motion active */
+[data-perf="smooth"] [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
-[data-perf="balanced"] .backdrop-blur-2xl {
-  -webkit-backdrop-filter: blur(12px) !important;
-  backdrop-filter: blur(12px) !important;
+[data-perf="balanced"] [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
 }
 
 [data-perf="smooth"] .animate-wave-glide,
@@ -1350,6 +1414,114 @@
 .cv-auto {
   content-visibility: auto;
   contain-intrinsic-size: 1px 420px;
+}
+
+/* ============================================================================
+   PHYSICS DOMAIN ANIMATIONS (Mechanics, Waves, EM, Optics, Quantum/Thermal)
+   ============================================================================ */
+@keyframes physics-projectile-arc {
+  0% { offset-distance: 0%; opacity: 0.4; transform: scale(0.85); }
+  12% { opacity: 1; transform: scale(1); }
+  88% { opacity: 1; transform: scale(1); }
+  100% { offset-distance: 100%; opacity: 0.35; transform: scale(0.85); }
+}
+
+@keyframes physics-spring-osc {
+  0%, 100% { transform: translateY(-9px); }
+  50% { transform: translateY(9px); }
+}
+
+@keyframes physics-wave-shift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-48px); }
+}
+
+@keyframes physics-electron-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes physics-electron-orbit-rev {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes physics-flux-dash {
+  to { stroke-dashoffset: -40; }
+}
+
+@keyframes physics-beam-shimmer {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.98; }
+}
+
+@keyframes physics-thermal-drift-a {
+  0%, 100% { transform: translate(0px, 0px); }
+  25% { transform: translate(11px, -7px); }
+  50% { transform: translate(18px, 6px); }
+  75% { transform: translate(6px, 9px); }
+}
+
+@keyframes physics-thermal-drift-b {
+  0%, 100% { transform: translate(0px, 0px); }
+  33% { transform: translate(-12px, 8px); }
+  66% { transform: translate(8px, -10px); }
+}
+
+.physics-anim-projectile {
+  offset-path: path('M 18 76 Q 110 8 202 76');
+  animation: physics-projectile-arc 2.6s cubic-bezier(0.35, 0.1, 0.25, 1) infinite;
+}
+
+.physics-anim-spring {
+  animation: physics-spring-osc 1.8s ease-in-out infinite;
+}
+
+.physics-anim-wave {
+  animation: physics-wave-shift 2.2s linear infinite;
+}
+
+.physics-anim-orbit {
+  transform-box: view-box;
+  transform-origin: center;
+  animation: physics-electron-orbit 5.6s linear infinite;
+}
+
+.physics-anim-orbit-rev {
+  transform-box: view-box;
+  transform-origin: center;
+  animation: physics-electron-orbit-rev 7.2s linear infinite;
+}
+
+.physics-anim-flux {
+  stroke-dasharray: 6 4;
+  animation: physics-flux-dash 1.3s linear infinite;
+}
+
+.physics-anim-beam {
+  animation: physics-beam-shimmer 2.1s ease-in-out infinite;
+}
+
+.physics-anim-thermal-a {
+  animation: physics-thermal-drift-a 3.4s ease-in-out infinite;
+}
+
+.physics-anim-thermal-b {
+  animation: physics-thermal-drift-b 2.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .physics-anim-projectile,
+  .physics-anim-spring,
+  .physics-anim-wave,
+  .physics-anim-orbit,
+  .physics-anim-orbit-rev,
+  .physics-anim-flux,
+  .physics-anim-beam,
+  .physics-anim-thermal-a,
+  .physics-anim-thermal-b {
+    animation: none !important;
+  }
 }
 
 /* Custom scrollbars for code editor and simulation consoles */

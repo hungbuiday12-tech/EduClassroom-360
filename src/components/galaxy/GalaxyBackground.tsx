@@ -102,8 +102,8 @@ function normalizeAngle(a: number): number {
 }
 
 const TARGET_FRAME_MS: Record<PerformanceMode, number> = {
-  smooth: 26, // ~38 FPS ambient background pacing -> huge CPU/GPU savings
-  balanced: 18, // ~55 FPS
+  smooth: 33, // ~30 FPS ambient background pacing -> huge CPU/GPU savings
+  balanced: 20, // ~50 FPS
   ultra: 0 // native monitor refresh rate
 };
 
@@ -114,7 +114,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
   className = ''
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { creatureTheme, perfMode } = useBackgroundTheme();
+  const { creatureTheme, perfMode, bgStyle } = useBackgroundTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -125,6 +125,220 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
     let animationFrameId = 0;
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
+
+    const resolveDarkMode = () =>
+      typeof isDark === 'boolean'
+        ? isDark
+        : document.documentElement.classList.contains('dark');
+
+    // Dynamic animated modes for Minimal Ambient Drift, Studio Dot Wave, and Live Blueprint STEM
+    if (
+      bgStyle === 'minimal_solid' ||
+      bgStyle === 'studio_grid' ||
+      bgStyle === 'blueprint_tech'
+    ) {
+      let darkMode = resolveDarkMode();
+      let lastTick = performance.now();
+      const targetMs = perfMode === 'smooth' ? 33 : perfMode === 'balanced' ? 20 : 0;
+
+      const nodes = Array.from({ length: bgStyle === 'minimal_solid' ? 14 : 26 }, (_, idx) => ({
+        x: ((idx * 193) % 997) / 997,
+        y: ((idx * 389) % 991) / 991,
+        vx: (((idx % 5) - 2) || 1) * 0.00018,
+        vy: (((idx % 7) - 3) || -1) * 0.00014,
+        r: 1.4 + (idx % 3) * 0.85,
+        phase: idx * 0.7
+      }));
+
+      const onResizeDyn = () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      };
+      const classObs = new MutationObserver(() => {
+        darkMode = resolveDarkMode();
+      });
+      classObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      window.addEventListener('resize', onResizeDyn);
+
+      const renderDynamicPreset = (now: number) => {
+        animationFrameId = requestAnimationFrame(renderDynamicPreset);
+        if (targetMs > 0 && now - lastTick < targetMs) return;
+        const dt = Math.min(48, now - lastTick) / 16.667;
+        lastTick = now;
+        const t = now * 0.001;
+
+        if (bgStyle === 'minimal_solid') {
+          ctx.fillStyle = darkMode ? '#080d18' : '#f7faff';
+          ctx.fillRect(0, 0, width, height);
+
+          // Drifting dual ambient glow pools
+          const g1x = width * (0.28 + 0.12 * Math.sin(t * 0.28));
+          const g1y = height * (0.32 + 0.1 * Math.cos(t * 0.22));
+          const g1 = ctx.createRadialGradient(g1x, g1y, 10, g1x, g1y, width * 0.42);
+          g1.addColorStop(0, darkMode ? 'rgba(14, 165, 233, 0.11)' : 'rgba(56, 189, 248, 0.12)');
+          g1.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g1;
+          ctx.fillRect(0, 0, width, height);
+
+          const g2x = width * (0.72 + 0.11 * Math.cos(t * 0.24));
+          const g2y = height * (0.68 + 0.09 * Math.sin(t * 0.31));
+          const g2 = ctx.createRadialGradient(g2x, g2y, 10, g2x, g2y, width * 0.38);
+          g2.addColorStop(0, darkMode ? 'rgba(20, 184, 166, 0.09)' : 'rgba(37, 99, 235, 0.08)');
+          g2.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g2;
+          ctx.fillRect(0, 0, width, height);
+
+          for (const n of nodes) {
+            n.x = (n.x + n.vx * dt + 1) % 1;
+            n.y = (n.y + n.vy * dt + 1) % 1;
+            const pulse = 0.35 + 0.35 * Math.sin(t * 1.4 + n.phase);
+            ctx.fillStyle = darkMode
+              ? `rgba(125, 211, 252, ${pulse * 0.45})`
+              : `rgba(2, 132, 199, ${pulse * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(n.x * width, n.y * height, n.r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          return;
+        }
+
+        if (bgStyle === 'studio_grid') {
+          const grad = ctx.createLinearGradient(0, 0, width, height);
+          if (darkMode) {
+            grad.addColorStop(0, '#070d19');
+            grad.addColorStop(1, '#0c1629');
+          } else {
+            grad.addColorStop(0, '#f8fafc');
+            grad.addColorStop(1, '#eef4fb');
+          }
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, width, height);
+
+          // Harmonic wave dot matrix
+          const gap = 30;
+          const waveSpeed = t * 1.8;
+          for (let x = gap / 2; x < width; x += gap) {
+            for (let y = gap / 2; y < height; y += gap) {
+              const w = Math.sin(x * 0.011 + y * 0.009 - waveSpeed) * 0.5 + 0.5;
+              const radius = 1.0 + w * 1.15;
+              const alpha = (darkMode ? 0.11 : 0.14) + w * (darkMode ? 0.22 : 0.18);
+              ctx.fillStyle = darkMode
+                ? `rgba(56, 189, 248, ${alpha.toFixed(3)})`
+                : `rgba(2, 132, 199, ${alpha.toFixed(3)})`;
+              ctx.fillRect(x - radius * 0.5, y - radius * 0.5, radius, radius);
+            }
+          }
+
+          // Floating gentle constellation vertices
+          ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.12)' : 'rgba(37, 99, 235, 0.09)';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < nodes.length; i++) {
+            const a = nodes[i];
+            a.x = (a.x + a.vx * dt + 1) % 1;
+            a.y = (a.y + a.vy * dt + 1) % 1;
+            const ax = a.x * width;
+            const ay = a.y * height;
+            ctx.fillStyle = darkMode ? 'rgba(45, 212, 191, 0.45)' : 'rgba(2, 132, 199, 0.35)';
+            ctx.beginPath();
+            ctx.arc(ax, ay, a.r, 0, Math.PI * 2);
+            ctx.fill();
+            const b = nodes[(i + 1) % nodes.length];
+            const dist = Math.hypot(ax - b.x * width, ay - b.y * height);
+            if (dist < 220) {
+              ctx.beginPath();
+              ctx.moveTo(ax, ay);
+              ctx.lineTo(b.x * width, b.y * height);
+              ctx.stroke();
+            }
+          }
+          return;
+        }
+
+        // blueprint_tech — live panning STEM Oxy coordinate blueprint + calibration sweep
+        const grad = ctx.createLinearGradient(0, 0, width, height);
+        if (darkMode) {
+          grad.addColorStop(0, '#040a17');
+          grad.addColorStop(0.55, '#08152b');
+          grad.addColorStop(1, '#040914');
+        } else {
+          grad.addColorStop(0, '#f4f8fd');
+          grad.addColorStop(0.55, '#ebf3fc');
+          grad.addColorStop(1, '#f7fbff');
+        }
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+
+        const minor = 36;
+        const major = minor * 4;
+        const panX = (t * 10) % minor;
+        const panY = (t * 6) % minor;
+
+        ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.065)' : 'rgba(2, 132, 199, 0.07)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = panX; x < width; x += minor) {
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, height);
+        }
+        for (let y = panY; y < height; y += minor) {
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+        }
+        ctx.stroke();
+
+        // Sweeping calibration laser line
+        const sweepY = ((t * 48) % (height + 160)) - 80;
+        const sweepGrad = ctx.createLinearGradient(0, sweepY - 35, 0, sweepY + 35);
+        sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0)');
+        sweepGrad.addColorStop(0.5, darkMode ? 'rgba(56, 189, 248, 0.14)' : 'rgba(2, 132, 199, 0.11)');
+        sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        ctx.fillStyle = sweepGrad;
+        ctx.fillRect(0, sweepY - 35, width, 70);
+
+        const panMajorX = (t * 10) % major;
+        const panMajorY = (t * 6) % major;
+        ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(37, 99, 235, 0.14)';
+        ctx.beginPath();
+        for (let x = panMajorX; x < width; x += major) {
+          for (let y = panMajorY; y < height; y += major) {
+            ctx.moveTo(x - 4, y);
+            ctx.lineTo(x + 4, y);
+            ctx.moveTo(x, y - 4);
+            ctx.lineTo(x, y + 4);
+          }
+        }
+        ctx.stroke();
+
+        // Moving sine guide curve
+        ctx.strokeStyle = darkMode ? 'rgba(45, 212, 191, 0.18)' : 'rgba(13, 148, 136, 0.15)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        for (let x = 0; x <= width; x += 24) {
+          const y = height * 0.5 + Math.sin(x * 0.008 + t * 0.9) * 44;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        for (const n of nodes) {
+          n.x = (n.x + n.vx * dt + 1) % 1;
+          n.y = (n.y + n.vy * dt + 1) % 1;
+          ctx.fillStyle = darkMode ? 'rgba(56, 189, 248, 0.48)' : 'rgba(2, 132, 199, 0.35)';
+          ctx.beginPath();
+          ctx.arc(n.x * width, n.y * height, n.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      };
+
+      animationFrameId = requestAnimationFrame(renderDynamicPreset);
+      return () => {
+        cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('resize', onResizeDyn);
+        classObs.disconnect();
+      };
+    }
+
+    const effectiveCreatureTheme = bgStyle === 'aurora_clean' ? 'galaxy' : creatureTheme;
 
     const isLowPower = perfMode === 'smooth';
     const isBalanced = perfMode === 'balanced';
@@ -504,8 +718,8 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       };
     };
 
-    if (creatureTheme !== 'galaxy') {
-      if (creatureTheme === 'all') {
+    if (effectiveCreatureTheme !== 'galaxy') {
+      if (effectiveCreatureTheme === 'all') {
         const isSmall = width < 640;
         const mix: Array<{ kind: ConcreteCreatureKind; count: number }> = isLowPower
           ? [
@@ -548,9 +762,9 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           turtles: isLowPower ? 3 : width < 640 ? 4 : 6,
           fireflies: isLowPower ? 8 : width < 640 ? 10 : 16
         };
-        const count = countMap[creatureTheme];
+        const count = countMap[effectiveCreatureTheme];
         for (let i = 0; i < count; i++) {
-          creatures.push(createCreature(creatureTheme, i));
+          creatures.push(createCreature(effectiveCreatureTheme, i));
         }
       }
     }
@@ -1508,7 +1722,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       glowSpriteCache.clear();
       bgCacheCanvas = null;
     };
-  }, [interactive, intensity, isDark, creatureTheme, perfMode]);
+  }, [interactive, intensity, isDark, creatureTheme, perfMode, bgStyle]);
 
   return (
     <canvas

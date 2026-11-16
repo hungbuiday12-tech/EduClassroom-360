@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { HandGestureId, HandTrackingFrame } from './handGestureTracker';
+import {
+  DEFAULT_GESTURE_SETTINGS,
+  GestureAction2D,
+  GestureSettings,
+  HandGestureId,
+  HandTrackingFrame
+} from './handGestureTracker';
 
 export type Spatial2DModeId =
   | 'polygon_euler'
@@ -92,6 +98,7 @@ interface Spatial2DGestureCanvasProps {
   virtualGesture: HandGestureId;
   frozen: boolean;
   handFrameRef: React.MutableRefObject<HandTrackingFrame>;
+  gestureSettings?: GestureSettings;
   onMetricsChange: (metrics: { metricA: string; metricB: string; metricC: string }) => void;
 }
 
@@ -202,9 +209,18 @@ function pointInPoly(p: Vec2, poly: Vec2[]): boolean {
 }
 
 export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2DGestureCanvasProps>(
-  ({ mode2D, accentCss, isEn, cameraActive, virtualGesture, frozen, handFrameRef, onMetricsChange }, ref) => {
+  ({ mode2D, accentCss, isEn, cameraActive, virtualGesture, frozen, handFrameRef, gestureSettings, onMetricsChange }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const gridCacheRef = useRef<{
+      canvas: HTMLCanvasElement;
+      w: number;
+      h: number;
+      dpr: number;
+      scale: number;
+    } | null>(null);
+    const gestureSettingsRef = useRef<GestureSettings | undefined>(gestureSettings);
+    gestureSettingsRef.current = gestureSettings;
 
     // Interactive world states held in refs for crisp 60fps animation
     const worldScaleRef = useRef<number>(48); // pixels per unit
@@ -404,17 +420,71 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
         ctx.save();
         ctx.scale(dpr, dpr);
 
-        // Background
-        const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.45, 30, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
-        bgGrad.addColorStop(0, '#0b152a');
-        bgGrad.addColorStop(1, '#040814');
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, w, h);
+        // Pre-baked offscreen Background + Cartesian Oxy Grid blit (regenerated only on resize/scale)
+        const scale = worldScaleRef.current;
+        const cx = w * 0.5;
+        const cy = h * 0.5;
+        const cache = gridCacheRef.current;
+        if (!cache || cache.w !== w || cache.h !== h || cache.dpr !== dpr || cache.scale !== scale) {
+          const off = cache?.canvas ?? document.createElement('canvas');
+          off.width = Math.max(1, Math.floor(w * dpr));
+          off.height = Math.max(1, Math.floor(h * dpr));
+          const octx = off.getContext('2d');
+          if (octx) {
+            octx.save();
+            octx.scale(dpr, dpr);
+            const bgGrad = octx.createRadialGradient(w * 0.5, h * 0.45, 30, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
+            bgGrad.addColorStop(0, '#0b152a');
+            bgGrad.addColorStop(1, '#040814');
+            octx.fillStyle = bgGrad;
+            octx.fillRect(0, 0, w, h);
+
+            octx.strokeStyle = 'rgba(56, 189, 248, 0.1)';
+            octx.lineWidth = 1;
+            octx.beginPath();
+            for (let gx = -12; gx <= 12; gx++) {
+              const px = cx + gx * scale;
+              if (px < 0 || px > w) continue;
+              octx.moveTo(px, 0);
+              octx.lineTo(px, h);
+            }
+            for (let gy = -10; gy <= 10; gy++) {
+              const py = cy - gy * scale;
+              if (py < 0 || py > h) continue;
+              octx.moveTo(0, py);
+              octx.lineTo(w, py);
+            }
+            octx.stroke();
+
+            octx.strokeStyle = 'rgba(148, 163, 184, 0.38)';
+            octx.lineWidth = 1.5;
+            octx.beginPath();
+            octx.moveTo(0, cy);
+            octx.lineTo(w, cy);
+            octx.moveTo(cx, 0);
+            octx.lineTo(cx, h);
+            octx.stroke();
+
+            octx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+            octx.font = 'bold 11px monospace';
+            octx.fillText('O(0,0)', cx + 6, cy + 14);
+            octx.fillText('x', w - 16, cy - 8);
+            octx.fillText('y', cx + 10, 18);
+            octx.restore();
+          }
+          gridCacheRef.current = { canvas: off, w, h, dpr, scale };
+        }
+        if (gridCacheRef.current) {
+          ctx.drawImage(gridCacheRef.current.canvas, 0, 0, w, h);
+        }
 
         // Read hand gesture state or pointer fallback
         const frame = handFrameRef.current;
         const hasHand = cameraActive && frame.detected;
         const gesture: HandGestureId = hasHand ? frame.gesture : pointerDownRef.current ? virtualGesture : 'none';
+        const actionsMap = gestureSettingsRef.current?.gestureActions2D ?? DEFAULT_GESTURE_SETTINGS.gestureActions2D;
+        const mapped2DAction: GestureAction2D =
+          gesture === 'none' ? 'none' : actionsMap[gesture] ?? 'none';
 
         // Map normalized [0..1] hand coords into 2D world coordinates
         const normToWorld = (nx: number, ny: number): Vec2 => screenToWorld(nx * w, ny * h, w, h);
@@ -426,18 +496,24 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
         const h1World = hasHand && frame.hand1Index ? normToWorld(frame.hand1Index.x, frame.hand1Index.y) : primaryWorld;
         const h2World = hasHand && frame.hand2Index ? normToWorld(frame.hand2Index.x, frame.hand2Index.y) : null;
 
-        const isPinchActive = hasHand
-          ? frame.hand1Pinching || frame.hand2Pinching || frame.gesture === 'pinch'
-          : pointerDownRef.current && virtualGesture === 'pinch';
+        const isPinchActive =
+          mapped2DAction === 'grab_drag' ||
+          (hasHand && (frame.hand1Pinching || frame.hand2Pinching) && mapped2DAction !== 'none');
 
-        const isPointDraw = hasHand
-          ? frame.gesture === 'point_1' || (frame.handCount === 2 && frame.gesture === 'two_hand_10')
-          : pointerDownRef.current && virtualGesture === 'point_1';
+        const isPointDraw =
+          mapped2DAction === 'plot_draw' ||
+          (mapped2DAction === 'dual_compass' && hasHand && frame.handCount === 2);
 
-        const isTwoHand = hasHand ? frame.handCount === 2 : pointerDownRef.current && virtualGesture === 'two_hand_10';
+        const isTwoHand =
+          mapped2DAction === 'dual_compass' ||
+          (hasHand && frame.handCount === 2 && mapped2DAction !== 'none');
+
+        const isSweepAction = mapped2DAction === 'sweep_tangent';
+        const isCycleSymAction = mapped2DAction === 'cycle_symmetry';
+        const isRotateAction = mapped2DAction === 'rotate_pan';
 
         // Apply gesture interactions to the active 2D geometric lab (unless frozen)
-        if (!frozen) {
+        if (!frozen && mapped2DAction !== 'freeze_lock' && mapped2DAction !== 'none') {
           if (mode2D === 'polygon_euler') {
             const verts = polyVertsRef.current;
             if (isTwoHand && h2World) {
@@ -448,7 +524,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
                 verts[1].x += (h2World.x - verts[1].x) * 0.35;
                 verts[1].y += (h2World.y - verts[1].y) * 0.35;
               }
-            } else if (isPinchActive || (pointerDownRef.current && virtualGesture === 'palm_5')) {
+            } else if (isPinchActive || isRotateAction) {
               if (draggedPolyIdxRef.current === null) {
                 let bestIdx = 0;
                 let bestD = Infinity;
@@ -479,12 +555,12 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
             } else if (isPinchActive) {
               externalPtRef.current.x += (primaryWorld.x - externalPtRef.current.x) * 0.4;
               externalPtRef.current.y += (primaryWorld.y - externalPtRef.current.y) * 0.4;
-            } else if (gesture === 'slice_2') {
+            } else if (isSweepAction) {
               inscribedAngleRef.current = Math.atan2(
                 primaryWorld.y - circleCenterRef.current.y,
                 primaryWorld.x - circleCenterRef.current.x
               );
-            } else if (pointerDownRef.current && virtualGesture === 'two_hand_10') {
+            } else if (pointerDownRef.current && mapped2DAction === 'dual_compass') {
               const newR = Math.max(0.8, Math.min(4.8, Math.hypot(primaryWorld.x - circleCenterRef.current.x, primaryWorld.y - circleCenterRef.current.y)));
               circleRadiusRef.current = newR;
             }
@@ -506,14 +582,14 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
               }
             }
           } else if (mode2D === 'symmetry_kaleido') {
-            if (gesture === 'morph_3' && nowMs - lastSymToggleRef.current > 1100) {
+            if (isCycleSymAction && nowMs - lastSymToggleRef.current > 1100) {
               lastSymToggleRef.current = nowMs;
               const orders = [4, 6, 8, 12];
               const next = orders[(orders.indexOf(kaleidoOrderRef.current) + 1) % orders.length];
               kaleidoOrderRef.current = next;
               setKaleidoOrderUI(next);
             }
-            if (gesture === 'palm_5' && (hasHand || pointerDownRef.current)) {
+            if (isRotateAction && (hasHand || pointerDownRef.current)) {
               boardRotRef.current += (primaryWorld.x * 0.015);
             }
 
@@ -545,12 +621,12 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
               activeKaleidoH2Ref.current = [];
             }
           } else if (mode2D === 'conic_wave') {
-            if (isPinchActive || (pointerDownRef.current && virtualGesture === 'point_1')) {
+            if (isPinchActive || isPointDraw) {
               const targetA = Math.max(-0.8, Math.min(0.85, primaryWorld.y * 0.16));
               const targetB = Math.max(-1.6, Math.min(1.6, -primaryWorld.x * 0.28));
               conicRef.current.a += (targetA - conicRef.current.a) * 0.35;
               conicRef.current.b += (targetB - conicRef.current.b) * 0.35;
-            } else if (gesture === 'slice_2') {
+            } else if (isSweepAction) {
               const targetK = Math.max(-2.0, Math.min(2.0, primaryWorld.x * 0.4));
               const targetM = Math.max(-3.5, Math.min(3.5, primaryWorld.y));
               conicRef.current.k += (targetK - conicRef.current.k) * 0.35;
@@ -598,7 +674,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
                 pc.rot = Math.round(pc.rot / step) * step;
               }
               grabbedPieceRef.current = null;
-              if (gesture === 'palm_5' && (hasHand || pointerDownRef.current)) {
+              if (isRotateAction && (hasHand || pointerDownRef.current)) {
                 // Rotate nearest piece gently
                 let bestIdx = 0;
                 let bestD = Infinity;
@@ -617,46 +693,6 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
           }
         }
         prevPointerDownRef.current = pointerDownRef.current;
-
-        // Draw Cartesian Oxy Grid
-        const scale = worldScaleRef.current;
-        const cx = w * 0.5;
-        const cy = h * 0.5;
-
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.1)';
-        ctx.lineWidth = 1;
-        for (let gx = -12; gx <= 12; gx++) {
-          const px = cx + gx * scale;
-          if (px < 0 || px > w) continue;
-          ctx.beginPath();
-          ctx.moveTo(px, 0);
-          ctx.lineTo(px, h);
-          ctx.stroke();
-        }
-        for (let gy = -10; gy <= 10; gy++) {
-          const py = cy - gy * scale;
-          if (py < 0 || py > h) continue;
-          ctx.beginPath();
-          ctx.moveTo(0, py);
-          ctx.lineTo(w, py);
-          ctx.stroke();
-        }
-
-        // Major Oxy Axes
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.38)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(0, cy);
-        ctx.lineTo(w, cy);
-        ctx.moveTo(cx, 0);
-        ctx.lineTo(cx, h);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
-        ctx.font = 'bold 11px monospace';
-        ctx.fillText('O(0,0)', cx + 6, cy + 14);
-        ctx.fillText('x', w - 16, cy - 8);
-        ctx.fillText('y', cx + 10, 18);
 
         // Render Mode-Specific Live Geometry
         let metricA = '';

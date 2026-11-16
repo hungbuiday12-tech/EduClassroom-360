@@ -16,12 +16,12 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
     title: 'Cơ học & Nhiệt học Lớp 9: Vận tốc, Công, Cơ năng & Nhiệt lượng',
     subtitle: 'Vận tốc trung bình, công cơ học, công suất, định luật bảo toàn cơ năng và phương trình cân bằng nhiệt',
     description:
-      'Tổng hợp trọn vẹn kiến thức Cơ học và Nhiệt học trọng tâm lớp 9: tính vận tốc trung bình trên từng chặng đường, công – công suất, sự chuyển hóa giữa động năng – thế năng và công thức tính nhiệt lượng $Q = m c \\Delta t$.',
+      'Tổng hợp trọn vẹn kiến thức Cơ học và Nhiệt học trọng tâm lớp 9: hiểu đúng cách tính vận tốc trung bình trên từng chặng đường, công – công suất, sự chuyển hóa giữa động năng – thế năng và nhiệt lượng $Q = m c \\Delta t$.',
     theorySections: [
       {
         heading: '1. Vận tốc trung bình, Công và Công suất',
         content:
-          '• Vận tốc trung bình trên cả quãng đường: $v_{tb} = \\frac{s_1 + s_2 + \\dots}{t_1 + t_2 + \\dots}$ (Lưu ý: không lấy trung bình cộng $v_1, v_2$ khi thời gian khác nhau!).\n• Công cơ học khi lực $F$ làm vật dịch chuyển quãng đường $s$ theo hướng của lực: $A = F \\cdot s$ (đơn vị Jun, $1\\text{ J} = 1\\text{ N}\\cdot\\text{m}$).\n• Công suất đặc trưng cho tốc độ thực hiện công: $P = \\frac{A}{t} = F \\cdot v$ (đơn vị Oát, $1\\text{ W} = 1\\text{ J/s}$).'
+          '• Vận tốc trung bình trên cả hành trình: $v_{tb} = \\frac{s_1 + s_2 + \\dots}{t_1 + t_2 + \\dots}$ (Lưu ý: chỉ tính tổng quãng đường chia tổng thời gian; không lấy trung bình cộng $v_1, v_2$ khi thời gian đi mỗi chặng khác nhau!).\n• Công cơ học khi lực $F$ kéo vật dịch chuyển đoạn $s$ theo hướng lực: $A = F \\cdot s$ (đơn vị Jun, $1\\text{ J} = 1\\text{ N}\\cdot\\text{m}$).\n• Công suất cho biết lực thực hiện công nhanh hay chậm trong $1\\text{ giây}$: $P = \\frac{A}{t} = F \\cdot v$ (đơn vị Oát, $1\\text{ W} = 1\\text{ J/s}$).'
       },
       {
         heading: '2. Động năng, Thế năng & Bảo toàn cơ năng',
@@ -550,12 +550,12 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
     title: 'Chuyển động thẳng đều: Quãng đường – Độ dịch chuyển & Đồ thị (d – t)',
     subtitle: 'Phân biệt quãng đường và độ dịch chuyển, tốc độ và vận tốc, quy tắc đọc đồ thị độ dịch chuyển – thời gian (d – t)',
     description:
-      'Điểm mới quan trọng nhất của CT Vật lí 10 GDPT 2018: phân biệt rạch ròi đại lượng vô hướng (quãng đường $s$, tốc độ $v$) với đại lượng vectơ (độ dịch chuyển $\\vec{d}$, vận tốc $\\vec{v}$), đồng thời đọc thành thạo độ dốc đồ thị $(d - t)$.',
+      'Điểm quan trọng của Vật lí 10 GDPT 2018: phân biệt rõ quãng đường đi được $s$ (luôn dương, cộng dồn mọi đoạn) với độ dịch chuyển $d$ (tính từ điểm đầu tới điểm cuối, có thể bằng $0$ nếu quay về chỗ cũ), và đọc độ dốc đồ thị $(d - t)$.',
     theorySections: [
       {
         heading: '1. Phân biệt Quãng đường (s) và Độ dịch chuyển (d)',
         content:
-          '• **Quãng đường $s$**: Độ dài quỹ đạo vật thực tế đi được, luôn $\\ge 0$, không đổi dấu.\n• **Độ dịch chuyển $\\vec{d}$**: Vectơ nối từ điểm đầu đến điểm cuối của chuyển động. Trên đường thẳng, độ dịch chuyển đại số $d = x - x_0$ có thể dương, âm hoặc bằng $0$ (khi vật đi rồi quay về vị trí xuất phát).'
+          '• **Quãng đường $s$**: Tổng chiều dài đường vật thực tế đã đi (luôn $\\ge 0$, ví dụ đi $600\\text{ m}$ rồi quay lại $300\\text{ m}$ thì $s = 900\\text{ m}$).\n• **Độ dịch chuyển $\\vec{d}$**: Mũi tên nối thẳng từ vị trí xuất phát đến vị trí cuối. Nếu đi thẳng rồi quay lại bớt $300\\text{ m}$, độ dịch chuyển chỉ còn $d = 300\\text{ m}$; nếu quay về đúng chỗ cũ thì $d = 0$!'
       },
       {
         heading: '2. Phân biệt Tốc độ trung bình và Vận tốc trung bình',
@@ -1664,12 +1664,12 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
     title: 'Vật lí Hạt nhân, Năng lượng liên kết & Định luật Phóng xạ',
     subtitle: 'Cấu trúc hạt nhân A = Z + N, độ hụt khối Δm, năng lượng liên kết riêng, phản ứng hạt nhân và định luật phóng xạ mũ',
     description:
-      'Chương cuối cùng của Vật lí 12 GDPT 2018: tính độ hụt khối và mức độ bền vững của hạt nhân qua năng lượng liên kết riêng $W_{lkr}$, cân bằng bảo toàn số khối/điện tích trong phản ứng phân hạch – nhiệt hạch và mô phỏng trực tiếp sự phân rã phóng xạ.',
+      'Chương cuối của Vật lí 12 GDPT 2018: hiểu vì sao hạt nhân bị hụt khối so với tổng các hạt tạo thành ($\\Delta m$), đánh giá độ bền vững qua năng lượng liên kết riêng, cân bằng số khối/điện tích trong phản ứng hạt nhân và quan sát sự phân rã phóng xạ.',
     theorySections: [
       {
         heading: '1. Cấu tạo Hạt nhân & Năng lượng liên kết',
         content:
-          '• Kí hiệu hạt nhân ${}^A_Z X$ gồm $Z$ proton và $N = A - Z$ neutron.\n• Độ hụt khối: $\\Delta m = Z m_p + (A - Z) m_n - m_X$.\n• Năng lượng liên kết: $W_{lk} = \\Delta m \\cdot c^2$ (với $1\\text{ amu}\\cdot c^2 = 931{,}5\\text{ MeV}$).\n• Năng lượng liên kết riêng $\\varepsilon = \\frac{W_{lk}}{A}$ càng lớn thì hạt nhân càng bền vững (lớn nhất quanh $A \\in [50; 95]$).'
+          '• Kí hiệu hạt nhân ${}^A_Z X$ gồm $Z$ proton mang điện dương và $N = A - Z$ neutron trung hòa.\n• Độ hụt khối: Khối lượng hạt nhân thực tế luôn nhẹ hơn tổng khối lượng $Z$ proton và $N$ neutron rời rạc cộng lại: $\\Delta m = Z m_p + (A - Z) m_n - m_X$.\n• Phần khối lượng bị hụt đó chuyển thành **năng lượng liên kết** gắn chặt các hạt với nhau: $W_{lk} = \\Delta m \\cdot c^2$ (với $1\\text{ amu}\\cdot c^2 = 931{,}5\\text{ MeV}$).\n• Năng lượng liên kết riêng $\\varepsilon = \\frac{W_{lk}}{A}$ càng lớn thì hạt nhân càng bền vững (bền nhất quanh $A \\in [50; 95]$).'
       },
       {
         heading: '2. Phản ứng hạt nhân & Năng lượng phản ứng',
@@ -2610,7 +2610,7 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       {
         source: 'HSG Vật lí · Mạch đối xứng cầu',
         question:
-          'Cho 5 điện trở đều bằng $R = 10\\,\\Omega$ ghép thành mạch cầu có nhánh cầu là một Ampe kế lý tưởng ($R_A = 0$) nối từ C đến D. Nhánh AC là $R$, CB là $2R$, AD là $R$, DB là $2R$ (hoặc biến thể $R_{AC}=10, R_{CB}=20, R_{AD}=10, R_{DB}=20$? Nếu không cân bằng: $R_{AC}=10, R_{CB}=20, R_{AD}=20, R_{DB}=10$). Đặt $U_{AB} = 30\\text{ V}$, tính số chỉ Ampe kế khi $R_{AC}=10\\,\\Omega, R_{CB}=20\\,\\Omega, R_{AD}=20\\,\\Omega, R_{DB}=10\\,\\Omega$.',
+          'Cho mạch cầu AB có 4 cạnh mắc hai đầu nguồn $U_{AB} = 30\\text{ V}$ với $R_{AC} = 10\\,\\Omega$, $R_{CB} = 20\\,\\Omega$, $R_{AD} = 20\\,\\Omega$, $R_{DB} = 10\\,\\Omega$. Giữa hai điểm C và D mắc một Ampe kế lý tưởng ($R_A = 0$). Hãy tính số chỉ và chiều dòng điện qua Ampe kế.',
         hints: ['Vì $R_A = 0$, hai điểm C và D bị chập làm một nút! Mạch trở thành $(R_{AC} // R_{AD})$ nối tiếp $(R_{CB} // R_{DB})$.'],
         solutionSteps: [
           'Bước 1: Do $R_A = 0$, $V_C = V_D$. Chập nút C và D thành một điểm.',
@@ -2896,18 +2896,18 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
     grade: 'Lớp 11',
     track: 'chuyen',
     tier: 'Nâng cao',
-    stageLabel: 'Chuyên đề Sóng Âm & Cơ Học Tương Đối Cổ Điển',
+    stageLabel: 'Khu Chuyên Lí · Bậc 2: Nâng cao Chuyên · Sóng âm & Doppler',
     sourceTag: 'Bồi dưỡng Chuyên Lí · Lab 2D & 3D Doppler',
     description:
-      'Phân tích sự biến thiên bước sóng và tần số âm thanh khi nguồn phát chuyển động tương đối so với máy thu, cùng cơ chế tạo nón sóng xung kích khi vượt tốc độ âm thanh.',
+      'Giải thích trực quan sự thay đổi bước sóng và cao độ âm thanh khi nguồn phát chuyển động (như tiếng còi xe cứu thương lao tới rồi đi xa), cùng cơ chế hình thành nón sóng xung kích khi bay vượt tốc độ âm thanh.',
     theorySections: [
       {
         heading: '1. Độ nén mặt sóng & Công thức Doppler',
-        content: 'Khi nguồn phát chuyển động lại gần máy thu đứng yên với tốc độ $v_s < v$, các mặt sóng phía trước bị nén lại nên bước sóng giảm $\\lambda\' = \\lambda\\left(1 - \\frac{v_s}{v}\\right)$, kéo theo tần số thu được tăng lên.'
+        content: 'Khi nguồn âm vừa phát ra sóng vừa chạy đuổi theo sóng đó về phía người nghe đứng yên với tốc độ $v_s < v$, các gợn sóng phía trước bị ép sát vào nhau nên bước sóng ngắn lại: $\\lambda\' = \\lambda\\left(1 - \\frac{v_s}{v}\\right)$, làm tần số âm nghe được cao (bổng) hơn bình thường.'
       },
       {
         heading: '2. Nón sóng Mach khi $v_s \\ge v$',
-        content: 'Khi tốc độ nguồn vượt quá tốc độ truyền sóng trong môi trường ($M = v_s/v > 1$), các mặt sóng giao thoa tăng cường tạo thành mặt nón sóng xung kích với nửa góc mở $\\sin\\theta = \\frac{v}{v_s} = \\frac{1}{M}$.'
+        content: 'Khi nguồn phát chuyển động nhanh hơn tốc độ âm thanh ($M = v_s/v > 1$), các mặt cầu sóng xếp chồng lên nhau tạo thành mặt nón sóng xung kích (gây tiếng nổ siêu thanh) với nửa góc mở $\\sin\\theta = \\frac{v}{v_s} = \\frac{1}{M}$.'
       }
     ],
     keyFormulas: [
@@ -3236,12 +3236,12 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       {
         heading: '1. Công của lực điện & Hiệu điện thế',
         content:
-          '• Trong điện trường đều $\\vec{E}$, công của lực điện khi dịch chuyển điện tích $q$ từ $M$ đến $N$ chỉ phụ thuộc vị trí đầu và cuối: $A_{MN} = q E d$ ($d = \\overline{M\'N\'}$ là hình chiếu độ dịch chuyển lên phương đường sức).\n• Hiệu điện thế giữa $M$ và $N$: $U_{MN} = V_M - V_N = \\frac{A_{MN}}{q} = E \\cdot d$.'
+          '• Trong điện trường đều $\\vec{E}$, công của lực điện khi dịch chuyển điện tích $q$ từ $M$ đến $N$ chỉ phụ thuộc điểm đầu và điểm cuối, không phụ thuộc đường đi cong hay thẳng: $A_{MN} = q E d$ (trong đó $d$ là độ dài hình chiếu đoạn dịch chuyển lên phương đường sức; $d > 0$ nếu đi xuôi chiều $\\vec{E}$, $d < 0$ nếu đi ngược chiều $\\vec{E}$).\n• Hiệu điện thế giữa $M$ và $N$: $U_{MN} = V_M - V_N = \\frac{A_{MN}}{q} = E \\cdot d$.'
       },
       {
         heading: '2. Tụ điện & Năng lượng điện trường',
         content:
-          '• Điện dung đặc trưng cho khả năng tích điện của tụ ở một hiệu điện thế: $C = \\frac{Q}{U}$ (đơn vị Fara, $1\\,\\mu\\text{F} = 10^{-6}\\text{ F}$, $1\\text{ nF} = 10^{-9}\\text{ F}$).\n• Năng lượng điện trường bên trong tụ điện: $W = \\frac{1}{2}QU = \\frac{1}{2}CU^2 = \\frac{Q^2}{2C}$.'
+          '• Điện dung $C$ đo khả năng tích trữ điện tích của tụ ở một hiệu điện thế: $C = \\frac{Q}{U}$ (đơn vị Fara, $1\\,\\mu\\text{F} = 10^{-6}\\text{ F}$, $1\\text{ nF} = 10^{-9}\\text{ F}$).\n• Năng lượng tích trữ bên trong tụ điện: $W = \\frac{1}{2}QU = \\frac{1}{2}CU^2 = \\frac{Q^2}{2C}$.'
       }
     ],
     keyFormulas: [

@@ -18,9 +18,13 @@ import {
   StepForward,
   Plus,
   Minus,
+  Grid,
+  Sparkles,
+  Cpu,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { ViewportPortal } from '../common/ViewportPortal';
+import { PHYSICS_3D_SIMS } from '../../data/physicsDomainsData';
 
 interface Numeric3DControlProps {
   label: string;
@@ -128,10 +132,19 @@ export type Physics3DMode =
 
 interface Physics3DViewProps {
   initialMode?: Physics3DMode;
+  allowedModes?: Physics3DMode[];
+  domainTitle?: string;
+  onSelectMode?: (mode: Physics3DMode) => void;
   onBack?: () => void;
 }
 
-export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pendulum_spring', onBack }) => {
+export const Physics3DView: React.FC<Physics3DViewProps> = ({
+  initialMode = 'pendulum_spring',
+  allowedModes,
+  domainTitle,
+  onSelectMode,
+  onBack,
+}) => {
   const { t } = useLanguage();
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +159,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
   const [simSpeed, setSimSpeed] = useState<number>(1.0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isControlsExpanded, setIsControlsExpanded] = useState(true);
+  const [showGrid3D, setShowGrid3D] = useState(true);
+  const [quality3D, setQuality3D] = useState<'light' | 'high'>('light');
 
   // Simulation physics parameters
   // 1. Pendulum / Spring
@@ -209,9 +224,13 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
   // WebGL context safety
   const [contextLost, setContextLost] = useState(false);
 
-  // Refs for animation
+  // Refs for animation (unified single WebGL rAF loop — zero setInterval drift)
   const sceneRef = useRef<THREE.Scene | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const gridRef = useRef<THREE.GridHelper | null>(null);
+  const isSoftwareGlRef = useRef<boolean>(false);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
+  const sceneTickRef = useRef<((effDt: number) => void) | null>(null);
   const isRunningRef = useRef<boolean>(isRunning);
   const simSpeedRef = useRef<number>(simSpeed);
   const stepTriggerRef = useRef<number>(0);
@@ -221,6 +240,15 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
   useEffect(() => {
     simSpeedRef.current = simSpeed;
   }, [simSpeed]);
+  useEffect(() => {
+    if (gridRef.current) gridRef.current.visible = showGrid3D;
+  }, [showGrid3D]);
+  useEffect(() => {
+    if (rendererRef.current && !isSoftwareGlRef.current) {
+      const cap = quality3D === 'high' ? 1.75 : 1.15;
+      rendererRef.current.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
+    }
+  }, [quality3D]);
   const simStateRef = useRef({
     time: 0,
     projT: 0,
@@ -276,6 +304,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       return /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(gpu);
     })();
 
+    isSoftwareGlRef.current = isSoftwareGl;
+
     // Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
@@ -296,8 +326,9 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       antialias: !isSoftwareGl,
       powerPreference: 'high-performance',
     });
+    rendererRef.current = renderer;
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, quality3D === 'high' ? 1.75 : 1.15));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
@@ -326,6 +357,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     // Grid Floor
     const grid = new THREE.GridHelper(20, 20, 0x3b82f6, 0x1e293b);
     grid.position.y = -0.01;
+    grid.visible = showGrid3D;
+    gridRef.current = grid;
     scene.add(grid);
 
     // Dynamic models group
@@ -333,9 +366,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     scene.add(dynamicGroup);
     dynamicGroupRef.current = dynamicGroup;
 
-    // Animation loop
+    // Unified single Animation Loop (time integration + scene kinematics + WebGL render)
     let frameId = 0;
     let lastTime = performance.now();
+    let lastTickStep = -1;
 
     const animate = () => {
       frameId = requestAnimationFrame(animate);
@@ -344,14 +378,19 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         return;
       }
       const now = performance.now();
-      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
 
-      if (isRunningRef.current) {
-        const effDt = dt * simSpeedRef.current;
-        simStateRef.current.time += effDt;
-        simStateRef.current.projT += effDt;
-        simStateRef.current.electronAngle += effDt * 3.0;
+      const stepped = lastTickStep !== stepTriggerRef.current;
+      if (isRunningRef.current || stepped) {
+        lastTickStep = stepTriggerRef.current;
+        const effDt = isRunningRef.current ? dt * simSpeedRef.current : 0.05;
+        if (isRunningRef.current) {
+          simStateRef.current.time += effDt;
+          simStateRef.current.projT += effDt;
+          simStateRef.current.electronAngle += effDt * 3.0;
+        }
+        sceneTickRef.current?.(effDt);
       }
 
       controls.update();
@@ -399,6 +438,9 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
           else obj.material.dispose();
         }
       });
+      sceneTickRef.current = null;
+      rendererRef.current = null;
+      gridRef.current = null;
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -406,10 +448,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     };
   }, []);
 
-  // Construct and animate 3D scene elements per tick
+  // Construct and animate 3D scene elements per tick (bound cleanly to rAF)
   useEffect(() => {
     const group = dynamicGroupRef.current;
     if (!group) return;
+    sceneTickRef.current = null;
 
     // Clear previous geometries and materials recursively to prevent GPU leaks
     while (group.children.length > 0) {
@@ -490,11 +533,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       group.add(pendLine);
       const pendPosAttr = pendLineGeo.attributes.position as THREE.BufferAttribute;
 
-      // Tick update for spring and pendulum (zero geometry allocations!)
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
-        lastStepSeen = stepTriggerRef.current;
+      // Tick update for spring and pendulum (zero geometry allocations, synced to rAF!)
+      sceneTickRef.current = () => {
         const tNow = simStateRef.current.time;
         const springY = 2.5 + Math.sin(omega * tNow) * 1.2;
         springBob.position.y = springY;
@@ -508,9 +548,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
 
         pendPosAttr.setXYZ(1, pendX, pendY, 0);
         pendPosAttr.needsUpdate = true;
-      }, 24);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -570,11 +613,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       ring.position.set(targetDist, 0.02, 0);
       group.add(ring);
 
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
-        lastStepSeen = stepTriggerRef.current;
-        const currentSimT = (simStateRef.current.projT % (tMax + 0.8));
+      sceneTickRef.current = () => {
+        const currentSimT = simStateRef.current.projT % (tMax + 0.8);
         if (currentSimT <= tMax) {
           const bx = -6 + v0x * currentSimT * 0.4;
           const by = Math.max(0, 0.2 + (v0y * currentSimT - 0.5 * g * currentSimT * currentSimT) * 0.4);
@@ -583,9 +623,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         } else {
           ball.visible = false;
         }
-      }, 30);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -634,18 +677,18 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       const helixMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 2 });
       group.add(new THREE.Line(helixGeo, helixMat));
 
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
-        lastStepSeen = stepTriggerRef.current;
+      sceneTickRef.current = () => {
         const tCur = simStateRef.current.time * 2.5;
         const px = Math.cos(tCur) * R_cyclotron;
         const py = 3 + Math.sin(tCur) * R_cyclotron;
         const pz = -3 + ((tCur * 0.8) % 6);
         particle.position.set(px, py, pz);
-      }, 30);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -699,10 +742,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         invSqrtD2[i] = 0.25 / Math.max(1, Math.sqrt(d2));
       }
 
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
-        lastStepSeen = stepTriggerRef.current;
+      sceneTickRef.current = () => {
         const tNow = simStateRef.current.time;
         const phaseShift = Math.max(0.2, waveFrequency) * Math.PI * 2 * tNow;
         const k = 1.8;
@@ -715,9 +755,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         }
         posAttr.needsUpdate = true;
         planeGeo.computeVertexNormals();
-      }, 30);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -773,17 +816,17 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       const safeN = Math.max(1, Math.min(4, quantumN));
       const currentOrbitR = orbitRadii[safeN - 1];
 
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
-        lastStepSeen = stepTriggerRef.current;
+      sceneTickRef.current = () => {
         const angle = simStateRef.current.electronAngle * (2.0 / Math.sqrt(safeN));
         const ex = Math.cos(angle) * currentOrbitR;
         const ez = Math.sin(angle) * currentOrbitR;
         electron.position.set(ex, 2.5, ez);
-      }, 30);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -941,10 +984,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       pLine.computeLineDistances();
       group.add(pLine);
 
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
-        lastStepSeen = stepTriggerRef.current;
+      sceneTickRef.current = () => {
         const cycleT = simStateRef.current.time % 3.6;
         const rawX = -4.8 + kinV0 * cycleT * 0.45 + 0.5 * kinAccel * cycleT * cycleT * 0.45;
         const clampedX = Math.max(-5.2, Math.min(5.0, rawX));
@@ -952,9 +992,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         car.position.x = clampedX;
         vArrow.position.set(clampedX, 1.05, 0);
         vArrow.setLength(Math.max(0.5, Math.min(3.0, Math.abs(curV) * 0.32)), 0.28, 0.15);
-      }, 30);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -1019,13 +1062,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       const minY = 0.28;
       const maxY = Math.max(0.8, boxH - 0.12);
 
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
-        lastStepSeen = stepTriggerRef.current;
-        const spd = simSpeedRef.current;
+      sceneTickRef.current = (effDt: number) => {
+        const dtScale = Math.min(2.5, Math.max(0.15, (effDt || 0.016) * 35));
         for (const p of particles) {
-          p.mesh.position.addScaledVector(p.vel, spd);
+          p.mesh.position.addScaledVector(p.vel, dtScale);
           if (p.mesh.position.x > halfW || p.mesh.position.x < -halfW) p.vel.x *= -1;
           if (p.mesh.position.z > halfD || p.mesh.position.z < -halfD) p.vel.z *= -1;
           if (p.mesh.position.y > maxY || p.mesh.position.y < minY) p.vel.y *= -1;
@@ -1033,9 +1073,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
           p.mesh.position.z = Math.max(-halfD, Math.min(halfD, p.mesh.position.z));
           p.mesh.position.y = Math.max(minY, Math.min(maxY, p.mesh.position.y));
         }
-      }, 28);
+      };
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -1084,10 +1126,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       const rodPosAttr = rodLine.geometry.attributes.position as THREE.BufferAttribute;
       const vDir = new THREE.Vector3();
       const fDir = new THREE.Vector3();
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
-        lastStepSeen = stepTriggerRef.current;
+      sceneTickRef.current = () => {
         const theta = simStateRef.current.time * Math.max(0.2, circOmega3D);
         const cosT = Math.cos(theta);
         const sinT = Math.sin(theta);
@@ -1107,9 +1146,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         fArrow.position.set(bx, yLevel, bz);
         fArrow.setDirection(fDir);
         fArrow.setLength(Math.min(r * 0.8, Math.max(0.8, circOmega3D * circOmega3D * r * 0.12)), 0.3, 0.15);
-      }, 28);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -1164,14 +1206,14 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       axle.position.set(0, 2.2, 0);
       group.add(axle);
 
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
-        lastStepSeen = stepTriggerRef.current;
+      sceneTickRef.current = () => {
         coilGroup.rotation.z = simStateRef.current.time * Math.max(0.2, genOmega3D);
-      }, 30);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -1311,10 +1353,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         sinHarmonics[i] = amp * Math.sin(harmonics * Math.PI * (i / segs));
       }
 
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
-        lastStepSeen = stepTriggerRef.current;
+      sceneTickRef.current = () => {
         const tCur = simStateRef.current.time;
         const cosW = Math.cos(tCur * (2.2 + harmonics * 0.55));
         for (let i = 0; i <= segs; i++) {
@@ -1323,9 +1362,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
           stringPosAttr.setY(i, by);
         }
         stringPosAttr.needsUpdate = true;
-      }, 24);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -1368,11 +1410,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
       const cycleLen = 4.6;
       const waveV = 1.85;
       const srcV = waveV * ratio;
-      let lastStepSeen = -1;
 
-      const updateInterval = setInterval(() => {
-        if (!isRunning && lastStepSeen === stepTriggerRef.current) return;
-        lastStepSeen = stepTriggerRef.current;
+      sceneTickRef.current = () => {
         const tCycle = simStateRef.current.time % cycleLen;
         const srcX = ratio < 0.01 ? 0 : -4.2 + srcV * tCycle;
         sourceOrb.position.set(Math.min(4.8, srcX), yWave, 0);
@@ -1399,9 +1438,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
           rObj.mesh.scale.setScalar(rad);
           (rObj.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0.05, 0.85 * (1 - age / 3.2));
         }
-      }, 28);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -1461,10 +1503,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
 
       const startVec = new THREE.Vector3();
       const endVec = new THREE.Vector3();
-      let lastStepSeen = -1;
-      const updateInterval = setInterval(() => {
-        if (document.hidden || (!isRunning && lastStepSeen === stepTriggerRef.current)) return;
-        lastStepSeen = stepTriggerRef.current;
+      sceneTickRef.current = () => {
         const tCur = simStateRef.current.time;
 
         for (let i = 0; i < photons.length; i++) {
@@ -1484,13 +1523,15 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
             electrons[i].position.set(-2.7 + prog * 5.4, yOff, zOff);
           }
         }
-      }, 24);
+      };
+      sceneTickRef.current(0);
 
-      return () => clearInterval(updateInterval);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
   }, [
     mode,
-    isRunning,
     mass,
     springK,
     gravityPreset,
@@ -1523,6 +1564,86 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
     photoWorkEv,
   ]);
 
+  const current3DSpec = PHYSICS_3D_SIMS[mode];
+
+  const apply3DPreset = (settings: {
+    speed?: number;
+    amplitude?: number;
+    frequency?: number;
+    showGrid?: boolean;
+  }) => {
+    if (typeof settings.speed === 'number') setSimSpeed(settings.speed);
+    if (typeof settings.showGrid === 'boolean') setShowGrid3D(settings.showGrid);
+    const amp = settings.amplitude ?? 1;
+    const freq = settings.frequency ?? 1;
+    switch (mode) {
+      case 'pendulum_spring':
+        setSpringK(Math.round(40 / Math.max(0.4, amp)));
+        break;
+      case 'projectile_3d':
+        setProjAngle(45);
+        setProjV0(Math.round(18 * amp));
+        break;
+      case 'circular_motion_3d':
+        setCircRadius3D(Number((2.5 * amp).toFixed(1)));
+        setCircOmega3D(Number((2.2 * (settings.speed ?? 1)).toFixed(1)));
+        break;
+      case 'wave_ripple':
+        setWaveFrequency(Number((2.5 * freq).toFixed(1)));
+        break;
+      case 'standing_wave_3d':
+        setStandingAmp(Number(Math.min(1.4, 0.9 * amp).toFixed(2)));
+        setStandingN(freq > 1.3 ? 5 : 3);
+        break;
+      case 'doppler_effect_3d':
+        setDopplerSpeedRatio((settings.speed ?? 1) > 1.3 ? 0.95 : 0.55);
+        setDopplerFreq(Number((2.8 * freq).toFixed(1)));
+        break;
+      case 'lorentz_helix':
+        setMagneticB(amp > 1.3 ? 1.0 : 2.0);
+        break;
+      case 'ac_generator_3d':
+        setGenOmega3D(Number((2.5 * (settings.speed ?? 1)).toFixed(1)));
+        break;
+      case 'optics_3d':
+        setFocalLength3D(amp > 1.3 ? 1.4 : 2.2);
+        break;
+      case 'young_interference_3d':
+        setYoungLambdaUm(freq < 0.85 ? 0.65 : 0.53);
+        setYoungSlitMm(amp > 1.3 ? 0.6 : 1.0);
+        break;
+      case 'photoelectric_3d':
+        setPhotoLambdaNm(freq > 1.2 ? 230 : 300);
+        break;
+      case 'thermal_gas_3d':
+        setGasTempK(Math.round(300 * Math.max(0.6, freq)));
+        break;
+      default:
+        break;
+    }
+  };
+
+  const allModeTabs: { id: Physics3DMode; label: string }[] = [
+    { id: 'kinematics_3d', label: 'Động Học & Vectơ' },
+    { id: 'circular_motion_3d', label: 'Tròn Đều 3D' },
+    { id: 'projectile_3d', label: 'Ném Xiên 3D' },
+    { id: 'pendulum_spring', label: 'Con Lắc 3D' },
+    { id: 'wave_ripple', label: 'Sóng Nước 3D' },
+    { id: 'standing_wave_3d', label: 'Sóng Dừng 3D' },
+    { id: 'doppler_effect_3d', label: 'Doppler 3D' },
+    { id: 'lorentz_helix', label: 'Từ Trường Lorentz' },
+    { id: 'ac_generator_3d', label: 'Máy Phát AC 3D' },
+    { id: 'optics_3d', label: 'Quang Học 3D' },
+    { id: 'young_interference_3d', label: 'Khe Y-âng 3D' },
+    { id: 'photoelectric_3d', label: 'Quang Điện 3D' },
+    { id: 'thermal_gas_3d', label: 'Khí Lí Tưởng 3D' },
+    { id: 'bohr_atom', label: 'Nguyên Tử Bohr' },
+  ];
+  const visibleModeTabs =
+    allowedModes && allowedModes.length > 0
+      ? allModeTabs.filter((m) => allowedModes.includes(m.id))
+      : allModeTabs;
+
   // Derived telemetry
   const gVal = getGravityValue();
   const radVal = (projAngle * Math.PI) / 180;
@@ -1535,12 +1656,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col lg:block ${
           isFullscreen
             ? 'fixed inset-0 z-[100] h-[100dvh] w-screen rounded-none'
-            : 'rounded-2xl sm:rounded-3xl min-h-[540px] lg:min-h-0 lg:h-[620px]'
+            : 'rounded-lg min-h-[560px] lg:min-h-0 lg:h-[650px]'
         }`}
       >
-        {/* TOP HEADER OVERLAY (Stacked on < lg to prevent overlapping 3D viewport, floating on lg+) */}
+        {/* TOP HEADER OVERLAY (No backdrop-blur over WebGL; stacked on < lg, floating on lg+) */}
         <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:top-4 lg:left-4 lg:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/95 lg:bg-transparent border-b border-slate-800/80 lg:border-b-0 lg:pointer-events-none shrink-0">
-          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-800/70 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white shadow-lg max-w-full">
+          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 text-white shadow-lg max-w-full">
             {(isFullscreen || onBack) && (
               <button
                 onClick={() => {
@@ -1550,7 +1671,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
                     onBack();
                   }
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white transition-colors shrink-0"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white transition-colors shrink-0"
                 title={isFullscreen ? 'Thu nhỏ (Esc)' : 'Quay lại trang trước'}
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -1559,6 +1680,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
             )}
             <Zap className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="text-[11px] sm:text-xs font-bold tracking-wide truncate">
+              {domainTitle ? `${domainTitle} · ` : ''}
               {mode === 'pendulum_spring' && 'Con Lắc Đơn & Con Lắc Lò Xo 3D'}
               {mode === 'projectile_3d' && 'Chuyển Động Ném Xiên & Bệ Pháo 3D'}
               {mode === 'lorentz_helix' && 'Từ Trường Lorentz & Quỹ Đạo Xoắn Ốc 3D'}
@@ -1577,28 +1699,16 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
           </div>
 
           <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
-            {/* Mode Switcher Buttons (scrollable on phones & iPads) */}
-            <div className="flex items-center gap-1 p-1 bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-lg overflow-x-auto max-w-full scrollbar-none">
-              {[
-                { id: 'kinematics_3d', label: 'Động Học & Vectơ' },
-                { id: 'circular_motion_3d', label: 'Tròn Đều 3D' },
-                { id: 'optics_3d', label: 'Quang Học 3D' },
-                { id: 'pendulum_spring', label: 'Con Lắc 3D' },
-                { id: 'projectile_3d', label: 'Ném Xiên 3D' },
-                { id: 'wave_ripple', label: 'Sóng Nước 3D' },
-                { id: 'standing_wave_3d', label: 'Sóng Dừng 3D' },
-                { id: 'doppler_effect_3d', label: 'Doppler 3D' },
-                { id: 'thermal_gas_3d', label: 'Khí Lí Tưởng 3D' },
-                { id: 'ac_generator_3d', label: 'Máy Phát AC 3D' },
-                { id: 'young_interference_3d', label: 'Khe Y-âng 3D' },
-                { id: 'photoelectric_3d', label: 'Quang Điện 3D' },
-                { id: 'lorentz_helix', label: 'Từ Trường Lorentz' },
-                { id: 'bohr_atom', label: 'Nguyên Tử Bohr' },
-              ].map((m) => (
+            {/* Domain-scoped Mode Switcher Buttons */}
+            <div className="flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-lg shadow-lg overflow-x-auto max-w-full scrollbar-none">
+              {visibleModeTabs.map((m) => (
                 <button
                   key={m.id}
-                  onClick={() => setMode(m.id as Physics3DMode)}
-                  className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all shrink-0 ${
+                  onClick={() => {
+                    setMode(m.id);
+                    onSelectMode?.(m.id);
+                  }}
+                  className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-md whitespace-nowrap transition-all shrink-0 cursor-pointer ${
                     mode === m.id ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
                   }`}
                 >
@@ -1607,10 +1717,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
               ))}
             </div>
 
-            {/* Play/Pause + Step + Speed + Reset */}
+            {/* Play/Pause + Step + Grid + Quality + Reset + Fullscreen */}
             <button
               onClick={() => setIsRunning(!isRunning)}
-              className="p-2 rounded-xl bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
+              className="p-2 rounded-md bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
               title={isRunning ? 'Tạm dừng mô phỏng' : 'Tiếp tục mô phỏng'}
             >
               {isRunning ? <Pause className="w-4 h-4 text-amber-400" /> : <Play className="w-4 h-4 text-emerald-400" />}
@@ -1618,7 +1728,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
 
             <button
               onClick={handleStepOnce}
-              className="hidden sm:flex items-center gap-1 px-2.5 py-2 rounded-xl bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-[11px] font-bold text-slate-200 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0 whitespace-nowrap"
+              className="hidden sm:flex items-center gap-1 px-2.5 py-2 rounded-md bg-slate-900/95 border border-slate-700/80 text-[11px] font-bold text-slate-200 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0 whitespace-nowrap"
               title="Tiến 1 bước +0.05s"
             >
               <StepForward className="w-3.5 h-3.5 text-cyan-400" />
@@ -1626,8 +1736,33 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
             </button>
 
             <button
+              onClick={() => setShowGrid3D((g) => !g)}
+              className={`p-2 rounded-md border transition-colors shadow-lg cursor-pointer shrink-0 ${
+                showGrid3D
+                  ? 'bg-sky-600/90 border-sky-400 text-white'
+                  : 'bg-slate-900/95 border-slate-700/80 text-slate-400 hover:text-white'
+              }`}
+              title={showGrid3D ? 'Ẩn lưới tọa độ' : 'Hiện lưới tọa độ'}
+            >
+              <Grid className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => setQuality3D((q) => (q === 'light' ? 'high' : 'light'))}
+              className={`hidden md:flex items-center gap-1 px-2 py-2 rounded-md border text-[11px] font-bold transition-colors shadow-lg cursor-pointer shrink-0 ${
+                quality3D === 'high'
+                  ? 'bg-violet-600/90 border-violet-400 text-white'
+                  : 'bg-slate-900/95 border-slate-700/80 text-slate-300 hover:text-white'
+              }`}
+              title="Chế độ đồ họa WebGL (Nhẹ FPS cao / Sắc nét)"
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              <span>{quality3D === 'high' ? 'HD' : 'Mượt'}</span>
+            </button>
+
+            <button
               onClick={handleReset3D}
-              className="p-2 rounded-xl bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
+              className="p-2 rounded-md bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
               title="Đặt lại thời gian t = 0"
             >
               <RotateCcw className="w-4 h-4" />
@@ -1636,7 +1771,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
             {/* Fullscreen */}
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2 rounded-xl bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
+              className="p-2 rounded-md bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
@@ -1644,7 +1779,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
         </div>
 
         {/* 3D WebGL Canvas (Unobstructed middle stage on < lg, full height on lg+) */}
-        <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[240px] lg:h-full' : 'h-[270px] sm:h-[340px] lg:h-full'}`}>
+        <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[240px] lg:h-full' : 'h-[280px] sm:h-[360px] lg:h-full'}`}>
           <div
             ref={mountRef}
             className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
@@ -1656,17 +1791,33 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({ initialMode = 'pen
           )}
         </div>
 
-        {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK (Below canvas on < lg, floating dock on lg+) */}
+        {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK (No backdrop-blur over WebGL) */}
         <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 w-full lg:w-[96%] lg:max-w-3xl lg:pointer-events-none bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
-          <div className="pointer-events-auto bg-slate-900/95 lg:bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[34dvh] sm:max-h-[260px] lg:max-h-none overflow-y-auto">
+          <div className="pointer-events-auto bg-slate-900/95 border border-slate-700/80 rounded-lg shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[34dvh] sm:max-h-[260px] lg:max-h-none overflow-y-auto">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-300">
               <Sliders className="w-3.5 h-3.5 text-amber-400" />
               <span>Thông Số Tùy Chỉnh Tự Do 3D</span>
+              {current3DSpec && current3DSpec.presets.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1 ml-1">
+                  <Sparkles className="w-3 h-3 text-sky-400" />
+                  {current3DSpec.presets.map((pr) => (
+                    <button
+                      key={pr.label}
+                      type="button"
+                      onClick={() => apply3DPreset(pr.settings)}
+                      title={pr.description}
+                      className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 hover:bg-amber-600 text-slate-200 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+                    >
+                      {pr.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-lg border border-slate-800">
+              <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-md border border-slate-800">
                 {[0.25, 0.5, 1, 2].map((spd) => (
                   <button
                     key={spd}

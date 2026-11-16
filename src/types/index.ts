@@ -1,4 +1,4 @@
-export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'cs' | 'exams' | 'arena' | 'forum';
+export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'physics_sims' | 'cs' | 'exams' | 'arena' | 'forum';
 
 export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
 
@@ -363,6 +363,13 @@ export type Physics3DMode =
   | 'doppler_effect_3d'
   | 'photoelectric_3d';
 
+export type PhysicsDomainId =
+  | 'mechanics'
+  | 'waves_osc'
+  | 'electricity_mag'
+  | 'optics_quantum'
+  | 'thermal_nuclear';
+
 export interface PhysicsEssayExercise {
   id?: string;
   source?: string;
@@ -567,6 +574,8 @@ export interface TutorContextPayload {
   topicTitle?: string;
   problemStatement?: string;
   grade?: string;
+  initialImageBase64?: string;
+  initialImageMimeType?: string;
 }
 
 export interface DiagnosticQuestion {

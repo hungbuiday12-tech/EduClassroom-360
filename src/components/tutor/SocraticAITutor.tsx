@@ -37,6 +37,7 @@ import { FormattedText } from '../common/MathRenderer';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { safeFetchJson, streamTutorChat } from '../../lib/apiClient';
 import { useNavigation, getLocationLabel } from '../../context/NavigationContext';
+import { VoiceMicButton } from '../common/VoiceMicButton';
 
 export const AI_ROADMAPS_STORAGE_KEY = 'educlassroom_ai_roadmaps_v1';
 
@@ -226,6 +227,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [pendingImage, setPendingImage] = useState<{ base64: string; mimeType: string } | null>(null);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
 
   // Mode 3 Diagnostic & Personalized Roadmap states — independent per Subject AI
   const [diagConfigBySubj, setDiagConfigBySubj] = useState<Record<AISubjectKey, SubjectDiagConfig>>(() => ({
@@ -309,7 +311,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   }, [context.subject, context.mode]);
 
   useEffect(() => {
-    if (context.topicTitle || context.problemStatement) {
+    if (context.topicTitle || context.problemStatement || context.initialImageBase64) {
       const s = normalizeSubject(context.subject);
       const m = context.mode || activeMode;
       const k = `${s}_${m}`;
@@ -317,8 +319,17 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         ...prev,
         [k]: [makeWelcomeMessage(s, m, context)]
       }));
+      if (context.problemStatement) {
+        setInputText(context.problemStatement);
+      }
+      if (context.initialImageBase64) {
+        setPendingImage({
+          base64: context.initialImageBase64,
+          mimeType: context.initialImageMimeType || 'image/png'
+        });
+      }
     }
-  }, [context.topicTitle, context.problemStatement, language]);
+  }, [context.topicTitle, context.problemStatement, context.initialImageBase64, language]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -333,6 +344,34 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [isFullscreen]);
+
+  // Global clipboard paste (Ctrl+V) while tutor is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            const reader = new FileReader();
+            reader.onload = () => {
+              setPendingImage({
+                base64: String(reader.result || ''),
+                mimeType: file.type || 'image/png'
+              });
+            };
+            reader.readAsDataURL(file);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -403,9 +442,8 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           'Gợi ý 3 bài học đầu tiên em nên mở ngay hôm nay'
         ];
 
-  const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const attachImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = () => {
       setPendingImage({
@@ -414,6 +452,12 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    attachImageFile(file);
   };
 
   const handleSend = async (overrideText?: string) => {
@@ -644,13 +688,40 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
   const tutorWindow = (
     <div
+      onDragOver={(e) => {
+        if (e.dataTransfer?.types?.includes('Files')) {
+          e.preventDefault();
+          setIsDraggingImage(true);
+        }
+      }}
+      onDragLeave={() => setIsDraggingImage(false)}
+      onDrop={(e) => {
+        if (e.dataTransfer?.files?.length) {
+          e.preventDefault();
+          setIsDraggingImage(false);
+          const file = e.dataTransfer.files[0];
+          if (file?.type.startsWith('image/')) {
+            attachImageFile(file);
+          } else if (file) {
+            file.text().then((txt) => {
+              if (txt.trim()) {
+                setInputText((prev) => (prev ? `${prev}\n${txt.slice(0, 6000)}` : txt.slice(0, 6000)));
+              }
+            }).catch(() => {});
+          }
+        }
+      }}
       className={
         isFullscreen
-          ? 'fixed inset-0 z-[115] w-screen h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden'
-          : 'fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] sm:w-[510px] md:w-[570px] h-[min(730px,88dvh)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/15 rounded-3xl shadow-[0_28px_80px_-16px_rgba(15,23,42,0.45)] dark:shadow-[0_28px_80px_-16px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden ring-1 ring-inset ring-white/50 dark:ring-white/10'
+          ? `fixed inset-0 z-[115] w-screen h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden ${
+              isDraggingImage ? 'ring-2 ring-inset ring-sky-500' : ''
+            }`
+          : `fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] sm:w-[510px] md:w-[570px] h-[min(730px,88dvh)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border ${
+              isDraggingImage ? 'border-sky-500 ring-2 ring-sky-500/40' : 'border-slate-200/90 dark:border-white/15'
+            } rounded-2xl shadow-[0_28px_80px_-16px_rgba(15,23,42,0.45)] dark:shadow-[0_28px_80px_-16px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden`
       }
     >
-      {/* Top Modern Glass Aurora Header */}
+      {/* Top Clean Header */}
       <div className={`relative overflow-hidden px-3.5 sm:px-5 py-3 bg-gradient-to-r ${activeMeta.headerGrad} text-white border-b border-white/10 flex items-center justify-between gap-2.5 shrink-0`}>
         <div aria-hidden="true" className={`absolute inset-0 pointer-events-none ${activeMeta.auroraOrb}`} />
 
@@ -666,7 +737,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                 onClose();
               }
             }}
-            className="group sheen-btn px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold text-sky-200 hover:text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+            className="group px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold text-sky-200 hover:text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer whitespace-nowrap"
             title={isEn ? `Back to ${backLabel}` : `Quay lại ${backLabel}`}
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
@@ -676,13 +747,9 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           </button>
 
           <div className="relative shrink-0">
-            <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center shadow-lg ${activeMeta.softClass}`}>
+            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-sm ${activeMeta.softClass}`}>
               {activeMeta.icon}
             </div>
-            <span
-              aria-hidden="true"
-              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-slate-950 animate-pulse"
-            />
           </div>
 
           <div className="min-w-0">
@@ -876,17 +943,27 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                   </select>
                 </label>
 
-                <input
-                  type="text"
-                  value={diagCustomGoal}
-                  onChange={(e) => updateActiveDiagConfig({ customGoal: e.target.value })}
-                  placeholder={
-                    isEn
-                      ? 'Optional goal (e.g., 9+ entrance exam, master DP graphs...)'
-                      : 'Mục tiêu riêng (VD: Thi đỗ chuyên Toán, đạt 9+ THPT QG, làm chủ Quy hoạch động...)'
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={diagCustomGoal}
+                    onChange={(e) => updateActiveDiagConfig({ customGoal: e.target.value })}
+                    placeholder={
+                      isEn
+                        ? 'Optional goal (e.g., 9+ entrance exam, master DP graphs...)'
+                        : 'Mục tiêu riêng (VD: Thi đỗ chuyên Toán, đạt 9+ THPT QG, làm chủ Quy hoạch động...)'
+                    }
+                    className="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <VoiceMicButton
+                    language={language}
+                    onTranscript={(spoken) =>
+                      updateActiveDiagConfig({
+                        customGoal: diagCustomGoal ? `${diagCustomGoal} ${spoken}` : spoken
+                      })
+                    }
+                  />
+                </div>
 
                 <button
                   onClick={handleGenerateQuiz}
@@ -1256,12 +1333,16 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       <div className="px-3.5 sm:px-5 py-3 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-white/10 shrink-0">
         <div className={`space-y-2.5 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           {pendingImage && (
-            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-500/30 text-xs">
+            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-500/30 text-xs">
               <div className="flex items-center gap-2.5 min-w-0">
                 <img
-                  src={`data:${pendingImage.mimeType};base64,${pendingImage.base64}`}
+                  src={
+                    pendingImage.base64.startsWith('data:')
+                      ? pendingImage.base64
+                      : `data:${pendingImage.mimeType};base64,${pendingImage.base64}`
+                  }
                   alt="Preview"
-                  className="w-9 h-9 rounded-lg object-cover border border-indigo-300/60 shrink-0"
+                  className="w-9 h-9 rounded-md object-cover border border-indigo-300/60 shrink-0"
                 />
                 <span className="text-indigo-900 dark:text-indigo-200 font-semibold truncate">
                   {isEn ? 'Attached photo of problem/step' : 'Đã đính kèm ảnh bài tập / bước giải'}
@@ -1276,15 +1357,23 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             </div>
           )}
 
-          <div className={`flex items-end gap-2 p-1.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/15 shadow-inner transition-all focus-within:ring-2 ${activeMeta.accentRing}`}>
+          <div className={`flex items-end gap-1.5 p-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/15 shadow-inner transition-all focus-within:ring-2 ${activeMeta.accentRing}`}>
             <label
               data-ripple="true"
-              className="p-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200/80 dark:border-white/10 cursor-pointer shrink-0 transition-all active:scale-95"
-              title={isEn ? 'Attach problem photo' : 'Gửi ảnh đề bài hoặc bước làm'}
+              className="p-2.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200/80 dark:border-white/10 cursor-pointer shrink-0 transition-all active:scale-95"
+              title={isEn ? 'Attach problem photo (or drag/paste Ctrl+V)' : 'Gửi ảnh đề bài (hoặc kéo thả / dán Ctrl+V)'}
             >
               <ImageIcon className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
               <input type="file" accept="image/*" onChange={handleImagePick} className="hidden" />
             </label>
+
+            <VoiceMicButton
+              language={language}
+              disabled={isLoading}
+              onTranscript={(spoken) =>
+                setInputText((prev) => (prev.trim() ? `${prev.trim()} ${spoken}` : spoken))
+              }
+            />
 
             <textarea
               value={inputText}
@@ -1299,15 +1388,15 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
               placeholder={
                 activeMode === 'full_solution'
                   ? isEn
-                    ? 'Paste a problem to get summary, method & full solution...'
-                    : 'Dán đề bài để AI tóm tắt, nêu cách làm và xuất lời giải chi tiết...'
+                    ? 'Paste a problem, drop image, Ctrl+V or click Mic to speak...'
+                    : 'Dán đề, kéo thả/Ctrl+V ảnh đề hoặc bấm Mic để đọc câu hỏi...'
                   : activeMode === 'diagnostic_roadmap'
                   ? isEn
-                    ? 'Ask to refine your study roadmap...'
-                    : 'Hỏi thêm để AI tinh chỉnh sơ đồ học tập cho em...'
+                    ? 'Ask to refine your study roadmap (text or voice)...'
+                    : 'Hỏi thêm bằng chữ hoặc giọng nói để tinh chỉnh sơ đồ học tập...'
                   : isEn
-                  ? 'Describe the step or concept you do not understand...'
-                  : 'Nhập đề bài hoặc nói rõ em đang chưa hiểu bước/công thức nào...'
+                  ? 'Describe the step you do not understand (text, image or voice)...'
+                  : 'Nhập đề, dán ảnh (Ctrl+V) hoặc bấm Mic nói phần em chưa hiểu...'
               }
               className="flex-1 px-2.5 py-2 bg-transparent text-xs sm:text-[13px] text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none resize-none"
             />
@@ -1315,7 +1404,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             <button
               onClick={() => handleSend()}
               disabled={isLoading || (!inputText.trim() && !pendingImage)}
-              className={`sheen-btn p-3 rounded-xl shrink-0 transition-all disabled:opacity-40 cursor-pointer ${activeMeta.sendBtn}`}
+              className={`p-3 rounded-lg shrink-0 transition-all disabled:opacity-40 cursor-pointer ${activeMeta.sendBtn}`}
               title={isEn ? 'Send to AI Tutor' : 'Gửi câu hỏi'}
             >
               <Send className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />

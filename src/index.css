@@ -18,9 +18,12 @@
   --accent-secondary: #14b8a6;
   --accent-soft: rgba(14, 165, 233, 0.14);
   --accent-ring: rgba(56, 189, 248, 0.38);
-  --hero-grad-from: #0284c7;
-  --hero-grad-via: #0ea5e9;
-  --hero-grad-to: #14b8a6;
+  --hero-grad-from: #38bdf8;
+  --hero-grad-via: #60a5fa;
+  --hero-grad-to: #2dd4bf;
+  --hero-grad-light-from: #1e3a8a;
+  --hero-grad-light-via: #0369a1;
+  --hero-grad-light-to: #0f766e;
   --accent-contrast: #ffffff;
 }
 
@@ -42,10 +45,10 @@
     font-family: var(--font-mono);
   }
 
-  /* Tactile floating hover-lift & crisp architectural square buttons (4px sharp corner) */
+  /* Tactile floating hover-lift & crisp architectural square-ish buttons (6px crisp corner) */
   button:not([data-circle]),
   [role="button"]:not([data-circle]) {
-    border-radius: 0.25rem;
+    border-radius: 0.375rem;
   }
 
   button[class*="rounded-md"]:not([data-circle]),
@@ -53,18 +56,18 @@
   button[class*="rounded-xl"]:not([data-circle]),
   [role="button"][class*="rounded-lg"]:not([data-circle]),
   [role="button"][class*="rounded-xl"]:not([data-circle]) {
-    border-radius: 0.25rem;
+    border-radius: 0.375rem;
   }
 
   button[class*="rounded-2xl"]:not([data-circle]),
   button[class*="rounded-3xl"]:not([data-circle]),
   [role="button"][class*="rounded-2xl"]:not([data-circle]) {
-    border-radius: 0.3125rem;
+    border-radius: 0.375rem;
   }
 
   button[class*="rounded-full"]:not([data-circle]):not(.w-6):not(.w-7):not(.w-8),
   [role="button"][class*="rounded-full"]:not([data-circle]) {
-    border-radius: 0.25rem;
+    border-radius: 0.375rem;
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -1610,10 +1613,28 @@
 
 /* Dynamic Palette & Frameless Hero Typography Utilities */
 .text-accent-gradient {
-  background-image: linear-gradient(125deg, var(--hero-grad-from), var(--hero-grad-via), var(--hero-grad-to));
+  background-image: linear-gradient(
+    125deg,
+    var(--hero-grad-light-from, #1e3a8a),
+    var(--hero-grad-light-via, #0369a1),
+    var(--hero-grad-light-to, #0f766e)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0.25px rgba(15, 23, 42, 0.14);
+}
+
+.dark .text-accent-gradient {
+  background-image: linear-gradient(
+    125deg,
+    var(--hero-grad-from, #38bdf8),
+    var(--hero-grad-via, #60a5fa),
+    var(--hero-grad-to, #2dd4bf)
+  );
+  -webkit-text-stroke: 0px transparent;
+  filter: drop-shadow(0 2px 12px rgba(56, 189, 248, 0.24));
 }
 
 .bg-accent-solid {
@@ -1640,10 +1661,105 @@
   transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms ease, text-shadow 180ms ease;
 }
 
+/* ============================================================================
+   VIRTUAL CLASSROOM, SPATIAL 3D & FORUM GRAND OVERVIEW SHOWCASE ANIMATIONS
+   ============================================================================ */
+@keyframes showcase-focus-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.65), 0 24px 60px -18px rgba(14, 165, 233, 0.5);
+    transform: translateY(0) scale(1);
+  }
+  28% {
+    box-shadow: 0 0 0 10px rgba(56, 189, 248, 0.28), 0 32px 84px -14px rgba(14, 165, 233, 0.65);
+    transform: translateY(-6px) scale(1.012);
+  }
+  65% {
+    box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.14), 0 24px 64px -16px rgba(14, 165, 233, 0.42);
+    transform: translateY(-2px) scale(1.004);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0), 0 20px 50px -18px rgba(14, 165, 233, 0.28);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes showcase-float-slow {
+  0%, 100% { transform: translate3d(0, 0px, 0) rotate(0deg); }
+  50% { transform: translate3d(0, -8px, 0) rotate(1.4deg); }
+}
+
+@keyframes showcase-beam-glide {
+  0% { transform: translateX(-130%) skewX(-18deg); opacity: 0; }
+  25% { opacity: 0.78; }
+  75% { opacity: 0.78; }
+  100% { transform: translateX(240%) skewX(-18deg); opacity: 0; }
+}
+
+@keyframes showcase-node-ping {
+  0%, 100% { transform: scale(1); opacity: 0.78; }
+  50% { transform: scale(1.42); opacity: 1; }
+}
+
+@keyframes lecture-card-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cta-beacon-glow {
+  0%, 100% {
+    box-shadow: 0 6px 22px -6px rgba(14, 165, 233, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 10px 28px -4px rgba(20, 184, 166, 0.56), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+}
+
+.showcase-focus-active {
+  animation: showcase-focus-pulse 1.8s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
+.showcase-float-slow {
+  animation: showcase-float-slow 5.2s ease-in-out infinite;
+}
+
+.showcase-beam-glide {
+  animation: showcase-beam-glide 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.showcase-node-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: showcase-node-ping 2.2s ease-in-out infinite;
+}
+
+.lecture-card-reveal {
+  animation: lecture-card-reveal 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cta-beacon-glow {
+  animation: cta-beacon-glow 3.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cursor-dodge-token {
     transform: none !important;
     transition: none !important;
   }
+  .showcase-focus-active,
+  .showcase-float-slow,
+  .showcase-beam-glide,
+  .showcase-node-ping,
+  .lecture-card-reveal,
+  .cta-beacon-glow {
+    animation: none !important;
+  }
 }
+
+
 

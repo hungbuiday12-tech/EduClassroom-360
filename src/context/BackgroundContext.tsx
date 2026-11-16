@@ -75,6 +75,9 @@ export interface ColorPaletteOption {
   gradFrom: string;
   gradVia: string;
   gradTo: string;
+  gradLightFrom: string;
+  gradLightVia: string;
+  gradLightTo: string;
   soft: string;
   ring: string;
   contrast: string;
@@ -134,9 +137,12 @@ export const COLOR_PALETTE_OPTIONS: ColorPaletteOption[] = [
     primary: '#0284c7',
     primaryLight: '#38bdf8',
     secondary: '#14b8a6',
-    gradFrom: '#0284c7',
-    gradVia: '#0ea5e9',
+    gradFrom: '#38bdf8',
+    gradVia: '#60a5fa',
     gradTo: '#2dd4bf',
+    gradLightFrom: '#1e3a8a',
+    gradLightVia: '#0369a1',
+    gradLightTo: '#0f766e',
     soft: 'rgba(14, 165, 233, 0.15)',
     ring: 'rgba(56, 189, 248, 0.4)',
     contrast: '#ffffff',
@@ -151,9 +157,12 @@ export const COLOR_PALETTE_OPTIONS: ColorPaletteOption[] = [
     primary: '#059669',
     primaryLight: '#34d399',
     secondary: '#0d9488',
-    gradFrom: '#059669',
-    gradVia: '#10b981',
-    gradTo: '#22d3ee',
+    gradFrom: '#34d399',
+    gradVia: '#2dd4bf',
+    gradTo: '#38bdf8',
+    gradLightFrom: '#064e3b',
+    gradLightVia: '#047857',
+    gradLightTo: '#0e7490',
     soft: 'rgba(16, 185, 129, 0.15)',
     ring: 'rgba(52, 211, 153, 0.42)',
     contrast: '#ffffff',
@@ -168,9 +177,12 @@ export const COLOR_PALETTE_OPTIONS: ColorPaletteOption[] = [
     primary: '#4f46e5',
     primaryLight: '#818cf8',
     secondary: '#a855f7',
-    gradFrom: '#4f46e5',
-    gradVia: '#7c3aed',
-    gradTo: '#ec4899',
+    gradFrom: '#818cf8',
+    gradVia: '#c084fc',
+    gradTo: '#f472b6',
+    gradLightFrom: '#312e81',
+    gradLightVia: '#5b21b6',
+    gradLightTo: '#be185d',
     soft: 'rgba(99, 102, 241, 0.15)',
     ring: 'rgba(129, 140, 248, 0.42)',
     contrast: '#ffffff',
@@ -185,9 +197,12 @@ export const COLOR_PALETTE_OPTIONS: ColorPaletteOption[] = [
     primary: '#d97706',
     primaryLight: '#fbbf24',
     secondary: '#ea580c',
-    gradFrom: '#d97706',
-    gradVia: '#f59e0b',
+    gradFrom: '#fbbf24',
+    gradVia: '#fb923c',
     gradTo: '#fb7185',
+    gradLightFrom: '#9a3412',
+    gradLightVia: '#b45309',
+    gradLightTo: '#be123c',
     soft: 'rgba(245, 158, 11, 0.15)',
     ring: 'rgba(251, 191, 36, 0.44)',
     contrast: '#0f172a',
@@ -202,9 +217,12 @@ export const COLOR_PALETTE_OPTIONS: ColorPaletteOption[] = [
     primary: '#e11d48',
     primaryLight: '#fb7185',
     secondary: '#f97316',
-    gradFrom: '#e11d48',
+    gradFrom: '#fb7185',
     gradVia: '#f43f5e',
     gradTo: '#fb923c',
+    gradLightFrom: '#881337',
+    gradLightVia: '#be123c',
+    gradLightTo: '#c2410c',
     soft: 'rgba(244, 63, 94, 0.14)',
     ring: 'rgba(251, 113, 133, 0.4)',
     contrast: '#ffffff',
@@ -219,9 +237,12 @@ export const COLOR_PALETTE_OPTIONS: ColorPaletteOption[] = [
     primary: '#334155',
     primaryLight: '#94a3b8',
     secondary: '#0ea5e9',
-    gradFrom: '#475569',
-    gradVia: '#0ea5e9',
-    gradTo: '#64748b',
+    gradFrom: '#cbd5e1',
+    gradVia: '#38bdf8',
+    gradTo: '#94a3b8',
+    gradLightFrom: '#0f172a',
+    gradLightVia: '#1d4ed8',
+    gradLightTo: '#334155',
     soft: 'rgba(100, 116, 139, 0.14)',
     ring: 'rgba(148, 163, 184, 0.4)',
     contrast: '#ffffff',
@@ -668,6 +689,9 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     root.style.setProperty('--hero-grad-from', pal.gradFrom);
     root.style.setProperty('--hero-grad-via', pal.gradVia);
     root.style.setProperty('--hero-grad-to', pal.gradTo);
+    root.style.setProperty('--hero-grad-light-from', pal.gradLightFrom);
+    root.style.setProperty('--hero-grad-light-via', pal.gradLightVia);
+    root.style.setProperty('--hero-grad-light-to', pal.gradLightTo);
     root.style.setProperty('--accent-contrast', pal.contrast);
     root.dataset.palette = colorPalette;
   }, [activePalette, colorPalette]);

@@ -107,6 +107,20 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     }, 30);
   };
 
+  const [focusedShowcase, setFocusedShowcase] = useState<'synapse_v2' | 'spatial_3d' | 'forum' | null>(null);
+  const [synapsePreviewDomain, setSynapsePreviewDomain] = useState<'physics' | 'space' | 'cs' | 'math'>('physics');
+  const [spatialPreviewTab, setSpatialPreviewTab] = useState<'models3d' | 'labs2d'>('models3d');
+  const [forumPreviewTab, setForumPreviewTab] = useState<'discussions' | 'solutions' | 'qa'>('discussions');
+  const showcaseFocusTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (showcaseFocusTimerRef.current) {
+        window.clearTimeout(showcaseFocusTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleEnterSynapseV2 = () => {
     navigate({ subject: 'synapse_v2', tutorOpen: false });
     onEnterAsGuest();
@@ -117,6 +131,35 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     navigate({ subject: 'spatial_3d', tutorOpen: false });
     onEnterAsGuest();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleEnterForum = () => {
+    navigate({ subject: 'forum', tutorOpen: false });
+    onEnterAsGuest();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const scrollToShowcase = (target: 'synapse_v2' | 'spatial_3d' | 'forum') => {
+    const id =
+      target === 'synapse_v2'
+        ? 'visitor-synapse-overview'
+        : target === 'spatial_3d'
+        ? 'visitor-spatial-overview'
+        : 'visitor-forum-overview';
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setFocusedShowcase(null);
+    if (showcaseFocusTimerRef.current) {
+      window.clearTimeout(showcaseFocusTimerRef.current);
+    }
+    window.requestAnimationFrame(() => {
+      setFocusedShowcase(target);
+    });
+    showcaseFocusTimerRef.current = window.setTimeout(() => {
+      setFocusedShowcase(null);
+    }, 2400);
   };
 
   const scrollToVisitorSection = (sectionId: string) => {
@@ -838,14 +881,25 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             </div>
 
             {/* Interactive Feature Spotlight Panel */}
-            <div className="sci-frame sci-blueprint-bg p-4 sm:p-5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200/90 dark:border-white/15 backdrop-blur-md shadow-sm space-y-2.5">
+            <div className="sci-frame sci-blueprint-bg p-4 sm:p-5 rounded-lg bg-white/90 dark:bg-slate-900/80 border border-slate-200/90 dark:border-white/15 backdrop-blur-md shadow-sm space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className={`px-2.5 py-0.5 rounded text-[11px] font-semibold border ${spotlightDetails[activeSpotlight].accentClass}`}>
                   {spotlightDetails[activeSpotlight].badge}
                 </span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {isEn ? 'Click any card above to inspect features' : 'Bấm từng thẻ phía trên để xem chi tiết tính năng'}
-                </span>
+                {(activeSpotlight === 'synapse_v2' || activeSpotlight === 'spatial_3d') ? (
+                  <button
+                    type="button"
+                    onClick={() => scrollToShowcase(activeSpotlight)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 dark:text-sky-300 hover:underline cursor-pointer"
+                  >
+                    <span>{isEn ? 'Jump to animated overview below' : 'Xem khung giới thiệu chi tiết bên dưới'}</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {isEn ? 'Click any card above to inspect features' : 'Bấm từng thẻ phía trên để xem chi tiết tính năng'}
+                  </span>
+                )}
               </div>
               <h3 className="font-display text-sm sm:text-base font-semibold text-slate-900 dark:text-white leading-snug">
                 {spotlightDetails[activeSpotlight].headline}
@@ -869,61 +923,100 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             {/* Live Dynamic Scene, Font, Palette & Cursor Dodge Bar */}
             <AppearanceStudioBar compact />
 
-            {/* Quick Guest Enter Action + Synapse v2 + Spatial 3D + All Features Scroll */}
-            <div className="pt-1 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={onEnterAsGuest}
-                className="sci-frame cs-deck-btn w-full sm:w-auto px-6 py-3.5 rounded bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs sm:text-sm tracking-wide shadow-lg shadow-blue-700/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
-              >
-                <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform shrink-0" />
-                <span>{isEn ? 'Enter Classroom Directly (Guest Mode)' : 'Vào Trực Tiếp Lớp Học (Không Cần Đăng Nhập)'}</span>
-                <ChevronRight className="w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform" />
-              </button>
+            {/* Quick Guest Enter Action + Synapse 2.0 + Học tương tác 3D + Diễn đàn học tập + All Features */}
+            <div className="pt-1 space-y-2.5 w-full max-w-full">
+              <div className="flex flex-wrap items-center gap-2.5 w-full max-w-full">
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={onEnterAsGuest}
+                  className="sci-frame cs-deck-btn w-full sm:w-auto max-w-full px-5 py-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs sm:text-sm tracking-wide shadow-lg shadow-blue-700/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                >
+                  <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform shrink-0" />
+                  <span>{isEn ? 'Enter Classroom Directly (Guest Mode)' : 'Vào Trực Tiếp Lớp Học (Không Cần Đăng Nhập)'}</span>
+                  <ChevronRight className="w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform" />
+                </button>
 
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={handleEnterSynapseV2}
-                className="group cs-deck-btn w-full sm:w-auto px-5 py-3.5 rounded bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-sky-600/20 whitespace-nowrap"
-              >
-                <Orbit className="w-4 h-4 icon-anim-cosmos shrink-0" />
-                <span>{isEn ? 'Synapse v2 · 30 Worlds' : 'Lớp học ảo · Synapse v2'}</span>
-              </button>
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => scrollToVisitorSection('visitor-all-features')}
+                  className="group cs-deck-btn w-full sm:w-auto max-w-full px-4 py-3 rounded-md bg-white/95 dark:bg-white/10 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-300/90 dark:border-white/20 text-slate-800 dark:text-slate-100 font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Layers className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                  <span>{isEn ? 'All Features' : 'Xem toàn bộ chức năng'}</span>
+                  <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform shrink-0" />
+                </button>
 
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={handleEnterSpatial3D}
-                className="group cs-deck-btn w-full sm:w-auto px-5 py-3.5 rounded bg-teal-600/15 dark:bg-teal-500/20 hover:bg-teal-600 hover:text-white border border-teal-500/50 text-teal-800 dark:text-teal-200 font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap"
-              >
-                <Hand className="w-4 h-4 icon-anim-hand shrink-0" />
-                <span>{isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D'}</span>
-              </button>
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={scrollToVisitorReviews}
+                  className="group cs-deck-btn w-full sm:w-auto max-w-full px-4 py-3 rounded-md bg-white/95 dark:bg-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-amber-300/90 dark:border-amber-400/40 text-amber-800 dark:text-amber-200 font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Star className="w-4 h-4 text-amber-500 fill-amber-400 icon-anim-star shrink-0" />
+                  <span>{isEn ? 'Reviews' : 'Đánh giá'}</span>
+                </button>
+              </div>
 
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={() => scrollToVisitorSection('visitor-all-features')}
-                className="group cs-deck-btn w-full sm:w-auto px-5 py-3.5 rounded bg-white/95 dark:bg-white/10 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-300/90 dark:border-white/20 text-slate-800 dark:text-slate-100 font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap"
-              >
-                <Layers className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
-                <span>{isEn ? 'All Platform Features' : 'Xem toàn bộ chức năng'}</span>
-                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform shrink-0" />
-              </button>
+              {/* 3 Prominent Square-ish Animated Showcase Scroll Buttons: Synapse 2.0 · Học tương tác 3D · Diễn đàn học tập */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full max-w-full">
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => scrollToShowcase('synapse_v2')}
+                  className="group sci-frame cs-deck-btn cta-beacon-glow w-full px-3.5 py-3 rounded-md bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 hover:from-sky-500 hover:via-cyan-500 hover:to-blue-500 border border-sky-300/60 text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-between gap-2 cursor-pointer"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <Orbit className="w-4 h-4 icon-anim-cosmos shrink-0" />
+                    <span className="truncate">{isEn ? 'Synapse 2.0' : 'Synapse 2.0'}</span>
+                  </span>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <span className="px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono font-bold tabular-nums">
+                      30
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={scrollToVisitorReviews}
-                className="group cs-deck-btn w-full sm:w-auto px-4 py-3.5 rounded bg-white/95 dark:bg-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-amber-300/90 dark:border-amber-400/40 text-amber-800 dark:text-amber-200 font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap"
-              >
-                <Star className="w-4 h-4 text-amber-500 fill-amber-400 icon-anim-star shrink-0" />
-                <span>{isEn ? 'Reviews' : 'Đánh giá'}</span>
-              </button>
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => scrollToShowcase('spatial_3d')}
+                  className="group sci-frame cs-deck-btn w-full px-3.5 py-3 rounded-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 border border-teal-300/60 text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-between gap-2 cursor-pointer shadow-lg shadow-teal-600/20"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <Hand className="w-4 h-4 icon-anim-hand shrink-0" />
+                    <span className="truncate">{isEn ? 'Interactive 3D Lab' : 'Học tương tác 3D'}</span>
+                  </span>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <span className="px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono font-bold tabular-nums">
+                      21
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
+                  </span>
+                </button>
 
-              <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => scrollToShowcase('forum')}
+                  className="group sci-frame cs-deck-btn w-full px-3.5 py-3 rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 border border-indigo-300/60 text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-between gap-2 cursor-pointer shadow-lg shadow-indigo-600/20"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <MessageSquare className="w-4 h-4 icon-anim-wave shrink-0" />
+                    <span className="truncate">{isEn ? 'Study Forum' : 'Diễn đàn học tập'}</span>
+                  </span>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <span className="px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono font-bold uppercase">
+                      Live
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
+                  </span>
+                </button>
+              </div>
+
+              <span className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5 pt-0.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
                 <span>{isEn ? 'Study progress & roadmap saved automatically' : 'Lưu kết quả học & phân tích lộ trình trực tiếp trên máy bạn'}</span>
               </span>
@@ -932,10 +1025,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
           {/* RIGHT COLUMN: Dedicated Glassmorphism Authentication Card */}
           <div className="lg:col-span-5">
-            <div className="sci-frame bg-white/92 dark:bg-slate-900/85 backdrop-blur-xl border border-slate-200 dark:border-white/15 rounded-xl p-6 sm:p-8 shadow-2xl shadow-slate-950/15 dark:shadow-slate-950/50">
+            <div className="sci-frame bg-white/92 dark:bg-slate-900/85 backdrop-blur-xl border border-slate-200 dark:border-white/15 rounded-lg p-6 sm:p-8 shadow-2xl shadow-slate-950/15 dark:shadow-slate-950/50">
               {/* Card Mode Tabs */}
               {authMode !== 'forgot' ? (
-                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-lg mb-5 border border-slate-200/80 dark:border-white/10">
+                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-md mb-5 border border-slate-200/80 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => {
@@ -985,7 +1078,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
               {/* Domain Warning for OAuth */}
               {unauthDomainWarning && (
-                <div className="mb-4 p-3.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-400/30 rounded-2xl text-xs text-amber-900 dark:text-amber-200 space-y-2">
+                <div className="mb-4 p-3.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-400/30 rounded-lg text-xs text-amber-900 dark:text-amber-200 space-y-2">
                   <div className="flex items-center gap-2 font-semibold">
                     <Globe className="w-4 h-4 text-amber-600 dark:text-amber-300 shrink-0" />
                     <span>
@@ -1011,7 +1104,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
               {/* Error Message */}
               {errorMessage && !unauthDomainWarning && (
-                <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 rounded-xl text-rose-700 dark:text-rose-300 text-xs">
+                <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 rounded-md text-rose-700 dark:text-rose-300 text-xs">
                   {errorMessage}
                 </div>
               )}
@@ -1031,7 +1124,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </div>
 
                   {resetSent ? (
-                    <div className="p-4 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-400/30 rounded-2xl text-center space-y-2.5">
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-400/30 rounded-lg text-center space-y-2.5">
                       <CheckCircle2 className="w-8 h-8 text-emerald-500 dark:text-emerald-400 mx-auto" />
                       <p className="text-xs text-emerald-800 dark:text-emerald-200 font-semibold">
                         {isEn ? (
@@ -1049,7 +1142,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                           setAuthMode('login');
                           setResetSent(false);
                         }}
-                        className="px-4 py-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-xl text-xs font-bold"
+                        className="px-4 py-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-md text-xs font-bold"
                       >
                         {isEn ? 'Back to Sign In' : 'Quay lại Đăng nhập'}
                       </button>
@@ -1523,6 +1616,702 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
               </span>
             </button>
+          </div>
+        </section>
+
+        {/* GRAND ANIMATED OVERVIEW SHOWCASE: SYNAPSE 2.0 · HỌC TƯƠNG TÁC 3D · DIỄN ĐÀN HỌC TẬP */}
+        <section
+          aria-label={isEn ? 'Virtual Classroom, Interactive 3D and Forum Overview' : 'Giới thiệu sơ lược Synapse 2.0, Học tương tác 3D và Diễn đàn học tập'}
+          className="mt-10 sm:mt-14 space-y-6"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-widest text-sky-700 dark:text-sky-400">
+                <Orbit className="w-4 h-4 icon-anim-cosmos" />
+                <span>{isEn ? 'INTERACTIVE FLAGSHIP OVERVIEW' : 'GIỚI THIỆU SƠ LƯỢC · KHÔNG GIAN TRẢI NGHIỆM NỔI BẬT'}</span>
+              </div>
+              <h3 className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">
+                {isEn
+                  ? 'Synapse 2.0 · Interactive 3D Lab · Study Forum'
+                  : 'Synapse 2.0 · Học Tương Tác 3D · Diễn Đàn Học Tập'}
+              </h3>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md">
+              {isEn
+                ? 'Switch preview tabs inside each animated deck, then click launch to enter directly.'
+                : 'Khám phá trực tiếp cấu trúc từng khu vực bên dưới trước khi bấm bước vào trải nghiệm ngay.'}
+            </p>
+          </div>
+
+          {/* FRAME 1: SYNAPSE 2.0 (30 ĐẠI CÔNG TRÌNH 3D) */}
+          <div
+            id="visitor-synapse-overview"
+            style={{ ['--holo-accent' as string]: '#38bdf8', ['--holo-secondary' as string]: '#818cf8' }}
+            className={`scroll-mt-24 holo-card-frame rounded-lg shadow-2xl shadow-sky-950/25 ${
+              focusedShowcase === 'synapse_v2' ? 'showcase-focus-active ring-2 ring-sky-400' : ''
+            }`}
+          >
+            <div className="holo-conic-ring" aria-hidden="true" />
+            <div className="sci-frame relative z-10 rounded-md bg-gradient-to-br from-[#040a18] via-[#091834] to-[#050f24] text-white p-6 sm:p-8 overflow-hidden">
+              <div className="absolute inset-0 sci-blueprint-bg opacity-40 pointer-events-none" />
+              <div
+                aria-hidden="true"
+                className="synapse-aurora-blob-a pointer-events-none -top-24 -left-16 w-72 h-72 rounded-full bg-sky-500/20 blur-3xl absolute"
+              />
+              <div
+                aria-hidden="true"
+                className="synapse-aurora-blob-b pointer-events-none -bottom-24 right-10 w-80 h-80 rounded-full bg-indigo-500/20 blur-3xl absolute"
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-sky-300/20 to-transparent showcase-beam-glide"
+              />
+
+              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+                {/* Left Content & Interactive 4-Domain Preview */}
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-sky-500/15 border border-sky-400/40 text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-sky-300">
+                      <Orbit className="w-4 h-4 icon-anim-cosmos" />
+                      <span>{isEn ? 'SYNAPSE 2.0 · 30 WEBGL 3D WORLDS' : 'SYNAPSE 2.0 · 30 ĐẠI CÔNG TRÌNH 3D'}</span>
+                    </span>
+                  </div>
+
+                  <h4 className="font-display text-xl sm:text-2xl lg:text-[1.75rem] font-semibold tracking-tight text-white leading-snug">
+                    {isEn
+                      ? 'Explore 30 Interactive 3D Scientific Chambers with Live Formulas'
+                      : '30 Không Gian Mô Phỏng Vũ Trụ, Vật Lí, Vi Tính & Toán Học 60 FPS'}
+                  </h4>
+
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                    {isEn
+                      ? 'Step inside large-scale 3D structures on your browser—rotate 360°, adjust experimental variables in real time, and inspect live physical & mathematical equations.'
+                      : 'Bước trực tiếp vào từng đại công trình 3D trên trình duyệt: xoay 360°, phóng to cấu trúc hạt – quang học – mạng nơ-ron và điều chỉnh tham số công thức sống ngay trên mô hình.'}
+                  </p>
+
+                  {/* Interactive Domain Tabs */}
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {(
+                      [
+                        { id: 'physics', vi: 'Vật lí & Lượng tử', en: 'Physics & Quantum' },
+                        { id: 'space', vi: 'Vũ trụ & Thiên văn', en: 'Cosmos & Space' },
+                        { id: 'cs', vi: 'Vi tính & AI 3D', en: 'CS & AI Core' },
+                        { id: 'math', vi: 'Toán học 3D', en: '3D Mathematics' },
+                      ] as const
+                    ).map((tab) => {
+                      const active = synapsePreviewDomain === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setSynapsePreviewDomain(tab.id)}
+                          className={`cs-deck-btn px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer border ${
+                            active
+                              ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sm shadow-sky-400/30'
+                              : 'bg-white/6 hover:bg-white/14 text-slate-200 border-white/15'
+                          }`}
+                        >
+                          {isEn ? tab.en : tab.vi}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Highlighted Chambers for Active Domain */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {(
+                      {
+                        physics: [
+                          { title: isEn ? 'CERN LHC Collider' : 'Máy gia tốc CERN LHC', desc: isEn ? 'Magnetic beam bending' : 'Từ trường bẻ cong chùm hạt' },
+                          { title: isEn ? 'Double-Slit Laser' : 'Giao thoa Laser Khe kép', desc: isEn ? 'Live λ & fringe spacing' : 'Chỉnh bước sóng λ & vân sáng' },
+                          { title: isEn ? 'Tokamak Fusion & 7T MRI' : 'Lò Tokamak & MRI 7T', desc: isEn ? 'Plasma confinement ring' : 'Vòng plasma từ trường siêu dẫn' },
+                        ],
+                        space: [
+                          { title: isEn ? 'James Webb Telescope' : 'Kính thiên văn James Webb', desc: isEn ? '18-mirror gold array' : 'Hệ 18 gương vàng L2' },
+                          { title: isEn ? 'Dyson Black Hole' : 'Hố đen & Vòng Dyson', desc: isEn ? 'Relativistic accretion disk' : 'Đĩa bồi tụ & chân trời sự kiện' },
+                          { title: isEn ? 'Wormhole & Solar Tower' : 'Hố sâu & Tháp Mặt Trời', desc: isEn ? 'Spacetime curvature mesh' : 'Lưới cong không-thời gian' },
+                        ],
+                        cs: [
+                          { title: isEn ? 'LiDAR SLAM Core' : 'Cảm biến LiDAR SLAM', desc: isEn ? '360° point-cloud scan' : 'Quét đám mây điểm 360°' },
+                          { title: isEn ? 'Photonic Tensor Chip' : 'Chip Quang tử Tensor', desc: isEn ? 'Optical matrix waveguides' : 'Ống dẫn sóng nhân ma trận' },
+                          { title: isEn ? '3D Neural & Dijkstra' : 'Mạng Nơ-ron & Đồ thị 3D', desc: isEn ? 'Live shortest-path pulse' : 'Truyền xung tìm đường ngắn nhất' },
+                        ],
+                        math: [
+                          { title: isEn ? 'Riemann & Oxyz Mesh' : 'Mặt cầu Riemann & Oxyz', desc: isEn ? 'Complex plane mapping' : 'Ánh xạ mặt phẳng phức 3D' },
+                          { title: isEn ? 'Platonic Polyhedra' : 'Khối đa diện Platon', desc: isEn ? 'Vertex-edge-face duality' : 'Đối ngẫu đỉnh - cạnh - mặt' },
+                          { title: isEn ? '3D Surface Integrals' : 'Tích phân mặt cong 3D', desc: isEn ? 'Gradient & flux vectors' : 'Vector thông lượng qua mặt cong' },
+                        ],
+                      }[synapsePreviewDomain]
+                    ).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-md bg-white/6 border border-sky-300/25 px-3 py-2.5 space-y-0.5 transition-all hover:border-sky-300/60 hover:bg-white/10"
+                      >
+                        <div className="text-xs font-semibold text-white truncate">{item.title}</div>
+                        <div className="text-[11px] text-sky-200/85 leading-snug">{item.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Primary Action Button */}
+                  <div className="pt-1 flex flex-wrap items-center gap-4">
+                    <button
+                      type="button"
+                      data-ripple="true"
+                      onClick={handleEnterSynapseV2}
+                      className="group/btn cs-deck-btn cta-beacon-glow px-6 py-3 rounded-md bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400 hover:from-sky-300 hover:to-blue-300 text-slate-950 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Orbit className="w-4 h-4 icon-anim-cosmos" />
+                      <span>{isEn ? 'Launch Synapse 2.0 Classroom' : 'Bước vào Synapse 2.0 ngay'}</span>
+                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
+                    <span className="text-xs text-slate-400">
+                      {isEn ? '30 worlds · Direct browser launch' : 'Mở ngay 30 không gian 3D · Không cần cài đặt'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right Grand Animated 3D Gyroscope & Collider Schematic Stage */}
+                <div className="lg:col-span-5">
+                  <div className="relative rounded-md border border-sky-400/35 bg-[#020816] p-5 overflow-hidden min-h-[275px] flex flex-col justify-between shadow-inner">
+                    <div
+                      aria-hidden="true"
+                      className="holo-radar-sweep pointer-events-none absolute left-1/2 top-1/2 w-[320px] h-[320px] rounded-full opacity-30"
+                      style={{
+                        background:
+                          'conic-gradient(from 0deg, rgba(56,189,248,0.55), transparent 72deg, transparent 360deg)',
+                      }}
+                    />
+
+                    <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-sky-300/95">
+                      <span>SYNAPSE 2.0 · 360° WEBGL</span>
+                      <span className="tabular-nums px-2 py-0.5 rounded bg-sky-500/15 border border-sky-400/30 text-cyan-200">
+                        {synapsePreviewDomain === 'physics' && 'E = γ·m₀c²'}
+                        {synapsePreviewDomain === 'space' && 'Rs = 2GM/c²'}
+                        {synapsePreviewDomain === 'cs' && 'y = σ(W·x + b)'}
+                        {synapsePreviewDomain === 'math' && '∬ F·dS = ∭ ∇·F dV'}
+                      </span>
+                    </div>
+
+                    <div className="relative z-10 my-2 flex items-center justify-center">
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 260 170"
+                        className="w-full max-w-[280px] h-44 showcase-float-slow"
+                      >
+                        <defs>
+                          <radialGradient id="synapseCoreGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#38bdf8" stopOpacity="1" />
+                            <stop offset="55%" stopColor="#0284c7" stopOpacity="0.4" />
+                            <stop offset="100%" stopColor="#0284c7" stopOpacity="0" />
+                          </radialGradient>
+                        </defs>
+                        <circle cx="130" cy="85" r="54" fill="url(#synapseCoreGlow)" />
+                        <g className="holo-orbit-cw">
+                          <circle
+                            cx="130"
+                            cy="85"
+                            r="72"
+                            fill="none"
+                            stroke="#38bdf8"
+                            strokeOpacity="0.6"
+                            strokeWidth="1.3"
+                            strokeDasharray="8 5"
+                          />
+                          <circle cx="202" cy="85" r="4.5" fill="#38bdf8" />
+                          <circle cx="58" cy="85" r="4" fill="#818cf8" />
+                          <circle cx="130" cy="13" r="3.5" fill="#2dd4bf" />
+                        </g>
+                        <g className="holo-orbit-ccw">
+                          <ellipse
+                            cx="130"
+                            cy="85"
+                            rx="58"
+                            ry="28"
+                            fill="none"
+                            stroke="#2dd4bf"
+                            strokeOpacity="0.78"
+                            strokeWidth="1.4"
+                          />
+                          <circle cx="130" cy="57" r="4" fill="#2dd4bf" />
+                          <circle cx="130" cy="113" r="3.5" fill="#fbbf24" />
+                        </g>
+                        <ellipse
+                          cx="130"
+                          cy="85"
+                          rx="30"
+                          ry="58"
+                          fill="none"
+                          stroke="#818cf8"
+                          strokeOpacity="0.7"
+                          strokeWidth="1.3"
+                          className="holo-dash"
+                        />
+                        <circle cx="130" cy="85" r="12" fill="#e0f2fe" />
+                        <circle cx="130" cy="85" r="21" fill="none" stroke="#38bdf8" strokeWidth="1.6" className="holo-ring-pulse" />
+                        <circle cx="130" cy="85" r="31" fill="none" stroke="#818cf8" strokeOpacity="0.45" strokeWidth="1" className="holo-ring-pulse" />
+                      </svg>
+                    </div>
+
+                    <div className="relative z-10 flex items-center justify-between gap-2 text-[11px] text-slate-300 border-t border-white/10 pt-2.5">
+                      <span>
+                        {synapsePreviewDomain === 'physics' && (isEn ? '9 Physics & Quantum Chambers' : '9 Phòng Vật lí & Lượng tử')}
+                        {synapsePreviewDomain === 'space' && (isEn ? '7 Space & Astrophysics Chambers' : '7 Trạm Vũ trụ & Thiên văn')}
+                        {synapsePreviewDomain === 'cs' && (isEn ? '8 AI, Robotics & CS Chambers' : '8 Lõi AI, LiDAR & Vi tính')}
+                        {synapsePreviewDomain === 'math' && (isEn ? '6 Pure Math & Geometry Chambers' : '6 Không gian Toán học 3D')}
+                      </span>
+                      <span className="font-mono text-sky-300 font-semibold tabular-nums">30 / 30</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FRAME 2: HỌC TƯƠNG TÁC 3D (10-FINGER GESTURE & OXYZ) */}
+          <div
+            id="visitor-spatial-overview"
+            style={{ ['--holo-accent' as string]: '#14b8a6', ['--holo-secondary' as string]: '#38bdf8' }}
+            className={`scroll-mt-24 holo-card-frame rounded-lg shadow-2xl shadow-teal-950/25 ${
+              focusedShowcase === 'spatial_3d' ? 'showcase-focus-active ring-2 ring-teal-400' : ''
+            }`}
+          >
+            <div className="holo-conic-ring" aria-hidden="true" />
+            <div className="sci-frame relative z-10 rounded-md bg-gradient-to-br from-[#031317] via-[#06222b] to-[#05121c] text-white p-6 sm:p-8 overflow-hidden">
+              <div className="absolute inset-0 sci-blueprint-bg opacity-35 pointer-events-none" />
+              <div
+                aria-hidden="true"
+                className="synapse-aurora-blob-b pointer-events-none -top-24 right-8 w-72 h-72 rounded-full bg-teal-500/20 blur-3xl absolute"
+              />
+              <div
+                aria-hidden="true"
+                className="synapse-aurora-blob-c pointer-events-none -bottom-24 -left-10 w-80 h-80 rounded-full bg-cyan-500/18 blur-3xl absolute"
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-teal-300/20 to-transparent showcase-beam-glide"
+              />
+
+              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+                {/* Left Grand Animated 10-Fingertip Constellation & 3D Wireframe Stage */}
+                <div className="lg:col-span-5 order-2 lg:order-1">
+                  <div className="relative rounded-md border border-teal-400/35 bg-[#020f13] p-5 overflow-hidden min-h-[275px] flex flex-col justify-between shadow-inner">
+                    <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-teal-300/95">
+                      <span>{spatialPreviewTab === 'models3d' ? '15 MODELS · 3D IK' : '6 LABS · 2D STUDIO'}</span>
+                      <span className="px-2 py-0.5 rounded bg-teal-500/15 border border-teal-400/30 text-emerald-300">
+                        10-FINGER LOCK
+                      </span>
+                    </div>
+
+                    <div className="relative z-10 my-2 flex items-center justify-center">
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 260 170"
+                        className="w-full max-w-[280px] h-44 showcase-float-slow"
+                      >
+                        <g className="holo-orbit-cw" style={{ transformOrigin: '198px 82px' }}>
+                          <circle
+                            cx="198"
+                            cy="82"
+                            r="48"
+                            fill="none"
+                            stroke="#2dd4bf"
+                            strokeOpacity="0.35"
+                            strokeWidth="1"
+                            strokeDasharray="5 4"
+                          />
+                        </g>
+                        {/* Oxyz wireframe isometric crystal / cube */}
+                        <g transform="translate(154, 32)">
+                          <polygon
+                            points="44,4 84,27 84,75 44,98 4,75 4,27"
+                            fill="rgba(20, 184, 166, 0.14)"
+                            stroke="#2dd4bf"
+                            strokeWidth="1.6"
+                          />
+                          <polyline
+                            points="4,27 44,50 84,27"
+                            fill="none"
+                            stroke="#38bdf8"
+                            strokeWidth="1.4"
+                          />
+                          <line x1="44" y1="50" x2="44" y2="98" stroke="#38bdf8" strokeWidth="1.4" />
+                          <circle cx="44" cy="50" r="4.5" fill="#fbbf24" className="showcase-node-ping" />
+                        </g>
+
+                        {/* 10-Fingertip sensor fan & kinetic laser filaments */}
+                        <g>
+                          {[
+                            { x: 22, y: 116 },
+                            { x: 32, y: 82 },
+                            { x: 48, y: 56 },
+                            { x: 68, y: 46 },
+                            { x: 88, y: 60 },
+                            { x: 28, y: 138 },
+                            { x: 48, y: 120 },
+                            { x: 66, y: 98 },
+                            { x: 84, y: 86 },
+                            { x: 98, y: 106 },
+                          ].map((pt, i) => (
+                            <g key={i}>
+                              <line
+                                x1={pt.x}
+                                y1={pt.y}
+                                x2={198}
+                                y2={82}
+                                stroke={i < 5 ? '#2dd4bf' : '#38bdf8'}
+                                strokeOpacity="0.34"
+                                strokeWidth="1.1"
+                                className="animate-electric-flow"
+                              />
+                              <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={i < 5 ? 4.4 : 3.4}
+                                fill={i < 5 ? '#2dd4bf' : '#38bdf8'}
+                                className="showcase-node-ping"
+                                style={{ animationDelay: `${i * 0.15}s` }}
+                              />
+                            </g>
+                          ))}
+                        </g>
+                      </svg>
+                    </div>
+
+                    <div className="relative z-10 flex items-center justify-between gap-2 text-[11px] text-slate-300 border-t border-white/10 pt-2.5">
+                      <span>
+                        {spatialPreviewTab === 'models3d'
+                          ? isEn
+                            ? 'Pinch to zoom, spread to explode 3D layers'
+                            : 'Chụm ngón phóng to, xòe tay tách lớp mô hình 3D'
+                          : isEn
+                          ? 'Drag vertices & tangents directly on 2D canvas'
+                          : 'Kéo đỉnh đa giác, tiêu điểm conic & tiếp tuyến 2D'}
+                      </span>
+                      <span className="font-mono text-teal-300 font-semibold">60 FPS</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Content & Interactive Mode Preview */}
+                <div className="lg:col-span-7 order-1 lg:order-2 space-y-4">
+                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-teal-500/15 border border-teal-400/40 text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-teal-300">
+                    <Hand className="w-4 h-4 icon-anim-hand" />
+                    <span>{isEn ? 'INTERACTIVE 3D · 10-FINGERTIP WEBCAM & OXYZ LAB' : 'HỌC TƯƠNG TÁC 3D · CẢM BIẾN 10 ĐẦU NGÓN TAY'}</span>
+                  </div>
+
+                  <h4 className="font-display text-xl sm:text-2xl lg:text-[1.75rem] font-semibold tracking-tight text-white leading-snug">
+                    {isEn
+                      ? 'Sculpt 2D Geometry & Manipulate 15 Realistic 3D Models by Hand or Mouse'
+                      : 'Xưởng Hình Học 2D & 15 Mô Hình 3D Thực Tế Điều Khiển Trực Quan'}
+                  </h4>
+
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                    {isEn
+                      ? 'Smooth 10-fingertip tracking with anti-jitter locking and single/dual-hand modes—plus instant mouse and touch controls if you prefer studying without a webcam.'
+                      : 'Thuật toán nhận diện cố định 10 đầu ngón tay chống rung loạn kèm nút chọn 1 hoặc 2 tay, độ nhạy tùy chỉnh — đồng thời hỗ trợ kéo chuột và chạm cảm ứng trực tiếp khi không mở camera.'}
+                  </p>
+
+                  {/* Interactive Tab Toggle: 15 3D Models vs 6 2D Geometry Labs */}
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setSpatialPreviewTab('models3d')}
+                      className={`cs-deck-btn px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer border ${
+                        spatialPreviewTab === 'models3d'
+                          ? 'bg-teal-400 text-slate-950 border-teal-300 shadow-sm shadow-teal-500/30'
+                          : 'bg-white/6 hover:bg-white/14 text-slate-200 border-white/15'
+                      }`}
+                    >
+                      {isEn ? '15 Realistic 3D Models' : '15 Mô hình 3D Thực tế'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSpatialPreviewTab('labs2d')}
+                      className={`cs-deck-btn px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer border ${
+                        spatialPreviewTab === 'labs2d'
+                          ? 'bg-teal-400 text-slate-950 border-teal-300 shadow-sm shadow-teal-500/30'
+                          : 'bg-white/6 hover:bg-white/14 text-slate-200 border-white/15'
+                      }`}
+                    >
+                      {isEn ? '6 Interactive 2D Geometry Labs' : '6 Xưởng Hình học 2D'}
+                    </button>
+                  </div>
+
+                  {/* Highlighted Items */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {(spatialPreviewTab === 'models3d'
+                      ? [
+                          { title: isEn ? 'Turbofan Jet Engine' : 'Động cơ phản lực Turbofan', desc: isEn ? 'Exploded turbine rotors' : 'Tách lớp cánh quạt & buồng đốt' },
+                          { title: isEn ? 'Hand-IK Robotic Arm' : 'Cánh tay Robot IK 6 bậc', desc: isEn ? 'Follows finger joints live' : 'Bám theo khớp tay thời gian thực' },
+                          { title: isEn ? 'Solar Orrery & Wind Tunnel' : 'Hệ Mặt Trời & Hầm Gió', desc: isEn ? 'Orbital Kepler & airflow' : 'Quỹ đạo Kepler & dòng khí động lực' },
+                        ]
+                      : [
+                          { title: isEn ? 'Euler Triangle & Circle' : 'Đường tròn Euler & Compa', desc: isEn ? 'Live orthocenter & centroid' : 'Di chuyển đỉnh thấy trực tâm đổi' },
+                          { title: isEn ? 'Conic Sections Studio' : 'Tiết diện Elip · Hyperbol', desc: isEn ? 'Tune eccentricity & foci' : 'Chỉnh tâm sai & tiêu điểm sống' },
+                          { title: isEn ? 'Vector & Symmetry Lab' : 'Vector Oxy & Phép đối xứng', desc: isEn ? 'Dot product & reflection axes' : 'Tích vô hướng & trục đối xứng' },
+                        ]
+                    ).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-md bg-white/6 border border-teal-300/25 px-3 py-2.5 space-y-0.5 transition-all hover:border-teal-300/60 hover:bg-white/10"
+                      >
+                        <div className="text-xs font-semibold text-white truncate">{item.title}</div>
+                        <div className="text-[11px] text-teal-200/85 leading-snug">{item.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Primary Action Button */}
+                  <div className="pt-1 flex flex-wrap items-center gap-4">
+                    <button
+                      type="button"
+                      data-ripple="true"
+                      onClick={handleEnterSpatial3D}
+                      className="group/btn cs-deck-btn px-6 py-3 rounded-md bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 hover:from-teal-300 hover:to-sky-300 text-slate-950 font-semibold text-xs sm:text-sm shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Hand className="w-4 h-4 icon-anim-hand" />
+                      <span>{isEn ? 'Launch Interactive 3D Lab' : 'Vào Học tương tác 3D ngay'}</span>
+                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
+                    <span className="text-xs text-slate-400">
+                      {isEn ? 'Works with Webcam or Mouse/Touch' : 'Dùng được bằng Webcam hoặc Chuột / Cảm ứng'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FRAME 3: DIỄN ĐÀN HỌC TẬP (COLLABORATIVE KNOWLEDGE NETWORK) */}
+          <div
+            id="visitor-forum-overview"
+            style={{ ['--holo-accent' as string]: '#818cf8', ['--holo-secondary' as string]: '#c084fc' }}
+            className={`scroll-mt-24 holo-card-frame rounded-lg shadow-2xl shadow-indigo-950/25 ${
+              focusedShowcase === 'forum' ? 'showcase-focus-active ring-2 ring-indigo-400' : ''
+            }`}
+          >
+            <div className="holo-conic-ring" aria-hidden="true" />
+            <div className="sci-frame relative z-10 rounded-md bg-gradient-to-br from-[#08091f] via-[#131438] to-[#0a0c24] text-white p-6 sm:p-8 overflow-hidden">
+              <div className="absolute inset-0 sci-blueprint-bg opacity-35 pointer-events-none" />
+              <div
+                aria-hidden="true"
+                className="synapse-aurora-blob-a pointer-events-none -top-24 -right-12 w-72 h-72 rounded-full bg-indigo-500/22 blur-3xl absolute"
+              />
+              <div
+                aria-hidden="true"
+                className="synapse-aurora-blob-c pointer-events-none -bottom-24 left-10 w-80 h-80 rounded-full bg-violet-500/20 blur-3xl absolute"
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-indigo-300/20 to-transparent showcase-beam-glide"
+              />
+
+              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+                {/* Left Content & Interactive Forum Topic Tabs */}
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-indigo-500/18 border border-indigo-400/40 text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-indigo-300">
+                    <MessageSquare className="w-4 h-4 icon-anim-wave" />
+                    <span>{isEn ? 'STUDY FORUM · PEER EXCHANGE & SOLUTIONS' : 'DIỄN ĐÀN HỌC TẬP · CỘNG ĐỒNG TOÁN · LÍ · TIN'}</span>
+                  </div>
+
+                  <h4 className="font-display text-xl sm:text-2xl lg:text-[1.75rem] font-semibold tracking-tight text-white leading-snug">
+                    {isEn
+                      ? 'Ask Hard Problems, Share Olympiad Solutions & Debate STEM Ideas Together'
+                      : 'Trao Đổi Bài Khó, Chia Sẻ Lời Giải Chuyên & Hỏi Đáp Cùng Cộng Đồng'}
+                  </h4>
+
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                    {isEn
+                      ? 'Post tough Math, Physics, or CS questions with equations and images, compare alternative proofs, and build study reputation alongside your weekly Arena XP.'
+                      : 'Đăng bài hỏi đáp Toán – Lí – Tin kèm ảnh đề và công thức trực quan, thảo luận nhiều cách giải tối ưu từ cơ bản đến HSG Quốc gia và tích lũy điểm đóng góp học thuật.'}
+                  </p>
+
+                  {/* Interactive Forum Preview Tabs */}
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {(
+                      [
+                        { id: 'discussions', vi: 'Thảo luận nổi bật', en: 'Top Discussions' },
+                        { id: 'solutions', vi: 'Kho lời giải hay', en: 'Best Solutions' },
+                        { id: 'qa', vi: 'Hỏi đáp nhanh 24/7', en: 'Fast Q&A Threads' },
+                      ] as const
+                    ).map((tab) => {
+                      const active = forumPreviewTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setForumPreviewTab(tab.id)}
+                          className={`cs-deck-btn px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer border ${
+                            active
+                              ? 'bg-indigo-400 text-slate-950 border-indigo-300 shadow-sm shadow-indigo-500/30'
+                              : 'bg-white/6 hover:bg-white/14 text-slate-200 border-white/15'
+                          }`}
+                        >
+                          {isEn ? tab.en : tab.vi}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Highlighted Forum Threads */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {(
+                      {
+                        discussions: [
+                          { title: isEn ? 'Cauchy-Schwarz Olympiad Tricks' : 'Kỹ thuật chọn điểm rơi BĐT', desc: isEn ? 'Math Chuyên · 18 replies' : 'Toán Chuyên · 18 bình luận hay' },
+                          { title: isEn ? 'RLC Resonance Phase Shift' : 'Độ lệch pha & Cộng hưởng RLC', desc: isEn ? 'Physics 12 · Vector diagram' : 'Vật lí 12 · Giản đồ vectơ kép' },
+                          { title: isEn ? 'DP Bitmask & Segment Tree' : 'Tối ưu DP Bitmask & Cây IT', desc: isEn ? 'CS VNOI · O(N log N) code' : 'Tin VNOI · Code mẫu C++20' },
+                        ],
+                        solutions: [
+                          { title: isEn ? '3 Ways to Solve Oxyz Distance' : '3 Cách tính khoảng cách Oxyz', desc: isEn ? 'Visual 3D vector proof' : 'Kèm hình tọa độ không gian 3D' },
+                          { title: isEn ? 'Damped Pendulum Energy Loss' : 'Dao động tắt dần & Cơ năng', desc: isEn ? 'Step-by-step conservation' : 'Phân tích từng nửa chu kỳ' },
+                          { title: isEn ? 'Dijkstra with State Compression' : 'Dijkstra mở rộng trạng thái', desc: isEn ? 'Annotated complexity analysis' : 'Phân tích độ phức tạp chi tiết' },
+                        ],
+                        qa: [
+                          { title: isEn ? 'Snap & Paste Exam Question' : 'Chụp / Ctrl+V ảnh đề cần hỏi', desc: isEn ? 'Instant math/code formatting' : 'Hiển thị rõ đề & công thức' },
+                          { title: isEn ? 'Pin Best Peer Answers' : 'Bình chọn lời giải chuẩn xác', desc: isEn ? 'Community verified solutions' : 'Đánh dấu lời giải được đồng thuận' },
+                          { title: isEn ? 'Link Directly to AI Tutors' : 'Hỏi tiếp với 3 Gia sư AI', desc: isEn ? 'Deepen any step you miss' : 'Giải thích sâu từng bước chưa rõ' },
+                        ],
+                      }[forumPreviewTab]
+                    ).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-md bg-white/6 border border-indigo-300/25 px-3 py-2.5 space-y-0.5 transition-all hover:border-indigo-300/60 hover:bg-white/10"
+                      >
+                        <div className="text-xs font-semibold text-white truncate">{item.title}</div>
+                        <div className="text-[11px] text-indigo-200/85 leading-snug">{item.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Primary Action Button */}
+                  <div className="pt-1 flex flex-wrap items-center gap-4">
+                    <button
+                      type="button"
+                      data-ripple="true"
+                      onClick={handleEnterForum}
+                      className="group/btn cs-deck-btn px-6 py-3 rounded-md bg-gradient-to-r from-indigo-400 via-violet-400 to-fuchsia-400 hover:from-indigo-300 hover:to-fuchsia-300 text-slate-950 font-semibold text-xs sm:text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4 icon-anim-wave" />
+                      <span>{isEn ? 'Open Study Forum Now' : 'Tham gia Diễn đàn học tập'}</span>
+                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
+                    <span className="text-xs text-slate-400">
+                      {isEn ? 'Post questions & vote answers freely' : 'Đặt câu hỏi & chia sẻ lời giải cùng bạn học'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right Grand Animated Collaborative Synaptic Mesh SVG Stage */}
+                <div className="lg:col-span-5">
+                  <div className="relative rounded-md border border-indigo-400/35 bg-[#040516] p-5 overflow-hidden min-h-[275px] flex flex-col justify-between shadow-inner">
+                    <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-indigo-300/95">
+                      <span>KNOWLEDGE GRAPH · LIVE</span>
+                      <span className="px-2 py-0.5 rounded bg-indigo-500/18 border border-indigo-400/35 text-violet-200">
+                        MATH · PHYS · CS
+                      </span>
+                    </div>
+
+                    <div className="relative z-10 my-2 flex items-center justify-center">
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 260 170"
+                        className="w-full max-w-[280px] h-44 showcase-float-slow"
+                      >
+                        <defs>
+                          <radialGradient id="forumHubGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#818cf8" stopOpacity="0.95" />
+                            <stop offset="60%" stopColor="#6366f1" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                          </radialGradient>
+                        </defs>
+                        <circle cx="130" cy="85" r="52" fill="url(#forumHubGlow)" />
+                        <g className="holo-orbit-cw" style={{ transformOrigin: '130px 85px' }}>
+                          <circle
+                            cx="130"
+                            cy="85"
+                            r="66"
+                            fill="none"
+                            stroke="#818cf8"
+                            strokeOpacity="0.4"
+                            strokeWidth="1.2"
+                            strokeDasharray="6 5"
+                          />
+                        </g>
+                        {/* Synaptic links connecting scholar nodes */}
+                        {[
+                          { x1: 52, y1: 42, x2: 130, y2: 85, c: '#38bdf8' },
+                          { x1: 208, y1: 44, x2: 130, y2: 85, c: '#fbbf24' },
+                          { x1: 48, y1: 128, x2: 130, y2: 85, c: '#34d399' },
+                          { x1: 212, y1: 126, x2: 130, y2: 85, c: '#c084fc' },
+                          { x1: 52, y1: 42, x2: 208, y2: 44, c: '#818cf8' },
+                          { x1: 48, y1: 128, x2: 212, y2: 126, c: '#818cf8' },
+                        ].map((edge, idx) => (
+                          <line
+                            key={idx}
+                            x1={edge.x1}
+                            y1={edge.y1}
+                            x2={edge.x2}
+                            y2={edge.y2}
+                            stroke={edge.c}
+                            strokeOpacity="0.58"
+                            strokeWidth="1.5"
+                            className="animate-electric-flow"
+                          />
+                        ))}
+                        {/* Outer Subject Hub Nodes */}
+                        {[
+                          { x: 52, y: 42, fill: '#38bdf8', label: 'Σ' },
+                          { x: 208, y: 44, fill: '#fbbf24', label: 'λ' },
+                          { x: 48, y: 128, fill: '#34d399', label: '</>' },
+                          { x: 212, y: 126, fill: '#c084fc', label: 'Q&A' },
+                        ].map((node, idx) => (
+                          <g key={idx}>
+                            <circle
+                              cx={node.x}
+                              cy={node.y}
+                              r="15"
+                              fill="#0b1029"
+                              stroke={node.fill}
+                              strokeWidth="1.6"
+                              className="showcase-node-ping"
+                              style={{ animationDelay: `${idx * 0.3}s` }}
+                            />
+                            <text
+                              x={node.x}
+                              y={node.y + 4}
+                              textAnchor="middle"
+                              fill={node.fill}
+                              fontSize="10"
+                              fontWeight="700"
+                              fontFamily="monospace"
+                            >
+                              {node.label}
+                            </text>
+                          </g>
+                        ))}
+                        {/* Central Hub */}
+                        <circle cx="130" cy="85" r="18" fill="#1e1b4b" stroke="#a5b4fc" strokeWidth="2" />
+                        <circle cx="130" cy="85" r="26" fill="none" stroke="#818cf8" strokeWidth="1.2" className="holo-ring-pulse" />
+                        <text x="130" y="89" textAnchor="middle" fill="#e0e7ff" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+                          FORUM
+                        </text>
+                      </svg>
+                    </div>
+
+                    <div className="relative z-10 flex items-center justify-between gap-2 text-[11px] text-slate-300 border-t border-white/10 pt-2.5">
+                      <span>
+                        {isEn
+                          ? 'Real-time academic discussions & peer grading'
+                          : 'Thảo luận Toán · Lí · Tin & chia sẻ cách giải hay'}
+                      </span>
+                      <span className="font-mono text-indigo-300 font-semibold">24/7</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

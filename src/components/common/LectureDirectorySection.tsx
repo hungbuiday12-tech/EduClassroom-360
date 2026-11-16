@@ -135,29 +135,44 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
     math: {
       headingVi: 'Toán Học · Đồ Thị 2D & Hình Học Oxyz 3D',
       headingEn: 'Mathematics · 2D Graphs & Oxyz 3D',
-      icon: <Compass className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />,
-      accentBorder: 'border-l-sky-500',
-      hoverBorder: 'hover:border-sky-400/90 dark:hover:border-sky-400/80 hover:shadow-[0_14px_30px_-10px_rgba(14,165,233,0.35)]',
-      indexBg: 'bg-sky-500/12 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300 group-hover:bg-sky-600 group-hover:text-white',
-      sheenGlow: 'from-sky-400/10 via-indigo-400/10 to-transparent'
+      icon: <Compass className="w-4 h-4 text-sky-600 dark:text-sky-300 icon-anim-compass shrink-0" />,
+      headerBadge: 'bg-sky-500/12 border-sky-400/40 text-sky-700 dark:text-sky-300',
+      cardSurface:
+        'bg-sky-50/45 dark:bg-slate-900/75 hover:bg-white dark:hover:bg-slate-800/95 border-sky-300/80 dark:border-sky-500/30 hover:border-sky-500 hover:shadow-[0_12px_28px_-10px_rgba(2,132,199,0.34)] text-sky-700 dark:text-sky-300',
+      indexBg:
+        'bg-sky-500/12 border border-sky-400/35 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300 group-hover:bg-sky-600 group-hover:border-sky-500 group-hover:text-white',
+      arrowBg:
+        'bg-sky-500/10 border border-sky-400/30 text-sky-600 dark:text-sky-300 group-hover:bg-sky-600 group-hover:border-sky-500 group-hover:text-white',
+      titleHover: 'group-hover:text-sky-700 dark:group-hover:text-sky-300',
+      sheenGlow: 'from-sky-400/12 via-blue-400/10 to-transparent'
     },
     physics: {
       headingVi: 'Vật Lí · Phòng Thí Nghiệm 2D & 3D 60 FPS',
       headingEn: 'Physics · 2D & 3D 60 FPS Simulation Labs',
-      icon: <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />,
-      accentBorder: 'border-l-amber-500',
-      hoverBorder: 'hover:border-amber-400/90 dark:hover:border-amber-400/80 hover:shadow-[0_14px_30px_-10px_rgba(245,158,11,0.35)]',
-      indexBg: 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 group-hover:bg-amber-500 group-hover:text-slate-950',
-      sheenGlow: 'from-amber-400/10 via-orange-400/10 to-transparent'
+      icon: <Zap className="w-4 h-4 text-amber-600 dark:text-amber-300 icon-anim-zap shrink-0" />,
+      headerBadge: 'bg-amber-500/12 border-amber-400/45 text-amber-800 dark:text-amber-300',
+      cardSurface:
+        'bg-amber-50/45 dark:bg-slate-900/75 hover:bg-white dark:hover:bg-slate-800/95 border-amber-300/85 dark:border-amber-500/30 hover:border-amber-500 hover:shadow-[0_12px_28px_-10px_rgba(245,158,11,0.34)] text-amber-700 dark:text-amber-300',
+      indexBg:
+        'bg-amber-500/15 border border-amber-400/40 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 group-hover:bg-amber-500 group-hover:border-amber-400 group-hover:text-slate-950',
+      arrowBg:
+        'bg-amber-500/10 border border-amber-400/35 text-amber-700 dark:text-amber-300 group-hover:bg-amber-500 group-hover:border-amber-400 group-hover:text-slate-950',
+      titleHover: 'group-hover:text-amber-700 dark:group-hover:text-amber-300',
+      sheenGlow: 'from-amber-400/12 via-orange-400/10 to-transparent'
     },
     cs: {
       headingVi: 'Tin Học · Lộ Trình VNOI & Sublime Text 4 Judge',
       headingEn: 'Computer Science · VNOI Roadmap & Sublime Judge',
-      icon: <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />,
-      accentBorder: 'border-l-emerald-500',
-      hoverBorder: 'hover:border-emerald-400/90 dark:hover:border-emerald-400/80 hover:shadow-[0_14px_30px_-10px_rgba(16,185,129,0.35)]',
-      indexBg: 'bg-emerald-500/12 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white',
-      sheenGlow: 'from-emerald-400/10 via-teal-400/10 to-transparent'
+      icon: <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-300 icon-anim-code shrink-0" />,
+      headerBadge: 'bg-emerald-500/12 border-emerald-400/40 text-emerald-800 dark:text-emerald-300',
+      cardSurface:
+        'bg-emerald-50/45 dark:bg-slate-900/75 hover:bg-white dark:hover:bg-slate-800/95 border-emerald-300/80 dark:border-emerald-500/30 hover:border-emerald-500 hover:shadow-[0_12px_28px_-10px_rgba(16,185,129,0.34)] text-emerald-700 dark:text-emerald-300',
+      indexBg:
+        'bg-emerald-500/12 border border-emerald-400/35 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 group-hover:bg-emerald-600 group-hover:border-emerald-500 group-hover:text-white',
+      arrowBg:
+        'bg-emerald-500/10 border border-emerald-400/30 text-emerald-700 dark:text-emerald-300 group-hover:bg-emerald-600 group-hover:border-emerald-500 group-hover:text-white',
+      titleHover: 'group-hover:text-emerald-700 dark:group-hover:text-emerald-300',
+      sheenGlow: 'from-emerald-400/12 via-teal-400/10 to-transparent'
     }
   };
 
@@ -166,31 +181,34 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
     const meta = subjectMeta[subj];
     return (
       <div key={subj} className="space-y-3">
-        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/80 dark:border-white/10">
-          <div className="flex items-center gap-2 min-w-0">
-            {meta.icon}
-            <h4 className="font-display text-sm sm:text-base font-extrabold text-slate-900 dark:text-white truncate">
+        <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200/85 dark:border-white/10">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className={`w-7 h-7 rounded-md border flex items-center justify-center shrink-0 ${meta.headerBadge}`}>
+              {meta.icon}
+            </span>
+            <h4 className="font-display text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
               {isEn ? meta.headingEn : meta.headingVi}
             </h4>
           </div>
-          <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 tabular-nums shrink-0">
+          <span className={`px-2 py-0.5 rounded border text-[11px] font-mono font-bold tabular-nums shrink-0 ${meta.headerBadge}`}>
             {items.length} {isEn ? 'lessons' : 'bài'}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {items.map((item) => (
+          {items.map((item, idx) => (
             <button
               key={item.id}
               type="button"
               data-ripple="true"
               onClick={() => onSelectLecture({ subject: item.subject, lectureId: item.id })}
-              className={`group relative overflow-hidden text-left p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800/95 border border-slate-200/85 dark:border-white/10 border-l-[4px] ${meta.accentBorder} ${meta.hoverBorder} transition-all duration-200 shadow-2xs flex items-start justify-between gap-3 cursor-pointer active:scale-[0.96]`}
+              style={{ animationDelay: `${Math.min(idx * 18, 220)}ms` }}
+              className={`group sci-frame cs-deck-btn lecture-card-reveal relative overflow-hidden text-left p-3.5 sm:p-4 rounded-md border ${meta.cardSurface} transition-all duration-200 shadow-xs flex items-start justify-between gap-3 cursor-pointer active:scale-[0.97]`}
             >
               {/* Animated hover sheen */}
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/35 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/45 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
               />
               {/* Subtle radial glow overlay on hover */}
               <span
@@ -200,20 +218,21 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
 
               <div className="relative z-10 flex items-start gap-3 min-w-0">
                 <span
-                  className={`font-mono text-xs font-extrabold tabular-nums w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 group-hover:scale-110 group-hover:-rotate-3 ${meta.indexBg}`}
+                  className={`font-mono text-xs font-extrabold tabular-nums w-8 h-8 rounded flex items-center justify-center shrink-0 transition-all duration-200 group-hover:scale-105 ${meta.indexBg}`}
                 >
                   {String(item.indexNumber).padStart(2, '0')}
                 </span>
                 <div className="min-w-0 space-y-1">
-                  <div className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors line-clamp-2">
+                  <div className={`text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white leading-snug transition-colors line-clamp-2 ${meta.titleHover}`}>
                     {item.title}
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    {item.metaLine}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                    <span className="truncate">{item.metaLine}</span>
                   </div>
                 </div>
               </div>
-              <span className="relative z-10 w-7 h-7 rounded-xl bg-slate-200/60 dark:bg-white/5 group-hover:bg-indigo-600 group-hover:text-white text-slate-400 flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200 group-hover:translate-x-0.5 group-hover:scale-105">
+
+              <span className={`relative z-10 w-7 h-7 rounded flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200 group-hover:translate-x-0.5 group-hover:scale-105 ${meta.arrowBg}`}>
                 <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
             </button>
@@ -226,25 +245,25 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
   return (
     <section
       id={id}
-      className="scroll-mt-24 rounded-3xl bg-white/85 dark:bg-slate-900/76 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/85 dark:border-white/10 p-5 sm:p-8 shadow-[0_16px_48px_-18px_rgba(15,23,42,0.14)] space-y-6"
+      className="scroll-mt-24 sci-frame sci-scan-bar relative rounded-lg bg-white/90 dark:bg-slate-900/82 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/90 dark:border-sky-500/25 p-5 sm:p-7 shadow-[0_18px_48px_-18px_rgba(15,23,42,0.16)] space-y-5"
     >
       {/* Header & Search */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
         <div className="space-y-1.5 min-w-0">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-            <BookOpen className="w-4 h-4 shrink-0" />
+          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-blue-700 dark:text-sky-400">
+            <BookOpen className="w-4 h-4 shrink-0 icon-anim-book" />
             <span className="tabular-nums">
               {isEn
                 ? `COMPLETE LECTURE DIRECTORY · ${totalCount} LESSONS`
                 : `DANH SÁCH BÀI GIẢNG TOÀN HỆ THỐNG · ${totalCount} BÀI`}
             </span>
           </div>
-          <h3 className="font-display text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          <h3 className="font-display text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             {isEn
               ? 'All Interactive Lectures (Math · Physics · CS)'
               : 'Danh Sách Bài Giảng 5 Bước (Toán · Vật Lí · Tin Học)'}
           </h3>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
             {isEn
               ? actionHintEn || 'Click any lesson below to open its interactive 5-step lecture, 2D/3D simulation, and practice quiz.'
               : actionHintVi || 'Bấm chọn bất kỳ bài giảng nào bên dưới để mở ngay phòng học 5 bước, mô phỏng 2D/3D và bài tập thực hành.'}
@@ -258,85 +277,117 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={isEn ? 'Search lesson title or grade...' : 'Tìm tên bài giảng, lớp 9–12...'}
-            className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/85 border border-slate-300/85 dark:border-white/15 rounded-md text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Subject Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      {/* Filter Bar — Responsive wrap prevents subject pills & track switcher from overlapping */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        {/* Subject Tabs — Crisp Square-ish Image 3 Aesthetic */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
+            data-ripple="true"
             onClick={() => onSubjectFilterChange('all')}
-            className={`group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 border transition-all cursor-pointer ${
+            className={`group cs-deck-btn flex items-center gap-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap border transition-all cursor-pointer ${
               subjectFilter === 'all'
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/25'
-                : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-indigo-400 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/50'
+                ? 'bg-blue-700 dark:bg-sky-500 text-white dark:text-slate-950 border-blue-700 dark:border-sky-400 shadow-md shadow-blue-600/20'
+                : 'bg-sky-50/70 dark:bg-slate-800/75 text-slate-800 dark:text-slate-200 border-sky-300/80 dark:border-sky-500/30 hover:border-blue-500 hover:bg-sky-100/80 dark:hover:bg-sky-950/45'
             }`}
           >
             <Layers className="w-4 h-4 shrink-0 icon-anim-list" />
-            <span className="tabular-nums">
-              {isEn ? `All (${totalCount})` : `Tất cả (${totalCount} bài)`}
+            <span>{isEn ? 'All' : 'Tất cả'}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold tabular-nums ${
+                subjectFilter === 'all'
+                  ? 'bg-white/20 dark:bg-slate-950/20 text-current'
+                  : 'bg-sky-500/15 text-blue-700 dark:text-sky-300 border border-sky-400/30'
+              }`}
+            >
+              {totalCount}
             </span>
           </button>
 
           <button
             type="button"
+            data-ripple="true"
             onClick={() => onSubjectFilterChange('math')}
-            className={`group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 border transition-all cursor-pointer ${
+            className={`group cs-deck-btn flex items-center gap-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap border transition-all cursor-pointer ${
               subjectFilter === 'math'
                 ? 'bg-sky-600 text-white border-sky-600 shadow-md shadow-sky-500/25'
-                : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400 hover:bg-sky-50/70 dark:hover:bg-sky-950/50'
+                : 'bg-sky-50/65 dark:bg-slate-800/75 text-sky-900 dark:text-sky-200 border-sky-300/80 dark:border-sky-500/30 hover:border-sky-500 hover:bg-sky-100/80 dark:hover:bg-sky-950/45'
             }`}
           >
             <Compass className="w-4 h-4 shrink-0 icon-anim-compass" />
-            <span className="tabular-nums">
-              {isEn ? `Math (${MATH_LECTURES.length})` : `Toán học (${MATH_LECTURES.length})`}
+            <span>{isEn ? 'Math' : 'Toán học'}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold tabular-nums ${
+                subjectFilter === 'math'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-400/30'
+              }`}
+            >
+              {MATH_LECTURES.length}
             </span>
           </button>
 
           <button
             type="button"
+            data-ripple="true"
             onClick={() => onSubjectFilterChange('physics')}
-            className={`group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 border transition-all cursor-pointer ${
+            className={`group cs-deck-btn flex items-center gap-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap border transition-all cursor-pointer ${
               subjectFilter === 'physics'
                 ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-md shadow-amber-500/25'
-                : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-amber-400 hover:bg-amber-50/70 dark:hover:bg-amber-950/50'
+                : 'bg-amber-50/65 dark:bg-slate-800/75 text-amber-950 dark:text-amber-200 border-amber-300/85 dark:border-amber-500/30 hover:border-amber-500 hover:bg-amber-100/80 dark:hover:bg-amber-950/45'
             }`}
           >
             <Zap className="w-4 h-4 shrink-0 icon-anim-zap" />
-            <span className="tabular-nums">
-              {isEn ? `Physics (${PHYSICS_LESSONS.length})` : `Vật lí (${PHYSICS_LESSONS.length})`}
+            <span>{isEn ? 'Physics' : 'Vật lí'}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold tabular-nums ${
+                subjectFilter === 'physics'
+                  ? 'bg-slate-950/15 text-slate-950'
+                  : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-400/35'
+              }`}
+            >
+              {PHYSICS_LESSONS.length}
             </span>
           </button>
 
           <button
             type="button"
+            data-ripple="true"
             onClick={() => onSubjectFilterChange('cs')}
-            className={`group sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 border transition-all cursor-pointer ${
+            className={`group cs-deck-btn flex items-center gap-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap border transition-all cursor-pointer ${
               subjectFilter === 'cs'
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/25'
-                : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-emerald-400 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/50'
+                : 'bg-emerald-50/65 dark:bg-slate-800/75 text-emerald-950 dark:text-emerald-200 border-emerald-300/80 dark:border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-100/80 dark:hover:bg-emerald-950/45'
             }`}
           >
             <Code2 className="w-4 h-4 shrink-0 icon-anim-code" />
-            <span className="tabular-nums">
-              {isEn ? `CS (${CS_LESSONS.length})` : `Tin học (${CS_LESSONS.length})`}
+            <span>{isEn ? 'CS' : 'Tin học'}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold tabular-nums ${
+                subjectFilter === 'cs'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-400/30'
+              }`}
+            >
+              {CS_LESSONS.length}
             </span>
           </button>
         </div>
 
-        {/* Track Filter */}
-        <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/85 border border-slate-200/80 dark:border-white/10 self-start sm:self-auto shrink-0">
+        {/* Track Filter — Crisp Square-ish Switcher */}
+        <div className="flex flex-wrap items-center gap-1 p-1 rounded-md bg-slate-100/90 dark:bg-slate-800/85 border border-slate-300/80 dark:border-white/15 self-start xl:self-auto shrink-0">
           <button
             type="button"
             onClick={() => setTrackFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
               trackFilter === 'all'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-white/15'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             {isEn ? 'All Tracks' : 'Mọi trình độ'}
@@ -344,10 +395,10 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
           <button
             type="button"
             onClick={() => setTrackFilter('khong_chuyen')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
               trackFilter === 'khong_chuyen'
-                ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-xs border border-emerald-300/60 dark:border-emerald-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             {isEn ? 'Standard' : 'Cơ bản GDPT'}
@@ -355,10 +406,10 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
           <button
             type="button"
             onClick={() => setTrackFilter('chuyen')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
               trackFilter === 'chuyen'
-                ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 shadow-xs border border-amber-300/60 dark:border-amber-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             {isEn ? 'Specialized' : 'Chuyên / HSG'}
@@ -368,7 +419,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
 
       {/* Lecture Lists */}
       {filteredItems.length === 0 ? (
-        <div className="py-10 text-center rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-white/10 text-xs text-slate-500 dark:text-slate-400">
+        <div className="py-10 text-center rounded-md bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-white/10 text-xs text-slate-500 dark:text-slate-400">
           {isEn
             ? 'No matching lectures found. Try clearing your filter.'
             : 'Không tìm thấy bài giảng phù hợp. Hãy thử đổi từ khóa hoặc bộ lọc.'}

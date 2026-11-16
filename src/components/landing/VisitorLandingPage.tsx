@@ -35,7 +35,17 @@ import {
   VolumeX,
   ListOrdered,
   ChevronDown,
-  Orbit
+  Orbit,
+  Hand,
+  Atom,
+  Mic,
+  Trophy,
+  GitBranch,
+  MessageSquare,
+  Clock,
+  Sliders,
+  UploadCloud,
+  Layers
 } from 'lucide-react';
 import { useAudio } from '../../context/AudioContext';
 import { useNavigation } from '../../context/NavigationContext';
@@ -57,7 +67,8 @@ interface VisitorLandingPageProps {
   onToggleTheme?: () => void;
 }
 
-type LandingSpotlightKey = 'math' | 'physics' | 'cs' | 'exams';
+type LandingSpotlightKey = 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'cs' | 'exams';
+type FeatureCategoryFilter = 'all' | 'simulation' | 'curriculum_ai' | 'arena_tools';
 
 export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   onEnterAsGuest,
@@ -96,6 +107,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
   const handleEnterSynapseV2 = () => {
     navigate({ subject: 'synapse_v2', tutorOpen: false });
+    onEnterAsGuest();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleEnterSpatial3D = () => {
+    navigate({ subject: 'spatial_3d', tutorOpen: false });
     onEnterAsGuest();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -200,7 +217,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     };
   }, [isCreatureMenuOpen]);
 
-  const [activeSpotlight, setActiveSpotlight] = useState<LandingSpotlightKey>('math');
+  const [activeSpotlight, setActiveSpotlight] = useState<LandingSpotlightKey>('synapse_v2');
+  const [featureCategory, setFeatureCategory] = useState<FeatureCategoryFilter>('all');
   const activeCreature =
     CREATURE_THEME_OPTIONS.find((opt) => opt.id === creatureTheme) || CREATURE_THEME_OPTIONS[0];
 
@@ -220,9 +238,53 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       accentClass: string;
     }
   > = {
+    synapse_v2: {
+      label: isEn ? 'Synapse v2 · 30 Worlds' : 'Synapse v2 · 30 Công trình',
+      badge: isEn ? '30 Interactive 3D Chambers' : '30 Đại Công Trình 3D WebGL',
+      headline: isEn
+        ? 'Virtual Science Campus: 30 Futuristic 3D Physics, Space, CS & Math Chambers'
+        : 'Lớp Học Ảo Synapse v2: 30 Đại Công Trình 3D Vật Lí, Vũ Trụ, Vi Tính & Toán',
+      summary: isEn
+        ? 'Step inside 30 real-time 3D scientific chambers with live formulas: CERN LHC, Double-Slit Laser, James Webb, Dyson Black Hole, Tokamak Fusion, LiDAR SLAM, 7T MRI, Sagnac Gyro, Acoustic Levitation & Photonic Tensor Core.'
+        : 'Khám phá 30 không gian 3D tương tác trực tiếp cùng công thức: Máy gia tốc CERN LHC, Laser Khe kép, Kính James Webb, Hố đen Dyson, Lò Tokamak, LiDAR SLAM, MRI 7T, Con quay Sagnac & Chip quang tử.',
+      highlights: isEn
+        ? [
+            '30 holographic chambers across Physics, Space, AI & Math',
+            'Real-time Three.js WebGL controls & live equations',
+            'Instant launch directly inside any observatory chamber',
+          ]
+        : [
+            '30 phòng thí nghiệm 3D Vật lí, Vũ trụ, Tin học & Toán',
+            'Điều chỉnh thông số & công thức trực tiếp trong WebGL',
+            'Chuyển cảnh mượt, tối ưu FPS theo cấu hình máy',
+          ],
+      accentClass: 'text-sky-600 dark:text-sky-300 border-sky-500/30 bg-sky-500/10',
+    },
+    spatial_3d: {
+      label: isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D',
+      badge: isEn ? '10-Fingertip AI Sensor' : 'Cảm biến Webcam 10 ngón',
+      headline: isEn
+        ? 'Control 6 2D Geometry Labs & 15 Advanced 3D Models Using Your Real Hands'
+        : 'Điều Khiển 6 Xưởng Hình Học 2D & 15 Mô Hình 3D Tiên Tiến Bằng 10 Đầu Ngón Tay',
+      summary: isEn
+        ? 'Strict 5-finger per hand MediaPipe tracking locks circular pins directly onto your fingertips. Customize sensitivity, 1-hand or dual-hand interaction modes, and sculpt 2D geometry or 3D turbines & robot arms.'
+        : 'AI chỉ nhận diện đúng 10 đầu ngón tay chống nhảy loạn. Tự do chỉnh độ nhạy, phương thức 1/2 tay để dựng 6 xưởng 2D (Euler, Compa, Vector, Conic) và xoay 15 mô hình 3D thực tế (Động cơ phản lực, Robot IK, Hầm gió).',
+      highlights: isEn
+        ? [
+            'Locked 10-fingertip tracking with zero random jumps',
+            '6 2D Geometry Workshops + 15 Kinetic 3D Models',
+            'Custom sensitivity sliders & per-gesture action mapping',
+          ]
+        : [
+            'Gắn chặt điểm tròn lên đúng 10 đầu ngón tay chống loạn',
+            '6 Xưởng Hình học 2D + 15 Mô hình 3D thực tế sáng tạo',
+            'Tùy chỉnh độ nhạy, chế độ tay & nút tính năng theo ý thích',
+          ],
+      accentClass: 'text-teal-600 dark:text-teal-300 border-teal-500/30 bg-teal-500/10',
+    },
     math: {
       label: isEn ? 'Math 2D & 3D' : 'Toán 2D & 3D',
-      badge: isEn ? `${MATH_LECTURES.length} Grades 9–12 topics` : `${MATH_LECTURES.length} chuyên đề VietJack 9–12`,
+      badge: isEn ? `${MATH_LECTURES.length} Grades 9–12 topics` : `${MATH_LECTURES.length} chuyên đề 9–12`,
       headline: isEn
         ? 'Oxy Analytic Grapher, Circle Geometry & 8 Oxyz 3D Scenes'
         : 'Đồ thị Oxy, Đường tròn Tương tác & 8 mô hình Oxyz 3D',
@@ -245,72 +307,72 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     physics: {
       label: isEn ? 'Physics 2D & 3D' : 'Vật Lí 2D & 3D',
       badge: isEn
-        ? `${PHYSICS_LESSONS.length} lessons · 19 2D Labs & 14 3D models`
-        : `${PHYSICS_LESSONS.length} bài giảng · 19 Lab 2D & 14 mô hình 3D`,
+        ? `5 Domains · ${PHYSICS_LESSONS.length} lessons (Grades 9–12)`
+        : `5 Lĩnh vực tách riêng · ${PHYSICS_LESSONS.length} bài 9–12`,
       headline: isEn
-        ? 'Real-time 60 FPS Physics Laboratory for Grades 9 to 12'
-        : 'Phòng thí nghiệm Vật lí thời gian thực 60 FPS từ Lớp 9 đến 12',
+        ? '5 Dedicated Physics Simulation Domains (2D & 3D) + Standard THPT/Specialized Lectures'
+        : 'Mô Phỏng Vật Lí 2D/3D Tách Riêng 5 Chuyên Đề (Lớp 9–12) & Bài Giảng Chuẩn THPT/Chuyên',
       summary: isEn
-        ? 'Adjust standing waves, Doppler sound speed, photoelectric wavelengths, RLC circuits or angular velocity across 2D canvases and 3D simulations.'
-        : 'Điều chỉnh tự do tham số sóng dừng, hiệu ứng Doppler, ống quang điện Einstein, mạch RLC nối tiếp hoặc tốc độ góc trên cả mặt phẳng 2D và không gian 3D tương tác.',
+        ? 'Separate pages for Mechanics, Waves/Oscillations, Electricity/Magnetism, Optics/Quantum & Thermal/Nuclear with full PhET-inspired controls, separated 2D/3D views, and clear THPT/Specialized explanations.'
+        : 'Tách riêng 5 trang thực hành (Cơ học, Sóng & Dao động, Điện & Điện từ, Quang & Lượng tử, Nhiệt & Hạt nhân) tham khảo PhET với đầy đủ thanh trượt thông số, tách biệt 2D/3D và văn phong chuẩn THPT/Chuyên.',
       highlights: isEn
         ? [
-            'Standing waves, Doppler shock cones & Photoelectric tube 2D/3D',
-            'RLC AC circuits, resonance & 3D AC generator',
-            'Young double-slit light interference with dynamic λ colors',
+            '19 2D Labs & 14 3D Models across 5 dedicated domain pages',
+            'RLC phasors, Doppler cones, Photoelectric tube & Bohr Atom',
+            'Adaptive difficulty labels for Grade 9–12 & Olympiad',
           ]
         : [
-            'Sóng dừng, Hiệu ứng Doppler & Ống Quang điện ngoài 2D/3D',
-            'Mạch xoay chiều RLC, Cộng hưởng điện & Máy phát 3D',
-            'Giao thoa ánh sáng khe Y-âng đổi màu theo bước sóng λ',
+            '19 Lab 2D & 14 mô hình 3D chia thành 5 trang lĩnh vực riêng',
+            'Mạch RLC, hiệu ứng Doppler, Quang điện ngoài & Nguyên tử Bohr',
+            'Bài giảng tinh gọn, chuẩn mực theo cấp độ THPT & Chuyên',
           ],
       accentClass: 'text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10',
     },
     cs: {
       label: isEn ? 'CS Sublime IDE' : 'Tin Học Sublime IDE',
       badge: isEn
-        ? `${CS_LESSONS.length} VNOI modules + Free Studio`
-        : `${CS_LESSONS.length} lộ trình VNOI + Code Tự Do`,
+        ? `${CS_LESSONS.length} VNOI modules + 16 Algo Visualizers`
+        : `${CS_LESSONS.length} chuyên đề + 16 Đồ thị thuật toán`,
       headline: isEn
-        ? 'Sublime Text 4 Monokai Studio & Multi-Language Online Judge'
-        : 'Trình soạn thảo Sublime Text 4 Monokai & Online Judge đa ngôn ngữ',
+        ? 'Sublime Text 4 Monokai Studio, Online Judge & 16 Algorithm Visualizers'
+        : 'Trình soạn thảo Sublime Text 4 Monokai, Online Judge & 16 Đồ Thị Thuật Toán',
       summary: isEn
-        ? 'Includes Edit/Selection/Find-Replace/Goto Line menus, C++ & Python competitive snippets, and image/file problem upload to auto-generate hidden test cases and grade instantaneously.'
-        : 'Trang bị đầy đủ thanh thực đơn Edit/Selection/Find-Replace/Goto Line/Snippets C++ & Python chuẩn thi HSG, kèm chế độ gửi đề bài bằng ảnh hoặc file để tự động sinh bộ test ẩn chấm điểm tức thì.',
+        ? 'Includes Edit/Selection/Find-Replace/Goto Line menus, C++20 & Python 3 competitive snippets, voice/image/Ctrl+V problem upload to auto-generate hidden test cases, plus 16 animated algorithm visualizers.'
+        : 'Trang bị đầy đủ Edit/Selection/Find-Replace/Goto Line/Snippets C++20 & Python 3, gửi đề bằng ảnh/Ctrl+V/giọng nói để sinh test ẩn chấm tức thì, kèm 16 đồ thị thuật toán (Oxy, Xâu, DP, Dijkstra).',
       highlights: isEn
         ? [
-            'Full Edit: 60-step Undo/Redo, Duplicate/Move Line, Find & Replace',
-            '1-click CP Snippets (Fast I/O, Prefix Sum, BFS, DP)',
-            'Auto-judge C++ & Python with stdin/stdout & hidden tests',
+            'Full Sublime menus: 60-step Undo/Redo, Find & Replace, Snippets',
+            '16 animated algorithm stages (DP, Binary Search, Dijkstra...)',
+            'Upload problem via Image / Ctrl+V / Voice for instant AI grading',
           ]
         : [
-            'Full Edit: Undo/Redo 60 bước, Duplicate/Move Line, Find & Replace',
-            'Thư viện Snippet CP (Fast I/O, Prefix Sum, BFS, DP) chèn 1 chạm',
-            'Chấm tự động C++ & Python với stdin/stdout và báo cáo test ẩn',
+            'Menu Sublime chuẩn: Undo/Redo, Find & Replace, Snippets 1 chạm',
+            '16 mô phỏng thuật toán trực quan (Oxy, Xâu, DP, Dijkstra...)',
+            'Nhận đề bằng Ảnh / Ctrl+V / Giọng nói & chấm test ẩn tự động',
           ],
       accentClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
     },
     exams: {
-      label: isEn ? `${totalExams} Official Exams` : `${totalExams} Đề Thi Chuẩn`,
+      label: isEn ? `${totalExams} Exams & Voice AI` : `${totalExams} Đề Thi & AI`,
       badge: isEn
-        ? `${chuyenExams} Specialized & ${khongChuyenExams} Standard`
-        : `${chuyenExams} Chuyên & ${khongChuyenExams} Không Chuyên`,
+        ? `${chuyenExams} Spec · ${khongChuyenExams} Std · Fast Upload`
+        : `${chuyenExams} Chuyên · ${khongChuyenExams} THPT · Tải Đề Nhanh`,
       headline: isEn
-        ? `${totalExams} national exam bank with timer, AI image grading & step solutions`
-        : `Ngân hàng ${totalExams} đề thi quốc gia kèm đồng hồ bấm giờ, chấm ảnh AI & lời giải`,
+        ? `${totalExams} Exam Bank + Drag-Drop / Ctrl+V / Voice Upload & 3 Voice AI Tutors`
+        : `Kho ${totalExams} Đề Thi + Nộp Ảnh/Dán Ctrl+V/Giọng Nói & 3 Gia Sư AI`,
       summary: isEn
-        ? 'Synced dynamically with the full exam bank. Each paper features a countdown timer, scratchpad, photo submission with AI grading & follow-up Q&A, and step-by-step solutions.'
-        : 'Số lượng đề hiển thị tự động cập nhật theo kho đề thực tế của hệ thống. Mỗi đề tích hợp đồng hồ đếm ngược, ghi chú đáp án, nộp ảnh bài làm để AI chấm điểm và giải đáp thắc mắc.',
+        ? 'Drop an exam photo, paste via Ctrl+V, or dictate via Voice Recognition to solve or launch a timed exam room immediately. Includes AI handwritten scoring (0–10) and 3 independent Voice-enabled AI Tutors.'
+        : 'Kéo-thả ảnh, dán Ctrl+V hoặc đọc đề bằng Giọng nói để AI giải ngay hoặc tạo phòng thi bấm giờ. Nộp ảnh bài làm viết tay cho AI chấm điểm 0–10 và hỏi đáp trực tiếp cùng 3 Gia sư AI.',
       highlights: isEn
         ? [
-            `Complete ${totalExams} papers across Math · Physics · CS`,
-            'Separated into Specialized / Olympic & Standard High School tracks',
-            'Upload handwritten work photo for AI scoring & follow-up Q&A',
+            `Complete ${totalExams} papers (Specialized/Olympic & THPT)`,
+            'Fast upload: Drag & Drop, Ctrl+V Paste, Voice Recognition Mic',
+            'Handwritten photo AI grading (0–10) & 3 Voice AI Tutors (Ctrl+D/F/G)',
           ]
         : [
-            `Tự động đồng bộ đúng ${totalExams} bộ đề Toán · Lí · Tin`,
-            'Phân khu rõ Chuyên & HSG Quốc gia với Không chuyên THPT',
-            'Nộp ảnh bài làm để AI chấm điểm, công bố & giải đáp trực tiếp',
+            `Đủ ${totalExams} đề Toán · Lí · Tin (Chuyên & Không chuyên)`,
+            'Tải đề siêu tốc: Kéo thả ảnh, dán Ctrl+V, Giọng nói Micro',
+            'Chấm bài viết tay 0–10 & 3 Gia sư AI giọng nói (Ctrl+D/F/G)',
           ],
       accentClass: 'text-teal-600 dark:text-teal-400 border-teal-500/30 bg-teal-500/10',
     },
@@ -621,19 +683,19 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
+            <h1 className="font-display text-2xl sm:text-4xl lg:text-[2.9rem] font-semibold text-slate-900 dark:text-white tracking-tight leading-[1.15]">
               {isEn ? (
                 <>
-                  Explore the 360° Interactive Classroom{' '}
+                  Explore the 360° Interactive STEM{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-sky-600 to-teal-600 dark:from-sky-400 dark:via-cyan-300 dark:to-emerald-300">
                     Observatory
                   </span>
                 </>
               ) : (
                 <>
-                  Khám Phá Vũ Trụ Mô Phỏng Lớp Học{' '}
+                  Khám Phá Vũ Trụ Học Tập Trực Quan{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-sky-600 to-teal-600 dark:from-sky-400 dark:via-cyan-300 dark:to-emerald-300">
-                    360°
+                    Synapse 360°
                   </span>
                 </>
               )}
@@ -642,36 +704,98 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
               {isEn ? (
                 <>
-                  Specialized STEM platform for Junior/High School &amp; Olympiad students featuring{' '}
-                  <strong className="text-slate-900 dark:text-white">{totalLessons} 5-step lessons</strong>, real-time{' '}
-                  <strong className="text-slate-900 dark:text-white">Math · Physics 2D/3D 60 FPS</strong> labs,{' '}
-                  <strong className="text-slate-900 dark:text-white">Sublime Text 4</strong> Online Judge and{' '}
-                  <strong className="text-slate-900 dark:text-white">{totalExams} official exam papers</strong>.
+                  Complete Grades 9–12 &amp; Olympiad STEM workspace featuring{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">30 Synapse v2 3D chambers</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">10-fingertip webcam 2D/3D labs</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">5 Physics simulation domains</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Sublime Text 4 Judge</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">3 Voice AI Tutors</strong> and{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">{totalExams} official exams</strong>.
                 </>
               ) : (
                 <>
-                  Nền tảng học tập chuyên sâu dành cho học sinh THCS, THPT và Đội tuyển Chuyên với{' '}
-                  <strong className="text-slate-900 dark:text-white">{totalLessons} bài giảng 5 bước</strong> theo chuẩn VietJack, phòng mô phỏng{' '}
-                  <strong className="text-slate-900 dark:text-white">Toán · Vật lí 2D/3D 60 FPS</strong>, trình soạn thảo{' '}
-                  <strong className="text-slate-900 dark:text-white">Sublime Text 4</strong> kèm Online Judge và kho{' '}
-                  <strong className="text-slate-900 dark:text-white">{totalExams} đề thi</strong> cập nhật linh hoạt.
+                  Hệ sinh thái học tập toàn diện cho học sinh THCS, THPT &amp; Đội tuyển Chuyên: tích hợp{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">30 đại công trình 3D Synapse v2</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Học cảm giác 3D bằng 10 đầu ngón tay</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">5 chuyên đề Mô phỏng Vật lí</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">IDE Sublime Text 4</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">3 Gia sư AI Giọng nói</strong> cùng kho{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">{totalLessons} bài giảng &amp; {totalExams} đề thi</strong>.
                 </>
               )}
             </p>
 
-            {/* Interactive 4-Pillar Quick Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
+            {/* Interactive 6-Pillar Quick Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-1">
               <button
                 type="button"
+                data-ripple="true"
+                onClick={() => setActiveSpotlight('synapse_v2')}
+                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                  activeSpotlight === 'synapse_v2'
+                    ? 'bg-white dark:bg-slate-900/90 border-sky-500 ring-2 ring-sky-500/20'
+                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-sky-400/60'
+                }`}
+              >
+                <Orbit className="w-5 h-5 text-sky-600 dark:text-sky-400 mb-1.5 icon-anim-cosmos" />
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                  {isEn ? 'Synapse v2 · 3D' : 'Synapse v2 · 3D'}
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
+                  {isEn ? '30 3D Chambers' : '30 Đại công trình 3D'}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => setActiveSpotlight('spatial_3d')}
+                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                  activeSpotlight === 'spatial_3d'
+                    ? 'bg-white dark:bg-slate-900/90 border-teal-500 ring-2 ring-teal-500/20'
+                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-teal-400/60'
+                }`}
+              >
+                <Hand className="w-5 h-5 text-teal-600 dark:text-teal-400 mb-1.5 icon-anim-hand" />
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                  {isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D'}
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
+                  {isEn ? '10-Finger · 6 2D + 15 3D' : '10 ngón · 6 2D + 15 3D'}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => setActiveSpotlight('physics')}
+                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                  activeSpotlight === 'physics'
+                    ? 'bg-white dark:bg-slate-900/90 border-amber-500 ring-2 ring-amber-500/20'
+                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400/60'
+                }`}
+              >
+                <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1.5 icon-anim-zap" />
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                  {isEn ? 'Physics 2D & 3D' : 'Vật Lí 2D & 3D'}
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
+                  {isEn ? '5 Domains · 19 2D + 14 3D' : '5 Lĩnh vực · 19 2D + 14 3D'}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                data-ripple="true"
                 onClick={() => setActiveSpotlight('math')}
-                className={`group min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'math'
                     ? 'bg-white dark:bg-slate-900/90 border-blue-500 ring-2 ring-blue-500/20'
-                    : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-blue-400/60'
+                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-blue-400/60'
                 }`}
               >
                 <Compass className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-1.5 icon-anim-compass" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
                   {isEn ? 'Math 2D / Oxyz 3D' : 'Toán 2D / Oxyz 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
@@ -681,55 +805,39 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
               <button
                 type="button"
-                onClick={() => setActiveSpotlight('physics')}
-                className={`group min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
-                  activeSpotlight === 'physics'
-                    ? 'bg-white dark:bg-slate-900/90 border-amber-500 ring-2 ring-amber-500/20'
-                    : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400/60'
-                }`}
-              >
-                <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1.5 icon-anim-zap" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                  {isEn ? 'Physics 2D & 3D' : 'Vật Lý 2D & 3D'}
-                </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '19 2D Labs · 14 3D models' : '19 Lab 2D · 14 mẫu 3D'}
-                </p>
-              </button>
-
-              <button
-                type="button"
+                data-ripple="true"
                 onClick={() => setActiveSpotlight('cs')}
-                className={`group min-w-0 text-left p-3 sm:p-3.5 rounded-2xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'cs'
                     ? 'bg-white dark:bg-slate-900/90 border-emerald-500 ring-2 ring-emerald-500/20'
-                    : 'bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-emerald-400/60'
+                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-emerald-400/60'
                 }`}
               >
                 <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-1.5 icon-anim-code" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
                   {isEn ? 'CS Sublime 4' : 'Tin Học Sublime 4'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${CS_LESSONS.length} modules · C++/Py` : `${CS_LESSONS.length} bài · Judge C++/Py`}
+                  {isEn ? `${CS_LESSONS.length} modules · 16 Algos` : `${CS_LESSONS.length} bài · 16 Thuật toán`}
                 </p>
               </button>
 
               <button
                 type="button"
+                data-ripple="true"
                 onClick={() => setActiveSpotlight('exams')}
-                className={`group min-w-0 text-left p-3 sm:p-3.5 rounded-xl border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'exams'
-                    ? 'bg-white dark:bg-slate-900/90 border-teal-500 ring-2 ring-teal-500/20'
-                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-teal-400/60'
+                    ? 'bg-white dark:bg-slate-900/90 border-cyan-500 ring-2 ring-cyan-500/20'
+                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-cyan-400/60'
                 }`}
               >
-                <Award className="w-5 h-5 text-teal-600 dark:text-teal-400 mb-1.5 icon-anim-award" />
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate tabular-nums">
-                  {isEn ? `${totalExams} Official Exams` : `${totalExams} Đề Thi Chuẩn`}
+                <Award className="w-5 h-5 text-cyan-600 dark:text-cyan-400 mb-1.5 icon-anim-award" />
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate tabular-nums">
+                  {isEn ? `${totalExams} Exams & Voice AI` : `${totalExams} Đề & Gia Sư AI`}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${chuyenExams} Spec · ${khongChuyenExams} Std` : `${chuyenExams} Chuyên · ${khongChuyenExams} THPT`}
+                  {isEn ? 'Upload / Voice / Grading' : 'Tải ảnh / Giọng nói / Chấm'}
                 </p>
               </button>
             </div>
@@ -737,14 +845,14 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             {/* Interactive Feature Spotlight Panel */}
             <div className="sci-frame sci-blueprint-bg p-4 sm:p-5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200/90 dark:border-white/15 backdrop-blur-md shadow-sm space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${spotlightDetails[activeSpotlight].accentClass}`}>
+                <span className={`px-2.5 py-0.5 rounded text-[11px] font-semibold border ${spotlightDetails[activeSpotlight].accentClass}`}>
                   {spotlightDetails[activeSpotlight].badge}
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
                   {isEn ? 'Click any card above to inspect features' : 'Bấm từng thẻ phía trên để xem chi tiết tính năng'}
                 </span>
               </div>
-              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug">
+              <h3 className="font-display text-sm sm:text-base font-semibold text-slate-900 dark:text-white leading-snug">
                 {spotlightDetails[activeSpotlight].headline}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -754,7 +862,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 {spotlightDetails[activeSpotlight].highlights.map((item, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-1.5 text-[11px] text-slate-700 dark:text-slate-200 bg-slate-100/85 dark:bg-white/5 px-2.5 py-2 rounded-lg border border-slate-200/60 dark:border-white/10"
+                    className="flex items-start gap-1.5 text-[11px] text-slate-700 dark:text-slate-200 bg-slate-100/85 dark:bg-white/5 px-2.5 py-2 rounded border border-slate-200/60 dark:border-white/10"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                     <span className="leading-snug">{item}</span>
@@ -763,11 +871,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </div>
             </div>
 
-            {/* Quick Guest Enter Action + Synapse v2 + Reviews Quick Scroll */}
+            {/* Quick Guest Enter Action + Synapse v2 + Spatial 3D + All Features Scroll */}
             <div className="pt-1 flex flex-wrap items-center gap-3">
               <button
+                type="button"
+                data-ripple="true"
                 onClick={onEnterAsGuest}
-                className="sci-frame cs-deck-btn w-full sm:w-auto px-6 py-3.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-blue-700/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                className="sci-frame cs-deck-btn w-full sm:w-auto px-6 py-3.5 rounded bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs sm:text-sm tracking-wide shadow-lg shadow-blue-700/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
               >
                 <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform shrink-0" />
                 <span>{isEn ? 'Enter Classroom Directly (Guest Mode)' : 'Vào Trực Tiếp Lớp Học (Không Cần Đăng Nhập)'}</span>
@@ -776,20 +886,43 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
               <button
                 type="button"
+                data-ripple="true"
                 onClick={handleEnterSynapseV2}
-                className="group cs-deck-btn w-full sm:w-auto px-5 py-3.5 rounded-lg bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-sky-600/20 whitespace-nowrap"
+                className="group cs-deck-btn w-full sm:w-auto px-5 py-3.5 rounded bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-sky-600/20 whitespace-nowrap"
               >
                 <Orbit className="w-4 h-4 icon-anim-cosmos shrink-0" />
-                <span>{isEn ? 'Synapse v2 · Virtual Campus' : 'Lớp học ảo · Synapse v2'}</span>
+                <span>{isEn ? 'Synapse v2 · 30 Worlds' : 'Lớp học ảo · Synapse v2'}</span>
               </button>
 
               <button
                 type="button"
+                data-ripple="true"
+                onClick={handleEnterSpatial3D}
+                className="group cs-deck-btn w-full sm:w-auto px-5 py-3.5 rounded bg-teal-600/15 dark:bg-teal-500/20 hover:bg-teal-600 hover:text-white border border-teal-500/50 text-teal-800 dark:text-teal-200 font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                <Hand className="w-4 h-4 icon-anim-hand shrink-0" />
+                <span>{isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D'}</span>
+              </button>
+
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => scrollToVisitorSection('visitor-all-features')}
+                className="group cs-deck-btn w-full sm:w-auto px-5 py-3.5 rounded bg-white/95 dark:bg-white/10 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-300/90 dark:border-white/20 text-slate-800 dark:text-slate-100 font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                <Layers className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                <span>{isEn ? 'All Platform Features' : 'Xem toàn bộ chức năng'}</span>
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform shrink-0" />
+              </button>
+
+              <button
+                type="button"
+                data-ripple="true"
                 onClick={scrollToVisitorReviews}
-                className="group cs-deck-btn w-full sm:w-auto px-5 py-3.5 rounded-lg bg-white/95 dark:bg-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-amber-300/90 dark:border-amber-400/40 text-amber-800 dark:text-amber-200 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap"
+                className="group cs-deck-btn w-full sm:w-auto px-4 py-3.5 rounded bg-white/95 dark:bg-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-amber-300/90 dark:border-amber-400/40 text-amber-800 dark:text-amber-200 font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs whitespace-nowrap"
               >
                 <Star className="w-4 h-4 text-amber-500 fill-amber-400 icon-anim-star shrink-0" />
-                <span>{isEn ? 'Ratings & Votes' : 'Đánh giá & Bình chọn'}</span>
+                <span>{isEn ? 'Reviews' : 'Đánh giá'}</span>
               </button>
 
               <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
@@ -1239,18 +1372,18 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         </div>
 
         {/* TABLE OF CONTENTS (MỤC LỤC) BAR */}
-        <section className="mt-6 sm:mt-8 sci-frame rounded-xl bg-white/90 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/90 dark:border-sky-500/25 p-5 sm:p-6 shadow-sm space-y-4">
+        <section className="mt-6 sm:mt-8 sci-frame sci-scan-bar rounded-xl bg-white/90 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/90 dark:border-sky-500/25 p-5 sm:p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-white/10">
-            <div className="flex items-center gap-2">
-              <ListOrdered className="w-5 h-5 text-blue-700 dark:text-sky-400 shrink-0" />
-              <h2 className="font-display text-sm sm:text-base font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
-                {isEn ? 'Table of Contents · Quick Navigation' : 'Mục Lục · Điều Hướng Nhanh Từng Môn'}
+            <div className="flex items-center gap-2.5">
+              <ListOrdered className="w-5 h-5 text-blue-700 dark:text-sky-400 icon-anim-list shrink-0" />
+              <h2 className="font-display text-sm sm:text-base font-semibold uppercase tracking-wider text-slate-900 dark:text-white">
+                {isEn ? 'Table of Contents · Quick Navigation' : 'Mục Lục · Điều Hướng Nhanh Toàn Trang'}
               </h2>
             </div>
             <span className="text-xs text-slate-500 dark:text-slate-400">
               {isEn
-                ? 'Click any entry below to scroll directly to the lecture directory'
-                : 'Bấm vào từng mục bên dưới để lọc & cuộn thẳng xuống danh sách bài giảng'}
+                ? 'Click any entry below to scroll directly to features or lectures'
+                : 'Bấm vào từng mục bên dưới để cuộn thẳng xuống các chức năng hoặc bài giảng'}
             </span>
           </div>
 
@@ -1258,22 +1391,45 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             <button
               type="button"
               data-ripple="true"
-              onClick={() => scrollToLectureDirectory('all')}
-              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-sky-50/90 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-300/80 dark:border-sky-500/40 hover:border-blue-500 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+              onClick={() => scrollToVisitorSection('visitor-all-features')}
+              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-gradient-to-r from-sky-50 via-blue-50/80 to-teal-50/70 dark:from-sky-950/60 dark:via-slate-900/80 dark:to-teal-950/45 hover:from-sky-100 hover:to-teal-100 dark:hover:from-sky-900/70 dark:hover:to-teal-950/70 border border-sky-300/80 dark:border-sky-500/40 hover:border-blue-500 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
             >
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
               />
               <div className="relative z-10 min-w-0">
-                <span className="font-mono text-[11px] font-bold text-blue-700 dark:text-sky-400 block">
-                  01 · {isEn ? 'FULL DIRECTORY' : 'TOÀN BỘ BÀI GIẢNG'}
+                <span className="font-mono text-[11px] font-semibold text-blue-700 dark:text-sky-400 block">
+                  01 · {isEn ? 'ALL 9 PLATFORM SYSTEMS' : 'TOÀN BỘ 9 HỆ THỐNG'}
                 </span>
-                <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-sky-200 truncate block transition-colors">
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-sky-200 truncate block transition-colors">
+                  {isEn ? 'Complete Feature Tour' : 'Giới thiệu toàn bộ chức năng web'}
+                </span>
+              </div>
+              <span className="relative z-10 w-8 h-8 rounded bg-blue-600/10 group-hover:bg-blue-700 text-blue-700 dark:text-sky-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => scrollToLectureDirectory('all')}
+              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/90 dark:bg-slate-800/65 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-200/85 dark:border-white/10 hover:border-blue-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+              />
+              <div className="relative z-10 min-w-0">
+                <span className="font-mono text-[11px] font-semibold text-blue-700 dark:text-sky-400 block">
+                  02 · {isEn ? 'FULL DIRECTORY' : 'TOÀN BỘ BÀI GIẢNG'}
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-sky-200 truncate block transition-colors">
                   {isEn ? `All Lectures (${totalLessons} lessons)` : `Danh sách bài giảng (${totalLessons} bài)`}
                 </span>
               </div>
-              <span className="relative z-10 w-8 h-8 rounded-md bg-blue-600/10 group-hover:bg-blue-700 text-blue-700 dark:text-sky-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+              <span className="relative z-10 w-8 h-8 rounded bg-blue-600/10 group-hover:bg-blue-700 text-blue-700 dark:text-sky-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
                 <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
               </span>
             </button>
@@ -1282,21 +1438,21 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               type="button"
               data-ripple="true"
               onClick={() => scrollToLectureDirectory('math')}
-              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/90 dark:bg-slate-800/65 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-200/85 dark:border-white/10 hover:border-sky-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/90 dark:bg-slate-800/65 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-200/85 dark:border-white/10 hover:border-sky-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
             >
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
               />
               <div className="relative z-10 min-w-0">
-                <span className="font-mono text-[11px] font-bold text-sky-600 dark:text-sky-400 block">
-                  02 · {isEn ? 'MATHEMATICS' : 'TOÁN HỌC'}
+                <span className="font-mono text-[11px] font-semibold text-sky-600 dark:text-sky-400 block">
+                  03 · {isEn ? 'MATHEMATICS' : 'TOÁN HỌC'}
                 </span>
-                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-300 truncate block transition-colors">
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-300 truncate block transition-colors">
                   {isEn ? `Math Lectures (${MATH_LECTURES.length})` : `Bài giảng Toán (${MATH_LECTURES.length} bài)`}
                 </span>
               </div>
-              <span className="relative z-10 w-8 h-8 rounded-md bg-sky-500/10 group-hover:bg-sky-600 text-sky-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+              <span className="relative z-10 w-8 h-8 rounded bg-sky-500/10 group-hover:bg-sky-600 text-sky-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
                 <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
               </span>
             </button>
@@ -1305,21 +1461,21 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               type="button"
               data-ripple="true"
               onClick={() => scrollToLectureDirectory('physics')}
-              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/90 dark:bg-slate-800/65 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-slate-200/85 dark:border-white/10 hover:border-amber-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/90 dark:bg-slate-800/65 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-slate-200/85 dark:border-white/10 hover:border-amber-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
             >
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
               />
               <div className="relative z-10 min-w-0">
-                <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 block">
-                  03 · {isEn ? 'PHYSICS' : 'VẬT LÍ'}
+                <span className="font-mono text-[11px] font-semibold text-amber-600 dark:text-amber-400 block">
+                  04 · {isEn ? 'PHYSICS' : 'VẬT LÍ'}
                 </span>
-                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
                   {isEn ? `Physics Labs & Lessons (${PHYSICS_LESSONS.length})` : `Bài giảng Vật lí (${PHYSICS_LESSONS.length} bài)`}
                 </span>
               </div>
-              <span className="relative z-10 w-8 h-8 rounded-md bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+              <span className="relative z-10 w-8 h-8 rounded bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
                 <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
               </span>
             </button>
@@ -1328,44 +1484,21 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               type="button"
               data-ripple="true"
               onClick={() => scrollToLectureDirectory('cs')}
-              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/90 dark:bg-slate-800/65 hover:bg-emerald-50 dark:hover:bg-emerald-950/45 border border-slate-200/85 dark:border-white/10 hover:border-emerald-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/90 dark:bg-slate-800/65 hover:bg-emerald-50 dark:hover:bg-emerald-950/45 border border-slate-200/85 dark:border-white/10 hover:border-emerald-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
             >
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
               />
               <div className="relative z-10 min-w-0">
-                <span className="font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block">
-                  04 · {isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC'}
+                <span className="font-mono text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 block">
+                  05 · {isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC'}
                 </span>
-                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
                   {isEn ? `CS & VNOI Modules (${CS_LESSONS.length})` : `Bài giảng Tin học (${CS_LESSONS.length} bài)`}
                 </span>
               </div>
-              <span className="relative z-10 w-8 h-8 rounded-md bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
-                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
-              </span>
-            </button>
-
-            <button
-              type="button"
-              data-ripple="true"
-              onClick={() => scrollToVisitorSection('visitor-ecosystem')}
-              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/90 dark:bg-slate-800/65 hover:bg-teal-50 dark:hover:bg-teal-950/45 border border-slate-200/85 dark:border-white/10 hover:border-teal-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
-            >
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
-              />
-              <div className="relative z-10 min-w-0">
-                <span className="font-mono text-[11px] font-bold text-teal-600 dark:text-teal-400 block">
-                  05 · {isEn ? 'ECOSYSTEM & EXAMS' : 'HỆ SINH THÁI & ĐỀ THI'}
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 truncate block transition-colors">
-                  {isEn ? `4 Pillars & ${totalExams} Exams` : `4 Phòng Lab & ${totalExams} Đề thi`}
-                </span>
-              </div>
-              <span className="relative z-10 w-8 h-8 rounded-md bg-teal-500/12 group-hover:bg-teal-600 text-teal-600 dark:text-teal-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+              <span className="relative z-10 w-8 h-8 rounded bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
                 <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
               </span>
             </button>
@@ -1374,124 +1507,659 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               type="button"
               data-ripple="true"
               onClick={scrollToVisitorReviews}
-              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/90 dark:bg-slate-800/65 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-slate-200/85 dark:border-white/10 hover:border-amber-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/90 dark:bg-slate-800/65 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-slate-200/85 dark:border-white/10 hover:border-amber-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
             >
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
               />
               <div className="relative z-10 min-w-0">
-                <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 block">
+                <span className="font-mono text-[11px] font-semibold text-amber-600 dark:text-amber-400 block">
                   06 · {isEn ? 'COMMUNITY' : 'CỘNG ĐỒNG'}
                 </span>
-                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
                   {isEn ? 'Platform Ratings & Votes' : 'Đánh giá & Bình chọn'}
                 </span>
               </div>
-              <span className="relative z-10 w-8 h-8 rounded-md bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+              <span className="relative z-10 w-8 h-8 rounded bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
                 <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
               </span>
             </button>
           </div>
         </section>
 
-        {/* 4 Core Pillars Overview Section */}
-        <div id="visitor-ecosystem" className="scroll-mt-24 mt-12 sm:mt-16 pt-10 border-t border-slate-200/80 dark:border-white/10 space-y-8">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
-              {isEn
-                ? 'Complete 360° Interactive STEM Learning Ecosystem'
-                : 'Hệ Sinh Thái Lớp Học Mô Phỏng 360° Toàn Diện'}
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-300 leading-relaxed">
-              {isEn
-                ? 'Every lesson includes 5 structured stages (Concept · Formula · Deep Dive · Ask AI · 2 MCQs & 1 Essay) with automatic progress & roadmap analysis.'
-                : 'Mỗi bài giảng gồm 5 phần chuyên sâu (Khái niệm · Công thức · Giải thích sâu · Hỏi AI · 2 Trắc nghiệm & 1 Tự luận), tự động lưu kết quả và phân tích lộ trình học thông minh.'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            <div
-              onClick={onEnterAsGuest}
-              className="p-5 rounded-xl bg-white/88 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs min-w-0"
-            >
-              <div className="w-10 h-10 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Compass className="w-5 h-5" />
+        {/* COMPLETE PLATFORM CAPABILITIES SHOWCASE (ALL 9 WEB SYSTEMS) */}
+        <section
+          id="visitor-all-features"
+          className="scroll-mt-24 mt-12 sm:mt-16 pt-10 border-t border-slate-200/80 dark:border-white/10 space-y-8"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+            <div className="max-w-2xl space-y-2">
+              <div className="inline-flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-widest text-sky-700 dark:text-sky-400">
+                <Layers className="w-4 h-4 icon-anim-grid" />
+                <span>{isEn ? 'COMPLETE PLATFORM ARCHITECTURE' : 'TOÀN BỘ CHỨC NĂNG CỦA NỀN TẢNG'}</span>
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
-                {isEn ? 'Math 2D & Oxyz 3D' : 'Toán Học 2D & Oxyz 3D'}
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
+              <h3 className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn
-                  ? 'Plot polynomials, logarithms, integrals; drag-and-drop geometry and rotate 7 interactive Oxyz 3D models.'
-                  : 'Vẽ đồ thị đa thức, logarit, trị tuyệt đối, tô diện tích tích phân; dựng hình phẳng Conic/tứ giác nội tiếp và xoay 7 mô hình 3D trực quan.'}
+                  ? '9 Integrated Workspaces for Visual STEM Mastery'
+                  : '9 Hệ Thống Tích Hợp Từ Mô Phỏng 3D Đến Luyện Thi AI'}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                {isEn
+                  ? 'Click any module card below to jump straight into its interactive workspace—no registration required.'
+                  : 'Mỗi tính năng bên dưới hoạt động độc lập và liên thông lộ trình XP. Bấm trực tiếp vào bất kỳ khung nào để mở ngay phòng học đó.'}
               </p>
-              <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1">
-                {isEn ? `Explore ${MATH_LECTURES.length} Math topics →` : `Xem ${MATH_LECTURES.length} bài Toán →`}
-              </span>
             </div>
 
-            <div
-              onClick={onEnterAsGuest}
-              className="p-5 rounded-xl bg-white/88 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs min-w-0"
-            >
-              <div className="w-10 h-10 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Zap className="w-5 h-5" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
-                {isEn ? 'Physics 2D & 3D Labs' : 'Phòng Lab Vật Lý 2D & 3D'}
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                {isEn
-                  ? '10 2D labs & 11 60 FPS 3D simulations: pendulums, circular motion, RLC AC phasors, Young wave interference, Lorentz fields.'
-                  : '10 phòng thí nghiệm 2D và 11 cảnh 3D 60 FPS: Con lắc, chuyển động tròn, mạch xoay chiều RLC Fresnel, giao thoa khe Y-âng, từ trường Lorentz.'}
-              </p>
-              <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
-                {isEn ? `Explore ${PHYSICS_LESSONS.length} Physics labs →` : `Khám phá ${PHYSICS_LESSONS.length} bài Lí →`}
-              </span>
-            </div>
-
-            <div
-              onClick={onEnterAsGuest}
-              className="p-5 rounded-xl bg-white/88 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs min-w-0"
-            >
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Code2 className="w-5 h-5" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
-                Sublime Text 4 &amp; Online Judge
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                {isEn
-                  ? 'Monokai editor with Find/Replace, Goto Line, CP snippets; submit C++/Python against hidden tests or OCR custom problem images.'
-                  : 'Trình soạn thảo Monokai đầy đủ Edit, Find/Replace, Goto Line, Snippet thi HSG; nộp bài C++/Python chấm test ẩn hoặc gửi đề tự do bằng ảnh/file.'}
-              </p>
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                {isEn ? `Practice ${CS_LESSONS.length} modules →` : `Luyện ${CS_LESSONS.length} chuyên đề →`}
-              </span>
-            </div>
-
-            <div
-              onClick={onEnterAsGuest}
-              className="p-5 rounded-xl bg-white/88 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 transition-all cursor-pointer group space-y-3 shadow-xs min-w-0"
-            >
-              <div className="w-10 h-10 rounded-lg bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <FileText className="w-5 h-5" />
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-300 transition-colors tabular-nums">
-                {isEn ? `${totalExams} Exams & AI Photo Grading` : `${totalExams} Đề Thi & AI Chấm Ảnh`}
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                {isEn
-                  ? `${totalExams} curated papers (${chuyenExams} Specialized & ${khongChuyenExams} Standard) with photo submission, AI scoring & interactive Q&A.`
-                  : `Ngân hàng ${totalExams} đề thi (${chuyenExams} Chuyên & ${khongChuyenExams} đề THPT) kèm nộp ảnh AI chấm điểm & giải đáp từng bước.`}
-              </p>
-              <span className="text-[11px] text-teal-600 dark:text-teal-400 font-semibold flex items-center gap-1">
-                {isEn ? 'Explore Exam Bank →' : 'Khám phá đề thi →'}
-              </span>
+            {/* Category Filter Tabs */}
+            <div className="flex flex-wrap items-center gap-1.5 bg-white/85 dark:bg-slate-900/75 p-1.5 rounded border border-slate-200/90 dark:border-white/15 backdrop-blur-md shrink-0">
+              {(
+                [
+                  { id: 'all', vi: 'Tất cả (9)', en: 'All (9)' },
+                  { id: 'simulation', vi: 'Mô phỏng 2D/3D', en: '2D/3D Labs' },
+                  { id: 'curriculum_ai', vi: 'Bài giảng & Đề AI', en: 'Lessons & AI' },
+                  { id: 'arena_tools', vi: 'Đấu trường & Tiện ích', en: 'Arena & Tools' },
+                ] as const
+              ).map((tab) => {
+                const active = featureCategory === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    data-ripple="true"
+                    onClick={() => setFeatureCategory(tab.id)}
+                    className={`cs-deck-btn px-3 py-1.5 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      active
+                        ? 'bg-blue-700 dark:bg-sky-500 text-white dark:text-slate-950 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10'
+                    }`}
+                  >
+                    {isEn ? tab.en : tab.vi}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* 01: Synapse v2 */}
+            {(featureCategory === 'all' || featureCategory === 'simulation') && (
+              <div
+                data-ripple="true"
+                onClick={handleEnterSynapseV2}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-sky-300/85 dark:border-sky-500/35 hover:border-sky-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-sky-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 120 120"
+                  className="absolute right-2 top-2 w-20 h-20 opacity-20 dark:opacity-30 pointer-events-none animate-orbit-slow"
+                >
+                  <circle cx="60" cy="60" r="42" fill="none" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="6 5" />
+                  <circle cx="60" cy="60" r="24" fill="none" stroke="#38bdf8" strokeWidth="1.3" />
+                </svg>
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Orbit className="w-6 h-6 icon-anim-cosmos" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-sky-700 dark:text-sky-300">
+                      01 · WEBGL 3D
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors">
+                    {isEn ? 'Synapse v2 · 30 3D Chambers' : 'Lớp Học Ảo Synapse v2 · 30 Đại Công Trình'}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'CERN LHC, Double-Slit Laser, James Webb, Dyson Black Hole, Tokamak Fusion, LiDAR SLAM, 7T MRI Ring, Sagnac Gyro, Metamaterial Cloak & Photonic Chip.'
+                      : '30 không gian 3D tương tác trực tiếp: LHC, Laser khe kép, James Webb, Hố đen Dyson, Tokamak, LiDAR SLAM, MRI 7T, Con quay Sagnac, Áo tàng hình & Chip quang tử.'}
+                  </p>
+                  <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                      <span>{isEn ? 'Live formula tuning inside 3D chambers' : 'Chỉnh thông số & công thức sống trong 3D'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                      <span>{isEn ? 'Physics · Space · CS · Pure Math' : 'Đủ 4 nhóm: Vật lí, Vũ trụ, Vi tính & Toán'}</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEnterSynapseV2();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Launch 30 3D Worlds' : 'Mở 30 Đại công trình 3D'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* 02: Spatial 3D 10-Fingertip Gesture Lab */}
+            {(featureCategory === 'all' || featureCategory === 'simulation') && (
+              <div
+                data-ripple="true"
+                onClick={handleEnterSpatial3D}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-teal-300/85 dark:border-teal-500/35 hover:border-teal-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-teal-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Hand className="w-6 h-6 icon-anim-hand" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-teal-700 dark:text-teal-300">
+                      02 · 10-FINGER AI
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-300 transition-colors">
+                    {isEn ? 'Spatial 3D · 10-Fingertip Webcam' : 'Học Cảm Giác 3D · Cảm Biến 10 Ngón Tay'}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Strict 10-fingertip webcam lock with zero jumping. Build 6 intuitive 2D geometry labs & manipulate 15 realistic 3D models (Turbofan, Solar Orrery, Robot Arm IK, Wind Tunnel).'
+                      : 'Nhận diện đúng 10 đầu ngón tay cố định chống loạn. Dựng 6 xưởng 2D (Euler, Compa, Vector, Conic) & xoay 15 mô hình 3D tiên tiến (Động cơ phản lực, Robot IK, Hầm gió).'}
+                  </p>
+                  <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+                      <span>{isEn ? 'Sensitivity sliders & 1/2 hand mode toggles' : 'Chỉnh độ nhạy, 1/2 tay & nút chức năng tùy thích'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+                      <span>{isEn ? 'Mouse/touch fallback supported without webcam' : 'Hỗ trợ kéo chuột trực tiếp khi không bật camera'}</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEnterSpatial3D();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Open Spatial 3D Lab' : 'Vào Học cảm giác 3D'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* 03: Physics 2D/3D (5 Dedicated Domains) */}
+            {(featureCategory === 'all' || featureCategory === 'simulation') && (
+              <div
+                data-ripple="true"
+                onClick={() => {
+                  navigate({ subject: 'physics_sims', tutorOpen: false });
+                  onEnterAsGuest();
+                }}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-amber-300/85 dark:border-amber-500/35 hover:border-amber-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-amber-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Atom className="w-6 h-6 icon-anim-atom" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                      03 · 5 DOMAINS
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
+                    {isEn ? 'Physics 2D/3D · 5 Separate Domains' : 'Mô Phỏng Vật Lí 2D/3D · 5 Lĩnh Vực Riêng'}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'PhET-inspired Grade 9–12 labs split into 5 clean pages: Mechanics, Waves, Electricity/RLC, Optics/Quantum & Thermal/Nuclear, plus clear THPT & Specialized lessons.'
+                      : 'Tổng hợp thí nghiệm Lớp 9–12 chuẩn PhET tách riêng 5 trang: Cơ học, Dao động & Sóng, Điện từ & RLC, Quang & Lượng tử, Nhiệt & Hạt nhân.'}
+                  </p>
+                  <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>{isEn ? '19 2D interactive canvases + 14 3D 60FPS labs' : 'Tách rõ 19 Lab 2D & 14 mô phỏng 3D 60 FPS'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>{isEn ? `${PHYSICS_LESSONS.length} THPT & Specialized lectures` : `${PHYSICS_LESSONS.length} bài giảng chuẩn cấp độ THPT / Chuyên`}</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ subject: 'physics_sims', tutorOpen: false });
+                    onEnterAsGuest();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Open 5 Physics Domains' : 'Mở 5 Chuyên đề Vật lí'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* 04: Math 2D & Oxyz 3D */}
+            {(featureCategory === 'all' || featureCategory === 'simulation' || featureCategory === 'curriculum_ai') && (
+              <div
+                data-ripple="true"
+                onClick={() => {
+                  navigate({ subject: 'math', mathTab: 'grapher', tutorOpen: false });
+                  onEnterAsGuest();
+                }}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-blue-300/85 dark:border-blue-500/35 hover:border-blue-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-blue-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Compass className="w-6 h-6 icon-anim-compass" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                      04 · OXY &amp; OXYZ 3D
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
+                    {isEn ? `Math 2D & Oxyz 3D (${MATH_LECTURES.length})` : `Toán Học 2D & Oxyz 3D (${MATH_LECTURES.length} bài)`}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Plot functions & shade definite integrals; explore 2D Circle geometry, Conics, tangent cones, and 8 rotatable Oxyz 3D models alongside 5-step Grade 9–12 lessons.'
+                      : 'Vẽ đồ thị đa thức, mũ-logarit, tô diện tích tích phân; tương tác đường tròn 2D (tiếp tuyến, phương tích) & 8 mô hình Oxyz 3D xoay tự do kèm bài giảng 5 bước.'}
+                  </p>
+                  <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <span>{isEn ? 'Integral shading + Interactive Circle Lab' : 'Tích phân tô màu + Xưởng Đường tròn 2D'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <span>{isEn ? '2 MCQs & 1 Essay per lecture saved to Roadmap' : '2 TN + 1 TL tự lưu phân tích lỗ hổng kiến thức'}</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ subject: 'math', mathTab: 'grapher', tutorOpen: false });
+                    onEnterAsGuest();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Open Math 2D/3D' : 'Mở Toán 2D & Oxyz 3D'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* 05: CS Sublime Text 4 + Online Judge + 16 Algo Visualizers */}
+            {(featureCategory === 'all' || featureCategory === 'simulation' || featureCategory === 'curriculum_ai') && (
+              <div
+                data-ripple="true"
+                onClick={() => {
+                  navigate({ subject: 'cs', tutorOpen: false });
+                  onEnterAsGuest();
+                }}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-emerald-300/85 dark:border-emerald-500/35 hover:border-emerald-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-emerald-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Code2 className="w-6 h-6 icon-anim-code" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                      05 · SUBLIME IDE
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
+                    {isEn ? 'Sublime Text 4 IDE & 16 Algos' : 'Tin Học Sublime 4 & 16 Thuật Toán'}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Monokai code studio with Find/Replace, Goto Line, C++/Python snippets, Online Judge for hidden tests, voice/image problem OCR, and 16 visualizers (DP, Dijkstra...).'
+                      : 'Trình code Monokai chuẩn Sublime Text 4, Snippet C++20/Python 3, Online Judge sinh test ẩn từ ảnh/giọng nói và 16 mô phỏng thuật toán (Oxy, Xâu, DP, Dijkstra...).'}
+                  </p>
+                  <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>{isEn ? `${CS_LESSONS.length} VNOI modules + Free Code Studio` : `${CS_LESSONS.length} chuyên đề VNOI + Code tự do`}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>{isEn ? '16 interactive algorithm graphs' : '16 đồ thị chạy từng bước thuật toán'}</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ subject: 'cs', tutorOpen: false });
+                    onEnterAsGuest();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Open Code Judge IDE' : 'Mở IDE & 16 Thuật toán'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* 06: Exam Bank + Fast Drag-Drop/Ctrl+V/Voice Upload */}
+            {(featureCategory === 'all' || featureCategory === 'curriculum_ai') && (
+              <div
+                data-ripple="true"
+                onClick={() => {
+                  navigate({ subject: 'exams', tutorOpen: false });
+                  onEnterAsGuest();
+                }}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-cyan-300/85 dark:border-cyan-500/35 hover:border-cyan-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-cyan-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <UploadCloud className="w-6 h-6 icon-anim-award" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-cyan-700 dark:text-cyan-300 tabular-nums">
+                      06 · {totalExams} EXAMS
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">
+                    {isEn ? `${totalExams} Exams & Fast AI Upload` : `Kho ${totalExams} Đề Thi & Up Đề Siêu Tốc`}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Drag-drop files, paste images with Ctrl+V, or dictate via Voice to solve instantly or open a timed room. Upload handwritten photos for AI 0–10 scoring & Q&A.'
+                      : 'Tách rõ Chuyên & THPT. Kéo-thả ảnh, dán Ctrl+V hoặc đọc đề bằng Giọng nói để AI giải ngay hoặc tạo phòng thi bấm giờ; nộp ảnh viết tay chấm 0–10 & hỏi đáp.'}
+                  </p>
+                  <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                      <span>{isEn ? 'Drag-drop / Ctrl+V paste / Voice exam upload' : 'Up đề tức thì: Kéo thả, Ctrl+V & Giọng nói'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                      <span>{isEn ? 'Handwritten AI grading (0–10) & feedback' : 'Chấm ảnh bài làm viết tay 0–10 & giải đáp'}</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ subject: 'exams', tutorOpen: false });
+                    onEnterAsGuest();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Explore Exam Bank' : 'Mở Kho Đề & Up Đề AI'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* 07: 3 Independent AI Tutors + Voice Recognition */}
+            {(featureCategory === 'all' || featureCategory === 'curriculum_ai') && (
+              <div
+                data-ripple="true"
+                onClick={() => {
+                  navigate({ subject: 'overview', tutorOpen: true, tutorSubject: 'math' });
+                  onEnterAsGuest();
+                }}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-indigo-300/85 dark:border-indigo-500/35 hover:border-indigo-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-indigo-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Mic className="w-6 h-6 icon-anim-wave" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
+                      07 · VOICE AI ×3
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
+                    {isEn ? '3 Voice-Enabled AI Tutors' : '3 Gia Sư AI + Nhận Diện Giọng Nói'}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Dedicated Math, Physics & CS tutors (Left Ctrl + D/F/G) with real-time Vietnamese/English Voice Mic, image paste, and 3 modes: Guided Hints, 4-Step Solution & Roadmap.'
+                      : '3 Gia sư độc lập Toán · Lí · Tin (Ctrl trái + D/F/G). Hỗ trợ Micro nhận diện giọng nói Việt/Anh, gửi ảnh đề và 3 chế độ: Gợi mở, Giải 4 bước & Test vẽ lộ trình.'}
+                  </p>
+                  <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                      <span>{isEn ? 'Live Voice-to-Text in every AI panel' : 'Micro nhận diện giọng nói trong mọi khung AI'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                      <span>{isEn ? 'Shortcuts: Ctrl+D (Math) · Ctrl+F (Phys) · Ctrl+G (CS)' : 'Phím tắt nhanh: Ctrl+D (Toán), Ctrl+F (Lí), Ctrl+G (Tin)'}</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ subject: 'overview', tutorOpen: true, tutorSubject: 'math' });
+                    onEnterAsGuest();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Try Voice AI Tutors' : 'Mở 3 Gia sư AI Giọng nói'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* 08: Roadmap + Weekly Arena + Study Forum */}
+            {(featureCategory === 'all' || featureCategory === 'arena_tools') && (
+              <div
+                data-ripple="true"
+                onClick={() => {
+                  navigate({ subject: 'arena', tutorOpen: false });
+                  onEnterAsGuest();
+                }}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-orange-300/85 dark:border-orange-500/35 hover:border-orange-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-orange-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Trophy className="w-6 h-6 icon-anim-trophy" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-orange-700 dark:text-orange-300">
+                      08 · COMMUNITY &amp; XP
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-300 transition-colors">
+                    {isEn ? 'Roadmap · Weekly Arena · Forum' : 'Lộ Trình 5 Bước · Đấu Trường · Diễn Đàn'}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Follow the Grade 9–12 progression map, compete daily in MCQ or AI-graded Essay rounds for live weekly rankings, and share solutions on the Study Forum.'
+                      : 'Theo dõi Bản đồ lộ trình 5 bước từ Lớp 9–12, thi Đấu Trường Tuần (Trắc nghiệm & Tự luận AI chấm) lên BXH trực tuyến, và trao đổi bài khó trên Diễn đàn.'}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ subject: 'roadmap', tutorOpen: false });
+                        onEnterAsGuest();
+                      }}
+                      className="px-2.5 py-1 rounded bg-blue-500/12 hover:bg-blue-600 hover:text-white text-blue-700 dark:text-sky-300 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <GitBranch className="w-3 h-3" />
+                      <span>{isEn ? 'Roadmap' : 'Lộ trình'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ subject: 'arena', tutorOpen: false });
+                        onEnterAsGuest();
+                      }}
+                      className="px-2.5 py-1 rounded bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 text-amber-700 dark:text-amber-300 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Trophy className="w-3 h-3" />
+                      <span>{isEn ? 'Arena' : 'Đấu trường'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ subject: 'forum', tutorOpen: false });
+                        onEnterAsGuest();
+                      }}
+                      className="px-2.5 py-1 rounded bg-emerald-500/15 hover:bg-emerald-600 hover:text-white text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <MessageSquare className="w-3 h-3" />
+                      <span>{isEn ? 'Forum' : 'Diễn đàn'}</span>
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ subject: 'arena', tutorOpen: false });
+                    onEnterAsGuest();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Enter Weekly Arena' : 'Vào Đấu trường & BXH'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* 09: Study Utilities + Dynamic PC-Spec Themes + Molecular Sidebar */}
+            {(featureCategory === 'all' || featureCategory === 'arena_tools') && (
+              <div
+                data-ripple="true"
+                onClick={onEnterAsGuest}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-slate-300/90 dark:border-white/20 hover:border-sky-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-sky-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-slate-500/15 text-sky-600 dark:text-sky-300 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Sliders className="w-6 h-6 icon-anim-clock" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-slate-600 dark:text-sky-300">
+                      09 · STUDIO &amp; FPS
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors">
+                    {isEn ? 'Focus Timer & PC-Tuned Themes' : 'Tiện Ích Học Tập & 5 Nền Động Theo Cấu Hình'}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Synced Pomodoro timer with alarm bells & ambient music, Quick Notes, Molecular Left Sidebar, Dark/Light mode, VI/EN toggle, and 5 animated backgrounds tuned for your PC.'
+                      : 'Đồng hồ Pomodoro đồng bộ góc trái (chuông báo & nhạc nền thư giãn), Sổ tay ghi chú, Thanh hạt phân tử bên trái, Sáng/Tối, VI/EN & 5 nền động tùy chỉnh mượt theo cấu hình máy.'}
+                  </p>
+                  <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                      <span>{isEn ? 'Pomodoro presets + Bell & Ambient audio' : 'Pomodoro đa chế độ + Nhạc nền & Chuông'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>{isEn ? 'Smooth / Balanced / Ultra FPS performance modes' : '3 chế độ hiệu năng FPS (Mượt / Cân bằng / Cao cấp)'}</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEnterAsGuest();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-slate-900 dark:bg-sky-500 hover:bg-slate-800 dark:hover:bg-sky-400 text-white dark:text-slate-950 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Enter Full Workspace' : 'Vào Toàn Bộ Không Gian Học'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Cross-Platform Smart Conveniences Bar */}
+          <div className="sci-frame sci-scan-bar rounded-xl bg-gradient-to-r from-slate-900 via-[#0d1f3d] to-slate-900 text-white p-5 sm:p-6 border border-sky-400/30 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex items-start gap-3">
+              <Mic className="w-5 h-5 text-sky-300 icon-anim-wave shrink-0 mt-0.5" />
+              <div className="text-xs space-y-0.5">
+                <div className="font-semibold text-white">{isEn ? 'Voice Recognition' : 'Nhận diện Giọng nói'}</div>
+                <p className="text-slate-300 leading-snug">
+                  {isEn ? 'Speak questions & exam prompts in VI/EN.' : 'Đọc đề bài & câu hỏi trực tiếp bằng Tiếng Việt/Anh.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <UploadCloud className="w-5 h-5 text-teal-300 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-0.5">
+                <div className="font-semibold text-white">{isEn ? 'Instant Ctrl+V Paste' : 'Dán Ảnh Đề Ctrl+V'}</div>
+                <p className="text-slate-300 leading-snug">
+                  {isEn ? 'Paste screenshots straight into Exams, Code & AI.' : 'Dán ảnh đề thi vào Đề thi, Code IDE & Gia sư AI.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Sliders className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-0.5">
+                <div className="font-semibold text-white">{isEn ? 'PC-Spec Background Modes' : 'Tùy biến theo Cấu hình PC'}</div>
+                <p className="text-slate-300 leading-snug">
+                  {isEn ? 'Switch between 5 animated themes & FPS caps.' : '5 giao diện nền động & giảm tải GPU chống giật lag.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-emerald-300 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-0.5">
+                <div className="font-semibold text-white">{isEn ? '5-Step Cloud/Local Sync' : 'Đồng bộ Bài học 5 Bước'}</div>
+                <p className="text-slate-300 leading-snug">
+                  {isEn ? 'XP, scores & weak-topic roadmap saved automatically.' : 'Tự lưu XP, bài tập tự luận & phân tích lỗ hổng kiến thức.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Full Lecture Directory on Welcome Page */}
         <div className="mt-12 sm:mt-16">
@@ -1520,9 +2188,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               : 'Synapse · Hệ thống giáo dục mô phỏng vũ trụ học thuật'}
           </span>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
-            <span>{isEn ? 'Math 2D & Oxyz 3D' : 'Toán 2D & Oxyz 3D'}</span>
+            <span>{isEn ? 'Synapse v2 (30)' : 'Synapse v2 (30)'}</span>
             <span aria-hidden="true">·</span>
-            <span>{isEn ? 'Physics 2D/3D 60FPS' : 'Vật lí 2D/3D 60FPS'}</span>
+            <span>{isEn ? 'Spatial 3D (10-Finger)' : 'Học cảm giác 3D'}</span>
+            <span aria-hidden="true">·</span>
+            <span>{isEn ? '5 Physics Domains' : '5 Chuyên đề Vật lí'}</span>
+            <span aria-hidden="true">·</span>
+            <span>{isEn ? 'Math Oxyz 3D' : 'Toán 2D & Oxyz'}</span>
             <span aria-hidden="true">·</span>
             <span>Sublime Text 4 Judge</span>
             <span aria-hidden="true">·</span>

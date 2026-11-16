@@ -380,31 +380,33 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <div className="flex flex-wrap items-center justify-center gap-3.5 pt-1">
             <button
               type="button"
+              data-ripple="true"
               onClick={() => scrollToLectureDirectory('all')}
-              className="min-h-[52px] px-7 py-3.5 rounded bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm sm:text-base font-semibold shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2.5 transition-colors cursor-pointer whitespace-nowrap"
+              className="group cs-deck-btn min-h-[52px] px-7 py-3.5 rounded bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm sm:text-base font-semibold shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
             >
-              <BookOpen className="w-5 h-5 shrink-0" />
+              <BookOpen className="w-5 h-5 icon-anim-book shrink-0" />
               <span>
                 {isEn ? `Explore ${totalLessons} Lectures` : `Khám phá ${totalLessons} Bài giảng`}
               </span>
-              <ChevronDown className="w-4 h-4 shrink-0" />
+              <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform shrink-0" />
             </button>
 
             <button
               type="button"
+              data-ripple="true"
               onClick={() => onNavigate('physics_sims')}
-              className="min-h-[52px] px-7 py-3.5 rounded bg-white/10 hover:bg-white/18 border border-white/25 hover:border-sky-300/60 text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2.5 transition-colors cursor-pointer whitespace-nowrap"
+              className="group cs-deck-btn min-h-[52px] px-7 py-3.5 rounded bg-white/10 hover:bg-white/18 border border-white/25 hover:border-sky-300/60 text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
             >
-              <Atom className="w-5 h-5 text-amber-300 shrink-0" />
+              <Atom className="w-5 h-5 text-amber-300 icon-anim-atom shrink-0" />
               <span>{isEn ? 'Open 2D/3D Simulations' : 'Mở Phòng Mô phỏng 2D/3D'}</span>
-              <ArrowRight className="w-4 h-4 shrink-0" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
             </button>
           </div>
 
           {/* Centered Academic Metrics & Learner Mastery Bar */}
           <div className="mt-6 pt-6 border-t border-white/12 grid grid-cols-1 md:grid-cols-12 gap-5 items-center text-left">
             <div className="md:col-span-7 grid grid-cols-3 gap-4 text-center md:text-left">
-              <div>
+              <div className="group/stat rounded px-2 py-1 hover:bg-white/[0.04] transition-colors">
                 <div className="font-display text-2xl sm:text-3xl font-semibold text-white tabular-nums">
                   {totalLessons}
                 </div>
@@ -412,7 +414,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   {isEn ? 'Interactive Lessons' : 'Bài giảng tương tác'}
                 </div>
               </div>
-              <div>
+              <div className="group/stat rounded px-2 py-1 hover:bg-white/[0.04] transition-colors">
                 <div className="font-display text-2xl sm:text-3xl font-semibold text-sky-300 tabular-nums">
                   60 FPS
                 </div>
@@ -420,7 +422,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   {isEn ? '2D/3D Physics & Graphs' : 'Mô phỏng 2D/3D'}
                 </div>
               </div>
-              <div>
+              <div className="group/stat rounded px-2 py-1 hover:bg-white/[0.04] transition-colors">
                 <div className="font-display text-2xl sm:text-3xl font-semibold text-amber-300 tabular-nums">
                   {totalExams}
                 </div>
@@ -430,7 +432,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </div>
             </div>
 
-            <div className="md:col-span-5 rounded bg-white/[0.07] border border-white/15 px-4 py-3.5 flex items-center justify-between gap-3">
+            <div className="md:col-span-5 sci-scan-bar rounded bg-white/[0.07] border border-white/15 px-4 py-3.5 flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="font-semibold text-white truncate">
@@ -442,7 +444,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 </div>
                 <div className="w-full bg-white/12 h-2 rounded-sm overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-sky-400 to-emerald-400 h-full rounded-sm transition-all duration-500"
+                    className="roadmap-shimmer-bar bg-gradient-to-r from-sky-400 via-teal-300 to-emerald-400 h-full rounded-sm transition-all duration-500"
                     style={{ width: `${xpProgressPct}%` }}
                   />
                 </div>
@@ -452,20 +454,22 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 onOpenSettings && (
                   <button
                     type="button"
+                    data-ripple="true"
                     onClick={onOpenSettings}
-                    className="min-h-[42px] px-3.5 py-2 rounded bg-white/12 hover:bg-white/22 border border-white/15 text-xs font-semibold text-white transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
+                    className="group cs-deck-btn min-h-[42px] px-3.5 py-2 rounded bg-white/12 hover:bg-white/22 border border-white/15 text-xs font-semibold text-white transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
                   >
-                    <Settings className="w-4 h-4 text-sky-300" />
+                    <Settings className="w-4 h-4 text-sky-300 icon-anim-gear" />
                     <span>{isEn ? 'Settings' : 'Cài đặt'}</span>
                   </button>
                 )
               ) : (
                 <button
                   type="button"
+                  data-ripple="true"
                   onClick={() => openAuthModal('login')}
-                  className="min-h-[42px] px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
+                  className="group cs-deck-btn min-h-[42px] px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                   <span>{isEn ? 'Sign In' : 'Đăng nhập'}</span>
                 </button>
               )}
@@ -475,13 +479,18 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       </section>
 
       {/* TABLE OF CONTENTS (MỤC LỤC TRANG CHÍNH) */}
-      <section className="sci-frame rounded-xl bg-white/90 dark:bg-slate-900/82 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/85 dark:border-sky-500/25 p-5 sm:p-6 shadow-xs space-y-4">
+      <section className="sci-frame sci-scan-bar rounded-xl bg-white/90 dark:bg-slate-900/82 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/85 dark:border-sky-500/25 p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-white/10">
-          <div className="flex items-center gap-2">
-            <ListOrdered className="w-5 h-5 text-blue-600 dark:text-sky-400 shrink-0" />
-            <h2 className="font-display text-sm sm:text-base font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+          <div className="flex items-center gap-2.5">
+            <ListOrdered className="w-5 h-5 text-blue-600 dark:text-sky-400 icon-anim-list shrink-0" />
+            <h2 className="font-display text-sm sm:text-base font-semibold uppercase tracking-wider text-slate-900 dark:text-white">
               {isEn ? 'Table of Contents · Jump to Lectures' : 'Mục Lục Trang Chính · Cuộn Nhanh Xuống Bài Giảng'}
             </h2>
+            <span aria-hidden="true" className="hidden sm:inline-flex items-end gap-[2px] h-3 pb-0.5 opacity-80">
+              <span className="w-[2px] h-full bg-sky-500 rounded-xs sci-meter-1" />
+              <span className="w-[2px] h-full bg-teal-500 rounded-xs sci-meter-2" />
+              <span className="w-[2px] h-full bg-blue-600 rounded-xs sci-meter-3" />
+            </span>
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400">
             {isEn
@@ -495,21 +504,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             type="button"
             data-ripple="true"
             onClick={() => scrollToLectureDirectory('all')}
-            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-gradient-to-r from-sky-50 via-blue-50/70 to-sky-50 dark:from-blue-950/60 dark:via-slate-900/80 dark:to-sky-950/50 hover:from-sky-100 hover:to-blue-100 dark:hover:from-blue-900/70 dark:hover:to-sky-950/80 border border-sky-300/85 dark:border-sky-500/40 hover:border-blue-600 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+            className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-gradient-to-r from-sky-50 via-blue-50/70 to-sky-50 dark:from-blue-950/60 dark:via-slate-900/80 dark:to-sky-950/50 hover:from-sky-100 hover:to-blue-100 dark:hover:from-blue-900/70 dark:hover:to-sky-950/80 border border-sky-300/85 dark:border-sky-500/40 hover:border-blue-600 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
           >
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
             />
             <div className="relative z-10 min-w-0">
-              <span className="font-mono text-[11px] font-bold text-blue-700 dark:text-sky-400 block">
+              <span className="font-mono text-[11px] font-semibold text-blue-700 dark:text-sky-400 block">
                 01 · {isEn ? 'ALL LECTURES' : 'DANH SÁCH BÀI GIẢNG'}
               </span>
-              <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-sky-200 truncate block transition-colors">
+              <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-sky-200 truncate block transition-colors">
                 {isEn ? `View All ${totalLessons} Lectures` : `Xem toàn bộ ${totalLessons} bài giảng`}
               </span>
             </div>
-            <span className="relative z-10 w-8 h-8 rounded-md bg-blue-600/10 dark:bg-sky-400/15 group-hover:bg-blue-600 text-blue-700 dark:text-sky-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+            <span className="relative z-10 w-8 h-8 rounded bg-blue-600/10 dark:bg-sky-400/15 group-hover:bg-blue-600 text-blue-700 dark:text-sky-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
               <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
             </span>
           </button>
@@ -518,21 +527,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             type="button"
             data-ripple="true"
             onClick={() => scrollToLectureDirectory('math')}
-            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/95 dark:bg-slate-800/65 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-300/85 dark:border-white/10 hover:border-sky-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+            className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/95 dark:bg-slate-800/65 hover:bg-sky-50 dark:hover:bg-sky-950/45 border border-slate-300/85 dark:border-white/10 hover:border-sky-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
           >
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
             />
             <div className="relative z-10 min-w-0">
-              <span className="font-mono text-[11px] font-bold text-sky-700 dark:text-sky-400 block">
+              <span className="font-mono text-[11px] font-semibold text-sky-700 dark:text-sky-400 block">
                 02 · {isEn ? 'MATHEMATICS' : 'TOÁN HỌC'}
               </span>
-              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-300 truncate block transition-colors">
+              <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-300 truncate block transition-colors">
                 {isEn ? `Math (${MATH_LECTURES.length} lessons)` : `Bài giảng Toán (${MATH_LECTURES.length} bài)`}
               </span>
             </div>
-            <span className="relative z-10 w-8 h-8 rounded-md bg-sky-500/10 group-hover:bg-sky-600 text-sky-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+            <span className="relative z-10 w-8 h-8 rounded bg-sky-500/10 group-hover:bg-sky-600 text-sky-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
               <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
             </span>
           </button>
@@ -541,21 +550,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             type="button"
             data-ripple="true"
             onClick={() => scrollToLectureDirectory('physics')}
-            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/95 dark:bg-slate-800/65 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-slate-300/85 dark:border-white/10 hover:border-amber-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+            className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/95 dark:bg-slate-800/65 hover:bg-amber-50 dark:hover:bg-amber-950/45 border border-slate-300/85 dark:border-white/10 hover:border-amber-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
           >
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
             />
             <div className="relative z-10 min-w-0">
-              <span className="font-mono text-[11px] font-bold text-amber-700 dark:text-amber-400 block">
+              <span className="font-mono text-[11px] font-semibold text-amber-700 dark:text-amber-400 block">
                 03 · {isEn ? 'PHYSICS' : 'VẬT LÍ'}
               </span>
-              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
+              <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
                 {isEn ? `Physics (${PHYSICS_LESSONS.length} labs)` : `Bài giảng Vật lí (${PHYSICS_LESSONS.length} bài)`}
               </span>
             </div>
-            <span className="relative z-10 w-8 h-8 rounded-md bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+            <span className="relative z-10 w-8 h-8 rounded bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
               <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
             </span>
           </button>
@@ -564,21 +573,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             type="button"
             data-ripple="true"
             onClick={() => scrollToLectureDirectory('cs')}
-            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/95 dark:bg-slate-800/65 hover:bg-emerald-50 dark:hover:bg-emerald-950/45 border border-slate-300/85 dark:border-white/10 hover:border-emerald-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+            className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/95 dark:bg-slate-800/65 hover:bg-emerald-50 dark:hover:bg-emerald-950/45 border border-slate-300/85 dark:border-white/10 hover:border-emerald-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
           >
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
             />
             <div className="relative z-10 min-w-0">
-              <span className="font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-400 block">
+              <span className="font-mono text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 block">
                 04 · {isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC'}
               </span>
-              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
+              <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
                 {isEn ? `CS & VNOI (${CS_LESSONS.length} modules)` : `Bài giảng Tin học (${CS_LESSONS.length} bài)`}
               </span>
             </div>
-            <span className="relative z-10 w-8 h-8 rounded-md bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+            <span className="relative z-10 w-8 h-8 rounded bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
               <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
             </span>
           </button>
@@ -587,21 +596,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             type="button"
             data-ripple="true"
             onClick={() => scrollToSection('classroom-exams-banner')}
-            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/95 dark:bg-slate-800/65 hover:bg-blue-50 dark:hover:bg-blue-950/45 border border-slate-300/85 dark:border-white/10 hover:border-blue-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+            className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/95 dark:bg-slate-800/65 hover:bg-blue-50 dark:hover:bg-blue-950/45 border border-slate-300/85 dark:border-white/10 hover:border-blue-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
           >
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
             />
             <div className="relative z-10 min-w-0">
-              <span className="font-mono text-[11px] font-bold text-blue-700 dark:text-sky-400 block">
+              <span className="font-mono text-[11px] font-semibold text-blue-700 dark:text-sky-400 block">
                 05 · {isEn ? 'EXAM ARCHIVE' : 'KHO ĐỀ THI'}
               </span>
-              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-sky-300 truncate block transition-colors">
+              <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-sky-300 truncate block transition-colors">
                 {isEn ? `${totalExams} Official Exams` : `${totalExams} Đề thi & AI chấm`}
               </span>
             </div>
-            <span className="relative z-10 w-8 h-8 rounded-md bg-blue-500/12 group-hover:bg-blue-600 text-blue-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+            <span className="relative z-10 w-8 h-8 rounded bg-blue-500/12 group-hover:bg-blue-600 text-blue-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
               <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
             </span>
           </button>
@@ -610,21 +619,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             type="button"
             data-ripple="true"
             onClick={() => scrollToSection('classroom-utilities')}
-            className="group relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg bg-slate-50/95 dark:bg-slate-800/65 hover:bg-teal-50 dark:hover:bg-teal-950/45 border border-slate-300/85 dark:border-white/10 hover:border-teal-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+            className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/95 dark:bg-slate-800/65 hover:bg-teal-50 dark:hover:bg-teal-950/45 border border-slate-300/85 dark:border-white/10 hover:border-teal-500/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
           >
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
             />
             <div className="relative z-10 min-w-0">
-              <span className="font-mono text-[11px] font-bold text-teal-700 dark:text-teal-400 block">
+              <span className="font-mono text-[11px] font-semibold text-teal-700 dark:text-teal-400 block">
                 06 · {isEn ? 'STUDY UTILITIES' : 'TIỆN ÍCH HỌC TẬP'}
               </span>
-              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 truncate block transition-colors">
+              <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 truncate block transition-colors">
                 {isEn ? 'Focus Timer & Quick Notes' : 'Đồng hồ tập trung & Sổ tay'}
               </span>
             </div>
-            <span className="relative z-10 w-8 h-8 rounded-md bg-teal-500/12 group-hover:bg-teal-600 text-teal-600 dark:text-teal-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+            <span className="relative z-10 w-8 h-8 rounded bg-teal-500/12 group-hover:bg-teal-600 text-teal-600 dark:text-teal-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
               <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
             </span>
           </button>
@@ -635,19 +644,33 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       <section
         data-ripple="true"
         onClick={() => onNavigate('synapse_v2')}
-        className="group sci-frame relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-[#0a1a36] to-slate-900 text-white p-6 sm:p-8 border border-sky-400/45 hover:border-sky-300/85 shadow-[0_20px_55px_-16px_rgba(2,132,199,0.34)] cursor-pointer transition-all"
+        className="group sci-frame relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-[#0a1a36] to-slate-900 text-white p-6 sm:p-8 border border-sky-400/45 hover:border-sky-300/85 hover:-translate-y-0.5 shadow-[0_20px_55px_-16px_rgba(2,132,199,0.34)] cursor-pointer transition-all"
       >
         <div className="absolute inset-0 sci-blueprint-bg opacity-35 pointer-events-none" />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-sky-300/12 to-transparent -translate-x-[160%] group-hover-sheen"
+        />
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 220 220"
+          className="hidden md:block absolute right-10 -top-10 w-56 h-56 opacity-20 group-hover:opacity-40 pointer-events-none animate-orbit-slow transition-opacity"
+        >
+          <circle cx="110" cy="110" r="88" fill="none" stroke="#38bdf8" strokeWidth="1.3" strokeDasharray="8 6" />
+          <circle cx="110" cy="110" r="56" fill="none" stroke="#818cf8" strokeWidth="1.2" strokeDasharray="4 5" />
+          <circle cx="110" cy="22" r="4" fill="#38bdf8" />
+          <circle cx="166" cy="110" r="3.5" fill="#2dd4bf" />
+        </svg>
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center gap-4 sm:gap-5 min-w-0">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gradient-to-br from-sky-500/30 to-blue-600/40 border border-sky-300/50 flex items-center justify-center shrink-0 shadow-inner">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gradient-to-br from-sky-500/30 to-blue-600/40 border border-sky-300/50 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
               <Orbit className="w-8 h-8 text-sky-300 icon-anim-cosmos" />
             </div>
             <div className="space-y-1.5 min-w-0">
-              <div className="text-[11px] font-mono font-extrabold uppercase tracking-[0.2em] text-sky-300">
+              <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.2em] text-sky-300">
                 {isEn ? 'SYNAPSE V2 · 30 FUTURISTIC 3D HOLOGRAPHIC CHAMBERS' : 'LỚP HỌC ẢO · SYNAPSE V2 · 30 ĐẠI CÔNG TRÌNH TƯƠNG LAI'}
               </div>
-              <h2 className="font-display text-xl sm:text-2xl font-black tracking-tight text-white">
+              <h2 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-white">
                 {isEn
                   ? 'Explore 30 Futuristic 3D Physics, Space Science, Computer Science & Math Megastructures'
                   : 'Bước vào 30 Khung Lớp Học Ảo Vật Lí, Vũ Trụ, Khoa Học Vi Tính & Đại Công Trình 3D'}
@@ -662,15 +685,16 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
           <button
             type="button"
+            data-ripple="true"
             onClick={(e) => {
               e.stopPropagation();
               onNavigate('synapse_v2');
             }}
-            className="group/btn cs-deck-btn shrink-0 px-6 py-3.5 rounded-md bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400 hover:from-sky-300 hover:to-blue-300 text-slate-950 font-black text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+            className="group/btn cs-deck-btn shrink-0 px-6 py-3.5 rounded bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400 hover:from-sky-300 hover:to-blue-300 text-slate-950 font-semibold text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
           >
             <Orbit className="w-4 h-4 icon-anim-cosmos" />
             <span>{isEn ? 'Launch Synapse v2 World' : 'Khởi động Lớp học ảo · Synapse v2'}</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
           </button>
         </div>
       </section>
@@ -679,21 +703,36 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       <section
         data-ripple="true"
         onClick={() => onNavigate('spatial_3d')}
-        className="group sci-frame relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-[#08222a] to-slate-900 text-white p-6 sm:p-7 border border-teal-400/45 hover:border-cyan-300/90 shadow-[0_20px_55px_-16px_rgba(20,184,166,0.3)] cursor-pointer transition-all"
+        className="group sci-frame relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-[#08222a] to-slate-900 text-white p-6 sm:p-7 border border-teal-400/45 hover:border-cyan-300/90 hover:-translate-y-0.5 shadow-[0_20px_55px_-16px_rgba(20,184,166,0.3)] cursor-pointer transition-all"
       >
         <div className="absolute inset-0 sci-blueprint-bg opacity-30 pointer-events-none" />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-teal-300/12 to-transparent -translate-x-[160%] group-hover-sheen"
+        />
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 220 140"
+          className="hidden md:block absolute right-14 top-1/2 -translate-y-1/2 w-52 h-32 opacity-22 group-hover:opacity-45 pointer-events-none transition-opacity"
+        >
+          <path d="M18 110 L58 48 L96 86 L140 30 L188 74" fill="none" stroke="#2dd4bf" strokeWidth="1.8" className="animate-electric-flow" />
+          <circle cx="58" cy="48" r="4.5" fill="#2dd4bf" className="math-focus-pulse" />
+          <circle cx="96" cy="86" r="4.5" fill="#38bdf8" />
+          <circle cx="140" cy="30" r="4.5" fill="#fbbf24" className="math-focus-pulse" />
+          <circle cx="188" cy="74" r="4.5" fill="#2dd4bf" />
+        </svg>
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="flex items-start sm:items-center gap-4 min-w-0">
-            <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-teal-500/30 to-cyan-500/35 border border-teal-300/50 flex items-center justify-center shrink-0">
-              <Hand className="w-7 h-7 text-teal-300" />
+            <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-teal-500/30 to-cyan-500/35 border border-teal-300/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Hand className="w-7 h-7 text-teal-300 icon-anim-hand" />
             </div>
             <div className="space-y-1 min-w-0">
-              <div className="text-[11px] font-mono font-extrabold uppercase tracking-[0.18em] text-teal-300">
+              <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-teal-300">
                 {isEn
                   ? 'SPATIAL 2D/3D GESTURE LAB · 10-FINGERTIP AI SENSOR'
                   : 'KHU VỰC MỚI · HỌC CẢM GIÁC 3D · CẢM BIẾN 10 ĐẦU NGÓN TAY'}
               </div>
-              <h2 className="font-display text-lg sm:text-xl font-black tracking-tight text-white">
+              <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-white">
                 {isEn
                   ? '2D Interactive Geometry Studio & 15 Realistic 3D Models via Live Webcam Hand Tracking'
                   : 'Xưởng Hình Học 2D Trực Quan & 15 Mô Hình 3D Thực Tế Điều Khiển Bằng 10 Đầu Ngón Tay'}
@@ -708,15 +747,16 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
           <button
             type="button"
+            data-ripple="true"
             onClick={(e) => {
               e.stopPropagation();
               onNavigate('spatial_3d');
             }}
-            className="cs-deck-btn shrink-0 px-5 py-3.5 rounded-md bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 hover:from-teal-300 hover:to-sky-300 text-slate-950 font-black text-sm shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+            className="group/btn cs-deck-btn shrink-0 px-5 py-3.5 rounded bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 hover:from-teal-300 hover:to-sky-300 text-slate-950 font-semibold text-sm shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
           >
-            <Hand className="w-4 h-4" />
+            <Hand className="w-4 h-4 icon-anim-hand" />
             <span>{isEn ? 'Open Spatial 3D Lab' : 'Vào Học cảm giác 3D'}</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
           </button>
         </div>
       </section>
@@ -777,9 +817,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
             <div className="relative z-10 space-y-3">
               <div className="w-12 h-12 rounded-lg bg-sky-50 dark:bg-sky-950/60 border border-sky-200/90 dark:border-sky-800/70 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                <Compass className="w-6 h-6" />
+                <Compass className="w-6 h-6 icon-anim-compass" />
               </div>
-              <h3 className="font-display text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn
                   ? `Interactive Math (${MATH_LECTURES.length})`
                   : `Toán học tương tác (${MATH_LECTURES.length} bài)`}
@@ -794,15 +834,16 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <div className="relative z-10 pt-1">
               <button
                 type="button"
+                data-ripple="true"
                 onClick={(e) => {
                   e.stopPropagation();
                   onNavigate('math');
                 }}
-                className="w-full min-h-[48px] px-5 py-3 rounded bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                className="group/btn cs-deck-btn w-full min-h-[48px] px-5 py-3 rounded bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
               >
-                <Compass className="w-4 h-4 shrink-0" />
+                <Compass className="w-4 h-4 icon-anim-compass shrink-0" />
                 <span>{isEn ? 'Open 2D & Oxyz 3D Lab' : 'Vào Toán · Đồ thị & Oxyz 3D'}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
@@ -849,9 +890,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
             <div className="relative z-10 space-y-3">
               <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200/90 dark:border-amber-800/70 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                <Zap className="w-6 h-6" />
+                <Zap className="w-6 h-6 icon-anim-zap" />
               </div>
-              <h3 className="font-display text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn
                   ? `Experimental Physics (${PHYSICS_LESSONS.length})`
                   : `Vật lí thực nghiệm (${PHYSICS_LESSONS.length} bài)`}
@@ -866,24 +907,26 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <div className="relative z-10 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <button
                 type="button"
+                data-ripple="true"
                 onClick={(e) => {
                   e.stopPropagation();
                   onNavigate('physics_sims');
                 }}
-                className="w-full min-h-[48px] px-4 py-3 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                className="group/btn cs-deck-btn w-full min-h-[48px] px-4 py-3 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
               >
-                <Atom className="w-4 h-4 shrink-0" />
+                <Atom className="w-4 h-4 icon-anim-atom shrink-0" />
                 <span>{isEn ? '2D/3D Domains' : 'Mô phỏng 2D/3D'}</span>
               </button>
               <button
                 type="button"
+                data-ripple="true"
                 onClick={(e) => {
                   e.stopPropagation();
                   onNavigate('physics');
                 }}
-                className="w-full min-h-[48px] px-4 py-3 rounded bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white text-sm font-semibold border border-amber-500/40 flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                className="group/btn cs-deck-btn w-full min-h-[48px] px-4 py-3 rounded bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white text-sm font-semibold border border-amber-500/40 flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
               >
-                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                <Zap className="w-4 h-4 text-amber-400 icon-anim-zap shrink-0" />
                 <span>{isEn ? 'Lectures & Labs' : 'Bài giảng & Lab'}</span>
               </button>
             </div>
@@ -928,9 +971,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
             <div className="relative z-10 space-y-3">
               <div className="w-12 h-12 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/90 dark:border-emerald-800/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                <Code2 className="w-6 h-6" />
+                <Code2 className="w-6 h-6 icon-anim-code" />
               </div>
-              <h3 className="font-display text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn
                   ? `Computer Science (${CS_LESSONS.length})`
                   : `Tin học Sublime 4 (${CS_LESSONS.length} bài)`}
@@ -945,15 +988,16 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <div className="relative z-10 pt-1">
               <button
                 type="button"
+                data-ripple="true"
                 onClick={(e) => {
                   e.stopPropagation();
                   onNavigate('cs');
                 }}
-                className="w-full min-h-[48px] px-5 py-3 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                className="group/btn cs-deck-btn w-full min-h-[48px] px-5 py-3 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
               >
-                <Code2 className="w-4 h-4 shrink-0" />
+                <Code2 className="w-4 h-4 icon-anim-code shrink-0" />
                 <span>{isEn ? 'Open Code Judge Lab' : 'Vào Tin Học & Code Judge'}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
@@ -1003,9 +1047,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
             <div className="relative z-10 space-y-3">
               <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-800/70 text-blue-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <GitBranch className="w-6 h-6" />
+                <GitBranch className="w-6 h-6 icon-anim-branch" />
               </div>
-              <h3 className="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h3 className="font-display text-lg sm:text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn ? '5-Step Learning Process Map' : 'Bản đồ Quy trình Học 5 Bước'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -1018,11 +1062,12 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <div className="relative z-10 pt-2">
               <button
                 type="button"
+                data-ripple="true"
                 onClick={(e) => {
                   e.stopPropagation();
                   onNavigate('roadmap');
                 }}
-                className="cs-deck-btn w-full px-5 py-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="cs-deck-btn w-full px-5 py-3 rounded bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <GitBranch className="w-4 h-4 icon-anim-branch" />
                 <span>{t('overview.gotoRoadmap', 'Mở Bản đồ Quy trình Học', 'Open Study Roadmap')}</span>
@@ -1069,9 +1114,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
             <div className="relative z-10 space-y-3">
               <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200/90 dark:border-amber-800/70 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Trophy className="w-6 h-6" />
+                <Trophy className="w-6 h-6 icon-anim-trophy" />
               </div>
-              <h3 className="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h3 className="font-display text-lg sm:text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn ? 'Weekly Arena & Live Rankings' : 'Thi đấu & BXH Tuần Trực Tuyến'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -1084,11 +1129,12 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <div className="relative z-10 pt-2">
               <button
                 type="button"
+                data-ripple="true"
                 onClick={(e) => {
                   e.stopPropagation();
                   onNavigate('arena');
                 }}
-                className="cs-deck-btn w-full px-5 py-3 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-extrabold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="cs-deck-btn w-full px-5 py-3 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-semibold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <Trophy className="w-4 h-4 icon-anim-trophy" />
                 <span>{t('overview.gotoArena', 'Vào Thi đấu & BXH Tuần', 'Enter Weekly Arena')}</span>
@@ -1121,9 +1167,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
             <div className="relative z-10 space-y-3">
               <div className="w-12 h-12 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200/90 dark:border-teal-800/70 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Sparkles className="w-6 h-6" />
+                <Sparkles className="w-6 h-6 icon-anim-star" />
               </div>
-              <h3 className="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h3 className="font-display text-lg sm:text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn ? '3 Specialized AI Tutors' : '3 Trợ Lý AI (Toán · Lí · Tin)'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -1136,11 +1182,12 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <div className="relative z-10 pt-2">
               <button
                 type="button"
+                data-ripple="true"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenTutor?.('math', 'explain_no_answer');
                 }}
-                className="cs-deck-btn w-full px-5 py-3 rounded-md bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 text-white text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="cs-deck-btn w-full px-5 py-3 rounded bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 text-white text-sm font-semibold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 icon-anim-star" />
                 <span>{t('overview.openTutor', 'Mở 3 Trợ Lý AI (Toán - Lí - Tin)', 'Launch 3 AI Tutors')}</span>
@@ -1153,11 +1200,11 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
       {/* SECTION 3: Dedicated 3 Subject AI Assistants × 3 Modes */}
       {onOpenTutor && (
-        <section className="sci-frame rounded-xl bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/90 dark:border-white/10 p-6 sm:p-7 shadow-[0_14px_42px_-16px_rgba(15,23,42,0.12)] space-y-5">
+        <section className="sci-frame sci-scan-bar rounded-xl bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/90 dark:border-white/10 p-6 sm:p-7 shadow-[0_14px_42px_-16px_rgba(15,23,42,0.12)] space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200/70 dark:border-white/10">
             <div>
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-700 dark:text-sky-400">
-                <Sparkles className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-blue-700 dark:text-sky-400">
+                <Sparkles className="w-4 h-4 icon-anim-star" />
                 <span>
                   {isEn
                     ? '3 Independent AI Tutors · 3 Study Modes Each'
@@ -1166,54 +1213,67 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </div>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                 {isEn
-                  ? 'Real-time AI streaming. Pick a subject tutor and mode below, or press Left Ctrl + D (Math), Left Ctrl + F (Physics), Left Ctrl + G (CS).'
-                  : 'Chọn nhanh AI theo từng môn bên dưới hoặc dùng phím tắt Ctrl(trái)+D (Toán), Ctrl(trái)+F (Lí), Ctrl(trái)+G (Tin).'}
+                  ? 'Real-time AI streaming & Voice Mic input. Pick a subject tutor and mode below, or press Left Ctrl + D (Math), Left Ctrl + F (Physics), Left Ctrl + G (CS).'
+                  : 'Hỗ trợ AI theo thời gian thực & nhập đề bằng Giọng nói. Chọn nhanh AI bên dưới hoặc bấm phím tắt Ctrl(trái)+D (Toán), Ctrl(trái)+F (Lí), Ctrl(trái)+G (Tin).'}
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {aiCards.map((item) => (
-              <div
-                key={item.subj}
-                className={`rounded-lg border p-4 sm:p-5 flex flex-col justify-between gap-3.5 ${item.accent}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <div
-                      className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 ${item.badge}`}
-                    >
-                      {item.icon}
+            {aiCards.map((item) => {
+              const iconAnimClass =
+                item.subj === 'math'
+                  ? 'icon-anim-compass'
+                  : item.subj === 'physics'
+                  ? 'icon-anim-zap'
+                  : 'icon-anim-code';
+              return (
+                <div
+                  key={item.subj}
+                  className={`group sci-frame relative overflow-hidden rounded-lg border p-4 sm:p-5 flex flex-col justify-between gap-3.5 hover:-translate-y-0.5 transition-all duration-200 ${item.accent}`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/35 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+                  />
+                  <div className="relative z-10 flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <div
+                        className={`w-9 h-9 rounded flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${item.badge}`}
+                      >
+                        <span className={iconAnimClass}>{item.icon}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-display text-base font-semibold text-slate-900 dark:text-white leading-tight">
+                          {item.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                          {item.sub}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-display text-base font-extrabold text-slate-900 dark:text-white leading-tight">
-                        {item.title}
-                      </h4>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                        {item.sub}
-                      </p>
-                    </div>
+                    <kbd className="px-1.5 py-0.5 rounded bg-white/90 dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-[10px] font-mono font-semibold text-slate-600 dark:text-slate-300 shrink-0">
+                      {item.shortcut}
+                    </kbd>
                   </div>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/90 dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 shrink-0">
-                    {item.shortcut}
-                  </kbd>
-                </div>
 
-                <div className="space-y-2">
-                  {aiModes.map((m) => (
-                    <button
-                      key={m.mode}
-                      type="button"
-                      onClick={() => onOpenTutor(item.subj, m.mode)}
-                      className={`w-full text-left px-3.5 py-2.5 rounded-md bg-white/95 dark:bg-slate-900/90 border border-slate-200/90 dark:border-white/10 text-xs font-bold flex items-center justify-between gap-2 transition-colors cursor-pointer ${item.btn}`}
-                    >
-                      <span className="truncate">{m.label}</span>
-                      <ArrowRight className="w-3.5 h-3.5 shrink-0" />
-                    </button>
-                  ))}
+                  <div className="relative z-10 space-y-2">
+                    {aiModes.map((m) => (
+                      <button
+                        key={m.mode}
+                        type="button"
+                        data-ripple="true"
+                        onClick={() => onOpenTutor(item.subj, m.mode)}
+                        className={`group/mode cs-deck-btn w-full text-left px-3.5 py-2.5 rounded bg-white/95 dark:bg-slate-900/90 border border-slate-200/90 dark:border-white/10 text-xs font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${item.btn}`}
+                      >
+                        <span className="truncate">{m.label}</span>
+                        <ArrowRight className="w-3.5 h-3.5 shrink-0 group-hover/mode:translate-x-1 transition-transform" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
@@ -1223,55 +1283,86 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         id="classroom-exams-banner"
         data-ripple="true"
         onClick={() => onNavigate('exams')}
-        className="scroll-mt-24 sci-frame relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-[#0a1a36] to-slate-900 border border-sky-500/35 p-6 sm:p-8 shadow-xl cursor-pointer hover:border-sky-400/75 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6"
+        className="group scroll-mt-24 sci-frame relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-[#0a1a36] to-slate-900 border border-sky-500/35 hover:border-sky-400/80 hover:-translate-y-0.5 p-6 sm:p-8 shadow-xl cursor-pointer transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6"
       >
-        <div className="space-y-2 max-w-2xl min-w-0">
-          <div className="text-xs font-bold uppercase tracking-widest text-cyan-400 tabular-nums">
-            {isEn
-              ? `2025 - 2026 Exam Archive · ${chuyenExams} Specialized & ${standardExams} Standard`
-              : `Kho Đề Thi Chuẩn 2025 - 2026 · ${chuyenExams} Chuyên & ${standardExams} Không Chuyên`}
+        <div className="absolute inset-0 sci-blueprint-bg opacity-25 pointer-events-none" />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-cyan-300/12 to-transparent -translate-x-[160%] group-hover-sheen"
+        />
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 240 120"
+          className="hidden md:block absolute right-52 top-1/2 -translate-y-1/2 w-56 h-28 opacity-20 group-hover:opacity-45 pointer-events-none transition-opacity"
+        >
+          <path
+            d="M12 88 L46 88 L66 36 L86 98 L108 48 L130 78 L158 26 L186 64 L228 64"
+            fill="none"
+            stroke="#38bdf8"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="animate-electric-flow"
+          />
+          <circle cx="66" cy="36" r="4" fill="#fbbf24" className="math-focus-pulse" />
+          <circle cx="158" cy="26" r="4" fill="#34d399" className="math-focus-pulse" />
+        </svg>
+
+        <div className="relative z-10 flex items-start sm:items-center gap-4 max-w-2xl min-w-0">
+          <div className="w-12 h-12 rounded-lg bg-cyan-500/15 border border-cyan-400/35 text-cyan-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <FileText className="w-6 h-6 icon-anim-list" />
           </div>
-          <h3 className="font-display text-lg sm:text-2xl font-extrabold text-white tracking-tight tabular-nums">
-            {isEn
-              ? `${totalExams} Full Exam Bank, AI Photo Grading & Step-by-Step Solutions`
-              : `Kho ${totalExams} Đề Thi, Nộp Ảnh Chấm Điểm AI & Giải Chi Tiết (Toán · Lí · Tin)`}
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            {isEn
-              ? 'Official and specialized Olympiad exams with built-in timer, handwritten photo submission for AI grading (0–10), and interactive follow-up Q&A.'
-              : 'Tuyển tập đề thi từ KHTN, Sư Phạm, Amsterdam, Lê Hồng Phong và nhiều tỉnh thành... kèm đồng hồ bấm giờ, nộp ảnh để AI chấm điểm và hỏi đáp phần chưa hiểu.'}
-          </p>
+          <div className="space-y-1.5 min-w-0">
+            <div className="text-xs font-semibold uppercase tracking-widest text-cyan-400 tabular-nums">
+              {isEn
+                ? `2025 - 2026 Exam Archive · ${chuyenExams} Specialized & ${standardExams} Standard`
+                : `Kho Đề Thi Chuẩn 2025 - 2026 · ${chuyenExams} Chuyên & ${standardExams} Không Chuyên`}
+            </div>
+            <h3 className="font-display text-lg sm:text-2xl font-semibold text-white tracking-tight tabular-nums">
+              {isEn
+                ? `${totalExams} Full Exam Bank, AI Photo Grading & Step-by-Step Solutions`
+                : `Kho ${totalExams} Đề Thi, Nộp Ảnh Chấm Điểm AI & Giải Chi Tiết (Toán · Lí · Tin)`}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              {isEn
+                ? 'Official and specialized Olympiad exams with built-in timer, drag-drop/Ctrl+V/voice problem upload, handwritten photo AI grading (0–10), and Q&A.'
+                : 'Tuyển tập đề thi từ KHTN, Sư Phạm, Amsterdam, Lê Hồng Phong... kèm đồng hồ bấm giờ, tải đề ảnh/Ctrl+V/giọng nói, nộp ảnh AI chấm điểm 0–10 & hỏi đáp.'}
+            </p>
+          </div>
         </div>
 
         <button
+          type="button"
+          data-ripple="true"
           onClick={(e) => {
             e.stopPropagation();
             onNavigate('exams');
           }}
-          className="cs-deck-btn shrink-0 w-full sm:w-auto px-6 py-3 rounded-md bg-gradient-to-r from-cyan-400 to-sky-400 hover:from-cyan-300 hover:to-sky-300 text-slate-950 font-extrabold text-sm transition-all shadow-md flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+          className="group/btn cs-deck-btn relative z-10 shrink-0 w-full sm:w-auto px-6 py-3 rounded bg-gradient-to-r from-cyan-400 to-sky-400 hover:from-cyan-300 hover:to-sky-300 text-slate-950 font-semibold text-sm transition-all shadow-md flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
         >
+          <FileText className="w-4 h-4 shrink-0" />
           <span>{isEn ? `Explore ${totalExams} exams` : `Khám phá ${totalExams} đề thi`}</span>
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
         </button>
       </section>
 
       {/* SECTION 5: Classroom Focus Utilities (Synced Study-Format Pomodoro + Bells + Quick Notebook) */}
       <section id="classroom-utilities" className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Focus Timer synced with Bottom-Left Floating Widget */}
-        <div className="lg:col-span-5 sci-frame bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/85 dark:border-sky-500/25 rounded-xl p-6 sm:p-7 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="group lg:col-span-5 sci-frame bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/85 dark:border-sky-500/25 hover:border-sky-400/75 rounded-xl p-6 sm:p-7 shadow-xs flex flex-col justify-between space-y-4 transition-all">
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+              <h3 className="font-display text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-600 dark:text-sky-400 icon-anim-clock" />
                 {isEn ? 'Focus Timer & Study Formats' : 'Đồng hồ tập trung & Hình thức học'}
               </h3>
               <button
                 type="button"
+                data-ripple="true"
                 onClick={() => setIsWidgetOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-50 dark:bg-sky-950/60 border border-sky-300/70 dark:border-sky-700/60 text-[11px] font-bold text-sky-800 dark:text-sky-300 hover:bg-sky-100 cursor-pointer"
+                className="group/mini cs-deck-btn flex items-center gap-1 px-2.5 py-1 rounded bg-sky-50 dark:bg-sky-950/60 border border-sky-300/70 dark:border-sky-700/60 text-[11px] font-semibold text-sky-800 dark:text-sky-300 hover:bg-sky-100 cursor-pointer"
                 title={isEn ? 'Open corner mini widget' : 'Mở khung bấm giờ góc trái'}
               >
-                <PanelBottomOpen className="w-3.5 h-3.5" />
+                <PanelBottomOpen className="w-3.5 h-3.5 group-hover/mini:translate-y-0.5 transition-transform" />
                 <span>{isEn ? 'Mini Corner' : 'Góc trái'}</span>
               </button>
             </div>
@@ -1284,8 +1375,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   <button
                     key={preset.id}
                     type="button"
+                    data-ripple="true"
                     onClick={() => setStudyFormat(preset.id)}
-                    className={`px-2 py-1.5 rounded-md text-[11px] font-bold border transition-all cursor-pointer truncate ${
+                    className={`cs-deck-btn px-2 py-1.5 rounded text-[11px] font-semibold border transition-all cursor-pointer truncate ${
                       active
                         ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                         : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-500'
@@ -1299,39 +1391,52 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
             {/* Phase Switch + Sessions Count */}
             <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1 p-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-white/10">
+              <div className="flex items-center gap-1 p-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-white/10">
                 <button
                   type="button"
+                  data-ripple="true"
                   onClick={() => switchPhase('focus')}
-                  className={`px-2.5 py-1 rounded-sm font-bold cursor-pointer ${
+                  className={`cs-deck-btn px-2.5 py-1 rounded-sm font-semibold cursor-pointer ${
                     phase === 'focus'
                       ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-sky-300 shadow-xs'
-                      : 'text-slate-500'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   {isEn ? 'Focus' : 'Tập trung'}
                 </button>
                 <button
                   type="button"
+                  data-ripple="true"
                   onClick={() => switchPhase('break')}
-                  className={`px-2.5 py-1 rounded-sm font-bold cursor-pointer ${
+                  className={`cs-deck-btn px-2.5 py-1 rounded-sm font-semibold cursor-pointer ${
                     phase === 'break'
                       ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-300 shadow-xs'
-                      : 'text-slate-500'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   {isEn ? 'Break' : 'Nghỉ ngơi'}
                 </button>
               </div>
-              <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400">
+              <span className="font-mono text-[11px] font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
                 {completedSessions} {isEn ? 'done' : 'phiên'}
               </span>
             </div>
 
             {/* SVG Circular Ring */}
             <div className="flex flex-col items-center justify-center py-1">
-              <div className="relative w-40 h-40 flex items-center justify-center">
+              <div className={`relative w-40 h-40 flex items-center justify-center ${isTimerRunning ? 'timer-active-glow' : ''}`}>
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 140 140" aria-hidden="true">
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="64"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                    strokeDasharray="4 6"
+                    className={`text-sky-400/35 dark:text-sky-400/25 ${isTimerRunning ? 'animate-orbit-slow' : ''}`}
+                    style={{ transformOrigin: '70px 70px' }}
+                  />
                   <circle
                     cx="70"
                     cy="70"
@@ -1355,7 +1460,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="font-display text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">
+                  <div className="font-display text-3xl font-semibold tracking-tight text-slate-900 dark:text-white tabular-nums">
                     {formatTimer(timeLeft)}
                   </div>
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mt-1">
@@ -1380,9 +1485,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </div>
 
             {/* Bell & Ambient Sound Strip */}
-            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-md bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/80 dark:border-white/10 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/80 dark:border-white/10 text-xs">
               <div className="flex items-center gap-1.5 min-w-0">
-                <Bell className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <Bell className="w-3.5 h-3.5 text-amber-500 icon-anim-bell shrink-0" />
                 <select
                   value={bellSound}
                   onChange={(e) => {
@@ -1401,8 +1506,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 </select>
                 <button
                   type="button"
+                  data-ripple="true"
                   onClick={() => playBell()}
-                  className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-[10px] font-bold cursor-pointer"
+                  className="cs-deck-btn px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/65 text-amber-800 dark:text-amber-300 text-[10px] font-semibold cursor-pointer"
                 >
                   {isEn ? 'Test' : 'Thử'}
                 </button>
@@ -1410,17 +1516,18 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
               <button
                 type="button"
+                data-ripple="true"
                 onClick={toggleBgPlaying}
-                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer ${
+                className={`group/amb cs-deck-btn flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer ${
                   isBgPlaying && bgSound !== 'off'
-                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                     : 'bg-slate-200/70 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300'
                 }`}
               >
                 {isBgPlaying && bgSound !== 'off' ? (
-                  <Volume2 className="w-3.5 h-3.5" />
+                  <Volume2 className="w-3.5 h-3.5 icon-anim-wave" />
                 ) : (
-                  <VolumeX className="w-3.5 h-3.5" />
+                  <VolumeX className="w-3.5 h-3.5 group-hover/amb:scale-110 transition-transform" />
                 )}
                 <span>{isEn ? 'Ambient' : 'Nhạc nền'}</span>
               </button>
@@ -1431,21 +1538,28 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             {alarmRinging && (
               <button
                 type="button"
+                data-ripple="true"
                 onClick={dismissAlarm}
-                className="px-4 py-2.5 rounded-md text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer"
+                className="cs-deck-btn px-4 py-2.5 rounded text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer"
               >
                 {isEn ? 'Stop Bell' : 'Tắt chuông'}
               </button>
             )}
             <button
+              type="button"
+              data-ripple="true"
               onClick={toggleTimer}
-              className={`cs-deck-btn px-6 py-2.5 rounded-md text-xs sm:text-sm font-bold text-white flex items-center gap-2 transition-colors cursor-pointer ${
+              className={`group/start cs-deck-btn px-6 py-2.5 rounded text-xs sm:text-sm font-semibold text-white flex items-center gap-2 transition-all cursor-pointer ${
                 isTimerRunning
                   ? 'bg-amber-600 hover:bg-amber-700'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              {isTimerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              {isTimerRunning ? (
+                <Pause className="w-4 h-4 group-hover/start:scale-110 transition-transform" />
+              ) : (
+                <Play className="w-4 h-4 fill-white group-hover/start:translate-x-0.5 transition-transform" />
+              )}
               {isTimerRunning
                 ? isEn
                   ? 'Pause'
@@ -1455,20 +1569,22 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 : 'Bắt đầu học'}
             </button>
             <button
+              type="button"
+              data-ripple="true"
               onClick={resetTimer}
-              className="p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
+              className="group/rst cs-deck-btn p-2.5 text-slate-500 hover:text-sky-600 dark:hover:text-sky-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer"
               title={isEn ? 'Reset Timer' : 'Đặt lại đồng hồ'}
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-4 h-4 group-hover/rst:-rotate-90 transition-transform duration-300" />
             </button>
           </div>
         </div>
 
         {/* Quick Classroom Notes */}
-        <div className="lg:col-span-7 sci-frame bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/90 dark:border-white/10 rounded-xl p-6 sm:p-7 shadow-xs flex flex-col">
+        <div className="group lg:col-span-7 sci-frame bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/90 dark:border-white/10 hover:border-sky-400/60 rounded-xl p-6 sm:p-7 shadow-xs flex flex-col transition-all">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+            <h3 className="font-display text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-blue-600 dark:text-sky-400 icon-anim-book" />
               {isEn ? 'Personal Study Quick Notes' : 'Sổ tay ghi chú bài học cá nhân'}
             </h3>
             <span className="text-xs text-slate-400 font-mono tabular-nums">
@@ -1487,13 +1603,15 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   ? 'Write a quick formula or study reminder...'
                   : 'Ghi lại công thức hoặc mẹo học nhanh...'
               }
-              className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 bg-slate-50/90 dark:bg-slate-800/60 border border-slate-300/80 dark:border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 bg-slate-50/90 dark:bg-slate-800/60 border border-slate-300/80 dark:border-white/10 rounded focus:outline-none focus:ring-2 focus:ring-sky-500 transition-colors"
             />
             <button
+              type="button"
+              data-ripple="true"
               onClick={handleAddNote}
-              className="cs-deck-btn px-4 py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+              className="group/add cs-deck-btn px-4 py-2.5 text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 icon-anim-plus" />
               {isEn ? 'Save' : 'Lưu'}
             </button>
           </div>
@@ -1502,15 +1620,18 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             {notes.map((n) => (
               <div
                 key={n.id}
-                className="p-3 bg-slate-50/85 dark:bg-slate-800/45 rounded-xl border border-slate-200/70 dark:border-white/10 flex items-start justify-between gap-3 text-xs"
+                className="animate-msg-in p-3 bg-slate-50/85 dark:bg-slate-800/45 rounded-lg border border-slate-200/70 dark:border-white/10 hover:border-sky-400/65 hover:-translate-y-0.5 flex items-start justify-between gap-3 text-xs transition-all"
               >
                 <div className="flex-1">
                   <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{n.text}</p>
                   <span className="text-[10px] text-slate-400 font-mono mt-1 block">{n.date}</span>
                 </div>
                 <button
+                  type="button"
+                  data-ripple="true"
                   onClick={() => handleDeleteNote(n.id)}
-                  className="text-slate-400 hover:text-red-500 p-1 transition-colors cursor-pointer"
+                  className="text-slate-400 hover:text-red-500 hover:scale-110 p-1 rounded transition-all cursor-pointer"
+                  aria-label={isEn ? 'Delete note' : 'Xóa ghi chú'}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

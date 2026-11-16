@@ -4,11 +4,15 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {
   ArrowLeft,
+  BookOpen,
   Box,
   Camera,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
+  Circle,
   Compass,
   Eraser,
   Eye,
@@ -17,12 +21,16 @@ import {
   FlipHorizontal,
   Grid,
   Hand,
+  Info,
   Layers,
   Lock,
   Maximize2,
   Minimize2,
+  Minus,
+  Move,
   Orbit,
   Pause,
+  PenTool,
   Play,
   Plus,
   RotateCcw,
@@ -30,11 +38,15 @@ import {
   Settings2,
   Sliders,
   Sparkles,
+  Square,
+  Star,
+  Triangle,
   Undo2,
   Video,
   VideoOff,
   Volume2,
-  VolumeX
+  VolumeX,
+  Wand2
 } from 'lucide-react';
 import { SubjectType } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
@@ -55,6 +67,7 @@ import {
   PointerSource
 } from './handGestureTracker';
 import {
+  Free2DToolId,
   SPATIAL_2D_MODES,
   Spatial2DGestureCanvas,
   Spatial2DHandle,
@@ -64,8 +77,11 @@ import {
   buildAdvancedModel,
   DynamicModelRef,
   ExplodablePart,
+  ExplodablePartInfo,
   updateAdvancedKinematics
 } from './advancedModels3D';
+import { SpatialSenseHub } from './SpatialSenseHub';
+import { Spatial3DGuideModal } from './Spatial3DGuideModal';
 
 export type SpatialModeId =
   | 'turbofan'
@@ -89,7 +105,7 @@ export type CreativeBrushId = 'tube' | 'cube' | 'sphere' | 'pyramid' | 'torus';
 type SpaceMode = '3d' | '2d';
 type DockTabId = 'gesture' | 'shapes' | 'params' | 'style' | 'settings';
 
-const GESTURE_SETTINGS_STORAGE_KEY = 'synapse_spatial_gesture_settings_v1';
+const GESTURE_SETTINGS_STORAGE_KEY = 'synapse_spatial_gesture_settings_v3';
 
 function loadGestureSettings(): GestureSettings {
   try {
@@ -99,6 +115,8 @@ function loadGestureSettings(): GestureSettings {
     return {
       ...DEFAULT_GESTURE_SETTINGS,
       ...parsed,
+      rotationSensitivity: parsed.rotationSensitivity ?? DEFAULT_GESTURE_SETTINGS.rotationSensitivity,
+      gestureHoldMs: parsed.gestureHoldMs ?? DEFAULT_GESTURE_SETTINGS.gestureHoldMs,
       gestureActions3D: {
         ...DEFAULT_GESTURE_SETTINGS.gestureActions3D,
         ...(parsed.gestureActions3D || {})
@@ -316,6 +334,16 @@ interface LabRuntime {
   renderer: THREE.WebGLRenderer;
   controls: OrbitControls;
   rootGroup: THREE.Group;
+  isolatedHolder: THREE.Group;
+  isolatedPivot: THREE.Group;
+  isolatedRestore: {
+    partIndex: number;
+    parent: THREE.Object3D;
+    pos: THREE.Vector3;
+    rot: THREE.Euler;
+    scale: THREE.Vector3;
+  } | null;
+  highlightHelper: THREE.BoxHelper;
   axesGroup: THREE.Group;
   floorGroup: THREE.Group;
   slicePlane: THREE.Plane;
@@ -343,6 +371,11 @@ const _v3TmpA = new THREE.Vector3();
 const _v3TmpB = new THREE.Vector3();
 const _eulerTmp = new THREE.Euler();
 const _colorTmp = new THREE.Color();
+const _box3Tmp = new THREE.Box3();
+const _centerTmp = new THREE.Vector3();
+const _sizeTmp = new THREE.Vector3();
+const _raycaster = new THREE.Raycaster();
+const _pointerNdc = new THREE.Vector2();
 
 function isSoftwareWebGL(): boolean {
   try {
@@ -367,14 +400,40 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const isEn = language === 'en';
   const { bgSound, isBgPlaying, setBgSound, toggleBgPlaying } = useAudio();
 
-  // Top-level Dual Workspace Switch: 3D Realistic/Creative vs 2D Interactive Geometry
+  // Top-level Dual Entry View: Dedicated Spatial Hub vs Interactive Studio (3D / 2D)
+  const [entryView, setEntryView] = useState<'hub' | 'studio'>('hub');
+  const [show3DGuide, setShow3DGuide] = useState<boolean>(false);
+  const [autoShow3DGuide, setAutoShow3DGuide] = useState<boolean>(true);
   const [spaceMode, setSpaceMode] = useState<SpaceMode>('3d');
-  const [mode2D, setMode2D] = useState<Spatial2DModeId>('polygon_euler');
+  const [mode2D, setMode2D] = useState<Spatial2DModeId>('free_create');
+  const [free2DTool, setFree2DTool] = useState<Free2DToolId>('freehand');
+  const [free2DColor, setFree2DColor] = useState<string>('#22d3ee');
+  const [free2DSnap, setFree2DSnap] = useState<boolean>(false);
+  const [free2DAutoShape, setFree2DAutoShape] = useState<boolean>(false);
+  const [free2DCount, setFree2DCount] = useState<number>(0);
   const [metrics2D, setMetrics2D] = useState<{ metricA: string; metricB: string; metricC: string }>({
-    metricA: 'S = 16.50 đvdt',
-    metricB: 'Chu vi P = 18.42 đv',
-    metricC: 'O — G — H thẳng hàng'
+    metricA: 'Tự do tạo hình 2D',
+    metricB: '0 hình đã tạo',
+    metricC: 'Kéo tay/chuột để vẽ'
   });
+
+  const handleEnter3DSpace = useCallback(
+    (forceGuide = false) => {
+      setEntryView('studio');
+      setSpaceMode('3d');
+      if (forceGuide || autoShow3DGuide) {
+        setShow3DGuide(true);
+      }
+    },
+    [autoShow3DGuide]
+  );
+
+  const handleEnter2DSpace = useCallback(() => {
+    setEntryView('studio');
+    setSpaceMode('2d');
+    setMode2D('free_create');
+    setShow3DGuide(false);
+  }, []);
 
   // Core 3D studio states
   const [modeId, setModeId] = useState<SpatialModeId>('turbofan');
@@ -385,7 +444,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [snapGrid, setSnapGrid] = useState<boolean>(false);
   const [scaleVal, setScaleVal] = useState<number>(1.0);
   const [heightVal, setHeightVal] = useState<number>(1.0);
-  const [explodeVal, setExplodeVal] = useState<number>(0.12);
+  const [explodeVal, setExplodeVal] = useState<number>(0.0);
   const [sliceEnabled, setSliceEnabled] = useState<boolean>(false);
   const [sliceY, setSliceY] = useState<number>(2.4);
   const [simSpeed, setSimSpeed] = useState<number>(1.0);
@@ -399,6 +458,18 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [strokeCount, setStrokeCount] = useState<number>(0);
   const [markerCount, setMarkerCount] = useState<number>(0);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  // 3D Part Selection & Isolation Inspection States
+  const [modelParts, setModelParts] = useState<ExplodablePartInfo[]>([]);
+  const [highlightedPartIdx, setHighlightedPartIdx] = useState<number | null>(null);
+  const [isolatedPartIdx, setIsolatedPartIdx] = useState<number | null>(null);
+  const [partCardMinimized, setPartCardMinimized] = useState<boolean>(false);
+  const highlightedPartIdxRef = useRef<number | null>(null);
+  const isolatedPartIdxRef = useRef<number | null>(null);
+  const modelPartsRef = useRef<ExplodablePartInfo[]>([]);
+  highlightedPartIdxRef.current = highlightedPartIdx;
+  isolatedPartIdxRef.current = isolatedPartIdx;
+  modelPartsRef.current = modelParts;
 
   // Camera & Hand Gesture Tracking states (persisted user settings)
   const [cameraActive, setCameraActive] = useState<boolean>(false);
@@ -431,10 +502,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     engine: 'initializing',
     handCount: 0,
     gesture: 'none',
+    candidateGesture: 'none',
+    gestureHoldProgress: 0,
+    gestureSettled: false,
     fingerCount: 0,
     trackedTipCount: 0,
     cursorX: 0.5,
     cursorY: 0.5,
+    cursorDX: 0,
+    cursorDY: 0,
+    hand1VelX: 0,
+    hand1VelY: 0,
     pinchRatio: 0,
     hand1Pinching: false,
     hand2Pinching: false,
@@ -442,7 +520,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     hand2Index: null,
     handTiltAngle: 0,
     twoHandSpan: 0.45,
+    twoHandSpanDelta: 0,
+    twoHandOppositeSpread: false,
+    twoHandMovingCloser: false,
     twoHandAngle: 0,
+    swipeEvent: null,
     confidence: 0,
     tips: []
   };
@@ -466,6 +548,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const runtimeRef = useRef<LabRuntime | null>(null);
 
   const paramsRef = useRef({
+    entryView,
     spaceMode,
     modeId,
     finish,
@@ -489,6 +572,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     virtualGesture
   });
   paramsRef.current = {
+    entryView,
     spaceMode,
     modeId,
     finish,
@@ -515,9 +599,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const smoothTargetRef = useRef({
     scale: 1.0,
     height: 1.0,
-    explode: 0.12,
+    explode: 0.0,
     sliceY: 2.4,
     rotOffset: 0,
+    pitchOffset: 0,
     tiltOffset: 0,
     cursorX: 0,
     cursorY: 1.5,
@@ -525,6 +610,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   });
   const virtualPadDownRef = useRef<boolean>(false);
   const lastPinchStampAtRef = useRef<number>(0);
+  const lastTwoFingerSelectAtRef = useRef<number>(0);
+  const lastReassembleAtRef = useRef<number>(0);
+  const prevGestureRef = useRef<HandGestureId>('none');
+  const lastManualSwipeAtRef = useRef<number>(0);
+  const pointerDownScreenRef = useRef<{ x: number; y: number } | null>(null);
   const awardFlagRef = useRef<boolean>(false);
 
   const activePalette = useMemo(
@@ -779,6 +869,78 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     []
   );
 
+  const restoreIsolatedPart = useCallback((rt: LabRuntime) => {
+    const rest = rt.isolatedRestore;
+    if (rest && rt.model && rt.model.explodables[rest.partIndex]) {
+      const part = rt.model.explodables[rest.partIndex];
+      rt.isolatedPivot.remove(part.mesh);
+      rest.parent.add(part.mesh);
+      part.mesh.position.copy(rest.pos);
+      part.mesh.rotation.copy(rest.rot);
+      part.mesh.scale.copy(rest.scale);
+    }
+    rt.isolatedRestore = null;
+    rt.isolatedHolder.visible = false;
+    rt.isolatedHolder.rotation.set(0, 0, 0);
+    rt.isolatedHolder.scale.set(1, 1, 1);
+    rt.isolatedPivot.scale.set(1, 1, 1);
+    if (rt.model) {
+      rt.model.group.visible = true;
+    }
+  }, []);
+
+  const syncPartIsolation = useCallback(
+    (rt: LabRuntime | null, idx: number | null) => {
+      if (!rt) return;
+      restoreIsolatedPart(rt);
+      if (idx === null || !rt.model || !rt.model.explodables[idx]) {
+        return;
+      }
+
+      const part = rt.model.explodables[idx];
+      const originalParent = part.mesh.parent || rt.model.group;
+      rt.isolatedRestore = {
+        partIndex: idx,
+        parent: originalParent,
+        pos: part.mesh.position.clone(),
+        rot: part.mesh.rotation.clone(),
+        scale: part.mesh.scale.clone()
+      };
+
+      rt.model.group.visible = false;
+      rt.highlightHelper.visible = false;
+
+      rt.isolatedHolder.visible = true;
+      rt.isolatedHolder.position.set(0, 1.85, 0);
+      rt.isolatedHolder.rotation.set(0, 0, 0);
+      rt.isolatedHolder.scale.set(1, 1, 1);
+      rt.isolatedPivot.position.set(0, 0, 0);
+      rt.isolatedPivot.rotation.set(0, 0, 0);
+      rt.isolatedPivot.scale.set(1, 1, 1);
+
+      originalParent.remove(part.mesh);
+      rt.isolatedPivot.add(part.mesh);
+      part.mesh.position.set(0, 0, 0);
+      rt.isolatedHolder.updateMatrixWorld(true);
+
+      _box3Tmp.setFromObject(part.mesh);
+      if (!_box3Tmp.isEmpty()) {
+        _box3Tmp.getCenter(_centerTmp);
+        _box3Tmp.getSize(_sizeTmp);
+        part.mesh.position.set(-_centerTmp.x, -(_centerTmp.y - 1.85), -_centerTmp.z);
+        const maxDim = Math.max(_sizeTmp.x, _sizeTmp.y, _sizeTmp.z, 0.25);
+        const fitScale = THREE.MathUtils.clamp(2.5 / maxDim, 0.65, 2.8);
+        rt.isolatedPivot.scale.setScalar(fitScale);
+      }
+
+      smoothTargetRef.current.rotOffset = 0;
+      smoothTargetRef.current.pitchOffset = 0;
+      smoothTargetRef.current.scale = 1.0;
+      setScaleVal(1.0);
+    },
+    [restoreIsolatedPart]
+  );
+
   const disposeModel = useCallback((model: DynamicModelRef | null) => {
     if (!model) return;
     model.disposables.geometries.forEach((g) => g.dispose());
@@ -793,6 +955,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       palette: AccentPalette,
       softwareGl: boolean
     ) => {
+      restoreIsolatedPart(runtime);
+      setIsolatedPartIdx(null);
+      setHighlightedPartIdx(null);
+      setExplodeVal(0.0);
+      smoothTargetRef.current.explode = 0.0;
+
       if (runtime.model) {
         runtime.rootGroup.remove(runtime.model.group);
         disposeModel(runtime.model);
@@ -829,6 +997,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           windTurbine: built.windTurbine,
           disposables: { geometries: built.geometries, materials: built.materials }
         };
+        setModelParts(built.explodables.map((p) => p.info));
         return;
       }
 
@@ -846,14 +1015,20 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         return m;
       };
 
-      const addPart = (mesh: THREE.Object3D, explodeDir: THREE.Vector3, addEdges = true) => {
+      const addPart = (
+        mesh: THREE.Object3D,
+        explodeDir: THREE.Vector3,
+        info: ExplodablePartInfo,
+        addEdges = true
+      ) => {
         mesh.castShadow = !softwareGl;
         mesh.receiveShadow = !softwareGl;
         group.add(mesh);
         explodables.push({
           mesh,
           basePos: mesh.position.clone(),
-          explodeDir: explodeDir.clone()
+          explodeDir: explodeDir.clone(),
+          info
         });
         if (addEdges && mesh instanceof THREE.Mesh) {
           const edges = new THREE.EdgesGeometry(mesh.geometry, 20);
@@ -872,7 +1047,18 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         const baseGeo = trackGeo(new THREE.BoxGeometry(baseW, 0.14, baseW));
         const baseMesh = new THREE.Mesh(baseGeo, mats.secondary);
         baseMesh.position.set(0, 0.07, 0);
-        addPart(baseMesh, new THREE.Vector3(0, -0.5, 0));
+        addPart(baseMesh, new THREE.Vector3(0, -1.0, 0), {
+          id: 'pyramid_base',
+          nameVi: 'Đáy Hình Vuông ABCD',
+          nameEn: 'Square Base ABCD',
+          badgeVi: 'Mặt đáy',
+          badgeEn: 'Base',
+          introVi: 'Đa giác đáy hình vuông cạnh a = 3.0m nằm trên mặt phẳng chuẩn (Oxy).',
+          introEn: 'Regular square base polygon of side a = 3.0m.',
+          functionVi: 'Chịu lực nâng toàn khối chóp và xác định diện tích đáy B = a².',
+          functionEn: 'Supports the pyramid faces and defines base area B = a².',
+          specFormula: 'S_đáy = a² · Chu vi = 4a'
+        });
 
         const h = 3.2;
         const half = baseW / 2;
@@ -883,6 +1069,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           new THREE.Vector3(-half, 0.14, -half)
         ];
         const apex = new THREE.Vector3(0, h + 0.14, 0);
+        const faceLabels = ['Mặt bên SAB', 'Mặt bên SBC', 'Mặt bên SCD', 'Mặt bên SDA'];
 
         for (let i = 0; i < 4; i++) {
           const a = corners[i];
@@ -893,29 +1080,94 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           faceGeo.computeVertexNormals();
           const faceMesh = new THREE.Mesh(faceGeo, mats.primary);
           const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
-          addPart(faceMesh, new THREE.Vector3(mid.x, 0.5, mid.z).normalize());
+          addPart(faceMesh, new THREE.Vector3(mid.x, 0.65, mid.z).normalize().multiplyScalar(1.45), {
+            id: `pyramid_face_${i + 1}`,
+            nameVi: faceLabels[i],
+            nameEn: `Lateral Face ${i + 1}`,
+            badgeVi: `Mặt bên ${i + 1}/4`,
+            badgeEn: `Face ${i + 1}/4`,
+            introVi: 'Tam giác cân có cạnh đáy a và trung đoạn d = √(h² + (a/2)²).',
+            introEn: 'Isosceles triangular lateral face meeting at apex S.',
+            functionVi: '4 mặt bên bằng nhau hợp thành diện tích xung quanh Sxq = 2·a·d.',
+            functionEn: 'Four congruent triangles forming total lateral surface S_lat = 2ad.',
+            specFormula: 'S_mặt = ½ · a · d'
+          });
         }
 
         const rodGeo = trackGeo(new THREE.CylinderGeometry(0.035, 0.035, h, 12));
         const rodMesh = new THREE.Mesh(rodGeo, mats.glow);
         rodMesh.position.set(0, 0.14 + h / 2, 0);
-        addPart(rodMesh, new THREE.Vector3(0, 0.8, 0), false);
+        addPart(
+          rodMesh,
+          new THREE.Vector3(0, 1.35, 0),
+          {
+            id: 'pyramid_altitude',
+            nameVi: 'Đường Cao SH',
+            nameEn: 'Altitude Axis SH',
+            badgeVi: 'Trục cao',
+            badgeEn: 'Altitude',
+            introVi: 'Đoạn thẳng hạ vuông góc từ đỉnh S xuống tâm H của hình vuông ABCD.',
+            introEn: 'Perpendicular height axis from apex S to base center H.',
+            functionVi: 'Xác định chiều cao h để tính thể tích hình chóp V = ⅓·B·h.',
+            functionEn: 'Defines pyramid height h for volume calculation V = ⅓·B·h.',
+            specFormula: 'V = (1/3) · a² · h'
+          },
+          false
+        );
 
         const apexGeo = trackGeo(new THREE.SphereGeometry(0.14, 20, 20));
         const apexOrb = new THREE.Mesh(apexGeo, mats.glow);
         apexOrb.position.copy(apex);
-        addPart(apexOrb, new THREE.Vector3(0, 1.4, 0), false);
+        addPart(
+          apexOrb,
+          new THREE.Vector3(0, 2.05, 0),
+          {
+            id: 'pyramid_apex',
+            nameVi: 'Đỉnh Chóp S',
+            nameEn: 'Pyramid Apex S',
+            badgeVi: 'Đỉnh S',
+            badgeEn: 'Apex S',
+            introVi: 'Điểm hội tụ chung của 4 cạnh bên SA, SB, SC, SD trong không gian.',
+            introEn: 'Convergence vertex of all four slant edges.',
+            functionVi: 'Tâm đối xứng trục và điểm chuẩn định hướng góc nghiêng mặt bên.',
+            functionEn: 'Anchor vertex determining lateral slant angles.',
+            specFormula: 'SA = SB = SC = SD'
+          },
+          false
+        );
       } else if (nextMode === 'prism') {
         const radius = 1.65;
         const h = 3.1;
         const baseGeo = trackGeo(new THREE.CylinderGeometry(radius, radius, 0.12, 6));
         const botBase = new THREE.Mesh(baseGeo, mats.secondary);
         botBase.position.set(0, 0.06, 0);
-        addPart(botBase, new THREE.Vector3(0, -0.7, 0));
+        addPart(botBase, new THREE.Vector3(0, -1.2, 0), {
+          id: 'prism_bot',
+          nameVi: 'Đáy Dưới Lục Giác Đều',
+          nameEn: 'Bottom Hexagon Base',
+          badgeVi: 'Đáy dưới',
+          badgeEn: 'Bottom Base',
+          introVi: 'Lục giác đều nội tiếp đường tròn bán kính R = 1.65m, gồm 6 tam giác đều.',
+          introEn: 'Regular hexagon base composed of 6 equilateral triangles.',
+          functionVi: 'Làm nền đáy và xác định diện tích đáy B = (3√3/2)·R².',
+          functionEn: 'Defines base footprint and area B = (3√3/2)·R².',
+          specFormula: 'B = (3√3 / 2) · a²'
+        });
 
         const topBase = new THREE.Mesh(baseGeo, mats.secondary);
         topBase.position.set(0, h + 0.12, 0);
-        addPart(topBase, new THREE.Vector3(0, 1.1, 0));
+        addPart(topBase, new THREE.Vector3(0, 1.45, 0), {
+          id: 'prism_top',
+          nameVi: 'Đáy Trên Lục Giác Đều',
+          nameEn: 'Top Hexagon Base',
+          badgeVi: 'Đáy trên',
+          badgeEn: 'Top Base',
+          introVi: 'Mặt đáy song song và bằng với đáy dưới ở độ cao h = 3.1m.',
+          introEn: 'Congruent parallel upper hexagonal cap at height h.',
+          functionVi: 'Khép kín thể tích lăng trụ đứng và giữ khoảng cách song song chuẩn h.',
+          functionEn: 'Seals the prism volume parallel to the bottom face.',
+          specFormula: 'V = B · h'
+        });
 
         const sideWidth = 2 * radius * Math.sin(Math.PI / 6);
         const apothem = radius * Math.cos(Math.PI / 6);
@@ -926,7 +1178,18 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           const wall = new THREE.Mesh(wallGeo, mats.primary);
           wall.position.set(Math.cos(theta) * apothem, 0.12 + h / 2, Math.sin(theta) * apothem);
           wall.rotation.y = -theta + Math.PI / 2;
-          addPart(wall, new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta)));
+          addPart(wall, new THREE.Vector3(Math.cos(theta) * 1.45, 0, Math.sin(theta) * 1.45), {
+            id: `prism_wall_${i + 1}`,
+            nameVi: `Mặt Bên Hình Chữ Nhật #${i + 1}`,
+            nameEn: `Lateral Face #${i + 1}`,
+            badgeVi: `Mặt bên ${i + 1}/6`,
+            badgeEn: `Side ${i + 1}/6`,
+            introVi: 'Mặt bên hình chữ nhật vuông góc hai đáy với kích thước a × h.',
+            introEn: 'Rectangular lateral wall perpendicular to both hexagon bases.',
+            functionVi: 'Tạo thành bao xung quanh Sxq = 6·a·h và chịu lực dọc trục.',
+            functionEn: 'Forms 1/6 of the lateral prism surface area.',
+            specFormula: 'S_xq = 6 · a · h'
+          });
         }
       } else if (nextMode === 'cone_conic') {
         const r = 1.75;
@@ -934,7 +1197,18 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         const diskGeo = trackGeo(new THREE.CylinderGeometry(r, r, 0.1, 48));
         const disk = new THREE.Mesh(diskGeo, mats.secondary);
         disk.position.set(0, 0.05, 0);
-        addPart(disk, new THREE.Vector3(0, -0.7, 0));
+        addPart(disk, new THREE.Vector3(0, -1.2, 0), {
+          id: 'cone_base',
+          nameVi: 'Mặt Đáy Hình Tròn (O, r)',
+          nameEn: 'Circular Base Disk',
+          badgeVi: 'Đáy tròn',
+          badgeEn: 'Base Disk',
+          introVi: 'Hình tròn tâm O bán kính r = 1.75m làm chuẩn dựng đường sinh hình nón.',
+          introEn: 'Circular base of radius r = 1.75m.',
+          functionVi: 'Xác định diện tích đáy S_đáy = πr² để tính thể tích hình nón.',
+          functionEn: 'Defines circular footprint area S = πr².',
+          specFormula: 'S_đáy = π · r²'
+        });
 
         const outerConeGeo = trackGeo(new THREE.ConeGeometry(r, h, 48, 1, true));
         const outerConeMat = trackMat(
@@ -943,7 +1217,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             roughness: 0.15,
             metalness: 0.1,
             transparent: true,
-            opacity: 0.42,
+            opacity: 0.55,
             side: THREE.DoubleSide,
             clippingPlanes: [runtime.slicePlane],
             clipShadows: true
@@ -951,21 +1225,133 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         );
         const outerCone = new THREE.Mesh(outerConeGeo, outerConeMat);
         outerCone.position.set(0, 0.1 + h / 2, 0);
-        addPart(outerCone, new THREE.Vector3(0, 0.7, 0), false);
+        addPart(
+          outerCone,
+          new THREE.Vector3(0, 1.25, 0),
+          {
+            id: 'cone_shell',
+            nameVi: 'Mặt Xung Quanh Hình Nón',
+            nameEn: 'Conical Lateral Shell',
+            badgeVi: 'Mặt nón',
+            badgeEn: 'Cone Shell',
+            introVi: 'Mặt tròn xoay sinh bởi đường sinh l = √(r² + h²) quay quanh trục.',
+            introEn: 'Conical revolution surface swept by slant line l.',
+            functionVi: 'Cho phép mặt phẳng cắt nghiêng tạo ra Elip, Parabol và Hyperbol.',
+            functionEn: 'Generates conic sections when intersected by planes.',
+            specFormula: 'S_xq = π · r · l'
+          },
+          false
+        );
 
         const conicPlaneGeo = trackGeo(new THREE.TorusGeometry(1.12, 0.045, 16, 64));
         const conicRing = new THREE.Mesh(conicPlaneGeo, mats.glow);
         conicRing.position.set(0, 1.55, 0);
         conicRing.rotation.set(Math.PI / 2 - 0.52, 0, 0.28);
         conicRing.scale.set(1.0, 1.32, 1.0);
-        addPart(conicRing, new THREE.Vector3(0.8, 0.6, 0), false);
+        addPart(
+          conicRing,
+          new THREE.Vector3(1.5, 0.9, 0),
+          {
+            id: 'cone_ellipse',
+            nameVi: 'Thiết Diện Đường Conic (Elip)',
+            nameEn: 'Conic Ellipse Cross-Section',
+            badgeVi: 'Thiết diện',
+            badgeEn: 'Ellipse',
+            introVi: 'Giao tuyến cong kín hình Elip tạo bởi mặt phẳng cắt nghiêng cắt mọi đường sinh.',
+            introEn: 'Closed elliptical intersection curve from oblique slicing plane.',
+            functionVi: 'Minh họa phương trình chính tắc x²/a² + y²/b² = 1 trong không gian 3D.',
+            functionEn: 'Visualizes canonical ellipse x²/a² + y²/b² = 1 in 3D.',
+            specFormula: 'x²/a² + y²/b² = 1'
+          },
+          false
+        );
       } else if (nextMode === 'platonic') {
-        const platonicSpecs: { geo: THREE.BufferGeometry; dir: THREE.Vector3; sec: boolean }[] = [
-          { geo: new THREE.TetrahedronGeometry(0.65), dir: new THREE.Vector3(0, 1.3, 0), sec: false },
-          { geo: new THREE.BoxGeometry(0.95, 0.95, 0.95), dir: new THREE.Vector3(-1.3, 0.3, 0.6), sec: true },
-          { geo: new THREE.OctahedronGeometry(1.18), dir: new THREE.Vector3(1.3, 0.3, 0.6), sec: false },
-          { geo: new THREE.DodecahedronGeometry(1.48), dir: new THREE.Vector3(-0.9, 0.4, -1.1), sec: true },
-          { geo: new THREE.IcosahedronGeometry(1.85), dir: new THREE.Vector3(0.9, 0.4, -1.1), sec: false }
+        const platonicSpecs: { geo: THREE.BufferGeometry; dir: THREE.Vector3; sec: boolean; info: ExplodablePartInfo }[] = [
+          {
+            geo: new THREE.TetrahedronGeometry(0.65),
+            dir: new THREE.Vector3(0, 1.8, 0),
+            sec: false,
+            info: {
+              id: 'platonic_tetra',
+              nameVi: 'Tứ Diện Đều {3, 3}',
+              nameEn: 'Regular Tetrahedron',
+              badgeVi: '4 Mặt',
+              badgeEn: '4 Faces',
+              introVi: 'Đa diện đều đơn giản nhất gồm 4 mặt tam giác đều, 4 đỉnh, 6 cạnh.',
+              introEn: 'Simplest Platonic solid with 4 equilateral triangle faces.',
+              functionVi: 'Khối lõi trong cấu trúc lồng ghép Platon thỏa V - E + F = 2.',
+              functionEn: 'Innermost core solid obeying Euler V - E + F = 2.',
+              specFormula: 'V=4, E=6, F=4'
+            }
+          },
+          {
+            geo: new THREE.BoxGeometry(0.95, 0.95, 0.95),
+            dir: new THREE.Vector3(-1.8, 0.5, 0.9),
+            sec: true,
+            info: {
+              id: 'platonic_cube',
+              nameVi: 'Hình Lập Phương {4, 3}',
+              nameEn: 'Hexahedron (Cube)',
+              badgeVi: '6 Mặt',
+              badgeEn: '6 Faces',
+              introVi: '6 mặt hình vuông bằng nhau, 8 đỉnh, 12 cạnh vuông góc trực giao.',
+              introEn: 'Six square faces, 8 vertices, 12 orthogonal edges.',
+              functionVi: 'Đối ngẫu hình học với khối Bát diện đều.',
+              functionEn: 'Geometric dual of the regular octahedron.',
+              specFormula: 'V=8, E=12, F=6'
+            }
+          },
+          {
+            geo: new THREE.OctahedronGeometry(1.18),
+            dir: new THREE.Vector3(1.8, 0.5, 0.9),
+            sec: false,
+            info: {
+              id: 'platonic_octa',
+              nameVi: 'Bát Diện Đều {3, 4}',
+              nameEn: 'Regular Octahedron',
+              badgeVi: '8 Mặt',
+              badgeEn: '8 Faces',
+              introVi: '8 mặt tam giác đều ghép hai chóp tứ giác đều chung đáy.',
+              introEn: 'Eight equilateral triangular faces forming two joined pyramids.',
+              functionVi: 'Khối đối ngẫu của hình lập phương và hay gặp trong tinh thể.',
+              functionEn: 'Dual polyhedron of the cube, common in crystal lattices.',
+              specFormula: 'V=6, E=12, F=8'
+            }
+          },
+          {
+            geo: new THREE.DodecahedronGeometry(1.48),
+            dir: new THREE.Vector3(-1.45, 0.55, -1.5),
+            sec: true,
+            info: {
+              id: 'platonic_dodeca',
+              nameVi: 'Thập Nhị Diện Đều {5, 3}',
+              nameEn: 'Regular Dodecahedron',
+              badgeVi: '12 Mặt',
+              badgeEn: '12 Faces',
+              introVi: '12 mặt ngũ giác đều, 20 đỉnh, 30 cạnh với tỉ lệ vàng φ.',
+              introEn: 'Twelve regular pentagonal faces, 20 vertices, 30 edges.',
+              functionVi: 'Thể hiện tính đối xứng 5 bậc và tỉ lệ vàng trong không gian.',
+              functionEn: 'Demonstrates 5-fold symmetry and golden ratio proportions.',
+              specFormula: 'V=20, E=30, F=12'
+            }
+          },
+          {
+            geo: new THREE.IcosahedronGeometry(1.85),
+            dir: new THREE.Vector3(1.45, 0.55, -1.5),
+            sec: false,
+            info: {
+              id: 'platonic_icosa',
+              nameVi: 'Nhị Thập Diện Đều {3, 5}',
+              nameEn: 'Regular Icosahedron',
+              badgeVi: '20 Mặt',
+              badgeEn: '20 Faces',
+              introVi: '20 mặt tam giác đều hội tụ 5 mặt tại mỗi đỉnh, 12 đỉnh, 30 cạnh.',
+              introEn: 'Twenty equilateral triangles with 5 meeting per vertex.',
+              functionVi: 'Lớp vỏ ngoài gần cầu nhất trong 5 khối đa diện Platon.',
+              functionEn: 'Outermost spherical-approximation shell in Platonic nesting.',
+              specFormula: 'V=12, E=30, F=20'
+            }
+          }
         ];
         platonicSpecs.forEach((spec, idx) => {
           trackGeo(spec.geo);
@@ -980,7 +1366,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 roughness: 0.25 + idx * 0.08,
                 metalness: 0.35,
                 transparent: true,
-                opacity: Math.max(0.28, 0.9 - idx * 0.14),
+                opacity: Math.max(0.32, 0.9 - idx * 0.13),
                 side: THREE.DoubleSide,
                 clippingPlanes: [runtime.slicePlane],
                 clipShadows: true
@@ -988,7 +1374,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             );
           }
           m.position.set(0, 2.0, 0);
-          addPart(m, spec.dir);
+          addPart(m, spec.dir, spec.info);
         });
       } else if (nextMode === 'sphere_slice') {
         const R = 1.95;
@@ -1007,12 +1393,44 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         );
         const outerSphere = new THREE.Mesh(outerGeo, outerMat);
         outerSphere.position.set(0, R + 0.15, 0);
-        addPart(outerSphere, new THREE.Vector3(0, 0.6, 0), false);
+        addPart(
+          outerSphere,
+          new THREE.Vector3(0, 1.3, 0),
+          {
+            id: 'sphere_shell',
+            nameVi: 'Vỏ Mặt Cầu (S)',
+            nameEn: 'Spherical Surface Shell',
+            badgeVi: 'Mặt cầu',
+            badgeEn: 'Sphere Shell',
+            introVi: 'Tập hợp mọi điểm M(x, y, z) cách đều tâm I cố định đúng bằng R.',
+            introEn: 'Locus of points equidistant R from center I.',
+            functionVi: 'Cho phép cắt ngang tạo thiết diện tròn bán kính r = √(R² - d²).',
+            functionEn: 'Yields circular slice radius r = √(R² - d²).',
+            specFormula: 'S = 4πR² · V = (4/3)πR³'
+          },
+          false
+        );
 
         const coreGeo = trackGeo(new THREE.SphereGeometry(0.45, 24, 24));
         const coreMesh = new THREE.Mesh(coreGeo, mats.glow);
         coreMesh.position.set(0, R + 0.15, 0);
-        addPart(coreMesh, new THREE.Vector3(0, 0, 0), false);
+        addPart(
+          coreMesh,
+          new THREE.Vector3(0, -0.6, 0),
+          {
+            id: 'sphere_core',
+            nameVi: 'Tâm Mặt Cầu I(a, b, c)',
+            nameEn: 'Sphere Center Core I',
+            badgeVi: 'Tâm I',
+            badgeEn: 'Center I',
+            introVi: 'Tâm đối xứng mọi phương của mặt cầu trong hệ trục Oxyz.',
+            introEn: 'Omnidirectional symmetry center of the sphere.',
+            functionVi: 'Làm gốc đo khoảng cách d(I, (P)) xác định giao tuyến tròn.',
+            functionEn: 'Origin for measuring plane distance d(I, P).',
+            specFormula: 'r_giao = √(R² - d²)'
+          },
+          false
+        );
 
         const cutGeo = trackGeo(new THREE.TorusGeometry(1.0, 0.045, 16, 64));
         sphereCutRing = new THREE.Mesh(cutGeo, mats.glow);
@@ -1023,18 +1441,61 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         const plinthGeo = trackGeo(new THREE.CylinderGeometry(0.65, 0.85, 0.18, 24));
         const plinth = new THREE.Mesh(plinthGeo, mats.secondary);
         plinth.position.set(0, 0.09, 0);
-        addPart(plinth, new THREE.Vector3(0, -0.4, 0), false);
+        addPart(
+          plinth,
+          new THREE.Vector3(0, -0.8, 0),
+          {
+            id: 'oxyz_plinth',
+            nameVi: 'Đế Gốc Tọa Độ O(0,0,0)',
+            nameEn: 'Origin Coordinate Plinth',
+            badgeVi: 'Gốc O',
+            badgeEn: 'Origin O',
+            introVi: 'Bệ chuẩn định vị mặt phẳng Oxz trong không gian vẽ Oxyz.',
+            introEn: 'Reference base anchoring the Oxz coordinate plane.',
+            functionVi: 'Giúp ước lượng độ cao y và tọa độ 3 chiều của các nét Neon.',
+            functionEn: 'Anchors spatial scale and vertical height y.',
+            specFormula: 'O(0, 0, 0)'
+          },
+          false
+        );
 
         const coreOctGeo = trackGeo(new THREE.OctahedronGeometry(0.32));
         const coreOct = new THREE.Mesh(coreOctGeo, mats.glow);
         coreOct.position.set(0, 1.5, 0);
-        addPart(coreOct, new THREE.Vector3(0, 0.5, 0));
+        addPart(coreOct, new THREE.Vector3(0, 1.1, 0), {
+          id: 'oxyz_beacon',
+          nameVi: 'Tâm Tham Chiếu Không Gian',
+          nameEn: 'Spatial Beacon Octahedron',
+          badgeVi: 'Tâm chuẩn',
+          badgeEn: 'Beacon',
+          introVi: 'Khối bát diện phát sáng đặt tại độ cao chuẩn y = 1.5m.',
+          introEn: 'Luminous octahedral reference at standard height y = 1.5m.',
+          functionVi: 'Là điểm mốc trung tâm để xoay và cân đối khối vẽ 3D.',
+          functionEn: 'Central anchor around which 3D neon strokes orbit.',
+          specFormula: 'r(t) = (x(t), y(t), z(t))'
+        });
 
         const orbitRingGeo = trackGeo(new THREE.TorusGeometry(1.35, 0.02, 12, 64));
         const orbitRing = new THREE.Mesh(orbitRingGeo, mats.primary);
         orbitRing.rotation.x = Math.PI / 2;
         orbitRing.position.set(0, 1.5, 0);
-        addPart(orbitRing, new THREE.Vector3(0, 0.2, 0), false);
+        addPart(
+          orbitRing,
+          new THREE.Vector3(1.2, 0.4, 0),
+          {
+            id: 'oxyz_ring',
+            nameVi: 'Vòng Định Hướng Đường Chân Trời',
+            nameEn: 'Horizon Orientation Ring',
+            badgeVi: 'Vòng chuẩn',
+            badgeEn: 'Guide Ring',
+            introVi: 'Vòng tròn bán kính 1.35m bao quanh vùng thao tác tay Oxyz.',
+            introEn: 'Horizontal reference ring framing the 3D sculpt zone.',
+            functionVi: 'Giúp căn tỷ lệ khi đặt khối kiến tạo Voxel hoặc vẽ ống cong.',
+            functionEn: 'Assists depth perception during 3D sculpting.',
+            specFormula: 'x² + z² = 1.35²'
+          },
+          false
+        );
       } else if (nextMode === 'wave_surface') {
         const size = 5.4;
         const segs = 56;
@@ -1064,16 +1525,50 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         );
         const waveMesh = new THREE.Mesh(waveGeo, waveMat);
         waveMesh.position.set(0, 1.35, 0);
-        addPart(waveMesh, new THREE.Vector3(0, 0.4, 0), false);
+        addPart(
+          waveMesh,
+          new THREE.Vector3(0, 1.15, 0),
+          {
+            id: 'wave_field',
+            nameVi: 'Mặt Sóng Giao Thoa Hai Nguồn',
+            nameEn: 'Two-Source Wave Field Mesh',
+            badgeVi: 'Mặt sóng',
+            badgeEn: 'Wave Field',
+            introVi: 'Lưới 56×56 đỉnh mô phỏng tổng hợp biên độ từ hai nguồn S₁ và S₂.',
+            introEn: 'Dynamic 56×56 vertex surface summing two coherent wave sources.',
+            functionVi: 'Hiển thị các vân cực đại (cộng hưởng) và cực tiểu (triệt tiêu) theo thời gian thực.',
+            functionEn: 'Displays constructive antinodes and destructive nodal lines.',
+            specFormula: 'u = A·[cos(kr₁-ωt) + cos(kr₂-ωt)]'
+          },
+          false
+        );
 
         const emitterGeo = trackGeo(new THREE.CylinderGeometry(0.12, 0.18, 1.15, 16));
-        [-1.6, 1.6].forEach((xPos) => {
+        [-1.6, 1.6].forEach((xPos, sIdx) => {
           const tower = new THREE.Mesh(emitterGeo, mats.secondary);
           tower.position.set(xPos, 0.58, 0);
-          addPart(tower, new THREE.Vector3(Math.sign(xPos), -0.3, 0), false);
+          addPart(
+            tower,
+            new THREE.Vector3(Math.sign(xPos) * 1.4, -0.6, 0),
+            {
+              id: `wave_source_${sIdx + 1}`,
+              nameVi: `Nguồn Phát Sóng Kết Hợp S${sIdx + 1}`,
+              nameEn: `Coherent Wave Source S${sIdx + 1}`,
+              badgeVi: `Nguồn S${sIdx + 1}`,
+              badgeEn: `Source S${sIdx + 1}`,
+              introVi: `Cần rung dao động điều hòa đặt tại x = ${xPos}m, cùng tần số f và cùng pha.`,
+              introEn: `Harmonic wave emitter positioned at x = ${xPos}m.`,
+              functionVi: 'Phát sóng tròn đồng tâm lan truyền trên mặt lưới tạo giao thoa.',
+              functionEn: 'Emits concentric circular waves creating interference patterns.',
+              specFormula: 'Δd = r₂ - r₁ = k·λ'
+            },
+            false
+          );
         });
       } else if (nextMode === 'quantum_atom') {
         const centerY = 2.05;
+        const nucleusGroup = new THREE.Group();
+        nucleusGroup.position.set(0, centerY, 0);
         const nucleonGeo = trackGeo(new THREE.SphereGeometry(0.24, 18, 18));
         const offsets = [
           [0, 0, 0],
@@ -1084,9 +1579,26 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         ];
         offsets.forEach(([ox, oy, oz], idx) => {
           const nuc = new THREE.Mesh(nucleonGeo, idx % 2 === 0 ? mats.glow : mats.secondary);
-          nuc.position.set(ox, centerY + oy, oz);
-          addPart(nuc, new THREE.Vector3(ox * 2, oy * 2, oz * 2), false);
+          nuc.position.set(ox, oy, oz);
+          nucleusGroup.add(nuc);
         });
+        addPart(
+          nucleusGroup,
+          new THREE.Vector3(0, -1.2, 0),
+          {
+            id: 'atom_nucleus',
+            nameVi: 'Hạt Nhân Nguyên Tử (Proton & Neutron)',
+            nameEn: 'Atomic Nucleus Cluster',
+            badgeVi: 'Hạt nhân',
+            badgeEn: 'Nucleus',
+            introVi: 'Cụm hạt nhân mang điện tích dương (+Ze) tập trung gần như toàn bộ khối lượng.',
+            introEn: 'Positively charged core of protons and neutrons.',
+            functionVi: 'Tạo lực hút tĩnh điện Coulomb giữ các electron chuyển động trên quỹ đạo.',
+            functionEn: 'Provides Coulomb attraction binding orbital electrons.',
+            specFormula: 'F = k·Z·e² / r²'
+          },
+          false
+        );
 
         atomElectrons = [];
         const tilts: [number, number, number][] = [
@@ -1096,13 +1608,30 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           [0.2, 1.2, -1.1]
         ];
         const eGeo = trackGeo(new THREE.SphereGeometry(0.13, 16, 16));
+        const shellNames = ['Lớp K (n=1)', 'Lớp L (n=2)', 'Lớp M (n=3)', 'Lớp N (n=4)'];
         tilts.forEach((tilt, idx) => {
           const r = 1.35 + idx * 0.34;
           const ringGeo = trackGeo(new THREE.TorusGeometry(r, 0.025, 12, 64));
           const ring = new THREE.Mesh(ringGeo, idx % 2 === 0 ? mats.primary : mats.secondary);
           ring.position.set(0, centerY, 0);
           ring.rotation.set(tilt[0], tilt[1], tilt[2]);
-          addPart(ring, new THREE.Vector3(Math.cos(idx * 1.5), 0.3, Math.sin(idx * 1.5)), false);
+          addPart(
+            ring,
+            new THREE.Vector3(Math.cos(idx * 1.55) * 1.65, 0.55, Math.sin(idx * 1.55) * 1.65),
+            {
+              id: `atom_shell_${idx + 1}`,
+              nameVi: `Quỹ Đạo Dừng ${shellNames[idx]}`,
+              nameEn: `Bohr Orbit Shell n=${idx + 1}`,
+              badgeVi: `Mức n=${idx + 1}`,
+              badgeEn: `Shell n=${idx + 1}`,
+              introVi: `Quỹ đạo lượng tử bán kính r = ${r.toFixed(2)}m với mức năng lượng gián đoạn.`,
+              introEn: `Quantized orbital ring at radius r = ${r.toFixed(2)}m.`,
+              functionVi: 'Quy định trạng thái dừng của electron; chuyển mức sẽ phát/hấp thụ photon.',
+              functionEn: 'Hosts orbiting electrons; transitions emit or absorb photons.',
+              specFormula: `E_${idx + 1} = -13.6 / ${(idx + 1) * (idx + 1)} eV`
+            },
+            false
+          );
 
           const electron = new THREE.Mesh(eGeo, mats.glow);
           group.add(electron);
@@ -1135,11 +1664,45 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         const tubeGeoA = trackGeo(new THREE.TubeGeometry(curveA, 72, 0.085, 12, false));
         const tubeGeoB = trackGeo(new THREE.TubeGeometry(curveB, 72, 0.085, 12, false));
 
-        addPart(new THREE.Mesh(tubeGeoA, mats.primary), new THREE.Vector3(-0.9, 0, 0), false);
-        addPart(new THREE.Mesh(tubeGeoB, mats.secondary), new THREE.Vector3(0.9, 0, 0), false);
+        addPart(
+          new THREE.Mesh(tubeGeoA, mats.primary),
+          new THREE.Vector3(-1.75, 0, 0),
+          {
+            id: 'dna_strand_a',
+            nameVi: "Mạch Khung Đường-Photphat 3'→5'",
+            nameEn: "Backbone Strand A (3'→5')",
+            badgeVi: 'Mạch A',
+            badgeEn: 'Strand A',
+            introVi: 'Khung xương ngoài xoắn đều tạo từ phân tử đường Deoxyribose và nhóm Photphat.',
+            introEn: 'Helical sugar-phosphate backbone running 3′ to 5′.',
+            functionVi: 'Bảo vệ trình tự mã di truyền và làm mạch khuôn khi nhân đôi DNA.',
+            functionEn: 'Stabilizes genetic sequence and acts as replication template.',
+            specFormula: 'Bước xoắn = 34 Å · 10 cặp/vòng'
+          },
+          false
+        );
+        addPart(
+          new THREE.Mesh(tubeGeoB, mats.secondary),
+          new THREE.Vector3(1.75, 0, 0),
+          {
+            id: 'dna_strand_b',
+            nameVi: "Mạch Khung Đối Song 5'→3'",
+            nameEn: "Antiparallel Strand B (5'→3')",
+            badgeVi: 'Mạch B',
+            badgeEn: 'Strand B',
+            introVi: 'Mạch xoắn thứ hai chạy ngược chiều đối song và xoắn quanh trục chung.',
+            introEn: 'Complementary backbone running antiparallel around the axis.',
+            functionVi: 'Giúp cấu trúc xoắn kép bền vững và tự sửa sai khi sao chép.',
+            functionEn: 'Provides structural complementarity and error correction.',
+            specFormula: 'A = T, G = X (Chargaff)'
+          },
+          false
+        );
 
         const rungGeo = trackGeo(new THREE.CylinderGeometry(0.04, 0.04, radius * 0.96, 10));
         rungGeo.rotateZ(Math.PI / 2);
+        const rungsAGroup = new THREE.Group();
+        const rungsBGroup = new THREE.Group();
         const pairs = 15;
         for (let i = 1; i <= pairs; i++) {
           const t = i / (pairs + 1);
@@ -1151,13 +1714,48 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           const halfA = new THREE.Mesh(rungGeo, i % 2 === 0 ? mats.glow : mats.primary);
           halfA.position.copy(pA).lerp(mid, 0.5);
           halfA.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir);
-          addPart(halfA, dir.clone().multiplyScalar(-0.7), false);
+          rungsAGroup.add(halfA);
 
           const halfB = new THREE.Mesh(rungGeo, i % 2 === 0 ? mats.secondary : mats.glow);
           halfB.position.copy(pB).lerp(mid, 0.5);
           halfB.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir);
-          addPart(halfB, dir.clone().multiplyScalar(0.7), false);
+          rungsBGroup.add(halfB);
         }
+
+        addPart(
+          rungsAGroup,
+          new THREE.Vector3(-0.95, 0.35, 0.95),
+          {
+            id: 'dna_bases_a',
+            nameVi: 'Dãy Bazơ Nitơ Nhánh A (A / G)',
+            nameEn: 'Nitrogenous Bases Side A',
+            badgeVi: 'Bazơ nhánh A',
+            badgeEn: 'Bases A',
+            introVi: 'Các bazơ nitơ gắn vào mạch A hướng vào tâm xoắn kép.',
+            introEn: 'Nitrogenous bases anchored to strand A facing the helix core.',
+            functionVi: 'Lưu giữ thông tin di truyền qua trật tự sắp xếp 4 loại đơn phân A, T, G, X.',
+            functionEn: 'Encodes genetic information via base sequence.',
+            specFormula: '2–3 liên kết Hydro'
+          },
+          false
+        );
+        addPart(
+          rungsBGroup,
+          new THREE.Vector3(0.95, 0.35, -0.95),
+          {
+            id: 'dna_bases_b',
+            nameVi: 'Dãy Bazơ Bổ Sung Nhánh B (T / X)',
+            nameEn: 'Complementary Bases Side B',
+            badgeVi: 'Bazơ nhánh B',
+            badgeEn: 'Bases B',
+            introVi: 'Các bazơ bổ sung liên kết Hydro với nhánh A theo nguyên tắc A–T, G–X.',
+            introEn: 'Complementary base rungs pairing A–T and G–C.',
+            functionVi: 'Tách liên kết Hydro ở giữa khi enzyme Helicase tháo xoắn nhân đôi.',
+            functionEn: 'Unzips hydrogen bonds centrally during DNA replication.',
+            specFormula: 'A-T (2 H) · G-X (3 H)'
+          },
+          false
+        );
       }
 
       runtime.rootGroup.add(group);
@@ -1170,8 +1768,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         sphereCutRing,
         disposables: { geometries, materials }
       };
+      setModelParts(explodables.map((p) => p.info));
     },
-    [buildMaterials, disposeModel]
+    [buildMaterials, disposeModel, restoreIsolatedPart]
   );
 
   // Dedicated Unified MediaPipe Hand-Tracking Loop (FPS-throttled per gestureSettings.trackingFps)
@@ -1201,6 +1800,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           smoothing: gs.smoothing,
           deadzone: gs.deadzone,
           stabilityFrames: gs.stabilityFrames,
+          gestureHoldMs: gs.gestureHoldMs,
           invertX: gs.invertX,
           invertY: gs.invertY
         });
@@ -1322,6 +1922,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const rootGroup = new THREE.Group();
     scene.add(rootGroup);
 
+    const isolatedHolder = new THREE.Group();
+    isolatedHolder.position.set(0, 1.85, 0);
+    isolatedHolder.visible = false;
+    const isolatedPivot = new THREE.Group();
+    isolatedHolder.add(isolatedPivot);
+    scene.add(isolatedHolder);
+
+    const highlightHelper = new THREE.BoxHelper(new THREE.Object3D(), 0x22d3ee);
+    highlightHelper.visible = false;
+    scene.add(highlightHelper);
+
     const strokesGroup = new THREE.Group();
     scene.add(strokesGroup);
 
@@ -1377,6 +1988,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       renderer,
       controls,
       rootGroup,
+      isolatedHolder,
+      isolatedPivot,
+      isolatedRestore: null,
+      highlightHelper,
       axesGroup,
       floorGroup,
       slicePlane,
@@ -1394,6 +2009,51 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       activePreviewLineH2: null
     };
     runtimeRef.current = runtime;
+
+    const handleCanvasPointerDown = (e: PointerEvent) => {
+      pointerDownScreenRef.current = { x: e.clientX, y: e.clientY };
+    };
+    const handleCanvasPointerUp = (e: PointerEvent) => {
+      const down = pointerDownScreenRef.current;
+      pointerDownScreenRef.current = null;
+      if (!down) return;
+      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) return;
+      if (paramsRef.current.spaceMode !== '3d' || isolatedPartIdxRef.current !== null || !runtime.model) {
+        return;
+      }
+      const rect = renderer.domElement.getBoundingClientRect();
+      _pointerNdc.set(
+        ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1,
+        -((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1
+      );
+      _raycaster.setFromCamera(_pointerNdc, camera);
+      const hits = _raycaster.intersectObject(runtime.model.group, true);
+      if (hits.length === 0) return;
+
+      let matchedIdx = -1;
+      for (const hit of hits) {
+        let obj: THREE.Object3D | null = hit.object;
+        while (obj && obj !== runtime.model.group) {
+          const found = runtime.model.explodables.findIndex((p) => p.mesh === obj);
+          if (found !== -1) {
+            matchedIdx = found;
+            break;
+          }
+          obj = obj.parent;
+        }
+        if (matchedIdx !== -1) break;
+      }
+
+      if (matchedIdx !== -1) {
+        setHighlightedPartIdx(matchedIdx);
+        setIsolatedPartIdx(matchedIdx);
+        setPartCardMinimized(false);
+        const info = runtime.model.explodables[matchedIdx].info;
+        showToast(`Đã chọn bộ phận: ${info.nameVi}`);
+      }
+    };
+    renderer.domElement.addEventListener('pointerdown', handleCanvasPointerDown);
+    renderer.domElement.addEventListener('pointerup', handleCanvasPointerUp);
 
     rebuildModel(runtime, paramsRef.current.modeId, paramsRef.current.finish, ACCENT_PALETTES[0], softwareGl);
 
@@ -1515,8 +2175,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       const elapsed = clock.getElapsedTime();
       const cfg = paramsRef.current;
 
-      // Only render 3D canvas while in 3D space mode
-      if (cfg.spaceMode === '3d') {
+      // Only render 3D canvas while in Studio 3D space mode
+      if (cfg.entryView === 'studio' && cfg.spaceMode === '3d') {
         const res = handFrameRef.current;
         const handDetected = cfg.cameraActive && res.detected;
         const currentGesture: HandGestureId = cfg.cameraActive
@@ -1527,7 +2187,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
         let cursorNormX = handDetected ? res.cursorX : 0.5;
         let cursorNormY = handDetected ? res.cursorY : 0.5;
-        const twoHandSpanVal = handDetected ? res.twoHandSpan : 0.45;
 
         // Sync 10 dedicated 3D fingertip sensors in Oxyz
         if (handDetected) {
@@ -1564,13 +2223,83 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             ? 'none'
             : cfg.gestureSettings.gestureActions3D[currentGesture] ?? 'none';
 
-        const shouldPushUi = elapsed - lastUiPush > 0.12;
+        const shouldPushUi = elapsed - lastUiPush > 0.11;
         if (shouldPushUi) lastUiPush = elapsed;
+
+        const isIsolated = isolatedPartIdxRef.current !== null;
+        const rotSens = cfg.gestureSettings.rotationSensitivity || 2.35;
 
         const isPinchActive =
           activeControl &&
           (mapped3DAction === 'pinch_stamp_scale' ||
             (handDetected && (res.hand1Pinching || res.hand2Pinching) && mapped3DAction !== 'none'));
+
+        // 1. UNIFIED SWIPE LEFT/RIGHT: cycle between exploded/isolated parts
+        if (handDetected && res.swipeEvent && modelPartsRef.current.length > 0) {
+          const total = modelPartsRef.current.length;
+          if (smoothTargetRef.current.explode >= 0.25 || isIsolated) {
+            const dir = res.swipeEvent === 'right' ? 1 : -1;
+            const baseIdx =
+              isolatedPartIdxRef.current !== null
+                ? isolatedPartIdxRef.current
+                : highlightedPartIdxRef.current ?? 0;
+            const nextIdx = (baseIdx + dir + total) % total;
+            setHighlightedPartIdx(nextIdx);
+            if (isIsolated) {
+              setIsolatedPartIdx(nextIdx);
+            }
+            const nextInfo = modelPartsRef.current[nextIdx];
+            showToast(
+              `${res.swipeEvent === 'right' ? 'Tiếp →' : '← Trước'} ${nextInfo.nameVi} (${nextIdx + 1}/${total})`
+            );
+          }
+        }
+
+        // 2. RISING-EDGE 2-FINGER SELECTION: isolate / exit highlighted part when exploded
+        const nowPerfMs = performance.now();
+        const isTwoFingerSelectEdge =
+          handDetected &&
+          currentGesture === 'slice_2' &&
+          prevGestureRef.current !== 'slice_2' &&
+          nowPerfMs - lastTwoFingerSelectAtRef.current > 850 &&
+          modelPartsRef.current.length > 0 &&
+          (smoothTargetRef.current.explode >= 0.25 || isIsolated);
+
+        if (isTwoFingerSelectEdge) {
+          lastTwoFingerSelectAtRef.current = nowPerfMs;
+          if (isIsolated) {
+            setIsolatedPartIdx(null);
+            showToast('Quay lại toàn bộ mô hình đã tách');
+          } else {
+            const pickIdx = highlightedPartIdxRef.current ?? 0;
+            setHighlightedPartIdx(pickIdx);
+            setIsolatedPartIdx(pickIdx);
+            setPartCardMinimized(false);
+            showToast(`Xem chi tiết: ${modelPartsRef.current[pickIdx].nameVi}`);
+          }
+        }
+
+        // 3. RISING-EDGE 4-FINGER REASSEMBLE: merge all separated/isolated parts smoothly back together
+        const isReassembleEdge =
+          activeControl &&
+          mapped3DAction === 'reassemble_parts' &&
+          (currentGesture !== prevGestureRef.current || nowPerfMs - lastReassembleAtRef.current > 850) &&
+          (smoothTargetRef.current.explode > 0.04 || isIsolated);
+
+        if (isReassembleEdge) {
+          lastReassembleAtRef.current = nowPerfMs;
+          smoothTargetRef.current.explode = 0;
+          setExplodeVal(0);
+          setIsolatedPartIdx(null);
+          setHighlightedPartIdx(null);
+          showToast(
+            isEn
+              ? '4 Fingers · Reassembled full 3D model!'
+              : '4 Ngón · Đã ghép mô hình về nguyên trạng!'
+          );
+        }
+
+        let isZoomGestureActive = false;
 
         if (activeControl && mapped3DAction !== 'none') {
           const targetX = (cursorNormX - 0.5) * 6.4;
@@ -1590,10 +2319,55 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             setAutoSpin((v) => !v);
           }
 
-          // 1-Finger OR 2-Hand Symmetrical Dual Neon Tube Sculpting
+          // TWO-HAND UNIFIED COMMANDS (strictly separated):
+          // - Pulling 2 hands opposite left/right -> ONLY triggers Explode/Separate Structure
+          // - Moving 2 hands closer together -> ONLY triggers Zoom Out (shrink)
+          if (handDetected && res.handCount === 2) {
+            if (res.twoHandOppositeSpread && !isIsolated) {
+              const step = Math.max(0.015, res.twoHandSpanDelta * 3.4);
+              const nextExp = THREE.MathUtils.clamp(smoothTargetRef.current.explode + step, 0, 1.85);
+              smoothTargetRef.current.explode = nextExp;
+              if (highlightedPartIdxRef.current === null && modelPartsRef.current.length > 0 && nextExp >= 0.25) {
+                setHighlightedPartIdx(0);
+              }
+              if (shouldPushUi) {
+                setExplodeVal(+nextExp.toFixed(2));
+              }
+            } else if (res.twoHandMovingCloser) {
+              isZoomGestureActive = true;
+              const shrinkStep = Math.max(0.014, Math.abs(res.twoHandSpanDelta) * 3.0);
+              const nextScale = THREE.MathUtils.clamp(smoothTargetRef.current.scale - shrinkStep, 0.42, 2.45);
+              smoothTargetRef.current.scale = nextScale;
+              if (shouldPushUi) {
+                setScaleVal(+nextScale.toFixed(2));
+              }
+            }
+          }
+
+          // ONE-HAND PULL UPWARD -> Zoom In (Enlarge model / isolated part)
+          const isPullingUp1Hand =
+            handDetected &&
+            res.handCount === 1 &&
+            res.hand1VelY < -0.18 &&
+            Math.abs(res.hand1VelX) < 0.28 &&
+            currentGesture !== 'fist_0' &&
+            !(cfg.modeId === 'freehand_oxyz' && currentGesture === 'point_1');
+
+          if (isPullingUp1Hand) {
+            isZoomGestureActive = true;
+            const growStep = Math.min(0.06, Math.abs(res.hand1VelY) * 0.085);
+            const nextScale = THREE.MathUtils.clamp(smoothTargetRef.current.scale + growStep, 0.42, 2.45);
+            smoothTargetRef.current.scale = nextScale;
+            if (shouldPushUi) {
+              setScaleVal(+nextScale.toFixed(2));
+            }
+          }
+
+          // 1-Finger OR 2-Hand Symmetrical Dual Neon Tube Sculpting (Freehand Oxyz)
           if (
-            mapped3DAction === 'draw_neon' ||
-            (cfg.modeId === 'freehand_oxyz' && mapped3DAction === 'dual_zoom_tilt')
+            !isIsolated &&
+            (mapped3DAction === 'draw_neon' ||
+              (cfg.modeId === 'freehand_oxyz' && mapped3DAction === 'dual_zoom_tilt'))
           ) {
             if (handDetected && res.handCount === 2 && res.hand1Index && res.hand2Index) {
               const p1x = (res.hand1Index.x - 0.5) * 6.4;
@@ -1618,29 +2392,31 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             if (runtime.activeStrokePointsH2.length > 0) finalizeStrokeChannel(true);
           }
 
-          // Pinch / Stamp gesture: Modulate Scale/Height/RPM OR Stamp 3D architectural blocks!
+          // Pinch: Stamp creative 3D blocks in Oxyz OR boost RPM/Amplitude (never conflicts with unified zoom/explode)
           if (mapped3DAction === 'pinch_stamp_scale') {
-            const nextScale = THREE.MathUtils.clamp(0.55 + (1 - cursorNormY) * 1.15, 0.5, 1.75);
             const nextHeight = THREE.MathUtils.clamp(0.55 + cursorNormX * 1.25, 0.5, 1.85);
-            smoothTargetRef.current.scale = nextScale;
             smoothTargetRef.current.height = nextHeight;
             if (shouldPushUi) {
-              setScaleVal(+nextScale.toFixed(2));
               setHeightVal(+nextHeight.toFixed(2));
             }
 
-            const nowMs = performance.now();
             if (
+              !isIsolated &&
               (cfg.modeId === 'freehand_oxyz' || cfg.creativeBrush !== 'tube') &&
-              nowMs - lastPinchStampAtRef.current > 650
+              nowPerfMs - lastPinchStampAtRef.current > 650
             ) {
-              lastPinchStampAtRef.current = nowMs;
+              lastPinchStampAtRef.current = nowPerfMs;
               const stampBrush = cfg.creativeBrush === 'tube' ? 'cube' : cfg.creativeBrush;
               spawnCreativeStamp(targetX, targetY, targetZ, stampBrush, cfg.snapGrid);
             }
           }
 
-          if (mapped3DAction === 'slice_plane') {
+          // Slice plane ONLY when not exploded and not isolated
+          if (
+            mapped3DAction === 'slice_plane' &&
+            !isIsolated &&
+            smoothTargetRef.current.explode < 0.25
+          ) {
             if (!cfg.sliceEnabled) setSliceEnabled(true);
             const nextSlice = THREE.MathUtils.clamp((1 - cursorNormY) * 3.8 + 0.1, 0.15, 4.1);
             smoothTargetRef.current.sliceY = nextSlice;
@@ -1649,36 +2425,30 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          if (mapped3DAction === 'orbit_rotate') {
-            const nextRot = (cursorNormX - 0.5) * Math.PI * 2.4;
-            const nextExp = THREE.MathUtils.clamp((1 - cursorNormY) * 1.25, 0, 1.2);
-            smoothTargetRef.current.rotOffset = nextRot;
-            smoothTargetRef.current.explode = nextExp;
-            if (shouldPushUi) {
-              setExplodeVal(+nextExp.toFixed(2));
+          // HIGH-SENSITIVITY MODEL ROTATION (pure orbit_rotate — never triggers explode!)
+          if (mapped3DAction === 'orbit_rotate' && !isZoomGestureActive) {
+            if (handDetected) {
+              smoothTargetRef.current.rotOffset += res.cursorDX * Math.PI * 2.4 * rotSens;
+              smoothTargetRef.current.pitchOffset = THREE.MathUtils.clamp(
+                smoothTargetRef.current.pitchOffset + res.cursorDY * Math.PI * 1.5 * rotSens,
+                -1.1,
+                1.1
+              );
+            } else {
+              smoothTargetRef.current.rotOffset = (cursorNormX - 0.5) * Math.PI * 2.4 * rotSens;
+              smoothTargetRef.current.pitchOffset = THREE.MathUtils.clamp(
+                (cursorNormY - 0.5) * 1.3 * rotSens,
+                -1.0,
+                1.0
+              );
             }
           }
 
-          if (mapped3DAction === 'dual_zoom_tilt') {
-            const nextScale = THREE.MathUtils.clamp(0.5 + twoHandSpanVal * 1.55, 0.55, 1.75);
-            const nextRot = (cursorNormX - 0.5) * Math.PI * 2.2;
+          if (mapped3DAction === 'dual_zoom_tilt' && !res.twoHandOppositeSpread && !res.twoHandMovingCloser) {
             const nextTilt = handDetected ? THREE.MathUtils.clamp(res.twoHandAngle * 0.55, -0.55, 0.55) : 0;
-            smoothTargetRef.current.scale = nextScale;
-            smoothTargetRef.current.rotOffset = nextRot;
             smoothTargetRef.current.tiltOffset = nextTilt;
-            if (shouldPushUi) {
-              setScaleVal(+nextScale.toFixed(2));
-            }
           } else {
             smoothTargetRef.current.tiltOffset = 0;
-          }
-
-          if (mapped3DAction === 'explode_layers') {
-            const focusExp = THREE.MathUtils.clamp((1 - cursorNormY) * 1.15, 0.1, 1.15);
-            smoothTargetRef.current.explode = focusExp;
-            if (shouldPushUi) {
-              setExplodeVal(+focusExp.toFixed(2));
-            }
           }
 
           if (!awardFlagRef.current && onEarnXP) {
@@ -1698,6 +2468,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           smoothTargetRef.current.tiltOffset = 0;
         }
 
+        prevGestureRef.current = currentGesture;
+
         runtime.axesGroup.visible = cfg.showAxes;
         runtime.floorGroup.visible = cfg.showAxes;
 
@@ -1709,42 +2481,74 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
         const model = runtime.model;
         if (model) {
-          const s = THREE.MathUtils.damp(model.group.scale.x, smoothTargetRef.current.scale, 9, dt);
-          const sy = THREE.MathUtils.damp(
-            model.group.scale.y,
-            smoothTargetRef.current.scale * smoothTargetRef.current.height,
-            9,
-            dt
-          );
-          model.group.scale.set(s, sy, s);
+          const activeTargetGroup = isIsolated ? runtime.isolatedHolder : model.group;
+          const s = THREE.MathUtils.damp(activeTargetGroup.scale.x, smoothTargetRef.current.scale, 10, dt);
+          const sy = isIsolated
+            ? s
+            : THREE.MathUtils.damp(
+                activeTargetGroup.scale.y,
+                smoothTargetRef.current.scale * smoothTargetRef.current.height,
+                10,
+                dt
+              );
+          activeTargetGroup.scale.set(s, sy, s);
 
-          model.group.rotation.z = THREE.MathUtils.damp(
-            model.group.rotation.z,
+          activeTargetGroup.rotation.z = THREE.MathUtils.damp(
+            activeTargetGroup.rotation.z,
             smoothTargetRef.current.tiltOffset,
             8,
             dt
           );
 
           if (!cfg.frozen) {
-            if (activeControl && (currentGesture === 'palm_5' || currentGesture === 'two_hand_10')) {
-              model.group.rotation.y = THREE.MathUtils.damp(
-                model.group.rotation.y,
+            const isHandOrbiting =
+              activeControl &&
+              (mapped3DAction === 'orbit_rotate' || (currentGesture === 'two_hand_10' && !res.twoHandOppositeSpread && !res.twoHandMovingCloser));
+            if (isHandOrbiting) {
+              activeTargetGroup.rotation.y = THREE.MathUtils.damp(
+                activeTargetGroup.rotation.y,
                 smoothTargetRef.current.rotOffset,
-                7,
+                11,
                 dt
               );
-            } else if (cfg.autoSpin && cfg.modeId !== 'robot_arm') {
-              model.group.rotation.y += dt * 0.34 * cfg.simSpeed;
+              activeTargetGroup.rotation.x = THREE.MathUtils.damp(
+                activeTargetGroup.rotation.x,
+                smoothTargetRef.current.pitchOffset,
+                10,
+                dt
+              );
+            } else if (cfg.autoSpin && (isIsolated || cfg.modeId !== 'robot_arm')) {
+              activeTargetGroup.rotation.y += dt * (isIsolated ? 0.3 : 0.34) * cfg.simSpeed;
+              smoothTargetRef.current.rotOffset = activeTargetGroup.rotation.y;
             }
           }
 
           const expTarget = smoothTargetRef.current.explode;
-          for (const part of model.explodables) {
-            _v3TmpB.copy(part.basePos).addScaledVector(part.explodeDir, expTarget * 1.35);
-            part.mesh.position.lerp(_v3TmpB, 1 - Math.exp(-9 * dt));
+          if (!isIsolated) {
+            for (const part of model.explodables) {
+              _v3TmpB.copy(part.basePos).addScaledVector(part.explodeDir, expTarget * 2.85);
+              part.mesh.position.lerp(_v3TmpB, 1 - Math.exp(-9 * dt));
+            }
+            if (expTarget >= 0.25 && model.explodables.length > 0) {
+              const hIdx = highlightedPartIdxRef.current ?? 0;
+              if (highlightedPartIdxRef.current === null && shouldPushUi) {
+                setHighlightedPartIdx(0);
+              }
+              const hPart = model.explodables[hIdx];
+              if (hPart) {
+                runtime.highlightHelper.setFromObject(hPart.mesh);
+                runtime.highlightHelper.visible = true;
+              } else {
+                runtime.highlightHelper.visible = false;
+              }
+            } else {
+              runtime.highlightHelper.visible = false;
+            }
+          } else {
+            runtime.highlightHelper.visible = false;
           }
 
-          // Update 6 advanced kinetic rigs (Turbofan, Solar, Robot Arm IK, Supercar, Wind Turbine)
+          // Update 6 advanced kinetic rigs (skip IK joint clamping when viewing a single isolated robot part)
           updateAdvancedKinematics(
             model,
             dt,
@@ -1759,7 +2563,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   z: smoothTargetRef.current.cursorZ
                 }
               : { x: 0, y: 1.5, z: 0 },
-            isPinchActive
+            isPinchActive,
+            isIsolated
           );
 
           if (model.waveGeo && model.waveBaseZ && !cfg.frozen) {
@@ -1786,7 +2591,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             model.waveGeo.computeVertexNormals();
           }
 
-          if (model.atomElectrons && !cfg.frozen) {
+          if (model.atomElectrons && !cfg.frozen && !isIsolated) {
             for (const item of model.atomElectrons) {
               const ang = elapsed * item.speed * cfg.simSpeed + item.phase;
               _v3TmpA.set(Math.cos(ang) * item.ringRadius, Math.sin(ang) * item.ringRadius, 0);
@@ -1802,7 +2607,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             const centerY = R + 0.15;
             const worldSliceY = smoothTargetRef.current.sliceY / Math.max(0.4, sy);
             const d = Math.abs(worldSliceY - centerY);
-            if (cfg.sliceEnabled && d < R * 0.98) {
+            if (cfg.sliceEnabled && !isIsolated && d < R * 0.98) {
               model.sphereCutRing.visible = true;
               const rCut = Math.sqrt(R * R - d * d);
               model.sphereCutRing.scale.set(rCut, rCut, 1);
@@ -1813,7 +2618,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           }
         }
 
-        if (cfg.sliceEnabled) {
+        if (cfg.sliceEnabled && !isIsolated) {
           const yClip = THREE.MathUtils.damp(runtime.slicePlane.constant, smoothTargetRef.current.sliceY, 12, dt);
           runtime.slicePlane.constant = yClip;
           runtime.sliceHelperMesh.visible = true;
@@ -1849,8 +2654,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       cancelAnimationFrame(frameId);
       clearTimeout(frameId);
       window.removeEventListener('resize', handleResize);
+      renderer.domElement.removeEventListener('pointerdown', handleCanvasPointerDown);
+      renderer.domElement.removeEventListener('pointerup', handleCanvasPointerUp);
       controls.dispose();
+      restoreIsolatedPart(runtime);
       disposeModel(runtime.model);
+      highlightHelper.geometry.dispose();
+      (highlightHelper.material as THREE.Material).dispose();
       envTarget.dispose();
       gridHelper.geometry.dispose();
       (gridHelper.material as THREE.Material).dispose();
@@ -1879,7 +2689,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       }
       runtimeRef.current = null;
     };
-  }, [disposeModel, onEarnXP, rebuildModel]);
+  }, [disposeModel, onEarnXP, rebuildModel, restoreIsolatedPart, showToast]);
 
   useEffect(() => {
     const rt = runtimeRef.current;
@@ -1887,6 +2697,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const softwareGl = isSoftwareWebGL();
     rebuildModel(rt, modeId, finish, activePalette, softwareGl);
   }, [modeId, finish, activePalette, rebuildModel]);
+
+  useEffect(() => {
+    syncPartIsolation(runtimeRef.current, isolatedPartIdx);
+  }, [isolatedPartIdx, syncPartIsolation]);
 
   useEffect(() => {
     const rt = runtimeRef.current;
@@ -1899,16 +2713,23 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     rt.renderer.shadowMap.enabled = !softwareGl && !isLight;
   }, [gestureSettings.graphicsQuality]);
 
-  // Resize WebGL properly whenever toggling back from 2D -> 3D
+  // Resize WebGL properly whenever toggling back from Hub or 2D -> 3D
   useEffect(() => {
-    if (spaceMode !== '3d' || !canvasMountRef.current || !runtimeRef.current) return;
-    const mount = canvasMountRef.current;
-    const w = mount.clientWidth || window.innerWidth;
-    const h = mount.clientHeight || window.innerHeight;
-    runtimeRef.current.camera.aspect = w / h;
-    runtimeRef.current.camera.updateProjectionMatrix();
-    runtimeRef.current.renderer.setSize(w, h);
-  }, [spaceMode]);
+    if (entryView !== 'studio' || spaceMode !== '3d' || !canvasMountRef.current || !runtimeRef.current) return;
+    const resizeNow = () => {
+      const mount = canvasMountRef.current;
+      const rt = runtimeRef.current;
+      if (!mount || !rt) return;
+      const w = mount.clientWidth || window.innerWidth;
+      const h = mount.clientHeight || window.innerHeight;
+      rt.camera.aspect = w / h;
+      rt.camera.updateProjectionMatrix();
+      rt.renderer.setSize(w, h);
+    };
+    resizeNow();
+    const raf = requestAnimationFrame(resizeNow);
+    return () => cancelAnimationFrame(raf);
+  }, [entryView, spaceMode]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -1996,6 +2817,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   }, [isEn, showToast]);
 
   const handleUndoStroke = useCallback(() => {
+    if (spaceMode === '2d') {
+      if (mode2D === 'free_create') {
+        canvas2DRef.current?.undoFreeItem();
+      }
+      return;
+    }
     const rt = runtimeRef.current;
     if (!rt) return;
     if (rt.markerMeshes.length > 0 && (creativeBrush !== 'tube' || rt.strokeMeshes.length === 0)) {
@@ -2015,7 +2842,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       (last.material as THREE.Material).dispose();
       setStrokeCount(rt.strokeMeshes.length);
     }
-  }, [creativeBrush]);
+  }, [creativeBrush, mode2D, spaceMode]);
 
   const handleClearCreations = useCallback(() => {
     if (spaceMode === '2d') {
@@ -2042,6 +2869,23 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     showToast(isEn ? 'Cleared all Oxyz strokes & blocks.' : 'Đã xóa sạch nét vẽ & khối kiến tạo 3D.');
   }, [isEn, showToast, spaceMode]);
 
+  const handleCyclePart = useCallback(
+    (dir: -1 | 1) => {
+      if (modelParts.length === 0) return;
+      const now = performance.now();
+      if (now - lastManualSwipeAtRef.current < 120) return;
+      lastManualSwipeAtRef.current = now;
+      const base =
+        isolatedPartIdx !== null ? isolatedPartIdx : highlightedPartIdx ?? 0;
+      const nextIdx = (base + dir + modelParts.length) % modelParts.length;
+      setHighlightedPartIdx(nextIdx);
+      if (isolatedPartIdx !== null) {
+        setIsolatedPartIdx(nextIdx);
+      }
+    },
+    [highlightedPartIdx, isolatedPartIdx, modelParts.length]
+  );
+
   const handleResetView = useCallback(() => {
     if (spaceMode === '2d') {
       canvas2DRef.current?.resetBoard();
@@ -2049,9 +2893,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       showToast(isEn ? 'Reset 2D board' : 'Đã đặt lại hình học 2D');
       return;
     }
+    setIsolatedPartIdx(null);
+    setHighlightedPartIdx(null);
     setScaleVal(1.0);
     setHeightVal(1.0);
-    setExplodeVal(0.12);
+    setExplodeVal(0.0);
     setSliceEnabled(false);
     setSliceY(2.4);
     setSimSpeed(1.0);
@@ -2060,9 +2906,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     smoothTargetRef.current = {
       scale: 1.0,
       height: 1.0,
-      explode: 0.12,
+      explode: 0.0,
       sliceY: 2.4,
       rotOffset: 0,
+      pitchOffset: 0,
       tiltOffset: 0,
       cursorX: 0,
       cursorY: 1.5,
@@ -2075,6 +2922,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       if (runtimeRef.current.model) {
         runtimeRef.current.model.group.rotation.set(0, 0, 0);
       }
+      runtimeRef.current.isolatedHolder.rotation.set(0, 0, 0);
     }
   }, [isEn, showToast, spaceMode]);
 
@@ -2200,111 +3048,154 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     ) || GESTURE_DEFINITIONS[4];
 
   return (
-    <div
-      ref={stageContainerRef}
-      className={`relative w-full overflow-hidden rounded-xl border border-sky-500/35 bg-[#050914] text-slate-100 shadow-2xl select-none ${
-        isFullscreen ? 'h-screen rounded-none border-0' : 'h-[calc(100vh-128px)] min-h-[640px]'
-      }`}
-    >
-      {/* Dedicated Three.js 3D Viewport */}
-      <div
-        ref={canvasMountRef}
-        className={`absolute inset-0 w-full h-full ${spaceMode === '3d' ? 'block' : 'hidden'}`}
-      />
-
-      {/* Dedicated 2D Gesture Geometry Viewport */}
-      {spaceMode === '2d' && (
-        <div className="absolute inset-0 w-full h-full">
-          <Spatial2DGestureCanvas
-            ref={canvas2DRef}
-            mode2D={mode2D}
-            accentCss={activePalette.css}
-            isEn={isEn}
-            cameraActive={cameraActive}
-            virtualGesture={virtualGesture}
-            frozen={frozen}
-            handFrameRef={handFrameRef}
-            gestureSettings={gestureSettings}
-            onMetricsChange={setMetrics2D}
-          />
-        </div>
+    <>
+      {entryView === 'hub' && (
+        <SpatialSenseHub
+          isEn={isEn}
+          onBack={onBack}
+          onLaunch3D={() => handleEnter3DSpace(true)}
+          onLaunch2D={handleEnter2DSpace}
+        />
       )}
 
-      {/* Top HUD Bar */}
-      {!hudHidden && (
-        <div className="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-          <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
-            {onBack && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-slate-700/80 hover:border-sky-400 text-xs font-bold text-slate-100 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>{isEn ? 'Back' : 'Quay lại'}</span>
-              </button>
-            )}
+      <div
+        ref={stageContainerRef}
+        className={`relative w-full overflow-hidden rounded-xl border border-sky-500/35 bg-[#050914] text-slate-100 shadow-2xl select-none ${
+          entryView === 'hub'
+            ? 'hidden'
+            : isFullscreen
+            ? 'h-screen rounded-none border-0'
+            : 'h-[calc(100vh-128px)] min-h-[640px]'
+        }`}
+      >
+        {/* Dedicated Three.js 3D Viewport */}
+        <div
+          ref={canvasMountRef}
+          className={`absolute inset-0 w-full h-full ${spaceMode === '3d' ? 'block' : 'hidden'}`}
+        />
 
-            {/* Clean 2D vs 3D Segmented Space Switcher */}
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-950/95 border border-sky-500/40">
-              <button
-                type="button"
-                onClick={() => setSpaceMode('2d')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  spaceMode === '2d'
-                    ? 'bg-sky-500 text-slate-950'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <Compass className="w-3.5 h-3.5" />
-                <span>{isEn ? '2D Geometry' : 'Không gian 2D'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSpaceMode('3d')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  spaceMode === '3d'
-                    ? 'bg-sky-500 text-slate-950'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <Box className="w-3.5 h-3.5" />
-                <span>{isEn ? '3D Realistic Studio' : 'Không gian 3D'}</span>
-              </button>
-            </div>
-
-            {/* Active Mode Subtitle + Gesture Status */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-950/95 border border-slate-700/80 text-xs">
-              <span
-                className="w-2.5 h-2.5 rounded-xs shrink-0"
-                style={{ backgroundColor: currentGestureMeta.accent }}
-              />
-              <span className="font-bold text-white whitespace-nowrap">
-                {spaceMode === '2d'
-                  ? isEn
-                    ? active2DMode.titleEn
-                    : active2DMode.titleVi
-                  : isEn
-                  ? activeMode.titleEn
-                  : activeMode.titleVi}
-              </span>
-              <span className="text-slate-400">·</span>
-              <span className="font-semibold text-sky-300 whitespace-nowrap">
-                {isEn ? currentGestureMeta.labelEn : currentGestureMeta.labelVi}
-              </span>
-              {frozen && (
-                <span className="inline-flex items-center gap-1 text-amber-300 font-bold">
-                  · <Lock className="w-3 h-3" /> {isEn ? 'Locked' : 'Khóa'}
-                </span>
-              )}
-            </div>
+        {/* Dedicated 2D Gesture Geometry Viewport */}
+        {entryView === 'studio' && spaceMode === '2d' && (
+          <div className="absolute inset-0 w-full h-full">
+            <Spatial2DGestureCanvas
+              ref={canvas2DRef}
+              mode2D={mode2D}
+              accentCss={activePalette.css}
+              isEn={isEn}
+              cameraActive={cameraActive}
+              virtualGesture={virtualGesture}
+              frozen={frozen}
+              handFrameRef={handFrameRef}
+              gestureSettings={gestureSettings}
+              freeTool={free2DTool}
+              freeColor={free2DColor}
+              freeSnap={free2DSnap}
+              freeAutoShape={free2DAutoShape}
+              onFreeCountChange={setFree2DCount}
+              onMetricsChange={setMetrics2D}
+            />
           </div>
+        )}
 
-          {/* Right Quick Actions */}
-          <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto">
-            <button
-              type="button"
-              onClick={cameraActive ? stopCamera : startCamera}
+        {/* Top HUD Bar */}
+        {!hudHidden && (
+          <div className="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => setEntryView('hub')}
+                className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-sky-500/45 hover:border-sky-400 text-xs font-bold text-sky-200 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                title={isEn ? 'Back to Spatial Sense Portal' : 'Về Trang Học Cảm Giác'}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Portal' : 'Trang Chính'}</span>
+              </button>
+
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-slate-700/80 hover:border-sky-400 text-xs font-bold text-slate-100 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>{isEn ? 'Back' : 'Quay lại'}</span>
+                </button>
+              )}
+
+              {/* Clean 2D vs 3D Segmented Space Switcher */}
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-950/95 border border-sky-500/40">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSpaceMode('2d');
+                    setShow3DGuide(false);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                    spaceMode === '2d'
+                      ? 'bg-sky-500 text-slate-950'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>{isEn ? '2D Geometry' : 'Không gian 2D'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEnter3DSpace(false)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                    spaceMode === '3d'
+                      ? 'bg-sky-500 text-slate-950'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <Box className="w-3.5 h-3.5" />
+                  <span>{isEn ? '3D Realistic Studio' : 'Không gian 3D'}</span>
+                </button>
+              </div>
+
+              {spaceMode === '3d' && (
+                <button
+                  type="button"
+                  onClick={() => setShow3DGuide(true)}
+                  className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-amber-400/50 hover:border-amber-300 text-xs font-bold text-amber-200 cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>{isEn ? '3D Guide' : 'Hướng dẫn 3D'}</span>
+                </button>
+              )}
+
+              {/* Active Mode Subtitle + Gesture Status */}
+              <div className="hidden xl:flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-950/95 border border-slate-700/80 text-xs">
+                <span
+                  className="w-2.5 h-2.5 rounded-xs shrink-0"
+                  style={{ backgroundColor: currentGestureMeta.accent }}
+                />
+                <span className="font-bold text-white whitespace-nowrap">
+                  {spaceMode === '2d'
+                    ? isEn
+                      ? active2DMode.titleEn
+                      : active2DMode.titleVi
+                    : isEn
+                    ? activeMode.titleEn
+                    : activeMode.titleVi}
+                </span>
+                <span className="text-slate-400">·</span>
+                <span className="font-semibold text-sky-300 whitespace-nowrap">
+                  {isEn ? currentGestureMeta.labelEn : currentGestureMeta.labelVi}
+                </span>
+                {frozen && (
+                  <span className="inline-flex items-center gap-1 text-amber-300 font-bold">
+                    · <Lock className="w-3 h-3" /> {isEn ? 'Locked' : 'Khóa'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Right Quick Actions */}
+            <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto">
+              <button
+                type="button"
+                onClick={cameraActive ? stopCamera : startCamera}
               disabled={cameraLoading}
               className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                 cameraActive
@@ -2403,52 +3294,67 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         </button>
       )}
 
-      {/* Top-Right Corner Live Telemetry & 10-Fingertip Webcam PiP */}
-      {!hudHidden && (
-        <div className="absolute top-16 right-3 z-20 flex flex-col items-end gap-2 max-w-[244px]">
-          <div className="w-full rounded-2xl bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
-            <div className="font-mono font-bold text-cyan-300 truncate">
-              {spaceMode === '2d' ? active2DMode.formula : activeMode.formula}
-            </div>
-            <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-slate-200 font-mono text-[10px] tabular-nums">
-              <span>{liveTelemetry.metricA}</span>
-              <span>·</span>
-              <span>{liveTelemetry.metricB}</span>
-            </div>
-            <div className="text-[10px] text-slate-400 font-mono tabular-nums">{liveTelemetry.metricC}</div>
-          </div>
-
-          {cameraActive && (
-            <div className="relative w-[240px] h-[180px] rounded-2xl overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-fill ${mirrorCamera ? '-scale-x-100' : ''}`}
-              />
-              <canvas
-                ref={overlayCanvasRef}
-                width={240}
-                height={180}
-                className="absolute inset-0 w-full h-full pointer-events-none"
-              />
-              <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between px-2 py-0.5 rounded-lg bg-slate-950/90 text-[10px] font-mono text-cyan-200">
-                <span>
-                  {!handFrame.ready
-                    ? isEn
-                      ? 'Loading 10-finger AI...'
-                      : 'Đang nạp AI 10 ngón...'
-                    : handFrame.detected
-                    ? `${handFrame.trackedTipCount}/10 ${isEn ? 'tips' : 'cảm biến'} · ${handFrame.fingerCount} ${isEn ? 'open' : 'duỗi'}`
-                    : isEn
-                    ? 'Show 1 or 2 hands'
-                    : 'Đưa 1–2 bàn tay vào'}
-                </span>
-                <span>{currentGestureMeta.fingers}</span>
+        {/* Top-Right Corner Live Telemetry & 10-Fingertip Webcam PiP */}
+        {!hudHidden && (
+          <div className="absolute top-16 right-3 z-20 flex flex-col items-end gap-2 max-w-[244px]">
+            <div className="spatial-hud-frame w-full rounded-lg bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
+              <div className="font-mono font-bold text-cyan-300 truncate">
+                {spaceMode === '2d' ? active2DMode.formula : activeMode.formula}
               </div>
+              <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-slate-200 font-mono text-[10px] tabular-nums">
+                <span>{liveTelemetry.metricA}</span>
+                <span>·</span>
+                <span>{liveTelemetry.metricB}</span>
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono tabular-nums">{liveTelemetry.metricC}</div>
             </div>
-          )}
+
+            {cameraActive && (
+              <div className="spatial-hud-frame relative w-[240px] h-[180px] rounded-lg overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-fill ${mirrorCamera ? '-scale-x-100' : ''}`}
+                />
+                <canvas
+                  ref={overlayCanvasRef}
+                  width={240}
+                  height={180}
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                />
+                {/* 0.5s finger-settle progress bar */}
+                {handFrame.detected && handFrame.candidateGesture !== 'none' && handFrame.gestureHoldProgress < 1 && (
+                  <div className="absolute top-1.5 left-1.5 right-1.5 px-2 py-1 rounded bg-slate-950/90 border border-amber-400/50 space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-mono font-bold text-amber-200">
+                      <span>{isEn ? 'Settling fingers (0.5s)...' : 'Đang đợi 0.5s ổn định ngón...'}</span>
+                      <span>{Math.round(handFrame.gestureHoldProgress * 100)}%</span>
+                    </div>
+                    <div className="w-full h-1 bg-slate-800 rounded overflow-hidden">
+                      <div
+                        className="h-full bg-amber-400 transition-[width] duration-75"
+                        style={{ width: `${Math.round(handFrame.gestureHoldProgress * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between px-2 py-0.5 rounded bg-slate-950/90 text-[10px] font-mono text-cyan-200">
+                  <span>
+                    {!handFrame.ready
+                      ? isEn
+                        ? 'Loading 10-finger AI...'
+                        : 'Đang nạp AI 10 ngón...'
+                      : handFrame.detected
+                      ? `${handFrame.trackedTipCount}/10 ${isEn ? 'tips' : 'cảm biến'} · ${handFrame.fingerCount} ${isEn ? 'open' : 'duỗi'}`
+                      : isEn
+                      ? 'Show 1 or 2 hands'
+                      : 'Đưa 1–2 bàn tay vào'}
+                  </span>
+                  <span>{currentGestureMeta.fingers}</span>
+                </div>
+              </div>
+            )}
 
           {/* Virtual 3D Touch Pad when in 3D without webcam */}
           {spaceMode === '3d' && !cameraActive && showVirtualPad && (
@@ -2508,18 +3414,167 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         </div>
       )}
 
+      {/* Top-Left Stack: Camera Warning + 3D Part Selection / Isolation Card */}
+      {!hudHidden && (
+        <div className="absolute top-16 left-3 z-20 flex flex-col gap-2 max-w-[320px] pointer-events-none">
+          {cameraError && (
+            <div className="pointer-events-auto rounded-lg bg-amber-950/95 border border-amber-500/50 px-3 py-2 text-[11px] text-amber-200">
+              {cameraError}
+            </div>
+          )}
+
+          {/* Case 1: Isolated Part Inspection Card */}
+          {spaceMode === '3d' && isolatedPartIdx !== null && modelParts[isolatedPartIdx] && (
+            <div className="spatial-hud-frame spatial-step-reveal pointer-events-auto w-[min(316px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-cyan-400/60 shadow-2xl p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/40 text-[10px] font-mono font-bold text-cyan-300">
+                  <Info className="w-3 h-3" />
+                  {isEn
+                    ? `Part ${isolatedPartIdx + 1}/${modelParts.length} · ${modelParts[isolatedPartIdx].badgeEn}`
+                    : `Bộ phận ${isolatedPartIdx + 1}/${modelParts.length} · ${modelParts[isolatedPartIdx].badgeVi}`}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPartCardMinimized((v) => !v)}
+                    className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:border-cyan-400 cursor-pointer"
+                    title={partCardMinimized ? 'Mở rộng' : 'Thu gọn'}
+                  >
+                    {partCardMinimized ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsolatedPartIdx(null)}
+                    className="flex items-center gap-1 px-2 py-1 rounded bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[10px] font-bold text-slate-100 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3 h-3" />
+                    <span>{isEn ? 'Full Model' : 'Toàn mô hình'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-sm font-extrabold text-white leading-snug">
+                {isEn ? modelParts[isolatedPartIdx].nameEn : modelParts[isolatedPartIdx].nameVi}
+              </div>
+
+              {!partCardMinimized && (
+                <div className="space-y-1.5 text-[11px] leading-relaxed">
+                  <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-cyan-300">
+                      {isEn ? 'Introduction' : 'Giới thiệu cấu tạo'}
+                    </div>
+                    <p className="text-slate-200 mt-0.5">
+                      {isEn ? modelParts[isolatedPartIdx].introEn : modelParts[isolatedPartIdx].introVi}
+                    </p>
+                  </div>
+                  <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+                      {isEn ? 'Function & Role' : 'Chức năng & Vai trò'}
+                    </div>
+                    <p className="text-slate-200 mt-0.5">
+                      {isEn ? modelParts[isolatedPartIdx].functionEn : modelParts[isolatedPartIdx].functionVi}
+                    </p>
+                  </div>
+                  {modelParts[isolatedPartIdx].specFormula && (
+                    <div className="px-2.5 py-1 rounded bg-sky-950/70 border border-sky-500/35 font-mono text-[10px] font-bold text-sky-200">
+                      {modelParts[isolatedPartIdx].specFormula}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleCyclePart(-1)}
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[11px] font-bold text-slate-200 cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>{isEn ? 'Prev Part' : 'Bộ phận cũ'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCyclePart(1)}
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-sky-500 hover:bg-sky-400 text-[11px] font-extrabold text-slate-950 cursor-pointer"
+                >
+                  <span>{isEn ? 'Next Part' : 'Bộ phận tiếp'}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {isEn
+                  ? 'Swipe L/R to switch · 1 hand up zoom in · 2 hands closer zoom out · 2 fingers exit'
+                  : 'Vuốt Trái/Phải đổi · Kéo 1 tay lên phóng to · 2 tay lại gần thu nhỏ · 2 ngón thoát'}
+              </div>
+            </div>
+          )}
+
+          {/* Case 2: Exploded Model Selector Prompt Strip */}
+          {spaceMode === '3d' &&
+            isolatedPartIdx === null &&
+            explodeVal >= 0.25 &&
+            modelParts.length > 0 && (
+              <div className="spatial-hud-frame spatial-step-reveal pointer-events-auto w-[min(316px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/50 shadow-xl p-2.5 space-y-1.5">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-emerald-300">
+                  <span>
+                    {isEn
+                      ? `EXPLODED · ${modelParts.length} PARTS`
+                      : `ĐÃ TÁCH CẤU TRÚC · ${modelParts.length} BỘ PHẬN`}
+                  </span>
+                  <span>
+                    {(highlightedPartIdx ?? 0) + 1}/{modelParts.length}
+                  </span>
+                </div>
+                <div className="text-xs font-extrabold text-white truncate">
+                  {isEn
+                    ? modelParts[highlightedPartIdx ?? 0].nameEn
+                    : modelParts[highlightedPartIdx ?? 0].nameVi}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleCyclePart(-1)}
+                    className="p-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-200 cursor-pointer"
+                    title={isEn ? 'Previous part' : 'Bộ phận trước'}
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const pick = highlightedPartIdx ?? 0;
+                      setHighlightedPartIdx(pick);
+                      setIsolatedPartIdx(pick);
+                      setPartCardMinimized(false);
+                    }}
+                    className="flex-1 px-2.5 py-1.5 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-extrabold cursor-pointer truncate"
+                  >
+                    {isEn ? 'Inspect Selected (2 Fingers)' : 'Xem riêng bộ phận (2 ngón)'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCyclePart(1)}
+                    className="p-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-200 cursor-pointer"
+                    title={isEn ? 'Next part' : 'Bộ phận tiếp'}
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  {isEn
+                    ? 'Raise 2 fingers or click a part · Swipe L/R to cycle'
+                    : 'Giơ 2 ngón tay (hoặc bấm vào khối) để xem riêng · Vuốt Trái/Phải chuyển'}
+                </div>
+              </div>
+            )}
+        </div>
+      )}
+
       {/* Toast Notification Banner */}
       {toastMsg && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-950/95 border border-cyan-400/60 text-xs font-bold text-cyan-200 shadow-lg">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMsg}</span>
-        </div>
-      )}
-
-      {/* Camera Warning Banner */}
-      {cameraError && !hudHidden && (
-        <div className="absolute top-16 left-3 z-20 max-w-sm rounded-xl bg-amber-950/95 border border-amber-500/50 px-3 py-2 text-[11px] text-amber-200">
-          {cameraError}
         </div>
       )}
 
@@ -2544,7 +3599,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           </button>
 
           {!dockCollapsed && (
-            <div className="w-full rounded-xl bg-slate-950/95 border border-slate-700/85 shadow-2xl p-3 space-y-2.5">
+            <div className="spatial-hud-frame w-full rounded-xl bg-slate-950/95 border border-slate-700/85 shadow-2xl p-3 space-y-2.5">
               {/* Dock Tabs + Quick Action Shortcuts */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -2552,11 +3607,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     [
                       {
                         id: 'shapes',
-                        labelVi: spaceMode === '2d' ? '6 Xưởng Hình Học 2D' : '15 Mô Hình 3D',
-                        labelEn: spaceMode === '2d' ? '6 2D Labs' : '15 3D Models',
+                        labelVi: spaceMode === '2d' ? '7 Xưởng Hình Học 2D' : '15 Mô Hình 3D',
+                        labelEn: spaceMode === '2d' ? '7 2D Labs' : '15 3D Models',
                         icon: Box
                       },
-                      { id: 'gesture', labelVi: '7 Cử Chỉ Tay', labelEn: '7 Gestures', icon: Hand },
+                      { id: 'gesture', labelVi: '8 Cử Chỉ Tay', labelEn: '8 Gestures', icon: Hand },
                       {
                         id: 'params',
                         labelVi: spaceMode === '2d' ? 'Công Cụ 2D' : 'Sáng Tạo & Cắt',
@@ -2589,11 +3644,22 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
                 {/* Quick Creation & Undo Shortcuts */}
                 <div className="flex items-center gap-1.5">
+                  {spaceMode === '2d' && mode2D === 'free_create' && (
+                    <button
+                      type="button"
+                      onClick={handleUndoStroke}
+                      disabled={free2DCount === 0}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-cyan-500/40 disabled:opacity-40 text-[11px] font-bold text-cyan-300 hover:border-cyan-400 cursor-pointer"
+                    >
+                      <Undo2 className="w-3.5 h-3.5" />
+                      <span>{isEn ? `Undo (${free2DCount})` : `Hoàn tác (${free2DCount})`}</span>
+                    </button>
+                  )}
                   {spaceMode === '2d' && mode2D === 'polygon_euler' && (
                     <button
                       type="button"
                       onClick={() => canvas2DRef.current?.addVertexOrTile()}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-cyan-500/40 text-[11px] font-bold text-cyan-300 hover:border-cyan-400 cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-cyan-500/40 text-[11px] font-bold text-cyan-300 hover:border-cyan-400 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>{isEn ? 'Add Vertex' : 'Thêm Đỉnh'}</span>
@@ -2603,7 +3669,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     <button
                       type="button"
                       onClick={() => canvas2DRef.current?.cycleSymmetry()}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-cyan-500/40 text-[11px] font-bold text-cyan-300 hover:border-cyan-400 cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-cyan-500/40 text-[11px] font-bold text-cyan-300 hover:border-cyan-400 cursor-pointer"
                     >
                       <Layers className="w-3.5 h-3.5" />
                       <span>{isEn ? 'Cycle Axes' : 'Đổi Số Cánh'}</span>
@@ -2613,7 +3679,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowVirtualPad(true)}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[11px] font-bold text-cyan-300 cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[11px] font-bold text-cyan-300 cursor-pointer"
                     >
                       {isEn ? 'Touch Pad' : 'Bàn Di 3D'}
                     </button>
@@ -2623,7 +3689,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       type="button"
                       onClick={handleUndoStroke}
                       disabled={strokeCount === 0 && markerCount === 0}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 disabled:opacity-40 text-[11px] font-bold text-slate-200 hover:border-cyan-400 cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 disabled:opacity-40 text-[11px] font-bold text-slate-200 hover:border-cyan-400 cursor-pointer"
                       title={isEn ? 'Undo last stroke/block' : 'Hoàn tác nét/khối 3D'}
                     >
                       <Undo2 className="w-3.5 h-3.5" />
@@ -2633,8 +3699,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   <button
                     type="button"
                     onClick={handleClearCreations}
-                    disabled={spaceMode === '3d' && strokeCount === 0 && markerCount === 0}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 disabled:opacity-40 text-[11px] font-bold text-rose-300 hover:border-rose-400 cursor-pointer"
+                    disabled={
+                      spaceMode === '3d'
+                        ? strokeCount === 0 && markerCount === 0
+                        : mode2D === 'free_create' && free2DCount === 0
+                    }
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 disabled:opacity-40 text-[11px] font-bold text-rose-300 hover:border-rose-400 cursor-pointer"
                     title={isEn ? 'Clear drawings' : 'Xóa nét vẽ'}
                   >
                     <Eraser className="w-3.5 h-3.5" />
@@ -2645,7 +3715,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               {/* TAB: SHAPES / CREATIONS (2D or 3D) */}
               {dockTab === 'shapes' && spaceMode === '2d' && (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5">
                     {SPATIAL_2D_MODES.map((m) => {
                       const active = mode2D === m.id;
                       return (
@@ -2667,9 +3737,84 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       );
                     })}
                   </div>
-                  <div className="text-[11px] text-slate-300 px-1">
-                    {isEn ? active2DMode.descEn : active2DMode.descVi}
-                  </div>
+
+                  {mode2D === 'free_create' ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 px-2.5 py-2 rounded-md border border-slate-800 text-[11px]">
+                      <div className="flex flex-wrap items-center gap-1">
+                        {(
+                          [
+                            { id: 'freehand', vi: 'Vẽ tay', en: 'Freehand', icon: PenTool },
+                            { id: 'line', vi: 'Đoạn thẳng', en: 'Line', icon: Minus },
+                            { id: 'circle', vi: 'Hình tròn', en: 'Circle', icon: Circle },
+                            { id: 'rect', vi: 'Vuông / CN', en: 'Rect', icon: Square },
+                            { id: 'triangle', vi: 'Tam giác', en: 'Triangle', icon: Triangle },
+                            { id: 'star', vi: 'Ngôi sao', en: 'Star', icon: Star },
+                            { id: 'move', vi: 'Di chuyển', en: 'Move', icon: Move }
+                          ] as const
+                        ).map((tool) => {
+                          const ToolIcon = tool.icon;
+                          const active = free2DTool === tool.id;
+                          return (
+                            <button
+                              key={tool.id}
+                              type="button"
+                              onClick={() => setFree2DTool(tool.id)}
+                              className={`flex items-center gap-1 px-2 py-1 rounded-md border font-bold cursor-pointer ${
+                                active
+                                  ? 'bg-sky-500 text-slate-950 border-sky-300'
+                                  : 'bg-slate-950 border-slate-700 text-slate-300 hover:border-sky-400'
+                              }`}
+                            >
+                              <ToolIcon className="w-3 h-3" />
+                              <span>{isEn ? tool.en : tool.vi}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {['#22d3ee', '#34d399', '#fbbf24', '#f472b6', '#818cf8', '#f8fafc'].map((col) => (
+                          <button
+                            key={col}
+                            type="button"
+                            data-circle="true"
+                            onClick={() => setFree2DColor(col)}
+                            className={`w-4 h-4 rounded-full border cursor-pointer ${
+                              free2DColor === col ? 'border-white scale-115' : 'border-slate-700'
+                            }`}
+                            style={{ backgroundColor: col }}
+                            title={col}
+                          />
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setFree2DAutoShape((v) => !v)}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-md border font-bold cursor-pointer ${
+                            free2DAutoShape
+                              ? 'bg-purple-500/20 border-purple-400 text-purple-200'
+                              : 'bg-slate-950 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          <Wand2 className="w-3 h-3" />
+                          <span>{isEn ? 'Auto Shape' : 'Tự nắn nét'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFree2DSnap((v) => !v)}
+                          className={`px-2 py-1 rounded-md border font-bold cursor-pointer ${
+                            free2DSnap
+                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                              : 'bg-slate-950 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          {isEn ? 'Grid Snap' : 'Bắt lưới'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-slate-300 px-1">
+                      {isEn ? active2DMode.descEn : active2DMode.descVi}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2741,10 +3886,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               )}
 
-              {/* TAB: 7 HAND GESTURES & CAMERA TUNING */}
+              {/* TAB: 8 HAND GESTURES & CAMERA TUNING */}
               {dockTab === 'gesture' && (
                 <div className="space-y-2.5">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
                     {GESTURE_DEFINITIONS.map((g) => {
                       const active =
                         (cameraActive && handFrame.detected ? handFrame.gesture : virtualGesture) === g.id;
@@ -2754,11 +3899,28 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                           type="button"
                           onClick={() => {
                             setVirtualGesture(g.id);
-                            if (g.id === 'morph_3') {
-                              if (spaceMode === '2d') canvas2DRef.current?.cycleSymmetry();
-                              else setExplodeVal((prev) => (prev > 0.6 ? 0.12 : 0.85));
+                            if (g.id === 'two_hand_10' && spaceMode === '3d') {
+                              setExplodeVal((prev) => (prev >= 0.3 ? 0.0 : 1.35));
+                            } else if (g.id === 'reassemble_4' && spaceMode === '3d') {
+                              smoothTargetRef.current.explode = 0;
+                              setExplodeVal(0);
+                              setIsolatedPartIdx(null);
+                              setHighlightedPartIdx(null);
+                              showToast(
+                                isEn
+                                  ? '4 Fingers · Reassembled full 3D model!'
+                                  : '4 Ngón · Đã ghép mô hình về nguyên trạng!'
+                              );
+                            } else if (g.id === 'morph_3' && spaceMode === '2d') {
+                              canvas2DRef.current?.cycleSymmetry();
                             } else if (g.id === 'slice_2' && spaceMode === '3d') {
-                              setSliceEnabled(true);
+                              if (explodeVal >= 0.25 || isolatedPartIdx !== null) {
+                                setIsolatedPartIdx((prev) =>
+                                  prev !== null ? null : highlightedPartIdx ?? 0
+                                );
+                              } else {
+                                setSliceEnabled(true);
+                              }
                             } else if (g.id === 'fist_0') {
                               setFrozen((v) => !v);
                             }
@@ -3071,6 +4233,22 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
                     <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
                       <div className="flex justify-between font-semibold text-slate-300">
+                        <span>{isEn ? '3D Rotation Speed' : 'Độ nhạy Xoay 3D'}</span>
+                        <span className="font-mono text-cyan-300">{gestureSettings.rotationSensitivity.toFixed(2)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1.0}
+                        max={4.0}
+                        step={0.1}
+                        value={gestureSettings.rotationSensitivity}
+                        onChange={(e) => updateGestureSetting('rotationSensitivity', Number(e.target.value))}
+                        className="w-full accent-cyan-400"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-300">
                         <span>{isEn ? 'Hold Frames' : 'Số khung ổn định'}</span>
                         <span className="font-mono text-purple-300">{gestureSettings.stabilityFrames}</span>
                       </div>
@@ -3082,6 +4260,22 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                         value={gestureSettings.stabilityFrames}
                         onChange={(e) => updateGestureSetting('stabilityFrames', Number(e.target.value))}
                         className="w-full accent-purple-400"
+                      />
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-300">
+                        <span>{isEn ? 'Finger Settle Delay' : 'Đợi ngón ổn định'}</span>
+                        <span className="font-mono text-amber-300">{(gestureSettings.gestureHoldMs / 1000).toFixed(2)}s</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={200}
+                        max={1000}
+                        step={50}
+                        value={gestureSettings.gestureHoldMs}
+                        onChange={(e) => updateGestureSetting('gestureHoldMs', Number(e.target.value))}
+                        className="w-full accent-amber-400"
                       />
                     </div>
 
@@ -3196,15 +4390,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               {dockTab === 'params' && spaceMode === '3d' && (
                 <div className="space-y-2.5 text-[11px]">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                    <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
                       <div className="flex justify-between font-bold text-slate-200">
-                        <span>{isEn ? 'Scale (2 Hands)' : 'Tỷ lệ Khối (2 Tay)'}</span>
+                        <span>{isEn ? 'Scale (1 Hand Up / 2 Closer)' : 'Phóng to / Thu nhỏ'}</span>
                         <span className="font-mono text-cyan-300">{scaleVal.toFixed(2)}x</span>
                       </div>
                       <input
                         type="range"
-                        min={0.5}
-                        max={1.75}
+                        min={0.42}
+                        max={2.45}
                         step={0.05}
                         value={scaleVal}
                         onChange={(e) => setScaleVal(Number(e.target.value))}
@@ -3212,7 +4406,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       />
                     </div>
 
-                    <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                    <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
                       <div className="flex justify-between font-bold text-slate-200">
                         <span>{isEn ? 'RPM / Wind / Height' : 'Tốc độ Tua / Biên độ'}</span>
                         <span className="font-mono text-amber-300">{heightVal.toFixed(2)}x</span>
@@ -3228,15 +4422,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       />
                     </div>
 
-                    <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                    <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
                       <div className="flex justify-between font-bold text-slate-200">
-                        <span>{isEn ? 'Explode Layers (3/5F)' : 'Tách Lớp Vỏ (3/5 Ngón)'}</span>
+                        <span>{isEn ? 'Explode Structure (2H L/R)' : 'Tách Cấu Trúc (Kéo 2 tay)'}</span>
                         <span className="font-mono text-emerald-300">{Math.round(explodeVal * 100)}%</span>
                       </div>
                       <input
                         type="range"
                         min={0}
-                        max={1.2}
+                        max={1.85}
                         step={0.05}
                         value={explodeVal}
                         onChange={(e) => setExplodeVal(Number(e.target.value))}
@@ -3274,7 +4468,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   </div>
 
                   {/* 3D Pinch Creative Stamp Brush Selector */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
+                  <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
                     <span className="font-bold text-slate-300">
                       {isEn ? 'Pinch 3D Stamp Shape:' : 'Cọ Sáng Tạo Khi Chụm Ngón:'}
                     </span>
@@ -3284,7 +4478,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                           key={b.id}
                           type="button"
                           onClick={() => setCreativeBrush(b.id)}
-                          className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
+                          className={`px-2.5 py-1 rounded-md font-bold cursor-pointer ${
                             creativeBrush === b.id
                               ? 'bg-cyan-500 text-slate-950'
                               : 'bg-slate-800 text-slate-300 hover:text-white'
@@ -3296,7 +4490,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       <button
                         type="button"
                         onClick={() => setSnapGrid((v) => !v)}
-                        className={`ml-2 px-2.5 py-1 rounded-lg border font-bold cursor-pointer ${
+                        className={`ml-2 px-2.5 py-1 rounded-md border font-bold cursor-pointer ${
                           snapGrid
                             ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
                             : 'bg-slate-800 border-slate-700 text-slate-400'
@@ -3309,8 +4503,110 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               )}
 
-              {dockTab === 'params' && spaceMode === '2d' && (
-                <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+              {dockTab === 'params' && spaceMode === '2d' && mode2D === 'free_create' && (
+                <div className="space-y-2 text-[11px] bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {(
+                        [
+                          { id: 'freehand', vi: 'Vẽ tay tự do', en: 'Freehand', icon: PenTool },
+                          { id: 'line', vi: 'Đoạn thẳng', en: 'Line', icon: Minus },
+                          { id: 'circle', vi: 'Hình tròn', en: 'Circle', icon: Circle },
+                          { id: 'rect', vi: 'Chữ nhật / Vuông', en: 'Rectangle', icon: Square },
+                          { id: 'triangle', vi: 'Tam giác', en: 'Triangle', icon: Triangle },
+                          { id: 'star', vi: 'Ngôi sao 5 cánh', en: '5-Point Star', icon: Star },
+                          { id: 'move', vi: 'Di chuyển hình', en: 'Move Shape', icon: Move }
+                        ] as const
+                      ).map((tool) => {
+                        const ToolIcon = tool.icon;
+                        const active = free2DTool === tool.id;
+                        return (
+                          <button
+                            key={tool.id}
+                            type="button"
+                            onClick={() => setFree2DTool(tool.id)}
+                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md border font-bold cursor-pointer ${
+                              active
+                                ? 'bg-sky-500 text-slate-950 border-sky-300'
+                                : 'bg-slate-950 border-slate-700 text-slate-200 hover:border-sky-400'
+                            }`}
+                          >
+                            <ToolIcon className="w-3.5 h-3.5" />
+                            <span>{isEn ? tool.en : tool.vi}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {['#22d3ee', '#34d399', '#fbbf24', '#f472b6', '#818cf8', '#f8fafc'].map((col) => (
+                        <button
+                          key={col}
+                          type="button"
+                          data-circle="true"
+                          onClick={() => setFree2DColor(col)}
+                          className={`w-5 h-5 rounded-full border cursor-pointer ${
+                            free2DColor === col ? 'border-white scale-110' : 'border-slate-700'
+                          }`}
+                          style={{ backgroundColor: col }}
+                          title={col}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setFree2DAutoShape((v) => !v)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md border font-bold cursor-pointer ${
+                          free2DAutoShape
+                            ? 'bg-purple-500/20 border-purple-400 text-purple-200'
+                            : 'bg-slate-950 border-slate-700 text-slate-300'
+                        }`}
+                      >
+                        <Wand2 className="w-3.5 h-3.5" />
+                        <span>{isEn ? 'Smart Shape Snap' : 'Tự nhận diện & nắn nét đẹp'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFree2DSnap((v) => !v)}
+                        className={`px-2.5 py-1.5 rounded-md border font-bold cursor-pointer ${
+                          free2DSnap
+                            ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                            : 'bg-slate-950 border-slate-700 text-slate-300'
+                        }`}
+                      >
+                        {isEn ? 'Grid Snap (0.5u)' : 'Bắt lưới tọa độ (0.5đv)'}
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleUndoStroke}
+                        disabled={free2DCount === 0}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 disabled:opacity-40 text-slate-200 font-bold cursor-pointer"
+                      >
+                        <Undo2 className="w-3.5 h-3.5" />
+                        <span>{isEn ? 'Undo' : 'Hoàn tác'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearCreations}
+                        disabled={free2DCount === 0}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 disabled:opacity-40 text-rose-300 font-bold cursor-pointer"
+                      >
+                        <Eraser className="w-3.5 h-3.5" />
+                        <span>{isEn ? 'Clear All' : 'Xóa hết'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {dockTab === 'params' && spaceMode === '2d' && mode2D !== 'free_create' && (
+                <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
                   <div className="text-slate-300">
                     {isEn ? active2DMode.descEn : active2DMode.descVi}
                   </div>
@@ -3318,7 +4614,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     <button
                       type="button"
                       onClick={() => canvas2DRef.current?.addVertexOrTile()}
-                      className="px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold cursor-pointer"
+                      className="px-3 py-1.5 rounded-md bg-cyan-500 text-slate-950 font-bold cursor-pointer"
                     >
                       {mode2D === 'tangram_build'
                         ? isEn
@@ -3331,14 +4627,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     <button
                       type="button"
                       onClick={() => canvas2DRef.current?.cycleSymmetry()}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-cyan-300 font-bold cursor-pointer"
+                      className="px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-cyan-300 font-bold cursor-pointer"
                     >
                       {isEn ? 'Cycle Radial Symmetry' : 'Đổi Bậc Đối Xứng (4/6/8/12)'}
                     </button>
                     <button
                       type="button"
                       onClick={handleResetView}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 font-bold cursor-pointer"
+                      className="px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-slate-200 font-bold cursor-pointer"
                     >
                       {isEn ? 'Reset 2D Board' : 'Đặt Lại Bảng 2D'}
                     </button>
@@ -3441,6 +4737,20 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           )}
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Flashy Animated 3D Usage Guide Frame when entering / clicking Không gian 3D */}
+      <Spatial3DGuideModal
+        isOpen={entryView === 'studio' && spaceMode === '3d' && show3DGuide}
+        isEn={isEn}
+        autoShowOn3D={autoShow3DGuide}
+        onToggleAutoShow={setAutoShow3DGuide}
+        onClose={() => setShow3DGuide(false)}
+        onSwitchTo2D={() => {
+          setShow3DGuide(false);
+          handleEnter2DSpace();
+        }}
+      />
+    </>
   );
 };

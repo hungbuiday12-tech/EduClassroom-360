@@ -6,6 +6,7 @@ export type HandGestureId =
   | 'pinch'
   | 'slice_2'
   | 'morph_3'
+  | 'reassemble_4'
   | 'palm_5'
   | 'two_hand_10'
   | 'fist_0';
@@ -19,6 +20,7 @@ export type GestureAction3D =
   | 'pinch_stamp_scale'
   | 'slice_plane'
   | 'explode_layers'
+  | 'reassemble_parts'
   | 'orbit_rotate'
   | 'dual_zoom_tilt'
   | 'freeze_lock'
@@ -42,11 +44,13 @@ export interface GestureSettings {
   pointerSource: PointerSource;
   sensitivityX: number; // 0.5 .. 2.0
   sensitivityY: number; // 0.5 .. 2.0
+  rotationSensitivity: number; // 1.0 .. 4.0 (high responsiveness for 3D model spin)
   pinchSensitivity: number; // 0.6 .. 1.6
   fingerExtendSensitivity: number; // 0.6 .. 1.5
   smoothing: number; // 0.1 .. 0.9
   deadzone: number; // 0.000 .. 0.045
   stabilityFrames: number; // 1 .. 8
+  gestureHoldMs: number; // 0 .. 1000 (default 500ms = 0.5s finger-settle delay)
   trackingFps: 12 | 20 | 30;
   mirrorCamera: boolean;
   invertX: boolean;
@@ -59,13 +63,15 @@ export interface GestureSettings {
 export const DEFAULT_GESTURE_SETTINGS: GestureSettings = {
   handMode: 'auto',
   pointerSource: 'index',
-  sensitivityX: 1.05,
-  sensitivityY: 1.05,
+  sensitivityX: 1.25,
+  sensitivityY: 1.2,
+  rotationSensitivity: 2.35,
   pinchSensitivity: 1.05,
   fingerExtendSensitivity: 1.0,
-  smoothing: 0.55,
-  deadzone: 0.008,
-  stabilityFrames: 4,
+  smoothing: 0.48,
+  deadzone: 0.006,
+  stabilityFrames: 3,
+  gestureHoldMs: 500,
   trackingFps: 20,
   mirrorCamera: true,
   invertX: false,
@@ -76,6 +82,7 @@ export const DEFAULT_GESTURE_SETTINGS: GestureSettings = {
     pinch: 'pinch_stamp_scale',
     slice_2: 'slice_plane',
     morph_3: 'explode_layers',
+    reassemble_4: 'reassemble_parts',
     palm_5: 'orbit_rotate',
     two_hand_10: 'dual_zoom_tilt',
     fist_0: 'freeze_lock'
@@ -85,6 +92,7 @@ export const DEFAULT_GESTURE_SETTINGS: GestureSettings = {
     pinch: 'grab_drag',
     slice_2: 'sweep_tangent',
     morph_3: 'cycle_symmetry',
+    reassemble_4: 'none',
     palm_5: 'rotate_pan',
     two_hand_10: 'dual_compass',
     fist_0: 'freeze_lock'
@@ -161,6 +169,7 @@ export const ACTION_3D_OPTIONS: { id: GestureAction3D; labelVi: string; labelEn:
   { id: 'pinch_stamp_scale', labelVi: 'Đặt khối / Chỉnh tỷ lệ & RPM', labelEn: 'Stamp Block / Scale & RPM' },
   { id: 'slice_plane', labelVi: 'Kéo mặt cắt ngang 3D', labelEn: 'Slide 3D Clipping Plane' },
   { id: 'explode_layers', labelVi: 'Mở bung tách lớp mô hình', labelEn: 'Explode Model Layers' },
+  { id: 'reassemble_parts', labelVi: 'Ghép mô hình về nguyên trạng (4 ngón)', labelEn: 'Reassemble Model (4 Fingers)' },
   { id: 'orbit_rotate', labelVi: 'Xoay 360° & Tách nhẹ', labelEn: '360° Orbit & Soft Explode' },
   { id: 'dual_zoom_tilt', labelVi: 'Thu phóng & Nghiêng 2 tay', labelEn: '2-Hand Zoom & Tilt' },
   { id: 'freeze_lock', labelVi: 'Khóa / Đóng băng thông số', labelEn: 'Freeze & Inspect' },
@@ -196,10 +205,17 @@ export interface HandTrackingFrame {
   errorMessage?: string;
   handCount: number;
   gesture: HandGestureId;
+  candidateGesture: HandGestureId;
+  gestureHoldProgress: number; // 0..1 fill toward 0.5s finger-settle delay
+  gestureSettled: boolean;
   fingerCount: number; // extended fingers across 1 or 2 hands (0..10)
   trackedTipCount: number; // total visible fingertip sensors (0, 5, or 10)
   cursorX: number; // normalized [0..1]
   cursorY: number; // normalized [0..1]
+  cursorDX: number; // frame-to-frame delta X
+  cursorDY: number; // frame-to-frame delta Y
+  hand1VelX: number; // normalized units/sec
+  hand1VelY: number; // normalized units/sec
   pinchRatio: number; // 0..1
   hand1Pinching: boolean;
   hand2Pinching: boolean;
@@ -207,7 +223,11 @@ export interface HandTrackingFrame {
   hand2Index: { x: number; y: number } | null;
   handTiltAngle: number; // wrist -> middle MCP roll angle (radians)
   twoHandSpan: number; // normalized distance between two hands when handCount === 2
+  twoHandSpanDelta: number; // frame-to-frame change in span (+ apart, - closer)
+  twoHandOppositeSpread: boolean; // 2 hands pulling left & right in opposite directions
+  twoHandMovingCloser: boolean; // 2 hands moving from far apart closer together
   twoHandAngle: number; // angle between left & right hands (radians)
+  swipeEvent: 'left' | 'right' | null; // edge-triggered horizontal swipe
   confidence: number; // 0..1
   tips: HandTipPoint[]; // up to 10 fingertip sensors locked to each fingertip
 }
@@ -226,10 +246,10 @@ export const GESTURE_DEFINITIONS: GestureMeta[] = [
   {
     id: 'point_1',
     fingers: '1',
-    labelVi: '1 Ngón · Vẽ & Chạm Điểm',
-    labelEn: '1 Finger · Draw & Plot',
-    actionVi: '2D: Ghim điểm & vẽ tự do · 3D: Vẽ ống Neon & dẫn tay Robot',
-    actionEn: '2D: Plot & freehand draw · 3D: Sculpt Neon tubes & guide Robot Arm',
+    labelVi: '1 Ngón · Kéo Lên Phóng To / Vẽ',
+    labelEn: '1 Finger · Pull Up Zoom / Draw',
+    actionVi: '2D: Tự do vẽ & ghim điểm · 3D: Kéo 1 tay lên để phóng to mô hình (hoặc vẽ Neon)',
+    actionEn: '2D: Freehand draw & plot · 3D: Pull 1 hand upward to zoom in (or sculpt Neon)',
     accent: '#22d3ee'
   },
   {
@@ -237,53 +257,62 @@ export const GESTURE_DEFINITIONS: GestureMeta[] = [
     fingers: '👌',
     labelVi: 'Chụm Ngón · Gắp & Điều Tốc',
     labelEn: 'Pinch · Grab & Modulate',
-    actionVi: '2D: Kéo đỉnh đa giác & compa · 3D: Đặt khối kiến tạo & tăng tua/gió',
-    actionEn: '2D: Drag vertices & shapes · 3D: Stamp 3D blocks & throttle RPM/speed',
+    actionVi: '2D: Gắp kéo hình & đỉnh · 3D: Đặt khối kiến tạo & tăng tua/tốc độ',
+    actionEn: '2D: Grab & drag shapes · 3D: Stamp 3D blocks & throttle RPM/speed',
     accent: '#f59e0b'
   },
   {
     id: 'slice_2',
     fingers: '2',
-    labelVi: '2 Ngón · Đo Góc & Cắt Lớp',
-    labelEn: '2 Fingers · Measure & Slice',
-    actionVi: '2D: Quét tiếp tuyến & tia cắt · 3D: Trượt mặt cắt ngang xuyên vật thể',
-    actionEn: '2D: Sweep secant/tangent · 3D: Slide cross-section clipping plane',
+    labelVi: '2 Ngón · Chọn Bộ Phận / Cắt',
+    labelEn: '2 Fingers · Select Part / Slice',
+    actionVi: '2D: Quét tiếp tuyến · 3D: Sau khi tách cấu trúc, giơ 2 ngón để chọn & xem riêng bộ phận',
+    actionEn: '2D: Sweep secant · 3D: After exploding, show 2 fingers to isolate & inspect a part',
     accent: '#a855f7'
   },
   {
     id: 'morph_3',
     fingers: '3',
-    labelVi: '3 Ngón · Tách Lớp Cấu Trúc',
-    labelEn: '3 Fingers · Explode Layers',
-    actionVi: '2D: Đổi bậc đối xứng · 3D: Mở bung vỏ máy & tách lớp nội thất',
-    actionEn: '2D: Cycle radial symmetry · 3D: Explode engine/hull layers smoothly',
+    labelVi: '3 Ngón · Chế Độ Bổ Trợ',
+    labelEn: '3 Fingers · Auxiliary Mode',
+    actionVi: '2D: Đổi bậc đối xứng · 3D: Vuốt trái/phải đổi bộ phận khi đang tách',
+    actionEn: '2D: Cycle radial symmetry · 3D: Swipe left/right to cycle separated parts',
     accent: '#ec4899'
+  },
+  {
+    id: 'reassemble_4',
+    fingers: '4',
+    labelVi: '4 Ngón · Ghép Mô Hình Về Lại',
+    labelEn: '4 Fingers · Reassemble Model',
+    actionVi: 'Sau khi tách cấu trúc hoặc đang xem riêng bộ phận, giơ 4 ngón (đợi 0.5s) để ghép về nguyên trạng',
+    actionEn: 'After exploding or inspecting a part, raise 4 fingers (hold 0.5s) to reassemble the model',
+    accent: '#f97316'
   },
   {
     id: 'palm_5',
     fingers: '5',
-    labelVi: '5 Ngón · Xoay Quỹ Đạo 360°',
-    labelEn: '5 Fingers · 360° Orbit',
-    actionVi: '2D: Xoay & trượt hệ trục · 3D: Xoay 360° toàn bộ mô hình thực tế',
-    actionEn: '2D: Rotate & pan canvas · 3D: Smoothly orbit 3D model 360°',
+    labelVi: '5 Ngón · Xoay Nhạy Cao 360°',
+    labelEn: '5 Fingers · High-Sens 360° Orbit',
+    actionVi: '2D: Xoay bảng · 3D: Xoay mô hình hoặc bộ phận đang chọn 360° cực nhạy',
+    actionEn: '2D: Rotate canvas · 3D: High-sensitivity 360° rotation of model or isolated part',
     accent: '#10b981'
   },
   {
     id: 'two_hand_10',
-    fingers: '10',
-    labelVi: '10 Ngón (2 Tay) · Compa & Thu Phóng',
-    labelEn: '10 Fingers (2 Hands) · Dual Control',
-    actionVi: '2D: Compa 2 tay, 2 vector u & v · 3D: Thu phóng, nghiêng & vẽ đối xứng kép',
-    actionEn: '2D: 2-hand compass & dual vectors · 3D: Zoom, tilt & dual-beam sculpt',
+    fingers: '2 Tay',
+    labelVi: '2 Tay · Kéo Ngang Tách · Khép Thu Nhỏ',
+    labelEn: '2 Hands · Pull Apart Explode / Close Shrink',
+    actionVi: 'Kéo 2 tay trái–phải ngược nhau để Tách xa cấu trúc · Đưa 2 tay lại gần để Thu nhỏ',
+    actionEn: 'Pull 2 hands oppositely L/R to explode structure · Bring 2 hands closer to zoom out',
     accent: '#38bdf8'
   },
   {
     id: 'fist_0',
     fingers: '0',
-    labelVi: 'Nắm Tay · Khóa Đo Đạc',
-    labelEn: 'Fist · Freeze & Inspect',
-    actionVi: 'Đóng băng tức thì để đọc thông số, công thức & chụp ảnh nét',
-    actionEn: 'Freeze motion instantly to inspect formulas & capture crisp shots',
+    labelVi: 'Nắm Tay · Khóa Đọc Thông Tin',
+    labelEn: 'Fist · Freeze & Read Info',
+    actionVi: 'Đóng băng tức thì để đọc giới thiệu bộ phận, công thức & chụp ảnh nét',
+    actionEn: 'Freeze motion instantly to read part details, formulas & capture crisp shots',
     accent: '#64748b'
   }
 ];
@@ -343,6 +372,7 @@ export interface TrackerProcessOptions {
   smoothing: number;
   deadzone?: number;
   stabilityFrames?: number;
+  gestureHoldMs?: number;
   handMode?: HandControlMode;
   pointerSource?: PointerSource;
   invertX?: boolean;
@@ -362,13 +392,21 @@ export class HandGestureTracker {
   private smoothedTips: Map<number, { x: number; y: number; z: number }> = new Map();
   private smoothCursorX = 0.5;
   private smoothCursorY = 0.5;
+  private prevCursorX = 0.5;
+  private prevCursorY = 0.5;
+  private prevH1X: number | null = null;
+  private prevH2X: number | null = null;
+  private prevProcessMs = 0;
+  private lastSwipeAtMs = 0;
   private smoothSpan = 0.45;
+  private prevSmoothSpan = 0.45;
   private smoothTwoHandAngle = 0;
   private smoothTiltAngle = 0;
   private hasCursorFix = false;
 
   private candidateGesture: HandGestureId = 'none';
   private candidateStreak = 0;
+  private candidateSinceMs = 0;
   private stableGesture: HandGestureId = 'none';
   private missFrames = 0;
   private lastResultFrame: HandTrackingFrame | null = null;
@@ -440,9 +478,12 @@ export class HandGestureTracker {
   public resetSmoothing(): void {
     this.smoothedTips.clear();
     this.hasCursorFix = false;
+    this.prevH1X = null;
+    this.prevH2X = null;
     this.stableGesture = 'none';
     this.candidateGesture = 'none';
     this.candidateStreak = 0;
+    this.candidateSinceMs = 0;
     this.lastResultFrame = null;
   }
 
@@ -464,6 +505,8 @@ export class HandGestureTracker {
     this.lastVideoTime = video.currentTime;
 
     const nowMs = Math.max(this.lastTimestampMs + 1, performance.now());
+    const dtSec = this.prevProcessMs > 0 ? Math.max(0.016, Math.min(0.2, (nowMs - this.prevProcessMs) / 1000)) : 0.05;
+    this.prevProcessMs = nowMs;
     this.lastTimestampMs = nowMs;
 
     const result = this.landmarker.detectForVideo(video, nowMs);
@@ -474,8 +517,12 @@ export class HandGestureTracker {
       if (this.missFrames > 5) {
         this.smoothedTips.clear();
         this.stableGesture = 'none';
+        this.candidateGesture = 'none';
         this.candidateStreak = 0;
+        this.candidateSinceMs = 0;
         this.hasCursorFix = false;
+        this.prevH1X = null;
+        this.prevH2X = null;
       }
       const empty = this.emptyFrame();
       this.lastResultFrame = empty;
@@ -491,6 +538,7 @@ export class HandGestureTracker {
     const smoothing = options.smoothing;
     const deadzone = options.deadzone ?? 0.008;
     const stabilityFrames = Math.max(1, Math.min(8, Math.round(options.stabilityFrames ?? 4)));
+    const gestureHoldMs = Math.max(0, Math.min(1200, options.gestureHoldMs ?? 500));
     const handMode: HandControlMode = options.handMode ?? 'auto';
     const pointerSource: PointerSource = options.pointerSource ?? 'index';
     const invertX = options.invertX ?? false;
@@ -661,6 +709,8 @@ export class HandGestureTracker {
         rawGesture = anyPinch ? 'pinch' : 'slice_2';
       } else if (totalExtended === 3) {
         rawGesture = 'morph_3';
+      } else if (totalExtended === 4 || (indexExt && middleExt && ringExt && pinkyExt && !tips[0]?.extended)) {
+        rawGesture = 'reassemble_4';
       } else {
         rawGesture = 'palm_5';
       }
@@ -671,13 +721,22 @@ export class HandGestureTracker {
     } else {
       this.candidateGesture = rawGesture;
       this.candidateStreak = 1;
+      this.candidateSinceMs = nowMs;
     }
 
-    if (this.candidateStreak >= stabilityFrames) {
-      this.stableGesture = rawGesture;
-    } else if (this.stableGesture === 'none') {
+    const holdElapsedMs = Math.max(0, nowMs - this.candidateSinceMs);
+    const timeSettled = holdElapsedMs >= gestureHoldMs;
+    const gestureHoldProgress =
+      this.stableGesture === rawGesture
+        ? 1
+        : gestureHoldMs > 0
+        ? Math.min(1, holdElapsedMs / gestureHoldMs)
+        : 1;
+
+    if (this.candidateStreak >= stabilityFrames && timeSettled) {
       this.stableGesture = rawGesture;
     }
+    const gestureSettled = this.stableGesture !== 'none' && this.stableGesture === rawGesture;
 
     let targetCursorX = 0.5;
     let targetCursorY = 0.5;
@@ -714,22 +773,77 @@ export class HandGestureTracker {
       targetCursorY = sy / tips.length;
     }
 
+    let cursorDX = 0;
+    let cursorDY = 0;
+    let twoHandSpanDelta = 0;
+
     if (!this.hasCursorFix) {
       this.smoothCursorX = targetCursorX;
       this.smoothCursorY = targetCursorY;
+      this.prevCursorX = targetCursorX;
+      this.prevCursorY = targetCursorY;
       this.smoothSpan = twoHandSpan;
+      this.prevSmoothSpan = twoHandSpan;
       this.smoothTwoHandAngle = twoHandAngle;
       this.smoothTiltAngle = handTiltAngle;
       this.hasCursorFix = true;
     } else {
+      this.prevCursorX = this.smoothCursorX;
+      this.prevCursorY = this.smoothCursorY;
+      this.prevSmoothSpan = this.smoothSpan;
       const moveDist = Math.hypot(targetCursorX - this.smoothCursorX, targetCursorY - this.smoothCursorY);
       if (moveDist > deadzone) {
         this.smoothCursorX += (targetCursorX - this.smoothCursorX) * tipAlpha;
         this.smoothCursorY += (targetCursorY - this.smoothCursorY) * tipAlpha;
       }
-      this.smoothSpan += (twoHandSpan - this.smoothSpan) * 0.35;
+      cursorDX = this.smoothCursorX - this.prevCursorX;
+      cursorDY = this.smoothCursorY - this.prevCursorY;
+      this.smoothSpan += (twoHandSpan - this.smoothSpan) * 0.4;
+      twoHandSpanDelta = this.smoothSpan - this.prevSmoothSpan;
       this.smoothTwoHandAngle += (twoHandAngle - this.smoothTwoHandAngle) * 0.3;
       this.smoothTiltAngle += (handTiltAngle - this.smoothTiltAngle) * 0.3;
+    }
+
+    const hand1VelX = cursorDX / dtSec;
+    const hand1VelY = cursorDY / dtSec;
+
+    // Detect 2-hand opposite horizontal pulling (left hand pulls left, right hand pulls right)
+    let twoHandOppositeSpread = false;
+    let twoHandMovingCloser = false;
+    if (indexedHands.length === 2 && hand1Index && hand2Index) {
+      const h1x = Math.min(hand1Index.x, hand2Index.x);
+      const h2x = Math.max(hand1Index.x, hand2Index.x);
+      if (this.prevH1X !== null && this.prevH2X !== null) {
+        const dH1 = h1x - this.prevH1X;
+        const dH2 = h2x - this.prevH2X;
+        // Left hand moving left (< -0.0025) AND right hand moving right (> +0.0025) OR strong horizontal span expand
+        if ((dH1 < -0.0025 && dH2 > 0.0025) || (twoHandSpanDelta > 0.007 && Math.abs(h2x - h1x) > 0.16)) {
+          twoHandOppositeSpread = true;
+        }
+        // Moving from far apart closer together
+        if (twoHandSpanDelta < -0.0045 || (dH1 > 0.0025 && dH2 < -0.0025)) {
+          twoHandMovingCloser = true;
+        }
+      }
+      this.prevH1X = h1x;
+      this.prevH2X = h2x;
+    } else {
+      this.prevH1X = null;
+      this.prevH2X = null;
+    }
+
+    // Detect crisp single-hand horizontal swipe (left or right) with cooldown (after fingers settle)
+    let swipeEvent: 'left' | 'right' | null = null;
+    if (
+      indexedHands.length === 1 &&
+      this.stableGesture !== 'none' &&
+      this.stableGesture !== 'fist_0' &&
+      nowMs - this.lastSwipeAtMs > 620 &&
+      Math.abs(hand1VelX) > 0.85 &&
+      Math.abs(hand1VelX) > Math.abs(hand1VelY) * 1.45
+    ) {
+      swipeEvent = hand1VelX > 0 ? 'right' : 'left';
+      this.lastSwipeAtMs = nowMs;
     }
 
     const frame: HandTrackingFrame = {
@@ -738,10 +852,17 @@ export class HandGestureTracker {
       engine: this.engineState,
       handCount: indexedHands.length,
       gesture: this.stableGesture,
+      candidateGesture: this.candidateGesture,
+      gestureHoldProgress,
+      gestureSettled,
       fingerCount: totalExtended,
       trackedTipCount: tips.length,
       cursorX: this.smoothCursorX,
       cursorY: this.smoothCursorY,
+      cursorDX,
+      cursorDY,
+      hand1VelX,
+      hand1VelY,
       pinchRatio: maxPinchRatio,
       hand1Pinching,
       hand2Pinching,
@@ -749,7 +870,11 @@ export class HandGestureTracker {
       hand2Index,
       handTiltAngle: this.smoothTiltAngle,
       twoHandSpan: this.smoothSpan,
+      twoHandSpanDelta,
+      twoHandOppositeSpread,
+      twoHandMovingCloser,
       twoHandAngle: this.smoothTwoHandAngle,
+      swipeEvent,
       confidence: Math.min(0.99, confSum / indexedHands.length),
       tips
     };
@@ -819,10 +944,17 @@ export class HandGestureTracker {
       errorMessage: this.errorMessage,
       handCount: 0,
       gesture: 'none',
+      candidateGesture: 'none',
+      gestureHoldProgress: 0,
+      gestureSettled: false,
       fingerCount: 0,
       trackedTipCount: 0,
       cursorX: this.smoothCursorX,
       cursorY: this.smoothCursorY,
+      cursorDX: 0,
+      cursorDY: 0,
+      hand1VelX: 0,
+      hand1VelY: 0,
       pinchRatio: 0,
       hand1Pinching: false,
       hand2Pinching: false,
@@ -830,7 +962,11 @@ export class HandGestureTracker {
       hand2Index: null,
       handTiltAngle: this.smoothTiltAngle,
       twoHandSpan: this.smoothSpan,
+      twoHandSpanDelta: 0,
+      twoHandOppositeSpread: false,
+      twoHandMovingCloser: false,
       twoHandAngle: this.smoothTwoHandAngle,
+      swipeEvent: null,
       confidence: 0,
       tips: []
     };

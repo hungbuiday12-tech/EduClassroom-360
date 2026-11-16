@@ -8,12 +8,15 @@ import {
 } from './handGestureTracker';
 
 export type Spatial2DModeId =
+  | 'free_create'
   | 'polygon_euler'
   | 'compass_circle'
   | 'vectors_oxy'
   | 'symmetry_kaleido'
   | 'conic_wave'
   | 'tangram_build';
+
+export type Free2DToolId = 'freehand' | 'line' | 'circle' | 'rect' | 'triangle' | 'star' | 'move';
 
 export interface Spatial2DModeMeta {
   id: Spatial2DModeId;
@@ -26,6 +29,15 @@ export interface Spatial2DModeMeta {
 }
 
 export const SPATIAL_2D_MODES: Spatial2DModeMeta[] = [
+  {
+    id: 'free_create',
+    titleVi: 'Tự Do Tạo Hình Bằng Tay',
+    titleEn: 'Freehand Visual Shape Studio',
+    formula: 'Tự do vẽ nét & dựng hình trực quan trên Oxy',
+    descVi: 'Tự do vẽ nét bằng tay/chuột hoặc chọn hình (Tròn, Vuông, Tam giác, Thẳng, Ngôi sao), kéo thả & bật Tự nắn nét hình học.',
+    descEn: 'Draw freehand curves or drag & drop geometric shapes (Circle, Rect, Triangle, Line, Star) freely with optional smart shape-snap.',
+    badge: 'TỰ DO TẠO'
+  },
   {
     id: 'polygon_euler',
     titleVi: 'Tam giác & Đường thẳng Euler',
@@ -88,6 +100,7 @@ export interface Spatial2DHandle {
   resetBoard: () => void;
   addVertexOrTile: () => void;
   cycleSymmetry: () => void;
+  undoFreeItem: () => void;
 }
 
 interface Spatial2DGestureCanvasProps {
@@ -99,6 +112,11 @@ interface Spatial2DGestureCanvasProps {
   frozen: boolean;
   handFrameRef: React.MutableRefObject<HandTrackingFrame>;
   gestureSettings?: GestureSettings;
+  freeTool?: Free2DToolId;
+  freeColor?: string;
+  freeSnap?: boolean;
+  freeAutoShape?: boolean;
+  onFreeCountChange?: (count: number) => void;
   onMetricsChange: (metrics: { metricA: string; metricB: string; metricC: string }) => void;
 }
 
@@ -208,8 +226,119 @@ function pointInPoly(p: Vec2, poly: Vec2[]): boolean {
   return inside;
 }
 
+type Free2DItem =
+  | { kind: 'stroke'; pts: Vec2[]; color: string }
+  | { kind: 'line'; x1: number; y1: number; x2: number; y2: number; color: string }
+  | { kind: 'circle'; cx: number; cy: number; r: number; color: string }
+  | { kind: 'rect'; x1: number; y1: number; x2: number; y2: number; color: string }
+  | { kind: 'triangle'; cx: number; cy: number; x2: number; y2: number; color: string }
+  | { kind: 'star'; cx: number; cy: number; r: number; rot: number; color: string };
+
+function tryRecognizeFreehand(pts: Vec2[], color: string): Free2DItem | null {
+  if (pts.length < 6) return null;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  let pathLen = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+    if (i > 0) pathLen += Math.hypot(p.x - pts[i - 1].x, p.y - pts[i - 1].y);
+  }
+  const start = pts[0];
+  const end = pts[pts.length - 1];
+  const directDist = Math.hypot(end.x - start.x, end.y - start.y);
+  const bboxW = maxX - minX;
+  const bboxH = maxY - minY;
+  const diag = Math.hypot(bboxW, bboxH);
+  if (diag < 0.45) return null;
+
+  // Straight line check: path length closely matches start-to-end distance
+  if (directDist > 0.6 && pathLen / directDist < 1.14) {
+    return { kind: 'line', x1: start.x, y1: start.y, x2: end.x, y2: end.y, color };
+  }
+
+  // Closed shape checks
+  if (directDist < diag * 0.42) {
+    const cx = (minX + maxX) * 0.5;
+    const cy = (minY + maxY) * 0.5;
+    const avgR =
+      pts.reduce((acc, p) => acc + Math.hypot(p.x - cx, p.y - cy), 0) / pts.length;
+    const radialVariance =
+      pts.reduce((acc, p) => acc + Math.abs(Math.hypot(p.x - cx, p.y - cy) - avgR), 0) / pts.length;
+
+    if (radialVariance < avgR * 0.22 && avgR > 0.35) {
+      return { kind: 'circle', cx, cy, r: avgR, color };
+    }
+    if (bboxW > 0.45 && bboxH > 0.45 && radialVariance >= avgR * 0.22) {
+      const aspect = Math.min(bboxW, bboxH) / Math.max(bboxW, bboxH);
+      if (aspect > 0.35) {
+        return { kind: 'rect', x1: minX, y1: minY, x2: maxX, y2: maxY, color };
+      }
+    }
+  }
+  return null;
+}
+
+function getFreeItemCenter(item: Free2DItem): Vec2 {
+  if (item.kind === 'stroke') {
+    if (item.pts.length === 0) return { x: 0, y: 0 };
+    let sx = 0, sy = 0;
+    for (const p of item.pts) {
+      sx += p.x;
+      sy += p.y;
+    }
+    return { x: sx / item.pts.length, y: sy / item.pts.length };
+  }
+  if (item.kind === 'line' || item.kind === 'rect') {
+    return { x: (item.x1 + item.x2) * 0.5, y: (item.y1 + item.y2) * 0.5 };
+  }
+  return { x: item.cx, y: item.cy };
+}
+
+function translateFreeItem(item: Free2DItem, dx: number, dy: number): void {
+  if (item.kind === 'stroke') {
+    for (const p of item.pts) {
+      p.x += dx;
+      p.y += dy;
+    }
+  } else if (item.kind === 'line' || item.kind === 'rect') {
+    item.x1 += dx;
+    item.y1 += dy;
+    item.x2 += dx;
+    item.y2 += dy;
+  } else if (item.kind === 'triangle') {
+    item.cx += dx;
+    item.cy += dy;
+    item.x2 += dx;
+    item.y2 += dy;
+  } else {
+    item.cx += dx;
+    item.cy += dy;
+  }
+}
+
 export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2DGestureCanvasProps>(
-  ({ mode2D, accentCss, isEn, cameraActive, virtualGesture, frozen, handFrameRef, gestureSettings, onMetricsChange }, ref) => {
+  (
+    {
+      mode2D,
+      accentCss,
+      isEn,
+      cameraActive,
+      virtualGesture,
+      frozen,
+      handFrameRef,
+      gestureSettings,
+      freeTool = 'freehand',
+      freeColor,
+      freeSnap = false,
+      freeAutoShape = false,
+      onFreeCountChange,
+      onMetricsChange
+    },
+    ref
+  ) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const gridCacheRef = useRef<{
@@ -221,10 +350,30 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
     } | null>(null);
     const gestureSettingsRef = useRef<GestureSettings | undefined>(gestureSettings);
     gestureSettingsRef.current = gestureSettings;
+    const freeToolRef = useRef<Free2DToolId>(freeTool);
+    freeToolRef.current = freeTool;
+    const freeColorRef = useRef<string>(freeColor || accentCss);
+    freeColorRef.current = freeColor || accentCss;
+    const freeSnapRef = useRef<boolean>(freeSnap);
+    freeSnapRef.current = freeSnap;
+    const freeAutoShapeRef = useRef<boolean>(freeAutoShape);
+    freeAutoShapeRef.current = freeAutoShape;
+    const onFreeCountChangeRef = useRef(onFreeCountChange);
+    onFreeCountChangeRef.current = onFreeCountChange;
 
     // Interactive world states held in refs for crisp 60fps animation
     const worldScaleRef = useRef<number>(48); // pixels per unit
     const boardRotRef = useRef<number>(0);
+
+    // Mode 0: Tự do tạo (Freehand & Visual Shapes)
+    const freeItemsRef = useRef<Free2DItem[]>([]);
+    const activeFreeStrokeRef = useRef<Vec2[]>([]);
+    const activeFreeStrokeH2Ref = useRef<Vec2[]>([]);
+    const freeShapeOriginRef = useRef<Vec2 | null>(null);
+    const freeShapePreviewRef = useRef<Free2DItem | null>(null);
+    const grabbedFreeIdxRef = useRef<number | null>(null);
+    const lastFreeDragPosRef = useRef<Vec2 | null>(null);
+    const lastFreeMetricLabelRef = useRef<string>('');
 
     // Mode 1: Polygon / Euler Triangle vertices
     const polyVertsRef = useRef<Vec2[]>([
@@ -290,6 +439,14 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
 
     const resetBoard = useCallback(() => {
       boardRotRef.current = 0;
+      freeItemsRef.current = [];
+      activeFreeStrokeRef.current = [];
+      activeFreeStrokeH2Ref.current = [];
+      freeShapeOriginRef.current = null;
+      freeShapePreviewRef.current = null;
+      grabbedFreeIdxRef.current = null;
+      lastFreeDragPosRef.current = null;
+      onFreeCountChangeRef.current?.(0);
       polyVertsRef.current = [
         { x: -3.5, y: -2.0 },
         { x: 3.6, y: -1.8 },
@@ -319,6 +476,15 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
           a.click();
         },
         clearCanvas: () => {
+          if (mode2D === 'free_create') {
+            freeItemsRef.current = [];
+            activeFreeStrokeRef.current = [];
+            activeFreeStrokeH2Ref.current = [];
+            freeShapeOriginRef.current = null;
+            freeShapePreviewRef.current = null;
+            grabbedFreeIdxRef.current = null;
+            onFreeCountChangeRef.current?.(0);
+          }
           kaleidoStrokesRef.current = [];
           activeKaleidoH1Ref.current = [];
           activeKaleidoH2Ref.current = [];
@@ -351,6 +517,12 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
           const next = orders[(orders.indexOf(kaleidoOrderRef.current) + 1) % orders.length];
           kaleidoOrderRef.current = next;
           setKaleidoOrderUI(next);
+        },
+        undoFreeItem: () => {
+          if (freeItemsRef.current.length > 0) {
+            freeItemsRef.current.pop();
+            onFreeCountChangeRef.current?.(freeItemsRef.current.length);
+          }
         }
       }),
       [mode2D, resetBoard]
@@ -514,7 +686,127 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
 
         // Apply gesture interactions to the active 2D geometric lab (unless frozen)
         if (!frozen && mapped2DAction !== 'freeze_lock' && mapped2DAction !== 'none') {
-          if (mode2D === 'polygon_euler') {
+          if (mode2D === 'free_create') {
+            const snapVal = (v: number) => (freeSnapRef.current ? Math.round(v * 2) / 2 : v);
+            const curPt = { x: snapVal(primaryWorld.x), y: snapVal(primaryWorld.y) };
+            const activeCol = freeColorRef.current || accentCss;
+            const tool = freeToolRef.current;
+
+            const isMovingMode = tool === 'move' || (isPinchActive && tool === 'freehand' && !pointerDownRef.current);
+            const isEngaged =
+              pointerDownRef.current ||
+              (hasHand && (isPointDraw || isPinchActive || (isTwoHand && h2World !== null)));
+
+            if (isMovingMode && isEngaged) {
+              if (grabbedFreeIdxRef.current === null) {
+                let bestIdx: number | null = null;
+                let bestD = 1.65;
+                freeItemsRef.current.forEach((it, idx) => {
+                  const c = getFreeItemCenter(it);
+                  const d = Math.hypot(c.x - primaryWorld.x, c.y - primaryWorld.y);
+                  if (d < bestD) {
+                    bestD = d;
+                    bestIdx = idx;
+                  }
+                });
+                grabbedFreeIdxRef.current = bestIdx;
+                lastFreeDragPosRef.current = { x: curPt.x, y: curPt.y };
+              } else if (lastFreeDragPosRef.current && freeItemsRef.current[grabbedFreeIdxRef.current]) {
+                const dx = curPt.x - lastFreeDragPosRef.current.x;
+                const dy = curPt.y - lastFreeDragPosRef.current.y;
+                if (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) {
+                  translateFreeItem(freeItemsRef.current[grabbedFreeIdxRef.current], dx, dy);
+                  lastFreeDragPosRef.current = { x: curPt.x, y: curPt.y };
+                }
+              }
+            } else {
+              grabbedFreeIdxRef.current = null;
+              lastFreeDragPosRef.current = null;
+
+              if (tool === 'freehand') {
+                if (isEngaged) {
+                  const pts1 = activeFreeStrokeRef.current;
+                  const last1 = pts1[pts1.length - 1];
+                  if (!last1 || Math.hypot(h1World.x - last1.x, h1World.y - last1.y) > 0.07) {
+                    pts1.push({ x: snapVal(h1World.x), y: snapVal(h1World.y) });
+                    if (pts1.length > 260) pts1.shift();
+                  }
+                  if (hasHand && isTwoHand && h2World) {
+                    const pts2 = activeFreeStrokeH2Ref.current;
+                    const last2 = pts2[pts2.length - 1];
+                    if (!last2 || Math.hypot(h2World.x - last2.x, h2World.y - last2.y) > 0.07) {
+                      pts2.push({ x: snapVal(h2World.x), y: snapVal(h2World.y) });
+                      if (pts2.length > 260) pts2.shift();
+                    }
+                  }
+                } else {
+                  if (activeFreeStrokeRef.current.length >= 2) {
+                    const recognized = freeAutoShapeRef.current
+                      ? tryRecognizeFreehand(activeFreeStrokeRef.current, activeCol)
+                      : null;
+                    freeItemsRef.current.push(
+                      recognized || { kind: 'stroke', pts: activeFreeStrokeRef.current, color: activeCol }
+                    );
+                    lastFreeMetricLabelRef.current = recognized
+                      ? recognized.kind.toUpperCase()
+                      : `${activeFreeStrokeRef.current.length} điểm`;
+                    onFreeCountChangeRef.current?.(freeItemsRef.current.length);
+                  }
+                  if (activeFreeStrokeH2Ref.current.length >= 2) {
+                    freeItemsRef.current.push({ kind: 'stroke', pts: activeFreeStrokeH2Ref.current, color: '#34d399' });
+                    onFreeCountChangeRef.current?.(freeItemsRef.current.length);
+                  }
+                  activeFreeStrokeRef.current = [];
+                  activeFreeStrokeH2Ref.current = [];
+                }
+              } else {
+                // Parametric shape tool (line, circle, rect, triangle, star)
+                if (isEngaged) {
+                  const pStart = hasHand && isTwoHand && h2World ? { x: snapVal(h1World.x), y: snapVal(h1World.y) } : freeShapeOriginRef.current || curPt;
+                  const pEnd = hasHand && isTwoHand && h2World ? { x: snapVal(h2World.x), y: snapVal(h2World.y) } : curPt;
+                  if (!freeShapeOriginRef.current) freeShapeOriginRef.current = { ...pStart };
+                  const o = freeShapeOriginRef.current;
+                  const startPt = hasHand && isTwoHand && h2World ? pStart : o;
+                  const r = Math.max(0.25, Math.hypot(pEnd.x - startPt.x, pEnd.y - startPt.y));
+
+                  if (tool === 'line') {
+                    freeShapePreviewRef.current = { kind: 'line', x1: startPt.x, y1: startPt.y, x2: pEnd.x, y2: pEnd.y, color: activeCol };
+                  } else if (tool === 'circle') {
+                    freeShapePreviewRef.current = { kind: 'circle', cx: startPt.x, cy: startPt.y, r, color: activeCol };
+                  } else if (tool === 'rect') {
+                    freeShapePreviewRef.current = { kind: 'rect', x1: startPt.x, y1: startPt.y, x2: pEnd.x, y2: pEnd.y, color: activeCol };
+                  } else if (tool === 'triangle') {
+                    freeShapePreviewRef.current = { kind: 'triangle', cx: startPt.x, cy: startPt.y, x2: pEnd.x, y2: pEnd.y, color: activeCol };
+                  } else if (tool === 'star') {
+                    freeShapePreviewRef.current = {
+                      kind: 'star',
+                      cx: startPt.x,
+                      cy: startPt.y,
+                      r,
+                      rot: Math.atan2(pEnd.y - startPt.y, pEnd.x - startPt.x),
+                      color: activeCol
+                    };
+                  }
+                } else if (freeShapePreviewRef.current) {
+                  const item = freeShapePreviewRef.current;
+                  const valid =
+                    item.kind === 'line' || item.kind === 'rect'
+                      ? Math.hypot(item.x2 - item.x1, item.y2 - item.y1) > 0.25
+                      : item.kind === 'triangle'
+                      ? Math.hypot(item.x2 - item.cx, item.y2 - item.cy) > 0.25
+                      : item.kind === 'circle' || item.kind === 'star'
+                      ? item.r > 0.25
+                      : true;
+                  if (valid) {
+                    freeItemsRef.current.push(item);
+                    onFreeCountChangeRef.current?.(freeItemsRef.current.length);
+                  }
+                  freeShapeOriginRef.current = null;
+                  freeShapePreviewRef.current = null;
+                }
+              }
+            }
+          } else if (mode2D === 'polygon_euler') {
             const verts = polyVertsRef.current;
             if (isTwoHand && h2World) {
               // Dual hand simultaneously moves A & B!
@@ -699,7 +991,143 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
         let metricB = '';
         let metricC = '';
 
-        if (mode2D === 'polygon_euler') {
+        if (mode2D === 'free_create') {
+          const drawFreeItem = (item: Free2DItem, isPreview = false) => {
+            ctx.save();
+            ctx.strokeStyle = item.color;
+            ctx.fillStyle = `${item.color}24`;
+            ctx.lineWidth = isPreview ? 2.2 : 2.8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            if (isPreview) ctx.setLineDash([6, 4]);
+
+            if (item.kind === 'stroke') {
+              if (item.pts.length >= 2) {
+                ctx.beginPath();
+                item.pts.forEach((pt, idx) => {
+                  const sp = worldToScreen(pt.x, pt.y, w, h);
+                  if (idx === 0) ctx.moveTo(sp.x, sp.y);
+                  else ctx.lineTo(sp.x, sp.y);
+                });
+                ctx.stroke();
+              }
+            } else if (item.kind === 'line') {
+              const s1 = worldToScreen(item.x1, item.y1, w, h);
+              const s2 = worldToScreen(item.x2, item.y2, w, h);
+              ctx.beginPath();
+              ctx.moveTo(s1.x, s1.y);
+              ctx.lineTo(s2.x, s2.y);
+              ctx.stroke();
+              const len = Math.hypot(item.x2 - item.x1, item.y2 - item.y1);
+              ctx.fillStyle = '#ffffff';
+              ctx.beginPath();
+              ctx.arc(s1.x, s1.y, 4, 0, Math.PI * 2);
+              ctx.arc(s2.x, s2.y, 4, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.font = 'bold 11px monospace';
+              ctx.fillText(`L=${len.toFixed(2)}`, (s1.x + s2.x) * 0.5 + 8, (s1.y + s2.y) * 0.5 - 6);
+            } else if (item.kind === 'circle') {
+              const sc = worldToScreen(item.cx, item.cy, w, h);
+              ctx.beginPath();
+              ctx.arc(sc.x, sc.y, item.r * scale, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+              ctx.fillStyle = '#ffffff';
+              ctx.beginPath();
+              ctx.arc(sc.x, sc.y, 3.5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.font = 'bold 11px monospace';
+              ctx.fillText(`R=${item.r.toFixed(2)}`, sc.x + 8, sc.y - 8);
+            } else if (item.kind === 'rect') {
+              const s1 = worldToScreen(item.x1, item.y1, w, h);
+              const s2 = worldToScreen(item.x2, item.y2, w, h);
+              const rx = Math.min(s1.x, s2.x);
+              const ry = Math.min(s1.y, s2.y);
+              const rw = Math.abs(s2.x - s1.x);
+              const rh = Math.abs(s2.y - s1.y);
+              ctx.beginPath();
+              ctx.rect(rx, ry, rw, rh);
+              ctx.fill();
+              ctx.stroke();
+              const ww = Math.abs(item.x2 - item.x1);
+              const hh = Math.abs(item.y2 - item.y1);
+              ctx.fillStyle = '#e2e8f0';
+              ctx.font = 'bold 11px monospace';
+              ctx.fillText(`${ww.toFixed(1)}×${hh.toFixed(1)} (S=${(ww * hh).toFixed(1)})`, rx + 6, ry - 6);
+            } else if (item.kind === 'triangle') {
+              const baseDx = item.x2 - item.cx;
+              const baseDy = item.y2 - item.cy;
+              const r = Math.hypot(baseDx, baseDy);
+              const baseAng = Math.atan2(baseDy, baseDx);
+              ctx.beginPath();
+              for (let k = 0; k < 3; k++) {
+                const a = baseAng + (k * Math.PI * 2) / 3;
+                const sp = worldToScreen(item.cx + Math.cos(a) * r, item.cy + Math.sin(a) * r, w, h);
+                if (k === 0) ctx.moveTo(sp.x, sp.y);
+                else ctx.lineTo(sp.x, sp.y);
+              }
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+              const sc = worldToScreen(item.cx, item.cy, w, h);
+              const side = r * Math.sqrt(3);
+              ctx.fillStyle = '#e2e8f0';
+              ctx.font = 'bold 11px monospace';
+              ctx.fillText(`Δ a=${side.toFixed(1)}`, sc.x + 6, sc.y - 6);
+            } else if (item.kind === 'star') {
+              ctx.beginPath();
+              for (let k = 0; k < 10; k++) {
+                const a = item.rot + (k * Math.PI) / 5;
+                const rad = k % 2 === 0 ? item.r : item.r * 0.42;
+                const sp = worldToScreen(item.cx + Math.cos(a) * rad, item.cy + Math.sin(a) * rad, w, h);
+                if (k === 0) ctx.moveTo(sp.x, sp.y);
+                else ctx.lineTo(sp.x, sp.y);
+              }
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+            }
+            ctx.restore();
+          };
+
+          freeItemsRef.current.forEach((it, idx) => {
+            drawFreeItem(it, false);
+            if (grabbedFreeIdxRef.current === idx) {
+              const c = getFreeItemCenter(it);
+              const sc = worldToScreen(c.x, c.y, w, h);
+              ctx.strokeStyle = '#fbbf24';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(sc.x, sc.y, 12, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          });
+
+          if (activeFreeStrokeRef.current.length >= 2) {
+            drawFreeItem({ kind: 'stroke', pts: activeFreeStrokeRef.current, color: freeColorRef.current || accentCss }, false);
+          }
+          if (activeFreeStrokeH2Ref.current.length >= 2) {
+            drawFreeItem({ kind: 'stroke', pts: activeFreeStrokeH2Ref.current, color: '#34d399' }, false);
+          }
+          if (freeShapePreviewRef.current) {
+            drawFreeItem(freeShapePreviewRef.current, true);
+          }
+
+          const toolLabels: Record<Free2DToolId, string> = {
+            freehand: isEn ? 'Freehand Draw' : 'Vẽ tự do',
+            line: isEn ? 'Line' : 'Đoạn thẳng',
+            circle: isEn ? 'Circle' : 'Hình tròn',
+            rect: isEn ? 'Rectangle' : 'Chữ nhật',
+            triangle: isEn ? 'Triangle' : 'Tam giác',
+            star: isEn ? '5-Pt Star' : 'Ngôi sao',
+            move: isEn ? 'Move Shape' : 'Di chuyển'
+          };
+          metricA = `${toolLabels[freeToolRef.current]} · ${freeItemsRef.current.length} ${isEn ? 'items' : 'hình'}`;
+          metricB = freeSnapRef.current ? (isEn ? 'Snap Grid 0.5' : 'Bắt lưới 0.5') : (isEn ? 'Free Coords' : 'Tọa độ tự do');
+          metricC = freeAutoShapeRef.current
+            ? isEn ? 'Auto-Shape ON' : 'Tự nắn hình: BẬT'
+            : lastFreeMetricLabelRef.current || (isEn ? 'Draw or drag shape' : 'Kéo tay/chuột để tạo hình');
+        } else if (mode2D === 'polygon_euler') {
           const verts = polyVertsRef.current;
           const scrVerts = verts.map((v) => worldToScreen(v.x, v.y, w, h));
 

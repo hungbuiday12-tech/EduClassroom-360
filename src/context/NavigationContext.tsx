@@ -53,7 +53,11 @@ const DEFAULT_LOCATION: NavLocation = {
 export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): string {
   const isEn = lang === 'en';
   if (loc.tutorOpen) {
-    return isEn ? 'AI Tutor' : 'Gia sư AI';
+    return loc.tutorSubject === 'physics'
+      ? 'Syn Physics'
+      : loc.tutorSubject === 'cs'
+      ? 'Syn Code'
+      : 'Syn Math';
   }
   switch (loc.subject) {
     case 'overview':

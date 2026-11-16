@@ -795,8 +795,8 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                         {
                           label:
                             activeLecture.sim2dMode === 'geometry'
-                              ? 'Mô phỏng 2D Hình học'
-                              : 'Mô phỏng 2D Đồ thị',
+                              ? t('', 'Mô phỏng 2D Hình học', '2D Geometry Sim')
+                              : t('', 'Mô phỏng 2D Đồ thị', '2D Grapher Sim'),
                           onClick: handleOpen2DSim,
                           variant: 'primary' as const,
                           icon:
@@ -807,7 +807,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                             )
                         },
                         {
-                          label: `Mô phỏng 3D · ${get3DModeLabel(activeLecture.sim3dMode)}`,
+                          label: `${t('', 'Mô phỏng 3D', '3D Sim')} · ${get3DModeLabel(activeLecture.sim3dMode)}`,
                           onClick: handleOpen3DSim,
                           variant: 'amber' as const,
                           icon: <Box className="w-3.5 h-3.5" />
@@ -815,13 +815,13 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       ]
                     : []),
                   {
-                    label: 'Ôn thẻ Flashcard',
+                    label: t('', 'Ôn thẻ Flashcard', 'Review Flashcards'),
                     onClick: () => setActiveTab('flashcards'),
                     variant: 'secondary' as const,
                     icon: <Layers className="w-3.5 h-3.5" />
                   },
                   {
-                    label: 'Làm Trắc nghiệm & Tự luận',
+                    label: t('', 'Làm Trắc nghiệm & Tự luận', 'Practice & Quiz'),
                     onClick: () => setActiveTab('quiz'),
                     variant: 'emerald' as const,
                     icon: <Award className="w-3.5 h-3.5" />
@@ -840,7 +840,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   {activeLecture.flashcards && activeLecture.flashcards.length > 0 ? (
                     <div className="flex flex-col items-center">
                       <div className="w-full max-w-lg mb-2 flex items-center justify-between text-xs text-slate-500 font-medium">
-                        <span>Thẻ ghi nhớ kiểm tra kiến thức</span>
+                        <span>{t('', 'Thẻ ghi nhớ kiểm tra kiến thức', 'Active Recall Flashcard')}</span>
                         <span className="font-mono tabular-nums">
                           {currentCardIdx + 1} / {activeLecture.flashcards.length}
                         </span>
@@ -854,10 +854,10 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
                             <Sparkles className="w-3.5 h-3.5" />
-                            {isFlipped ? 'Đáp Án / Bí Kíp' : 'Câu Hỏi Tự Vấn'}
+                            {isFlipped ? t('', 'Đáp Án / Bí Kíp', 'Answer / Key Tip') : t('', 'Câu Hỏi Tự Vấn', 'Prompt Question')}
                           </span>
                           <span className="text-[11px] text-slate-400 group-hover:text-indigo-500 transition-colors">
-                            Nhấp để lật thẻ
+                            {t('', 'Nhấp để lật thẻ', 'Click to flip')}
                           </span>
                         </div>
 
@@ -873,13 +873,13 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                           </div>
                           {isFlipped && activeLecture.flashcards[currentCardIdx].tip && (
                             <div className="mt-3 text-xs text-amber-800 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-950/40 py-1.5 px-3 rounded-lg inline-block">
-                              Mẹo: <FormattedText text={activeLecture.flashcards[currentCardIdx].tip!} />
+                              {t('', 'Mẹo:', 'Tip:')} <FormattedText text={activeLecture.flashcards[currentCardIdx].tip!} />
                             </div>
                           )}
                         </div>
 
                         <div className="text-center text-[11px] text-slate-400">
-                          {isFlipped ? 'Nhấp để xem câu hỏi' : 'Nhấp vào thẻ để lật đáp án'}
+                          {isFlipped ? t('', 'Nhấp để xem câu hỏi', 'Click to see question') : t('', 'Nhấp vào thẻ để lật đáp án', 'Click card to reveal answer')}
                         </div>
                       </div>
 
@@ -893,13 +893,13 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                           }}
                           className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
                         >
-                          ← Thẻ trước
+                          {t('', '← Thẻ trước', '← Prev Card')}
                         </button>
                         <button
                           onClick={() => setIsFlipped(!isFlipped)}
                           className="px-5 py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs transition-colors whitespace-nowrap"
                         >
-                          {isFlipped ? 'Lật lại câu hỏi' : 'Lật xem đáp án'}
+                          {isFlipped ? t('', 'Lật lại câu hỏi', 'Show Question') : t('', 'Lật xem đáp án', 'Reveal Answer')}
                         </button>
                         <button
                           disabled={currentCardIdx === activeLecture.flashcards.length - 1}
@@ -911,13 +911,13 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                           }}
                           className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
                         >
-                          Thẻ tiếp →
+                          {t('', 'Thẻ tiếp →', 'Next Card →')}
                         </button>
                       </div>
                     </div>
                   ) : (
                     <p className="text-slate-500 text-xs italic text-center py-6">
-                      Chuyên đề này đang cập nhật bộ thẻ Flashcard. Mời bạn làm bài tập Trắc nghiệm &amp; Tự luận!
+                      {t('', 'Chuyên đề này đang cập nhật bộ thẻ Flashcard. Mời bạn làm bài tập Trắc nghiệm & Tự luận!', 'Flashcards are being updated for this topic. Try the Practice & Quiz exercises!')}
                     </p>
                   )}
                 </div>

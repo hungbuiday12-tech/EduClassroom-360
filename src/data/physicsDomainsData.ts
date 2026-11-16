@@ -131,7 +131,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Đồ thị Chuyển động Biến đổi Đều & Vectơ',
     subtitle: 'Quan sát trực tiếp vị trí, vận tốc v(t), gia tốc a(t) và tổng hợp vectơ theo thời gian thực',
     formula: 'x = x₀ + v₀t + ½at² · v = v₀ + at',
-    linkedLessonId: 'phys-10-1',
+    linkedLessonId: 'phys-10-accel',
     defaultParams: { vizMode: 1, v0: 4, accel: 2, angleDeg: 35, f1: 30, f2: 20 },
     paramBounds: {
       vizMode: { min: 0, max: 2, step: 1, unit: '', label: 'Chế độ hiển thị' },
@@ -152,7 +152,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Rơi Tự Do & Bảo Toàn Cơ Năng',
     subtitle: 'Biểu đồ cột Động năng Wđ, Thế năng Wt và Cơ năng W trong trọng trường',
     formula: 'W = ½mv² + mgh = const',
-    linkedLessonId: 'phys-10-2',
+    linkedLessonId: 'phys-10-b10',
     defaultParams: { mass: 2, height: 25, gravity: 9.8 },
     paramBounds: {
       mass: { min: 0.5, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng m' },
@@ -172,7 +172,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Quỹ đạo Ném Xiên Parabol',
     subtitle: 'Phân tích thành phần vận tốc vx, vy, tầm xa L và độ cao cực đại H',
     formula: 'L = (v₀²·sin2α)/g · H = (v₀·sinα)²/(2g)',
-    linkedLessonId: 'phys-10-3',
+    linkedLessonId: 'phys-10-proj',
     defaultParams: { v0: 24, angle: 45, g: 9.8 },
     paramBounds: {
       v0: { min: 10, max: 40, step: 1, unit: 'm/s', label: 'Vận tốc bắn v₀' },
@@ -192,7 +192,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Chuyển động Tròn Đều & Lực Hướng Tâm',
     subtitle: 'Vectơ vận tốc tiếp tuyến v và gia tốc hướng tâm a_ht = v²/R',
     formula: 'v = ωR · F_ht = mv²/R = mω²R',
-    linkedLessonId: 'phys-10-4',
+    linkedLessonId: 'phys-10-circular',
     defaultParams: { radius: 2.5, omega: 2.5, mass: 2 },
     paramBounds: {
       radius: { min: 1, max: 5, step: 0.2, unit: 'm', label: 'Bán kính quỹ đạo R' },
@@ -212,7 +212,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Con Lắc Lò Xo & Dao động Điều Hòa',
     subtitle: 'Đồ thị li độ x(t), lực đàn hồi F = -kx và bảo toàn năng lượng',
     formula: 'T = 2π√(m/k) · x = A·cos(ωt + φ)',
-    linkedLessonId: 'phys-11-1',
+    linkedLessonId: 'phys-11-shm',
     defaultParams: { amplitude: 10, stiffness: 40, mass: 1 },
     paramBounds: {
       amplitude: { min: 3, max: 18, step: 1, unit: 'cm', label: 'Biên độ A' },
@@ -232,7 +232,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Con Lắc Đơn & Trọng Trường',
     subtitle: 'Đo chu kì dao động nhỏ theo chiều dài dây treo l và gia tốc trọng trường g',
     formula: 'T = 2π√(l/g) · α_max',
-    linkedLessonId: 'phys-11-2',
+    linkedLessonId: 'phys-11-b5',
     defaultParams: { length: 1.5, angle0: 14, gravity: 9.8 },
     paramBounds: {
       length: { min: 0.4, max: 3.5, step: 0.1, unit: 'm', label: 'Chiều dài dây l' },
@@ -252,7 +252,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Giao Thoa Hai Nguồn Sóng Nước',
     subtitle: 'Vân cực đại – cực tiểu Hypebol từ hai nguồn kết hợp S₁, S₂',
     formula: 'd₂ - d₁ = kλ (Cực đại) · (k+½)λ (Cực tiểu)',
-    linkedLessonId: 'phys-11-3',
+    linkedLessonId: 'phys-11-b12',
     defaultParams: { freq: 2.5, speed: 60, sep: 120 },
     paramBounds: {
       freq: { min: 0.8, max: 5, step: 0.2, unit: 'Hz', label: 'Tần số nguồn f' },
@@ -272,7 +272,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Sóng Dừng Trên Sợi Dây Đàn Hồi',
     subtitle: 'Hình thành các nút sóng đứng yên và bụng sóng dao động cực đại',
     formula: 'l = k·(λ/2) (2 đầu cố định)',
-    linkedLessonId: 'phys-11-4',
+    linkedLessonId: 'phys-standing-wave',
     defaultParams: { length: 2.4, waveSpeed: 24, amplitude: 5, harmonicN: 3, openEnd: 0 },
     paramBounds: {
       harmonicN: { min: 1, max: 7, step: 1, unit: 'bó', label: 'Số bó sóng k' },
@@ -293,7 +293,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Hiệu Ứng Doppler Sóng Âm',
     subtitle: 'Biến dạng mặt sóng khi nguồn âm di chuyển với vận tốc vs so với tốc độ âm v',
     formula: "f' = f·(v ± v₀)/(v ∓ v_s)",
-    linkedLessonId: 'phys-11-4',
+    linkedLessonId: 'phys-doppler-effect',
     defaultParams: { sourceSpeed: 150, waveSpeed: 340, sourceFreq: 440 },
     paramBounds: {
       sourceSpeed: { min: 0, max: 480, step: 10, unit: 'm/s', label: 'Tốc độ nguồn vs' },
@@ -313,7 +313,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Định Luật Ôm & Dòng Electron Trong Mạch',
     subtitle: 'Thay đổi suất điện động U và điện trở R₁, R₂ để đo I₁, I₂ và công suất P',
     formula: 'I = U / R_tđ · P = U·I = I²R',
-    linkedLessonId: 'phys-9-1',
+    linkedLessonId: 'phys-9-elec',
     defaultParams: { voltage: 12, r1: 4, r2: 8, circuitType: 0 },
     paramBounds: {
       circuitType: { min: 0, max: 1, step: 1, unit: '', label: 'Kiểu ghép điện trở' },
@@ -334,7 +334,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Đường Sức Điện Trường Hai Điện Tích',
     subtitle: 'Mô phỏng đường sức tĩnh điện từ điện tích điểm q₁, q₂ và vectơ cường độ E',
     formula: 'E = k|q| / (εr²) · E_tổng = E₁ + E₂',
-    linkedLessonId: 'phys-11-5',
+    linkedLessonId: 'phys-11-b17',
     defaultParams: { q1: 4, q2: -4, dist: 180 },
     paramBounds: {
       q1: { min: -8, max: 8, step: 1, unit: 'μC', label: 'Điện tích q₁' },
@@ -354,7 +354,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Cảm Ứng Điện Từ Faraday & Lenz',
     subtitle: 'Di chuyển nam châm qua cuộn dây tạo từ thông biến thiên dΦ/dt và dòng điện cảm ứng',
     formula: 'e_c = -ΔΦ / Δt = -N·B·S·cosα / Δt',
-    linkedLessonId: 'phys-12-3',
+    linkedLessonId: 'phys-12-b16',
     defaultParams: { magnetSpeed: 4, turns: 12, bField: 1.5 },
     paramBounds: {
       magnetSpeed: { min: 1, max: 10, step: 0.5, unit: 'm/s', label: 'Tốc độ nam châm' },
@@ -374,7 +374,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Mạch Xoay Chiều RLC & Cộng Hưởng Điện',
     subtitle: 'Giản đồ Fresnel (U_R, U_L, U_C), tổng trở Z và độ lệch pha φ',
     formula: 'Z = √(R² + (Z_L - Z_C)²) · I = U / Z',
-    linkedLessonId: 'phys-12-4',
+    linkedLessonId: 'phys-12-ac-rlc',
     defaultParams: { uEff: 120, resR: 40, indL: 0.3, capC: 40, freq: 50 },
     paramBounds: {
       uEff: { min: 40, max: 220, step: 10, unit: 'V', label: 'Điện áp hiệu dụng U' },
@@ -396,7 +396,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Khúc Xạ Ánh Sáng & Phản Xạ Toàn Phần',
     subtitle: 'Định luật Snell n₁sin(i) = n₂sin(r) và góc giới hạn phản xạ toàn phần',
     formula: 'n₁·sin(i) = n₂·sin(r) · sin(i_gh) = n₂/n₁',
-    linkedLessonId: 'phys-9-2',
+    linkedLessonId: 'phys-9-energy-refract',
     defaultParams: { angleI: 40, n1: 1.0, n2: 1.5 },
     paramBounds: {
       angleI: { min: 0, max: 85, step: 1, unit: '°', label: 'Góc tới i' },
@@ -416,7 +416,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Quang Hình Thấu Kính Hội Tụ & Phân Kì',
     subtitle: 'Dựng 3 tia sáng đặc biệt tạo ảnh thật/ảo, tính tiêu cự và độ phóng đại k',
     formula: '1/f = 1/d + 1/d\' · k = -d\'/d',
-    linkedLessonId: 'phys-9-3',
+    linkedLessonId: 'phys-9-optics',
     defaultParams: { f: 15, d: 35, objH: 10 },
     paramBounds: {
       f: { min: 6, max: 30, step: 1, unit: 'cm', label: 'Tiêu cự |f|' },
@@ -436,7 +436,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Thí Nghiệm Giao Thoa Khe Young',
     subtitle: 'Đo khoảng vân i = λD/a và phân bố vân sáng/tối trên màn quan sát',
     formula: 'i = λD / a · x_s = k·i',
-    linkedLessonId: 'phys-11-3',
+    linkedLessonId: 'phys-11-b12',
     defaultParams: { lambda: 0.55, slitA: 1.0, screenD: 2.0 },
     paramBounds: {
       lambda: { min: 0.38, max: 0.76, step: 0.02, unit: 'μm', label: 'Bước sóng λ' },
@@ -456,7 +456,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Hiện Tượng Quang Điện Ngoài Einstein',
     subtitle: 'Bắn electron ra khỏi catot kim loại khi λ ≤ λ₀ và đo điện áp hãm U_AK',
     formula: 'hf = A + ½mv²_max · λ₀ = hc/A',
-    linkedLessonId: 'phys-12-5',
+    linkedLessonId: 'phys-12-optics-q',
     defaultParams: { wavelengthNm: 280, workFunctionEv: 2.14, voltageUak: 1.5 },
     paramBounds: {
       wavelengthNm: { min: 180, max: 750, step: 10, unit: 'nm', label: 'Bước sóng ánh sáng λ' },
@@ -476,7 +476,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Động Học Phân Tử & Khí Lí Tưởng',
     subtitle: 'Va chạm phân tử trong xi-lanh pít-tông theo nhiệt độ T và thể tích V',
     formula: 'pV = nRT · W_đ = (3/2)k_BT',
-    linkedLessonId: 'phys-12-1',
+    linkedLessonId: 'phys-12-b12',
     defaultParams: { tempK: 320, volume: 10, moles: 1.0 },
     paramBounds: {
       tempK: { min: 150, max: 600, step: 15, unit: 'K', label: 'Nhiệt độ tuyệt đối T' },
@@ -496,7 +496,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
     title: 'Phóng Xạ & Chu Kì Bán Rã Hạt Nhân',
     subtitle: 'Đường cong phân rã mũ N(t) = N₀·2^(-t/T) theo số hạt nhân còn lại',
     formula: 'N(t) = N₀·2^(-t/T) = N₀·e^(-λt)',
-    linkedLessonId: 'phys-12-5',
+    linkedLessonId: 'phys-12-b23',
     defaultParams: { n0: 160, halfLife: 4.0 },
     paramBounds: {
       n0: { min: 50, max: 320, step: 10, unit: 'hạt', label: 'Số hạt ban đầu N₀' },
@@ -518,7 +518,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Đường Đua Động Học 3D',
     subtitle: 'So sánh 2 xe thẳng đều & nhanh dần đều kèm vectơ vận tốc/gia tốc 3D',
     formula: 'x = x₀ + v₀t + ½at²',
-    linkedLessonId: 'phys-10-1',
+    linkedLessonId: 'phys-10-accel',
     presets: [
       { label: 'Đuổi kịp chuẩn', description: 'Tốc độ 1.0x, hiện vectơ & quỹ đạo', settings: { speed: 1, amplitude: 1, showVectors: true, showTrail: true } },
       { label: 'Tăng tốc mạnh', description: 'Tốc độ 1.8x, quan sát gia tốc lớn', settings: { speed: 1.8, amplitude: 1.5, showVectors: true, showTrail: true } }
@@ -531,7 +531,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Quỹ Đạo Ném Xiên 3D & Vectơ Thành Phần',
     subtitle: 'Phân tích đồng thời quỹ đạo Parabol không gian với vectơ vx, vy',
     formula: 'y = x·tanα - gx²/(2v₀²cos²α)',
-    linkedLessonId: 'phys-10-3',
+    linkedLessonId: 'phys-10-proj',
     presets: [
       { label: 'Góc phóng 45°', description: 'Tầm xa cực đại', settings: { speed: 1, amplitude: 1, showVectors: true, showTrail: true } },
       { label: 'Bắn chậm phân tích', description: 'Slow motion 0.5x dễ đọc vectơ', settings: { speed: 0.5, amplitude: 1.3, showVectors: true, showTrail: true } }
@@ -544,7 +544,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Quỹ Đạo Tròn Đều & Hướng Tâm 3D',
     subtitle: 'Quan sát lực hướng tâm và vận tốc tiếp tuyến quay đều quanh trục tọa độ',
     formula: 'F_ht = mω²R · v = ωR',
-    linkedLessonId: 'phys-10-4',
+    linkedLessonId: 'phys-10-circular',
     presets: [
       { label: 'Quay tiêu chuẩn', description: 'R chuẩn, vectơ hướng tâm', settings: { speed: 1, amplitude: 1, showVectors: true, showTrail: true } },
       { label: 'Bán kính lớn & nhanh', description: 'Mở rộng biên độ R, tăng ω', settings: { speed: 1.7, amplitude: 1.4, showVectors: true, showTrail: true } }
@@ -557,7 +557,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Con Lắc Lò Xo & Quỹ Đạo Pha 3D',
     subtitle: 'Xoắn lò xo biến dạng thật kết hợp vệt pha điều hòa',
     formula: 'F = -kx · T = 2π√(m/k)',
-    linkedLessonId: 'phys-11-1',
+    linkedLessonId: 'phys-11-shm',
     presets: [
       { label: 'Dao động điều hòa', description: 'Biên độ 1.0x, hiện lực phục hồi', settings: { speed: 1, amplitude: 1, showVectors: true, showTrail: true } },
       { label: 'Biên độ lớn', description: 'Lò xo giãn tối đa', settings: { speed: 1.3, amplitude: 1.6, showVectors: true, showTrail: true } }
@@ -570,7 +570,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Mặt Sóng Giao Thoa 3D (2 Nguồn Kết Hợp)',
     subtitle: 'Mặt nước 3D dập dềnh theo biên độ giao thoa S₁ & S₂ tại mọi điểm (x, z)',
     formula: 'u_M = 2A·cos(π(d₂-d₁)/λ)·cos(ωt - π(d₁+d₂)/λ)',
-    linkedLessonId: 'phys-11-3',
+    linkedLessonId: 'phys-11-b12',
     presets: [
       { label: 'Sóng giao thoa cân bằng', description: 'Vân cực đại-cực tiểu đối xứng', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Biển sóng tần số cao', description: 'Tần số sóng 1.7x tạo nhiều gợn', settings: { speed: 1.2, amplitude: 1.3, frequency: 1.7 } }
@@ -583,7 +583,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Sóng Dừng Không Gian 3D',
     subtitle: 'Quan sát rõ các nút cố định và bụng dao động trong không gian 3 chiều',
     formula: 'l = k·(λ/2)',
-    linkedLessonId: 'phys-11-4',
+    linkedLessonId: 'phys-standing-wave',
     presets: [
       { label: '3 bó sóng (k=3)', description: 'Cộng hưởng họa âm bậc 3', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Họa âm cao', description: 'Tăng số bụng sóng trên dây', settings: { speed: 1.2, amplitude: 1.2, frequency: 1.8 } }
@@ -596,7 +596,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Sóng Cầu & Nón Mach Doppler 3D',
     subtitle: 'Các vòng mặt sóng lan truyền bị nén phía trước nguồn phát chuyển động',
     formula: "f' = f·v / (v - v_s)",
-    linkedLessonId: 'phys-11-4',
+    linkedLessonId: 'phys-doppler-effect',
     presets: [
       { label: 'Nguồn di chuyển đều', description: 'Hiện rõ hiệu ứng dồn bước sóng', settings: { speed: 1, frequency: 1 } },
       { label: 'Cận tường âm thanh', description: 'Tần số dồn đặc phía đầu', settings: { speed: 1.6, frequency: 1.5 } }
@@ -609,7 +609,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Quỹ Đạo Xoắn Ốc Lực Lorentz 3D',
     subtitle: 'Hạt mang điện q bay xiên góc vào từ trường đều B chịu lực f = q(v × B)',
     formula: 'f_L = |q|vB·sinα · R = mv⊥ / (|q|B)',
-    linkedLessonId: 'phys-12-3',
+    linkedLessonId: 'phys-12-mag',
     presets: [
       { label: 'Xoắn ốc đều', description: 'Hiện đầy đủ vectơ v, B và f_L', settings: { speed: 1, amplitude: 1, showVectors: true, showTrail: true } },
       { label: 'Bán kính xoắn lớn', description: 'Giảm từ trường B để R mở rộng', settings: { speed: 1.4, amplitude: 1.6, showVectors: true, showTrail: true } }
@@ -622,7 +622,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Máy Phát Điện Xoay Chiều 3D',
     subtitle: 'Khung dây quay đều trong từ trường đều của nam châm chữ U tạo suất điện động sin',
     formula: 'e = E₀·sin(ωt) = ωNBS·sin(ωt)',
-    linkedLessonId: 'phys-12-4',
+    linkedLessonId: 'phys-12-ac-gen',
     presets: [
       { label: 'Tần số lưới 50Hz chậm', description: 'Quan sát cực đại khi mặt phẳng // B', settings: { speed: 1, frequency: 1, showVectors: true } },
       { label: 'Quay công suất lớn', description: 'Tăng ω gấp 2 lần', settings: { speed: 2, frequency: 1.5, showVectors: true } }
@@ -635,7 +635,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Bàn Thí Nghiệm Quang Học Thấu Kính 3D',
     subtitle: 'Chùm tia sáng song song hội tụ qua thấu kính lồi 3D trên băng quang học',
     formula: '1/f = 1/d + 1/d\'',
-    linkedLessonId: 'phys-9-3',
+    linkedLessonId: 'phys-9-optics',
     presets: [
       { label: 'Hội tụ tiêu chuẩn', description: 'Thấu kính tiêu cự trung bình', settings: { amplitude: 1, showVectors: true } },
       { label: 'Hội tụ mạnh (D lớn)', description: 'Tia hội tụ gần thấu kính', settings: { amplitude: 1.6, showVectors: true } }
@@ -648,7 +648,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Hộp Giao Thoa Khe Young 3D',
     subtitle: 'Chùm tia laser từ hai khe S₁, S₂ giao thoa tạo hệ vân sáng-tối trên màn 3D',
     formula: 'i = λD / a',
-    linkedLessonId: 'phys-11-3',
+    linkedLessonId: 'phys-11-b12',
     presets: [
       { label: 'Laser Xanh lục', description: 'Vân sắc nét trên màn ảnh 3D', settings: { frequency: 1, amplitude: 1 } },
       { label: 'Khoảng vân rộng', description: 'Tăng bước sóng/giảm khe a', settings: { frequency: 0.7, amplitude: 1.5 } }
@@ -661,7 +661,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Tế Bào Quang Điện & Photon 3D',
     subtitle: 'Các hạt photon bắn vào tấm Catốt giải phóng đám mây quang electron bay về Anốt',
     formula: 'ε = hf = A + W_đmax',
-    linkedLessonId: 'phys-12-5',
+    linkedLessonId: 'phys-12-optics-q',
     presets: [
       { label: 'Chùm photon năng lượng cao', description: 'Electron bắn ra tốc độ cao', settings: { speed: 1.2, frequency: 1.4 } },
       { label: 'Quan sát chậm va chạm', description: 'Slow motion theo dõi từng hạt photon', settings: { speed: 0.5, frequency: 1 } }
@@ -674,7 +674,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Hộp Khí Lí Tưởng Va Đập Đàn Hồi 3D',
     subtitle: 'Chuyển động nhiệt hỗn loạn 3 chiều của các phân tử khí phụ thuộc T',
     formula: 'p = (1/3)nm₀v²_tb',
-    linkedLessonId: 'phys-12-1',
+    linkedLessonId: 'phys-12-b12',
     presets: [
       { label: 'Nhiệt độ phòng', description: 'Tốc độ phân tử trung bình', settings: { speed: 1, frequency: 1 } },
       { label: 'Khí nóng áp suất cao', description: 'Động năng va đập thành bình tăng mạnh', settings: { speed: 2, frequency: 1.6 } }
@@ -687,7 +687,7 @@ export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
     title: 'Mẫu Nguyên Tử Bohr & Quỹ Đạo Dừng 3D',
     subtitle: 'Electron chuyển động trên các quỹ đạo dừng K, L, M quanh hạt nhân trung tâm',
     formula: 'r_n = n²·r₀ · ε = E_cao - E_thấp = hf',
-    linkedLessonId: 'phys-12-5',
+    linkedLessonId: 'phys-12-optics-q',
     presets: [
       { label: 'Quỹ đạo dừng K-L-M', description: 'Hiện đầy đủ quỹ đạo 3D', settings: { speed: 1, showTrail: true } },
       { label: 'Phóng to mô hình', description: 'Tăng kích thước và tốc độ quay', settings: { speed: 1.6, amplitude: 1.3, showTrail: true } }

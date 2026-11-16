@@ -760,12 +760,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                         <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-                          Bài {l.lessonNumber}
+                          {t('', 'Bài', 'Lesson')} {l.lessonNumber}
                         </span>
                         <span aria-hidden="true">·</span>
                         <span>{l.vnoiPhase || l.level}</span>
                         <span aria-hidden="true">·</span>
-                        <span className="tabular-nums">{l.estimatedMinutes}p</span>
+                        <span className="tabular-nums">{l.estimatedMinutes}{t('', 'p', 'm')}</span>
                       </div>
 
                       <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
@@ -784,7 +784,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     {l.complexity.time}
                   </span>
                   <span className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 shrink-0">
-                    Vào giảng bài <ChevronRight className="w-3.5 h-3.5" />
+                    {t('', 'Vào giảng bài', 'Open Lesson')} <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
               </button>
@@ -804,20 +804,20 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Quay lại</span>
+                  <span>{t('btn.back', 'Quay lại', 'Back')}</span>
                 </button>
                 <button
                   onClick={() => navigate({ csSubView: 'roadmap' })}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
                 >
-                  <span>Danh sách VNOI</span>
+                  <span>{t('', 'Danh sách VNOI', 'VNOI List')}</span>
                 </button>
                 <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   <span className="font-bold text-blue-600 dark:text-blue-400">
                     {currentLesson.vnoiPhase || currentLesson.level}
                   </span>
                   <span aria-hidden="true">·</span>
-                  <span>Bài {currentLesson.lessonNumber} / {CS_LESSONS.length}</span>
+                  <span>{t('', 'Bài', 'Lesson')} {currentLesson.lessonNumber} / {CS_LESSONS.length}</span>
                   {currentLesson.vnoiTag && (
                     <>
                       <span aria-hidden="true">·</span>
@@ -840,7 +840,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                   }}
                   className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap"
                 >
-                  ← Bài trước
+                  {t('', '← Bài trước', '← Prev Lesson')}
                 </button>
                 <button
                   disabled={currentLesson.lessonNumber >= CS_LESSONS.length}
@@ -853,7 +853,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                   }}
                   className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap"
                 >
-                  Bài tiếp →
+                  {t('', 'Bài tiếp →', 'Next Lesson →')}
                 </button>
               </div>
             </div>
@@ -894,7 +894,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     />
                   )}
                   <BookOpen className="relative z-10 w-4 h-4 icon-anim-book" />
-                  <span className="relative z-10">1. Bài Giảng Chi Tiết</span>
+                  <span className="relative z-10">{t('', '1. Bài Giảng Chi Tiết', '1. Detailed Lecture')}</span>
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'code' })}
@@ -1215,7 +1215,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                             className="px-3.5 py-1.5 rounded-lg bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2] text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                           >
                             <Play className="w-3.5 h-3.5 text-[#66d9ef]" />
-                            <span>{pState.isRunning ? 'Đang chạy...' : 'Chạy Thử (Stdin)'}</span>
+                            <span>{pState.isRunning ? t('', 'Đang chạy...', 'Running...') : t('', 'Chạy Thử (Stdin)', 'Run Sample (Stdin)')}</span>
                           </button>
 
                           <button
@@ -1227,8 +1227,8 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                             <Send className="w-3.5 h-3.5" />
                             <span>
                               {pState.isJudging
-                                ? 'Đang chấm...'
-                                : `Nộp Bài & Chấm Điểm (${totalTestsCount} tests)`}
+                                ? t('', 'Đang chấm...', 'Judging...')
+                                : t('', `Nộp Bài & Chấm Điểm (${totalTestsCount} tests)`, `Submit & Grade (${totalTestsCount} tests)`)}
                             </span>
                           </button>
                         </div>
@@ -1243,7 +1243,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                                 : 'bg-[#f92672]/20 text-[#f92672]'
                             }`}
                           >
-                            {pState.verdict} · {pState.score}/100 điểm
+                            {pState.verdict} · {pState.score}/100 {t('', 'điểm', 'pts')}
                           </span>
                         )}
                       </div>

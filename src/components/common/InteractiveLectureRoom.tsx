@@ -713,7 +713,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
         step: 2,
         title:
           subject === 'cs'
-            ? 'Thảo luận test biên với Gia sư AI Tin học'
+            ? 'Thảo luận test biên với Syn Code (Syn AI)'
             : 'Thực hành Mô phỏng 2D/3D để khắc sâu bản chất',
         action:
           subject === 'cs'
@@ -1184,7 +1184,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
                   onClick={() => navigate({ tutorOpen: true, tutorSubject: subject })}
                   className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
                 >
-                  Mở Gia sư AI toàn màn hình →
+                  Mở Syn AI toàn màn hình →
                 </button>
               </div>
 

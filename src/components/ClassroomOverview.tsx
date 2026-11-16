@@ -229,7 +229,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
     {
       subj: 'math' as const,
       shortcut: isEn ? 'Left Ctrl+D' : 'Ctrl(trái)+D',
-      title: isEn ? 'Math AI Tutor' : 'AI Toán Học',
+      title: 'Syn Math',
       sub: isEn
         ? 'Algebra · Calculus · Plane & Oxyz 3D Geometry'
         : 'Đại số · Giải tích · Hình học & Oxyz 3D',
@@ -242,7 +242,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
     {
       subj: 'physics' as const,
       shortcut: isEn ? 'Left Ctrl+F' : 'Ctrl(trái)+F',
-      title: isEn ? 'Physics AI Tutor' : 'AI Vật Lí',
+      title: 'Syn Physics',
       sub: isEn
         ? 'Mechanics · Thermodynamics · RLC · Waves & Nuclear'
         : 'Cơ · Nhiệt · Điện RLC · Sóng & Hạt nhân',
@@ -255,7 +255,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
     {
       subj: 'cs' as const,
       shortcut: isEn ? 'Left Ctrl+G' : 'Ctrl(trái)+G',
-      title: isEn ? 'CS & Code AI Tutor' : 'AI Tin Học & Code',
+      title: 'Syn Code',
       sub: isEn
         ? 'Competitive Algorithms · C++20 · Python 3 · Debug'
         : 'Thuật toán CP · C++20 · Python 3 · Debug',
@@ -959,7 +959,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               {isEn ? 'GUIDED ECOSYSTEM' : 'HỆ SINH THÁI HỌC TẬP & THI ĐẤU'}
             </div>
             <h2 className="font-display text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-0.5">
-              {isEn ? 'Roadmap, Weekly Arena & AI Tutors' : 'Lộ Trình Chuẩn, Đấu Trường Tuần & Gia Sư AI'}
+              {isEn ? 'Roadmap, Weekly Arena & Syn AI' : 'Lộ Trình Chuẩn, Đấu Trường Tuần & Syn AI'}
             </h2>
           </div>
         </div>
@@ -1113,16 +1113,16 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </div>
 
             <div className="relative z-10 space-y-3">
-              <div className="w-12 h-12 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200/90 dark:border-teal-800/70 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 rounded-md bg-teal-50 dark:bg-teal-950/60 border border-teal-200/90 dark:border-teal-800/70 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                 <Sparkles className="w-6 h-6 icon-anim-star" />
               </div>
               <h3 className="font-display text-lg sm:text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                {isEn ? '3 Specialized AI Tutors' : '3 Trợ Lý AI (Toán · Lí · Tin)'}
+                {isEn ? 'Syn AI Command Suite (3 Engines)' : 'Hệ Sinh Thái Syn AI (3 Động Cơ)'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isEn
-                  ? 'Independent AI tutors for Math, Physics & CS with Guided Hints, Full Solution, and Diagnostic Roadmap modes.'
-                  : '3 Gia sư AI độc lập cho từng môn với 3 chế độ thực chiến: Giảng gợi mở, Giải 4 bước, và Test năng lực vẽ lộ trình.'}
+                  ? 'Independent Syn Math, Syn Physics & Syn Code engines with Guided Hints, Full Solution, and Diagnostic Roadmap modes.'
+                  : 'Bộ 3 Syn Math · Syn Physics · Syn Code độc lập với 3 chế độ thực chiến: Giảng gợi mở, Giải 4 bước, và Test vẽ lộ trình.'}
               </p>
             </div>
 
@@ -1137,7 +1137,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 className="cs-deck-btn w-full px-5 py-3 rounded bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 text-white text-sm font-semibold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 icon-anim-star" />
-                <span>{t('overview.openTutor', 'Mở 3 Trợ Lý AI (Toán - Lí - Tin)', 'Launch 3 AI Tutors')}</span>
+                <span>{t('overview.openTutor', 'Mở Trung Tâm Syn AI', 'Launch Syn AI Suite')}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
@@ -1145,23 +1145,23 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </div>
       </section>
 
-      {/* SECTION 3: Dedicated 3 Subject AI Assistants × 3 Modes */}
+      {/* SECTION 3: Dedicated Syn AI (Syn Math · Syn Physics · Syn Code) × 3 Modes */}
       {onOpenTutor && (
-        <section className="sci-frame sci-scan-bar rounded-xl bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/90 dark:border-white/10 p-6 sm:p-7 shadow-[0_14px_42px_-16px_rgba(15,23,42,0.12)] space-y-5">
+        <section className="sci-frame sci-scan-bar rounded-md bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/90 dark:border-white/10 p-6 sm:p-7 shadow-[0_14px_42px_-16px_rgba(15,23,42,0.12)] space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200/70 dark:border-white/10">
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-blue-700 dark:text-sky-400">
                 <Sparkles className="w-4 h-4 icon-anim-star" />
                 <span>
                   {isEn
-                    ? '3 Independent AI Tutors · 3 Study Modes Each'
-                    : '3 Gia Sư AI Độc Lập · Mỗi AI 3 Chế Độ Thực Chiến'}
+                    ? 'Syn AI Neural Suite · 3 Engines × 3 Tactical Modes'
+                    : 'Syn AI Neural Suite · 3 Động Cơ × 3 Chế Độ Thực Chiến'}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                 {isEn
-                  ? 'Real-time AI streaming & Voice Mic input. Pick a subject tutor and mode below, or press Left Ctrl + D (Math), Left Ctrl + F (Physics), Left Ctrl + G (CS).'
-                  : 'Hỗ trợ AI theo thời gian thực & nhập đề bằng Giọng nói. Chọn nhanh AI bên dưới hoặc bấm phím tắt Ctrl(trái)+D (Toán), Ctrl(trái)+F (Lí), Ctrl(trái)+G (Tin).'}
+                  ? 'Real-time streaming & Voice Mic input. Launch Syn Math (Left Ctrl+D), Syn Physics (Left Ctrl+F), or Syn Code (Left Ctrl+G).'
+                  : 'Hỗ trợ AI thời gian thực & nhập đề bằng Giọng nói. Mở nhanh bằng Ctrl(trái)+D (Syn Math), Ctrl(trái)+F (Syn Physics), Ctrl(trái)+G (Syn Code).'}
               </p>
             </div>
           </div>

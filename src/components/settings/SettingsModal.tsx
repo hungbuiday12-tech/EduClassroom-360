@@ -285,14 +285,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-4xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/15 rounded-3xl shadow-[0_30px_80px_-20px_rgba(15,23,42,0.55)] overflow-hidden my-auto grid grid-cols-1 md:grid-cols-12"
+        className="sci-frame relative w-full max-w-4xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-300 dark:border-slate-700/90 rounded-md shadow-[0_30px_80px_-20px_rgba(15,23,42,0.55)] overflow-hidden my-auto grid grid-cols-1 md:grid-cols-12"
       >
         {/* Left Navigation Sidebar */}
-        <aside className="md:col-span-4 bg-slate-50/90 dark:bg-slate-950/70 border-b md:border-b-0 md:border-r border-slate-200/70 dark:border-white/10 p-5 sm:p-6 flex flex-col justify-between gap-6">
+        <aside className="md:col-span-4 bg-slate-50/95 dark:bg-slate-950/85 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex flex-col justify-between gap-6">
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
                   {isEn ? 'SYSTEM PREFERENCES' : 'THIẾT LẬP HỆ THỐNG'}
                 </div>
                 <h2 className="font-display text-xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-0.5">
@@ -302,7 +302,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="md:hidden p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-500 cursor-pointer"
+                className="md:hidden p-2 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 cursor-pointer"
                 aria-label="Đóng cài đặt"
               >
                 <X className="w-4 h-4" />
@@ -310,15 +310,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             {user && (
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10">
+              <div className="flex items-center gap-3 p-3 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
                     alt={user.displayName}
-                    className="w-10 h-10 rounded-full object-cover border border-indigo-400/60 shrink-0"
+                    className="w-10 h-10 rounded-md object-cover border border-indigo-400/60 shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-display font-bold text-sm flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-md bg-indigo-600 text-white font-display font-bold text-sm flex items-center justify-center shrink-0">
                     {user.displayName.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -342,7 +342,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       setActiveTab(tab.id);
                       clearAlerts();
                     }}
-                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-md text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
                       active
                         ? 'bg-indigo-600 text-white shadow-sm'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/80'
@@ -420,7 +420,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Alerts */}
           {errorMsg && (
-            <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+            <div className="p-3.5 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
@@ -494,12 +494,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           key={i}
                           type="button"
                           onClick={() => setAvatarUrl(url)}
-                          className={`p-0.5 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer ${
-                            avatarUrl === url ? 'border-indigo-500' : 'border-transparent'
+                          className={`p-0.5 rounded-md border-2 transition-transform hover:scale-105 cursor-pointer ${
+                            avatarUrl === url ? 'border-indigo-500' : 'border-slate-200 dark:border-slate-700'
                           }`}
                           title={`Avatar mẫu ${i + 1}`}
                         >
-                          <img src={url} alt={`Preset ${i + 1}`} className="w-8 h-8 rounded-full bg-slate-100" />
+                          <img src={url} alt={`Preset ${i + 1}`} className="w-8 h-8 rounded bg-slate-100" />
                         </button>
                       ))}
                     </div>
@@ -772,7 +772,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={opt.id}
                         type="button"
                         onClick={() => setBgStyle(opt.id, true)}
-                        className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                        className={`p-3 rounded-md border text-left transition-all cursor-pointer flex items-start gap-3 ${
                           selected
                             ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-white/10 hover:border-sky-400'
@@ -899,8 +899,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         }`}
                       >
                         <span
-                          data-circle="true"
-                          className="w-5 h-5 rounded-full shrink-0 border border-white/40"
+                          className="w-5 h-5 rounded shrink-0 border border-white/40"
                           style={{ background: pal.swatch }}
                         />
                         <span>{isEn ? pal.labelEn : pal.labelVi}</span>
@@ -1004,12 +1003,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <Sparkles className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold text-slate-900 dark:text-white block mb-0.5">
-                    {isEn ? 'AI Tutor Shortcuts' : 'Phím tắt mở nhanh 3 Trợ lý AI'}
+                    {isEn ? 'Syn AI Keyboard Shortcuts' : 'Phím tắt mở nhanh Syn AI'}
                   </span>
                   <span>
                     {isEn
-                      ? 'Left Ctrl + D (Math AI) · Left Ctrl + F (Physics AI) · Left Ctrl + G (CS AI)'
-                      : 'Ctrl trái + D (AI Toán) · Ctrl trái + F (AI Vật Lí) · Ctrl trái + G (AI Tin Học)'}
+                      ? 'Left Ctrl + D (Syn Math) · Left Ctrl + F (Syn Physics) · Left Ctrl + G (Syn Code)'
+                      : 'Ctrl trái + D (Syn Math) · Ctrl trái + F (Syn Physics) · Ctrl trái + G (Syn Code)'}
                   </span>
                 </div>
               </div>

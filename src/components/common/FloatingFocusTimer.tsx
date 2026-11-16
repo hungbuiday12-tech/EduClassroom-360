@@ -69,7 +69,7 @@ export const FloatingFocusTimer: React.FC = () => {
     <div className="fixed bottom-3 left-3 sm:bottom-5 sm:left-5 lg:left-[calc(var(--sidebar-w,248px)+16px)] z-[85] flex flex-col items-start gap-2.5 transition-[left] duration-200">
       {/* Expanded Mini-Chat Style Focus Panel */}
       {isWidgetOpen && (
-        <div className="w-[318px] sm:w-[348px] max-w-[calc(100vw-24px)] rounded-xl bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.55)] overflow-hidden text-xs">
+        <div className="sci-frame syn-window-enter w-[312px] sm:w-[344px] max-w-[calc(100vw-24px)] rounded-md bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-300 dark:border-slate-700 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.58)] overflow-hidden text-xs">
           {/* Panel Header */}
           <div className="px-4 py-3 bg-slate-900 dark:bg-slate-900 border-b border-slate-800 text-white flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -364,61 +364,43 @@ export const FloatingFocusTimer: React.FC = () => {
         </div>
       )}
 
-      {/* Compact Mini-Chat Launcher Pill in Bottom-Left */}
-      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/90 dark:bg-slate-900/92 border border-white/15 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-md">
-        <button
-          type="button"
-          onClick={() => setIsWidgetOpen(!isWidgetOpen)}
-          className={`px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+      {/* Compact Mini-Chat Launcher Bubble in Bottom-Left */}
+      <button
+        type="button"
+        onClick={() => setIsWidgetOpen(!isWidgetOpen)}
+        aria-expanded={isWidgetOpen}
+        className={`sci-frame group flex items-center gap-2 px-3 py-2 rounded-md border backdrop-blur-md shadow-[0_14px_34px_-10px_rgba(15,23,42,0.58)] transition-all cursor-pointer ${
+          alarmRinging
+            ? 'bg-amber-400 border-amber-300 text-slate-950'
+            : isRunning
+            ? 'bg-indigo-600/95 hover:bg-indigo-500 border-indigo-400/50 text-white'
+            : 'bg-slate-950/92 hover:bg-slate-900 border-slate-700/80 text-white'
+        }`}
+        title={isEn ? 'Focus Timer & Ambient Studio' : 'Phương thức tập trung & Âm thanh nền'}
+      >
+        <span
+          className={`w-2 h-2 rounded-sm shrink-0 ${
             alarmRinging
-              ? 'bg-amber-400 text-slate-950'
+              ? 'bg-slate-950 animate-ping'
               : isRunning
-              ? 'bg-indigo-600 text-white'
-              : 'bg-slate-800/95 hover:bg-slate-700 text-white'
+              ? 'bg-emerald-400 syn-core-pulse'
+              : isBgPlaying && bgSound !== 'off'
+              ? 'bg-sky-400 syn-core-pulse'
+              : 'bg-slate-400'
           }`}
-          title={isEn ? 'Open Mini Focus Timer' : 'Mở đồng hồ bấm giờ tập trung'}
-        >
-          {alarmRinging ? (
-            <Bell className="w-3.5 h-3.5 shrink-0" />
-          ) : (
-            <Clock className="w-3.5 h-3.5 shrink-0 text-sky-300" />
-          )}
-          <span className="font-mono tabular-nums font-extrabold">{formatClock(timeLeft)}</span>
-          <span className="hidden sm:inline text-[10px] opacity-80">
-            {phase === 'focus' ? (isEn ? 'Focus' : 'Tập trung') : isEn ? 'Break' : 'Nghỉ'}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={startPause}
-          className={`p-2 rounded-xl text-white transition-colors cursor-pointer ${
-            isRunning ? 'bg-amber-500 hover:bg-amber-400 text-slate-950' : 'bg-emerald-600 hover:bg-emerald-500'
-          }`}
-          title={isRunning ? (isEn ? 'Pause' : 'Tạm dừng') : isEn ? 'Start' : 'Bắt đầu'}
-          aria-label={isRunning ? 'Pause timer' : 'Start timer'}
-        >
-          {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-        </button>
-
-        <button
-          type="button"
-          onClick={toggleBgPlaying}
-          className={`p-2 rounded-xl transition-colors cursor-pointer ${
-            isBgPlaying && bgSound !== 'off'
-              ? 'bg-sky-500 text-slate-950'
-              : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-          }`}
-          title={isEn ? 'Toggle background ambient sound' : 'Bật / Tắt âm thanh nền'}
-          aria-label="Toggle ambient music"
-        >
-          {isBgPlaying && bgSound !== 'off' ? (
-            <Volume2 className="w-3.5 h-3.5" />
-          ) : (
-            <VolumeX className="w-3.5 h-3.5" />
-          )}
-        </button>
-      </div>
+        />
+        {alarmRinging ? (
+          <Bell className="w-3.5 h-3.5 shrink-0" />
+        ) : (
+          <Clock className="w-3.5 h-3.5 shrink-0 text-sky-300" />
+        )}
+        <span className="font-mono tabular-nums text-xs font-extrabold tracking-tight">
+          {formatClock(timeLeft)}
+        </span>
+        {isBgPlaying && bgSound !== 'off' && (
+          <Volume2 className="w-3 h-3 shrink-0 text-sky-300" />
+        )}
+      </button>
     </div>
   );
 };

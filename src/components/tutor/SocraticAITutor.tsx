@@ -22,7 +22,8 @@ import {
   FileCheck2,
   Copy,
   Check,
-  Bot
+  Cpu,
+  Radio
 } from 'lucide-react';
 import {
   AITutorMode,
@@ -106,6 +107,50 @@ function normalizeSubject(subj?: SubjectType): AISubjectKey {
   return 'math';
 }
 
+const SynCoreEmblem: React.FC<{ accentHex: string; secondaryHex: string; icon: React.ReactNode }> = ({
+  accentHex,
+  secondaryHex,
+  icon
+}) => (
+  <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 64 64"
+      className="absolute inset-0 w-full h-full pointer-events-none"
+    >
+      <circle
+        cx="32"
+        cy="32"
+        r="28"
+        fill="none"
+        stroke={accentHex}
+        strokeWidth="1.6"
+        strokeDasharray="10 6"
+        className="holo-orbit-cw"
+        opacity="0.85"
+      />
+      <circle
+        cx="32"
+        cy="32"
+        r="21"
+        fill="none"
+        stroke={secondaryHex}
+        strokeWidth="1.4"
+        strokeDasharray="6 8"
+        className="holo-orbit-ccw"
+        opacity="0.75"
+      />
+      <circle cx="32" cy="4" r="2.4" fill={accentHex} className="holo-orbit-cw" />
+    </svg>
+    <div
+      className="syn-core-pulse w-8 h-8 rounded-md border border-white/25 bg-slate-900/90 flex items-center justify-center text-white shadow-inner"
+      style={{ boxShadow: `0 0 18px -2px ${accentHex}` }}
+    >
+      {icon}
+    </div>
+  </div>
+);
+
 export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   isOpen,
   onClose,
@@ -129,51 +174,78 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   const getAiPersonaMeta = (subj: AISubjectKey) => {
     if (subj === 'physics') {
       return {
-        nameVi: 'AI Vật Lí',
-        nameEn: 'Physics AI',
+        nameVi: 'Syn Physics',
+        nameEn: 'Syn Physics',
+        roleVi: 'Vật Lí Học Lượng Tử & Mô Phỏng',
+        roleEn: 'Physics & Quantum Engine',
         badgeVi: 'Cơ · Điện · Quang · Lượng tử',
         badgeEn: 'Mechanics · Optics · Quantum',
-        colorClass: 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/25',
-        softClass: 'bg-amber-500/20 text-amber-300 border-amber-400/40',
-        headerGrad: 'from-slate-950 via-amber-950/90 to-slate-900',
-        auroraOrb: 'bg-[radial-gradient(ellipse_at_top_right,rgba(245,158,11,0.28),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(249,115,22,0.18),transparent_60%)]',
-        userBubble: 'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 text-white shadow-md shadow-amber-500/25',
-        sendBtn: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-lg shadow-amber-500/30',
+        accentHex: '#f59e0b',
+        secondaryHex: '#fb7185',
+        tabActive:
+          'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-slate-950 border-amber-300 shadow-[0_10px_28px_-8px_rgba(245,158,11,0.55)]',
+        glowRing: 'ring-1 ring-amber-400/45 border-amber-500/50',
+        headerGrad: 'from-slate-950 via-[#1f1305] to-slate-950',
+        auroraOrb:
+          'bg-[radial-gradient(ellipse_at_top_right,rgba(245,158,11,0.34),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(249,115,22,0.22),transparent_60%)]',
+        userBubble:
+          'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 text-slate-950 font-medium shadow-md shadow-amber-500/25',
+        sendBtn:
+          'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-lg shadow-amber-500/35',
         accentRing: 'focus-within:ring-amber-400/60 focus-within:border-amber-400',
-        avatarRing: 'ring-amber-400/50 bg-gradient-to-br from-amber-500 to-orange-600 text-white',
+        avatarRing: 'ring-amber-400/60 bg-gradient-to-br from-amber-500 to-orange-600 text-slate-950',
+        eqBar: 'bg-amber-400',
         icon: <Zap className="w-4 h-4" />
       };
     }
     if (subj === 'cs') {
       return {
-        nameVi: 'AI Tin Học',
-        nameEn: 'CS & Code AI',
-        badgeVi: 'Thuật toán · C++ · Python',
-        badgeEn: 'Algorithms · C++ · Python',
-        colorClass: 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white border-emerald-400 shadow-md shadow-emerald-500/25',
-        softClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40',
-        headerGrad: 'from-slate-950 via-emerald-950/90 to-slate-900',
-        auroraOrb: 'bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.28),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(20,184,166,0.2),transparent_60%)]',
-        userBubble: 'bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-md shadow-emerald-500/25',
-        sendBtn: 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30',
+        nameVi: 'Syn Code',
+        nameEn: 'Syn Code',
+        roleVi: 'Thuật Toán & Lập Trình Thi Đấu',
+        roleEn: 'Algorithms & Code Engine',
+        badgeVi: 'Thuật toán · C++20 · Python 3',
+        badgeEn: 'Algorithms · C++20 · Python 3',
+        accentHex: '#10b981',
+        secondaryHex: '#06b6d4',
+        tabActive:
+          'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-[0_10px_28px_-8px_rgba(16,185,129,0.55)]',
+        glowRing: 'ring-1 ring-emerald-400/45 border-emerald-500/50',
+        headerGrad: 'from-slate-950 via-[#041d17] to-slate-950',
+        auroraOrb:
+          'bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.34),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(6,182,212,0.22),transparent_60%)]',
+        userBubble:
+          'bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-md shadow-emerald-500/25',
+        sendBtn:
+          'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/35',
         accentRing: 'focus-within:ring-emerald-400/60 focus-within:border-emerald-400',
-        avatarRing: 'ring-emerald-400/50 bg-gradient-to-br from-emerald-500 to-teal-600 text-white',
+        avatarRing: 'ring-emerald-400/60 bg-gradient-to-br from-emerald-500 to-cyan-600 text-white',
+        eqBar: 'bg-emerald-400',
         icon: <Code2 className="w-4 h-4" />
       };
     }
     return {
-      nameVi: 'AI Toán Học',
-      nameEn: 'Math AI',
+      nameVi: 'Syn Math',
+      nameEn: 'Syn Math',
+      roleVi: 'Đại Số · Giải Tích · Hình Học Oxyz',
+      roleEn: 'Algebra · Calculus · Oxyz Engine',
       badgeVi: 'Đại số · Giải tích · Oxyz',
       badgeEn: 'Algebra · Calculus · Oxyz',
-      colorClass: 'bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 text-white border-indigo-400 shadow-md shadow-indigo-500/25',
-      softClass: 'bg-indigo-500/20 text-sky-300 border-indigo-400/40',
-      headerGrad: 'from-slate-950 via-indigo-950/95 to-slate-900',
-      auroraOrb: 'bg-[radial-gradient(ellipse_at_top_right,rgba(56,189,248,0.26),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(99,102,241,0.24),transparent_60%)]',
-      userBubble: 'bg-gradient-to-br from-indigo-600 via-violet-600 to-sky-600 text-white shadow-md shadow-indigo-500/25',
-      sendBtn: 'bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white shadow-lg shadow-indigo-500/30',
-      accentRing: 'focus-within:ring-indigo-400/60 focus-within:border-indigo-400',
-      avatarRing: 'ring-indigo-400/50 bg-gradient-to-br from-indigo-500 to-violet-600 text-white',
+      accentHex: '#38bdf8',
+      secondaryHex: '#818cf8',
+      tabActive:
+        'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white border-sky-300 shadow-[0_10px_28px_-8px_rgba(56,189,248,0.55)]',
+      glowRing: 'ring-1 ring-sky-400/45 border-sky-500/50',
+      headerGrad: 'from-slate-950 via-[#0a1333] to-slate-950',
+      auroraOrb:
+        'bg-[radial-gradient(ellipse_at_top_right,rgba(56,189,248,0.34),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(99,102,241,0.28),transparent_60%)]',
+      userBubble:
+        'bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-600 text-white shadow-md shadow-blue-500/25',
+      sendBtn:
+        'bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white shadow-lg shadow-sky-500/35',
+      accentRing: 'focus-within:ring-sky-400/60 focus-within:border-sky-400',
+      avatarRing: 'ring-sky-400/60 bg-gradient-to-br from-blue-600 to-indigo-600 text-white',
+      eqBar: 'bg-sky-400',
       icon: <Compass className="w-4 h-4" />
     };
   };
@@ -189,8 +261,8 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         id: `welcome_${subj}_${mode}_${Date.now()}`,
         role: 'tutor',
         text: isEn
-          ? `Hello! I am **${subjName} (Mode 2: Full Summary, Method & Detailed Solution)**${topicPart}.\n\nSend me your problem or photo: I will **summarize the givens, explain the best method, and provide the complete step-by-step solution & final answer**.`
-          : `Chào em! Thầy/Cô là **${subjName} — Chế độ 2 (Tóm tắt · Cách làm · Lời giải cụ thể)**${topicPart}.\n\nHãy gửi đề bài hoặc ảnh chụp: Thầy/Cô sẽ **tóm tắt giả thiết, phân tích phương pháp giải và trình bày lời giải chi tiết đến đáp án cuối cùng**.`,
+          ? `Hello! I am **${subjName}** inside **Syn AI** (Mode 2: Full Summary, Method & Detailed Solution)${topicPart}.\n\nSend me your problem or photo: I will **summarize the givens, explain the best method, and provide the complete step-by-step solution & final answer**.`
+          : `Chào em! Mình là **${subjName}** thuộc hệ thống **Syn AI** — Chế độ 2 (Tóm tắt · Cách làm · Lời giải cụ thể)${topicPart}.\n\nHãy gửi đề bài hoặc ảnh chụp: Syn AI sẽ **tóm tắt giả thiết, phân tích phương pháp giải và trình bày lời giải chi tiết đến đáp án cuối cùng**.`,
         timestamp
       };
     }
@@ -200,8 +272,8 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         id: `welcome_${subj}_${mode}_${Date.now()}`,
         role: 'tutor',
         text: isEn
-          ? `Hello! I am **${subjName} (Mode 3: Skill Diagnosis & Roadmap Architect)**.\n\nComplete the quick 5-question professional + major-track check above to generate your personalized **Study Flowchart**, or ask me any follow-up questions about your study plan below.`
-          : `Chào em! Thầy/Cô là **${subjName} — Chế độ 3 (Đánh giá trình độ & Thiết kế Sơ đồ học tập)**.\n\nEm hãy làm bộ **5 câu hỏi chuyên môn + lựa chọn chuyên ngành** ngay phía trên để AI phân tích điểm mạnh/yếu và vẽ ra sơ đồ lộ trình riêng cho em nhé!`,
+          ? `Hello! I am **${subjName}** inside **Syn AI** (Mode 3: Skill Diagnosis & Roadmap Architect).\n\nComplete the quick 5-question professional + major-track check above to generate your personalized **Study Flowchart**, or ask me any follow-up questions about your study plan below.`
+          : `Chào em! Mình là **${subjName}** thuộc **Syn AI** — Chế độ 3 (Đánh giá trình độ & Thiết kế Sơ đồ học tập).\n\nEm hãy làm bộ **5 câu hỏi chuyên môn + lựa chọn chuyên ngành** ngay phía trên để Syn AI phân tích điểm mạnh/yếu và vẽ ra sơ đồ lộ trình riêng cho em nhé!`,
         timestamp
       };
     }
@@ -210,16 +282,14 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       id: `welcome_${subj}_${mode}_${Date.now()}`,
       role: 'tutor',
       text: isEn
-        ? `Hello! I am **${subjName} (Mode 1: Clarify Doubts — No Final Answer)**${topicPart}.\n\nI will analyze the problem with you and explain any unclear step in detail, **without spoiling the final result**.\n\n**Which exact concept, formula, or step are you unsure about?**`
-        : `Chào em! Thầy/Cô là **${subjName} — Chế độ 1 (Giải đáp thắc mắc · Không đưa kết quả)**${topicPart}.\n\nThầy/Cô sẽ phân tích đề và giảng thật cụ thể chỗ em chưa hiểu, nhưng **tuyệt đối không đưa ra đáp án cuối ngay** để em tự bứt phá tư duy.\n\n**Em hãy nói rõ em đang chưa hiểu cụ thể ở phần nào?** (Ví dụ: chưa hiểu đề hỏi gì, quên công thức nào, hay vướng ở bước biến đổi nào?)`,
+        ? `Hello! I am **${subjName}** inside **Syn AI** (Mode 1: Clarify Doubts — No Final Answer)${topicPart}.\n\nI will analyze the problem with you and explain any unclear step in detail, **without spoiling the final result**.\n\n**Which exact concept, formula, or step are you unsure about?**`
+        : `Chào em! Mình là **${subjName}** thuộc **Syn AI** — Chế độ 1 (Giải đáp thắc mắc · Không đưa kết quả)${topicPart}.\n\nSyn AI sẽ phân tích đề và giảng thật cụ thể chỗ em chưa hiểu, nhưng **tuyệt đối không đưa ra đáp án cuối ngay** để em tự bứt phá tư duy.\n\n**Em hãy nói rõ em đang chưa hiểu cụ thể ở phần nào?** (Ví dụ: chưa hiểu đề hỏi gì, quên công thức nào, hay vướng ở bước biến đổi nào?)`,
       timestamp
     };
   };
 
-  // Separate thread state per (subject, mode) so all 3 subject AIs & 3 modes keep clean history
   const [threads, setThreads] = useState<Record<string, TutorMessage[]>>({});
   const threadKey = `${activeSubject}_${activeMode}`;
-
   const currentMessages = threads[threadKey] || [makeWelcomeMessage(activeSubject, activeMode, context)];
 
   const [inputText, setInputText] = useState('');
@@ -229,7 +299,6 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   const [pendingImage, setPendingImage] = useState<{ base64: string; mimeType: string } | null>(null);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
 
-  // Mode 3 Diagnostic & Personalized Roadmap states — independent per Subject AI
   const [diagConfigBySubj, setDiagConfigBySubj] = useState<Record<AISubjectKey, SubjectDiagConfig>>(() => ({
     math: {
       grade: 'Lớp 12',
@@ -345,7 +414,6 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [isFullscreen]);
 
-  // Global clipboard paste (Ctrl+V) while tutor is open
   useEffect(() => {
     if (!isOpen) return;
     const onPaste = (e: ClipboardEvent) => {
@@ -523,12 +591,11 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       );
 
       if (!streamRes.ok || !streamRes.reply) {
-        // Remove empty placeholder message so error shows cleanly
         setThreads((prev) => ({
           ...prev,
           [targetThreadKey]: (prev[targetThreadKey] || []).filter((m) => m.id !== tutorMsgId)
         }));
-        throw new Error(streamRes.error || 'Gemini AI không thể phản hồi lúc này. Vui lòng thử lại.');
+        throw new Error(streamRes.error || 'Syn AI không thể phản hồi lúc này. Vui lòng thử lại.');
       }
 
       setThreads((prev) => {
@@ -541,7 +608,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         };
       });
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Không thể kết nối Gemini AI. Vui lòng kiểm tra kết nối và thử lại.');
+      setErrorMsg(err?.message || 'Không thể kết nối Syn AI. Vui lòng kiểm tra kết nối và thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -571,7 +638,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     setDiagLoadingQuiz(false);
 
     if (!res.ok || !Array.isArray(res.data?.questions) || res.data.questions.length === 0) {
-      setDiagError(res.error || 'Gemini AI chưa tạo được bộ câu hỏi. Vui lòng bấm thử lại.');
+      setDiagError(res.error || 'Syn AI chưa tạo được bộ câu hỏi. Vui lòng bấm thử lại.');
       return;
     }
 
@@ -629,7 +696,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     setDiagLoadingRoadmap(false);
 
     if (!res.ok || !res.data?.roadmap) {
-      setDiagError(res.error || 'Gemini AI chưa hoàn thành sơ đồ lộ trình. Vui lòng bấm thử lại.');
+      setDiagError(res.error || 'Syn AI chưa hoàn thành sơ đồ lộ trình. Vui lòng bấm thử lại.');
       return;
     }
 
@@ -660,25 +727,28 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     onChangeSubject?.(subj);
   };
 
-  const modeTabs: { id: AITutorMode; shortVi: string; shortEn: string; descVi: string; descEn: string }[] = [
+  const modeTabs: { id: AITutorMode; code: string; shortVi: string; shortEn: string; descVi: string; descEn: string }[] = [
     {
       id: 'explain_no_answer',
-      shortVi: '1. Giảng Chưa Hiểu (Không Đáp Án)',
-      shortEn: '1. Guided Explain (No Answer)',
+      code: '01',
+      shortVi: 'Giảng Gợi Mở (Không Đáp Án)',
+      shortEn: 'Guided Explain (No Answer)',
       descVi: 'Phân tích đề · Hỏi chỗ vướng · Giảng chi tiết từng bước (không đưa đáp án cuối)',
       descEn: 'Analyzes problem · Asks unclear step · Explains deeply without spoiling answer'
     },
     {
       id: 'full_solution',
-      shortVi: '2. Tóm Tắt · Cách Làm · Lời Giải',
-      shortEn: '2. Summary · Method · Full Solution',
+      code: '02',
+      shortVi: 'Tóm Tắt · Cách Làm · Lời Giải',
+      shortEn: 'Summary · Method · Solution',
       descVi: 'Tóm tắt giả thiết · Nêu phương pháp · Xuất lời giải + kết quả cụ thể',
       descEn: 'Summarizes problem · Explains method · Gives full solution & final answer'
     },
     {
       id: 'diagnostic_roadmap',
-      shortVi: '3. Đánh Giá & Sơ Đồ Học Tập',
-      shortEn: '3. Skill Check & Study Roadmap',
+      code: '03',
+      shortVi: 'Đánh Giá & Sơ Đồ Học Tập',
+      shortEn: 'Skill Check & Roadmap',
       descVi: 'Hỏi chuyên môn & chọn chuyên ngành → Phân tích năng lực → Vẽ sơ đồ học tập',
       descEn: 'Diagnostic + major choices → Skill analysis → Personalized study flowchart'
     }
@@ -703,27 +773,45 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           if (file?.type.startsWith('image/')) {
             attachImageFile(file);
           } else if (file) {
-            file.text().then((txt) => {
-              if (txt.trim()) {
-                setInputText((prev) => (prev ? `${prev}\n${txt.slice(0, 6000)}` : txt.slice(0, 6000)));
-              }
-            }).catch(() => {});
+            file
+              .text()
+              .then((txt) => {
+                if (txt.trim()) {
+                  setInputText((prev) => (prev ? `${prev}\n${txt.slice(0, 6000)}` : txt.slice(0, 6000)));
+                }
+              })
+              .catch(() => {});
           }
         }
       }}
       className={
         isFullscreen
-          ? `fixed inset-0 z-[115] w-screen h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden ${
-              isDraggingImage ? 'ring-2 ring-inset ring-sky-500' : ''
+          ? `syn-window-enter fixed inset-0 z-[115] w-screen h-[100dvh] bg-slate-950 flex flex-col overflow-hidden ${
+              isDraggingImage ? 'ring-2 ring-inset ring-sky-400' : ''
             }`
-          : `fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] sm:w-[510px] md:w-[570px] h-[min(730px,88dvh)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border ${
-              isDraggingImage ? 'border-sky-500 ring-2 ring-sky-500/40' : 'border-slate-200/90 dark:border-white/15'
-            } rounded-2xl shadow-[0_28px_80px_-16px_rgba(15,23,42,0.45)] dark:shadow-[0_28px_80px_-16px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden`
+          : `syn-window-enter sci-frame fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] sm:w-[560px] md:w-[630px] h-[min(770px,89dvh)] bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border ${
+              isDraggingImage ? 'border-sky-400 ring-2 ring-sky-400/50' : activeMeta.glowRing
+            } rounded-md shadow-[0_32px_90px_-16px_rgba(2,6,23,0.68)] flex flex-col overflow-hidden`
       }
     >
-      {/* Top Clean Header */}
-      <div className={`relative overflow-hidden px-3.5 sm:px-5 py-3 bg-gradient-to-r ${activeMeta.headerGrad} text-white border-b border-white/10 flex items-center justify-between gap-2.5 shrink-0`}>
+      {/* Drag-and-drop HUD overlay */}
+      {isDraggingImage && (
+        <div className="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm border-2 border-dashed border-sky-400 flex flex-col items-center justify-center gap-2 text-white pointer-events-none">
+          <div className="w-14 h-14 rounded-md bg-sky-500/20 border border-sky-400 flex items-center justify-center animate-bounce">
+            <ImageIcon className="w-7 h-7 text-sky-300" />
+          </div>
+          <div className="font-display text-sm font-bold">
+            {isEn ? 'Drop image for Syn AI visual analysis' : 'Thả ảnh vào đây để Syn AI phân tích'}
+          </div>
+        </div>
+      )}
+
+      {/* GRAND COMMAND HEADER */}
+      <div
+        className={`syn-header-beam relative px-3.5 sm:px-5 py-3.5 bg-gradient-to-r ${activeMeta.headerGrad} text-white border-b border-white/15 flex items-center justify-between gap-2.5 shrink-0`}
+      >
         <div aria-hidden="true" className={`absolute inset-0 pointer-events-none ${activeMeta.auroraOrb}`} />
+        <div aria-hidden="true" className="absolute inset-0 syn-neural-grid opacity-30 pointer-events-none" />
 
         <div className="relative z-10 flex items-center gap-2.5 min-w-0">
           <button
@@ -737,30 +825,40 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                 onClose();
               }
             }}
-            className="group px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold text-sky-200 hover:text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer whitespace-nowrap"
+            className="group px-2.5 py-2 rounded-md bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold text-sky-200 hover:text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer whitespace-nowrap"
             title={isEn ? `Back to ${backLabel}` : `Quay lại ${backLabel}`}
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="max-w-[130px] truncate">
-              {isEn ? `Back (${backLabel})` : `Quay lại (${backLabel})`}
+            <span className="hidden sm:inline max-w-[115px] truncate">
+              {isEn ? backLabel : backLabel}
             </span>
           </button>
 
-          <div className="relative shrink-0">
-            <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-sm ${activeMeta.softClass}`}>
-              {activeMeta.icon}
-            </div>
-          </div>
+          <SynCoreEmblem
+            accentHex={activeMeta.accentHex}
+            secondaryHex={activeMeta.secondaryHex}
+            icon={activeMeta.icon}
+          />
 
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-display text-sm sm:text-base font-extrabold tracking-tight truncate">
-                {isEn ? `${activeMeta.nameEn} · Smart Tutor` : `${activeMeta.nameVi} · Trợ Giảng 3 Chế Độ`}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-1.5 py-0.5 rounded bg-white/12 border border-white/20 font-mono text-[10px] font-extrabold tracking-widest uppercase text-sky-200">
+                SYN AI
+              </span>
+              <h3 className="font-display text-sm sm:text-base font-extrabold tracking-tight truncate text-white">
+                {isEn ? activeMeta.nameEn : activeMeta.nameVi}
               </h3>
+              <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-[10px] font-mono text-emerald-300">
+                <Radio className="w-2.5 h-2.5 animate-pulse" />
+                <span>LIVE</span>
+              </span>
             </div>
-            <p className="text-[11px] text-slate-300/90 truncate flex items-center gap-1.5">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-              <span>{isEn ? activeMeta.badgeEn : activeMeta.badgeVi}</span>
+            <p className="text-[11px] text-slate-300/90 truncate flex items-center gap-1.5 mt-0.5">
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full shrink-0 animate-pulse"
+                style={{ backgroundColor: activeMeta.accentHex }}
+              />
+              <span>{isEn ? activeMeta.roleEn : activeMeta.roleVi}</span>
             </p>
           </div>
         </div>
@@ -768,15 +866,15 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         <div className="relative z-10 flex items-center gap-1.5 shrink-0">
           <button
             onClick={handleReset}
-            className="p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/15 border border-white/10 transition-all cursor-pointer"
+            className="p-2 rounded-md text-slate-300 hover:text-white bg-white/5 hover:bg-white/15 border border-white/10 transition-all cursor-pointer"
             title={isEn ? 'Reset current conversation' : 'Làm mới cuộc trò chuyện'}
           >
             <RotateCcw className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 rounded-xl text-slate-300 hover:text-white bg-white/5 hover:bg-white/15 border border-white/10 transition-all cursor-pointer"
-            title={isFullscreen ? 'Thu nhỏ' : 'Mở toàn màn hình'}
+            className="p-2 rounded-md text-slate-300 hover:text-white bg-white/5 hover:bg-white/15 border border-white/10 transition-all cursor-pointer"
+            title={isFullscreen ? (isEn ? 'Exit Fullscreen' : 'Thu nhỏ') : isEn ? 'Fullscreen' : 'Mở toàn màn hình'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -785,7 +883,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
               setIsFullscreen(false);
               onClose();
             }}
-            className="p-2 rounded-xl text-slate-300 hover:text-rose-300 bg-white/5 hover:bg-rose-500/20 border border-white/10 transition-all cursor-pointer"
+            className="p-2 rounded-md text-slate-300 hover:text-rose-300 bg-white/5 hover:bg-rose-500/20 border border-white/10 transition-all cursor-pointer"
             title={isEn ? 'Close' : 'Đóng'}
           >
             <X className="w-4 h-4" />
@@ -793,39 +891,53 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         </div>
       </div>
 
-      {/* 3 Dedicated Subject AI Switcher */}
-      <div className="px-3.5 sm:px-5 py-2.5 bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-white/10 shrink-0">
+      {/* 3 DEDICATED SYN AI ENGINES SWITCHER */}
+      <div className="px-3.5 sm:px-5 py-2.5 bg-slate-900/95 dark:bg-slate-950 border-b border-slate-800 shrink-0">
         <div className={`grid grid-cols-3 gap-2 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           {(['math', 'physics', 'cs'] as AISubjectKey[]).map((subj) => {
             const meta = getAiPersonaMeta(subj);
             const selected = activeSubject === subj;
             const shortcut = subj === 'math' ? 'Ctrl(L)+D' : subj === 'physics' ? 'Ctrl(L)+F' : 'Ctrl(L)+G';
             const shortKey = subj === 'math' ? '^D' : subj === 'physics' ? '^F' : '^G';
+            const iconAnim =
+              subj === 'math'
+                ? 'icon-anim-compass'
+                : subj === 'physics'
+                ? 'icon-anim-zap'
+                : 'icon-anim-code';
             return (
               <button
                 key={subj}
                 data-ripple="true"
                 onClick={() => handleSwitchSubject(subj)}
                 title={isEn ? `Shortcut: Left ${shortcut}` : `Phím tắt: ${shortcut.replace('Ctrl(L)', 'Ctrl trái')}`}
-                className={`group sheen-btn flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-2xl text-xs sm:text-[13px] font-bold border transition-all whitespace-nowrap cursor-pointer ${
+                className={`group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-md text-xs sm:text-[13px] font-bold border transition-all whitespace-nowrap cursor-pointer ${
                   selected
-                    ? meta.colorClass
-                    : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border-slate-200/90 dark:border-white/10 hover:border-indigo-400/70 hover:bg-white dark:hover:bg-slate-800'
+                    ? meta.tabActive
+                    : 'bg-slate-900/90 text-slate-300 border-slate-700/80 hover:border-sky-400/70 hover:text-white hover:bg-slate-800'
                 }`}
               >
-                <span className="group-hover:scale-110 transition-transform">{meta.icon}</span>
-                <span>{isEn ? meta.nameEn : meta.nameVi}</span>
-                <span className={`hidden sm:inline text-[10px] font-mono px-1.5 py-0.5 rounded-md ${selected ? 'bg-black/15 text-white' : 'bg-slate-200/70 dark:bg-white/10 text-slate-500 dark:text-slate-400'}`}>
-                  {shortKey}
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className={iconAnim}>{meta.icon}</span>
+                  <span className="truncate">{isEn ? meta.nameEn : meta.nameVi}</span>
                 </span>
+                <kbd
+                  className={`hidden sm:inline text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                    selected
+                      ? 'bg-black/20 border-white/25 text-current'
+                      : 'bg-slate-950 border-slate-700 text-slate-400'
+                  }`}
+                >
+                  {shortKey}
+                </kbd>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* 3 Pedagogical AI Modes Switcher */}
-      <div className="px-3.5 sm:px-5 py-2.5 bg-slate-50/90 dark:bg-slate-900/70 border-b border-slate-200/80 dark:border-white/10 shrink-0">
+      {/* 3 PEDAGOGICAL MODES TACTICAL BAR */}
+      <div className="px-3.5 sm:px-5 py-2.5 bg-slate-100/95 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 shrink-0">
         <div className={`space-y-1.5 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
             {modeTabs.map((m) => {
@@ -846,35 +958,44 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                     setActiveMode(m.id);
                     setErrorMsg(null);
                   }}
-                  className={`group sheen-btn flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap border transition-all cursor-pointer ${
+                  className={`group sheen-btn flex items-center justify-center sm:justify-start gap-1.5 px-2.5 py-2 rounded-md text-[11px] sm:text-xs font-bold whitespace-nowrap border transition-all cursor-pointer ${
                     selected
-                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-sm'
-                      : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-indigo-400/60 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 border-slate-950 dark:border-white shadow-sm'
+                      : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
+                  <span
+                    className={`px-1 py-0.5 rounded font-mono text-[10px] ${
+                      selected
+                        ? 'bg-sky-500 text-white dark:bg-slate-900 dark:text-sky-300'
+                        : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    {m.code}
+                  </span>
                   <span className="group-hover:scale-110 transition-transform">{modeIcon}</span>
                   <span className="truncate">{isEn ? m.shortEn : m.shortVi}</span>
                 </button>
               );
             })}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug flex items-center gap-1.5 px-0.5">
-            <Sparkles className="w-3 h-3 text-indigo-500 shrink-0" />
+          <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug flex items-center gap-1.5 px-0.5">
+            <Sparkles className="w-3 h-3 text-sky-500 shrink-0" />
             <span>{isEn ? activeModeMeta.descEn : activeModeMeta.descVi}</span>
           </p>
         </div>
       </div>
 
-      {/* MAIN BODY: Mode 3 includes interactive Skill Diagnosis & Visual Flowchart + optional chat */}
-      <div className="relative flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 bg-gradient-to-b from-slate-50/90 via-white/70 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900/95 dark:to-indigo-950/30">
+      {/* MAIN NEURAL VIEWPORT */}
+      <div className="relative flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 bg-gradient-to-b from-slate-50 via-white to-slate-100/80 dark:from-slate-950 dark:via-[#060c1a] dark:to-slate-950 syn-neural-grid">
         <div className={`space-y-4 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           {activeMode === 'diagnostic_roadmap' && (
-            <div className="space-y-3.5">
+            <div className="space-y-3.5 roadmap-card-enter">
               {/* Step 1: Configuration Card */}
-              <div className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-indigo-200/80 dark:border-indigo-500/25 rounded-2xl p-4 space-y-3.5 shadow-sm">
+              <div className="sci-frame bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-indigo-200 dark:border-indigo-500/30 rounded-md p-4 space-y-3.5 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                    <div className="w-7 h-7 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-md bg-indigo-500/15 border border-indigo-400/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
                       <BrainCircuit className="w-4 h-4 shrink-0" />
                     </div>
                     <span>
@@ -899,7 +1020,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                     <select
                       value={diagGrade}
                       onChange={(e) => updateActiveDiagConfig({ grade: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       {['Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((g) => (
                         <option key={g} value={g}>
@@ -916,7 +1037,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                     <select
                       value={diagSelfLevel}
                       onChange={(e) => updateActiveDiagConfig({ selfLevel: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="Cần xây lại gốc">{isEn ? 'Foundational' : 'Cần xây lại gốc'}</option>
                       <option value="Trung bình">{isEn ? 'Average' : 'Trung bình'}</option>
@@ -933,7 +1054,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                   <select
                     value={diagMajor}
                     onChange={(e) => updateActiveDiagConfig({ major: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     {activeMajorOptions.map((m) => (
                       <option key={m} value={m}>
@@ -953,7 +1074,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                         ? 'Optional goal (e.g., 9+ entrance exam, master DP graphs...)'
                         : 'Mục tiêu riêng (VD: Thi đỗ chuyên Toán, đạt 9+ THPT QG, làm chủ Quy hoạch động...)'
                     }
-                    className="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="flex-1 px-3 py-2 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <VoiceMicButton
                     language={language}
@@ -968,14 +1089,14 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                 <button
                   onClick={handleGenerateQuiz}
                   disabled={diagLoadingQuiz}
-                  className={`group sheen-btn w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer ${activeMeta.sendBtn}`}
+                  className={`group sheen-btn w-full py-2.5 px-4 rounded-md text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer ${activeMeta.sendBtn}`}
                 >
                   <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                   <span>
                     {diagLoadingQuiz
                       ? isEn
                         ? 'Generating Diagnostic & Major Questions...'
-                        : 'AI đang tạo câu hỏi chuyên môn & chuyên ngành...'
+                        : 'Syn AI đang tạo câu hỏi chuyên môn & chuyên ngành...'
                       : diagQuestions.length > 0
                       ? isEn
                         ? 'Regenerate 5 Assessment Questions'
@@ -988,39 +1109,45 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
               </div>
 
               {diagError && (
-                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300">
+                <div className="p-3 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300">
                   {diagError}
                 </div>
               )}
 
-              {/* Step 2: Interactive 5-Question Quiz */}
+              {/* Step 2: 5 Diagnostic Questions */}
               {diagQuestions.length > 0 && (
-                <div className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/15 rounded-2xl p-4 space-y-3.5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                      {isEn ? 'Answer 5 Questions Below:' : 'Hoàn thành 5 câu hỏi đánh giá:'}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                <div className="sci-frame bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-md p-4 space-y-4 shadow-sm roadmap-card-enter">
+                  <div className="flex items-center justify-between text-xs font-extrabold text-slate-900 dark:text-white">
+                    <span>{isEn ? 'Answer 5 Questions Below:' : 'Hoàn thành 5 câu hỏi đánh giá:'}</span>
+                    <span className="font-mono text-sky-600 dark:text-sky-400">
                       {Object.keys(diagAnswers).length}/{diagQuestions.length}
                     </span>
                   </div>
 
-                  <div className="space-y-3">
-                    {diagQuestions.map((q, idx) => (
+                  <div className="space-y-4">
+                    {diagQuestions.map((q, qIdx) => (
                       <div
                         key={q.id}
-                        className="p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-950/75 border border-slate-200/80 dark:border-white/10 space-y-2.5"
+                        className="p-3.5 rounded-md bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 space-y-2.5"
                       >
-                        <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                            Câu {idx + 1} · {q.category === 'specialization' ? (isEn ? 'Major & Style' : 'Định hướng chuyên ngành') : (isEn ? 'Subject Skill' : 'Kiến thức chuyên môn')}
+                        <div className="flex items-center justify-between gap-2 text-[11px]">
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                            Q{qIdx + 1} · {q.topicTag}
                           </span>
-                          <span className="truncate">{q.topicTag}</span>
+                          <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
+                            {q.category === 'specialization'
+                              ? isEn
+                                ? 'Specialization'
+                                : 'Chuyên ngành'
+                              : isEn
+                              ? 'Core Knowledge'
+                              : 'Kiến thức nền'}
+                          </span>
                         </div>
-                        <div className="text-xs sm:text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
+                        <div className="text-xs sm:text-[13px] font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
                           <FormattedText text={q.question} />
                         </div>
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className="grid grid-cols-1 gap-1.5">
                           {q.options.map((opt, optIdx) => {
                             const picked = diagAnswers[q.id] === optIdx;
                             return (
@@ -1033,14 +1160,14 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                                     [activeSubject]: { ...(prev[activeSubject] || {}), [q.id]: optIdx }
                                   }))
                                 }
-                                className={`group text-left px-3.5 py-2.5 rounded-xl text-xs border transition-all flex items-start gap-2.5 cursor-pointer ${
+                                className={`group text-left px-3.5 py-2.5 rounded-md text-xs border transition-all flex items-start gap-2.5 cursor-pointer ${
                                   picked
                                     ? 'bg-indigo-50 dark:bg-indigo-950/70 border-indigo-500 text-indigo-900 dark:text-indigo-200 font-semibold shadow-xs'
                                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400/70 hover:bg-indigo-50/30 dark:hover:bg-slate-800'
                                 }`}
                               >
                                 <span
-                                  className={`w-5 h-5 rounded-lg font-mono text-[11px] font-bold flex items-center justify-center shrink-0 transition-colors ${
+                                  className={`w-5 h-5 rounded font-mono text-[11px] font-bold flex items-center justify-center shrink-0 transition-colors ${
                                     picked
                                       ? 'bg-indigo-600 text-white'
                                       : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50'
@@ -1062,14 +1189,14 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                   <button
                     onClick={handleBuildRoadmap}
                     disabled={diagLoadingRoadmap}
-                    className="sheen-btn w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-500/25 transition-all disabled:opacity-50 cursor-pointer"
+                    className="sheen-btn w-full py-3 px-4 rounded-md bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-500/25 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     <GitBranch className="w-4 h-4" />
                     <span>
                       {diagLoadingRoadmap
                         ? isEn
                           ? 'Analyzing Skills & Building Flowchart...'
-                          : 'Đang phân tích kỹ năng & vẽ sơ đồ học tập...'
+                          : 'Syn AI đang phân tích kỹ năng & vẽ sơ đồ học tập...'
                         : isEn
                         ? 'Analyze Skills & Generate Study Roadmap'
                         : 'Phân Tích Trình Độ & Tạo Sơ Đồ Học Tập'}
@@ -1080,8 +1207,8 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
               {/* Step 3: Visual Personalized Roadmap Diagram */}
               {activeRoadmap && (
-                <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-emerald-300/80 dark:border-emerald-500/35 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-white/10">
+                <div className="sci-frame bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-emerald-300/80 dark:border-emerald-500/35 rounded-md p-4 sm:p-5 space-y-4 shadow-sm roadmap-card-enter">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
                     <div>
                       <div className="text-xs sm:text-sm font-extrabold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                         <FileCheck2 className="w-4 h-4" />
@@ -1103,7 +1230,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
                   {/* Strengths & Weaknesses */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/35 border border-emerald-200/80 dark:border-emerald-900/60 space-y-1.5">
+                    <div className="p-3 rounded-md bg-emerald-50/80 dark:bg-emerald-950/35 border border-emerald-200/80 dark:border-emerald-900/60 space-y-1.5">
                       <div className="font-extrabold text-emerald-800 dark:text-emerald-300">
                         {isEn ? 'Strengths' : 'Điểm mạnh'}
                       </div>
@@ -1114,7 +1241,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                         </div>
                       ))}
                     </div>
-                    <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/35 border border-amber-200/80 dark:border-amber-900/60 space-y-1.5">
+                    <div className="p-3 rounded-md bg-amber-50/80 dark:bg-amber-950/35 border border-amber-200/80 dark:border-amber-900/60 space-y-1.5">
                       <div className="font-extrabold text-amber-800 dark:text-amber-300">
                         {isEn ? 'Gaps to Fix' : 'Điểm cần bù đắp'}
                       </div>
@@ -1127,7 +1254,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/35 border border-indigo-200/80 dark:border-indigo-900/60 text-[11px] text-slate-700 dark:text-slate-300 space-y-1.5">
+                  <div className="p-3 rounded-md bg-indigo-50/80 dark:bg-indigo-950/35 border border-indigo-200/80 dark:border-indigo-900/60 text-[11px] text-slate-700 dark:text-slate-300 space-y-1.5">
                     <div>
                       <strong className="text-indigo-700 dark:text-indigo-300">
                         {isEn ? 'Major Strategy: ' : 'Tư vấn chuyên ngành: '}
@@ -1147,10 +1274,10 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                         {idx < activeRoadmap.stages.length - 1 && (
                           <div className="absolute left-3 top-7 bottom-0 w-0.5 bg-gradient-to-b from-indigo-500 via-sky-400 to-indigo-200 dark:to-indigo-800/80" />
                         )}
-                        <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-gradient-to-br from-indigo-600 to-sky-500 text-white text-[11px] font-extrabold flex items-center justify-center shadow-sm">
+                        <div className="roadmap-node-aura absolute left-0 top-1 w-6 h-6 rounded-md bg-gradient-to-br from-indigo-600 to-sky-500 text-white text-[11px] font-extrabold flex items-center justify-center shadow-sm">
                           {st.step}
                         </div>
-                        <div className="p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-950/80 border border-slate-200/90 dark:border-white/10 hover:border-indigo-400/60 transition-colors space-y-2">
+                        <div className="p-3.5 rounded-md bg-slate-50/90 dark:bg-slate-950/85 border border-slate-200/90 dark:border-slate-800 hover:border-indigo-400/60 transition-colors space-y-2">
                           <div className="flex flex-wrap items-center justify-between gap-1">
                             <span className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400">
                               {st.phase}
@@ -1173,12 +1300,12 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                           </ul>
                           <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
                             <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                              Mục tiêu: {st.targetMilestone}
+                              {isEn ? 'Goal' : 'Mục tiêu'}: {st.targetMilestone}
                             </span>
                             {onNavigateSubject && (
                               <button
                                 onClick={() => onNavigateSubject(st.recommendedModule)}
-                                className="group sheen-btn px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold flex items-center gap-1 hover:bg-indigo-600 dark:hover:bg-indigo-100 transition-all cursor-pointer"
+                                className="group sheen-btn px-3 py-1.5 rounded-md bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold flex items-center gap-1 hover:bg-indigo-600 dark:hover:bg-indigo-100 transition-all cursor-pointer"
                               >
                                 <span>{isEn ? 'Open Module' : 'Học ngay'}</span>
                                 <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -1194,104 +1321,122 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             </div>
           )}
 
-          {/* Messages Feed (Active in all 3 modes; streams Gemini tokens live!) */}
+          {/* LIVE STREAMING CONVERSATION FEED */}
           <div className="space-y-4">
             {currentMessages
               .filter((msg) => msg.text.length > 0 || Boolean(msg.imagePreview))
               .map((msg) => (
-              <div
-                key={msg.id}
-                className={`animate-msg-in flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-              >
-                <div className={`flex items-end gap-2 max-w-[92%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                  {msg.role === 'tutor' && (
-                    <div className={`w-7 h-7 rounded-xl ring-2 flex items-center justify-center shrink-0 mb-0.5 shadow-sm ${activeMeta.avatarRing}`}>
-                      <Bot className="w-4 h-4" />
-                    </div>
-                  )}
+                <div
+                  key={msg.id}
+                  className={`animate-msg-in flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                >
                   <div
-                    className={`group relative rounded-2xl px-4 py-3 text-xs sm:text-[13.5px] leading-relaxed ${
-                      msg.role === 'user'
-                        ? `${activeMeta.userBubble} rounded-br-sm`
-                        : 'bg-white/95 dark:bg-slate-800/90 backdrop-blur-md border border-slate-200/90 dark:border-white/12 text-slate-800 dark:text-slate-100 rounded-bl-sm shadow-sm'
+                    className={`flex items-end gap-2.5 max-w-[93%] ${
+                      msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
                     }`}
                   >
-                    {msg.imagePreview && (
-                      <img
-                        src={msg.imagePreview}
-                        alt="Uploaded question"
-                        className="max-h-44 rounded-xl mb-2.5 border border-white/25 object-contain shadow-xs"
-                      />
-                    )}
-                    {msg.role === 'user' ? (
-                      <div className="whitespace-pre-wrap">{msg.text}</div>
-                    ) : (
-                      <div className="space-y-1.5">
-                        <FormattedText text={msg.text} />
+                    {msg.role === 'tutor' && (
+                      <div
+                        className={`w-8 h-8 rounded-md ring-1 flex items-center justify-center shrink-0 mb-0.5 shadow-sm ${activeMeta.avatarRing}`}
+                      >
+                        <Cpu className="w-4 h-4" />
                       </div>
                     )}
-                    {msg.role === 'tutor' && (
-                      <button
-                        type="button"
-                        onClick={() => handleCopyMessage(msg.id, msg.text)}
-                        className="mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 bg-slate-100/80 dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition-colors cursor-pointer"
-                        title={isEn ? 'Copy response' : 'Sao chép nội dung'}
-                      >
-                        {copiedMsgId === msg.id ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-500" />
-                            <span className="text-emerald-600 dark:text-emerald-400">
-                              {isEn ? 'Copied' : 'Đã chép'}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>{isEn ? 'Copy' : 'Sao chép'}</span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                    <div
+                      className={`group relative rounded-md px-4 py-3 text-xs sm:text-[13.5px] leading-relaxed ${
+                        msg.role === 'user'
+                          ? `${activeMeta.userBubble}`
+                          : 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/90 text-slate-800 dark:text-slate-100 shadow-sm'
+                      }`}
+                    >
+                      {msg.imagePreview && (
+                        <img
+                          src={msg.imagePreview}
+                          alt="Uploaded question"
+                          className="max-h-44 rounded-md mb-2.5 border border-white/25 object-contain shadow-xs"
+                        />
+                      )}
+                      {msg.role === 'user' ? (
+                        <div className="whitespace-pre-wrap">{msg.text}</div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <FormattedText text={msg.text} />
+                        </div>
+                      )}
+                      {msg.role === 'tutor' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyMessage(msg.id, msg.text)}
+                          className="mt-2.5 inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 border border-slate-200/80 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-300 transition-colors cursor-pointer"
+                          title={isEn ? 'Copy response' : 'Sao chép nội dung'}
+                        >
+                          {copiedMsgId === msg.id ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-500" />
+                              <span className="text-emerald-600 dark:text-emerald-400">
+                                {isEn ? 'Copied' : 'Đã chép'}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>{isEn ? 'Copy' : 'Sao chép'}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <span className={`text-[10px] text-slate-400 mt-1 tabular-nums ${msg.role === 'tutor' ? 'pl-10' : 'pr-1'}`}>
-                  {msg.role === 'tutor' ? (isEn ? activeMeta.nameEn : activeMeta.nameVi) : 'Em'} · {msg.timestamp}
-                </span>
-              </div>
-            ))}
-
-            {isLoading &&
-              !(currentMessages[currentMessages.length - 1]?.role === 'tutor' &&
-                currentMessages[currentMessages.length - 1]?.text.length > 0) && (
-              <div className="animate-msg-in flex items-end gap-2">
-                <div className={`w-7 h-7 rounded-xl ring-2 flex items-center justify-center shrink-0 mb-0.5 shadow-sm ${activeMeta.avatarRing}`}>
-                  <Bot className="w-4 h-4 animate-pulse" />
-                </div>
-                <div className="bg-white/95 dark:bg-slate-800/90 border border-slate-200 dark:border-white/15 rounded-2xl rounded-bl-sm px-4 py-3 text-xs text-slate-600 dark:text-slate-300 shadow-sm flex items-center gap-3">
-                  <div className="flex items-center gap-1 shrink-0" aria-hidden="true">
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 typing-dot" />
-                    <span className="w-2 h-2 rounded-full bg-sky-500 typing-dot-2" />
-                    <span className="w-2 h-2 rounded-full bg-purple-500 typing-dot-3" />
-                  </div>
-                  <span>
-                    {activeMode === 'full_solution'
-                      ? isEn
-                        ? `${activeMeta.nameEn} is preparing full summary & detailed solution...`
-                        : `${activeMeta.nameVi} đang tóm tắt đề và giải chi tiết...`
-                      : activeMode === 'diagnostic_roadmap'
-                      ? isEn
-                        ? `${activeMeta.nameEn} is updating your study advice...`
-                        : `${activeMeta.nameVi} đang tinh chỉnh lộ trình cho em...`
-                      : isEn
-                      ? `${activeMeta.nameEn} is analyzing your unclear step...`
-                      : `${activeMeta.nameVi} đang phân tích kỹ phần em chưa hiểu...`}
+                  <span
+                    className={`text-[10px] font-mono text-slate-400 mt-1 tabular-nums ${
+                      msg.role === 'tutor' ? 'pl-11' : 'pr-1'
+                    }`}
+                  >
+                    {msg.role === 'tutor' ? (isEn ? activeMeta.nameEn : activeMeta.nameVi) : isEn ? 'You' : 'Em'} ·{' '}
+                    {msg.timestamp}
                   </span>
                 </div>
-              </div>
-            )}
+              ))}
+
+            {isLoading &&
+              !(
+                currentMessages[currentMessages.length - 1]?.role === 'tutor' &&
+                currentMessages[currentMessages.length - 1]?.text.length > 0
+              ) && (
+                <div className="animate-msg-in flex items-end gap-2.5">
+                  <div
+                    className={`syn-core-pulse w-8 h-8 rounded-md ring-1 flex items-center justify-center shrink-0 mb-0.5 shadow-sm ${activeMeta.avatarRing}`}
+                  >
+                    <Cpu className="w-4 h-4" />
+                  </div>
+                  <div className="sci-frame bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-md px-4 py-3 text-xs text-slate-700 dark:text-slate-200 shadow-sm flex items-center gap-3">
+                    {/* 5-bar modern harmonic waveform */}
+                    <div className="flex items-center gap-0.5 h-4 shrink-0" aria-hidden="true">
+                      <span className={`w-1 h-4 rounded-xs ${activeMeta.eqBar} syn-eq-1`} />
+                      <span className={`w-1 h-4 rounded-xs ${activeMeta.eqBar} syn-eq-2`} />
+                      <span className={`w-1 h-4 rounded-xs ${activeMeta.eqBar} syn-eq-3`} />
+                      <span className={`w-1 h-4 rounded-xs ${activeMeta.eqBar} syn-eq-4`} />
+                      <span className={`w-1 h-4 rounded-xs ${activeMeta.eqBar} syn-eq-5`} />
+                    </div>
+                    <span className="font-medium">
+                      {activeMode === 'full_solution'
+                        ? isEn
+                          ? `${activeMeta.nameEn} is preparing full summary & detailed solution...`
+                          : `${activeMeta.nameVi} đang tóm tắt đề và giải chi tiết...`
+                        : activeMode === 'diagnostic_roadmap'
+                        ? isEn
+                          ? `${activeMeta.nameEn} is updating your study advice...`
+                          : `${activeMeta.nameVi} đang tinh chỉnh lộ trình cho em...`
+                        : isEn
+                        ? `${activeMeta.nameEn} is analyzing your unclear step...`
+                        : `${activeMeta.nameVi} đang phân tích kỹ phần em chưa hiểu...`}
+                    </span>
+                  </div>
+                </div>
+              )}
 
             {errorMsg && (
-              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between gap-2 shadow-xs">
+              <div className="p-3.5 rounded-md bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between gap-2 shadow-xs">
                 <span>{errorMsg}</span>
                 <button
                   onClick={() => setErrorMsg(null)}
@@ -1306,12 +1451,17 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         </div>
       </div>
 
-      {/* Quick Chips */}
-      <div className="px-3.5 sm:px-5 py-2.5 bg-white/90 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-white/10 shrink-0">
+      {/* QUICK TACTICAL PROMPTS */}
+      <div className="px-3.5 sm:px-5 py-2.5 bg-white/95 dark:bg-slate-900/95 border-t border-slate-200 dark:border-slate-800 shrink-0">
         <div className={`${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-            <span>{isEn ? 'Quick prompts:' : 'Gợi ý hỏi nhanh:'}</span>
+          <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-sky-500" />
+              <span>{isEn ? 'Quick prompts:' : 'Gợi ý hỏi nhanh:'}</span>
+            </span>
+            <span className="hidden sm:inline font-mono text-[10px] text-slate-400">
+              {isEn ? 'Paste image: Ctrl+V' : 'Dán ảnh đề: Ctrl+V'}
+            </span>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
             {quickChips.map((prompt, i) => (
@@ -1320,7 +1470,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                 data-ripple="true"
                 onClick={() => handleSend(prompt)}
                 disabled={isLoading}
-                className="sheen-btn px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 hover:bg-indigo-50 dark:hover:bg-indigo-950/70 border border-slate-200/90 dark:border-white/10 hover:border-indigo-400/70 text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap shrink-0 transition-all cursor-pointer disabled:opacity-50"
+                className="sheen-btn px-3 py-1.5 rounded-md bg-slate-100/90 dark:bg-slate-800/90 hover:bg-indigo-50 dark:hover:bg-indigo-950/70 border border-slate-200 dark:border-slate-700 hover:border-sky-400 text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap shrink-0 transition-all cursor-pointer disabled:opacity-50"
               >
                 {prompt}
               </button>
@@ -1329,11 +1479,11 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         </div>
       </div>
 
-      {/* Modern Floating Input Composer */}
-      <div className="px-3.5 sm:px-5 py-3 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-white/10 shrink-0">
+      {/* MULTIMODAL COMPOSER */}
+      <div className="px-3.5 sm:px-5 py-3 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shrink-0">
         <div className={`space-y-2.5 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           {pendingImage && (
-            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-500/30 text-xs">
+            <div className="flex items-center justify-between px-3 py-2 rounded-md bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-500/35 text-xs">
               <div className="flex items-center gap-2.5 min-w-0">
                 <img
                   src={
@@ -1342,7 +1492,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                       : `data:${pendingImage.mimeType};base64,${pendingImage.base64}`
                   }
                   alt="Preview"
-                  className="w-9 h-9 rounded-md object-cover border border-indigo-300/60 shrink-0"
+                  className="w-9 h-9 rounded object-cover border border-indigo-300/60 shrink-0"
                 />
                 <span className="text-indigo-900 dark:text-indigo-200 font-semibold truncate">
                   {isEn ? 'Attached photo of problem/step' : 'Đã đính kèm ảnh bài tập / bước giải'}
@@ -1357,10 +1507,12 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             </div>
           )}
 
-          <div className={`flex items-end gap-1.5 p-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/15 shadow-inner transition-all focus-within:ring-2 ${activeMeta.accentRing}`}>
+          <div
+            className={`flex items-end gap-1.5 p-1.5 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-inner transition-all focus-within:ring-2 ${activeMeta.accentRing}`}
+          >
             <label
               data-ripple="true"
-              className="p-2.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200/80 dark:border-white/10 cursor-pointer shrink-0 transition-all active:scale-95"
+              className="p-2.5 rounded-md bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-300 border border-slate-200 dark:border-slate-700 cursor-pointer shrink-0 transition-all active:scale-95"
               title={isEn ? 'Attach problem photo (or drag/paste Ctrl+V)' : 'Gửi ảnh đề bài (hoặc kéo thả / dán Ctrl+V)'}
             >
               <ImageIcon className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
@@ -1404,8 +1556,8 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             <button
               onClick={() => handleSend()}
               disabled={isLoading || (!inputText.trim() && !pendingImage)}
-              className={`p-3 rounded-lg shrink-0 transition-all disabled:opacity-40 cursor-pointer ${activeMeta.sendBtn}`}
-              title={isEn ? 'Send to AI Tutor' : 'Gửi câu hỏi'}
+              className={`sheen-btn p-3 rounded-md shrink-0 transition-all disabled:opacity-40 cursor-pointer ${activeMeta.sendBtn}`}
+              title={isEn ? 'Send to Syn AI' : 'Gửi tới Syn AI'}
             >
               <Send className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
             </button>

@@ -1242,15 +1242,15 @@ function buildTutorSystemInstruction(
   const persona =
     subjKey === 'math'
       ? isEn
-        ? 'EduMath AI — Senior Mathematics Specialist AI (Algebra, Calculus, 2D/3D Oxyz Geometry, Combinatorics & Olympiad Math for Grades 9–12)'
-        : 'AI Toán Học — Chuyên gia Toán học THCS/THPT & Chuyên Toán (Đại số, Giải tích, Hình học Oxy/Oxyz, Tổ hợp & Xác suất Lớp 9–12)'
+        ? 'Syn Math (Syn AI) — Senior Mathematics Specialist AI (Algebra, Calculus, 2D/3D Oxyz Geometry, Combinatorics & Olympiad Math for Grades 9–12)'
+        : 'Syn Math (Syn AI) — Chuyên gia Toán học THCS/THPT & Chuyên Toán (Đại số, Giải tích, Hình học Oxy/Oxyz, Tổ hợp & Xác suất Lớp 9–12)'
       : subjKey === 'physics'
       ? isEn
-        ? 'EduPhysics AI — Senior Physics Specialist AI (Mechanics, Electricity & Magnetism, Oscillations & Waves, Optics, Quantum & Nuclear Physics for Grades 9–12 & 2D/3D Labs)'
-        : 'AI Vật Lí — Chuyên gia Vật Lí THCS/THPT & Thí nghiệm 2D/3D (Cơ học, Điện từ, Dao động & Sóng, Quang học, Hạt nhân Lớp 9–12)'
+        ? 'Syn Physics (Syn AI) — Senior Physics Specialist AI (Mechanics, Electricity & Magnetism, Oscillations & Waves, Optics, Quantum & Nuclear Physics for Grades 9–12 & 2D/3D Labs)'
+        : 'Syn Physics (Syn AI) — Chuyên gia Vật Lí THCS/THPT & Thí nghiệm 2D/3D (Cơ học, Điện từ, Dao động & Sóng, Quang học, Hạt nhân Lớp 9–12)'
       : isEn
-      ? 'EduCode AI — Senior Computer Science & Competitive Programming AI (C++20 STL, Python 3, VNOI/IOI/ICPC, Big-O Time/Space, Graphs, DP, Segment Tree & Edge Test Analysis)'
-      : 'AI Tin Học — Chuyên gia Thuật toán & Lập trình thi đấu (C++20 STL, Python 3, VNOI/IOI/ICPC, Big-O, Quy hoạch động, Đồ thị, CTDL & Test biên)';
+      ? 'Syn Code (Syn AI) — Senior Computer Science & Competitive Programming AI (C++20 STL, Python 3, VNOI/IOI/ICPC, Big-O Time/Space, Graphs, DP, Segment Tree & Edge Test Analysis)'
+      : 'Syn Code (Syn AI) — Chuyên gia Thuật toán & Lập trình thi đấu (C++20 STL, Python 3, VNOI/IOI/ICPC, Big-O, Quy hoạch động, Đồ thị, CTDL & Test biên)';
 
   const domainFocusVi =
     subjKey === 'math'
@@ -1952,7 +1952,7 @@ Hãy chấm điểm công tâm, chính xác từng bước lập luận/công th
         mistakes: Array.isArray(parsed.mistakes) ? parsed.mistakes : [],
         stepScores: Array.isArray(parsed.stepScores) ? parsed.stepScores : [],
         detailedFeedback: parsed.detailedFeedback || 'Đã hoàn thành chấm bài tự luận.',
-        suggestedStudyTip: parsed.suggestedStudyTip || 'Hãy xem lại biểu điểm từng ý và hỏi Gia sư AI ở bước chưa vững.'
+        suggestedStudyTip: parsed.suggestedStudyTip || 'Hãy xem lại biểu điểm từng ý và hỏi Syn AI ở bước chưa vững.'
       }
     });
   } catch (err: any) {

@@ -45,13 +45,13 @@ export const WORKFLOW_STAGES: WorkflowStage[] = [
   {
     stepNumber: 3,
     id: 'tutor',
-    titleVi: '3. Hỏi Gia Sư AI Socratic Khi Gặp Điểm Mù',
-    titleEn: '3. Consult Socratic AI Tutor on Stuck Steps',
-    subtitleVi: 'AI không giải hộ trực tiếp mà hỏi ngược xem bạn đang vướng phần nào, rồi giảng cặn kẽ đúng chỗ chưa hiểu.',
-    subtitleEn: 'The AI tutor never spoils answers—it pinpoints your exact confusion and re-explains step by step.',
+    titleVi: '3. Hỏi Syn AI Khi Gặp Điểm Mù',
+    titleEn: '3. Consult Syn AI on Stuck Steps',
+    subtitleVi: 'Syn AI không giải hộ trực tiếp mà hỏi ngược xem bạn đang vướng phần nào, rồi giảng cặn kẽ đúng chỗ chưa hiểu.',
+    subtitleEn: 'Syn AI never spoils answers—it pinpoints your exact confusion and re-explains step by step.',
     actionChecklistVi: [
       'Chỉ rõ bước hoặc công thức bạn đang thấy khó hiểu',
-      'Đọc giải thích trực quan từng bước của Gia sư AI',
+      'Đọc giải thích trực quan từng bước của Syn AI',
       'Tự trả lời câu hỏi gợi mở cuối mỗi lượt trao đổi'
     ],
     actionChecklistEn: [

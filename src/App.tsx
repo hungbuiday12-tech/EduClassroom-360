@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Compass, Zap, Code2, Orbit } from 'lucide-react';
+import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -39,9 +39,22 @@ function MainApp() {
   const rightCtrlDownRef = useRef(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [isSynDockOpen, setIsSynDockOpen] = useState<boolean>(false);
+  const synDockRef = useRef<HTMLDivElement | null>(null);
   const [tutorContext, setTutorContext] = useState<TutorContextPayload>({
     subject: 'math'
   });
+
+  useEffect(() => {
+    if (!isSynDockOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (synDockRef.current && !synDockRef.current.contains(e.target as Node)) {
+        setIsSynDockOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isSynDockOpen]);
 
   const handleOpenTutor = (ctx?: TutorContextPayload) => {
     const fallbackSubj: SubjectType =
@@ -432,32 +445,103 @@ function MainApp() {
           {/* Persistent Bottom-Left Mini Focus Timer & Ambient Audio Widget */}
           <FloatingFocusTimer />
 
-          {/* Global 3-Subject x 3-Mode AI Tutor Drawer & Clean Bottom-Right 3-AI Dock */}
+          {/* Global 3-Subject x 3-Mode Syn AI Drawer & Compact Bottom-Right Syn AI Mini-Chat */}
           {!isTutorOpen && currentSubject !== 'synapse_v2' && currentSubject !== 'spatial_3d' && (
-            <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex items-center gap-1.5 p-1.5 rounded-xl bg-slate-950/92 dark:bg-slate-900/95 border border-slate-800 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.65)] backdrop-blur-md">
+            <div
+              ref={synDockRef}
+              className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex flex-col items-end gap-2"
+            >
+              {isSynDockOpen && (
+                <div className="sci-frame syn-window-enter w-[246px] rounded-md bg-slate-950/95 border border-cyan-500/45 shadow-[0_24px_60px_-14px_rgba(6,182,212,0.45)] backdrop-blur-xl overflow-hidden">
+                  <div className="px-3 py-2 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono font-extrabold tracking-wider text-cyan-300 uppercase">
+                      <span className="w-2 h-2 rounded-sm bg-cyan-400 syn-core-pulse" />
+                      <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Syn AI Suite</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsSynDockOpen(false)}
+                      className="p-1 rounded bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      aria-label={isEn ? 'Close Syn AI menu' : 'Thu gọn menu Syn AI'}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="p-2 space-y-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSynDockOpen(false);
+                        handleOpenTutor({ subject: 'math' });
+                      }}
+                      className="cs-deck-btn w-full px-3 py-2 rounded bg-blue-600 hover:bg-blue-500 border border-blue-400/35 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Compass className="w-3.5 h-3.5 shrink-0" />
+                        <span>Syn Math</span>
+                      </span>
+                      <kbd className="px-1.5 py-0.5 rounded bg-blue-950/70 border border-blue-300/30 font-mono text-[9px] text-blue-100">
+                        Ctrl+D
+                      </kbd>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSynDockOpen(false);
+                        handleOpenTutor({ subject: 'physics' });
+                      }}
+                      className="cs-deck-btn w-full px-3 py-2 rounded bg-amber-500 hover:bg-amber-400 border border-amber-300/45 text-slate-950 text-xs font-extrabold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Zap className="w-3.5 h-3.5 shrink-0" />
+                        <span>Syn Physics</span>
+                      </span>
+                      <kbd className="px-1.5 py-0.5 rounded bg-amber-950/20 border border-amber-950/30 font-mono text-[9px] text-slate-950">
+                        Ctrl+F
+                      </kbd>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSynDockOpen(false);
+                        handleOpenTutor({ subject: 'cs' });
+                      }}
+                      className="cs-deck-btn w-full px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/35 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Code2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Syn Code</span>
+                      </span>
+                      <kbd className="px-1.5 py-0.5 rounded bg-emerald-950/70 border border-emerald-300/30 font-mono text-[9px] text-emerald-100">
+                        Ctrl+G
+                      </kbd>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <button
-                onClick={() => handleOpenTutor({ subject: 'math' })}
-                className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title={isEn ? 'Open Math AI (Left Ctrl + D)' : 'Mở AI Toán Học (Ctrl trái + D)'}
+                type="button"
+                onClick={() => setIsSynDockOpen((prev) => !prev)}
+                aria-expanded={isSynDockOpen}
+                className="sci-frame syn-dock-halo flex items-center gap-2 px-3 py-2 rounded-md bg-slate-950/95 hover:bg-slate-900 border border-cyan-500/45 text-white text-xs font-bold shadow-[0_16px_40px_-10px_rgba(6,182,212,0.42)] backdrop-blur-md transition-all cursor-pointer"
+                title={
+                  isEn
+                    ? 'Open Syn AI (Left Ctrl + D / F / G)'
+                    : 'Mở Syn AI (Phím tắt: Ctrl trái + D / F / G)'
+                }
               >
-                <Compass className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? 'Math AI' : 'AI Toán'}</span>
-              </button>
-              <button
-                onClick={() => handleOpenTutor({ subject: 'physics' })}
-                className="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title={isEn ? 'Open Physics AI (Left Ctrl + F)' : 'Mở AI Vật Lí (Ctrl trái + F)'}
-              >
-                <Zap className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? 'Physics AI' : 'AI Lí'}</span>
-              </button>
-              <button
-                onClick={() => handleOpenTutor({ subject: 'cs' })}
-                className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title={isEn ? 'Open CS AI (Left Ctrl + G)' : 'Mở AI Tin Học (Ctrl trái + G)'}
-              >
-                <Code2 className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? 'CS AI' : 'AI Tin'}</span>
+                <span className="w-2 h-2 rounded-sm bg-cyan-400 syn-core-pulse shrink-0" />
+                <Cpu className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="font-mono font-extrabold tracking-wider text-cyan-200 uppercase">
+                  Syn AI
+                </span>
+                <ChevronUp
+                  className={`w-3.5 h-3.5 text-cyan-300 transition-transform duration-200 ${
+                    isSynDockOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
             </div>
           )}

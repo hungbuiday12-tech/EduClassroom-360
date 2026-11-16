@@ -803,7 +803,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
               className="cs-deck-btn px-4 py-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors whitespace-nowrap shrink-0"
             >
               <Sparkles className="w-4 h-4" />
-              <span>{isEn ? 'AI Mode 3: Build My Roadmap' : 'AI Chế Độ 3: Tạo Sơ Đồ Riêng'}</span>
+              <span>{isEn ? 'Syn AI Mode 3: Build My Roadmap' : 'Syn AI Chế Độ 3: Tạo Sơ Đồ Riêng'}</span>
             </button>
           </div>
         </div>
@@ -1169,15 +1169,15 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-600 dark:text-slate-400 tabular-nums">
                         <span>
-                          Đã làm:{' '}
+                          {isEn ? 'Completed:' : 'Đã làm:'}{' '}
                           <strong className="text-slate-900 dark:text-slate-200">
                             {item.completedSteps}/{item.totalSteps || '?'}
                           </strong>{' '}
-                          phần
+                          {isEn ? 'steps' : 'phần'}
                         </span>
                         {item.mcqTotal > 0 && (
                           <span>
-                            TN:{' '}
+                            {isEn ? 'MCQ:' : 'TN:'}{' '}
                             <strong className="text-indigo-600 dark:text-indigo-400">
                               {item.mcqCorrect}/{item.mcqTotal}
                             </strong>
@@ -1185,11 +1185,11 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                         )}
                         {item.essayGradedCount > 0 && (
                           <span>
-                            TL nhỏ:{' '}
+                            {isEn ? 'Short Essay:' : 'TL nhỏ:'}{' '}
                             <strong className="text-emerald-600 dark:text-emerald-400">
                               {item.essayAvgScore}/10
                             </strong>{' '}
-                            ({item.essayGradedCount} câu)
+                            ({item.essayGradedCount} {isEn ? 'Q' : 'câu'})
                           </span>
                         )}
                       </div>
@@ -1208,7 +1208,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                           <div className="flex items-start gap-1.5 text-emerald-700 dark:text-emerald-300">
                             <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                             <span className="line-clamp-2">
-                              <strong>Nắm vững:</strong> {item.strongPoints.slice(0, 2).join('; ')}
+                              <strong>{isEn ? 'Mastered:' : 'Nắm vững:'}</strong> {item.strongPoints.slice(0, 2).join('; ')}
                             </span>
                           </div>
                         )}
@@ -1216,7 +1216,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                           <div className="flex items-start gap-1.5 text-amber-700 dark:text-amber-300">
                             <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                             <span className="line-clamp-2">
-                              <strong>Cần củng cố:</strong> {item.weakPoints.slice(0, 2).join('; ')}
+                              <strong>{isEn ? 'Needs Review:' : 'Cần củng cố:'}</strong> {item.weakPoints.slice(0, 2).join('; ')}
                             </span>
                           </div>
                         )}
@@ -1226,7 +1226,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                     {(firstStepRec || item.recommendedAction) && (
                       <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
                         <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                          Gợi ý lộ trình tiếp theo:{' '}
+                          {isEn ? 'Next Roadmap Suggestion: ' : 'Gợi ý lộ trình tiếp theo: '}
                         </span>
                         {firstStepRec
                           ? `${firstStepRec.title} — ${firstStepRec.action}`
@@ -1481,7 +1481,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                 className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 transition-colors whitespace-nowrap"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>{isEn ? 'Open Socratic AI Tutor' : 'Mở Gia Sư AI Ngay'}</span>
+                <span>{isEn ? 'Open Syn AI Now' : 'Mở Syn AI Ngay'}</span>
               </button>
             ) : (
               <button
@@ -1783,10 +1783,10 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                         className="w-full text-left flex items-center justify-between text-xs p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-indigo-400"
                       >
                         <span className="truncate font-medium text-slate-700 dark:text-slate-300">
-                          {preNode.title}
+                          {isEn ? preNode.titleEn : preNode.title}
                         </span>
                         <span className={done ? 'text-emerald-600 font-semibold shrink-0 ml-2' : 'text-amber-600 font-semibold shrink-0 ml-2'}>
-                          {done ? '✓ Xong' : 'Chưa xong'}
+                          {done ? (isEn ? '✓ Done' : '✓ Xong') : (isEn ? 'Pending' : 'Chưa xong')}
                         </span>
                       </button>
                     );
@@ -1870,7 +1870,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                   className="px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Ask AI Tutor' : 'Hỏi Gia Sư AI'}</span>
+                  <span>{isEn ? 'Ask Syn AI' : 'Hỏi Syn AI'}</span>
                 </button>
               </div>
 

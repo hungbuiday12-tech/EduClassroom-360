@@ -731,10 +731,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
             </button>
             <div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                {isEn ? meta.labelEn : meta.label} · {activeMatch.mode === 'mcq' ? 'Trắc nghiệm tốc độ' : 'Tự luận chuyên sâu'} · {dateKey}
+                {isEn ? meta.labelEn : meta.label} · {activeMatch.mode === 'mcq' ? (isEn ? 'Speed MCQ' : 'Trắc nghiệm tốc độ') : (isEn ? 'Deep Essay' : 'Tự luận chuyên sâu')} · {dateKey}
               </div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
-                {activeMatch.mode === 'mcq' ? `Bộ đề ngày ${dateKey} (${mcqs.length} câu)` : essay.title}
+                {activeMatch.mode === 'mcq' ? (isEn ? `Daily Paper ${dateKey} (${mcqs.length} Qs)` : `Bộ đề ngày ${dateKey} (${mcqs.length} câu)`) : essay.title}
               </h2>
             </div>
           </div>
@@ -748,7 +748,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
               onClick={() =>
                 onOpenTutor({
                   subject: activeMatch.subject,
-                  topicTitle: activeMatch.mode === 'mcq' ? `Thi đấu ${meta.label}` : essay.title,
+                  topicTitle: activeMatch.mode === 'mcq' ? `${isEn ? 'Arena' : 'Thi đấu'} ${isEn ? meta.labelEn : meta.label}` : essay.title,
                   problemStatement:
                     activeMatch.mode === 'essay'
                       ? essay.prompt
@@ -758,7 +758,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
               className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Hint via AI Tutor' : 'Hỏi Gia Sư AI'}</span>
+              <span>{isEn ? 'Hint via Syn AI' : 'Hỏi Syn AI'}</span>
             </button>
           </div>
         </div>
@@ -770,20 +770,22 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
               <div className="bg-slate-900 text-white rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="text-xs text-amber-300 font-semibold">
-                    Kết quả chính thức hôm nay ({dateKey}) · Đã ghi nhận vào BXH {weekId}
+                    {isEn ? `Official Today (${dateKey}) · Recorded on ${weekId} Leaderboard` : `Kết quả chính thức hôm nay (${dateKey}) · Đã ghi nhận vào BXH ${weekId}`}
                   </div>
                   <h3 className="text-2xl font-extrabold tabular-nums">
-                    Điểm số: {mcqResult.attempt.score}/100 ({mcqResult.correctCount}/{mcqResult.total} câu đúng)
+                    {isEn ? `Score: ${mcqResult.attempt.score}/100 (${mcqResult.correctCount}/${mcqResult.total} correct)` : `Điểm số: ${mcqResult.attempt.score}/100 (${mcqResult.correctCount}/{mcqResult.total} câu đúng)`}
                   </h3>
                   <p className="text-xs text-slate-300">
-                    Thời gian hoàn thành: {formatDuration(mcqResult.attempt.durationSec)} · Lượt thi môn {meta.label} hôm nay đã khóa đến 00:00 ngày mai.
+                    {isEn
+                      ? `Completion time: ${formatDuration(mcqResult.attempt.durationSec)} · Today's ${meta.labelEn} attempt is locked until 00:00 tomorrow.`
+                      : `Thời gian hoàn thành: ${formatDuration(mcqResult.attempt.durationSec)} · Lượt thi môn ${meta.label} hôm nay đã khóa đến 00:00 ngày mai.`}
                   </p>
                 </div>
                 <button
                   onClick={() => setActiveMatch(null)}
                   className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold shrink-0"
                 >
-                  Xem Bảng Xếp Hạng Tuần
+                  {isEn ? 'View Weekly Leaderboard' : 'Xem Bảng Xếp Hạng Tuần'}
                 </button>
               </div>
             )}
@@ -800,9 +802,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                 >
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                     <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                      Câu {idx + 1} · {q.grade}
+                      {isEn ? `Question ${idx + 1}` : `Câu ${idx + 1}`} · {q.grade}
                     </span>
-                    <span className="tabular-nums font-mono">{q.points} điểm</span>
+                    <span className="tabular-nums font-mono">{q.points} {isEn ? 'pts' : 'điểm'}</span>
                   </div>
 
                   <div className="text-sm text-slate-900 dark:text-slate-100 leading-relaxed font-medium">
@@ -855,21 +857,23 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                           }`}
                         >
                           {isRight ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                          {isRight ? 'Chính xác' : `Chưa đúng (Đáp án: ${String.fromCharCode(65 + q.correctIndex)})`}
+                          {isRight
+                            ? (isEn ? 'Correct' : 'Chính xác')
+                            : (isEn ? `Incorrect (Answer: ${String.fromCharCode(65 + q.correctIndex)})` : `Chưa đúng (Đáp án: ${String.fromCharCode(65 + q.correctIndex)})`)}
                         </span>
                         {!isRight && (
                           <button
                             onClick={() =>
                               onOpenTutor({
                                 subject: activeMatch.subject,
-                                topicTitle: `Câu ${idx + 1} (${q.grade})`,
+                                topicTitle: `${isEn ? 'Question' : 'Câu'} ${idx + 1} (${q.grade})`,
                                 problemStatement: `${q.question}\nCác lựa chọn: ${q.options.join(' | ')}`
                               })
                             }
                             className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
-                            <span>Hỏi AI giảng lại câu này</span>
+                            <span>{isEn ? 'Ask Syn AI to explain' : 'Hỏi Syn AI giảng lại câu này'}</span>
                           </button>
                         )}
                       </div>
@@ -892,7 +896,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
             {!mcqResult && (
               <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
                 <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                  Đã chọn {Object.keys(mcqAnswers).length}/{mcqs.length} câu
+                  {isEn ? `Selected ${Object.keys(mcqAnswers).length}/${mcqs.length} questions` : `Đã chọn ${Object.keys(mcqAnswers).length}/${mcqs.length} câu`}
                 </span>
                 <button
                   onClick={handleSubmitMCQ}
@@ -900,7 +904,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                   className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />
-                  <span>{isSubmittingMatch ? 'Đang nộp & xếp hạng...' : 'Nộp Bài Thi Hôm Nay'}</span>
+                  <span>
+                    {isSubmittingMatch
+                      ? (isEn ? 'Submitting & ranking...' : 'Đang nộp & xếp hạng...')
+                      : (isEn ? "Submit Today's Round" : 'Nộp Bài Thi Hôm Nay')}
+                  </span>
                 </button>
               </div>
             )}
@@ -914,7 +922,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
             <div className="lg:col-span-5 space-y-4">
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
                 <div className="text-xs text-slate-500 dark:text-slate-400">
-                  {essay.grade} · Thang điểm 100
+                  {essay.grade} · {isEn ? '100-point Scale' : 'Thang điểm 100'}
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{essay.title}</h3>
                 <div className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line">
@@ -923,7 +931,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
 
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
                   <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Biểu điểm chấm Tự luận:
+                    {isEn ? 'Essay Grading Rubric:' : 'Biểu điểm chấm Tự luận:'}
                   </div>
                   <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
                     {essay.rubricChecklist.map((r, i) => (
@@ -946,17 +954,17 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                   <div className="bg-slate-900 text-white rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <div className="text-xs text-amber-300 font-semibold">
-                        Điểm Tự Luận Chính Thức ({dateKey})
+                        {isEn ? `Official Essay Score (${dateKey})` : `Điểm Tự Luận Chính Thức (${dateKey})`}
                       </div>
                       <div className="text-3xl font-extrabold tabular-nums mt-1">
-                        {essayResult.evaluation.score} / 100 điểm
+                        {essayResult.evaluation.score} / 100 {isEn ? 'pts' : 'điểm'}
                       </div>
                     </div>
                     <button
                       onClick={() => setActiveMatch(null)}
                       className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold"
                     >
-                      Xem Bảng Xếp Hạng Tuần
+                      {isEn ? 'View Weekly Leaderboard' : 'Xem Bảng Xếp Hạng Tuần'}
                     </button>
                   </div>
 
@@ -1026,7 +1034,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
                       <FileText className="w-4 h-4 text-indigo-500" />
-                      <span>Bài Làm Tự Luận Của Bạn</span>
+                      <span>{isEn ? 'Your Essay Solution' : 'Bài Làm Tự Luận Của Bạn'}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -1131,7 +1139,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
                       <ImageIcon className="w-4 h-4 text-indigo-500" />
-                      <span>{essayImage ? 'Đã đính kèm ảnh bài làm' : 'Hoặc tải ảnh bài viết giấy'}</span>
+                      <span>
+                        {essayImage
+                          ? (isEn ? 'Handwritten Photo Attached' : 'Đã đính kèm ảnh bài làm')
+                          : (isEn ? 'Or upload handwritten photo' : 'Hoặc tải ảnh bài viết giấy')}
+                      </span>
                       <input type="file" accept="image/*" onChange={handleEssayImagePick} className="hidden" />
                     </label>
 
@@ -1141,7 +1153,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                       className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 disabled:opacity-50"
                     >
                       <Send className="w-4 h-4" />
-                      <span>{isSubmittingMatch ? 'Giám khảo AI đang chấm...' : 'Nộp Chấm Tự Luận'}</span>
+                      <span>
+                        {isSubmittingMatch
+                          ? (isEn ? 'Syn AI Grading...' : 'Syn AI đang chấm...')
+                          : (isEn ? 'Submit for AI Grading' : 'Nộp Chấm Tự Luận')}
+                      </span>
                     </button>
                   </div>
 
@@ -1196,7 +1212,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
               </div>
               <div className="text-slate-500 dark:text-slate-400 tabular-nums flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
-                <span>Mở lượt ngày mới sau: {resetCountdown}</span>
+                <span>{isEn ? `Next daily reset in: ${resetCountdown}` : `Mở lượt ngày mới sau: ${resetCountdown}`}</span>
               </div>
             </div>
 
@@ -1206,7 +1222,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                 className="px-4 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Đăng nhập lưu hạng</span>
+                <span>{isEn ? 'Sign In to Save Rank' : 'Đăng nhập lưu hạng'}</span>
               </button>
             )}
           </div>
@@ -1240,11 +1256,13 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
       {/* My Weekly Performance KPI Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
-          <div className="text-xs text-slate-500 dark:text-slate-400">Điểm TB Tuần / Hạng</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            {isEn ? 'Weekly Avg / Rank' : 'Điểm TB Tuần / Hạng'}
+          </div>
           <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums mt-1">
-            {myLeaderboardRow.entry ? `${myLeaderboardRow.entry.overallAvg}đ` : '—'}
+            {myLeaderboardRow.entry ? `${myLeaderboardRow.entry.overallAvg}${isEn ? 'pt' : 'đ'}` : '—'}
             <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 ml-2">
-              {myLeaderboardRow.rank ? `#${myLeaderboardRow.rank}` : 'Chưa có hạng'}
+              {myLeaderboardRow.rank ? `#${myLeaderboardRow.rank}` : (isEn ? 'Unranked' : 'Chưa có hạng')}
             </span>
           </div>
         </div>
@@ -1269,11 +1287,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs"
             >
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>{meta.label} (TB tuần)</span>
+                <span>{isEn ? `${meta.labelEn} (Weekly Avg)` : `${meta.label} (TB tuần)`}</span>
                 {meta.icon}
               </div>
               <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums mt-1">
-                {avg !== null && avg !== undefined ? `${avg}đ` : '—'}
+                {avg !== null && avg !== undefined ? `${avg}${isEn ? 'pt' : 'đ'}` : '—'}
                 {best !== null && best !== undefined && (
                   <span className="text-xs font-medium text-slate-500 ml-2">Max {best}</span>
                 )}
@@ -1308,7 +1326,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                       todayAttempt ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                     }`}
                   >
-                    {todayAttempt ? '0/1 lượt hôm nay' : '1/1 lượt hôm nay'}
+                    {todayAttempt
+                      ? (isEn ? '0/1 today' : '0/1 lượt hôm nay')
+                      : (isEn ? '1/1 today' : '1/1 lượt hôm nay')}
                   </span>
                 </div>
 
@@ -1316,10 +1336,12 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                   <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
                     <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
                       <Lock className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Đã hoàn thành lượt thi hôm nay ({dateKey})</span>
+                      <span>{isEn ? `Completed today's round (${dateKey})` : `Đã hoàn thành lượt thi hôm nay (${dateKey})`}</span>
                     </div>
                     <div className="text-slate-600 dark:text-slate-400 tabular-nums">
-                      Hình thức: {todayAttempt.mode === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'} · Điểm:{' '}
+                      {isEn ? 'Mode:' : 'Hình thức:'}{' '}
+                      {todayAttempt.mode === 'mcq' ? (isEn ? 'MCQ' : 'Trắc nghiệm') : (isEn ? 'Essay' : 'Tự luận')} ·{' '}
+                      {isEn ? 'Score:' : 'Điểm:'}{' '}
                       <strong className="text-indigo-600 dark:text-indigo-400">{todayAttempt.score}/100</strong> ·{' '}
                       {formatDuration(todayAttempt.durationSec)}
                     </div>
@@ -1328,7 +1350,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                 ) : (
                   <div className="space-y-2.5">
                     <div className="text-xs text-slate-500 dark:text-slate-400">
-                      Chọn hình thức thi đấu cho lượt duy nhất hôm nay:
+                      {isEn ? "Select round mode for today's single attempt:" : 'Chọn hình thức thi đấu cho lượt duy nhất hôm nay:'}
                     </div>
                     <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
                       <button
@@ -1339,7 +1361,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                             : 'text-slate-600 dark:text-slate-400'
                         }`}
                       >
-                        Trắc nghiệm (5 câu)
+                        {isEn ? 'MCQ (5 Qs)' : 'Trắc nghiệm (5 câu)'}
                       </button>
                       <button
                         onClick={() => setSelectedLobbyMode((prev) => ({ ...prev, [subj]: 'essay' }))}
@@ -1349,7 +1371,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                             : 'text-slate-600 dark:text-slate-400'
                         }`}
                       >
-                        Tự luận (AI Chấm)
+                        {isEn ? 'Essay (AI Graded)' : 'Tự luận (AI Chấm)'}
                       </button>
                     </div>
                   </div>
@@ -1358,7 +1380,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
 
               {todayAttempt ? (
                 <div className="text-center py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 tabular-nums">
-                  Mở lại sau {resetCountdown}
+                  {isEn ? `Reopens in ${resetCountdown}` : `Mở lại sau ${resetCountdown}`}
                 </div>
               ) : (
                 <button
@@ -1367,7 +1389,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>
-                    Bắt đầu thi {chosenMode === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'} ({meta.label})
+                    {isEn
+                      ? `Start ${chosenMode === 'mcq' ? 'MCQ' : 'Essay'} (${meta.labelEn})`
+                      : `Bắt đầu thi ${chosenMode === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'} (${meta.label})`}
                   </span>
                 </button>
               )}
@@ -1382,21 +1406,25 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
           <div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-500" />
-              <span>Bảng Xếp Hạng Thành Tích Tuần ({weekId})</span>
+              <span>{isEn ? `Weekly Leaderboard (${weekId})` : `Bảng Xếp Hạng Thành Tích Tuần (${weekId})`}</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
               <span>{getWeekDateRangeLabel()}</span>
               <span aria-hidden="true">·</span>
-              <span>{isStreamLive ? 'Đồng bộ trực tuyến thời gian thực' : 'Đồng bộ máy chủ'}</span>
+              <span>
+                {isStreamLive
+                  ? (isEn ? 'Live Real-Time Sync' : 'Đồng bộ trực tuyến thời gian thực')
+                  : (isEn ? 'Server Sync' : 'Đồng bộ máy chủ')}
+              </span>
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
             {[
-              { id: 'overall' as RankFilterTab, label: 'Trung Bình Chung' },
-              { id: 'math' as RankFilterTab, label: 'Môn Toán' },
-              { id: 'physics' as RankFilterTab, label: 'Môn Vật Lí' },
-              { id: 'cs' as RankFilterTab, label: 'Môn Tin Học' }
+              { id: 'overall' as RankFilterTab, label: isEn ? 'Overall Avg' : 'Trung Bình Chung' },
+              { id: 'math' as RankFilterTab, label: isEn ? 'Math' : 'Môn Toán' },
+              { id: 'physics' as RankFilterTab, label: isEn ? 'Physics' : 'Môn Vật Lí' },
+              { id: 'cs' as RankFilterTab, label: isEn ? 'CS' : 'Môn Tin Học' }
             ].map((t) => (
               <button
                 key={t.id}
@@ -1417,10 +1445,12 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
           <div className="py-10 text-center space-y-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
             <Users className="w-8 h-8 text-slate-400 mx-auto" />
             <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
-              Chưa có thí sinh nào nộp bài trong tuần {weekId}
+              {isEn ? `No submissions yet for week ${weekId}` : `Chưa có thí sinh nào nộp bài trong tuần ${weekId}`}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Hãy hoàn thành 1 lượt thi Toán, Vật lí hoặc Tin học ở phía trên để ghi danh vị trí #1 đầu tiên của tuần!
+              {isEn
+                ? 'Complete 1 round in Math, Physics, or CS above to claim the #1 rank this week!'
+                : 'Hãy hoàn thành 1 lượt thi Toán, Vật lí hoặc Tin học ở phía trên để ghi danh vị trí #1 đầu tiên của tuần!'}
             </p>
           </div>
         ) : (
@@ -1428,13 +1458,13 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs">
-                  <th className="py-2.5 px-3 font-semibold">Hạng</th>
-                  <th className="py-2.5 px-3 font-semibold">Thí sinh</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Toán (TB)</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Vật lí (TB)</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Tin học (TB)</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">TB Chung</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Lượt / Thời gian</th>
+                  <th className="py-2.5 px-3 font-semibold">{isEn ? 'Rank' : 'Hạng'}</th>
+                  <th className="py-2.5 px-3 font-semibold">{isEn ? 'Contestant' : 'Thí sinh'}</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'Math (Avg)' : 'Toán (TB)'}</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'Physics (Avg)' : 'Vật lí (TB)'}</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'CS (Avg)' : 'Tin học (TB)'}</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'Overall' : 'TB Chung'}</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'Rounds / Time' : 'Lượt / Thời gian'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -1487,7 +1517,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Award className="w-4 h-4 text-indigo-500" />
-            <span>Nhật ký các lượt thi tuần này của bạn ({userWeekAttempts.length} lượt)</span>
+            <span>
+              {isEn
+                ? `Your Weekly Attempts Log (${userWeekAttempts.length} rounds)`
+                : `Nhật ký các lượt thi tuần này của bạn (${userWeekAttempts.length} lượt)`}
+            </span>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {userWeekAttempts.map((att) => (

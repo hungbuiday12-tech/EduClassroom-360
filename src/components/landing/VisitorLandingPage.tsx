@@ -398,26 +398,26 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       accentClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
     },
     exams: {
-      label: isEn ? `${totalExams} Exams & Voice AI` : `${totalExams} Đề Thi & AI`,
+      label: isEn ? `${totalExams} Exams & Syn AI` : `${totalExams} Đề Thi & Syn AI`,
       badge: isEn
         ? `${chuyenExams} Spec · ${khongChuyenExams} Std · Fast Upload`
         : `${chuyenExams} Chuyên · ${khongChuyenExams} THPT · Tải Đề Nhanh`,
       headline: isEn
-        ? `${totalExams} Exam Bank + Drag-Drop / Ctrl+V / Voice Upload & 3 Voice AI Tutors`
-        : `Kho ${totalExams} Đề Thi + Nộp Ảnh/Dán Ctrl+V/Giọng Nói & 3 Gia Sư AI`,
+        ? `${totalExams} Exam Bank + Drag-Drop / Ctrl+V / Voice & Syn AI`
+        : `Kho ${totalExams} Đề Thi + Nộp Ảnh/Dán Ctrl+V/Giọng Nói & Syn AI`,
       summary: isEn
-        ? 'Drop an exam photo, paste via Ctrl+V, or dictate via Voice Recognition to solve or launch a timed exam room immediately. Includes AI handwritten scoring (0–10) and 3 independent Voice-enabled AI Tutors.'
-        : 'Kéo-thả ảnh, dán Ctrl+V hoặc đọc đề bằng Giọng nói để AI giải ngay hoặc tạo phòng thi bấm giờ. Nộp ảnh bài làm viết tay cho AI chấm điểm 0–10 và hỏi đáp trực tiếp cùng 3 Gia sư AI.',
+        ? 'Drop an exam photo, paste via Ctrl+V, or dictate via Voice Recognition to solve or launch a timed exam room immediately. Includes AI handwritten scoring (0–10) and Syn AI (Syn Math, Syn Physics, Syn Code).'
+        : 'Kéo-thả ảnh, dán Ctrl+V hoặc đọc đề bằng Giọng nói để AI giải ngay hoặc tạo phòng thi bấm giờ. Nộp ảnh bài làm viết tay cho AI chấm điểm 0–10 và hỏi đáp cùng Syn AI (Syn Math · Syn Physics · Syn Code).',
       highlights: isEn
         ? [
             `Complete ${totalExams} papers (Specialized/Olympic & THPT)`,
             'Fast upload: Drag & Drop, Ctrl+V Paste, Voice Recognition Mic',
-            'Handwritten photo AI grading (0–10) & 3 Voice AI Tutors (Ctrl+D/F/G)',
+            'Handwritten photo AI grading (0–10) & Syn AI (Ctrl+D/F/G)',
           ]
         : [
             `Đủ ${totalExams} đề Toán · Lí · Tin (Chuyên & Không chuyên)`,
             'Tải đề siêu tốc: Kéo thả ảnh, dán Ctrl+V, Giọng nói Micro',
-            'Chấm bài viết tay 0–10 & 3 Gia sư AI giọng nói (Ctrl+D/F/G)',
+            'Chấm bài viết tay 0–10 & Syn AI giọng nói (Ctrl+D/F/G)',
           ],
       accentClass: 'text-teal-600 dark:text-teal-400 border-teal-500/30 bg-teal-500/10',
     },
@@ -747,7 +747,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   <strong className="font-semibold text-slate-900 dark:text-white">10-fingertip webcam 2D/3D labs</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">5 Physics simulation domains</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Sublime Text 4 Judge</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">3 Voice AI Tutors</strong> and{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Syn AI (Syn Math · Syn Physics · Syn Code)</strong> and{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">{totalExams} official exams</strong>.
                 </>
               ) : (
@@ -757,7 +757,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   <strong className="font-semibold text-slate-900 dark:text-white">Học cảm giác 3D bằng 10 đầu ngón tay</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">5 chuyên đề Mô phỏng Vật lí</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">IDE Sublime Text 4</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">3 Gia sư AI Giọng nói</strong> cùng kho{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Syn AI (Syn Math · Syn Physics · Syn Code)</strong> cùng kho{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">{totalLessons} bài giảng &amp; {totalExams} đề thi</strong>.
                 </>
               )}
@@ -872,7 +872,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               >
                 <Award className="w-5 h-5 text-cyan-600 dark:text-cyan-400 mb-1.5 icon-anim-award" />
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate tabular-nums">
-                  {isEn ? `${totalExams} Exams & Voice AI` : `${totalExams} Đề & Gia Sư AI`}
+                  {isEn ? `${totalExams} Exams & Syn AI` : `${totalExams} Đề & Syn AI`}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
                   {isEn ? 'Upload / Voice / Grading' : 'Tải ảnh / Giọng nói / Chấm'}
@@ -1023,12 +1023,20 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Dedicated Glassmorphism Authentication Card */}
+          {/* RIGHT COLUMN: Dedicated Crisp Architectural Authentication Card */}
           <div className="lg:col-span-5">
-            <div className="sci-frame bg-white/92 dark:bg-slate-900/85 backdrop-blur-xl border border-slate-200 dark:border-white/15 rounded-lg p-6 sm:p-8 shadow-2xl shadow-slate-950/15 dark:shadow-slate-950/50">
+            <div className="sci-frame bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-300 dark:border-white/15 rounded-md p-6 sm:p-7 shadow-2xl shadow-slate-950/15 dark:shadow-slate-950/50">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200/80 dark:border-white/10">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-blue-700 dark:text-sky-400">
+                  SYNAPSE ACCESS PORTAL
+                </span>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  SYNC · AUTH
+                </span>
+              </div>
               {/* Card Mode Tabs */}
               {authMode !== 'forgot' ? (
-                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-md mb-5 border border-slate-200/80 dark:border-white/10">
+                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded mb-5 border border-slate-200/80 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => {
@@ -2171,7 +2179,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                         qa: [
                           { title: isEn ? 'Snap & Paste Exam Question' : 'Chụp / Ctrl+V ảnh đề cần hỏi', desc: isEn ? 'Instant math/code formatting' : 'Hiển thị rõ đề & công thức' },
                           { title: isEn ? 'Pin Best Peer Answers' : 'Bình chọn lời giải chuẩn xác', desc: isEn ? 'Community verified solutions' : 'Đánh dấu lời giải được đồng thuận' },
-                          { title: isEn ? 'Link Directly to AI Tutors' : 'Hỏi tiếp với 3 Gia sư AI', desc: isEn ? 'Deepen any step you miss' : 'Giải thích sâu từng bước chưa rõ' },
+                          { title: isEn ? 'Link Directly to Syn AI' : 'Hỏi tiếp với Syn AI', desc: isEn ? 'Deepen any step you miss' : 'Giải thích sâu từng bước chưa rõ' },
                         ],
                       }[forumPreviewTab]
                     ).map((item, idx) => (
@@ -2731,25 +2739,25 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <Mic className="w-6 h-6 icon-anim-wave" />
                     </div>
                     <span className="font-mono text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
-                      07 · VOICE AI ×3
+                      07 · SYN AI ×3
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
-                    {isEn ? '3 Voice-Enabled AI Tutors' : '3 Gia Sư AI + Nhận Diện Giọng Nói'}
+                    {isEn ? 'Syn AI (Syn Math · Syn Physics · Syn Code)' : 'Syn AI (Syn Math · Syn Physics · Syn Code)'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Dedicated Math, Physics & CS tutors (Left Ctrl + D/F/G) with real-time Vietnamese/English Voice Mic, image paste, and 3 modes: Guided Hints, 4-Step Solution & Roadmap.'
-                      : '3 Gia sư độc lập Toán · Lí · Tin (Ctrl trái + D/F/G). Hỗ trợ Micro nhận diện giọng nói Việt/Anh, gửi ảnh đề và 3 chế độ: Gợi mở, Giải 4 bước & Test vẽ lộ trình.'}
+                      ? 'Dedicated Syn Math, Syn Physics & Syn Code engines (Left Ctrl + D/F/G) with real-time Voice Mic, image paste, and 3 modes: Guided Hints, 4-Step Solution & Roadmap.'
+                      : '3 động cơ độc lập Syn Math · Syn Physics · Syn Code (Ctrl trái + D/F/G). Hỗ trợ Micro giọng nói Việt/Anh, dán ảnh đề và 3 chế độ: Gợi mở, Giải 4 bước & Test vẽ lộ trình.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                      <span>{isEn ? 'Live Voice-to-Text in every AI panel' : 'Micro nhận diện giọng nói trong mọi khung AI'}</span>
+                      <span>{isEn ? 'Live Voice-to-Text inside Syn AI HUD' : 'Micro nhận diện giọng nói trong giao diện Syn AI'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                      <span>{isEn ? 'Shortcuts: Ctrl+D (Math) · Ctrl+F (Phys) · Ctrl+G (CS)' : 'Phím tắt nhanh: Ctrl+D (Toán), Ctrl+F (Lí), Ctrl+G (Tin)'}</span>
+                      <span>{isEn ? 'Shortcuts: Ctrl+D (Syn Math) · Ctrl+F (Syn Physics) · Ctrl+G (Syn Code)' : 'Phím tắt: Ctrl+D (Syn Math), Ctrl+F (Syn Physics), Ctrl+G (Syn Code)'}</span>
                     </li>
                   </ul>
                 </div>
@@ -2762,7 +2770,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Try Voice AI Tutors' : 'Mở 3 Gia sư AI Giọng nói'}</span>
+                  <span>{isEn ? 'Launch Syn AI' : 'Mở Syn AI Command Center'}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -2923,7 +2931,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <div className="text-xs space-y-0.5">
                 <div className="font-semibold text-white">{isEn ? 'Instant Ctrl+V Paste' : 'Dán Ảnh Đề Ctrl+V'}</div>
                 <p className="text-slate-300 leading-snug">
-                  {isEn ? 'Paste screenshots straight into Exams, Code & AI.' : 'Dán ảnh đề thi vào Đề thi, Code IDE & Gia sư AI.'}
+                  {isEn ? 'Paste screenshots straight into Exams, Code & Syn AI.' : 'Dán ảnh đề thi vào Đề thi, Code IDE & Syn AI.'}
                 </p>
               </div>
             </div>

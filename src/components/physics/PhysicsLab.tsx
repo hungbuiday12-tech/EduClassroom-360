@@ -241,18 +241,52 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
   const [selectedTrack, setSelectedTrack] = useState<CurriculumTrack>('khong_chuyen');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedTier, setSelectedTier] = useState<'all' | SpecializedTier>('all');
+  const [selectedChapter, setSelectedChapter] = useState<string>('all');
   const [showStudyPrinciples, setShowStudyPrinciples] = useState<boolean>(false);
 
-  // Filtered lessons by track + grade/tier
+  useEffect(() => {
+    setSelectedChapter('all');
+  }, [selectedTrack, selectedGrade, selectedTier]);
+
+  const availableChapters = useMemo(() => {
+    if (selectedTrack === 'khong_chuyen' && selectedGrade === 'all') return [];
+    const set = new Set<string>();
+    const gradeOrder: Record<string, number> = { 'Lớp 9': 9, 'Lớp 10': 10, 'Lớp 11': 11, 'Lớp 12': 12 };
+    const sorted = [...PHYSICS_LESSONS].sort((a, b) => {
+      const gDiff = (gradeOrder[a.grade] ?? 99) - (gradeOrder[b.grade] ?? 99);
+      if (gDiff !== 0) return gDiff;
+      return a.lessonNumber - b.lessonNumber;
+    });
+    sorted.forEach((l) => {
+      if (l.track !== selectedTrack) return;
+      if (selectedTrack === 'khong_chuyen' && l.grade !== selectedGrade) return;
+      if (selectedTrack === 'chuyen' && selectedTier !== 'all' && l.tier !== selectedTier) return;
+      if (l.stageLabel) set.add(l.stageLabel);
+    });
+    return Array.from(set);
+  }, [selectedTrack, selectedGrade, selectedTier]);
+
+  // Filtered lessons by track + grade/tier + chapter
   const filteredLessons = useMemo(() => {
+    const gradeOrder: Record<string, number> = { 'Lớp 9': 9, 'Lớp 10': 10, 'Lớp 11': 11, 'Lớp 12': 12 };
     return PHYSICS_LESSONS.filter((l) => {
       if (l.track !== selectedTrack) return false;
       if (selectedTrack === 'khong_chuyen') {
-        return selectedGrade === 'all' || l.grade === selectedGrade;
+        if (selectedGrade !== 'all' && l.grade !== selectedGrade) return false;
+      } else {
+        if (selectedTier !== 'all' && l.tier !== selectedTier) return false;
       }
-      return selectedTier === 'all' || l.tier === selectedTier;
+      if (selectedChapter !== 'all' && l.stageLabel !== selectedChapter) return false;
+      return true;
+    }).sort((a, b) => {
+      if (selectedTrack === 'khong_chuyen') {
+        const gDiff = (gradeOrder[a.grade] ?? 99) - (gradeOrder[b.grade] ?? 99);
+        if (gDiff !== 0) return gDiff;
+        return a.lessonNumber - b.lessonNumber;
+      }
+      return 0;
     });
-  }, [selectedTrack, selectedGrade, selectedTier]);
+  }, [selectedTrack, selectedGrade, selectedTier, selectedChapter]);
 
   // Current selected lesson
   const selectedLessonId = location.physicsLessonId;
@@ -3685,7 +3719,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     </div>
                     <div className="min-w-0 space-y-1">
                       <div className="text-sm sm:text-base font-extrabold leading-snug">
-                        Khu Không Chuyên (GDPT 9–12)
+                        Khu GDPT 2018 (Lớp 9–12)
                       </div>
                       <div
                         className={`text-xs leading-relaxed ${
@@ -3694,7 +3728,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                             : 'text-slate-500 dark:text-slate-400'
                         }`}
                       >
-                        Lớp 9 · Lớp 10 · Lớp 11 · Lớp 12 · {PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học chuẩn SGK
+                        KHTN 9 &amp; Vật lí 10–11–12 chuẩn Thông tư 32 · {PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học
                       </div>
                     </div>
                   </div>
@@ -3751,7 +3785,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     </div>
                     <div className="min-w-0 space-y-1">
                       <div className="text-sm sm:text-base font-extrabold leading-snug">
-                        Khu Chuyên Lí (CB → NC → Chuyên)
+                        Khu Chuyên Lí &amp; Chuyên đề GDPT 2018
                       </div>
                       <div
                         className={`text-xs leading-relaxed ${
@@ -3760,7 +3794,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                             : 'text-slate-500 dark:text-slate-400'
                         }`}
                       >
-                        Cơ bản → Nâng cao → HSG Quốc Gia · {PHYSICS_LESSONS.filter((l) => l.track === 'chuyen').length} chuyên đề
+                        Chuyên đề 10–11–12 · Bồi dưỡng HSG Quốc Gia · {PHYSICS_LESSONS.filter((l) => l.track === 'chuyen').length} chuyên đề
                       </div>
                     </div>
                   </div>
@@ -3785,21 +3819,25 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               {selectedTrack === 'khong_chuyen' ? (
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-xs font-semibold text-slate-500 mr-1">Khối lớp:</span>
-                  {['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((grade) => (
-                    <button
-                      key={grade}
-                      onClick={() => setSelectedGrade(grade)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                        selectedGrade === grade
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      {grade === 'all'
-                        ? `Tất cả (${PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài)`
-                        : grade}
-                    </button>
-                  ))}
+                  {['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((grade) => {
+                    const count =
+                      grade === 'all'
+                        ? PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen').length
+                        : PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen' && l.grade === grade).length;
+                    return (
+                      <button
+                        key={grade}
+                        onClick={() => setSelectedGrade(grade)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                          selectedGrade === grade
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {grade === 'all' ? `Tất cả (${count} bài)` : `${grade} (${count})`}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -3829,6 +3867,37 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                 {showStudyPrinciples ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
             </div>
+
+            {availableChapters.length > 1 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/70">
+                <span className="text-[11px] font-semibold text-slate-500 mr-1">Chương GDPT 2018:</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedChapter('all')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all ${
+                    selectedChapter === 'all'
+                      ? 'bg-slate-900 dark:bg-sky-500 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  Tất cả chương
+                </button>
+                {availableChapters.map((chap) => (
+                  <button
+                    key={chap}
+                    type="button"
+                    onClick={() => setSelectedChapter(chap)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all text-left ${
+                      selectedChapter === chap
+                        ? 'bg-sky-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {chap}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {showStudyPrinciples && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs">
@@ -3894,6 +3963,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                           <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
                             {translate(l.title)}
                           </h3>
+                          {l.stageLabel && (
+                            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                              {l.stageLabel}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -4075,7 +4149,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
             {/* Key Formulas with KaTeX */}
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                Công thức hệ SI:
+                {t('', 'Công thức hệ SI:', 'SI Formulas:')}
               </span>
               {lesson.keyFormulas.map((kf, idx) => (
                 <span
@@ -4114,19 +4188,19 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               }
               actions={[
                 {
-                  label: 'Mở Phòng Thí Nghiệm 2D',
+                  label: t('', 'Mở Phòng Thí Nghiệm 2D', 'Open 2D Lab'),
                   onClick: () => navigate({ physicsTab: 'simulation' }),
                   variant: 'primary',
                   icon: <Zap className="w-4 h-4" />
                 },
                 {
-                  label: 'Mở Mô Phỏng 3D',
+                  label: t('', 'Mở Mô Phỏng 3D', 'Open 3D Simulation'),
                   onClick: () => navigate({ physicsTab: 'sim3d' }),
                   variant: 'amber',
                   icon: <Box className="w-4 h-4" />
                 },
                 {
-                  label: 'Làm Bài Tập Củng Cố (+25 XP)',
+                  label: t('', 'Làm Bài Tập Củng Cố (+25 XP)', 'Practice Exercises (+25 XP)'),
                   onClick: () => navigate({ physicsTab: 'practice' }),
                   variant: 'emerald',
                   icon: <GraduationCap className="w-4 h-4" />
@@ -4163,7 +4237,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
-                        <span>Quay lại (Esc)</span>
+                        <span>{t('', 'Quay lại (Esc)', 'Back (Esc)')}</span>
                       </button>
                     ) : (
                       <button
@@ -4171,12 +4245,12 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
-                        <span>Quay lại</span>
+                        <span>{t('btn.back', 'Quay lại', 'Back')}</span>
                       </button>
                     )}
 
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                      Phòng Thí Nghiệm 2D · {activeSimTitle}
+                      {t('', 'Phòng Thí Nghiệm 2D', '2D Physics Lab')} · {translate(activeSimTitle)}
                     </span>
                   </div>
 
@@ -4186,7 +4260,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                       className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 transition-colors"
                     >
                       <Layers className="w-3.5 h-3.5" />
-                      <span>Mở trang riêng lĩnh vực</span>
+                      <span>{t('', 'Mở trang riêng lĩnh vực', 'Open Domain View')}</span>
                     </button>
 
                     <button
@@ -4197,7 +4271,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition-colors"
                     >
                       <Box className="w-3.5 h-3.5" />
-                      <span>Chuyển sang 3D</span>
+                      <span>{t('', 'Chuyển sang 3D', 'Switch to 3D')}</span>
                     </button>
 
                     <button
@@ -4209,7 +4283,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                       }`}
                     >
                       {isSimFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                      <span>{isSimFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
+                      <span>{isSimFullscreen ? t('btn.exitFullscreen', 'Thu nhỏ', 'Exit Fullscreen') : t('btn.fullscreen', 'Toàn màn hình', 'Fullscreen')}</span>
                     </button>
                   </div>
                 </div>
@@ -4219,7 +4293,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   <div className="flex flex-wrap items-center gap-2 bg-white/95 dark:bg-slate-900/95 px-3 py-2 rounded-lg border border-slate-200/80 dark:border-slate-800/80 shadow-xs text-xs">
                     <span className="flex items-center gap-1 font-bold text-slate-600 dark:text-slate-300">
                       <Sparkles className="w-3.5 h-3.5 text-sky-500" />
-                      Mẫu thí nghiệm nhanh:
+                      {t('', 'Mẫu thí nghiệm nhanh:', 'Quick Experiment Presets:')}
                     </span>
                     {activePresets.map((pr) => (
                       <button
@@ -4251,7 +4325,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                             }`}
                           >
                             {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                            <span>{isRunning ? 'Tạm dừng' : 'Chạy tiếp'}</span>
+                            <span>{isRunning ? t('btn.pause', 'Tạm dừng', 'Pause') : t('btn.resume', 'Chạy tiếp', 'Resume')}</span>
                           </button>
 
                           <button

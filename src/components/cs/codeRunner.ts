@@ -8,6 +8,7 @@ export interface ExecuteCodeOptions {
   timeLimitEnabled?: boolean;
   timeLimitMs?: number | null;
   problemDesc?: string;
+  skipAiFallback?: boolean;
 }
 
 export function parseTimeLimitMs(limitStr?: string | null, fallbackMs = 1000): number | null {
@@ -921,13 +922,22 @@ function transformPyStatement(stmt: string): string {
   }
   if (stmt === 'return') return 'return;';
 
-  // Chained assignment: a = b = c (avoid ==, !=, <=, >=, +=, -=, etc.)
+  // Chained assignment: a = b = c (avoid ==, !=, <=, >=, +=, -=, //=, etc.)
   // Multiple variable tuple unpacking: a, b = x, y OR a, b = map(int, ...)
-  const assignMatch = stmt.match(/^([A-Za-z_][A-Za-z0-9_,\s[\].]*?)\s*([+\-*\/]?=)\s*(.+)$/);
+  const assignMatch = stmt.match(/^([A-Za-z_][A-Za-z0-9_,\s[\].]*?)\s*(\/\/=|\*\*=|[+\-*\/%]=|=)\s*(.+)$/);
   if (assignMatch && !stmt.includes('==') && !stmt.startsWith('if ') && !stmt.startsWith('while ')) {
     const lhs = assignMatch[1].trim();
     const op = assignMatch[2];
     const rhs = assignMatch[3].trim();
+
+    if (op === '//=' || op === '**=') {
+      const targetJs = transformPyExpr(lhs);
+      const rhsJs = transformPyExpr(rhs);
+      if (op === '//=') {
+        return `${targetJs} = Math.floor((${targetJs}) / (${rhsJs}));`;
+      }
+      return `${targetJs} = Math.pow((${targetJs}), (${rhsJs}));`;
+    }
 
     if (op === '=') {
       // Chained assignment e.g. col[c] = d1[...] = d2[...] = True
@@ -1649,7 +1659,7 @@ function buildVectorInit(dims: string[], defaultVal: string): string {
   return `__cppVec(${dims[0]}, () => ${rest})`;
 }
 
-function replaceCppTypeDecls(code: string): string {
+function replaceCppTypeDecls(code: string, floatVars: Set<string>): string {
   let res = code;
 
   // Handle std:: prefix cleanly
@@ -1664,18 +1674,19 @@ function replaceCppTypeDecls(code: string): string {
   res = res.replace(/cin\.tie\([^)]*\)\s*;/g, '');
   res = res.replace(/cout\.tie\([^)]*\)\s*;/g, '');
 
-  // Convert C-style casts: (double)a, (long long)x, (int)s.length()
-  res = res.replace(/\(\s*(?:long\s+long|int|unsigned\s+int|unsigned\s+long\s+long|size_t)\s*\)\s*([A-Za-z0-9_.()]+)/g, '__cppInt($1)');
-  res = res.replace(/\(\s*(?:double|float)\s*\)\s*([A-Za-z0-9_.()]+)/g, 'Number($1)');
+  // Convert C-style & static_cast casts
+  res = res.replace(/\bstatic_cast<\s*(?:double|float)\s*>\s*\(/g, '__cppToFloat(');
+  res = res.replace(/\bstatic_cast<\s*(?:long\s+long|int|unsigned\s+int|unsigned\s+long\s+long|size_t)\s*>\s*\(/g, '__cppInt(');
+  res = res.replace(/\(\s*(?:long\s+long|int|unsigned\s+int|unsigned\s+long\s+long|size_t)\s*\)\s*(\([^()]+\)|[A-Za-z0-9_.]+)/g, '__cppInt($1)');
+  res = res.replace(/\(\s*(?:double|float)\s*\)\s*(\([^()]+\)|[A-Za-z0-9_.]+)/g, '__cppToFloat($1)');
 
   // Convert structured binding: auto [d, u] = pq.top();
   res = res.replace(/\b(?:const\s+)?auto\s*\[([^\]]+)\]\s*=/g, 'let [$1] =');
 
   // Convert container declarations statement by statement
-  // vector<...> v(n, val), vector<vector<...>> adj(n + 1);
   res = res.replace(
     /\b(vector|priority_queue|queue|stack|map|unordered_map|set|unordered_set|pair)\s*</g,
-    (_m, kind, offset, full) => `__CPP_TYPE_${kind}__<`
+    (_m, kind) => `__CPP_TYPE_${kind}__<`
   );
 
   // Iterative resolver for __CPP_TYPE_...__<...>
@@ -1687,16 +1698,13 @@ function replaceCppTypeDecls(code: string): string {
     const angleStart = match.index + match[0].length - 1;
     const { endIdx, content } = stripBalancedAngleBrackets(res, angleStart);
 
-    // Check what follows up to ; or , or = or { or )
     const after = res.slice(endIdx + 1);
     const declMatch = after.match(/^\s*(&?\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*\[[^\]]+\])?(?:\s*\([^;)]*\))?(?:\s*=\s*\{[^;]*\}|\s*=\s*[^;,\n)]+)?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*\([^;)]*\))?(?:\s*=\s*[^;,\n)]+)?)*)/);
 
-    // If inside a function parameter list, e.g. `const vector<int>& a` or `vector<int> a`
     const beforeCtx = res.slice(Math.max(0, match.index - 20), match.index);
     const inParamOrCast = /\(\s*(?:const\s*)?$|,\s*(?:const\s*)?$/.test(beforeCtx) && !/;\s*$/.test(beforeCtx);
 
     if (kind === 'pair') {
-      // Check if inside parens/template or declaration
       if (inParamOrCast || !declMatch) {
         res = res.slice(0, match.index) + '__CPPPAIR' + res.slice(endIdx + 1);
       } else {
@@ -1715,24 +1723,21 @@ function replaceCppTypeDecls(code: string): string {
     }
 
     if (inParamOrCast) {
-      // Strip type annotation from parameter list: `const vector<int>& a` -> `a`
       const paramVar = after.match(/^\s*(?:const\s*)?&?\s*([A-Za-z_][A-Za-z0-9_]*)/);
       if (paramVar) {
-        // Check we aren't inside `= ...` or return type
+        if (/\b(double|float)\b/.test(content)) floatVars.add(paramVar[1]);
         const fullPrefix = res.slice(0, match.index).replace(/\bconst\s*$/, '');
         res = fullPrefix + paramVar[1] + res.slice(endIdx + 1 + paramVar[0].length);
         continue;
       }
     }
 
-    // Check if return type before function name: e.g. vector<long long> dijkstra(
     const fnRetMatch = after.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*\{/);
     if (fnRetMatch) {
       res = res.slice(0, match.index) + `function ${fnRetMatch[1]}(${fnRetMatch[2]}) {` + res.slice(endIdx + 1 + fnRetMatch[0].length);
       continue;
     }
 
-    // Standard variable declaration after template type
     const stmtMatch = after.match(/^\s*([^;\n]+);/);
     if (stmtMatch) {
       const declList = splitCppTopCommas(stmtMatch[1]);
@@ -1741,28 +1746,25 @@ function replaceCppTypeDecls(code: string): string {
       for (const item of declList) {
         if (kind === 'priority_queue') {
           const isMinHeap = /greater\s*</.test(content);
-          const vName = item.trim();
-          builtVars.push(`${vName} = __cppPQ(${isMinHeap})`);
+          builtVars.push(`${item.trim()} = __cppPQ(${isMinHeap})`);
         } else if (kind === 'map' || kind === 'unordered_map') {
-          const vName = item.trim();
-          builtVars.push(`${vName} = __cppMap()`);
+          builtVars.push(`${item.trim()} = __cppMap()`);
         } else if (kind === 'set' || kind === 'unordered_set') {
-          const vName = item.trim();
-          builtVars.push(`${vName} = __cppSet()`);
+          builtVars.push(`${item.trim()} = __cppSet()`);
         } else if (kind === 'queue') {
-          const vName = item.trim();
-          builtVars.push(`${vName} = __cppQueue()`);
+          builtVars.push(`${item.trim()} = __cppQueue()`);
         } else if (kind === 'stack') {
-          const vName = item.trim();
-          builtVars.push(`${vName} = __cppStack()`);
+          builtVars.push(`${item.trim()} = __cppStack()`);
         } else if (kind === 'vector') {
-          // vector<vector<...>> v(n, vector<...>(m, 0)) OR vector<int> v(n, 0) OR vector<int> v = {1,2,3}
           const eqMatch = item.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*\{([\s\S]*)\}$/);
           const ctorMatch = item.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\(([\s\S]*)\)$/);
+          const isFloatVec = /\b(double|float)\b/.test(content);
           if (eqMatch) {
+            if (isFloatVec) floatVars.add(eqMatch[1]);
             builtVars.push(`${eqMatch[1]} = [${eqMatch[2]}]`);
           } else if (ctorMatch) {
             const vName = ctorMatch[1];
+            if (isFloatVec) floatVars.add(vName);
             const args = splitCppTopCommas(ctorMatch[2]);
             if (args.length === 1) {
               const is2D = /vector/.test(content);
@@ -1777,12 +1779,13 @@ function replaceCppTypeDecls(code: string): string {
               }
             }
           } else {
-            // Possibly C-array of vectors like vector<int> adj[N]
             const arrMatch = item.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\[([^\]]+)\]$/);
             if (arrMatch) {
               builtVars.push(`${arrMatch[1]} = __cppVec(${arrMatch[2]}, () => [])`);
             } else {
-              builtVars.push(`${item.trim()} = []`);
+              const cleanV = item.trim();
+              if (isFloatVec && /^[A-Za-z_][A-Za-z0-9_]*$/.test(cleanV)) floatVars.add(cleanV);
+              builtVars.push(`${cleanV} = []`);
             }
           }
         }
@@ -1792,7 +1795,6 @@ function replaceCppTypeDecls(code: string): string {
       continue;
     }
 
-    // Fallback cleanup
     res = res.slice(0, match.index) + 'let ' + res.slice(endIdx + 1);
   }
 
@@ -1833,6 +1835,129 @@ function cleanCppStreamCtorArgs(rawArgs: string): string {
   return firstComma || 'null';
 }
 
+function hasCppFloatHint(expr: string, floatVars: Set<string>): boolean {
+  if (/(?:__cppToFloat|sqrt|pow|log|log10|log2|sin|cos|tan|floor|ceil|round)\s*\(/.test(expr)) {
+    return true;
+  }
+  if (/(?:\d+\.\d*|\.\d+|\b\d+(?:\.\d+)?[eE][+-]?\d+)/.test(expr)) {
+    return true;
+  }
+  if (floatVars.size > 0) {
+    const idents = expr.match(/\b[A-Za-z_][A-Za-z0-9_]*\b/g);
+    if (idents && idents.some((id) => floatVars.has(id))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function findCppLeftOperandStart(src: string, opIdx: number): number {
+  let i = opIdx - 1;
+  while (i >= 0 && /\s/.test(src[i])) i--;
+  let p = 0;
+  let b = 0;
+  while (i >= 0) {
+    const ch = src[i];
+    if (ch === ')') p++;
+    else if (ch === '(') {
+      if (p === 0) break;
+      p--;
+    } else if (ch === ']') b++;
+    else if (ch === '[') {
+      if (b === 0) break;
+      b--;
+    } else if (p === 0 && b === 0) {
+      if (';{}?,:=<>+-&|^%!'.includes(ch)) break;
+      if (i >= 5 && /\b(return|throw|case)\b/.test(src.slice(Math.max(0, i - 6), i + 1)) && !/[A-Za-z0-9_]/.test(src[i + 1] || '')) {
+        i++;
+        break;
+      }
+    }
+    i--;
+  }
+  let start = i + 1;
+  while (start < opIdx && /\s/.test(src[start])) start++;
+  return start;
+}
+
+function findCppRightOperandEnd(src: string, afterOpIdx: number): number {
+  let i = afterOpIdx;
+  while (i < src.length && /\s/.test(src[i])) i++;
+  if (i < src.length && (src[i] === '+' || src[i] === '-')) i++;
+  let p = 0;
+  let b = 0;
+  while (i < src.length) {
+    const ch = src[i];
+    if (ch === '(') p++;
+    else if (ch === ')') {
+      if (p === 0) break;
+      p--;
+    } else if (ch === '[') b++;
+    else if (ch === ']') {
+      if (b === 0) break;
+      b--;
+    } else if (p === 0 && b === 0) {
+      if (';{}?,:=<>+-*/%&|^'.includes(ch)) break;
+    }
+    i++;
+  }
+  let end = i;
+  while (end > afterOpIdx && /\s/.test(src[end - 1])) end--;
+  return end;
+}
+
+function rewriteCppIntegerDivision(code: string, floatVars: Set<string>): string {
+  // 1. Handle `/=` compound division assignment on integer targets
+  let res = code.replace(
+    /([A-Za-z_][A-Za-z0-9_.\[\]]*)\s*\/=\s*([^;\n]+)/g,
+    (m, target, rhs) => {
+      if (hasCppFloatHint(target, floatVars) || hasCppFloatHint(rhs, floatVars)) {
+        return m;
+      }
+      return `${target} = __cppDiv(${target}, ${rhs})`;
+    }
+  );
+
+  // 2. Iteratively rewrite binary `/` with exact C++ precedence when neither operand is float
+  let idx = 0;
+  let guard = 0;
+  while (idx < res.length && guard++ < 400) {
+    if (res[idx] === '/' && res[idx + 1] !== '/' && res[idx + 1] !== '*' && res[idx + 1] !== '=') {
+      const leftStart = findCppLeftOperandStart(res, idx);
+      const rightEnd = findCppRightOperandEnd(res, idx + 1);
+      const lhs = res.slice(leftStart, idx).trim();
+      const rhs = res.slice(idx + 1, rightEnd).trim();
+      if (lhs && rhs && !hasCppFloatHint(lhs, floatVars) && !hasCppFloatHint(rhs, floatVars)) {
+        const replacement = `__cppDiv(${lhs}, ${rhs})`;
+        res = res.slice(0, leftStart) + replacement + res.slice(rightEnd);
+        idx = leftStart + replacement.length;
+        continue;
+      }
+    }
+    idx++;
+  }
+  return res;
+}
+
+function formatCppScalarItem(item: string, typeStr: string, floatVars: Set<string>): string {
+  const isFloat = /\b(double|float)\b/.test(typeStr);
+  const defaultVal = /\b(string|char)\b/.test(typeStr) ? '""' : /\bbool\b/.test(typeStr) ? 'false' : '0';
+  const eqIdx = item.indexOf('=');
+  if (eqIdx !== -1) {
+    const vName = item.slice(0, eqIdx).trim().replace(/^&/, '');
+    if (isFloat && /^[A-Za-z_][A-Za-z0-9_]*$/.test(vName)) floatVars.add(vName);
+    return item.trim();
+  }
+  const parenCtor = item.trim().match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\(([\s\S]*)\)$/);
+  if (parenCtor) {
+    if (isFloat) floatVars.add(parenCtor[1]);
+    return `${parenCtor[1]} = ${parenCtor[2].trim() || defaultVal}`;
+  }
+  const cleanName = item.trim().replace(/^&/, '');
+  if (isFloat && /^[A-Za-z_][A-Za-z0-9_]*$/.test(cleanName)) floatVars.add(cleanName);
+  return `${cleanName} = ${defaultVal}`;
+}
+
 function transpileCppToJS(
   code: string,
   ioMode: ProblemIOMode = 'standard'
@@ -1861,9 +1986,10 @@ function transpileCppToJS(
     js = js.replace(new RegExp(`\\b${dName}\\b`, 'g'), `(${dVal})`);
   }
 
-  // Track C++ File Stream variables (ifstream / ofstream / fstream) BEFORE scalar/template conversions
+  // Track C++ File Stream variables & float variables
   const inStreams = new Set<string>(['cin']);
   const outStreams = new Set<string>(['cout']);
+  const floatVars = new Set<string>();
 
   // Normalize ios::in / ios::out inside .open(...) too
   js = js.replace(/\b(?:ios_base|ios)::(?:in|out|app|trunc|binary|ate)\b/g, 'null');
@@ -1909,9 +2035,9 @@ function transpileCppToJS(
   js = js.replace(/\bFILE\s*\*\s*([A-Za-z_][A-Za-z0-9_]*)/g, 'let $1');
 
   // Resolve templates & containers
-  js = replaceCppTypeDecls(js);
+  js = replaceCppTypeDecls(js, floatVars);
 
-  // Convert struct Name { ... }; -> class-like factory or object
+  // Convert struct Name { ... };
   js = js.replace(
     /\bstruct\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{([\s\S]*?)\}\s*;/g,
     (_m, sName, body) => {
@@ -1921,50 +2047,77 @@ function transpileCppToJS(
 
   // Convert range-based for: for (auto& x : vec) or for (int x : vec)
   js = js.replace(
-    /\bfor\s*\(\s*(?:const\s+)?(?:auto|int|long\s+long|double|char|string|bool)\s*&?\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([^)]+)\)/g,
+    /\bfor\s*\(\s*(?:const\s+)?(?:auto|int|long\s+long|double|float|char|string|bool)\s*&?\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([^)]+)\)/g,
     'for (let $1 of $2)'
   );
 
   // Convert function definitions: int foo(int a, long long b) {
   const primTypes = '(?:const\\s+)?(?:unsigned\\s+)?(?:long\\s+long|long|int|double|float|bool|char|string|void|auto)';
   js = js.replace(
-    new RegExp(`\\b${primTypes}\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(([^)]*)\\)\\s*\\{`, 'g'),
+    new RegExp(`\\b(?:${primTypes})\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(([^)]*)\\)\\s*\\{`, 'g'),
     (_m, fnName, params) => {
       const cleanedParams = params.trim()
         ? splitCppTopCommas(params).map((p) => {
             const noDef = p.split('=')[0].trim();
             const defPart = p.includes('=') ? ' = ' + p.split('=')[1].trim() : '';
             const tokens = noDef.replace(/&/g, '').trim().split(/\s+/);
-            return tokens[tokens.length - 1] + defPart;
+            const pName = tokens[tokens.length - 1];
+            if (/\b(double|float)\b/.test(noDef) && pName) floatVars.add(pName);
+            return pName + defPart;
           })
         : [];
       return `function ${fnName}(${cleanedParams.join(', ')}) { __tick();`;
     }
   );
 
-  // Convert C-array declarations: `int cnt[MAXA];` -> `let cnt = __cppVec(MAXA, () => 0);`
+  // Convert 1D & 2D C-array declarations: `int a[N], b[N];` or `int dp[105][105];`
   js = js.replace(
-    new RegExp(`\\b${primTypes}\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\[([^\\]]+)\\]\\s*(?:=\\s*\\{([^}]*)\\})?\\s*;`, 'g'),
-    (_m, vName, size, initList) => {
+    new RegExp(`\\b(${primTypes})\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\[([^\\]]+)\\]\\s*\\[([^\\]]+)\\]\\s*;`, 'g'),
+    (_m, typeStr, vName, d1, d2) => {
+      if (/\b(double|float)\b/.test(typeStr)) floatVars.add(vName);
+      const defVal = /\b(string|char)\b/.test(typeStr) ? '""' : /\bbool\b/.test(typeStr) ? 'false' : '0';
+      return `let ${vName} = __cppVec(${d1}, () => __cppVec(${d2}, () => ${defVal}));`;
+    }
+  );
+  js = js.replace(
+    new RegExp(`\\b(${primTypes})\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\[([^\\]]+)\\]\\s*(?:=\\s*\\{([^}]*)\\})?\\s*;`, 'g'),
+    (_m, typeStr, vName, size, initList) => {
+      if (/\b(double|float)\b/.test(typeStr)) floatVars.add(vName);
+      const defVal = /\b(string|char)\b/.test(typeStr) ? '""' : /\bbool\b/.test(typeStr) ? 'false' : '0';
       if (initList !== undefined) {
         return `let ${vName} = [${initList}];`;
       }
-      return `let ${vName} = __cppVec(${size}, () => 0);`;
+      return `let ${vName} = __cppVec(${size}, () => ${defVal});`;
     }
   );
 
-  // Inside for loops first so scalar decl regex doesn't touch loop init: `for (let i = 0; ...)`
+  // Inside for loops first so scalar decl regex doesn't touch loop init
   js = js.replace(
-    new RegExp(`for\\s*\\(\\s*${primTypes}\\s+`, 'g'),
-    'for (let '
+    new RegExp(`for\\s*\\(\\s*(${primTypes})\\s+`, 'g'),
+    (_m, typeStr) => {
+      if (/\b(double|float)\b/.test(typeStr)) {
+        // loop var float tracking is rare, keep standard
+      }
+      return 'for (let ';
+    }
   );
 
-  // Convert scalar variable declarations iteratively so consecutive declarations on indented lines are all matched
-  const constScalarRe = new RegExp(`(^|[;{}\n])([ \t]*)const\\s+${primTypes}\\s+([A-Za-z_][^;{}]*)`, 'g');
-  const varScalarRe = new RegExp(`(^|[;{}\n])([ \t]*)${primTypes}\\s+([A-Za-z_][^;{}]*)`, 'g');
+  // Convert scalar variable declarations iteratively with proper default values (string="", bool=false, numeric=0)
+  const constScalarRe = new RegExp(`(^|[;{}\n])([ \t]*)const\\s+(${primTypes})\\s+([A-Za-z_][^;{}]*)`, 'g');
+  const varScalarRe = new RegExp(`(^|[;{}\n])([ \t]*)(${primTypes})\\s+([A-Za-z_][^;{}]*)`, 'g');
   for (let pass = 0; pass < 4; pass++) {
-    const nextConst = js.replace(constScalarRe, (_m, pre, ws, decls) => `${pre}${ws}const ${decls}`);
-    const nextVar = nextConst.replace(varScalarRe, (_m, pre, ws, decls) => `${pre}${ws}let ${decls}`);
+    const nextConst = js.replace(constScalarRe, (_m, pre, ws, typeStr, decls) => {
+      const formatted = splitCppTopCommas(decls)
+        .map((item) => formatCppScalarItem(item, typeStr, floatVars))
+        .join(', ');
+      return `${pre}${ws}const ${formatted}`;
+    });
+    const nextVar = nextConst.replace(varScalarRe, (_m, pre, ws, typeStr, decls) => {
+      const formatted = splitCppTopCommas(decls)
+        .map((item) => formatCppScalarItem(item, typeStr, floatVars))
+        .join(', ');
+      return `${pre}${ws}let ${formatted}`;
+    });
     if (nextVar === js) break;
     js = nextVar;
   }
@@ -1973,12 +2126,18 @@ function transpileCppToJS(
   js = js.replace(/\.push(_back)?\s*\(\s*\{([^}]+)\}\s*\)/g, '.push($2_PAIR_)');
   js = js.replace(/\.push\(([^)]+)_PAIR_\)/g, '.push([$1])');
 
-  // Convert pair .first / .second and vector methods
+  // Convert min({a, b, c}) / max({a, b, c})
+  js = js.replace(/\b(min|max)\s*\(\s*\{([^}]+)\}\s*\)/g, '$1($2)');
+
+  // Convert pair .first / .second and vector/string methods
   js = js
     .replace(/\.first\b/g, '[0]')
     .replace(/\.second\b/g, '[1]')
     .replace(/\.push_back\(/g, '.push(')
     .replace(/\.pop_back\(\)/g, '.pop()')
+    .replace(/\.clear\(\)/g, '.__cppClear()')
+    .replace(/\.back\(\)/g, '.__cppBack()')
+    .replace(/\.front\(\)/g, '.__cppFront()')
     .replace(/\.length\(\)/g, '.length')
     .replace(/\.size\(\)/g, '.length')
     .replace(/\.empty\(\)/g, '.__cppEmpty()')
@@ -1986,33 +2145,85 @@ function transpileCppToJS(
     .replace(/\.resize\s*\(([^)]+)\)/g, '.__cppResize($1)')
     .replace(/\bmake_pair\s*\(/g, '__cppMakePair(');
 
-  // Convert STL sort / reverse / lower_bound / upper_bound
+  // Convert C++ STL comparators like greater<int>()
+  js = js.replace(/\bgreater\s*<[^>]*>\s*\(\s*\)/g, '__cppGreater');
+
+  // Convert memset(arr, val, sizeof(...))
   js = js.replace(
-    /\bsort\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\.begin\(\)\s*,\s*\1\.end\(\)(?:\s*,\s*([^)]+))?\s*\)/g,
+    /\bmemset\s*\(\s*([A-Za-z_][A-Za-z0-9_.[\]]*)\s*,\s*([^,]+)\s*,\s*(?:sizeof\s*\([^)]*\)|[^)]+)\s*\)/g,
+    '__cppMemset($1, $2)'
+  );
+
+  // Convert fill(v.begin(), v.end(), val) and fill(a, a + n, val)
+  js = js.replace(
+    /\bfill\s*\(\s*([A-Za-z_][A-Za-z0-9_.[\]()]*)\.begin\(\)\s*,\s*\1\.end\(\)\s*,\s*([^)]+)\)/g,
+    '__cppFill($1, $2)'
+  );
+  js = js.replace(
+    /\bfill\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)(?:\s*\+\s*([^,]+))?\s*,\s*\1\s*\+\s*([^,]+)\s*,\s*([^)]+)\)/g,
+    (_m, arr, startOffset, endOffset, val) =>
+      `__cppFillRange(${arr}, ${startOffset ? startOffset.trim() : '0'}, ${endOffset.trim()}, ${val.trim()})`
+  );
+
+  // Convert accumulate(v.begin(), v.end(), init)
+  js = js.replace(
+    /\baccumulate\s*\(\s*([A-Za-z_][A-Za-z0-9_.[\]()]*)\.begin\(\)\s*,\s*\1\.end\(\)\s*,\s*([^)]+)\)/g,
+    '__cppAccumulate($1, $2)'
+  );
+
+  // Convert STL sort / reverse / lower_bound / upper_bound (supports member expressions & C-arrays)
+  js = js.replace(
+    /\bsort\s*\(\s*([A-Za-z_][A-Za-z0-9_.[\]()]*)\.begin\(\)\s*,\s*\1\.end\(\)(?:\s*,\s*([^)]+))?\s*\)/g,
     (_m, v, cmp) => (cmp ? `__cppSort(${v}, ${cmp})` : `__cppSort(${v})`)
   );
   js = js.replace(
-    /\breverse\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\.begin\(\)\s*,\s*\1\.end\(\)\s*\)/g,
+    /\bsort\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)(?:\s*\+\s*([^,]+))?\s*,\s*\1\s*\+\s*([^,)]+)(?:\s*,\s*([^)]+))?\s*\)/g,
+    (_m, arr, startOff, endOff, cmp) => {
+      const lExpr = startOff ? startOff.trim() : '0';
+      const rExpr = endOff.trim();
+      return cmp ? `__cppSortRange(${arr}, ${lExpr}, ${rExpr}, ${cmp})` : `__cppSortRange(${arr}, ${lExpr}, ${rExpr})`;
+    }
+  );
+  js = js.replace(
+    /\breverse\s*\(\s*([A-Za-z_][A-Za-z0-9_.[\]()]*)\.begin\(\)\s*,\s*\1\.end\(\)\s*\)/g,
     '$1.reverse()'
   );
   js = js.replace(
-    /\blower_bound\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\.begin\(\)\s*,\s*\1\.end\(\)\s*,\s*([^)]+)\)/g,
+    /\breverse\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)(?:\s*\+\s*([^,]+))?\s*,\s*\1\s*\+\s*([^)]+)\)/g,
+    (_m, arr, startOff, endOff) =>
+      `__cppReverseRange(${arr}, ${startOff ? startOff.trim() : '0'}, ${endOff.trim()})`
+  );
+  js = js.replace(
+    /\blower_bound\s*\(\s*([A-Za-z_][A-Za-z0-9_.[\]()]*)\.begin\(\)\s*,\s*\1\.end\(\)\s*,\s*([^)]+)\)/g,
     '__cppLowerBound($1, $2)'
   );
   js = js.replace(
-    /\bupper_bound\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\.begin\(\)\s*,\s*\1\.end\(\)\s*,\s*([^)]+)\)/g,
+    /\bupper_bound\s*\(\s*([A-Za-z_][A-Za-z0-9_.[\]()]*)\.begin\(\)\s*,\s*\1\.end\(\)\s*,\s*([^)]+)\)/g,
     '__cppUpperBound($1, $2)'
   );
 
-  // Iterator deref helper for lower_bound/upper_bound
+  // Iterator deref helper strictly scoped to variables declared via lower_bound/upper_bound
+  const iteratorVars = new Set<string>();
   js = js.replace(
     /\blet\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*__cpp(Lower|Upper)Bound\(([^,]+),\s*([^)]+)\)\s*;/g,
-    'let $1 = __cpp$2Bound($3, $4); let __itTarget_$1 = $3;'
+    (_m, itVar, kind, arr, val) => {
+      iteratorVars.add(itVar);
+      return `let ${itVar} = __cpp${kind}Bound(${arr}, ${val}); let __itTarget_${itVar} = ${arr};`;
+    }
   );
-  js = js.replace(/([A-Za-z_][A-Za-z0-9_]*)\s*==\s*([A-Za-z_][A-Za-z0-9_]*)\.end\(\)/g, '$1 === $2.length');
-  js = js.replace(/([A-Za-z_][A-Za-z0-9_]*)\s*!=\s*([A-Za-z_][A-Za-z0-9_]*)\.end\(\)/g, '$1 !== $2.length');
-  js = js.replace(/\*([A-Za-z_][A-Za-z0-9_]*)\s*=/g, '__itTarget_$1[$1] =');
-  js = js.replace(/\*([A-Za-z_][A-Za-z0-9_]*)\b/g, '__itTarget_$1[$1]');
+  if (iteratorVars.size > 0) {
+    const itPattern = Array.from(iteratorVars).join('|');
+    js = js.replace(
+      new RegExp(`\\b(${itPattern})\\s*==\\s*([A-Za-z_][A-Za-z0-9_.]*)\\.end\\(\\)`, 'g'),
+      '$1 === $2.length'
+    );
+    js = js.replace(
+      new RegExp(`\\b(${itPattern})\\s*!=\\s*([A-Za-z_][A-Za-z0-9_.]*)\\.end\\(\\)`, 'g'),
+      '$1 !== $2.length'
+    );
+    js = js.replace(new RegExp(`(?<![A-Za-z0-9_.)\\]])\\*(${itPattern})\\s*=`, 'g'), '__itTarget_$1[$1] =');
+    js = js.replace(new RegExp(`(?<![A-Za-z0-9_.)\\]])\\*(${itPattern})\\b`, 'g'), '__itTarget_$1[$1]');
+  }
 
   // Convert C-style scanf / fscanf
   js = js.replace(/\bscanf\s*\(\s*([^,]+)\s*,\s*([^)]+)\)/g, (_m, fmt, argsStr) => {
@@ -2026,18 +2237,22 @@ function transpileCppToJS(
     return `__cppScanfStream(${fp}, ${fmt}, [${setters.join(', ')}])`;
   });
 
-  // Convert `getline(inStream, line)` for cin or any declared ifstream
+  // Convert `getline(inStream >> ws, line)` and `getline(inStream, line)`
   const inPattern = Array.from(inStreams).join('|');
   const outPattern = Array.from(outStreams).join('|');
 
   js = js.replace(
+    new RegExp(`\\bgetline\\s*\\(\\s*(${inPattern})\\s*>>\\s*ws\\s*,\\s*([A-Za-z_][A-Za-z0-9_.\\[\\]]*)\\s*\\)`, 'g'),
+    '__cppStreamGetline($1, (__v) => ($2 = __v), true)'
+  );
+  js = js.replace(
     new RegExp(`\\bgetline\\s*\\(\\s*(${inPattern})\\s*,\\s*([A-Za-z_][A-Za-z0-9_.\\[\\]]*)\\s*\\)`, 'g'),
-    '__cppStreamGetline($1, (__v) => ($2 = __v))'
+    '__cppStreamGetline($1, (__v) => ($2 = __v), false)'
   );
 
-  // Convert `inStream >> a >> b` (for cin or any declared ifstream)
+  // Convert `inStream >> a >> b` (supports multi-line chains up to `;` or `)`)
   js = js.replace(
-    new RegExp(`(?<!\\.)\\b(${inPattern})((?:\\s*>>\\s*[^;)\\n]+)+)`, 'g'),
+    new RegExp(`(?<!\\.)\\b(${inPattern})((?:\\s*>>\\s*[^;){}]+)+)`, 'g'),
     (_m, streamVar, chain) => {
       const vars = splitCppStreamChain(chain, '>>');
       const setters = vars.map((v) => `(__v) => (${v} = __cppReadTarget(${v}, __v))`);
@@ -2045,9 +2260,9 @@ function transpileCppToJS(
     }
   );
 
-  // Convert `outStream << expr1 << expr2 << endl;` (for cout or any declared ofstream)
+  // Convert `outStream << expr1 << expr2 << endl;` (supports multi-line chains)
   js = js.replace(
-    new RegExp(`(?<!\\.)\\b(${outPattern})((?:\\s*<<\\s*[^;\\n]+)+)\\s*;`, 'g'),
+    new RegExp(`(?<!\\.)\\b(${outPattern})((?:\\s*<<\\s*[^;{}]+)+)\\s*;`, 'g'),
     (_m, streamVar, chain) => {
       const parts = splitCppStreamChain(chain, '<<');
       return `__cppStreamWrite(${streamVar}, [${parts.map((p) => (p === 'endl' ? '__CPP_ENDL' : p === 'fixed' ? '__CPP_FIXED' : p)).join(', ')}]);`;
@@ -2057,13 +2272,19 @@ function transpileCppToJS(
   // Step & TLE guard on loops
   js = js.replace(/\b(while\s*\([^)]+\)\s*\{|for\s*\([^)]+\)\s*\{|do\s*\{)/g, '$1 __tick();');
 
-  // Safe integer division heuristic for binary search `(low + high) / 2` and `(l + r) / 2`
-  js = js.replace(/\(([^()]+)\)\s*\/\s*2\b/g, '__cppDiv2($1)');
+  // Precedence-accurate integer division (`/`, `/=`) for non-float C++ operands
+  js = rewriteCppIntegerDivision(js, floatVars);
 
   // Common C++ math/char functions & constants
   js = js
     .replace(/\b__gcd\s*\(/g, '__cppGcd(')
     .replace(/\bgcd\s*\(/g, '__cppGcd(')
+    .replace(/\blcm\s*\(/g, '__cppLcm(')
+    .replace(/\b__builtin_popcount(?:ll|l)?\s*\(/g, '__cppPopcount(')
+    .replace(/\bINT_MAX\b/g, '2147483647')
+    .replace(/\bINT_MIN\b/g, '-2147483648')
+    .replace(/\bLLONG_MAX\b|\bLONG_LONG_MAX\b/g, '9007199254740991')
+    .replace(/\bLLONG_MIN\b|\bLONG_LONG_MIN\b/g, '-9007199254740991')
     .replace(/\bswap\s*\(([^,]+),\s*([^)]+)\)/g, '([$1, $2] = [$2, $1])')
     .replace(/\bNULL\b|\bnullptr\b/g, 'null');
 
@@ -2321,9 +2542,12 @@ export function runCppInSandbox(
       }
       return true;
     },
-    __cppStreamGetline: (stream: any, setter: (val: string) => void) => {
+    __cppStreamGetline: (stream: any, setter: (val: string) => void, skipLeadingWs = false) => {
       if (!stream || typeof stream.__readLine !== 'function') return false;
-      const line = stream.__readLine();
+      let line = stream.__readLine();
+      while (skipLeadingWs && line !== null && line.trim() === '') {
+        line = stream.__readLine();
+      }
       if (line === null) return false;
       setter(line);
       return true;
@@ -2353,9 +2577,8 @@ export function runCppInSandbox(
       }
     },
 
-
     __cppVec: (size: number, factory: () => any) => {
-      const n = Math.max(0, Math.min(size, 500_000));
+      const n = Math.max(0, Math.min(size, 2_000_000));
       const arr = new Array(n);
       for (let i = 0; i < n; i++) arr[i] = factory();
       return arr;
@@ -2466,12 +2689,64 @@ export function runCppInSandbox(
       };
     },
     __cppMakePair: (a: any, b: any) => [a, b],
+    __cppGreater: (a: any, b: any) => a > b,
     __cppSort: (arr: any[], cmpFn?: (a: any, b: any) => boolean) => {
       arr.sort((a, b) => {
         if (cmpFn) return cmpFn(a, b) ? -1 : 1;
         if (typeof a === 'number' && typeof b === 'number') return a - b;
         return String(a).localeCompare(String(b));
       });
+    },
+    __cppSortRange: (arr: any[], l: number, r: number, cmpFn?: (a: any, b: any) => boolean) => {
+      const start = Math.max(0, Math.trunc(l));
+      const end = Math.min(arr.length, Math.trunc(r));
+      const slice = arr.slice(start, end);
+      slice.sort((a, b) => {
+        if (cmpFn) return cmpFn(a, b) ? -1 : 1;
+        if (typeof a === 'number' && typeof b === 'number') return a - b;
+        return String(a).localeCompare(String(b));
+      });
+      for (let i = 0; i < slice.length; i++) arr[start + i] = slice[i];
+    },
+    __cppReverseRange: (arr: any[], l: number, r: number) => {
+      let i = Math.max(0, Math.trunc(l));
+      let j = Math.min(arr.length, Math.trunc(r)) - 1;
+      while (i < j) {
+        const tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+        i++;
+        j--;
+      }
+    },
+    __cppFill: (arr: any[], val: any) => {
+      for (let i = 0; i < arr.length; i++) arr[i] = val;
+    },
+    __cppFillRange: (arr: any[], l: number, r: number, val: any) => {
+      const start = Math.max(0, Math.trunc(l));
+      const end = Math.min(arr.length, Math.trunc(r));
+      for (let i = start; i < end; i++) arr[i] = val;
+    },
+    __cppMemset: (arr: any, val: number) => {
+      const fillVal = val === 0x3f ? 1061109567 : val;
+      const walk = (target: any) => {
+        if (!Array.isArray(target)) return;
+        for (let i = 0; i < target.length; i++) {
+          if (Array.isArray(target[i])) walk(target[i]);
+          else target[i] = fillVal;
+        }
+      };
+      walk(arr);
+    },
+    __cppAccumulate: (arr: any[], init: number = 0) => arr.reduce((acc, x) => acc + x, init),
+    __cppPopcount: (x: number) => {
+      let n = Math.trunc(x) >>> 0;
+      let c = 0;
+      while (n) {
+        n &= n - 1;
+        c++;
+      }
+      return c;
     },
     __cppLowerBound: (arr: number[], x: number) => {
       let l = 0,
@@ -2493,8 +2768,14 @@ export function runCppInSandbox(
       }
       return l;
     },
+    __cppDiv: (a: number, b: number) => {
+      const denom = Number(b);
+      if (denom === 0) throw new Error('Runtime Error: Chia cho 0 (Division by zero).');
+      return Math.trunc(Number(a) / denom);
+    },
     __cppDiv2: (val: number) => (Number.isInteger(val) ? Math.trunc(val / 2) : val / 2),
-    __cppInt: (v: any) => parseInt(String(v), 10) || 0,
+    __cppToFloat: (v: any) => Number(v),
+    __cppInt: (v: any) => Math.trunc(Number(v)) || 0,
     __cppGcd: (a: number, b: number) => {
       let x = Math.abs(Math.trunc(a)),
         y = Math.abs(Math.trunc(b));
@@ -2504,6 +2785,12 @@ export function runCppInSandbox(
         x = t;
       }
       return x;
+    },
+    __cppLcm: (a: number, b: number) => {
+      const x = Math.abs(Math.trunc(a));
+      const y = Math.abs(Math.trunc(b));
+      if (x === 0 || y === 0) return 0;
+      return Math.trunc(x / envHelpers.__cppGcd(x, y)) * y;
     },
     max: (...args: any[]) => Math.max(...args),
     min: (...args: any[]) => Math.min(...args),
@@ -2533,7 +2820,8 @@ export function runCppInSandbox(
         __cppScanfStream, __cppOpenIfstream, __cppOpenOfstream,
         __cppStreamRead, __cppStreamGetline, __cppReadTarget, __cppStreamWrite,
         __cppVec, __cppMap, __cppSet, __cppQueue, __cppStack, __cppPQ,
-        __cppMakePair, __cppSort, __cppLowerBound, __cppUpperBound, __cppDiv2, __cppInt, __cppGcd,
+        __cppMakePair, __cppGreater, __cppSort, __cppSortRange, __cppReverseRange, __cppFill, __cppFillRange, __cppMemset,
+        __cppAccumulate, __cppPopcount, __cppLowerBound, __cppUpperBound, __cppDiv, __cppDiv2, __cppToFloat, __cppInt, __cppGcd, __cppLcm,
         max, min, abs, sqrt, pow, floor, ceil, isalnum, isalpha, isdigit, tolower, toupper,
         stoi, stoll, to_string
       } = env;
@@ -2542,6 +2830,9 @@ export function runCppInSandbox(
       if (!Array.prototype.__cppEmpty) {
         Object.defineProperties(Array.prototype, {
           __cppEmpty: { value: function() { return this.length === 0; }, configurable: true },
+          __cppClear: { value: function() { this.length = 0; }, configurable: true },
+          __cppBack: { value: function() { return this[this.length - 1]; }, configurable: true },
+          __cppFront: { value: function() { return this[0]; }, configurable: true },
           __cppAssign: { value: function(n, v) { this.length = 0; for (let i = 0; i < n; i++) this.push(v); }, configurable: true },
           __cppResize: { value: function(n, v = 0) { while (this.length < n) this.push(v); this.length = n; }, configurable: true }
         });
@@ -2681,6 +2972,15 @@ export async function executeCode(
   }
 
   // 3. Optional server verification fallback if advanced C++/Python constructs (e.g. templates/classes) hit local limits
+  if (options.skipAiFallback) {
+    const endTime = performance.now();
+    return {
+      stdout: localRes.stdout,
+      stderr: localRes.stderr,
+      runtimeMs: Math.round(endTime - startTime),
+      isError: true
+    };
+  }
   try {
     const response = await safeFetchJson<any>('/api/gemini/run-code', {
       method: 'POST',

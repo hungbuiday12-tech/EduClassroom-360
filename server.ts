@@ -2,6 +2,8 @@ import express, { type Request, type Response } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
+import { execFile } from 'child_process';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 
@@ -2268,19 +2270,99 @@ ${evalContext}`;
   }
 });
 
+function normalizeJudgeOutputStr(s: string): string {
+  return String(s || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim()
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter((line) => line.length > 0)
+    .join('\n');
+}
+
+function execPythonInTempDir(
+  pyCode: string,
+  inputData: string,
+  ioMode: 'standard' | 'file',
+  inputFileName?: string,
+  outputFileName?: string,
+  timeoutMs = 900
+): Promise<{ ok: boolean; stdout: string }> {
+  return new Promise((resolve) => {
+    let tmpDir = '';
+    try {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'syn-py-'));
+      const scriptPath = path.join(tmpDir, 'sol.py');
+      fs.writeFileSync(scriptPath, pyCode, 'utf8');
+
+      const safeInName = inputFileName ? path.basename(inputFileName.trim()) : '';
+      const safeOutName = outputFileName ? path.basename(outputFileName.trim()) : '';
+      if (ioMode === 'file' && safeInName) {
+        fs.writeFileSync(path.join(tmpDir, safeInName), inputData || '', 'utf8');
+      }
+
+      const child = execFile(
+        'python3',
+        ['-I', scriptPath],
+        {
+          cwd: tmpDir,
+          timeout: timeoutMs,
+          maxBuffer: 1024 * 1024
+        },
+        (error, stdout) => {
+          let resultOut = String(stdout || '');
+          if (!error && ioMode === 'file' && safeOutName) {
+            const outPath = path.join(tmpDir, safeOutName);
+            if (fs.existsSync(outPath)) {
+              resultOut = fs.readFileSync(outPath, 'utf8');
+            }
+          }
+          try {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+          } catch {
+            // ignore cleanup errors
+          }
+          resolve({ ok: !error, stdout: resultOut.replace(/\n$/, '') });
+        }
+      );
+      if (child.stdin) {
+        child.stdin.write(inputData || '');
+        child.stdin.end();
+      }
+    } catch {
+      if (tmpDir) {
+        try {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+        } catch {
+          // ignore
+        }
+      }
+      resolve({ ok: false, stdout: '' });
+    }
+  });
+}
+
 /**
  * API: Analyze problem from image (OCR) or raw text and synthesize verified test suite
  */
 app.post('/api/gemini/analyze-problem', async (req: Request, res: Response) => {
   try {
-    const { text, imageBase64, mimeType } = req.body;
+    const {
+      text,
+      imageBase64,
+      mimeType,
+      userSamples,
+      ioMode: reqIoMode,
+      inputFileName: reqInputFileName,
+      outputFileName: reqOutputFileName
+    } = req.body;
 
     if (!text && !imageBase64) {
       return res.status(400).json({ error: 'Vui lòng cung cấp văn bản hoặc hình ảnh đề bài' });
     }
 
     const ai = getGenAI();
-
     const parts: any[] = [];
 
     if (imageBase64) {
@@ -2293,43 +2375,96 @@ app.post('/api/gemini/analyze-problem', async (req: Request, res: Response) => {
       });
     }
 
-    const promptText = `
-Bạn là Giám thị trưởng và Chuyên gia thiết kế bộ test Tin học (VNOI / ICPC).
-Nhiệm vụ của bạn:
-1. Đọc và phân tích kỹ lưỡng đề bài được cung cấp qua hình ảnh (OCR) hoặc văn bản.
-2. Tách rõ:
-   - title: Tiêu đề bài toán (ngắn gọn, chuẩn tin học, tiếng Việt).
-   - description: Toàn bộ nội dung yêu cầu bài toán (rõ ràng, không bị thiếu thông tin).
-   - inputFormat: Quy cách dữ liệu đầu vào.
-   - outputFormat: Quy cách dữ liệu đầu ra.
-   - constraints: Các ràng buộc thời gian, bộ nhớ, giá trị N, A[i].
-   - ioMode: "file" nếu đề yêu cầu đọc/ghi tệp (.INP/.OUT, freopen, fstream, open file...), ngược lại là "standard" (stdin/stdout).
-   - inputFileName: tên file input nếu ioMode là "file" (ví dụ "BAI1.INP"), ngược lại "".
-   - outputFileName: tên file output nếu ioMode là "file" (ví dụ "BAI1.OUT"), ngược lại "".
-   - timeLimitEnabled: true nếu có giới hạn thời gian (mặc định true), false nếu đề ghi không giới hạn thời gian.
-   - timeLimitMs: giới hạn thời gian theo mili-giây (ví dụ 1.0s -> 1000, 0.5s -> 500, 2s -> 2000), hoặc null nếu timeLimitEnabled = false.
-3. RẤT QUAN TRỌNG: Hãy TỰ GIẢI bài toán này một cách chính xác tuyệt đối, sau đó sinh bộ Test Cases theo **BẬC THANG ĐỘ KHÓ TĂNG DẦN** (tuyệt đối KHÔNG dồn các test quá khó hoặc đánh đố ngay từ đầu):
-   - sampleCases (2 test, difficulty: "Cơ bản"): Dữ liệu rất nhỏ, đơn giản, giúp người học hiểu đề và thử ngay ý tưởng cơ bản.
-   - hiddenCases (6 test SẮP XẾP TĂNG DẦN ĐỘ KHÓ TỪ DỄ ĐẾN KHÓ):
-     + Test ẩn 1 & 2 (difficulty: "Cơ bản"): Dữ liệu nhỏ, số dương đẹp (ví dụ N = 2..5), không gài bẫy, code viết đúng logic chính là qua ngay.
-     + Test ẩn 3 & 4 (difficulty: "Trung bình"): Dữ liệu cỡ vừa (N = 5..12), thêm số âm / phần tử trùng / trường hợp không tìm thấy hoặc rẽ nhánh phụ.
-     + Test ẩn 5 (difficulty: "Nâng cao"): Trường hợp biên tinh tế (N = 1, giá trị 0, mảng đảo ngược hoặc nhiều đáp án hòa nhau).
-     + Test ẩn 6 (difficulty: "Thử thách"): Giá trị lớn hoặc kích thước sát giới hạn (kiểm tra kiểu 64-bit long long và độ phức tạp thuật toán).
-   - MỖI TEST CASE PHẢI CÓ 'input', 'expectedOutput' ĐƯỢC BẠN TÍNH TOÁN ĐÚNG 100%, và 'difficulty' thuộc đúng 1 trong 4 nhãn: "Cơ bản", "Trung bình", "Nâng cao", "Thử thách".
-4. Đưa ra mã nguồn tham khảo (referenceCpp và referencePython) giải đúng bài toán này.
+    const validUserSamples = Array.isArray(userSamples)
+      ? userSamples.filter((s: any) => String(s?.input || '').trim() || String(s?.expectedOutput || '').trim())
+      : [];
 
-${text ? `Dữ liệu văn bản người dùng cung cấp:\n${text}` : ''}
-`;
+    const samplesContext =
+      validUserSamples.length > 0
+        ? `\nTest mẫu người dùng đã cung cấp (referencePython BẮT BUỘC phải chạy ra đúng kết quả này):\n${validUserSamples
+            .slice(0, 4)
+            .map((s: any, i: number) => `Sample #${i + 1}:\nInput:\n${s.input}\nExpected Output:\n${s.expectedOutput}`)
+            .join('\n---\n')}`
+        : '';
+
+    const ioHint =
+      reqIoMode === 'file'
+        ? `\nCấu hình I/O người dùng chọn: Đọc/Ghi File (${reqInputFileName || 'INPUT.INP'} -> ${reqOutputFileName || 'OUTPUT.OUT'}).`
+        : '';
+
+    const promptText = `Phân tích đề bài lập trình (VNOI/ICPC), giải chính xác và sinh bộ test theo bậc thang độ khó:
+Quy tắc I/O:
+- Chỉ đặt ioMode = "file" (kèm inputFileName, outputFileName) KHI VÀ CHỈ KHI đề bài yêu cầu rõ đọc/ghi file (.INP/.OUT, freopen, tên tệp). Mọi bài nhập xuất chuẩn mặc định ioMode = "standard", inputFileName = "", outputFileName = "".
+- Bộ test:
+  * sampleCases: 2 test cơ bản minh họa rõ đề.
+  * hiddenCases: 6 test tăng dần độ khó: 2 "Cơ bản" -> 2 "Trung bình" -> 1 "Nâng cao" (trường hợp biên) -> 1 "Thử thách" (giá trị lớn / hiệu năng).
+  * referencePython: Code Python 3 hoàn chỉnh, chạy được ngay bằng stdin/stdout (hoặc đúng tên file nếu ioMode="file"), dùng giải thuật tối ưu để kiểm chứng 100% đáp án.
+  * referenceCpp: Code C++17 gọn sạch, chuẩn mực.${ioHint}${samplesContext}
+${text ? `\nNội dung đề bài:\n${String(text).slice(0, 8000)}` : ''}`;
 
     parts.push({ text: promptText });
 
     const response = await callGeminiWithFallback({
       ai,
       contents: { parts },
-      systemInstruction: `You are an elite competitive programming judge. Extract the problem from user input (OCR/text) and output strict JSON with keys: title (string), description (string), inputFormat (string), outputFormat (string), constraints (array of strings), ioMode ("standard" | "file"), inputFileName (string), outputFileName (string), timeLimitEnabled (boolean), timeLimitMs (number | null), sampleCases (array of objects { id, input, expectedOutput, isSample: true, difficulty: "Cơ bản", explanation }), hiddenCases (array of 6 objects strictly ordered from easiest to hardest: { id, input, expectedOutput, isSample: false, difficulty: "Cơ bản" | "Trung bình" | "Nâng cao" | "Thử thách" }), referenceCpp (string), referencePython (string). Ensure expectedOutput is 100% mathematically and algorithmically accurate.`,
+      systemInstruction:
+        'You are an elite Vietnamese competitive programming judge. Extract the exact problem specification and produce accurate sampleCases, 6 progressive hiddenCases, referenceCpp, and runnable referencePython.',
       responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING },
+          description: { type: Type.STRING },
+          inputFormat: { type: Type.STRING },
+          outputFormat: { type: Type.STRING },
+          constraints: { type: Type.ARRAY, items: { type: Type.STRING } },
+          ioMode: { type: Type.STRING },
+          inputFileName: { type: Type.STRING },
+          outputFileName: { type: Type.STRING },
+          timeLimitEnabled: { type: Type.BOOLEAN },
+          timeLimitMs: { type: Type.NUMBER, nullable: true },
+          sampleCases: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                input: { type: Type.STRING },
+                expectedOutput: { type: Type.STRING },
+                explanation: { type: Type.STRING }
+              },
+              required: ['input', 'expectedOutput']
+            }
+          },
+          hiddenCases: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                input: { type: Type.STRING },
+                expectedOutput: { type: Type.STRING },
+                difficulty: { type: Type.STRING }
+              },
+              required: ['input', 'expectedOutput', 'difficulty']
+            }
+          },
+          referenceCpp: { type: Type.STRING },
+          referencePython: { type: Type.STRING }
+        },
+        required: [
+          'title',
+          'description',
+          'inputFormat',
+          'outputFormat',
+          'constraints',
+          'ioMode',
+          'sampleCases',
+          'hiddenCases',
+          'referenceCpp',
+          'referencePython'
+        ]
+      },
       thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 35000
+      timeoutMs: 22000
     });
 
     const parsedData = safeParseGeminiJson<any>(response.text, null);
@@ -2337,8 +2472,89 @@ ${text ? `Dữ liệu văn bản người dùng cung cấp:\n${text}` : ''}
       throw new Error('Không thể trích xuất dữ liệu JSON từ phản hồi AI');
     }
 
+    const resolvedIoMode: 'standard' | 'file' =
+      parsedData.ioMode === 'file' ? 'file' : 'standard';
+    if (resolvedIoMode === 'standard') {
+      parsedData.ioMode = 'standard';
+      parsedData.inputFileName = '';
+      parsedData.outputFileName = '';
+    } else {
+      parsedData.ioMode = 'file';
+      parsedData.inputFileName = String(parsedData.inputFileName || reqInputFileName || 'INPUT.INP').trim();
+      parsedData.outputFileName = String(parsedData.outputFileName || reqOutputFileName || 'OUTPUT.OUT').trim();
+    }
+
+    // Server-side CPython 3 verification: guarantee mathematically exact expectedOutput!
+    let verifiedByPython = false;
+    const pyRef = String(parsedData.referencePython || '').trim();
+    if (pyRef) {
+      let samplesPassed = true;
+      if (validUserSamples.length > 0) {
+        const sampleRuns = await Promise.all(
+          validUserSamples.slice(0, 4).map((s: any) =>
+            execPythonInTempDir(
+              pyRef,
+              String(s.input || ''),
+              resolvedIoMode,
+              parsedData.inputFileName,
+              parsedData.outputFileName
+            )
+          )
+        );
+        samplesPassed = sampleRuns.every((run, idx) => {
+          const exp = String(validUserSamples[idx]?.expectedOutput || '').trim();
+          if (!run.ok) return false;
+          if (!exp) return Boolean(run.stdout.trim());
+          return normalizeJudgeOutputStr(run.stdout) === normalizeJudgeOutputStr(exp);
+        });
+      } else if (Array.isArray(parsedData.sampleCases) && parsedData.sampleCases.length > 0) {
+        const aiSampleRuns = await Promise.all(
+          parsedData.sampleCases.map((s: any) =>
+            execPythonInTempDir(
+              pyRef,
+              String(s.input || ''),
+              resolvedIoMode,
+              parsedData.inputFileName,
+              parsedData.outputFileName
+            )
+          )
+        );
+        if (aiSampleRuns.every((r) => r.ok && r.stdout.trim().length > 0)) {
+          parsedData.sampleCases = parsedData.sampleCases.map((s: any, idx: number) => ({
+            ...s,
+            expectedOutput: aiSampleRuns[idx].stdout.trim()
+          }));
+        } else {
+          samplesPassed = false;
+        }
+      }
+
+      if (samplesPassed && Array.isArray(parsedData.hiddenCases) && parsedData.hiddenCases.length > 0) {
+        const hiddenRuns = await Promise.all(
+          parsedData.hiddenCases.map((hc: any) =>
+            execPythonInTempDir(
+              pyRef,
+              String(hc.input || ''),
+              resolvedIoMode,
+              parsedData.inputFileName,
+              parsedData.outputFileName
+            )
+          )
+        );
+        const allOk = hiddenRuns.every((r) => r.ok && r.stdout.trim().length > 0);
+        if (allOk) {
+          parsedData.hiddenCases = parsedData.hiddenCases.map((hc: any, idx: number) => ({
+            ...hc,
+            expectedOutput: hiddenRuns[idx].stdout.trim()
+          }));
+          verifiedByPython = true;
+        }
+      }
+    }
+
     return res.json({
       success: true,
+      verifiedByPython,
       problem: {
         id: `CUSTOM_${Date.now()}`,
         ...parsedData

@@ -1,5 +1,5 @@
 import { CodeLanguage, CodingProblem, ProblemIOMode, TestCase, TestDifficultyTier } from '../../types';
-import { executeCode, parseTimeLimitMs } from './codeRunner';
+import { compareOutputs, executeCode, parseTimeLimitMs } from './codeRunner';
 import { safeFetchJson } from '../../lib/apiClient';
 
 export interface UserSamplePair {
@@ -17,7 +17,7 @@ export interface DetectedExecutionConfig {
 }
 
 export function detectProblemExecutionConfig(rawText: string = ''): DetectedExecutionConfig {
-  const txt = rawText || '';
+  const txt = (rawText || '').replace(/#ifndef\s+ONLINE_JUDGE\b[\s\S]*?#endif\b[^\n]*/gi, '');
   const lower = txt.toLowerCase();
 
   let timeLimitEnabled = true;
@@ -40,8 +40,8 @@ export function detectProblemExecutionConfig(rawText: string = ''): DetectedExec
   }
 
   let ioMode: ProblemIOMode = 'standard';
-  let inputFileName = 'INPUT.INP';
-  let outputFileName = 'OUTPUT.OUT';
+  let inputFileName = '';
+  let outputFileName = '';
 
   const freopenIn = txt.match(/freopen\s*\(\s*["']([^"']+)["']\s*,\s*["']r["']/i);
   const freopenOut = txt.match(/freopen\s*\(\s*["']([^"']+)["']\s*,\s*["']w["']/i);
@@ -58,8 +58,8 @@ export function detectProblemExecutionConfig(rawText: string = ''): DetectedExec
     outputFileName = (freopenOut?.[1] || extOut?.[1] || 'OUTPUT.OUT').trim();
   } else if (mentionsFileKeyword && (extIn || extOut)) {
     ioMode = 'file';
-    if (extIn) inputFileName = extIn[1].trim();
-    if (extOut) outputFileName = extOut[1].trim();
+    inputFileName = (extIn?.[1] || 'INPUT.INP').trim();
+    outputFileName = (extOut?.[1] || 'OUTPUT.OUT').trim();
   }
 
   return {
@@ -481,7 +481,6 @@ function inferAlgorithm(
   }
   if (norm.includes('fibonacci')) candidates.push('fibonacci');
   if (norm.includes('giai thua') || norm.includes('factorial')) candidates.push('factorial');
-  if (norm.includes('uoc chung') || norm.includes('ucln') || norm.includes('gcd')) candidates.push('gcd_lcm' as any);
   if (norm.includes('uoc chung lon nhat') || norm.includes('ucln') || norm.includes('gcd')) candidates.push('gcd_ab');
   if (norm.includes('boi chung nho nhat') || norm.includes('bcnn') || norm.includes('lcm')) candidates.push('lcm_ab');
   if (norm.includes('tong') && norm.includes('tich')) candidates.push('sum_prod_ab');
@@ -797,9 +796,10 @@ export async function analyzeProblemAndGenerateTests(
         : parseTimeLimitMs(aiProblem?.timeLimit, detectedLocal.timeLimitMs ?? 1000);
 
     const aiIoMode: ProblemIOMode =
-      aiProblem?.ioMode === 'file' ||
-      (aiProblem?.inputFileName && aiProblem?.outputFileName)
+      aiProblem?.ioMode === 'file'
         ? 'file'
+        : aiProblem?.ioMode === 'standard'
+        ? 'standard'
         : detectedLocal.ioMode;
 
     const tlEnabled = req.userConfiguredExecution
@@ -817,13 +817,17 @@ export async function analyzeProblemAndGenerateTests(
       : aiIoMode;
 
     const finalInFile =
-      (req.userConfiguredExecution ? req.inputFileName : aiProblem?.inputFileName) ||
-      detectedLocal.inputFileName ||
-      'INPUT.INP';
+      finalIoMode === 'file'
+        ? (req.userConfiguredExecution ? req.inputFileName : aiProblem?.inputFileName) ||
+          detectedLocal.inputFileName ||
+          'INPUT.INP'
+        : '';
     const finalOutFile =
-      (req.userConfiguredExecution ? req.outputFileName : aiProblem?.outputFileName) ||
-      detectedLocal.outputFileName ||
-      'OUTPUT.OUT';
+      finalIoMode === 'file'
+        ? (req.userConfiguredExecution ? req.outputFileName : aiProblem?.outputFileName) ||
+          detectedLocal.outputFileName ||
+          'OUTPUT.OUT'
+        : '';
 
     return {
       timeLimitEnabled: tlEnabled,
@@ -837,7 +841,204 @@ export async function analyzeProblemAndGenerateTests(
   const formatTimeLabel = (enabled: boolean, ms: number | null) =>
     enabled && ms ? `${(ms / 1000).toFixed(ms % 1000 === 0 ? 1 : 2).replace(/0+$/, '').replace(/\.$/, '')}s` : 'Không giới hạn';
 
-  // 1. Try Server AI Endpoint (/api/gemini/analyze-problem)
+  const verifyOracleMatchesSamples = async (
+    oracleCode: string,
+    oracleLang: CodeLanguage,
+    samplesToTest: { input: string; expectedOutput: string }[],
+    oracleOpts: {
+      ioMode: ProblemIOMode;
+      inputFileName?: string;
+      outputFileName?: string;
+      timeLimitEnabled: boolean;
+      timeLimitMs: number | null;
+      skipAiFallback?: boolean;
+    }
+  ): Promise<boolean> => {
+    for (const s of samplesToTest) {
+      const res = await executeCode('ORACLE_CHECK', oracleLang, oracleCode, s.input, {
+        ...oracleOpts,
+        skipAiFallback: true
+      });
+      if (res.isError) return false;
+      if (s.expectedOutput.trim() && !compareOutputs(res.stdout, s.expectedOutput)) {
+        return false;
+      }
+      if (!s.expectedOutput.trim() && !res.stdout.trim()) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const preExecCfg = resolveExecConfig();
+  const sections = parseStructuredSections(req.text, req.fileName);
+  const inferredKind = inferAlgorithm(req.text, combinedSamples);
+
+  // 0A. Ultra-fast path: Reference AC code + text (without image OCR) -> build & verify locally in <50ms!
+  if (!req.imageBase64 && req.referenceCode?.trim()) {
+    const lang = req.referenceLang || 'cpp';
+    const oracleUsesFile = /\b(freopen|ifstream|ofstream|open\s*\()/i.test(req.referenceCode);
+    const oracleOpts = oracleUsesFile
+      ? {
+          ioMode: 'file' as ProblemIOMode,
+          inputFileName: preExecCfg.inputFileName || 'INPUT.INP',
+          outputFileName: preExecCfg.outputFileName || 'OUTPUT.OUT',
+          timeLimitEnabled: preExecCfg.timeLimitEnabled,
+          timeLimitMs: preExecCfg.timeLimitMs,
+          skipAiFallback: true
+        }
+      : {
+          ioMode: 'standard' as ProblemIOMode,
+          timeLimitEnabled: preExecCfg.timeLimitEnabled,
+          timeLimitMs: preExecCfg.timeLimitMs,
+          skipAiFallback: true
+        };
+
+    const sampleCheckOk =
+      combinedSamples.length === 0
+        ? true
+        : await verifyOracleMatchesSamples(req.referenceCode, lang, combinedSamples, oracleOpts);
+
+    if (sampleCheckOk) {
+      const sampleCases: TestCase[] =
+        combinedSamples.length > 0
+          ? combinedSamples.map((s, idx) => ({
+              id: idx + 1,
+              input: s.input,
+              expectedOutput: s.expectedOutput,
+              isSample: true,
+              explanation: s.explanation || 'Test mẫu từ đề bài',
+              difficulty: 'Cơ bản' as TestDifficultyTier
+            }))
+          : [];
+
+      const hiddenSeeds = generateHiddenInputs(inferredKind, sampleCases[0]?.input);
+      const hiddenCases: TestCase[] = [];
+      let allHiddenOk = true;
+      for (let i = 0; i < hiddenSeeds.length; i++) {
+        const seed = hiddenSeeds[i];
+        const res = await executeCode('ORACLE', lang, req.referenceCode, seed.input, oracleOpts);
+        if (res.isError || !res.stdout.trim()) {
+          allHiddenOk = false;
+          break;
+        }
+        hiddenCases.push({
+          id: sampleCases.length + i + 1,
+          input: seed.input,
+          expectedOutput: res.stdout.trim(),
+          isSample: false,
+          difficulty: seed.difficulty
+        });
+      }
+
+      if (allHiddenOk && hiddenCases.length > 0) {
+        if (sampleCases.length === 0) {
+          sampleCases.push({
+            id: 1,
+            input: hiddenCases[0].input,
+            expectedOutput: hiddenCases[0].expectedOutput,
+            isSample: true,
+            explanation: 'Test mẫu sinh tự động từ Code AC',
+            difficulty: 'Cơ bản'
+          });
+        }
+        return {
+          problem: {
+            id: `CUSTOM_${Date.now()}`,
+            title: sections.title,
+            category: 'Tự do - Code AC tham chiếu',
+            difficulty: 'Medium',
+            timeLimit: formatTimeLabel(preExecCfg.timeLimitEnabled, preExecCfg.timeLimitMs),
+            timeLimitEnabled: preExecCfg.timeLimitEnabled,
+            timeLimitMs: preExecCfg.timeLimitMs,
+            ioMode: preExecCfg.ioMode,
+            inputFileName: preExecCfg.inputFileName,
+            outputFileName: preExecCfg.outputFileName,
+            memoryLimit: '256MB',
+            description: sections.description,
+            inputFormat: sections.inputFormat,
+            outputFormat: sections.outputFormat,
+            constraints: sections.constraints,
+            sampleCases,
+            hiddenCases,
+            cppTemplate: lang === 'cpp' ? req.referenceCode : '',
+            pythonTemplate: lang === 'python' ? req.referenceCode : ''
+          },
+          source: 'local-oracle',
+          diagnosticNote: `Sinh tức thì từ Code AC tham chiếu (${hiddenCases.length} test ẩn) · TLE: ${formatTimeLabel(
+            preExecCfg.timeLimitEnabled,
+            preExecCfg.timeLimitMs
+          )} · I/O: ${preExecCfg.ioMode === 'file' ? `File (${preExecCfg.inputFileName} → ${preExecCfg.outputFileName})` : 'Chuẩn (stdin/stdout)'}.`
+        };
+      }
+    }
+  }
+
+  // 0B. Ultra-fast deterministic solver path when inferred algorithm matches ALL provided sample cases
+  if (!req.imageBase64 && inferredKind !== 'unknown' && combinedSamples.length > 0) {
+    const allSamplesMatchSolver = combinedSamples.every((s) => {
+      if (!s.input.trim() || !s.expectedOutput.trim()) return false;
+      const out = runAlgorithmSolver(inferredKind, s.input);
+      return out !== null && compareOutputs(out, s.expectedOutput);
+    });
+
+    if (allSamplesMatchSolver) {
+      const sampleCases: TestCase[] = combinedSamples.map((s, idx) => ({
+        id: idx + 1,
+        input: s.input,
+        expectedOutput: s.expectedOutput,
+        isSample: true,
+        explanation: s.explanation || 'Test mẫu từ đề bài',
+        difficulty: 'Cơ bản' as TestDifficultyTier
+      }));
+      const hiddenSeeds = generateHiddenInputs(inferredKind, sampleCases[0]?.input);
+      const hiddenCases: TestCase[] = [];
+      for (let i = 0; i < hiddenSeeds.length; i++) {
+        const seed = hiddenSeeds[i];
+        const out = runAlgorithmSolver(inferredKind, seed.input);
+        if (out !== null) {
+          hiddenCases.push({
+            id: sampleCases.length + i + 1,
+            input: seed.input,
+            expectedOutput: out,
+            isSample: false,
+            difficulty: seed.difficulty
+          });
+        }
+      }
+      if (hiddenCases.length >= 4) {
+        return {
+          problem: {
+            id: `CUSTOM_${Date.now()}`,
+            title: sections.title,
+            category: 'Tự do - Nhận diện thuật toán nhanh',
+            difficulty: 'Medium',
+            timeLimit: formatTimeLabel(preExecCfg.timeLimitEnabled, preExecCfg.timeLimitMs),
+            timeLimitEnabled: preExecCfg.timeLimitEnabled,
+            timeLimitMs: preExecCfg.timeLimitMs,
+            ioMode: preExecCfg.ioMode,
+            inputFileName: preExecCfg.inputFileName,
+            outputFileName: preExecCfg.outputFileName,
+            memoryLimit: '256MB',
+            description: sections.description,
+            inputFormat: sections.inputFormat,
+            outputFormat: sections.outputFormat,
+            constraints: sections.constraints,
+            sampleCases,
+            hiddenCases,
+            cppTemplate: '',
+            pythonTemplate: ''
+          },
+          source: 'local-inferred',
+          diagnosticNote: `Nhận diện thuật toán chuẩn (${inferredKind}) & sinh nhanh ${sampleCases.length} mẫu + ${hiddenCases.length} test ẩn · I/O: ${
+            preExecCfg.ioMode === 'file' ? `File (${preExecCfg.inputFileName} → ${preExecCfg.outputFileName})` : 'Chuẩn (stdin/stdout)'
+          }.`
+        };
+      }
+    }
+  }
+
+  // 1. Server AI Endpoint (/api/gemini/analyze-problem) with real CPython 3 verification
   let aiError: string | undefined;
   try {
     const res = await safeFetchJson<any>(
@@ -848,10 +1049,14 @@ export async function analyzeProblemAndGenerateTests(
         body: JSON.stringify({
           text: req.text.trim(),
           imageBase64: req.imageBase64 || undefined,
-          mimeType: req.mimeType || undefined
+          mimeType: req.mimeType || undefined,
+          userSamples: combinedSamples,
+          ioMode: req.userConfiguredExecution ? req.ioMode : preExecCfg.ioMode,
+          inputFileName: req.inputFileName,
+          outputFileName: req.outputFileName
         })
       },
-      65000
+      28000
     );
 
     if (!res.ok) {
@@ -900,40 +1105,60 @@ export async function analyzeProblemAndGenerateTests(
           )
           .map((tc: TestCase, idx: number) => ({ ...tc, id: mergedSamples.length + idx + 1 }));
 
-        // Verify hiddenCases with oracle code using standard stdin/stdout for oracle unless oracle itself opens files
-        const oracleCode = req.referenceCode?.trim() || data.problem.referencePython || data.problem.referenceCpp;
-        const oracleLang: CodeLanguage = req.referenceCode?.trim()
+        // Only verify hiddenCases in local browser sandbox when server Python verification hasn't already verified them,
+        // OR when user explicitly supplied referenceCode; ALWAYS check oracle passes mergedSamples first so a faulty sandbox never corrupts valid tests.
+        const hasUserRef = Boolean(req.referenceCode?.trim());
+        const oracleCode = hasUserRef
+          ? req.referenceCode!.trim()
+          : !data.verifiedByPython
+          ? data.problem.referencePython || data.problem.referenceCpp
+          : '';
+        const oracleLang: CodeLanguage = hasUserRef
           ? req.referenceLang || 'cpp'
           : data.problem.referencePython
           ? 'python'
           : 'cpp';
 
         if (oracleCode) {
-          const oracleUsesFile =
-            /\b(freopen|ifstream|ofstream|open\s*\()/i.test(oracleCode);
+          const oracleUsesFile = /\b(freopen|ifstream|ofstream|open\s*\()/i.test(oracleCode);
           const oracleOpts = oracleUsesFile
             ? {
                 ioMode: 'file' as ProblemIOMode,
-                inputFileName: execCfg.inputFileName,
-                outputFileName: execCfg.outputFileName,
+                inputFileName: execCfg.inputFileName || 'INPUT.INP',
+                outputFileName: execCfg.outputFileName || 'OUTPUT.OUT',
                 timeLimitEnabled: execCfg.timeLimitEnabled,
-                timeLimitMs: execCfg.timeLimitMs
+                timeLimitMs: execCfg.timeLimitMs,
+                skipAiFallback: true
               }
             : {
                 ioMode: 'standard' as ProblemIOMode,
                 timeLimitEnabled: execCfg.timeLimitEnabled,
-                timeLimitMs: execCfg.timeLimitMs
+                timeLimitMs: execCfg.timeLimitMs,
+                skipAiFallback: true
               };
 
-          const verifiedHidden: TestCase[] = [];
-          for (const hc of hiddenCases) {
-            const exec = await executeCode('CUSTOM_ORACLE', oracleLang, oracleCode, hc.input, oracleOpts);
-            verifiedHidden.push({
-              ...hc,
-              expectedOutput: !exec.isError && exec.stdout.trim() ? exec.stdout.trim() : hc.expectedOutput
-            });
+          const samplePass =
+            mergedSamples.length === 0 ||
+            (await verifyOracleMatchesSamples(oracleCode, oracleLang, mergedSamples, oracleOpts));
+
+          if (samplePass) {
+            const candidateOutputs: string[] = [];
+            let allOk = true;
+            for (const hc of hiddenCases) {
+              const exec = await executeCode('CUSTOM_ORACLE', oracleLang, oracleCode, hc.input, oracleOpts);
+              if (exec.isError || !exec.stdout.trim()) {
+                allOk = false;
+                break;
+              }
+              candidateOutputs.push(exec.stdout.trim());
+            }
+            if (allOk && candidateOutputs.length === hiddenCases.length) {
+              hiddenCases = hiddenCases.map((hc, idx) => ({
+                ...hc,
+                expectedOutput: candidateOutputs[idx]
+              }));
+            }
           }
-          hiddenCases = verifiedHidden;
         }
 
         const analyzedProblem: CodingProblem = {
@@ -965,7 +1190,7 @@ export async function analyzeProblemAndGenerateTests(
           source: 'ai',
           referenceCpp: data.problem.referenceCpp,
           referencePython: data.problem.referencePython,
-          diagnosticNote: `AI đã tạo ${mergedSamples.length} test mẫu + ${hiddenCases.length} test ẩn · TLE: ${analyzedProblem.timeLimit} · I/O: ${
+          diagnosticNote: `AI${data.verifiedByPython ? ' + Python3' : ''} đã tạo ${mergedSamples.length} test mẫu + ${hiddenCases.length} test ẩn · TLE: ${analyzedProblem.timeLimit} · I/O: ${
             execCfg.ioMode === 'file' ? `File (${execCfg.inputFileName} → ${execCfg.outputFileName})` : 'Chuẩn (stdin/stdout)'
           }.`
         };
@@ -980,10 +1205,8 @@ export async function analyzeProblemAndGenerateTests(
     throw new Error(aiError || 'Không thể đọc đề bài từ ảnh bằng Gemini AI lúc này. Vui lòng thử lại.');
   }
 
-  // 2. Local Structured Analysis + Progressive Test Generator
+  // 2. Local Structured Analysis + Progressive Test Generator Fallback
   const execCfg = resolveExecConfig();
-  const sections = parseStructuredSections(req.text, req.fileName);
-  const inferredKind = inferAlgorithm(req.text, combinedSamples);
 
   const sampleCases: TestCase[] =
     combinedSamples.length > 0
@@ -1013,28 +1236,30 @@ export async function analyzeProblemAndGenerateTests(
   const hiddenSeeds = generateHiddenInputs(inferredKind, sampleCases[0]?.input);
   const hiddenCases: TestCase[] = [];
 
-  // 2A. If user supplied a Reference AC solution, run it on every generated progressive hidden test!
+  // 2A. If user supplied a Reference AC solution, run it on every generated progressive hidden test
   if (req.referenceCode && req.referenceCode.trim()) {
     const lang = req.referenceLang || 'cpp';
     const oracleUsesFile = /\b(freopen|ifstream|ofstream|open\s*\()/i.test(req.referenceCode);
     const oracleOpts = oracleUsesFile
       ? {
           ioMode: 'file' as ProblemIOMode,
-          inputFileName: execCfg.inputFileName,
-          outputFileName: execCfg.outputFileName,
+          inputFileName: execCfg.inputFileName || 'INPUT.INP',
+          outputFileName: execCfg.outputFileName || 'OUTPUT.OUT',
           timeLimitEnabled: execCfg.timeLimitEnabled,
-          timeLimitMs: execCfg.timeLimitMs
+          timeLimitMs: execCfg.timeLimitMs,
+          skipAiFallback: true
         }
       : {
           ioMode: 'standard' as ProblemIOMode,
           timeLimitEnabled: execCfg.timeLimitEnabled,
-          timeLimitMs: execCfg.timeLimitMs
+          timeLimitMs: execCfg.timeLimitMs,
+          skipAiFallback: true
         };
 
     for (let i = 0; i < hiddenSeeds.length; i++) {
       const seed = hiddenSeeds[i];
       const res = await executeCode('ORACLE', lang, req.referenceCode, seed.input, oracleOpts);
-      if (!res.isError) {
+      if (!res.isError && res.stdout.trim()) {
         hiddenCases.push({
           id: sampleCases.length + i + 1,
           input: seed.input,

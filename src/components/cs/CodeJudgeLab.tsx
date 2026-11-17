@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { motion } from 'motion/react';
 import { CS_LESSONS } from '../../data/csLessonsData';
 import { CODING_PROBLEMS } from '../../data/curriculumData';
+import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
 import {
   CodeLanguage,
   CodingProblem,
@@ -108,6 +109,36 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
   // Sub-view inside curriculum: 'roadmap' (VNOI Roadmap grid) or 'lecture' (Dedicated teaching classroom)
   const curriculumSubView = location.csSubView;
   const lessonTab = location.csLessonTab;
+
+  // Active CS Roadmap Track ('vnoi' | 'openedg_cpp' | 'roadmap_sh_cpp' | 'learncpp' | 'github_career')
+  const [selectedTrackId, setSelectedTrackId] = useState<CSTrackId>('vnoi');
+  const [completedTrackStageIds, setCompletedTrackStageIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('synapse_cs_track_completed_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleTrackStageCompleted = (stageId: string) => {
+    setCompletedTrackStageIds((prev) => {
+      const exists = prev.includes(stageId);
+      const next = exists ? prev.filter((id) => id !== stageId) : [...prev, stageId];
+      try {
+        localStorage.setItem('synapse_cs_track_completed_v1', JSON.stringify(next));
+      } catch {}
+      if (!exists && onScoreEarned) {
+        onScoreEarned(25);
+      }
+      return next;
+    });
+  };
+
+  const activeSpecializedTrack = useMemo(
+    () => CS_SPECIALIZED_TRACKS.find((tr) => tr.id === selectedTrackId) || null,
+    [selectedTrackId]
+  );
 
   // VNOI Phase filter: 'all' | phase name
   const [selectedPhase, setSelectedPhase] = useState<string>('all');
@@ -693,11 +724,11 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       </div>
 
       {/* ============================================================= */}
-      {/* MODE 1: VNOI ROADMAP BROWSER & DEDICATED LECTURE ROOM        */}
+      {/* MODE 1: CS ROADMAPS (VNOI + 4 C++ CAREER/STUDY TRACKS)       */}
       {/* ============================================================= */}
       {viewMode === 'curriculum' && curriculumSubView === 'roadmap' && (
         <div className="space-y-6">
-          {/* VNOI Phase Filter Bar */}
+          {/* Roadmap Track Selector Bar */}
           <div className="sci-frame bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-md p-4 sm:p-5 space-y-4 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-start gap-2.5">
@@ -710,106 +741,318 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 </button>
                 <div>
                   <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
-                    Bản Đồ Học Tập Tin Học Theo Lộ Trình VNOI Roadmap ({CS_LESSONS.length} Bài Giảng Chuyên Đề)
+                    {selectedTrackId === 'vnoi'
+                      ? `Lộ Trình VNOI Roadmap (${CS_LESSONS.length} Bài Giảng Chuyên Đề)`
+                      : activeSpecializedTrack?.title}
                   </h2>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                    Bấm vào bất kỳ bài nào dưới đây để mở ngay giao diện Giảng bài chi tiết từng bước, Code mẫu và Bài tập tự chấm.
+                    {selectedTrackId === 'vnoi'
+                      ? 'Chọn lộ trình học tập phù hợp (VNOI Thi đấu, Chứng chỉ OpenEDG, Roadmap.sh, LearnCpp.com hoặc GitHub Career Track) và bấm vào bài học để thực hành.'
+                      : activeSpecializedTrack?.summary}
                   </p>
                 </div>
               </div>
               <span className="text-xs font-mono text-slate-500 dark:text-slate-400 tabular-nums shrink-0">
-                5 Giai đoạn · 12 Chuyên đề cốt lõi
+                5 Lộ trình Tin học &amp; C++
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {/* 5-Track Selector */}
+            <div className="flex flex-wrap items-center gap-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
               <button
-                onClick={() => setSelectedPhase('all')}
-                className={`px-3 py-1.5 rounded-[4px] text-xs font-bold whitespace-nowrap transition-colors border ${
-                  selectedPhase === 'all'
-                    ? 'bg-sky-600 border-sky-500 text-white shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-sky-500/60'
+                type="button"
+                onClick={() => setSelectedTrackId('vnoi')}
+                className={`px-3 py-2 rounded-[4px] text-xs font-bold whitespace-nowrap transition-colors border cursor-pointer ${
+                  selectedTrackId === 'vnoi'
+                    ? 'bg-blue-600 border-blue-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-500/60'
                 }`}
               >
-                Tất cả Phase ({CS_LESSONS.length})
+                VNOI Roadmap ({CS_LESSONS.length} bài)
               </button>
-              {vnoiPhases.map((phase) => (
+              {CS_SPECIALIZED_TRACKS.map((track) => {
+                const isActive = selectedTrackId === track.id;
+                const doneCount = track.stages.filter((s) => completedTrackStageIds.includes(s.id)).length;
+                return (
+                  <button
+                    key={track.id}
+                    type="button"
+                    onClick={() => setSelectedTrackId(track.id)}
+                    className={`px-3 py-2 rounded-[4px] text-xs font-bold whitespace-nowrap transition-colors border cursor-pointer flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-sky-600 border-sky-500 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-500/60'
+                    }`}
+                  >
+                    <span>{track.shortName}</span>
+                    <span className={`text-[10px] font-mono tabular-nums ${isActive ? 'text-sky-100' : 'text-slate-400'}`}>
+                      ({doneCount}/{track.stages.length})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedTrackId === 'vnoi' && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                 <button
-                  key={phase}
-                  onClick={() => setSelectedPhase(phase)}
+                  onClick={() => setSelectedPhase('all')}
                   className={`px-3 py-1.5 rounded-[4px] text-xs font-bold whitespace-nowrap transition-colors border ${
-                    selectedPhase === phase
+                    selectedPhase === 'all'
                       ? 'bg-sky-600 border-sky-500 text-white shadow-xs'
                       : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-sky-500/60'
                   }`}
                 >
-                  {phase}
+                  Tất cả Phase ({CS_LESSONS.length})
                 </button>
-              ))}
-            </div>
+                {vnoiPhases.map((phase) => (
+                  <button
+                    key={phase}
+                    onClick={() => setSelectedPhase(phase)}
+                    className={`px-3 py-1.5 rounded-[4px] text-xs font-bold whitespace-nowrap transition-colors border ${
+                      selectedPhase === phase
+                        ? 'bg-sky-600 border-sky-500 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-sky-500/60'
+                    }`}
+                  >
+                    {phase}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* VNOI Roadmap Progression Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredLessons.map((l) => (
-              <button
-                key={l.id}
-                type="button"
-                onClick={() => {
-                  setRevealedSolution(false);
-                  navigate({
-                    csLessonId: l.id,
-                    csLessonTab: 'lecture',
-                    csSubView: 'lecture'
-                  });
-                }}
-                className="group sci-frame text-left bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 hover:border-sky-500 dark:hover:border-sky-500 rounded-md p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4"
-              >
-                <div className="space-y-2.5">
-                  <div className="flex items-start gap-3">
-                    <LectureThumbnail
-                      subject="cs"
-                      id={l.id}
-                      lessonNumber={l.lessonNumber}
-                      category={l.vnoiPhase || l.level}
-                    />
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="font-bold text-sky-600 dark:text-sky-400 tabular-nums">
-                          {t('', 'Bài', 'Lesson')} {l.lessonNumber}
-                        </span>
-                        <span aria-hidden="true">·</span>
-                        <span>{l.vnoiPhase || l.level}</span>
-                        <span aria-hidden="true">·</span>
-                        <span className="tabular-nums">{l.estimatedMinutes}{t('', 'p', 'm')}</span>
-                      </div>
+          {selectedTrackId === 'vnoi' ? (
+            /* VNOI Roadmap Progression Cards Grid */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredLessons.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => {
+                    setRevealedSolution(false);
+                    navigate({
+                      csLessonId: l.id,
+                      csLessonTab: 'lecture',
+                      csSubView: 'lecture'
+                    });
+                  }}
+                  className="group sci-frame text-left bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 hover:border-sky-500 dark:hover:border-sky-500 rounded-md p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-start gap-3">
+                      <LectureThumbnail
+                        subject="cs"
+                        id={l.id}
+                        lessonNumber={l.lessonNumber}
+                        category={l.vnoiPhase || l.level}
+                      />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                          <span className="font-bold text-sky-600 dark:text-sky-400 tabular-nums">
+                            {t('', 'Bài', 'Lesson')} {l.lessonNumber}
+                          </span>
+                          <span aria-hidden="true">·</span>
+                          <span>{l.vnoiPhase || l.level}</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="tabular-nums">{l.estimatedMinutes}{t('', 'p', 'm')}</span>
+                        </div>
 
-                      <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-snug">
-                        {l.title}
-                      </h3>
+                        <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-snug">
+                          {l.title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      {l.topic}
+                    </p>
+                    <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 rounded px-2.5 py-1.5 leading-snug">
+                      <span className="font-bold">Học xong làm được: </span>
+                      {l.practiceProblem?.title || l.topic}
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                    {l.topic}
-                  </p>
-                  <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 rounded px-2.5 py-1.5 leading-snug">
-                    <span className="font-bold">Học xong làm được: </span>
-                    {l.practiceProblem?.title || l.topic}
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+                    <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 truncate">
+                      {l.complexity.time}
+                    </span>
+                    <span className="font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1 shrink-0">
+                      {t('', 'Vào giảng bài', 'Open Lesson')} <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
                   </div>
-                </div>
+                </button>
+              ))}
+            </div>
+          ) : activeSpecializedTrack ? (
+            /* Specialized International & Career C++ Roadmap Board */
+            <div className="space-y-4">
+              {/* Track Overview & Progress Summary */}
+              {(() => {
+                const totalStages = activeSpecializedTrack.stages.length;
+                const doneStages = activeSpecializedTrack.stages.filter((s) =>
+                  completedTrackStageIds.includes(s.id)
+                ).length;
+                const pct = Math.round((doneStages / Math.max(1, totalStages)) * 100);
+                return (
+                  <div className="sci-frame bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-md p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="font-bold text-sky-600 dark:text-sky-400">
+                          {activeSpecializedTrack.categoryLabel}
+                        </span>
+                        <span className="text-slate-400" aria-hidden="true">·</span>
+                        <span className="font-mono text-slate-500 dark:text-slate-400">
+                          {activeSpecializedTrack.officialRef}
+                        </span>
+                        <span className="text-slate-400" aria-hidden="true">·</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">
+                          ~{activeSpecializedTrack.estimatedWeeks} tuần học
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                        <strong className="text-slate-900 dark:text-white">Đối tượng: </strong>
+                        {activeSpecializedTrack.targetAudience}
+                      </p>
+                    </div>
 
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
-                  <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 truncate">
-                    {l.complexity.time}
-                  </span>
-                  <span className="font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1 shrink-0">
-                    {t('', 'Vào giảng bài', 'Open Lesson')} <ChevronRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
+                    <div className="min-w-[220px] space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-slate-600 dark:text-slate-300">Tiến độ hoàn thành</span>
+                        <span className="text-sky-600 dark:text-sky-400 tabular-nums">
+                          {doneStages}/{totalStages} chặng ({pct}%)
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all duration-300"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Stages Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {activeSpecializedTrack.stages.map((stage) => {
+                  const isDone = completedTrackStageIds.includes(stage.id);
+                  const linkedLessons = CS_LESSONS.filter((l) => stage.linkedLessonIds.includes(l.id));
+                  return (
+                    <div
+                      key={stage.id}
+                      className={`sci-frame bg-white/95 dark:bg-slate-900/95 border rounded-md p-5 shadow-sm flex flex-col justify-between gap-4 transition-colors ${
+                        isDone
+                          ? 'border-emerald-400/70 dark:border-emerald-600/60'
+                          : 'border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                              <span className="font-mono font-bold text-sky-600 dark:text-sky-400">
+                                Chặng {stage.stepNumber}
+                              </span>
+                              <span className="text-slate-400" aria-hidden="true">·</span>
+                              <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                                {stage.phaseCode}
+                              </span>
+                              <span className="text-slate-400" aria-hidden="true">·</span>
+                              <span className="text-slate-500 dark:text-slate-400 tabular-nums">
+                                ~{stage.estimatedHours} giờ
+                              </span>
+                            </div>
+                            <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">
+                              {stage.title}
+                            </h3>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleTrackStageCompleted(stage.id)}
+                            className={`px-2.5 py-1.5 rounded-[4px] border text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer transition-colors ${
+                              isDone
+                                ? 'bg-emerald-600 border-emerald-500 text-white'
+                                : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-emerald-500'
+                            }`}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{isDone ? 'Đã xong' : 'Đánh dấu'}</span>
+                          </button>
+                        </div>
+
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          {stage.description}
+                        </p>
+
+                        <div className="space-y-1.5">
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Kiến thức trọng tâm
+                          </div>
+                          <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-200">
+                            {stage.topics.map((tp, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <span className="text-sky-500 font-bold mt-0.5">•</span>
+                                <span>{tp}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 rounded px-3 py-2 leading-snug">
+                          <span className="font-bold">Mục tiêu đầu ra: </span>
+                          {stage.practiceGoal}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
+                        {linkedLessons.map((lesson) => (
+                          <button
+                            key={lesson.id}
+                            type="button"
+                            onClick={() => {
+                              setRevealedSolution(false);
+                              navigate({
+                                csLessonId: lesson.id,
+                                csLessonTab: 'lecture',
+                                csSubView: 'lecture'
+                              });
+                            }}
+                            className="px-2.5 py-1.5 rounded-[4px] bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <BookOpen className="w-3 h-3" />
+                            <span>Bài {lesson.lessonNumber}</span>
+                          </button>
+                        ))}
+                        {stage.linkedAlgoId && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate({ csViewMode: 'visualizer', csAlgoId: stage.linkedAlgoId })
+                            }
+                            className="px-2.5 py-1.5 rounded-[4px] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <GitBranch className="w-3 h-3" />
+                            <span>Mô phỏng thuật toán</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigate({ csViewMode: 'custom' })}
+                          className="ml-auto px-2.5 py-1.5 rounded-[4px] bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-300/70 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>Thực hành Sublime Studio</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
 

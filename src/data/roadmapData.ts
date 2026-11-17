@@ -350,6 +350,66 @@ export const ROADMAP_NODES: RoadmapNode[] = [
     workflowTips: ['Xác định rõ: Trạng thái $dp[i]$ lưu gì? Bài toán cơ sở? Công thức chuyển trạng thái?'],
     checkQuestions: ['Tại sao ở bài toán Balo 0/1 dùng mảng 1 chiều phải duyệt trọng lượng $w$ ngược từ $W$ về $w_i$?']
   },
+  {
+    id: 'rm-cs-openedg',
+    subject: 'cs',
+    grade: 'Trung cấp',
+    order: 5,
+    title: 'Chứng chỉ Quốc tế: C++ Institute (OpenEDG · CPE ➜ CPA ➜ CPP)',
+    titleEn: 'International Certification: C++ Institute (OpenEDG CPE/CPA/CPP)',
+    goal: 'Chuẩn hóa kiến thức thi chứng chỉ quốc tế C++ Institute: con trỏ, tham chiếu, OOP đa hình, Templates, ngoại lệ & thư viện chuẩn STL.',
+    goalEn: 'Master the OpenEDG credential syllabus: pointers, OOP polymorphism, generic templates, exceptions & STL.',
+    prerequisites: ['rm-cs-1'],
+    estimatedMinutes: 50,
+    targetLessonId: 'cs-3',
+    workflowTips: ['Mở mục Tin học → Chọn lộ trình "C++ Institute (OpenEDG)" để theo dõi checklist CPE/CPA/CPP chi tiết'],
+    checkQuestions: ['Sự khác nhau giữa truyền tham trị, con trỏ `*` và tham chiếu hằng `const T&` trong C++ là gì?']
+  },
+  {
+    id: 'rm-cs-learncpp',
+    subject: 'cs',
+    grade: 'Cơ bản',
+    order: 6,
+    title: 'Tự học bài bản từ gốc: LearnCpp.com (Chapters 0 ➜ 28)',
+    titleEn: 'Ground-Up Mastery: LearnCpp.com Curriculum (Ch. 0–28)',
+    goal: 'Đi từ gốc rễ C++: brace initialization, debugger, lvalue/rvalue, `std::vector`, nạp chồng toán tử, hàm ảo, Smart Pointers & fstream.',
+    goalEn: 'Build unshakable C++ fundamentals from variables and debugging to classes, move semantics, and streams.',
+    prerequisites: [],
+    estimatedMinutes: 45,
+    targetLessonId: 'cs-1',
+    workflowTips: ['Dùng trình chấm Sublime Studio thử nghiệm từng đoạn code mẫu từ LearnCpp với chế độ Standard & File I/O'],
+    checkQuestions: ['Tại sao `std::string_view` giúp đọc xâu không cấp phát lại bộ nhớ khi truyền vào hàm?']
+  },
+  {
+    id: 'rm-cs-roadmapsh',
+    subject: 'cs',
+    grade: 'Nâng cao / HSG',
+    order: 7,
+    title: 'Thực chiến công nghiệp: Roadmap.sh (C++ Developer Roadmap)',
+    titleEn: 'Industry Engineering: Roadmap.sh C++ Developer Track',
+    goal: 'Làm chủ Modern C++20/23, RAII & Smart Pointers, CMake, vcpkg/Conan, GoogleTest, ASan/UBSan và lập trình đa luồng `std::jthread`.',
+    goalEn: 'Master Modern C++20 idioms, RAII ownership, CMake build pipelines, sanitizers, testing, and multithreading.',
+    prerequisites: ['rm-cs-openedg'],
+    estimatedMinutes: 60,
+    targetLessonId: 'cs-9',
+    workflowTips: ['Luôn biên dịch với `-Wall -Wextra -fsanitize=address,undefined` trong các dự án C++ thực tế'],
+    checkQuestions: ['Nguyên tắc RAII và `std::unique_ptr` ngăn chặn rò rỉ bộ nhớ (memory leak) khi có ngoại lệ như thế nào?']
+  },
+  {
+    id: 'rm-cs-github',
+    subject: 'cs',
+    grade: 'Nâng cao / HSG',
+    order: 8,
+    title: 'Phát triển sự nghiệp (Career Track) trên GitHub & Open-Source',
+    titleEn: 'GitHub Open-Source Career Track & Specialization Branches',
+    goal: 'Thành thạo Git/PR/GitHub Actions CI và chọn nhánh Systems/Networking, Game Engine 3D (ECS) hoặc Algorithms/Low-Latency.',
+    goalEn: 'Build a public GitHub engineering portfolio with CI/CD across Systems, Graphics, or Low-Latency C++.',
+    prerequisites: ['rm-cs-roadmapsh'],
+    estimatedMinutes: 55,
+    targetLessonId: 'cs-12',
+    workflowTips: ['Thiết lập README chuẩn, CMake + CTest CI xanh và bắt đầu đóng góp issue "good first issue" trên GitHub'],
+    checkQuestions: ['Chuỗi CI trên GitHub Actions giúp kiểm soát chất lượng Pull Request C++ qua những bước nào?']
+  },
 
   // ==================== BỔ SUNG CHUYÊN ĐỀ LỚP 9–11 (MỚI) ====================
   {

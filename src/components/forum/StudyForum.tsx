@@ -112,6 +112,66 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
   selectedGroupIdRef.current = selectedGroupId;
   const prevGroupIdRef = useRef<string>(selectedGroupId);
   const prevMsgCountRef = useRef<number>(0);
+  const scrollGuardCancelRef = useRef<(() => void) | null>(null);
+
+  // Disable browser scroll-anchoring while StudyForum is mounted so appending chat messages
+  // or updating sidebar groups never pushes the outer viewport down.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const htmlEl = document.documentElement;
+    const bodyEl = document.body;
+    const prevHtmlAnchor = htmlEl.style.overflowAnchor;
+    const prevBodyAnchor = bodyEl.style.overflowAnchor;
+    htmlEl.style.overflowAnchor = 'none';
+    bodyEl.style.overflowAnchor = 'none';
+    return () => {
+      htmlEl.style.overflowAnchor = prevHtmlAnchor;
+      bodyEl.style.overflowAnchor = prevBodyAnchor;
+      scrollGuardCancelRef.current?.();
+    };
+  }, []);
+
+  const preserveViewportScroll = useCallback((customX?: number, customY?: number) => {
+    if (typeof window === 'undefined') return;
+    scrollGuardCancelRef.current?.();
+    const targetX = customX ?? window.scrollX;
+    const targetY = customY ?? window.scrollY;
+    let active = true;
+
+    const cancel = () => {
+      active = false;
+      window.removeEventListener('wheel', cancel);
+      window.removeEventListener('touchmove', cancel);
+    };
+    window.addEventListener('wheel', cancel, { passive: true, once: true });
+    window.addEventListener('touchmove', cancel, { passive: true, once: true });
+
+    const snap = () => {
+      if (!active) return;
+      if (Math.abs(window.scrollY - targetY) > 1 || Math.abs(window.scrollX - targetX) > 1) {
+        window.scrollTo({ left: targetX, top: targetY, behavior: 'auto' });
+      }
+    };
+
+    const raf1 = window.requestAnimationFrame(() => {
+      snap();
+      window.requestAnimationFrame(snap);
+    });
+    const t1 = window.setTimeout(snap, 60);
+    const t2 = window.setTimeout(() => {
+      snap();
+      cancel();
+    }, 160);
+
+    scrollGuardCancelRef.current = () => {
+      active = false;
+      window.cancelAnimationFrame(raf1);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.removeEventListener('wheel', cancel);
+      window.removeEventListener('touchmove', cancel);
+    };
+  }, []);
 
   const selectedGroup = useMemo(
     () => groups.find((g) => g.id === selectedGroupId) || null,
@@ -226,6 +286,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
       return;
     }
 
+    const savedX = typeof window !== 'undefined' ? window.scrollX : 0;
+    const savedY = typeof window !== 'undefined' ? window.scrollY : 0;
     setLoadingMessages(true);
     setErrorMsg(null);
     try {
@@ -243,8 +305,9 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
       setMessages([]);
     } finally {
       setLoadingMessages(false);
+      preserveViewportScroll(savedX, savedY);
     }
-  }, [selectedGroupId, user]);
+  }, [selectedGroupId, user, preserveViewportScroll]);
 
   useEffect(() => {
     void fetchMessagesForGroup();
@@ -329,6 +392,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
   }, [messages.length, selectedGroupId]);
 
   const handleOpenCreateGroup = () => {
+    preserveViewportScroll();
     setErrorMsg(null);
     setStatusMsg(null);
     if (!user) {
@@ -464,12 +528,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
     const savedScrollX = typeof window !== 'undefined' ? window.scrollX : 0;
     const savedScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
     const preserveOuterScroll = () => {
-      if (typeof window === 'undefined') return;
-      window.requestAnimationFrame(() => {
-        if (Math.abs(window.scrollY - savedScrollY) > 1 || Math.abs(window.scrollX - savedScrollX) > 1) {
-          window.scrollTo({ left: savedScrollX, top: savedScrollY, behavior: 'auto' });
-        }
-      });
+      preserveViewportScroll(savedScrollX, savedScrollY);
     };
 
     setSendingMsg(true);
@@ -603,6 +662,9 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
     if (msg.isAdminGroup && !isAdmin) return;
     if (msg.senderId !== user.uid && !isAdmin) return;
 
+    const savedX = typeof window !== 'undefined' ? window.scrollX : 0;
+    const savedY = typeof window !== 'undefined' ? window.scrollY : 0;
+
     const apiRes = await safeFetchJson<{ success: boolean; group?: ForumGroup; error?: string }>(
       `/api/forum/groups/${encodeURIComponent(msg.groupId)}/messages/${encodeURIComponent(
         msg.id
@@ -620,6 +682,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
         sortGroupsList(prev.map((g) => (g.id === apiRes.data!.group!.id ? apiRes.data!.group! : g)))
       );
     }
+    preserveViewportScroll(savedX, savedY);
 
     if (auth.currentUser && auth.currentUser.uid === user.uid) {
       try {
@@ -734,35 +797,45 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Inline alerts */}
-      {errorMsg && (
-        <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setErrorMsg(null)}
-            className="p-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/50 cursor-pointer"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-      {statusMsg && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{statusMsg}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setStatusMsg(null)}
-            className="p-1 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 cursor-pointer"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+      {/* Floating Fixed Alerts — zero layout shift when appearing/disappearing */}
+      {(errorMsg || statusMsg) && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[120] w-[calc(100%-2rem)] max-w-lg space-y-2 pointer-events-none">
+          {errorMsg && (
+            <div className="pointer-events-auto p-3.5 rounded-2xl bg-rose-50/95 dark:bg-rose-950/95 backdrop-blur-md border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-200 text-xs font-semibold flex items-center justify-between gap-3 shadow-xl">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  preserveViewportScroll();
+                  setErrorMsg(null);
+                }}
+                className="p-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/50 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          {statusMsg && (
+            <div className="pointer-events-auto p-3.5 rounded-2xl bg-emerald-50/95 dark:bg-emerald-950/95 backdrop-blur-md border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-200 text-xs font-semibold flex items-center justify-between gap-3 shadow-xl">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{statusMsg}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  preserveViewportScroll();
+                  setStatusMsg(null);
+                }}
+                className="p-1 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -793,7 +866,11 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => setSubjectFilter(opt.id)}
+                  data-no-lift="true"
+                  onClick={() => {
+                    preserveViewportScroll();
+                    setSubjectFilter(opt.id);
+                  }}
                   className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
                     active
                       ? 'bg-indigo-600 text-white'
@@ -824,11 +901,13 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                   <button
                     key={grp.id}
                     type="button"
+                    data-no-lift="true"
                     onClick={() => {
+                      preserveViewportScroll();
                       setErrorMsg(null);
                       setSelectedGroupId(grp.id);
                     }}
-                    className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
+                    className={`w-full min-h-[92px] text-left p-3.5 rounded-2xl border transition-colors cursor-pointer space-y-1.5 ${
                       isSelected
                         ? isMandatory
                           ? 'bg-amber-50/90 dark:bg-amber-950/35 border-amber-400 dark:border-amber-500/60 shadow-xs'
@@ -967,7 +1046,9 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                     {groups.some((g) => !g.isMandatoryAdminGroup) && (
                       <button
                         type="button"
+                        data-no-lift="true"
                         onClick={() => {
+                          preserveViewportScroll();
                           const firstPublic = groups.find((g) => !g.isMandatoryAdminGroup);
                           if (firstPublic) setSelectedGroupId(firstPublic.id);
                         }}
@@ -998,7 +1079,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                     className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3.5"
                     style={{ overflowAnchor: 'none' }}
                   >
-                    {loadingMessages ? (
+                    {loadingMessages && messages.length === 0 ? (
                       <div className="py-12 text-center text-xs text-slate-400">
                         {isEn ? 'Loading messages...' : 'Đang tải nội dung trao đổi...'}
                       </div>
@@ -1154,6 +1235,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                           />
                           <button
                             type="submit"
+                            data-no-lift="true"
                             aria-disabled={sendingMsg || !messageInput.trim()}
                             className={`px-4 py-3 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 whitespace-nowrap transition-opacity ${
                               sendingMsg || !messageInput.trim()

@@ -120,8 +120,8 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
   const [cfgTimeLimitEnabled, setCfgTimeLimitEnabled] = useState<boolean>(true);
   const [cfgTimeLimitSec, setCfgTimeLimitSec] = useState<string>('1.0');
   const [cfgIoMode, setCfgIoMode] = useState<ProblemIOMode>('standard');
-  const [cfgInputFileName, setCfgInputFileName] = useState<string>('INPUT.INP');
-  const [cfgOutputFileName, setCfgOutputFileName] = useState<string>('OUTPUT.OUT');
+  const [cfgInputFileName, setCfgInputFileName] = useState<string>('');
+  const [cfgOutputFileName, setCfgOutputFileName] = useState<string>('');
   const [userTouchedExecConfig, setUserTouchedExecConfig] = useState<boolean>(false);
 
   // Sublime Editor State
@@ -129,7 +129,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
   const [cppCode, setCppCode] = useState<string>(DEFAULT_CLEAN_CPP);
   const [pyCode, setPyCode] = useState<string>(DEFAULT_CLEAN_PYTHON);
   const [customInput, setCustomInput] = useState<string>('');
-  const [activeFile, setActiveFile] = useState<'main.cpp' | 'solution.py' | 'input.txt'>('main.cpp');
+  const [activeFile, setActiveFile] = useState<'main.cpp' | 'solution.py' | 'input.file'>('main.cpp');
 
   // Layout & Fullscreen
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -176,6 +176,18 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
     return () => window.removeEventListener('keydown', onKey);
   }, [isFullscreen]);
 
+  const effectiveIoMode: ProblemIOMode = problem ? problem.ioMode || 'standard' : cfgIoMode;
+  const activeInputFileName =
+    effectiveIoMode === 'file'
+      ? (problem?.inputFileName || cfgInputFileName || 'INPUT.INP').trim() || 'INPUT.INP'
+      : '';
+
+  useEffect(() => {
+    if (effectiveIoMode !== 'file' && activeFile === 'input.file') {
+      setActiveFile(selectedLang === 'python' ? 'solution.py' : 'main.cpp');
+    }
+  }, [effectiveIoMode, activeFile, selectedLang]);
+
   const activeEditorValue =
     activeFile === 'main.cpp' ? cppCode : activeFile === 'solution.py' ? pyCode : customInput;
 
@@ -186,20 +198,28 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
   };
 
   const handleSelectTab = (tabId: string) => {
-    const file = tabId as 'main.cpp' | 'solution.py' | 'input.txt';
+    const file = tabId as 'main.cpp' | 'solution.py' | 'input.file';
+    if (file === 'input.file' && effectiveIoMode !== 'file') return;
     setActiveFile(file);
     if (file === 'main.cpp') setSelectedLang('cpp');
     else if (file === 'solution.py') setSelectedLang('python');
   };
 
-  const editorTabs: SublimeTabItem[] = useMemo(
-    () => [
+  const editorTabs: SublimeTabItem[] = useMemo(() => {
+    const baseTabs: SublimeTabItem[] = [
       { id: 'main.cpp', label: 'main.cpp', language: 'cpp', dirty: cppCode !== DEFAULT_CLEAN_CPP },
-      { id: 'solution.py', label: 'solution.py', language: 'python', dirty: pyCode !== DEFAULT_CLEAN_PYTHON },
-      { id: 'input.txt', label: 'input.txt', language: 'text', dirty: Boolean(customInput) }
-    ],
-    [cppCode, pyCode, customInput]
-  );
+      { id: 'solution.py', label: 'solution.py', language: 'python', dirty: pyCode !== DEFAULT_CLEAN_PYTHON }
+    ];
+    if (effectiveIoMode === 'file') {
+      baseTabs.push({
+        id: 'input.file',
+        label: activeInputFileName || 'INPUT.INP',
+        language: 'text',
+        dirty: Boolean(customInput)
+      });
+    }
+    return baseTabs;
+  }, [cppCode, pyCode, customInput, effectiveIoMode, activeInputFileName]);
 
   // Image Upload Handler
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,8 +267,8 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
       setCfgTimeLimitSec(Number.isInteger(sec) ? sec.toFixed(1) : String(sec));
     }
     setCfgIoMode(detected.ioMode);
-    setCfgInputFileName(detected.inputFileName);
-    setCfgOutputFileName(detected.outputFileName);
+    setCfgInputFileName(detected.ioMode === 'file' ? detected.inputFileName || 'INPUT.INP' : '');
+    setCfgOutputFileName(detected.ioMode === 'file' ? detected.outputFileName || 'OUTPUT.OUT' : '');
   };
 
   // Text/Code File Upload Handler
@@ -316,9 +336,18 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
         const s = result.problem.timeLimitMs / 1000;
         setCfgTimeLimitSec(Number.isInteger(s) ? s.toFixed(1) : String(s));
       }
-      setCfgIoMode(result.problem.ioMode || 'standard');
-      if (result.problem.inputFileName) setCfgInputFileName(result.problem.inputFileName);
-      if (result.problem.outputFileName) setCfgOutputFileName(result.problem.outputFileName);
+      const resolvedIo: ProblemIOMode = result.problem.ioMode || 'standard';
+      setCfgIoMode(resolvedIo);
+      if (resolvedIo === 'file') {
+        setCfgInputFileName(result.problem.inputFileName || 'INPUT.INP');
+        setCfgOutputFileName(result.problem.outputFileName || 'OUTPUT.OUT');
+      } else {
+        setCfgInputFileName('');
+        setCfgOutputFileName('');
+        if (activeFile === 'input.file') {
+          setActiveFile(selectedLang === 'python' ? 'solution.py' : 'main.cpp');
+        }
+      }
 
       const firstIn = result.problem.sampleCases[0]?.input || result.problem.hiddenCases[0]?.input || '';
       setCustomInput(firstIn);
@@ -1042,6 +1071,8 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                               onClick={() => {
                                 setUserTouchedExecConfig(true);
                                 setCfgIoMode('file');
+                                if (!cfgInputFileName.trim()) setCfgInputFileName('INPUT.INP');
+                                if (!cfgOutputFileName.trim()) setCfgOutputFileName('OUTPUT.OUT');
                               }}
                               className={`px-2.5 py-1 rounded-[3px] text-[11px] font-bold transition-colors ${
                                 cfgIoMode === 'file'
@@ -1595,7 +1626,9 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                                 onClick={() =>
                                   setProblem({
                                     ...problem,
-                                    ioMode: 'standard'
+                                    ioMode: 'standard',
+                                    inputFileName: '',
+                                    outputFileName: ''
                                   })
                                 }
                                 className={`px-2 py-0.5 rounded-[3px] text-[10px] font-bold border ${
@@ -1904,7 +1937,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                   <SublimeEditor
                     value={activeEditorValue}
                     onChange={handleEditorChange}
-                    language={activeFile === 'solution.py' ? 'python' : activeFile === 'input.txt' ? 'text' : 'cpp'}
+                    language={activeFile === 'solution.py' ? 'python' : activeFile === 'input.file' ? 'text' : 'cpp'}
                     tabs={editorTabs}
                     activeTabId={activeFile}
                     onSelectTab={handleSelectTab}
@@ -1928,8 +1961,8 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                     placeholder={
                       activeFile === 'solution.py'
                         ? '# Viết code Python 3 tại đây...'
-                        : activeFile === 'input.txt'
-                        ? 'Nhập dữ liệu stdin tùy chỉnh...'
+                        : activeFile === 'input.file'
+                        ? `Nhập nội dung file ${activeInputFileName || 'INPUT.INP'}...`
                         : '// Viết code C++ tại đây...'
                     }
                     statusRightExtra={judgeScore !== null ? `Score: ${judgeScore}/100` : undefined}

@@ -2152,9 +2152,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                                   )}
                                 </div>
 
-                                {currentProblem.solutionAnalysis && (
+                                {(tier === 'basic'
+                                  ? (currentProblem.basicAnalysis || currentProblem.solutionAnalysis)
+                                  : currentProblem.solutionAnalysis) && (
                                   <div className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
-                                    <FormattedText text={currentProblem.solutionAnalysis} />
+                                    <FormattedText
+                                      text={
+                                        tier === 'basic'
+                                          ? (currentProblem.basicAnalysis || currentProblem.solutionAnalysis || '')
+                                          : (currentProblem.solutionAnalysis || '')
+                                      }
+                                    />
                                   </div>
                                 )}
 

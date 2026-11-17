@@ -1182,7 +1182,17 @@ export async function analyzeProblemAndGenerateTests(
           sampleCases: mergedSamples,
           hiddenCases,
           cppTemplate: data.problem.referenceCpp || '',
-          pythonTemplate: data.problem.referencePython || ''
+          pythonTemplate: data.problem.referencePython || '',
+          basicSolutionCpp: data.problem.basicCpp || undefined,
+          basicSolutionPython: data.problem.basicPython || undefined,
+          basicAnalysis:
+            data.problem.basicAnalysis ||
+            'Cơ bản: Thuật toán tối giản viết tuần tự, dễ theo dõi và hạn chế tách nhiều hàm phụ.',
+          advancedSolutionCpp: data.problem.referenceCpp || undefined,
+          advancedSolutionPython: data.problem.referencePython || undefined,
+          solutionAnalysis:
+            data.problem.solutionAnalysis ||
+            'Nâng cao / Chuyên: Thuật toán tối ưu Big-O (DP / STL / Fast I/O) chuẩn thi HSG.'
         };
 
         return {
@@ -1316,6 +1326,7 @@ export async function analyzeProblemAndGenerateTests(
       }
     }
 
+    const dualLocal = buildLocalDualTierCodes(inferredKind);
     return {
       problem: {
         id: `CUSTOM_${Date.now()}`,
@@ -1335,8 +1346,14 @@ export async function analyzeProblemAndGenerateTests(
         constraints: sections.constraints,
         sampleCases,
         hiddenCases,
-        cppTemplate: '',
-        pythonTemplate: ''
+        cppTemplate: dualLocal?.advancedCpp || '',
+        pythonTemplate: dualLocal?.advancedPython || '',
+        basicSolutionCpp: dualLocal?.basicCpp,
+        basicSolutionPython: dualLocal?.basicPython,
+        basicAnalysis: dualLocal?.basicAnalysis,
+        advancedSolutionCpp: dualLocal?.advancedCpp,
+        advancedSolutionPython: dualLocal?.advancedPython,
+        solutionAnalysis: dualLocal?.solutionAnalysis
       },
       source: 'local-inferred',
       diagnosticNote: `Đã nhận diện dạng bài (${inferredKind}) và tạo ${hiddenCases.length} test · TLE: ${formatTimeLabel(
@@ -1373,6 +1390,62 @@ export async function analyzeProblemAndGenerateTests(
     diagnosticNote:
       'Đã trích xuất đề bài và test mẫu. Bạn có thể thêm test từng mức độ (Cơ bản ➜ Thử thách) ở cột trái.'
   };
+}
+
+function buildLocalDualTierCodes(kind: AlgorithmKind): {
+  basicCpp: string;
+  basicPython: string;
+  basicAnalysis: string;
+  advancedCpp: string;
+  advancedPython: string;
+  solutionAnalysis: string;
+} | null {
+  switch (kind) {
+    case 'sum_ab':
+    case 'diff_ab':
+    case 'prod_ab':
+    case 'sum_prod_ab': {
+      const op = kind === 'diff_ab' ? '-' : kind === 'prod_ab' ? '*' : '+';
+      return {
+        basicCpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    long long a, b;\n    cin >> a >> b;\n    cout << ${kind === 'sum_prod_ab' ? '(a + b) << "\\n" << (a * b)' : `(a ${op} b)`};\n    return 0;\n}`,
+        basicPython: `a, b = map(int, input().split())\n${kind === 'sum_prod_ab' ? 'print(a + b)\nprint(a * b)' : `print(a ${op} b)`}`,
+        basicAnalysis: 'Cơ bản: Đọc trực tiếp hai số long long trong main(), không tách hàm hay cấu hình nâng cao.',
+        advancedCpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    long long a, b;\n    if (cin >> a >> b) {\n        cout << ${kind === 'sum_prod_ab' ? '(a + b) << "\\n" << (a * b)' : `(a ${op} b)`} << '\\n';\n    }\n    return 0;\n}`,
+        advancedPython: `import sys\n\ntokens = sys.stdin.read().split()\nif len(tokens) >= 2:\n    a, b = int(tokens[0]), int(tokens[1])\n    ${kind === 'sum_prod_ab' ? 'print(f"{a + b}\\n{a * b}")' : `print(a ${op} b)`}`,
+        solutionAnalysis: 'Nâng cao: Tối ưu Fast I/O (sync_with_stdio(false), sys.stdin) an toàn cho dữ liệu lớn.'
+      };
+    }
+    case 'kadane_max_subarray':
+      return {
+        basicCpp: `#include <iostream>\nusing namespace std;\n\nlong long a[100005];\n\nint main() {\n    int n;\n    cin >> n;\n    for (int i = 0; i < n; i++) cin >> a[i];\n    long long best = a[0];\n    for (int i = 0; i < n; i++) {\n        long long sum = 0;\n        for (int j = i; j < n; j++) {\n            sum += a[j];\n            if (sum > best) best = sum;\n        }\n    }\n    cout << best;\n    return 0;\n}`,
+        basicPython: `n = int(input())\na = list(map(int, input().split()))\nbest = a[0]\nfor i in range(n):\n    s = 0\n    for j in range(i, n):\n        s += a[j]\n        if s > best:\n            best = s\nprint(best)`,
+        basicAnalysis: 'Cơ bản: Thử mọi cặp [i..j] bằng 2 vòng lặp trực tiếp ngay trong main() — O(N²), dễ hiểu.',
+        advancedCpp: `#include <iostream>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    int n;\n    if (!(cin >> n)) return 0;\n    long long cur = 0, best = -4e18;\n    for (int i = 0; i < n; i++) {\n        long long x;\n        cin >> x;\n        cur = max(x, cur + x); // DP Kadane\n        best = max(best, cur);\n    }\n    cout << best << '\\n';\n    return 0;\n}`,
+        advancedPython: `import sys\n\ndata = sys.stdin.read().split()\nif data:\n    n = int(data[0])\n    cur = 0\n    best = -10**18\n    for x in map(int, data[1:1 + n]):\n        cur = max(x, cur + x)\n        best = max(best, cur)\n    print(best)`,
+        solutionAnalysis: 'Nâng cao / Chuyên: Quy hoạch động Kadane DP O(N) thời gian, O(1) bộ nhớ.'
+      };
+    case 'knapsack':
+      return {
+        basicCpp: `#include <iostream>\nusing namespace std;\n\nint w[105], v[105], dp[105][1005];\n\nint main() {\n    int n, W;\n    cin >> n >> W;\n    for (int i = 1; i <= n; i++) cin >> w[i] >> v[i];\n    for (int i = 1; i <= n; i++) {\n        for (int j = 0; j <= W; j++) {\n            dp[i][j] = dp[i - 1][j];\n            if (j >= w[i] && dp[i - 1][j - w[i]] + v[i] > dp[i][j]) {\n                dp[i][j] = dp[i - 1][j - w[i]] + v[i];\n            }\n        }\n    }\n    cout << dp[n][W];\n    return 0;\n}`,
+        basicPython: `n, W = map(int, input().split())\nw, v = [0] * (n + 1), [0] * (n + 1)\nfor i in range(1, n + 1):\n    w[i], v[i] = map(int, input().split())\ndp = [[0] * (W + 1) for _ in range(n + 1)]\nfor i in range(1, n + 1):\n    for j in range(W + 1):\n        dp[i][j] = dp[i - 1][j]\n        if j >= w[i]:\n            dp[i][j] = max(dp[i][j], dp[i - 1][j - w[i]] + v[i])\nprint(dp[n][W])`,
+        basicAnalysis: 'Cơ bản: Bảng quy hoạch động 2D trực quan dp[i][j] viết thẳng trong main().',
+        advancedCpp: `#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    int n, W;\n    if (!(cin >> n >> W)) return 0;\n    vector<int> dp(W + 1, 0);\n    for (int i = 0; i < n; i++) {\n        int wt, val;\n        cin >> wt >> val;\n        for (int j = W; j >= wt; j--) dp[j] = max(dp[j], dp[j - wt] + val);\n    }\n    cout << dp[W] << '\\n';\n    return 0;\n}`,
+        advancedPython: `import sys\n\nraw = sys.stdin.read().split()\nif raw:\n    n, W = int(raw[0]), int(raw[1])\n    dp = [0] * (W + 1)\n    idx = 2\n    for _ in range(n):\n        wt, val = int(raw[idx]), int(raw[idx + 1])\n        idx += 2\n        for j in range(W, wt - 1, -1):\n            dp[j] = max(dp[j], dp[j - wt] + val)\n    print(dp[W])`,
+        solutionAnalysis: 'Nâng cao / Chuyên: Nén DP 1D duyệt ngược giảm bộ nhớ xuống O(W) kết hợp Fast I/O.'
+      };
+    case 'prime_check':
+    case 'count_primes':
+      return {
+        basicCpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    long long n;\n    cin >> n;\n    bool nt = (n >= 2);\n    for (long long i = 2; i < n; i++) {\n        if (n % i == 0) { nt = false; break; }\n    }\n    cout << (nt ? "YES" : "NO");\n    return 0;\n}`,
+        basicPython: `n = int(input())\nnt = n >= 2\nfor i in range(2, n):\n    if n % i == 0:\n        nt = False\n        break\nprint("YES" if nt else "NO")`,
+        basicAnalysis: 'Cơ bản: Duyệt thẳng từ 2 đến n - 1 trong main() để kiểm tra ước, không cần tách hàm.',
+        advancedCpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    long long n;\n    if (!(cin >> n)) return 0;\n    if (n < 2) { cout << "NO\\n"; return 0; }\n    for (long long i = 2; i * i <= n; i++) {\n        if (n % i == 0) { cout << "NO\\n"; return 0; }\n    }\n    cout << "YES\\n";\n    return 0;\n}`,
+        advancedPython: `import sys\n\nn = int(sys.stdin.read().strip() or 0)\nok = n >= 2\ni = 2\nwhile ok and i * i <= n:\n    if n % i == 0:\n        ok = False\n    i += 1\nprint("YES" if ok else "NO")`,
+        solutionAnalysis: 'Nâng cao / Chuyên: Chặn ước tại √N (i*i <= n) đạt O(√N) thay vì O(N).'
+      };
+    default:
+      return null;
+  }
 }
 
 export const LESSON_HIDDEN_TEST_CASES: Record<

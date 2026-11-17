@@ -154,6 +154,8 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [savePulseMsg, setSavePulseMsg] = useState<string | null>(null);
   const [openDeepDiveSteps, setOpenDeepDiveSteps] = useState<Record<number, boolean>>({});
+  const [csTierByStep, setCsTierByStep] = useState<Record<number, 'basic' | 'advanced'>>({});
+  const [csLangByStep, setCsLangByStep] = useState<Record<number, 'cpp' | 'python'>>({});
 
   // Award XP tracking per session/record so students aren't double-rewarded for re-clicking
   const [awardedKeys, setAwardedKeys] = useState<Record<string, boolean>>({});
@@ -1076,20 +1078,139 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
               </div>
             )}
 
-            {step.codeSnippet && (
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Mẫu cài đặt chuẩn: {step.codeSnippet.title}</span>
+            {step.codeSnippet && (() => {
+              const snip = step.codeSnippet;
+              const activeLang: 'cpp' | 'python' =
+                csLangByStep[idx] ||
+                snip.language ||
+                'cpp';
+              const hasPy = Boolean(snip.pythonBasicCode || snip.pythonAdvancedCode || snip.language === 'python');
+              const cppBasic = snip.basicCode;
+              const cppAdv = snip.advancedCode || snip.code;
+              const pyBasic = snip.pythonBasicCode || (snip.language === 'python' ? snip.basicCode : undefined);
+              const pyAdv = snip.pythonAdvancedCode || (snip.language === 'python' ? (snip.advancedCode || snip.code) : undefined);
+
+              const activeBasicCode = activeLang === 'python' ? pyBasic : cppBasic;
+              const activeAdvCode = activeLang === 'python' ? (pyAdv || cppAdv) : cppAdv;
+              const hasBasicTier = Boolean(activeBasicCode && activeBasicCode.trim());
+              const hasAdvTier = Boolean(activeAdvCode && activeAdvCode.trim());
+              const activeTier: 'basic' | 'advanced' =
+                (csTierByStep[idx] === 'basic' && hasBasicTier)
+                  ? 'basic'
+                  : (csTierByStep[idx] === 'advanced' && hasAdvTier)
+                  ? 'advanced'
+                  : hasBasicTier
+                  ? 'basic'
+                  : 'advanced';
+
+              const renderedCode =
+                activeTier === 'basic'
+                  ? (activeBasicCode || activeAdvCode)
+                  : activeAdvCode;
+              const renderedTitle =
+                activeTier === 'basic'
+                  ? (snip.basicTitle || snip.title)
+                  : (snip.advancedTitle || snip.title);
+              const renderedExpl =
+                activeTier === 'basic'
+                  ? (snip.basicExplanation || 'Phiên bản Cơ bản: Thuật toán tối giản, viết tuần tự, không lạm dụng hàm phụ hay cấu trúc phức tạp.')
+                  : (snip.advancedExplanation || 'Phiên bản Nâng cao / Chuyên: Dùng kỹ thuật tối ưu Big-O, DP / STL / Fast I/O.');
+
+              return (
+                <div className="space-y-2.5 pt-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 min-w-0">
+                      <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="truncate">{renderedTitle}</span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {hasBasicTier && (
+                        <div className="inline-flex items-center p-0.5 rounded-md bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
+                          <button
+                            type="button"
+                            onClick={() => setCsTierByStep((prev) => ({ ...prev, [idx]: 'basic' }))}
+                            className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                              activeTier === 'basic'
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            Cơ bản (Tối giản)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCsTierByStep((prev) => ({ ...prev, [idx]: 'advanced' }))}
+                            className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                              activeTier === 'advanced'
+                                ? 'bg-amber-600 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            Nâng cao / Chuyên
+                          </button>
+                        </div>
+                      )}
+
+                      {hasPy && (
+                        <div className="inline-flex items-center p-0.5 rounded-md bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
+                          <button
+                            type="button"
+                            onClick={() => setCsLangByStep((prev) => ({ ...prev, [idx]: 'cpp' }))}
+                            className={`px-2 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                              activeLang === 'cpp'
+                                ? 'bg-sky-600 text-white'
+                                : 'text-slate-600 dark:text-slate-300'
+                            }`}
+                          >
+                            C++
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCsLangByStep((prev) => ({ ...prev, [idx]: 'python' }))}
+                            className={`px-2 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                              activeLang === 'python'
+                                ? 'bg-sky-600 text-white'
+                                : 'text-slate-600 dark:text-slate-300'
+                            }`}
+                          >
+                            Python
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    className={`px-3 py-2 rounded-lg border text-[11px] leading-relaxed ${
+                      activeTier === 'basic'
+                        ? 'bg-emerald-50/75 dark:bg-emerald-950/25 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200'
+                        : 'bg-amber-50/75 dark:bg-amber-950/25 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+                    }`}
+                  >
+                    <span className="font-extrabold mr-1.5">
+                      {activeTier === 'basic' ? 'Cơ bản (Ít hàm, dễ hiểu):' : 'Nâng cao / Chuyên (DP · Tối ưu):'}
+                    </span>
+                    <FormattedText text={renderedExpl} />
+                  </div>
+
+                  <MonokaiCodeBlock
+                    code={renderedCode}
+                    language={activeLang}
+                    title={
+                      activeTier === 'basic'
+                        ? activeLang === 'cpp'
+                          ? 'basic_solution.cpp'
+                          : 'basic_solution.py'
+                        : activeLang === 'cpp'
+                        ? 'advanced_solution.cpp'
+                        : 'advanced_solution.py'
+                    }
+                    maxHeightClass="max-h-[340px]"
+                  />
                 </div>
-                <MonokaiCodeBlock
-                  code={step.codeSnippet.code}
-                  language={step.codeSnippet.language}
-                  title={step.codeSnippet.language === 'cpp' ? 'lesson_demo.cpp' : 'lesson_demo.py'}
-                  maxHeightClass="max-h-[320px]"
-                />
-              </div>
-            )}
+              );
+            })()}
           </section>
         )}
 

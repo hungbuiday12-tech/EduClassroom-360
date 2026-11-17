@@ -6,13 +6,99 @@ export interface SafeApiResponse<T = any> {
   isStaticFallback?: boolean;
 }
 
+const BUILTIN_CLOUD_API_BASE =
+  'https://ais-pre-zoetjpf6ywpdfftq66dzuz-183305151918.asia-southeast1.run.app';
+const LEGACY_CLOUD_API_BASE =
+  'https://ais-pre-2cajz7v7fqng2hy3peejkj-489067186717.asia-southeast1.run.app';
+
 const DEFAULT_REMOTE_API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim().replace(/\/+$/, '') ||
-  'https://ais-pre-2cajz7v7fqng2hy3peejkj-489067186717.asia-southeast1.run.app';
+  BUILTIN_CLOUD_API_BASE;
 
 const STORAGE_KEY = 'educlassroom_api_base_url';
 let sessionRemoteBase: string | null = null;
 let warmUpStarted = false;
+
+export function getDefaultRemoteApiBase(): string {
+  return DEFAULT_REMOTE_API_BASE;
+}
+
+export function getCustomApiBase(): string {
+  try {
+    if (typeof window === 'undefined') return '';
+    return window.localStorage.getItem(STORAGE_KEY)?.trim() || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setCustomApiBase(url: string | null): void {
+  sessionRemoteBase = null;
+  try {
+    if (typeof window === 'undefined') return;
+    const clean = url?.trim().replace(/\/+$/, '') || '';
+    if (clean && /^https?:\/\//i.test(clean)) {
+      window.localStorage.setItem(STORAGE_KEY, clean);
+    } else {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+  } catch {}
+}
+
+export async function testApiBackendConnection(
+  customBase?: string
+): Promise<{ ok: boolean; url: string; latencyMs: number; aiConfigured?: boolean; error?: string }> {
+  const base =
+    customBase?.trim().replace(/\/+$/, '') ||
+    (isPackagedOrStaticOrigin() || getCustomApiBase() || sessionRemoteBase
+      ? getRemoteApiBase()
+      : typeof window !== 'undefined'
+      ? window.location.origin
+      : DEFAULT_REMOTE_API_BASE);
+
+  const startedAt = Date.now();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(`${base}/api/health`, {
+      method: 'GET',
+      signal: controller.signal
+    });
+    const latencyMs = Date.now() - startedAt;
+    if (!res.ok) {
+      return {
+        ok: false,
+        url: base,
+        latencyMs,
+        error: `HTTP ${res.status}`
+      };
+    }
+    const json = await res.json().catch(() => null);
+    if (!json?.ok) {
+      return {
+        ok: false,
+        url: base,
+        latencyMs,
+        error: 'Phản hồi /api/health không hợp lệ.'
+      };
+    }
+    return {
+      ok: true,
+      url: base,
+      latencyMs,
+      aiConfigured: Boolean(json.aiConfigured)
+    };
+  } catch (err: any) {
+    return {
+      ok: false,
+      url: base,
+      latencyMs: Date.now() - startedAt,
+      error: err?.name === 'AbortError' ? 'Timeout (5s)' : normalizeErrorPayload(err?.message)
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export function warmUpBackend(): void {
   if (warmUpStarted || typeof window === 'undefined') return;
@@ -85,19 +171,19 @@ export function resolveApiUrl(path: string, forceRemote = false): string {
   const envConfigured = Boolean((import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim());
   const storedBase = getStoredApiBase();
 
-  // Only bypass same-origin when explicitly configured, already switched to a verified remote base,
-  // or running inside a non-HTTP packaged container (file://, capacitor://, tauri://, etc.)
+  // Bypass same-origin when explicitly configured, switched to a verified remote base,
+  // or running inside a packaged APK/EXE container or static site (GitHub Pages)
   if (
     forceRemote ||
     sessionRemoteBase ||
     envConfigured ||
     storedBase ||
-    isNonHttpPackagedProtocol()
+    isPackagedOrStaticOrigin()
   ) {
     return `${getRemoteApiBase()}${normalizedPath}`;
   }
 
-  // On all http:// and https:// origins, always try same-origin /api/* first
+  // On standard http:// and https:// web origins with backend, try same-origin /api/* first
   return normalizedPath;
 }
 
@@ -106,9 +192,11 @@ async function probeHealthyBackendBase(): Promise<string | null> {
   const stored = getStoredApiBase();
   if (stored) candidates.push(stored);
   candidates.push(DEFAULT_REMOTE_API_BASE);
+  candidates.push(BUILTIN_CLOUD_API_BASE);
+  candidates.push(LEGACY_CLOUD_API_BASE);
   candidates.push('http://127.0.0.1:3000');
   candidates.push('http://localhost:3000');
-  if (typeof window !== 'undefined' && (window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:')) {
+  if (typeof window !== 'undefined' && (window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:' || /android/i.test(navigator.userAgent || ''))) {
     candidates.push('http://10.0.2.2:3000');
   }
 
@@ -419,8 +507,7 @@ export async function streamTutorChat(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const streamUrl = resolveApiUrl('/api/gemini/tutor/stream');
+  const runStreamAt = async (streamUrl: string) => {
     const res = await fetch(streamUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -431,8 +518,7 @@ export async function streamTutorChat(
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
 
     if (!res.ok || !res.body || !contentType.includes('text/event-stream')) {
-      clearTimeout(timer);
-      return await tryNonStreamFallback();
+      return { shouldRetryRemote: res.status === 404 || res.status === 405 || contentType.includes('text/html') };
     }
 
     const reader = res.body.getReader();
@@ -473,11 +559,29 @@ export async function streamTutorChat(
     }
 
     if (accumulated.trim()) {
-      return { ok: true, reply: accumulated.trim() };
+      return { done: true as const, result: { ok: true, reply: accumulated.trim() } };
+    }
+    if (streamError) {
+      return { done: true as const, result: { ok: false, error: streamError } };
+    }
+    return { shouldRetryRemote: false };
+  };
+
+  try {
+    const primaryStreamUrl = resolveApiUrl('/api/gemini/tutor/stream');
+    const firstAttempt = await runStreamAt(primaryStreamUrl);
+    if ('done' in firstAttempt && firstAttempt.done) {
+      return firstAttempt.result;
     }
 
-    if (streamError) {
-      return { ok: false, error: streamError };
+    if (firstAttempt.shouldRetryRemote || isPackagedOrStaticOrigin()) {
+      const discovered = await probeHealthyBackendBase();
+      if (discovered) {
+        const remoteAttempt = await runStreamAt(`${discovered}/api/gemini/tutor/stream`);
+        if ('done' in remoteAttempt && remoteAttempt.done) {
+          return remoteAttempt.result;
+        }
+      }
     }
 
     clearTimeout(timer);
@@ -485,6 +589,17 @@ export async function streamTutorChat(
   } catch (err: any) {
     if (err?.name === 'AbortError') {
       return { ok: false, error: 'Kết nối AI bị quá thời gian (timeout). Vui lòng thử lại.' };
+    }
+    try {
+      const discovered = await probeHealthyBackendBase();
+      if (discovered) {
+        const remoteAttempt = await runStreamAt(`${discovered}/api/gemini/tutor/stream`);
+        if ('done' in remoteAttempt && remoteAttempt.done) {
+          return remoteAttempt.result;
+        }
+      }
+    } catch {
+      // fall through to non-stream fallback
     }
     clearTimeout(timer);
     return await tryNonStreamFallback();

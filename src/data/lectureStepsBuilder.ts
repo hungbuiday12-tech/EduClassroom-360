@@ -1209,6 +1209,33 @@ export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
   const customCSSteps = CS_CUSTOM_LECTURE_STEPS[lesson.id];
   const hasCustomCS = Boolean(customCSSteps && customCSSteps.length > 0);
   const easyGuide = CS_LESSON_EASY_GUIDE[lesson.id] || buildDefaultCSGuide(lesson);
+  const cppEx = lesson.codeExamples?.find((e) => e.language === 'cpp') || lesson.codeExamples?.[0];
+  const pyEx = lesson.codeExamples?.find((e) => e.language === 'python');
+
+  const buildDualSnippetFromExample = (codeEx: NonNullable<CSLesson['codeExamples']>[number]) => {
+    const counterpartPy = codeEx.language === 'cpp' ? pyEx : undefined;
+    const counterpartCpp = codeEx.language === 'python' ? cppEx : undefined;
+    return {
+      language: codeEx.language,
+      title: codeEx.title,
+      code: codeEx.advancedCode || codeEx.code,
+      basicTitle: codeEx.basicTitle || `Cơ bản (Tối giản): ${codeEx.title}`,
+      basicCode: codeEx.basicCode,
+      basicExplanation:
+        codeEx.basicExplanation ||
+        'Thuật toán tối giản viết tuần tự, dễ theo dõi từng bước và hạn chế tách nhiều hàm phức tạp.',
+      advancedTitle: codeEx.advancedTitle || `Nâng cao / Chuyên: ${codeEx.title}`,
+      advancedCode: codeEx.advancedCode || codeEx.code,
+      advancedExplanation: codeEx.advancedExplanation || codeEx.explanation,
+      pythonBasicCode:
+        codeEx.language === 'python' ? codeEx.basicCode : counterpartPy?.basicCode,
+      pythonAdvancedCode:
+        codeEx.language === 'python'
+          ? codeEx.advancedCode || codeEx.code
+          : counterpartPy?.advancedCode || counterpartPy?.code
+    };
+  };
+
   const baseSteps: LectureStep[] = hasCustomCS
     ? customCSSteps
     : lesson.lectureSteps && lesson.lectureSteps.length > 0
@@ -1223,29 +1250,36 @@ export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
           stepTitle: `${idx + 1}. ${cleanTitle.length > 62 ? `Nội dung phần ${idx + 1}` : cleanTitle}`,
           stepType: idx === 0 ? 'concept' : 'derivation',
           teacherExplanation: tItem,
-          codeSnippet: codeEx
-            ? {
-                language: codeEx.language,
-                title: codeEx.title,
-                code: codeEx.code
-              }
-            : undefined,
+          codeSnippet: codeEx ? buildDualSnippetFromExample(codeEx) : undefined,
           keyTakeaway:
             codeEx?.explanation ||
             `Độ phức tạp mục tiêu: Time ${lesson.complexity.time}, Space ${lesson.complexity.space}.`
         };
       });
 
-  // Attach workedExample & reference code from practiceProblem cleanly
+  // Attach workedExample & dual-tier reference code cleanly to every step
   const enrichedInput: LectureStep[] = baseSteps.map((st, idx) => {
     const codeEx = lesson.codeExamples?.[idx % Math.max(1, lesson.codeExamples?.length || 1)];
     if (!st.codeSnippet && codeEx) {
       return {
         ...st,
+        codeSnippet: buildDualSnippetFromExample(codeEx)
+      };
+    }
+    if (st.codeSnippet && !st.codeSnippet.basicCode && codeEx) {
+      return {
+        ...st,
         codeSnippet: {
-          language: codeEx.language,
-          title: codeEx.title,
-          code: codeEx.code
+          ...buildDualSnippetFromExample(codeEx),
+          ...st.codeSnippet,
+          basicCode: st.codeSnippet.basicCode || codeEx.basicCode,
+          basicTitle: st.codeSnippet.basicTitle || codeEx.basicTitle,
+          basicExplanation: st.codeSnippet.basicExplanation || codeEx.basicExplanation,
+          advancedCode: st.codeSnippet.advancedCode || st.codeSnippet.code || codeEx.advancedCode || codeEx.code,
+          advancedTitle: st.codeSnippet.advancedTitle || codeEx.advancedTitle || st.codeSnippet.title,
+          advancedExplanation: st.codeSnippet.advancedExplanation || codeEx.explanation,
+          pythonBasicCode: st.codeSnippet.pythonBasicCode || pyEx?.basicCode,
+          pythonAdvancedCode: st.codeSnippet.pythonAdvancedCode || pyEx?.advancedCode || pyEx?.code
         }
       };
     }
@@ -1270,16 +1304,28 @@ export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
       answer: `Time Complexity: ${lesson.complexity.time} · Space Complexity: ${lesson.complexity.space}`
     };
 
+    const practiceDualSnippet = {
+      language: 'cpp' as const,
+      title: `Code Mẫu 2 Cấp Độ (${lesson.practiceProblem.title})`,
+      code: lesson.practiceProblem.fullSolutionCpp,
+      basicTitle: `Cơ bản (Tối giản): ${lesson.practiceProblem.title}`,
+      basicCode: lesson.practiceProblem.basicSolutionCpp || cppEx?.basicCode,
+      basicExplanation:
+        lesson.practiceProblem.basicAnalysis ||
+        'Cài đặt tối giản viết thẳng trong main(), hạn chế tách hàm phụ và kỹ thuật nâng cao.',
+      advancedTitle: `Nâng cao / Chuyên: ${lesson.practiceProblem.title}`,
+      advancedCode: lesson.practiceProblem.fullSolutionCpp,
+      advancedExplanation: lesson.practiceProblem.solutionAnalysis,
+      pythonBasicCode: lesson.practiceProblem.basicSolutionPython || pyEx?.basicCode,
+      pythonAdvancedCode: lesson.practiceProblem.fullSolutionPython || pyEx?.code
+    };
+
     if (hasCustomCS && enrichedInput.length > 0) {
       const lastIdx = enrichedInput.length - 1;
       enrichedInput[lastIdx] = {
         ...enrichedInput[lastIdx],
         workedExample: worked,
-        codeSnippet: enrichedInput[lastIdx].codeSnippet || {
-          language: 'cpp',
-          title: `Lời giải tham khảo C++ (${lesson.practiceProblem.title})`,
-          code: lesson.practiceProblem.fullSolutionCpp
-        }
+        codeSnippet: enrichedInput[lastIdx].codeSnippet || practiceDualSnippet
       };
     } else {
       enrichedInput.push({
@@ -1287,11 +1333,7 @@ export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
         stepType: 'example',
         teacherExplanation: `${lesson.practiceProblem.description}\n\n**Phân tích thuật toán chuẩn**: ${lesson.practiceProblem.solutionAnalysis}`,
         workedExample: worked,
-        codeSnippet: {
-          language: 'cpp',
-          title: `Lời giải tham khảo C++ (${lesson.practiceProblem.title})`,
-          code: lesson.practiceProblem.fullSolutionCpp
-        },
+        codeSnippet: practiceDualSnippet,
         keyTakeaway: `Luôn tự chạy tay trên test mẫu và kiểm tra giới hạn ${lesson.complexity.time} trước khi nhấn Nộp bài.`
       });
     }

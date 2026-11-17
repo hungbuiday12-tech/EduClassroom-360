@@ -1,3 +1,543 @@
 {
-  "models": []
+  "models": [
+    {
+      "id": "custom_1794909435125_h900x",
+      "titleVi": "Kính Thiên Văn Phản Xạ Newton",
+      "titleEn": "Newtonian Reflector Telescope",
+      "badge": "THIÊN VĂN HỌC",
+      "formula": "D = 1.22 * (λ / R) · M = f₀ / fₑ",
+      "descVi": "Mô hình kính thiên văn phản xạ Newton với ống quang học chính và hệ giá đỡ Dobson linh hoạt. Bạn có thể tách các bộ phận để quan sát cấu trúc gương sơ cấp và thị kính.",
+      "descEn": "A Newtonian reflector telescope model with primary optical tube and flexible Dobson mount. Interact to explode parts to inspect the primary mirror and eyepiece system.",
+      "sourceIdea": "Kính thiên văn phản xạ Newton để bàn",
+      "sourceType": "ai_idea",
+      "detectedObjectVi": "Kính thiên văn Newton",
+      "detectedObjectEn": "Newtonian Telescope",
+      "hasImageAttachment": false,
+      "createdAt": "2026-11-17T09:57:15.125Z",
+      "parts": [
+        {
+          "id": "base_dobson",
+          "nameVi": "Đế xoay Dobson",
+          "nameEn": "Dobson Base",
+          "badgeVi": "CƠ SỞ",
+          "badgeEn": "BASE",
+          "introVi": "Khung gỗ chịu lực hình tròn cho phép xoay 360 độ.",
+          "introEn": "Circular heavy-duty wooden frame allowing 360-degree rotation.",
+          "functionVi": "Hỗ trợ ổn định cho toàn bộ ống kính.",
+          "functionEn": "Provides stable support for the entire telescope tube.",
+          "specFormula": "r = 15cm",
+          "primitive": "cylinder",
+          "colorRole": "secondary",
+          "customHex": "#4a3728",
+          "secondaryHex": "#2a1d15",
+          "materialKind": "wood",
+          "detailStyle": "none",
+          "dimensionsCm": [
+            30,
+            10,
+            30
+          ],
+          "pos": [
+            0,
+            0.5,
+            0
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            0.5,
+            1
+          ],
+          "explodeDir": [
+            0,
+            -1,
+            0
+          ],
+          "addEdges": true,
+          "anim": {
+            "type": "none",
+            "speed": 0.1,
+            "amplitude": 0.05
+          }
+        },
+        {
+          "id": "tube_main",
+          "nameVi": "Ống quang học",
+          "nameEn": "Optical Tube",
+          "badgeVi": "THÂN",
+          "badgeEn": "BODY",
+          "introVi": "Ống thép hình trụ chứa hệ thống quang học chính.",
+          "introEn": "Cylindrical steel tube housing the primary optical system.",
+          "functionVi": "Ngăn chặn ánh sáng bên ngoài gây nhiễu ảnh.",
+          "functionEn": "Blocks stray light from interfering with the image.",
+          "specFormula": "L = 60cm",
+          "primitive": "cylinder",
+          "colorRole": "primary",
+          "customHex": "#1e293b",
+          "secondaryHex": "#0f172a",
+          "materialKind": "glossy_paint",
+          "detailStyle": "vents",
+          "dimensionsCm": [
+            18,
+            60,
+            18
+          ],
+          "pos": [
+            0,
+            1.8,
+            0
+          ],
+          "rot": [
+            0,
+            0,
+            6.28
+          ],
+          "scale": [
+            0.8,
+            2.5,
+            0.8
+          ],
+          "explodeDir": [
+            0,
+            1,
+            0
+          ],
+          "addEdges": true,
+          "anim": {
+            "type": "none",
+            "speed": 0.1,
+            "amplitude": 0.05
+          }
+        },
+        {
+          "id": "primary_mirror_cell",
+          "nameVi": "Gương sơ cấp",
+          "nameEn": "Primary Mirror",
+          "badgeVi": "QUANG HỌC",
+          "badgeEn": "OPTICS",
+          "introVi": "Gương parabol hội tụ ánh sáng từ các vật thể xa xôi.",
+          "introEn": "Parabolic mirror to focus light from distant objects.",
+          "functionVi": "Phản xạ ánh sáng về phía gương chéo.",
+          "functionEn": "Reflects light towards the secondary mirror.",
+          "specFormula": "f/ratio = 5",
+          "primitive": "lathe_dome",
+          "colorRole": "highlight",
+          "customHex": "#cbd5e1",
+          "secondaryHex": "#94a3b8",
+          "materialKind": "glass",
+          "detailStyle": "bezel_rings",
+          "dimensionsCm": [
+            16,
+            2,
+            16
+          ],
+          "pos": [
+            0,
+            1.8,
+            -1.2
+          ],
+          "rot": [
+            6.28,
+            0,
+            0
+          ],
+          "scale": [
+            0.8,
+            0.8,
+            0.8
+          ],
+          "explodeDir": [
+            0,
+            0,
+            -2
+          ],
+          "addEdges": false,
+          "anim": {
+            "type": "none",
+            "speed": 0.1,
+            "amplitude": 0.05
+          }
+        },
+        {
+          "id": "eyepiece_focus",
+          "nameVi": "Thị kính",
+          "nameEn": "Eyepiece",
+          "badgeVi": "THẤU KÍNH",
+          "badgeEn": "LENS",
+          "introVi": "Hệ thấu kính phóng đại hình ảnh thu được.",
+          "introEn": "Lens system to magnify the captured image.",
+          "functionVi": "Điều chỉnh tiêu cự để lấy nét hình ảnh.",
+          "functionEn": "Adjusts focus to bring image into clarity.",
+          "specFormula": "f = 25mm",
+          "primitive": "lathe_nozzle",
+          "colorRole": "highlight",
+          "customHex": "#f8fafc",
+          "secondaryHex": "#334155",
+          "materialKind": "anodized",
+          "detailStyle": "knurled_grip",
+          "dimensionsCm": [
+            4,
+            8,
+            4
+          ],
+          "pos": [
+            0,
+            2.3,
+            0.5
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "explodeDir": [
+            0,
+            1,
+            1
+          ],
+          "addEdges": true,
+          "anim": {
+            "type": "pulse",
+            "speed": 0.5,
+            "amplitude": 0.05
+          }
+        },
+        {
+          "id": "secondary_mirror_bracket",
+          "nameVi": "Gương chéo",
+          "nameEn": "Secondary Mirror",
+          "badgeVi": "QUANG HỌC",
+          "badgeEn": "OPTICS",
+          "introVi": "Gương phẳng nghiêng 45 độ đặt tại trung tâm ống.",
+          "introEn": "Flat mirror tilted at 45 degrees placed in the center.",
+          "functionVi": "Hướng ánh sáng ra khỏi thị kính bên hông.",
+          "functionEn": "Directs light out to the side eyepiece.",
+          "specFormula": "θ = 45°",
+          "primitive": "box",
+          "colorRole": "highlight",
+          "customHex": "#94a3b8",
+          "secondaryHex": "#64748b",
+          "materialKind": "brushed_metal",
+          "detailStyle": "none",
+          "dimensionsCm": [
+            2,
+            2,
+            0.5
+          ],
+          "pos": [
+            0,
+            1.8,
+            0.5
+          ],
+          "rot": [
+            0,
+            6.28,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "explodeDir": [
+            1,
+            0,
+            0
+          ],
+          "addEdges": false,
+          "anim": {
+            "type": "none",
+            "speed": 0.1,
+            "amplitude": 0.05
+          }
+        }
+      ],
+      "blueprint2D": {
+        "summaryVi": "Sơ đồ quang học phản xạ Newton với đường đi của ánh sáng từ gương sơ cấp đến thị kính.",
+        "summaryEn": "Newtonian reflector optical diagram showing light path from primary mirror to eyepiece.",
+        "elements": [
+          "Gương sơ cấp",
+          "Gương chéo",
+          "Thị kính",
+          "Tiêu điểm"
+        ]
+      }
+    },
+    {
+      "id": "custom_1794909371182_910w7",
+      "titleVi": "Kính thiên văn phản xạ Newton",
+      "titleEn": "Newtonian Reflector Telescope",
+      "badge": "QUANG HỌC",
+      "formula": "D = 1.22 * (λ / a)",
+      "descVi": "Mô hình kính thiên văn phản xạ để bàn gồm gương sơ cấp, ống quang học và giá đỡ cơ khí. Tương tác bằng cách tách rời các bộ phận để khám phá đường đi của ánh sáng.",
+      "descEn": "A desktop Newtonian reflector model featuring primary mirror, optical tube, and mechanical mount. Interact by exploding parts to inspect the light path architecture.",
+      "sourceIdea": "Kính thiên văn phản xạ Newton để bàn",
+      "sourceType": "ai_idea",
+      "detectedObjectVi": "Kính thiên văn phản xạ Newton",
+      "detectedObjectEn": "Newtonian Reflector Telescope",
+      "hasImageAttachment": false,
+      "createdAt": "2026-11-17T09:56:11.182Z",
+      "parts": [
+        {
+          "id": "base_stand",
+          "nameVi": "Đế xoay",
+          "nameEn": "Rotating Base",
+          "badgeVi": "CƠ KHÍ",
+          "badgeEn": "MECHANICAL",
+          "introVi": "Chân đế vững chãi giúp kính xoay 360 độ.",
+          "introEn": "Sturdy base allowing 360-degree rotation.",
+          "functionVi": "Hỗ trợ ổn định cho toàn bộ ống kính.",
+          "functionEn": "Provides stable support for the telescope assembly.",
+          "specFormula": "r = 10cm",
+          "primitive": "rounded_box",
+          "colorRole": "primary",
+          "customHex": "#1e293b",
+          "secondaryHex": "#334155",
+          "materialKind": "brushed_metal",
+          "detailStyle": "none",
+          "dimensionsCm": [
+            15,
+            3,
+            15
+          ],
+          "pos": [
+            0,
+            0.5,
+            0
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "explodeDir": [
+            0,
+            -1,
+            0
+          ],
+          "addEdges": true,
+          "anim": {
+            "type": "none",
+            "speed": 0.1,
+            "amplitude": 0.05
+          }
+        },
+        {
+          "id": "optical_tube",
+          "nameVi": "Ống quang học",
+          "nameEn": "Optical Tube",
+          "badgeVi": "QUANG HỌC",
+          "badgeEn": "OPTICS",
+          "introVi": "Thân ống hình trụ chứa các gương phản xạ.",
+          "introEn": "Cylindrical tube containing reflective mirrors.",
+          "functionVi": "Chặn ánh sáng tạp và định hướng tia sáng tới gương.",
+          "functionEn": "Baffles stray light and directs photons to mirrors.",
+          "specFormula": "L = 30cm",
+          "primitive": "cylinder",
+          "colorRole": "secondary",
+          "customHex": "#0f172a",
+          "secondaryHex": "#334155",
+          "materialKind": "anodized",
+          "detailStyle": "vents",
+          "dimensionsCm": [
+            8,
+            30,
+            8
+          ],
+          "pos": [
+            0,
+            1.8,
+            0
+          ],
+          "rot": [
+            0,
+            0,
+            1.57
+          ],
+          "scale": [
+            1,
+            2.5,
+            1
+          ],
+          "explodeDir": [
+            0,
+            1,
+            0
+          ],
+          "addEdges": true,
+          "anim": {
+            "type": "none",
+            "speed": 0.1,
+            "amplitude": 0.05
+          }
+        },
+        {
+          "id": "primary_mirror",
+          "nameVi": "Gương sơ cấp",
+          "nameEn": "Primary Mirror",
+          "badgeVi": "GƯƠNG",
+          "badgeEn": "MIRROR",
+          "introVi": "Gương parabol ở đáy ống kính.",
+          "introEn": "Parabolic mirror at the base of the tube.",
+          "functionVi": "Hội tụ ánh sáng từ vật thể xa.",
+          "functionEn": "Collects and focuses light from distant objects.",
+          "specFormula": "f = 200mm",
+          "primitive": "lathe_dome",
+          "colorRole": "glow",
+          "customHex": "#94a3b8",
+          "secondaryHex": "#f8fafc",
+          "materialKind": "glass",
+          "detailStyle": "bezel_rings",
+          "dimensionsCm": [
+            7,
+            1,
+            7
+          ],
+          "pos": [
+            -1.2,
+            1.8,
+            0
+          ],
+          "rot": [
+            0,
+            0,
+            1.57
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "explodeDir": [
+            -1,
+            0,
+            0
+          ],
+          "addEdges": false,
+          "anim": {
+            "type": "none",
+            "speed": 0.1,
+            "amplitude": 0.05
+          }
+        },
+        {
+          "id": "focuser_assembly",
+          "nameVi": "Bộ phận lấy nét",
+          "nameEn": "Focuser Assembly",
+          "badgeVi": "CƠ KHÍ",
+          "badgeEn": "MECHANICAL",
+          "introVi": "Cụm điều chỉnh độ sắc nét cho thị kính.",
+          "introEn": "Focus adjustment module for the eyepiece.",
+          "functionVi": "Thay đổi khoảng cách tiêu cự để lấy nét ảnh.",
+          "functionEn": "Adjusts focal distance to sharpen the image.",
+          "specFormula": "Δd = 20mm",
+          "primitive": "stepped_collar",
+          "colorRole": "highlight",
+          "customHex": "#f59e0b",
+          "secondaryHex": "#78350f",
+          "materialKind": "anodized",
+          "detailStyle": "knurled_grip",
+          "dimensionsCm": [
+            3,
+            4,
+            3
+          ],
+          "pos": [
+            0.5,
+            2.3,
+            0
+          ],
+          "rot": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            0.8,
+            0.8,
+            0.8
+          ],
+          "explodeDir": [
+            0,
+            1,
+            0
+          ],
+          "addEdges": true,
+          "anim": {
+            "type": "pulse",
+            "speed": 0.5,
+            "amplitude": 0.05
+          }
+        },
+        {
+          "id": "secondary_mirror",
+          "nameVi": "Gương chéo",
+          "nameEn": "Secondary Mirror",
+          "badgeVi": "GƯƠNG",
+          "badgeEn": "MIRROR",
+          "introVi": "Gương phẳng nghiêng 45 độ.",
+          "introEn": "Flat mirror tilted at 45 degrees.",
+          "functionVi": "Chuyển hướng ánh sáng ra ngoài thị kính.",
+          "functionEn": "Reflects light rays toward the eyepiece.",
+          "specFormula": "θ = 45°",
+          "primitive": "octahedron",
+          "colorRole": "highlight",
+          "customHex": "#e2e8f0",
+          "secondaryHex": "#cbd5e1",
+          "materialKind": "glass",
+          "detailStyle": "none",
+          "dimensionsCm": [
+            1.5,
+            1.5,
+            1.5
+          ],
+          "pos": [
+            0.5,
+            1.8,
+            0
+          ],
+          "rot": [
+            0,
+            0,
+            0.78
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "explodeDir": [
+            0,
+            0,
+            1
+          ],
+          "addEdges": false,
+          "anim": {
+            "type": "none",
+            "speed": 0.1,
+            "amplitude": 0.05
+          }
+        }
+      ],
+      "blueprint2D": {
+        "summaryVi": "Mặt cắt dọc thể hiện đường đi của tia sáng từ gương sơ cấp lên gương thứ cấp tới mắt người.",
+        "summaryEn": "Longitudinal cross-section showing light path from primary mirror to secondary mirror to the eyepiece.",
+        "elements": []
+      }
+    }
+  ]
 }

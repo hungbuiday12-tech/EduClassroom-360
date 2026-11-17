@@ -21,7 +21,11 @@ app.use((req: Request, res: Response, next: any) => {
   const origin = req.headers.origin;
   res.setHeader('Access-Control-Allow-Origin', origin && origin !== 'null' ? origin : '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Requested-With, Cache-Control, Accept'
+  );
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
   res.setHeader('Access-Control-Max-Age', '86400');
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
@@ -2408,14 +2412,16 @@ app.post('/api/gemini/analyze-problem', async (req: Request, res: Response) => {
         ? `\nCấu hình I/O người dùng chọn: Đọc/Ghi File (${reqInputFileName || 'INPUT.INP'} -> ${reqOutputFileName || 'OUTPUT.OUT'}).`
         : '';
 
-    const promptText = `Phân tích đề bài lập trình (VNOI/ICPC), giải chính xác và sinh bộ test theo bậc thang độ khó:
+    const promptText = `Phân tích đề bài lập trình (VNOI/ICPC), giải chính xác ở CẢ 2 CẤP ĐỘ và sinh bộ test theo bậc thang độ khó:
 Quy tắc I/O:
 - Chỉ đặt ioMode = "file" (kèm inputFileName, outputFileName) KHI VÀ CHỈ KHI đề bài yêu cầu rõ đọc/ghi file (.INP/.OUT, freopen, tên tệp). Mọi bài nhập xuất chuẩn mặc định ioMode = "standard", inputFileName = "", outputFileName = "".
-- Bộ test:
+- Bộ test & Code Mẫu 2 Cấp Độ:
   * sampleCases: 2 test cơ bản minh họa rõ đề.
   * hiddenCases: 6 test tăng dần độ khó: 2 "Cơ bản" -> 2 "Trung bình" -> 1 "Nâng cao" (trường hợp biên) -> 1 "Thử thách" (giá trị lớn / hiệu năng).
-  * referencePython: Code Python 3 hoàn chỉnh, chạy được ngay bằng stdin/stdout (hoặc đúng tên file nếu ioMode="file"), dùng giải thuật tối ưu để kiểm chứng 100% đáp án.
-  * referenceCpp: Code C++17 gọn sạch, chuẩn mực.${ioHint}${samplesContext}
+  * basicCpp & basicPython: Code CƠ BẢN (thuật toán tối giản, viết tuần tự dễ hiểu ngay trong main(), hạn chế tách nhiều hàm phụ hay kỹ thuật STL/DP phức tạp).
+  * basicAnalysis: Giải thích ngắn 1-2 câu cách hoạt động và độ phức tạp của phiên bản Cơ bản.
+  * referenceCpp & referencePython: Code NÂNG CAO / CHUYÊN tối ưu chuẩn thi HSG/VNOI (có thể dùng Quy hoạch động DP, Binary Search, STL, Fast I/O) kiểm chứng 100% đáp án.
+  * solutionAnalysis: Giải thích ngắn 1-2 câu chiến lược tối ưu (DP / cấu trúc dữ liệu / Big-O) của phiên bản Nâng cao / Chuyên.${ioHint}${samplesContext}
 ${text ? `\nNội dung đề bài:\n${String(text).slice(0, 8000)}` : ''}`;
 
     parts.push({ text: promptText });
@@ -2424,7 +2430,7 @@ ${text ? `\nNội dung đề bài:\n${String(text).slice(0, 8000)}` : ''}`;
       ai,
       contents: { parts },
       systemInstruction:
-        'You are an elite Vietnamese competitive programming judge. Extract the exact problem specification and produce accurate sampleCases, 6 progressive hiddenCases, referenceCpp, and runnable referencePython.',
+        'You are an elite Vietnamese competitive programming judge. Extract the exact problem specification and produce accurate sampleCases, 6 progressive hiddenCases, BOTH minimalist Basic solutions (basicCpp/basicPython) and optimal Advanced/DP solutions (referenceCpp/referencePython).',
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
@@ -2463,8 +2469,12 @@ ${text ? `\nNội dung đề bài:\n${String(text).slice(0, 8000)}` : ''}`;
               required: ['input', 'expectedOutput', 'difficulty']
             }
           },
+          basicCpp: { type: Type.STRING },
+          basicPython: { type: Type.STRING },
+          basicAnalysis: { type: Type.STRING },
           referenceCpp: { type: Type.STRING },
-          referencePython: { type: Type.STRING }
+          referencePython: { type: Type.STRING },
+          solutionAnalysis: { type: Type.STRING }
         },
         required: [
           'title',
@@ -2475,12 +2485,14 @@ ${text ? `\nNội dung đề bài:\n${String(text).slice(0, 8000)}` : ''}`;
           'ioMode',
           'sampleCases',
           'hiddenCases',
+          'basicCpp',
+          'basicPython',
           'referenceCpp',
           'referencePython'
         ]
       },
       thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 22000
+      timeoutMs: 24000
     });
 
     const parsedData = safeParseGeminiJson<any>(response.text, null);
@@ -3174,7 +3186,9 @@ const ALLOWED_PRIMITIVES = new Set([
   'rounded_box',
   'extrude_fin',
   'tube_arch',
-  'frustum'
+  'frustum',
+  'chamfer_hex',
+  'stepped_collar'
 ]);
 const ALLOWED_MATERIAL_KINDS = new Set([
   'brushed_metal',
@@ -3195,7 +3209,10 @@ const ALLOWED_DETAIL_STYLES = new Set([
   'fasteners',
   'vents',
   'core_glow',
-  'dual_band'
+  'dual_band',
+  'optics_lens',
+  'knurled_grip',
+  'circuit_trim'
 ]);
 const ALLOWED_ROLES = new Set(['primary', 'secondary', 'highlight', 'glow']);
 const ALLOWED_ANIMS = new Set(['none', 'spin_y', 'spin_x', 'spin_z', 'pulse', 'bob_y', 'orbit_y']);
@@ -3237,7 +3254,7 @@ function sanitizeCustomModel(
   raw: any,
   sourceMeta: { ideaText: string; hasImage?: boolean; fileName?: string; scanMode?: string }
 ): any {
-  const rawParts = Array.isArray(raw?.parts) ? raw.parts.slice(0, 14) : [];
+  const rawParts = Array.isArray(raw?.parts) ? raw.parts.slice(0, 16) : [];
   const sanitizedParts = rawParts.map((p: any, idx: number) => {
     const px = clampNum(p?.pos?.[0], -3.2, 3.2, 0);
     const py = clampNum(p?.pos?.[1], 0.25, 4.0, 1.3 + idx * 0.22);
@@ -3410,17 +3427,18 @@ app.post('/api/spatial/generate-model', async (req: Request, res: Response) => {
       ? `
 REAL-WORLD CAMERA OBJECT SCAN MODE (STUDIO CAD RECONSTRUCTION):
 - Inspect the live camera photo closely and identify the primary foreground physical object ("detectedObjectVi", "detectedObjectEn").
-- Reconstruct the object with Studio-Grade PBR realism (matching the quality of handcrafted CAD assemblies like Turbofan, Robot Arm, Supercar):
-  * Choose sculpted primitives ("lathe_vase", "lathe_dome", "lathe_nozzle", "rounded_box", "tube_arch", "extrude_fin", "frustum", "cylinder", "torus", "capsule") rather than crude single blocks!
+- Reconstruct the object with Studio-Grade PBR realism (matching the craftsmanship of handcrafted CAD models like Turbofan Engine, 6-DOF Robot Arm, and Wind Turbine):
+  * Decompose into 9 to 15 tightly interlocking sculpted sub-parts: primary body/hull, secondary housings, caps/lids, ergonomic handles/grips, optical lenses/screens, buttons/dials, mounting collars, fasteners, and accent trim.
+  * Prefer rich sculpted primitives ("lathe_vase", "lathe_dome", "lathe_nozzle", "rounded_box", "tube_arch", "extrude_fin", "frustum", "chamfer_hex", "stepped_collar", "cylinder", "torus", "capsule") rather than plain cubes!
   * Extract authentic surface colors ("customHex") and contrasting trim accent colors ("secondaryHex") directly from the photo.
-  * Assign realistic PBR "materialKind" ("glass" for transparent lenses/screens/cups, "brushed_metal"/"anodized" for metallic frames/blades, "glossy_paint"/"ceramic" for painted housings/mugs, "rubber_matte" for grips/tires, "wood" for wooden parts, "neon_emissive" for LEDs/displays) and rich "detailStyle" trims ("bezel_rings", "fins_radial", "ribs", "fasteners", "vents", "core_glow", "dual_band").
+  * Assign realistic PBR "materialKind" ("glass" for transparent lenses/screens/cups, "brushed_metal"/"anodized" for metallic frames/blades, "glossy_paint"/"ceramic" for painted housings/mugs, "rubber_matte" for grips/tires, "wood" for wooden parts, "neon_emissive" for LEDs/displays) and rich "detailStyle" trims ("bezel_rings", "fins_radial", "ribs", "fasteners", "vents", "core_glow", "dual_band", "optics_lens", "knurled_grip", "circuit_trim").
   * Include realistic real-world "dimensionsCm" [width, height, depth] for each part so Point & Ask volume calculations are physically accurate!
 - Set "badge" to "QUÉT THỰC TẾ".
 `
       : '';
 
     const systemInstruction = `You are a Principal 3D CAD & STEM Procedural Geometry Architect for Synapse.
-Your job is to convert the user's text idea, uploaded image/sketch, camera scan photo, or technical document into a studio-grade, recognizable, multi-part PBR interactive 3D assembly in Three.js.
+Your job is to convert the user's text idea, uploaded image/sketch, camera scan photo, or technical document into a studio-grade, recognizable, multi-part PBR interactive 3D assembly in Three.js matching hand-crafted engineering models.
 ${cameraScanAddendum}
 OUTPUT ONLY VALID JSON matching this exact schema:
 {
@@ -3444,12 +3462,12 @@ OUTPUT ONLY VALID JSON matching this exact schema:
       "functionVi": "Clear 1-2 sentence functional engineering/scientific role in Vietnamese.",
       "functionEn": "Clear 1-2 sentence functional role in English.",
       "specFormula": "Optional short formula or dimension spec",
-      "primitive": "one of: lathe_vase | lathe_dome | lathe_nozzle | rounded_box | extrude_fin | tube_arch | frustum | box | sphere | cylinder | cone | torus | octahedron | dodecahedron | icosahedron | ring | capsule | prism",
+      "primitive": "one of: lathe_vase | lathe_dome | lathe_nozzle | rounded_box | extrude_fin | tube_arch | frustum | chamfer_hex | stepped_collar | box | sphere | cylinder | cone | torus | octahedron | dodecahedron | icosahedron | ring | capsule | prism",
       "colorRole": "one of: primary | secondary | highlight | glow",
       "customHex": "#38bdf8",
       "secondaryHex": "#cbd5e1",
       "materialKind": "one of: brushed_metal | anodized | glossy_paint | glass | rubber_matte | ceramic | copper_coil | neon_emissive | wood",
-      "detailStyle": "one of: none | bezel_rings | fins_radial | ribs | fasteners | vents | core_glow | dual_band",
+      "detailStyle": "one of: none | bezel_rings | fins_radial | ribs | fasteners | vents | core_glow | dual_band | optics_lens | knurled_grip | circuit_trim",
       "dimensionsCm": [12.0, 18.0, 12.0],
       "pos": [x, y, z],
       "rot": [rx, ry, rz],
@@ -3471,9 +3489,9 @@ OUTPUT ONLY VALID JSON matching this exact schema:
 }
 
 CRITICAL 3D ENGINEERING & VISUAL REALISM RULES:
-1. Build 7 to 12 hierarchical parts that genuinely assemble into the unmistakable silhouette of the subject: primary chassis/body, secondary functional assemblies (handles/wings/wheels/blades/mounts/optics), and fine accent details (collars, vents, glowing cores, glass shields, base stand).
-2. Always prefer sculpted silhouettes ("rounded_box", "lathe_vase", "lathe_dome", "lathe_nozzle", "tube_arch", "extrude_fin", "frustum") + rich "detailStyle" trims ("bezel_rings", "fins_radial", "ribs", "fasteners", "vents", "core_glow", "dual_band") and distinct PBR "materialKind" values across adjacent parts so materials contrast clearly (glossy vs brushed metal vs glass vs matte rubber).
-3. Keep the assembled object grounded and tightly connected above the grid floor: x and z in [-2.2, 2.2], y in [0.4, 3.6], scale values sx, sy, sz in [0.22, 2.8]. Adjacent parts must touch or interlock cleanly with zero floating pieces!
+1. Build 9 to 15 hierarchical parts that genuinely assemble into the unmistakable silhouette of the subject: grounded base/pedestal or chassis, primary multi-layered body, secondary functional assemblies (handles/wings/wheels/blades/mounts/optics/screens/buttons), and fine accent hardware (collars, vents, glowing cores, glass shields, fasteners).
+2. Always prefer sculpted silhouettes ("rounded_box", "lathe_vase", "lathe_dome", "lathe_nozzle", "tube_arch", "extrude_fin", "frustum", "chamfer_hex", "stepped_collar") + rich "detailStyle" trims ("bezel_rings", "fins_radial", "ribs", "fasteners", "vents", "core_glow", "dual_band", "optics_lens", "knurled_grip", "circuit_trim") and distinct PBR "materialKind" values across adjacent parts so materials contrast clearly.
+3. Keep the assembled object grounded cleanly with zero floating pieces: x and z in [-2.2, 2.2], y in [0.35, 3.6], scale values sx, sy, sz in [0.22, 2.8]. Adjacent parts must touch or interlock cleanly!
 4. Set explodeDir [ex, ey, ez] pointing cleanly outward from the assembly center so pulling 2 hands apart separates every part clearly without overlapping.
 5. Give dynamic parts subtle animations where natural (e.g. spin_y for rotors/wheels, pulse for LED/core, none for static housings).`;
 
@@ -3548,6 +3566,8 @@ app.post('/api/spatial/point-and-ask', async (req: Request, res: Response) => {
     approxVolume = 1,
     shapeHint = 'khối đa diện',
     hitPoint = [0, 0, 0],
+    customDimensionsCm = null,
+    pointerSource = 'finger',
     question = '',
     imageBase64 = '',
     language = 'vi'
@@ -3572,29 +3592,38 @@ app.post('/api/spatial/point-and-ask', async (req: Request, res: Response) => {
     const d = Number(dims[2] || 1).toFixed(2);
     const vol = Number(approxVolume || 0).toFixed(3);
     const hit = Array.isArray(hitPoint) && hitPoint.length === 3 ? hitPoint : [0, 0, 0];
+    const realDimsInfo =
+      Array.isArray(customDimensionsCm) && customDimensionsCm.length === 3
+        ? `Kích thước thực tế (cm): ${Number(customDimensionsCm[0] || 10).toFixed(1)} × ${Number(customDimensionsCm[1] || 10).toFixed(1)} × ${Number(customDimensionsCm[2] || 10).toFixed(1)} cm`
+        : customDimensionsCm && typeof customDimensionsCm === 'object'
+        ? `Kích thước thực tế (cm): ${Number(customDimensionsCm.width || 10).toFixed(1)} × ${Number(customDimensionsCm.height || 10).toFixed(1)} × ${Number(customDimensionsCm.depth || 10).toFixed(1)} cm`
+        : '';
 
     const systemInstruction = isEn
-      ? `You are Synapse's Spatial 3D STEM Tutor answering a student who is physically pointing at a specific 3D component with their finger/cursor and speaking a question.
+      ? `You are Synapse's Spatial 3D STEM Tutor answering a student who is physically pointing at a specific 3D component with their index finger/cursor and speaking a question simultaneously.
 You receive:
-- A live snapshot of the 3D scene showing the glowing highlighted target component and reticle.
-- Exact 3D bounding-box geometry telemetry of the pointed component.
+- A live snapshot of the 3D scene showing the glowing cyan/gold highlighted target zone ("khoanh vùng") and aiming reticle on the pointed detail.
+- Exact 3D bounding-box geometry telemetry & coordinates of the pointed component.
 - The student's spoken question.
 
-Respond accurately, concretely, and clearly in English using LaTeX ($...$) for formulas and numbers.`
-      : `Bạn là Gia Sư STEM Không Gian 3D của Synapse đang giải đáp trực tiếp cho học sinh khi họ dùng ngón tay / con trỏ chỉ trực tiếp vào một chi tiết trên mô hình 3D và đặt câu hỏi bằng giọng nói.
+Respond accurately, concretely, and clearly in English using LaTeX ($...$) for formulas and numbers. When asked for volume/surface area or "how does this work?", directly reference the highlighted component and walk through the formula with the measured dimensions.`
+      : `Bạn là Gia Sư STEM Không Gian 3D của Synapse đang giải đáp trực tiếp cho học sinh khi họ dùng ngón tay / con trỏ chỉ vào một chi tiết trên mô hình 3D và hỏi bằng giọng nói cùng lúc.
 Bạn được cung cấp:
-- Ảnh chụp trực tiếp góc nhìn 3D hiện tại (chi tiết được khoanh vùng sáng cyan và có tâm ngắm tại vị trí chỉ trỏ).
-- Thông số kích thước không gian, hình học & chức năng thực tế của đúng chi tiết đang chỉ.
+- Ảnh chụp trực tiếp góc nhìn 3D hiện tại (chi tiết đang được khoanh vùng vòng tròn sáng cyan/vàng và có tâm ngắm ngay tại tọa độ ngón tay chỉ).
+- Thông số kích thước không gian, tọa độ điểm chạm, hình học & chức năng kỹ thuật của đúng chi tiết đang khoanh vùng.
 - Câu hỏi trực tiếp của học sinh.
 
-Hãy trả lời súc tích, chuẩn xác, dễ hiểu bằng tiếng Việt (viết công thức toán/vật lý trong dấu $...$).
-Nếu câu hỏi liên quan đến kích thước, diện tích hoặc thể tích (như "tính thể tích phần này"), hãy sử dụng ngay kích thước đo được (${w} × ${h} × ${d} đơn vị không gian, ước lượng hình học ${vol}) và công thức hình học tương ứng để giải từng bước rõ ràng!`;
+Hãy trả lời súc tích, chuẩn xác, sinh động bằng tiếng Việt (viết công thức toán/vật lý trong dấu $...$).
+- Nếu câu hỏi là "cái này hoạt động thế nào?" hoặc hỏi nguyên lý: hãy mô tả trực tiếp cơ chế vận hành của đúng chi tiết đang khoanh vùng và vai trò liên kết với các bộ phận lân cận.
+- Nếu câu hỏi liên quan đến kích thước, diện tích hoặc thể tích (VD: "tính thể tích phần này giúp tôi"): hãy lấy ngay kích thước đo được (${w} × ${h} × ${d} đv, hình dạng ${shapeHint}, $V \\approx ${vol}\\ \\text{đv}^3$) ${realDimsInfo ? `và đối chiếu thêm tỷ lệ thực tế (${realDimsInfo}) ` : ''}để trình bày công thức và phép tính từng bước rõ ràng!`;
 
     const promptText = `
 Mô hình đang học: ${modelTitle} ${modelFormula ? `(Công thức chung: ${modelFormula})` : ''}
-Chi tiết đang được chỉ vào: ${partName || 'Chi tiết chưa đặt tên'} [${partBadge || 'PART'}]
-Tọa độ điểm chạm 3D (x, y, z): (${Number(hit[0] || 0).toFixed(2)}, ${Number(hit[1] || 0).toFixed(2)}, ${Number(hit[2] || 0).toFixed(2)})
-Kích thước hộp bao (Rộng × Cao × Sâu): ${w} × ${h} × ${d} (đv không gian; thể tích ước lượng theo dạng ${shapeHint}: ≈ ${vol} đv³)
+Nguồn chỉ trỏ: ${pointerSource === 'finger' ? 'Ngón tay trỏ (Webcam 3D)' : 'Con trỏ chuột / chạm'}
+Chi tiết đang được khoanh vùng: ${partName || 'Chi tiết chưa đặt tên'} [${partBadge || 'PART'}]
+Tọa độ điểm chỉ 3D (x, y, z): (${Number(hit[0] || 0).toFixed(2)}, ${Number(hit[1] || 0).toFixed(2)}, ${Number(hit[2] || 0).toFixed(2)})
+Kích thước hộp bao (Rộng × Cao × Sâu): ${w} × ${h} × ${d} đv không gian (thể tích ước lượng theo dạng ${shapeHint}: ≈ ${vol} đv³)
+${realDimsInfo ? realDimsInfo : ''}
 Mô tả cấu tạo: ${partIntro || 'Không có'}
 Chức năng kỹ thuật: ${partFunction || 'Không có'}
 Thông số/Công thức riêng: ${partSpecFormula || 'Không có'}

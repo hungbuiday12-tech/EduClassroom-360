@@ -210,6 +210,14 @@ export interface LectureStep {
     language: 'cpp' | 'python';
     title: string;
     code: string;
+    basicTitle?: string;
+    basicCode?: string;
+    basicExplanation?: string;
+    advancedTitle?: string;
+    advancedCode?: string;
+    advancedExplanation?: string;
+    pythonBasicCode?: string;
+    pythonAdvancedCode?: string;
   };
   keyTakeaway?: string;
   quickIntuition?: string;
@@ -576,6 +584,7 @@ export interface CodingProblem {
   pythonTemplate: string;
   basicSolutionCpp?: string;
   basicSolutionPython?: string;
+  basicAnalysis?: string;
   advancedSolutionCpp?: string;
   advancedSolutionPython?: string;
   solutionAnalysis?: string;

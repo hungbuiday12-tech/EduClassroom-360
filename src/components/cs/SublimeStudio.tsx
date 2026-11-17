@@ -160,6 +160,8 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
   const [judgeVerdict, setJudgeVerdict] = useState<string | null>(null);
   const [mistakeAnalysis, setMistakeAnalysis] = useState<CodeMistakeAnalysis | null>(null);
   const [isAnalyzingMistake, setIsAnalyzingMistake] = useState<boolean>(false);
+  const [showSampleDrawer, setShowSampleDrawer] = useState<boolean>(false);
+  const [sampleTier, setSampleTier] = useState<'basic' | 'advanced'>('basic');
   const resultSectionRef = useRef<HTMLDivElement | null>(null);
 
   // Escape exits fullscreen cleanly
@@ -1906,6 +1908,123 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                             })}
                           </div>
                         </div>
+
+                        {(problem.basicSolutionCpp ||
+                          problem.advancedSolutionCpp ||
+                          problem.basicSolutionPython ||
+                          problem.advancedSolutionPython) && (
+                          <div
+                            className={`p-2.5 rounded-[4px] border space-y-2 ${
+                              isDarkIDE
+                                ? 'bg-slate-900/90 border-slate-800'
+                                : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setShowSampleDrawer((v) => !v)}
+                              className="w-full flex items-center justify-between gap-2 text-[11px] font-bold text-sky-500 hover:text-sky-400 cursor-pointer"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <Code2 className="w-3.5 h-3.5" />
+                                <span>
+                                  {showSampleDrawer
+                                    ? 'Ẩn Code Mẫu 2 Cấp Độ'
+                                    : 'Code Mẫu: Cơ bản & Nâng cao / Chuyên'}
+                                </span>
+                              </span>
+                              <span className="text-[10px] font-mono opacity-80">
+                                {showSampleDrawer ? '▲' : '▼'}
+                              </span>
+                            </button>
+
+                            {showSampleDrawer && (() => {
+                              const curLang: CodeLanguage =
+                                activeFile === 'solution.py' ? 'python' : 'cpp';
+                              const hasBasic = Boolean(
+                                curLang === 'python'
+                                  ? problem.basicSolutionPython
+                                  : problem.basicSolutionCpp
+                              );
+                              const hasAdv = Boolean(
+                                curLang === 'python'
+                                  ? problem.advancedSolutionPython
+                                  : problem.advancedSolutionCpp
+                              );
+                              const tier: 'basic' | 'advanced' =
+                                sampleTier === 'advanced' && hasAdv
+                                  ? 'advanced'
+                                  : hasBasic
+                                  ? 'basic'
+                                  : 'advanced';
+                              const codeStr =
+                                tier === 'basic'
+                                  ? curLang === 'python'
+                                    ? problem.basicSolutionPython || problem.advancedSolutionPython || ''
+                                    : problem.basicSolutionCpp || problem.advancedSolutionCpp || ''
+                                  : curLang === 'python'
+                                  ? problem.advancedSolutionPython || problem.basicSolutionPython || ''
+                                  : problem.advancedSolutionCpp || problem.basicSolutionCpp || '';
+                              const noteStr =
+                                tier === 'basic'
+                                  ? problem.basicAnalysis || 'Thuật toán tối giản viết tuần tự, ít hàm phụ.'
+                                  : problem.solutionAnalysis || 'Thuật toán tối ưu DP / STL chuẩn Chuyên Tin.';
+
+                              return (
+                                <div className="space-y-2 pt-1 border-t border-slate-800/70">
+                                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                    <div className="inline-flex items-center p-0.5 rounded-[4px] bg-slate-950 border border-slate-800">
+                                      {hasBasic && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setSampleTier('basic')}
+                                          className={`px-2 py-0.5 rounded-[3px] text-[10px] font-bold cursor-pointer ${
+                                            tier === 'basic'
+                                              ? 'bg-emerald-600 text-white'
+                                              : 'text-slate-400 hover:text-white'
+                                          }`}
+                                        >
+                                          Cơ bản (Tối giản)
+                                        </button>
+                                      )}
+                                      {hasAdv && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setSampleTier('advanced')}
+                                          className={`px-2 py-0.5 rounded-[3px] text-[10px] font-bold cursor-pointer ${
+                                            tier === 'advanced'
+                                              ? 'bg-amber-600 text-white'
+                                              : 'text-slate-400 hover:text-white'
+                                          }`}
+                                        >
+                                          Nâng cao / Chuyên
+                                        </button>
+                                      )}
+                                    </div>
+                                    {codeStr && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (curLang === 'python') setPyCode(codeStr);
+                                          else setCppCode(codeStr);
+                                        }}
+                                        className="px-2 py-0.5 rounded-[3px] bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold cursor-pointer"
+                                      >
+                                        Nạp vào Editor
+                                      </button>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 leading-relaxed">{noteStr}</p>
+                                  {codeStr && (
+                                    <pre className="p-2 rounded bg-[#0d1117] border border-slate-800 text-[10px] font-mono text-slate-200 overflow-x-auto max-h-48 leading-relaxed">
+                                      <code>{codeStr}</code>
+                                    </pre>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
                       </>
                     ) : (
                       <div className="text-center py-12 space-y-3">

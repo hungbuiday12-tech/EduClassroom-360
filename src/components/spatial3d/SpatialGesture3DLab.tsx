@@ -97,6 +97,7 @@ import { SpatialRealWorldScannerModal } from './SpatialRealWorldScannerModal';
 import { CustomSpatialModel } from './customModelTypes';
 import { buildCustomSpatialModel, updateCustomModelKinematics } from './customModelBuilder';
 import { deleteCustomSpatialModel, fetchCustomSpatialModels } from './customModelStore';
+import { safeFetchJson } from '../../lib/apiClient';
 
 export type SpatialModeId =
   | 'turbofan'
@@ -375,6 +376,8 @@ interface LabRuntime {
   activePreviewLine: THREE.Line | null;
   activePreviewLineH2: THREE.Line | null;
   reticleGroup: THREE.Group;
+  pointZoneGroup: THREE.Group;
+  pointLaserLine: THREE.Line;
 }
 
 interface PointAskTarget {
@@ -540,6 +543,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [pointAskHover, setPointAskHover] = useState<PointAskTarget | null>(null);
   const [pointAskLockedTarget, setPointAskLockedTarget] = useState<PointAskTarget | null>(null);
   const [pointAskMicListening, setPointAskMicListening] = useState<boolean>(false);
+  const [pointAskHandsFree, setPointAskHandsFree] = useState<boolean>(false);
+  const [fingerAimScreen, setFingerAimScreen] = useState<{ x: number; y: number } | null>(null);
   const [pointAskInterim, setPointAskInterim] = useState<string>('');
   const [pointAskInput, setPointAskInput] = useState<string>('');
   const [pointAskLoading, setPointAskLoading] = useState<boolean>(false);
@@ -547,7 +552,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [pointAskTtsEnabled, setPointAskTtsEnabled] = useState<boolean>(false);
   const pointAskActiveRef = useRef<boolean>(false);
   const pointAskLoadingRef = useRef<boolean>(false);
+  const pointAskMicListeningRef = useRef<boolean>(false);
+  const pointAskHandsFreeRef = useRef<boolean>(false);
   const pointAskHoverRef = useRef<PointAskTarget | null>(null);
+  const pointAskSpeechHoverRef = useRef<PointAskTarget | null>(null);
   const pointAskLockedRef = useRef<PointAskTarget | null>(null);
   const mouseHoverNdcRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
   const speechRecRef = useRef<any>(null);
@@ -555,6 +563,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const lastReticleUiPushRef = useRef<number>(0);
   pointAskActiveRef.current = pointAskActive;
   pointAskLoadingRef.current = pointAskLoading;
+  pointAskMicListeningRef.current = pointAskMicListening;
+  pointAskHandsFreeRef.current = pointAskHandsFree;
   pointAskLockedRef.current = pointAskLockedTarget;
 
   // Camera & Hand Gesture Tracking states (persisted user settings)
@@ -2138,6 +2148,54 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     reticleGroup.visible = false;
     scene.add(reticleGroup);
 
+    // 3D "Khoanh Vùng" Halo (Dual pulsing orthogonal rings + volumetric zone sphere around pointed part)
+    const pointZoneGroup = new THREE.Group();
+    const zoneOuterGeo = new THREE.TorusGeometry(1, 0.026, 12, 56);
+    const zoneOuterMat = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee,
+      transparent: true,
+      opacity: 0.92,
+      depthTest: false
+    });
+    const zoneOuterRing = new THREE.Mesh(zoneOuterGeo, zoneOuterMat);
+    const zoneInnerGeo = new THREE.TorusGeometry(0.86, 0.018, 10, 48);
+    const zoneInnerMat = new THREE.MeshBasicMaterial({
+      color: 0xfacc15,
+      transparent: true,
+      opacity: 0.85,
+      depthTest: false
+    });
+    const zoneInnerRing = new THREE.Mesh(zoneInnerGeo, zoneInnerMat);
+    zoneInnerRing.rotation.x = Math.PI * 0.42;
+    const zoneShellGeo = new THREE.SphereGeometry(0.95, 22, 16);
+    const zoneShellMat = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee,
+      transparent: true,
+      opacity: 0.1,
+      depthWrite: false
+    });
+    const zoneShellMesh = new THREE.Mesh(zoneShellGeo, zoneShellMat);
+    pointZoneGroup.add(zoneOuterRing, zoneInnerRing, zoneShellMesh);
+    pointZoneGroup.renderOrder = 24;
+    pointZoneGroup.visible = false;
+    scene.add(pointZoneGroup);
+
+    // 3D Laser Sight connecting finger tip sensor to pointed 3D detail
+    const pointLaserGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 1.5, 0),
+      new THREE.Vector3(0, 1.6, 0)
+    ]);
+    const pointLaserMat = new THREE.LineBasicMaterial({
+      color: 0x22d3ee,
+      transparent: true,
+      opacity: 0.88,
+      depthTest: false
+    });
+    const pointLaserLine = new THREE.Line(pointLaserGeo, pointLaserMat);
+    pointLaserLine.renderOrder = 24;
+    pointLaserLine.visible = false;
+    scene.add(pointLaserLine);
+
     const runtime: LabRuntime = {
       scene,
       camera,
@@ -2163,7 +2221,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       activeStrokePointsH2: [],
       activePreviewLine: null,
       activePreviewLineH2: null,
-      reticleGroup
+      reticleGroup,
+      pointZoneGroup,
+      pointLaserLine
     };
     runtimeRef.current = runtime;
 
@@ -2277,6 +2337,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         const picked = raycastPointTargetFromNdc(ndcX, ndcY, 'mouse');
         if (picked) {
           pointAskLockedRef.current = picked;
+          pointAskSpeechHoverRef.current = picked;
           setPointAskLockedTarget(picked);
           setPointAskHover(picked);
           setHighlightedPartIdx(picked.partIdx);
@@ -2284,12 +2345,19 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           if (partMesh) {
             runtime.highlightHelper.setFromObject(partMesh);
             runtime.highlightHelper.visible = true;
+            _box3Tmp.setFromObject(partMesh);
+            _box3Tmp.getCenter(_centerTmp);
+            _box3Tmp.getSize(_sizeTmp);
+            runtime.pointZoneGroup.position.copy(_centerTmp);
+            runtime.pointZoneGroup.scale.setScalar(Math.max(0.28, _sizeTmp.length() * 0.44));
+            runtime.pointZoneGroup.visible = true;
           }
-          showToast(`Đã khóa điểm chỉ: ${picked.partInfo.nameVi}`);
+          showToast(`Đã khoanh vùng & khóa: ${picked.partInfo.nameVi}`);
         } else {
           pointAskLockedRef.current = null;
           setPointAskLockedTarget(null);
           runtime.reticleGroup.visible = false;
+          runtime.pointZoneGroup.visible = false;
         }
         return;
       }
@@ -2632,9 +2700,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          // ONE-HAND PULL UPWARD -> Zoom In (Enlarge model / isolated part)
+          // ONE-HAND PULL UPWARD -> Zoom In (disabled during Point & Ask laser aiming)
           const isPullingUp1Hand =
             handDetected &&
+            !pointAskActiveRef.current &&
             res.handCount === 1 &&
             res.hand1VelY < -0.18 &&
             Math.abs(res.hand1VelX) < 0.28 &&
@@ -2651,9 +2720,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          // 1-Finger OR 2-Hand Symmetrical Dual Neon Tube Sculpting (Freehand Oxyz)
+          // 1-Finger OR 2-Hand Symmetrical Dual Neon Tube Sculpting (disabled when Point & Ask laser is active)
           if (
             !isIsolated &&
+            !pointAskActiveRef.current &&
             (mapped3DAction === 'draw_neon' ||
               (cfg.modeId === 'freehand_oxyz' && mapped3DAction === 'dual_zoom_tilt'))
           ) {
@@ -2680,8 +2750,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             if (runtime.activeStrokePointsH2.length > 0) finalizeStrokeChannel(true);
           }
 
-          // Pinch: Stamp creative 3D blocks in Oxyz OR boost RPM/Amplitude (never conflicts with unified zoom/explode)
-          if (mapped3DAction === 'pinch_stamp_scale') {
+          // Pinch: Stamp creative 3D blocks in Oxyz OR boost RPM/Amplitude (disabled during Point & Ask)
+          if (mapped3DAction === 'pinch_stamp_scale' && !pointAskActiveRef.current) {
             const nextHeight = THREE.MathUtils.clamp(0.55 + cursorNormX * 1.25, 0.5, 1.85);
             smoothTargetRef.current.height = nextHeight;
             if (shouldPushUi) {
@@ -2846,9 +2916,36 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             runtime.highlightHelper.visible = false;
           }
 
-          // Live Point & Ask Raycasting via Webcam Index Finger OR Mouse Hover
+          // Live Point & Ask Raycasting via Webcam Index Finger OR Mouse Hover + 3D Khoanh Vùng Halo
           if (pointAskActiveRef.current && cfg.spaceMode === '3d') {
             const lockedTarget = pointAskLockedRef.current;
+            const updateKhoanhVungHalo = (meshObj: THREE.Object3D, isLockedState: boolean) => {
+              _box3Tmp.setFromObject(meshObj);
+              _box3Tmp.getCenter(_centerTmp);
+              _box3Tmp.getSize(_sizeTmp);
+              const radius = Math.max(0.28, _sizeTmp.length() * 0.44);
+              const pulse = 1 + Math.sin(elapsed * (isLockedState ? 6.2 : 3.8)) * 0.06;
+              runtime.pointZoneGroup.position.copy(_centerTmp);
+              runtime.pointZoneGroup.scale.setScalar(radius * pulse);
+              zoneOuterRing.rotation.y = elapsed * (isLockedState ? 1.8 : 1.0);
+              zoneInnerRing.rotation.z = -elapsed * (isLockedState ? 2.4 : 1.3);
+              zoneOuterMat.color.setHex(isLockedState ? 0xfacc15 : 0x22d3ee);
+              runtime.pointZoneGroup.visible = true;
+            };
+
+            const syncFingerLaserVisual = (hitWorld: THREE.Vector3 | null) => {
+              if (handDetected && res.hand1Index && runtime.tipSensorMeshes[1]?.visible && hitWorld) {
+                const posAttr = runtime.pointLaserLine.geometry.attributes.position as THREE.BufferAttribute;
+                const fp = runtime.tipSensorMeshes[1].position;
+                posAttr.setXYZ(0, fp.x, fp.y, fp.z);
+                posAttr.setXYZ(1, hitWorld.x, hitWorld.y, hitWorld.z);
+                posAttr.needsUpdate = true;
+                runtime.pointLaserLine.visible = true;
+              } else {
+                runtime.pointLaserLine.visible = false;
+              }
+            };
+
             if (lockedTarget) {
               runtime.reticleGroup.visible = true;
               runtime.reticleGroup.position.set(
@@ -2862,39 +2959,60 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               if (lPart) {
                 runtime.highlightHelper.setFromObject(lPart.mesh);
                 runtime.highlightHelper.visible = true;
+                updateKhoanhVungHalo(lPart.mesh, true);
               }
-            } else if (!pointAskLoadingRef.current && nowPerfMs - lastPointRayAtRef.current > 55) {
+              syncFingerLaserVisual(runtime.reticleGroup.position);
+            } else if (!pointAskLoadingRef.current && nowPerfMs - lastPointRayAtRef.current > 45) {
               lastPointRayAtRef.current = nowPerfMs;
               let rayTarget: PointAskTarget | null = null;
               if (handDetected && res.hand1Index) {
                 const fNdcX = res.hand1Index.x * 2 - 1;
                 const fNdcY = -(res.hand1Index.y * 2 - 1);
                 rayTarget = raycastPointTargetFromNdc(fNdcX, fNdcY, 'finger');
-              } else if (mouseHoverNdcRef.current.active) {
-                rayTarget = raycastPointTargetFromNdc(
-                  mouseHoverNdcRef.current.x,
-                  mouseHoverNdcRef.current.y,
-                  'mouse'
-                );
+                if (nowPerfMs - lastReticleUiPushRef.current > 50) {
+                  setFingerAimScreen({
+                    x: res.hand1Index.x * 100,
+                    y: res.hand1Index.y * 100
+                  });
+                }
+              } else {
+                if (nowPerfMs - lastReticleUiPushRef.current > 80) {
+                  setFingerAimScreen(null);
+                }
+                if (mouseHoverNdcRef.current.active) {
+                  rayTarget = raycastPointTargetFromNdc(
+                    mouseHoverNdcRef.current.x,
+                    mouseHoverNdcRef.current.y,
+                    'mouse'
+                  );
+                }
               }
               pointAskHoverRef.current = rayTarget;
+              if (rayTarget && pointAskMicListeningRef.current) {
+                // Keep capturing latest pointed detail while student is speaking simultaneously!
+                pointAskSpeechHoverRef.current = rayTarget;
+              }
               if (rayTarget) {
                 const hPart = model.explodables[rayTarget.partIdx];
                 if (hPart) {
                   runtime.highlightHelper.setFromObject(hPart.mesh);
                   runtime.highlightHelper.visible = true;
+                  updateKhoanhVungHalo(hPart.mesh, false);
                 }
                 runtime.reticleGroup.scale.setScalar(1.0 + Math.sin(elapsed * 5.2) * 0.12);
-                if (nowPerfMs - lastReticleUiPushRef.current > 100) {
+                syncFingerLaserVisual(_v3TmpA.set(rayTarget.worldHit[0], rayTarget.worldHit[1], rayTarget.worldHit[2]));
+                if (nowPerfMs - lastReticleUiPushRef.current > 85) {
                   lastReticleUiPushRef.current = nowPerfMs;
                   setPointAskHover(rayTarget);
                 }
               } else {
                 runtime.reticleGroup.visible = false;
+                runtime.pointZoneGroup.visible = false;
+                runtime.pointLaserLine.visible = false;
                 if (expTarget < 0.25) {
                   runtime.highlightHelper.visible = false;
                 }
-                if (nowPerfMs - lastReticleUiPushRef.current > 120) {
+                if (nowPerfMs - lastReticleUiPushRef.current > 110) {
                   lastReticleUiPushRef.current = nowPerfMs;
                   setPointAskHover(null);
                 }
@@ -2902,6 +3020,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           } else {
             runtime.reticleGroup.visible = false;
+            runtime.pointZoneGroup.visible = false;
+            runtime.pointLaserLine.visible = false;
           }
 
           // Update 6 advanced kinetic rigs (skip IK joint clamping when viewing a single isolated robot part)
@@ -3060,6 +3180,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       reticleRingMat.dispose();
       reticleDotGeo.dispose();
       reticleDotMat.dispose();
+      zoneOuterGeo.dispose();
+      zoneOuterMat.dispose();
+      zoneInnerGeo.dispose();
+      zoneInnerMat.dispose();
+      zoneShellGeo.dispose();
+      zoneShellMat.dispose();
+      pointLaserGeo.dispose();
+      pointLaserMat.dispose();
       envTarget.dispose();
       gridHelper.geometry.dispose();
       (gridHelper.material as THREE.Material).dispose();
@@ -3453,8 +3581,95 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     };
   }, [stopPointAskVoice]);
 
+  const startVoiceRecognition = useCallback(
+    (onFinalTranscript: (spoken: string) => void) => {
+      const SpeechRecCtor =
+        typeof window !== 'undefined'
+          ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+          : null;
+      if (!SpeechRecCtor) {
+        showToast(
+          isEn
+            ? 'Browser lacks Speech Recognition — type or use quick questions below.'
+            : 'Trình duyệt chưa hỗ trợ Micro Web Speech — hãy nhập hoặc bấm câu hỏi nhanh.'
+        );
+        return false;
+      }
+
+      // Seed speech hover ref with current hover, but keep updating dynamically while speaking!
+      pointAskSpeechHoverRef.current = pointAskHoverRef.current;
+
+      try {
+        const recognition = new SpeechRecCtor();
+        recognition.lang = isEn ? 'en-US' : 'vi-VN';
+        recognition.interimResults = true;
+        recognition.continuous = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+          setPointAskMicListening(true);
+          pointAskMicListeningRef.current = true;
+          setPointAskInterim('');
+        };
+        recognition.onspeechstart = () => {
+          if (pointAskHoverRef.current) {
+            pointAskSpeechHoverRef.current = pointAskHoverRef.current;
+          }
+        };
+        recognition.onresult = (event: any) => {
+          let interimTxt = '';
+          let finalTxt = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const chunk = event.results[i][0]?.transcript || '';
+            if (event.results[i].isFinal) finalTxt += chunk;
+            else interimTxt += chunk;
+          }
+          if (interimTxt) {
+            setPointAskInterim(interimTxt);
+            if (pointAskHoverRef.current) {
+              pointAskSpeechHoverRef.current = pointAskHoverRef.current;
+            }
+          }
+          if (finalTxt.trim()) {
+            const spoken = finalTxt.trim();
+            setPointAskInterim('');
+            setPointAskInput(spoken);
+            stopPointAskVoice();
+            onFinalTranscript(spoken);
+          }
+        };
+        recognition.onerror = (ev: any) => {
+          setPointAskMicListening(false);
+          pointAskMicListeningRef.current = false;
+          setPointAskInterim('');
+          if (ev?.error && ev.error !== 'no-speech' && ev.error !== 'aborted') {
+            showToast(
+              isEn
+                ? `Mic error: ${ev.error}`
+                : `Không thu được giọng nói (${ev.error}). Bạn có thể nhập câu hỏi trực tiếp.`
+            );
+          }
+        };
+        recognition.onend = () => {
+          setPointAskMicListening(false);
+          pointAskMicListeningRef.current = false;
+        };
+
+        speechRecRef.current = recognition;
+        recognition.start();
+        return true;
+      } catch {
+        setPointAskMicListening(false);
+        pointAskMicListeningRef.current = false;
+        showToast(isEn ? 'Could not start microphone' : 'Không thể bật Micro lúc này');
+        return false;
+      }
+    },
+    [isEn, showToast, stopPointAskVoice]
+  );
+
   const submitPointAndAsk = useCallback(
-    async (rawQuestion: string) => {
+    async (rawQuestion: string, overrideTarget?: PointAskTarget | null) => {
       const q = String(rawQuestion || '').trim();
       if (!q) {
         showToast(isEn ? 'Please speak or enter a question.' : 'Vui lòng nói hoặc nhập câu hỏi.');
@@ -3466,8 +3681,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         return;
       }
 
-      // Resolve currently pointed target, or lock fallback onto highlighted/isolated/first part
-      let target: PointAskTarget | null = pointAskLockedRef.current || pointAskHoverRef.current;
+      // Simultaneous Finger + Voice Target Resolution: prefer live/latest speech-captured finger coordinate
+      let target: PointAskTarget | null =
+        overrideTarget ||
+        pointAskLockedRef.current ||
+        pointAskHoverRef.current ||
+        pointAskSpeechHoverRef.current;
+
       if (!target) {
         const fallbackIdx =
           isolatedPartIdxRef.current ?? highlightedPartIdxRef.current ?? 0;
@@ -3498,6 +3718,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       if (targetMesh) {
         rt.highlightHelper.setFromObject(targetMesh);
         rt.highlightHelper.visible = true;
+        _box3Tmp.setFromObject(targetMesh);
+        _box3Tmp.getCenter(_centerTmp);
+        _box3Tmp.getSize(_sizeTmp);
+        rt.pointZoneGroup.position.copy(_centerTmp);
+        rt.pointZoneGroup.scale.setScalar(Math.max(0.28, _sizeTmp.length() * 0.44));
+        rt.pointZoneGroup.visible = true;
       }
       rt.reticleGroup.position.set(target.worldHit[0], target.worldHit[1], target.worldHit[2]);
       rt.reticleGroup.lookAt(rt.camera.position);
@@ -3507,7 +3733,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       setPointAskInput(q);
       try {
         rt.renderer.render(rt.scene, rt.camera);
-        const snapDataUrl = rt.renderer.domElement.toDataURL('image/jpeg', 0.82);
+        const snapDataUrl = rt.renderer.domElement.toDataURL('image/jpeg', 0.84);
         const modelTitle = activeCustomModel
           ? isEn
             ? activeCustomModel.titleEn
@@ -3517,30 +3743,39 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           : activeMode.titleVi;
         const modelFormula = activeCustomModel ? activeCustomModel.formula : activeMode.formula;
 
-        const resp = await fetch('/api/spatial/point-and-ask', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            modelTitle,
-            modelFormula,
-            partName: isEn ? target.partInfo.nameEn : target.partInfo.nameVi,
-            partBadge: isEn ? target.partInfo.badgeEn : target.partInfo.badgeVi,
-            partIntro: isEn ? target.partInfo.introEn : target.partInfo.introVi,
-            partFunction: isEn ? target.partInfo.functionEn : target.partInfo.functionVi,
-            partSpecFormula: target.partInfo.specFormula || '',
-            partDimensions: target.dims,
-            approxVolume: target.volume,
-            shapeHint: target.shapeHint,
-            hitPoint: target.worldHit,
-            question: q,
-            imageBase64: snapDataUrl,
-            language: isEn ? 'en' : 'vi'
-          })
-        });
+        const apiRes = await safeFetchJson<{ success?: boolean; result?: any; error?: string }>(
+          '/api/spatial/point-and-ask',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              modelTitle,
+              modelFormula,
+              partName: isEn ? target.partInfo.nameEn : target.partInfo.nameVi,
+              partBadge: isEn ? target.partInfo.badgeEn : target.partInfo.badgeVi,
+              partIntro: isEn ? target.partInfo.introEn : target.partInfo.introVi,
+              partFunction: isEn ? target.partInfo.functionEn : target.partInfo.functionVi,
+              partSpecFormula: target.partInfo.specFormula || '',
+              partDimensions: target.dims,
+              approxVolume: target.volume,
+              shapeHint: target.shapeHint,
+              hitPoint: target.worldHit,
+              customDimensionsCm:
+                activeCustomModel?.parts?.[target.partIdx]?.dimensionsCm ||
+                activeCustomModel?.dimensionsCm ||
+                null,
+              pointerSource: target.source,
+              question: q,
+              imageBase64: snapDataUrl,
+              language: isEn ? 'en' : 'vi'
+            })
+          },
+          32000
+        );
 
-        const data = await resp.json();
-        if (!resp.ok || !data?.result) {
-          throw new Error(data?.error || 'Không thể phân tích chi tiết được chỉ.');
+        const data = apiRes.data;
+        if (!apiRes.ok || !data?.result) {
+          throw new Error(apiRes.error || data?.error || 'Không thể phân tích chi tiết được chỉ.');
         }
 
         const nextResult: PointAskResult = {
@@ -3557,13 +3792,33 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         };
         setPointAskResult(nextResult);
 
+        const maybeResumeHandsFree = () => {
+          if (pointAskActiveRef.current && pointAskHandsFreeRef.current) {
+            pointAskLockedRef.current = null;
+            setPointAskLockedTarget(null);
+            window.setTimeout(() => {
+              if (pointAskActiveRef.current && pointAskHandsFreeRef.current && !pointAskMicListeningRef.current) {
+                startVoiceRecognition((nextSpoken) => {
+                  const captured =
+                    pointAskLockedRef.current || pointAskHoverRef.current || pointAskSpeechHoverRef.current;
+                  void submitPointAndAsk(nextSpoken, captured);
+                });
+              }
+            }, 350);
+          }
+        };
+
         if (pointAskTtsEnabled && typeof window !== 'undefined' && 'speechSynthesis' in window) {
           window.speechSynthesis.cancel();
           const spoken = `${nextResult.title}. ${nextResult.answer.replace(/\$[^$]+\$/g, '')}`;
           const utter = new SpeechSynthesisUtterance(spoken);
           utter.lang = isEn ? 'en-US' : 'vi-VN';
           utter.rate = 1.02;
+          utter.onend = maybeResumeHandsFree;
+          utter.onerror = maybeResumeHandsFree;
           window.speechSynthesis.speak(utter);
+        } else {
+          maybeResumeHandsFree();
         }
       } catch (err: any) {
         showToast(err?.message || (isEn ? 'Point & Ask failed' : 'Lỗi khi phân tích điểm chỉ AI'));
@@ -3571,7 +3826,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         setPointAskLoading(false);
       }
     },
-    [activeCustomModel, activeMode, isEn, pointAskTtsEnabled, showToast]
+    [activeCustomModel, activeMode, isEn, pointAskTtsEnabled, showToast, startVoiceRecognition]
   );
 
   const togglePointAskVoice = useCallback(() => {
@@ -3579,83 +3834,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       stopPointAskVoice();
       return;
     }
-
-    const SpeechRecCtor =
-      typeof window !== 'undefined'
-        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        : null;
-    if (!SpeechRecCtor) {
-      showToast(
-        isEn
-          ? 'Browser lacks Speech Recognition — type or use quick questions below.'
-          : 'Trình duyệt chưa hỗ trợ Micro Web Speech — hãy nhập hoặc bấm câu hỏi nhanh.'
-      );
-      return;
-    }
-
-    // Lock whichever part the user's finger or mouse is currently pointing at when they begin speaking
-    if (pointAskHoverRef.current && !pointAskLockedRef.current) {
-      pointAskLockedRef.current = pointAskHoverRef.current;
-      setPointAskLockedTarget(pointAskHoverRef.current);
-      setHighlightedPartIdx(pointAskHoverRef.current.partIdx);
-    }
-
-    try {
-      const recognition = new SpeechRecCtor();
-      recognition.lang = isEn ? 'en-US' : 'vi-VN';
-      recognition.interimResults = true;
-      recognition.continuous = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => {
-        setPointAskMicListening(true);
-        setPointAskInterim('');
-      };
-      recognition.onspeechstart = () => {
-        if (pointAskHoverRef.current && !pointAskLockedRef.current) {
-          pointAskLockedRef.current = pointAskHoverRef.current;
-          setPointAskLockedTarget(pointAskHoverRef.current);
-        }
-      };
-      recognition.onresult = (event: any) => {
-        let interimTxt = '';
-        let finalTxt = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const chunk = event.results[i][0]?.transcript || '';
-          if (event.results[i].isFinal) finalTxt += chunk;
-          else interimTxt += chunk;
-        }
-        if (interimTxt) setPointAskInterim(interimTxt);
-        if (finalTxt.trim()) {
-          const spoken = finalTxt.trim();
-          setPointAskInterim('');
-          setPointAskInput(spoken);
-          stopPointAskVoice();
-          void submitPointAndAsk(spoken);
-        }
-      };
-      recognition.onerror = (ev: any) => {
-        setPointAskMicListening(false);
-        setPointAskInterim('');
-        if (ev?.error && ev.error !== 'no-speech' && ev.error !== 'aborted') {
-          showToast(
-            isEn
-              ? `Mic error: ${ev.error}`
-              : `Không thu được giọng nói (${ev.error}). Bạn có thể nhập câu hỏi trực tiếp.`
-          );
-        }
-      };
-      recognition.onend = () => {
-        setPointAskMicListening(false);
-      };
-
-      speechRecRef.current = recognition;
-      recognition.start();
-    } catch {
-      setPointAskMicListening(false);
-      showToast(isEn ? 'Could not start microphone' : 'Không thể bật Micro lúc này');
-    }
-  }, [isEn, pointAskMicListening, showToast, stopPointAskVoice, submitPointAndAsk]);
+    startVoiceRecognition((spoken) => {
+      const captured =
+        pointAskLockedRef.current || pointAskHoverRef.current || pointAskSpeechHoverRef.current;
+      void submitPointAndAsk(spoken, captured);
+    });
+  }, [pointAskMicListening, startVoiceRecognition, stopPointAskVoice, submitPointAndAsk]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -4289,6 +4473,18 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
+                    onClick={() => setPointAskHandsFree((v) => !v)}
+                    className={`px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold cursor-pointer ${
+                      pointAskHandsFree
+                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                    title={isEn ? 'Auto keep listening for next pointed detail' : 'Rảnh tay: tự động nghe liên tục câu tiếp theo'}
+                  >
+                    {isEn ? 'AUTO' : 'RẢNH TAY'}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setPointAskTtsEnabled((v) => !v)}
                     className={`p-1 rounded border text-[10px] cursor-pointer ${
                       pointAskTtsEnabled
@@ -4502,6 +4698,25 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           )}
         </div>
       )}
+
+      {/* Webcam Index Finger Laser Sight Crosshair during Point & Ask */}
+      {!hudHidden &&
+        spaceMode === '3d' &&
+        pointAskActive &&
+        cameraActive &&
+        fingerAimScreen && (
+          <div
+            className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-1/2"
+            style={{
+              left: `${Math.max(4, Math.min(96, fingerAimScreen.x))}%`,
+              top: `${Math.max(6, Math.min(92, fingerAimScreen.y))}%`
+            }}
+          >
+            <div className="relative flex items-center justify-center w-8 h-8 rounded-full border-2 border-cyan-300 bg-cyan-400/15 shadow-[0_0_16px_rgba(34,211,238,0.85)]">
+              <span className="w-2 h-2 rounded-full bg-amber-300" />
+            </div>
+          </div>
+        )}
 
       {/* Floating 3D-Projected Reticle Callout Badge on Canvas during Point & Ask */}
       {!hudHidden &&

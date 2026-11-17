@@ -59,8 +59,8 @@ export default defineConfig(() => {
           ]
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-          globIgnores: ['**/mediapipe/hand_landmarker.task'],
+          maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
+          globIgnores: ['**/mediapipe/**'],
           navigateFallbackDenylist: [/^\/api\//, /\/mediapipe\//],
           runtimeCaching: [
             {

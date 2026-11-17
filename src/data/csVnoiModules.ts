@@ -32,6 +32,48 @@ export const VNOI_LESSON_ENRICHMENT: Record<string, VnoiEnrichment> = {
         codeSnippet: {
           language: 'cpp',
           title: 'Template chuẩn mở đầu mọi bài VNOI',
+          basicTitle: 'Cơ bản: Nhập xuất trực tiếp trong main() (Tối giản)',
+          basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long a, b;
+    cin >> a >> b;
+    cout << a + b << endl;
+    cout << a * b << endl;
+    return 0;
+}`,
+          basicExplanation:
+            'Phiên bản tối giản cho người mới: chỉ khai báo biến long long trực tiếp trong main(), không dùng Fast I/O hay cấu trúc nâng cao.',
+          advancedTitle: 'Nâng cao / Chuyên: Fast I/O & Chống tràn số trung gian',
+          advancedCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    long long a, b;
+    if (cin >> a >> b) {
+        // Ép kiểu 1LL trước phép nhân để tránh tràn số trung gian
+        long long product = 1LL * a * b;
+        cout << a + b << '\\n' << product << '\\n';
+    }
+    return 0;
+}`,
+          advancedExplanation:
+            'Tắt đồng bộ stdio với sync_with_stdio(false) + cin.tie(NULL) giúp tăng tốc I/O gấp 5–10 lần khi N ≥ 10⁵ trên VNOI.',
+          pythonBasicCode: `a, b = map(int, input().split())
+print(a + b)
+print(a * b)`,
+          pythonAdvancedCode: `import sys
+
+def main():
+    data = sys.stdin.read().split()
+    if len(data) >= 2:
+        a, b = int(data[0]), int(data[1])
+        print(f"{a + b}\\n{a * b}")
+
+main()`,
           code: `#include <iostream>
 using namespace std;
 

@@ -16,7 +16,9 @@ export type CustomModelPrimitiveKind =
   | 'rounded_box'
   | 'extrude_fin'
   | 'tube_arch'
-  | 'frustum';
+  | 'frustum'
+  | 'chamfer_hex'
+  | 'stepped_collar';
 
 export type CustomModelMaterialKind =
   | 'brushed_metal'
@@ -37,7 +39,10 @@ export type CustomModelDetailStyle =
   | 'fasteners'
   | 'vents'
   | 'core_glow'
-  | 'dual_band';
+  | 'dual_band'
+  | 'optics_lens'
+  | 'knurled_grip'
+  | 'circuit_trim';
 
 export type CustomModelColorRole = 'primary' | 'secondary' | 'highlight' | 'glow';
 
@@ -106,6 +111,7 @@ export interface CustomSpatialModel {
   createdAt: string;
   parts: CustomModelPartSpec[];
   blueprint2D?: CustomModelBlueprint2D;
+  dimensionsCm?: [number, number, number] | { width: number; height: number; depth: number };
 }
 
 export const CUSTOM_MODEL_PRIMITIVES: CustomModelPrimitiveKind[] = [
@@ -126,5 +132,7 @@ export const CUSTOM_MODEL_PRIMITIVES: CustomModelPrimitiveKind[] = [
   'rounded_box',
   'extrude_fin',
   'tube_arch',
-  'frustum'
+  'frustum',
+  'chamfer_hex',
+  'stepped_collar'
 ];

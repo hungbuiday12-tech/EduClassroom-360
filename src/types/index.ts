@@ -211,6 +211,14 @@ export interface LectureStep {
     code: string;
   };
   keyTakeaway?: string;
+  quickIntuition?: string;
+  dryRunTrace?: {
+    title: string;
+    sampleInput: string;
+    traceRows: string[];
+    finalOutput: string;
+  };
+  commonMistakes?: string[];
   miniQuiz?: LectureStepMCQ[];
   miniEssay?: LectureStepMiniEssay;
 }
@@ -348,7 +356,30 @@ export type PhysicsSimType =
   | 'young_interference'
   | 'standing_wave'
   | 'doppler_effect'
-  | 'photoelectric_effect';
+  | 'photoelectric_effect'
+  // +22 New 2D Physics Simulations
+  | 'atwood_pulley'
+  | 'inclined_plane'
+  | 'momentum_collision'
+  | 'torque_lever'
+  | 'kepler_orbit'
+  | 'damped_resonance'
+  | 'beat_waves'
+  | 'sound_intensity'
+  | 'lissajous_shm'
+  | 'coulomb_pendulum'
+  | 'rc_capacitor'
+  | 'wheatstone_bridge'
+  | 'transformer_2d'
+  | 'lc_oscillation'
+  | 'prism_dispersion'
+  | 'spherical_mirror'
+  | 'malus_polarization'
+  | 'hydrogen_spectrum'
+  | 'pv_thermodynamics'
+  | 'calorimetry_mixing'
+  | 'bernoulli_flow'
+  | 'nuclear_fission';
 
 export type Physics3DMode =
   | 'pendulum_spring'
@@ -364,7 +395,26 @@ export type Physics3DMode =
   | 'young_interference_3d'
   | 'standing_wave_3d'
   | 'doppler_effect_3d'
-  | 'photoelectric_3d';
+  | 'photoelectric_3d'
+  // +18 New 3D Physics Simulations
+  | 'inclined_plane_3d'
+  | 'collision_spheres_3d'
+  | 'gyroscope_precession_3d'
+  | 'kepler_orbit_3d'
+  | 'simple_pendulum_3d'
+  | 'coupled_pendulums_3d'
+  | 'resonance_tubes_3d'
+  | 'solenoid_field_3d'
+  | 'electric_dipole_3d'
+  | 'dc_motor_3d'
+  | 'transformer_3d'
+  | 'prism_dispersion_3d'
+  | 'curved_mirror_3d'
+  | 'polarization_3d'
+  | 'blackbody_cavity_3d'
+  | 'carnot_piston_3d'
+  | 'nuclear_fission_3d'
+  | 'rutherford_scattering_3d';
 
 export type PhysicsDomainId =
   | 'mechanics'
@@ -481,6 +531,8 @@ export interface CSLesson {
 
 export type TestDifficultyTier = 'Cơ bản' | 'Trung bình' | 'Nâng cao' | 'Thử thách';
 
+export type ProblemIOMode = 'standard' | 'file';
+
 export interface TestCase {
   id: number;
   input: string;
@@ -488,6 +540,8 @@ export interface TestCase {
   isSample?: boolean;
   explanation?: string;
   difficulty?: TestDifficultyTier;
+  timeLimitEnabled?: boolean;
+  timeLimitMs?: number | null;
 }
 
 export interface CodingProblem {
@@ -496,6 +550,11 @@ export interface CodingProblem {
   difficulty: 'Easy' | 'Medium' | 'Hard';
   category: string;
   timeLimit: string;
+  timeLimitEnabled?: boolean;
+  timeLimitMs?: number | null;
+  ioMode?: ProblemIOMode;
+  inputFileName?: string;
+  outputFileName?: string;
   memoryLimit: string;
   description: string;
   inputFormat: string;

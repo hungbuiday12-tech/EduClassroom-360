@@ -1,5 +1,42 @@
-import { CodeLanguage, CodingProblem, TestCase, TestResult } from '../../types';
+import { CodeLanguage, CodingProblem, ProblemIOMode, TestCase, TestResult } from '../../types';
 import { safeFetchJson } from '../../lib/apiClient';
+
+export interface ExecuteCodeOptions {
+  ioMode?: ProblemIOMode;
+  inputFileName?: string;
+  outputFileName?: string;
+  timeLimitEnabled?: boolean;
+  timeLimitMs?: number | null;
+  problemDesc?: string;
+}
+
+export function parseTimeLimitMs(limitStr?: string | null, fallbackMs = 1000): number | null {
+  if (!limitStr) return fallbackMs;
+  const lower = limitStr.toLowerCase().trim();
+  if (!lower || lower.includes('không giới hạn') || lower.includes('unlimited') || lower === 'none') {
+    return null;
+  }
+  const msMatch = lower.match(/(\d+(?:\.\d+)?)\s*ms/);
+  if (msMatch) return Math.max(50, Math.round(Number(msMatch[1])));
+  const sMatch = lower.match(/(\d+(?:\.\d+)?)\s*s/);
+  if (sMatch) return Math.max(50, Math.round(Number(sMatch[1]) * 1000));
+  const numOnly = Number(lower);
+  if (!Number.isNaN(numOnly) && numOnly > 0) return Math.max(50, Math.round(numOnly * 1000));
+  return fallbackMs;
+}
+
+function normVirtualFileName(name: string): string {
+  return String(name || '')
+    .trim()
+    .replace(/^['"]|['"]$/g, '')
+    .replace(/^(\.\/|\.\\|\/|\\)+/, '')
+    .toLowerCase();
+}
+
+function formatSecLabel(ms: number): string {
+  const sec = ms / 1000;
+  return `${Number.isInteger(sec) ? sec.toFixed(1) : sec.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}s`;
+}
 
 /**
  * Standard ICPC / IOI / VNOI output comparator:
@@ -62,7 +99,8 @@ export function compareOutputs(actual: string, expected: string): boolean {
   return false;
 }
 
-const MAX_STEPS = 2_000_000;
+const DEFAULT_LIMITED_STEPS = 5_000_000;
+const UNLIMITED_SAFETY_STEPS = 50_000_000;
 
 // ============================================================================
 // PYTHON 3 BROWSER TRANSPILER & SANDBOX
@@ -241,12 +279,12 @@ function transformPyExpr(expr: string): string {
     .replace(/\bnot\b/g, '!')
     .replace(/__name__\s*==\s*__PYSTR_(\d+)__/g, 'true')
     .replace(/float\(__PYSTR_(\d+)__\)/g, 'Infinity')
-    .replace(/sys\.stdin\.read\(\)/g, '__stdinRead()')
     .replace(/map\s*\(\s*(int|float|str)\s*,/g, '__pyMap($1,')
     .replace(/\bdivmod\s*\(/g, '__pyDivmod(')
     .replace(/\.isalnum\(\)/g, '.__pyIsAlnum()')
     .replace(/\.isalpha\(\)/g, '.__pyIsAlpha()')
     .replace(/\.isdigit\(\)/g, '.__pyIsDigit()')
+    .replace(/\.splitlines\(\)/g, '.__pySplitlines()')
     .replace(/\.lower\(\)/g, '.toLowerCase()')
     .replace(/\.upper\(\)/g, '.toUpperCase()')
     .replace(/\.strip\(\)/g, '.trim()')
@@ -258,6 +296,9 @@ function transformPyExpr(expr: string): string {
     .replace(/\.items\(\)/g, '.__pyItems()')
     .replace(/\.keys\(\)/g, '.__pyKeys()')
     .replace(/\.values\(\)/g, '.__pyValues()');
+
+  // Convert Python open(...) calls (strip encoding=/newline=/errors= kwargs cleanly)
+  e = convertPyOpenCalls(e);
 
   // Nesting-safe resolution of .__PY_JOIN__(...), .__pyDictGet(...), .__pyItems(), .__pyKeys(), .__pyValues(), .__pyIs*()
   e = resolvePyDotHelpers(e);
@@ -278,7 +319,7 @@ function transformPyExpr(expr: string): string {
   // List concatenation `[0] + [...]` -> `__pyConcat([0], [...])`
   e = convertPyListConcat(e);
 
-  // Convert print(a, b, sep=..., end=...)
+  // Convert print(a, b, sep=..., end=..., file=...)
   e = convertPyPrintArgs(e);
 
   return e;
@@ -316,6 +357,7 @@ function resolvePyDotHelpers(expr: string): string {
     { marker: '.__pyItems(', build: (recv) => `__pyEntries(${recv})` },
     { marker: '.__pyKeys(', build: (recv) => `__pyKeys(${recv})` },
     { marker: '.__pyValues(', build: (recv) => `__pyValues(${recv})` },
+    { marker: '.__pySplitlines(', build: (recv) => `String(${recv}).replace(/\\r\\n/g, '\\n').replace(/\\r/g, '\\n').split('\\n')` },
     { marker: '.__pyIsAlnum(', build: (recv) => `/^[a-zA-Z0-9]+$/.test(${recv})` },
     { marker: '.__pyIsAlpha(', build: (recv) => `/^[a-zA-Z]+$/.test(${recv})` },
     { marker: '.__pyIsDigit(', build: (recv) => `/^[0-9]+$/.test(${recv})` }
@@ -620,32 +662,94 @@ function convertFloorDivAndPow(expr: string): string {
   return e;
 }
 
-function convertPyPrintArgs(expr: string): string {
-  const idx = expr.indexOf('print(');
-  if (idx === -1) return expr;
-  const close = findClosingParen(expr, idx + 5);
-  if (close === -1) return expr;
-  const inner = expr.slice(idx + 6, close).trim();
-  if (!inner) return expr;
-  const args = splitTopLevel(inner);
-  const posArgs: string[] = [];
-  let sep = '" "';
-  let end = '"\\n"';
-  for (const arg of args) {
-    if (/^sep\s*=/.test(arg)) sep = arg.replace(/^sep\s*=/, '').trim();
-    else if (/^end\s*=/.test(arg)) end = arg.replace(/^end\s*=/, '').trim();
-    else if (arg.startsWith('*')) posArgs.push(`...__pyIter(${arg.slice(1).trim()})`);
-    else posArgs.push(arg);
+function convertPyOpenCalls(expr: string): string {
+  let out = expr;
+  let searchFrom = 0;
+  let safety = 0;
+  while (safety++ < 25) {
+    const match = /\bopen\s*\(/.exec(out.slice(searchFrom));
+    if (!match || match.index === undefined) break;
+    const idx = searchFrom + match.index;
+    const prev = idx > 0 ? out[idx - 1] : '';
+    if (prev === '.' || prev === '_') {
+      searchFrom = idx + match[0].length;
+      continue;
+    }
+    const parenOpen = out.indexOf('(', idx);
+    const close = findClosingParen(out, parenOpen);
+    if (close === -1) break;
+    const inner = out.slice(parenOpen + 1, close).trim();
+    const args = inner ? splitTopLevel(inner) : [];
+    let fileArg = '""';
+    let modeArg = '"r"';
+    const pos: string[] = [];
+    for (const arg of args) {
+      if (/^file\s*=/.test(arg)) fileArg = arg.replace(/^file\s*=/, '').trim();
+      else if (/^mode\s*=/.test(arg)) modeArg = arg.replace(/^mode\s*=/, '').trim();
+      else if (/^[A-Za-z_][A-Za-z0-9_]*\s*=/.test(arg)) {
+        // Ignore encoding=, newline=, errors=, buffering=
+      } else {
+        pos.push(arg);
+      }
+    }
+    if (pos[0] !== undefined) fileArg = pos[0];
+    if (pos[1] !== undefined) modeArg = pos[1];
+    const replacement = `__pyOpen(${fileArg}, ${modeArg})`;
+    out = out.slice(0, idx) + replacement + out.slice(close + 1);
+    searchFrom = idx + replacement.length;
   }
-  const call = `__pyPrint([${posArgs.join(', ')}], ${sep}, ${end})`;
-  return expr.slice(0, idx) + call + expr.slice(close + 1);
+  return out;
 }
 
-function transpilePythonToJS(code: string): { jsCode: string; strings: string[] } {
+function convertPyPrintArgs(expr: string): string {
+  let out = expr;
+  let searchFrom = 0;
+  let safety = 0;
+  while (safety++ < 20) {
+    const match = /\bprint\s*\(/.exec(out.slice(searchFrom));
+    if (!match || match.index === undefined) break;
+    const idx = searchFrom + match.index;
+    const prev = idx > 0 ? out[idx - 1] : '';
+    if (prev === '.' || prev === '_') {
+      searchFrom = idx + match[0].length;
+      continue;
+    }
+    const parenOpen = out.indexOf('(', idx);
+    const close = findClosingParen(out, parenOpen);
+    if (close === -1) break;
+    const inner = out.slice(parenOpen + 1, close).trim();
+    if (!inner) {
+      const call = '__pyPrint([], " ", "\\n", null)';
+      out = out.slice(0, idx) + call + out.slice(close + 1);
+      searchFrom = idx + call.length;
+      continue;
+    }
+    const args = splitTopLevel(inner);
+    const posArgs: string[] = [];
+    let sep = '" "';
+    let end = '"\\n"';
+    let fileArg = 'null';
+    for (const arg of args) {
+      if (/^sep\s*=/.test(arg)) sep = arg.replace(/^sep\s*=/, '').trim();
+      else if (/^end\s*=/.test(arg)) end = arg.replace(/^end\s*=/, '').trim();
+      else if (/^file\s*=/.test(arg)) fileArg = arg.replace(/^file\s*=/, '').trim();
+      else if (arg.startsWith('*')) posArgs.push(`...__pyIter(${arg.slice(1).trim()})`);
+      else posArgs.push(arg);
+    }
+    const call = `__pyPrint([${posArgs.join(', ')}], ${sep}, ${end}, ${fileArg})`;
+    out = out.slice(0, idx) + call + out.slice(close + 1);
+    searchFrom = idx + call.length;
+  }
+  return out;
+}
+
+function transpilePythonToJS(code: string): { jsCode: string; strings: string[]; extraVars: string[] } {
   const { lines, strings } = stripPythonCommentsAndProtectStrings(code);
-  const indentStack: number[] = [0];
+  const blockStack: { indent: number; closeCode: string }[] = [{ indent: 0, closeCode: '' }];
   const jsLines: string[] = [];
+  const extraVars: string[] = [];
   let blockExpectsIndent = false;
+  let pendingCloseCode = '}';
 
   for (let idx = 0; idx < lines.length; idx++) {
     const rawLine = lines[idx];
@@ -660,29 +764,57 @@ function transpilePythonToJS(code: string): { jsCode: string; strings: string[] 
 
     const indent = expanded.length - expanded.trimStart().length;
 
-    if (blockExpectsIndent && indent <= indentStack[indentStack.length - 1]) {
+    if (blockExpectsIndent && indent <= blockStack[blockStack.length - 1].indent) {
       // Single line empty block fallback
-      jsLines.push('}');
-      indentStack.pop();
+      jsLines.push(pendingCloseCode);
       blockExpectsIndent = false;
+      pendingCloseCode = '}';
     }
 
-    while (indent < indentStack[indentStack.length - 1]) {
-      indentStack.pop();
-      jsLines.push('  '.repeat(indentStack.length) + '}');
+    while (indent < blockStack[blockStack.length - 1].indent) {
+      const popped = blockStack.pop()!;
+      jsLines.push('  '.repeat(blockStack.length) + popped.closeCode);
     }
 
-    if (indent > indentStack[indentStack.length - 1]) {
-      indentStack.push(indent);
+    if (indent > blockStack[blockStack.length - 1].indent) {
+      blockStack.push({ indent, closeCode: pendingCloseCode });
+      pendingCloseCode = '}';
     }
 
-    const pad = '  '.repeat(Math.max(0, indentStack.length - 1));
+    const pad = '  '.repeat(Math.max(0, blockStack.length - 1));
     blockExpectsIndent = false;
 
     if (trimmed === 'pass') {
       continue;
     }
     if (trimmed.startsWith('nonlocal ') || trimmed.startsWith('global ')) {
+      continue;
+    }
+
+    // with open(...) as f [, open(...) as g]:
+    const withMatch = trimmed.match(/^with\s+(.+):$/);
+    if (withMatch) {
+      const items = splitTopLevel(withMatch[1]);
+      const closers: string[] = [];
+      jsLines.push(`${pad}{`);
+      items.forEach((item, wIdx) => {
+        const asMatch = item.match(/^(.+?)\s+as\s+([A-Za-z_][A-Za-z0-9_]*)$/);
+        if (asMatch) {
+          const ctxExpr = transformPyExpr(asMatch[1].trim());
+          const varName = asMatch[2].trim();
+          extraVars.push(varName);
+          jsLines.push(`${pad}  ${varName} = ${ctxExpr};`);
+          closers.push(`if (${varName} && typeof ${varName}.close === "function") ${varName}.close();`);
+        } else {
+          const tmpName = `__pyWith_${idx}_${wIdx}`;
+          extraVars.push(tmpName);
+          jsLines.push(`${pad}  ${tmpName} = ${transformPyExpr(item.trim())};`);
+          closers.push(`if (${tmpName} && typeof ${tmpName}.close === "function") ${tmpName}.close();`);
+        }
+      });
+      jsLines.push(`${pad}  try {`);
+      pendingCloseCode = `  } finally { ${closers.reverse().join(' ')} }\n${pad}}`;
+      blockExpectsIndent = true;
       continue;
     }
 
@@ -698,7 +830,8 @@ function transpilePythonToJS(code: string): { jsCode: string; strings: string[] 
           })
         : [];
       jsLines.push(`${pad}function ${fnName}(${params.join(', ')}) {`);
-      jsLines.push(`${pad}  if (++__steps > ${MAX_STEPS}) throw new Error("Time Limit Exceeded (TLE)");`);
+      jsLines.push(`${pad}  __tick();`);
+      pendingCloseCode = '}';
       blockExpectsIndent = true;
       continue;
     }
@@ -707,6 +840,7 @@ function transpilePythonToJS(code: string): { jsCode: string; strings: string[] 
     const classMatch = trimmed.match(/^class\s+([A-Za-z_][A-Za-z0-9_]*)(?:\([^)]*\))?\s*:$/);
     if (classMatch) {
       jsLines.push(`${pad}class ${classMatch[1]} {`);
+      pendingCloseCode = '}';
       blockExpectsIndent = true;
       continue;
     }
@@ -715,17 +849,20 @@ function transpilePythonToJS(code: string): { jsCode: string; strings: string[] 
     if (/^if\s+(.+):$/.test(trimmed)) {
       const cond = trimmed.slice(3, -1).trim();
       jsLines.push(`${pad}if (__pyBool(${transformPyExpr(cond)})) {`);
+      pendingCloseCode = '}';
       blockExpectsIndent = true;
       continue;
     }
     if (/^elif\s+(.+):$/.test(trimmed)) {
       const cond = trimmed.slice(5, -1).trim();
       jsLines.push(`${pad}else if (__pyBool(${transformPyExpr(cond)})) {`);
+      pendingCloseCode = '}';
       blockExpectsIndent = true;
       continue;
     }
     if (/^else\s*:$/.test(trimmed)) {
       jsLines.push(`${pad}else {`);
+      pendingCloseCode = '}';
       blockExpectsIndent = true;
       continue;
     }
@@ -734,7 +871,8 @@ function transpilePythonToJS(code: string): { jsCode: string; strings: string[] 
     if (/^while\s+(.+):$/.test(trimmed)) {
       const cond = trimmed.slice(6, -1).trim();
       jsLines.push(`${pad}while (__pyBool(${transformPyExpr(cond)})) {`);
-      jsLines.push(`${pad}  if (++__steps > ${MAX_STEPS}) throw new Error("Time Limit Exceeded (TLE)");`);
+      jsLines.push(`${pad}  __tick();`);
+      pendingCloseCode = '}';
       blockExpectsIndent = true;
       continue;
     }
@@ -746,7 +884,8 @@ function transpilePythonToJS(code: string): { jsCode: string; strings: string[] 
       const iterExpr = transformPyExpr(forMatch[2].trim());
       const lhs = varsRaw.includes(',') ? `let [${varsRaw}]` : `let ${varsRaw}`;
       jsLines.push(`${pad}for (${lhs} of __pyIter(${iterExpr})) {`);
-      jsLines.push(`${pad}  if (++__steps > ${MAX_STEPS}) throw new Error("Time Limit Exceeded (TLE)");`);
+      jsLines.push(`${pad}  __tick();`);
+      pendingCloseCode = '}';
       blockExpectsIndent = true;
       continue;
     }
@@ -754,19 +893,23 @@ function transpilePythonToJS(code: string): { jsCode: string; strings: string[] 
     // Single-line if statement? e.g., if a > b: return a
     const inlineIf = trimmed.match(/^if\s+([^:]+):\s*(.+)$/);
     if (inlineIf) {
-      jsLines.push(`${pad}if (${transformPyExpr(inlineIf[1])}) { ${transformPyStatement(inlineIf[2])} }`);
+      jsLines.push(`${pad}if (__pyBool(${transformPyExpr(inlineIf[1])})) { ${transformPyStatement(inlineIf[2])} }`);
       continue;
     }
 
     jsLines.push(`${pad}${transformPyStatement(trimmed)}`);
   }
 
-  while (indentStack.length > 1) {
-    indentStack.pop();
-    jsLines.push('  '.repeat(indentStack.length - 1) + '}');
+  if (blockExpectsIndent) {
+    jsLines.push(pendingCloseCode);
   }
 
-  return { jsCode: jsLines.join('\n'), strings };
+  while (blockStack.length > 1) {
+    const popped = blockStack.pop()!;
+    jsLines.push('  '.repeat(Math.max(0, blockStack.length - 1)) + popped.closeCode);
+  }
+
+  return { jsCode: jsLines.join('\n'), strings, extraVars };
 }
 
 function transformPyStatement(stmt: string): string {
@@ -802,7 +945,6 @@ function transformPyStatement(stmt: string): string {
           rhsParts.length > 1
             ? `[${rhsParts.map(transformPyExpr).join(', ')}]`
             : `__pyIter(${transformPyExpr(rhs)})`;
-        // Declare any undeclared simple variables using __vars? Simpler: var assignment works in non-strict or pre-declared!
         return `[${lhsVars.join(', ')}] = ${rhsJs};`;
       }
 
@@ -815,15 +957,18 @@ function transformPyStatement(stmt: string): string {
   return `${transformPyExpr(stmt)};`;
 }
 
-function collectPythonDeclaredVars(jsCode: string): string[] {
+function collectPythonDeclaredVars(jsCode: string, extraVars: string[] = []): string[] {
   const vars = new Set<string>();
   const reserved = new Set([
     'if', 'else', 'for', 'while', 'function', 'return', 'let', 'const', 'var', 'true', 'false',
     'null', 'break', 'continue', 'throw', 'new', 'of', 'in', 'class', 'Math', 'Infinity',
-    'print', 'input', 'len', 'range', 'int', 'float', 'str', 'bool', 'list', 'set', 'dict', 'tuple',
+    'print', 'input', 'open', 'len', 'range', 'int', 'float', 'str', 'bool', 'list', 'set', 'dict', 'tuple',
     'sum', 'max', 'min', 'abs', 'round', 'sorted', 'reversed', 'enumerate', 'zip', 'all', 'any',
     'pow', 'chr', 'ord', 'math', 'bisect', 'heapq', 'itertools', 'collections', 'sys'
   ]);
+  for (const v of extraVars) {
+    if (v && !reserved.has(v)) vars.add(v);
+  }
   const lines = jsCode.split('\n');
   for (const line of lines) {
     const m1 = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=/);
@@ -839,24 +984,159 @@ function collectPythonDeclaredVars(jsCode: string): string[] {
   return Array.from(vars);
 }
 
+interface SandboxFileTracker {
+  ioMode: ProblemIOMode;
+  expIn: string;
+  expOut: string;
+  openedIn: boolean;
+  openedOut: boolean;
+  fileOutBuf: string;
+  stdoutBuf: string;
+}
+
+function makeFileReadError(tracker: SandboxFileTracker, fname: string): Error {
+  if (tracker.ioMode === 'standard') {
+    return new Error(
+      `File I/O Error: Đề bài đang ở chế độ ĐỌC/GHI CHUẨN (stdin/stdout), không sử dụng đọc/ghi file ("${fname}"). Hãy dùng cin/cout hoặc input()/print() thay vì mở file.`
+    );
+  }
+  return new Error(
+    `FileNotFoundError: Không tìm thấy file đầu vào "${fname}" (Đề bài yêu cầu đọc từ "${tracker.expIn}").`
+  );
+}
+
+function makeFileWriteError(tracker: SandboxFileTracker, fname: string): Error {
+  if (tracker.ioMode === 'standard') {
+    return new Error(
+      `File I/O Error: Đề bài đang ở chế độ ĐỌC/GHI CHUẨN (stdin/stdout), không sử dụng đọc/ghi file ("${fname}"). Hãy xuất ra stdout thay vì ghi file.`
+    );
+  }
+  return new Error(
+    `File I/O Error: Code đang ghi ra file "${fname}", không khớp với file đầu ra yêu cầu "${tracker.expOut}".`
+  );
+}
+
 export function runPythonInSandbox(
   code: string,
-  rawInput: string
+  rawInput: string,
+  options: ExecuteCodeOptions = {}
 ): { stdout: string; stderr: string; isError: boolean } {
-  const stdoutChunks: string[] = [];
-  let lineBuffer = '';
-  const flushStdout = () => {
-    if (lineBuffer.length > 0) {
-      stdoutChunks.push(lineBuffer);
-      lineBuffer = '';
+  const ioMode: ProblemIOMode = options.ioMode || 'standard';
+  const expIn = (options.inputFileName || 'INPUT.INP').trim();
+  const expOut = (options.outputFileName || 'OUTPUT.OUT').trim();
+  const tlEnabled = options.timeLimitEnabled !== false;
+  const tlMs = tlEnabled ? Math.max(50, options.timeLimitMs ?? 1000) : Infinity;
+  const maxSteps = tlEnabled ? DEFAULT_LIMITED_STEPS : UNLIMITED_SAFETY_STEPS;
+
+  const tracker: SandboxFileTracker = {
+    ioMode,
+    expIn,
+    expOut,
+    openedIn: false,
+    openedOut: false,
+    fileOutBuf: '',
+    stdoutBuf: ''
+  };
+
+  const makePyStream = (initialText: string, isWritable: boolean, targetIsOutFile: boolean) => {
+    const normalized = initialText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const rawLines = normalized.length ? normalized.split('\n') : [];
+    let cursorLine = 0;
+    let cursorChar = 0;
+    let closed = false;
+
+    const handle: any = {
+      read: () => {
+        if (closed || isWritable) return '';
+        const rem = normalized.slice(cursorChar);
+        cursorChar = normalized.length;
+        cursorLine = rawLines.length;
+        return rem;
+      },
+      readline: () => {
+        if (closed || isWritable) return '';
+        if (cursorLine >= rawLines.length) return '';
+        const line = rawLines[cursorLine++];
+        cursorChar = Math.min(normalized.length, cursorChar + line.length + 1);
+        return cursorLine < rawLines.length ? line + '\n' : line;
+      },
+      readlines: () => {
+        if (closed || isWritable) return [];
+        const rem = rawLines.slice(cursorLine).map((l, i, arr) => (cursorLine + i < rawLines.length - 1 ? l + '\n' : l));
+        cursorLine = rawLines.length;
+        cursorChar = normalized.length;
+        return rem;
+      },
+      write: (text: any) => {
+        if (closed) return 0;
+        const s = String(text ?? '');
+        if (targetIsOutFile) tracker.fileOutBuf += s;
+        else tracker.stdoutBuf += s;
+        return s.length;
+      },
+      writelines: (linesArg: any) => {
+        for (const item of envHelpers.__pyIter(linesArg)) handle.write(item);
+      },
+      flush: () => {},
+      close: () => {
+        closed = true;
+      },
+      [Symbol.iterator]: function* () {
+        while (cursorLine < rawLines.length) {
+          yield handle.readline();
+        }
+      }
+    };
+    return handle;
+  };
+
+  const stdInStream = makePyStream(ioMode === 'standard' ? rawInput : '', false, false);
+  const stdOutStream = makePyStream('', true, false);
+  const sysObj: { stdin: any; stdout: any; stderr: any } = {
+    stdin: stdInStream,
+    stdout: stdOutStream,
+    stderr: makePyStream('', true, false)
+  };
+
+  const startMs = performance.now();
+  let steps = 0;
+  const tick = () => {
+    steps++;
+    if ((steps & 2047) === 0) {
+      if (tlEnabled && performance.now() - startMs > tlMs) {
+        throw new Error(`Time Limit Exceeded (TLE): Vượt quá giới hạn ${formatSecLabel(tlMs)}.`);
+      }
+      if (steps > maxSteps) {
+        throw new Error(
+          tlEnabled
+            ? `Time Limit Exceeded (TLE): Vượt quá ${formatSecLabel(tlMs)} (quá số bước lặp cho phép).`
+            : `Runtime Error: Nghi ngờ vòng lặp vô hạn (vượt ${(maxSteps / 1_000_000).toFixed(0)} triệu bước bảo vệ).`
+        );
+      }
     }
   };
 
-  const lines = rawInput.replace(/\r\n/g, '\n').split('\n');
-  let lineIdx = 0;
-
-  const envHelpers = {
-    __pyPrint: (args: any[], sep: string = ' ', end: string = '\n') => {
+  const envHelpers: any = {
+    __tick: tick,
+    __pyOpen: (filename: string, mode: string = 'r') => {
+      const m = String(mode || 'r').toLowerCase();
+      const fname = String(filename || '').trim();
+      const isWrite = m.includes('w') || m.includes('a') || m.includes('+');
+      if (isWrite) {
+        if (ioMode !== 'file' || normVirtualFileName(fname) !== normVirtualFileName(expOut)) {
+          throw makeFileWriteError(tracker, fname);
+        }
+        tracker.openedOut = true;
+        if (m.includes('w')) tracker.fileOutBuf = '';
+        return makePyStream('', true, true);
+      }
+      if (ioMode !== 'file' || normVirtualFileName(fname) !== normVirtualFileName(expIn)) {
+        throw makeFileReadError(tracker, fname);
+      }
+      tracker.openedIn = true;
+      return makePyStream(rawInput, false, false);
+    },
+    __pyPrint: (args: any[], sep: string = ' ', end: string = '\n', fileObj: any = null) => {
       const formatted = args
         .map((a) => {
           if (typeof a === 'boolean') return a ? 'True' : 'False';
@@ -866,24 +1146,17 @@ export function runPythonInSandbox(
         })
         .join(sep);
       const outStr = formatted + end;
-      for (const ch of outStr) {
-        if (ch === '\n') {
-          stdoutChunks.push(lineBuffer);
-          lineBuffer = '';
-        } else {
-          lineBuffer += ch;
-        }
-      }
+      const target = fileObj || sysObj.stdout;
+      target.write(outStr);
     },
-    __stdinRead: () => rawInput,
+    __stdinRead: () => sysObj.stdin.read(),
     input: (prompt?: string) => {
-      if (prompt) lineBuffer += prompt;
-      if (lineIdx < lines.length) {
-        return lines[lineIdx++];
-      }
-      return '';
+      if (prompt) sysObj.stdout.write(String(prompt));
+      const line = sysObj.stdin.readline();
+      return String(line).replace(/\n$/, '');
     },
-    print: (...args: any[]) => envHelpers.__pyPrint(args, ' ', '\n'),
+    print: (...args: any[]) => envHelpers.__pyPrint(args, ' ', '\n', null),
+    open: (filename: string, mode: string = 'r') => envHelpers.__pyOpen(filename, mode),
     len: (obj: any) => {
       if (obj === null || obj === undefined) return 0;
       if (typeof obj.length === 'number') return obj.length;
@@ -1152,20 +1425,18 @@ export function runPythonInSandbox(
         return out;
       }
     },
-    sys: {
-      stdin: { read: () => rawInput }
-    }
+    sys: sysObj
   };
 
   try {
-    const { jsCode, strings } = transpilePythonToJS(code);
+    const { jsCode, strings, extraVars } = transpilePythonToJS(code);
     const restored = jsCode.replace(/__PYSTR_(\d+)__/g, (_m, i) => strings[Number(i)]);
-    const decls = collectPythonDeclaredVars(restored);
+    const decls = collectPythonDeclaredVars(restored, extraVars);
     const varDeclLine = decls.length ? `var ${decls.join(', ')};` : '';
 
     const fullScript = `
       const {
-        __pyPrint, __stdinRead, input, print, len, range, int, float, str, bool,
+        __tick, __pyOpen, __pyPrint, __stdinRead, input, print, open, len, range, int, float, str, bool,
         list, set, tuple, dict, sum, max, min, abs, round, pow, sorted, reversed,
         enumerate, zip, all, any, chr, ord, __pyMap, __pyIter, __pyListMul, __pyDivmod,
         __pyJoin, __pyGet, __pyEntries, __pyKeys, __pyValues, __pyBool, __pyConcat, __pyEq, __pyIn, __pyAt, __pySlice,
@@ -1176,23 +1447,60 @@ export function runPythonInSandbox(
       const heappush = heapq.heappush;
       const heappop = heapq.heappop;
       const accumulate = itertools.accumulate;
-      let __steps = 0;
       ${varDeclLine}
       ${restored}
     `;
 
     const runner = new Function('env', fullScript);
     runner(envHelpers);
-    flushStdout();
+
+    const elapsedMs = performance.now() - startMs;
+    if (tlEnabled && elapsedMs > tlMs) {
+      return {
+        stdout: (ioMode === 'file' ? tracker.fileOutBuf : tracker.stdoutBuf).replace(/\n$/, ''),
+        stderr: `Time Limit Exceeded (TLE): Thời gian chạy (${Math.round(elapsedMs)}ms) vượt giới hạn ${formatSecLabel(tlMs)}.`,
+        isError: true
+      };
+    }
+
+    if (ioMode === 'file') {
+      if (!tracker.openedIn && !tracker.openedOut) {
+        return {
+          stdout: tracker.stdoutBuf.replace(/\n$/, ''),
+          stderr: `Lỗi Đọc/Ghi File: Đề đang cấu hình Đọc/Ghi File ("${expIn}" → "${expOut}"), nhưng code của bạn đang đọc/ghi thường (stdin/stdout). Hãy dùng open("${expIn}", "r") và open("${expOut}", "w").`,
+          isError: true
+        };
+      }
+      if (!tracker.openedIn) {
+        return {
+          stdout: tracker.fileOutBuf.replace(/\n$/, ''),
+          stderr: `Lỗi Đọc/Ghi File: Chương trình chưa mở file đầu vào "${expIn}" (đang đọc từ stdin thường).`,
+          isError: true
+        };
+      }
+      if (!tracker.openedOut) {
+        return {
+          stdout: tracker.stdoutBuf.replace(/\n$/, ''),
+          stderr: `Lỗi Đọc/Ghi File: Chương trình chưa ghi ra file đầu ra "${expOut}" (đang in ra stdout thường).`,
+          isError: true
+        };
+      }
+      return {
+        stdout: tracker.fileOutBuf.replace(/\n$/, ''),
+        stderr: '',
+        isError: false
+      };
+    }
+
     return {
-      stdout: stdoutChunks.join('\n'),
+      stdout: tracker.stdoutBuf.replace(/\n$/, ''),
       stderr: '',
       isError: false
     };
   } catch (err: any) {
-    flushStdout();
+    const partialOut = ioMode === 'file' ? tracker.fileOutBuf || tracker.stdoutBuf : tracker.stdoutBuf;
     return {
-      stdout: stdoutChunks.join('\n'),
+      stdout: partialOut.replace(/\n$/, ''),
       stderr: err?.message || 'Python SyntaxError / RuntimeError',
       isError: true
     };
@@ -1491,9 +1799,51 @@ function replaceCppTypeDecls(code: string): string {
   return res;
 }
 
-function transpileCppToJS(code: string): { jsCode: string; strings: string[] } {
+function splitCppStreamChain(chain: string, op: '<<' | '>>'): string[] {
+  const parts: string[] = [];
+  let p = 0;
+  let b = 0;
+  let c = 0;
+  let start = 0;
+  for (let i = 0; i < chain.length; i++) {
+    const ch = chain[i];
+    if (ch === '(') p++;
+    else if (ch === ')') p = Math.max(0, p - 1);
+    else if (ch === '[') b++;
+    else if (ch === ']') b = Math.max(0, b - 1);
+    else if (ch === '{') c++;
+    else if (ch === '}') c = Math.max(0, c - 1);
+    else if (p === 0 && b === 0 && c === 0 && chain.slice(i, i + 2) === op) {
+      const seg = chain.slice(start, i).trim();
+      if (seg) parts.push(seg);
+      start = i + 2;
+      i++;
+    }
+  }
+  const tail = chain.slice(start).trim();
+  if (tail) parts.push(tail);
+  return parts;
+}
+
+function cleanCppStreamCtorArgs(rawArgs: string): string {
+  const cleaned = rawArgs
+    .replace(/\b(?:std::)?ios(?:_base)?::[A-Za-z_]+\b/g, '0')
+    .trim();
+  const firstComma = splitCppTopCommas(cleaned)[0];
+  return firstComma || 'null';
+}
+
+function transpileCppToJS(
+  code: string,
+  ioMode: ProblemIOMode = 'standard'
+): { jsCode: string; strings: string[] } {
   const { cleaned, strings } = stripCppCommentsAndProtectStrings(code);
   let js = cleaned;
+
+  // In Standard I/O mode, skip #ifndef ONLINE_JUDGE ... #endif (often wrapping local freopen)
+  if (ioMode === 'standard') {
+    js = js.replace(/#ifndef\s+ONLINE_JUDGE\b[\s\S]*?#endif\b[^\n]*/g, '');
+  }
 
   // Extract #define constants
   const defines: [string, string][] = [];
@@ -1501,14 +1851,62 @@ function transpileCppToJS(code: string): { jsCode: string; strings: string[] } {
     defines.push([name, val.trim()]);
     return '';
   });
-  // Remove #include lines
+  // Remove #include / remaining preprocessor lines
   js = js.replace(/^\s*#[^\n]*$/gm, '');
-  // Remove using namespace std;
+  // Remove using namespace std; and strip std::
   js = js.replace(/\busing\s+namespace\s+[A-Za-z0-9_:]+\s*;/g, '');
+  js = js.replace(/\bstd::/g, '');
 
   for (const [dName, dVal] of defines) {
     js = js.replace(new RegExp(`\\b${dName}\\b`, 'g'), `(${dVal})`);
   }
+
+  // Track C++ File Stream variables (ifstream / ofstream / fstream) BEFORE scalar/template conversions
+  const inStreams = new Set<string>(['cin']);
+  const outStreams = new Set<string>(['cout']);
+
+  // Normalize ios::in / ios::out inside .open(...) too
+  js = js.replace(/\b(?:ios_base|ios)::(?:in|out|app|trunc|binary|ate)\b/g, 'null');
+
+  // ifstream fin("a.inp"); or ifstream fin("a.inp", ...); or ifstream fin;
+  js = js.replace(
+    /\bifstream\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?\s*;/g,
+    (_m, varName, rawArgs) => {
+      inStreams.add(varName);
+      const arg = rawArgs ? cleanCppStreamCtorArgs(rawArgs) : 'null';
+      if (varName === 'cin') return `cin = __cppOpenIfstream(${arg});`;
+      return `let ${varName} = __cppOpenIfstream(${arg});`;
+    }
+  );
+
+  // ofstream fout("a.out"); or ofstream fout("a.out", ...); or ofstream fout;
+  js = js.replace(
+    /\bofstream\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?\s*;/g,
+    (_m, varName, rawArgs) => {
+      outStreams.add(varName);
+      const arg = rawArgs ? cleanCppStreamCtorArgs(rawArgs) : 'null';
+      if (varName === 'cout') return `cout = __cppOpenOfstream(${arg});`;
+      return `let ${varName} = __cppOpenOfstream(${arg});`;
+    }
+  );
+
+  // fstream f("a.inp", ...);
+  js = js.replace(
+    /\bfstream\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?\s*;/g,
+    (_m, varName, rawArgs) => {
+      const arg = rawArgs ? cleanCppStreamCtorArgs(rawArgs) : 'null';
+      const looksOut = /out|OUT/i.test(rawArgs || '');
+      if (looksOut) {
+        outStreams.add(varName);
+        return `let ${varName} = __cppOpenOfstream(${arg});`;
+      }
+      inStreams.add(varName);
+      return `let ${varName} = __cppOpenIfstream(${arg});`;
+    }
+  );
+
+  // Strip C FILE* declarations: `FILE *fi = fopen(...);` -> `let fi = fopen(...);`
+  js = js.replace(/\bFILE\s*\*\s*([A-Za-z_][A-Za-z0-9_]*)/g, 'let $1');
 
   // Resolve templates & containers
   js = replaceCppTypeDecls(js);
@@ -1517,7 +1915,6 @@ function transpileCppToJS(code: string): { jsCode: string; strings: string[] } {
   js = js.replace(
     /\bstruct\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{([\s\S]*?)\}\s*;/g,
     (_m, sName, body) => {
-      // Very clean struct handling for competitive programming (like SegmentTree)
       return `/* struct ${sName} */\nfunction make_${sName}(...args) { const self = {}; ${body} return self; }`;
     }
   );
@@ -1541,11 +1938,10 @@ function transpileCppToJS(code: string): { jsCode: string; strings: string[] } {
             return tokens[tokens.length - 1] + defPart;
           })
         : [];
-      return `function ${fnName}(${cleanedParams.join(', ')}) {`;
+      return `function ${fnName}(${cleanedParams.join(', ')}) { __tick();`;
     }
   );
 
-  // Convert `main()` parameters if any: `function main() {`
   // Convert C-array declarations: `int cnt[MAXA];` -> `let cnt = __cppVec(MAXA, () => 0);`
   js = js.replace(
     new RegExp(`\\b${primTypes}\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\[([^\\]]+)\\]\\s*(?:=\\s*\\{([^}]*)\\})?\\s*;`, 'g'),
@@ -1608,7 +2004,7 @@ function transpileCppToJS(code: string): { jsCode: string; strings: string[] } {
     '__cppUpperBound($1, $2)'
   );
 
-  // If code uses `auto it = __cppLowerBound(tails, x); if (it == tails.end()) ... *it = x;`
+  // Iterator deref helper for lower_bound/upper_bound
   js = js.replace(
     /\blet\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*__cpp(Lower|Upper)Bound\(([^,]+),\s*([^)]+)\)\s*;/g,
     'let $1 = __cpp$2Bound($3, $4); let __itTarget_$1 = $3;'
@@ -1618,30 +2014,48 @@ function transpileCppToJS(code: string): { jsCode: string; strings: string[] } {
   js = js.replace(/\*([A-Za-z_][A-Za-z0-9_]*)\s*=/g, '__itTarget_$1[$1] =');
   js = js.replace(/\*([A-Za-z_][A-Za-z0-9_]*)\b/g, '__itTarget_$1[$1]');
 
-  // Convert `getline(cin, line)` -> `__cppGetline((v) => line = v)`
-  js = js.replace(/\bgetline\s*\(\s*cin\s*,\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)/g, '__cppGetline((__v) => ($1 = __v))');
-
-  // Convert `cin >> a >> b >> arr[i]` (both standalone and in conditions like `if (cin >> a >> b)` or `if (!(cin >> n))`)
-  js = js.replace(/\bcin((?:\s*>>\s*[^;)\n]+)+)/g, (_m, chain) => {
-    const vars = chain
-      .split('>>')
-      .map((s: string) => s.trim())
-      .filter(Boolean);
-    const setters = vars.map((v: string) => `(__v) => (${v} = __cppReadTarget(${v}, __v))`);
-    return `__cppCin([${setters.join(', ')}])`;
+  // Convert C-style scanf / fscanf
+  js = js.replace(/\bscanf\s*\(\s*([^,]+)\s*,\s*([^)]+)\)/g, (_m, fmt, argsStr) => {
+    const args = splitCppTopCommas(argsStr).map((a) => a.replace(/^\s*&\s*/, '').trim());
+    const setters = args.map((v) => `(__v) => (${v} = __cppReadTarget(${v}, __v))`);
+    return `__cppScanfStream(cin, ${fmt}, [${setters.join(', ')}])`;
+  });
+  js = js.replace(/\bfscanf\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\)/g, (_m, fp, fmt, argsStr) => {
+    const args = splitCppTopCommas(argsStr).map((a) => a.replace(/^\s*&\s*/, '').trim());
+    const setters = args.map((v) => `(__v) => (${v} = __cppReadTarget(${v}, __v))`);
+    return `__cppScanfStream(${fp}, ${fmt}, [${setters.join(', ')}])`;
   });
 
-  // Convert `cout << expr1 << expr2 << endl;`
-  js = js.replace(/\bcout((?:\s*<<\s*[^;\n]+)+)\s*;/g, (_m, chain) => {
-    const parts = chain
-      .split('<<')
-      .map((s: string) => s.trim())
-      .filter(Boolean);
-    return `__cppCout([${parts.map((p: string) => (p === 'endl' ? '__CPP_ENDL' : p === 'fixed' ? '__CPP_FIXED' : p)).join(', ')}]);`;
-  });
+  // Convert `getline(inStream, line)` for cin or any declared ifstream
+  const inPattern = Array.from(inStreams).join('|');
+  const outPattern = Array.from(outStreams).join('|');
 
-  // Step guard on loops and functions
-  js = js.replace(/\b(while\s*\([^)]+\)\s*\{|for\s*\([^)]+\)\s*\{)/g, '$1 if (++__steps > ' + MAX_STEPS + ') throw new Error("Time Limit Exceeded (TLE)");');
+  js = js.replace(
+    new RegExp(`\\bgetline\\s*\\(\\s*(${inPattern})\\s*,\\s*([A-Za-z_][A-Za-z0-9_.\\[\\]]*)\\s*\\)`, 'g'),
+    '__cppStreamGetline($1, (__v) => ($2 = __v))'
+  );
+
+  // Convert `inStream >> a >> b` (for cin or any declared ifstream)
+  js = js.replace(
+    new RegExp(`(?<!\\.)\\b(${inPattern})((?:\\s*>>\\s*[^;)\\n]+)+)`, 'g'),
+    (_m, streamVar, chain) => {
+      const vars = splitCppStreamChain(chain, '>>');
+      const setters = vars.map((v) => `(__v) => (${v} = __cppReadTarget(${v}, __v))`);
+      return `__cppStreamRead(${streamVar}, [${setters.join(', ')}])`;
+    }
+  );
+
+  // Convert `outStream << expr1 << expr2 << endl;` (for cout or any declared ofstream)
+  js = js.replace(
+    new RegExp(`(?<!\\.)\\b(${outPattern})((?:\\s*<<\\s*[^;\\n]+)+)\\s*;`, 'g'),
+    (_m, streamVar, chain) => {
+      const parts = splitCppStreamChain(chain, '<<');
+      return `__cppStreamWrite(${streamVar}, [${parts.map((p) => (p === 'endl' ? '__CPP_ENDL' : p === 'fixed' ? '__CPP_FIXED' : p)).join(', ')}]);`;
+    }
+  );
+
+  // Step & TLE guard on loops
+  js = js.replace(/\b(while\s*\([^)]+\)\s*\{|for\s*\([^)]+\)\s*\{|do\s*\{)/g, '$1 __tick();');
 
   // Safe integer division heuristic for binary search `(low + high) / 2` and `(l + r) / 2`
   js = js.replace(/\(([^()]+)\)\s*\/\s*2\b/g, '__cppDiv2($1)');
@@ -1658,35 +2072,260 @@ function transpileCppToJS(code: string): { jsCode: string; strings: string[] } {
 
 export function runCppInSandbox(
   code: string,
-  rawInput: string
+  rawInput: string,
+  options: ExecuteCodeOptions = {}
 ): { stdout: string; stderr: string; isError: boolean } {
   const syntaxErr = validateCppSyntax(code);
   if (syntaxErr) {
     return { stdout: '', stderr: syntaxErr, isError: true };
   }
 
-  const lines = rawInput.replace(/\r\n/g, '\n').split('\n');
-  let lineIdx = 0;
-  const tokens = rawInput.trim() ? rawInput.trim().split(/\s+/) : [];
-  let tokenIdx = 0;
+  const ioMode: ProblemIOMode = options.ioMode || 'standard';
+  const expIn = (options.inputFileName || 'INPUT.INP').trim();
+  const expOut = (options.outputFileName || 'OUTPUT.OUT').trim();
+  const tlEnabled = options.timeLimitEnabled !== false;
+  const tlMs = tlEnabled ? Math.max(50, options.timeLimitMs ?? 1000) : Infinity;
+  const maxSteps = tlEnabled ? DEFAULT_LIMITED_STEPS : UNLIMITED_SAFETY_STEPS;
 
-  let outBuffer = '';
-  let fixedPrecision: number | null = null;
+  const tracker: SandboxFileTracker = {
+    ioMode,
+    expIn,
+    expOut,
+    openedIn: false,
+    openedOut: false,
+    fileOutBuf: '',
+    stdoutBuf: ''
+  };
+
+  const makeCppInStream = (initialData: string | null) => {
+    let lines: string[] = [];
+    let tokens: string[] = [];
+    let lineIdx = 0;
+    let tokenIdx = 0;
+    let opened = false;
+    let failed = false;
+
+    const loadText = (text: string) => {
+      const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      lines = normalized.split('\n');
+      tokens = normalized.trim() ? normalized.trim().split(/\s+/) : [];
+      lineIdx = 0;
+      tokenIdx = 0;
+      opened = true;
+      failed = false;
+    };
+
+    if (initialData !== null) loadText(initialData);
+
+    return {
+      __isCppInputStream: true,
+      open: (fname: string) => {
+        const clean = String(fname || '').trim();
+        if (ioMode !== 'file' || normVirtualFileName(clean) !== normVirtualFileName(expIn)) {
+          failed = true;
+          throw makeFileReadError(tracker, clean);
+        }
+        tracker.openedIn = true;
+        loadText(rawInput);
+      },
+      close: () => {
+        opened = false;
+      },
+      is_open: () => opened,
+      eof: () => tokenIdx >= tokens.length,
+      fail: () => failed || tokenIdx >= tokens.length,
+      good: () => !failed && tokenIdx < tokens.length,
+      __readToken: () => {
+        if (tokenIdx >= tokens.length) {
+          failed = true;
+          return null;
+        }
+        return tokens[tokenIdx++];
+      },
+      __readLine: () => {
+        if (lineIdx >= lines.length) {
+          failed = true;
+          return null;
+        }
+        return lines[lineIdx++];
+      },
+      __loadRedirect: (text: string) => loadText(text)
+    };
+  };
+
+  const makeCppOutStream = (targetIsFile: boolean) => {
+    let fixedPrecision: number | null = null;
+    let opened = true;
+
+    return {
+      __isCppOutputStream: true,
+      __targetIsFile: targetIsFile,
+      open: (fname: string) => {
+        const clean = String(fname || '').trim();
+        if (ioMode !== 'file' || normVirtualFileName(clean) !== normVirtualFileName(expOut)) {
+          throw makeFileWriteError(tracker, clean);
+        }
+        tracker.openedOut = true;
+        tracker.fileOutBuf = '';
+        targetIsFile = true;
+        opened = true;
+      },
+      close: () => {
+        opened = false;
+      },
+      is_open: () => opened,
+      __redirectToOutFile: () => {
+        targetIsFile = true;
+      },
+      __append: (chunk: string) => {
+        if (targetIsFile) tracker.fileOutBuf += chunk;
+        else tracker.stdoutBuf += chunk;
+      },
+      __getFixed: () => fixedPrecision,
+      __setFixed: (p: number) => {
+        fixedPrecision = p;
+      }
+    };
+  };
+
+  const stdCin = makeCppInStream(ioMode === 'standard' ? rawInput : '');
+  const stdCout = makeCppOutStream(false);
+
+  const startMs = performance.now();
+  let steps = 0;
+  const tick = () => {
+    steps++;
+    if ((steps & 2047) === 0) {
+      if (tlEnabled && performance.now() - startMs > tlMs) {
+        throw new Error(`Time Limit Exceeded (TLE): Vượt quá giới hạn ${formatSecLabel(tlMs)}.`);
+      }
+      if (steps > maxSteps) {
+        throw new Error(
+          tlEnabled
+            ? `Time Limit Exceeded (TLE): Vượt quá ${formatSecLabel(tlMs)} (quá số bước lặp cho phép).`
+            : `Runtime Error: Nghi ngờ vòng lặp vô hạn (vượt ${(maxSteps / 1_000_000).toFixed(0)} triệu bước bảo vệ).`
+        );
+      }
+    }
+  };
+
+  const formatPrintf = (fmt: string, args: any[]): string => {
+    let argIdx = 0;
+    return String(fmt)
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '\t')
+      .replace(/%([0-9.]*)(lld|llu|ld|lu|lf|d|i|u|f|s|c|%)/g, (_m, mod, spec) => {
+        if (spec === '%') return '%';
+        const val = args[argIdx++];
+        if (spec === 'f' || spec === 'lf') {
+          const decMatch = String(mod).match(/\.(\d+)/);
+          const prec = decMatch ? Number(decMatch[1]) : 6;
+          return Number(val).toFixed(prec);
+        }
+        if (spec === 'd' || spec === 'i' || spec === 'lld' || spec === 'ld') {
+          return String(Math.trunc(Number(val) || 0));
+        }
+        return String(val ?? '');
+      });
+  };
 
   const envHelpers = {
+    __tick: tick,
+    __stdCin: stdCin,
+    __stdCout: stdCout,
+    stdin: stdCin,
+    stdout: stdCout,
+    stderr: makeCppOutStream(false),
     __CPP_ENDL: Symbol('endl'),
     __CPP_FIXED: Symbol('fixed'),
     setprecision: (p: number) => ({ __setprecision: p }),
-    __cppCin: (setters: ((val: string) => void)[]) => {
+    freopen: (fname: string, mode: string, stream: any) => {
+      const m = String(mode || '').toLowerCase();
+      const clean = String(fname || '').trim();
+      const isRead = m.includes('r') && !m.includes('+');
+      if (isRead || stream === stdCin) {
+        if (ioMode !== 'file' || normVirtualFileName(clean) !== normVirtualFileName(expIn)) {
+          throw makeFileReadError(tracker, clean);
+        }
+        tracker.openedIn = true;
+        stdCin.__loadRedirect(rawInput);
+        return stdCin;
+      }
+      if (ioMode !== 'file' || normVirtualFileName(clean) !== normVirtualFileName(expOut)) {
+        throw makeFileWriteError(tracker, clean);
+      }
+      tracker.openedOut = true;
+      tracker.fileOutBuf = '';
+      stdCout.__redirectToOutFile();
+      return stdCout;
+    },
+    fopen: (fname: string, mode: string) => {
+      const clean = String(fname || '').trim();
+      const m = String(mode || 'r').toLowerCase();
+      if (m.includes('w') || m.includes('a')) {
+        if (ioMode !== 'file' || normVirtualFileName(clean) !== normVirtualFileName(expOut)) {
+          return null;
+        }
+        tracker.openedOut = true;
+        if (m.includes('w')) tracker.fileOutBuf = '';
+        return makeCppOutStream(true);
+      }
+      if (ioMode !== 'file' || normVirtualFileName(clean) !== normVirtualFileName(expIn)) {
+        return null;
+      }
+      tracker.openedIn = true;
+      return makeCppInStream(rawInput);
+    },
+    fclose: (fp: any) => {
+      if (fp && typeof fp.close === 'function') fp.close();
+      return 0;
+    },
+    printf: (fmt: string, ...args: any[]) => {
+      stdCout.__append(formatPrintf(fmt, args));
+    },
+    fprintf: (fp: any, fmt: string, ...args: any[]) => {
+      if (!fp || typeof fp.__append !== 'function') {
+        throw new Error('File I/O Error: Con trỏ FILE* ghi không hợp lệ (hoặc file chưa mở thành công).');
+      }
+      fp.__append(formatPrintf(fmt, args));
+    },
+    __cppScanfStream: (stream: any, _fmt: string, setters: ((val: string) => void)[]) => {
+      if (!stream || typeof stream.__readToken !== 'function') {
+        throw new Error('File I/O Error: Con trỏ FILE* đọc không hợp lệ (hoặc file chưa mở thành công).');
+      }
+      let readCount = 0;
       for (const setter of setters) {
-        if (tokenIdx >= tokens.length) return false;
-        setter(tokens[tokenIdx++]);
+        const tok = stream.__readToken();
+        if (tok === null) return readCount || -1;
+        setter(tok);
+        readCount++;
+      }
+      return readCount;
+    },
+    __cppOpenIfstream: (fname: string | null) => {
+      const s = makeCppInStream(null);
+      if (fname !== null && fname !== undefined) s.open(fname);
+      return s;
+    },
+    __cppOpenOfstream: (fname: string | null) => {
+      const s = makeCppOutStream(true);
+      if (fname !== null && fname !== undefined) s.open(fname);
+      return s;
+    },
+    __cppStreamRead: (stream: any, setters: ((val: string) => void)[]) => {
+      if (!stream || typeof stream.__readToken !== 'function') return false;
+      for (const setter of setters) {
+        const tok = stream.__readToken();
+        if (tok === null) return false;
+        setter(tok);
       }
       return true;
     },
-    __cppGetline: (setter: (val: string) => void) => {
-      if (lineIdx >= lines.length) return false;
-      setter(lines[lineIdx++]);
+    __cppStreamGetline: (stream: any, setter: (val: string) => void) => {
+      if (!stream || typeof stream.__readLine !== 'function') return false;
+      const line = stream.__readLine();
+      if (line === null) return false;
+      setter(line);
       return true;
     },
     __cppReadTarget: (currentVal: any, rawToken: string) => {
@@ -1695,23 +2334,26 @@ export function runCppInSandbox(
       const n = Number(rawToken);
       return Number.isNaN(n) ? rawToken : n;
     },
-    __cppCout: (items: any[]) => {
+    __cppStreamWrite: (stream: any, items: any[]) => {
+      if (!stream || typeof stream.__append !== 'function') return;
       for (const item of items) {
         if (item === envHelpers.__CPP_ENDL) {
-          outBuffer += '\n';
+          stream.__append('\n');
         } else if (item === envHelpers.__CPP_FIXED) {
-          fixedPrecision = fixedPrecision ?? 6;
+          stream.__setFixed(stream.__getFixed() ?? 6);
         } else if (item && typeof item === 'object' && '__setprecision' in item) {
-          fixedPrecision = item.__setprecision;
+          stream.__setFixed(item.__setprecision);
         } else if (typeof item === 'boolean') {
-          outBuffer += item ? '1' : '0';
-        } else if (typeof item === 'number' && fixedPrecision !== null && !Number.isInteger(item)) {
-          outBuffer += item.toFixed(fixedPrecision);
+          stream.__append(item ? '1' : '0');
+        } else if (typeof item === 'number' && stream.__getFixed() !== null && !Number.isInteger(item)) {
+          stream.__append(item.toFixed(stream.__getFixed()));
         } else {
-          outBuffer += String(item);
+          stream.__append(String(item));
         }
       }
     },
+
+
     __cppVec: (size: number, factory: () => any) => {
       const n = Math.max(0, Math.min(size, 500_000));
       const arr = new Array(n);
@@ -1881,18 +2523,22 @@ export function runCppInSandbox(
   };
 
   try {
-    // Attach Array helpers non-enumerably for clean .__cppEmpty(), .__cppAssign(), .__cppResize()
-    const { jsCode, strings } = transpileCppToJS(code);
+    const { jsCode, strings } = transpileCppToJS(code, ioMode);
     const restored = jsCode.replace(/__CPPSTR_(\d+)__/g, (_m, i) => strings[Number(i)]);
 
     const fullScript = `
       const {
-        __CPP_ENDL, __CPP_FIXED, setprecision, __cppCin, __cppGetline, __cppReadTarget,
-        __cppCout, __cppVec, __cppMap, __cppSet, __cppQueue, __cppStack, __cppPQ,
+        __tick, __stdCin, __stdCout, stdin, stdout, stderr,
+        __CPP_ENDL, __CPP_FIXED, setprecision, freopen, fopen, fclose, printf, fprintf,
+        __cppScanfStream, __cppOpenIfstream, __cppOpenOfstream,
+        __cppStreamRead, __cppStreamGetline, __cppReadTarget, __cppStreamWrite,
+        __cppVec, __cppMap, __cppSet, __cppQueue, __cppStack, __cppPQ,
         __cppMakePair, __cppSort, __cppLowerBound, __cppUpperBound, __cppDiv2, __cppInt, __cppGcd,
         max, min, abs, sqrt, pow, floor, ceil, isalnum, isalpha, isdigit, tolower, toupper,
         stoi, stoll, to_string
       } = env;
+      let cin = __stdCin;
+      let cout = __stdCout;
       if (!Array.prototype.__cppEmpty) {
         Object.defineProperties(Array.prototype, {
           __cppEmpty: { value: function() { return this.length === 0; }, configurable: true },
@@ -1900,38 +2546,86 @@ export function runCppInSandbox(
           __cppResize: { value: function(n, v = 0) { while (this.length < n) this.push(v); this.length = n; }, configurable: true }
         });
       }
-      let __steps = 0;
       ${restored}
       if (typeof main === 'function') main();
     `;
 
     const runner = new Function('env', fullScript);
     runner(envHelpers);
+
+    const elapsedMs = performance.now() - startMs;
+    if (tlEnabled && elapsedMs > tlMs) {
+      return {
+        stdout: (ioMode === 'file' ? tracker.fileOutBuf : tracker.stdoutBuf).replace(/\n$/, ''),
+        stderr: `Time Limit Exceeded (TLE): Thời gian chạy (${Math.round(elapsedMs)}ms) vượt giới hạn ${formatSecLabel(tlMs)}.`,
+        isError: true
+      };
+    }
+
+    if (ioMode === 'file') {
+      if (!tracker.openedIn && !tracker.openedOut) {
+        return {
+          stdout: tracker.stdoutBuf.replace(/\n$/, ''),
+          stderr: `Lỗi Đọc/Ghi File: Đề đang cấu hình Đọc/Ghi File ("${expIn}" → "${expOut}"), nhưng code đang dùng nhập/xuất chuẩn (cin/cout). Hãy dùng freopen hoặc ifstream/ofstream.`,
+          isError: true
+        };
+      }
+      if (!tracker.openedIn) {
+        return {
+          stdout: tracker.fileOutBuf.replace(/\n$/, ''),
+          stderr: `Lỗi Đọc/Ghi File: Chương trình chưa mở file đầu vào "${expIn}" (đang đọc từ stdin thường).`,
+          isError: true
+        };
+      }
+      if (!tracker.openedOut) {
+        return {
+          stdout: tracker.stdoutBuf.replace(/\n$/, ''),
+          stderr: `Lỗi Đọc/Ghi File: Chương trình chưa ghi ra file đầu ra "${expOut}" (đang xuất ra stdout thường).`,
+          isError: true
+        };
+      }
+      return {
+        stdout: tracker.fileOutBuf.replace(/\n$/, ''),
+        stderr: '',
+        isError: false
+      };
+    }
+
     return {
-      stdout: outBuffer.replace(/\n$/, ''),
+      stdout: tracker.stdoutBuf.replace(/\n$/, ''),
       stderr: '',
       isError: false
     };
   } catch (err: any) {
+    const partialOut = ioMode === 'file' ? tracker.fileOutBuf || tracker.stdoutBuf : tracker.stdoutBuf;
+    const msg = err?.message || 'Lỗi biên dịch hoặc thực thi C++';
+    const isDirectCategory =
+      msg.includes('Time Limit Exceeded') ||
+      msg.includes('File I/O Error') ||
+      msg.includes('FileNotFoundError') ||
+      msg.includes('Lỗi Đọc/Ghi File');
     return {
-      stdout: outBuffer.replace(/\n$/, ''),
-      stderr: `Compile / Runtime Error: ${err?.message || 'Lỗi biên dịch hoặc thực thi C++'}`,
+      stdout: partialOut.replace(/\n$/, ''),
+      stderr: isDirectCategory ? msg : `Compile / Runtime Error: ${msg}`,
       isError: true
     };
   }
 }
 
 /**
- * Execute actual user C++ or Python code strictly against stdin.
+ * Execute actual user C++ or Python code strictly honoring I/O mode (Standard vs File) and TLE budget.
  * Falls back to /api/gemini/run-code ONLY if local sandbox fails with an unsupported construct.
  */
 export async function executeCode(
   _problemId: string,
   language: CodeLanguage,
   code: string,
-  input: string
+  input: string,
+  options: ExecuteCodeOptions = {}
 ): Promise<{ stdout: string; stderr: string; runtimeMs: number; isError: boolean }> {
   const startTime = performance.now();
+  const tlEnabled = options.timeLimitEnabled !== false;
+  const tlMs = tlEnabled ? Math.max(50, options.timeLimitMs ?? 1000) : null;
 
   if (!code.trim()) {
     return {
@@ -1944,24 +2638,38 @@ export async function executeCode(
 
   // 1. Run locally first in real sandbox (fast, deterministic, offline-safe, executes user's real logic)
   const localRes =
-    language === 'cpp' ? runCppInSandbox(code, input) : runPythonInSandbox(code, input);
+    language === 'cpp'
+      ? runCppInSandbox(code, input, options)
+      : runPythonInSandbox(code, input, options);
 
   if (!localRes.isError) {
     const endTime = performance.now();
+    const runtimeMs = Math.max(4, Math.round(endTime - startTime));
+    if (tlEnabled && tlMs !== null && runtimeMs > tlMs) {
+      return {
+        stdout: localRes.stdout,
+        stderr: `Time Limit Exceeded (TLE): Thời gian chạy ${runtimeMs}ms vượt giới hạn ${formatSecLabel(tlMs)}.`,
+        runtimeMs,
+        isError: true
+      };
+    }
     return {
       stdout: localRes.stdout,
       stderr: '',
-      runtimeMs: Math.max(4, Math.round(endTime - startTime)),
+      runtimeMs,
       isError: false
     };
   }
 
-  // 2. If obvious syntax error (missing main / unbalanced braces), fail immediately without guessing
+  // 2. If deterministic error (syntax error, TLE, or explicit File I/O vs Standard I/O mismatch), fail immediately
   if (
     localRes.stderr.includes('Không tìm thấy hàm int main') ||
     localRes.stderr.includes('Dư dấu đóng') ||
     localRes.stderr.includes('Thiếu dấu đóng') ||
-    localRes.stderr.includes('Time Limit Exceeded')
+    localRes.stderr.includes('Time Limit Exceeded') ||
+    localRes.stderr.includes('File I/O Error') ||
+    localRes.stderr.includes('FileNotFoundError') ||
+    localRes.stderr.includes('Lỗi Đọc/Ghi File')
   ) {
     const endTime = performance.now();
     return {
@@ -1977,16 +2685,35 @@ export async function executeCode(
     const response = await safeFetchJson<any>('/api/gemini/run-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, language, input })
+      body: JSON.stringify({
+        code,
+        language,
+        input,
+        problemDesc: options.problemDesc,
+        ioMode: options.ioMode || 'standard',
+        inputFileName: options.inputFileName,
+        outputFileName: options.outputFileName,
+        timeLimitEnabled: tlEnabled,
+        timeLimitMs: tlMs
+      })
     });
     if (response.ok && response.data) {
       const data = response.data;
       if (data && typeof data.stdout === 'string') {
         const endTime = performance.now();
+        const reportedMs = Math.max(10, Math.round(data.runtimeMs || endTime - startTime));
+        if (!data.isError && tlEnabled && tlMs !== null && reportedMs > tlMs) {
+          return {
+            stdout: data.stdout,
+            stderr: `Time Limit Exceeded (TLE): Thời gian thực thi ${reportedMs}ms vượt giới hạn ${formatSecLabel(tlMs)}.`,
+            runtimeMs: reportedMs,
+            isError: true
+          };
+        }
         return {
           stdout: data.stdout,
           stderr: data.stderr || '',
-          runtimeMs: Math.max(10, Math.round(data.runtimeMs || endTime - startTime)),
+          runtimeMs: reportedMs,
           isError: Boolean(data.isError)
         };
       }
@@ -2005,7 +2732,7 @@ export async function executeCode(
 }
 
 /**
- * Grade all test cases (sample + hidden) accurately
+ * Grade all test cases (sample + hidden) accurately honoring TLE & I/O mode
  */
 export async function judgeProblem(
   problem: CodingProblem,
@@ -2023,9 +2750,26 @@ export async function judgeProblem(
   let passedCount = 0;
   let compileError = false;
 
+  const probTlEnabled = problem.timeLimitEnabled ?? true;
+  const probTlMs = probTlEnabled
+    ? problem.timeLimitMs ?? parseTimeLimitMs(problem.timeLimit, 1000)
+    : null;
+
   for (let i = 0; i < allCases.length; i++) {
     const tc = allCases[i];
-    const exec = await executeCode(problem.id, language, code, tc.input);
+    const tcTlEnabled = tc.timeLimitEnabled ?? probTlEnabled;
+    const tcTlMs = tcTlEnabled
+      ? tc.timeLimitMs ?? probTlMs ?? 1000
+      : null;
+
+    const exec = await executeCode(problem.id, language, code, tc.input, {
+      ioMode: problem.ioMode || 'standard',
+      inputFileName: problem.inputFileName,
+      outputFileName: problem.outputFileName,
+      timeLimitEnabled: tcTlEnabled,
+      timeLimitMs: tcTlMs,
+      problemDesc: problem.description
+    });
 
     if (exec.isError) {
       if (exec.stderr.toLowerCase().includes('compile')) compileError = true;
@@ -2036,8 +2780,10 @@ export async function judgeProblem(
         expected: tc.expectedOutput,
         actual: exec.stderr,
         runtimeMs: exec.runtimeMs,
-        status: exec.stderr.includes('TLE') ? 'Time Limit Exceeded' : 'Runtime Error',
-        difficulty: tc.difficulty
+        status: exec.stderr.includes('TLE') || exec.stderr.includes('Time Limit Exceeded')
+          ? 'Time Limit Exceeded'
+          : 'Runtime Error',
+        difficulty: tc.difficulty || (tc.isSample ? 'Cơ bản' : undefined)
       });
       continue;
     }
@@ -2056,7 +2802,7 @@ export async function judgeProblem(
       actual: actualTrimmed,
       runtimeMs: exec.runtimeMs,
       status: passed ? 'Accepted' : 'Wrong Answer',
-      difficulty: tc.difficulty
+      difficulty: tc.difficulty || (tc.isSample ? 'Cơ bản' : undefined)
     });
   }
 

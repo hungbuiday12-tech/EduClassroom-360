@@ -2303,6 +2303,11 @@ Nhiệm vụ của bạn:
    - inputFormat: Quy cách dữ liệu đầu vào.
    - outputFormat: Quy cách dữ liệu đầu ra.
    - constraints: Các ràng buộc thời gian, bộ nhớ, giá trị N, A[i].
+   - ioMode: "file" nếu đề yêu cầu đọc/ghi tệp (.INP/.OUT, freopen, fstream, open file...), ngược lại là "standard" (stdin/stdout).
+   - inputFileName: tên file input nếu ioMode là "file" (ví dụ "BAI1.INP"), ngược lại "".
+   - outputFileName: tên file output nếu ioMode là "file" (ví dụ "BAI1.OUT"), ngược lại "".
+   - timeLimitEnabled: true nếu có giới hạn thời gian (mặc định true), false nếu đề ghi không giới hạn thời gian.
+   - timeLimitMs: giới hạn thời gian theo mili-giây (ví dụ 1.0s -> 1000, 0.5s -> 500, 2s -> 2000), hoặc null nếu timeLimitEnabled = false.
 3. RẤT QUAN TRỌNG: Hãy TỰ GIẢI bài toán này một cách chính xác tuyệt đối, sau đó sinh bộ Test Cases theo **BẬC THANG ĐỘ KHÓ TĂNG DẦN** (tuyệt đối KHÔNG dồn các test quá khó hoặc đánh đố ngay từ đầu):
    - sampleCases (2 test, difficulty: "Cơ bản"): Dữ liệu rất nhỏ, đơn giản, giúp người học hiểu đề và thử ngay ý tưởng cơ bản.
    - hiddenCases (6 test SẮP XẾP TĂNG DẦN ĐỘ KHÓ TỪ DỄ ĐẾN KHÓ):
@@ -2321,7 +2326,7 @@ ${text ? `Dữ liệu văn bản người dùng cung cấp:\n${text}` : ''}
     const response = await callGeminiWithFallback({
       ai,
       contents: { parts },
-      systemInstruction: `You are an elite competitive programming judge. Extract the problem from user input (OCR/text) and output strict JSON with keys: title (string), description (string), inputFormat (string), outputFormat (string), constraints (array of strings), sampleCases (array of objects { id, input, expectedOutput, isSample: true, difficulty: "Cơ bản", explanation }), hiddenCases (array of 6 objects strictly ordered from easiest to hardest: { id, input, expectedOutput, isSample: false, difficulty: "Cơ bản" | "Trung bình" | "Nâng cao" | "Thử thách" }), referenceCpp (string), referencePython (string). Ensure expectedOutput is 100% mathematically and algorithmically accurate.`,
+      systemInstruction: `You are an elite competitive programming judge. Extract the problem from user input (OCR/text) and output strict JSON with keys: title (string), description (string), inputFormat (string), outputFormat (string), constraints (array of strings), ioMode ("standard" | "file"), inputFileName (string), outputFileName (string), timeLimitEnabled (boolean), timeLimitMs (number | null), sampleCases (array of objects { id, input, expectedOutput, isSample: true, difficulty: "Cơ bản", explanation }), hiddenCases (array of 6 objects strictly ordered from easiest to hardest: { id, input, expectedOutput, isSample: false, difficulty: "Cơ bản" | "Trung bình" | "Nâng cao" | "Thử thách" }), referenceCpp (string), referencePython (string). Ensure expectedOutput is 100% mathematically and algorithmically accurate.`,
       responseMimeType: 'application/json',
       thinkingLevel: ThinkingLevel.LOW,
       timeoutMs: 35000
@@ -2353,11 +2358,31 @@ ${text ? `Dữ liệu văn bản người dùng cung cấp:\n${text}` : ''}
  */
 app.post('/api/gemini/run-code', async (req: Request, res: Response) => {
   try {
-    const { code, language, input, problemDesc } = req.body;
+    const {
+      code,
+      language,
+      input,
+      problemDesc,
+      ioMode = 'standard',
+      inputFileName = 'INPUT.INP',
+      outputFileName = 'OUTPUT.OUT',
+      timeLimitEnabled = true,
+      timeLimitMs = 1000
+    } = req.body;
 
     if (!code) {
       return res.status(400).json({ error: 'Code không được để trống' });
     }
+
+    const tlConstraintText =
+      timeLimitEnabled === false
+        ? 'KHÔNG giới hạn thời gian (Unlimited Time Limit - không đánh lỗi TLE trừ vòng lặp vô tận thực sự).'
+        : `Giới hạn thời gian (Time Limit / TLE): ${timeLimitMs || 1000}ms. Nếu chương trình có vòng lặp vô tận hoặc độ phức tạp không thể chạy xong trong ${timeLimitMs || 1000}ms với dữ liệu đầu vào này, bắt buộc trả về isError: true và stderr bắt đầu bằng "Time Limit Exceeded (TLE): ...".`;
+
+    const ioConstraintText =
+      ioMode === 'file'
+        ? `CHẾ ĐỘ ĐỌC/GHI FILE BẮT BUỘC: Dữ liệu đầu vào chỉ nằm trong file "${inputFileName}" và kết quả bắt buộc phải được ghi vào file "${outputFileName}" (stdin trống). Nếu mã nguồn chỉ đọc/ghi stdin/stdout thường (cin/cout/input()/print() mà không dùng freopen/ifstream/ofstream/fopen/open("${inputFileName}")/open("${outputFileName}")) hoặc mở sai tên file, bắt buộc trả về isError: true và stderr bắt đầu bằng "Lỗi Đọc/Ghi File: ...".`
+        : `CHẾ ĐỘ ĐỌC/GHI CHUẨN (stdin/stdout): Không có file .INP/.OUT nào được gắn (ngoại trừ khối #ifndef ONLINE_JUDGE). Nếu mã nguồn cố mở file bên ngoài để đọc/ghi thay vì stdin/stdout, trả về isError: true và stderr bắt đầu bằng "Lỗi Đọc/Ghi File: ...".`;
 
     const ai = getGenAI();
     const prompt = `
@@ -2367,17 +2392,21 @@ Dưới đây là mã nguồn của thí sinh:
 ${code}
 \`\`\`
 
-Dữ liệu đầu vào (stdin):
+Dữ liệu đầu vào (${ioMode === 'file' ? `nội dung file ${inputFileName}` : 'stdin'}):
 \`\`\`
 ${input || ''}
 \`\`\`
 
+Quy tắc thực thi bắt buộc:
+- ${ioConstraintText}
+- ${tlConstraintText}
+
 Yêu cầu bài toán (nếu có):
 ${problemDesc || 'Chạy đúng theo luồng I/O của mã nguồn'}
 
-Hãy mô phỏng việc biên dịch và chạy chương trình trên với stdin đã cho:
-1. Nếu mã có lỗi cú pháp hoặc runtime error, trả về isError: true và stderr.
-2. Nếu mã chạy bình thường, tính toán chính xác stdout mà chương trình in ra console (chỉ in nội dung stdout thuần, không kèm chú thích hay markdown).
+Hãy mô phỏng việc biên dịch và chạy chương trình trên với dữ liệu đã cho:
+1. Nếu mã có lỗi cú pháp, vi phạm chế độ Đọc/Ghi File vs Chuẩn, TLE, hoặc runtime error, trả về isError: true và stderr rõ ràng.
+2. Nếu mã chạy bình thường, tính toán chính xác ${ioMode === 'file' ? `nội dung ghi vào file ${outputFileName}` : 'stdout'} (chỉ in nội dung đầu ra thuần, không kèm chú thích hay markdown).
 Trả về JSON định dạng: { "stdout": string, "stderr": string, "isError": boolean, "runtimeMs": number }
 `;
 

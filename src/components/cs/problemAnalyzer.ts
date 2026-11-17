@@ -1,11 +1,74 @@
-import { CodeLanguage, CodingProblem, TestCase, TestDifficultyTier } from '../../types';
-import { executeCode } from './codeRunner';
+import { CodeLanguage, CodingProblem, ProblemIOMode, TestCase, TestDifficultyTier } from '../../types';
+import { executeCode, parseTimeLimitMs } from './codeRunner';
 import { safeFetchJson } from '../../lib/apiClient';
 
 export interface UserSamplePair {
   input: string;
   expectedOutput: string;
   explanation?: string;
+}
+
+export interface DetectedExecutionConfig {
+  ioMode: ProblemIOMode;
+  inputFileName: string;
+  outputFileName: string;
+  timeLimitEnabled: boolean;
+  timeLimitMs: number | null;
+}
+
+export function detectProblemExecutionConfig(rawText: string = ''): DetectedExecutionConfig {
+  const txt = rawText || '';
+  const lower = txt.toLowerCase();
+
+  let timeLimitEnabled = true;
+  let timeLimitMs: number | null = 1000;
+
+  if (/không\s*giới\s*hạn\s*thời\s*gian|no\s*time\s*limit|unlimited\s*time/i.test(lower)) {
+    timeLimitEnabled = false;
+    timeLimitMs = null;
+  } else {
+    const tlMatch = txt.match(
+      /(?:thời\s*gian(?:\s*chạy|\s*giới\s*hạn)?|time\s*limit)\s*[:：]?\s*(\d+(?:[.,]\d+)?)\s*(ms|giây|sec|seconds|s)\b/i
+    );
+    if (tlMatch) {
+      const val = Number(tlMatch[1].replace(',', '.'));
+      const unit = tlMatch[2].toLowerCase();
+      if (!Number.isNaN(val) && val > 0) {
+        timeLimitMs = unit === 'ms' ? Math.max(50, Math.round(val)) : Math.max(50, Math.round(val * 1000));
+      }
+    }
+  }
+
+  let ioMode: ProblemIOMode = 'standard';
+  let inputFileName = 'INPUT.INP';
+  let outputFileName = 'OUTPUT.OUT';
+
+  const freopenIn = txt.match(/freopen\s*\(\s*["']([^"']+)["']\s*,\s*["']r["']/i);
+  const freopenOut = txt.match(/freopen\s*\(\s*["']([^"']+)["']\s*,\s*["']w["']/i);
+  const extIn = txt.match(/\b([A-Za-z0-9_-]+\.(?:INP|IN|inp|in))\b/);
+  const extOut = txt.match(/\b([A-Za-z0-9_-]+\.(?:OUT|out))\b/);
+  const mentionsFileKeyword =
+    /(?:tệp|file\s*(?:văn\s*bản|vào|ra|input|output)|đọc\s*(?:từ|dữ\s*liệu\s*từ)\s*(?:file|tệp)|ghi\s*(?:kết\s*quả\s*)?(?:ra|vào)\s*(?:file|tệp))/i.test(
+      txt
+    );
+
+  if (freopenIn || freopenOut || (extIn && extOut)) {
+    ioMode = 'file';
+    inputFileName = (freopenIn?.[1] || extIn?.[1] || 'INPUT.INP').trim();
+    outputFileName = (freopenOut?.[1] || extOut?.[1] || 'OUTPUT.OUT').trim();
+  } else if (mentionsFileKeyword && (extIn || extOut)) {
+    ioMode = 'file';
+    if (extIn) inputFileName = extIn[1].trim();
+    if (extOut) outputFileName = extOut[1].trim();
+  }
+
+  return {
+    ioMode,
+    inputFileName,
+    outputFileName,
+    timeLimitEnabled,
+    timeLimitMs
+  };
 }
 
 export interface AnalyzeProblemRequest {
@@ -16,6 +79,12 @@ export interface AnalyzeProblemRequest {
   userSamples?: UserSamplePair[];
   referenceCode?: string;
   referenceLang?: CodeLanguage;
+  timeLimitEnabled?: boolean;
+  timeLimitMs?: number | null;
+  ioMode?: ProblemIOMode;
+  inputFileName?: string;
+  outputFileName?: string;
+  userConfiguredExecution?: boolean;
 }
 
 export interface AnalyzeProblemResult {
@@ -717,6 +786,57 @@ export async function analyzeProblemAndGenerateTests(
   const combinedSamples: UserSamplePair[] =
     userSamples.length > 0 ? userSamples : extractedFromText;
 
+  const detectedLocal = detectProblemExecutionConfig(req.text);
+
+  const resolveExecConfig = (aiProblem?: any): DetectedExecutionConfig => {
+    const aiTimeMs =
+      aiProblem?.timeLimitEnabled === false
+        ? null
+        : typeof aiProblem?.timeLimitMs === 'number'
+        ? aiProblem.timeLimitMs
+        : parseTimeLimitMs(aiProblem?.timeLimit, detectedLocal.timeLimitMs ?? 1000);
+
+    const aiIoMode: ProblemIOMode =
+      aiProblem?.ioMode === 'file' ||
+      (aiProblem?.inputFileName && aiProblem?.outputFileName)
+        ? 'file'
+        : detectedLocal.ioMode;
+
+    const tlEnabled = req.userConfiguredExecution
+      ? req.timeLimitEnabled !== false
+      : aiProblem?.timeLimitEnabled !== undefined
+      ? Boolean(aiProblem.timeLimitEnabled)
+      : detectedLocal.timeLimitEnabled;
+
+    const tlMs = tlEnabled
+      ? (req.userConfiguredExecution ? req.timeLimitMs : aiTimeMs) ?? detectedLocal.timeLimitMs ?? 1000
+      : null;
+
+    const finalIoMode: ProblemIOMode = req.userConfiguredExecution
+      ? req.ioMode || 'standard'
+      : aiIoMode;
+
+    const finalInFile =
+      (req.userConfiguredExecution ? req.inputFileName : aiProblem?.inputFileName) ||
+      detectedLocal.inputFileName ||
+      'INPUT.INP';
+    const finalOutFile =
+      (req.userConfiguredExecution ? req.outputFileName : aiProblem?.outputFileName) ||
+      detectedLocal.outputFileName ||
+      'OUTPUT.OUT';
+
+    return {
+      timeLimitEnabled: tlEnabled,
+      timeLimitMs: tlMs,
+      ioMode: finalIoMode,
+      inputFileName: finalInFile,
+      outputFileName: finalOutFile
+    };
+  };
+
+  const formatTimeLabel = (enabled: boolean, ms: number | null) =>
+    enabled && ms ? `${(ms / 1000).toFixed(ms % 1000 === 0 ? 1 : 2).replace(/0+$/, '').replace(/\.$/, '')}s` : 'Không giới hạn';
+
   // 1. Try Server AI Endpoint (/api/gemini/analyze-problem)
   let aiError: string | undefined;
   try {
@@ -739,6 +859,8 @@ export async function analyzeProblemAndGenerateTests(
     } else if (res.data) {
       const data = res.data;
       if (data.success && data.problem) {
+        const execCfg = resolveExecConfig(data.problem);
+
         const aiSamples: TestCase[] = Array.isArray(data.problem.sampleCases)
           ? data.problem.sampleCases.map((tc: any, idx: number) => ({
               id: idx + 1,
@@ -778,7 +900,7 @@ export async function analyzeProblemAndGenerateTests(
           )
           .map((tc: TestCase, idx: number) => ({ ...tc, id: mergedSamples.length + idx + 1 }));
 
-        // If user provided AC Reference Code or AI returned referencePython/referenceCpp, verify hiddenCases outputs!
+        // Verify hiddenCases with oracle code using standard stdin/stdout for oracle unless oracle itself opens files
         const oracleCode = req.referenceCode?.trim() || data.problem.referencePython || data.problem.referenceCpp;
         const oracleLang: CodeLanguage = req.referenceCode?.trim()
           ? req.referenceLang || 'cpp'
@@ -787,9 +909,25 @@ export async function analyzeProblemAndGenerateTests(
           : 'cpp';
 
         if (oracleCode) {
+          const oracleUsesFile =
+            /\b(freopen|ifstream|ofstream|open\s*\()/i.test(oracleCode);
+          const oracleOpts = oracleUsesFile
+            ? {
+                ioMode: 'file' as ProblemIOMode,
+                inputFileName: execCfg.inputFileName,
+                outputFileName: execCfg.outputFileName,
+                timeLimitEnabled: execCfg.timeLimitEnabled,
+                timeLimitMs: execCfg.timeLimitMs
+              }
+            : {
+                ioMode: 'standard' as ProblemIOMode,
+                timeLimitEnabled: execCfg.timeLimitEnabled,
+                timeLimitMs: execCfg.timeLimitMs
+              };
+
           const verifiedHidden: TestCase[] = [];
           for (const hc of hiddenCases) {
-            const exec = await executeCode('CUSTOM_ORACLE', oracleLang, oracleCode, hc.input);
+            const exec = await executeCode('CUSTOM_ORACLE', oracleLang, oracleCode, hc.input, oracleOpts);
             verifiedHidden.push({
               ...hc,
               expectedOutput: !exec.isError && exec.stdout.trim() ? exec.stdout.trim() : hc.expectedOutput
@@ -803,7 +941,12 @@ export async function analyzeProblemAndGenerateTests(
           title: data.problem.title || 'Bài Toán Đã Phân Tích',
           category: 'Tự do - Phân tích AI',
           difficulty: 'Medium',
-          timeLimit: '1.0s',
+          timeLimit: formatTimeLabel(execCfg.timeLimitEnabled, execCfg.timeLimitMs),
+          timeLimitEnabled: execCfg.timeLimitEnabled,
+          timeLimitMs: execCfg.timeLimitMs,
+          ioMode: execCfg.ioMode,
+          inputFileName: execCfg.inputFileName,
+          outputFileName: execCfg.outputFileName,
           memoryLimit: '256MB',
           description: data.problem.description || req.text,
           inputFormat: data.problem.inputFormat || 'Theo đề bài.',
@@ -822,7 +965,9 @@ export async function analyzeProblemAndGenerateTests(
           source: 'ai',
           referenceCpp: data.problem.referenceCpp,
           referencePython: data.problem.referencePython,
-          diagnosticNote: `AI đã tạo ${mergedSamples.length} test mẫu + ${hiddenCases.length} test ẩn theo độ khó tăng dần (Cơ bản ➜ Thử thách).`
+          diagnosticNote: `AI đã tạo ${mergedSamples.length} test mẫu + ${hiddenCases.length} test ẩn · TLE: ${analyzedProblem.timeLimit} · I/O: ${
+            execCfg.ioMode === 'file' ? `File (${execCfg.inputFileName} → ${execCfg.outputFileName})` : 'Chuẩn (stdin/stdout)'
+          }.`
         };
       }
     }
@@ -836,6 +981,7 @@ export async function analyzeProblemAndGenerateTests(
   }
 
   // 2. Local Structured Analysis + Progressive Test Generator
+  const execCfg = resolveExecConfig();
   const sections = parseStructuredSections(req.text, req.fileName);
   const inferredKind = inferAlgorithm(req.text, combinedSamples);
 
@@ -870,9 +1016,24 @@ export async function analyzeProblemAndGenerateTests(
   // 2A. If user supplied a Reference AC solution, run it on every generated progressive hidden test!
   if (req.referenceCode && req.referenceCode.trim()) {
     const lang = req.referenceLang || 'cpp';
+    const oracleUsesFile = /\b(freopen|ifstream|ofstream|open\s*\()/i.test(req.referenceCode);
+    const oracleOpts = oracleUsesFile
+      ? {
+          ioMode: 'file' as ProblemIOMode,
+          inputFileName: execCfg.inputFileName,
+          outputFileName: execCfg.outputFileName,
+          timeLimitEnabled: execCfg.timeLimitEnabled,
+          timeLimitMs: execCfg.timeLimitMs
+        }
+      : {
+          ioMode: 'standard' as ProblemIOMode,
+          timeLimitEnabled: execCfg.timeLimitEnabled,
+          timeLimitMs: execCfg.timeLimitMs
+        };
+
     for (let i = 0; i < hiddenSeeds.length; i++) {
       const seed = hiddenSeeds[i];
-      const res = await executeCode('ORACLE', lang, req.referenceCode, seed.input);
+      const res = await executeCode('ORACLE', lang, req.referenceCode, seed.input, oracleOpts);
       if (!res.isError) {
         hiddenCases.push({
           id: sampleCases.length + i + 1,
@@ -890,7 +1051,12 @@ export async function analyzeProblemAndGenerateTests(
         title: sections.title,
         category: 'Tự do - Code AC tham chiếu',
         difficulty: 'Medium',
-        timeLimit: '1.0s',
+        timeLimit: formatTimeLabel(execCfg.timeLimitEnabled, execCfg.timeLimitMs),
+        timeLimitEnabled: execCfg.timeLimitEnabled,
+        timeLimitMs: execCfg.timeLimitMs,
+        ioMode: execCfg.ioMode,
+        inputFileName: execCfg.inputFileName,
+        outputFileName: execCfg.outputFileName,
         memoryLimit: '256MB',
         description: sections.description,
         inputFormat: sections.inputFormat,
@@ -902,7 +1068,10 @@ export async function analyzeProblemAndGenerateTests(
         pythonTemplate: lang === 'python' ? req.referenceCode : ''
       },
       source: 'local-oracle',
-      diagnosticNote: `Đã dùng Code AC tham chiếu sinh ${hiddenCases.length} test ẩn độ khó tăng dần (Cơ bản ➜ Thử thách).`
+      diagnosticNote: `Đã dùng Code AC tham chiếu sinh ${hiddenCases.length} test ẩn · TLE: ${formatTimeLabel(
+        execCfg.timeLimitEnabled,
+        execCfg.timeLimitMs
+      )}.`
     };
   }
 
@@ -928,7 +1097,12 @@ export async function analyzeProblemAndGenerateTests(
         title: sections.title,
         category: 'Tự do - Nhận diện thuật toán',
         difficulty: 'Medium',
-        timeLimit: '1.0s',
+        timeLimit: formatTimeLabel(execCfg.timeLimitEnabled, execCfg.timeLimitMs),
+        timeLimitEnabled: execCfg.timeLimitEnabled,
+        timeLimitMs: execCfg.timeLimitMs,
+        ioMode: execCfg.ioMode,
+        inputFileName: execCfg.inputFileName,
+        outputFileName: execCfg.outputFileName,
         memoryLimit: '256MB',
         description: sections.description,
         inputFormat: sections.inputFormat,
@@ -940,7 +1114,10 @@ export async function analyzeProblemAndGenerateTests(
         pythonTemplate: ''
       },
       source: 'local-inferred',
-      diagnosticNote: `Đã nhận diện dạng bài (${inferredKind}) và tạo ${hiddenCases.length} test độ khó tăng dần (Cơ bản ➜ Thử thách).`
+      diagnosticNote: `Đã nhận diện dạng bài (${inferredKind}) và tạo ${hiddenCases.length} test · TLE: ${formatTimeLabel(
+        execCfg.timeLimitEnabled,
+        execCfg.timeLimitMs
+      )}.`
     };
   }
 
@@ -951,7 +1128,12 @@ export async function analyzeProblemAndGenerateTests(
       title: sections.title,
       category: 'Tự do - Test tùy chỉnh',
       difficulty: 'Medium',
-      timeLimit: '1.0s',
+      timeLimit: formatTimeLabel(execCfg.timeLimitEnabled, execCfg.timeLimitMs),
+      timeLimitEnabled: execCfg.timeLimitEnabled,
+      timeLimitMs: execCfg.timeLimitMs,
+      ioMode: execCfg.ioMode,
+      inputFileName: execCfg.inputFileName,
+      outputFileName: execCfg.outputFileName,
       memoryLimit: '256MB',
       description: sections.description,
       inputFormat: sections.inputFormat,
@@ -1154,19 +1336,32 @@ export async function analyzeCodeMistakeWithAI(
   }
 
   if (firstFail) {
+    const isFileErr =
+      firstFail.actual?.includes('File I/O') ||
+      firstFail.actual?.includes('FileNotFoundError') ||
+      firstFail.actual?.includes('Đọc/Ghi File');
+    const isTleErr = firstFail.status === 'Time Limit Exceeded';
+
     mistakes.push({
       location: `Test #${firstFail.index} (${firstFail.status})`,
-      issue:
-        firstFail.status === 'Runtime Error'
-          ? 'Lỗi cú pháp hoặc thực thi'
-          : 'Kết quả in ra không khớp đáp án mong đợi',
+      issue: isTleErr
+        ? 'Vượt quá giới hạn thời gian (TLE)'
+        : isFileErr
+        ? 'Nhầm lẫn chế độ Đọc/Ghi File và Đọc/Ghi Chuẩn'
+        : firstFail.status === 'Runtime Error'
+        ? 'Lỗi cú pháp hoặc thực thi'
+        : 'Kết quả in ra không khớp đáp án mong đợi',
       explanation:
-        firstFail.status === 'Runtime Error'
-          ? `Chương trình gặp lỗi: ${firstFail.actual || 'Runtime Error'}.`
+        isTleErr || isFileErr || firstFail.status === 'Runtime Error'
+          ? `${firstFail.actual || firstFail.status}.`
           : `Với đầu vào "${firstFail.input.replace(/\n/g, ' ')}", chương trình của bạn in ra "${
               firstFail.actual || '(trống)'
             }" trong khi đáp án đúng là "${firstFail.expected}".`,
-      fixHint: 'Kiểm tra lại thứ tự đọc dữ liệu đầu vào, công thức tính và điều kiện biên.'
+      fixHint: isTleErr
+        ? 'Tối ưu thuật toán để giảm độ phức tạp hoặc điều chỉnh giới hạn thời gian (TLE) trong phần cấu hình test.'
+        : isFileErr
+        ? 'Kiểm tra lại kiểu Đọc/Ghi (File .INP/.OUT hay stdin/stdout) giữa đề bài và code của bạn.'
+        : 'Kiểm tra lại thứ tự đọc dữ liệu đầu vào, công thức tính và điều kiện biên.'
     });
   }
 

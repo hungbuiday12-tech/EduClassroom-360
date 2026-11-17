@@ -1,4 +1,5 @@
 import { Physics3DMode, PhysicsDomainId, PhysicsSimType } from '../types';
+import { EXTRA_PHYSICS_2D_SIMS, EXTRA_PHYSICS_3D_SIMS } from './physicsExtraSimsData';
 
 export interface PhysicsDomainMeta {
   id: PhysicsDomainId;
@@ -124,6 +125,7 @@ export const PHYSICS_DOMAINS: PhysicsDomainMeta[] = [
 ];
 
 export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
+  ...EXTRA_PHYSICS_2D_SIMS,
   kinematics_graphs: {
     id: 'kinematics_graphs',
     domainId: 'mechanics',
@@ -511,6 +513,7 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
 };
 
 export const PHYSICS_3D_SIMS: Record<Physics3DMode, Physics3DSimSpec> = {
+  ...EXTRA_PHYSICS_3D_SIMS,
   kinematics_3d: {
     id: 'kinematics_3d',
     domainId: 'mechanics',

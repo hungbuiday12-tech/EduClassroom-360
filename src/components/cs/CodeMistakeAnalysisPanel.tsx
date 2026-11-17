@@ -53,17 +53,17 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
   };
 
   const containerCls = darkSurface
-    ? 'bg-[#1e1f1c] border border-[#3e3d32] text-[#f8f8f2] rounded-2xl p-4 sm:p-5 space-y-5'
-    : 'bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl p-4 sm:p-5 space-y-5 shadow-xs';
+    ? 'sci-frame bg-slate-950 border border-slate-800 text-slate-100 rounded-md p-4 sm:p-5 space-y-5 shadow-lg'
+    : 'sci-frame bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-md p-4 sm:p-5 space-y-5 shadow-sm';
 
   const subCardCls = darkSurface
-    ? 'bg-[#272822] border border-[#3e3d32] rounded-xl p-3.5'
-    : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 rounded-xl p-3.5';
+    ? 'bg-slate-900 border border-slate-800 rounded-[4px] p-3.5'
+    : 'bg-slate-50 dark:bg-slate-900/75 border border-slate-200 dark:border-slate-800 rounded-[4px] p-3.5';
 
   return (
     <div className={containerCls}>
       {/* 1. Score Banner & Verdict */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-[#3e3d32]">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
         <div className="flex flex-wrap items-center gap-3">
           {score === 100 ? (
             <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" />
@@ -87,7 +87,7 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
                 · {verdict}
               </span>
             </div>
-            <p className={`text-xs mt-0.5 tabular-nums ${darkSurface ? 'text-[#90908a]' : 'text-slate-500 dark:text-slate-400'}`}>
+            <p className={`text-xs mt-0.5 tabular-nums ${darkSurface ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
               Đạt {passedCount}/{results.length} test case
               {failedResults.length > 0
                 ? ` · Sai ${failedResults.length} test (${failedResults.map((f) => `#${f.testNumber}`).join(', ')})`
@@ -101,10 +101,10 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
             type="button"
             onClick={onRetryAnalyze}
             disabled={isAnalyzingMistake}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 ${
+            className={`sheen-btn px-3 py-1.5 rounded-[4px] text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap ${
               darkSurface
-                ? 'bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#66d9ef]'
-                : 'bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+                ? 'bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/60 text-sky-400'
+                : 'bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/50 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300'
             }`}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isAnalyzingMistake ? 'animate-spin' : ''}`} />
@@ -113,19 +113,19 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
         )}
       </div>
 
-      {/* 2. All Tests Overview Grid (Progressive Difficulty Ladder) */}
+      {/* 2. All Tests Overview Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         {results.map((tr, i) => (
           <div
             key={i}
-            className={`p-2.5 rounded-xl border font-mono text-xs flex flex-col gap-1 ${
+            className={`p-2.5 rounded-[4px] border border-l-2 font-mono text-xs flex flex-col gap-1 ${
               tr.passed
                 ? darkSurface
-                  ? 'bg-[#a6e22e]/10 border-[#a6e22e]/35 text-[#a6e22e]'
-                  : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                  ? 'bg-emerald-500/10 border-emerald-500/35 border-l-emerald-400 text-emerald-400'
+                  : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 border-l-emerald-500 text-emerald-700 dark:text-emerald-300'
                 : darkSurface
-                ? 'bg-[#f92672]/10 border-[#f92672]/40 text-[#f92672]'
-                : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+                ? 'bg-rose-500/10 border-rose-500/40 border-l-rose-400 text-rose-400'
+                : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 border-l-rose-500 text-rose-700 dark:text-rose-300'
             }`}
           >
             <div className="flex items-center justify-between gap-1.5">
@@ -136,7 +136,7 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
               <span className="text-[10px] tabular-nums">{tr.passed ? `${tr.runtimeMs}ms` : tr.status}</span>
             </div>
             {tr.difficulty && (
-              <div className={`text-[10px] font-sans font-semibold ${darkSurface ? 'text-[#90908a]' : 'text-slate-500 dark:text-slate-400'}`}>
+              <div className={`text-[10px] font-sans font-semibold ${darkSurface ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 Mức: {tr.difficulty}
               </div>
             )}
@@ -158,30 +158,30 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
                   <span className="font-bold text-rose-500">
                     Test #{ft.testNumber}{ft.difficulty ? ` (${ft.difficulty})` : ''} · {ft.status}
                   </span>
-                  <span className={`text-[10px] tabular-nums ${darkSurface ? 'text-[#90908a]' : 'text-slate-400'}`}>
+                  <span className="text-[10px] tabular-nums text-slate-400">
                     {ft.runtimeMs}ms
                   </span>
                 </div>
                 <div>
-                  <div className={`text-[10px] mb-0.5 ${darkSurface ? 'text-[#90908a]' : 'text-slate-500'}`}>
+                  <div className={`text-[10px] mb-0.5 ${darkSurface ? 'text-slate-400' : 'text-slate-500'}`}>
                     Input:
                   </div>
-                  <pre className="p-2 rounded-lg bg-slate-900 text-amber-300 text-[11px] overflow-x-auto max-h-24">
+                  <pre className="p-2 rounded-[4px] bg-[#131722] border border-slate-800 text-amber-300 text-[11px] overflow-x-auto max-h-24">
                     {ft.input.trim() || '(trống)'}
                   </pre>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <div className={`text-[10px] mb-0.5 ${darkSurface ? 'text-[#a6e22e]' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    <div className={`text-[10px] mb-0.5 ${darkSurface ? 'text-emerald-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                       Đáp án đúng:
                     </div>
-                    <pre className="p-2 rounded-lg bg-slate-900 text-emerald-400 text-[11px] overflow-x-auto max-h-24">
+                    <pre className="p-2 rounded-[4px] bg-[#131722] border border-slate-800 text-emerald-400 text-[11px] overflow-x-auto max-h-24">
                       {ft.expected.trim() || '(trống)'}
                     </pre>
                   </div>
                   <div>
                     <div className="text-[10px] mb-0.5 text-rose-500">Code bạn in ra:</div>
-                    <pre className="p-2 rounded-lg bg-slate-900 text-rose-400 text-[11px] overflow-x-auto max-h-24 whitespace-pre-wrap">
+                    <pre className="p-2 rounded-[4px] bg-[#131722] border border-slate-800 text-rose-400 text-[11px] overflow-x-auto max-h-24 whitespace-pre-wrap">
                       {ft.actual.trim() || '(không in gì)'}
                     </pre>
                   </div>
@@ -193,10 +193,10 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
       )}
 
       {/* 4. AI Mistake Analysis & Simple Sample Code */}
-      <div className="pt-2 border-t border-slate-200/60 dark:border-[#3e3d32] space-y-3">
+      <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Bot className={`w-5 h-5 ${darkSurface ? 'text-[#66d9ef]' : 'text-blue-600 dark:text-blue-400'}`} />
+            <Bot className={`w-5 h-5 ${darkSurface ? 'text-sky-400' : 'text-sky-600 dark:text-sky-400'}`} />
             <h4 className="text-sm font-extrabold">
               {score < 100
                 ? 'Phân Tích Chỗ Sai Trong Code & Code Mẫu Đơn Giản (AI)'
@@ -204,7 +204,7 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
             </h4>
           </div>
           {analysis && (
-            <span className={`text-[11px] font-mono ${darkSurface ? 'text-[#90908a]' : 'text-slate-500 dark:text-slate-400'}`}>
+            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
               {analysis.source === 'ai' ? 'Gemini AI' : 'Kiểm tra cục bộ'}
             </span>
           )}
@@ -212,17 +212,16 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
 
         {isAnalyzingMistake ? (
           <div className={`${subCardCls} flex items-center gap-3 py-5`}>
-            <Loader2 className="w-5 h-5 animate-spin text-blue-500 shrink-0" />
+            <Loader2 className="w-5 h-5 animate-spin text-sky-500 shrink-0" />
             <div className="text-xs">
               <div className="font-bold">AI đang đối chiếu mã nguồn của bạn với các test bị sai...</div>
-              <div className={darkSurface ? 'text-[#90908a]' : 'text-slate-500 dark:text-slate-400'}>
+              <div className="text-slate-500 dark:text-slate-400">
                 Đang tìm dòng code lỗi, giải thích nguyên nhân và viết lại code mẫu đơn giản nhất.
               </div>
             </div>
           </div>
         ) : analysis ? (
           <div className="space-y-4">
-            {/* Summary */}
             <div className={`${subCardCls} text-xs leading-relaxed`}>
               <div className="font-bold mb-1 flex items-center gap-1.5 text-amber-500">
                 <Sparkles className="w-3.5 h-3.5" />
@@ -231,7 +230,6 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
               <p>{analysis.summary}</p>
             </div>
 
-            {/* Specific Mistakes */}
             {analysis.mistakes.length > 0 && (
               <div className="space-y-2">
                 <div className="text-xs font-bold flex items-center gap-1.5">
@@ -244,10 +242,10 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
                       <div className="font-mono text-[11px] font-bold text-amber-500">
                         {idx + 1}. {m.location} · {m.issue}
                       </div>
-                      <p className={`leading-relaxed ${darkSurface ? 'text-[#d8d8d0]' : 'text-slate-700 dark:text-slate-300'}`}>
+                      <p className={`leading-relaxed ${darkSurface ? 'text-slate-300' : 'text-slate-700 dark:text-slate-300'}`}>
                         {m.explanation}
                       </p>
-                      <div className={`text-[11px] font-semibold ${darkSurface ? 'text-[#a6e22e]' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      <div className={`text-[11px] font-semibold ${darkSurface ? 'text-emerald-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                         Cách sửa: {m.fixHint}
                       </div>
                     </div>
@@ -256,7 +254,6 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
               </div>
             )}
 
-            {/* Simple Sample Code */}
             {analysis.simpleSampleCode && (
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -270,11 +267,7 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
                     <button
                       type="button"
                       onClick={() => onApplySampleCode(analysis.simpleSampleCode)}
-                      className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-colors ${
-                        darkSurface
-                          ? 'bg-[#a6e22e] hover:bg-[#b8f242] text-[#272822]'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      }`}
+                      className="sheen-btn px-3 py-1 rounded-[4px] text-[11px] font-bold transition-colors bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
                     >
                       Nạp Code Mẫu Vào Editor
                     </button>
@@ -295,7 +288,7 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
                     <div className="font-bold text-emerald-500">Giải thích code mẫu đơn giản:</div>
                     <p>{analysis.simpleCodeExplanation}</p>
                     {analysis.complexityNote && (
-                      <div className={`text-[11px] font-mono pt-1 ${darkSurface ? 'text-[#66d9ef]' : 'text-blue-600 dark:text-blue-400'}`}>
+                      <div className={`text-[11px] font-mono pt-1 ${darkSurface ? 'text-sky-400' : 'text-sky-600 dark:text-sky-400'}`}>
                         Độ phức tạp: {analysis.complexityNote}
                       </div>
                     )}

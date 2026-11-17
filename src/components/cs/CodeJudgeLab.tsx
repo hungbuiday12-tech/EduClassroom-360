@@ -11,7 +11,7 @@ import {
   CSLesson,
   CSLevel
 } from '../../types';
-import { executeCode, judgeProblem } from './codeRunner';
+import { executeCode, judgeProblem, parseTimeLimitMs } from './codeRunner';
 import {
   analyzeCodeMistakeWithAI,
   CodeMistakeAnalysis,
@@ -271,7 +271,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
     setCustomOutput('Đang biên dịch và thực thi...');
     setCustomStderr('');
 
-    const res = await executeCode(currentProblem.id, judgeLang, code, customInput);
+    const res = await executeCode(currentProblem.id, judgeLang, code, customInput, {
+      ioMode: currentProblem.ioMode || 'standard',
+      inputFileName: currentProblem.inputFileName,
+      outputFileName: currentProblem.outputFileName,
+      timeLimitEnabled: currentProblem.timeLimitEnabled ?? true,
+      timeLimitMs:
+        currentProblem.timeLimitMs !== undefined
+          ? currentProblem.timeLimitMs
+          : parseTimeLimitMs(currentProblem.timeLimit),
+      problemDesc: currentProblem.description
+    });
     setIsRunningCustom(false);
     setCustomOutput(res.stdout);
     setCustomStderr(res.stderr);
@@ -406,7 +416,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       customErr: ''
     });
 
-    const res = await executeCode(prob.id, curriculumLang, codeToRun, state.customIn);
+    const res = await executeCode(prob.id, curriculumLang, codeToRun, state.customIn, {
+      ioMode: 'standard',
+      timeLimitEnabled: true,
+      timeLimitMs: 1000,
+      problemDesc: prob.description
+    });
     updateLessonPracticeState(prob, {
       isRunning: false,
       customOut: res.stdout,
@@ -514,15 +529,15 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12 overflow-x-hidden">
+    <div className="space-y-6 animate-fadeIn pb-20 overflow-x-hidden">
       {/* Header Banner */}
-      <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col gap-5">
+      <div className="sci-frame sci-scan-bar bg-white/95 dark:bg-slate-900/95 rounded-md p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <button
                 onClick={viewMode !== 'curriculum' ? goBack : onBack || goBack}
-                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer whitespace-nowrap"
               >
                 <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
                 <span>{t('nav.back_prev', 'Quay lại trang trước', 'Back')}</span>
@@ -530,21 +545,22 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               {viewMode !== 'curriculum' && (
                 <button
                   onClick={() => navigate({ csViewMode: 'curriculum' })}
-                  className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 hover:bg-blue-100 transition-colors cursor-pointer"
+                  className="group flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <BookOpen className="w-3.5 h-3.5 icon-anim-book" />
                   <span>{t('cs.goto_curriculum', 'VNOI Roadmap', 'VNOI Roadmap')}</span>
                 </button>
               )}
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="syn-live-square bg-emerald-500" />
                 Tin Học Chuyên Sâu · VNOI Roadmap
               </span>
               <span className="text-slate-400" aria-hidden="true">·</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
                 Phase 0 ➜ Phase 4 · C++ &amp; Python
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Lộ Trình VNOI Roadmap &amp; Trình Chấm Online Judge
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -553,28 +569,28 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
           </div>
         </div>
 
-        {/* View Mode Switcher (Large Interactive Command Deck) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-stretch gap-2.5 bg-slate-100/90 dark:bg-slate-800/75 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 shadow-inner">
+        {/* View Mode Switcher (Large Interactive Square Command Deck) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-stretch gap-2 bg-slate-100/90 dark:bg-slate-950/80 p-2 rounded-md border border-slate-200 dark:border-slate-800 shadow-inner">
           <button
             onClick={() => navigate({ csViewMode: 'curriculum' })}
-            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[50px] rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 min-h-[48px] rounded-[4px] text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
               viewMode === 'curriculum'
-                ? 'text-white shadow-[0_12px_28px_-8px_rgba(37,99,235,0.65)]'
-                : 'bg-white/75 dark:bg-slate-900/55 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-400/70 hover:text-blue-600 dark:hover:text-blue-300'
+                ? 'text-white shadow-[0_10px_24px_-8px_rgba(37,99,235,0.6)]'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:border-blue-500/70 hover:text-blue-600 dark:hover:text-blue-300'
             }`}
           >
             {viewMode === 'curriculum' && (
               <motion.span
                 layoutId="cs-viewmode-active"
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 z-0"
+                className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 z-0"
               />
             )}
             <span
-              className={`relative z-10 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${
+              className={`relative z-10 w-8 h-8 rounded-[4px] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${
                 viewMode === 'curriculum'
-                  ? 'bg-white/20 text-white ring-1 ring-white/30'
-                  : 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/60'
+                  ? 'bg-white/20 text-white border border-white/25'
+                  : 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/70 dark:border-blue-800/60'
               }`}
             >
               <BookOpen className="w-[18px] h-[18px] icon-anim-book" />
@@ -586,24 +602,24 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
 
           <button
             onClick={() => navigate({ csViewMode: 'judge' })}
-            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[50px] rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 min-h-[48px] rounded-[4px] text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
               viewMode === 'judge'
-                ? 'text-white shadow-[0_12px_28px_-8px_rgba(5,150,105,0.65)]'
-                : 'bg-white/75 dark:bg-slate-900/55 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-800 hover:border-emerald-400/70 hover:text-emerald-600 dark:hover:text-emerald-300'
+                ? 'text-white shadow-[0_10px_24px_-8px_rgba(5,150,105,0.6)]'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/70 hover:text-emerald-600 dark:hover:text-emerald-300'
             }`}
           >
             {viewMode === 'judge' && (
               <motion.span
                 layoutId="cs-viewmode-active"
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 z-0"
+                className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 z-0"
               />
             )}
             <span
-              className={`relative z-10 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 ${
+              className={`relative z-10 w-8 h-8 rounded-[4px] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 ${
                 viewMode === 'judge'
-                  ? 'bg-white/20 text-white ring-1 ring-white/30'
-                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/60'
+                  ? 'bg-white/20 text-white border border-white/25'
+                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/60'
               }`}
             >
               <Code2 className="w-[18px] h-[18px] icon-anim-code" />
@@ -615,24 +631,24 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
 
           <button
             onClick={() => navigate({ csViewMode: 'custom' })}
-            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[50px] rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 min-h-[48px] rounded-[4px] text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
               viewMode === 'custom'
-                ? 'text-slate-950 shadow-[0_12px_28px_-8px_rgba(245,158,11,0.68)]'
-                : 'bg-white/75 dark:bg-slate-900/55 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-800 hover:border-amber-400/80 hover:text-amber-700 dark:hover:text-amber-300'
+                ? 'text-slate-950 shadow-[0_10px_24px_-8px_rgba(245,158,11,0.65)]'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:border-amber-500/70 hover:text-amber-700 dark:hover:text-amber-300'
             }`}
           >
             {viewMode === 'custom' && (
               <motion.span
                 layoutId="cs-viewmode-active"
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 z-0"
+                className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 z-0"
               />
             )}
             <span
-              className={`relative z-10 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 ${
+              className={`relative z-10 w-8 h-8 rounded-[4px] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 ${
                 viewMode === 'custom'
-                  ? 'bg-slate-950/15 text-slate-950 ring-1 ring-slate-950/20'
-                  : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60'
+                  ? 'bg-slate-950/15 text-slate-950 border border-slate-950/20'
+                  : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/70 dark:border-amber-800/60'
               }`}
             >
               <Sparkles className="w-[18px] h-[18px] icon-anim-star" />
@@ -647,24 +663,24 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               navigate({ csViewMode: 'visualizer' });
               window.dispatchEvent(new Event('educlassroom:cs-viz-reset'));
             }}
-            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 sm:py-3.5 min-h-[50px] rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+            className={`group cs-deck-btn flex-1 min-w-fit flex items-center justify-center sm:justify-start gap-3 px-4 sm:px-5 py-3 min-h-[48px] rounded-[4px] text-[13px] sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
               viewMode === 'visualizer'
-                ? 'text-white shadow-[0_12px_28px_-8px_rgba(2,132,199,0.65)]'
-                : 'bg-white/75 dark:bg-slate-900/55 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-800 hover:border-sky-400/75 hover:text-sky-600 dark:hover:text-sky-300'
+                ? 'text-white shadow-[0_10px_24px_-8px_rgba(2,132,199,0.6)]'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:border-sky-500/75 hover:text-sky-600 dark:hover:text-sky-300'
             }`}
           >
             {viewMode === 'visualizer' && (
               <motion.span
                 layoutId="cs-viewmode-active"
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                className="absolute inset-0 rounded-xl bg-gradient-to-r from-sky-500 via-cyan-600 to-blue-600 z-0"
+                className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-sky-500 via-cyan-600 to-blue-600 z-0"
               />
             )}
             <span
-              className={`relative z-10 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${
+              className={`relative z-10 w-8 h-8 rounded-[4px] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 ${
                 viewMode === 'visualizer'
-                  ? 'bg-white/20 text-white ring-1 ring-white/30'
-                  : 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 group-hover:bg-sky-100 dark:group-hover:bg-sky-900/60'
+                  ? 'bg-white/20 text-white border border-white/25'
+                  : 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200/70 dark:border-sky-800/60'
               }`}
             >
               <GitBranch className="w-[18px] h-[18px] icon-anim-branch" />
@@ -682,12 +698,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       {viewMode === 'curriculum' && curriculumSubView === 'roadmap' && (
         <div className="space-y-6">
           {/* VNOI Phase Filter Bar */}
-          <div className="bg-white/85 dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+          <div className="sci-frame bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-md p-4 sm:p-5 space-y-4 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-start gap-2.5">
                 <button
                   onClick={onBack || goBack}
-                  className="mt-0.5 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0 whitespace-nowrap"
+                  className="mt-0.5 flex items-center gap-1 px-2.5 py-1.5 rounded-[4px] text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors shrink-0 whitespace-nowrap"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Quay lại</span>
@@ -709,10 +725,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               <button
                 onClick={() => setSelectedPhase('all')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-[4px] text-xs font-bold whitespace-nowrap transition-colors border ${
                   selectedPhase === 'all'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    ? 'bg-sky-600 border-sky-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-sky-500/60'
                 }`}
               >
                 Tất cả Phase ({CS_LESSONS.length})
@@ -721,10 +737,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 <button
                   key={phase}
                   onClick={() => setSelectedPhase(phase)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                  className={`px-3 py-1.5 rounded-[4px] text-xs font-bold whitespace-nowrap transition-colors border ${
                     selectedPhase === phase
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      ? 'bg-sky-600 border-sky-500 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-sky-500/60'
                   }`}
                 >
                   {phase}
@@ -747,7 +763,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     csSubView: 'lecture'
                   });
                 }}
-                className="group text-left bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                className="group sci-frame text-left bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 hover:border-sky-500 dark:hover:border-sky-500 rounded-md p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4"
               >
                 <div className="space-y-2.5">
                   <div className="flex items-start gap-3">
@@ -759,7 +775,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     />
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                        <span className="font-bold text-sky-600 dark:text-sky-400 tabular-nums">
                           {t('', 'Bài', 'Lesson')} {l.lessonNumber}
                         </span>
                         <span aria-hidden="true">·</span>
@@ -768,7 +784,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                         <span className="tabular-nums">{l.estimatedMinutes}{t('', 'p', 'm')}</span>
                       </div>
 
-                      <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
+                      <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-snug">
                         {l.title}
                       </h3>
                     </div>
@@ -777,13 +793,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                   <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
                     {l.topic}
                   </p>
+                  <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 rounded px-2.5 py-1.5 leading-snug">
+                    <span className="font-bold">Học xong làm được: </span>
+                    {l.practiceProblem?.title || l.topic}
+                  </div>
                 </div>
 
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
                   <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 truncate">
                     {l.complexity.time}
                   </span>
-                  <span className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 shrink-0">
+                  <span className="font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1 shrink-0">
                     {t('', 'Vào giảng bài', 'Open Lesson')} <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
@@ -796,24 +816,24 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       {viewMode === 'curriculum' && curriculumSubView === 'lecture' && (
         <div className="space-y-5">
           {/* Dedicated Lesson Classroom Header Bar */}
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-4">
+          <div className="sci-frame bg-white/95 dark:bg-slate-900/95 rounded-md p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   onClick={goBack}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors whitespace-nowrap"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>{t('btn.back', 'Quay lại', 'Back')}</span>
                 </button>
                 <button
                   onClick={() => navigate({ csSubView: 'roadmap' })}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] text-xs font-semibold bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
                 >
                   <span>{t('', 'Danh sách VNOI', 'VNOI List')}</span>
                 </button>
                 <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-bold text-blue-600 dark:text-blue-400">
+                  <span className="font-bold text-sky-600 dark:text-sky-400">
                     {currentLesson.vnoiPhase || currentLesson.level}
                   </span>
                   <span aria-hidden="true">·</span>
@@ -838,7 +858,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       navigate({ csLessonId: prev.id });
                     }
                   }}
-                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap"
+                  className="px-2.5 py-1.5 rounded-[4px] border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap"
                 >
                   {t('', '← Bài trước', '← Prev Lesson')}
                 </button>
@@ -851,7 +871,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       navigate({ csLessonId: next.id });
                     }
                   }}
-                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap"
+                  className="px-2.5 py-1.5 rounded-[4px] border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap"
                 >
                   {t('', 'Bài tiếp →', 'Next Lesson →')}
                 </button>
@@ -870,27 +890,27 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     Time: {currentLesson.complexity.time}
                   </span>
                   <span aria-hidden="true">·</span>
-                  <span className="font-mono text-blue-600 dark:text-blue-400">
+                  <span className="font-mono text-sky-600 dark:text-sky-400">
                     Space: {currentLesson.complexity.space}
                   </span>
                 </div>
               </div>
 
               {/* 4 Lesson Room Sub-tabs */}
-              <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100/90 dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 shrink-0">
+              <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100/90 dark:bg-slate-950/80 rounded-md border border-slate-200 dark:border-slate-800 shrink-0">
                 <button
                   onClick={() => navigate({ csLessonTab: 'lecture' })}
-                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
+                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'lecture'
                       ? 'text-white shadow-md shadow-blue-500/30'
-                      : 'bg-white/75 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-white dark:hover:bg-slate-800'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 hover:text-blue-600 dark:hover:text-blue-300'
                   }`}
                 >
                   {lessonTab === 'lecture' && (
                     <motion.span
                       layoutId="cs-lessontab-active"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 z-0"
+                      className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-blue-600 to-indigo-600 z-0"
                     />
                   )}
                   <BookOpen className="relative z-10 w-4 h-4 icon-anim-book" />
@@ -898,17 +918,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'code' })}
-                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
+                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'code'
                       ? 'text-white shadow-md shadow-emerald-500/30'
-                      : 'bg-white/75 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-white dark:hover:bg-slate-800'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 hover:text-emerald-600 dark:hover:text-emerald-300'
                   }`}
                 >
                   {lessonTab === 'code' && (
                     <motion.span
                       layoutId="cs-lessontab-active"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 z-0"
+                      className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-emerald-600 to-teal-600 z-0"
                     />
                   )}
                   <Code2 className="relative z-10 w-4 h-4 icon-anim-code" />
@@ -916,17 +936,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'practice' })}
-                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
+                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'practice'
                       ? 'text-white shadow-md shadow-amber-500/30'
-                      : 'bg-white/75 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-300 hover:bg-white dark:hover:bg-slate-800'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 hover:text-amber-600 dark:hover:text-amber-300'
                   }`}
                 >
                   {lessonTab === 'practice' && (
                     <motion.span
                       layoutId="cs-lessontab-active"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-600 to-orange-500 z-0"
+                      className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-amber-600 to-orange-500 z-0"
                     />
                   )}
                   <Award className="relative z-10 w-4 h-4 icon-anim-award" />
@@ -934,22 +954,38 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'visualizer' })}
-                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
+                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'visualizer'
                       ? 'text-white shadow-md shadow-sky-500/30'
-                      : 'bg-white/75 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-300 hover:bg-white dark:hover:bg-slate-800'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 hover:text-sky-600 dark:hover:text-sky-300'
                   }`}
                 >
                   {lessonTab === 'visualizer' && (
                     <motion.span
                       layoutId="cs-lessontab-active"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-600 z-0"
+                      className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-sky-500 to-cyan-600 z-0"
                     />
                   )}
                   <GitBranch className="relative z-10 w-4 h-4 icon-anim-branch" />
                   <span className="relative z-10">4. Mô Phỏng Trực Quan</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Beginner-Friendly 3-Step Guided Learning Strip */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+              <div className="flex items-center gap-2 px-3 py-2 rounded bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 text-emerald-900 dark:text-emerald-200">
+                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 shrink-0">01</span>
+                <span><strong>Hiểu nhanh 30s &amp; Chạy tay:</strong> Nắm ý tưởng đời thực + xem bảng giá trị biến chạy từng bước.</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200/70 dark:border-sky-900/50 text-sky-900 dark:text-sky-200">
+                <span className="font-mono font-bold text-sky-600 dark:text-sky-400 shrink-0">02</span>
+                <span><strong>Đọc Code C++ / Python &amp; Tránh bẫy:</strong> Biết ngay lỗi WA / TLE hay gặp để không mắc phải.</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50 text-amber-900 dark:text-amber-200">
+                <span className="font-mono font-bold text-amber-600 dark:text-amber-400 shrink-0">03</span>
+                <span><strong>Thực hành ngay:</strong> Chạy thử mô phỏng trực quan &amp; nộp bài ở phòng Online Judge.</span>
               </div>
             </div>
           </div>
@@ -1005,12 +1041,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               const displayExplanation = activeCodeEx?.explanation || '';
 
               return (
-                <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/40">
+                <div className="sci-frame bg-white/95 dark:bg-slate-900/95 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
                     <div className="flex items-center gap-2.5">
                       <button
                         onClick={() => navigate({ csLessonTab: 'lecture' })}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shrink-0 whitespace-nowrap"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-[4px] text-xs font-bold bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shrink-0 whitespace-nowrap"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
                         <span>Quay lại Bài giảng</span>
@@ -1025,12 +1061,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg">
+                      <div className="flex items-center bg-slate-200/80 dark:bg-slate-950 p-1 rounded-[4px] border border-slate-300 dark:border-slate-800">
                         <button
                           onClick={() => setCurriculumLang('cpp')}
-                          className={`px-3 py-1 rounded text-xs font-semibold whitespace-nowrap transition-all ${
+                          className={`px-3 py-1 rounded-[3px] text-xs font-bold whitespace-nowrap transition-all ${
                             curriculumLang === 'cpp'
-                              ? 'bg-blue-600 text-white shadow-xs'
+                              ? 'bg-sky-600 text-white shadow-xs'
                               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                           }`}
                         >
@@ -1038,9 +1074,9 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                         </button>
                         <button
                           onClick={() => setCurriculumLang('python')}
-                          className={`px-3 py-1 rounded text-xs font-semibold whitespace-nowrap transition-all ${
+                          className={`px-3 py-1 rounded-[3px] text-xs font-bold whitespace-nowrap transition-all ${
                             curriculumLang === 'python'
-                              ? 'bg-blue-600 text-white shadow-xs'
+                              ? 'bg-sky-600 text-white shadow-xs'
                               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                           }`}
                         >
@@ -1050,7 +1086,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     </div>
                   </div>
 
-                  <div className="p-3 sm:p-4 bg-[#171814]">
+                  <div className="p-3 sm:p-4 bg-slate-950">
                     <MonokaiCodeBlock
                       code={displayCode}
                       language={curriculumLang}
@@ -1061,7 +1097,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                   </div>
 
                   {displayExplanation && (
-                    <div className="px-4 sm:px-6 py-3 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 font-medium">
+                    <div className="px-4 sm:px-6 py-3 bg-sky-50/60 dark:bg-sky-950/20 border-t border-sky-100 dark:border-sky-900/30 text-xs text-sky-900 dark:text-sky-300 font-medium">
                       <FormattedText text={displayExplanation} />
                     </div>
                   )}
@@ -1081,27 +1117,27 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
 
               return (
                 <div className="space-y-5">
-                  <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
+                  <div className="sci-frame bg-white/95 dark:bg-slate-900/95 rounded-md p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
                       <div className="flex flex-wrap items-center gap-2.5">
                         <button
                           onClick={() => navigate({ csLessonTab: 'lecture' })}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-[4px] text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors whitespace-nowrap"
                         >
                           <ArrowLeft className="w-3.5 h-3.5" />
                           <span>Quay lại Bài giảng</span>
                         </button>
                         <Award className="w-5 h-5 text-amber-500 shrink-0" />
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
                           Bài Tập Tự Code: {prob.title}
                         </h3>
                       </div>
 
                       <button
                         onClick={() => handleLoadIntoJudge(prob)}
-                        className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all whitespace-nowrap"
+                        className="sheen-btn flex items-center gap-2 px-3.5 py-2 rounded-[4px] bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all whitespace-nowrap"
                       >
-                        <Maximize2 className="w-3.5 h-3.5" />
+                        <Maximize2 className="w-3.5 h-3.5 text-sky-500" />
                         <span>Mở trong Online Judge toàn màn hình</span>
                       </button>
                     </div>
@@ -1110,8 +1146,8 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       <FormattedText text={prob.description} />
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
-                        <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                          <div className="font-semibold text-slate-900 dark:text-white mb-1">
+                        <div className="bg-slate-50 dark:bg-slate-950/70 p-3.5 rounded-[4px] border border-slate-200 dark:border-slate-800">
+                          <div className="font-bold text-slate-900 dark:text-white mb-1">
                             Định dạng Input:
                           </div>
                           <div className="font-mono text-slate-600 dark:text-slate-300 whitespace-pre-line">
@@ -1119,8 +1155,8 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                           </div>
                         </div>
 
-                        <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-                          <div className="font-semibold text-slate-900 dark:text-white mb-1">
+                        <div className="bg-slate-50 dark:bg-slate-950/70 p-3.5 rounded-[4px] border border-slate-200 dark:border-slate-800">
+                          <div className="font-bold text-slate-900 dark:text-white mb-1">
                             Định dạng Output:
                           </div>
                           <div className="font-mono text-slate-600 dark:text-slate-300 whitespace-pre-line">
@@ -1129,7 +1165,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                         </div>
                       </div>
 
-                      <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                         Độ khó: {prob.difficulty} · Bộ test: {prob.sampleCases.length} mẫu + {hiddenTests.length} test ẩn ({totalTestsCount} tests) · Thời gian: 1.0s
                       </div>
                     </div>
@@ -1143,7 +1179,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                         {prob.sampleCases.map((sc, idx) => (
                           <div
                             key={idx}
-                            className="bg-slate-900 text-slate-100 rounded-xl p-3 font-mono text-xs space-y-1.5"
+                            className="bg-slate-950 text-slate-100 rounded-[4px] border border-slate-800 p-3 font-mono text-xs space-y-1.5"
                           >
                             <div className="flex items-center justify-between text-slate-400 text-[10px] uppercase font-bold">
                               <span>Ví dụ {idx + 1}</span>
@@ -1174,118 +1210,121 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     </div>
 
                     {/* Embedded Self-Coding Workspace */}
-                    <div className="rounded-2xl overflow-hidden border border-[#3e3d32] bg-[#272822] shadow-xl">
-                      <div className="h-[340px] sm:h-[380px] flex flex-col">
-                        <SublimeEditor
-                          value={currentPracticeCode}
-                          onChange={(val) => setLessonCode(prob.id, curriculumLang, val)}
-                          language={curriculumLang}
-                          tabs={[
-                            { id: 'cpp', label: 'main.cpp', language: 'cpp', dirty: currentPracticeCode !== DEFAULT_PRACTICE_CPP },
-                            { id: 'python', label: 'solution.py', language: 'python', dirty: currentPracticeCode !== DEFAULT_PRACTICE_PYTHON }
-                          ]}
-                          activeTabId={curriculumLang}
-                          onSelectTab={(id) => setCurriculumLang(id as CodeLanguage)}
-                          fontSize={fontSize}
-                          onFontSizeChange={setFontSize}
-                          onRun={handleRunLessonCustom}
-                          onReset={() =>
-                            setLessonCode(
-                              prob.id,
-                              curriculumLang,
-                              curriculumLang === 'cpp' ? DEFAULT_PRACTICE_CPP : DEFAULT_PRACTICE_PYTHON
-                            )
-                          }
-                          placeholder={
-                            curriculumLang === 'python'
-                              ? '# Tự viết code Python 3 tại đây và bấm Nộp Bài...'
-                              : '// Tự viết code C++ tại đây và bấm Nộp Bài...'
-                          }
-                          statusRightExtra={pState.score !== null ? `Score: ${pState.score}/100` : undefined}
-                        />
-                      </div>
-
-                      {/* Action Bar */}
-                      <div className="bg-[#1e1f1c] border-t border-[#3e3d32] px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={handleRunLessonCustom}
-                            disabled={pState.isRunning || pState.isJudging}
-                            className="px-3.5 py-1.5 rounded-lg bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2] text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                          >
-                            <Play className="w-3.5 h-3.5 text-[#66d9ef]" />
-                            <span>{pState.isRunning ? t('', 'Đang chạy...', 'Running...') : t('', 'Chạy Thử (Stdin)', 'Run Sample (Stdin)')}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={handleSubmitLessonPractice}
-                            disabled={pState.isRunning || pState.isJudging}
-                            className="px-4 py-1.5 rounded-lg bg-[#a6e22e] hover:bg-[#b8f242] text-[#272822] text-xs font-bold flex items-center gap-1.5 shadow transition-all disabled:opacity-50"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                            <span>
-                              {pState.isJudging
-                                ? t('', 'Đang chấm...', 'Judging...')
-                                : t('', `Nộp Bài & Chấm Điểm (${totalTestsCount} tests)`, `Submit & Grade (${totalTestsCount} tests)`)}
-                            </span>
-                          </button>
-                        </div>
-
-                        {pState.score !== null && (
-                          <span
-                            className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold tabular-nums ${
-                              pState.score === 100
-                                ? 'bg-[#a6e22e]/20 text-[#a6e22e]'
-                                : pState.score > 0
-                                ? 'bg-[#e6db74]/20 text-[#e6db74]'
-                                : 'bg-[#f92672]/20 text-[#f92672]'
-                            }`}
-                          >
-                            {pState.verdict} · {pState.score}/100 {t('', 'điểm', 'pts')}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Stdin / Output Console */}
-                      <div className="bg-[#171814] border-t border-[#3e3d32] p-3 grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs text-[#f8f8f2]">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-bold uppercase text-[#90908a]">
-                            Input chạy thử (Stdin):
-                          </span>
-                          <textarea
-                            value={pState.customIn}
-                            onChange={(e) => updateLessonPracticeState(prob, { customIn: e.target.value })}
-                            rows={3}
-                            className="w-full p-2 bg-[#272822] border border-[#3e3d32] rounded-lg text-xs text-[#f8f8f2] focus:outline-none focus:border-[#66d9ef] resize-none"
+                    <div className="syn-conic-border shadow-xl">
+                      <div className="syn-conic-border-spin" aria-hidden="true" />
+                      <div className="relative z-10 rounded-[5px] overflow-hidden border border-slate-800 bg-[#131722]">
+                        <div className="h-[340px] sm:h-[380px] flex flex-col">
+                          <SublimeEditor
+                            value={currentPracticeCode}
+                            onChange={(val) => setLessonCode(prob.id, curriculumLang, val)}
+                            language={curriculumLang}
+                            tabs={[
+                              { id: 'cpp', label: 'main.cpp', language: 'cpp', dirty: currentPracticeCode !== DEFAULT_PRACTICE_CPP },
+                              { id: 'python', label: 'solution.py', language: 'python', dirty: currentPracticeCode !== DEFAULT_PRACTICE_PYTHON }
+                            ]}
+                            activeTabId={curriculumLang}
+                            onSelectTab={(id) => setCurriculumLang(id as CodeLanguage)}
+                            fontSize={fontSize}
+                            onFontSizeChange={setFontSize}
+                            onRun={handleRunLessonCustom}
+                            onReset={() =>
+                              setLessonCode(
+                                prob.id,
+                                curriculumLang,
+                                curriculumLang === 'cpp' ? DEFAULT_PRACTICE_CPP : DEFAULT_PRACTICE_PYTHON
+                              )
+                            }
+                            placeholder={
+                              curriculumLang === 'python'
+                                ? '# Tự viết code Python 3 tại đây và bấm Nộp Bài...'
+                                : '// Tự viết code C++ tại đây và bấm Nộp Bài...'
+                            }
+                            statusRightExtra={pState.score !== null ? `Score: ${pState.score}/100` : undefined}
                           />
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center justify-between text-[10px] font-bold uppercase text-[#90908a]">
-                            <span>Output chương trình:</span>
-                            {pState.runtimeMs !== null && (
-                              <span className="text-[#66d9ef] tabular-nums">{pState.runtimeMs}ms</span>
-                            )}
+
+                        {/* Action Bar */}
+                        <div className="bg-slate-950 border-t border-slate-800 px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleRunLessonCustom}
+                              disabled={pState.isRunning || pState.isJudging}
+                              className="sheen-btn px-3.5 py-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/60 text-slate-100 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap"
+                            >
+                              <Play className="w-3.5 h-3.5 text-sky-400" />
+                              <span>{pState.isRunning ? t('', 'Đang chạy...', 'Running...') : t('', 'Chạy Thử (Stdin)', 'Run Sample (Stdin)')}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={handleSubmitLessonPractice}
+                              disabled={pState.isRunning || pState.isJudging}
+                              className="cs-deck-btn sheen-btn px-4 py-1.5 rounded-[4px] bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all disabled:opacity-50 whitespace-nowrap"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>
+                                {pState.isJudging
+                                  ? t('', 'Đang chấm...', 'Judging...')
+                                  : t('', `Nộp Bài & Chấm Điểm (${totalTestsCount} tests)`, `Submit & Grade (${totalTestsCount} tests)`)}
+                              </span>
+                            </button>
                           </div>
-                          <div className="flex-1 min-h-[76px] max-h-[110px] p-2 bg-[#272822] border border-[#3e3d32] rounded-lg overflow-y-auto whitespace-pre-wrap">
-                            {pState.customErr ? (
-                              <span className="text-[#f92672]">{pState.customErr}</span>
-                            ) : pState.customOut ? (
-                              <span className="text-[#a6e22e]">{pState.customOut}</span>
-                            ) : (
-                              <span className="text-[#75715e]">// Kết quả chạy thử sẽ hiện tại đây...</span>
-                            )}
+
+                          {pState.score !== null && (
+                            <span
+                              className={`text-xs font-mono font-bold tabular-nums ${
+                                pState.score === 100
+                                  ? 'text-emerald-400'
+                                  : pState.score > 0
+                                  ? 'text-amber-400'
+                                  : 'text-rose-400'
+                              }`}
+                            >
+                              {pState.verdict} · {pState.score}/100 {t('', 'điểm', 'pts')}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Stdin / Output Console */}
+                        <div className="bg-slate-950 border-t border-slate-800 p-3 grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs text-slate-100">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold uppercase text-slate-400">
+                              Input chạy thử (Stdin):
+                            </span>
+                            <textarea
+                              value={pState.customIn}
+                              onChange={(e) => updateLessonPracticeState(prob, { customIn: e.target.value })}
+                              rows={3}
+                              className="w-full p-2 bg-[#131722] border border-slate-800 rounded-[4px] text-xs text-slate-100 focus:outline-none focus:border-sky-500 resize-none"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center justify-between text-[10px] font-bold uppercase text-slate-400">
+                              <span>Output chương trình:</span>
+                              {pState.runtimeMs !== null && (
+                                <span className="text-sky-400 tabular-nums">{pState.runtimeMs}ms</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-h-[76px] max-h-[110px] p-2 bg-[#131722] border border-slate-800 rounded-[4px] overflow-y-auto whitespace-pre-wrap">
+                              {pState.customErr ? (
+                                <span className="text-rose-400">{pState.customErr}</span>
+                              ) : pState.customOut ? (
+                                <span className="text-emerald-400">{pState.customOut}</span>
+                              ) : (
+                                <span className="text-slate-500">// Kết quả chạy thử sẽ hiện tại đây...</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Grading Verdict, Failed Tests & AI Mistake Diagnosis (Published on Submission) */}
+                    {/* Grading Verdict, Failed Tests & AI Mistake Diagnosis */}
                     {(pState.results || pState.isJudging) && (
                       <div>
                         {pState.isJudging && !pState.results ? (
-                          <div className="p-5 rounded-2xl bg-slate-100 dark:bg-slate-800/70 text-center text-xs font-mono text-blue-600 dark:text-blue-400">
+                          <div className="p-5 rounded-[4px] bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center text-xs font-mono text-sky-600 dark:text-sky-400">
                             Đang chấm bài tập qua {totalTestsCount} test cases...
                           </div>
                         ) : (
@@ -1313,12 +1352,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       </div>
                     )}
 
-                    {/* Sample & Optimal VNOI Solution (Automatically Revealed Upon Submission, or Manual Toggle) */}
+                    {/* Sample & Optimal VNOI Solution */}
                     <div className="pt-2">
                       <button
                         type="button"
                         onClick={() => setRevealedSolution(!isSolutionShown)}
-                        className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5"
+                        className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1.5"
                       >
                         <span>
                           {isSolutionShown
@@ -1328,7 +1367,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       </button>
 
                       {isSolutionShown && (
-                        <div className="mt-3 p-5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-4 animate-fadeIn">
+                        <div className="mt-3 p-5 rounded-md bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-4 animate-fadeIn">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                               Code Mẫu / Tối Ưu Chuẩn VNOI &amp; Chiến Lược Giải:
@@ -1337,10 +1376,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                               <button
                                 type="button"
                                 onClick={() => setCurriculumLang('cpp')}
-                                className={`px-2.5 py-1 rounded text-[11px] font-bold ${
+                                className={`px-2.5 py-1 rounded-[4px] text-[11px] font-bold border ${
                                   curriculumLang === 'cpp'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                    ? 'bg-sky-600 border-sky-500 text-white'
+                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                                 }`}
                               >
                                 C++
@@ -1348,10 +1387,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                               <button
                                 type="button"
                                 onClick={() => setCurriculumLang('python')}
-                                className={`px-2.5 py-1 rounded text-[11px] font-bold ${
+                                className={`px-2.5 py-1 rounded-[4px] text-[11px] font-bold border ${
                                   curriculumLang === 'python'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                    ? 'bg-sky-600 border-sky-500 text-white'
+                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                                 }`}
                               >
                                 Python
@@ -1365,7 +1404,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                                     curriculumLang === 'cpp' ? prob.fullSolutionCpp : prob.fullSolutionPython
                                   )
                                 }
-                                className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold"
+                                className="sheen-btn px-2.5 py-1 rounded-[4px] bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold"
                               >
                                 Nạp Code Tối Ưu Vào Editor
                               </button>
@@ -1410,34 +1449,34 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       )}
 
       {/* ============================================================= */}
-      {/* MODE 2: TRÌNH CHẤM ONLINE JUDGE (SUBLIME MONOKAI + FULLSCREEN) */}
+      {/* MODE 2: TRÌNH CHẤM ONLINE JUDGE (SYNAPSE ARCHITECTURAL IDE)   */}
       {/* ============================================================= */}
       {viewMode === 'judge' && (
         <ViewportPortal active={isJudgeFullscreen}>
           <div
             className={
               isJudgeFullscreen
-                ? 'fixed inset-0 z-[100] w-screen h-[100dvh] bg-[#1e1f1c] flex flex-col overflow-hidden'
+                ? 'fixed inset-0 z-[100] w-screen h-[100dvh] bg-slate-950 flex flex-col overflow-hidden'
                 : 'space-y-3'
             }
           >
             {/* Persistent Fullscreen Top Bar with Back / Exit button */}
             {isJudgeFullscreen && (
-              <div className="bg-[#171814] border-b border-[#3e3d32] px-3 py-2 flex items-center justify-between gap-2 shrink-0">
-                <div className="flex items-center gap-2 min-w-0">
+              <div className="syn-top-laser bg-slate-950 border-b border-slate-800 px-3 py-2 flex items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <button
                     onClick={() => {
                       setIsJudgeFullscreen(false);
                       goBack();
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#f8f8f2] text-xs font-bold flex items-center gap-1.5 shrink-0"
+                    className="px-2.5 py-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-100 text-xs font-bold flex items-center gap-1.5 shrink-0 whitespace-nowrap"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Quay lại</span>
                   </button>
                   <button
                     onClick={() => setIsJudgeFullscreen(false)}
-                    className="px-3 py-1.5 rounded-lg bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#66d9ef] text-xs font-bold flex items-center gap-1.5 shrink-0"
+                    className="px-2.5 py-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-sky-500/40 text-sky-400 text-xs font-bold flex items-center gap-1.5 shrink-0 whitespace-nowrap"
                   >
                     <Minimize2 className="w-3.5 h-3.5" />
                     <span>Thu nhỏ (Esc)</span>
@@ -1448,7 +1487,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 </div>
                 <button
                   onClick={() => setIsJudgeFullscreen(false)}
-                  className="p-1.5 rounded-lg bg-[#f92672]/20 text-[#f92672] border border-[#f92672]/40 hover:bg-[#f92672]/30"
+                  className="p-1.5 rounded-[4px] bg-rose-500/15 text-rose-300 border border-rose-500/40 hover:bg-rose-500/25 shrink-0"
                   title="Thoát toàn màn hình (Esc)"
                 >
                   <Minimize2 className="w-4 h-4" />
@@ -1457,7 +1496,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
             )}
 
             {/* Mobile Pane Switcher (<lg) */}
-            <div className="lg:hidden grid grid-cols-3 gap-1 p-1 bg-[#171814] border-b lg:border border-[#3e3d32] lg:rounded-xl shrink-0">
+            <div className="lg:hidden grid grid-cols-3 gap-1 p-1 bg-slate-950 border border-slate-800 rounded-md shrink-0">
               {[
                 { id: 'problem' as const, label: 'Đề Bài & Test' },
                 { id: 'editor' as const, label: 'Code Sublime' },
@@ -1466,10 +1505,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 <button
                   key={pane.id}
                   onClick={() => setMobileJudgePane(pane.id)}
-                  className={`py-2 px-2 rounded-lg text-xs font-bold transition-colors ${
+                  className={`py-2 px-2 rounded-[4px] text-xs font-bold transition-colors whitespace-nowrap ${
                     mobileJudgePane === pane.id
-                      ? 'bg-[#272822] text-[#a6e22e] border border-[#3e3d32]'
-                      : 'text-[#90908a]'
+                      ? 'bg-sky-600 text-white'
+                      : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   {pane.label}
@@ -1477,390 +1516,446 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               ))}
             </div>
 
-            <div
-              className={`flex flex-1 min-h-0 overflow-hidden border border-[#3e3d32] bg-[#272822] ${
-                isJudgeFullscreen ? 'border-0 rounded-none' : 'rounded-2xl min-h-[460px] sm:min-h-[560px] lg:h-[78vh] shadow-2xl'
-              }`}
-            >
-              {/* Left Column: Problem details & Sample cases */}
-              {(isJudgeSidebarOpen || mobileJudgePane === 'problem') && (
+            <div className={isJudgeFullscreen ? 'flex flex-1 min-h-0 overflow-hidden' : 'syn-conic-border shadow-xl'}>
+              {!isJudgeFullscreen && <div className="syn-conic-border-spin" aria-hidden="true" />}
+              <div
+                className={`relative z-10 flex flex-1 min-h-0 overflow-hidden ${
+                  isJudgeFullscreen
+                    ? 'border-0 rounded-none bg-slate-950'
+                    : 'rounded-[5px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 min-h-[460px] sm:min-h-[560px] lg:h-[78vh]'
+                }`}
+              >
+                {/* Left Column: Problem details & Sample cases */}
+                {(isJudgeSidebarOpen || mobileJudgePane === 'problem') && (
+                  <div
+                    className={`${
+                      mobileJudgePane === 'problem' ? 'flex w-full' : 'hidden lg:flex lg:w-[38%] xl:w-[35%]'
+                    } ${
+                      isJudgeFullscreen
+                        ? 'bg-slate-950 border-r border-slate-800 text-slate-100'
+                        : 'bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100'
+                    } flex-col shrink-0 min-h-0 overflow-hidden`}
+                  >
+                    <div
+                      className={`p-3.5 border-b space-y-2 shrink-0 ${
+                        isJudgeFullscreen
+                          ? 'bg-slate-900/90 border-slate-800'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {!isJudgeFullscreen && (
+                            <button
+                              onClick={goBack}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-[4px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-sky-700 dark:text-sky-400 shrink-0 whitespace-nowrap"
+                              title="Quay lại trang trước"
+                            >
+                              <ArrowLeft className="w-3 h-3" />
+                              <span>Quay lại</span>
+                            </button>
+                          )}
+                          <label className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider truncate">
+                            Chọn đề bài:
+                          </label>
+                        </div>
+                        <button
+                          onClick={() => setIsJudgeFullscreen(!isJudgeFullscreen)}
+                          className={`hidden lg:inline-flex items-center gap-1 px-2 py-1 rounded-[4px] border text-[11px] font-bold shrink-0 whitespace-nowrap ${
+                            isJudgeFullscreen
+                              ? 'bg-slate-950 border-slate-700 text-sky-400 hover:bg-slate-800'
+                              : 'bg-sky-50 dark:bg-slate-800 border-sky-200 dark:border-slate-700 text-sky-700 dark:text-sky-400 hover:bg-sky-100'
+                          }`}
+                        >
+                          {isJudgeFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+                          <span>{isJudgeFullscreen ? 'Thu nhỏ' : 'Split Fullscreen'}</span>
+                        </button>
+                      </div>
+                      <select
+                        value={currentProblem.id}
+                        onChange={(e) => {
+                          const prob = CODING_PROBLEMS.find((p) => p.id === e.target.value);
+                          if (prob) {
+                            handleProblemChange(prob);
+                          } else {
+                            const lessonProb = CS_LESSONS.find((l) => l.practiceProblem.id === e.target.value)?.practiceProblem;
+                            if (lessonProb) handleProblemChange(toCodingProblem(lessonProb));
+                          }
+                        }}
+                        className={`w-full border rounded-[4px] px-3 py-2 text-xs font-semibold focus:outline-none focus:border-sky-500 ${
+                          isJudgeFullscreen
+                            ? 'bg-slate-950 border-slate-700 text-slate-100'
+                            : 'bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100'
+                        }`}
+                      >
+                        <optgroup label="Bài tập củng cố theo bài giảng:">
+                          {CS_LESSONS.map((l) => (
+                            <option key={l.practiceProblem.id} value={l.practiceProblem.id}>
+                              Bài {l.lessonNumber}: {l.practiceProblem.title} ({l.practiceProblem.difficulty})
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Bộ đề Olympic tổng hợp:">
+                          {CODING_PROBLEMS.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.title} ({p.difficulty})
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <h3 className={`text-sm font-extrabold ${isJudgeFullscreen ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                            {currentProblem.title}
+                          </h3>
+                          <span className="text-[11px] font-mono font-bold text-sky-600 dark:text-sky-400 shrink-0">
+                            {currentProblem.difficulty}
+                          </span>
+                        </div>
+                        <div
+                          className={`leading-relaxed p-3 rounded-[4px] border ${
+                            isJudgeFullscreen
+                              ? 'text-slate-300 bg-slate-900/90 border-slate-800'
+                              : 'text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800'
+                          }`}
+                        >
+                          <FormattedText text={currentProblem.description} />
+                        </div>
+                      </div>
+
+                      {/* I/O Format */}
+                      <div className="space-y-2 text-[11px]">
+                        <div
+                          className={`p-2.5 rounded-[4px] border ${
+                            isJudgeFullscreen
+                              ? 'bg-slate-900/90 border-slate-800 text-slate-300'
+                              : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <span className="font-bold text-sky-600 dark:text-sky-400 block mb-0.5">Input:</span>
+                          <span className="font-mono whitespace-pre-line">{currentProblem.inputFormat}</span>
+                        </div>
+                        <div
+                          className={`p-2.5 rounded-[4px] border ${
+                            isJudgeFullscreen
+                              ? 'bg-slate-900/90 border-slate-800 text-slate-300'
+                              : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400 block mb-0.5">Output:</span>
+                          <span className="font-mono whitespace-pre-line">{currentProblem.outputFormat}</span>
+                        </div>
+                        <div
+                          className={`p-2.5 rounded-[4px] border ${
+                            isJudgeFullscreen
+                              ? 'bg-slate-900/90 border-slate-800 text-slate-300'
+                              : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <span className="font-bold text-amber-600 dark:text-amber-400 block mb-0.5">Ràng buộc:</span>
+                          <span className="font-mono">
+                            {Array.isArray(currentProblem.constraints)
+                              ? currentProblem.constraints.join(' · ')
+                              : currentProblem.constraints}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Sample test */}
+                      <div className="space-y-2">
+                        <span className="text-[11px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider block">
+                          Test ví dụ ({currentProblem.sampleCases.length} mẫu + {currentProblem.hiddenCases.length} test ẩn):
+                        </span>
+                        {currentProblem.sampleCases.map((sc, sIdx) => (
+                          <div
+                            key={sIdx}
+                            className={`border p-3 rounded-[4px] font-mono text-[11px] space-y-1 ${
+                              isJudgeFullscreen
+                                ? 'bg-slate-900/90 border-slate-800'
+                                : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[10px]">
+                              <span>Ví dụ #{sIdx + 1}</span>
+                              <button
+                                onClick={() => {
+                                  setCustomInput(sc.input);
+                                  setActiveConsoleTab('custom_run');
+                                  setMobileJudgePane('editor');
+                                }}
+                                className="text-sky-600 dark:text-sky-400 hover:underline font-semibold"
+                              >
+                                Nạp stdin
+                              </button>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">In: </span>
+                              <span className="text-amber-600 dark:text-amber-300 whitespace-pre-wrap">{sc.input.trim()}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Out: </span>
+                              <span className="text-emerald-700 dark:text-emerald-400 font-bold whitespace-pre-wrap">{sc.expectedOutput.trim()}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Right Column: Synchronized Sublime Editor & Console */}
                 <div
                   className={`${
-                    mobileJudgePane === 'problem' ? 'flex w-full' : 'hidden lg:flex lg:w-[38%] xl:w-[35%]'
-                  } bg-[#1e1f1c] border-r border-[#3e3d32] flex-col shrink-0 min-h-0 overflow-hidden`}
+                    mobileJudgePane === 'problem' ? 'hidden lg:flex' : 'flex'
+                  } flex-1 flex-col bg-[#131722] min-w-0 min-h-0 overflow-hidden`}
                 >
-                <div className="p-3.5 border-b border-[#3e3d32] bg-[#171814] space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {!isJudgeFullscreen && (
-                        <button
-                          onClick={goBack}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[11px] font-bold text-[#66d9ef] shrink-0"
-                          title="Quay lại trang trước"
-                        >
-                          <ArrowLeft className="w-3 h-3" />
-                          <span>Quay lại</span>
-                        </button>
-                      )}
-                      <label className="text-[11px] font-bold text-[#e6db74] uppercase tracking-wider truncate">
-                        Chọn đề bài:
-                      </label>
-                    </div>
-                    <button
-                      onClick={() => setIsJudgeFullscreen(!isJudgeFullscreen)}
-                      className="hidden lg:inline-flex items-center gap-1 px-2 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[11px] text-[#66d9ef] shrink-0"
-                    >
-                      {isJudgeFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-                      <span>{isJudgeFullscreen ? 'Thu nhỏ' : 'Split Fullscreen'}</span>
-                    </button>
+                  {/* Sublime Editor */}
+                  <div className={`${mobileJudgePane === 'console' ? 'hidden lg:flex' : 'flex'} flex-1 flex-col min-h-0 overflow-hidden`}>
+                    <SublimeEditor
+                      value={code}
+                      onChange={setCode}
+                      language={judgeLang}
+                      tabs={[
+                        { id: 'cpp', label: 'main.cpp', language: 'cpp', dirty: true },
+                        { id: 'python', label: 'solution.py', language: 'python', dirty: true }
+                      ]}
+                      activeTabId={judgeLang}
+                      onSelectTab={(id) => handleLanguageChange(id as CodeLanguage)}
+                      fontSize={fontSize}
+                      onFontSizeChange={setFontSize}
+                      onRun={handleRunCustom}
+                      onReset={handleResetTemplate}
+                      isFullscreen={isJudgeFullscreen}
+                      onToggleFullscreen={() => setIsJudgeFullscreen(!isJudgeFullscreen)}
+                      isSidebarOpen={isJudgeSidebarOpen}
+                      onToggleSidebar={() => setIsJudgeSidebarOpen(!isJudgeSidebarOpen)}
+                      statusRightExtra={judgeScore !== null ? `Score: ${judgeScore}/100` : undefined}
+                    />
                   </div>
-                  <select
-                    value={currentProblem.id}
-                    onChange={(e) => {
-                      const prob = CODING_PROBLEMS.find((p) => p.id === e.target.value);
-                      if (prob) {
-                        handleProblemChange(prob);
-                      } else {
-                        const lessonProb = CS_LESSONS.find((l) => l.practiceProblem.id === e.target.value)?.practiceProblem;
-                        if (lessonProb) handleProblemChange(toCodingProblem(lessonProb));
-                      }
-                    }}
-                    className="w-full bg-[#272822] border border-[#3e3d32] rounded-xl px-3 py-2 text-xs font-semibold text-[#f8f8f2] focus:outline-none focus:border-[#66d9ef]"
-                  >
-                    <optgroup label="Bài tập củng cố theo bài giảng:">
-                      {CS_LESSONS.map((l) => (
-                        <option key={l.practiceProblem.id} value={l.practiceProblem.id}>
-                          Bài {l.lessonNumber}: {l.practiceProblem.title} ({l.practiceProblem.difficulty})
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Bộ đề Olympic tổng hợp:">
-                      {CODING_PROBLEMS.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.title} ({p.difficulty})
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs text-[#d8d8d0]">
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <h3 className="text-sm font-bold text-white">{currentProblem.title}</h3>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#66d9ef]/20 text-[#66d9ef] shrink-0">
-                        {currentProblem.difficulty}
+                  {/* Action Toolbar */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-slate-800 bg-slate-950 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          handleRunCustom();
+                          setMobileJudgePane('console');
+                        }}
+                        disabled={isRunningCustom || isJudging}
+                        className="sheen-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/60 text-slate-100 text-xs font-bold transition-colors disabled:opacity-50 whitespace-nowrap"
+                      >
+                        <Play className="w-3.5 h-3.5 text-sky-400" />
+                        <span>{isRunningCustom ? 'Đang chạy...' : 'Chạy thử (Run)'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          handleSubmitCode();
+                          setMobileJudgePane('console');
+                        }}
+                        disabled={isRunningCustom || isJudging}
+                        className="cs-deck-btn sheen-btn flex items-center gap-1.5 px-4 py-1.5 rounded-[4px] bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold transition-all shadow disabled:opacity-50 whitespace-nowrap"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>{isJudging ? 'Đang chấm...' : 'Nộp bài (Submit)'}</span>
+                      </button>
+                    </div>
+
+                    {judgeScore !== null && (
+                      <span
+                        className={`text-xs font-mono font-bold tabular-nums ${
+                          judgeScore === 100
+                            ? 'text-emerald-400'
+                            : judgeScore > 0
+                            ? 'text-amber-400'
+                            : 'text-rose-400'
+                        }`}
+                      >
+                        {judgeVerdict} · {judgeScore}/100
                       </span>
-                    </div>
-                    <div className="leading-relaxed bg-[#272822] p-3 rounded-xl border border-[#3e3d32]">
-                      <FormattedText text={currentProblem.description} />
-                    </div>
+                    )}
                   </div>
 
-                  {/* I/O Format */}
-                  <div className="space-y-2 text-[11px]">
-                    <div className="bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32]">
-                      <span className="font-bold text-[#66d9ef] block mb-0.5">Input:</span>
-                      <span className="font-mono whitespace-pre-line">{currentProblem.inputFormat}</span>
+                  {/* Console Output Bar */}
+                  <div
+                    className={`${
+                      mobileJudgePane === 'console' ? 'flex-1 lg:flex-none lg:h-52' : 'hidden lg:flex lg:h-52'
+                    } border-t border-slate-800 bg-slate-950 flex-col shrink-0 overflow-hidden font-mono text-xs text-slate-100`}
+                  >
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-slate-800 bg-slate-900 overflow-x-auto">
+                      <button
+                        onClick={() => setActiveConsoleTab('custom_run')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
+                          activeConsoleTab === 'custom_run'
+                            ? 'bg-sky-600 text-white'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        Custom Test Stdin
+                      </button>
+                      <button
+                        onClick={() => setActiveConsoleTab('judge_results')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
+                          activeConsoleTab === 'judge_results'
+                            ? 'bg-emerald-600 text-white'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        Kết quả Chấm {judgeScore !== null ? `(${judgeScore}/100)` : ''}
+                      </button>
+                      <button
+                        onClick={() => setActiveConsoleTab('history')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
+                          activeConsoleTab === 'history'
+                            ? 'bg-sky-600 text-white'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        Lịch sử ({submissions.length})
+                      </button>
                     </div>
-                    <div className="bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32]">
-                      <span className="font-bold text-[#a6e22e] block mb-0.5">Output:</span>
-                      <span className="font-mono whitespace-pre-line">{currentProblem.outputFormat}</span>
-                    </div>
-                    <div className="bg-[#272822] p-2.5 rounded-xl border border-[#3e3d32]">
-                      <span className="font-bold text-[#e6db74] block mb-0.5">Ràng buộc:</span>
-                      <span className="font-mono">
-                        {Array.isArray(currentProblem.constraints)
-                          ? currentProblem.constraints.join(' • ')
-                          : currentProblem.constraints}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Sample test */}
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-bold text-[#e6db74] uppercase tracking-wider block">
-                      Test ví dụ ({currentProblem.sampleCases.length} mẫu + {currentProblem.hiddenCases.length} test ẩn):
-                    </span>
-                    {currentProblem.sampleCases.map((sc, sIdx) => (
-                      <div key={sIdx} className="bg-[#272822] border border-[#3e3d32] p-3 rounded-xl font-mono text-[11px] space-y-1">
-                        <div className="flex items-center justify-between text-[#90908a] text-[10px]">
-                          <span>Ví dụ #{sIdx + 1}</span>
-                          <button
-                            onClick={() => {
-                              setCustomInput(sc.input);
-                              setActiveConsoleTab('custom_run');
-                              setMobileJudgePane('editor');
-                            }}
-                            className="text-[#66d9ef] hover:underline"
-                          >
-                            Nạp stdin
-                          </button>
-                        </div>
-                        <div>
-                          <span className="text-[#90908a]">In: </span>
-                          <span className="text-[#e6db74] whitespace-pre-wrap">{sc.input.trim()}</span>
-                        </div>
-                        <div>
-                          <span className="text-[#90908a]">Out: </span>
-                          <span className="text-[#a6e22e] font-bold whitespace-pre-wrap">{sc.expectedOutput.trim()}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Right Column: Sublime Text 4 Monokai Editor & Console */}
-            <div
-              className={`${
-                mobileJudgePane === 'problem' ? 'hidden lg:flex' : 'flex'
-              } flex-1 flex-col bg-[#272822] min-w-0 min-h-0 overflow-hidden`}
-            >
-              {/* Sublime Editor */}
-              <div className={`${mobileJudgePane === 'console' ? 'hidden lg:flex' : 'flex'} flex-1 flex-col min-h-0 overflow-hidden`}>
-                <SublimeEditor
-                  value={code}
-                  onChange={setCode}
-                  language={judgeLang}
-                  tabs={[
-                    { id: 'cpp', label: 'main.cpp', language: 'cpp', dirty: true },
-                    { id: 'python', label: 'solution.py', language: 'python', dirty: true }
-                  ]}
-                  activeTabId={judgeLang}
-                  onSelectTab={(id) => handleLanguageChange(id as CodeLanguage)}
-                  fontSize={fontSize}
-                  onFontSizeChange={setFontSize}
-                  onRun={handleRunCustom}
-                  onReset={handleResetTemplate}
-                  isFullscreen={isJudgeFullscreen}
-                  onToggleFullscreen={() => setIsJudgeFullscreen(!isJudgeFullscreen)}
-                  isSidebarOpen={isJudgeSidebarOpen}
-                  onToggleSidebar={() => setIsJudgeSidebarOpen(!isJudgeSidebarOpen)}
-                  statusRightExtra={judgeScore !== null ? `Score: ${judgeScore}/100` : undefined}
-                />
-              </div>
-
-              {/* Action Toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-[#3e3d32] bg-[#1e1f1c] shrink-0">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      handleRunCustom();
-                      setMobileJudgePane('console');
-                    }}
-                    disabled={isRunningCustom || isJudging}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2] text-xs font-bold transition-colors disabled:opacity-50"
-                  >
-                    <Play className="w-3.5 h-3.5 text-[#66d9ef]" />
-                    <span>{isRunningCustom ? 'Đang chạy...' : 'Chạy thử (Run)'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      handleSubmitCode();
-                      setMobileJudgePane('console');
-                    }}
-                    disabled={isRunningCustom || isJudging}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#a6e22e] hover:bg-[#b8f242] text-[#272822] text-xs font-bold transition-all shadow disabled:opacity-50"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>{isJudging ? 'Đang chấm...' : 'Nộp bài (Submit)'}</span>
-                  </button>
-                </div>
-
-                {judgeScore !== null && (
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold ${
-                      judgeScore === 100
-                        ? 'bg-[#a6e22e]/20 text-[#a6e22e] border border-[#a6e22e]/40'
-                        : judgeScore > 0
-                        ? 'bg-[#e6db74]/20 text-[#e6db74] border border-[#e6db74]/40'
-                        : 'bg-[#f92672]/20 text-[#f92672] border border-[#f92672]/40'
-                    }`}
-                  >
-                    {judgeVerdict} ({judgeScore}/100)
-                  </span>
-                )}
-              </div>
-
-              {/* Console Output Bar */}
-              <div
-                className={`${
-                  mobileJudgePane === 'console' ? 'flex-1 lg:flex-none lg:h-52' : 'hidden lg:flex lg:h-52'
-                } border-t border-[#3e3d32] bg-[#171814] flex-col shrink-0 overflow-hidden font-mono text-xs text-[#f8f8f2]`}
-              >
-                <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-[#3e3d32] bg-[#1e1f1c] overflow-x-auto">
-                  <button
-                    onClick={() => setActiveConsoleTab('custom_run')}
-                    className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-all shrink-0 ${
-                      activeConsoleTab === 'custom_run'
-                        ? 'bg-[#3e3d32] text-[#e6db74]'
-                        : 'text-[#90908a] hover:text-white'
-                    }`}
-                  >
-                    Custom Test Stdin
-                  </button>
-                  <button
-                    onClick={() => setActiveConsoleTab('judge_results')}
-                    className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-all shrink-0 ${
-                      activeConsoleTab === 'judge_results'
-                        ? 'bg-[#3e3d32] text-[#a6e22e]'
-                        : 'text-[#90908a] hover:text-white'
-                    }`}
-                  >
-                    Kết quả Chấm {judgeScore !== null ? `(${judgeScore}/100)` : ''}
-                  </button>
-                  <button
-                    onClick={() => setActiveConsoleTab('history')}
-                    className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-all shrink-0 ${
-                      activeConsoleTab === 'history'
-                        ? 'bg-[#3e3d32] text-[#66d9ef]'
-                        : 'text-[#90908a] hover:text-white'
-                    }`}
-                  >
-                    Lịch sử ({submissions.length})
-                  </button>
-                </div>
-
-                <div className="flex-1 p-3 overflow-y-auto">
-                  {activeConsoleTab === 'custom_run' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-full">
-                      <div className="flex flex-col">
-                        <div className="text-[10px] font-bold text-[#90908a] uppercase tracking-wider mb-1">
-                          Input Stdin tùy chỉnh:
-                        </div>
-                        <textarea
-                          value={customInput}
-                          onChange={(e) => setCustomInput(e.target.value)}
-                          className="flex-1 min-h-[84px] p-2.5 bg-[#272822] text-[#f8f8f2] font-mono text-xs rounded-lg focus:outline-none focus:border-[#66d9ef] resize-none border border-[#3e3d32]"
-                        />
-                      </div>
-
-                      <div className="flex flex-col">
-                        <div className="flex items-center justify-between text-[10px] font-bold text-[#90908a] uppercase tracking-wider mb-1">
-                          <span>Output chương trình:</span>
-                          {customRuntime !== null && (
-                            <span className="text-[#66d9ef] font-mono">{customRuntime}ms</span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-h-[84px] p-2.5 bg-[#272822] text-[#f8f8f2] font-mono text-xs rounded-lg overflow-y-auto border border-[#3e3d32]">
-                          {customStderr ? (
-                            <span className="text-[#f92672]">{customStderr}</span>
-                          ) : customOutput ? (
-                            <span className="text-[#a6e22e] whitespace-pre">{customOutput}</span>
-                          ) : (
-                            <span className="text-[#75715e] italic">
-                              Bấm "Chạy thử (Run)" để xem kết quả xuất ra...
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeConsoleTab === 'judge_results' && (
-                    <div className="space-y-2.5">
-                      {judgeResults ? (
-                        <>
-                          <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#272822] border border-[#3e3d32]">
-                            <span
-                              className={`text-xs font-bold ${
-                                judgeScore === 100
-                                  ? 'text-[#a6e22e]'
-                                  : judgeScore && judgeScore > 0
-                                  ? 'text-[#e6db74]'
-                                  : 'text-[#f92672]'
-                              }`}
-                            >
-                              {judgeVerdict}
-                            </span>
-                            <span className="text-sm font-bold text-white">{judgeScore} / 100 Điểm</span>
+                    <div className="flex-1 p-3 overflow-y-auto">
+                      {activeConsoleTab === 'custom_run' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-full">
+                          <div className="flex flex-col">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                              Input Stdin tùy chỉnh:
+                            </div>
+                            <textarea
+                              value={customInput}
+                              onChange={(e) => setCustomInput(e.target.value)}
+                              className="flex-1 min-h-[84px] p-2.5 bg-[#131722] text-slate-100 font-mono text-xs rounded-[4px] focus:outline-none focus:border-sky-500 resize-none border border-slate-800"
+                            />
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {judgeResults.map((tr, tIdx) => (
-                              <div
-                                key={tIdx}
-                                className={`p-2 rounded-lg border text-[11px] font-mono space-y-1 ${
-                                  tr.passed
-                                    ? 'bg-[#a6e22e]/10 border-[#a6e22e]/30 text-[#a6e22e]'
-                                    : 'bg-[#f92672]/10 border-[#f92672]/30 text-[#f92672]'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between font-bold gap-2">
-                                  <span>
-                                    Test #{tIdx + 1}
-                                    {tr.difficulty ? ` · ${tr.difficulty}` : ''}
-                                  </span>
-                                  <span>{tr.passed ? 'ACCEPTED' : tr.status}</span>
-                                </div>
-                                {!tr.passed && (
-                                  <div className="text-[10px] text-[#f8f8f2] truncate">
-                                    Exp: {tr.expected.replace(/\n/g, ' ')} | Got: {tr.actual.replace(/\n/g, ' ')}
-                                  </div>
-                                )}
+                          <div className="flex flex-col">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                              <span>Output chương trình:</span>
+                              {customRuntime !== null && (
+                                <span className="text-sky-400 font-mono tabular-nums">{customRuntime}ms</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-h-[84px] p-2.5 bg-[#131722] text-slate-100 font-mono text-xs rounded-[4px] overflow-y-auto border border-slate-800">
+                              {customStderr ? (
+                                <span className="text-rose-400">{customStderr}</span>
+                              ) : customOutput ? (
+                                <span className="text-emerald-400 whitespace-pre">{customOutput}</span>
+                              ) : (
+                                <span className="text-slate-500 italic">
+                                  Bấm "Chạy thử (Run)" để xem kết quả xuất ra...
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {activeConsoleTab === 'judge_results' && (
+                        <div className="space-y-2.5">
+                          {judgeResults ? (
+                            <>
+                              <div className="flex items-center justify-between p-2.5 rounded-[4px] bg-[#131722] border border-slate-800">
+                                <span
+                                  className={`text-xs font-bold ${
+                                    judgeScore === 100
+                                      ? 'text-emerald-400'
+                                      : judgeScore && judgeScore > 0
+                                      ? 'text-amber-400'
+                                      : 'text-rose-400'
+                                  }`}
+                                >
+                                  {judgeVerdict}
+                                </span>
+                                <span className="text-sm font-bold text-white tabular-nums">{judgeScore} / 100 Điểm</span>
                               </div>
-                            ))}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-6 text-xs text-[#75715e]">
-                          Bấm "Nộp bài (Submit)" để chấm điểm với bộ test tự động.
-                        </div>
-                      )}
-                    </div>
-                  )}
 
-                  {activeConsoleTab === 'history' && (
-                    <div className="space-y-2">
-                      {submissions.length > 0 ? (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left text-xs">
-                            <thead>
-                              <tr className="border-b border-[#3e3d32] text-[#90908a]">
-                                <th className="py-1.5">Thời gian</th>
-                                <th>Bài</th>
-                                <th>Ngôn ngữ</th>
-                                <th>Điểm</th>
-                                <th>Trạng thái</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {submissions.map((sub) => (
-                                <tr key={sub.id} className="border-b border-[#3e3d32]/50 font-mono">
-                                  <td className="py-1.5 text-[#90908a]">{sub.submittedAt}</td>
-                                  <td className="font-sans font-medium text-[#f8f8f2]">{sub.problemTitle}</td>
-                                  <td className="uppercase text-[#66d9ef]">{sub.language}</td>
-                                  <td className="font-bold text-[#a6e22e]">{sub.score}/100</td>
-                                  <td>
-                                    <span
-                                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                        sub.status === 'Accepted'
-                                          ? 'bg-[#a6e22e]/20 text-[#a6e22e]'
-                                          : 'bg-[#f92672]/20 text-[#f92672]'
-                                      }`}
-                                    >
-                                      {sub.status}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {judgeResults.map((tr, tIdx) => (
+                                  <div
+                                    key={tIdx}
+                                    className={`p-2 rounded-[4px] border text-[11px] font-mono space-y-1 ${
+                                      tr.passed
+                                        ? 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
+                                        : 'bg-rose-500/10 border-rose-500/35 text-rose-400'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between font-bold gap-2">
+                                      <span>
+                                        Test #{tIdx + 1}
+                                        {tr.difficulty ? ` · ${tr.difficulty}` : ''}
+                                      </span>
+                                      <span>{tr.passed ? 'ACCEPTED' : tr.status}</span>
+                                    </div>
+                                    {!tr.passed && (
+                                      <div className="text-[10px] text-slate-200 truncate">
+                                        Exp: {tr.expected.replace(/\n/g, ' ')} | Got: {tr.actual.replace(/\n/g, ' ')}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-center py-6 text-xs text-slate-500">
+                              Bấm "Nộp bài (Submit)" để chấm điểm với bộ test tự động.
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="text-center py-6 text-xs text-[#75715e]">
-                          Chưa có lượt nộp bài nào.
+                      )}
+
+                      {activeConsoleTab === 'history' && (
+                        <div className="space-y-2">
+                          {submissions.length > 0 ? (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs">
+                                <thead>
+                                  <tr className="border-b border-slate-800 text-slate-400">
+                                    <th className="py-1.5">Thời gian</th>
+                                    <th>Bài</th>
+                                    <th>Ngôn ngữ</th>
+                                    <th>Điểm</th>
+                                    <th>Trạng thái</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {submissions.map((sub) => (
+                                    <tr key={sub.id} className="border-b border-slate-800/60 font-mono">
+                                      <td className="py-1.5 text-slate-400 tabular-nums">{sub.submittedAt}</td>
+                                      <td className="font-sans font-medium text-slate-100">{sub.problemTitle}</td>
+                                      <td className="uppercase text-sky-400">{sub.language}</td>
+                                      <td className="font-bold text-emerald-400 tabular-nums">{sub.score}/100</td>
+                                      <td>
+                                        <span
+                                          className={`text-[11px] font-bold ${
+                                            sub.status === 'Accepted'
+                                              ? 'text-emerald-400'
+                                              : 'text-rose-400'
+                                          }`}
+                                        >
+                                          {sub.status}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <div className="text-center py-6 text-xs text-slate-500">
+                              Chưa có lượt nộp bài nào.
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           </div>
         </ViewportPortal>
       )}

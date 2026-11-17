@@ -7,7 +7,9 @@ import {
   Compass,
   Layers,
   Play,
+  Search,
   Sliders,
+  X,
   Zap
 } from 'lucide-react';
 import { Physics3DMode, PhysicsDomainId, PhysicsSimType } from '../../types';
@@ -244,9 +246,11 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
 
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
   const [dimFilter, setDimFilter] = useState<DimFilter>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const total2DCount = Object.keys(PHYSICS_2D_SIMS).length;
   const total3DCount = Object.keys(PHYSICS_3D_SIMS).length;
+  const totalSimCount = total2DCount + total3DCount;
 
   const openDomain2D = (domainId: PhysicsDomainId, simId?: PhysicsSimType) => {
     const sims = get2DSimsByDomain(domainId);
@@ -262,7 +266,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
 
   const openDomain3D = (domainId: PhysicsDomainId, simId?: Physics3DMode) => {
     const sims = get3DSimsByDomain(domainId);
-    const chosen = simId || sims[0]?.id || 'spring_3d';
+    const chosen = simId || sims[0]?.id || 'pendulum_spring';
     navigate({
       subject: 'physics',
       physicsView: 'sim3d_hub',
@@ -273,13 +277,28 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
   };
 
   const domainRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return PHYSICS_DOMAINS.map((dom) => {
       const all2d = get2DSimsByDomain(dom.id);
       const all3d = get3DSimsByDomain(dom.id);
-      const sims2d =
-        gradeFilter === 'all' ? all2d : all2d.filter((s) => s.grades.includes(gradeFilter));
-      const sims3d =
-        gradeFilter === 'all' ? all3d : all3d.filter((s) => s.grades.includes(gradeFilter));
+      const sims2d = all2d.filter((s) => {
+        const matchGrade = gradeFilter === 'all' || s.grades.includes(gradeFilter);
+        const matchQuery =
+          !q ||
+          s.title.toLowerCase().includes(q) ||
+          s.subtitle.toLowerCase().includes(q) ||
+          s.formula.toLowerCase().includes(q);
+        return matchGrade && matchQuery;
+      });
+      const sims3d = all3d.filter((s) => {
+        const matchGrade = gradeFilter === 'all' || s.grades.includes(gradeFilter);
+        const matchQuery =
+          !q ||
+          s.title.toLowerCase().includes(q) ||
+          s.subtitle.toLowerCase().includes(q) ||
+          s.formula.toLowerCase().includes(q);
+        return matchGrade && matchQuery;
+      });
       return {
         dom,
         sims2d,
@@ -287,8 +306,8 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
         totalMatches:
           (dimFilter === '3d' ? 0 : sims2d.length) + (dimFilter === '2d' ? 0 : sims3d.length)
       };
-    }).filter((row) => row.totalMatches > 0 || gradeFilter === 'all');
-  }, [gradeFilter, dimFilter]);
+    }).filter((row) => row.totalMatches > 0);
+  }, [gradeFilter, dimFilter, searchQuery]);
 
   return (
     <div className="space-y-6 pb-12">
@@ -317,8 +336,8 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-3xl">
               {isEn
-                ? `Explore ${total2DCount} 2D real-time labs and ${total3DCount} interactive 3D WebGL experiments across Mechanics, Waves, Electromagnetism, Optics, and Nuclear Physics.`
-                : `Tổng hợp ${total2DCount} phòng thí nghiệm 2D và ${total3DCount} mô hình 3D tương tác theo 5 phân môn độc lập — đầy đủ thanh trượt thông số, đồ thị thời gian thực và bảng ghi số liệu thực hành.`}
+                ? `Explore ${total2DCount} 2D real-time labs and ${total3DCount} interactive 3D WebGL experiments (${totalSimCount} total) across Mechanics, Waves, Electromagnetism, Optics, and Nuclear Physics.`
+                : `Tổng hợp ${total2DCount} phòng thí nghiệm 2D và ${total3DCount} mô hình 3D tương tác (tổng ${totalSimCount} mô phỏng) theo 5 phân môn độc lập — đầy đủ thanh trượt thông số, đồ thị thời gian thực và bảng ghi số liệu thực hành.`}
             </p>
           </div>
 
@@ -350,7 +369,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
           </div>
         </div>
 
-        {/* Grade & Dimension Filter Bar */}
+        {/* Grade, Search & Dimension Filter Bar */}
         <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
@@ -373,30 +392,75 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
             ))}
           </div>
 
-          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-            {(
-              [
-                { id: 'all', label: isEn ? '2D + 3D' : 'Cả 2D & 3D' },
-                { id: '2d', label: isEn ? '2D Only' : 'Chỉ 2D' },
-                { id: '3d', label: isEn ? '3D Only' : 'Chỉ 3D' }
-              ] as { id: DimFilter; label: string }[]
-            ).map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setDimFilter(f.id)}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                  dimFilter === f.id
-                    ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2.5 flex-1 sm:flex-initial justify-end">
+            <div className="relative min-w-[210px] sm:w-64">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={isEn ? 'Search 73 labs or formula...' : 'Tìm 73 mô phỏng hoặc công thức...'}
+                className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sky-500"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+              {(
+                [
+                  { id: 'all', label: isEn ? '2D + 3D' : 'Cả 2D & 3D' },
+                  { id: '2d', label: isEn ? '2D Only' : 'Chỉ 2D' },
+                  { id: '3d', label: isEn ? '3D Only' : 'Chỉ 3D' }
+                ] as { id: DimFilter; label: string }[]
+              ).map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setDimFilter(f.id)}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                    dimFilter === f.id
+                      ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
+
+      {/* Empty Filter State */}
+      {domainRows.length === 0 && (
+        <div className="sci-frame rounded-lg bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 p-8 text-center space-y-3">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            {isEn
+              ? 'No simulations match the active grade/search filter.'
+              : 'Không tìm thấy mô phỏng Vật lí nào khớp bộ lọc hoặc từ khóa đang chọn.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setGradeFilter('all');
+              setDimFilter('all');
+              setSearchQuery('');
+            }}
+            className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer"
+          >
+            {isEn ? 'Reset All Filters' : 'Đặt lại bộ lọc (Xem tất cả 73 mô phỏng)'}
+          </button>
+        </div>
+      )}
 
       {/* 5 Animated Domain Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

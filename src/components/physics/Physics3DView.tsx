@@ -25,6 +25,9 @@ import {
 import { useLanguage } from '../../context/LanguageContext';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { PHYSICS_3D_SIMS } from '../../data/physicsDomainsData';
+import { Physics3DMode as SharedPhysics3DMode } from '../../types';
+import { EXTRA_3D_SCENE_CONFIGS, ExtraPhysics3DModeId } from '../../data/physicsExtraSimsData';
+import { buildExtra3DScene } from './physics3DExtraScenes';
 
 interface Numeric3DControlProps {
   label: string;
@@ -114,21 +117,7 @@ const Numeric3DControl: React.FC<Numeric3DControlProps> = ({
   );
 };
 
-export type Physics3DMode =
-  | 'pendulum_spring'
-  | 'projectile_3d'
-  | 'lorentz_helix'
-  | 'wave_ripple'
-  | 'bohr_atom'
-  | 'optics_3d'
-  | 'kinematics_3d'
-  | 'thermal_gas_3d'
-  | 'circular_motion_3d'
-  | 'ac_generator_3d'
-  | 'young_interference_3d'
-  | 'standing_wave_3d'
-  | 'doppler_effect_3d'
-  | 'photoelectric_3d';
+export type Physics3DMode = SharedPhysics3DMode;
 
 interface Physics3DViewProps {
   initialMode?: Physics3DMode;
@@ -220,6 +209,24 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   // 14. Photoelectric Effect 3D
   const [photoLambdaNm, setPhotoLambdaNm] = useState(280);
   const [photoWorkEv, setPhotoWorkEv] = useState(2.14);
+
+  // 15..32. Extra 18 3D Physics Scenes live parameters
+  const [extraParams, setExtraParams] = useState<{ p1: number; p2: number }>({ p1: 1, p2: 1 });
+  const extraParamsRef = useRef<{ p1: number; p2: number }>({ p1: 1, p2: 1 });
+  useEffect(() => {
+    const cfg = EXTRA_3D_SCENE_CONFIGS[mode as ExtraPhysics3DModeId];
+    if (cfg) {
+      const next = {
+        p1: cfg.params[0]?.defaultVal ?? 1,
+        p2: cfg.params[1]?.defaultVal ?? 1
+      };
+      setExtraParams(next);
+      extraParamsRef.current = next;
+    }
+  }, [mode]);
+  useEffect(() => {
+    extraParamsRef.current = extraParams;
+  }, [extraParams]);
 
   // WebGL context safety
   const [contextLost, setContextLost] = useState(false);
@@ -1530,6 +1537,23 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         sceneTickRef.current = null;
       };
     }
+
+    // -------------------------------------------------------------
+    // SCENES 15..32: +18 EXTRA 3D PHYSICS SIMULATIONS
+    // -------------------------------------------------------------
+    const extraTick = buildExtra3DScene(
+      mode,
+      group,
+      () => extraParamsRef.current,
+      () => simStateRef.current.time
+    );
+    if (extraTick) {
+      sceneTickRef.current = extraTick;
+      sceneTickRef.current(0);
+      return () => {
+        sceneTickRef.current = null;
+      };
+    }
   }, [
     mode,
     mass,
@@ -1618,8 +1642,23 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       case 'thermal_gas_3d':
         setGasTempK(Math.round(300 * Math.max(0.6, freq)));
         break;
-      default:
+      default: {
+        const cfg = EXTRA_3D_SCENE_CONFIGS[mode as ExtraPhysics3DModeId];
+        if (cfg) {
+          const pDef1 = cfg.params[0];
+          const pDef2 = cfg.params[1];
+          const mid1 = pDef1 ? pDef1.defaultVal : 1;
+          const mid2 = pDef2 ? pDef2.defaultVal : 1;
+          const nextP1 = pDef1
+            ? Math.min(pDef1.max, Math.max(pDef1.min, Number((mid1 * amp).toFixed(2))))
+            : mid1;
+          const nextP2 = pDef2
+            ? Math.min(pDef2.max, Math.max(pDef2.min, Number((mid2 * freq).toFixed(2))))
+            : mid2;
+          setExtraParams({ p1: nextP1, p2: nextP2 });
+        }
         break;
+      }
     }
   };
 
@@ -1638,6 +1677,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     { id: 'photoelectric_3d', label: 'Quang Điện 3D' },
     { id: 'thermal_gas_3d', label: 'Khí Lí Tưởng 3D' },
     { id: 'bohr_atom', label: 'Nguyên Tử Bohr' },
+    ...(Object.values(EXTRA_3D_SCENE_CONFIGS).map((cfg) => ({
+      id: cfg.mode as Physics3DMode,
+      label: cfg.shortLabel
+    })))
   ];
   const visibleModeTabs =
     allowedModes && allowedModes.length > 0
@@ -1695,6 +1738,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
               {mode === 'standing_wave_3d' && 'Sóng Dừng Trên Sợi Dây & Nút Bụng 3D'}
               {mode === 'doppler_effect_3d' && 'Hiệu Ứng Doppler & Nón Sóng Xung Kích 3D'}
               {mode === 'photoelectric_3d' && 'Ống Chân Không & Hiệu Ứng Quang Điện 3D'}
+              {EXTRA_3D_SCENE_CONFIGS[mode as ExtraPhysics3DModeId]?.hudTitle}
             </span>
           </div>
 
@@ -2335,6 +2379,47 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* 15..32. Extra 18 3D Physics Scene Controls */}
+              {EXTRA_3D_SCENE_CONFIGS[mode as ExtraPhysics3DModeId] &&
+                (() => {
+                  const cfg = EXTRA_3D_SCENE_CONFIGS[mode as ExtraPhysics3DModeId];
+                  const pDef1 = cfg.params[0];
+                  const pDef2 = cfg.params[1];
+                  return (
+                    <div className="space-y-2.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        {pDef1 && (
+                          <Numeric3DControl
+                            label={pDef1.label}
+                            unit={pDef1.unit}
+                            value={extraParams.p1}
+                            min={pDef1.min}
+                            max={pDef1.max}
+                            step={pDef1.step}
+                            accentClass={pDef1.accent}
+                            onChange={(v) => setExtraParams((prev) => ({ ...prev, p1: v }))}
+                          />
+                        )}
+                        {pDef2 && (
+                          <Numeric3DControl
+                            label={pDef2.label}
+                            unit={pDef2.unit}
+                            value={extraParams.p2}
+                            min={pDef2.min}
+                            max={pDef2.max}
+                            step={pDef2.step}
+                            accentClass={pDef2.accent}
+                            onChange={(v) => setExtraParams((prev) => ({ ...prev, p2: v }))}
+                          />
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono">
+                        {cfg.computeReadout(extraParams)}
+                      </div>
+                    </div>
+                  );
+                })()}
             </div>
           )}
         </div>

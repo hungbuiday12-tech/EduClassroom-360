@@ -924,12 +924,291 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
 }
 
 // ============================================================================
-// 3. COMPUTER SCIENCE LECTURE STEPS BUILDER
+// 3. COMPUTER SCIENCE LECTURE STEPS BUILDER (BEGINNER-FRIENDLY INTUITION + TRACE)
 // ============================================================================
+
+interface CSEasyGuide {
+  quickIntuition: string;
+  dryRunTrace: NonNullable<LectureStep['dryRunTrace']>;
+  commonMistakes: string[];
+}
+
+const CS_LESSON_EASY_GUIDE: Record<string, CSEasyGuide> = {
+  'cs-1': {
+    quickIntuition:
+      'Hãy tưởng tượng `int` như một chiếc ly nhỏ chỉ chứa tối đa khoảng 2 tỷ giọt nước ($2\\cdot 10^9$), còn `long long` là chiếc thùng lớn chứa tới 9 tỷ tỷ giọt ($9\\cdot 10^{18}$). Nếu rót tích của hai số $10^5 \\times 10^5 = 10^{10}$ vào chiếc ly `int`, nước sẽ tràn ra ngoài và biến thành số âm sai bét! Còn Fast I/O giống như mở đường cao tốc riêng cho `cin/cout` thay vì dừng đèn đỏ sau mỗi số.',
+    dryRunTrace: {
+      title: 'Chạy tay phép nhân tránh tràn số với a = 100000, b = 100000',
+      sampleInput: '100000 100000',
+      traceRows: [
+        'Đọc a = 100000 (kiểu int), b = 100000 (kiểu int)',
+        'Cách SAI: a * b tính bằng int 32-bit → tràn số, ra kết quả rác ≈ 1410065408 (hoặc âm)',
+        'Cách ĐÚNG: 1LL * a * b ép 1LL (64-bit) nhân với a trước → thành kiểu long long (100000LL)',
+        'Tiếp tục nhân 100000LL * 100000 = 10000000000LL (vừa khít trong long long ≤ 9·10^18)'
+      ],
+      finalOutput: 'Tong = 200000, Tich = 10000000000'
+    },
+    commonMistakes: [
+      'Ghi `long long res = a * b;` khi `a, b` là `int`: máy tính nhân `a * b` bị tràn TRƯỚC khi lưu vào `res`. Sửa: viết `1LL * a * b` hoặc khai báo `a, b` là `long long` ngay từ đầu.',
+      'Dùng `endl` trong vòng lặp in $10^5$ dòng làm bài chạy quá giờ (TLE). Sửa: luôn dùng `\'\\n\'` thay cho `endl`.',
+      'Đã tắt đồng bộ `ios::sync_with_stdio(false)` nhưng lại dùng lẫn `cin` với `scanf`/`printf` khiến thứ tự đọc xuất bị loạn.'
+    ]
+  },
+  'cs-2': {
+    quickIntuition:
+      'Muốn biết số $N$ (ví dụ $N = 36$) có phải số nguyên tố không, bạn không cần thử chia cho cả 35 số nhỏ hơn nó! Các ước của $36$ luôn đi thành từng cặp đối xứng qua $\\sqrt{36} = 6$: $(2, 18), (3, 12), (4, 9), (6, 6)$. Chỉ cần kiểm tra tới $\\sqrt{N}$ mà không thấy ước nào từ $2$ trở lên thì chắc chắn nửa bên kia cũng không có!',
+    dryRunTrace: {
+      title: 'Chạy tay kiểm tra N = 29 có phải số nguyên tố không (chỉ lặp i·i ≤ 29)',
+      sampleInput: 'N = 29',
+      traceRows: [
+        'N = 29 ≥ 2 → không loại ngay; bắt đầu thử i = 2',
+        'i = 2 (2×2 = 4 ≤ 29): 29 % 2 = 1 ≠ 0 → chưa có ước',
+        'i = 3 (3×3 = 9 ≤ 29): 29 % 3 = 2 ≠ 0 → chưa có ước',
+        'i = 4 (4×4 = 16 ≤ 29): 29 % 4 = 1 ≠ 0 → chưa có ước',
+        'i = 5 (5×5 = 25 ≤ 29): 29 % 5 = 4 ≠ 0 → chưa có ước',
+        'i = 6 (6×6 = 36 > 29): DỪNG vòng lặp! Không tìm thấy ước nào'
+      ],
+      finalOutput: '29 là SỐ NGUYÊN TỐ (chỉ mất 4 bước thử thay vì 27 bước!)'
+    },
+    commonMistakes: [
+      'Quên xử lý trường hợp biên $N \\le 1$: số $0$ và số $1$ KHÔNG phải số nguyên tố! Phải kiểm tra `if (n < 2) return false;` ngay dòng đầu.',
+      'Viết `i <= sqrt(n)` trong điều kiện `for` khiến hàm `sqrt` bị gọi lại mỗi vòng (chậm và dễ sai số thực). Sửa: viết `for (long long i = 2; i * i <= n; ++i)`.',
+      'Nếu `i` là `int` mà $N \\approx 2\\cdot 10^9$, phép tính `i * i` có thể tràn `int`. Sửa: dùng `long long i` hoặc `i <= n / i`.'
+    ]
+  },
+  'cs-3': {
+    quickIntuition:
+      'Mảng đếm tần số giống như chiếc hòm chia sẵn các ngăn đánh số $0, 1, 2, \\dots$: hễ thấy số $x$ đi qua, bạn bỏ thêm 1 viên bi vào ngăn số $x$ (`cnt[x]++`). Sau 1 lượt đi bộ hết mảng là biết ngay ngăn nào nhiều bi nhất mà không cần so sánh lặp đi lặp lại! Còn xâu đối xứng Palindrome giống như từ "RADAR" — đọc từ trái sang hay phải sang đều giống hệt nhau.',
+    dryRunTrace: {
+      title: 'Chạy tay đếm tần số trên mảng A = [4, 2, 4, 7, 2, 4]',
+      sampleInput: 'N = 6, A = [4, 2, 4, 7, 2, 4]',
+      traceRows: [
+        'Khởi tạo mảng đếm cnt toàn số 0',
+        'Đọc 4 → cnt[4] = 1',
+        'Đọc 2 → cnt[2] = 1',
+        'Đọc 4 → cnt[4] = 2',
+        'Đọc 7 → cnt[7] = 1',
+        'Đọc 2 → cnt[2] = 2',
+        'Đọc 4 → cnt[4] = 3 (lớn nhất!)'
+      ],
+      finalOutput: 'Số xuất hiện nhiều nhất là 4 (3 lần)'
+    },
+    commonMistakes: [
+      'Truy cập ngoài kích thước mảng (ví dụ mảng khai báo `a[100]` nhưng dùng chỉ số `a[100]` hoặc số $x$ âm/quá $10^6$). Sửa: khai báo dư vài phần tử (`MAXN + 5`) hoặc dùng `map`/`unordered_map` khi giá trị $x$ lên tới $10^9$.',
+      'Quên dùng `cin.ignore()` trước `getline(cin, s)` sau khi đọc số `N`, dẫn tới đọc nhầm ký tự xuống dòng rỗng.',
+      'Đếm mảng tần số trực tiếp cho số âm `cnt[-5]` gây lỗi bộ nhớ (Runtime Error).'
+    ]
+  },
+  'cs-4': {
+    quickIntuition:
+      'Đệ quy + Quay lui (Backtracking) giống hệt cách bạn đi trong mê cung: tại mỗi ngã rẽ, bạn thử bước sang một hướng và đánh dấu đã đi; nếu đâm vào ngõ cụt thì **lùi lại 1 bước**, xóa dấu cũ để thử hướng khác cho tới khi duyệt đủ mọi con đường hợp lệ.',
+    dryRunTrace: {
+      title: 'Chạy tay sinh các hoán vị của {1, 2} bằng Quay lui',
+      sampleInput: 'N = 2',
+      traceRows: [
+        'Try(1): thử x[1] = 1, đánh dấu used[1] = true → gọi Try(2)',
+        '  Try(2): thử x[2] = 2 (vì 1 đã dùng), đánh dấu used[2] = true → đủ 2 số, in [1, 2]',
+        '  Quay lui: bỏ đánh dấu used[2] = false',
+        'Quay lui về Try(1): bỏ đánh dấu used[1] = false, thử x[1] = 2, used[2] = true → gọi Try(2)',
+        '  Try(2): chọn x[2] = 1 → đủ 2 số, in [2, 1]'
+      ],
+      finalOutput: '1 2  và  2 1'
+    },
+    commonMistakes: [
+      'Quên trả lại trạng thái (unmark `used[v] = false`) sau khi gọi đệ quy quay lui, khiến các nhánh sau không chọn được giá trị `v` nữa.',
+      'Thiếu điều kiện dừng (Base Case) làm hàm gọi chính nó vô tận dẫn tới tràn ngăn xếp (Stack Overflow / Runtime Error).',
+      'Dùng Quay lui $O(N!)$ cho $N > 12$ mà không cắt nhánh (pruning) dẫn tới chạy quá thời gian (TLE).'
+    ]
+  },
+  'cs-5': {
+    quickIntuition:
+      'Tìm kiếm nhị phân giống cách bạn tra một từ trong cuốn từ điển dày 1000 trang: bạn không lật từng trang 1, 2, 3... mà mở ngay trang 500 ở giữa! Nếu từ cần tìm đứng sau trang 500, bạn vứt hẳn nửa đầu đi — chỉ khoảng 10 lần lật là tìm ra giữa 1000 trang, và chỉ 20 lần cho 1 triệu phần tử!',
+    dryRunTrace: {
+      title: 'Chạy tay tìm X = 11 trong mảng đã sắp xếp [2, 5, 8, 11, 15, 19]',
+      sampleInput: 'A = [2, 5, 8, 11, 15, 19], X = 11',
+      traceRows: [
+        'Khởi tạo L = 0, R = 5 → mid = (0 + 5) / 2 = 2 → A[2] = 8 < 11 → bỏ nửa trái, đặt L = 3',
+        'Giờ L = 3, R = 5 → mid = (3 + 5) / 2 = 4 → A[4] = 15 > 11 → bỏ nửa phải, đặt R = 3',
+        'Giờ L = 3, R = 3 → mid = 3 → A[3] = 11 == X → TÌM THẤY ở vị trí 3!'
+      ],
+      finalOutput: 'Tìm thấy 11 tại chỉ số 3 (chỉ mất 3 bước so sánh)'
+    },
+    commonMistakes: [
+      'Quên SẮP XẾP mảng tăng dần trước khi chạy Tìm kiếm nhị phân — thuật toán chỉ đúng khi dữ liệu có tính đơn điệu.',
+      'Vòng lặp `while (L <= R)` bị lặp vô tận khi cập nhật sai `L = mid` hoặc `R = mid` thay vì `mid + 1` / `mid - 1`.',
+      'Viết `mid = (L + R) / 2` có thể bị tràn `int` nếu `L, R` gần $2\\cdot 10^9$. Sửa: viết `mid = L + (R - L) / 2`.'
+    ]
+  },
+  'cs-6': {
+    quickIntuition:
+      'Mảng cộng dồn (Prefix Sum) giống việc bạn ghi sẵn tổng số bước chân từ đầu ngày đến cuối mỗi giờ: muốn biết từ giờ thứ 3 đến giờ thứ 7 đi bao nhiêu bước, chỉ cần lấy `Tổng(đến giờ 7) - Tổng(trước giờ 3)` trong đúng 1 phép trừ! Còn Hai con trỏ (Two Pointers) giống hai người đi bộ từ hai đầu cầu tiến vào nhau, mỗi người chỉ đi một chiều nên tổng bước đi tối đa là $N$.',
+    dryRunTrace: {
+      title: 'Chạy tay tính tổng đoạn [2..4] (chỉ số 1-based) trên A = [3, 5, 2, 6]',
+      sampleInput: 'A = [3, 5, 2, 6], hỏi tổng từ vị trí 2 đến 4',
+      traceRows: [
+        'Xây mảng cộng dồn P: P[0] = 0, P[1] = 3, P[2] = 8, P[3] = 10, P[4] = 16',
+        'Nhờ đã tính sẵn P, muốn biết tổng A[2] + A[3] + A[4] chỉ cần 1 phép trừ:',
+        'Sum(2..4) = P[4] - P[2 - 1] = P[4] - P[1] = 16 - 3 = 13',
+        'Kiểm chứng: 5 + 2 + 6 = 13 (chính xác tuyệt đối chỉ trong O(1)!)'
+      ],
+      finalOutput: '13'
+    },
+    commonMistakes: [
+      'Tính tổng bằng công thức `P[R] - P[L]` thay vì `P[R] - P[L - 1]` làm bị sót mất phần tử `A[L]`.',
+      'Khai báo mảng cộng dồn `P[]` kiểu `int`: dù từng số $A[i] \\le 10^9$ nhưng tổng nhiều phần tử vượt xa $2\\cdot 10^9$. Sửa: luôn dùng `long long P[]`.',
+      'Áp dụng Hai con trỏ thu hẹp cửa sổ khi mảng có số ÂM — khi có số âm, tổng đoạn không còn đơn điệu tăng khi mở rộng.'
+    ]
+  },
+  'cs-7': {
+    quickIntuition:
+      'Quy hoạch động (DP) thực ra là **"Nhớ lại việc đã làm để khỏi tính lại"**: giống như khi bạn tính $1+1+1+1+1 = 5$, rồi hỏi thêm $+ 1$ nữa bằng mấy — bạn trả lời ngay $6$ dựa vào kết quả $5$ vừa nhớ chứ không đếm lại từ $1$. Bài toán Cái túi là chọn đồ cho vào balo sức chứa $W$ sao cho tổng giá trị lớn nhất mà không bị rách túi.',
+    dryRunTrace: {
+      title: 'Chạy tay Cái túi 0/1: Sức chứa W = 5, 3 món (nặng, giá trị): (2, 3), (3, 4), (4, 5)',
+      sampleInput: 'W = 5; Món 1:(w=2,v=3), Món 2:(w=3,v=4), Món 3:(w=4,v=5)',
+      traceRows: [
+        'Ban đầu balo trống: dp = [0, 0, 0, 0, 0, 0] (cho sức chứa 0..5)',
+        'Xét Món 1 (w=2, v=3), duyệt ngược j từ 5 về 2: dp[2..5] đều nâng lên thành 3',
+        'Xét Món 2 (w=3, v=4), duyệt ngược j từ 5 về 3: tại j=5 → max(dp[5]=3, dp[2]+4 = 3+4 = 7) → dp[5] = 7!',
+        'Xét Món 3 (w=4, v=5), duyệt ngược j từ 5 về 4: dp[5] = max(7, dp[1]+5=5) = 7'
+      ],
+      finalOutput: 'Giá trị lớn nhất mang được = 7 (chọn Món 1 + Món 2, nặng 2+3=5)'
+    },
+    commonMistakes: [
+      'Trong Cái túi 0/1 tối ưu 1 chiều `dp[j]`, nếu bạn duyệt `j` XUÔI từ `w[i]` đến `W`, 1 món đồ sẽ bị lấy nhiều lần thành Cái túi vô hạn! Sửa: bắt buộc duyệt NGƯỢC `for (int j = W; j >= w[i]; --j)`.',
+      'Quên khởi tạo giá trị nền (`dp[0] = 0`, hoặc `INF` khi tìm Min).',
+      'Đáp án tổng giá trị có thể vượt `int` — nên dùng `long long` cho mảng `dp`.'
+    ]
+  },
+  'cs-8': {
+    quickIntuition:
+      'BFS giống như thả một giọt mực lên giấy thấm: mực loang đều ra từng vòng tròn khoảng cách 1 bước, 2 bước, 3 bước nên luôn tìm ra đường đi ÍT CẠNH NHẤT trước tiên. Còn DFS giống người thám hiểm đi sâu hết một nhánh hành lang rồi mới quay lại ngã rẽ. Khi các con đường có độ dài (trọng số) khác nhau, Dijkstra luôn ưu tiên bước tiếp từ thành phố gần điểm xuất phát nhất hiện tại.',
+    dryRunTrace: {
+      title: 'Chạy tay BFS tìm đường ngắn nhất từ đỉnh 1 trên đồ thị: 1-2, 1-3, 2-4, 3-4',
+      sampleInput: 'Đỉnh bắt đầu = 1; cạnh: (1,2), (1,3), (2,4), (3,4)',
+      traceRows: [
+        'Khởi tạo dist[1] = 0, hàng đợi Q = [1], đánh dấu visited[1] = true',
+        'Lấy 1 ra khỏi Q → thăm hàng xóm 2, 3: dist[2]=1, dist[3]=1 → Q = [2, 3]',
+        'Lấy 2 ra khỏi Q → thăm 4: dist[4] = dist[2] + 1 = 2 → Q = [3, 4]',
+        'Lấy 3 ra khỏi Q → 4 đã thăm nên bỏ qua; lấy 4 ra → Q rỗng, DỪNG!'
+      ],
+      finalOutput: 'Khoảng cách ngắn nhất từ 1: dist = [1→0, 2→1, 3→1, 4→2]'
+    },
+    commonMistakes: [
+      'Quên đánh dấu `visited[v] = true` NGAY LÚC đẩy `v` vào `queue` trong BFS (để tới lúc lấy ra mới đánh dấu sẽ bị đẩy trùng rất nhiều lần gây TLE/MLE).',
+      'Dùng Dijkstra khi đồ thị có CẠNH ÂM — Dijkstra không đảm bảo đúng với trọng số âm.',
+      'Khởi tạo `INF` quá nhỏ (ví dụ `1e9`) trong khi tổng đường đi dài có thể lên tới $10^{14}$. Sửa: dùng `const long long INF = 1e18;`.'
+    ]
+  },
+  'cs-9': {
+    quickIntuition:
+      'Segment Tree (Cây phân đoạn) giống bảng xếp hạng chia cặp giải đấu: mỗi ô ở tầng trên ghi sẵn kết quả gộp (tổng hoặc lớn nhất) của 2 nửa bên dưới. Nhờ chia đôi liên tục, khi sửa 1 phần tử bạn chỉ cần cập nhật đúng đường đi từ lá lên gốc ($\\approx 20$ ô với 1 triệu số), và hỏi tổng cả một đoạn dài cũng chỉ cần ghép vài nút đã tính sẵn!',
+    dryRunTrace: {
+      title: 'Chạy tay Cây phân đoạn tính tổng trên mảng A = [2, 4, 1, 5]',
+      sampleInput: 'A = [2, 4, 1, 5] (chỉ số 1..4)',
+      traceRows: [
+        'Nút lá: [1..1]=2, [2..2]=4, [3..3]=1, [4..4]=5',
+        'Tầng giữa gộp đôi: [1..2] = 2+4 = 6; [3..4] = 1+5 = 6',
+        'Gốc: [1..4] = 6 + 6 = 12',
+        'Cập nhật A[3] = 10: chỉ sửa lá [3..3]→10, cha [3..4]→15, gốc [1..4]→21 (chỉ 3 phép cộng!)'
+      ],
+      finalOutput: 'Tổng đoạn [1..4] sau cập nhật = 21'
+    },
+    commonMistakes: [
+      'Khai báo kích thước mảng cây `tree[]` chỉ bằng `2 * N`: với $N$ không phải lũy thừa của 2, chỉ số nút có thể vọt quá $2N$ gây lỗi bộ nhớ! Sửa: luôn khai báo `4 * MAXN`.',
+      'Quên gọi hàm đẩy giá trị cũ lên (`tree[id] = tree[2*id] + tree[2*id+1]`) sau khi đệ quy cập nhật nhánh con.',
+      'Nhầm lẫn giá trị trả về ngoài vùng giao nhau (trả `0` cho Tổng, nhưng phải trả `-INF` nếu tìm Max và `+INF` nếu tìm Min).'
+    ]
+  },
+  'cs-10': {
+    quickIntuition:
+      'Thuật toán Euclid tìm ƯCLN giống việc cắt một tấm vải hình chữ nhật $a \\times b$ thành các hình vuông lớn nhất có thể: bạn cắt bớt phần hình vuông đi cho tới khi cạnh dư bằng $0$! Còn Lũy thừa nhị phân $a^b$ giúp bạn không phải nhân $b$ lần: muốn tính $a^{13}$, bạn tách $13 = 8 + 4 + 1$ rồi chỉ việc bình phương liên tiếp $a \\to a^2 \\to a^4 \\to a^8$!',
+    dryRunTrace: {
+      title: 'Chạy tay tính 3^13 mod 1000 bằng Lũy thừa nhị phân (13 = 1101₂)',
+      sampleInput: 'a = 3, b = 13, MOD = 1000',
+      traceRows: [
+        'Khởi tạo res = 1, base = 3',
+        'b = 13 (lẻ): nhân vào res → res = 1×3 = 3; base = 3² = 9; b = 6',
+        'b = 6 (chẵn): không nhân res; base = 9² = 81; b = 3',
+        'b = 3 (lẻ): res = (3×81) % 1000 = 243; base = 81² % 1000 = 561; b = 1',
+        'b = 1 (lẻ): res = (243×561) % 1000 = 323; b = 0 → DỪNG'
+      ],
+      finalOutput: '3^13 mod 1000 = 323 (chỉ mất 4 vòng lặp!)'
+    },
+    commonMistakes: [
+      'Nhân `(res * base) % MOD` khi `res, base` kiểu `int` và `MOD = 1e9 + 7`: tích có thể lên tới $10^{18}$, tràn `int` trước khi chia lấy dư! Sửa: luôn dùng `long long` cho mọi biến modulo.',
+      'Quên lấy `% MOD` ở phép tính `base = (base * base) % MOD` hoặc quên trường hợp `b = 0` ($a^0 \\pmod{1} = 0$, với $M > 1$ thì $a^0 = 1$).',
+      'Áp dụng chia modulo `(a / b) % M` như phép chia thường — bắt buộc phải nhân với nghịch đảo modulo $b^{M-2} \\pmod M$ khi $M$ nguyên tố.'
+    ]
+  },
+  'cs-11': {
+    quickIntuition:
+      'Stack (Ngăn xếp) giống chồng đĩa trong bếp: đĩa nào đặt vào sau cùng thì lấy ra đầu tiên (LIFO) — cực kỳ hợp để kiểm tra ngoặc đóng `)` khớp với ngoặc mở `(` gần nhất! Còn Deque trượt cửa sổ $K$ giống việc giữ danh sách ứng cử viên vô địch: hễ có người mới mạnh hơn (hoặc nhỏ hơn nếu tìm Min) xuất hiện sau, những người yếu hơn đứng trước đó chắc chắn hết cơ hội nên bị loại thẳng tay.',
+    dryRunTrace: {
+      title: 'Chạy tay kiểm tra dãy ngoặc s = "(()())" bằng Stack',
+      sampleInput: 's = "(()())"',
+      traceRows: [
+        'Gặp `(` → đẩy vào stack: st = ["("]',
+        'Gặp `(` → đẩy vào stack: st = ["(", "("]',
+        'Gặp `)` → khớp với `(` ở đỉnh → lấy ra: st = ["("]',
+        'Gặp `(` → đẩy vào: st = ["(", "("] → gặp `)` → lấy ra: st = ["("]',
+        'Gặp `)` cuối → lấy ra: st = [] (ngăn xếp rỗng hoàn toàn → HỢP LỆ!)'
+      ],
+      finalOutput: 'YES (Dãy ngoặc hợp lệ)'
+    },
+    commonMistakes: [
+      'Gọi `st.top()` hoặc `st.pop()` khi `st.empty()` đang là `true` gây lỗi sập chương trình (Runtime Error). Sửa: luôn kiểm tra `if (st.empty())` trước.',
+      'Duyệt xong chuỗi ngoặc mà quên kiểm tra `st.empty()` ở cuối — ví dụ chuỗi `"((("` không gặp ngoặc đóng sai nhưng vẫn dư ngoặc mở trong stack!',
+      'Trong Deque lưu *giá trị* thay vì *chỉ số*, dẫn đến không biết phần tử ở đầu Deque đã trôi ra ngoài cửa sổ độ dài $K$ hay chưa.'
+    ]
+  },
+  'cs-12': {
+    quickIntuition:
+      'Thuật toán KMP giống như đọc sách có đánh dấu bookmark thông minh: khi so khớp mẫu $P$ với văn bản $T$ mà bị lệch ở chữ thứ 5, thay vì lùi lại từ đầu mẫu một cách ngây thơ, bảng tiền tố $\\pi$ cho biết mẫu đã có phần đầu trùng với phần vừa đọc, nên ta nhảy vọt tiếp luôn trong $O(N+M)$! Còn Hashing biến cả đoạn chữ dài thành một con số duy nhất để so sánh hai đoạn xâu trong đúng 1 phép `==`.',
+    dryRunTrace: {
+      title: 'Chạy tay tính mảng tiền tố KMP (lps/pi) cho mẫu P = "ABABC"',
+      sampleInput: 'P = "ABABC"',
+      traceRows: [
+        'i = 0 ("A"): pi[0] = 0',
+        'i = 1 ("AB"): tiền tố "A" ≠ hậu tố "B" → pi[1] = 0',
+        'i = 2 ("ABA"): "A" trùng "A" → pi[2] = 1',
+        'i = 3 ("ABAB"): "AB" trùng "AB" → pi[3] = 2',
+        'i = 4 ("ABABC"): chữ thứ 3 ("A") ≠ "C", lùi về pi[1]=0 → pi[4] = 0'
+      ],
+      finalOutput: 'pi = [0, 0, 1, 2, 0]'
+    },
+    commonMistakes: [
+      'Dùng Rolling Hash chỉ có 1 Modulo với dữ liệu lớn ($10^5$ xâu con) có thể bị đụng độ Hash (Collision) dẫn tới WA. Sửa: dùng 2 Modulo nguyên tố khác nhau (Double Hash).',
+      'Trong KMP dùng `if` thay vì `while (j > 0 && p[i] != p[j]) j = pi[j - 1];` khiến không lùi đủ bước về tiền tố khớp dài nhất.',
+      'Trong LCA Binary Lifting quên bước cân bằng độ sâu hai đỉnh `u, v` trước khi cùng nhảy lên $2^k$.'
+    ]
+  }
+};
+
+function buildDefaultCSGuide(lesson: CSLesson): CSEasyGuide {
+  const sample = lesson.practiceProblem?.sampleCases?.[0];
+  return {
+    quickIntuition: `Bài "${lesson.title}" giúp giải quyết bài toán ${lesson.topic} một cách tối ưu thay vì thử mọi trường hợp chậm chạp, nhắm tới tốc độ ${lesson.complexity.time}. Hãy đọc phần Khái niệm ngắn bên dưới rồi theo dõi ngay bảng Chạy tay từng bước để thấy thuật toán biến đổi dữ liệu ra sao.`,
+    dryRunTrace: {
+      title: `Chạy tay theo test mẫu (${lesson.practiceProblem?.title || lesson.title})`,
+      sampleInput: sample?.input || 'Dữ liệu mẫu nhỏ',
+      traceRows: [
+        `Đọc dữ liệu đầu vào theo định dạng: ${lesson.practiceProblem?.inputFormat || 'Input chuẩn'}`,
+        `Áp dụng cốt lõi "${lesson.topic}" — giữ độ phức tạp ${lesson.complexity.time}`,
+        sample?.explanation || lesson.practiceProblem?.solutionAnalysis || 'Cập nhật biến kết quả sau từng bước duyệt'
+      ],
+      finalOutput: sample?.output || 'Kết quả đúng theo Output Format'
+    },
+    commonMistakes: [
+      `Kiểm tra kiểu dữ liệu \`long long\` nếu kết quả hoặc phép nhân vượt $2\\cdot 10^9$.`,
+      `Luôn test các trường hợp biên ($N = 0, N = 1$, phần tử âm hoặc trùng nhau) trước khi nộp.`
+    ]
+  };
+}
 
 export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
   const customCSSteps = CS_CUSTOM_LECTURE_STEPS[lesson.id];
   const hasCustomCS = Boolean(customCSSteps && customCSSteps.length > 0);
+  const easyGuide = CS_LESSON_EASY_GUIDE[lesson.id] || buildDefaultCSGuide(lesson);
   const baseSteps: LectureStep[] = hasCustomCS
     ? customCSSteps
     : lesson.lectureSteps && lesson.lectureSteps.length > 0
@@ -1074,8 +1353,29 @@ export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
         st.keyTakeaway
       );
 
+    // Attach beginner-friendly quick intuition, dry-run trace, and common mistakes cleanly
+    const stepQuickIntuition =
+      st.quickIntuition ||
+      (idx === 0
+        ? easyGuide.quickIntuition
+        : `Trọng tâm bước ${idx + 1} (${stripLeadingNumber(st.stepTitle)}): ${st.keyTakeaway || lesson.topic}`);
+
+    const stepDryRun =
+      st.dryRunTrace ||
+      (idx === 0 || idx === enrichedInput.length - 1 || Boolean(st.codeSnippet)
+        ? easyGuide.dryRunTrace
+        : undefined);
+
+    const stepMistakes =
+      st.commonMistakes && st.commonMistakes.length > 0
+        ? st.commonMistakes
+        : easyGuide.commonMistakes;
+
     return {
       ...st,
+      quickIntuition: stepQuickIntuition,
+      dryRunTrace: stepDryRun,
+      commonMistakes: stepMistakes,
       conceptSection,
       formulaSection: st.formulaSection || {
         primaryFormula,

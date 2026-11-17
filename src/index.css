@@ -2147,3 +2147,94 @@
     animation: none !important;
   }
 }
+
+/* ============================================================================
+   SYNAPSE ARCHITECTURAL SQUARE-CUT STUDIO & IDE ANIMATIONS (GPU-COMPOSITED)
+   ============================================================================ */
+@keyframes syn-chassis-ring-spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes syn-pixel-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.65; }
+  50% { transform: scale(1.22); opacity: 1; }
+}
+
+@keyframes syn-laser-bar {
+  0% { transform: translate3d(-120%, 0, 0); opacity: 0; }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.9; }
+  100% { transform: translate3d(260%, 0, 0); opacity: 0; }
+}
+
+.syn-conic-border {
+  position: relative;
+  border-radius: 6px;
+  padding: 1.5px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.syn-conic-border-spin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220%;
+  height: 220%;
+  pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    rgba(2, 132, 199, 0.85) 0deg,
+    rgba(56, 189, 248, 0.14) 70deg,
+    rgba(20, 184, 166, 0.85) 150deg,
+    rgba(99, 102, 241, 0.14) 235deg,
+    rgba(14, 165, 233, 0.78) 310deg,
+    rgba(2, 132, 199, 0.85) 360deg
+  );
+  opacity: 0.52;
+  animation: syn-chassis-ring-spin 11s linear infinite;
+  transition: opacity 220ms ease;
+  z-index: 0;
+  will-change: transform;
+}
+
+.syn-conic-border:hover .syn-conic-border-spin {
+  opacity: 0.92;
+  animation-duration: 5.5s;
+}
+
+.syn-live-square {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  animation: syn-pixel-pulse 1.9s ease-in-out infinite;
+}
+
+.syn-top-laser {
+  position: relative;
+  overflow: hidden;
+}
+
+.syn-top-laser::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 34%;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, #38bdf8, #2dd4bf, transparent);
+  animation: syn-laser-bar 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syn-conic-border-spin,
+  .syn-live-square,
+  .syn-top-laser::after {
+    animation: none !important;
+  }
+}
+

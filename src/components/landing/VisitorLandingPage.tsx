@@ -419,12 +419,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         : 'Tách riêng 5 trang thực hành (Cơ học, Sóng & Dao động, Điện & Điện từ, Quang & Lượng tử, Nhiệt & Hạt nhân) tham khảo PhET với đầy đủ thanh trượt thông số, tách biệt 2D/3D và văn phong chuẩn THPT/Chuyên.',
       highlights: isEn
         ? [
-            '19 2D Labs & 14 3D Models across 5 dedicated domain pages',
+            '41 2D Labs & 32 3D Models across 5 dedicated domain pages',
             'RLC phasors, Doppler cones, Photoelectric tube & Bohr Atom',
             'Adaptive difficulty labels for Grade 9–12 & Olympiad',
           ]
         : [
-            '19 Lab 2D & 14 mô hình 3D chia thành 5 trang lĩnh vực riêng',
+            '41 Lab 2D & 32 mô hình 3D chia thành 5 trang lĩnh vực riêng',
             'Mạch RLC, hiệu ứng Doppler, Quang điện ngoài & Nguyên tử Bohr',
             'Bài giảng tinh gọn, chuẩn mực theo cấp độ THPT & Chuyên',
           ],
@@ -887,7 +887,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'Physics 2D & 3D' : 'Vật Lí 2D & 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '5 Domains · 19 2D + 14 3D' : '5 Lĩnh vực · 19 2D + 14 3D'}
+                  {isEn ? '5 Domains · 41 2D + 32 3D' : '5 Lĩnh vực · 41 2D + 32 3D'}
                 </p>
               </button>
 
@@ -1028,78 +1028,122 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 </button>
               </div>
 
-              {/* 4 Prominent Square-Framed Animated Showcase Scroll Buttons */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 w-full max-w-full">
+              {/* 4 Detailed Square-Framed Showcase & App Action Cards (Untruncated, Full Context) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-full">
                 <button
                   type="button"
                   data-ripple="true"
                   onClick={() => scrollToShowcase('synapse_v2')}
-                  className="group sci-frame cs-deck-btn cta-beacon-glow w-full px-3 py-3 rounded-md bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 hover:from-sky-500 hover:via-cyan-500 hover:to-blue-500 border border-sky-300/60 text-white font-semibold text-xs sm:text-[13px] transition-all flex items-center justify-between gap-2 cursor-pointer"
+                  className="group sci-frame cs-deck-btn cta-beacon-glow w-full p-3.5 rounded-md bg-gradient-to-br from-sky-600 via-cyan-600 to-blue-700 hover:from-sky-500 hover:via-cyan-500 hover:to-blue-600 border border-sky-300/60 text-white text-left transition-all flex flex-col justify-between gap-2 cursor-pointer"
                 >
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <Orbit className="w-4 h-4 icon-anim-cosmos shrink-0" />
-                    <span className="truncate">Synapse 2.0</span>
-                  </span>
-                  <span className="flex items-center gap-1 shrink-0">
-                    <span className="px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono font-bold tabular-nums">
-                      30
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
-                  </span>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-8 h-8 rounded-[4px] bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+                        <Orbit className="w-4 h-4 icon-anim-cosmos" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
+                          {isEn ? 'Synapse 2.0 · 30 3D Mega-Models' : 'Synapse 2.0 · 30 Đại Công Trình 3D'}
+                        </div>
+                        <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-sky-100/90">
+                          {isEn ? '360° WebGL · Live Math & Physics' : 'WebGL 360° · Tương tác thông số sống'}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown className="w-4 h-4 shrink-0 mt-0.5 text-sky-100 group-hover:translate-y-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-sky-50/90">
+                    {isEn
+                      ? 'Inspect solar systems, RLC circuits, 3D geometry & 73 Physics labs with real-time sliders.'
+                      : 'Xoay 360° Hệ Mặt Trời, mạch RLC, hình học Oxyz & kho 73 mô phỏng Vật lí có đồ thị trực tiếp.'}
+                  </p>
                 </button>
 
                 <button
                   type="button"
                   data-ripple="true"
                   onClick={() => scrollToShowcase('spatial_3d')}
-                  className="group sci-frame cs-deck-btn w-full px-3 py-3 rounded-md bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 border border-teal-300/60 text-white font-semibold text-xs sm:text-[13px] transition-all flex items-center justify-between gap-2 cursor-pointer shadow-lg shadow-teal-600/20"
+                  className="group sci-frame cs-deck-btn w-full p-3.5 rounded-md bg-gradient-to-br from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-500 hover:to-emerald-500 border border-teal-300/60 text-white text-left transition-all flex flex-col justify-between gap-2 cursor-pointer shadow-lg shadow-teal-600/20"
                 >
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <Hand className="w-4 h-4 icon-anim-hand shrink-0" />
-                    <span className="truncate">{isEn ? '3D Hand Lab' : 'Học 3D tay'}</span>
-                  </span>
-                  <span className="flex items-center gap-1 shrink-0">
-                    <span className="px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono font-bold tabular-nums">
-                      21+
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
-                  </span>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-8 h-8 rounded-[4px] bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+                        <Hand className="w-4 h-4 icon-anim-hand" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
+                          {isEn ? '3D Hand Lab & AI Sandbox' : 'Học Cảm Giác 3D Bằng Tay (AI)'}
+                        </div>
+                        <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-100/90">
+                          {isEn ? '10-Finger Tracking · 6 2D + 15 3D' : 'Webcam 10 ngón · 6 2D + 15 3D + Tạo AI'}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown className="w-4 h-4 shrink-0 mt-0.5 text-emerald-100 group-hover:translate-y-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-emerald-50/90">
+                    {isEn
+                      ? 'Pinch, rotate & grab 3D models via webcam or upload your own sketch for AI to build.'
+                      : 'Cầm nắm, xoay phóng mô hình bằng cử chỉ tay hoặc gửi ý tưởng/ảnh để AI dựng mô hình tự do.'}
+                  </p>
                 </button>
 
                 <button
                   type="button"
                   data-ripple="true"
                   onClick={() => scrollToShowcase('forum')}
-                  className="group sci-frame cs-deck-btn w-full px-3 py-3 rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 border border-indigo-300/60 text-white font-semibold text-xs sm:text-[13px] transition-all flex items-center justify-between gap-2 cursor-pointer shadow-lg shadow-indigo-600/20"
+                  className="group sci-frame cs-deck-btn w-full p-3.5 rounded-md bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 border border-indigo-300/60 text-white text-left transition-all flex flex-col justify-between gap-2 cursor-pointer shadow-lg shadow-indigo-600/20"
                 >
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <MessageSquare className="w-4 h-4 icon-anim-wave shrink-0" />
-                    <span className="truncate">{isEn ? 'Study Forum' : 'Diễn đàn'}</span>
-                  </span>
-                  <span className="flex items-center gap-1 shrink-0">
-                    <span className="px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono font-bold uppercase">
-                      Live
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
-                  </span>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-8 h-8 rounded-[4px] bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+                        <MessageSquare className="w-4 h-4 icon-anim-wave" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
+                          {isEn ? 'Live Academic Study Forum' : 'Diễn Đàn Học Tập & Giải Bài LIVE'}
+                        </div>
+                        <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-indigo-100/90">
+                          {isEn ? 'LaTeX · C++/Python Snippets · Q&A' : 'Cộng đồng trực tuyến · Chuẩn LaTeX & Code'}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown className="w-4 h-4 shrink-0 mt-0.5 text-indigo-100 group-hover:translate-y-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-indigo-50/90">
+                    {isEn
+                      ? 'Post tricky Math/Physics/CS exercises, vote solutions, and discuss live with peers.'
+                      : 'Đăng đề bài khó Toán, Lí, Tin, chia sẻ lời giải chi tiết có công thức LaTeX & code chạy thử.'}
+                  </p>
                 </button>
 
                 <button
                   type="button"
                   data-ripple="true"
                   onClick={() => scrollToVisitorSection('visitor-app-download')}
-                  className="group sci-frame cs-deck-btn w-full px-3 py-3 rounded-md bg-gradient-to-r from-slate-900 via-blue-900 to-sky-700 hover:from-slate-800 hover:to-sky-600 border border-cyan-300/60 text-white font-semibold text-xs sm:text-[13px] transition-all flex items-center justify-between gap-2 cursor-pointer shadow-lg shadow-sky-700/25"
+                  className="group sci-frame cs-deck-btn w-full p-3.5 rounded-md bg-gradient-to-br from-slate-900 via-blue-900 to-sky-800 hover:from-slate-800 hover:to-sky-700 border border-cyan-300/60 text-white text-left transition-all flex flex-col justify-between gap-2 cursor-pointer shadow-lg shadow-sky-700/25"
                 >
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <Download className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{isEn ? 'Get App' : 'Tải App'}</span>
-                  </span>
-                  <span className="flex items-center gap-1 shrink-0">
-                    <span className="px-1.5 py-0.5 rounded bg-cyan-400/25 text-cyan-100 text-[10px] font-mono font-bold uppercase">
-                      PC/ĐT
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
-                  </span>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-8 h-8 rounded-[4px] bg-cyan-400/20 border border-cyan-300/35 flex items-center justify-center shrink-0">
+                        <Download className="w-4 h-4 text-cyan-200" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
+                          {isEn ? 'Download App · PC, Android & iPhone' : 'Tải Ứng Dụng · PC, Android & iPhone'}
+                        </div>
+                        <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-cyan-200">
+                          {isEn ? 'Desktop Launcher · Mobile PWA · Offline' : 'App Laptop riêng · Mobile PWA mượt nhẹ'}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown className="w-4 h-4 shrink-0 mt-0.5 text-cyan-200 group-hover:translate-y-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-sky-100/90">
+                    {isEn
+                      ? 'Install standalone Windows/macOS launcher or Android/iOS home app with offline sync.'
+                      : 'Cài đặt bản độc lập cho Windows/macOS, Android APK/PWA & iPhone để học mượt không giật lag.'}
+                  </p>
                 </button>
               </div>
 
@@ -3060,7 +3104,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      <span>{isEn ? '19 2D interactive canvases + 14 3D 60FPS labs' : 'Tách rõ 19 Lab 2D & 14 mô phỏng 3D 60 FPS'}</span>
+                      <span>{isEn ? '41 2D interactive canvases + 32 3D 60FPS labs' : 'Tách rõ 41 Lab 2D & 32 mô phỏng 3D 60 FPS'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />

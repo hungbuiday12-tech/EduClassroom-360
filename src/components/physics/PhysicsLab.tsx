@@ -63,6 +63,7 @@ import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
 import { LectureThumbnail } from '../common/LectureThumbnail';
 import { buildPhysicsLectureSteps } from '../../data/lectureStepsBuilder';
 import { useNavigation } from '../../context/NavigationContext';
+import { renderExtra2DPhysicsSim } from './physics2DExtraRenderer';
 
 interface OverlayState {
   showRulerGrid: boolean;
@@ -737,8 +738,23 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
         case 'photoelectric_effect':
           drawPhotoelectricEffect(ctx, w, h, t, isDark);
           break;
-        default:
-          drawSpring(ctx, w, h, t, isDark);
+        default: {
+          const handledExtra = renderExtra2DPhysicsSim(
+            activeSimType,
+            ctx,
+            w,
+            h,
+            t,
+            isDark,
+            paramsRef.current,
+            curOverlays,
+            pushTelemetry
+          );
+          if (!handledExtra) {
+            drawSpring(ctx, w, h, t, isDark);
+          }
+          break;
+        }
       }
 
       // Subtle Time Stamp badge in top-right of canvas
@@ -5456,6 +5472,47 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                               <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">{bound.label}</div>
                               <div className="grid grid-cols-3 gap-1">
                                 {[{ v: 0, label: 'Vectơ' }, { v: 1, label: 'Đồ thị d-t' }, { v: 2, label: 'Đồ thị v-t' }].map((opt) => (
+                                  <button
+                                    key={opt.v}
+                                    type="button"
+                                    onClick={() => setParams((prev) => ({ ...prev, [paramKey]: opt.v }))}
+                                    className={`py-1.5 rounded-md text-[11px] font-bold transition-colors ${
+                                      Math.round(curVal) === opt.v
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                                    }`}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                        if (paramKey === 'modeCharge' || paramKey === 'convexMode' || paramKey === 'processType') {
+                          const opts =
+                            paramKey === 'modeCharge'
+                              ? [
+                                  { v: 1, label: 'Nạp tụ (Charge)' },
+                                  { v: 0, label: 'Xả tụ (Discharge)' }
+                                ]
+                              : paramKey === 'convexMode'
+                              ? [
+                                  { v: 0, label: 'Gương cầu Lõm' },
+                                  { v: 1, label: 'Gương cầu Lồi' }
+                                ]
+                              : [
+                                  { v: 0, label: 'Đẳng nhiệt' },
+                                  { v: 1, label: 'Đẳng áp' },
+                                  { v: 2, label: 'Đẳng tích' }
+                                ];
+                          return (
+                            <div key={paramKey} className="space-y-1.5 bg-slate-50/80 dark:bg-slate-800/40 p-2.5 rounded-md border border-slate-200/60 dark:border-slate-700/60">
+                              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                {bound.label}
+                              </div>
+                              <div className={`grid gap-1 ${opts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                                {opts.map((opt) => (
                                   <button
                                     key={opt.v}
                                     type="button"

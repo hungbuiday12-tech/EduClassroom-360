@@ -24,6 +24,7 @@ import {
   HelpCircle,
   Download
 } from 'lucide-react';
+import { ViewportPortal } from '../common/ViewportPortal';
 
 export type SublimeSyntaxLang = 'cpp' | 'python' | 'text';
 
@@ -366,43 +367,43 @@ export const MonokaiCodeBlock: React.FC<MonokaiCodeBlockProps> = ({
   const isCopied = copied || localCopied;
 
   return (
-    <div className="rounded-xl overflow-hidden border border-[#3e3d32] bg-[#272822] shadow-lg font-mono text-xs">
-      {/* Authentic Sublime mini window header */}
-      <div className="h-9 px-3 bg-[#1e1f1c] border-b border-[#141512] flex items-center justify-between select-none">
+    <div className="rounded-md overflow-hidden border border-slate-800 bg-[#131722] shadow-lg font-mono text-xs sci-frame">
+      {/* Synchronized Synapse Architectural Code Header */}
+      <div className="h-9 px-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between select-none">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+          <div className="flex items-center gap-1 shrink-0" aria-hidden="true">
+            <span className="w-2 h-2 rounded-[1px] bg-sky-400" />
+            <span className="w-2 h-2 rounded-[1px] bg-teal-400" />
+            <span className="w-2 h-2 rounded-[1px] bg-slate-600" />
           </div>
-          <div className="ml-2 px-3 h-7 mt-2 rounded-t bg-[#272822] text-[#f8f8f2] text-[11px] flex items-center gap-1.5 border-t-2 border-t-[#a6e22e] truncate">
+          <div className="ml-1.5 px-3 h-7 mt-2 rounded-t-[4px] bg-[#131722] text-slate-100 text-[11px] flex items-center gap-1.5 border-t-2 border-t-sky-400 border-x border-slate-800 truncate">
             <span className="truncate">{title || (language === 'cpp' ? 'main.cpp' : 'solution.py')}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="hidden sm:inline text-[10px] text-[#66d9ef] px-1.5 py-0.5 rounded bg-[#272822] border border-[#3e3d32]">
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="hidden sm:inline text-[10px] font-semibold text-sky-400">
             {language === 'cpp' ? 'C++20' : language === 'python' ? 'Python 3' : 'Text'}
           </span>
           <button
             onClick={handleCopyClick}
-            className="px-2.5 py-1 rounded bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2] text-[11px] flex items-center gap-1 transition-colors"
+            className="sheen-btn px-2.5 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/60 text-slate-200 text-[11px] flex items-center gap-1 transition-colors whitespace-nowrap"
           >
-            {isCopied ? <Check className="w-3 h-3 text-[#a6e22e]" /> : <Copy className="w-3 h-3" />}
+            {isCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
             <span>{isCopied ? 'Copied' : 'Copy'}</span>
           </button>
         </div>
       </div>
 
-      {/* Highlighted Lines */}
-      <div className={`overflow-auto ${maxHeightClass} py-2.5 bg-[#272822]`}>
+      {/* Highlighted Lines (Authentic Monokai Token Palette) */}
+      <div className={`overflow-auto ${maxHeightClass} py-2.5 bg-[#131722]`}>
         <table className="w-full border-collapse">
           <tbody>
             {lines.map((ln, idx) => {
               const tokens = tokenizeLineMonokai(ln, language);
               return (
-                <tr key={idx} className="hover:bg-[#3e3d32]/45 transition-colors">
+                <tr key={idx} className="hover:bg-slate-800/55 transition-colors">
                   {showLineNumbers && (
-                    <td className="w-11 select-none text-right pr-3 pl-2 text-[#90908a] text-[11px] align-top leading-6">
+                    <td className="w-11 select-none text-right pr-3 pl-2 text-slate-500 text-[11px] align-top leading-6 tabular-nums">
                       {idx + 1}
                     </td>
                   )}
@@ -492,7 +493,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
   const [cursorPos, setCursorPos] = useState<{ line: number; col: number }>({ line: 1, col: 1 });
   const [scrollTop, setScrollTop] = useState<number>(0);
   const [copied, setCopied] = useState<boolean>(false);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<{ name: string; left: number; top: number } | null>(null);
 
   // Undo / Redo stack (per editor session)
   const [historyStack, setHistoryStack] = useState<{ past: string[]; future: string[] }>({
@@ -1251,83 +1252,110 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
 
   return (
     <div
-      className={`flex flex-col bg-[#272822] text-[#f8f8f2] overflow-hidden select-none ${heightClass}`}
-      onClick={() => openMenu && setOpenMenu(null)}
+      className={`flex flex-col bg-[#131722] text-[#f8f8f2] overflow-hidden select-none ${heightClass}`}
+      onClick={() => menuAnchor && setMenuAnchor(null)}
     >
-      {/* Sublime Top Window Title + Menu Bar */}
-      <div className="bg-[#171814] border-b border-[#11120f] px-2.5 h-8 flex items-center justify-between text-[11px] text-[#c8c8c0]">
-        <div className="flex items-center gap-1 min-w-0">
+      {/* Portal Menu Dropdown (never clipped by overflow-x-auto or overlapped by right controls) */}
+      {menuAnchor && menuActions[menuAnchor.name] && (
+        <ViewportPortal active={true}>
+          <div
+            className="fixed inset-0 z-[155]"
+            onClick={() => setMenuAnchor(null)}
+          >
+            <div
+              style={{ left: `${menuAnchor.left}px`, top: `${menuAnchor.top}px` }}
+              onClick={(e) => e.stopPropagation()}
+              className="fixed w-64 max-h-80 overflow-y-auto bg-slate-950 border border-slate-700 shadow-2xl py-1 rounded-md z-[156]"
+            >
+              {menuActions[menuAnchor.name].map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setMenuAnchor(null);
+                    item.action();
+                  }}
+                  className="w-full px-3 py-1.5 text-left text-[11px] text-slate-100 hover:bg-sky-600/25 hover:text-sky-300 flex items-center justify-between gap-2 rounded-none"
+                >
+                  <span className="truncate">{item.label}</span>
+                  {item.shortcut && <span className="text-slate-400 text-[10px] font-mono shrink-0">{item.shortcut}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        </ViewportPortal>
+      )}
+
+      {/* Synchronized Top Window Title + Menu Bar (Zero-Overlap Flex Contract) */}
+      <div className="bg-slate-950 border-b border-slate-800 px-2.5 h-9 flex items-center justify-between gap-2 text-[11px] text-slate-300 shrink-0">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
           {onToggleSidebar && (
             <button
+              type="button"
               onClick={onToggleSidebar}
-              className="p-1.5 mr-1 rounded hover:bg-[#3e3d32] text-[#c8c8c0] hover:text-white transition-colors"
+              className="p-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/60 text-slate-300 hover:text-white transition-colors shrink-0"
               title={isSidebarOpen ? 'Ẩn thanh đề bài (Side Bar)' : 'Hiện thanh đề bài (Side Bar)'}
             >
               {isSidebarOpen ? <PanelLeftClose className="w-3.5 h-3.5" /> : <PanelLeftOpen className="w-3.5 h-3.5" />}
             </button>
           )}
-          <div className="hidden sm:flex items-center gap-1.5 mr-2 shrink-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+          <div className="hidden sm:flex items-center gap-1 mr-1 shrink-0" aria-hidden="true">
+            <span className="w-2 h-2 rounded-[1px] bg-sky-400" />
+            <span className="w-2 h-2 rounded-[1px] bg-teal-400" />
+            <span className="w-2 h-2 rounded-[1px] bg-indigo-400" />
           </div>
-          {/* Classic Sublime Menu Items */}
-          <div className="hidden lg:flex items-center gap-0.5 relative">
+          {/* Scrollable Menu Strip — mathematically isolated from right controls */}
+          <div className="hidden md:flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto scrollbar-none pr-1">
             {['File', 'Edit', 'Selection', 'Find', 'View', 'Goto', 'Tools', 'Project', 'Preferences', 'Help'].map((mName) => (
-              <div key={mName} className="relative">
-                <button
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    if (menuActions[mName]) {
-                      setOpenMenu(openMenu === mName ? null : mName);
-                    }
-                  }}
-                  className={`px-2 py-1 rounded text-[11px] transition-colors ${
-                    openMenu === mName ? 'bg-[#3e3d32] text-white' : 'hover:bg-[#2c2d27] text-[#c8c8c0]'
-                  }`}
-                >
-                  {mName}
-                </button>
-                {openMenu === mName && menuActions[mName] && (
-                  <div className="absolute left-0 top-full mt-0.5 w-60 max-h-80 overflow-y-auto bg-[#272822] border border-[#3e3d32] shadow-2xl py-1 z-50 rounded">
-                    {menuActions[mName].map((item, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setOpenMenu(null);
-                          item.action();
-                        }}
-                        className="w-full px-3 py-1.5 text-left text-[11px] text-[#f8f8f2] hover:bg-[#49483e] flex items-center justify-between gap-2"
-                      >
-                        <span className="truncate">{item.label}</span>
-                        {item.shortcut && <span className="text-[#90908a] text-[10px] shrink-0">{item.shortcut}</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <button
+                key={mName}
+                type="button"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (!menuActions[mName]) return;
+                  if (menuAnchor?.name === mName) {
+                    setMenuAnchor(null);
+                  } else {
+                    const rect = ev.currentTarget.getBoundingClientRect();
+                    setMenuAnchor({
+                      name: mName,
+                      left: Math.max(8, Math.min(rect.left, window.innerWidth - 268)),
+                      top: rect.bottom + 4
+                    });
+                  }
+                }}
+                className={`px-2 py-1 rounded-[4px] text-[11px] whitespace-nowrap shrink-0 transition-colors ${
+                  menuAnchor?.name === mName
+                    ? 'bg-sky-600 text-white font-semibold'
+                    : 'hover:bg-slate-800 text-slate-300 hover:text-white'
+                }`}
+              >
+                {mName}
+              </button>
             ))}
           </div>
-          <span className="lg:hidden text-[11px] font-mono text-[#a6e22e] font-semibold truncate">
-            Sublime Text 4
+          <span className="md:hidden text-[11px] font-mono text-sky-400 font-semibold truncate">
+            Synapse · Sublime 4
           </span>
         </div>
 
-        {/* Right Quick Window Controls */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Right Quick Window Controls (always shrink-0 & crisp square-cut) */}
+        <div className="flex items-center gap-1.5 shrink-0 bg-slate-950 pl-1">
           {onFontSizeChange && (
-            <div className="hidden sm:flex items-center bg-[#272822] border border-[#3e3d32] rounded px-1">
+            <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-[4px] px-1 h-7">
               <button
+                type="button"
                 onClick={() => onFontSizeChange(Math.max(11, fontSize - 1))}
-                className="p-0.5 hover:text-white text-[#90908a]"
+                className="p-0.5 hover:text-white text-slate-400"
                 title="Giảm cỡ chữ"
               >
                 <Minus className="w-3 h-3" />
               </button>
-              <span className="px-1.5 text-[10px] font-mono text-[#c8c8c0]">{fontSize}px</span>
+              <span className="px-1.5 text-[10px] font-mono text-slate-200 tabular-nums">{fontSize}px</span>
               <button
+                type="button"
                 onClick={() => onFontSizeChange(Math.min(22, fontSize + 1))}
-                className="p-0.5 hover:text-white text-[#90908a]"
+                className="p-0.5 hover:text-white text-slate-400"
                 title="Tăng cỡ chữ"
               >
                 <Plus className="w-3 h-3" />
@@ -1336,18 +1364,20 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
           )}
 
           <button
+            type="button"
             onClick={handleCopy}
-            className="px-2 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[11px] flex items-center gap-1 text-[#c8c8c0] hover:text-white"
+            className="px-2 h-7 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/60 text-[11px] flex items-center gap-1 text-slate-200 hover:text-white whitespace-nowrap shrink-0"
             title="Sao chép mã nguồn"
           >
-            {copied ? <Check className="w-3 h-3 text-[#a6e22e]" /> : <Copy className="w-3 h-3" />}
+            {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
             <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
           </button>
 
           {onReset && (
             <button
+              type="button"
               onClick={onReset}
-              className="p-1.5 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#c8c8c0] hover:text-white"
+              className="w-7 h-7 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/60 text-slate-300 hover:text-white flex items-center justify-center shrink-0"
               title="Đặt lại code mẫu"
             >
               <RotateCcw className="w-3 h-3" />
@@ -1356,11 +1386,12 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
 
           {onToggleFullscreen && (
             <button
+              type="button"
               onClick={onToggleFullscreen}
-              className={`px-2 py-1 rounded border text-[11px] flex items-center gap-1 font-semibold transition-colors ${
+              className={`sheen-btn px-2.5 h-7 rounded-[4px] border text-[11px] flex items-center gap-1 font-semibold transition-colors whitespace-nowrap shrink-0 ${
                 isFullscreen
-                  ? 'bg-[#f92672]/20 border-[#f92672]/50 text-[#f92672] hover:bg-[#f92672]/30'
-                  : 'bg-[#272822] border-[#3e3d32] text-[#66d9ef] hover:bg-[#3e3d32]'
+                  ? 'bg-rose-500/15 border-rose-500/50 text-rose-300 hover:bg-rose-500/25'
+                  : 'bg-sky-500/15 border-sky-500/40 text-sky-300 hover:bg-sky-500/25'
               }`}
               title={isFullscreen ? 'Thu nhỏ (Esc / F11)' : 'Toàn màn hình Split-Screen (F11)'}
             >
@@ -1371,33 +1402,34 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         </div>
       </div>
 
-      {/* Authentic Sublime File Tabs Bar */}
+      {/* File Tabs Bar (Square architectural top tabs) */}
       {tabs && tabs.length > 0 && (
-        <div className="bg-[#1e1f1c] border-b border-[#141512] px-2 pt-1.5 flex items-end gap-1 overflow-x-auto scrollbar-none">
+        <div className="bg-slate-900 border-b border-slate-800 px-2 pt-1.5 flex items-end gap-1 overflow-x-auto scrollbar-none shrink-0">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => onSelectTab?.(tab.id)}
-                className={`h-8 px-3.5 rounded-t-md text-xs font-mono flex items-center gap-2 shrink-0 transition-colors ${
+                className={`h-8 px-3.5 rounded-t-[4px] text-xs font-mono flex items-center gap-2 shrink-0 whitespace-nowrap transition-colors ${
                   isActive
-                    ? 'bg-[#272822] text-[#f8f8f2] font-semibold border-t-2 border-t-[#e6db74] shadow-[0_-1px_0_#272822]'
-                    : 'bg-[#171814] text-[#90908a] hover:bg-[#22231e] hover:text-[#d8d8d0] border-t-2 border-t-transparent'
+                    ? 'bg-[#131722] text-white font-semibold border-t-2 border-t-sky-400 border-x border-slate-800 shadow-[0_1px_0_#131722]'
+                    : 'bg-slate-950/70 text-slate-400 hover:bg-slate-800/80 hover:text-slate-200 border-t-2 border-t-transparent border-x border-transparent'
                 }`}
               >
                 <span
-                  className={`w-2 h-2 rounded-full ${
+                  className={`w-2 h-2 rounded-[1px] ${
                     tab.language === 'cpp'
-                      ? 'bg-[#66d9ef]'
+                      ? 'bg-sky-400'
                       : tab.language === 'python'
-                      ? 'bg-[#a6e22e]'
-                      : 'bg-[#e6db74]'
+                      ? 'bg-emerald-400'
+                      : 'bg-amber-400'
                   }`}
                 />
                 <span>{tab.label}</span>
                 {tab.dirty !== false && (
-                  <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[#fd971f]' : 'bg-[#75715e]'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-[1px] ${isActive ? 'bg-amber-400' : 'bg-slate-600'}`} />
                 )}
               </button>
             );
@@ -1405,13 +1437,13 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         </div>
       )}
 
-      {/* Compact Edit / Find / Snippets Toolbar (always accessible on mobile & quick-click on desktop) */}
-      <div className="bg-[#1b1c18] border-b border-[#11120f] px-2 py-1 flex items-center gap-1 overflow-x-auto scrollbar-none text-[11px]">
+      {/* Compact Edit / Find / Snippets Toolbar */}
+      <div className="bg-slate-950/90 border-b border-slate-800 px-2 py-1.5 flex items-center gap-1 overflow-x-auto scrollbar-none text-[11px] shrink-0">
         <button
           type="button"
           onClick={handleUndo}
           disabled={historyStack.past.length === 0}
-          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] disabled:opacity-35 text-[#c8c8c0] flex items-center gap-1 shrink-0"
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 disabled:opacity-35 text-slate-300 flex items-center gap-1 shrink-0 whitespace-nowrap"
           title="Undo (Ctrl+Z)"
         >
           <Undo2 className="w-3 h-3" />
@@ -1421,7 +1453,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
           type="button"
           onClick={handleRedo}
           disabled={historyStack.future.length === 0}
-          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] disabled:opacity-35 text-[#c8c8c0] flex items-center gap-1 shrink-0"
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 disabled:opacity-35 text-slate-300 flex items-center gap-1 shrink-0 whitespace-nowrap"
           title="Redo (Ctrl+Y)"
         >
           <Redo2 className="w-3 h-3" />
@@ -1433,10 +1465,10 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
             setShowFindBar((p) => !p);
             setShowReplaceRow(false);
           }}
-          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
             showFindBar && !showReplaceRow
-              ? 'bg-[#e6db74] text-[#272822] font-bold'
-              : 'bg-[#272822] hover:bg-[#3e3d32] text-[#e6db74]'
+              ? 'bg-sky-600 border-sky-500 text-white font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-sky-300'
           }`}
           title="Find (Ctrl+F)"
         >
@@ -1449,10 +1481,10 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
             setShowFindBar(true);
             setShowReplaceRow((p) => !p);
           }}
-          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
             showFindBar && showReplaceRow
-              ? 'bg-[#fd971f] text-[#272822] font-bold'
-              : 'bg-[#272822] hover:bg-[#3e3d32] text-[#fd971f]'
+              ? 'bg-amber-500 border-amber-400 text-slate-950 font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-amber-300'
           }`}
           title="Replace (Ctrl+H)"
         >
@@ -1462,8 +1494,10 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         <button
           type="button"
           onClick={() => setShowGotoBar((p) => !p)}
-          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
-            showGotoBar ? 'bg-[#66d9ef] text-[#272822] font-bold' : 'bg-[#272822] hover:bg-[#3e3d32] text-[#66d9ef]'
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
+            showGotoBar
+              ? 'bg-cyan-500 border-cyan-400 text-slate-950 font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-cyan-300'
           }`}
           title="Goto Line (Ctrl+G)"
         >
@@ -1473,7 +1507,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         <button
           type="button"
           onClick={duplicateCurrentLine}
-          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0] shrink-0"
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 shrink-0 whitespace-nowrap"
           title="Duplicate Line (Ctrl+D)"
         >
           Dup Line
@@ -1481,7 +1515,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         <button
           type="button"
           onClick={toggleCurrentLineComment}
-          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0] shrink-0"
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 shrink-0 whitespace-nowrap"
           title="Comment (Ctrl+/)"
         >
           Comment
@@ -1489,8 +1523,10 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         <button
           type="button"
           onClick={() => setShowSnippetsDrawer((p) => !p)}
-          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
-            showSnippetsDrawer ? 'bg-[#a6e22e] text-[#272822] font-bold' : 'bg-[#272822] hover:bg-[#3e3d32] text-[#a6e22e]'
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
+            showSnippetsDrawer
+              ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-emerald-300'
           }`}
         >
           <Sparkles className="w-3 h-3" />
@@ -1499,8 +1535,10 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         <button
           type="button"
           onClick={() => setWordWrap((p) => !p)}
-          className={`px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
-            wordWrap ? 'bg-[#ae81ff] text-[#272822] font-bold' : 'bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0]'
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
+            wordWrap
+              ? 'bg-indigo-500 border-indigo-400 text-white font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
           }`}
           title="Toggle Word Wrap"
         >
@@ -1510,7 +1548,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         <button
           type="button"
           onClick={handleDownloadFile}
-          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0] flex items-center gap-1 shrink-0"
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 flex items-center gap-1 shrink-0 whitespace-nowrap"
           title="Tải file code"
         >
           <Download className="w-3 h-3" />
@@ -1519,13 +1557,13 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         <button
           type="button"
           onClick={() => setShowShortcutsModal(true)}
-          className="px-2 py-0.5 rounded bg-[#272822] hover:bg-[#3e3d32] text-[#c8c8c0] flex items-center gap-1 shrink-0"
-          title="Phím tắt Sublime Text 4"
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 flex items-center gap-1 shrink-0"
+          title="Phím tắt IDE"
         >
           <HelpCircle className="w-3 h-3" />
         </button>
         {toastMsg && (
-          <span className="ml-auto px-2 py-0.5 rounded bg-[#a6e22e]/20 text-[#a6e22e] text-[10px] font-mono shrink-0">
+          <span className="ml-auto px-2 py-0.5 rounded-[4px] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[10px] font-mono shrink-0 whitespace-nowrap">
             {toastMsg}
           </span>
         )}
@@ -1533,7 +1571,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
 
       {/* Inline Collapsible Find & Replace Panel */}
       {showFindBar && (
-        <div className="bg-[#1e1f1c] border-b border-[#3e3d32] px-2.5 py-2 space-y-1.5 text-xs">
+        <div className="bg-slate-900 border-b border-slate-800 px-2.5 py-2 space-y-1.5 text-xs shrink-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <input
               type="text"
@@ -1547,25 +1585,27 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
                 if (e.key === 'Escape') setShowFindBar(false);
               }}
               placeholder="Tìm trong file (Ctrl+F)..."
-              className="flex-1 min-w-[140px] px-2.5 py-1 rounded bg-[#272822] border border-[#3e3d32] text-[#f8f8f2] font-mono text-xs focus:outline-none focus:border-[#e6db74]"
+              className="flex-1 min-w-[140px] px-2.5 py-1 rounded-[4px] bg-slate-950 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-400"
             />
             <button
               type="button"
               onClick={() => setMatchCase((p) => !p)}
-              className={`px-2 py-1 rounded font-mono text-[10px] border ${
-                matchCase ? 'bg-[#e6db74] text-[#272822] border-[#e6db74] font-bold' : 'bg-[#272822] border-[#3e3d32] text-[#90908a]'
+              className={`px-2 py-1 rounded-[4px] font-mono text-[10px] border ${
+                matchCase
+                  ? 'bg-sky-500 text-white border-sky-400 font-bold'
+                  : 'bg-slate-950 border-slate-700 text-slate-400'
               }`}
               title="Phân biệt HOA/thường"
             >
               Aa
             </button>
-            <span className="text-[10px] font-mono text-[#90908a] px-1">
+            <span className="text-[10px] font-mono text-slate-400 px-1 tabular-nums">
               {findMatches.length > 0 ? `${(findMatchIdx % findMatches.length) + 1}/${findMatches.length}` : '0/0'}
             </span>
             <button
               type="button"
               onClick={() => handleFindStep(-1)}
-              className="p-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32]"
+              className="p-1 rounded-[4px] bg-slate-950 hover:bg-slate-800 border border-slate-700"
               title="Tìm trước"
             >
               <ChevronUp className="w-3.5 h-3.5" />
@@ -1573,7 +1613,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
             <button
               type="button"
               onClick={() => handleFindStep(1)}
-              className="p-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32]"
+              className="p-1 rounded-[4px] bg-slate-950 hover:bg-slate-800 border border-slate-700"
               title="Tìm tiếp"
             >
               <ChevronDown className="w-3.5 h-3.5" />
@@ -1581,7 +1621,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
             <button
               type="button"
               onClick={() => setShowFindBar(false)}
-              className="p-1 rounded hover:bg-[#3e3d32] text-[#90908a] hover:text-white"
+              className="p-1 rounded-[4px] hover:bg-slate-800 text-slate-400 hover:text-white"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -1594,19 +1634,19 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
                 value={replaceQuery}
                 onChange={(e) => setReplaceQuery(e.target.value)}
                 placeholder="Thay thế bằng..."
-                className="flex-1 min-w-[140px] px-2.5 py-1 rounded bg-[#272822] border border-[#3e3d32] text-[#f8f8f2] font-mono text-xs focus:outline-none focus:border-[#fd971f]"
+                className="flex-1 min-w-[140px] px-2.5 py-1 rounded-[4px] bg-slate-950 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-amber-400"
               />
               <button
                 type="button"
                 onClick={handleReplaceCurrent}
-                className="px-2.5 py-1 rounded bg-[#3e3d32] hover:bg-[#49483e] text-[#f8f8f2] text-[11px] font-semibold"
+                className="px-2.5 py-1 rounded-[4px] bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-[11px] font-semibold"
               >
                 Replace
               </button>
               <button
                 type="button"
                 onClick={handleReplaceAll}
-                className="px-2.5 py-1 rounded bg-[#fd971f] text-[#272822] text-[11px] font-bold"
+                className="px-2.5 py-1 rounded-[4px] bg-amber-500 text-slate-950 text-[11px] font-bold"
               >
                 Replace All
               </button>
@@ -1617,8 +1657,8 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
 
       {/* Inline Goto Line Bar */}
       {showGotoBar && (
-        <div className="bg-[#1e1f1c] border-b border-[#3e3d32] px-2.5 py-1.5 flex items-center gap-2 text-xs">
-          <span className="font-mono text-[#66d9ef] text-[11px] shrink-0">Goto Line (1–{lines.length}):</span>
+        <div className="bg-slate-900 border-b border-slate-800 px-2.5 py-1.5 flex items-center gap-2 text-xs shrink-0">
+          <span className="font-mono text-sky-400 text-[11px] shrink-0">Goto Line (1–{lines.length}):</span>
           <input
             type="number"
             min={1}
@@ -1630,19 +1670,19 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
               if (e.key === 'Escape') setShowGotoBar(false);
             }}
             placeholder=":line"
-            className="w-24 px-2 py-0.5 rounded bg-[#272822] border border-[#3e3d32] text-[#f8f8f2] font-mono text-xs focus:outline-none focus:border-[#66d9ef]"
+            className="w-24 px-2 py-0.5 rounded-[4px] bg-slate-950 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-400"
           />
           <button
             type="button"
             onClick={() => handleGotoLine()}
-            className="px-2.5 py-0.5 rounded bg-[#66d9ef] text-[#272822] font-bold text-[11px]"
+            className="px-2.5 py-0.5 rounded-[4px] bg-sky-500 text-slate-950 font-bold text-[11px]"
           >
             Đi tới
           </button>
           <button
             type="button"
             onClick={() => setShowGotoBar(false)}
-            className="p-0.5 rounded hover:bg-[#3e3d32] text-[#90908a] ml-auto"
+            className="p-0.5 rounded-[4px] hover:bg-slate-800 text-slate-400 ml-auto"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -1651,8 +1691,8 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
 
       {/* Snippets Quick Drawer */}
       {showSnippetsDrawer && (
-        <div className="bg-[#1e1f1c] border-b border-[#3e3d32] px-2.5 py-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-          <span className="text-[#a6e22e] font-bold mr-1">Chèn Snippet ({language.toUpperCase()}):</span>
+        <div className="bg-slate-900 border-b border-slate-800 px-2.5 py-2 flex flex-wrap items-center gap-1.5 text-[11px] shrink-0">
+          <span className="text-emerald-400 font-bold mr-1">Chèn Snippet ({language.toUpperCase()}):</span>
           {cpSnippets.map((sn) => (
             <button
               key={sn.label}
@@ -1662,7 +1702,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
                 setShowSnippetsDrawer(false);
                 flashToast(`Đã chèn ${sn.label}`);
               }}
-              className="px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] border border-[#3e3d32] text-[#f8f8f2] font-mono text-[10px]"
+              className="px-2.5 py-1 rounded-[4px] bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/60 text-slate-200 font-mono text-[10px]"
             >
               + {sn.label}
             </button>
@@ -1670,25 +1710,25 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
           <button
             type="button"
             onClick={() => setShowSnippetsDrawer(false)}
-            className="ml-auto text-[#90908a] hover:text-white p-0.5"
+            className="ml-auto text-slate-400 hover:text-white p-0.5"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {/* Main Editor Canvas: Unified Scroll Container (Sticky Gutter + Grid Syntax Pre / Textarea) + Minimap */}
-      <div className="relative flex-1 flex bg-[#272822] overflow-hidden min-h-0">
+      {/* Main Editor Canvas: Sticky Gutter + Monokai Token Overlay + Minimap */}
+      <div className="relative flex-1 flex bg-[#131722] overflow-hidden min-h-0">
         <div
           ref={scrollerRef}
           onScroll={handleContainerScroll}
           onClick={() => textareaRef.current?.focus()}
-          className="relative flex-1 flex items-start overflow-auto bg-[#272822] min-w-0 min-h-0 overscroll-contain cursor-text"
+          className="relative flex-1 flex items-start overflow-auto bg-[#131722] min-w-0 min-h-0 overscroll-contain cursor-text"
         >
           {/* Sticky Line Numbers Gutter */}
           {showLineNumbers && (
             <div
-              className="sticky left-0 z-30 w-11 sm:w-14 bg-[#272822] border-r border-[#3e3d32]/60 select-none shrink-0 py-3 pb-16 font-mono text-right pr-2.5 sm:pr-3 min-h-full"
+              className="sticky left-0 z-30 w-11 sm:w-14 bg-[#0f131d] border-r border-slate-800/80 select-none shrink-0 py-3 pb-16 font-mono text-right pr-2.5 sm:pr-3 min-h-full tabular-nums"
               style={{ fontSize: `${Math.max(11, fontSize - 1)}px`, lineHeight: `${lineHeightPx}px` }}
             >
               {Array.from({ length: Math.max(lines.length, 28) }, (_, idx) => {
@@ -1697,7 +1737,11 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
                 return (
                   <div
                     key={ln}
-                    className={isCurrent ? 'text-[#f8f8f2] font-bold bg-[#3e3d32] -mr-2.5 sm:-mr-3 pr-2.5 sm:pr-3' : 'text-[#90908a]'}
+                    className={
+                      isCurrent
+                        ? 'text-sky-300 font-bold bg-sky-500/15 -mr-2.5 sm:-mr-3 pr-2.5 sm:pr-3 border-r-2 border-r-sky-400'
+                        : 'text-slate-500'
+                    }
                     style={{ height: `${lineHeightPx}px`, lineHeight: `${lineHeightPx}px` }}
                   >
                     {ln}
@@ -1708,11 +1752,11 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
           )}
 
           {/* Code Viewport (Single Grid cell sizes 1:1 to exact code dimensions, zero scroll desync) */}
-          <div className={`relative flex-1 min-h-full grid bg-[#272822] ${wordWrap ? 'min-w-0 w-full' : 'min-w-max'}`}>
+          <div className={`relative flex-1 min-h-full grid bg-[#131722] ${wordWrap ? 'min-w-0 w-full' : 'min-w-max'}`}>
             {/* Active Line Full-Width Highlight Band */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute left-0 right-0 bg-[#3e3d32]/90 z-0"
+              className="pointer-events-none absolute left-0 right-0 bg-sky-500/10 border-y border-sky-400/15 z-0"
               style={{
                 height: `${lineHeightPx}px`,
                 top: `${12 + (cursorPos.line - 1) * lineHeightPx}px`
@@ -1769,7 +1813,7 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
               autoComplete="off"
               autoCorrect="off"
               placeholder={placeholder}
-              className={`col-start-1 row-start-1 relative z-20 w-full h-full m-0 p-3 pb-16 font-mono bg-transparent text-transparent caret-[#f8f8f0] resize-none focus:outline-none overflow-hidden selection:bg-[#49483e]/80 selection:text-transparent ${
+              className={`col-start-1 row-start-1 relative z-20 w-full h-full m-0 p-3 pb-16 font-mono bg-transparent text-transparent caret-sky-300 resize-none focus:outline-none overflow-hidden selection:bg-sky-500/30 selection:text-transparent ${
                 wordWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'
               }`}
               style={{
@@ -1782,15 +1826,14 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
           </div>
         </div>
 
-        {/* Authentic Sublime Text Minimap */}
+        {/* Minimap */}
         {showMinimap && (
-          <div className="hidden md:block relative w-20 bg-[#272822] border-l border-[#3e3d32]/40 p-1.5 select-none overflow-hidden shrink-0 pointer-events-none">
-            {/* Minimap viewport thumb */}
+          <div className="hidden md:block relative w-20 bg-[#0f131d] border-l border-slate-800/80 p-1.5 select-none overflow-hidden shrink-0 pointer-events-none">
             <div
-              className="absolute left-0 right-0 h-14 bg-[#f8f8f2]/10 border-y border-[#f8f8f2]/15 transition-all duration-75"
+              className="absolute left-0 right-0 h-14 bg-sky-400/10 border-y border-sky-400/25 transition-all duration-75"
               style={{ top: `${minimapOffsetPercent}%` }}
             />
-            <div className="space-y-[2px] opacity-75">
+            <div className="space-y-[2px] opacity-80">
               {lines.slice(0, 120).map((ln, idx) => {
                 const trimmed = ln.trim();
                 if (!trimmed) return <div key={idx} className="h-[2px]" />;
@@ -1825,8 +1868,8 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         )}
       </div>
 
-      {/* Mobile & iPad Quick Coding Key Bar (hidden on desktop lg+) */}
-      <div className="lg:hidden bg-[#1e1f1c] border-t border-[#3e3d32] px-2 py-1.5 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+      {/* Mobile & iPad Quick Coding Key Bar */}
+      <div className="lg:hidden bg-slate-950 border-t border-slate-800 px-2 py-1.5 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
         {[
           { label: 'Tab', insert: indentUnit, back: 0 },
           { label: '{ }', insert: '{}', back: 1 },
@@ -1844,53 +1887,55 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
             key={k.label}
             type="button"
             onClick={() => insertSnippet(k.insert, k.back)}
-            className="px-2.5 py-1 rounded bg-[#272822] hover:bg-[#3e3d32] active:bg-[#49483e] border border-[#3e3d32] text-[#f8f8f2] font-mono text-xs shrink-0"
+            className="px-2.5 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 active:bg-slate-700 border border-slate-700 text-slate-100 font-mono text-xs shrink-0 whitespace-nowrap"
           >
             {k.label}
           </button>
         ))}
       </div>
 
-      {/* Authentic Sublime Bottom Status Bar */}
-      <div className="h-7 bg-[#1e1f1c] border-t border-[#141512] px-3 flex items-center justify-between text-[11px] font-mono text-[#90908a] shrink-0">
+      {/* Synchronized Bottom Status Bar */}
+      <div className="h-7 bg-slate-950 border-t border-slate-800 px-3 flex items-center justify-between text-[11px] font-mono text-slate-400 shrink-0 tabular-nums">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <button
             type="button"
             onClick={() => setShowGotoBar((p) => !p)}
-            className="text-[#f8f8f2] hover:text-[#66d9ef]"
+            className="text-slate-200 hover:text-sky-400 whitespace-nowrap"
             title="Nhảy tới dòng (Ctrl+G)"
           >
-            Line {cursorPos.line}, Col {cursorPos.col}
+            Ln {cursorPos.line}, Col {cursorPos.col}
           </button>
           <button
             type="button"
             onClick={() => setTabWidth((w) => (w === 4 ? 2 : 4))}
-            className="hidden sm:inline hover:text-white"
+            className="hidden sm:inline hover:text-white whitespace-nowrap"
             title="Đổi khoảng cách Tab (2 hoặc 4 spaces)"
           >
             Spaces: {tabWidth}
           </button>
           <span className="hidden md:inline">UTF-8</span>
-          {statusRightExtra && <span className="hidden md:inline text-[#a6e22e] truncate">{statusRightExtra}</span>}
+          {statusRightExtra && <span className="hidden md:inline text-emerald-400 font-semibold truncate">{statusRightExtra}</span>}
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-          <span className="text-[#66d9ef] font-semibold">
+          <span className="text-sky-400 font-semibold whitespace-nowrap">
             {language === 'cpp' ? 'C++20' : language === 'python' ? 'Python 3' : 'Plain Text'}
           </span>
           {onToggleConsole && (
             <button
+              type="button"
               onClick={onToggleConsole}
-              className="flex items-center gap-1 hover:text-white transition-colors"
+              className="flex items-center gap-1 hover:text-white transition-colors whitespace-nowrap"
             >
-              <Terminal className="w-3 h-3 text-[#e6db74]" />
+              <Terminal className="w-3 h-3 text-amber-400" />
               <span>{isConsoleOpen ? 'Hide Console' : 'Console'}</span>
             </button>
           )}
           {onRun && (
             <button
+              type="button"
               onClick={onRun}
-              className="hidden sm:flex items-center gap-1 text-[#a6e22e] hover:text-white transition-colors"
+              className="hidden sm:flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-semibold transition-colors whitespace-nowrap"
               title="Ctrl+B"
             >
               <Play className="w-3 h-3" />
@@ -1902,41 +1947,47 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
 
       {/* Shortcuts Help Modal */}
       {showShortcutsModal && (
-        <div
-          className="fixed inset-0 z-[140] bg-black/70 flex items-center justify-center p-4"
-          onClick={() => setShowShortcutsModal(false)}
-        >
+        <ViewportPortal active={true}>
           <div
-            className="w-full max-w-md bg-[#1e1f1c] border border-[#3e3d32] rounded-2xl p-5 text-[#f8f8f2] shadow-2xl space-y-3"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[150] bg-slate-950/80 flex items-center justify-center p-4"
+            onClick={() => setShowShortcutsModal(false)}
           >
-            <div className="flex items-center justify-between border-b border-[#3e3d32] pb-2.5">
-              <h4 className="font-bold text-sm text-[#e6db74]">Phím tắt Sublime Text 4 IDE</h4>
-              <button onClick={() => setShowShortcutsModal(false)} className="text-[#90908a] hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs font-mono">
-              {[
-                ['Ctrl + B / Enter', 'Chạy thử (Build)'],
-                ['Ctrl + F / H', 'Tìm & Thay thế'],
-                ['Ctrl + G', 'Nhảy tới dòng'],
-                ['Ctrl + Z / Y', 'Undo / Redo'],
-                ['Ctrl + D', 'Nhân bản dòng'],
-                ['Ctrl + Shift + K', 'Xóa dòng hiện tại'],
-                ['Ctrl + /', 'Bật/tắt Comment'],
-                ['Ctrl + Shift + ↑/↓', 'Di chuyển dòng'],
-                ['Ctrl + J', 'Gộp dòng kế tiếp'],
-                ['F11', 'Toàn màn hình']
-              ].map(([k, desc]) => (
-                <React.Fragment key={k}>
-                  <span className="text-[#66d9ef]">{k}</span>
-                  <span className="text-[#d8d8d0] font-sans">{desc}</span>
-                </React.Fragment>
-              ))}
+            <div
+              className="w-full max-w-md bg-slate-950 border border-slate-700 rounded-md p-5 text-slate-100 shadow-2xl space-y-3 sci-frame"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h4 className="font-bold text-sm text-sky-400">Phím tắt Sublime Text 4 IDE</h4>
+                <button
+                  type="button"
+                  onClick={() => setShowShortcutsModal(false)}
+                  className="p-1 rounded-[4px] bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs font-mono">
+                {[
+                  ['Ctrl + B / Enter', 'Chạy thử (Build)'],
+                  ['Ctrl + F / H', 'Tìm & Thay thế'],
+                  ['Ctrl + G', 'Nhảy tới dòng'],
+                  ['Ctrl + Z / Y', 'Undo / Redo'],
+                  ['Ctrl + D', 'Nhân bản dòng'],
+                  ['Ctrl + Shift + K', 'Xóa dòng hiện tại'],
+                  ['Ctrl + /', 'Bật/tắt Comment'],
+                  ['Ctrl + Shift + ↑/↓', 'Di chuyển dòng'],
+                  ['Ctrl + J', 'Gộp dòng kế tiếp'],
+                  ['F11', 'Toàn màn hình']
+                ].map(([k, desc]) => (
+                  <React.Fragment key={k}>
+                    <span className="text-sky-400">{k}</span>
+                    <span className="text-slate-300 font-sans">{desc}</span>
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </ViewportPortal>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import { ExamPaper } from '../types';
 import { EXTRA_EXAM_PAPERS } from './extraExamsData';
 import { EXTRA_EXAM_PAPERS_BATCH_2 } from './extraExamsBatch2Data';
 import { EXTRA_EXAM_PAPERS_BATCH_3 } from './extraExamsBatch3Data';
+import { expandExamPaperToFullQuestions } from './examFullCompleter';
 
 const RAW_EXAM_PAPERS: ExamPaper[] = [
   {
@@ -3793,7 +3794,8 @@ export function normalizeExamCode(raw: string): string {
 const bucketCounters: Record<string, number> = {};
 const usedCodes = new Set<string>();
 
-export const EXAM_PAPERS: ExamPaper[] = RAW_EXAM_PAPERS.map((exam) => {
+export const EXAM_PAPERS: ExamPaper[] = RAW_EXAM_PAPERS.map((rawExam, idx) => {
+  const exam = expandExamPaperToFullQuestions(rawExam, idx);
   const bucketKey = `${exam.subject}:${exam.track}`;
   const prefix = EXAM_CODE_PREFIX[bucketKey] || 'EX';
   bucketCounters[bucketKey] = (bucketCounters[bucketKey] || 0) + 1;

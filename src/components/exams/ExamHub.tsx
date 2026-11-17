@@ -15,6 +15,7 @@ import { useNavigation } from '../../context/NavigationContext';
 import { safeFetchJson } from '../../lib/apiClient';
 import { VoiceMicButton } from '../common/VoiceMicButton';
 import { ExamQuestionDiagram } from './ExamQuestionDiagram';
+import { downloadExamPaperDocx } from '../../utils/examDocxExporter';
 import {
   Search,
   Sparkles,
@@ -46,7 +47,7 @@ import {
   FileUp,
   ClipboardPaste,
   Hash,
-  Printer
+  FileDown
 } from 'lucide-react';
 
 interface ExamHubProps {
@@ -172,6 +173,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
   const [isMasterSolutionExpanded, setIsMasterSolutionExpanded] = useState<boolean>(false);
   const [revealedQuestionSolutions, setRevealedQuestionSolutions] = useState<Record<string, boolean>>({});
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [downloadingDocxId, setDownloadingDocxId] = useState<string | null>(null);
 
   // Timer countdown
   useEffect(() => {
@@ -588,6 +590,19 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
     setTimeout(() => setCopiedText(null), 2000);
   };
 
+  const handleDownloadDocx = async (exam: ExamPaper, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (downloadingDocxId) return;
+    setDownloadingDocxId(exam.id);
+    try {
+      await downloadExamPaperDocx(exam, getExamCode(exam), isEn);
+    } catch (err) {
+      console.error('Failed to export .docx:', err);
+    } finally {
+      setDownloadingDocxId(null);
+    }
+  };
+
   const codeLookupExam = useMemo(() => findExamByCode(searchKeyword), [searchKeyword]);
 
   const filteredExams = useMemo(() => {
@@ -751,6 +766,21 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                 <RotateCcw className="w-4 h-4" />
               </button>
 
+              <button
+                type="button"
+                onClick={(e) => void handleDownloadDocx(activeExam, e)}
+                disabled={downloadingDocxId === activeExam.id}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/70 transition-colors cursor-pointer disabled:opacity-50"
+                title={isEn ? 'Download .docx exam paper (no answers included)' : 'Tải file .docx đề thi (không kèm đáp án)'}
+              >
+                {downloadingDocxId === activeExam.id ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <FileDown className="w-3.5 h-3.5" />
+                )}
+                <span>{isEn ? 'Download .docx' : 'Tải đề .docx'}</span>
+              </button>
+
               {!isExamCompleted ? (
                 <button
                   onClick={handleFinishExam}
@@ -838,9 +868,43 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
               {activeExam.questions.map((q, qIdx) => {
                 const qKey = `q-${qIdx}`;
                 const isSingleSolutionRevealed = revealedQuestionSolutions[qKey];
+                const partTag = q.number.includes('Phần I -')
+                  ? isEn
+                    ? 'PART I · MULTIPLE CHOICE (4 OPTIONS)'
+                    : 'PHẦN I · CÂU TRẮC NGHIỆM NHIỀU PHƯƠNG ÁN LỰA CHỌN'
+                  : q.number.includes('Phần II -')
+                  ? isEn
+                    ? 'PART II · TRUE / FALSE STATEMENTS'
+                    : 'PHẦN II · CÂU TRẮC NGHIỆM ĐÚNG / SAI'
+                  : q.number.includes('Phần III -')
+                  ? isEn
+                    ? 'PART III · SHORT-ANSWER & CONSTRUCTED RESPONSE'
+                    : 'PHẦN III · TRẢ LỜI NGẮN & TỰ LUẬN VẬN DỤNG'
+                  : null;
+                const prevPartTag =
+                  qIdx > 0
+                    ? activeExam.questions[qIdx - 1].number.includes('Phần I -')
+                      ? isEn
+                        ? 'PART I · MULTIPLE CHOICE (4 OPTIONS)'
+                        : 'PHẦN I · CÂU TRẮC NGHIỆM NHIỀU PHƯƠNG ÁN LỰA CHỌN'
+                      : activeExam.questions[qIdx - 1].number.includes('Phần II -')
+                      ? isEn
+                        ? 'PART II · TRUE / FALSE STATEMENTS'
+                        : 'PHẦN II · CÂU TRẮC NGHIỆM ĐÚNG / SAI'
+                      : activeExam.questions[qIdx - 1].number.includes('Phần III -')
+                      ? isEn
+                        ? 'PART III · SHORT-ANSWER & CONSTRUCTED RESPONSE'
+                        : 'PHẦN III · TRẢ LỜI NGẮN & TỰ LUẬN VẬN DỤNG'
+                      : null
+                    : null;
 
                 return (
                   <div key={qKey} className={`space-y-4 ${qIdx > 0 ? 'pt-8' : ''}`}>
+                    {partTag && partTag !== prevPartTag && (
+                      <div className="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/70 text-xs font-extrabold text-indigo-800 dark:text-indigo-200 uppercase tracking-wider">
+                        {partTag}
+                      </div>
+                    )}
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-2">
                         <span className="px-3 py-1 rounded-xl text-xs font-extrabold bg-blue-600 text-white shadow-xs">
@@ -1622,44 +1686,36 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 shrink-0 print:hidden">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={() => {
-                      const fullText = codeLookupExam.questions
-                        .map(
-                          (q) =>
-                            `=== ${q.number} (${q.points || ''}) ===\nĐỀ BÀI:\n${q.content}\n\nLỜI GIẢI CHI TIẾT:\n${q.solution}`
-                        )
-                        .join('\n\n');
-                      handleCopy(`[MÃ ĐỀ ${getExamCode(codeLookupExam)}] ${codeLookupExam.title}\n\n${fullText}`);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-indigo-400 cursor-pointer"
+                    onClick={(e) => void handleDownloadDocx(codeLookupExam, e)}
+                    disabled={downloadingDocxId === codeLookupExam.id}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 cursor-pointer disabled:opacity-50"
+                    title={isEn ? 'Download exam .docx (questions only, no answers)' : 'Tải đề .docx (chỉ đề bài, không kèm đáp án)'}
                   >
-                    {copiedText?.startsWith(`[MÃ ĐỀ ${getExamCode(codeLookupExam)}]`) ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    {downloadingDocxId === codeLookupExam.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <Copy className="w-3.5 h-3.5" />
+                      <FileDown className="w-3.5 h-3.5" />
                     )}
-                    <span>{isEn ? 'Copy All Solutions' : 'Chép Toàn Bộ Lời Giải'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-indigo-400 cursor-pointer"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>{isEn ? 'Print Solutions' : 'In Lời Giải'}</span>
+                    <span>{isEn ? 'Download Exam .docx (No Keys)' : 'Tải Đề .docx (Không Đáp Án)'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleOpenExam(codeLookupExam)}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold cursor-pointer shadow-sm"
                   >
-                    <span>{isEn ? 'Open Practice Exam' : 'Mở Phòng Thi Đề Này'}</span>
+                    <span>{isEn ? 'Open Practice & Grading' : 'Mở Phòng Thi & Chấm Bài'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
+              </div>
+
+              <div className="px-3.5 py-2 rounded-xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+                {isEn
+                  ? 'Web-only solutions: Downloaded .docx contains questions only. Detailed solutions & diagrams are unlocked exclusively here by code lookup or inside the exam grading sheet.'
+                  : 'Bảo mật đáp án: File tải về (.docx) chỉ gồm Đề bài, không cho tải kết quả. Lời giải chi tiết & hình vẽ chỉ xem trực tiếp trên web khi tra mã đề hoặc trong phòng chấm thi của đề này.'}
               </div>
 
               <div className="space-y-4">
@@ -1679,18 +1735,9 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                           </span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(q.solution)}
-                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer print:hidden"
-                      >
-                        {copiedText === q.solution ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                        <span>{isEn ? 'Copy' : 'Chép lời giải'}</span>
-                      </button>
+                      <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        {isEn ? 'Web-only solution' : 'Xem trực tiếp trên web'}
+                      </span>
                     </div>
 
                     <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
@@ -2095,9 +2142,26 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                   </div>
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
-                  <span>{isEn ? 'Open Exam & AI Photo Grading' : 'Mở full đề · tính giờ & AI chấm'}</span>
-                  <ArrowRight className="w-4 h-4" />
+                <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => void handleDownloadDocx(exam, e)}
+                    disabled={downloadingDocxId === exam.id}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 text-[11px] font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/70 transition-colors cursor-pointer disabled:opacity-50"
+                    title={isEn ? 'Download .docx (no answers)' : 'Tải file .docx (không kèm đáp án)'}
+                  >
+                    {downloadingDocxId === exam.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileDown className="w-3 h-3" />
+                    )}
+                    <span>{isEn ? '.docx' : 'Tải .docx'}</span>
+                  </button>
+
+                  <div className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                    <span>{isEn ? 'Open & AI Grade' : 'Mở đề & chấm bài'}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
             ))}

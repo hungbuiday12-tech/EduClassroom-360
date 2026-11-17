@@ -2238,3 +2238,106 @@
   }
 }
 
+/* ============================================================================
+   SMART KNOWLEDGE MAP (AI ADAPTIVE HUD) ANIMATIONS (GPU-COMPOSITED)
+   ============================================================================ */
+@keyframes kmap-packet-dash {
+  from {
+    stroke-dashoffset: 36;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes kmap-packet-dash-rev {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 36;
+  }
+}
+
+@keyframes kmap-orbit-cw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes kmap-orbit-ccw {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes kmap-laser-sweep {
+  0% {
+    transform: translate3d(-120%, 0, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.75;
+  }
+  80% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translate3d(260%, 0, 0);
+    opacity: 0;
+  }
+}
+
+.kmap-packet-flow {
+  stroke-dasharray: 5 7;
+  animation: kmap-packet-dash 1.35s linear infinite;
+}
+
+.kmap-packet-flow-rev {
+  stroke-dasharray: 4 8;
+  animation: kmap-packet-dash-rev 1.6s linear infinite;
+}
+
+.kmap-core-orbit {
+  transform-origin: center;
+  animation: kmap-orbit-cw 14s linear infinite;
+}
+
+.kmap-core-orbit-rev {
+  transform-origin: center;
+  animation: kmap-orbit-ccw 10s linear infinite;
+}
+
+.kmap-laser-scan {
+  position: relative;
+  overflow: hidden;
+}
+
+.kmap-laser-scan::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30%;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, #22d3ee, #6366f1, transparent);
+  animation: kmap-laser-sweep 4.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 20;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kmap-packet-flow,
+  .kmap-packet-flow-rev,
+  .kmap-core-orbit,
+  .kmap-core-orbit-rev,
+  .kmap-laser-scan::before {
+    animation: none !important;
+  }
+}

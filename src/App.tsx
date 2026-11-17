@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X } from 'lucide-react';
+import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -27,6 +27,7 @@ import { PWAInstallModal } from './components/common/PWAInstallModal';
 import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { useNavigation } from './context/NavigationContext';
 import { useLanguage } from './context/LanguageContext';
+import { useDraggableWidget } from './hooks/useDraggableWidget';
 import { EXAM_PAPERS } from './data/examData';
 
 function MainApp() {
@@ -48,6 +49,7 @@ function MainApp() {
   const currentSubjectRef = useRef(currentSubject);
   currentSubjectRef.current = currentSubject;
   const synDockRef = useRef<HTMLDivElement | null>(null);
+  const synWidget = useDraggableWidget({ storageKey: 'synapse_widget_pos_synai_v1' });
   const [tutorContext, setTutorContext] = useState<TutorContextPayload>({
     subject: 'math'
   });
@@ -353,6 +355,7 @@ function MainApp() {
                         handleOpenTutor({ subject: subj || 'math', mode })
                       }
                       onOpenSettings={() => setIsSettingsOpen(true)}
+                      onOpenInstallApp={() => setIsInstallModalOpen(true)}
                     />
                   )}
 
@@ -499,25 +502,61 @@ function MainApp() {
             currentSubject !== 'spatial_3d' &&
             !(currentSubject === 'arena' && isArenaMatchActive) && (
             <div
-              ref={synDockRef}
-              className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex flex-col items-end gap-2"
+              ref={(el) => {
+                synDockRef.current = el;
+                synWidget.containerRef.current = el;
+              }}
+              style={
+                synWidget.position
+                  ? { left: `${synWidget.position.x}px`, top: `${synWidget.position.y}px` }
+                  : undefined
+              }
+              className={`fixed z-[85] select-none ${
+                synWidget.position ? '' : 'bottom-3 right-3 sm:bottom-5 sm:right-5'
+              }`}
             >
               {isSynDockOpen && (
-                <div className="sci-frame syn-window-enter w-[246px] rounded-md bg-slate-950/95 border border-cyan-500/45 shadow-[0_24px_60px_-14px_rgba(6,182,212,0.45)] backdrop-blur-xl overflow-hidden">
-                  <div className="px-3 py-2 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between gap-2">
+                <div
+                  className={`sci-frame syn-window-enter absolute w-[256px] rounded-md bg-slate-950/95 border border-cyan-500/45 shadow-[0_24px_60px_-14px_rgba(6,182,212,0.45)] backdrop-blur-xl overflow-hidden ${
+                    synWidget.isBottomHalf ? 'bottom-full mb-2' : 'top-full mt-2'
+                  } ${synWidget.isRightHalf ? 'right-0' : 'left-0'}`}
+                >
+                  <div
+                    onPointerDown={synWidget.handleDragStart}
+                    className={`px-3 py-2 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between gap-2 touch-none ${
+                      synWidget.isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                    }`}
+                    title={isEn ? 'Drag to reposition Syn AI' : 'Kéo để di chuyển vị trí Syn AI'}
+                  >
                     <div className="flex items-center gap-1.5 text-[11px] font-mono font-extrabold tracking-wider text-cyan-300 uppercase">
+                      <GripVertical className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="w-2 h-2 rounded-sm bg-cyan-400 syn-core-pulse" />
                       <Cpu className="w-3.5 h-3.5 text-cyan-400" />
                       <span>Syn AI Suite</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsSynDockOpen(false)}
-                      className="p-1 rounded bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                      aria-label={isEn ? 'Close Syn AI menu' : 'Thu gọn menu Syn AI'}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {synWidget.isCustomPositioned && (
+                        <button
+                          type="button"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={synWidget.resetPosition}
+                          className="px-1.5 py-1 rounded bg-white/10 hover:bg-cyan-500/25 text-[10px] font-semibold text-cyan-200 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+                          title={isEn ? 'Reset default corner position' : 'Đặt lại vị trí góc mặc định'}
+                        >
+                          <PinOff className="w-3 h-3" />
+                          <span className="hidden sm:inline">{isEn ? 'Reset' : 'Đặt lại'}</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => setIsSynDockOpen(false)}
+                        className="p-1 rounded bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        aria-label={isEn ? 'Close Syn AI menu' : 'Thu gọn menu Syn AI'}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                   <div className="p-2 space-y-1.5">
                     <button
@@ -574,15 +613,23 @@ function MainApp() {
 
               <button
                 type="button"
-                onClick={() => setIsSynDockOpen((prev) => !prev)}
+                data-no-lift="true"
+                onPointerDown={synWidget.handleDragStart}
+                onClick={() => {
+                  if (synWidget.consumeDidDrag()) return;
+                  setIsSynDockOpen((prev) => !prev);
+                }}
                 aria-expanded={isSynDockOpen}
-                className="sci-frame syn-dock-halo flex items-center gap-2 px-3 py-2 rounded-md bg-slate-950/95 hover:bg-slate-900 border border-cyan-500/45 text-white text-xs font-bold shadow-[0_16px_40px_-10px_rgba(6,182,212,0.42)] backdrop-blur-md transition-all cursor-pointer"
+                className={`sci-frame syn-dock-halo flex items-center gap-2 px-3 py-2 rounded-md bg-slate-950/95 hover:bg-slate-900 border border-cyan-500/45 text-white text-xs font-bold shadow-[0_16px_40px_-10px_rgba(6,182,212,0.42)] backdrop-blur-md transition-colors touch-none ${
+                  synWidget.isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                }`}
                 title={
                   isEn
-                    ? 'Open Syn AI (Left Ctrl + D / F / G)'
-                    : 'Mở Syn AI (Phím tắt: Ctrl trái + D / F / G)'
+                    ? 'Click to open Syn AI · Drag to move anywhere'
+                    : 'Bấm mở Syn AI · Kéo thả để di chuyển vị trí bất kỳ'
                 }
               >
+                <GripVertical className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="w-2 h-2 rounded-sm bg-cyan-400 syn-core-pulse shrink-0" />
                 <Cpu className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 <span className="font-mono font-extrabold tracking-wider text-cyan-200 uppercase">

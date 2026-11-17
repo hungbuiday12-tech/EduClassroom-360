@@ -48,20 +48,12 @@ import {
   Sliders,
   UploadCloud,
   Layers,
-  Download,
-  Laptop,
-  Smartphone,
-  Tablet,
-  Share,
-  PlusSquare,
-  Copy,
-  WifiOff,
-  Cpu
+  Download
 } from 'lucide-react';
 import { useAudio } from '../../context/AudioContext';
 import { useNavigation } from '../../context/NavigationContext';
-import { usePWAInstall, DevicePlatform } from '../../hooks/usePWAInstall';
 import { PlatformReviews } from '../common/PlatformReviews';
+import { AppDownloadGuideSection } from '../common/AppDownloadGuideSection';
 import {
   LectureDirectorySection,
   DirectorySubjectFilter,
@@ -72,6 +64,7 @@ import { EXAM_PAPERS } from '../../data/examData';
 import { MATH_LECTURES } from '../../data/curriculumData';
 import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
 import { CS_LESSONS } from '../../data/csLessonsData';
+import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
 
 interface VisitorLandingPageProps {
   onEnterAsGuest: () => void;
@@ -124,51 +117,6 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const [spatialPreviewTab, setSpatialPreviewTab] = useState<'models3d' | 'labs2d'>('models3d');
   const [forumPreviewTab, setForumPreviewTab] = useState<'discussions' | 'solutions' | 'qa'>('discussions');
   const showcaseFocusTimerRef = useRef<number | null>(null);
-
-  const {
-    canNativeInstall: canPwaInstall,
-    isInstalled: isPwaInstalled,
-    platform: detectedDevicePlatform,
-    promptInstall: triggerPwaInstall
-  } = usePWAInstall();
-  const [appDeviceTab, setAppDeviceTab] = useState<DevicePlatform>(detectedDevicePlatform);
-  const [appInstalling, setAppInstalling] = useState(false);
-  const [copiedAppUrl, setCopiedAppUrl] = useState(false);
-  const [appInstallNote, setAppInstallNote] = useState<string | null>(null);
-
-  useEffect(() => {
-    setAppDeviceTab(detectedDevicePlatform);
-  }, [detectedDevicePlatform]);
-
-  const handleDirectPwaInstall = async () => {
-    if (!canPwaInstall) {
-      onOpenInstallApp?.();
-      return;
-    }
-    setAppInstalling(true);
-    setAppInstallNote(null);
-    const outcome = await triggerPwaInstall();
-    setAppInstalling(false);
-    if (outcome === 'accepted') {
-      setAppInstallNote(
-        isEn
-          ? 'Synapse app installed! Open it straight from your Desktop, Dock, or Home Screen.'
-          : 'Cài đặt thành công! Mở ngay Synapse từ Desktop, Taskbar hoặc Màn hình chính.'
-      );
-    } else if (outcome === 'unavailable') {
-      onOpenInstallApp?.();
-    }
-  };
-
-  const handleCopyLandingUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopiedAppUrl(true);
-      window.setTimeout(() => setCopiedAppUrl(false), 2200);
-    } catch {
-      // Clipboard fallback ignored
-    }
-  };
 
   useEffect(() => {
     return () => {
@@ -257,6 +205,18 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleOpenCsTrackFromVisitor = (csTrackId: CSTrackId) => {
+    navigate({
+      subject: 'cs',
+      csViewMode: 'curriculum',
+      csSubView: 'roadmap',
+      csTrackId,
+      tutorOpen: false
+    });
+    onEnterAsGuest();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Auth Card Modes on Landing: 'login' | 'register' | 'forgot'
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
 
@@ -327,6 +287,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const totalExams = EXAM_PAPERS.length;
   const chuyenExams = EXAM_PAPERS.filter((e) => e.track === 'chuyen').length;
   const khongChuyenExams = EXAM_PAPERS.filter((e) => e.track === 'khong_chuyen').length;
+  const csSpecializedStageCount = CS_SPECIALIZED_TRACKS.reduce((s, t) => s + t.stages.length, 0);
   const totalLessons = MATH_LECTURES.length + PHYSICS_LESSONS.length + CS_LESSONS.length;
 
   const spotlightDetails: Record<
@@ -431,25 +392,25 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       accentClass: 'text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10',
     },
     cs: {
-      label: isEn ? 'CS Sublime IDE' : 'Tin Học Sublime IDE',
+      label: isEn ? 'CS 5 Roadmaps & IDE' : 'Tin Học · 5 Lộ Trình',
       badge: isEn
-        ? `${CS_LESSONS.length} VNOI modules + 16 Algo Visualizers`
-        : `${CS_LESSONS.length} chuyên đề + 16 Đồ thị thuật toán`,
+        ? `5 CS Roadmaps (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++) · 16 Algos`
+        : `5 Lộ trình Tin (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++) · 16 Thuật toán`,
       headline: isEn
-        ? 'Sublime Text 4 Monokai Studio, Online Judge & 16 Algorithm Visualizers'
-        : 'Trình soạn thảo Sublime Text 4 Monokai, Online Judge & 16 Đồ Thị Thuật Toán',
+        ? '5 Complete CS Roadmaps, Sublime Text 4 Studio & Online Judge'
+        : '5 Lộ Trình Tin Học Toàn Diện, IDE Sublime Text 4 & Online Judge',
       summary: isEn
-        ? 'Includes Edit/Selection/Find-Replace/Goto Line menus, C++20 & Python 3 competitive snippets, voice/image/Ctrl+V problem upload to auto-generate hidden test cases, plus 16 animated algorithm visualizers.'
-        : 'Trang bị đầy đủ Edit/Selection/Find-Replace/Goto Line/Snippets C++20 & Python 3, gửi đề bằng ảnh/Ctrl+V/giọng nói để sinh test ẩn chấm tức thì, kèm 16 đồ thị thuật toán (Oxy, Xâu, DP, Dijkstra).',
+        ? 'Master VNOI Competitive Programming alongside 4 international C++ tracks (OpenEDG CPE/CPA/CPP, Roadmap.sh C++, LearnCpp Modern C++20/23 & GitHub Systems), full Sublime Text 4 menus, auto test-gen, and 16 visualizers.'
+        : 'Đầy đủ VNOI Thi đấu + 4 lộ trình C++ Quốc tế (OpenEDG CPE/CPA/CPP, Roadmap.sh, LearnCpp Modern C++20/23 & GitHub C++ Career). Menu Sublime Text 4, gửi đề Ảnh/Ctrl+V/Giọng nói sinh test ẩn & 16 đồ thị thuật toán.',
       highlights: isEn
         ? [
-            'Full Sublime menus: 60-step Undo/Redo, Find & Replace, Snippets',
-            '16 animated algorithm stages (DP, Binary Search, Dijkstra...)',
-            'Upload problem via Image / Ctrl+V / Voice for instant AI grading',
+            `5 Roadmaps: VNOI (${CS_LESSONS.length}) + OpenEDG, Roadmap.sh, LearnCpp & GitHub (${csSpecializedStageCount} stages)`,
+            'Full Sublime menus: 60-step Undo/Redo, Find & Replace, Snippets & 16 Algo graphs',
+            'Upload problem via Image / Ctrl+V / Voice for instant AI test grading',
           ]
         : [
-            'Menu Sublime chuẩn: Undo/Redo, Find & Replace, Snippets 1 chạm',
-            '16 mô phỏng thuật toán trực quan (Oxy, Xâu, DP, Dijkstra...)',
+            `5 Lộ trình: VNOI (${CS_LESSONS.length} bài) + OpenEDG, Roadmap.sh, LearnCpp & GitHub (${csSpecializedStageCount} chặng)`,
+            'IDE Sublime Text 4 + 16 mô phỏng thuật toán (Oxy, Xâu, DP, Dijkstra...)',
             'Nhận đề bằng Ảnh / Ctrl+V / Giọng nói & chấm test ẩn tự động',
           ],
       accentClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
@@ -922,10 +883,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               >
                 <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-1.5 icon-anim-code" />
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                  {isEn ? 'CS Sublime 4' : 'Tin Học Sublime 4'}
+                  {isEn ? 'CS · 5 Roadmaps' : 'Tin Học · 5 Lộ Trình'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${CS_LESSONS.length} modules · 16 Algos` : `${CS_LESSONS.length} bài · 16 Thuật toán`}
+                  {isEn ? `${CS_LESSONS.length}+${csSpecializedStageCount} · 16 Algos` : `${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++`}
                 </p>
               </button>
 
@@ -1725,7 +1686,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   05 · {isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC'}
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
-                  {isEn ? `CS & VNOI Modules (${CS_LESSONS.length})` : `Bài giảng Tin học (${CS_LESSONS.length} bài)`}
+                  {isEn
+                    ? `CS 5 Roadmaps (${CS_LESSONS.length} + ${csSpecializedStageCount})`
+                    : `Tin học · 5 lộ trình (${CS_LESSONS.length} + ${csSpecializedStageCount} chặng)`}
                 </span>
               </div>
               <span className="relative z-10 w-8 h-8 rounded bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -2455,452 +2418,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         </section>
 
         {/* GRAND MULTI-DEVICE APP DOWNLOAD SHOWCASE (LAPTOP · ANDROID · IPHONE) */}
-        <section
-          id="visitor-app-download"
-          className="cv-auto scroll-mt-24 mt-12 sm:mt-16"
-        >
-          <div className="sci-frame relative overflow-hidden rounded-md p-[1.5px] bg-gradient-to-br from-cyan-400/75 via-blue-500/45 to-emerald-400/75 shadow-2xl">
-            <div className="relative rounded-md bg-slate-950/95 p-5 sm:p-8 lg:p-9 overflow-hidden">
-              {/* Architectural Corner Reticles */}
-              <span aria-hidden="true" className="pointer-events-none absolute top-2.5 left-2.5 w-4 h-4 border-t-2 border-l-2 border-cyan-400/75" />
-              <span aria-hidden="true" className="pointer-events-none absolute top-2.5 right-2.5 w-4 h-4 border-t-2 border-r-2 border-cyan-400/75" />
-              <span aria-hidden="true" className="pointer-events-none absolute bottom-2.5 left-2.5 w-4 h-4 border-b-2 border-l-2 border-emerald-400/75" />
-              <span aria-hidden="true" className="pointer-events-none absolute bottom-2.5 right-2.5 w-4 h-4 border-b-2 border-r-2 border-emerald-400/75" />
-
-              {/* GPU-Composited Horizontal Laser Scanner */}
-              <span
-                aria-hidden="true"
-                className="app-scan-beam pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-cyan-400/12 to-transparent -skew-x-12"
-              />
-
-              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-7 items-center">
-                {/* Left Column: Detailed Cross-Device Guide, Specs & Controls */}
-                <div className="lg:col-span-7 space-y-5 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-1 rounded bg-cyan-500/15 border border-cyan-400/45 text-[11px] font-mono font-bold uppercase tracking-widest text-cyan-200 flex items-center gap-1.5">
-                      <Download className="w-3.5 h-3.5 text-cyan-300" />
-                      <span>{isEn ? 'SYNAPSE NATIVE APP EDITION' : 'PHIÊN BẢN ỨNG DỤNG ĐỘC LẬP ĐA THIẾT BỊ'}</span>
-                    </span>
-                    <span className="px-2.5 py-1 rounded bg-emerald-500/15 border border-emerald-400/40 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-200">
-                      LAPTOP · ANDROID · IPHONE
-                    </span>
-                  </div>
-
-                  <h3 className="font-display text-2xl sm:text-3xl font-semibold text-white leading-tight tracking-tight">
-                    {isEn
-                      ? 'Install Synapse Directly on Laptop, Android & iPhone'
-                      : 'Tải Ứng Dụng Synapse Cho Laptop, Android & iPhone'}
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-                    {isEn
-                      ? 'Launch Synapse like a dedicated native application in its own fullscreen window—fast cold start, cached 3D/2D labs & Sublime Text IDE, plus hardware camera access for 10-finger 3D tracking.'
-                      : 'Biến Synapse thành ứng dụng độc lập chạy cửa sổ riêng cực mượt trên Windows, macOS, Android và iPhone/iPad: lưu đệm sẵn bài giảng & mô hình 3D dùng mượt khi mạng yếu, hỗ trợ camera 10 ngón tay không giật lag.'}
-                  </p>
-
-                  {/* 3 Square Spec Highlights */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <div className="rounded-md bg-slate-900/90 border border-slate-700/80 p-3 space-y-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-cyan-300">
-                        <Cpu className="w-3.5 h-3.5 shrink-0" />
-                        <span>{isEn ? 'ZERO BLOAT · < 5 MB' : 'SIÊU NHẸ · < 5 MB'}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-300 leading-snug">
-                        {isEn
-                          ? 'Runs standalone window cleanly with 60 FPS GPU compositing.'
-                          : 'Chạy cửa sổ riêng không thanh địa chỉ, tối ưu GPU cho laptop & điện thoại.'}
-                      </p>
-                    </div>
-                    <div className="rounded-md bg-slate-900/90 border border-slate-700/80 p-3 space-y-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-300">
-                        <WifiOff className="w-3.5 h-3.5 shrink-0" />
-                        <span>{isEn ? 'OFFLINE LAB CACHE' : 'LƯU ĐỆM HỌC OFFLINE'}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-300 leading-snug">
-                        {isEn
-                          ? 'Pre-caches MediaPipe WASM, lessons & custom 3D viewer engine.'
-                          : 'Lưu sẵn lõi WebGL 3D, nhận diện tay & hệ bài giảng lớp 9–12.'}
-                      </p>
-                    </div>
-                    <div className="rounded-md bg-slate-900/90 border border-slate-700/80 p-3 space-y-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-amber-300">
-                        <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                        <span>{isEn ? 'LIVE CLOUD SYNC' : 'ĐỒNG BỘ TỨC THỜI'}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-300 leading-snug">
-                        {isEn
-                          ? 'Instant updates & saved AI 3D models shared between PC and phone.'
-                          : 'Tự động cập nhật tính năng mới & đồng bộ mô hình AI 3D mọi thiết bị.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Interactive Square Device Selector Tabs */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {(
-                      [
-                        {
-                          id: 'desktop',
-                          titleVi: 'Laptop / PC',
-                          subVi: 'Windows 10/11 · macOS',
-                          titleEn: 'Laptop / PC',
-                          subEn: 'Windows · macOS · Linux',
-                          icon: <Laptop className="w-4 h-4 shrink-0" />,
-                          accent: 'border-cyan-400 bg-cyan-500/20 text-white'
-                        },
-                        {
-                          id: 'android',
-                          titleVi: 'Android',
-                          subVi: 'Chrome · Samsung WebAPK',
-                          titleEn: 'Android Phone',
-                          subEn: 'Chrome · Samsung WebAPK',
-                          icon: <Smartphone className="w-4 h-4 shrink-0" />,
-                          accent: 'border-emerald-400 bg-emerald-500/20 text-white'
-                        },
-                        {
-                          id: 'ios',
-                          titleVi: 'iPhone / iPad',
-                          subVi: 'iOS Safari · Màn hình chính',
-                          titleEn: 'iPhone / iPad',
-                          subEn: 'iOS Safari Home App',
-                          icon: <Tablet className="w-4 h-4 shrink-0" />,
-                          accent: 'border-indigo-400 bg-indigo-500/20 text-white'
-                        }
-                      ] as const
-                    ).map((dev) => {
-                      const active = appDeviceTab === dev.id;
-                      return (
-                        <button
-                          key={dev.id}
-                          type="button"
-                          data-ripple="true"
-                          onClick={() => setAppDeviceTab(dev.id)}
-                          className={`text-left px-3.5 py-2.5 rounded-md border transition-all cursor-pointer flex items-center gap-2.5 ${
-                            active
-                              ? `${dev.accent} shadow-lg`
-                              : 'bg-slate-900/75 border-slate-700/80 text-slate-300 hover:border-cyan-400/60 hover:text-white'
-                          }`}
-                        >
-                          {dev.icon}
-                          <div className="min-w-0">
-                            <div className="text-xs font-bold truncate">
-                              {isEn ? dev.titleEn : dev.titleVi}
-                            </div>
-                            <div className="text-[10px] text-slate-400 truncate">
-                              {isEn ? dev.subEn : dev.subVi}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Detailed Step-by-Step Guide Card for Selected Device */}
-                  <div className="rounded-md bg-slate-900/95 border border-cyan-500/35 p-4 space-y-2.5 text-xs">
-                    {appDeviceTab === 'desktop' && (
-                      <>
-                        <div className="flex items-center justify-between gap-2 text-cyan-300 font-bold">
-                          <span className="flex items-center gap-2">
-                            <Laptop className="w-4 h-4" />
-                            {isEn
-                              ? 'Desktop Installation (Windows 10/11 & MacBook)'
-                              : 'Cách cài đặt trên Laptop / Máy tính (Windows & MacBook)'}
-                          </span>
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/35">
-                            CHROME / EDGE
-                          </span>
-                        </div>
-                        <ol className="list-decimal pl-5 space-y-1.5 text-slate-200 leading-relaxed">
-                          <li>
-                            {isEn
-                              ? 'Click "Install on This Device" below (or click the Monitor+Arrow icon on the right of Chrome/Edge URL bar).'
-                              : 'Bấm nút "Tải & Cài Đặt Ngay" bên dưới (hoặc bấm biểu tượng Màn hình có mũi tên xuống ở góc phải thanh địa chỉ Chrome / Edge).'}
-                          </li>
-                          <li>
-                            {isEn
-                              ? 'Confirm "Install" — Synapse creates a desktop shortcut & Taskbar/Dock app with dedicated GPU window.'
-                              : 'Chọn "Cài đặt" — Synapse tạo icon trên Desktop & Taskbar/Dock, mở ra cửa sổ độc lập siêu mượt như phần mềm gốc.'}
-                          </li>
-                          <li>
-                            {isEn
-                              ? 'Tip: Switch Graphics Quality to "Smooth" in 3D Settings if your laptop uses integrated graphics.'
-                              : 'Mẹo laptop văn phòng: Dùng sẵn chế độ Cân bằng hoặc Siêu mượt để đạt 60 FPS liên tục.'}
-                          </li>
-                        </ol>
-                      </>
-                    )}
-
-                    {appDeviceTab === 'android' && (
-                      <>
-                        <div className="flex items-center justify-between gap-2 text-emerald-300 font-bold">
-                          <span className="flex items-center gap-2">
-                            <Smartphone className="w-4 h-4" />
-                            {isEn
-                              ? 'Android Phone & Tablet Installation (WebAPK)'
-                              : 'Cách tải cho Điện thoại & Tablet Android'}
-                          </span>
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/35">
-                            ANDROID 8+
-                          </span>
-                        </div>
-                        <ol className="list-decimal pl-5 space-y-1.5 text-slate-200 leading-relaxed">
-                          <li>
-                            {isEn
-                              ? 'Open this Synapse URL in Google Chrome or Samsung Internet on your Android phone (use "Copy Link" below if currently on Laptop).'
-                              : 'Mở đường dẫn Synapse bằng trình duyệt Chrome hoặc Samsung Internet trên điện thoại Android (bấm "Chép link gửi ĐT" nếu bạn đang xem bằng Laptop).'}
-                          </li>
-                          <li>
-                            {isEn
-                              ? 'Tap "Install Now" banner or tap Chrome Menu (⋮) → "Install app" / "Add to Home screen".'
-                              : 'Chạm trực tiếp "Cài đặt ứng dụng" khi hiện thông báo, hoặc bấm dấu (⋮) góc trên phải Chrome → chọn "Cài đặt ứng dụng".'}
-                          </li>
-                          <li>
-                            {isEn
-                              ? 'Open Synapse from your Android App Drawer with full touch 2D drawing & front-camera 3D tracking.'
-                              : 'Mở App Synapse từ khay ứng dụng: vẽ cảm ứng 2D bằng ngón tay & điều khiển mô hình 3D qua camera trước.'}
-                          </li>
-                        </ol>
-                      </>
-                    )}
-
-                    {appDeviceTab === 'ios' && (
-                      <>
-                        <div className="flex items-center justify-between gap-2 text-indigo-300 font-bold">
-                          <span className="flex items-center gap-2">
-                            <Tablet className="w-4 h-4" />
-                            {isEn
-                              ? 'iPhone & iPad Installation (iOS / iPadOS Safari)'
-                              : 'Cách tải cho iPhone & iPad (Trình duyệt Safari)'}
-                          </span>
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-indigo-500/15 border border-indigo-400/35">
-                            IOS SAFARI
-                          </span>
-                        </div>
-                        <ol className="list-decimal pl-5 space-y-1.5 text-slate-200 leading-relaxed">
-                          <li>
-                            {isEn
-                              ? 'Open Synapse in Safari on your iPhone or iPad (Apple requires Safari for Home Screen Web Apps).'
-                              : 'Mở liên kết Synapse bằng trình duyệt Safari trên iPhone / iPad (iOS yêu cầu cài qua Safari).'}
-                          </li>
-                          <li className="flex flex-wrap items-center gap-1.5">
-                            <span>{isEn ? 'Tap the Share icon' : 'Chạm nút Chia sẻ (Share)'}</span>
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-500/25 border border-sky-400/40 text-sky-200 font-bold">
-                              <Share className="w-3.5 h-3.5" />
-                            </span>
-                            <span>{isEn ? 'at the bottom bar of Safari.' : 'ở thanh công cụ dưới cùng.'}</span>
-                          </li>
-                          <li className="flex flex-wrap items-center gap-1.5">
-                            <span>{isEn ? 'Scroll down and tap' : 'Cuộn xuống chọn'}</span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-600 text-white font-bold">
-                              <PlusSquare className="w-3.5 h-3.5 text-cyan-400" />
-                              {isEn ? 'Add to Home Screen' : 'Thêm vào MH chính'}
-                            </span>
-                            <span>→ {isEn ? 'Tap "Add".' : 'Chạm "Thêm" góc trên phải.'}</span>
-                          </li>
-                        </ol>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Primary Action Row */}
-                  <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                    {isPwaInstalled ? (
-                      <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-emerald-500/20 border border-emerald-400/60 text-emerald-200 text-xs font-bold">
-                        <CheckCircle2 className="w-4 h-4 shrink-0" />
-                        <span>
-                          {isEn ? 'Running in Installed App Mode' : 'Bạn đang dùng phiên bản App đã cài đặt!'}
-                        </span>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        data-ripple="true"
-                        onClick={handleDirectPwaInstall}
-                        disabled={appInstalling}
-                        className="cs-deck-btn px-5 py-3 rounded-md bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-cyan-500/30 flex items-center gap-2 cursor-pointer disabled:opacity-60"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>
-                          {appInstalling
-                            ? isEn
-                              ? 'Installing...'
-                              : 'Đang cài đặt...'
-                            : canPwaInstall
-                            ? isEn
-                              ? 'Install Synapse Now (1-Click)'
-                              : 'Tải & Cài Đặt Ngay (1 Chạm)'
-                            : isEn
-                            ? 'Open Quick Install Guide'
-                            : 'Mở Trình Hướng Dẫn Cài Đặt'}
-                        </span>
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      data-ripple="true"
-                      onClick={handleCopyLandingUrl}
-                      className="cs-deck-btn px-4 py-3 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-600 hover:border-cyan-400 text-slate-100 font-semibold text-xs flex items-center gap-2 cursor-pointer"
-                    >
-                      {copiedAppUrl ? (
-                        <Check className="w-4 h-4 text-emerald-400" />
-                      ) : (
-                        <Copy className="w-4 h-4 text-cyan-400" />
-                      )}
-                      <span>
-                        {copiedAppUrl
-                          ? isEn
-                            ? 'App Link Copied!'
-                            : 'Đã chép link cài đặt!'
-                          : isEn
-                          ? 'Copy App URL for Phone'
-                          : 'Chép Link Tải Cho Điện Thoại'}
-                      </span>
-                    </button>
-                  </div>
-
-                  {appInstallNote && (
-                    <div className="p-3 rounded-md bg-emerald-500/15 border border-emerald-400/50 text-xs font-semibold text-emerald-200">
-                      {appInstallNote}
-                    </div>
-                  )}
-                </div>
-
-                {/* Right Column: Grand Square-Framed Animated Multi-Device Blueprint Stage */}
-                <div className="lg:col-span-5">
-                  <div className="relative rounded-md border border-cyan-400/40 bg-[#040918] p-5 overflow-hidden min-h-[320px] flex flex-col justify-between shadow-inner">
-                    <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-cyan-300">
-                      <span>MULTI-DEVICE SYNC MATRIX</span>
-                      <span className="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/40 text-emerald-300">
-                        PWA 360° READY
-                      </span>
-                    </div>
-
-                    {/* GPU-Composited Animated Hardware Triad SVG */}
-                    <div className="relative z-10 my-3 flex items-center justify-center">
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 320 215"
-                        className="w-full max-w-[330px] h-52"
-                      >
-                        <defs>
-                          <linearGradient id="synScreenGrad" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.28" />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity="0.16" />
-                          </linearGradient>
-                          <radialGradient id="synStageAura" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.35" />
-                            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
-                          </radialGradient>
-                        </defs>
-
-                        {/* Backdrop telemetry aura & blueprint grid */}
-                        <circle cx="160" cy="108" r="88" fill="url(#synStageAura)" />
-                        <rect
-                          x="14"
-                          y="14"
-                          width="292"
-                          height="187"
-                          rx="4"
-                          fill="none"
-                          stroke="#38bdf8"
-                          strokeOpacity="0.16"
-                          strokeDasharray="4 4"
-                        />
-
-                        {/* Sync Signal Beams Between Devices */}
-                        <path
-                          d="M 160 88 L 62 128 M 160 88 L 258 128 M 62 152 L 258 152"
-                          fill="none"
-                          stroke="#22d3ee"
-                          strokeWidth="1.6"
-                          strokeOpacity="0.7"
-                          className="app-telemetry-flow"
-                        />
-
-                        {/* Center Laptop Blueprint */}
-                        <g className="app-device-float-a">
-                          <rect
-                            x="92"
-                            y="26"
-                            width="136"
-                            height="84"
-                            rx="4"
-                            fill="#09152b"
-                            stroke={appDeviceTab === 'desktop' ? '#22d3ee' : '#38bdf8'}
-                            strokeWidth={appDeviceTab === 'desktop' ? '2.2' : '1.4'}
-                          />
-                          <rect x="98" y="32" width="124" height="72" rx="2" fill="url(#synScreenGrad)" />
-                          {/* 3D Wireframe Cube inside Laptop Screen */}
-                          <polygon points="160,44 182,56 182,80 160,92 138,80 138,56" fill="none" stroke="#38bdf8" strokeWidth="1.4" />
-                          <line x1="160" y1="44" x2="160" y2="92" stroke="#2dd4bf" strokeWidth="1" strokeOpacity="0.8" />
-                          <line x1="138" y1="56" x2="182" y2="80" stroke="#2dd4bf" strokeWidth="1" strokeOpacity="0.6" />
-                          <line x1="182" y1="56" x2="138" y2="80" stroke="#2dd4bf" strokeWidth="1" strokeOpacity="0.6" />
-                          {/* Laptop Base */}
-                          <path d="M 78 111 L 242 111 L 250 119 L 70 119 Z" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.2" />
-                          <text x="160" y="132" textAnchor="middle" fill="#7dd3fc" fontSize="8.5" fontWeight="700" fontFamily="monospace">
-                            LAPTOP · WIN / MAC
-                          </text>
-                        </g>
-
-                        {/* Left Android Smartphone */}
-                        <g className="app-device-float-b">
-                          <rect
-                            x="32"
-                            y="112"
-                            width="58"
-                            height="82"
-                            rx="5"
-                            fill="#07181c"
-                            stroke={appDeviceTab === 'android' ? '#34d399' : '#10b981'}
-                            strokeWidth={appDeviceTab === 'android' ? '2.2' : '1.4'}
-                          />
-                          <rect x="37" y="119" width="48" height="65" rx="2" fill="#0d292a" />
-                          <rect x="44" y="127" width="34" height="14" rx="1.5" fill="#10b981" fillOpacity="0.32" stroke="#34d399" strokeWidth="0.9" />
-                          <circle cx="61" cy="160" r="11" fill="none" stroke="#2dd4bf" strokeWidth="1.3" />
-                          <circle cx="61" cy="160" r="4" fill="#34d399" />
-                          <text x="61" y="205" textAnchor="middle" fill="#6ee7b7" fontSize="8.2" fontWeight="700" fontFamily="monospace">
-                            ANDROID
-                          </text>
-                        </g>
-
-                        {/* Right iPhone / iPad */}
-                        <g className="app-device-float-b" style={{ animationDelay: '0.8s' }}>
-                          <rect
-                            x="230"
-                            y="112"
-                            width="58"
-                            height="82"
-                            rx="6"
-                            fill="#0e112b"
-                            stroke={appDeviceTab === 'ios' ? '#818cf8' : '#6366f1'}
-                            strokeWidth={appDeviceTab === 'ios' ? '2.2' : '1.4'}
-                          />
-                          <rect x="235" y="119" width="48" height="65" rx="3" fill="#15193d" />
-                          <rect x="250" y="121" width="18" height="3" rx="1.5" fill="#312e81" />
-                          <polygon points="259,134 273,149 259,164 245,149" fill="#6366f1" fillOpacity="0.28" stroke="#a5b4fc" strokeWidth="1.2" />
-                          <rect x="249" y="176" width="20" height="2.5" rx="1" fill="#818cf8" />
-                          <text x="259" y="205" textAnchor="middle" fill="#c7d2fe" fontSize="8.2" fontWeight="700" fontFamily="monospace">
-                            IPHONE / IPAD
-                          </text>
-                        </g>
-                      </svg>
-                    </div>
-
-                    <div className="relative z-10 flex items-center justify-between gap-2 text-[11px] text-slate-300 border-t border-white/10 pt-2.5">
-                      <span>
-                        {isEn
-                          ? 'One codebase · Standalone app icon on all 3 platforms'
-                          : 'Một bản duy nhất · Cài icon riêng trên cả 3 hệ điều hành'}
-                      </span>
-                      <span className="font-mono text-cyan-300 font-semibold">PWA v4</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <div className="cv-auto mt-12 sm:mt-16">
+          <AppDownloadGuideSection
+            id="visitor-app-download"
+            onOpenInstallApp={onOpenInstallApp}
+            showFeatureMatrix={true}
+          />
+        </div>
 
         {/* COMPLETE PLATFORM CAPABILITIES SHOWCASE (ALL 9 WEB SYSTEMS) */}
         <section
@@ -3042,17 +2566,17 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Strict 10-fingertip webcam lock with zero jumping. Build 6 intuitive 2D geometry labs & manipulate 15 realistic 3D models (Turbofan, Solar Orrery, Robot Arm IK, Wind Tunnel).'
-                      : 'Nhận diện đúng 10 đầu ngón tay cố định chống loạn. Dựng 6 xưởng 2D (Euler, Compa, Vector, Conic) & xoay 15 mô hình 3D tiên tiến (Động cơ phản lực, Robot IK, Hầm gió).'}
+                      ? 'Strict 10-fingertip webcam lock with zero jumping. Build 6 2D labs + "Tự do tạo" freehand geometry canvas, explode & pinch-reassemble (4 fingers) 15 realistic 3D models.'
+                      : 'Nhận diện cố định 10 đầu ngón tay chống loạn. 6 xưởng 2D + bảng "Tự do tạo" vẽ tay tự do; 15 mô hình 3D tách cấu trúc, chọn từng bộ phận bằng 2 ngón & ghép lại với 4 ngón tay.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                      <span>{isEn ? 'Sensitivity sliders & 1/2 hand mode toggles' : 'Chỉnh độ nhạy, 1/2 tay & nút chức năng tùy thích'}</span>
+                      <span>{isEn ? 'Explode layers, inspect parts & 4-finger reassemble' : 'Tách lớp, soi chi tiết bộ phận & ghép lại bằng 4 ngón'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                      <span>{isEn ? 'Mouse/touch fallback supported without webcam' : 'Hỗ trợ kéo chuột trực tiếp khi không bật camera'}</span>
+                      <span>{isEn ? 'Freehand 2D drawing + mouse/touch fallback' : 'Tự do tạo hình học 2D & kéo chuột mượt khi tắt cam'}</span>
                     </li>
                   </ul>
                 </div>
@@ -3208,21 +2732,25 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
-                    {isEn ? 'Sublime Text 4 IDE & 16 Algos' : 'Tin Học Sublime 4 & 16 Thuật Toán'}
+                    {isEn ? '5 CS Roadmaps · Sublime 4 & 16 Algos' : 'Tin Học 5 Lộ Trình & Sublime 4 IDE'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Monokai code studio with Find/Replace, Goto Line, C++/Python snippets, Online Judge for hidden tests, voice/image problem OCR, and 16 visualizers (DP, Dijkstra...).'
-                      : 'Trình code Monokai chuẩn Sublime Text 4, Snippet C++20/Python 3, Online Judge sinh test ẩn từ ảnh/giọng nói và 16 mô phỏng thuật toán (Oxy, Xâu, DP, Dijkstra...).'}
+                      ? '5 curated roadmaps (VNOI CP + OpenEDG, Roadmap.sh, LearnCpp & GitHub C++ Career), Monokai Sublime Text 4 IDE, Online Judge with auto test generation, and 16 interactive algorithm graphs.'
+                      : 'Đủ 5 lộ trình chuẩn (VNOI Thi đấu + OpenEDG CPE/CPA/CPP, Roadmap.sh, LearnCpp Modern C++ & GitHub C++ Career), trình code Sublime Text 4 Monokai, Online Judge & 16 đồ thị thuật toán.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>{isEn ? `${CS_LESSONS.length} VNOI modules + Free Code Studio` : `${CS_LESSONS.length} chuyên đề VNOI + Code tự do`}</span>
+                      <span>
+                        {isEn
+                          ? `5 Roadmaps: ${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++ stages`
+                          : `5 Lộ trình: ${CS_LESSONS.length} bài VNOI + ${csSpecializedStageCount} chặng C++ Quốc tế`}
+                      </span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>{isEn ? '16 interactive algorithm graphs' : '16 đồ thị chạy từng bước thuật toán'}</span>
+                      <span>{isEn ? '16 interactive algorithm graphs + AI debug' : '16 đồ thị chạy từng bước + Sinh test ẩn bằng ảnh/giọng nói'}</span>
                     </li>
                   </ul>
                 </div>
@@ -3379,12 +2907,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-300 transition-colors">
-                    {isEn ? 'Roadmap · Weekly Arena · Forum' : 'Lộ Trình 5 Bước · Đấu Trường · Diễn Đàn'}
+                    {isEn ? 'Smart Knowledge Map · Arena · Forum' : 'Bản Đồ Tri Thức · Đấu Trường · Diễn Đàn'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Follow the Grade 9–12 progression map, compete daily in MCQ or AI-graded Essay rounds for live weekly rankings, and share solutions on the Study Forum.'
-                      : 'Theo dõi Bản đồ lộ trình 5 bước từ Lớp 9–12, thi Đấu Trường Tuần (Trắc nghiệm & Tự luận AI chấm) lên BXH trực tuyến, và trao đổi bài khó trên Diễn đàn.'}
+                      ? 'Smart Knowledge Map & adaptive weekly planner for Grades 9–12, daily MCQ & AI-graded Essay Arena rankings, plus the collaborative STEM Study Forum.'
+                      : 'Bản đồ tri thức thông minh tự chẩn đoán lỗ hổng kiến thức & xếp lịch tuần, thi Đấu Trường Tuần (Trắc nghiệm & Tự luận AI chấm) lên BXH trực tuyến, và Diễn đàn hỏi đáp 24/7.'}
                   </p>
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     <button
@@ -3461,17 +2989,17 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors">
-                    {isEn ? 'Focus Timer & PC-Tuned Themes' : 'Tiện Ích Học Tập & 5 Nền Động Theo Cấu Hình'}
+                    {isEn ? 'Draggable Widgets & Dynamic Themes' : 'Góc Tập Trung / Syn AI Tự Kéo Vị Trí & Nền Động'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Synced Pomodoro timer with alarm bells & ambient music, Quick Notes, Molecular Left Sidebar, Dark/Light mode, VI/EN toggle, and 5 animated backgrounds tuned for your PC.'
-                      : 'Đồng hồ Pomodoro đồng bộ góc trái (chuông báo & nhạc nền thư giãn), Sổ tay ghi chú, Thanh hạt phân tử bên trái, Sáng/Tối, VI/EN & 5 nền động tùy chỉnh mượt theo cấu hình máy.'}
+                      ? 'Freely drag & reposition Focus Timer and Syn AI anywhere on screen, enjoy ambient audio, Quick Notes, cursor-dodge typography, and 5 PC-tuned animated backgrounds.'
+                      : 'Kéo thả tự do vị trí nút Góc tập trung & Syn AI mọi góc màn hình, nhạc nền + chuông báo, Sổ tay ghi chú, chữ né chuột & 5 nền động (Hệ sinh thái, Phân tử, Đại dương, Bầu trời, Chòm sao).'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                      <span>{isEn ? 'Pomodoro presets + Bell & Ambient audio' : 'Pomodoro đa chế độ + Nhạc nền & Chuông'}</span>
+                      <span>{isEn ? 'Drag-anywhere Focus Timer & Syn AI buttons' : 'Tự do kéo thả vị trí nút Góc tập trung & Syn AI'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -3542,8 +3070,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             subjectFilter={directorySubject}
             onSubjectFilterChange={setDirectorySubject}
             onSelectLecture={handleOpenLectureFromVisitor}
-            actionHintVi="Bấm vào bất kỳ bài giảng nào để vào ngay lớp học mô phỏng 5 bước (không cần đăng nhập)."
-            actionHintEn="Click any lecture below to launch directly into its 5-step simulation classroom (no sign-in required)."
+            onSelectCsTrack={handleOpenCsTrackFromVisitor}
+            actionHintVi="Bấm vào bất kỳ bài giảng hoặc lộ trình nào để vào ngay lớp học mô phỏng 5 bước (không cần đăng nhập)."
+            actionHintEn="Click any lecture or roadmap below to launch directly into its 5-step simulation classroom (no sign-in required)."
           />
         </div>
 

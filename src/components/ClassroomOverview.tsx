@@ -28,7 +28,8 @@ import {
   ChevronDown,
   Orbit,
   Hand,
-  Atom
+  Atom,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -40,7 +41,9 @@ import { EXAM_PAPERS } from '../data/examData';
 import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
 import { CS_LESSONS } from '../data/csLessonsData';
+import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../data/csTracksData';
 import { PlatformReviews } from './common/PlatformReviews';
+import { AppDownloadGuideSection } from './common/AppDownloadGuideSection';
 import { CursorDodgeText } from './common/CursorDodgeText';
 import { AppearanceStudioBar } from './common/AppearanceStudioBar';
 import {
@@ -54,13 +57,15 @@ interface ClassroomOverviewProps {
   xp: number;
   onOpenTutor?: (subject?: 'math' | 'physics' | 'cs', mode?: AITutorMode) => void;
   onOpenSettings?: () => void;
+  onOpenInstallApp?: () => void;
 }
 
 export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   onNavigate,
   xp,
   onOpenTutor,
-  onOpenSettings
+  onOpenSettings,
+  onOpenInstallApp
 }) => {
   const { user, openAuthModal } = useAuth();
   const { t, language } = useLanguage();
@@ -119,6 +124,17 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleSelectCsTrackFromDirectory = (csTrackId: CSTrackId) => {
+    navigate({
+      subject: 'cs',
+      csViewMode: 'curriculum',
+      csSubView: 'roadmap',
+      csTrackId,
+      tutorOpen: false
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const {
     studyFormat,
     setStudyFormat,
@@ -150,6 +166,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   const totalExams = EXAM_PAPERS.length;
   const chuyenExams = EXAM_PAPERS.filter((e) => e.track === 'chuyen').length;
   const standardExams = EXAM_PAPERS.filter((e) => e.track === 'khong_chuyen').length;
+  const csSpecializedStageCount = CS_SPECIALIZED_TRACKS.reduce((s, t) => s + t.stages.length, 0);
   const totalLessons = MATH_LECTURES.length + PHYSICS_LESSONS.length + CS_LESSONS.length;
 
   useEffect(() => {
@@ -312,11 +329,11 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             className="font-display text-3xl sm:text-5xl lg:text-[3.15rem] font-semibold tracking-tight text-slate-900 dark:text-white leading-[1.16] text-balance max-w-3xl mx-auto hero-blend-shadow"
           />
 
-          <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-200 leading-relaxed max-w-2xl mx-auto hero-blend-shadow">
+          <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-200 leading-relaxed max-w-3xl mx-auto hero-blend-shadow">
             {t(
               'overview.heroDesc',
-              'Bài giảng chia nhiều phần (Khái niệm · Công thức · Giải thích sâu · AI · Luyện tập) cùng đồ thị hàm số & Oxyz 3D (Toán), mô phỏng 2D/3D (Lí) và IDE Sublime Text 4 (Tin).',
-              'Multi-part interactive lectures (Concept · Formula · Deep Dive · AI · Practice) with 2D/3D graphers & Oxyz (Math), 2D/3D simulations (Physics), and Sublime Text 4 IDE (CS).'
+              'Hệ sinh thái học tập STEM toàn diện cho Toán (2D & Oxyz 3D), Vật lí (41 Lab 2D & 32 mô hình 3D PhET), Tin học (5 lộ trình VNOI & C++ Quốc tế · IDE Sublime Text 4), 30 đại công trình Synapse v2, Học cảm giác 3D 10 ngón tay, Syn AI (Syn Math · Syn Physics · Syn Code), Kho Đề thi chấm ảnh AI, Đấu trường tuần & App đa thiết bị.',
+              'Complete interactive STEM ecosystem: Math (2D & Oxyz 3D), Physics (41 2D + 32 3D PhET labs), CS (5 VNOI & C++ roadmaps + Sublime Text 4 IDE), 30 Synapse v2 chambers, 10-finger Spatial 3D, Syn AI suite, AI-graded Exams, Weekly Arena & Cross-Device App.'
             )}
           </p>
 
@@ -531,7 +548,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 04 · {isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC'}
               </span>
               <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
-                {isEn ? `CS & VNOI (${CS_LESSONS.length} modules)` : `Bài giảng Tin học (${CS_LESSONS.length} bài)`}
+                {isEn
+                  ? `CS 5 Roadmaps (${CS_LESSONS.length}+${csSpecializedStageCount})`
+                  : `Tin học · 5 lộ trình (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++)`}
               </span>
             </div>
             <span className="relative z-10 w-8 h-8 rounded bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -581,6 +600,36 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </span>
             </div>
             <span className="relative z-10 w-8 h-8 rounded bg-teal-500/12 group-hover:bg-teal-600 text-teal-600 dark:text-teal-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+              <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => scrollToSection('classroom-app-download')}
+            className="sm:col-span-2 lg:col-span-3 group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-gradient-to-r from-cyan-50/95 via-sky-50/90 to-emerald-50/85 dark:from-cyan-950/55 dark:via-slate-800/80 dark:to-emerald-950/45 hover:from-cyan-100 hover:to-emerald-100 dark:hover:from-cyan-900/65 dark:hover:to-emerald-950/70 border border-cyan-300/85 dark:border-cyan-500/35 hover:border-cyan-500 text-left transition-all duration-200 cursor-pointer active:scale-[0.99] shadow-xs"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+            />
+            <div className="relative z-10 flex items-center gap-3 min-w-0">
+              <span className="w-9 h-9 rounded-md bg-cyan-500/15 border border-cyan-400/40 text-cyan-700 dark:text-cyan-300 flex items-center justify-center shrink-0">
+                <Download className="w-4 h-4" />
+              </span>
+              <div className="min-w-0">
+                <span className="font-mono text-[11px] font-semibold text-cyan-700 dark:text-cyan-300 block">
+                  07 · {isEn ? 'DOWNLOAD SYNAPSE APP · LAPTOP · ANDROID · IPHONE' : 'TẢI APP SYNAPSE ĐA THIẾT BỊ · PC · ANDROID · IPHONE'}
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-cyan-700 dark:group-hover:text-cyan-200 truncate block transition-colors">
+                  {isEn
+                    ? 'Scroll down for 1-click PC/Mobile install guide & full app feature matrix'
+                    : 'Cuộn xuống xem hướng dẫn cài đặt 1 chạm cho Laptop, Android, iPhone & toàn bộ tính năng App'}
+                </span>
+              </div>
+            </div>
+            <span className="relative z-10 w-8 h-8 rounded bg-cyan-500/15 group-hover:bg-cyan-600 text-cyan-700 dark:text-cyan-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
               <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
             </span>
           </button>
@@ -922,13 +971,13 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </div>
               <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn
-                  ? `Computer Science (${CS_LESSONS.length})`
-                  : `Tin học Sublime 4 (${CS_LESSONS.length} bài)`}
+                  ? `CS · 5 Roadmaps (${CS_LESSONS.length}+${csSpecializedStageCount})`
+                  : `Tin học · 5 Lộ Trình (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++)`}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isEn
-                  ? 'Sublime Text 4 style IDE, automated C++20 & Python 3 judge, and 16 interactive visualizers (Oxy, Strings, Arrays, DP, Binary Search, Dijkstra).'
-                  : 'Trình soạn thảo Sublime Text 4, chấm bài C++/Python + phân tích lỗi AI và 16 đồ thị mô phỏng (Oxy, Xâu, Mảng, DP, Dijkstra).'}
+                  ? '5 complete paths (VNOI CP + OpenEDG, Roadmap.sh, LearnCpp & GitHub C++ Career), Sublime Text 4 IDE, C++20/Python 3 Judge & 16 algo visualizers.'
+                  : 'Đủ 5 lộ trình (VNOI Thi đấu + OpenEDG C++, Roadmap.sh, LearnCpp & GitHub C++), IDE Sublime Text 4, trình chấm C++/Python + AI & 16 đồ thị thuật toán.'}
               </p>
             </div>
 
@@ -1594,9 +1643,19 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         subjectFilter={directorySubject}
         onSubjectFilterChange={setDirectorySubject}
         onSelectLecture={handleSelectLectureFromDirectory}
+        onSelectCsTrack={handleSelectCsTrackFromDirectory}
       />
 
-      {/* SECTION 7: Community Reviews, Star Ratings & Favorite Votes */}
+      {/* SECTION 7: Multi-Device App Download Guide & Full Feature Matrix */}
+      <div className="cv-auto">
+        <AppDownloadGuideSection
+          id="classroom-app-download"
+          onOpenInstallApp={onOpenInstallApp}
+          showFeatureMatrix={true}
+        />
+      </div>
+
+      {/* SECTION 8: Community Reviews, Star Ratings & Favorite Votes */}
       <div className="cv-auto">
         <PlatformReviews id="platform-reviews" />
       </div>

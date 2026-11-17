@@ -110,8 +110,11 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
   const curriculumSubView = location.csSubView;
   const lessonTab = location.csLessonTab;
 
-  // Active CS Roadmap Track ('vnoi' | 'openedg_cpp' | 'roadmap_sh_cpp' | 'learncpp' | 'github_career')
-  const [selectedTrackId, setSelectedTrackId] = useState<CSTrackId>('vnoi');
+  // Active CS Roadmap Track ('vnoi' | 'openedg_cpp' | 'roadmap_sh_cpp' | 'learncpp' | 'github_career') synced via URL/NavContext
+  const selectedTrackId: CSTrackId = location.csTrackId || 'vnoi';
+  const setSelectedTrackId = (nextTrack: CSTrackId) => {
+    navigate({ csTrackId: nextTrack, csViewMode: 'curriculum', csSubView: 'roadmap' });
+  };
   const [completedTrackStageIds, setCompletedTrackStageIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('synapse_cs_track_completed_v1');
@@ -593,18 +596,18 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               )}
               <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                 <span className="syn-live-square bg-emerald-500" />
-                Tin Học Chuyên Sâu · VNOI Roadmap
+                Tin Học Chuyên Sâu · 5 Lộ Trình (VNOI + 4 Tracks C++)
               </span>
               <span className="text-slate-400" aria-hidden="true">·</span>
               <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                Phase 0 ➜ Phase 4 · C++ &amp; Python
+                12 Bài VNOI · 18 Chặng C++ · Sublime Studio
               </span>
             </div>
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Lộ Trình VNOI Roadmap &amp; Trình Chấm Online Judge
+              5 Lộ Trình Tin Học (VNOI &amp; C++ Quốc Tế) · Trình Chấm Online Judge
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Hệ thống bài giảng chi tiết từng phần theo chuẩn VNOI Wiki, code mẫu song ngữ C++/Python và trình chấm test tự động.
+              Tổng hợp 5 lộ trình học tập (VNOI Roadmap 12 bài, OpenEDG C++, Roadmap.sh, LearnCpp.com &amp; GitHub Career Track 18 chặng), code mẫu C++/Python và trình chấm test tự động.
             </p>
           </div>
         </div>

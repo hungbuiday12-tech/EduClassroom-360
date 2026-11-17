@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Physics3DMode, PhysicsDomainId, PhysicsSimType, SubjectType } from '../types';
+import { CSTrackId } from '../data/csTracksData';
 import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
 import { PHYSICS_DOMAINS } from '../data/physicsDomainsData';
@@ -17,6 +18,7 @@ export interface NavLocation {
   physicsTab: 'theory' | 'simulation' | 'sim3d' | 'practice';
   csViewMode: 'curriculum' | 'judge' | 'custom' | 'visualizer';
   csSubView: 'roadmap' | 'lecture';
+  csTrackId: CSTrackId;
   csLessonId: string;
   csLessonTab: 'lecture' | 'code' | 'practice' | 'visualizer';
   csAlgoId?: string;
@@ -48,6 +50,7 @@ const DEFAULT_LOCATION: NavLocation = {
   physicsTab: 'theory',
   csViewMode: 'curriculum',
   csSubView: 'roadmap',
+  csTrackId: 'vnoi',
   csLessonId: 'cs-1',
   csLessonTab: 'lecture',
   csAlgoId: 'coord_hull',
@@ -133,9 +136,9 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       if (loc.csViewMode === 'custom') return 'Sublime Studio';
       if (loc.csSubView === 'lecture') {
         if (loc.csLessonTab === 'visualizer') return isEn ? 'CS Simulation' : 'Mô phỏng Thuật toán';
-        return isEn ? 'VNOI Lecture' : 'Bài giảng Tin học';
+        return isEn ? 'CS Lecture' : 'Bài giảng Tin học';
       }
-      return isEn ? 'CS · VNOI Roadmap' : 'Tin học · VNOI';
+      return isEn ? 'CS · 5 Roadmaps' : 'Tin học · 5 Lộ trình';
     case 'exams':
       return loc.examId
         ? isEn ? 'Exam Paper' : 'Đề thi chi tiết'
@@ -163,6 +166,7 @@ function isSameLocation(a: NavLocation, b: NavLocation): boolean {
     a.physicsTab === b.physicsTab &&
     a.csViewMode === b.csViewMode &&
     a.csSubView === b.csSubView &&
+    a.csTrackId === b.csTrackId &&
     a.csLessonId === b.csLessonId &&
     a.csLessonTab === b.csLessonTab &&
     a.csAlgoId === b.csAlgoId &&

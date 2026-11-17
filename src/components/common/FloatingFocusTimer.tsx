@@ -11,12 +11,15 @@ import {
   VolumeX,
   X,
   CheckCircle2,
-  Flame
+  Flame,
+  GripVertical,
+  PinOff
 } from 'lucide-react';
 import { useFocusTimer, STUDY_FORMAT_PRESETS } from '../../context/FocusTimerContext';
 import { useAudio } from '../../context/AudioContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { BELL_SOUND_OPTIONS, BG_SOUND_OPTIONS, BellSoundId, BgSoundId } from '../../lib/soundEngine';
+import { useDraggableWidget } from '../../hooks/useDraggableWidget';
 
 function formatClock(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -65,11 +68,37 @@ export const FloatingFocusTimer: React.FC = () => {
   const ringRadius = 40;
   const ringCircumference = 2 * Math.PI * ringRadius;
 
+  const {
+    containerRef,
+    position,
+    isDragging,
+    isCustomPositioned,
+    isRightHalf,
+    isBottomHalf,
+    handleDragStart,
+    consumeDidDrag,
+    resetPosition
+  } = useDraggableWidget({ storageKey: 'synapse_widget_pos_focus_v1' });
+
   return (
-    <div className="fixed bottom-3 left-3 sm:bottom-5 sm:left-5 lg:left-[calc(var(--sidebar-w,248px)+16px)] z-[85] flex flex-col items-start gap-2.5 transition-[left] duration-200">
-      {/* Expanded Mini-Chat Style Focus Panel */}
+    <div
+      ref={containerRef}
+      style={position ? { left: `${position.x}px`, top: `${position.y}px` } : undefined}
+      className={`fixed z-[85] ${
+        position
+          ? ''
+          : 'bottom-3 left-3 sm:bottom-5 sm:left-5 lg:left-[calc(var(--sidebar-w,248px)+16px)] transition-[left] duration-200'
+      }`}
+    >
+      {/* Expanded Mini-Chat Style Focus Panel (flips cleanly by quadrant) */}
       {isWidgetOpen && (
-        <div className="sci-frame syn-window-enter w-[312px] sm:w-[344px] max-w-[calc(100vw-24px)] rounded-md bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-300 dark:border-slate-700 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.58)] overflow-hidden text-xs">
+        <div
+          className={`sci-frame syn-window-enter absolute z-20 ${
+            isBottomHalf ? 'bottom-full mb-2.5' : 'top-full mt-2.5'
+          } ${
+            isRightHalf ? 'right-0' : 'left-0'
+          } w-[312px] sm:w-[344px] max-w-[calc(100vw-24px)] rounded-md bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-300 dark:border-slate-700 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.58)] overflow-hidden text-xs`}
+        >
           {/* Panel Header */}
           <div className="px-4 py-3 bg-slate-900 dark:bg-slate-900 border-b border-slate-800 text-white flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -84,14 +113,27 @@ export const FloatingFocusTimer: React.FC = () => {
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsWidgetOpen(false)}
-              className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors cursor-pointer"
-              aria-label={isEn ? 'Minimize timer' : 'Thu gọn đồng hồ'}
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              {isCustomPositioned && (
+                <button
+                  type="button"
+                  onClick={resetPosition}
+                  className="px-2 py-1 rounded bg-white/15 hover:bg-white/25 text-[10px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  title={isEn ? 'Reset default corner position' : 'Đặt lại vị trí góc mặc định'}
+                >
+                  <PinOff className="w-3 h-3" />
+                  <span>{isEn ? 'Reset' : 'Đặt lại vị trí'}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsWidgetOpen(false)}
+                className="p-1.5 rounded bg-white/15 hover:bg-white/25 transition-colors cursor-pointer"
+                aria-label={isEn ? 'Minimize timer' : 'Thu gọn đồng hồ'}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           <div className="p-4 space-y-3.5 max-h-[72vh] overflow-y-auto">
@@ -121,7 +163,7 @@ export const FloatingFocusTimer: React.FC = () => {
             )}
 
             {/* Phase Switch + Circular Clock */}
-            <div className="flex items-center gap-4 bg-slate-50/90 dark:bg-slate-900/70 rounded-2xl p-3 border border-slate-200/70 dark:border-white/10">
+            <div className="flex items-center gap-4 bg-slate-50/90 dark:bg-slate-900/70 rounded-md p-3 border border-slate-200/70 dark:border-white/10">
               <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100" aria-hidden="true">
                   <circle
@@ -230,7 +272,7 @@ export const FloatingFocusTimer: React.FC = () => {
                       key={preset.id}
                       type="button"
                       onClick={() => setStudyFormat(preset.id)}
-                      className={`px-2.5 py-1.5 rounded-xl border text-left text-[11px] font-semibold transition-all cursor-pointer flex items-center justify-between gap-1 ${
+                      className={`px-2.5 py-1.5 rounded-md border text-left text-[11px] font-semibold transition-all cursor-pointer flex items-center justify-between gap-1 ${
                         selected
                           ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-400 text-indigo-700 dark:text-indigo-300 font-bold'
                           : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-indigo-300'
@@ -364,20 +406,32 @@ export const FloatingFocusTimer: React.FC = () => {
         </div>
       )}
 
-      {/* Compact Mini-Chat Launcher Bubble in Bottom-Left */}
+      {/* Draggable Compact Mini-Chat Launcher Bubble */}
       <button
         type="button"
-        onClick={() => setIsWidgetOpen(!isWidgetOpen)}
+        data-no-lift="true"
+        onPointerDown={handleDragStart}
+        onClick={() => {
+          if (consumeDidDrag()) return;
+          setIsWidgetOpen(!isWidgetOpen);
+        }}
         aria-expanded={isWidgetOpen}
-        className={`sci-frame group flex items-center gap-2 px-3 py-2 rounded-md border backdrop-blur-md shadow-[0_14px_34px_-10px_rgba(15,23,42,0.58)] transition-all cursor-pointer ${
+        className={`sci-frame group flex items-center gap-2 px-3 py-2 rounded-md border backdrop-blur-md shadow-[0_14px_34px_-10px_rgba(15,23,42,0.58)] select-none touch-none ${
+          isDragging ? 'cursor-grabbing ring-2 ring-sky-400/70 scale-[1.03]' : 'cursor-grab transition-colors'
+        } ${
           alarmRinging
             ? 'bg-amber-400 border-amber-300 text-slate-950'
             : isRunning
             ? 'bg-indigo-600/95 hover:bg-indigo-500 border-indigo-400/50 text-white'
             : 'bg-slate-950/92 hover:bg-slate-900 border-slate-700/80 text-white'
         }`}
-        title={isEn ? 'Focus Timer & Ambient Studio' : 'Phương thức tập trung & Âm thanh nền'}
+        title={
+          isEn
+            ? 'Click to open Focus Studio · Drag to move anywhere'
+            : 'Bấm để mở Góc tập trung · Kéo giữ để di chuyển vị trí'
+        }
       >
+        <GripVertical className="w-3.5 h-3.5 shrink-0 text-slate-400/80 group-hover:text-white/90" />
         <span
           className={`w-2 h-2 rounded-sm shrink-0 ${
             alarmRinging

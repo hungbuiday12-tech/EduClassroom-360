@@ -420,7 +420,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={onOpenInstallApp}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-300/80 dark:border-sky-600/50 text-sky-700 dark:text-sky-300 text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-300/80 dark:border-sky-600/50 text-sky-700 dark:text-sky-300 text-xs sm:text-sm font-bold transition-colors cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>{isEn ? 'Install App (PC / Phone)' : 'Tải App (Laptop / Android / iOS)'}</span>
@@ -430,7 +430,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200/80 dark:border-rose-800/60 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200/80 dark:border-rose-800/60 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-bold transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 <span>{isEn ? 'Sign Out' : 'Đăng xuất tài khoản'}</span>
@@ -442,7 +442,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onClose();
                   openAuthModal('login');
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
                 <span>{isEn ? 'Sign In / Register' : 'Đăng nhập / Đăng ký'}</span>
@@ -479,7 +479,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 transition-colors cursor-pointer"
+              className="p-2 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 transition-colors cursor-pointer"
               aria-label="Đóng"
             >
               <X className="w-4 h-4" />
@@ -494,7 +494,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
           {successMsg && (
-            <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
+            <div className="p-3.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{successMsg}</span>
             </div>
@@ -507,7 +507,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Profile Setup Form */}
                 <form
                   onSubmit={handleSaveProfile}
-                  className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-4"
+                  className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-4"
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="font-display text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -529,7 +529,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         placeholder={isEn ? 'Your full name' : 'Họ tên hiển thị'}
-                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                     <div>
@@ -540,7 +540,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         type="text"
                         disabled
                         value={`@${user.username}`}
-                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono rounded-xl bg-slate-100 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/5 text-slate-500 cursor-not-allowed"
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono rounded-md bg-slate-100 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/5 text-slate-500 cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -554,7 +554,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       value={avatarUrl}
                       onChange={(e) => setAvatarUrl(e.target.value)}
                       placeholder="https://..."
-                      className="w-full px-3.5 py-2 text-xs font-mono rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3.5 py-2 text-xs font-mono rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                     <div className="flex flex-wrap items-center gap-2 mt-2.5">
                       {PRESET_AVATARS.map((url, i) => (
@@ -577,7 +577,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="submit"
                       disabled={busyAction === 'profile'}
-                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-60"
+                      className="px-4 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-60"
                     >
                       <Save className="w-3.5 h-3.5" />
                       <span>{busyAction === 'profile' ? (isEn ? 'Saving...' : 'Đang lưu...') : isEn ? 'Save Profile' : 'Lưu hồ sơ'}</span>
@@ -588,7 +588,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Gmail / Email Update Form */}
                 <form
                   onSubmit={handleSaveEmail}
-                  className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-4"
+                  className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-4"
                 >
                   <h4 className="font-display text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Mail className="w-4 h-4 text-sky-500" />
@@ -606,7 +606,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         value={newEmail}
                         onChange={(e) => setNewEmail(e.target.value)}
                         placeholder="example@gmail.com"
-                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                       />
                     </div>
                     <div>
@@ -618,7 +618,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         value={emailConfirmPassword}
                         onChange={(e) => setEmailConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                       />
                     </div>
                   </div>
@@ -627,7 +627,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="submit"
                       disabled={busyAction === 'email'}
-                      className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-60"
+                      className="px-4 py-2.5 rounded-md bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-60"
                     >
                       <Mail className="w-3.5 h-3.5" />
                       <span>{busyAction === 'email' ? (isEn ? 'Updating...' : 'Đang cập nhật...') : isEn ? 'Update Gmail' : 'Cập nhật Gmail'}</span>
@@ -636,7 +636,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </form>
               </div>
             ) : (
-              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-white/15 text-center space-y-3">
+              <div className="p-6 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-white/15 text-center space-y-3">
                 <UserCog className="w-10 h-10 text-indigo-500 mx-auto" />
                 <h4 className="font-display text-base font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Sign in to configure your account' : 'Đăng nhập để thiết lập tài khoản & Gmail'}
@@ -652,7 +652,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onClose();
                     openAuthModal('login');
                   }}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold inline-flex items-center gap-2 cursor-pointer"
+                  className="px-5 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold inline-flex items-center gap-2 cursor-pointer"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>{isEn ? 'Sign In Now' : 'Đăng Nhập Ngay'}</span>
@@ -667,7 +667,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="space-y-5">
                 <form
                   onSubmit={handleChangePassword}
-                  className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-4"
+                  className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-4"
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="font-display text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -693,7 +693,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
 
@@ -708,7 +708,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                     <div>
@@ -721,7 +721,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                   </div>
@@ -741,7 +741,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="submit"
                       disabled={busyAction === 'password'}
-                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-60"
+                      className="px-4 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-60"
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
                       <span>{busyAction === 'password' ? (isEn ? 'Updating...' : 'Đang đổi...') : isEn ? 'Update Password' : 'Đổi mật khẩu'}</span>
@@ -750,7 +750,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </form>
               </div>
             ) : (
-              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-white/15 text-center space-y-3">
+              <div className="p-6 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-white/15 text-center space-y-3">
                 <Lock className="w-10 h-10 text-amber-500 mx-auto" />
                 <h4 className="font-display text-base font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Sign in to manage password & security' : 'Đăng nhập để đổi mật khẩu & bảo mật'}
@@ -761,7 +761,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onClose();
                     openAuthModal('login');
                   }}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold inline-flex items-center gap-2 cursor-pointer"
+                  className="px-5 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold inline-flex items-center gap-2 cursor-pointer"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>{isEn ? 'Sign In' : 'Đăng nhập'}</span>
@@ -774,7 +774,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === 'appearance' && (
             <div className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-3">
+                <div className="p-4 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     {isDark ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-amber-500" />}
                     <div>
@@ -789,13 +789,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={onToggleTheme}
-                    className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 text-xs font-bold text-slate-800 dark:text-white cursor-pointer"
+                    className="px-3.5 py-2 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 text-xs font-bold text-slate-800 dark:text-white cursor-pointer"
                   >
                     {isEn ? 'Switch' : 'Đổi nền'}
                   </button>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-3">
+                <div className="p-4 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     <Globe className="w-5 h-5 text-sky-500" />
                     <div>
@@ -810,7 +810,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={toggleLanguage}
-                    className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 text-xs font-bold text-indigo-600 dark:text-indigo-400 cursor-pointer"
+                    className="px-3.5 py-2 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 text-xs font-bold text-indigo-600 dark:text-indigo-400 cursor-pointer"
                   >
                     {language === 'vi' ? 'VI → EN' : 'EN → VI'}
                   </button>
@@ -818,7 +818,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* PC-Spec Background Style Selector */}
-              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+              <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                     <Sparkles className="w-4 h-4 text-sky-500" />
@@ -881,7 +881,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 bgStyle === 'sky' ||
                 bgStyle === 'constellations' ||
                 bgStyle === 'cosmic_galaxy') && (
-                <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+                <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                       <Wand2 className="w-4 h-4 text-sky-500" />
@@ -900,7 +900,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           key={opt.id}
                           type="button"
                           onClick={() => setCreatureTheme(opt.id)}
-                          className={`px-3 py-2 rounded-lg border text-left text-xs font-semibold transition-all cursor-pointer ${
+                          className={`px-3 py-2 rounded border text-left text-xs font-semibold transition-all cursor-pointer ${
                             selected
                               ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
                               : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
@@ -915,7 +915,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               )}
 
               {/* Typography & Font Family Selector */}
-              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+              <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                   <Type className="w-4 h-4 text-sky-500" />
                   <span>{isEn ? 'Typography & Font Style' : 'Phông Chữ Hệ Thống'}</span>
@@ -928,7 +928,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={f.id}
                         type="button"
                         onClick={() => setFontPreset(f.id)}
-                        className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
+                        className={`p-3 rounded border text-left transition-all cursor-pointer ${
                           selected
                             ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
@@ -947,7 +947,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Color Palette Selector */}
-              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+              <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                   <Palette className="w-4 h-4 text-sky-500" />
                   <span>{isEn ? 'Accent Color Palette' : 'Bảng Màu Chủ Đạo'}</span>
@@ -960,7 +960,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={pal.id}
                         type="button"
                         onClick={() => setColorPalette(pal.id)}
-                        className={`px-3 py-2.5 rounded-lg border text-left text-xs font-semibold transition-all cursor-pointer flex items-center gap-2.5 ${
+                        className={`px-3 py-2.5 rounded border text-left text-xs font-semibold transition-all cursor-pointer flex items-center gap-2.5 ${
                           selected
                             ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-transparent shadow-sm'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
@@ -978,7 +978,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Cursor Dodge Interaction Toggle */}
-              <div className="p-4 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
+              <div className="p-4 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <MousePointer2 className="w-4 h-4 text-sky-500" />
                   <div>
@@ -1034,7 +1034,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* FPS & Graphics Performance Tier */}
-              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+              <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                   <Gauge className="w-4 h-4 text-sky-500" />
                   <span>{isEn ? 'FPS & Graphics Performance Mode' : 'Tối ưu FPS & Chất lượng Đồ họa'}</span>
@@ -1047,7 +1047,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={opt.id}
                         type="button"
                         onClick={() => setPerfMode(opt.id)}
-                        className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
+                        className={`p-3 rounded border text-left transition-all cursor-pointer ${
                           selected
                             ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
@@ -1067,7 +1067,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-500/20 text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2.5">
+              <div className="p-4 rounded-md bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-500/20 text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2.5">
                 <Sparkles className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold text-slate-900 dark:text-white block mb-0.5">
@@ -1082,7 +1082,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Cross-platform AI Backend URL for Web / APK / EXE */}
-              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+              <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                     <Server className="w-4 h-4 text-emerald-500" />
@@ -1113,13 +1113,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     value={backendUrlInput}
                     onChange={(e) => setBackendUrlInput(e.target.value)}
                     placeholder={getDefaultRemoteApiBase()}
-                    className="flex-1 px-3 py-2 text-xs font-mono rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="flex-1 px-3 py-2 text-xs font-mono rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={handleSaveBackendUrl}
-                      className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer whitespace-nowrap"
+                      className="px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer whitespace-nowrap"
                     >
                       {isEn ? 'Save URL' : 'Lưu máy chủ'}
                     </button>
@@ -1131,7 +1131,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           setCustomApiBase(null);
                           void handleTestBackend();
                         }}
-                        className="px-2.5 py-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold cursor-pointer"
+                        className="px-2.5 py-2 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold cursor-pointer"
                       >
                         {isEn ? 'Reset' : 'Mặc định'}
                       </button>
@@ -1140,7 +1140,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 {backendCheckStatus.ok !== undefined && (
                   <div
-                    className={`text-[11px] px-3 py-2 rounded-lg border font-medium ${
+                    className={`text-[11px] px-3 py-2 rounded border font-medium ${
                       backendCheckStatus.ok
                         ? 'bg-emerald-50 dark:bg-emerald-950/35 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
                         : 'bg-rose-50 dark:bg-rose-950/35 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
@@ -1159,7 +1159,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === 'audio' && (
             <div className="space-y-5">
               {/* Click SFX Section */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3.5">
+              <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                     <MousePointerClick className="w-4 h-4 text-sky-500" />
@@ -1169,7 +1169,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="button"
                       onClick={() => playClick()}
-                      className="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-700 dark:text-sky-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                     >
                       <Play className="w-3 h-3" />
                       <span>{isEn ? 'Preview' : 'Nghe thử'}</span>
@@ -1195,7 +1195,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={opt.id}
                         type="button"
                         onClick={() => setClickSound(opt.id)}
-                        className={`px-3 py-2 rounded-xl border text-left text-xs font-semibold transition-all cursor-pointer ${
+                        className={`px-3 py-2 rounded-md border text-left text-xs font-semibold transition-all cursor-pointer ${
                           selected
                             ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
@@ -1209,7 +1209,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Background Ambient Soundscapes */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3.5">
+              <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                     <Music className="w-4 h-4 text-indigo-500" />
@@ -1219,7 +1219,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="button"
                       onClick={toggleBgPlaying}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
                         isBgPlaying && bgSound !== 'off'
                           ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                           : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
@@ -1261,7 +1261,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={opt.id}
                         type="button"
                         onClick={() => setBgSound(opt.id)}
-                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                        className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
                           selected
                             ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-indigo-400'
@@ -1282,7 +1282,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Focus Timer Alarm Bell */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3.5">
+              <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                     <Bell className="w-4 h-4 text-amber-500" />
@@ -1291,7 +1291,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={() => playBell()}
-                    className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <Play className="w-3 h-3" />
                     <span>{isEn ? 'Test Bell' : 'Nghe thử chuông'}</span>
@@ -1306,7 +1306,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={opt.id}
                         type="button"
                         onClick={() => setBellSound(opt.id)}
-                        className={`px-3 py-2 rounded-xl border text-left text-xs font-semibold transition-all cursor-pointer ${
+                        className={`px-3 py-2 rounded-md border text-left text-xs font-semibold transition-all cursor-pointer ${
                           selected
                             ? 'bg-amber-500 text-slate-950 border-amber-500 font-bold shadow-sm'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-amber-400'

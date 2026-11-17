@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { MATH_LECTURES } from '../../data/curriculumData';
 import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
 import { CS_LESSONS } from '../../data/csLessonsData';
+import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
 import { useLanguage } from '../../context/LanguageContext';
 import {
   BookOpen,
@@ -10,7 +11,8 @@ import {
   Code2,
   Search,
   ArrowRight,
-  Layers
+  Layers,
+  GitBranch
 } from 'lucide-react';
 
 export type DirectorySubjectFilter = 'all' | 'math' | 'physics' | 'cs';
@@ -36,6 +38,7 @@ interface LectureDirectorySectionProps {
   subjectFilter: DirectorySubjectFilter;
   onSubjectFilterChange: (subject: DirectorySubjectFilter) => void;
   onSelectLecture: (target: LectureDirectoryTarget) => void;
+  onSelectCsTrack?: (trackId: CSTrackId) => void;
   actionHintVi?: string;
   actionHintEn?: string;
 }
@@ -45,6 +48,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
   subjectFilter,
   onSubjectFilterChange,
   onSelectLecture,
+  onSelectCsTrack,
   actionHintVi,
   actionHintEn
 }) => {
@@ -129,6 +133,22 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
     };
   }, [filteredItems]);
 
+  const filteredCsTracks = useMemo(() => {
+    if (subjectFilter !== 'all' && subjectFilter !== 'cs') return [];
+    if (trackFilter === 'khong_chuyen') return [];
+    const kw = query.trim().toLowerCase();
+    return CS_SPECIALIZED_TRACKS.filter((t) => {
+      if (!kw) return true;
+      const hay = `${t.shortName} ${t.title} ${t.titleEn} ${t.categoryLabel} ${t.officialRef} ${t.summary}`.toLowerCase();
+      return hay.includes(kw);
+    });
+  }, [subjectFilter, trackFilter, query]);
+
+  const csSpecializedStageCount = useMemo(
+    () => CS_SPECIALIZED_TRACKS.reduce((sum, t) => sum + t.stages.length, 0),
+    []
+  );
+
   const totalCount = allItems.length;
 
   const subjectMeta = {
@@ -161,8 +181,8 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
       sheenGlow: 'from-amber-400/12 via-orange-400/10 to-transparent'
     },
     cs: {
-      headingVi: 'Tin Học · Lộ Trình VNOI & Sublime Text 4 Judge',
-      headingEn: 'Computer Science · VNOI Roadmap & Sublime Judge',
+      headingVi: 'Tin Học · 5 Lộ Trình (VNOI & C++ Quốc Tế) · Sublime 4 Judge',
+      headingEn: 'Computer Science · 5 Roadmaps (VNOI & C++ Tracks) · Sublime Judge',
       icon: <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-300 icon-anim-code shrink-0" />,
       headerBadge: 'bg-emerald-500/12 border-emerald-400/40 text-emerald-800 dark:text-emerald-300',
       cardSurface:
@@ -177,7 +197,8 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
   };
 
   const renderGroup = (subj: 'math' | 'physics' | 'cs', items: UnifiedLectureItem[]) => {
-    if (items.length === 0) return null;
+    const showCsTracks = subj === 'cs' && filteredCsTracks.length > 0;
+    if (items.length === 0 && !showCsTracks) return null;
     const meta = subjectMeta[subj];
     return (
       <div key={subj} className="space-y-3">
@@ -191,53 +212,114 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
             </h4>
           </div>
           <span className={`px-2 py-0.5 rounded border text-[11px] font-mono font-bold tabular-nums shrink-0 ${meta.headerBadge}`}>
-            {items.length} {isEn ? 'lessons' : 'bài'}
+            {subj === 'cs'
+              ? isEn
+                ? `${items.length} VNOI · +4 C++ tracks (${csSpecializedStageCount})`
+                : `${items.length} VNOI · +4 lộ trình (${csSpecializedStageCount} chặng)`
+              : `${items.length} ${isEn ? 'lessons' : 'bài'}`}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {items.map((item, idx) => (
-            <button
-              key={item.id}
-              type="button"
-              data-ripple="true"
-              onClick={() => onSelectLecture({ subject: item.subject, lectureId: item.id })}
-              style={{ animationDelay: `${Math.min(idx * 18, 220)}ms` }}
-              className={`group sci-frame cs-deck-btn lecture-card-reveal relative overflow-hidden text-left p-3.5 sm:p-4 rounded-md border ${meta.cardSurface} transition-all duration-200 shadow-xs flex items-start justify-between gap-3 cursor-pointer active:scale-[0.97]`}
-            >
-              {/* Animated hover sheen */}
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/45 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
-              />
-              {/* Subtle radial glow overlay on hover */}
-              <span
-                aria-hidden="true"
-                className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${meta.sheenGlow} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-              />
-
-              <div className="relative z-10 flex items-start gap-3 min-w-0">
+        {items.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {items.map((item, idx) => (
+              <button
+                key={item.id}
+                type="button"
+                data-ripple="true"
+                onClick={() => onSelectLecture({ subject: item.subject, lectureId: item.id })}
+                style={{ animationDelay: `${Math.min(idx * 18, 220)}ms` }}
+                className={`group sci-frame cs-deck-btn lecture-card-reveal relative overflow-hidden text-left p-3.5 sm:p-4 rounded-md border ${meta.cardSurface} transition-all duration-200 shadow-xs flex items-start justify-between gap-3 cursor-pointer active:scale-[0.97]`}
+              >
+                {/* Animated hover sheen */}
                 <span
-                  className={`font-mono text-xs font-extrabold tabular-nums w-8 h-8 rounded flex items-center justify-center shrink-0 transition-all duration-200 group-hover:scale-105 ${meta.indexBg}`}
-                >
-                  {String(item.indexNumber).padStart(2, '0')}
-                </span>
-                <div className="min-w-0 space-y-1">
-                  <div className={`text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white leading-snug transition-colors line-clamp-2 ${meta.titleHover}`}>
-                    {item.title}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
-                    <span className="truncate">{item.metaLine}</span>
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/45 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                {/* Subtle radial glow overlay on hover */}
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${meta.sheenGlow} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                />
+
+                <div className="relative z-10 flex items-start gap-3 min-w-0">
+                  <span
+                    className={`font-mono text-xs font-extrabold tabular-nums w-8 h-8 rounded flex items-center justify-center shrink-0 transition-all duration-200 group-hover:scale-105 ${meta.indexBg}`}
+                  >
+                    {String(item.indexNumber).padStart(2, '0')}
+                  </span>
+                  <div className="min-w-0 space-y-1">
+                    <div className={`text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white leading-snug transition-colors line-clamp-2 ${meta.titleHover}`}>
+                      {item.title}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                      <span className="truncate">{item.metaLine}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <span className={`relative z-10 w-7 h-7 rounded flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200 group-hover:translate-x-0.5 group-hover:scale-105 ${meta.arrowBg}`}>
-                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                <span className={`relative z-10 w-7 h-7 rounded flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200 group-hover:translate-x-0.5 group-hover:scale-105 ${meta.arrowBg}`}>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {showCsTracks && (
+          <div className="pt-2 space-y-2.5">
+            <div className="flex items-center justify-between gap-2 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+              <span className="inline-flex items-center gap-1.5">
+                <GitBranch className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  {isEn
+                    ? `4 Additional C++ Career & Certification Roadmaps (${csSpecializedStageCount} Stages)`
+                    : `4 Lộ Trình Tin Học & C++ Bổ Sung (${csSpecializedStageCount} Chặng Chuẩn Quốc Tế)`}
+                </span>
               </span>
-            </button>
-          ))}
-        </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredCsTracks.map((track, tIdx) => (
+                <button
+                  key={track.id}
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => {
+                    if (onSelectCsTrack) {
+                      onSelectCsTrack(track.id);
+                    } else if (track.stages[0]?.linkedLessonIds[0]) {
+                      onSelectLecture({ subject: 'cs', lectureId: track.stages[0].linkedLessonIds[0] });
+                    }
+                  }}
+                  className="group sci-frame cs-deck-btn relative overflow-hidden text-left p-3.5 rounded-md border border-emerald-300/80 dark:border-emerald-500/35 bg-emerald-50/55 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800/95 hover:border-emerald-500 transition-all duration-200 shadow-xs flex items-start justify-between gap-3 cursor-pointer active:scale-[0.98]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+                  />
+                  <div className="relative z-10 flex items-start gap-3 min-w-0">
+                    <span className="font-mono text-[11px] font-extrabold tabular-nums px-2 h-8 rounded flex items-center justify-center shrink-0 bg-emerald-600 text-white">
+                      LT{tIdx + 2}
+                    </span>
+                    <div className="min-w-0 space-y-1">
+                      <div className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 leading-snug line-clamp-1">
+                        {track.shortName} · {isEn ? track.categoryLabelEn : track.categoryLabel}
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-1">
+                        {track.officialRef} · {track.stages.length} {isEn ? 'stages' : 'chặng'} · ~{track.estimatedWeeks}{' '}
+                        {isEn ? 'weeks' : 'tuần'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="relative z-10 w-7 h-7 rounded flex items-center justify-center shrink-0 mt-0.5 bg-emerald-500/10 border border-emerald-400/30 text-emerald-700 dark:text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -265,8 +347,10 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
           </h3>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
             {isEn
-              ? actionHintEn || 'Click any lesson below to open its interactive 5-step lecture, 2D/3D simulation, and practice quiz.'
-              : actionHintVi || 'Bấm chọn bất kỳ bài giảng nào bên dưới để mở ngay phòng học 5 bước, mô phỏng 2D/3D và bài tập thực hành.'}
+              ? actionHintEn ||
+                `Click any lesson to open its 5-step classroom, or jump straight into 5 CS roadmaps (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++ stages).`
+              : actionHintVi ||
+                `Bấm chọn bất kỳ bài giảng nào để mở phòng học 5 bước, hoặc truy cập ngay 5 lộ trình Tin học (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} chặng C++ Quốc tế).`}
           </p>
         </div>
 
@@ -366,7 +450,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
             }`}
           >
             <Code2 className="w-4 h-4 shrink-0 icon-anim-code" />
-            <span>{isEn ? 'CS' : 'Tin học'}</span>
+            <span>{isEn ? 'CS · 5 Roadmaps' : 'Tin học · 5 Lộ trình'}</span>
             <span
               className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold tabular-nums ${
                 subjectFilter === 'cs'
@@ -374,7 +458,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
                   : 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-400/30'
               }`}
             >
-              {CS_LESSONS.length}
+              {CS_LESSONS.length}+{csSpecializedStageCount}
             </span>
           </button>
         </div>
@@ -418,7 +502,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
       </div>
 
       {/* Lecture Lists */}
-      {filteredItems.length === 0 ? (
+      {filteredItems.length === 0 && filteredCsTracks.length === 0 ? (
         <div className="py-10 text-center rounded-md bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-white/10 text-xs text-slate-500 dark:text-slate-400">
           {isEn
             ? 'No matching lectures found. Try clearing your filter.'

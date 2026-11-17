@@ -48,6 +48,8 @@ import {
   LESSON_ASSESSMENT_UPDATED_EVENT,
   loadAllLessonAssessments
 } from '../../lib/lessonProgressStore';
+import { SmartKnowledgeMap } from './SmartKnowledgeMap';
+import { CSTrackId } from '../../data/csTracksData';
 
 interface LearningRoadmapProps {
   onBack: () => void;
@@ -620,7 +622,18 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     return <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
   };
 
-  const handleOpenSavedLesson = (subject: 'math' | 'physics' | 'cs', lessonKey?: string) => {
+  const handleOpenSavedLesson = (
+    subject: 'math' | 'physics' | 'cs',
+    lessonKey?: string,
+    explicitCsTrackId?: CSTrackId
+  ) => {
+    const NODE_TO_CS_TRACK: Record<string, CSTrackId> = {
+      'rm-cs-openedg': 'openedg_cpp',
+      'rm-cs-roadmapsh': 'roadmap_sh_cpp',
+      'rm-cs-learncpp': 'learncpp',
+      'rm-cs-github': 'github_career'
+    };
+
     if (subject === 'math') {
       navigate({
         subject: 'math',
@@ -636,11 +649,22 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
         physicsTab: 'theory'
       });
     } else {
+      const resolvedTrack = explicitCsTrackId || (lessonKey ? NODE_TO_CS_TRACK[lessonKey] : undefined);
+      if (resolvedTrack) {
+        navigate({
+          subject: 'cs',
+          csViewMode: 'curriculum',
+          csSubView: 'roadmap',
+          csTrackId: resolvedTrack,
+          csLessonTab: 'lecture'
+        });
+        return;
+      }
       navigate({
         subject: 'cs',
         csViewMode: 'curriculum',
         csSubView: lessonKey ? 'lecture' : 'roadmap',
-        ...(lessonKey ? { csLessonId: lessonKey } : {}),
+        ...(lessonKey ? { csLessonId: lessonKey, csTrackId: 'vnoi' } : {}),
         csLessonTab: 'lecture'
       });
     }
@@ -808,6 +832,28 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
           </div>
         </div>
       </div>
+
+      {/* SMART INTERACTIVE KNOWLEDGE GRAPH HUD */}
+      <SmartKnowledgeMap
+        isEn={isEn}
+        completedNodeIds={completedNodeIds}
+        savedLessonSummaries={savedLessonSummaries}
+        aiRoadmaps={aiRoadmaps}
+        dailyStudyMinutes={generatedPlan.days}
+        activePlanGrade={planProfile.grade}
+        activePlanHoursPerWeek={planProfile.hoursPerWeek}
+        onSelectRoadmapNode={(nodeId) => setSelectedNodeId(nodeId)}
+        onOpenNodeLesson={(subj, lessonId, csTrackId) => handleOpenSavedLesson(subj, lessonId, csTrackId)}
+        onOpenDiagnosticAI={(subj, topicTitle) =>
+          onOpenTutor({
+            subject: subj,
+            mode: 'diagnostic_roadmap',
+            topicTitle,
+            grade: planProfile.grade
+          })
+        }
+        onNavigateSubject={onNavigateSubject}
+      />
 
       {/* SECTION 00: PERSONALIZED SMART STUDY PLAN GENERATOR & WEEKLY TIMETABLE */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-xs space-y-5 roadmap-card-enter">

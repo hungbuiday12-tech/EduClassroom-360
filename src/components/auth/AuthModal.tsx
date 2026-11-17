@@ -281,7 +281,7 @@ export const AuthModal: React.FC = () => {
               </div>
 
               <div className="flex items-start gap-3 text-slate-200">
-                <div className="p-1.5 bg-amber-500/20 text-amber-400 rounded-lg shrink-0 mt-0.5">
+                <div className="p-1.5 bg-amber-500/20 text-amber-400 rounded shrink-0 mt-0.5">
                   <Zap className="w-3.5 h-3.5" />
                 </div>
                 <div>
@@ -297,7 +297,7 @@ export const AuthModal: React.FC = () => {
               </div>
 
               <div className="flex items-start gap-3 text-slate-200">
-                <div className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg shrink-0 mt-0.5">
+                <div className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded shrink-0 mt-0.5">
                   <Code2 className="w-3.5 h-3.5" />
                 </div>
                 <div>
@@ -350,7 +350,7 @@ export const AuthModal: React.FC = () => {
                     setErrorMessage(null);
                     setUnauthorizedDomainInfo(null);
                   }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+                  className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${
                     authModalMode === 'register'
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'
@@ -377,7 +377,7 @@ export const AuthModal: React.FC = () => {
             )}
 
             {unauthorizedDomainInfo && (
-              <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl text-amber-900 dark:text-amber-200 text-xs space-y-2.5 animate-in fade-in duration-200">
+              <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-md text-amber-900 dark:text-amber-200 text-xs space-y-2.5 animate-in fade-in duration-200">
                 <div className="flex items-start gap-2.5">
                   <Globe className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
@@ -396,7 +396,7 @@ export const AuthModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleQuickGoogleFallback}
-                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition-colors shadow-xs flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-md text-xs transition-colors shadow-xs flex items-center gap-1.5"
                 >
                   <span>{isEn ? 'Continue with Google' : 'Tiếp tục vào với Google ngay'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -405,7 +405,7 @@ export const AuthModal: React.FC = () => {
             )}
 
             {errorMessage && !unauthorizedDomainInfo && (
-              <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-md text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
@@ -425,7 +425,7 @@ export const AuthModal: React.FC = () => {
                 </div>
 
                 {resetSentSuccess ? (
-                  <div className="p-5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-center space-y-3">
+                  <div className="p-5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-md text-center space-y-3">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
                     <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
                       {isEn ? 'Password reset email sent!' : 'Đã gửi thư đặt lại mật khẩu thành công!'}
@@ -446,7 +446,7 @@ export const AuthModal: React.FC = () => {
                         setAuthModalMode('login');
                         setResetSentSuccess(false);
                       }}
-                      className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold text-xs"
+                      className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-md font-bold text-xs"
                     >
                       {isEn ? 'Back to Sign In' : 'Quay lại Đăng nhập'}
                     </button>
@@ -465,7 +465,7 @@ export const AuthModal: React.FC = () => {
                           value={resetEmail}
                           onChange={(e) => setResetEmail(e.target.value)}
                           placeholder="ten.ban@gmail.com"
-                          className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                          className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                       </div>
                     </div>
@@ -473,7 +473,7 @@ export const AuthModal: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loadingAction}
-                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-md transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
                       {loadingAction ? (
                         <span>{isEn ? 'Sending...' : 'Đang gửi thư bảo mật...'}</span>
@@ -493,7 +493,7 @@ export const AuthModal: React.FC = () => {
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={loadingAction}
-                  className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold shadow-xs transition-colors"
+                  className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold shadow-xs transition-colors"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path
@@ -541,7 +541,7 @@ export const AuthModal: React.FC = () => {
                           value={identifier}
                           onChange={(e) => setIdentifier(e.target.value)}
                           placeholder={isEn ? 'Enter username or email' : 'Nhập username hoặc địa chỉ email'}
-                          className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                          className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[11px] text-slate-500">
@@ -600,7 +600,7 @@ export const AuthModal: React.FC = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full pl-10 pr-10 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                          className="w-full pl-10 pr-10 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                         <button
                           type="button"
@@ -615,7 +615,7 @@ export const AuthModal: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loadingAction}
-                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-md transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
                       {loadingAction
                         ? isEn ? 'Signing in...' : 'Đang xác thực...'
@@ -634,7 +634,7 @@ export const AuthModal: React.FC = () => {
                         value={regFullName}
                         onChange={(e) => setRegFullName(e.target.value)}
                         placeholder={isEn ? 'e.g., Nguyen Van An' : 'ví dụ: Nguyễn Văn An'}
-                        className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                        className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                       />
                     </div>
 
@@ -649,7 +649,7 @@ export const AuthModal: React.FC = () => {
                           value={regUsername}
                           onChange={(e) => setRegUsername(e.target.value)}
                           placeholder="chuyentoan2026"
-                          className="w-full px-3.5 py-2 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                          className="w-full px-3.5 py-2 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                       </div>
 
@@ -663,7 +663,7 @@ export const AuthModal: React.FC = () => {
                           value={regEmail}
                           onChange={(e) => setRegEmail(e.target.value)}
                           placeholder="an.nguyen@gmail.com"
-                          className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                          className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                       </div>
                     </div>
@@ -680,7 +680,7 @@ export const AuthModal: React.FC = () => {
                           value={regPassword}
                           onChange={(e) => setRegPassword(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full pl-10 pr-10 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                          className="w-full pl-10 pr-10 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                         />
                         <button
                           type="button"
@@ -695,7 +695,7 @@ export const AuthModal: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loadingAction}
-                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-md transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
                       {loadingAction
                         ? isEn ? 'Creating profile...' : 'Đang khởi tạo hồ sơ...'

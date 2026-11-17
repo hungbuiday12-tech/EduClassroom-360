@@ -99,7 +99,9 @@ const SidebarMolecularParticles: React.FC<{ paused?: boolean }> = ({ paused = fa
       r: 2.1 + (i % 3) * 1.15,
       color: MOLECULE_PALETTE[i % MOLECULE_PALETTE.length],
       phase: i * 0.85,
-      isRing: i % 4 === 0
+      isRing: i % 4 === 0,
+      px: 0,
+      py: 0
     }));
 
     const pointer = { x: -999, y: -999 };
@@ -122,16 +124,17 @@ const SidebarMolecularParticles: React.FC<{ paused?: boolean }> = ({ paused = fa
       if (!reduceMotion) {
         rafId = requestAnimationFrame(render);
       }
-      if (pausedRef.current || document.hidden || now - last < 26) return;
-      const dt = Math.min(40, now - last) / 16.67;
+      if (pausedRef.current || document.hidden || w < 96 || now - last < 40) return;
+      const dt = Math.min(56, now - last) / 16.67;
       last = now;
       const t = now * 0.001;
       const isDark = document.documentElement.classList.contains('dark');
 
       ctx.clearRect(0, 0, w, h);
 
-      // Update positions in pixel coordinates
-      const pts = atoms.map((a) => {
+      // Update positions in place (zero per-frame array/object allocation)
+      for (let i = 0; i < atoms.length; i++) {
+        const a = atoms[i];
         if (!reduceMotion) {
           a.x += (a.vx * dt) / w;
           a.y += (a.vy * dt) / h;
@@ -152,16 +155,19 @@ const SidebarMolecularParticles: React.FC<{ paused?: boolean }> = ({ paused = fa
             py += (dy / dist) * push;
           }
         }
-        return { ...a, px, py };
-      });
+        a.px = px;
+        a.py = py;
+      }
 
       // Draw molecular covalent bonds
       const maxBondDist = Math.min(92, w * 0.44);
       ctx.lineWidth = 1;
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const dx = pts[i].px - pts[j].px;
-          const dy = pts[i].py - pts[j].py;
+      for (let i = 0; i < atoms.length; i++) {
+        const ai = atoms[i];
+        for (let j = i + 1; j < atoms.length; j++) {
+          const aj = atoms[j];
+          const dx = ai.px - aj.px;
+          const dy = ai.py - aj.py;
           const d = Math.hypot(dx, dy);
           if (d < maxBondDist) {
             const alpha = (1 - d / maxBondDist) * (isDark ? 0.34 : 0.24);
@@ -169,34 +175,33 @@ const SidebarMolecularParticles: React.FC<{ paused?: boolean }> = ({ paused = fa
               ? `rgba(125, 211, 252, ${alpha.toFixed(3)})`
               : `rgba(2, 132, 199, ${alpha.toFixed(3)})`;
             ctx.beginPath();
-            ctx.moveTo(pts[i].px, pts[i].py);
-            ctx.lineTo(pts[j].px, pts[j].py);
+            ctx.moveTo(ai.px, ai.py);
+            ctx.lineTo(aj.px, aj.py);
             ctx.stroke();
           }
         }
       }
 
-      // Draw molecular atoms & faint valence orbital rings
-      for (const p of pts) {
+      // Draw molecular atoms & faint valence orbital rings (without save/restore inside loop)
+      const prevAlpha = ctx.globalAlpha;
+      for (let i = 0; i < atoms.length; i++) {
+        const p = atoms[i];
         const pulse = 0.72 + 0.28 * Math.sin(t * 2.1 + p.phase);
         if (p.isRing) {
-          ctx.save();
           ctx.globalAlpha = (isDark ? 0.28 : 0.2) * pulse;
           ctx.strokeStyle = p.color;
           ctx.lineWidth = 0.9;
           ctx.beginPath();
           ctx.arc(p.px, p.py, p.r * 2.5, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.restore();
         }
-        ctx.save();
         ctx.globalAlpha = (isDark ? 0.68 : 0.48) * pulse;
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.px, p.py, p.r, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
       }
+      ctx.globalAlpha = prevAlpha;
     };
 
     rafId = requestAnimationFrame(render);
@@ -426,13 +431,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const renderSidebarBody = (isMobileDrawer: boolean) => {
     const isRail = !isMobileDrawer && collapsed;
     return (
-      <div className="relative overflow-hidden flex flex-col h-full bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-r border-slate-200/90 dark:border-slate-800/90 select-none">
+      <div className="relative overflow-hidden flex flex-col h-full bg-white/95 dark:bg-slate-950/95 border-r border-slate-200/90 dark:border-slate-800/90 select-none">
         {/* Moving Molecular Particles & Covalent Bonds Background */}
-        <SidebarMolecularParticles paused={pauseParticles} />
+        <SidebarMolecularParticles paused={pauseParticles || isRail} />
 
         {/* Top Brand + Collapse Row */}
         <div
-          className={`relative z-10 h-16 px-4 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center shrink-0 bg-white/60 dark:bg-slate-950/55 backdrop-blur-sm ${
+          className={`relative z-10 h-16 px-4 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center shrink-0 bg-white/85 dark:bg-slate-950/85 ${
             isRail ? 'justify-center' : 'justify-between gap-2'
           }`}
         >

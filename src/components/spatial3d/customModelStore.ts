@@ -1,4 +1,4 @@
-import { apiUrl } from '../../utils/apiConfig';
+import { resolveApiUrl as apiUrl } from '../../lib/apiClient';
 import { CustomSpatialModel } from './customModelTypes';
 
 const LOCAL_CUSTOM_MODELS_KEY = 'synapse_custom_spatial_models_v1';

@@ -25,6 +25,7 @@ export default defineConfig(() => {
           'assets/aistudio/image_0883e005.png'
         ],
         manifest: {
+          id: './',
           name: 'Synapse - Học viện STEM Mô phỏng 2D/3D',
           short_name: 'Synapse',
           description:

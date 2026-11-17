@@ -1474,15 +1474,11 @@
   animation: roadmapShimmerBar 3s linear infinite;
 }
 
-/* Smooth FPS GPU Compositor Optimizations: trim heavy backdrop-blur repaints while keeping live frame motion active */
-[data-perf="smooth"] [class*="backdrop-blur"] {
+/* Smooth & Balanced Laptop GPU Compositor Optimizations: disable heavy Gaussian backdrop-blur over live canvases (reserved for Ultra mode) */
+[data-perf="smooth"] [class*="backdrop-blur"],
+[data-perf="balanced"] [class*="backdrop-blur"] {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-}
-
-[data-perf="balanced"] [class*="backdrop-blur"] {
-  -webkit-backdrop-filter: blur(4px) !important;
-  backdrop-filter: blur(4px) !important;
 }
 
 [data-perf="smooth"] .animate-wave-glide,
@@ -1646,6 +1642,9 @@
     var(--hero-grad-to, #2dd4bf)
   );
   -webkit-text-stroke: 0px transparent;
+}
+
+[data-perf="ultra"] .dark .text-accent-gradient {
   filter: drop-shadow(0 2px 12px rgba(56, 189, 248, 0.24));
 }
 
@@ -2096,5 +2095,55 @@
   }
 }
 
+/* ============================================================================
+   MULTI-DEVICE APP DOWNLOAD SHOWCASE — GPU-COMPOSITED HARDWARE TELEMETRY
+   ============================================================================ */
+@keyframes app-device-float-a {
+  0%, 100% { transform: translate3d(0, 0px, 0); }
+  50% { transform: translate3d(0, -7px, 0); }
+}
 
+@keyframes app-device-float-b {
+  0%, 100% { transform: translate3d(0, 0px, 0); }
+  50% { transform: translate3d(0, 6px, 0); }
+}
 
+@keyframes app-scan-beam {
+  0% { transform: translate3d(-120%, 0, 0); opacity: 0; }
+  15% { opacity: 0.85; }
+  85% { opacity: 0.85; }
+  100% { transform: translate3d(340%, 0, 0); opacity: 0; }
+}
+
+@keyframes app-telemetry-flow {
+  to { stroke-dashoffset: -48; }
+}
+
+.app-device-float-a {
+  will-change: transform;
+  animation: app-device-float-a 5.4s ease-in-out infinite;
+}
+
+.app-device-float-b {
+  will-change: transform;
+  animation: app-device-float-b 6.2s ease-in-out infinite;
+}
+
+.app-scan-beam {
+  will-change: transform, opacity;
+  animation: app-scan-beam 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.app-telemetry-flow {
+  stroke-dasharray: 8 8;
+  animation: app-telemetry-flow 1.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-device-float-a,
+  .app-device-float-b,
+  .app-scan-beam,
+  .app-telemetry-flow {
+    animation: none !important;
+  }
+}

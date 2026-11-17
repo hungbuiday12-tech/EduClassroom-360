@@ -418,6 +418,8 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
     const pointerDownRef = useRef<boolean>(false);
     const pointerWorldRef = useRef<Vec2>({ x: 0, y: 0 });
     const prevPointerDownRef = useRef<boolean>(false);
+    const dirtyRef = useRef<boolean>(true);
+    const lastRenderTimeRef = useRef<number>(0);
 
     const lastMetricPushRef = useRef<number>(0);
     const prevMetricsRef = useRef<{ metricA: string; metricB: string; metricC: string } | null>(null);
@@ -463,6 +465,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
       activeKaleidoH2Ref.current = [];
       conicRef.current = { a: 0.32, b: 0.1, c: -1.4, k: 0.45, m: 1.1 };
       tangramRef.current = makeTangramPieces();
+      dirtyRef.current = true;
     }, []);
 
     useImperativeHandle(
@@ -496,6 +499,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
               { x: 0.8, y: 3.2 }
             ];
           }
+          dirtyRef.current = true;
         },
         resetBoard,
         addVertexOrTile: () => {
@@ -512,17 +516,20 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
           } else if (mode2D === 'tangram_build') {
             tangramRef.current = makeTangramPieces();
           }
+          dirtyRef.current = true;
         },
         cycleSymmetry: () => {
           const orders = [4, 6, 8, 12];
           const next = orders[(orders.indexOf(kaleidoOrderRef.current) + 1) % orders.length];
           kaleidoOrderRef.current = next;
           setKaleidoOrderUI(next);
+          dirtyRef.current = true;
         },
         undoFreeItem: () => {
           if (freeItemsRef.current.length > 0) {
             freeItemsRef.current.pop();
             onFreeCountChangeRef.current?.(freeItemsRef.current.length);
+            dirtyRef.current = true;
           }
         }
       }),
@@ -544,6 +551,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
         canvas.style.width = `${w}px`;
         canvas.style.height = `${h}px`;
         worldScaleRef.current = Math.max(32, Math.min(62, Math.min(w, h) / 11.5));
+        dirtyRef.current = true;
       };
 
       updateSize();
@@ -564,19 +572,39 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
         if (!isMove) {
           pointerDownRef.current = isDown;
         }
+        if (isDown || !isMove) {
+          dirtyRef.current = true;
+        }
       },
       [screenToWorld]
     );
 
-    // Main 60fps 2D geometry & gesture loop (pauses cleanly when tab is hidden)
+    // Main adaptive 60fps 2D geometry & gesture loop (throttles cleanly when static/frozen or hidden)
     useEffect(() => {
       let rafId = 0;
+      dirtyRef.current = true;
 
       const renderFrame = (nowMs: number) => {
         if (document.hidden) {
           rafId = 0;
           return;
         }
+        const framePre = handFrameRef.current;
+        const handActiveNow = cameraActive && framePre.detected;
+        const isActivelyInteracting =
+          pointerDownRef.current ||
+          handActiveNow ||
+          prevPointerDownRef.current ||
+          mode2D === 'conic_wave';
+
+        // When completely idle or frozen with no interaction, cap redraws to ~8 FPS unless marked dirty
+        if (!dirtyRef.current && (frozen || !isActivelyInteracting) && nowMs - lastRenderTimeRef.current < 130) {
+          rafId = requestAnimationFrame(renderFrame);
+          return;
+        }
+        dirtyRef.current = false;
+        lastRenderTimeRef.current = nowMs;
+
         const canvas = canvasRef.current;
         const container = containerRef.current;
         if (!canvas || !container) {

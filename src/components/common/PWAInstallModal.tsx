@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Check,
   CheckCircle2,
+  Copy,
   Download,
   Laptop,
   PlusSquare,
@@ -27,6 +29,21 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
   const [selectedPlatform, setSelectedPlatform] = useState<DevicePlatform>(platform);
   const [installing, setInstalling] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  useEffect(() => {
+    setSelectedPlatform(platform);
+  }, [platform]);
+
+  const handleCopyInstallUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedUrl(true);
+      window.setTimeout(() => setCopiedUrl(false), 2200);
+    } catch {
+      // Ignore clipboard permission errors
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -281,21 +298,39 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
             </div>
           )}
 
-          {/* Offline & Camera Note */}
-          <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-slate-500 dark:text-slate-400">
+          {/* Offline, Copy Link & Camera Note */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-500 dark:text-slate-400">
             <span className="inline-flex items-center gap-1.5">
-              <WifiOff className="w-3.5 h-3.5 text-amber-500" />
+              <WifiOff className="w-3.5 h-3.5 text-amber-500 shrink-0" />
               {isEn
                 ? 'Core UI, lessons & 3D/2D labs stay cached for offline use.'
                 : 'Giao diện, bài giảng, phòng lab 2D/3D tự động lưu đệm dùng mượt cả khi mạng yếu.'}
             </span>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 rounded-md bg-slate-900 dark:bg-slate-800 text-white font-bold cursor-pointer"
-            >
-              {isEn ? 'Done' : 'Đã hiểu'}
-            </button>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={handleCopyInstallUrl}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold hover:border-sky-400 cursor-pointer"
+              >
+                {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>
+                  {copiedUrl
+                    ? isEn
+                      ? 'Link Copied'
+                      : 'Đã chép link'
+                    : isEn
+                    ? 'Copy Link for Phone'
+                    : 'Chép link gửi ĐT'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3 py-1.5 rounded-md bg-slate-900 dark:bg-slate-800 text-white font-bold cursor-pointer"
+              >
+                {isEn ? 'Done' : 'Đã hiểu'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

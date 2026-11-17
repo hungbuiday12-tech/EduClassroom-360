@@ -103,9 +103,9 @@ function normalizeAngle(a: number): number {
 }
 
 const TARGET_FRAME_MS: Record<PerformanceMode, number> = {
-  smooth: 33, // ~30 FPS ambient background pacing -> huge CPU/GPU savings
-  balanced: 20, // ~50 FPS
-  ultra: 0 // native monitor refresh rate
+  smooth: 44, // ~22 FPS ambient background pacing -> major laptop CPU/GPU savings
+  balanced: 32, // ~31 FPS smooth without starving UI scroll
+  ultra: 16 // capped 60 FPS
 };
 
 export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
@@ -205,10 +205,46 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       window.addEventListener('pointerleave', onPtrLeaveMol);
       window.addEventListener('pointerdown', onPtrDownMol, { passive: true, capture: true });
 
+      let lastMolScrollMs = 0;
+      const onScrollMol = () => {
+        lastMolScrollMs = performance.now();
+      };
+      window.addEventListener('scroll', onScrollMol, { passive: true });
+
+      let molBgCanvas: HTMLCanvasElement | null = document.createElement('canvas');
+      let molBgDark: boolean | null = null;
+      let molBgW = 0;
+      let molBgH = 0;
+      const rebuildMolBg = (dm: boolean) => {
+        if (!molBgCanvas) return;
+        molBgCanvas.width = Math.max(64, Math.floor(width * 0.5));
+        molBgCanvas.height = Math.max(64, Math.floor(height * 0.5));
+        const mctx = molBgCanvas.getContext('2d', { alpha: false });
+        if (!mctx) return;
+        const g = mctx.createLinearGradient(0, 0, molBgCanvas.width, molBgCanvas.height);
+        if (dm) {
+          g.addColorStop(0, '#040814');
+          g.addColorStop(0.5, '#091224');
+          g.addColorStop(1, '#040916');
+        } else {
+          g.addColorStop(0, '#f8fbff');
+          g.addColorStop(0.5, '#eef5fd');
+          g.addColorStop(1, '#f4f9ff');
+        }
+        mctx.fillStyle = g;
+        mctx.fillRect(0, 0, molBgCanvas.width, molBgCanvas.height);
+        molBgDark = dm;
+        molBgW = width;
+        molBgH = height;
+      };
+
       const renderMolecules = (now: number) => {
         animationFrameId = requestAnimationFrame(renderMolecules);
         if (document.hidden || pausedRef.current) {
           lastTick = now;
+          return;
+        }
+        if (perfMode !== 'ultra' && now - lastMolScrollMs < 130) {
           return;
         }
         if (targetMs > 0 && now - lastTick < targetMs) return;
@@ -217,18 +253,12 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         const t = now * 0.001;
 
         const [rA, gA, bA] = darkMode ? [pR_d, pG_d, pB_d] : [pR_l, pG_l, pB_l];
-        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-        if (darkMode) {
-          bgGrad.addColorStop(0, '#040814');
-          bgGrad.addColorStop(0.5, '#091224');
-          bgGrad.addColorStop(1, '#040916');
-        } else {
-          bgGrad.addColorStop(0, '#f8fbff');
-          bgGrad.addColorStop(0.5, '#eef5fd');
-          bgGrad.addColorStop(1, '#f4f9ff');
+        if (!molBgCanvas || molBgDark !== darkMode || molBgW !== width || molBgH !== height) {
+          rebuildMolBg(darkMode);
         }
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, width, height);
+        if (molBgCanvas) {
+          ctx.drawImage(molBgCanvas, 0, 0, width, height);
+        }
 
         // Soft cursor magnetic field aura
         if (ptr.active) {
@@ -376,11 +406,13 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       animationFrameId = requestAnimationFrame(renderMolecules);
       return () => {
         cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('scroll', onScrollMol);
         window.removeEventListener('resize', onResizeMol);
         window.removeEventListener('pointermove', onPtrMoveMol);
         window.removeEventListener('pointerleave', onPtrLeaveMol);
         window.removeEventListener('pointerdown', onPtrDownMol, { capture: true });
         classObs.disconnect();
+        molBgCanvas = null;
       };
     }
 
@@ -1849,15 +1881,27 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       ctx.restore();
     };
 
+    let lastScrollMs = 0;
+    const handleScroll = () => {
+      lastScrollMs = performance.now();
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     let lastRenderMs = performance.now();
     let lastSimMs = lastRenderMs;
     const minFrameMs = TARGET_FRAME_MS[perfMode];
+    // Preallocated scratch coordinates for constellation rendering (zero per-frame GC)
+    const constellationPtsScratch: Array<{ x: number; y: number; mag: number }> = [];
 
     const render = (nowMs: number) => {
       animationFrameId = requestAnimationFrame(render);
       if (document.hidden || pausedRef.current) {
         lastRenderMs = nowMs;
         lastSimMs = nowMs;
+        return;
+      }
+
+      if (perfMode !== 'ultra' && nowMs - lastScrollMs < 130) {
         return;
       }
 
@@ -2042,18 +2086,27 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       } else if (bgStyle === 'constellations') {
         ctx.save();
         const minDim = Math.min(width, height);
-        const starPoints: Array<{ x: number; y: number }> = [];
+        const starPtsStart = 0;
+        let starTotal = 0;
 
         for (const con of constellationCatalog) {
           const cx = con.ox * width - offsetX * 0.65;
           const cy = con.oy * height - offsetY * 0.65;
           const sc = minDim * con.scale;
-          const pts = con.stars.map(([sx, sy, mag]) => {
+          const baseIdx = starTotal;
+          for (let si = 0; si < con.stars.length; si++) {
+            const [sx, sy, mag] = con.stars[si];
             const px = cx + sx * sc;
             const py = cy + sy * sc;
-            starPoints.push({ x: px, y: py });
-            return { x: px, y: py, mag };
-          });
+            if (!constellationPtsScratch[starTotal]) {
+              constellationPtsScratch[starTotal] = { x: px, y: py, mag };
+            } else {
+              constellationPtsScratch[starTotal].x = px;
+              constellationPtsScratch[starTotal].y = py;
+              constellationPtsScratch[starTotal].mag = mag;
+            }
+            starTotal++;
+          }
 
           // Constellation skeleton lines
           ctx.strokeStyle = darkMode
@@ -2062,14 +2115,16 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           ctx.lineWidth = 1.15;
           ctx.beginPath();
           for (const [a, b] of con.edges) {
-            ctx.moveTo(pts[a].x, pts[a].y);
-            ctx.lineTo(pts[b].x, pts[b].y);
+            const pa = constellationPtsScratch[baseIdx + a];
+            const pb = constellationPtsScratch[baseIdx + b];
+            ctx.moveTo(pa.x, pa.y);
+            ctx.lineTo(pb.x, pb.y);
           }
           ctx.stroke();
 
           // Constellation stars with crisp glow
-          for (let si = 0; si < pts.length; si++) {
-            const p = pts[si];
+          for (let si = 0; si < con.stars.length; si++) {
+            const p = constellationPtsScratch[baseIdx + si];
             const tw = 0.75 + 0.25 * Math.sin(nowSec * 2.2 + si * 1.3);
             stampGlow(p.x, p.y, p.mag * 3.8, darkMode ? activePalette.primaryLight : activePalette.primary, tw * 0.55, true);
             ctx.fillStyle = darkMode ? '#ffffff' : activePalette.primary;
@@ -2089,7 +2144,8 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         // Dynamic filament links from cursor to nearby constellation stars
         if (interactive && mouse.lastMouseMoveAt > 0) {
           const linkRadius = 195;
-          for (const sp of starPoints) {
+          for (let i = starPtsStart; i < starTotal; i++) {
+            const sp = constellationPtsScratch[i];
             const d = Math.hypot(sp.x - mouse.targetX, sp.y - mouse.targetY);
             if (d < linkRadius) {
               const frac = 1 - d / linkRadius;
@@ -2398,6 +2454,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       cancelAnimationFrame(animationFrameId);
       clearInterval(shootingStarTimer);
       classObserver?.disconnect();
+      window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerdown', handlePointerDown, { capture: true });

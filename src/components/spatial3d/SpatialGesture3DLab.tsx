@@ -40,6 +40,7 @@ import {
   Sparkles,
   Square,
   Star,
+  Trash2,
   Triangle,
   Undo2,
   Video,
@@ -82,6 +83,11 @@ import {
 } from './advancedModels3D';
 import { SpatialSenseHub } from './SpatialSenseHub';
 import { Spatial3DGuideModal } from './Spatial3DGuideModal';
+import { Spatial2DGuideModal } from './Spatial2DGuideModal';
+import { SpatialAIModelCreatorModal } from './SpatialAIModelCreatorModal';
+import { CustomSpatialModel } from './customModelTypes';
+import { buildCustomSpatialModel, updateCustomModelKinematics } from './customModelBuilder';
+import { deleteCustomSpatialModel, fetchCustomSpatialModels } from './customModelStore';
 
 export type SpatialModeId =
   | 'turbofan'
@@ -404,6 +410,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [entryView, setEntryView] = useState<'hub' | 'studio'>('hub');
   const [show3DGuide, setShow3DGuide] = useState<boolean>(false);
   const [autoShow3DGuide, setAutoShow3DGuide] = useState<boolean>(true);
+  const [show2DGuide, setShow2DGuide] = useState<boolean>(false);
+  const [autoShow2DGuide, setAutoShow2DGuide] = useState<boolean>(true);
+  const [showAICreator, setShowAICreator] = useState<boolean>(false);
+  const [customModels, setCustomModels] = useState<CustomSpatialModel[]>([]);
+  const [activeCustomId, setActiveCustomId] = useState<string | null>(null);
   const [spaceMode, setSpaceMode] = useState<SpaceMode>('3d');
   const [mode2D, setMode2D] = useState<Spatial2DModeId>('free_create');
   const [free2DTool, setFree2DTool] = useState<Free2DToolId>('freehand');
@@ -417,10 +428,21 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     metricC: 'Kéo tay/chuột để vẽ'
   });
 
+  useEffect(() => {
+    let mounted = true;
+    fetchCustomSpatialModels().then((list) => {
+      if (mounted) setCustomModels(list);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const handleEnter3DSpace = useCallback(
     (forceGuide = false) => {
       setEntryView('studio');
       setSpaceMode('3d');
+      setShow2DGuide(false);
       if (forceGuide || autoShow3DGuide) {
         setShow3DGuide(true);
       }
@@ -428,16 +450,22 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     [autoShow3DGuide]
   );
 
-  const handleEnter2DSpace = useCallback(() => {
-    setEntryView('studio');
-    setSpaceMode('2d');
-    setMode2D('free_create');
-    setShow3DGuide(false);
-  }, []);
+  const handleEnter2DSpace = useCallback(
+    (forceGuide = false) => {
+      setEntryView('studio');
+      setSpaceMode('2d');
+      setMode2D('free_create');
+      setShow3DGuide(false);
+      if (forceGuide || autoShow2DGuide) {
+        setShow2DGuide(true);
+      }
+    },
+    [autoShow2DGuide]
+  );
 
   // Core 3D studio states
   const [modeId, setModeId] = useState<SpatialModeId>('turbofan');
-  const [shapeFilter, setShapeFilter] = useState<'all' | 'realistic' | 'geometry' | 'simulation'>('all');
+  const [shapeFilter, setShapeFilter] = useState<'all' | 'realistic' | 'geometry' | 'simulation' | 'custom'>('all');
   const [finish, setFinish] = useState<MaterialFinishId>('ceramic');
   const [paletteId, setPaletteId] = useState<string>('cyan');
   const [creativeBrush, setCreativeBrush] = useState<CreativeBrushId>('tube');
@@ -546,11 +574,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const streamRef = useRef<MediaStream | null>(null);
   const trackerRef = useRef<HandGestureTracker | null>(null);
   const runtimeRef = useRef<LabRuntime | null>(null);
+  const wakeLoopRef = useRef<(() => void) | null>(null);
 
   const paramsRef = useRef({
     entryView,
     spaceMode,
     modeId,
+    activeCustomId,
     finish,
     paletteId,
     creativeBrush,
@@ -575,6 +605,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     entryView,
     spaceMode,
     modeId,
+    activeCustomId,
     finish,
     paletteId,
     creativeBrush,
@@ -625,6 +656,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     () => SPATIAL_MODES.find((m) => m.id === modeId) || SPATIAL_MODES[0],
     [modeId]
   );
+  const activeCustomModel = useMemo(
+    () => (activeCustomId ? customModels.find((m) => m.id === activeCustomId) || null : null),
+    [activeCustomId, customModels]
+  );
   const active2DMode = useMemo(
     () => SPATIAL_2D_MODES.find((m) => m.id === mode2D) || SPATIAL_2D_MODES[0],
     [mode2D]
@@ -634,6 +669,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     () =>
       shapeFilter === 'all'
         ? SPATIAL_MODES
+        : shapeFilter === 'custom'
+        ? []
         : SPATIAL_MODES.filter((m) => m.group === shapeFilter),
     [shapeFilter]
   );
@@ -649,6 +686,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const liveTelemetry = useMemo(() => {
     if (spaceMode === '2d') {
       return metrics2D;
+    }
+
+    if (activeCustomModel) {
+      return {
+        metricA: `${activeCustomModel.parts.length} ${isEn ? 'AI modules' : 'bộ phận AI'}`,
+        metricB: `${isEn ? 'Explode' : 'Tách khối'} ${Math.round(explodeVal * 100)}%`,
+        metricC: activeCustomModel.badge || (isEn ? 'Free Creation' : 'Sáng tạo tự do')
+      };
     }
 
     const a = +(2.6 * scaleVal).toFixed(2);
@@ -771,6 +816,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   }, [
     spaceMode,
     metrics2D,
+    activeCustomModel,
+    isEn,
     modeId,
     scaleVal,
     heightVal,
@@ -790,6 +837,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       clipPlane: THREE.Plane,
       softwareGl: boolean
     ) => {
+      const lowCostGlass = softwareGl || paramsRef.current.gestureSettings.graphicsQuality === 'light';
       const makeMat = (isSecondary: boolean, isHighlight = false) => {
         const col = isHighlight ? 0xffffff : isSecondary ? palette.secondaryHex : palette.hex;
         if (finishMode === 'wireframe') {
@@ -807,9 +855,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             color: col,
             metalness: 0.08,
             roughness: 0.08,
-            transmission: softwareGl ? 0 : 0.72,
+            transmission: lowCostGlass ? 0 : 0.72,
             transparent: true,
-            opacity: softwareGl ? 0.55 : 0.92,
+            opacity: lowCostGlass ? 0.58 : 0.92,
             ior: 1.52,
             thickness: 1.2,
             clearcoat: 1.0,
@@ -953,7 +1001,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       nextMode: SpatialModeId,
       nextFinish: MaterialFinishId,
       palette: AccentPalette,
-      softwareGl: boolean
+      softwareGl: boolean,
+      customSpec: CustomSpatialModel | null = null
     ) => {
       restoreIsolatedPart(runtime);
       setIsolatedPartIdx(null);
@@ -968,6 +1017,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       }
 
       const mats = buildMaterials(nextFinish, palette, runtime.slicePlane, softwareGl);
+
+      if (customSpec) {
+        const builtCustom = buildCustomSpatialModel(customSpec, mats, nextFinish, runtime.slicePlane, softwareGl);
+        runtime.rootGroup.add(builtCustom.group);
+        runtime.model = builtCustom;
+        setModelParts(builtCustom.explodables.map((p) => p.info));
+        return;
+      }
 
       if (
         nextMode === 'turbofan' ||
@@ -1498,7 +1555,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         );
       } else if (nextMode === 'wave_surface') {
         const size = 5.4;
-        const segs = 56;
+        const segs = softwareGl || paramsRef.current.gestureSettings.graphicsQuality === 'light' ? 40 : 56;
         waveGeo = trackGeo(new THREE.PlaneGeometry(size, size, segs, segs));
         waveGeo.rotateX(-Math.PI / 2);
         const pos = waveGeo.attributes.position as THREE.BufferAttribute;
@@ -1780,9 +1837,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     let cancelled = false;
     let lastInferMs = 0;
     let lastPush = 0;
+    let lastHadHand = false;
 
     const scanHands = (nowMs: number) => {
       if (cancelled) return;
+      if (document.hidden) {
+        rafId = 0;
+        return;
+      }
       const cfg = paramsRef.current;
       const gs = cfg.gestureSettings;
       const minIntervalMs = 1000 / Math.max(10, gs.trackingFps || 20);
@@ -1811,17 +1873,25 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           trackerRef.current.drawOverlay(overlayCanvasRef.current, res, pal.css);
         }
 
-        if (nowMs - lastPush > 110) {
+        if ((res.detected || lastHadHand || !res.ready) && nowMs - lastPush > 150) {
           lastPush = nowMs;
+          lastHadHand = res.detected;
           setHandFrame(res);
         }
       }
       rafId = requestAnimationFrame(scanHands);
     };
 
+    const onVis = () => {
+      if (!document.hidden && !cancelled && rafId === 0) {
+        rafId = requestAnimationFrame(scanHands);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
     rafId = requestAnimationFrame(scanHands);
     return () => {
       cancelled = true;
+      document.removeEventListener('visibilitychange', onVis);
       cancelAnimationFrame(rafId);
     };
   }, [cameraActive]);
@@ -2068,15 +2138,21 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const clock = new THREE.Clock();
     let frameId = 0;
     let disposed = false;
+    let loopSleeping = false;
     let lastUiPush = 0;
+    let lastHighlightIdx = -1;
+    let lastHighlightExp = -1;
+    let highlightTick = 0;
+    let waveTick = 0;
+    const activeSlots = new Uint8Array(10);
 
     function afterDraw(cb: () => void) {
-      if (disposed) return;
+      if (disposed || loopSleeping) return;
       const gl = renderer.getContext() as WebGL2RenderingContext;
       const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
       gl.flush();
       const poll = () => {
-        if (disposed) return;
+        if (disposed || loopSleeping) return;
         const state = sync && gl.getSyncParameter(sync, gl.SYNC_STATUS);
         if (state === gl.UNSIGNALED) {
           frameId = window.setTimeout(poll, 5);
@@ -2171,12 +2247,18 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
     const tick = () => {
       if (disposed) return;
-      const dt = Math.min(0.05, clock.getDelta());
-      const elapsed = clock.getElapsedTime();
       const cfg = paramsRef.current;
 
-      // Only render 3D canvas while in Studio 3D space mode
-      if (cfg.entryView === 'studio' && cfg.spaceMode === '3d') {
+      // Sleep 3D render loop completely when on Hub, in 2D space, or browser tab is hidden (0 GPU/CPU overhead)
+      if (document.hidden || cfg.entryView !== 'studio' || cfg.spaceMode !== '3d') {
+        loopSleeping = true;
+        return;
+      }
+
+      const dt = Math.min(0.05, clock.getDelta());
+      const elapsed = clock.getElapsedTime();
+
+      {
         const res = handFrameRef.current;
         const handDetected = cfg.cameraActive && res.detected;
         const currentGesture: HandGestureId = cfg.cameraActive
@@ -2188,13 +2270,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         let cursorNormX = handDetected ? res.cursorX : 0.5;
         let cursorNormY = handDetected ? res.cursorY : 0.5;
 
-        // Sync 10 dedicated 3D fingertip sensors in Oxyz
+        // Sync 10 dedicated 3D fingertip sensors in Oxyz (zero per-frame Set allocation)
         if (handDetected) {
-          const activeSlotSet = new Set<number>();
+          activeSlots.fill(0);
           for (const tip of res.tips) {
             const slotIdx = tip.id - 1;
             if (slotIdx < 0 || slotIdx >= 10) continue;
-            activeSlotSet.add(slotIdx);
+            activeSlots[slotIdx] = 1;
             const sensor = runtime.tipSensorMeshes[slotIdx];
             sensor.visible = true;
             sensor.scale.setScalar(tip.extended ? 1.15 : 0.65);
@@ -2206,10 +2288,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             sensor.position.z = THREE.MathUtils.damp(sensor.position.z, tz, 18, dt);
           }
           for (let i = 0; i < 10; i++) {
-            if (!activeSlotSet.has(i)) runtime.tipSensorMeshes[i].visible = false;
+            if (!activeSlots[i]) runtime.tipSensorMeshes[i].visible = false;
           }
         } else {
-          for (let i = 0; i < 10; i++) runtime.tipSensorMeshes[i].visible = false;
+          for (let i = 0; i < 10; i++) {
+            if (runtime.tipSensorMeshes[i].visible) runtime.tipSensorMeshes[i].visible = false;
+          }
         }
 
         const activeControl = handDetected || (!cfg.cameraActive && virtualPadDownRef.current);
@@ -2223,7 +2307,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             ? 'none'
             : cfg.gestureSettings.gestureActions3D[currentGesture] ?? 'none';
 
-        const shouldPushUi = elapsed - lastUiPush > 0.11;
+        const shouldPushUi = elapsed - lastUiPush > 0.15;
         if (shouldPushUi) lastUiPush = elapsed;
 
         const isIsolated = isolatedPartIdxRef.current !== null;
@@ -2384,7 +2468,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               if (runtime.activeStrokePointsH2.length > 0) finalizeStrokeChannel(true);
             }
 
-            if (shouldPushUi) {
+            if (shouldPushUi && (cfg.modeId === 'freehand_oxyz' || cfg.modeId === 'robot_arm')) {
               setOxyzCursor({ x: targetX, y: targetY, z: targetZ });
             }
           } else {
@@ -2536,15 +2620,25 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               }
               const hPart = model.explodables[hIdx];
               if (hPart) {
-                runtime.highlightHelper.setFromObject(hPart.mesh);
+                if (
+                  hIdx !== lastHighlightIdx ||
+                  Math.abs(expTarget - lastHighlightExp) > 0.015 ||
+                  ++highlightTick % 6 === 0
+                ) {
+                  lastHighlightIdx = hIdx;
+                  lastHighlightExp = expTarget;
+                  runtime.highlightHelper.setFromObject(hPart.mesh);
+                }
                 runtime.highlightHelper.visible = true;
               } else {
                 runtime.highlightHelper.visible = false;
               }
             } else {
+              lastHighlightIdx = -1;
               runtime.highlightHelper.visible = false;
             }
           } else {
+            lastHighlightIdx = -1;
             runtime.highlightHelper.visible = false;
           }
 
@@ -2565,6 +2659,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               : { x: 0, y: 1.5, z: 0 },
             isPinchActive,
             isIsolated
+          );
+
+          // Update AI-synthesized custom 3D model kinematics (spin / pulse / bob / orbit)
+          updateCustomModelKinematics(
+            model,
+            dt,
+            elapsed,
+            cfg.simSpeed,
+            cfg.heightVal,
+            cfg.frozen,
+            isIsolated || expTarget >= 0.25
           );
 
           if (model.waveGeo && model.waveBaseZ && !cfg.frozen) {
@@ -2588,7 +2693,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
             pos.needsUpdate = true;
             col.needsUpdate = true;
-            model.waveGeo.computeVertexNormals();
+            if (cfg.gestureSettings.graphicsQuality !== 'light' || ++waveTick % 2 === 0) {
+              model.waveGeo.computeVertexNormals();
+            }
           }
 
           if (model.atomElectrons && !cfg.frozen && !isIsolated) {
@@ -2636,8 +2743,30 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       else frameId = requestAnimationFrame(tick);
     };
 
-    if (softwareGl) afterDraw(tick);
-    else frameId = requestAnimationFrame(tick);
+    const wakeLoop = () => {
+      if (disposed || document.hidden) return;
+      const cfg = paramsRef.current;
+      if (cfg.entryView !== 'studio' || cfg.spaceMode !== '3d') return;
+      if (loopSleeping) {
+        loopSleeping = false;
+        clock.getDelta();
+        if (softwareGl) afterDraw(tick);
+        else frameId = requestAnimationFrame(tick);
+      }
+    };
+    wakeLoopRef.current = wakeLoop;
+    document.addEventListener('visibilitychange', wakeLoop);
+
+    if (
+      !document.hidden &&
+      paramsRef.current.entryView === 'studio' &&
+      paramsRef.current.spaceMode === '3d'
+    ) {
+      if (softwareGl) afterDraw(tick);
+      else frameId = requestAnimationFrame(tick);
+    } else {
+      loopSleeping = true;
+    }
 
     const handleResize = () => {
       if (!mount) return;
@@ -2651,6 +2780,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
     return () => {
       disposed = true;
+      wakeLoopRef.current = null;
+      document.removeEventListener('visibilitychange', wakeLoop);
       cancelAnimationFrame(frameId);
       clearTimeout(frameId);
       window.removeEventListener('resize', handleResize);
@@ -2695,8 +2826,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const rt = runtimeRef.current;
     if (!rt) return;
     const softwareGl = isSoftwareWebGL();
-    rebuildModel(rt, modeId, finish, activePalette, softwareGl);
-  }, [modeId, finish, activePalette, rebuildModel]);
+    rebuildModel(rt, modeId, finish, activePalette, softwareGl, activeCustomModel);
+  }, [modeId, activeCustomModel, finish, activePalette, rebuildModel]);
 
   useEffect(() => {
     syncPartIsolation(runtimeRef.current, isolatedPartIdx);
@@ -2713,9 +2844,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     rt.renderer.shadowMap.enabled = !softwareGl && !isLight;
   }, [gestureSettings.graphicsQuality]);
 
-  // Resize WebGL properly whenever toggling back from Hub or 2D -> 3D
+  // Resize WebGL properly & wake Three.js RAF whenever entering Studio 3D mode
   useEffect(() => {
     if (entryView !== 'studio' || spaceMode !== '3d' || !canvasMountRef.current || !runtimeRef.current) return;
+    wakeLoopRef.current?.();
     const resizeNow = () => {
       const mount = canvasMountRef.current;
       const rt = runtimeRef.current;
@@ -2938,15 +3070,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const dataUrl = rt.renderer.domElement.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = dataUrl;
-    a.download = `synapse-spatial3d-${modeId}.png`;
+    const exportKey = activeCustomModel ? activeCustomModel.id : modeId;
+    a.download = `synapse-spatial3d-${exportKey}.png`;
     a.click();
     showToast(isEn ? 'Saved 3D PNG snapshot!' : 'Đã tải ảnh chụp 3D chất lượng cao!');
-  }, [isEn, modeId, showToast, spaceMode]);
+  }, [activeCustomModel, isEn, modeId, showToast, spaceMode]);
 
   const handleExportOBJ = useCallback(() => {
     const rt = runtimeRef.current;
     if (!rt) return;
-    let objOutput = `# Synapse Spatial 3D Export (${modeId})\n`;
+    const exportKey = activeCustomModel ? activeCustomModel.id : modeId;
+    let objOutput = `# Synapse Spatial 3D Export (${exportKey})\n`;
     let vertexOffset = 1;
 
     const appendMesh = (mesh: THREE.Mesh, name: string) => {
@@ -2988,11 +3122,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `synapse-3d-${modeId}.obj`;
+    a.download = `synapse-3d-${exportKey}.obj`;
     a.click();
     URL.revokeObjectURL(url);
     showToast(isEn ? 'Exported 3D .OBJ mesh!' : 'Đã xuất file mô hình 3D (.OBJ)!');
-  }, [isEn, modeId, showToast]);
+  }, [activeCustomModel, isEn, modeId, showToast]);
 
   const handleToggleMusic = useCallback(() => {
     if (!isBgPlaying || bgSound === 'off') {
@@ -3052,9 +3186,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       {entryView === 'hub' && (
         <SpatialSenseHub
           isEn={isEn}
+          savedCustomCount={customModels.length}
           onBack={onBack}
           onLaunch3D={() => handleEnter3DSpace(true)}
-          onLaunch2D={handleEnter2DSpace}
+          onLaunch2D={() => handleEnter2DSpace(false)}
+          onLaunch2DGuide={() => handleEnter2DSpace(true)}
+          onOpenAICreator={() => setShowAICreator(true)}
         />
       )}
 
@@ -3126,10 +3263,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-950/95 border border-sky-500/40">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSpaceMode('2d');
-                    setShow3DGuide(false);
-                  }}
+                  onClick={() => handleEnter2DSpace(false)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                     spaceMode === '2d'
                       ? 'bg-sky-500 text-slate-950'
@@ -3153,15 +3287,36 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </button>
               </div>
 
-              {spaceMode === '3d' && (
+              {spaceMode === '2d' && (
                 <button
                   type="button"
-                  onClick={() => setShow3DGuide(true)}
-                  className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-amber-400/50 hover:border-amber-300 text-xs font-bold text-amber-200 cursor-pointer whitespace-nowrap shrink-0"
+                  onClick={() => setShow2DGuide(true)}
+                  className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-emerald-400/50 hover:border-emerald-300 text-xs font-bold text-emerald-200 cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <BookOpen className="w-3.5 h-3.5" />
-                  <span>{isEn ? '3D Guide' : 'Hướng dẫn 3D'}</span>
+                  <span>{isEn ? '2D Guide' : 'Hướng dẫn 2D'}</span>
                 </button>
+              )}
+
+              {spaceMode === '3d' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShow3DGuide(true)}
+                    className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-amber-400/50 hover:border-amber-300 text-xs font-bold text-amber-200 cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>{isEn ? '3D Guide' : 'Hướng dẫn 3D'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAICreator(true)}
+                    className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-purple-600/90 hover:bg-purple-500 border border-purple-300/60 text-xs font-extrabold text-white cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{isEn ? '+ Create AI 3D' : '+ Tạo AI 3D'}</span>
+                  </button>
+                </>
               )}
 
               {/* Active Mode Subtitle + Gesture Status */}
@@ -3170,11 +3325,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   className="w-2.5 h-2.5 rounded-xs shrink-0"
                   style={{ backgroundColor: currentGestureMeta.accent }}
                 />
-                <span className="font-bold text-white whitespace-nowrap">
+                <span className="font-bold text-white whitespace-nowrap max-w-[200px] truncate">
                   {spaceMode === '2d'
                     ? isEn
                       ? active2DMode.titleEn
                       : active2DMode.titleVi
+                    : activeCustomModel
+                    ? isEn
+                      ? activeCustomModel.titleEn
+                      : activeCustomModel.titleVi
                     : isEn
                     ? activeMode.titleEn
                     : activeMode.titleVi}
@@ -3299,7 +3458,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           <div className="absolute top-16 right-3 z-20 flex flex-col items-end gap-2 max-w-[244px]">
             <div className="spatial-hud-frame w-full rounded-lg bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
               <div className="font-mono font-bold text-cyan-300 truncate">
-                {spaceMode === '2d' ? active2DMode.formula : activeMode.formula}
+                {spaceMode === '2d'
+                  ? active2DMode.formula
+                  : activeCustomModel
+                  ? activeCustomModel.formula
+                  : activeMode.formula}
               </div>
               <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-slate-200 font-mono text-[10px] tabular-nums">
                 <span>{liveTelemetry.metricA}</span>
@@ -3607,8 +3770,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     [
                       {
                         id: 'shapes',
-                        labelVi: spaceMode === '2d' ? '7 Xưởng Hình Học 2D' : '15 Mô Hình 3D',
-                        labelEn: spaceMode === '2d' ? '7 2D Labs' : '15 3D Models',
+                        labelVi:
+                          spaceMode === '2d'
+                            ? '7 Xưởng Hình Học 2D'
+                            : `Mô Hình 3D (${15 + customModels.length})`,
+                        labelEn:
+                          spaceMode === '2d'
+                            ? '7 2D Labs'
+                            : `3D Models (${15 + customModels.length})`,
                         icon: Box
                       },
                       { id: 'gesture', labelVi: '8 Cử Chỉ Tay', labelEn: '8 Gestures', icon: Hand },
@@ -3824,65 +3993,169 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     <div className="flex flex-wrap items-center gap-1">
                       {(
                         [
-                          { id: 'all', labelVi: 'Tất cả (15)', labelEn: 'All (15)' },
-                          { id: 'realistic', labelVi: 'Thực tế & Tiên tiến (6)', labelEn: 'Realistic & Tech (6)' },
-                          { id: 'geometry', labelVi: 'Hình học & Sáng tạo (6)', labelEn: 'Geometry & Sculpt (6)' },
-                          { id: 'simulation', labelVi: 'Vật lí & Sinh học (3)', labelEn: 'Science Sims (3)' }
+                          {
+                            id: 'all',
+                            labelVi: `Tất cả (${15 + customModels.length})`,
+                            labelEn: `All (${15 + customModels.length})`
+                          },
+                          {
+                            id: 'custom',
+                            labelVi: `Sáng tạo tự do (${customModels.length})`,
+                            labelEn: `Free Creation (${customModels.length})`
+                          },
+                          { id: 'realistic', labelVi: 'Thực tế (6)', labelEn: 'Realistic (6)' },
+                          { id: 'geometry', labelVi: 'Hình học (6)', labelEn: 'Geometry (6)' },
+                          { id: 'simulation', labelVi: 'Vật lí · Sinh (3)', labelEn: 'Science (3)' }
                         ] as const
                       ).map((cat) => (
                         <button
                           key={cat.id}
                           type="button"
                           onClick={() => setShapeFilter(cat.id)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer border ${
                             shapeFilter === cat.id
-                              ? 'bg-slate-800 text-cyan-300 border border-cyan-500/50'
-                              : 'text-slate-400 hover:text-slate-200'
+                              ? cat.id === 'custom'
+                                ? 'bg-purple-950/80 text-purple-200 border-purple-400/60'
+                                : 'bg-slate-800 text-cyan-300 border-cyan-500/50'
+                              : 'border-transparent text-slate-400 hover:text-slate-200'
                           }`}
                         >
                           {isEn ? cat.labelEn : cat.labelVi}
                         </button>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() => setShowAICreator(true)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-extrabold cursor-pointer ml-1"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>{isEn ? '+ AI Model' : '+ Tạo Mô Hình AI'}</span>
+                      </button>
                     </div>
                     <span className="text-[11px] text-slate-400 truncate max-w-md">
-                      {isEn ? activeMode.descEn : activeMode.descVi}
+                      {activeCustomModel
+                        ? isEn
+                          ? activeCustomModel.descEn
+                          : activeCustomModel.descVi
+                        : isEn
+                        ? activeMode.descEn
+                        : activeMode.descVi}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 max-h-[146px] overflow-y-auto pr-0.5">
-                    {filtered3DModes.map((m) => {
-                      const active = modeId === m.id;
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => setModeId(m.id)}
-                          className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
-                            active
-                              ? 'bg-sky-500/20 border-sky-400 text-white'
-                              : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between text-[9px] font-mono">
-                            <span
-                              className={
-                                m.group === 'realistic'
-                                  ? 'text-amber-300'
-                                  : m.group === 'geometry'
-                                  ? 'text-sky-300'
-                                  : 'text-emerald-300'
-                              }
+                  {shapeFilter === 'custom' && customModels.length === 0 ? (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-md bg-purple-950/30 border border-purple-500/40">
+                      <div className="space-y-0.5 text-center sm:text-left">
+                        <div className="text-xs font-extrabold text-purple-200">
+                          {isEn
+                            ? 'Free Creation Studio is ready for your AI ideas'
+                            : 'Mục Sáng tạo tự do chưa có mô hình nào'}
+                        </div>
+                        <p className="text-[11px] text-slate-300">
+                          {isEn
+                            ? 'Upload an image, attach notes/docs, or describe any 3D mechanism — AI builds & saves it with full 10-finger controls.'
+                            : 'Mô tả ý tưởng hoặc tải lên ảnh/tài liệu để AI dựng mô hình 3D hoàn chỉnh ngay tại đây.'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAICreator(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold shrink-0 cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>{isEn ? 'Create First AI Model' : 'Tạo Mô Hình Đầu Tiên'}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 max-h-[146px] overflow-y-auto pr-0.5">
+                      {(shapeFilter === 'all' || shapeFilter === 'custom') &&
+                        customModels.map((cm) => {
+                          const active = activeCustomId === cm.id;
+                          return (
+                            <div
+                              key={cm.id}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => setActiveCustomId(cm.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  setActiveCustomId(cm.id);
+                                }
+                              }}
+                              className={`group relative text-left p-2 rounded-md border transition-all cursor-pointer ${
+                                active
+                                  ? 'bg-purple-500/20 border-purple-400 text-white'
+                                  : 'bg-slate-900/90 border-purple-500/30 text-slate-300 hover:border-purple-400/70'
+                              }`}
                             >
-                              {m.badge}
-                            </span>
-                          </div>
-                          <div className="text-[11px] font-bold mt-0.5 truncate">
-                            {isEn ? m.titleEn : m.titleVi}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                              <div className="flex items-center justify-between gap-1 text-[9px] font-mono">
+                                <span className="text-purple-300 font-bold truncate">
+                                  AI · {cm.badge || (isEn ? 'FREE' : 'TỰ DO')}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void deleteCustomSpatialModel(cm.id);
+                                    setCustomModels((prev) => prev.filter((item) => item.id !== cm.id));
+                                    if (activeCustomId === cm.id) {
+                                      setActiveCustomId(null);
+                                    }
+                                    showToast(
+                                      isEn ? `Removed "${cm.titleEn}"` : `Đã xóa mô hình "${cm.titleVi}"`
+                                    );
+                                  }}
+                                  className="p-0.5 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                                  title={isEn ? 'Delete model' : 'Xóa mô hình'}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                              <div className="text-[11px] font-bold mt-0.5 truncate">
+                                {isEn ? cm.titleEn : cm.titleVi}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                      {filtered3DModes.map((m) => {
+                        const active = !activeCustomId && modeId === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveCustomId(null);
+                              setModeId(m.id);
+                            }}
+                            className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
+                              active
+                                ? 'bg-sky-500/20 border-sky-400 text-white'
+                                : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-[9px] font-mono">
+                              <span
+                                className={
+                                  m.group === 'realistic'
+                                    ? 'text-amber-300'
+                                    : m.group === 'geometry'
+                                    ? 'text-sky-300'
+                                    : 'text-emerald-300'
+                                }
+                              >
+                                {m.badge}
+                              </span>
+                            </div>
+                            <div className="text-[11px] font-bold mt-0.5 truncate">
+                              {isEn ? m.titleEn : m.titleVi}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -4739,7 +5012,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       )}
       </div>
 
-      {/* Flashy Animated 3D Usage Guide Frame when entering / clicking Không gian 3D */}
+      {/* Flashy Animated 3D Usage Guide Frame */}
       <Spatial3DGuideModal
         isOpen={entryView === 'studio' && spaceMode === '3d' && show3DGuide}
         isEn={isEn}
@@ -4748,7 +5021,42 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         onClose={() => setShow3DGuide(false)}
         onSwitchTo2D={() => {
           setShow3DGuide(false);
-          handleEnter2DSpace();
+          handleEnter2DSpace(false);
+        }}
+      />
+
+      {/* Dedicated Separate 2D Geometry Usage Guide Frame */}
+      <Spatial2DGuideModal
+        isOpen={entryView === 'studio' && spaceMode === '2d' && show2DGuide}
+        isEn={isEn}
+        autoShowOn2D={autoShow2DGuide}
+        onToggleAutoShow={setAutoShow2DGuide}
+        onClose={() => setShow2DGuide(false)}
+        onSwitchTo3D={() => {
+          setShow2DGuide(false);
+          handleEnter3DSpace(false);
+        }}
+      />
+
+      {/* AI Idea -> Complete 3D Model Creator ("Sáng tạo tự do") */}
+      <SpatialAIModelCreatorModal
+        isOpen={showAICreator}
+        isEn={isEn}
+        onClose={() => setShowAICreator(false)}
+        onCreated={(created) => {
+          setCustomModels((prev) => [created, ...prev.filter((m) => m.id !== created.id)]);
+          setActiveCustomId(created.id);
+          setEntryView('studio');
+          setSpaceMode('3d');
+          setDockTab('shapes');
+          setShapeFilter('custom');
+          setShowAICreator(false);
+          setShow3DGuide(false);
+          showToast(
+            isEn
+              ? `Created & saved AI 3D model: ${created.titleEn}`
+              : `Đã tạo & lưu vào Sáng tạo tự do: ${created.titleVi}`
+          );
         }}
       />
     </>

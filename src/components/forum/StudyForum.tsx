@@ -14,14 +14,19 @@ import {
   X,
   AlertCircle,
   CheckCircle2,
-  BookOpen
+  BookOpen,
+  Box,
+  Hand,
+  ArrowRight
 } from 'lucide-react';
 import { ForumGroup, ForumMessage, ForumSubject, UserProfile } from '../../types';
 import { useAuth, SYNAPSE_ADMIN_EMAIL, SYNAPSE_LOGO_AVATAR } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNavigation } from '../../context/NavigationContext';
 import { safeFetchJson } from '../../lib/apiClient';
 import { FormattedText } from '../common/MathRenderer';
 import { BrandLogo } from '../common/BrandLogo';
+import { parseCoopForumInviteContent } from '../spatial3d/coopTypes';
 import {
   auth,
   db,
@@ -79,6 +84,7 @@ const CREATE_SUBJECT_OPTIONS: Array<{
 export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
   const { user, openAuthModal } = useAuth();
   const { language } = useLanguage();
+  const { navigate } = useNavigation();
   const isEn = language === 'en';
   const isAdmin = isForumAdminUser(user);
 
@@ -1168,8 +1174,69 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                               )}
                             </div>
 
-                            <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed whitespace-pre-wrap pl-10">
-                              <FormattedText text={msg.content} />
+                            <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed whitespace-pre-wrap pl-10 space-y-2.5">
+                              {(() => {
+                                const { invite, displayText } = parseCoopForumInviteContent(msg.content);
+                                return (
+                                  <>
+                                    {displayText && <FormattedText text={displayText} />}
+                                    {invite && (
+                                      <div className="rounded-xl bg-[#071126] text-slate-100 border border-cyan-400/55 p-3.5 shadow-lg space-y-2.5 max-w-md">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-extrabold uppercase tracking-wider text-cyan-300">
+                                            <Hand className="w-3.5 h-3.5" />
+                                            <span>
+                                              {isEn
+                                                ? 'CO-OP 3D HANDS · 2–4 LEARNERS'
+                                                : 'BÀN TAY ẢO BẠN HỌC · PHÒNG 3D'}
+                                            </span>
+                                          </span>
+                                          <span className="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/40 font-mono text-[10px] font-bold text-cyan-200">
+                                            #{invite.roomId}
+                                          </span>
+                                        </div>
+
+                                        <div>
+                                          <div className="text-sm font-extrabold text-white">
+                                            {invite.title}
+                                          </div>
+                                          <div className="text-[11px] text-slate-300 mt-0.5 flex flex-wrap items-center gap-1.5">
+                                            <Box className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                                            <span className="font-semibold text-sky-200">
+                                              {invite.modelTitle}
+                                            </span>
+                                            <span>·</span>
+                                            <span>
+                                              {isEn ? 'Host:' : 'Chủ phòng:'} {invite.hostName}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            navigate({
+                                              subject: 'spatial_3d',
+                                              coopRoomCode: invite.roomId,
+                                              coopInviteMeta: invite,
+                                              tutorOpen: false
+                                            })
+                                          }
+                                          className="w-full flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-slate-950 text-xs font-extrabold cursor-pointer transition-colors"
+                                        >
+                                          <Hand className="w-3.5 h-3.5" />
+                                          <span>
+                                            {isEn
+                                              ? 'Join Shared 3D Space'
+                                              : 'Tham Gia Không Gian 3D Chung'}
+                                          </span>
+                                          <ArrowRight className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
                         );

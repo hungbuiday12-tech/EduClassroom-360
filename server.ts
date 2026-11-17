@@ -1,4 +1,6 @@
 import express, { type Request, type Response } from 'express';
+import http from 'http';
+import { WebSocketServer, WebSocket } from 'ws';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -3703,6 +3705,492 @@ CÂU HỎI CỦA HỌC SINH: "${trimmedQuestion}"
   }
 });
 
+// =====================================================================
+// SPATIAL 3D CO-OP VIRTUAL HANDS ("Bàn tay ảo của bạn học" · 2-4 Peers)
+// =====================================================================
+const COOP_MAX_MEMBERS = 4;
+const COOP_PEER_COLORS = ['#22d3ee', '#f59e0b', '#a855f7', '#10b981'] as const;
+
+interface CoopServerPeer {
+  peerId: string;
+  name: string;
+  avatar?: string;
+  colorHex: string;
+  handActive: boolean;
+  handCount: number;
+  gesture: string;
+  joinedAt: string;
+  ws: WebSocket;
+  latestPose?: any;
+  isAlive: boolean;
+}
+
+interface CoopServerRoom {
+  roomId: string;
+  title: string;
+  hostName: string;
+  modelTitle: string;
+  isPublic: boolean;
+  maxMembers: number;
+  createdAt: string;
+  emptySince: number | null;
+  modelState: Record<string, any>;
+  peers: Map<string, CoopServerPeer>;
+}
+
+const spatialCoopRooms = new Map<string, CoopServerRoom>();
+
+function generateCoopRoomCode(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (let attempt = 0; attempt < 16; attempt++) {
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+    if (!spatialCoopRooms.has(code)) return code;
+  }
+  return `S${Date.now().toString(36).toUpperCase().slice(-5)}`;
+}
+
+function defaultCoopModelState(patch?: Record<string, any>): Record<string, any> {
+  return {
+    modeId: typeof patch?.modeId === 'string' ? patch.modeId : 'turbofan',
+    customModel: patch?.customModel || null,
+    explodeVal: typeof patch?.explodeVal === 'number' ? patch.explodeVal : 0,
+    scaleVal: typeof patch?.scaleVal === 'number' ? patch.scaleVal : 1,
+    heightVal: typeof patch?.heightVal === 'number' ? patch.heightVal : 1,
+    sliceEnabled: Boolean(patch?.sliceEnabled),
+    sliceY: typeof patch?.sliceY === 'number' ? patch.sliceY : 2.4,
+    finish: typeof patch?.finish === 'string' ? patch.finish : 'ceramic',
+    paletteId: typeof patch?.paletteId === 'string' ? patch.paletteId : 'cyan',
+    rotY: typeof patch?.rotY === 'number' ? patch.rotY : 0,
+    pitchX: typeof patch?.pitchX === 'number' ? patch.pitchX : 0,
+    highlightedPartIdx:
+      typeof patch?.highlightedPartIdx === 'number' ? patch.highlightedPartIdx : null,
+    isolatedPartIdx: typeof patch?.isolatedPartIdx === 'number' ? patch.isolatedPartIdx : null,
+    detachedOffsets:
+      patch?.detachedOffsets && typeof patch.detachedOffsets === 'object' ? patch.detachedOffsets : {}
+  };
+}
+
+function serializeCoopSummary(room: CoopServerRoom) {
+  return {
+    roomId: room.roomId,
+    title: room.title,
+    hostName: room.hostName,
+    modelId: room.modelState.modeId || 'turbofan',
+    modelTitle: room.modelTitle,
+    customModelTitle: room.modelState.customModel?.titleVi || undefined,
+    maxMembers: room.maxMembers,
+    memberCount: room.peers.size,
+    isPublic: room.isPublic,
+    createdAt: room.createdAt
+  };
+}
+
+function serializeCoopRoster(room: CoopServerRoom) {
+  return Array.from(room.peers.values()).map((p) => ({
+    peerId: p.peerId,
+    name: p.name,
+    avatar: p.avatar,
+    colorHex: p.colorHex,
+    handActive: p.handActive,
+    handCount: p.handCount,
+    gesture: p.gesture,
+    joinedAt: p.joinedAt
+  }));
+}
+
+function pickAvailableCoopColor(room: CoopServerRoom): string {
+  const used = new Set(Array.from(room.peers.values()).map((p) => p.colorHex));
+  for (const col of COOP_PEER_COLORS) {
+    if (!used.has(col)) return col;
+  }
+  return COOP_PEER_COLORS[room.peers.size % COOP_PEER_COLORS.length];
+}
+
+function broadcastCoopRoom(
+  room: CoopServerRoom,
+  payload: Record<string, any>,
+  excludePeerId?: string
+): void {
+  const msg = JSON.stringify(payload);
+  for (const peer of room.peers.values()) {
+    if (excludePeerId && peer.peerId === excludePeerId) continue;
+    if (peer.ws.readyState === WebSocket.OPEN) {
+      try {
+        peer.ws.send(msg);
+      } catch {
+        // ignore transient send failure
+      }
+    }
+  }
+}
+
+// Cleanup rooms empty for > 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, room] of spatialCoopRooms.entries()) {
+    if (room.peers.size === 0 && room.emptySince && now - room.emptySince > 5 * 60 * 1000) {
+      spatialCoopRooms.delete(id);
+    }
+  }
+}, 45000);
+
+app.get('/api/spatial/coop/rooms', (_req: Request, res: Response) => {
+  const rooms = Array.from(spatialCoopRooms.values())
+    .filter((r) => r.isPublic)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map(serializeCoopSummary);
+  return res.json({ rooms });
+});
+
+app.post('/api/spatial/coop/rooms', (req: Request, res: Response) => {
+  const { title, hostName, modelTitle, isPublic, modelState, preferredRoomId } = req.body || {};
+  const cleanCode =
+    typeof preferredRoomId === 'string' && /^[A-Z0-9]{4,10}$/i.test(preferredRoomId.trim())
+      ? preferredRoomId.trim().toUpperCase()
+      : generateCoopRoomCode();
+
+  if (spatialCoopRooms.has(cleanCode)) {
+    const existing = spatialCoopRooms.get(cleanCode)!;
+    return res.json({
+      success: true,
+      roomId: existing.roomId,
+      room: serializeCoopSummary(existing),
+      modelState: existing.modelState
+    });
+  }
+
+  const state = defaultCoopModelState(modelState);
+  const cleanTitle = String(title || 'Phòng 3D Bàn Tay Ảo').trim().slice(0, 80) || 'Phòng 3D Bàn Tay Ảo';
+  const cleanHost = String(hostName || 'Bạn học').trim().slice(0, 60) || 'Bạn học';
+  const cleanModelTitle =
+    String(modelTitle || state.customModel?.titleVi || state.modeId || 'Mô hình 3D').trim().slice(0, 80);
+
+  const room: CoopServerRoom = {
+    roomId: cleanCode,
+    title: cleanTitle,
+    hostName: cleanHost,
+    modelTitle: cleanModelTitle,
+    isPublic: isPublic !== false,
+    maxMembers: COOP_MAX_MEMBERS,
+    createdAt: new Date().toISOString(),
+    emptySince: Date.now(),
+    modelState: state,
+    peers: new Map()
+  };
+
+  spatialCoopRooms.set(cleanCode, room);
+  return res.status(201).json({
+    success: true,
+    roomId: cleanCode,
+    room: serializeCoopSummary(room),
+    modelState: room.modelState
+  });
+});
+
+app.get('/api/spatial/coop/rooms/:roomId', (req: Request, res: Response) => {
+  const code = String(req.params.roomId || '').trim().toUpperCase();
+  const room = spatialCoopRooms.get(code);
+  if (!room) {
+    return res.status(404).json({ error: 'Phòng 3D không tồn tại hoặc đã kết thúc.' });
+  }
+  return res.json({
+    room: serializeCoopSummary(room),
+    peers: serializeCoopRoster(room),
+    modelState: room.modelState
+  });
+});
+
+function attachSpatialCoopWebSocket(httpServer: http.Server): void {
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 512 * 1024 });
+
+  httpServer.on('upgrade', (request, socket, head) => {
+    const reqUrl = request.url || '';
+    const pathname = reqUrl.split('?')[0];
+    if (pathname !== '/ws/spatial-coop') {
+      return;
+    }
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  });
+
+  const heartbeatInterval = setInterval(() => {
+    for (const client of wss.clients) {
+      const anyClient = client as any;
+      if (anyClient._coopAlive === false) {
+        try {
+          client.terminate();
+        } catch {}
+        continue;
+      }
+      anyClient._coopAlive = false;
+      try {
+        client.ping();
+      } catch {}
+    }
+  }, 25000);
+
+  wss.on('close', () => {
+    clearInterval(heartbeatInterval);
+  });
+
+  wss.on('connection', (ws: WebSocket) => {
+    (ws as any)._coopAlive = true;
+    ws.on('pong', () => {
+      (ws as any)._coopAlive = true;
+    });
+
+    let joinedRoomId: string | null = null;
+    let joinedPeerId: string | null = null;
+
+    const detachFromRoom = () => {
+      if (!joinedRoomId || !joinedPeerId) return;
+      const room = spatialCoopRooms.get(joinedRoomId);
+      if (!room) {
+        joinedRoomId = null;
+        joinedPeerId = null;
+        return;
+      }
+      const existing = room.peers.get(joinedPeerId);
+      if (existing && existing.ws === ws) {
+        room.peers.delete(joinedPeerId);
+        if (room.peers.size === 0) {
+          room.emptySince = Date.now();
+        }
+        broadcastCoopRoom(room, {
+          type: 'room:peer_left',
+          peerId: joinedPeerId,
+          peers: serializeCoopRoster(room)
+        });
+      }
+      joinedRoomId = null;
+      joinedPeerId = null;
+    };
+
+    ws.on('close', detachFromRoom);
+    ws.on('error', detachFromRoom);
+
+    ws.on('message', (raw) => {
+      let msg: any = null;
+      try {
+        msg = JSON.parse(raw.toString());
+      } catch {
+        return;
+      }
+      if (!msg || typeof msg.type !== 'string') return;
+
+      if (msg.type === 'join') {
+        const roomCode = String(msg.roomId || '').trim().toUpperCase().slice(0, 16);
+        const peerId = String(msg.peer?.peerId || '').trim().slice(0, 64);
+        const peerName = String(msg.peer?.name || 'Bạn học').trim().slice(0, 60) || 'Bạn học';
+        const peerAvatar =
+          typeof msg.peer?.avatar === 'string' ? msg.peer.avatar.slice(0, 512) : undefined;
+
+        if (!roomCode || !peerId) {
+          ws.send(JSON.stringify({ type: 'error', code: 'invalid_join', message: 'Thiếu mã phòng hoặc ID.' }));
+          return;
+        }
+
+        let room = spatialCoopRooms.get(roomCode);
+        if (!room && msg.createIfMissing) {
+          const state = defaultCoopModelState(msg.createIfMissing.modelState);
+          room = {
+            roomId: roomCode,
+            title: String(msg.createIfMissing.title || `Phòng 3D ${roomCode}`).slice(0, 80),
+            hostName: String(msg.createIfMissing.hostName || peerName).slice(0, 60),
+            modelTitle: String(msg.createIfMissing.modelTitle || state.modeId || 'Mô hình 3D').slice(0, 80),
+            isPublic: msg.createIfMissing.isPublic !== false,
+            maxMembers: COOP_MAX_MEMBERS,
+            createdAt: new Date().toISOString(),
+            emptySince: null,
+            modelState: state,
+            peers: new Map()
+          };
+          spatialCoopRooms.set(roomCode, room);
+        }
+
+        if (!room) {
+          ws.send(
+            JSON.stringify({
+              type: 'error',
+              code: 'room_not_found',
+              message: 'Phòng 3D không tồn tại hoặc đã đóng.'
+            })
+          );
+          return;
+        }
+
+        const alreadyIn = room.peers.get(peerId);
+        if (!alreadyIn && room.peers.size >= room.maxMembers) {
+          ws.send(
+            JSON.stringify({
+              type: 'error',
+              code: 'room_full',
+              message: `Phòng 3D "${room.title}" đã đủ ${room.maxMembers}/${room.maxMembers} thành viên.`
+            })
+          );
+          return;
+        }
+
+        if (joinedRoomId && joinedRoomId !== roomCode) {
+          detachFromRoom();
+        }
+
+        const assignedColor = alreadyIn ? alreadyIn.colorHex : pickAvailableCoopColor(room);
+        if (alreadyIn && alreadyIn.ws !== ws) {
+          try {
+            alreadyIn.ws.close(1000, 'replaced');
+          } catch {}
+        }
+
+        const peerRecord: CoopServerPeer = {
+          peerId,
+          name: peerName,
+          avatar: peerAvatar,
+          colorHex: assignedColor,
+          handActive: false,
+          handCount: 0,
+          gesture: 'none',
+          joinedAt: alreadyIn?.joinedAt || new Date().toISOString(),
+          ws,
+          latestPose: alreadyIn?.latestPose,
+          isAlive: true
+        };
+        room.peers.set(peerId, peerRecord);
+        room.emptySince = null;
+        joinedRoomId = roomCode;
+        joinedPeerId = peerId;
+
+        const peerPoses: any[] = [];
+        for (const p of room.peers.values()) {
+          if (p.peerId !== peerId && p.latestPose) {
+            peerPoses.push(p.latestPose);
+          }
+        }
+
+        ws.send(
+          JSON.stringify({
+            type: 'room:state',
+            room: serializeCoopSummary(room),
+            selfPeerId: peerId,
+            selfColorHex: assignedColor,
+            peers: serializeCoopRoster(room),
+            modelState: room.modelState,
+            peerPoses
+          })
+        );
+
+        broadcastCoopRoom(
+          room,
+          {
+            type: 'room:peer_joined',
+            peer: {
+              peerId: peerRecord.peerId,
+              name: peerRecord.name,
+              avatar: peerRecord.avatar,
+              colorHex: peerRecord.colorHex,
+              handActive: peerRecord.handActive,
+              handCount: peerRecord.handCount,
+              gesture: peerRecord.gesture,
+              joinedAt: peerRecord.joinedAt
+            },
+            peers: serializeCoopRoster(room)
+          },
+          peerId
+        );
+        return;
+      }
+
+      if (msg.type === 'leave') {
+        detachFromRoom();
+        return;
+      }
+
+      if (!joinedRoomId || !joinedPeerId) return;
+      const room = spatialCoopRooms.get(joinedRoomId);
+      const sender = room?.peers.get(joinedPeerId);
+      if (!room || !sender) return;
+
+      if (msg.type === 'hand_pose') {
+        const skeletons = Array.isArray(msg.skeletons) ? msg.skeletons.slice(0, 2) : [];
+        const gesture = typeof msg.gesture === 'string' ? msg.gesture : 'none';
+        const fingerCount = Number(msg.fingerCount) || 0;
+        sender.handActive = skeletons.length > 0;
+        sender.handCount = skeletons.length;
+        sender.gesture = gesture;
+
+        const posePayload = {
+          type: 'room:hand_pose',
+          peerId: sender.peerId,
+          name: sender.name,
+          colorHex: sender.colorHex,
+          skeletons,
+          fingerCount,
+          gesture,
+          updatedAt: Date.now()
+        };
+        sender.latestPose = posePayload;
+        broadcastCoopRoom(room, posePayload, sender.peerId);
+      } else if (msg.type === 'model_patch' && msg.patch && typeof msg.patch === 'object') {
+        const patch = msg.patch as Record<string, any>;
+        const allowedKeys = [
+          'modeId',
+          'customModel',
+          'explodeVal',
+          'scaleVal',
+          'heightVal',
+          'sliceEnabled',
+          'sliceY',
+          'finish',
+          'paletteId',
+          'rotY',
+          'pitchX',
+          'highlightedPartIdx',
+          'isolatedPartIdx',
+          'detachedOffsets'
+        ];
+        const applied: Record<string, any> = {};
+        for (const k of allowedKeys) {
+          if (k in patch) {
+            room.modelState[k] = patch[k];
+            applied[k] = patch[k];
+          }
+        }
+        if (typeof patch.modelTitle === 'string' && patch.modelTitle.trim()) {
+          room.modelTitle = patch.modelTitle.trim().slice(0, 80);
+        }
+        broadcastCoopRoom(
+          room,
+          {
+            type: 'room:model_patch',
+            originPeerId: sender.peerId,
+            originName: sender.name,
+            patch: applied,
+            modelState: room.modelState,
+            modelTitle: room.modelTitle
+          },
+          sender.peerId
+        );
+      } else if (msg.type === 'ping_3d') {
+        broadcastCoopRoom(
+          room,
+          {
+            type: 'room:ping_3d',
+            peerId: sender.peerId,
+            name: sender.name,
+            colorHex: sender.colorHex,
+            text: String(msg.text || 'Xem chi tiết này!').slice(0, 120)
+          },
+          sender.peerId
+        );
+      }
+    });
+  });
+}
+
 // JSON guards for /api routes (never leak HTML pages to JSON clients)
 app.use('/api', (_req: Request, res: Response) => {
   res.status(404).json({ error: 'API endpoint không tồn tại.' });
@@ -3715,6 +4203,9 @@ app.use('/api', (err: any, _req: Request, res: Response, _next: any) => {
 
 // Vite middleware in dev or static files in production
 async function startServer() {
+  const httpServer = http.createServer(app);
+  attachSpatialCoopWebSocket(httpServer);
+
   const isDev = process.env.NODE_ENV !== 'production' && process.env.RENDER !== 'true';
 
   if (isDev) {
@@ -3731,8 +4222,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, HOST, () => {
-    console.log(`Synapse server running on http://${HOST}:${PORT}`);
+  httpServer.listen(PORT, HOST, () => {
+    console.log(`Synapse server + WebSocket Co-op running on http://${HOST}:${PORT}`);
   });
 }
 

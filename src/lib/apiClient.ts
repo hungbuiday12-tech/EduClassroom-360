@@ -187,6 +187,30 @@ export function resolveApiUrl(path: string, forceRemote = false): string {
   return normalizedPath;
 }
 
+export function resolveWsUrl(path: string, forceRemote = false): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const envConfigured = Boolean((import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim());
+  const storedBase = getStoredApiBase();
+
+  if (
+    forceRemote ||
+    sessionRemoteBase ||
+    envConfigured ||
+    storedBase ||
+    isPackagedOrStaticOrigin()
+  ) {
+    const httpBase = getRemoteApiBase().replace(/\/+$/, '');
+    const wsBase = httpBase.replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
+    return `${wsBase}${normalizedPath}`;
+  }
+
+  if (typeof window !== 'undefined' && window.location?.host) {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.host}${normalizedPath}`;
+  }
+  return `ws://127.0.0.1:3000${normalizedPath}`;
+}
+
 async function probeHealthyBackendBase(): Promise<string | null> {
   const candidates: string[] = [];
   const stored = getStoredApiBase();

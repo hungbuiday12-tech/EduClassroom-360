@@ -13,7 +13,7 @@ export type HandGestureId =
 
 export type HandControlMode = 'auto' | 'right_only' | 'left_only' | 'two_hands_split';
 export type PointerSource = 'index' | 'middle' | 'pinch_mid' | 'palm_center';
-export type GraphicsQuality = 'light' | 'high';
+export type GraphicsQuality = 'ultra_light' | 'light' | 'high';
 
 export type GestureAction3D =
   | 'draw_neon'
@@ -50,12 +50,13 @@ export interface GestureSettings {
   smoothing: number; // 0.1 .. 0.9
   deadzone: number; // 0.000 .. 0.045
   stabilityFrames: number; // 1 .. 8
-  gestureHoldMs: number; // 0 .. 1000 (default 500ms = 0.5s finger-settle delay)
-  trackingFps: 12 | 20 | 30;
+  gestureHoldMs: number; // 0 .. 1000
+  trackingFps: 12 | 15 | 20 | 30;
   mirrorCamera: boolean;
   invertX: boolean;
   invertY: boolean;
   graphicsQuality: GraphicsQuality;
+  renderScale: number; // 0 = auto per graphicsQuality, or 0.55 | 0.7 | 0.85 | 1.0 | 1.5
   gestureActions3D: Record<ActiveGestureKey, GestureAction3D>;
   gestureActions2D: Record<ActiveGestureKey, GestureAction2D>;
 }
@@ -63,20 +64,21 @@ export interface GestureSettings {
 export const DEFAULT_GESTURE_SETTINGS: GestureSettings = {
   handMode: 'auto',
   pointerSource: 'index',
-  sensitivityX: 1.25,
-  sensitivityY: 1.2,
+  sensitivityX: 1.2,
+  sensitivityY: 1.15,
   rotationSensitivity: 2.35,
-  pinchSensitivity: 1.05,
+  pinchSensitivity: 1.1,
   fingerExtendSensitivity: 1.0,
-  smoothing: 0.48,
+  smoothing: 0.44,
   deadzone: 0.006,
-  stabilityFrames: 3,
-  gestureHoldMs: 500,
-  trackingFps: 20,
+  stabilityFrames: 2,
+  gestureHoldMs: 140,
+  trackingFps: 15,
   mirrorCamera: true,
   invertX: false,
   invertY: false,
   graphicsQuality: 'light',
+  renderScale: 0,
   gestureActions3D: {
     point_1: 'draw_neon',
     pinch: 'pinch_stamp_scale',
@@ -110,56 +112,63 @@ export interface GesturePresetSpec {
 
 export const GESTURE_PRESETS: GesturePresetSpec[] = [
   {
-    id: 'smooth_learn',
-    labelVi: 'Mượt mà Học tập',
-    labelEn: 'Smooth Study',
-    descVi: 'Chống rung cao, 20 FPS, nhẹ GPU',
-    descEn: 'High anti-jitter, 20 FPS, light GPU',
+    id: 'potato_smooth',
+    labelVi: 'Siêu nhẹ · Máy yếu',
+    labelEn: 'Low-Spec Boost',
+    descVi: 'Giảm độ phân giải 0.65x, khóa 30 FPS, AI 12 FPS, tắt bóng đổ',
+    descEn: '0.65x render resolution, 30 FPS cap, 12 FPS AI, no shadows',
     patch: {
-      sensitivityX: 1.0,
-      sensitivityY: 1.0,
-      pinchSensitivity: 1.0,
+      sensitivityX: 1.15,
+      sensitivityY: 1.15,
+      pinchSensitivity: 1.15,
+      fingerExtendSensitivity: 1.05,
+      smoothing: 0.5,
+      deadzone: 0.008,
+      stabilityFrames: 2,
+      gestureHoldMs: 120,
+      trackingFps: 12,
+      graphicsQuality: 'ultra_light',
+      renderScale: 0.65
+    }
+  },
+  {
+    id: 'smooth_learn',
+    labelVi: 'Mượt mà Cân bằng',
+    labelEn: 'Balanced Smooth',
+    descVi: 'Độ phân giải 1.0x, chống rung chuẩn, 15 FPS camera AI',
+    descEn: '1.0x resolution, smooth anti-jitter, 15 FPS camera AI',
+    patch: {
+      sensitivityX: 1.15,
+      sensitivityY: 1.15,
+      pinchSensitivity: 1.1,
       fingerExtendSensitivity: 1.0,
-      smoothing: 0.65,
-      deadzone: 0.012,
-      stabilityFrames: 5,
-      trackingFps: 20,
-      graphicsQuality: 'light'
+      smoothing: 0.5,
+      deadzone: 0.008,
+      stabilityFrames: 2,
+      gestureHoldMs: 140,
+      trackingFps: 15,
+      graphicsQuality: 'light',
+      renderScale: 0
     }
   },
   {
     id: 'fast_creative',
-    labelVi: 'Sáng tạo Nhanh',
-    labelEn: 'Fast Creative',
-    descVi: 'Phản hồi tức thì, nhạy rộng 30 FPS',
-    descEn: 'Instant response, wide range 30 FPS',
+    labelVi: 'Sắc nét · Nhạy cao',
+    labelEn: 'Crisp & Fast',
+    descVi: 'Phản hồi tức thì, độ nét HD, camera AI 30 FPS',
+    descEn: 'Instant response, HD sharpness, 30 FPS camera AI',
     patch: {
-      sensitivityX: 1.45,
-      sensitivityY: 1.45,
-      pinchSensitivity: 1.25,
-      fingerExtendSensitivity: 1.15,
-      smoothing: 0.28,
+      sensitivityX: 1.35,
+      sensitivityY: 1.35,
+      pinchSensitivity: 1.2,
+      fingerExtendSensitivity: 1.1,
+      smoothing: 0.3,
       deadzone: 0.004,
       stabilityFrames: 2,
+      gestureHoldMs: 90,
       trackingFps: 30,
-      graphicsQuality: 'light'
-    }
-  },
-  {
-    id: 'precision_measure',
-    labelVi: 'Đo đạc Chính xác',
-    labelEn: 'Precision Lab',
-    descVi: 'Deadzone khóa tâm, kéo đỉnh chuẩn từng mm',
-    descEn: 'Locked deadzone, crisp vertex precision',
-    patch: {
-      sensitivityX: 0.85,
-      sensitivityY: 0.85,
-      pinchSensitivity: 0.9,
-      fingerExtendSensitivity: 0.95,
-      smoothing: 0.72,
-      deadzone: 0.018,
-      stabilityFrames: 6,
-      trackingFps: 20
+      graphicsQuality: 'high',
+      renderScale: 0
     }
   }
 ];
@@ -187,6 +196,39 @@ export const ACTION_2D_OPTIONS: { id: GestureAction2D; labelVi: string; labelEn:
   { id: 'freeze_lock', labelVi: 'Khóa / Đóng băng hình', labelEn: 'Freeze Canvas' },
   { id: 'none', labelVi: 'Không gán thao tác', labelEn: 'Disabled' }
 ];
+
+export const HAND_SKELETON_CONNECTIONS: readonly [number, number][] = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+  [0, 5],
+  [5, 6],
+  [6, 7],
+  [7, 8],
+  [0, 9],
+  [9, 10],
+  [10, 11],
+  [11, 12],
+  [0, 13],
+  [13, 14],
+  [14, 15],
+  [15, 16],
+  [0, 17],
+  [17, 18],
+  [18, 19],
+  [19, 20],
+  [5, 9],
+  [9, 13],
+  [13, 17]
+];
+
+export interface HandSkeletonData {
+  handIndex: 0 | 1;
+  handedness: string;
+  pinching: boolean;
+  landmarks: [number, number, number][]; // 21 quantized [x, y, z] normalized coords
+}
 
 export interface HandTipPoint {
   id: number; // 1..10 fixed finger slot
@@ -230,6 +272,7 @@ export interface HandTrackingFrame {
   swipeEvent: 'left' | 'right' | null; // edge-triggered horizontal swipe
   confidence: number; // 0..1
   tips: HandTipPoint[]; // up to 10 fingertip sensors locked to each fingertip
+  skeletons: HandSkeletonData[]; // full 21-landmark skeletons for 3D Co-op rendering
 }
 
 export interface GestureMeta {
@@ -241,6 +284,54 @@ export interface GestureMeta {
   actionEn: string;
   accent: string;
 }
+
+export const REAL_GRAB_GESTURES: GestureMeta[] = [
+  {
+    id: 'palm_5',
+    fingers: '🖐️ Mở tay',
+    labelVi: 'Mở Tay · Nhắm Chọn Bộ Phận',
+    labelEn: 'Open Hand · Aim & Hover',
+    actionVi: 'Đưa tay rà lên bất kỳ chi tiết nào để sáng viền chọn đúng phần muốn tháo (mô hình đứng yên để ngắm chuẩn).',
+    actionEn: 'Hover open hand over any part to highlight it cleanly while the model holds steady.',
+    accent: '#22d3ee'
+  },
+  {
+    id: 'pinch',
+    fingers: '👌 Chụm',
+    labelVi: 'Chụm Cái–Trỏ · Cầm & Tháo Lắp',
+    labelEn: 'Pinch · Grab & Detach Part',
+    actionVi: 'Chụm ngón trỏ–cái để kéo tháo rời bộ phận ra ngoài; thả gần khớp cũ (<0.36m) tự hít khít lại.',
+    actionEn: 'Pinch thumb & index to pull any part off; release near its socket (<0.36m) to snap back.',
+    accent: '#f59e0b'
+  },
+  {
+    id: 'fist_0',
+    fingers: '✊ Nắm',
+    labelVi: 'Nắm Tay · Cầm Xoay Cả Khối',
+    labelEn: 'Fist · Hold & Rotate Model',
+    actionVi: 'Nắm chặt tay để cầm trọn mô hình, xoay 360° & nhấc di chuyển tự do; mở tay ra để đặt xuống.',
+    actionEn: 'Close fist to grip the entire model, turn 360° & carry; open hand to place down.',
+    accent: '#10b981'
+  },
+  {
+    id: 'slice_2',
+    fingers: '✌️ 2 Ngón',
+    labelVi: '2 Ngón V · Tách Lớp / Lắp Khít',
+    labelEn: '2 Fingers · Explode / Snap All',
+    actionVi: 'Giơ 2 ngón chữ V để tách toàn bộ lớp ra quan sát, hoặc giơ lại 2 ngón để lắp khít tất cả về nguyên trạng.',
+    actionEn: 'Show 2 fingers (V-sign) to explode all layers, or show again to snap everything back together.',
+    accent: '#a855f7'
+  },
+  {
+    id: 'two_hand_10',
+    fingers: '👐 2 Tay',
+    labelVi: '2 Bàn Tay · Phóng To / Thu Nhỏ',
+    labelEn: '2 Hands · Zoom In / Out',
+    actionVi: 'Đưa 2 bàn tay tách xa nhau để phóng to; khép 2 bàn tay lại gần để thu nhỏ mô hình.',
+    actionEn: 'Spread two hands apart to zoom in; bring both hands closer to zoom out.',
+    accent: '#38bdf8'
+  }
+];
 
 export const GESTURE_DEFINITIONS: GestureMeta[] = [
   {
@@ -600,6 +691,7 @@ export class HandGestureTracker {
     };
 
     const tips: HandTipPoint[] = [];
+    const skeletons: HandSkeletonData[] = [];
     let totalExtended = 0;
     let confSum = 0;
     let hand1Pinching = false;
@@ -668,6 +760,28 @@ export class HandGestureTracker {
           extended: ext
         });
       }
+
+      const skLandmarks: [number, number, number][] = [];
+      for (let lmIdx = 0; lmIdx < 21; lmIdx++) {
+        const rawLm = lms[lmIdx];
+        if (!rawLm) {
+          skLandmarks.push([0.5, 0.5, 0]);
+          continue;
+        }
+        const bx = mirror ? 1 - rawLm.x : rawLm.x;
+        const mappedLm = mapCoord(bx, rawLm.y);
+        skLandmarks.push([
+          Math.round(mappedLm.x * 1000) / 1000,
+          Math.round(mappedLm.y * 1000) / 1000,
+          Math.round((rawLm.z ?? 0) * 1000) / 1000
+        ]);
+      }
+      skeletons.push({
+        handIndex: handIdx,
+        handedness: hEntry.category || (handIdx === 0 ? 'Right' : 'Left'),
+        pinching: isPinch,
+        landmarks: skLandmarks
+      });
     }
 
     if (indexedHands.length < 2) {
@@ -744,15 +858,19 @@ export class HandGestureTracker {
     }
 
     const holdElapsedMs = Math.max(0, nowMs - this.candidateSinceMs);
-    const timeSettled = holdElapsedMs >= gestureHoldMs;
+    const isDirectGrabState =
+      rawGesture === 'fist_0' || rawGesture === 'palm_5' || rawGesture === 'pinch' || rawGesture === 'two_hand_10';
+    const effectiveHoldMs = isDirectGrabState ? Math.min(gestureHoldMs, 100) : Math.max(gestureHoldMs, 240);
+    const effectiveStability = isDirectGrabState ? Math.min(stabilityFrames, 2) : stabilityFrames;
+    const timeSettled = holdElapsedMs >= effectiveHoldMs;
     const gestureHoldProgress =
       this.stableGesture === rawGesture
         ? 1
-        : gestureHoldMs > 0
-        ? Math.min(1, holdElapsedMs / gestureHoldMs)
+        : effectiveHoldMs > 0
+        ? Math.min(1, holdElapsedMs / effectiveHoldMs)
         : 1;
 
-    if (this.candidateStreak >= stabilityFrames && timeSettled) {
+    if (this.candidateStreak >= effectiveStability && timeSettled) {
       this.stableGesture = rawGesture;
     }
     const gestureSettled = this.stableGesture !== 'none' && this.stableGesture === rawGesture;
@@ -895,7 +1013,8 @@ export class HandGestureTracker {
       twoHandAngle: this.smoothTwoHandAngle,
       swipeEvent,
       confidence: Math.min(0.99, confSum / indexedHands.length),
-      tips
+      tips,
+      skeletons
     };
 
     this.lastResultFrame = frame;
@@ -987,7 +1106,8 @@ export class HandGestureTracker {
       twoHandAngle: this.smoothTwoHandAngle,
       swipeEvent: null,
       confidence: 0,
-      tips: []
+      tips: [],
+      skeletons: []
     };
   }
 }

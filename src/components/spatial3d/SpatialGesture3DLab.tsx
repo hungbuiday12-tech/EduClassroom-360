@@ -26,6 +26,7 @@ import {
   Info,
   Layers,
   Lock,
+  Magnet,
   Maximize2,
   Mic,
   MicOff,
@@ -49,17 +50,21 @@ import {
   Trash2,
   Triangle,
   Undo2,
+  Users,
   Video,
   VideoOff,
   Volume2,
   VolumeX,
   Wand2,
-  X
+  X,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 import { SubjectType } from '../../types';
 import { FormattedText } from '../common/MathRenderer';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAudio } from '../../context/AudioContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   ACTION_2D_OPTIONS,
   ACTION_3D_OPTIONS,
@@ -94,10 +99,28 @@ import { Spatial3DGuideModal } from './Spatial3DGuideModal';
 import { Spatial2DGuideModal } from './Spatial2DGuideModal';
 import { SpatialAIModelCreatorModal } from './SpatialAIModelCreatorModal';
 import { SpatialRealWorldScannerModal } from './SpatialRealWorldScannerModal';
+import { SpatialCoopModal } from './SpatialCoopModal';
+import { RemoteHandRigManager, synthesizePointerSkeleton } from './remoteHandSkeleton';
+import {
+  LocalGripVisualState,
+  LocalHandRigManager,
+  SocketTetherManager,
+  playSpatialSfx
+} from './localHandRig';
+import {
+  CoopHandSkeleton,
+  CoopPeerHandPose,
+  CoopPeerInfo,
+  CoopRoomSummary,
+  CoopSharedModelState
+} from './coopTypes';
 import { CustomSpatialModel } from './customModelTypes';
 import { buildCustomSpatialModel, updateCustomModelKinematics } from './customModelBuilder';
 import { deleteCustomSpatialModel, fetchCustomSpatialModels } from './customModelStore';
-import { safeFetchJson } from '../../lib/apiClient';
+import { resolveWsUrl, safeFetchJson } from '../../lib/apiClient';
+
+export type InteractionStyleId = 'real_grab' | 'classic';
+export type MouseHandToolId = 'smart_grab' | 'hold_model' | 'orbit';
 
 export type SpatialModeId =
   | 'turbofan'
@@ -378,6 +401,9 @@ interface LabRuntime {
   reticleGroup: THREE.Group;
   pointZoneGroup: THREE.Group;
   pointLaserLine: THREE.Line;
+  remoteHandManager: RemoteHandRigManager;
+  localHandManager: LocalHandRigManager;
+  tetherManager: SocketTetherManager;
 }
 
 interface PointAskTarget {
@@ -409,6 +435,15 @@ interface SpatialGesture3DLabProps {
   onBack?: () => void;
   onNavigate?: (subject: SubjectType) => void;
   onEarnXP?: (xp: number) => void;
+  initialCoopRoomCode?: string | null;
+  coopInviteMeta?: {
+    roomId?: string;
+    title?: string;
+    modelId?: string;
+    modelTitle?: string;
+    hostName?: string;
+  } | null;
+  onConsumeCoopRoom?: () => void;
 }
 
 const _v3TmpA = new THREE.Vector3();
@@ -420,6 +455,76 @@ const _centerTmp = new THREE.Vector3();
 const _sizeTmp = new THREE.Vector3();
 const _raycaster = new THREE.Raycaster();
 const _pointerNdc = new THREE.Vector2();
+const _mat4Inv = new THREE.Matrix4();
+const _dragPlane = new THREE.Plane();
+const _planeHit = new THREE.Vector3();
+const _camDir = new THREE.Vector3();
+const _partWorldPos = new THREE.Vector3();
+const _socketWorldPos = new THREE.Vector3();
+const _restLocalPos = new THREE.Vector3();
+const _desiredLocalPos = new THREE.Vector3();
+const _dragDeltaWorld = new THREE.Vector3();
+const _grabAnchorWorld = new THREE.Vector3();
+const _handPinchWorld = new THREE.Vector3();
+
+function mapNormalizedToWorldHand(nx: number, ny: number, nz: number, out: THREE.Vector3): THREE.Vector3 {
+  const x = (nx - 0.5) * 6.4;
+  const y = THREE.MathUtils.clamp((1 - ny) * 3.85 + 0.15, 0.2, 4.15);
+  const z = Math.sin((nx - 0.5) * Math.PI) * 1.35 - nz * 2.1 + 0.75;
+  return out.set(x, y, z);
+}
+
+function findPartIndexFromObject(model: DynamicModelRef, startObj: THREE.Object3D | null): number {
+  let obj: THREE.Object3D | null = startObj;
+  while (obj && obj !== model.group) {
+    const found = model.explodables.findIndex((p) => p.mesh === obj);
+    if (found !== -1) return found;
+    obj = obj.parent;
+  }
+  return -1;
+}
+
+function countDetachedParts(model: DynamicModelRef | null): number {
+  if (!model) return 0;
+  let count = 0;
+  for (const p of model.explodables) {
+    const t = p.detachTarget;
+    if (t && t.lengthSq() > 0.0025) count++;
+  }
+  return count;
+}
+
+function collectDetachedOffsetsMap(model: DynamicModelRef | null): Record<string, [number, number, number]> {
+  const out: Record<string, [number, number, number]> = {};
+  if (!model) return out;
+  for (const p of model.explodables) {
+    const t = p.detachTarget || p.detachOffset;
+    if (t && t.lengthSq() > 0.0025) {
+      out[p.info.id] = [+t.x.toFixed(3), +t.y.toFixed(3), +t.z.toFixed(3)];
+    }
+  }
+  return out;
+}
+
+function applyWorldDeltaToPartDetach(
+  model: DynamicModelRef,
+  part: ExplodablePart,
+  deltaWorld: THREE.Vector3,
+  expTarget: number
+): void {
+  const parentObj = part.mesh.parent || model.group;
+  parentObj.updateWorldMatrix(true, false);
+  part.mesh.getWorldPosition(_partWorldPos);
+  _partWorldPos.add(deltaWorld);
+  _mat4Inv.copy(parentObj.matrixWorld).invert();
+  _desiredLocalPos.copy(_partWorldPos).applyMatrix4(_mat4Inv);
+  _restLocalPos.copy(part.basePos).addScaledVector(part.explodeDir, expTarget * 2.85);
+  const target = (part.detachTarget ??= new THREE.Vector3());
+  target.subVectors(_desiredLocalPos, _restLocalPos);
+  if (target.lengthSq() > 4.8 * 4.8) {
+    target.setLength(4.8);
+  }
+}
 
 function isSoftwareWebGL(): boolean {
   try {
@@ -438,21 +543,29 @@ function isSoftwareWebGL(): boolean {
 
 export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   onBack,
-  onEarnXP
+  onNavigate,
+  onEarnXP,
+  initialCoopRoomCode,
+  coopInviteMeta,
+  onConsumeCoopRoom
 }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { bgSound, isBgPlaying, setBgSound, toggleBgPlaying } = useAudio();
+  const { user } = useAuth();
 
   // Top-level Dual Entry View: Dedicated Spatial Hub vs Interactive Studio (3D / 2D)
-  const [entryView, setEntryView] = useState<'hub' | 'studio'>('hub');
+  const [entryView, setEntryView] = useState<'hub' | 'studio'>(initialCoopRoomCode ? 'studio' : 'hub');
   const [show3DGuide, setShow3DGuide] = useState<boolean>(false);
   const [autoShow3DGuide, setAutoShow3DGuide] = useState<boolean>(true);
   const [show2DGuide, setShow2DGuide] = useState<boolean>(false);
   const [autoShow2DGuide, setAutoShow2DGuide] = useState<boolean>(true);
   const [showAICreator, setShowAICreator] = useState<boolean>(false);
   const [showRealScanner, setShowRealScanner] = useState<boolean>(false);
+  const [showCoopModal, setShowCoopModal] = useState<boolean>(false);
   const [customModels, setCustomModels] = useState<CustomSpatialModel[]>([]);
+  const customModelsRef = useRef<CustomSpatialModel[]>(customModels);
+  customModelsRef.current = customModels;
   const [activeCustomId, setActiveCustomId] = useState<string | null>(null);
   const [spaceMode, setSpaceMode] = useState<SpaceMode>('3d');
   const [mode2D, setMode2D] = useState<Spatial2DModeId>('free_create');
@@ -526,7 +639,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [markerCount, setMarkerCount] = useState<number>(0);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // 3D Part Selection & Isolation Inspection States
+  // 3D Part Selection, Real-Life Physical Grab & Isolation Inspection States
+  const [interactionStyle, setInteractionStyle] = useState<InteractionStyleId>('real_grab');
+  const [mouseHandTool, setMouseHandTool] = useState<MouseHandToolId>('smart_grab');
+  const [tactileSfxEnabled, setTactileSfxEnabled] = useState<boolean>(true);
+  const [detachedPartCount, setDetachedPartCount] = useState<number>(0);
+  const [activeGrabInfo, setActiveGrabInfo] = useState<{
+    kind: 'part' | 'hold' | 'hover';
+    partIdx: number | null;
+    partName: string;
+    distance: number;
+  } | null>(null);
   const [modelParts, setModelParts] = useState<ExplodablePartInfo[]>([]);
   const [highlightedPartIdx, setHighlightedPartIdx] = useState<number | null>(null);
   const [isolatedPartIdx, setIsolatedPartIdx] = useState<number | null>(null);
@@ -534,6 +657,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const highlightedPartIdxRef = useRef<number | null>(null);
   const isolatedPartIdxRef = useRef<number | null>(null);
   const modelPartsRef = useRef<ExplodablePartInfo[]>([]);
+  const detachedPartsVersionRef = useRef<number>(0);
   highlightedPartIdxRef.current = highlightedPartIdx;
   isolatedPartIdxRef.current = isolatedPartIdx;
   modelPartsRef.current = modelParts;
@@ -622,11 +746,37 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     twoHandAngle: 0,
     swipeEvent: null,
     confidence: 0,
-    tips: []
+    tips: [],
+    skeletons: []
   };
 
   const [handFrame, setHandFrame] = useState<HandTrackingFrame>(initialFrame);
   const handFrameRef = useRef<HandTrackingFrame>(initialFrame);
+
+  // Co-op Multi-User 3D Virtual Hands ("Bàn tay ảo của bạn học" · 2–4 Peers)
+  const [coopSelfPeerId] = useState<string>(() => {
+    try {
+      const saved = sessionStorage.getItem('synapse_coop_peer_id');
+      if (saved) return saved;
+      const fresh = `peer_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+      sessionStorage.setItem('synapse_coop_peer_id', fresh);
+      return fresh;
+    } catch {
+      return `peer_${Math.random().toString(36).slice(2, 8)}`;
+    }
+  });
+  const [coopTargetRoomId, setCoopTargetRoomId] = useState<string | null>(
+    initialCoopRoomCode ? initialCoopRoomCode.toUpperCase() : null
+  );
+  const [coopActiveRoom, setCoopActiveRoom] = useState<CoopRoomSummary | null>(null);
+  const [coopPeers, setCoopPeers] = useState<CoopPeerInfo[]>([]);
+  const [coopWsStatus, setCoopWsStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+  const [coopWsError, setCoopWsError] = useState<string | null>(null);
+  const coopWsRef = useRef<WebSocket | null>(null);
+  const coopFallbackMetaRef = useRef<SpatialGesture3DLabProps['coopInviteMeta']>(coopInviteMeta || null);
+  const isRemoteCoopApplyRef = useRef<boolean>(false);
+  const lastSentModelSigRef = useRef<string>('');
+  const pendingCoopModelSyncRef = useRef<CoopSharedModelState | null>(null);
 
   const [oxyzCursor, setOxyzCursor] = useState<{ x: number; y: number; z: number }>({
     x: 0,
@@ -667,7 +817,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     sensitivity,
     smoothing,
     gestureSettings,
-    virtualGesture
+    virtualGesture,
+    interactionStyle,
+    mouseHandTool,
+    tactileSfxEnabled
   });
   paramsRef.current = {
     entryView,
@@ -692,7 +845,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     sensitivity,
     smoothing,
     gestureSettings,
-    virtualGesture
+    virtualGesture,
+    interactionStyle,
+    mouseHandTool,
+    tactileSfxEnabled
   };
 
   const smoothTargetRef = useRef({
@@ -703,9 +859,51 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     rotOffset: 0,
     pitchOffset: 0,
     tiltOffset: 0,
+    carryX: 0,
+    carryY: 0,
+    carryZ: 0,
     cursorX: 0,
     cursorY: 1.5,
     cursorZ: 0
+  });
+  const pointerGrabRef = useRef<{
+    active: boolean;
+    kind: 'none' | 'part' | 'hold_model';
+    partIdx: number;
+    startClientX: number;
+    startClientY: number;
+    lastClientX: number;
+    lastClientY: number;
+    movedPx: number;
+    grabWorldPoint: THREE.Vector3;
+    dragPlane: THREE.Plane;
+    lastHitPoint: THREE.Vector3;
+  }>({
+    active: false,
+    kind: 'none',
+    partIdx: -1,
+    startClientX: 0,
+    startClientY: 0,
+    lastClientX: 0,
+    lastClientY: 0,
+    movedPx: 0,
+    grabWorldPoint: new THREE.Vector3(),
+    dragPlane: new THREE.Plane(new THREE.Vector3(0, 0, 1), 0),
+    lastHitPoint: new THREE.Vector3()
+  });
+  const hoverPartRef = useRef<{ partIdx: number; worldHit: THREE.Vector3; atMs: number } | null>(null);
+  const camGrabRef = useRef<{
+    kind: 'none' | 'part' | 'hold_model';
+    partIdx: number;
+    prevWorld: THREE.Vector3;
+    grabAnchor: THREE.Vector3;
+    lastUiAt: number;
+  }>({
+    kind: 'none',
+    partIdx: -1,
+    prevWorld: new THREE.Vector3(),
+    grabAnchor: new THREE.Vector3(),
+    lastUiAt: 0
   });
   const virtualPadDownRef = useRef<boolean>(false);
   const lastPinchStampAtRef = useRef<number>(0);
@@ -1077,12 +1275,23 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       setIsolatedPartIdx(null);
       setHighlightedPartIdx(null);
       setExplodeVal(0.0);
+      setDetachedPartCount(0);
+      setActiveGrabInfo(null);
       setPointAskHover(null);
       setPointAskLockedTarget(null);
       setPointAskResult(null);
       pointAskHoverRef.current = null;
       pointAskLockedRef.current = null;
+      hoverPartRef.current = null;
+      pointerGrabRef.current.active = false;
+      pointerGrabRef.current.kind = 'none';
+      camGrabRef.current.kind = 'none';
       smoothTargetRef.current.explode = 0.0;
+      smoothTargetRef.current.carryX = 0;
+      smoothTargetRef.current.carryY = 0;
+      smoothTargetRef.current.carryZ = 0;
+      runtime.tetherManager.hideFrom(0);
+      runtime.localHandManager.hideAll();
 
       if (runtime.model) {
         runtime.rootGroup.remove(runtime.model.group);
@@ -2196,6 +2405,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     pointLaserLine.visible = false;
     scene.add(pointLaserLine);
 
+    const remoteHandManager = new RemoteHandRigManager();
+    scene.add(remoteHandManager.container);
+
+    const localHandManager = new LocalHandRigManager();
+    scene.add(localHandManager.container);
+
+    const tetherManager = new SocketTetherManager(16);
+    scene.add(tetherManager.container);
+
     const runtime: LabRuntime = {
       scene,
       camera,
@@ -2223,7 +2441,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       activePreviewLineH2: null,
       reticleGroup,
       pointZoneGroup,
-      pointLaserLine
+      pointLaserLine,
+      remoteHandManager,
+      localHandManager,
+      tetherManager
     };
     runtimeRef.current = runtime;
 
@@ -2306,21 +2527,288 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       };
     };
 
+    const finalizePartRelease = (model: DynamicModelRef, partIdx: number) => {
+      const part = model.explodables[partIdx];
+      if (!part) return;
+      const target = part.detachTarget;
+      const dist = target ? target.length() : 0;
+      if (target && dist < 0.36) {
+        target.set(0, 0, 0);
+        playSpatialSfx('snap', paramsRef.current.tactileSfxEnabled);
+        showToast(
+          isEn
+            ? `Snapped back into place: ${part.info.nameEn}`
+            : `Hít khít vào khớp lắp ráp: ${part.info.nameVi}`
+        );
+      } else if (dist >= 0.36) {
+        playSpatialSfx('detach', paramsRef.current.tactileSfxEnabled);
+        showToast(
+          isEn
+            ? `Detached part: ${part.info.nameEn} (${dist.toFixed(2)}m)`
+            : `Đã tháo rời bộ phận: ${part.info.nameVi} (${dist.toFixed(2)}m)`
+        );
+      }
+      setDetachedPartCount(countDetachedParts(model));
+      detachedPartsVersionRef.current += 1;
+      setActiveGrabInfo(null);
+    };
+
     const handleCanvasPointerDown = (e: PointerEvent) => {
       pointerDownScreenRef.current = { x: e.clientX, y: e.clientY };
+      if (e.button !== 0) return;
+
+      const cfg = paramsRef.current;
+      if (
+        cfg.spaceMode !== '3d' ||
+        !runtime.model ||
+        pointAskActiveRef.current ||
+        isolatedPartIdxRef.current !== null ||
+        cfg.interactionStyle !== 'real_grab'
+      ) {
+        controls.enabled = true;
+        return;
+      }
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      const ndcX = ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+      const ndcY = -((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+      _pointerNdc.set(ndcX, ndcY);
+      _raycaster.setFromCamera(_pointerNdc, camera);
+
+      const useHoldTool = cfg.mouseHandTool === 'hold_model' || e.shiftKey;
+      if (useHoldTool) {
+        controls.enabled = false;
+        const pg = pointerGrabRef.current;
+        pg.active = true;
+        pg.kind = 'hold_model';
+        pg.partIdx = -1;
+        pg.startClientX = e.clientX;
+        pg.startClientY = e.clientY;
+        pg.lastClientX = e.clientX;
+        pg.lastClientY = e.clientY;
+        pg.movedPx = 0;
+        runtime.model.group.getWorldPosition(_centerTmp);
+        _centerTmp.y += 1.45;
+        camera.getWorldDirection(_camDir).negate();
+        pg.dragPlane.setFromNormalAndCoplanarPoint(_camDir, _centerTmp);
+        pg.lastHitPoint.copy(_centerTmp);
+        pg.grabWorldPoint.copy(_centerTmp);
+        playSpatialSfx('hold', cfg.tactileSfxEnabled);
+        renderer.domElement.style.cursor = 'grabbing';
+        setActiveGrabInfo({
+          kind: 'hold',
+          partIdx: null,
+          partName: isEn ? 'Whole 3D Object' : 'Cả Mô Hình 3D',
+          distance: 0
+        });
+        return;
+      }
+
+      if (cfg.mouseHandTool === 'smart_grab') {
+        const hits = _raycaster.intersectObject(runtime.model.group, true);
+        let matchedIdx = -1;
+        let firstHit = hits[0] || null;
+        for (const hit of hits) {
+          const found = findPartIndexFromObject(runtime.model, hit.object);
+          if (found !== -1) {
+            matchedIdx = found;
+            firstHit = hit;
+            break;
+          }
+        }
+        if (matchedIdx !== -1 && firstHit) {
+          controls.enabled = false;
+          const pg = pointerGrabRef.current;
+          pg.active = true;
+          pg.kind = 'part';
+          pg.partIdx = matchedIdx;
+          pg.startClientX = e.clientX;
+          pg.startClientY = e.clientY;
+          pg.lastClientX = e.clientX;
+          pg.lastClientY = e.clientY;
+          pg.movedPx = 0;
+          pg.grabWorldPoint.copy(firstHit.point);
+          camera.getWorldDirection(_camDir).negate();
+          pg.dragPlane.setFromNormalAndCoplanarPoint(_camDir, firstHit.point);
+          pg.lastHitPoint.copy(firstHit.point);
+          setHighlightedPartIdx(matchedIdx);
+          const pInfo = runtime.model.explodables[matchedIdx].info;
+          playSpatialSfx('grab', cfg.tactileSfxEnabled);
+          renderer.domElement.style.cursor = 'grabbing';
+          setActiveGrabInfo({
+            kind: 'part',
+            partIdx: matchedIdx,
+            partName: isEn ? pInfo.nameEn : pInfo.nameVi,
+            distance: +(runtime.model.explodables[matchedIdx].detachTarget?.length() || 0).toFixed(2)
+          });
+          return;
+        }
+      }
+
+      controls.enabled = true;
     };
+
     const handleCanvasPointerMove = (e: PointerEvent) => {
       const rect = renderer.domElement.getBoundingClientRect();
-      mouseHoverNdcRef.current = {
-        x: ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1,
-        y: -((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1,
-        active: true
-      };
+      const ndcX = ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+      const ndcY = -((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+      mouseHoverNdcRef.current = { x: ndcX, y: ndcY, active: true };
+
+      const cfg = paramsRef.current;
+      const pg = pointerGrabRef.current;
+      if (pg.active && runtime.model) {
+        const dxPx = e.clientX - pg.lastClientX;
+        const dyPx = e.clientY - pg.lastClientY;
+        pg.movedPx += Math.hypot(dxPx, dyPx);
+        pg.lastClientX = e.clientX;
+        pg.lastClientY = e.clientY;
+
+        if (pg.kind === 'part' && pg.partIdx >= 0) {
+          const part = runtime.model.explodables[pg.partIdx];
+          if (part) {
+            _pointerNdc.set(ndcX, ndcY);
+            _raycaster.setFromCamera(_pointerNdc, camera);
+            if (_raycaster.ray.intersectPlane(pg.dragPlane, _planeHit)) {
+              _dragDeltaWorld.subVectors(_planeHit, pg.lastHitPoint);
+              pg.lastHitPoint.copy(_planeHit);
+              pg.grabWorldPoint.copy(_planeHit);
+              applyWorldDeltaToPartDetach(runtime.model, part, _dragDeltaWorld, smoothTargetRef.current.explode);
+              const nowPerf = performance.now();
+              if (nowPerf - camGrabRef.current.lastUiAt > 90) {
+                camGrabRef.current.lastUiAt = nowPerf;
+                detachedPartsVersionRef.current += 1;
+                setDetachedPartCount(countDetachedParts(runtime.model));
+                setActiveGrabInfo({
+                  kind: 'part',
+                  partIdx: pg.partIdx,
+                  partName: isEn ? part.info.nameEn : part.info.nameVi,
+                  distance: +(part.detachTarget?.length() || 0).toFixed(2)
+                });
+              }
+            }
+          }
+        } else if (pg.kind === 'hold_model') {
+          smoothTargetRef.current.rotOffset += dxPx * 0.011;
+          smoothTargetRef.current.pitchOffset = THREE.MathUtils.clamp(
+            smoothTargetRef.current.pitchOffset + dyPx * 0.0085,
+            -1.15,
+            1.15
+          );
+          smoothTargetRef.current.carryX = THREE.MathUtils.clamp(
+            smoothTargetRef.current.carryX + dxPx * 0.0032,
+            -1.35,
+            1.35
+          );
+          smoothTargetRef.current.carryY = THREE.MathUtils.clamp(
+            smoothTargetRef.current.carryY - dyPx * 0.0032,
+            -0.65,
+            0.95
+          );
+        }
+        return;
+      }
+
+      if (
+        cfg.spaceMode === '3d' &&
+        cfg.interactionStyle === 'real_grab' &&
+        !pointAskActiveRef.current &&
+        isolatedPartIdxRef.current === null &&
+        runtime.model
+      ) {
+        if (cfg.mouseHandTool === 'hold_model' || e.shiftKey) {
+          renderer.domElement.style.cursor = 'grab';
+          hoverPartRef.current = null;
+          return;
+        }
+        const nowPerf = performance.now();
+        if (!hoverPartRef.current || nowPerf - hoverPartRef.current.atMs > 48) {
+          _pointerNdc.set(ndcX, ndcY);
+          _raycaster.setFromCamera(_pointerNdc, camera);
+          const hits = _raycaster.intersectObject(runtime.model.group, true);
+          let matchedIdx = -1;
+          let matchedHit = hits[0] || null;
+          for (const h of hits) {
+            const found = findPartIndexFromObject(runtime.model, h.object);
+            if (found !== -1) {
+              matchedIdx = found;
+              matchedHit = h;
+              break;
+            }
+          }
+          if (matchedIdx !== -1 && matchedHit) {
+            if (!hoverPartRef.current) {
+              hoverPartRef.current = {
+                partIdx: matchedIdx,
+                worldHit: matchedHit.point.clone(),
+                atMs: nowPerf
+              };
+            } else {
+              hoverPartRef.current.partIdx = matchedIdx;
+              hoverPartRef.current.worldHit.copy(matchedHit.point);
+              hoverPartRef.current.atMs = nowPerf;
+            }
+            renderer.domElement.style.cursor = cfg.mouseHandTool === 'smart_grab' ? 'grab' : 'pointer';
+          } else {
+            hoverPartRef.current = null;
+            renderer.domElement.style.cursor = 'default';
+          }
+        }
+      } else {
+        hoverPartRef.current = null;
+        renderer.domElement.style.cursor = pointAskActiveRef.current ? 'crosshair' : 'default';
+      }
     };
+
     const handleCanvasPointerLeave = () => {
       mouseHoverNdcRef.current.active = false;
+      hoverPartRef.current = null;
+      if (!pointerGrabRef.current.active) {
+        renderer.domElement.style.cursor = 'default';
+      }
     };
+
     const handleCanvasPointerUp = (e: PointerEvent) => {
+      controls.enabled = true;
+      const pg = pointerGrabRef.current;
+      if (pg.active) {
+        const wasMoved = pg.movedPx > 6;
+        const grabbedKind = pg.kind;
+        const grabbedIdx = pg.partIdx;
+        pg.active = false;
+        pg.kind = 'none';
+        pg.partIdx = -1;
+        pointerDownScreenRef.current = null;
+        renderer.domElement.style.cursor =
+          paramsRef.current.mouseHandTool === 'hold_model' ? 'grab' : 'default';
+
+        if (grabbedKind === 'hold_model') {
+          smoothTargetRef.current.carryX = 0;
+          smoothTargetRef.current.carryY = 0;
+          smoothTargetRef.current.carryZ = 0;
+          setActiveGrabInfo(null);
+          return;
+        }
+
+        if (grabbedKind === 'part' && runtime.model) {
+          if (wasMoved) {
+            finalizePartRelease(runtime.model, grabbedIdx);
+          } else {
+            // Simple click selects/highlights part cleanly without pulling or hijacking viewport
+            setHighlightedPartIdx(grabbedIdx);
+            setActiveGrabInfo(null);
+            const info = runtime.model.explodables[grabbedIdx]?.info;
+            if (info) {
+              showToast(
+                isEn
+                  ? `Selected: ${info.nameEn} (Drag to pull off · Double-click to isolate)`
+                  : `Đã chọn: ${info.nameVi} (Kéo để tháo rời · Nhấp đúp để xem 360°)`
+              );
+            }
+          }
+        }
+        return;
+      }
+
       const down = pointerDownScreenRef.current;
       pointerDownScreenRef.current = null;
       if (!down) return;
@@ -2372,30 +2860,49 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
       let matchedIdx = -1;
       for (const hit of hits) {
-        let obj: THREE.Object3D | null = hit.object;
-        while (obj && obj !== runtime.model.group) {
-          const found = runtime.model.explodables.findIndex((p) => p.mesh === obj);
-          if (found !== -1) {
-            matchedIdx = found;
-            break;
-          }
-          obj = obj.parent;
-        }
+        matchedIdx = findPartIndexFromObject(runtime.model, hit.object);
         if (matchedIdx !== -1) break;
       }
 
       if (matchedIdx !== -1) {
         setHighlightedPartIdx(matchedIdx);
-        setIsolatedPartIdx(matchedIdx);
-        setPartCardMinimized(false);
+        if (paramsRef.current.interactionStyle === 'classic') {
+          setIsolatedPartIdx(matchedIdx);
+          setPartCardMinimized(false);
+        }
         const info = runtime.model.explodables[matchedIdx].info;
         showToast(`Đã chọn bộ phận: ${info.nameVi}`);
       }
     };
-    renderer.domElement.addEventListener('pointerdown', handleCanvasPointerDown);
+
+    const handleCanvasDblClick = (e: MouseEvent) => {
+      if (paramsRef.current.spaceMode !== '3d' || !runtime.model || pointAskActiveRef.current) return;
+      if (isolatedPartIdxRef.current !== null) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      const ndcX = ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+      const ndcY = -((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+      _pointerNdc.set(ndcX, ndcY);
+      _raycaster.setFromCamera(_pointerNdc, camera);
+      const hits = _raycaster.intersectObject(runtime.model.group, true);
+      for (const hit of hits) {
+        const matchedIdx = findPartIndexFromObject(runtime.model, hit.object);
+        if (matchedIdx !== -1) {
+          setHighlightedPartIdx(matchedIdx);
+          setIsolatedPartIdx(matchedIdx);
+          setPartCardMinimized(false);
+          const info = runtime.model.explodables[matchedIdx].info;
+          showToast(isEn ? `Inspecting 360°: ${info.nameEn}` : `Soi chi tiết 360°: ${info.nameVi}`);
+          return;
+        }
+      }
+    };
+
+    renderer.domElement.addEventListener('pointerdown', handleCanvasPointerDown, { capture: true });
     renderer.domElement.addEventListener('pointermove', handleCanvasPointerMove);
     renderer.domElement.addEventListener('pointerleave', handleCanvasPointerLeave);
-    renderer.domElement.addEventListener('pointerup', handleCanvasPointerUp);
+    renderer.domElement.addEventListener('dblclick', handleCanvasDblClick);
+    window.addEventListener('pointerup', handleCanvasPointerUp);
+    window.addEventListener('pointercancel', handleCanvasPointerUp);
 
     rebuildModel(runtime, paramsRef.current.modeId, paramsRef.current.finish, ACCENT_PALETTES[0], softwareGl);
 
@@ -2635,27 +3142,238 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           }
         }
 
-        // 3. RISING-EDGE 4-FINGER REASSEMBLE: merge all separated/isolated parts smoothly back together
+        // 3. RISING-EDGE 4-FINGER REASSEMBLE: snap all detached + separated/isolated parts smoothly back together
+        const hasAnyDetached = runtime.model ? countDetachedParts(runtime.model) > 0 : false;
         const isReassembleEdge =
           activeControl &&
           mapped3DAction === 'reassemble_parts' &&
           (currentGesture !== prevGestureRef.current || nowPerfMs - lastReassembleAtRef.current > 850) &&
-          (smoothTargetRef.current.explode > 0.04 || isIsolated);
+          (smoothTargetRef.current.explode > 0.04 || isIsolated || hasAnyDetached);
 
         if (isReassembleEdge) {
           lastReassembleAtRef.current = nowPerfMs;
           smoothTargetRef.current.explode = 0;
+          smoothTargetRef.current.carryX = 0;
+          smoothTargetRef.current.carryY = 0;
+          smoothTargetRef.current.carryZ = 0;
+          if (runtime.model) {
+            for (const p of runtime.model.explodables) {
+              if (p.detachTarget) p.detachTarget.set(0, 0, 0);
+            }
+          }
+          setDetachedPartCount(0);
+          detachedPartsVersionRef.current += 1;
           setExplodeVal(0);
           setIsolatedPartIdx(null);
           setHighlightedPartIdx(null);
+          playSpatialSfx('snap', cfg.tactileSfxEnabled);
           showToast(
             isEn
               ? '4 Fingers · Reassembled full 3D model!'
-              : '4 Ngón · Đã ghép mô hình về nguyên trạng!'
+              : '4 Ngón · Đã lắp ráp toàn bộ mô hình về nguyên trạng!'
           );
         }
 
         let isZoomGestureActive = false;
+        let camHoverPartIdx = -1;
+        const isRealGrabMode = cfg.interactionStyle === 'real_grab';
+
+        // REAL-LIFE PHYSICAL HAND INTERACTION (1-Hand Pinch Detach, 1-Hand Fist Hold/Carry, 2-Hand Zoom)
+        if (isRealGrabMode && handDetected && !pointAskActiveRef.current && runtime.model) {
+          const sk0 = res.skeletons[0];
+          const pThumb = sk0?.landmarks?.[4];
+          const pIndex = sk0?.landmarks?.[8];
+          const pinchNx = pThumb && pIndex ? (pThumb[0] + pIndex[0]) * 0.5 : cursorNormX;
+          const pinchNy = pThumb && pIndex ? (pThumb[1] + pIndex[1]) * 0.5 : cursorNormY;
+          const pinchNz = pThumb && pIndex ? (pThumb[2] + pIndex[2]) * 0.5 : 0;
+          const pinchNdcX = pinchNx * 2 - 1;
+          const pinchNdcY = -(pinchNy * 2 - 1);
+
+          // Two hands -> Intuitive real-life Spread/Pinch Zoom (apart = zoom in, closer = zoom out)
+          if (res.handCount === 2) {
+            if (camGrabRef.current.kind === 'part') {
+              finalizePartRelease(runtime.model, camGrabRef.current.partIdx);
+              camGrabRef.current.kind = 'none';
+              camGrabRef.current.partIdx = -1;
+            } else if (camGrabRef.current.kind === 'hold_model') {
+              camGrabRef.current.kind = 'none';
+              smoothTargetRef.current.carryX = 0;
+              smoothTargetRef.current.carryY = 0;
+              smoothTargetRef.current.carryZ = 0;
+            }
+            if (Math.abs(res.twoHandSpanDelta) > 0.0022) {
+              isZoomGestureActive = true;
+              const nextScale = THREE.MathUtils.clamp(
+                smoothTargetRef.current.scale + res.twoHandSpanDelta * 2.8,
+                0.42,
+                2.45
+              );
+              smoothTargetRef.current.scale = nextScale;
+              if (shouldPushUi) {
+                setScaleVal(+nextScale.toFixed(2));
+              }
+            }
+            const nextTilt = THREE.MathUtils.clamp(res.twoHandAngle * 0.45, -0.45, 0.45);
+            smoothTargetRef.current.tiltOffset = nextTilt;
+          } else if (currentGesture === 'fist_0' && !isIsolated) {
+            // Closed fist -> Hold & carry/rotate the entire object in your palm
+            if (camGrabRef.current.kind === 'part') {
+              finalizePartRelease(runtime.model, camGrabRef.current.partIdx);
+              camGrabRef.current.partIdx = -1;
+            }
+            if (camGrabRef.current.kind !== 'hold_model') {
+              camGrabRef.current.kind = 'hold_model';
+              runtime.model.group.getWorldPosition(camGrabRef.current.grabAnchor);
+              camGrabRef.current.grabAnchor.y += 1.45;
+              playSpatialSfx('hold', cfg.tactileSfxEnabled);
+              setActiveGrabInfo({
+                kind: 'hold',
+                partIdx: null,
+                partName: isEn ? 'Whole 3D Object' : 'Cả Mô Hình 3D',
+                distance: 0
+              });
+            }
+            smoothTargetRef.current.rotOffset += res.cursorDX * Math.PI * 2.4 * rotSens;
+            smoothTargetRef.current.pitchOffset = THREE.MathUtils.clamp(
+              smoothTargetRef.current.pitchOffset + res.cursorDY * Math.PI * 1.6 * rotSens,
+              -1.15,
+              1.15
+            );
+            smoothTargetRef.current.carryX = THREE.MathUtils.clamp((pinchNx - 0.5) * 1.45, -1.25, 1.25);
+            smoothTargetRef.current.carryY = THREE.MathUtils.clamp((0.5 - pinchNy) * 1.05, -0.55, 0.85);
+            runtime.model.group.getWorldPosition(camGrabRef.current.grabAnchor);
+            camGrabRef.current.grabAnchor.y += 1.45;
+          } else {
+            // Release hold if exited fist_0
+            if (camGrabRef.current.kind === 'hold_model') {
+              camGrabRef.current.kind = 'none';
+              smoothTargetRef.current.carryX = 0;
+              smoothTargetRef.current.carryY = 0;
+              smoothTargetRef.current.carryZ = 0;
+              setActiveGrabInfo(null);
+            }
+
+            // Pinch -> Instant grab & pull any part along camera-facing plane!
+            if (res.hand1Pinching && !isIsolated) {
+              if (camGrabRef.current.kind !== 'part') {
+                _pointerNdc.set(pinchNdcX, pinchNdcY);
+                _raycaster.setFromCamera(_pointerNdc, camera);
+                const hits = _raycaster.intersectObject(runtime.model.group, true);
+                let matchedIdx = -1;
+                let matchedWorldHit: THREE.Vector3 | null = null;
+                for (const h of hits) {
+                  const found = findPartIndexFromObject(runtime.model, h.object);
+                  if (found !== -1) {
+                    matchedIdx = found;
+                    matchedWorldHit = h.point;
+                    break;
+                  }
+                }
+                // Magnetic finger assist: find nearest explodable center within 0.16 NDC if slightly off a thin part
+                if (matchedIdx === -1) {
+                  let bestNdcDist = 0.16;
+                  for (let pi = 0; pi < runtime.model.explodables.length; pi++) {
+                    const p = runtime.model.explodables[pi];
+                    p.mesh.getWorldPosition(_partWorldPos);
+                    _v3TmpB.copy(_partWorldPos).project(camera);
+                    const dNdc = Math.hypot(_v3TmpB.x - pinchNdcX, _v3TmpB.y - pinchNdcY);
+                    if (dNdc < bestNdcDist) {
+                      bestNdcDist = dNdc;
+                      matchedIdx = pi;
+                      matchedWorldHit = _partWorldPos;
+                    }
+                  }
+                }
+
+                if (matchedIdx !== -1 && matchedWorldHit) {
+                  camGrabRef.current.kind = 'part';
+                  camGrabRef.current.partIdx = matchedIdx;
+                  camGrabRef.current.grabAnchor.copy(matchedWorldHit);
+                  camera.getWorldDirection(_camDir).negate();
+                  _dragPlane.setFromNormalAndCoplanarPoint(_camDir, matchedWorldHit);
+                  _pointerNdc.set(pinchNdcX, pinchNdcY);
+                  _raycaster.setFromCamera(_pointerNdc, camera);
+                  if (_raycaster.ray.intersectPlane(_dragPlane, _planeHit)) {
+                    camGrabRef.current.prevWorld.copy(_planeHit);
+                  } else {
+                    mapNormalizedToWorldHand(pinchNx, pinchNy, pinchNz, camGrabRef.current.prevWorld);
+                  }
+                  setHighlightedPartIdx(matchedIdx);
+                  playSpatialSfx('grab', cfg.tactileSfxEnabled);
+                  const pInfo = runtime.model.explodables[matchedIdx].info;
+                  setActiveGrabInfo({
+                    kind: 'part',
+                    partIdx: matchedIdx,
+                    partName: isEn ? pInfo.nameEn : pInfo.nameVi,
+                    distance: +(runtime.model.explodables[matchedIdx].detachTarget?.length() || 0).toFixed(2)
+                  });
+                }
+              }
+
+              if (camGrabRef.current.kind === 'part' && camGrabRef.current.partIdx >= 0) {
+                const grabbedPart = runtime.model.explodables[camGrabRef.current.partIdx];
+                if (grabbedPart) {
+                  camera.getWorldDirection(_camDir).negate();
+                  _dragPlane.setFromNormalAndCoplanarPoint(_camDir, camGrabRef.current.grabAnchor);
+                  _pointerNdc.set(pinchNdcX, pinchNdcY);
+                  _raycaster.setFromCamera(_pointerNdc, camera);
+                  if (_raycaster.ray.intersectPlane(_dragPlane, _planeHit)) {
+                    _dragDeltaWorld.subVectors(_planeHit, camGrabRef.current.prevWorld);
+                    camGrabRef.current.prevWorld.copy(_planeHit);
+                    applyWorldDeltaToPartDetach(
+                      runtime.model,
+                      grabbedPart,
+                      _dragDeltaWorld,
+                      smoothTargetRef.current.explode
+                    );
+                    grabbedPart.mesh.getWorldPosition(camGrabRef.current.grabAnchor);
+                    if (nowPerfMs - camGrabRef.current.lastUiAt > 110) {
+                      camGrabRef.current.lastUiAt = nowPerfMs;
+                      detachedPartsVersionRef.current += 1;
+                      setDetachedPartCount(countDetachedParts(runtime.model));
+                      setActiveGrabInfo({
+                        kind: 'part',
+                        partIdx: camGrabRef.current.partIdx,
+                        partName: isEn ? grabbedPart.info.nameEn : grabbedPart.info.nameVi,
+                        distance: +(grabbedPart.detachTarget?.length() || 0).toFixed(2)
+                      });
+                    }
+                  }
+                }
+              }
+            } else {
+              if (camGrabRef.current.kind === 'part') {
+                finalizePartRelease(runtime.model, camGrabRef.current.partIdx);
+                camGrabRef.current.kind = 'none';
+                camGrabRef.current.partIdx = -1;
+              }
+              // Hover raycast from open hand index/pinch midpoint
+              if (!isIsolated) {
+                _pointerNdc.set(pinchNdcX, pinchNdcY);
+                _raycaster.setFromCamera(_pointerNdc, camera);
+                const hits = _raycaster.intersectObject(runtime.model.group, true);
+                for (const h of hits) {
+                  const found = findPartIndexFromObject(runtime.model, h.object);
+                  if (found !== -1) {
+                    camHoverPartIdx = found;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        } else if (camGrabRef.current.kind !== 'none') {
+          if (camGrabRef.current.kind === 'part' && runtime.model) {
+            finalizePartRelease(runtime.model, camGrabRef.current.partIdx);
+          } else if (camGrabRef.current.kind === 'hold_model') {
+            smoothTargetRef.current.carryX = 0;
+            smoothTargetRef.current.carryY = 0;
+            smoothTargetRef.current.carryZ = 0;
+            setActiveGrabInfo(null);
+          }
+          camGrabRef.current.kind = 'none';
+          camGrabRef.current.partIdx = -1;
+        }
 
         if (activeControl && mapped3DAction !== 'none') {
           const targetX = (cursorNormX - 0.5) * 6.4;
@@ -2665,20 +3383,26 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           smoothTargetRef.current.cursorY = targetY;
           smoothTargetRef.current.cursorZ = targetZ;
 
-          if (mapped3DAction === 'freeze_lock') {
-            if (!cfg.frozen) setFrozen(true);
-          } else if (cfg.frozen) {
-            setFrozen(false);
+          if (!isRealGrabMode) {
+            if (mapped3DAction === 'freeze_lock') {
+              if (!cfg.frozen) setFrozen(true);
+            } else if (cfg.frozen) {
+              setFrozen(false);
+            }
           }
 
           if (mapped3DAction === 'auto_spin_toggle' && shouldPushUi) {
             setAutoSpin((v) => !v);
           }
 
-          // TWO-HAND UNIFIED COMMANDS (strictly separated):
-          // - Pulling 2 hands opposite left/right -> ONLY triggers Explode/Separate Structure
-          // - Moving 2 hands closer together -> ONLY triggers Zoom Out (shrink)
-          if (handDetected && res.handCount === 2) {
+          // Explode structure via 3 Fingers (morph_3) in real_grab mode, OR via 2-hand opposite spread in classic mode
+          if (isRealGrabMode) {
+            if (currentGesture === 'morph_3' && !isIsolated) {
+              const nextExp = THREE.MathUtils.clamp(smoothTargetRef.current.explode + dt * 0.85, 0, 1.85);
+              smoothTargetRef.current.explode = nextExp;
+              if (shouldPushUi) setExplodeVal(+nextExp.toFixed(2));
+            }
+          } else if (handDetected && res.handCount === 2) {
             if (res.twoHandOppositeSpread && !isIsolated) {
               const step = Math.max(0.015, res.twoHandSpanDelta * 3.4);
               const nextExp = THREE.MathUtils.clamp(smoothTargetRef.current.explode + step, 0, 1.85);
@@ -2700,8 +3424,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          // ONE-HAND PULL UPWARD -> Zoom In (disabled during Point & Ask laser aiming)
+          // Classic ONE-HAND PULL UPWARD -> Zoom In
           const isPullingUp1Hand =
+            !isRealGrabMode &&
             handDetected &&
             !pointAskActiveRef.current &&
             res.handCount === 1 &&
@@ -2720,12 +3445,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          // 1-Finger OR 2-Hand Symmetrical Dual Neon Tube Sculpting (disabled when Point & Ask laser is active)
+          // 1-Finger OR 2-Hand Symmetrical Dual Neon Tube Sculpting (disabled when Point & Ask laser is active or grabbing part)
           if (
             !isIsolated &&
             !pointAskActiveRef.current &&
+            camGrabRef.current.kind === 'none' &&
             (mapped3DAction === 'draw_neon' ||
-              (cfg.modeId === 'freehand_oxyz' && mapped3DAction === 'dual_zoom_tilt'))
+              (!isRealGrabMode && cfg.modeId === 'freehand_oxyz' && mapped3DAction === 'dual_zoom_tilt'))
           ) {
             if (handDetected && res.handCount === 2 && res.hand1Index && res.hand2Index) {
               const p1x = (res.hand1Index.x - 0.5) * 6.4;
@@ -2750,8 +3476,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             if (runtime.activeStrokePointsH2.length > 0) finalizeStrokeChannel(true);
           }
 
-          // Pinch: Stamp creative 3D blocks in Oxyz OR boost RPM/Amplitude (disabled during Point & Ask)
-          if (mapped3DAction === 'pinch_stamp_scale' && !pointAskActiveRef.current) {
+          // Pinch in Classic mode OR freehand_oxyz when not grabbing an existing part
+          if (
+            mapped3DAction === 'pinch_stamp_scale' &&
+            !pointAskActiveRef.current &&
+            (!isRealGrabMode || (cfg.modeId === 'freehand_oxyz' && camGrabRef.current.kind === 'none'))
+          ) {
             const nextHeight = THREE.MathUtils.clamp(0.55 + cursorNormX * 1.25, 0.5, 1.85);
             smoothTargetRef.current.height = nextHeight;
             if (shouldPushUi) {
@@ -2769,10 +3499,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          // Slice plane ONLY when not exploded and not isolated
+          // Slice plane ONLY when not exploded, not isolated, and not grabbing a part
           if (
             mapped3DAction === 'slice_plane' &&
             !isIsolated &&
+            camGrabRef.current.kind === 'none' &&
             smoothTargetRef.current.explode < 0.25
           ) {
             if (!cfg.sliceEnabled) setSliceEnabled(true);
@@ -2783,8 +3514,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          // HIGH-SENSITIVITY MODEL ROTATION (pure orbit_rotate — never triggers explode!)
-          if (mapped3DAction === 'orbit_rotate' && !isZoomGestureActive) {
+          // HIGH-SENSITIVITY MODEL ROTATION (when open palm_5 orbit_rotate and not holding/grabbing)
+          if (mapped3DAction === 'orbit_rotate' && !isZoomGestureActive && camGrabRef.current.kind === 'none') {
             if (handDetected) {
               smoothTargetRef.current.rotOffset += res.cursorDX * Math.PI * 2.4 * rotSens;
               smoothTargetRef.current.pitchOffset = THREE.MathUtils.clamp(
@@ -2802,11 +3533,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          if (mapped3DAction === 'dual_zoom_tilt' && !res.twoHandOppositeSpread && !res.twoHandMovingCloser) {
-            const nextTilt = handDetected ? THREE.MathUtils.clamp(res.twoHandAngle * 0.55, -0.55, 0.55) : 0;
-            smoothTargetRef.current.tiltOffset = nextTilt;
-          } else {
-            smoothTargetRef.current.tiltOffset = 0;
+          if (!isRealGrabMode) {
+            if (mapped3DAction === 'dual_zoom_tilt' && !res.twoHandOppositeSpread && !res.twoHandMovingCloser) {
+              const nextTilt = handDetected ? THREE.MathUtils.clamp(res.twoHandAngle * 0.55, -0.55, 0.55) : 0;
+              smoothTargetRef.current.tiltOffset = nextTilt;
+            } else {
+              smoothTargetRef.current.tiltOffset = 0;
+            }
           }
 
           if (!awardFlagRef.current && onEarnXP) {
@@ -2851,6 +3584,27 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               );
           activeTargetGroup.scale.set(s, sy, s);
 
+          if (!isIsolated) {
+            activeTargetGroup.position.x = THREE.MathUtils.damp(
+              activeTargetGroup.position.x,
+              smoothTargetRef.current.carryX,
+              12,
+              dt
+            );
+            activeTargetGroup.position.y = THREE.MathUtils.damp(
+              activeTargetGroup.position.y,
+              smoothTargetRef.current.carryY,
+              12,
+              dt
+            );
+            activeTargetGroup.position.z = THREE.MathUtils.damp(
+              activeTargetGroup.position.z,
+              smoothTargetRef.current.carryZ,
+              12,
+              dt
+            );
+          }
+
           activeTargetGroup.rotation.z = THREE.MathUtils.damp(
             activeTargetGroup.rotation.z,
             smoothTargetRef.current.tiltOffset,
@@ -2858,48 +3612,100 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             dt
           );
 
+          const isDirectHolding =
+            (pointerGrabRef.current.active && pointerGrabRef.current.kind === 'hold_model') ||
+            camGrabRef.current.kind === 'hold_model';
+
           if (!cfg.frozen) {
             const isHandOrbiting =
               activeControl &&
-              (mapped3DAction === 'orbit_rotate' || (currentGesture === 'two_hand_10' && !res.twoHandOppositeSpread && !res.twoHandMovingCloser));
-            if (isHandOrbiting) {
+              (mapped3DAction === 'orbit_rotate' ||
+                (currentGesture === 'two_hand_10' && !res.twoHandOppositeSpread && !res.twoHandMovingCloser));
+            if (isHandOrbiting || isDirectHolding) {
               activeTargetGroup.rotation.y = THREE.MathUtils.damp(
                 activeTargetGroup.rotation.y,
                 smoothTargetRef.current.rotOffset,
+                12,
+                dt
+              );
+              activeTargetGroup.rotation.x = THREE.MathUtils.damp(
+                activeTargetGroup.rotation.x,
+                smoothTargetRef.current.pitchOffset,
                 11,
                 dt
               );
+            } else {
+              if (cfg.autoSpin && (isIsolated || (cfg.modeId !== 'robot_arm' && !pointerGrabRef.current.active && camGrabRef.current.kind === 'none'))) {
+                activeTargetGroup.rotation.y += dt * (isIsolated ? 0.3 : 0.34) * cfg.simSpeed;
+                smoothTargetRef.current.rotOffset = activeTargetGroup.rotation.y;
+              }
               activeTargetGroup.rotation.x = THREE.MathUtils.damp(
                 activeTargetGroup.rotation.x,
                 smoothTargetRef.current.pitchOffset,
                 10,
                 dt
               );
-            } else if (cfg.autoSpin && (isIsolated || cfg.modeId !== 'robot_arm')) {
-              activeTargetGroup.rotation.y += dt * (isIsolated ? 0.3 : 0.34) * cfg.simSpeed;
-              smoothTargetRef.current.rotOffset = activeTargetGroup.rotation.y;
             }
           }
 
           const expTarget = smoothTargetRef.current.explode;
+          let tetherSlot = 0;
           if (!isIsolated) {
+            const lerpAlpha = 1 - Math.exp(-14 * dt);
             for (const part of model.explodables) {
-              _v3TmpB.copy(part.basePos).addScaledVector(part.explodeDir, expTarget * 2.85);
-              part.mesh.position.lerp(_v3TmpB, 1 - Math.exp(-9 * dt));
+              _restLocalPos.copy(part.basePos).addScaledVector(part.explodeDir, expTarget * 2.85);
+              let hasDetach = false;
+              if (part.detachTarget || part.detachOffset) {
+                if (!part.detachOffset) part.detachOffset = new THREE.Vector3();
+                if (!part.detachTarget) part.detachTarget = new THREE.Vector3();
+                part.detachOffset.lerp(part.detachTarget, 1 - Math.exp(-18 * dt));
+                if (part.detachOffset.lengthSq() > 0.0005 || part.detachTarget.lengthSq() > 0.0005) {
+                  hasDetach = true;
+                }
+                _desiredLocalPos.copy(_restLocalPos).add(part.detachOffset);
+                part.mesh.position.lerp(_desiredLocalPos, lerpAlpha);
+              } else {
+                part.mesh.position.lerp(_restLocalPos, 1 - Math.exp(-9 * dt));
+              }
+
+              if (hasDetach && tetherSlot < 16) {
+                const parentObj = part.mesh.parent || model.group;
+                parentObj.updateWorldMatrix(true, false);
+                _socketWorldPos.copy(_restLocalPos).applyMatrix4(parentObj.matrixWorld);
+                part.mesh.getWorldPosition(_partWorldPos);
+                runtime.tetherManager.setSlot(tetherSlot++, _socketWorldPos, _partWorldPos, camera);
+              }
             }
-            if (expTarget >= 0.25 && model.explodables.length > 0) {
-              const hIdx = highlightedPartIdxRef.current ?? 0;
-              if (highlightedPartIdxRef.current === null && shouldPushUi) {
+            runtime.tetherManager.hideFrom(tetherSlot);
+
+            // Highlight active hovered / grabbed / exploded part cleanly
+            const pointerActivePartIdx =
+              pointerGrabRef.current.active && pointerGrabRef.current.kind === 'part'
+                ? pointerGrabRef.current.partIdx
+                : hoverPartRef.current?.partIdx ?? -1;
+            const camActivePartIdx =
+              camGrabRef.current.kind === 'part' ? camGrabRef.current.partIdx : camHoverPartIdx;
+            const preferredHighlightIdx =
+              pointerActivePartIdx >= 0
+                ? pointerActivePartIdx
+                : camActivePartIdx >= 0
+                ? camActivePartIdx
+                : expTarget >= 0.25 || countDetachedParts(model) > 0
+                ? highlightedPartIdxRef.current
+                : null;
+
+            if (preferredHighlightIdx !== null && preferredHighlightIdx >= 0 && model.explodables.length > 0) {
+              if (highlightedPartIdxRef.current === null && shouldPushUi && expTarget >= 0.25) {
                 setHighlightedPartIdx(0);
               }
-              const hPart = model.explodables[hIdx];
+              const hPart = model.explodables[preferredHighlightIdx];
               if (hPart) {
                 if (
-                  hIdx !== lastHighlightIdx ||
+                  preferredHighlightIdx !== lastHighlightIdx ||
                   Math.abs(expTarget - lastHighlightExp) > 0.015 ||
-                  ++highlightTick % 6 === 0
+                  ++highlightTick % 4 === 0
                 ) {
-                  lastHighlightIdx = hIdx;
+                  lastHighlightIdx = preferredHighlightIdx;
                   lastHighlightExp = expTarget;
                   runtime.highlightHelper.setFromObject(hPart.mesh);
                 }
@@ -2911,9 +3717,64 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               lastHighlightIdx = -1;
               runtime.highlightHelper.visible = false;
             }
-          } else if (!pointAskActiveRef.current) {
-            lastHighlightIdx = -1;
-            runtime.highlightHelper.visible = false;
+          } else {
+            runtime.tetherManager.hideFrom(0);
+            if (!pointAskActiveRef.current) {
+              lastHighlightIdx = -1;
+              runtime.highlightHelper.visible = false;
+            }
+          }
+
+          // Update Local 3D Articulated Skeleton Hand & Grip Halo
+          if (isRealGrabMode && !pointAskActiveRef.current && !isIsolated) {
+            let visualState: LocalGripVisualState = 'idle';
+            if (
+              camGrabRef.current.kind === 'part' ||
+              (pointerGrabRef.current.active && pointerGrabRef.current.kind === 'part')
+            ) {
+              visualState = 'grab_part';
+            } else if (
+              camGrabRef.current.kind === 'hold_model' ||
+              (pointerGrabRef.current.active && pointerGrabRef.current.kind === 'hold_model')
+            ) {
+              visualState = 'hold_model';
+            } else if (handDetected && res.handCount === 2) {
+              visualState = 'two_hand_zoom';
+            } else if (camHoverPartIdx >= 0 || hoverPartRef.current) {
+              visualState = 'hover_part';
+            }
+
+            if (handDetected && res.skeletons.length > 0) {
+              const anchor =
+                visualState === 'grab_part' || visualState === 'hold_model'
+                  ? camGrabRef.current.grabAnchor
+                  : null;
+              runtime.localHandManager.updateFromCameraSkeletons(
+                res.skeletons,
+                visualState,
+                camera,
+                dt,
+                anchor
+              );
+            } else if (pointerGrabRef.current.active || hoverPartRef.current) {
+              let ptrAnchor: THREE.Vector3 | null = null;
+              if (pointerGrabRef.current.active) {
+                if (pointerGrabRef.current.kind === 'hold_model') {
+                  model.group.getWorldPosition(_grabAnchorWorld);
+                  _grabAnchorWorld.y += 1.45;
+                  ptrAnchor = _grabAnchorWorld;
+                } else {
+                  ptrAnchor = pointerGrabRef.current.grabWorldPoint;
+                }
+              } else if (hoverPartRef.current) {
+                ptrAnchor = hoverPartRef.current.worldHit;
+              }
+              runtime.localHandManager.updateFromPointer(ptrAnchor, camera, visualState, dt);
+            } else {
+              runtime.localHandManager.hideAll();
+            }
+          } else {
+            runtime.localHandManager.hideAll();
           }
 
           // Live Point & Ask Raycasting via Webcam Index Finger OR Mouse Hover + 3D Khoanh Vùng Halo
@@ -3117,6 +3978,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           runtime.sliceHelperMesh.visible = false;
         }
 
+        runtime.remoteHandManager.update(dt);
         controls.update();
         renderer.render(scene, camera);
       }
@@ -3167,10 +4029,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       cancelAnimationFrame(frameId);
       clearTimeout(frameId);
       window.removeEventListener('resize', handleResize);
-      renderer.domElement.removeEventListener('pointerdown', handleCanvasPointerDown);
+      renderer.domElement.removeEventListener('pointerdown', handleCanvasPointerDown, { capture: true });
       renderer.domElement.removeEventListener('pointermove', handleCanvasPointerMove);
       renderer.domElement.removeEventListener('pointerleave', handleCanvasPointerLeave);
-      renderer.domElement.removeEventListener('pointerup', handleCanvasPointerUp);
+      renderer.domElement.removeEventListener('dblclick', handleCanvasDblClick);
+      window.removeEventListener('pointerup', handleCanvasPointerUp);
+      window.removeEventListener('pointercancel', handleCanvasPointerUp);
       controls.dispose();
       restoreIsolatedPart(runtime);
       disposeModel(runtime.model);
@@ -3210,6 +4074,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         m.geometry.dispose();
         (m.material as THREE.Material).dispose();
       });
+      runtime.remoteHandManager.dispose();
+      runtime.localHandManager.dispose();
+      runtime.tetherManager.dispose();
       renderer.dispose();
       if (renderer.domElement.parentNode === mount) {
         mount.removeChild(renderer.domElement);
@@ -3223,11 +4090,468 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     if (!rt) return;
     const softwareGl = isSoftwareWebGL();
     rebuildModel(rt, modeId, finish, activePalette, softwareGl, activeCustomModel);
+    const pending = pendingCoopModelSyncRef.current;
+    if (pending) {
+      pendingCoopModelSyncRef.current = null;
+      isRemoteCoopApplyRef.current = true;
+      setExplodeVal(pending.explodeVal ?? 0);
+      setScaleVal(pending.scaleVal ?? 1);
+      setHeightVal(pending.heightVal ?? 1);
+      setSliceEnabled(Boolean(pending.sliceEnabled));
+      setSliceY(pending.sliceY ?? 2.4);
+      setHighlightedPartIdx(pending.highlightedPartIdx ?? null);
+      setIsolatedPartIdx(pending.isolatedPartIdx ?? null);
+      smoothTargetRef.current.explode = pending.explodeVal ?? 0;
+      smoothTargetRef.current.scale = pending.scaleVal ?? 1;
+      smoothTargetRef.current.height = pending.heightVal ?? 1;
+      smoothTargetRef.current.sliceY = pending.sliceY ?? 2.4;
+      if (pending.detachedOffsets && rt.model) {
+        for (const p of rt.model.explodables) {
+          const vec = pending.detachedOffsets[p.info.id];
+          if (vec && Array.isArray(vec) && vec.length === 3) {
+            (p.detachTarget ??= new THREE.Vector3()).set(vec[0], vec[1], vec[2]);
+          } else if (p.detachTarget) {
+            p.detachTarget.set(0, 0, 0);
+          }
+        }
+        setDetachedPartCount(countDetachedParts(rt.model));
+      }
+      window.setTimeout(() => {
+        isRemoteCoopApplyRef.current = false;
+      }, 60);
+    }
   }, [modeId, activeCustomModel, finish, activePalette, rebuildModel]);
 
   useEffect(() => {
     syncPartIsolation(runtimeRef.current, isolatedPartIdx);
   }, [isolatedPartIdx, syncPartIsolation]);
+
+  // Helper to apply incoming Co-op shared model state safely without echo loop
+  const applyRemoteCoopModelState = useCallback(
+    (remoteState: Partial<CoopSharedModelState>, isFullSnapshot = false) => {
+      if (!remoteState) return;
+      isRemoteCoopApplyRef.current = true;
+      const modelChanged =
+        (typeof remoteState.modeId === 'string' && remoteState.modeId !== paramsRef.current.modeId) ||
+        ('customModel' in remoteState &&
+          (remoteState.customModel?.id || null) !== paramsRef.current.activeCustomId);
+
+      if (modelChanged) {
+        pendingCoopModelSyncRef.current = {
+          modeId: (remoteState.modeId || paramsRef.current.modeId) as SpatialModeId,
+          customModel: remoteState.customModel ?? null,
+          explodeVal: remoteState.explodeVal ?? 0,
+          scaleVal: remoteState.scaleVal ?? 1,
+          heightVal: remoteState.heightVal ?? 1,
+          sliceEnabled: Boolean(remoteState.sliceEnabled),
+          sliceY: remoteState.sliceY ?? 2.4,
+          finish: (remoteState.finish || paramsRef.current.finish) as MaterialFinishId,
+          paletteId: remoteState.paletteId || paramsRef.current.paletteId,
+          rotY: remoteState.rotY ?? 0,
+          pitchX: remoteState.pitchX ?? 0,
+          highlightedPartIdx: remoteState.highlightedPartIdx ?? null,
+          isolatedPartIdx: remoteState.isolatedPartIdx ?? null,
+          detachedOffsets: remoteState.detachedOffsets
+        };
+      }
+
+      if ('customModel' in remoteState) {
+        const cm = remoteState.customModel;
+        if (cm && cm.id) {
+          setCustomModels((prev) => [cm, ...prev.filter((m) => m.id !== cm.id)]);
+          setActiveCustomId(cm.id);
+        } else if (remoteState.customModel === null) {
+          setActiveCustomId(null);
+        }
+      }
+      if (typeof remoteState.modeId === 'string') {
+        setModeId(remoteState.modeId as SpatialModeId);
+      }
+      if (typeof remoteState.finish === 'string') {
+        setFinish(remoteState.finish as MaterialFinishId);
+      }
+      if (typeof remoteState.paletteId === 'string') {
+        setPaletteId(remoteState.paletteId);
+      }
+      if (!modelChanged || isFullSnapshot) {
+        if (typeof remoteState.explodeVal === 'number') {
+          setExplodeVal(remoteState.explodeVal);
+          smoothTargetRef.current.explode = remoteState.explodeVal;
+        }
+        if (typeof remoteState.scaleVal === 'number') {
+          setScaleVal(remoteState.scaleVal);
+          smoothTargetRef.current.scale = remoteState.scaleVal;
+        }
+        if (typeof remoteState.heightVal === 'number') {
+          setHeightVal(remoteState.heightVal);
+          smoothTargetRef.current.height = remoteState.heightVal;
+        }
+        if (typeof remoteState.sliceEnabled === 'boolean') {
+          setSliceEnabled(remoteState.sliceEnabled);
+        }
+        if (typeof remoteState.sliceY === 'number') {
+          setSliceY(remoteState.sliceY);
+          smoothTargetRef.current.sliceY = remoteState.sliceY;
+        }
+        if ('highlightedPartIdx' in remoteState) {
+          setHighlightedPartIdx(remoteState.highlightedPartIdx ?? null);
+        }
+        if ('isolatedPartIdx' in remoteState) {
+          setIsolatedPartIdx(remoteState.isolatedPartIdx ?? null);
+        }
+        if (typeof remoteState.rotY === 'number') {
+          smoothTargetRef.current.rotOffset = remoteState.rotY;
+          if (runtimeRef.current?.model) {
+            runtimeRef.current.model.group.rotation.y = remoteState.rotY;
+          }
+        }
+        if (typeof remoteState.pitchX === 'number') {
+          smoothTargetRef.current.pitchOffset = remoteState.pitchX;
+          if (runtimeRef.current?.model) {
+            runtimeRef.current.model.group.rotation.x = remoteState.pitchX;
+          }
+        }
+        if ('detachedOffsets' in remoteState && runtimeRef.current?.model) {
+          const map = remoteState.detachedOffsets || {};
+          for (const p of runtimeRef.current.model.explodables) {
+            const vec = map[p.info.id];
+            if (vec && Array.isArray(vec) && vec.length === 3) {
+              (p.detachTarget ??= new THREE.Vector3()).set(vec[0], vec[1], vec[2]);
+            } else if (p.detachTarget) {
+              p.detachTarget.set(0, 0, 0);
+            }
+          }
+          setDetachedPartCount(countDetachedParts(runtimeRef.current.model));
+        }
+      }
+
+      window.setTimeout(() => {
+        isRemoteCoopApplyRef.current = false;
+      }, 90);
+    },
+    []
+  );
+
+  // Sync external deep link (?coopRoom=...) into active Co-op target
+  useEffect(() => {
+    if (initialCoopRoomCode) {
+      const code = initialCoopRoomCode.trim().toUpperCase();
+      coopFallbackMetaRef.current = coopInviteMeta || null;
+      setEntryView('studio');
+      setSpaceMode('3d');
+      setShow3DGuide(false);
+      setCoopTargetRoomId(code);
+      onConsumeCoopRoom?.();
+    }
+  }, [initialCoopRoomCode, coopInviteMeta, onConsumeCoopRoom]);
+
+  // Persistent WebSocket lifecycle for 2–4 Participant Co-op 3D Skeleton Hands
+  useEffect(() => {
+    if (!coopTargetRoomId) {
+      setCoopActiveRoom(null);
+      setCoopPeers([]);
+      setCoopWsStatus('disconnected');
+      runtimeRef.current?.remoteHandManager.clearAll();
+      return;
+    }
+
+    let cancelled = false;
+    let reconnectTimer: number | null = null;
+    let handStreamTimer: number | null = null;
+    let modelSyncTimer: number | null = null;
+
+    const connectSocket = (forceRemote = false) => {
+      if (cancelled) return;
+      setCoopWsStatus('connecting');
+      setCoopWsError(null);
+
+      const wsUrl = resolveWsUrl('/ws/spatial-coop', forceRemote);
+      let ws: WebSocket;
+      try {
+        ws = new WebSocket(wsUrl);
+      } catch {
+        setCoopWsStatus('error');
+        setCoopWsError(isEn ? 'Could not initialize WebSocket connection.' : 'Không mở được kết nối WebSocket phòng 3D.');
+        return;
+      }
+      coopWsRef.current = ws;
+
+      ws.onopen = () => {
+        if (cancelled) {
+          ws.close();
+          return;
+        }
+        const cfg = paramsRef.current;
+        const meta = coopFallbackMetaRef.current;
+        const activeCustom = cfg.activeCustomId
+          ? customModelsRef.current.find((m) => m.id === cfg.activeCustomId) || null
+          : null;
+        const activeM = SPATIAL_MODES.find((m) => m.id === cfg.modeId) || SPATIAL_MODES[0];
+
+        ws.send(
+          JSON.stringify({
+            type: 'join',
+            roomId: coopTargetRoomId,
+            peer: {
+              peerId: coopSelfPeerId,
+              name: user?.displayName || (isEn ? 'Classmate' : 'Bạn học'),
+              avatar: user?.avatarUrl || undefined
+            },
+            createIfMissing: meta
+              ? {
+                  title: meta.title || `Phòng 3D ${coopTargetRoomId}`,
+                  hostName: meta.hostName || 'Bạn học',
+                  modelTitle: meta.modelTitle || activeM.titleVi,
+                  isPublic: true,
+                  modelState: {
+                    modeId: (meta.modelId || cfg.modeId) as SpatialModeId,
+                    customModel: activeCustom,
+                    explodeVal: 0,
+                    scaleVal: 1,
+                    heightVal: 1,
+                    sliceEnabled: false,
+                    sliceY: 2.4,
+                    finish: cfg.finish,
+                    paletteId: cfg.paletteId
+                  }
+                }
+              : undefined
+          })
+        );
+      };
+
+      ws.onmessage = (evt) => {
+        if (cancelled) return;
+        let msg: any = null;
+        try {
+          msg = JSON.parse(evt.data);
+        } catch {
+          return;
+        }
+        if (!msg) return;
+
+        if (msg.type === 'error') {
+          setCoopWsStatus('error');
+          setCoopWsError(msg.message || 'Lỗi kết nối phòng 3D');
+          showToast(msg.message || 'Không thể vào phòng 3D');
+          if (msg.code === 'room_full' || msg.code === 'room_not_found') {
+            setCoopTargetRoomId(null);
+          }
+          return;
+        }
+
+        if (msg.type === 'room:state') {
+          setCoopWsStatus('connected');
+          setCoopWsError(null);
+          setCoopActiveRoom(msg.room);
+          setCoopPeers(Array.isArray(msg.peers) ? msg.peers : []);
+          if (msg.modelState) {
+            applyRemoteCoopModelState(msg.modelState, true);
+          }
+          const rt = runtimeRef.current;
+          if (rt && Array.isArray(msg.peerPoses)) {
+            const activeIds = new Set<string>(
+              (msg.peers || []).map((p: CoopPeerInfo) => p.peerId).filter((id: string) => id !== coopSelfPeerId)
+            );
+            rt.remoteHandManager.syncRoster(activeIds);
+            for (const pose of msg.peerPoses as CoopPeerHandPose[]) {
+              if (pose.peerId !== coopSelfPeerId) {
+                rt.remoteHandManager.applyPeerPose(pose);
+              }
+            }
+          }
+          showToast(
+            isEn
+              ? `Joined Co-op 3D Room #${msg.room?.roomId}`
+              : `Đã vào phòng 3D chung #${msg.room?.roomId} (${(msg.peers || []).length}/4)`
+          );
+        } else if (msg.type === 'room:peer_joined') {
+          setCoopPeers(Array.isArray(msg.peers) ? msg.peers : []);
+          if (msg.peer?.name) {
+            showToast(
+              isEn
+                ? `${msg.peer.name} joined the 3D space!`
+                : `${msg.peer.name} vừa tham gia không gian 3D!`
+            );
+          }
+        } else if (msg.type === 'room:peer_left') {
+          setCoopPeers(Array.isArray(msg.peers) ? msg.peers : []);
+          if (msg.peerId) {
+            runtimeRef.current?.remoteHandManager.removePeer(msg.peerId);
+          }
+        } else if (msg.type === 'room:hand_pose') {
+          if (msg.peerId && msg.peerId !== coopSelfPeerId) {
+            runtimeRef.current?.remoteHandManager.applyPeerPose(msg as CoopPeerHandPose);
+            setCoopPeers((prev) =>
+              prev.map((p) =>
+                p.peerId === msg.peerId
+                  ? {
+                      ...p,
+                      handActive: Array.isArray(msg.skeletons) && msg.skeletons.length > 0,
+                      handCount: Array.isArray(msg.skeletons) ? msg.skeletons.length : 0,
+                      gesture: msg.gesture || 'none'
+                    }
+                  : p
+              )
+            );
+          }
+        } else if (msg.type === 'room:model_patch' && msg.originPeerId !== coopSelfPeerId) {
+          if (msg.patch) {
+            applyRemoteCoopModelState(msg.patch, false);
+          }
+        } else if (msg.type === 'room:ping_3d' && msg.peerId !== coopSelfPeerId) {
+          showToast(`${msg.name}: ${msg.text}`);
+        }
+      };
+
+      ws.onclose = () => {
+        if (coopWsRef.current === ws) coopWsRef.current = null;
+        if (cancelled) return;
+        setCoopWsStatus('disconnected');
+        if (coopTargetRoomId) {
+          reconnectTimer = window.setTimeout(() => {
+            if (!cancelled) connectSocket(!forceRemote);
+          }, 2200);
+        }
+      };
+
+      ws.onerror = () => {
+        if (!cancelled) {
+          setCoopWsStatus('error');
+        }
+      };
+    };
+
+    connectSocket(false);
+
+    // Stream local 21-landmark skeleton hands at ~18 Hz
+    let hadLocalHandSent = false;
+    handStreamTimer = window.setInterval(() => {
+      const ws = coopWsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      const cfg = paramsRef.current;
+      if (cfg.entryView !== 'studio' || cfg.spaceMode !== '3d') return;
+
+      const hf = handFrameRef.current;
+      let skeletons: CoopHandSkeleton[] = [];
+      let gesture: HandGestureId = 'none';
+      let fingerCount = 0;
+
+      if (cfg.cameraActive && hf.detected && hf.skeletons.length > 0) {
+        skeletons = hf.skeletons.map((s) => ({
+          handIndex: s.handIndex,
+          handedness: s.handedness,
+          pinching: s.pinching,
+          gesture: hf.gesture,
+          landmarks: s.landmarks
+        }));
+        gesture = hf.gesture;
+        fingerCount = hf.fingerCount;
+      } else if (!cfg.cameraActive && (virtualPadDownRef.current || mouseHoverNdcRef.current.active)) {
+        const nx = virtualPadDownRef.current
+          ? (smoothTargetRef.current.cursorX + 3.2) / 6.4
+          : (mouseHoverNdcRef.current.x + 1) * 0.5;
+        const ny = virtualPadDownRef.current
+          ? 1 - smoothTargetRef.current.cursorY / 3.8
+          : (1 - mouseHoverNdcRef.current.y) * 0.5;
+        gesture = cfg.virtualGesture;
+        skeletons = [synthesizePointerSkeleton(nx, ny, gesture)];
+        fingerCount = gesture === 'point_1' ? 1 : gesture === 'slice_2' ? 2 : 5;
+      }
+
+      if (skeletons.length > 0 || hadLocalHandSent) {
+        hadLocalHandSent = skeletons.length > 0;
+        try {
+          ws.send(
+            JSON.stringify({
+              type: 'hand_pose',
+              skeletons,
+              gesture,
+              fingerCount
+            })
+          );
+        } catch {}
+      }
+    }, 55);
+
+    // Sync local shared model parameter changes (~140ms cadence) when changed locally
+    modelSyncTimer = window.setInterval(() => {
+      const ws = coopWsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN || isRemoteCoopApplyRef.current) return;
+      const cfg = paramsRef.current;
+      const rotY = runtimeRef.current?.model
+        ? +(runtimeRef.current.model.group.rotation.y.toFixed(2))
+        : 0;
+      const sig = [
+        cfg.modeId,
+        cfg.activeCustomId || '',
+        cfg.explodeVal.toFixed(2),
+        cfg.scaleVal.toFixed(2),
+        cfg.heightVal.toFixed(2),
+        cfg.sliceEnabled ? '1' : '0',
+        cfg.sliceY.toFixed(2),
+        cfg.finish,
+        cfg.paletteId,
+        highlightedPartIdxRef.current ?? '',
+        isolatedPartIdxRef.current ?? '',
+        rotY,
+        detachedPartsVersionRef.current
+      ].join('|');
+
+      if (sig === lastSentModelSigRef.current) return;
+      lastSentModelSigRef.current = sig;
+
+      const activeCustom = cfg.activeCustomId
+        ? customModelsRef.current.find((m) => m.id === cfg.activeCustomId) || null
+        : null;
+      const activeM = SPATIAL_MODES.find((m) => m.id === cfg.modeId) || SPATIAL_MODES[0];
+
+      try {
+        ws.send(
+          JSON.stringify({
+            type: 'model_patch',
+            patch: {
+              modeId: cfg.modeId,
+              customModel: activeCustom,
+              modelTitle: activeCustom
+                ? isEn
+                  ? activeCustom.titleEn
+                  : activeCustom.titleVi
+                : isEn
+                ? activeM.titleEn
+                : activeM.titleVi,
+              explodeVal: +cfg.explodeVal.toFixed(2),
+              scaleVal: +cfg.scaleVal.toFixed(2),
+              heightVal: +cfg.heightVal.toFixed(2),
+              sliceEnabled: cfg.sliceEnabled,
+              sliceY: +cfg.sliceY.toFixed(2),
+              finish: cfg.finish,
+              paletteId: cfg.paletteId,
+              rotY,
+              highlightedPartIdx: highlightedPartIdxRef.current,
+              isolatedPartIdx: isolatedPartIdxRef.current,
+              detachedOffsets: collectDetachedOffsetsMap(runtimeRef.current?.model || null)
+            }
+          })
+        );
+      } catch {}
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      if (handStreamTimer) window.clearInterval(handStreamTimer);
+      if (modelSyncTimer) window.clearInterval(modelSyncTimer);
+      if (coopWsRef.current) {
+        try {
+          coopWsRef.current.send(JSON.stringify({ type: 'leave' }));
+          coopWsRef.current.close(1000, 'cleanup');
+        } catch {}
+        coopWsRef.current = null;
+      }
+      runtimeRef.current?.remoteHandManager.clearAll();
+    };
+  }, [coopTargetRoomId, coopSelfPeerId, user, isEn, applyRemoteCoopModelState, showToast]);
 
   useEffect(() => {
     const rt = runtimeRef.current;
@@ -3421,6 +4745,50 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     [highlightedPartIdx, isolatedPartIdx, modelParts.length]
   );
 
+  const handleReassembleAllParts = useCallback(() => {
+    const rt = runtimeRef.current;
+    if (rt?.model) {
+      for (const p of rt.model.explodables) {
+        if (p.detachTarget) p.detachTarget.set(0, 0, 0);
+      }
+      rt.tetherManager.hideFrom(0);
+    }
+    smoothTargetRef.current.explode = 0;
+    smoothTargetRef.current.carryX = 0;
+    smoothTargetRef.current.carryY = 0;
+    smoothTargetRef.current.carryZ = 0;
+    setExplodeVal(0);
+    setDetachedPartCount(0);
+    setActiveGrabInfo(null);
+    setHighlightedPartIdx(null);
+    setIsolatedPartIdx(null);
+    detachedPartsVersionRef.current += 1;
+    playSpatialSfx('snap', tactileSfxEnabled);
+    showToast(isEn ? 'Reassembled all parts back together!' : 'Đã lắp ráp khít toàn bộ mô hình về nguyên trạng!');
+  }, [isEn, showToast, tactileSfxEnabled]);
+
+  const handleReassembleSinglePart = useCallback(
+    (partIdx: number) => {
+      const rt = runtimeRef.current;
+      const part = rt?.model?.explodables[partIdx];
+      if (!rt?.model || !part) return;
+      if (part.detachTarget) part.detachTarget.set(0, 0, 0);
+      setDetachedPartCount(countDetachedParts(rt.model));
+      detachedPartsVersionRef.current += 1;
+      playSpatialSfx('snap', tactileSfxEnabled);
+      showToast(isEn ? `Reattached: ${part.info.nameEn}` : `Đã lắp lại: ${part.info.nameVi}`);
+    },
+    [isEn, showToast, tactileSfxEnabled]
+  );
+
+  const handleZoomStep = useCallback((delta: number) => {
+    setScaleVal((prev) => {
+      const next = +THREE.MathUtils.clamp(prev + delta, 0.42, 2.45).toFixed(2);
+      smoothTargetRef.current.scale = next;
+      return next;
+    });
+  }, []);
+
   const handleResetView = useCallback(() => {
     if (spaceMode === '2d') {
       canvas2DRef.current?.resetBoard();
@@ -3428,6 +4796,16 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       showToast(isEn ? 'Reset 2D board' : 'Đã đặt lại hình học 2D');
       return;
     }
+    if (runtimeRef.current?.model) {
+      for (const p of runtimeRef.current.model.explodables) {
+        if (p.detachTarget) p.detachTarget.set(0, 0, 0);
+        if (p.detachOffset) p.detachOffset.set(0, 0, 0);
+      }
+      runtimeRef.current.tetherManager.hideFrom(0);
+    }
+    setDetachedPartCount(0);
+    setActiveGrabInfo(null);
+    detachedPartsVersionRef.current += 1;
     setIsolatedPartIdx(null);
     setHighlightedPartIdx(null);
     setScaleVal(1.0);
@@ -3446,6 +4824,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       rotOffset: 0,
       pitchOffset: 0,
       tiltOffset: 0,
+      carryX: 0,
+      carryY: 0,
+      carryZ: 0,
       cursorX: 0,
       cursorY: 1.5,
       cursorZ: 0
@@ -3455,6 +4836,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       runtimeRef.current.controls.target.set(0, 1.65, 0);
       runtimeRef.current.controls.update();
       if (runtimeRef.current.model) {
+        runtimeRef.current.model.group.position.set(0, 0, 0);
         runtimeRef.current.model.group.rotation.set(0, 0, 0);
       }
       runtimeRef.current.isolatedHolder.rotation.set(0, 0, 0);
@@ -3885,6 +5267,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           onLaunch2DGuide={() => handleEnter2DSpace(true)}
           onOpenAICreator={() => setShowAICreator(true)}
           onOpenRealScanner={handleOpenRealScanner}
+          onOpenCoop={() => {
+            setEntryView('studio');
+            setSpaceMode('3d');
+            setShow3DGuide(false);
+            setShowCoopModal(true);
+          }}
         />
       )}
 
@@ -4047,6 +5435,29 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     <Crosshair className="w-3.5 h-3.5" />
                     <span>{isEn ? 'Point & Ask' : 'Chỉ & Hỏi AI'}</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCoopModal(true)}
+                    className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
+                      coopActiveRoom
+                        ? 'bg-emerald-500 hover:bg-emerald-400 border-emerald-200 text-slate-950 shadow-lg shadow-emerald-500/25'
+                        : 'bg-slate-950/95 hover:border-emerald-400 border-emerald-400/55 text-emerald-200'
+                    }`}
+                    title={
+                      isEn
+                        ? 'Classmate Virtual Hands (2–4 learners in shared 3D)'
+                        : 'Bàn Tay Ảo Bạn Học: Cùng 2–4 bạn bè tương tác 1 mô hình 3D'
+                    }
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>
+                      {coopActiveRoom
+                        ? `${isEn ? 'Co-op' : 'Bạn Học'} (${coopPeers.length}/${coopActiveRoom.maxMembers})`
+                        : isEn
+                        ? 'Co-op Hands'
+                        : 'Bạn Học 3D'}
+                    </span>
+                  </button>
                 </>
               )}
 
@@ -4202,6 +5613,42 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               </div>
               <div className="text-[10px] text-slate-400 font-mono tabular-nums">{liveTelemetry.metricC}</div>
             </div>
+
+            {spaceMode === '3d' && coopActiveRoom && (
+              <div className="spatial-hud-frame w-full rounded-lg bg-slate-950/95 border border-emerald-400/60 p-2.5 text-[11px] space-y-1.5">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-mono font-extrabold text-emerald-300 text-[10px]">
+                    {isEn ? 'CO-OP' : 'PHÒNG'} #{coopActiveRoom.roomId} · {coopPeers.length}/{coopActiveRoom.maxMembers}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowCoopModal(true)}
+                    className="text-[10px] font-bold text-cyan-300 hover:text-cyan-200 underline cursor-pointer"
+                  >
+                    {isEn ? 'Invite' : 'Mời bạn'}
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {coopPeers.map((peer) => (
+                    <div key={peer.peerId} className="flex items-center justify-between gap-1.5 text-[10px]">
+                      <span className="flex items-center gap-1.5 min-w-0 font-bold text-slate-100 truncate">
+                        <span
+                          className="w-2 h-2 rounded-xs shrink-0"
+                          style={{ backgroundColor: peer.colorHex }}
+                        />
+                        <span className="truncate">
+                          {peer.name}
+                          {peer.peerId === coopSelfPeerId ? (isEn ? ' (You)' : ' (Bạn)') : ''}
+                        </span>
+                      </span>
+                      <span className={peer.handActive ? 'text-emerald-300 font-mono' : 'text-slate-500 font-mono'}>
+                        {peer.handActive ? `${peer.handCount}H` : '•'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {cameraActive && (
               <div className="spatial-hud-frame relative w-[240px] h-[180px] rounded-lg overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
@@ -4459,6 +5906,130 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     ? 'Raise 2 fingers or click a part · Swipe L/R to cycle'
                     : 'Giơ 2 ngón tay (hoặc bấm vào khối) để xem riêng · Vuốt Trái/Phải chuyển'}
                 </div>
+              </div>
+            )}
+
+          {/* Case 2B: Real-Grab Active Manipulation / Detached Part Inspector Card */}
+          {spaceMode === '3d' &&
+            isolatedPartIdx === null &&
+            !pointAskActive &&
+            explodeVal < 0.25 &&
+            (activeGrabInfo ||
+              detachedPartCount > 0 ||
+              (interactionStyle === 'real_grab' &&
+                highlightedPartIdx !== null &&
+                modelParts[highlightedPartIdx])) && (
+              <div className="spatial-hud-frame pointer-events-auto w-[min(320px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/55 shadow-2xl p-2.5 space-y-2">
+                {(() => {
+                  const targetIdx =
+                    activeGrabInfo?.partIdx !== undefined && activeGrabInfo?.partIdx !== null
+                      ? activeGrabInfo.partIdx
+                      : highlightedPartIdx;
+                  const partMeta = targetIdx !== null && targetIdx !== undefined ? modelParts[targetIdx] : null;
+                  const statusLabel =
+                    activeGrabInfo?.kind === 'hold'
+                      ? isEn
+                        ? 'HOLDING WHOLE MODEL'
+                        : 'ĐANG CẦM CẢ MÔ HÌNH'
+                      : activeGrabInfo?.kind === 'part'
+                      ? isEn
+                        ? 'PULLING / DETACHING'
+                        : 'ĐANG CẦM & THÁO RỜI'
+                      : activeGrabInfo?.kind === 'hover'
+                      ? isEn
+                        ? 'HOVERING PART'
+                        : 'CHẠM BỘ PHẬN'
+                      : detachedPartCount > 0
+                      ? isEn
+                        ? `DETACHED: ${detachedPartCount} PART(S)`
+                        : `ĐÃ THÁO RỜI: ${detachedPartCount} CHI TIẾT`
+                      : isEn
+                      ? 'PART READY TO GRAB'
+                      : 'SẴN SÀNG CẦM THÁO';
+                  return (
+                    <>
+                      <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-bold">
+                        <span
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border whitespace-nowrap shrink-0 ${
+                            activeGrabInfo?.kind === 'part' || activeGrabInfo?.kind === 'hold'
+                              ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300'
+                              : 'bg-amber-400/15 border-amber-400/50 text-amber-300'
+                          }`}
+                        >
+                          <Hand className="w-3 h-3 shrink-0" />
+                          <span>{statusLabel}</span>
+                        </span>
+                        {activeGrabInfo && activeGrabInfo.kind === 'part' && (
+                          <span className="text-cyan-300 whitespace-nowrap shrink-0">
+                            {activeGrabInfo.distance.toFixed(2)} m
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-xs font-extrabold text-white truncate">
+                        {activeGrabInfo?.partName ||
+                          (partMeta
+                            ? isEn
+                              ? partMeta.nameEn
+                              : partMeta.nameVi
+                            : isEn
+                            ? `${detachedPartCount} part(s) disassembled`
+                            : `${detachedPartCount} bộ phận đang tháo rời`)}
+                      </div>
+
+                      <div className="text-[10px] text-slate-400 leading-snug">
+                        {activeGrabInfo?.kind === 'hold'
+                          ? isEn
+                            ? 'Move hand or drag to rotate & carry the model; release to place.'
+                            : 'Di chuyển tay/chuột để xoay & di dời cả khối; thả ra để đặt lại.'
+                          : activeGrabInfo?.kind === 'part'
+                          ? isEn
+                            ? 'Pull away to inspect, or drop near socket (<0.36m) for magnetic snap.'
+                            : 'Kéo ra ngoài để tháo rời, hoặc thả gần khớp (<0.36m) để hít khít lại.'
+                          : isEn
+                          ? 'Drag any part to disassemble · Shift+Drag holds whole model · 2-hand spreads zoom'
+                          : 'Chụm/kéo chi tiết để tháo · Giữ Shift+kéo để cầm cả khối · 2 tay phóng to/thu nhỏ'}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {targetIdx !== null && targetIdx !== undefined && partMeta && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleReassembleSinglePart(targetIdx)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-400/50 hover:bg-emerald-500/30 text-emerald-200 text-[10px] font-bold whitespace-nowrap shrink-0 cursor-pointer"
+                            >
+                              <Magnet className="w-3 h-3 shrink-0" />
+                              <span>{isEn ? 'Snap Part' : 'Lắp lại phần này'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setHighlightedPartIdx(targetIdx);
+                                setIsolatedPartIdx(targetIdx);
+                                setPartCardMinimized(false);
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[10px] font-extrabold whitespace-nowrap shrink-0 cursor-pointer"
+                            >
+                              <Maximize2 className="w-3 h-3 shrink-0" />
+                              <span>{isEn ? 'Inspect 360°' : 'Xem riêng 360°'}</span>
+                            </button>
+                          </>
+                        )}
+                        {detachedPartCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleReassembleAllParts()}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-900 border border-cyan-400/50 hover:bg-cyan-500/15 text-cyan-200 text-[10px] font-bold whitespace-nowrap shrink-0 cursor-pointer"
+                          >
+                            <RotateCcw className="w-3 h-3 shrink-0" />
+                            <span>{isEn ? 'Snap All' : 'Lắp lại tất cả'}</span>
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -4751,6 +6322,168 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       {/* UNIFIED COLLAPSIBLE BOTTOM CONTROL DOCK */}
       {!hudHidden && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[min(980px,96vw)] flex flex-col items-center">
+          {spaceMode === '3d' && !pointAskActive && isolatedPartIdx === null && (
+            <div className="mb-1.5 flex flex-wrap items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/95 border border-slate-700/85 shadow-xl max-w-full">
+              {interactionStyle === 'real_grab' && (
+                <div className="flex items-center gap-1 pr-1.5 border-r border-slate-800">
+                  {(
+                    [
+                      {
+                        id: 'smart_grab' as const,
+                        labelVi: 'Cầm & Tháo',
+                        labelEn: 'Grab Part',
+                        icon: Hand,
+                        titleVi: 'Kéo trực tiếp để tháo lắp từng bộ phận (nền trống xoay camera)',
+                        titleEn: 'Drag any part to detach/snap; drag empty space to orbit'
+                      },
+                      {
+                        id: 'hold_model' as const,
+                        labelVi: 'Cầm Cả Khối',
+                        labelEn: 'Hold Model',
+                        icon: Move,
+                        titleVi: 'Cầm & xoay toàn bộ mô hình như ngoài đời (hoặc giữ Shift + Kéo)',
+                        titleEn: 'Hold & rotate entire model freely (or Shift + Drag)'
+                      },
+                      {
+                        id: 'orbit' as const,
+                        labelVi: 'Xoay Camera',
+                        labelEn: 'Orbit Cam',
+                        icon: Orbit,
+                        titleVi: 'Chế độ xoay camera chuẩn quanh mô hình',
+                        titleEn: 'Standard orbit camera around model'
+                      }
+                    ] as const
+                  ).map((tool) => {
+                    const ToolIcon = tool.icon;
+                    const active = mouseHandTool === tool.id;
+                    return (
+                      <button
+                        key={tool.id}
+                        type="button"
+                        onClick={() => setMouseHandTool(tool.id)}
+                        title={isEn ? tool.titleEn : tool.titleVi}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                          active
+                            ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                            : 'bg-slate-900 border border-slate-700/80 text-slate-300 hover:border-emerald-400/60 hover:text-white'
+                        }`}
+                      >
+                        <ToolIcon className="w-3 h-3 shrink-0" />
+                        <span>{isEn ? tool.labelEn : tool.labelVi}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex items-center gap-1 pr-1.5 border-r border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => handleZoomStep(-0.15)}
+                  title={isEn ? 'Zoom Out' : 'Thu nhỏ mô hình'}
+                  className="p-1 rounded-md bg-slate-900 border border-slate-700/80 hover:border-cyan-400 text-slate-200 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <span className="px-1.5 text-[11px] font-mono font-bold text-cyan-300 whitespace-nowrap shrink-0">
+                  {scaleVal.toFixed(2)}x
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleZoomStep(0.15)}
+                  title={isEn ? 'Zoom In' : 'Phóng to mô hình'}
+                  className="p-1 rounded-md bg-slate-900 border border-slate-700/80 hover:border-cyan-400 text-slate-200 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1 pr-1.5 border-r border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = explodeVal >= 0.35 ? 0 : 1.15;
+                    smoothTargetRef.current.explode = next;
+                    setExplodeVal(next);
+                  }}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer ${
+                    explodeVal >= 0.35
+                      ? 'bg-amber-400 text-slate-950'
+                      : 'bg-slate-900 border border-slate-700/80 text-slate-200 hover:border-amber-400/60'
+                  }`}
+                >
+                  <Layers className="w-3 h-3 shrink-0" />
+                  <span>
+                    {explodeVal >= 0.35
+                      ? isEn
+                        ? 'Collapse'
+                        : 'Thu Gọn'
+                      : isEn
+                      ? 'Explode'
+                      : 'Tách Lớp'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleReassembleAllParts()}
+                  disabled={detachedPartCount === 0 && explodeVal < 0.05}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                    detachedPartCount > 0 || explodeVal >= 0.05
+                      ? 'bg-cyan-500/20 border border-cyan-400 text-cyan-200 hover:bg-cyan-500/30'
+                      : 'bg-slate-900 border border-slate-800 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <Magnet className="w-3 h-3 shrink-0" />
+                  <span>
+                    {isEn ? 'Snap Back' : 'Lắp Lại'}
+                    {detachedPartCount > 0 ? ` (${detachedPartCount})` : ''}
+                  </span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setInteractionStyle((prev) => (prev === 'real_grab' ? 'classic' : 'real_grab'))
+                  }
+                  title={
+                    isEn
+                      ? 'Toggle Real-Life Grab vs Classic Gesture Mode'
+                      : 'Chuyển chế độ Cầm Nắm Thực Tế / Cử Chỉ Cổ Điển'
+                  }
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer border ${
+                    interactionStyle === 'real_grab'
+                      ? 'bg-emerald-500/15 border-emerald-400/60 text-emerald-300'
+                      : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <span>
+                    {interactionStyle === 'real_grab'
+                      ? isEn
+                        ? 'Real-Grab'
+                        : 'Thực tế'
+                      : isEn
+                      ? 'Classic'
+                      : 'Cổ điển'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTactileSfxEnabled((v) => !v)}
+                  title={isEn ? 'Toggle Tactile Snap SFX' : 'Bật/tắt âm thanh cầm nắm & khớp nối'}
+                  className={`p-1 rounded-md border whitespace-nowrap shrink-0 cursor-pointer ${
+                    tactileSfxEnabled
+                      ? 'bg-cyan-500/15 border-cyan-400/55 text-cyan-300'
+                      : 'bg-slate-900 border-slate-700 text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {tactileSfxEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => setDockCollapsed((v) => !v)}
@@ -6105,6 +7838,69 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               : `Đã quét thực tế & dựng 3D: ${created.titleVi}`
           );
         }}
+      />
+
+      {/* Multiplayer Co-op 3D Skeleton Hands ("Bàn tay ảo của bạn học" · 2–4 Learners) */}
+      <SpatialCoopModal
+        isOpen={showCoopModal}
+        isEn={isEn}
+        onClose={() => setShowCoopModal(false)}
+        currentModelTitle={
+          activeCustomModel
+            ? isEn
+              ? activeCustomModel.titleEn
+              : activeCustomModel.titleVi
+            : isEn
+            ? activeMode.titleEn
+            : activeMode.titleVi
+        }
+        currentModelState={{
+          modeId,
+          customModel: activeCustomModel,
+          explodeVal,
+          scaleVal,
+          heightVal,
+          sliceEnabled,
+          sliceY,
+          finish,
+          paletteId,
+          rotY: runtimeRef.current?.model?.group.rotation.y || 0,
+          pitchX: runtimeRef.current?.model?.group.rotation.x || 0,
+          highlightedPartIdx,
+          isolatedPartIdx,
+          detachedOffsets: collectDetachedOffsetsMap(runtimeRef.current?.model || null)
+        }}
+        activeRoom={coopActiveRoom}
+        peers={coopPeers}
+        selfPeerId={coopSelfPeerId}
+        wsStatus={coopWsStatus}
+        wsError={coopWsError}
+        onJoinRoom={(roomId, fallbackMeta) => {
+          coopFallbackMetaRef.current = fallbackMeta || null;
+          setEntryView('studio');
+          setSpaceMode('3d');
+          setShow3DGuide(false);
+          setCoopTargetRoomId(roomId.trim().toUpperCase());
+        }}
+        onLeaveRoom={() => {
+          setCoopTargetRoomId(null);
+          showToast(isEn ? 'Left Co-op 3D Room' : 'Đã rời phòng 3D chung');
+        }}
+        onRoomCreatedAndJoin={(room) => {
+          coopFallbackMetaRef.current = {
+            roomId: room.roomId,
+            title: room.title,
+            modelId: room.modelId,
+            modelTitle: room.modelTitle,
+            hostName: room.hostName
+          };
+          setCoopActiveRoom(room);
+          setEntryView('studio');
+          setSpaceMode('3d');
+          setShow3DGuide(false);
+          setCoopTargetRoomId(room.roomId);
+        }}
+        onNavigateForum={onNavigate ? () => onNavigate('forum') : undefined}
       />
     </>
   );

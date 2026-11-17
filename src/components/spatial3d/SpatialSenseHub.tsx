@@ -12,6 +12,7 @@ import {
   RotateCcw,
   Scan,
   Sparkles,
+  Users,
   Video
 } from 'lucide-react';
 import { GESTURE_DEFINITIONS } from './handGestureTracker';
@@ -25,6 +26,7 @@ interface SpatialSenseHubProps {
   onLaunch2DGuide?: () => void;
   onOpenAICreator?: () => void;
   onOpenRealScanner?: () => void;
+  onOpenCoop?: () => void;
 }
 
 type GuideViewTab = 'workflow' | 'gestures' | 'fallback';
@@ -37,7 +39,8 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
   onLaunch2D,
   onLaunch2DGuide,
   onOpenAICreator,
-  onOpenRealScanner
+  onOpenRealScanner,
+  onOpenCoop
 }) => {
   const [guideTab, setGuideTab] = useState<GuideViewTab>('workflow');
 
@@ -176,6 +179,16 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
               <span>{isEn ? 'Open 3D Space' : 'Vào Không Gian 3D'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
+            {onOpenCoop && (
+              <button
+                type="button"
+                onClick={onOpenCoop}
+                className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/60 text-xs font-extrabold text-emerald-200 cursor-pointer"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Co-op Hands (2–4)' : 'Bàn Tay Bạn Học (2–4)'}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -455,7 +468,68 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
           </div>
         )}
 
-        {/* SECTION 3: FLASHY ANIMATED CONTROLS & OPERATION MANUAL FRAME */}
+        {/* PORTAL 4: BÀN TAY ẢO CỦA BẠN HỌC (KHÔNG GIAN 3D CHUNG 2–4 NGƯỜI QUA MẠNG) */}
+        {onOpenCoop && (
+          <div
+            style={{ animationDelay: '145ms' }}
+            className="spatial-holo-card spatial-step-reveal shadow-2xl"
+          >
+            <div className="spatial-holo-ring spatial-holo-ring-emerald" />
+            <div className="relative z-10 rounded-[9px] bg-[#061322] p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 overflow-hidden">
+              <div className="spatial-laser-sweep" />
+
+              <div className="flex items-start gap-4 min-w-0">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-slate-950/90 border border-emerald-400/45 flex items-center justify-center shrink-0">
+                  <svg viewBox="0 0 100 100" className="w-16 h-16">
+                    <circle cx="30" cy="48" r="14" fill="rgba(34,211,238,0.16)" stroke="#22d3ee" strokeWidth="2" />
+                    <circle cx="70" cy="48" r="14" fill="rgba(245,158,11,0.16)" stroke="#f59e0b" strokeWidth="2" />
+                    <polygon points="50,30 62,50 50,70 38,50" fill="rgba(16,185,129,0.22)" stroke="#10b981" strokeWidth="2" />
+                    <line x1="30" y1="34" x2="50" y2="30" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="3 2" />
+                    <line x1="70" y1="34" x2="50" y2="30" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="3 2" />
+                  </svg>
+                </div>
+
+                <div className="space-y-2 min-w-0">
+                  <div className="flex items-center gap-2 text-[11px] font-mono font-extrabold text-emerald-300 uppercase tracking-wider">
+                    <Users className="w-4 h-4" />
+                    <span>
+                      {isEn
+                        ? 'SPACE MODULE 04 · MULTIPLAYER VIRTUAL SKELETON HANDS (2–4)'
+                        : 'PHẦN 04 · BÀN TAY ẢO CỦA BẠN HỌC (2–4 NGƯỜI)'}
+                    </span>
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-white">
+                    {isEn
+                      ? 'Explore Shared 3D Models Live With Classmates’ Skeleton Hands'
+                      : 'Cùng 2–4 Bạn Học Khám Phá 1 Mô Hình 3D · Thấy Rõ Khung Xương Tay Nhau'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Create a synced 3D Co-op room and post a 1-click invite directly into Study Forum groups. Everyone sees each other’s 21-joint 3D skeleton hands exploding, rotating, and pointing at parts together in real time.'
+                      : 'Tạo phòng 3D chung rồi gửi thẳng thẻ mời vào các nhóm Diễn đàn học tập. Từ 2–4 bạn bè cùng tham gia sẽ nhìn thấy bàn tay khung xương 21 khớp 3D của nhau theo thời gian thực cùng xoay, tách cấu trúc và chỉ chi tiết trên một mô hình chung.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={onOpenCoop}
+                  className="cs-deck-btn flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 text-xs font-extrabold cursor-pointer whitespace-nowrap shadow-lg shadow-emerald-500/20"
+                >
+                  <Users className="w-4 h-4" />
+                  <span>{isEn ? 'Create / Join Co-op Room' : 'Tạo Phòng & Mời Diễn Đàn'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <span className="text-[11px] font-mono text-emerald-300/90 text-center md:text-right">
+                  {isEn ? 'Live 21-joint WebSocket hand sync' : 'Đồng bộ khung xương tay WebSocket 2–4 bạn'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 5: FLASHY ANIMATED CONTROLS & OPERATION MANUAL FRAME */}
         <div
           style={{ animationDelay: '160ms' }}
           className="spatial-holo-card spatial-step-reveal shadow-2xl"
@@ -468,7 +542,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
               <div>
                 <div className="flex items-center gap-2 text-[11px] font-mono font-extrabold text-amber-300 uppercase tracking-wider">
                   <Hand className="w-4 h-4" />
-                  <span>{isEn ? 'UNIFIED COMMAND & GESTURE GUIDE' : 'PHẦN 03 · HƯỚNG DẪN ĐIỀU KHIỂN & THAO TÁC'}</span>
+                  <span>{isEn ? 'UNIFIED COMMAND & GESTURE GUIDE' : 'PHẦN 05 · HƯỚNG DẪN ĐIỀU KHIỂN & THAO TÁC'}</span>
                 </div>
                 <h2 className="text-lg sm:text-xl font-extrabold text-white mt-0.5">
                   {isEn

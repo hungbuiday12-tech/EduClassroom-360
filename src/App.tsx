@@ -136,6 +136,10 @@ function MainApp() {
   // Guest explore mode state: allows unauthenticated visitors to explore the classroom
   const [isGuestExploring, setIsGuestExploring] = useState<boolean>(() => {
     try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('coopRoom')) return true;
+      }
       return sessionStorage.getItem('educlassroom_guest_exploring') === 'true';
     } catch {
       return false;
@@ -411,6 +415,11 @@ function MainApp() {
                       onBack={goBack}
                       onNavigate={selectSubject}
                       onEarnXP={handleEarnXP}
+                      initialCoopRoomCode={location.coopRoomCode}
+                      coopInviteMeta={location.coopInviteMeta}
+                      onConsumeCoopRoom={() =>
+                        navigate({ coopRoomCode: null, coopInviteMeta: null }, { replace: true })
+                      }
                     />
                   )}
                 </motion.div>

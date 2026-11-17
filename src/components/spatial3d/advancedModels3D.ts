@@ -18,6 +18,8 @@ export interface ExplodablePart {
   basePos: THREE.Vector3;
   explodeDir: THREE.Vector3;
   info: ExplodablePartInfo;
+  detachTarget?: THREE.Vector3;
+  detachOffset?: THREE.Vector3;
 }
 
 export interface DynamicModelRef {

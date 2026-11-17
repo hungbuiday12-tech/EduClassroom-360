@@ -23,6 +23,14 @@ export interface NavLocation {
   examId: string | null;
   synapseMode: 'catalog' | 'stage';
   synapseMonumentId: string;
+  coopRoomCode: string | null;
+  coopInviteMeta?: {
+    roomId?: string;
+    title?: string;
+    modelId?: string;
+    modelTitle?: string;
+    hostName?: string;
+  } | null;
   tutorOpen: boolean;
   tutorSubject: SubjectType;
 }
@@ -46,9 +54,28 @@ const DEFAULT_LOCATION: NavLocation = {
   examId: null,
   synapseMode: 'catalog',
   synapseMonumentId: 'dyson',
+  coopRoomCode: null,
+  coopInviteMeta: null,
   tutorOpen: false,
   tutorSubject: 'math'
 };
+
+function getInitialLocation(): NavLocation {
+  try {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const rawCode = params.get('coopRoom')?.trim().toUpperCase();
+      if (rawCode && /^[A-Z0-9]{4,12}$/.test(rawCode)) {
+        return {
+          ...DEFAULT_LOCATION,
+          subject: 'spatial_3d',
+          coopRoomCode: rawCode
+        };
+      }
+    }
+  } catch {}
+  return DEFAULT_LOCATION;
+}
 
 export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): string {
   const isEn = lang === 'en';
@@ -142,6 +169,7 @@ function isSameLocation(a: NavLocation, b: NavLocation): boolean {
     a.examId === b.examId &&
     a.synapseMode === b.synapseMode &&
     a.synapseMonumentId === b.synapseMonumentId &&
+    a.coopRoomCode === b.coopRoomCode &&
     a.tutorOpen === b.tutorOpen &&
     a.tutorSubject === b.tutorSubject
   );
@@ -165,7 +193,7 @@ interface NavigationContextValue {
 const NavigationContext = createContext<NavigationContextValue | null>(null);
 
 export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [location, setLocation] = useState<NavLocation>(DEFAULT_LOCATION);
+  const [location, setLocation] = useState<NavLocation>(getInitialLocation);
   const [historyStack, setHistoryStack] = useState<NavLocation[]>([]);
   const [reviewScrollTick, setReviewScrollTick] = useState<number>(0);
   const [directoryScrollTick, setDirectoryScrollTick] = useState<number>(0);

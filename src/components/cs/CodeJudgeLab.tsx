@@ -166,8 +166,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
     );
   }, [selectedLessonId, filteredLessons]);
 
-  // Code language for curriculum illustrated code & practice editor
+  // Code language & sample code tier ('basic' | 'advanced') for curriculum & Online Judge
   const [curriculumLang, setCurriculumLang] = useState<CodeLanguage>('cpp');
+  const [codeSampleTier, setCodeSampleTier] = useState<'basic' | 'advanced'>('basic');
+  const [showJudgeSampleDrawer, setShowJudgeSampleDrawer] = useState<boolean>(false);
   const [revealedSolution, setRevealedSolution] = useState<boolean>(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [lessonCodeMap, setLessonCodeMap] = useState<Record<string, { cpp: string; python: string }>>({});
@@ -201,7 +203,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       difficulty: tc.difficulty
     })),
     cppTemplate: DEFAULT_PRACTICE_CPP,
-    pythonTemplate: DEFAULT_PRACTICE_PYTHON
+    pythonTemplate: DEFAULT_PRACTICE_PYTHON,
+    basicSolutionCpp: p.basicSolutionCpp,
+    basicSolutionPython: p.basicSolutionPython,
+    advancedSolutionCpp: p.fullSolutionCpp,
+    advancedSolutionPython: p.fullSolutionPython,
+    solutionAnalysis: p.solutionAnalysis
   });
 
   // -----------------------------------------------------------------
@@ -490,8 +497,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
         userCode: codeToAnalyze,
         score,
         failedTests: failed,
-        fallbackSampleCpp: prob.fullSolutionCpp,
-        fallbackSamplePython: prob.fullSolutionPython
+        fallbackSampleCpp: prob.basicSolutionCpp || prob.fullSolutionCpp,
+        fallbackSamplePython: prob.basicSolutionPython || prob.fullSolutionPython,
+        fallbackAdvancedCpp: prob.fullSolutionCpp,
+        fallbackAdvancedPython: prob.fullSolutionPython
       });
       updateLessonPracticeState(prob, { mistakeAnalysis: analysis, isAnalyzingMistake: false });
     } catch {
@@ -1274,14 +1283,26 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
             />
           )}
 
-          {/* LESSON TAB 2: ILLUSTRATED CODE (C++ / PYTHON) */}
+          {/* LESSON TAB 2: ILLUSTRATED CODE (DUAL TIER: CƠ BẢN vs NÂNG CAO / CHUYÊN) */}
           {lessonTab === 'code' &&
             (() => {
               const activeCodeEx =
                 currentLesson.codeExamples.find((e) => e.language === curriculumLang) ||
                 currentLesson.codeExamples[0];
-              const displayCode = activeCodeEx?.code || '// Không có code mẫu';
-              const displayExplanation = activeCodeEx?.explanation || '';
+              const hasBasic = Boolean(activeCodeEx?.basicCode && activeCodeEx.basicCode.trim());
+              const effectiveTier = codeSampleTier === 'basic' && hasBasic ? 'basic' : 'advanced';
+              const displayTitle =
+                effectiveTier === 'basic'
+                  ? activeCodeEx?.basicTitle || activeCodeEx?.title
+                  : activeCodeEx?.advancedTitle || activeCodeEx?.title;
+              const displayCode =
+                effectiveTier === 'basic'
+                  ? activeCodeEx?.basicCode || activeCodeEx?.code || '// Không có code mẫu'
+                  : activeCodeEx?.advancedCode || activeCodeEx?.code || '// Không có code mẫu';
+              const displayExplanation =
+                effectiveTier === 'basic'
+                  ? activeCodeEx?.basicExplanation || activeCodeEx?.explanation || ''
+                  : activeCodeEx?.advancedExplanation || activeCodeEx?.explanation || '';
 
               return (
                 <div className="sci-frame bg-white/95 dark:bg-slate-900/95 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -1297,13 +1318,42 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <div>
                         <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                          Code Minh Họa Chuẩn Thi VNOI / HSG Quốc Gia
+                          {effectiveTier === 'basic'
+                            ? 'Code Minh Họa Cơ Bản (Thuật toán tối giản)'
+                            : 'Code Minh Họa Nâng Cao / Chuyên (DP · STL · VNOI)'}
                         </h3>
-                        <div className="text-xs text-slate-500">{activeCodeEx?.title}</div>
+                        <div className="text-xs text-slate-500">{displayTitle}</div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {hasBasic && (
+                        <div className="flex items-center bg-slate-200/80 dark:bg-slate-950 p-1 rounded-[4px] border border-slate-300 dark:border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => setCodeSampleTier('basic')}
+                            className={`px-3 py-1 rounded-[3px] text-xs font-bold whitespace-nowrap transition-all ${
+                              effectiveTier === 'basic'
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            Cơ bản (Tối giản)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCodeSampleTier('advanced')}
+                            className={`px-3 py-1 rounded-[3px] text-xs font-bold whitespace-nowrap transition-all ${
+                              effectiveTier === 'advanced'
+                                ? 'bg-amber-600 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            Nâng cao / Chuyên
+                          </button>
+                        </div>
+                      )}
+
                       <div className="flex items-center bg-slate-200/80 dark:bg-slate-950 p-1 rounded-[4px] border border-slate-300 dark:border-slate-800">
                         <button
                           onClick={() => setCurriculumLang('cpp')}
@@ -1333,14 +1383,28 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     <MonokaiCodeBlock
                       code={displayCode}
                       language={curriculumLang}
-                      title={curriculumLang === 'cpp' ? 'example.cpp' : 'example.py'}
+                      title={
+                        effectiveTier === 'basic'
+                          ? curriculumLang === 'cpp'
+                            ? 'basic_example.cpp'
+                            : 'basic_example.py'
+                          : curriculumLang === 'cpp'
+                          ? 'advanced_example.cpp'
+                          : 'advanced_example.py'
+                      }
                       onCopy={() => handleCopy(displayCode)}
                       copied={copiedText === displayCode}
                     />
                   </div>
 
                   {displayExplanation && (
-                    <div className="px-4 sm:px-6 py-3 bg-sky-50/60 dark:bg-sky-950/20 border-t border-sky-100 dark:border-sky-900/30 text-xs text-sky-900 dark:text-sky-300 font-medium">
+                    <div
+                      className={`px-4 sm:px-6 py-3 border-t text-xs font-medium ${
+                        effectiveTier === 'basic'
+                          ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30 text-emerald-900 dark:text-emerald-300'
+                          : 'bg-sky-50/60 dark:bg-sky-950/20 border-sky-100 dark:border-sky-900/30 text-sky-900 dark:text-sky-300'
+                      }`}
+                    >
                       <FormattedText text={displayExplanation} />
                     </div>
                   )}
@@ -1595,7 +1659,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       </div>
                     )}
 
-                    {/* Sample & Optimal VNOI Solution */}
+                    {/* Sample Solutions: Cơ bản (Tối giản) vs Nâng cao / Chuyên */}
                     <div className="pt-2">
                       <button
                         type="button"
@@ -1604,75 +1668,121 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       >
                         <span>
                           {isSolutionShown
-                            ? 'Ẩn code mẫu / lời giải tối ưu chuẩn VNOI'
-                            : 'Xem gợi ý & code mẫu tối ưu chuẩn VNOI'}
+                            ? 'Ẩn code mẫu 2 cấp độ (Cơ bản & Nâng cao / Chuyên)'
+                            : 'Xem gợi ý & code mẫu 2 cấp độ (Cơ bản & Nâng cao / Chuyên)'}
                         </span>
                       </button>
 
-                      {isSolutionShown && (
-                        <div className="mt-3 p-5 rounded-md bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-4 animate-fadeIn">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                              Code Mẫu / Tối Ưu Chuẩn VNOI &amp; Chiến Lược Giải:
-                            </h4>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setCurriculumLang('cpp')}
-                                className={`px-2.5 py-1 rounded-[4px] text-[11px] font-bold border ${
-                                  curriculumLang === 'cpp'
-                                    ? 'bg-sky-600 border-sky-500 text-white'
-                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
-                                }`}
-                              >
-                                C++
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setCurriculumLang('python')}
-                                className={`px-2.5 py-1 rounded-[4px] text-[11px] font-bold border ${
-                                  curriculumLang === 'python'
-                                    ? 'bg-sky-600 border-sky-500 text-white'
-                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
-                                }`}
-                              >
-                                Python
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setLessonCode(
-                                    prob.id,
-                                    curriculumLang,
-                                    curriculumLang === 'cpp' ? prob.fullSolutionCpp : prob.fullSolutionPython
-                                  )
-                                }
-                                className="sheen-btn px-2.5 py-1 rounded-[4px] bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold"
-                              >
-                                Nạp Code Tối Ưu Vào Editor
-                              </button>
+                      {isSolutionShown && (() => {
+                        const hasBasicSol = Boolean(
+                          curriculumLang === 'cpp' ? prob.basicSolutionCpp : prob.basicSolutionPython
+                        );
+                        const activeTier = codeSampleTier === 'basic' && hasBasicSol ? 'basic' : 'advanced';
+                        const activeSolCode =
+                          activeTier === 'basic'
+                            ? curriculumLang === 'cpp'
+                              ? prob.basicSolutionCpp || prob.fullSolutionCpp
+                              : prob.basicSolutionPython || prob.fullSolutionPython
+                            : curriculumLang === 'cpp'
+                            ? prob.fullSolutionCpp
+                            : prob.fullSolutionPython;
+                        const activeSolAnalysis =
+                          activeTier === 'basic'
+                            ? prob.basicAnalysis || prob.solutionAnalysis
+                            : prob.solutionAnalysis;
+
+                        return (
+                          <div className="mt-3 p-5 rounded-md bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-4 animate-fadeIn">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                  Code Mẫu &amp; Chiến Lược Giải:
+                                </h4>
+                                {hasBasicSol && (
+                                  <div className="inline-flex items-center p-0.5 rounded-[4px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                                    <button
+                                      type="button"
+                                      onClick={() => setCodeSampleTier('basic')}
+                                      className={`px-2.5 py-1 rounded-[3px] text-[11px] font-bold ${
+                                        activeTier === 'basic'
+                                          ? 'bg-emerald-600 text-white'
+                                          : 'text-slate-600 dark:text-slate-300'
+                                      }`}
+                                    >
+                                      Cơ bản (Tối giản)
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setCodeSampleTier('advanced')}
+                                      className={`px-2.5 py-1 rounded-[3px] text-[11px] font-bold ${
+                                        activeTier === 'advanced'
+                                          ? 'bg-amber-600 text-white'
+                                          : 'text-slate-600 dark:text-slate-300'
+                                      }`}
+                                    >
+                                      Nâng cao / Chuyên (DP · Tối ưu)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setCurriculumLang('cpp')}
+                                  className={`px-2.5 py-1 rounded-[4px] text-[11px] font-bold border ${
+                                    curriculumLang === 'cpp'
+                                      ? 'bg-sky-600 border-sky-500 text-white'
+                                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                                  }`}
+                                >
+                                  C++
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setCurriculumLang('python')}
+                                  className={`px-2.5 py-1 rounded-[4px] text-[11px] font-bold border ${
+                                    curriculumLang === 'python'
+                                      ? 'bg-sky-600 border-sky-500 text-white'
+                                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                                  }`}
+                                >
+                                  Python
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setLessonCode(prob.id, curriculumLang, activeSolCode)}
+                                  className="sheen-btn px-2.5 py-1 rounded-[4px] bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold"
+                                >
+                                  {activeTier === 'basic'
+                                    ? 'Nạp Code Cơ Bản Vào Editor'
+                                    : 'Nạp Code Nâng Cao Vào Editor'}
+                                </button>
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
-                            <FormattedText text={prob.solutionAnalysis} />
-                          </div>
+                            <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                              <FormattedText text={activeSolAnalysis} />
+                            </div>
 
-                          <MonokaiCodeBlock
-                            code={curriculumLang === 'cpp' ? prob.fullSolutionCpp : prob.fullSolutionPython}
-                            language={curriculumLang}
-                            title={curriculumLang === 'cpp' ? 'optimal_solution.cpp' : 'optimal_solution.py'}
-                            onCopy={() =>
-                              handleCopy(curriculumLang === 'cpp' ? prob.fullSolutionCpp : prob.fullSolutionPython)
-                            }
-                            copied={
-                              copiedText ===
-                              (curriculumLang === 'cpp' ? prob.fullSolutionCpp : prob.fullSolutionPython)
-                            }
-                            maxHeightClass="max-h-[360px]"
-                          />
-                        </div>
-                      )}
+                            <MonokaiCodeBlock
+                              code={activeSolCode}
+                              language={curriculumLang}
+                              title={
+                                activeTier === 'basic'
+                                  ? curriculumLang === 'cpp'
+                                    ? 'basic_solution.cpp'
+                                    : 'basic_solution.py'
+                                  : curriculumLang === 'cpp'
+                                  ? 'advanced_solution.cpp'
+                                  : 'advanced_solution.py'
+                              }
+                              onCopy={() => handleCopy(activeSolCode)}
+                              copied={copiedText === activeSolCode}
+                              maxHeightClass="max-h-[360px]"
+                            />
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -1945,6 +2055,132 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                           </div>
                         ))}
                       </div>
+
+                      {/* Dual-tier Sample Code Drawer in Online Judge */}
+                      {(currentProblem.basicSolutionCpp ||
+                        currentProblem.advancedSolutionCpp ||
+                        currentProblem.basicSolutionPython ||
+                        currentProblem.advancedSolutionPython) && (
+                        <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowJudgeSampleDrawer((v) => !v)}
+                            className="text-[11px] font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1.5"
+                          >
+                            <Code2 className="w-3.5 h-3.5" />
+                            <span>
+                              {showJudgeSampleDrawer
+                                ? 'Ẩn Code Mẫu (Cơ bản & Nâng cao / Chuyên)'
+                                : 'Xem Code Mẫu 2 Cấp Độ (Cơ bản & Nâng cao / Chuyên)'}
+                            </span>
+                          </button>
+
+                          {showJudgeSampleDrawer && (() => {
+                            const hasBasic = Boolean(
+                              judgeLang === 'cpp'
+                                ? currentProblem.basicSolutionCpp
+                                : currentProblem.basicSolutionPython
+                            );
+                            const hasAdv = Boolean(
+                              judgeLang === 'cpp'
+                                ? currentProblem.advancedSolutionCpp
+                                : currentProblem.advancedSolutionPython
+                            );
+                            const tier =
+                              codeSampleTier === 'advanced' && hasAdv
+                                ? 'advanced'
+                                : hasBasic
+                                ? 'basic'
+                                : 'advanced';
+                            const sampleCode =
+                              tier === 'basic'
+                                ? judgeLang === 'cpp'
+                                  ? currentProblem.basicSolutionCpp || currentProblem.advancedSolutionCpp || ''
+                                  : currentProblem.basicSolutionPython || currentProblem.advancedSolutionPython || ''
+                                : judgeLang === 'cpp'
+                                ? currentProblem.advancedSolutionCpp || currentProblem.basicSolutionCpp || ''
+                                : currentProblem.advancedSolutionPython || currentProblem.basicSolutionPython || '';
+
+                            return (
+                              <div
+                                className={`p-3 rounded-[4px] border space-y-2 ${
+                                  isJudgeFullscreen
+                                    ? 'bg-slate-900/95 border-slate-800'
+                                    : 'bg-white dark:bg-slate-900/95 border-slate-200 dark:border-slate-800'
+                                }`}
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                  <div className="inline-flex items-center p-0.5 rounded-[4px] bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                                    {hasBasic && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setCodeSampleTier('basic')}
+                                        className={`px-2 py-0.5 rounded-[3px] text-[10px] font-bold ${
+                                          tier === 'basic'
+                                            ? 'bg-emerald-600 text-white'
+                                            : 'text-slate-600 dark:text-slate-400'
+                                        }`}
+                                      >
+                                        Cơ bản (Tối giản)
+                                      </button>
+                                    )}
+                                    {hasAdv && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setCodeSampleTier('advanced')}
+                                        className={`px-2 py-0.5 rounded-[3px] text-[10px] font-bold ${
+                                          tier === 'advanced'
+                                            ? 'bg-amber-600 text-white'
+                                            : 'text-slate-600 dark:text-slate-400'
+                                        }`}
+                                      >
+                                        Nâng cao / Chuyên
+                                      </button>
+                                    )}
+                                  </div>
+                                  {sampleCode && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setCode(sampleCode);
+                                        setMobileJudgePane('editor');
+                                      }}
+                                      className="px-2 py-1 rounded-[3px] bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold"
+                                    >
+                                      Nạp vào Editor
+                                    </button>
+                                  )}
+                                </div>
+
+                                {currentProblem.solutionAnalysis && (
+                                  <div className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                                    <FormattedText text={currentProblem.solutionAnalysis} />
+                                  </div>
+                                )}
+
+                                {sampleCode && (
+                                  <MonokaiCodeBlock
+                                    code={sampleCode}
+                                    language={judgeLang}
+                                    title={
+                                      tier === 'basic'
+                                        ? judgeLang === 'cpp'
+                                          ? 'basic.cpp'
+                                          : 'basic.py'
+                                        : judgeLang === 'cpp'
+                                        ? 'advanced.cpp'
+                                        : 'advanced.py'
+                                    }
+                                    onCopy={() => handleCopy(sampleCode)}
+                                    copied={copiedText === sampleCode}
+                                    maxHeightClass="max-h-[260px]"
+                                  />
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

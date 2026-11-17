@@ -515,6 +515,12 @@ export interface CSLesson {
     title: string;
     code: string;
     explanation: string;
+    basicTitle?: string;
+    basicCode?: string;
+    basicExplanation?: string;
+    advancedTitle?: string;
+    advancedCode?: string;
+    advancedExplanation?: string;
   }[];
   practiceProblem: {
     id: string;
@@ -527,6 +533,9 @@ export interface CSLesson {
     solutionAnalysis: string;
     fullSolutionCpp: string;
     fullSolutionPython: string;
+    basicAnalysis?: string;
+    basicSolutionCpp?: string;
+    basicSolutionPython?: string;
   };
 }
 
@@ -565,6 +574,11 @@ export interface CodingProblem {
   hiddenCases: TestCase[];
   cppTemplate: string;
   pythonTemplate: string;
+  basicSolutionCpp?: string;
+  basicSolutionPython?: string;
+  advancedSolutionCpp?: string;
+  advancedSolutionPython?: string;
+  solutionAnalysis?: string;
 }
 
 export interface TestResult {

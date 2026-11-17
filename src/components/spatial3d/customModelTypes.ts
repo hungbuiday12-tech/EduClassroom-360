@@ -9,7 +9,35 @@ export type CustomModelPrimitiveKind =
   | 'icosahedron'
   | 'ring'
   | 'capsule'
-  | 'prism';
+  | 'prism'
+  | 'lathe_vase'
+  | 'lathe_dome'
+  | 'lathe_nozzle'
+  | 'rounded_box'
+  | 'extrude_fin'
+  | 'tube_arch'
+  | 'frustum';
+
+export type CustomModelMaterialKind =
+  | 'brushed_metal'
+  | 'anodized'
+  | 'glossy_paint'
+  | 'glass'
+  | 'rubber_matte'
+  | 'ceramic'
+  | 'copper_coil'
+  | 'neon_emissive'
+  | 'wood';
+
+export type CustomModelDetailStyle =
+  | 'none'
+  | 'bezel_rings'
+  | 'fins_radial'
+  | 'ribs'
+  | 'fasteners'
+  | 'vents'
+  | 'core_glow'
+  | 'dual_band';
 
 export type CustomModelColorRole = 'primary' | 'secondary' | 'highlight' | 'glow';
 
@@ -35,6 +63,13 @@ export interface CustomModelPartSpec {
   primitive: CustomModelPrimitiveKind;
   colorRole: CustomModelColorRole;
   customHex?: string;
+  secondaryHex?: string;
+  materialKind?: CustomModelMaterialKind;
+  detailStyle?: CustomModelDetailStyle;
+  metalness?: number;
+  roughness?: number;
+  opacity?: number;
+  dimensionsCm?: [number, number, number];
   pos: [number, number, number];
   rot: [number, number, number]; // radians
   scale: [number, number, number];
@@ -84,5 +119,12 @@ export const CUSTOM_MODEL_PRIMITIVES: CustomModelPrimitiveKind[] = [
   'icosahedron',
   'ring',
   'capsule',
-  'prism'
+  'prism',
+  'lathe_vase',
+  'lathe_dome',
+  'lathe_nozzle',
+  'rounded_box',
+  'extrude_fin',
+  'tube_arch',
+  'frustum'
 ];

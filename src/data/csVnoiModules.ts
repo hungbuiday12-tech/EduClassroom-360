@@ -413,6 +413,24 @@ export const EXTRA_VNOI_LESSONS: CSLesson[] = [
       {
         language: 'cpp',
         title: 'C++ Euclid GCD & Binary Exponentiation',
+        basicTitle: 'C++ Cơ bản: Tìm ƯCLN và tính lũy thừa bằng vòng lặp trực tiếp trong main',
+        basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long a = 24, b = 36;
+    while (a != b) {
+        if (a > b) a -= b;
+        else b -= a;
+    }
+    cout << "GCD(24, 36) = " << a << '\\n';
+
+    long long base = 2, exp = 10, mod = 1000000007, kq = 1;
+    for (int i = 0; i < exp; i++) kq = (kq * base) % mod;
+    cout << "2^10 mod M = " << kq << '\\n';
+    return 0;
+}`,
+        basicExplanation: 'Tìm ƯCLN bằng trừ dần trực giác và tính lũy thừa bằng vòng lặp nhân từng bước ngay trong main().',
         code: `#include <iostream>
 using namespace std;
 
@@ -448,6 +466,18 @@ int main() {
       {
         language: 'python',
         title: 'Python math.gcd & pow(a, b, mod)',
+        basicTitle: 'Python Cơ bản: Chia lấy dư Euclid & nhân lặp không dùng hàm thư viện',
+        basicCode: `a, b = 24, 36
+while b != 0:
+    a, b = b, a % b
+print("GCD:", a)
+
+MOD = 10**9 + 7
+kq = 1
+for _ in range(10):
+    kq = (kq * 2) % MOD
+print("2^10 mod M:", kq)`,
+        basicExplanation: 'Tự viết vòng lặp Euclid và nhân modulo từng bước để hiểu bản chất thuật toán.',
         code: `import math
 
 MOD = 10**9 + 7
@@ -478,7 +508,28 @@ print("2^100 mod M:", pow(2, 100, MOD))`,
           explanation: 'Áp dụng luỹ thừa nhị phân trong ~30 bước lặp.'
         }
       ],
-      solutionAnalysis: 'Dùng thuật toán luỹ thừa nhị phân (Binary Exponentiation) nhân dồn bình phương cơ số kết hợp modulo ở mỗi bước nhân.',
+      solutionAnalysis: 'Dùng thuật toán luỹ thừa nhị phân (Binary Exponentiation) nhân dồn bình phương cơ số kết hợp modulo ở mỗi bước nhân (O(log b)).',
+      basicAnalysis: 'Cơ bản: Khi b nhỏ, nhân dồn a đúng b lần và chia dư cho 10^9 + 7 ngay trong vòng lặp for (O(b), không cần phép toán bit hay chia đôi số mũ).',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long a, b;
+    cin >> a >> b;
+    long long MOD = 1000000007;
+    long long res = 1;
+    for (long long i = 0; i < b; i++) {
+        res = (res * (a % MOD)) % MOD;
+    }
+    cout << res;
+    return 0;
+}`,
+      basicSolutionPython: `a, b = map(int, input().split())
+MOD = 1000000007
+res = 1
+for _ in range(b):
+    res = (res * a) % MOD
+print(res)`,
       fullSolutionCpp: `#include <iostream>
 using namespace std;
 
@@ -572,7 +623,24 @@ solve()`
     codeExamples: [
       {
         language: 'cpp',
-        title: 'C++ Deque tìm Min đoạn tịnh tiến độ dài K',
+        title: 'C++ Deque tìm Min đoạn tịnh tiến độ dài K (O(N))',
+        basicTitle: 'C++ Cơ bản: Hai vòng lặp for tìm Min từng đoạn K phần tử (O(N·K))',
+        basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    int a[5] = {4, 2, 5, 1, 3};
+    int n = 5, k = 3;
+    for (int i = 0; i <= n - k; i++) {
+        int nhoNhat = a[i];
+        for (int j = i + 1; j < i + k; j++) {
+            if (a[j] < nhoNhat) nhoNhat = a[j];
+        }
+        cout << nhoNhat << " ";
+    }
+    return 0;
+}`,
+        basicExplanation: 'Không cần Deque: duyệt từng đoạn độ dài K bắt đầu từ i và tìm phần tử nhỏ nhất bằng vòng lặp trong main().',
         code: `#include <iostream>
 #include <vector>
 #include <deque>
@@ -597,6 +665,14 @@ int main() {
       {
         language: 'python',
         title: 'Python collections.deque Sliding Window Min',
+        basicTitle: 'Python Cơ bản: Dùng vòng lặp cắt từng đoạn a[i:i+k]',
+        basicCode: `a = [4, 2, 5, 1, 3]
+k = 3
+res = []
+for i in range(len(a) - k + 1):
+    res.append(min(a[i:i + k]))
+print(*res)`,
+        basicExplanation: 'Với mỗi cửa sổ độ dài K, lấy giá trị min trực tiếp mà không cần cấu trúc deque.',
         code: `from collections import deque
 
 def sliding_min(a, k):
@@ -636,6 +712,39 @@ print(*sliding_min([4, 2, 5, 1, 3], 3))`,
         }
       ],
       solutionAnalysis: 'Dùng Stack: gặp ngoặc mở thì đẩy vào Stack; gặp ngoặc đóng thì kiểm tra Stack không rỗng và đỉnh Stack phải là ngoặc mở cùng loại rồi pop ra. Cuối cùng Stack phải rỗng hoàn toàn.',
+      basicAnalysis: 'Cơ bản: Thay vì dùng std::stack, mô phỏng ngăn xếp bằng một chuỗi ký tự đơn giản `openStr` cộng/xóa ở cuối, viết gọn trong main().',
+      basicSolutionCpp: `#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+    string s, st = "";
+    cin >> s;
+    for (int i = 0; i < (int)s.size(); i++) {
+        char c = s[i];
+        if (c == '(' || c == '[' || c == '{') {
+            st += c;
+        } else {
+            if (st.empty()) {
+                cout << "NO";
+                return 0;
+            }
+            char top = st.back();
+            if ((c == ')' && top == '(') || (c == ']' && top == '[') || (c == '}' && top == '{')) {
+                st.pop_back();
+            } else {
+                cout << "NO";
+                return 0;
+            }
+        }
+    }
+    cout << (st.empty() ? "YES" : "NO");
+    return 0;
+}`,
+      basicSolutionPython: `s = input().strip()
+while "()" in s or "[]" in s or "{}" in s:
+    s = s.replace("()", "").replace("[]", "").replace("{}", "")
+print("YES" if s == "" else "NO")`,
       fullSolutionCpp: `#include <iostream>
 #include <string>
 #include <stack>
@@ -756,7 +865,30 @@ solve()`
     codeExamples: [
       {
         language: 'cpp',
-        title: 'C++ Thuật toán KMP tìm số lần xuất hiện của P trong T',
+        title: 'C++ Thuật toán KMP tìm số lần xuất hiện của P trong T (O(N + M))',
+        basicTitle: 'C++ Cơ bản: So khớp trực tiếp bằng 2 vòng lặp for trong main (O(N·M))',
+        basicCode: `#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+    string T = "ababcabcabababd";
+    string P = "ababd";
+    int n = T.size(), m = P.size(), matches = 0;
+    for (int i = 0; i <= n - m; i++) {
+        bool khop = true;
+        for (int j = 0; j < m; j++) {
+            if (T[i + j] != P[j]) {
+                khop = false;
+                break;
+            }
+        }
+        if (khop) matches++;
+    }
+    cout << "So lan xuat hien: " << matches << '\\n';
+    return 0;
+}`,
+        basicExplanation: 'Đặt mẫu P lần lượt tại mọi vị trí i của T rồi kiểm tra từng ký tự, không cần mảng hàm tiền tố KMP.',
         code: `#include <iostream>
 #include <string>
 #include <vector>
@@ -784,6 +916,15 @@ int main() {
       {
         language: 'python',
         title: 'Python KMP Prefix Function',
+        basicTitle: 'Python Cơ bản: Đếm bằng cắt chuỗi T[i:i+m] == P',
+        basicCode: `T = "ababcabcabababd"
+P = "ababd"
+ans = 0
+for i in range(len(T) - len(P) + 1):
+    if T[i:i + len(P)] == P:
+        ans += 1
+print(ans)`,
+        basicExplanation: 'Duyệt qua từng vị trí bắt đầu i và kiểm tra đoạn con dài |P| có bằng P hay không.',
         code: `def kmp_count(text: str, pattern: str) -> int:
     s = pattern + "#" + text
     n, m = len(s), len(pattern)
@@ -818,7 +959,36 @@ print(kmp_count("ababcabcabababd", "ababd"))`,
           explanation: 'Xâu "aa" xuất hiện tại các vị trí bắt đầu 0, 1, 2, 3 trong "aaaaa" (chồng lấp).'
         }
       ],
-      solutionAnalysis: 'Xây dựng hàm tiền tố trên xâu ghép S = P + "#" + T. Mỗi vị trí i > |P| có pi[i] == |P| tương ứng với một lần xâu P xuất hiện kết thúc tại vị trí đó.',
+      solutionAnalysis: 'Xây dựng hàm tiền tố trên xâu ghép S = P + "#" + T. Mỗi vị trí i > |P| có pi[i] == |P| tương ứng với một lần xâu P xuất hiện kết thúc tại vị trí đó (O(|T| + |P|)).',
+      basicAnalysis: 'Cơ bản: Duyệt từng vị trí i từ 0 đến |T|-|P| trong main(), kiểm tra từng ký tự của P có khớp liên tiếp với T[i+j] hay không (O(|T|·|P|), dễ đọc không dùng KMP).',
+      basicSolutionCpp: `#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+    string T, P;
+    cin >> T >> P;
+    int n = T.size(), m = P.size(), ans = 0;
+    for (int i = 0; i <= n - m; i++) {
+        bool ok = true;
+        for (int j = 0; j < m; j++) {
+            if (T[i + j] != P[j]) {
+                ok = false;
+                break;
+            }
+        }
+        if (ok) ans++;
+    }
+    cout << ans;
+    return 0;
+}`,
+      basicSolutionPython: `T = input().strip()
+P = input().strip()
+ans = 0
+for i in range(len(T) - len(P) + 1):
+    if T[i:i + len(P)] == P:
+        ans += 1
+print(ans)`,
       fullSolutionCpp: `#include <iostream>
 #include <string>
 #include <vector>

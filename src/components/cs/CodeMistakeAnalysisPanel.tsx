@@ -38,6 +38,7 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
   darkSurface = false
 }) => {
   const [copiedSample, setCopiedSample] = useState(false);
+  const [sampleTier, setSampleTier] = useState<'basic' | 'advanced'>('basic');
 
   if (score === null || !results) return null;
 
@@ -192,15 +193,15 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
         </div>
       )}
 
-      {/* 4. AI Mistake Analysis & Simple Sample Code */}
+      {/* 4. AI Mistake Analysis & Dual-Tier Sample Code */}
       <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Bot className={`w-5 h-5 ${darkSurface ? 'text-sky-400' : 'text-sky-600 dark:text-sky-400'}`} />
             <h4 className="text-sm font-extrabold">
               {score < 100
-                ? 'Phân Tích Chỗ Sai Trong Code & Code Mẫu Đơn Giản (AI)'
-                : 'Nhận Xét & Tối Ưu Hóa Code (AI)'}
+                ? 'Phân Tích Chỗ Sai Trong Code & Code Mẫu 2 Cấp Độ (AI)'
+                : 'Nhận Xét & Code Mẫu 2 Cấp Độ (AI)'}
             </h4>
           </div>
           {analysis && (
@@ -216,7 +217,7 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
             <div className="text-xs">
               <div className="font-bold">AI đang đối chiếu mã nguồn của bạn với các test bị sai...</div>
               <div className="text-slate-500 dark:text-slate-400">
-                Đang tìm dòng code lỗi, giải thích nguyên nhân và viết lại code mẫu đơn giản nhất.
+                Đang tìm dòng code lỗi và biên soạn cả Code Cơ bản (tối giản) lẫn Code Nâng cao / Chuyên.
               </div>
             </div>
           </div>
@@ -254,48 +255,105 @@ export const CodeMistakeAnalysisPanel: React.FC<CodeMistakeAnalysisPanelProps> =
               </div>
             )}
 
-            {analysis.simpleSampleCode && (
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-xs font-bold flex items-center gap-1.5">
-                    <Code2 className="w-4 h-4 text-emerald-500" />
-                    <span>
-                      Code Mẫu Đơn Giản &amp; Dễ Hiểu ({language === 'python' ? 'Python 3' : 'C++17/20'})
-                    </span>
-                  </div>
-                  {onApplySampleCode && (
-                    <button
-                      type="button"
-                      onClick={() => onApplySampleCode(analysis.simpleSampleCode)}
-                      className="sheen-btn px-3 py-1 rounded-[4px] text-[11px] font-bold transition-colors bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
-                    >
-                      Nạp Code Mẫu Vào Editor
-                    </button>
-                  )}
-                </div>
+            {(analysis.simpleSampleCode || analysis.advancedSampleCode) && (() => {
+              const hasAdvanced = Boolean(analysis.advancedSampleCode && analysis.advancedSampleCode.trim());
+              const effectiveTier = sampleTier === 'advanced' && hasAdvanced ? 'advanced' : 'basic';
+              const shownCode =
+                effectiveTier === 'advanced'
+                  ? analysis.advancedSampleCode || analysis.simpleSampleCode
+                  : analysis.simpleSampleCode || analysis.advancedSampleCode || '';
+              const shownExplain =
+                effectiveTier === 'advanced'
+                  ? analysis.advancedCodeExplanation || analysis.simpleCodeExplanation
+                  : analysis.simpleCodeExplanation;
+              const shownComplexity =
+                effectiveTier === 'advanced'
+                  ? analysis.advancedComplexityNote || analysis.complexityNote
+                  : analysis.complexityNote;
 
-                <MonokaiCodeBlock
-                  code={analysis.simpleSampleCode}
-                  language={language}
-                  title={language === 'python' ? 'simple_sample.py' : 'simple_sample.cpp'}
-                  onCopy={() => handleCopy(analysis.simpleSampleCode)}
-                  copied={copiedSample}
-                  maxHeightClass="max-h-[340px]"
-                />
-
-                {analysis.simpleCodeExplanation && (
-                  <div className={`${subCardCls} text-xs leading-relaxed space-y-1`}>
-                    <div className="font-bold text-emerald-500">Giải thích code mẫu đơn giản:</div>
-                    <p>{analysis.simpleCodeExplanation}</p>
-                    {analysis.complexityNote && (
-                      <div className={`text-[11px] font-mono pt-1 ${darkSurface ? 'text-sky-400' : 'text-sky-600 dark:text-sky-400'}`}>
-                        Độ phức tạp: {analysis.complexityNote}
+              return (
+                <div className="space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-xs font-bold flex items-center gap-1.5">
+                        <Code2 className="w-4 h-4 text-emerald-500" />
+                        <span>
+                          Code Mẫu ({language === 'python' ? 'Python 3' : 'C++17/20'})
+                        </span>
                       </div>
+                      <div className={`inline-flex items-center p-0.5 rounded-[4px] border ${darkSurface ? 'bg-slate-900 border-slate-700' : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800'}`}>
+                        <button
+                          type="button"
+                          onClick={() => setSampleTier('basic')}
+                          className={`px-2.5 py-1 rounded-[3px] text-[11px] font-bold transition-colors ${
+                            effectiveTier === 'basic'
+                              ? 'bg-emerald-600 text-white'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          Cơ bản (Tối giản)
+                        </button>
+                        {hasAdvanced && (
+                          <button
+                            type="button"
+                            onClick={() => setSampleTier('advanced')}
+                            className={`px-2.5 py-1 rounded-[3px] text-[11px] font-bold transition-colors ${
+                              effectiveTier === 'advanced'
+                                ? 'bg-amber-600 text-white'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            Nâng cao / Chuyên (DP · Tối ưu)
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {onApplySampleCode && shownCode && (
+                      <button
+                        type="button"
+                        onClick={() => onApplySampleCode(shownCode)}
+                        className="sheen-btn px-3 py-1 rounded-[4px] text-[11px] font-bold transition-colors bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
+                      >
+                        {effectiveTier === 'advanced' ? 'Nạp Code Nâng Cao Vào Editor' : 'Nạp Code Cơ Bản Vào Editor'}
+                      </button>
                     )}
                   </div>
-                )}
-              </div>
-            )}
+
+                  <MonokaiCodeBlock
+                    code={shownCode}
+                    language={language}
+                    title={
+                      effectiveTier === 'advanced'
+                        ? language === 'python'
+                          ? 'advanced_solution.py'
+                          : 'advanced_solution.cpp'
+                        : language === 'python'
+                        ? 'basic_solution.py'
+                        : 'basic_solution.cpp'
+                    }
+                    onCopy={() => handleCopy(shownCode)}
+                    copied={copiedSample}
+                    maxHeightClass="max-h-[340px]"
+                  />
+
+                  {shownExplain && (
+                    <div className={`${subCardCls} text-xs leading-relaxed space-y-1`}>
+                      <div className={`font-bold ${effectiveTier === 'advanced' ? 'text-amber-500' : 'text-emerald-500'}`}>
+                        {effectiveTier === 'advanced'
+                          ? 'Chiến lược Nâng cao / Chuyên (DP / STL / Tối ưu):'
+                          : 'Giải thích code Cơ bản (Tối giản trong main):'}
+                      </div>
+                      <p>{shownExplain}</p>
+                      {shownComplexity && (
+                        <div className={`text-[11px] font-mono pt-1 ${darkSurface ? 'text-sky-400' : 'text-sky-600 dark:text-sky-400'}`}>
+                          Độ phức tạp: {shownComplexity}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ) : null}
       </div>

@@ -78,7 +78,11 @@ export interface DynamicModelRef {
       amplitude: number;
     };
   }[];
-  disposables: { geometries: THREE.BufferGeometry[]; materials: THREE.Material[] };
+  disposables: {
+    geometries: THREE.BufferGeometry[];
+    materials: THREE.Material[];
+    textures?: THREE.Texture[];
+  };
 }
 
 export interface BuilderMaterials {

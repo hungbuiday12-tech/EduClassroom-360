@@ -2719,15 +2719,17 @@ ${failedBlock}
 Yêu cầu phân tích:
 1. Chỉ rõ chỗ sai / nguyên nhân gây ra lỗi hoặc sai đáp án (ví dụ: sai logic, thiếu xử lý biên, tràn số int -> long long, sai vòng lặp, đọc sai input, lỗi cú pháp...).
 2. Giải thích thật dễ hiểu cho học sinh biết vì sao code hiện tại tạo ra Output như trên thay vì Expected.
-3. Đưa ra **simpleSampleCode**: Một đoạn code mẫu **ĐƠN GIẢN, NGẮN GỌN, DỄ HIỂU NHẤT** bằng ${langName} (có chú thích tiếng Việt súc tích ở các bước chính) để học sinh dễ học theo và chạy đúng 100% các test trên.
-4. Viết **simpleCodeExplanation** giải thích ngắn gọn cách hoạt động của code mẫu đơn giản đó.
+3. Đưa ra **simpleSampleCode** (Phiên bản CƠ BẢN - TỐI GIẢN): Thuật toán đơn giản, trực tiếp, hạn chế tối đa tách nhiều hàm phức tạp hoặc kỹ thuật nâng cao (viết tuần tự dễ hiểu ngay trong main() hoặc rất ít câu lệnh), chạy đúng các test cơ bản và dễ nắm bắt nhất cho người mới học, bằng ${langName}.
+4. Viết **simpleCodeExplanation** giải thích ngắn gọn cách hoạt động của code Cơ bản đó và **complexityNote** nêu độ phức tạp.
+5. Đưa ra **advancedSampleCode** (Phiên bản NÂNG CAO / CHUYÊN): Thuật toán tối ưu chuẩn HSG / Chuyên Tin (có thể sử dụng Quy hoạch động DP, cấu trúc dữ liệu STL, chia để trị, tối ưu bộ nhớ/thời gian, Fast I/O) đạt 100/100 mọi test lớn, bằng ${langName}.
+6. Viết **advancedCodeExplanation** giải thích chiến lược tối ưu (ví dụ công thức DP / độ phức tạp) và **advancedComplexityNote** nêu rõ Time/Space tối ưu.
 `;
 
     const response = await callGeminiWithFallback({
       ai,
       contents: prompt,
       systemInstruction:
-        'You are a patient Vietnamese competitive programming mentor. Diagnose exact mistakes in the student code against failed tests and output clean JSON strictly following the schema.',
+        'You are a patient Vietnamese competitive programming mentor. Diagnose exact mistakes in the student code against failed tests, provide BOTH a minimalist Basic solution and an optimized Advanced/DP solution, and output clean JSON strictly following the schema.',
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
@@ -2748,9 +2750,21 @@ Yêu cầu phân tích:
           },
           simpleSampleCode: { type: Type.STRING },
           simpleCodeExplanation: { type: Type.STRING },
-          complexityNote: { type: Type.STRING }
+          complexityNote: { type: Type.STRING },
+          advancedSampleCode: { type: Type.STRING },
+          advancedCodeExplanation: { type: Type.STRING },
+          advancedComplexityNote: { type: Type.STRING }
         },
-        required: ['summary', 'mistakes', 'simpleSampleCode', 'simpleCodeExplanation', 'complexityNote']
+        required: [
+          'summary',
+          'mistakes',
+          'simpleSampleCode',
+          'simpleCodeExplanation',
+          'complexityNote',
+          'advancedSampleCode',
+          'advancedCodeExplanation',
+          'advancedComplexityNote'
+        ]
       },
       thinkingLevel: ThinkingLevel.LOW,
       timeoutMs: 26000
@@ -3153,7 +3167,35 @@ const ALLOWED_PRIMITIVES = new Set([
   'icosahedron',
   'ring',
   'capsule',
-  'prism'
+  'prism',
+  'lathe_vase',
+  'lathe_dome',
+  'lathe_nozzle',
+  'rounded_box',
+  'extrude_fin',
+  'tube_arch',
+  'frustum'
+]);
+const ALLOWED_MATERIAL_KINDS = new Set([
+  'brushed_metal',
+  'anodized',
+  'glossy_paint',
+  'glass',
+  'rubber_matte',
+  'ceramic',
+  'copper_coil',
+  'neon_emissive',
+  'wood'
+]);
+const ALLOWED_DETAIL_STYLES = new Set([
+  'none',
+  'bezel_rings',
+  'fins_radial',
+  'ribs',
+  'fasteners',
+  'vents',
+  'core_glow',
+  'dual_band'
 ]);
 const ALLOWED_ROLES = new Set(['primary', 'secondary', 'highlight', 'glow']);
 const ALLOWED_ANIMS = new Set(['none', 'spin_y', 'spin_x', 'spin_z', 'pulse', 'bob_y', 'orbit_y']);
@@ -3195,7 +3237,7 @@ function sanitizeCustomModel(
   raw: any,
   sourceMeta: { ideaText: string; hasImage?: boolean; fileName?: string; scanMode?: string }
 ): any {
-  const rawParts = Array.isArray(raw?.parts) ? raw.parts.slice(0, 10) : [];
+  const rawParts = Array.isArray(raw?.parts) ? raw.parts.slice(0, 14) : [];
   const sanitizedParts = rawParts.map((p: any, idx: number) => {
     const px = clampNum(p?.pos?.[0], -3.2, 3.2, 0);
     const py = clampNum(p?.pos?.[1], 0.25, 4.0, 1.3 + idx * 0.22);
@@ -3211,6 +3253,8 @@ function sanitizeCustomModel(
     }
 
     const rawHex = typeof p?.customHex === 'string' && /^#[0-9a-fA-F]{6}$/.test(p.customHex) ? p.customHex : undefined;
+    const rawSecHex =
+      typeof p?.secondaryHex === 'string' && /^#[0-9a-fA-F]{6}$/.test(p.secondaryHex) ? p.secondaryHex : undefined;
 
     return {
       id: String(p?.id || `part_${idx + 1}`).replace(/[^a-zA-Z0-9_-]/g, '_'),
@@ -3223,9 +3267,24 @@ function sanitizeCustomModel(
       functionVi: String(p?.functionVi || 'Đóng vai trò liên kết cơ học hoặc truyền năng lượng trong mô hình.'),
       functionEn: String(p?.functionEn || 'Supports structural stability and motion transmission.'),
       specFormula: p?.specFormula ? String(p.specFormula).slice(0, 64) : undefined,
-      primitive: ALLOWED_PRIMITIVES.has(p?.primitive) ? p.primitive : 'box',
+      primitive: ALLOWED_PRIMITIVES.has(p?.primitive) ? p.primitive : 'rounded_box',
       colorRole: ALLOWED_ROLES.has(p?.colorRole) ? p.colorRole : idx % 2 === 0 ? 'primary' : 'secondary',
       ...(rawHex ? { customHex: rawHex } : {}),
+      ...(rawSecHex ? { secondaryHex: rawSecHex } : {}),
+      ...(ALLOWED_MATERIAL_KINDS.has(p?.materialKind) ? { materialKind: p.materialKind } : {}),
+      ...(ALLOWED_DETAIL_STYLES.has(p?.detailStyle) ? { detailStyle: p.detailStyle } : {}),
+      ...(typeof p?.metalness === 'number' ? { metalness: clampNum(p.metalness, 0, 1, 0.25) } : {}),
+      ...(typeof p?.roughness === 'number' ? { roughness: clampNum(p.roughness, 0.04, 1, 0.32) } : {}),
+      ...(typeof p?.opacity === 'number' ? { opacity: clampNum(p.opacity, 0.15, 1, 1) } : {}),
+      ...(Array.isArray(p?.dimensionsCm) && p.dimensionsCm.length === 3
+        ? {
+            dimensionsCm: [
+              clampNum(p.dimensionsCm[0], 0.5, 500, 10),
+              clampNum(p.dimensionsCm[1], 0.5, 500, 10),
+              clampNum(p.dimensionsCm[2], 0.5, 500, 10)
+            ]
+          }
+        : {}),
       pos: [px, py, pz],
       rot: [
         clampNum(p?.rot?.[0], -6.28, 6.28, 0),
@@ -3259,13 +3318,15 @@ function sanitizeCustomModel(
       introEn: 'Supporting structural module balancing the 3D assembly.',
       functionVi: 'Kết nối và truyền lực giữa các cụm bộ phận chính.',
       functionEn: 'Connects and stabilizes primary structural modules.',
-      primitive: idx === 0 ? 'cylinder' : idx === 1 ? 'sphere' : 'torus',
+      primitive: idx === 0 ? 'lathe_dome' : idx === 1 ? 'sphere' : 'torus',
       colorRole: idx % 2 === 0 ? 'primary' : 'glow',
+      materialKind: idx === 0 ? 'anodized' : 'brushed_metal',
+      detailStyle: idx === 0 ? 'bezel_rings' : 'none',
       pos: [0, 0.9 + idx * 0.55, 0],
       rot: [0, 0, 0],
       scale: [0.9, 0.65, 0.9],
       explodeDir: [Math.cos(idx * 1.5) * 1.2, 0.5, Math.sin(idx * 1.5) * 1.2],
-      addEdges: true,
+      addEdges: false,
       anim: { type: idx === 2 ? 'spin_y' : 'none', speed: 1.0, amplitude: 0.2 }
     });
   }
@@ -3347,16 +3408,19 @@ app.post('/api/spatial/generate-model', async (req: Request, res: Response) => {
 
     const cameraScanAddendum = isCameraScan
       ? `
-REAL-WORLD CAMERA OBJECT SCAN MODE:
-- You are looking at a live camera photo of a real physical object in the user's environment.
-- First, accurately identify the primary physical object in the foreground (include "detectedObjectVi" and "detectedObjectEn" in your JSON).
-- Reconstruct the object's authentic 3D silhouette, proportions, real surface colors (using accurate "customHex" values matching the object in the photo!), and internal/external structural parts (6 to 10 parts) so the user can explode, isolate every part with 2 fingers, slice it, and study its real-world geometry & STEM physics!
-- Set "badge" to "QUÉT THỰC TẾ" (or concise category like "VẬT THỂ THỰC TẾ").
+REAL-WORLD CAMERA OBJECT SCAN MODE (STUDIO CAD RECONSTRUCTION):
+- Inspect the live camera photo closely and identify the primary foreground physical object ("detectedObjectVi", "detectedObjectEn").
+- Reconstruct the object with Studio-Grade PBR realism (matching the quality of handcrafted CAD assemblies like Turbofan, Robot Arm, Supercar):
+  * Choose sculpted primitives ("lathe_vase", "lathe_dome", "lathe_nozzle", "rounded_box", "tube_arch", "extrude_fin", "frustum", "cylinder", "torus", "capsule") rather than crude single blocks!
+  * Extract authentic surface colors ("customHex") and contrasting trim accent colors ("secondaryHex") directly from the photo.
+  * Assign realistic PBR "materialKind" ("glass" for transparent lenses/screens/cups, "brushed_metal"/"anodized" for metallic frames/blades, "glossy_paint"/"ceramic" for painted housings/mugs, "rubber_matte" for grips/tires, "wood" for wooden parts, "neon_emissive" for LEDs/displays) and rich "detailStyle" trims ("bezel_rings", "fins_radial", "ribs", "fasteners", "vents", "core_glow", "dual_band").
+  * Include realistic real-world "dimensionsCm" [width, height, depth] for each part so Point & Ask volume calculations are physically accurate!
+- Set "badge" to "QUÉT THỰC TẾ".
 `
       : '';
 
     const systemInstruction = `You are a Principal 3D CAD & STEM Procedural Geometry Architect for Synapse.
-Your job is to convert the user's text idea, uploaded image/sketch, camera scan photo, or technical document into a coherent, recognizable, multi-part interactive 3D assembly in Three.js.
+Your job is to convert the user's text idea, uploaded image/sketch, camera scan photo, or technical document into a studio-grade, recognizable, multi-part PBR interactive 3D assembly in Three.js.
 ${cameraScanAddendum}
 OUTPUT ONLY VALID JSON matching this exact schema:
 {
@@ -3366,7 +3430,7 @@ OUTPUT ONLY VALID JSON matching this exact schema:
   "titleEn": "English title (concise, max 48 chars)",
   "badge": "SHORT UPPERCASE BADGE (e.g. QUÉT THỰC TẾ, HÀNG KHÔNG, SINH HỌC, CƠ KHÍ)",
   "formula": "Key governing STEM formula (e.g. V = πr²h · F = ṁ·v)",
-  "descVi": "1-2 sentences describing what this 3D model shows and how to interact (explode, inspect parts, slice).",
+  "descVi": "1-2 sentences describing what this 3D model shows and how to interact (explode, inspect parts, point & ask, slice).",
   "descEn": "1-2 sentences in English.",
   "parts": [
     {
@@ -3380,14 +3444,18 @@ OUTPUT ONLY VALID JSON matching this exact schema:
       "functionVi": "Clear 1-2 sentence functional engineering/scientific role in Vietnamese.",
       "functionEn": "Clear 1-2 sentence functional role in English.",
       "specFormula": "Optional short formula or dimension spec",
-      "primitive": "one of: box | sphere | cylinder | cone | torus | octahedron | dodecahedron | icosahedron | ring | capsule | prism",
+      "primitive": "one of: lathe_vase | lathe_dome | lathe_nozzle | rounded_box | extrude_fin | tube_arch | frustum | box | sphere | cylinder | cone | torus | octahedron | dodecahedron | icosahedron | ring | capsule | prism",
       "colorRole": "one of: primary | secondary | highlight | glow",
       "customHex": "#38bdf8",
+      "secondaryHex": "#cbd5e1",
+      "materialKind": "one of: brushed_metal | anodized | glossy_paint | glass | rubber_matte | ceramic | copper_coil | neon_emissive | wood",
+      "detailStyle": "one of: none | bezel_rings | fins_radial | ribs | fasteners | vents | core_glow | dual_band",
+      "dimensionsCm": [12.0, 18.0, 12.0],
       "pos": [x, y, z],
       "rot": [rx, ry, rz],
       "scale": [sx, sy, sz],
       "explodeDir": [ex, ey, ez],
-      "addEdges": true,
+      "addEdges": false,
       "anim": {
         "type": "one of: none | spin_y | spin_x | spin_z | pulse | bob_y | orbit_y",
         "speed": 1.2,
@@ -3402,15 +3470,15 @@ OUTPUT ONLY VALID JSON matching this exact schema:
   }
 }
 
-CRITICAL 3D ENGINEERING RULES:
-1. Build 5 to 9 parts that genuinely assemble into the recognizable silhouette of the requested object (never scatter random blobs!).
-2. Keep the assembled object grounded and centered neatly above the grid floor: x and z in [-2.2, 2.2], y in [0.4, 3.6].
-3. Scale values sx, sy, sz in [0.22, 2.8] to sculpt recognizable proportions (e.g. long cylinder for cup/bottle/fuselage, flattened boxes for wings/screens/blades, torus/ring for handles/rims/wheels, cone for lamp shades/funnels, sphere/icosahedron for bulbs/globes/joints).
-4. Set explodeDir [ex, ey, ez] pointing cleanly outward from the assembly center so pulling 2 hands apart separates every part clearly without overlapping!
-5. Give dynamic parts subtle animations where natural (e.g. spin_y for fan blades/rotors/wheels, pulse for glowing indicator/core, none for static structural parts).`;
+CRITICAL 3D ENGINEERING & VISUAL REALISM RULES:
+1. Build 7 to 12 hierarchical parts that genuinely assemble into the unmistakable silhouette of the subject: primary chassis/body, secondary functional assemblies (handles/wings/wheels/blades/mounts/optics), and fine accent details (collars, vents, glowing cores, glass shields, base stand).
+2. Always prefer sculpted silhouettes ("rounded_box", "lathe_vase", "lathe_dome", "lathe_nozzle", "tube_arch", "extrude_fin", "frustum") + rich "detailStyle" trims ("bezel_rings", "fins_radial", "ribs", "fasteners", "vents", "core_glow", "dual_band") and distinct PBR "materialKind" values across adjacent parts so materials contrast clearly (glossy vs brushed metal vs glass vs matte rubber).
+3. Keep the assembled object grounded and tightly connected above the grid floor: x and z in [-2.2, 2.2], y in [0.4, 3.6], scale values sx, sy, sz in [0.22, 2.8]. Adjacent parts must touch or interlock cleanly with zero floating pieces!
+4. Set explodeDir [ex, ey, ez] pointing cleanly outward from the assembly center so pulling 2 hands apart separates every part clearly without overlapping.
+5. Give dynamic parts subtle animations where natural (e.g. spin_y for rotors/wheels, pulse for LED/core, none for static housings).`;
 
     const promptText = isCameraScan
-      ? `Analyze the real-world object photographed by the user's camera and reconstruct it faithfully as an interactive multi-part 3D model with accurate colors and STEM properties.${trimmedIdea ? `\nUser hint about this object: ${trimmedIdea}` : ''}\nPreferred primary UI language: ${isEn ? 'English (still include Vietnamese fields)' : 'Vietnamese (still include English fields)'}.`
+      ? `Analyze the real-world object photographed by the user's camera and reconstruct it faithfully as a studio-grade PBR interactive multi-part 3D model with accurate colors, sculpted geometry, materials, and STEM properties.${trimmedIdea ? `\nUser hint about this object: ${trimmedIdea}` : ''}\nPreferred primary UI language: ${isEn ? 'English (still include Vietnamese fields)' : 'Vietnamese (still include English fields)'}.`
       : `User idea: ${trimmedIdea || 'Analyze the attached image/file and recreate it in 3D.'}
 ${fileName ? `Attachment filename: ${fileName}` : ''}
 ${trimmedDoc ? `Attachment content excerpt:\n${trimmedDoc}` : ''}
@@ -3434,7 +3502,7 @@ Preferred primary UI language: ${isEn ? 'English (still include Vietnamese field
       systemInstruction,
       responseMimeType: 'application/json',
       thinkingLevel: ThinkingLevel.LOW,
-      timeoutMs: 24000
+      timeoutMs: 26000
     });
 
     const parsed = safeParseGeminiJson<any>(response.text, {});
@@ -3458,6 +3526,148 @@ Preferred primary UI language: ${isEn ? 'English (still include Vietnamese field
     });
   } catch (err: any) {
     console.error('Error in /api/spatial/generate-model:', err);
+    return res.status(500).json({
+      error: extractCleanErrorMessage(err)
+    });
+  }
+});
+
+// =====================================================================
+// SPATIAL 3D POINT & ASK: MULTIMODAL PART EXPLANATION + VOLUME MATH
+// =====================================================================
+app.post('/api/spatial/point-and-ask', async (req: Request, res: Response) => {
+  const {
+    modelTitle = 'Mô hình 3D',
+    modelFormula = '',
+    partName = '',
+    partBadge = '',
+    partIntro = '',
+    partFunction = '',
+    partSpecFormula = '',
+    partDimensions = [1, 1, 1],
+    approxVolume = 1,
+    shapeHint = 'khối đa diện',
+    hitPoint = [0, 0, 0],
+    question = '',
+    imageBase64 = '',
+    language = 'vi'
+  } = req.body || {};
+
+  const trimmedQuestion = String(question || '').trim();
+  if (!trimmedQuestion) {
+    return res.status(400).json({ error: 'Vui lòng nhập hoặc nói câu hỏi về chi tiết đang chỉ.' });
+  }
+
+  try {
+    const ai = getGenAI();
+    const isEn = language === 'en';
+    const cleanImg =
+      typeof imageBase64 === 'string' && imageBase64.length > 24
+        ? imageBase64.replace(/^data:image\/\w+;base64,/, '')
+        : '';
+
+    const dims = Array.isArray(partDimensions) && partDimensions.length === 3 ? partDimensions : [1, 1, 1];
+    const w = Number(dims[0] || 1).toFixed(2);
+    const h = Number(dims[1] || 1).toFixed(2);
+    const d = Number(dims[2] || 1).toFixed(2);
+    const vol = Number(approxVolume || 0).toFixed(3);
+    const hit = Array.isArray(hitPoint) && hitPoint.length === 3 ? hitPoint : [0, 0, 0];
+
+    const systemInstruction = isEn
+      ? `You are Synapse's Spatial 3D STEM Tutor answering a student who is physically pointing at a specific 3D component with their finger/cursor and speaking a question.
+You receive:
+- A live snapshot of the 3D scene showing the glowing highlighted target component and reticle.
+- Exact 3D bounding-box geometry telemetry of the pointed component.
+- The student's spoken question.
+
+Respond accurately, concretely, and clearly in English using LaTeX ($...$) for formulas and numbers.`
+      : `Bạn là Gia Sư STEM Không Gian 3D của Synapse đang giải đáp trực tiếp cho học sinh khi họ dùng ngón tay / con trỏ chỉ trực tiếp vào một chi tiết trên mô hình 3D và đặt câu hỏi bằng giọng nói.
+Bạn được cung cấp:
+- Ảnh chụp trực tiếp góc nhìn 3D hiện tại (chi tiết được khoanh vùng sáng cyan và có tâm ngắm tại vị trí chỉ trỏ).
+- Thông số kích thước không gian, hình học & chức năng thực tế của đúng chi tiết đang chỉ.
+- Câu hỏi trực tiếp của học sinh.
+
+Hãy trả lời súc tích, chuẩn xác, dễ hiểu bằng tiếng Việt (viết công thức toán/vật lý trong dấu $...$).
+Nếu câu hỏi liên quan đến kích thước, diện tích hoặc thể tích (như "tính thể tích phần này"), hãy sử dụng ngay kích thước đo được (${w} × ${h} × ${d} đơn vị không gian, ước lượng hình học ${vol}) và công thức hình học tương ứng để giải từng bước rõ ràng!`;
+
+    const promptText = `
+Mô hình đang học: ${modelTitle} ${modelFormula ? `(Công thức chung: ${modelFormula})` : ''}
+Chi tiết đang được chỉ vào: ${partName || 'Chi tiết chưa đặt tên'} [${partBadge || 'PART'}]
+Tọa độ điểm chạm 3D (x, y, z): (${Number(hit[0] || 0).toFixed(2)}, ${Number(hit[1] || 0).toFixed(2)}, ${Number(hit[2] || 0).toFixed(2)})
+Kích thước hộp bao (Rộng × Cao × Sâu): ${w} × ${h} × ${d} (đv không gian; thể tích ước lượng theo dạng ${shapeHint}: ≈ ${vol} đv³)
+Mô tả cấu tạo: ${partIntro || 'Không có'}
+Chức năng kỹ thuật: ${partFunction || 'Không có'}
+Thông số/Công thức riêng: ${partSpecFormula || 'Không có'}
+
+CÂU HỎI CỦA HỌC SINH: "${trimmedQuestion}"
+`;
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        answer: { type: Type.STRING },
+        operationMechanism: { type: Type.STRING },
+        volumeCalculation: { type: Type.STRING },
+        formula: { type: Type.STRING },
+        suggestedFollowUps: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING }
+        }
+      },
+      required: ['title', 'answer', 'operationMechanism', 'volumeCalculation', 'formula', 'suggestedFollowUps']
+    };
+
+    const contents: any = cleanImg
+      ? [
+          {
+            inlineData: {
+              data: cleanImg,
+              mimeType: 'image/jpeg'
+            }
+          },
+          { text: promptText }
+        ]
+      : promptText;
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents,
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema,
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 20000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {});
+    return res.json({
+      success: true,
+      result: {
+        title: String(parsed?.title || partName || modelTitle),
+        answer: String(
+          parsed?.answer ||
+            (isEn
+              ? `This highlighted region belongs to ${partName || 'the selected component'}. ${partFunction}`
+              : `Vùng bạn đang chỉ thuộc về **${partName || 'bộ phận được chọn'}**. ${partFunction}`)
+        ),
+        operationMechanism: String(
+          parsed?.operationMechanism || partFunction || partIntro || ''
+        ),
+        volumeCalculation: String(
+          parsed?.volumeCalculation ||
+            `$V \\approx ${vol}\\ \\text{đv}^3$ (${w} \\times ${h} \\times ${d})`
+        ),
+        formula: String(parsed?.formula || partSpecFormula || modelFormula || 'V = l \\cdot w \\cdot h'),
+        suggestedFollowUps: Array.isArray(parsed?.suggestedFollowUps)
+          ? parsed.suggestedFollowUps.slice(0, 3).map(String)
+          : isEn
+          ? ['How does this connect to adjacent parts?', 'Calculate its approximate volume', 'What material fits this part best?']
+          : ['Phần này liên kết với bộ phận nào?', 'Tính thể tích & kích thước chi tiết này', 'Vật liệu nào phù hợp nhất cho chi tiết này?']
+      }
+    });
+  } catch (err: any) {
+    console.error('Error in /api/spatial/point-and-ask:', err);
     return res.status(500).json({
       error: extractCleanErrorMessage(err)
     });

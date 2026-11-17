@@ -14,6 +14,7 @@ import {
   ChevronUp,
   Circle,
   Compass,
+  Crosshair,
   Eraser,
   Eye,
   EyeOff,
@@ -21,10 +22,13 @@ import {
   FlipHorizontal,
   Grid,
   Hand,
+  HelpCircle,
   Info,
   Layers,
   Lock,
   Maximize2,
+  Mic,
+  MicOff,
   Minimize2,
   Minus,
   Move,
@@ -36,6 +40,7 @@ import {
   RotateCcw,
   Scan,
   Scissors,
+  Send,
   Settings2,
   Sliders,
   Sparkles,
@@ -48,9 +53,11 @@ import {
   VideoOff,
   Volume2,
   VolumeX,
-  Wand2
+  Wand2,
+  X
 } from 'lucide-react';
 import { SubjectType } from '../../types';
+import { FormattedText } from '../common/MathRenderer';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAudio } from '../../context/AudioContext';
 import {
@@ -367,6 +374,32 @@ interface LabRuntime {
   activeStrokePointsH2: THREE.Vector3[];
   activePreviewLine: THREE.Line | null;
   activePreviewLineH2: THREE.Line | null;
+  reticleGroup: THREE.Group;
+}
+
+interface PointAskTarget {
+  partIdx: number;
+  partInfo: ExplodablePartInfo;
+  worldHit: [number, number, number];
+  screenX: number;
+  screenY: number;
+  dims: [number, number, number];
+  volume: number;
+  shapeHint: string;
+  source: 'finger' | 'mouse';
+}
+
+interface PointAskResult {
+  title: string;
+  answer: string;
+  operationMechanism: string;
+  volumeCalculation: string;
+  formula: string;
+  suggestedFollowUps: string[];
+  targetPartName: string;
+  question: string;
+  dims: [number, number, number];
+  approxVolume: number;
 }
 
 interface SpatialGesture3DLabProps {
@@ -501,6 +534,28 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   highlightedPartIdxRef.current = highlightedPartIdx;
   isolatedPartIdxRef.current = isolatedPartIdx;
   modelPartsRef.current = modelParts;
+
+  // Point & Ask (Finger/Cursor + Voice + AI Multimodal) States
+  const [pointAskActive, setPointAskActive] = useState<boolean>(false);
+  const [pointAskHover, setPointAskHover] = useState<PointAskTarget | null>(null);
+  const [pointAskLockedTarget, setPointAskLockedTarget] = useState<PointAskTarget | null>(null);
+  const [pointAskMicListening, setPointAskMicListening] = useState<boolean>(false);
+  const [pointAskInterim, setPointAskInterim] = useState<string>('');
+  const [pointAskInput, setPointAskInput] = useState<string>('');
+  const [pointAskLoading, setPointAskLoading] = useState<boolean>(false);
+  const [pointAskResult, setPointAskResult] = useState<PointAskResult | null>(null);
+  const [pointAskTtsEnabled, setPointAskTtsEnabled] = useState<boolean>(false);
+  const pointAskActiveRef = useRef<boolean>(false);
+  const pointAskLoadingRef = useRef<boolean>(false);
+  const pointAskHoverRef = useRef<PointAskTarget | null>(null);
+  const pointAskLockedRef = useRef<PointAskTarget | null>(null);
+  const mouseHoverNdcRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
+  const speechRecRef = useRef<any>(null);
+  const lastPointRayAtRef = useRef<number>(0);
+  const lastReticleUiPushRef = useRef<number>(0);
+  pointAskActiveRef.current = pointAskActive;
+  pointAskLoadingRef.current = pointAskLoading;
+  pointAskLockedRef.current = pointAskLockedTarget;
 
   // Camera & Hand Gesture Tracking states (persisted user settings)
   const [cameraActive, setCameraActive] = useState<boolean>(false);
@@ -996,6 +1051,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     if (!model) return;
     model.disposables.geometries.forEach((g) => g.dispose());
     model.disposables.materials.forEach((m) => m.dispose());
+    model.disposables.textures?.forEach((t) => t.dispose());
   }, []);
 
   const rebuildModel = useCallback(
@@ -1011,6 +1067,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       setIsolatedPartIdx(null);
       setHighlightedPartIdx(null);
       setExplodeVal(0.0);
+      setPointAskHover(null);
+      setPointAskLockedTarget(null);
+      setPointAskResult(null);
+      pointAskHoverRef.current = null;
+      pointAskLockedRef.current = null;
       smoothTargetRef.current.explode = 0.0;
 
       if (runtime.model) {
@@ -2055,6 +2116,28 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       return m;
     });
 
+    // 3D Target Reticle for Point & Ask feature
+    const reticleGroup = new THREE.Group();
+    const reticleRingGeo = new THREE.RingGeometry(0.085, 0.145, 32);
+    const reticleRingMat = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.92,
+      depthTest: false
+    });
+    const reticleRingMesh = new THREE.Mesh(reticleRingGeo, reticleRingMat);
+    const reticleDotGeo = new THREE.SphereGeometry(0.038, 12, 12);
+    const reticleDotMat = new THREE.MeshBasicMaterial({
+      color: 0xfacc15,
+      depthTest: false
+    });
+    const reticleDotMesh = new THREE.Mesh(reticleDotGeo, reticleDotMat);
+    reticleGroup.add(reticleRingMesh, reticleDotMesh);
+    reticleGroup.renderOrder = 25;
+    reticleGroup.visible = false;
+    scene.add(reticleGroup);
+
     const runtime: LabRuntime = {
       scene,
       camera,
@@ -2079,26 +2162,142 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       activeStrokePoints: [],
       activeStrokePointsH2: [],
       activePreviewLine: null,
-      activePreviewLineH2: null
+      activePreviewLineH2: null,
+      reticleGroup
     };
     runtimeRef.current = runtime;
 
+    const raycastPointTargetFromNdc = (
+      ndcX: number,
+      ndcY: number,
+      source: 'finger' | 'mouse'
+    ): PointAskTarget | null => {
+      if (!runtime.model) return null;
+      const isIso = isolatedPartIdxRef.current !== null;
+      const targetRoot = isIso ? runtime.isolatedHolder : runtime.model.group;
+      _pointerNdc.set(ndcX, ndcY);
+      _raycaster.setFromCamera(_pointerNdc, camera);
+      const hits = _raycaster.intersectObject(targetRoot, true);
+      if (hits.length === 0) return null;
+
+      let matchedIdx = -1;
+      let hitObj = hits[0];
+      for (const hit of hits) {
+        if (isIso && isolatedPartIdxRef.current !== null) {
+          matchedIdx = isolatedPartIdxRef.current;
+          hitObj = hit;
+          break;
+        }
+        let obj: THREE.Object3D | null = hit.object;
+        while (obj && obj !== runtime.model.group) {
+          const found = runtime.model.explodables.findIndex((p) => p.mesh === obj);
+          if (found !== -1) {
+            matchedIdx = found;
+            hitObj = hit;
+            break;
+          }
+          obj = obj.parent;
+        }
+        if (matchedIdx !== -1) break;
+      }
+
+      if (matchedIdx === -1) return null;
+      const part = runtime.model.explodables[matchedIdx];
+      if (!part) return null;
+
+      _box3Tmp.setFromObject(part.mesh);
+      _box3Tmp.getSize(_sizeTmp);
+      const w = Math.max(0.05, _sizeTmp.x);
+      const h = Math.max(0.05, _sizeTmp.y);
+      const d = Math.max(0.05, _sizeTmp.z);
+      const descriptor = `${part.info.nameVi} ${part.info.nameEn} ${part.info.badgeVi}`.toLowerCase();
+      let shapeHint = 'khối hộp vát cạnh';
+      let volume = w * h * d * 0.86;
+      if (/cầu|sphere|dome|orb|hạt|nhân|ball|bulb/.test(descriptor)) {
+        shapeHint = 'khối cầu / elipxoít';
+        volume = (Math.PI / 6) * w * h * d;
+      } else if (/nón|chóp|cone|nozzle|phễu|pyramid/.test(descriptor)) {
+        shapeHint = 'khối nón / chóp';
+        volume = (Math.PI / 12) * w * d * h;
+      } else if (/trụ|ống|cốc|ly|bình|bánh|vòng|đĩa|trục|rotor|cylinder|tube|wheel|ring|vase|cup|bottle|pipe/.test(descriptor)) {
+        shapeHint = 'khối trụ / tròn xoay';
+        volume = (Math.PI / 4) * w * d * h;
+      }
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      _v3TmpB.copy(hitObj.point).project(camera);
+      const screenX = ((_v3TmpB.x + 1) * 0.5) * rect.width;
+      const screenY = ((1 - _v3TmpB.y) * 0.5) * rect.height;
+
+      runtime.reticleGroup.position.copy(hitObj.point);
+      runtime.reticleGroup.lookAt(camera.position);
+      runtime.reticleGroup.visible = true;
+
+      return {
+        partIdx: matchedIdx,
+        partInfo: part.info,
+        worldHit: [hitObj.point.x, hitObj.point.y, hitObj.point.z],
+        screenX,
+        screenY,
+        dims: [+w.toFixed(2), +h.toFixed(2), +d.toFixed(2)],
+        volume: +volume.toFixed(3),
+        shapeHint,
+        source
+      };
+    };
+
     const handleCanvasPointerDown = (e: PointerEvent) => {
       pointerDownScreenRef.current = { x: e.clientX, y: e.clientY };
+    };
+    const handleCanvasPointerMove = (e: PointerEvent) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouseHoverNdcRef.current = {
+        x: ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1,
+        y: -((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1,
+        active: true
+      };
+    };
+    const handleCanvasPointerLeave = () => {
+      mouseHoverNdcRef.current.active = false;
     };
     const handleCanvasPointerUp = (e: PointerEvent) => {
       const down = pointerDownScreenRef.current;
       pointerDownScreenRef.current = null;
       if (!down) return;
       if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) return;
-      if (paramsRef.current.spaceMode !== '3d' || isolatedPartIdxRef.current !== null || !runtime.model) {
+      if (paramsRef.current.spaceMode !== '3d' || !runtime.model) {
         return;
       }
+
       const rect = renderer.domElement.getBoundingClientRect();
-      _pointerNdc.set(
-        ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1,
-        -((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1
-      );
+      const ndcX = ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+      const ndcY = -((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+
+      if (pointAskActiveRef.current) {
+        const picked = raycastPointTargetFromNdc(ndcX, ndcY, 'mouse');
+        if (picked) {
+          pointAskLockedRef.current = picked;
+          setPointAskLockedTarget(picked);
+          setPointAskHover(picked);
+          setHighlightedPartIdx(picked.partIdx);
+          const partMesh = runtime.model.explodables[picked.partIdx]?.mesh;
+          if (partMesh) {
+            runtime.highlightHelper.setFromObject(partMesh);
+            runtime.highlightHelper.visible = true;
+          }
+          showToast(`Đã khóa điểm chỉ: ${picked.partInfo.nameVi}`);
+        } else {
+          pointAskLockedRef.current = null;
+          setPointAskLockedTarget(null);
+          runtime.reticleGroup.visible = false;
+        }
+        return;
+      }
+
+      if (isolatedPartIdxRef.current !== null) {
+        return;
+      }
+      _pointerNdc.set(ndcX, ndcY);
       _raycaster.setFromCamera(_pointerNdc, camera);
       const hits = _raycaster.intersectObject(runtime.model.group, true);
       if (hits.length === 0) return;
@@ -2126,6 +2325,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       }
     };
     renderer.domElement.addEventListener('pointerdown', handleCanvasPointerDown);
+    renderer.domElement.addEventListener('pointermove', handleCanvasPointerMove);
+    renderer.domElement.addEventListener('pointerleave', handleCanvasPointerLeave);
     renderer.domElement.addEventListener('pointerup', handleCanvasPointerUp);
 
     rebuildModel(runtime, paramsRef.current.modeId, paramsRef.current.finish, ACCENT_PALETTES[0], softwareGl);
@@ -2636,13 +2837,71 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               } else {
                 runtime.highlightHelper.visible = false;
               }
-            } else {
+            } else if (!pointAskActiveRef.current) {
               lastHighlightIdx = -1;
               runtime.highlightHelper.visible = false;
             }
-          } else {
+          } else if (!pointAskActiveRef.current) {
             lastHighlightIdx = -1;
             runtime.highlightHelper.visible = false;
+          }
+
+          // Live Point & Ask Raycasting via Webcam Index Finger OR Mouse Hover
+          if (pointAskActiveRef.current && cfg.spaceMode === '3d') {
+            const lockedTarget = pointAskLockedRef.current;
+            if (lockedTarget) {
+              runtime.reticleGroup.visible = true;
+              runtime.reticleGroup.position.set(
+                lockedTarget.worldHit[0],
+                lockedTarget.worldHit[1],
+                lockedTarget.worldHit[2]
+              );
+              runtime.reticleGroup.lookAt(camera.position);
+              runtime.reticleGroup.scale.setScalar(1.0 + Math.sin(elapsed * 5.2) * 0.14);
+              const lPart = model.explodables[lockedTarget.partIdx];
+              if (lPart) {
+                runtime.highlightHelper.setFromObject(lPart.mesh);
+                runtime.highlightHelper.visible = true;
+              }
+            } else if (!pointAskLoadingRef.current && nowPerfMs - lastPointRayAtRef.current > 55) {
+              lastPointRayAtRef.current = nowPerfMs;
+              let rayTarget: PointAskTarget | null = null;
+              if (handDetected && res.hand1Index) {
+                const fNdcX = res.hand1Index.x * 2 - 1;
+                const fNdcY = -(res.hand1Index.y * 2 - 1);
+                rayTarget = raycastPointTargetFromNdc(fNdcX, fNdcY, 'finger');
+              } else if (mouseHoverNdcRef.current.active) {
+                rayTarget = raycastPointTargetFromNdc(
+                  mouseHoverNdcRef.current.x,
+                  mouseHoverNdcRef.current.y,
+                  'mouse'
+                );
+              }
+              pointAskHoverRef.current = rayTarget;
+              if (rayTarget) {
+                const hPart = model.explodables[rayTarget.partIdx];
+                if (hPart) {
+                  runtime.highlightHelper.setFromObject(hPart.mesh);
+                  runtime.highlightHelper.visible = true;
+                }
+                runtime.reticleGroup.scale.setScalar(1.0 + Math.sin(elapsed * 5.2) * 0.12);
+                if (nowPerfMs - lastReticleUiPushRef.current > 100) {
+                  lastReticleUiPushRef.current = nowPerfMs;
+                  setPointAskHover(rayTarget);
+                }
+              } else {
+                runtime.reticleGroup.visible = false;
+                if (expTarget < 0.25) {
+                  runtime.highlightHelper.visible = false;
+                }
+                if (nowPerfMs - lastReticleUiPushRef.current > 120) {
+                  lastReticleUiPushRef.current = nowPerfMs;
+                  setPointAskHover(null);
+                }
+              }
+            }
+          } else {
+            runtime.reticleGroup.visible = false;
           }
 
           // Update 6 advanced kinetic rigs (skip IK joint clamping when viewing a single isolated robot part)
@@ -2789,12 +3048,18 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       clearTimeout(frameId);
       window.removeEventListener('resize', handleResize);
       renderer.domElement.removeEventListener('pointerdown', handleCanvasPointerDown);
+      renderer.domElement.removeEventListener('pointermove', handleCanvasPointerMove);
+      renderer.domElement.removeEventListener('pointerleave', handleCanvasPointerLeave);
       renderer.domElement.removeEventListener('pointerup', handleCanvasPointerUp);
       controls.dispose();
       restoreIsolatedPart(runtime);
       disposeModel(runtime.model);
       highlightHelper.geometry.dispose();
       (highlightHelper.material as THREE.Material).dispose();
+      reticleRingGeo.dispose();
+      reticleRingMat.dispose();
+      reticleDotGeo.dispose();
+      reticleDotMat.dispose();
       envTarget.dispose();
       gridHelper.geometry.dispose();
       (gridHelper.material as THREE.Material).dispose();
@@ -3159,6 +3424,239 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     }
   }, []);
 
+  const stopPointAskVoice = useCallback(() => {
+    if (speechRecRef.current) {
+      try {
+        speechRecRef.current.stop();
+      } catch {}
+      speechRecRef.current = null;
+    }
+    setPointAskMicListening(false);
+    setPointAskInterim('');
+  }, []);
+
+  useEffect(() => {
+    if (!pointAskActive || spaceMode !== '3d') {
+      stopPointAskVoice();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }, [pointAskActive, spaceMode, stopPointAskVoice]);
+
+  useEffect(() => {
+    return () => {
+      stopPointAskVoice();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [stopPointAskVoice]);
+
+  const submitPointAndAsk = useCallback(
+    async (rawQuestion: string) => {
+      const q = String(rawQuestion || '').trim();
+      if (!q) {
+        showToast(isEn ? 'Please speak or enter a question.' : 'Vui lòng nói hoặc nhập câu hỏi.');
+        return;
+      }
+      const rt = runtimeRef.current;
+      if (!rt || !rt.model || rt.model.explodables.length === 0) {
+        showToast(isEn ? '3D model not ready yet.' : 'Mô hình 3D chưa sẵn sàng.');
+        return;
+      }
+
+      // Resolve currently pointed target, or lock fallback onto highlighted/isolated/first part
+      let target: PointAskTarget | null = pointAskLockedRef.current || pointAskHoverRef.current;
+      if (!target) {
+        const fallbackIdx =
+          isolatedPartIdxRef.current ?? highlightedPartIdxRef.current ?? 0;
+        const fallbackPart = rt.model.explodables[fallbackIdx] || rt.model.explodables[0];
+        _box3Tmp.setFromObject(fallbackPart.mesh);
+        _box3Tmp.getSize(_sizeTmp);
+        _box3Tmp.getCenter(_centerTmp);
+        const w = Math.max(0.05, _sizeTmp.x);
+        const h = Math.max(0.05, _sizeTmp.y);
+        const d = Math.max(0.05, _sizeTmp.z);
+        target = {
+          partIdx: fallbackIdx,
+          partInfo: fallbackPart.info,
+          worldHit: [_centerTmp.x, _centerTmp.y, _centerTmp.z],
+          screenX: rt.renderer.domElement.clientWidth * 0.5,
+          screenY: rt.renderer.domElement.clientHeight * 0.45,
+          dims: [+w.toFixed(2), +h.toFixed(2), +d.toFixed(2)],
+          volume: +(w * h * d * 0.85).toFixed(3),
+          shapeHint: 'khối không gian 3D',
+          source: 'mouse'
+        };
+      }
+
+      pointAskLockedRef.current = target;
+      setPointAskLockedTarget(target);
+      setHighlightedPartIdx(target.partIdx);
+      const targetMesh = rt.model.explodables[target.partIdx]?.mesh;
+      if (targetMesh) {
+        rt.highlightHelper.setFromObject(targetMesh);
+        rt.highlightHelper.visible = true;
+      }
+      rt.reticleGroup.position.set(target.worldHit[0], target.worldHit[1], target.worldHit[2]);
+      rt.reticleGroup.lookAt(rt.camera.position);
+      rt.reticleGroup.visible = true;
+
+      setPointAskLoading(true);
+      setPointAskInput(q);
+      try {
+        rt.renderer.render(rt.scene, rt.camera);
+        const snapDataUrl = rt.renderer.domElement.toDataURL('image/jpeg', 0.82);
+        const modelTitle = activeCustomModel
+          ? isEn
+            ? activeCustomModel.titleEn
+            : activeCustomModel.titleVi
+          : isEn
+          ? activeMode.titleEn
+          : activeMode.titleVi;
+        const modelFormula = activeCustomModel ? activeCustomModel.formula : activeMode.formula;
+
+        const resp = await fetch('/api/spatial/point-and-ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            modelTitle,
+            modelFormula,
+            partName: isEn ? target.partInfo.nameEn : target.partInfo.nameVi,
+            partBadge: isEn ? target.partInfo.badgeEn : target.partInfo.badgeVi,
+            partIntro: isEn ? target.partInfo.introEn : target.partInfo.introVi,
+            partFunction: isEn ? target.partInfo.functionEn : target.partInfo.functionVi,
+            partSpecFormula: target.partInfo.specFormula || '',
+            partDimensions: target.dims,
+            approxVolume: target.volume,
+            shapeHint: target.shapeHint,
+            hitPoint: target.worldHit,
+            question: q,
+            imageBase64: snapDataUrl,
+            language: isEn ? 'en' : 'vi'
+          })
+        });
+
+        const data = await resp.json();
+        if (!resp.ok || !data?.result) {
+          throw new Error(data?.error || 'Không thể phân tích chi tiết được chỉ.');
+        }
+
+        const nextResult: PointAskResult = {
+          title: data.result.title,
+          answer: data.result.answer,
+          operationMechanism: data.result.operationMechanism,
+          volumeCalculation: data.result.volumeCalculation,
+          formula: data.result.formula,
+          suggestedFollowUps: data.result.suggestedFollowUps || [],
+          targetPartName: isEn ? target.partInfo.nameEn : target.partInfo.nameVi,
+          question: q,
+          dims: target.dims,
+          approxVolume: target.volume
+        };
+        setPointAskResult(nextResult);
+
+        if (pointAskTtsEnabled && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const spoken = `${nextResult.title}. ${nextResult.answer.replace(/\$[^$]+\$/g, '')}`;
+          const utter = new SpeechSynthesisUtterance(spoken);
+          utter.lang = isEn ? 'en-US' : 'vi-VN';
+          utter.rate = 1.02;
+          window.speechSynthesis.speak(utter);
+        }
+      } catch (err: any) {
+        showToast(err?.message || (isEn ? 'Point & Ask failed' : 'Lỗi khi phân tích điểm chỉ AI'));
+      } finally {
+        setPointAskLoading(false);
+      }
+    },
+    [activeCustomModel, activeMode, isEn, pointAskTtsEnabled, showToast]
+  );
+
+  const togglePointAskVoice = useCallback(() => {
+    if (pointAskMicListening) {
+      stopPointAskVoice();
+      return;
+    }
+
+    const SpeechRecCtor =
+      typeof window !== 'undefined'
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null;
+    if (!SpeechRecCtor) {
+      showToast(
+        isEn
+          ? 'Browser lacks Speech Recognition — type or use quick questions below.'
+          : 'Trình duyệt chưa hỗ trợ Micro Web Speech — hãy nhập hoặc bấm câu hỏi nhanh.'
+      );
+      return;
+    }
+
+    // Lock whichever part the user's finger or mouse is currently pointing at when they begin speaking
+    if (pointAskHoverRef.current && !pointAskLockedRef.current) {
+      pointAskLockedRef.current = pointAskHoverRef.current;
+      setPointAskLockedTarget(pointAskHoverRef.current);
+      setHighlightedPartIdx(pointAskHoverRef.current.partIdx);
+    }
+
+    try {
+      const recognition = new SpeechRecCtor();
+      recognition.lang = isEn ? 'en-US' : 'vi-VN';
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setPointAskMicListening(true);
+        setPointAskInterim('');
+      };
+      recognition.onspeechstart = () => {
+        if (pointAskHoverRef.current && !pointAskLockedRef.current) {
+          pointAskLockedRef.current = pointAskHoverRef.current;
+          setPointAskLockedTarget(pointAskHoverRef.current);
+        }
+      };
+      recognition.onresult = (event: any) => {
+        let interimTxt = '';
+        let finalTxt = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const chunk = event.results[i][0]?.transcript || '';
+          if (event.results[i].isFinal) finalTxt += chunk;
+          else interimTxt += chunk;
+        }
+        if (interimTxt) setPointAskInterim(interimTxt);
+        if (finalTxt.trim()) {
+          const spoken = finalTxt.trim();
+          setPointAskInterim('');
+          setPointAskInput(spoken);
+          stopPointAskVoice();
+          void submitPointAndAsk(spoken);
+        }
+      };
+      recognition.onerror = (ev: any) => {
+        setPointAskMicListening(false);
+        setPointAskInterim('');
+        if (ev?.error && ev.error !== 'no-speech' && ev.error !== 'aborted') {
+          showToast(
+            isEn
+              ? `Mic error: ${ev.error}`
+              : `Không thu được giọng nói (${ev.error}). Bạn có thể nhập câu hỏi trực tiếp.`
+          );
+        }
+      };
+      recognition.onend = () => {
+        setPointAskMicListening(false);
+      };
+
+      speechRecRef.current = recognition;
+      recognition.start();
+    } catch {
+      setPointAskMicListening(false);
+      showToast(isEn ? 'Could not start microphone' : 'Không thể bật Micro lúc này');
+    }
+  }, [isEn, pointAskMicListening, showToast, stopPointAskVoice, submitPointAndAsk]);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -3335,6 +3833,35 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   >
                     <Scan className="w-3.5 h-3.5" />
                     <span>{isEn ? 'Scan Real → 3D' : 'Quét Thực Tế'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPointAskActive((prev) => {
+                        const next = !prev;
+                        if (next) {
+                          showToast(
+                            isEn
+                              ? 'Point & Ask ON: Point finger/cursor at a detail & speak!'
+                              : 'Đã bật Chỉ & Hỏi AI: Hãy chỉ tay/chuột vào chi tiết và nói!'
+                          );
+                        }
+                        return next;
+                      });
+                    }}
+                    className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
+                      pointAskActive
+                        ? 'bg-amber-400 hover:bg-amber-300 border-amber-200 text-slate-950 shadow-lg shadow-amber-500/25'
+                        : 'bg-slate-950/95 hover:border-amber-400 border-amber-400/55 text-amber-200'
+                    }`}
+                    title={
+                      isEn
+                        ? 'Point with finger or cursor and speak to ask AI'
+                        : 'Dùng ngón tay hoặc chuột chỉ vào chi tiết và nói để hỏi AI'
+                    }
+                  >
+                    <Crosshair className="w-3.5 h-3.5" />
+                    <span>{isEn ? 'Point & Ask' : 'Chỉ & Hỏi AI'}</span>
                   </button>
                 </>
               )}
@@ -3750,8 +4277,253 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               </div>
             )}
+
+          {/* Case 3: Point & Ask AI Multimodal Panel */}
+          {spaceMode === '3d' && pointAskActive && (
+            <div className="spatial-hud-frame spatial-step-reveal pointer-events-auto w-[min(356px,calc(100vw-24px))] max-h-[calc(100vh-215px)] overflow-y-auto rounded-lg bg-slate-950/95 border border-amber-400/65 shadow-2xl p-3 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-400/15 border border-amber-400/45 text-[10px] font-mono font-bold text-amber-300">
+                  <Crosshair className="w-3 h-3" />
+                  {isEn ? 'POINT & ASK AI' : 'CHỈ TRỎ & HỎI ĐÁP AI'}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPointAskTtsEnabled((v) => !v)}
+                    className={`p-1 rounded border text-[10px] cursor-pointer ${
+                      pointAskTtsEnabled
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                    title={isEn ? 'Toggle voice answer readout' : 'Bật/Tắt AI đọc lời giải'}
+                  >
+                    {pointAskTtsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPointAskActive(false)}
+                    className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                    title={isEn ? 'Close Point & Ask' : 'Tắt Chỉ & Hỏi'}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Pointed Part Live Telemetry Badge */}
+              {(() => {
+                const activeTarget = pointAskLockedTarget || pointAskHover;
+                if (!activeTarget) {
+                  return (
+                    <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-2 text-[11px] text-slate-300 leading-snug">
+                      {isEn
+                        ? 'Hover cursor or point your index finger at any 3D detail, click to lock it, then speak or type your question.'
+                        : 'Rê chuột hoặc đưa ngón trỏ chỉ vào chi tiết 3D cần hỏi (bấm chuột để khóa vùng), sau đó bấm Micro nói hoặc gõ câu hỏi.'}
+                    </div>
+                  );
+                }
+                return (
+                  <div className="rounded bg-cyan-950/60 border border-cyan-400/50 px-2.5 py-2 space-y-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-extrabold text-cyan-200 truncate">
+                        {isEn ? activeTarget.partInfo.nameEn : activeTarget.partInfo.nameVi}
+                      </span>
+                      {pointAskLockedTarget ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            pointAskLockedRef.current = null;
+                            setPointAskLockedTarget(null);
+                          }}
+                          className="px-1.5 py-0.5 rounded bg-amber-400/20 border border-amber-400/50 text-[9px] font-mono font-bold text-amber-200 cursor-pointer shrink-0"
+                        >
+                          {isEn ? 'LOCKED · Unlock' : 'ĐÃ KHÓA · Mở'}
+                        </button>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-[9px] font-mono font-bold text-cyan-200 shrink-0">
+                          {activeTarget.source === 'finger'
+                            ? isEn
+                              ? 'FINGER'
+                              : 'NGÓN TRỎ'
+                            : isEn
+                            ? 'CURSOR'
+                            : 'CON TRỎ'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 text-[10px] font-mono text-slate-300">
+                      <span>
+                        {activeTarget.dims[0]} × {activeTarget.dims[1]} × {activeTarget.dims[2]}
+                      </span>
+                      <span>·</span>
+                      <span className="text-emerald-300">V ≈ {activeTarget.volume} đv³</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Voice Microphone + Question Input */}
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={togglePointAskVoice}
+                  disabled={pointAskLoading}
+                  className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-extrabold transition-colors cursor-pointer ${
+                    pointAskMicListening
+                      ? 'bg-rose-500 hover:bg-rose-400 text-white animate-pulse'
+                      : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
+                  }`}
+                >
+                  {pointAskMicListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  <span>
+                    {pointAskMicListening
+                      ? isEn
+                        ? 'Listening... (Tap to stop)'
+                        : 'Đang nghe giọng nói... (Bấm dừng)'
+                      : isEn
+                      ? 'Speak Question About Highlighted Part'
+                      : 'Nói Câu Hỏi Về Chi Tiết Đang Chỉ'}
+                  </span>
+                </button>
+
+                {pointAskInterim && (
+                  <div className="px-2.5 py-1 rounded bg-slate-900 border border-rose-400/40 text-[11px] text-rose-200 italic">
+                    “{pointAskInterim}”
+                  </div>
+                )}
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void submitPointAndAsk(pointAskInput);
+                  }}
+                  className="flex items-center gap-1.5"
+                >
+                  <input
+                    type="text"
+                    value={pointAskInput}
+                    onChange={(e) => setPointAskInput(e.target.value)}
+                    placeholder={isEn ? 'Ask: How does this work? / Volume?' : 'VD: Cái này hoạt động thế nào?'}
+                    className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 focus:border-amber-400 text-xs text-white outline-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={pointAskLoading}
+                    className="px-2.5 py-1.5 rounded-md bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 text-xs font-extrabold cursor-pointer shrink-0"
+                    title={isEn ? 'Send' : 'Gửi câu hỏi'}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+
+                {/* Quick 1-click Point & Ask prompts */}
+                <div className="flex flex-wrap gap-1">
+                  {(isEn
+                    ? ['How does this work?', 'Calculate its volume', 'Physical principle?']
+                    : ['Cái này hoạt động thế nào?', 'Tính thể tích phần này giúp tôi', 'Nguyên lý vật lý?']
+                  ).map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      disabled={pointAskLoading}
+                      onClick={() => void submitPointAndAsk(q)}
+                      className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-[10px] font-semibold text-slate-200 cursor-pointer"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {pointAskLoading && (
+                <div className="rounded bg-slate-900 border border-amber-400/40 px-3 py-2 text-[11px] font-semibold text-amber-200">
+                  {isEn ? 'Syn AI is analyzing the pointed 3D region...' : 'Syn AI đang khoanh vùng & phân tích chi tiết được chỉ...'}
+                </div>
+              )}
+
+              {/* AI Multimodal Response Inspector */}
+              {pointAskResult && !pointAskLoading && (
+                <div className="rounded-lg bg-slate-900/95 border border-cyan-500/45 p-2.5 space-y-2 text-[11px] leading-relaxed">
+                  <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-1.5">
+                    <div>
+                      <div className="text-[10px] font-mono uppercase text-amber-300">
+                        {pointAskResult.targetPartName}
+                      </div>
+                      <div className="text-xs font-extrabold text-white">{pointAskResult.title}</div>
+                    </div>
+                    <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                  </div>
+
+                  <div className="text-slate-100">
+                    <FormattedText text={pointAskResult.answer} />
+                  </div>
+
+                  {pointAskResult.operationMechanism && (
+                    <div className="rounded bg-slate-950/90 border border-slate-800 px-2 py-1.5">
+                      <div className="text-[10px] font-bold uppercase text-emerald-300 mb-0.5">
+                        {isEn ? 'Mechanism' : 'Cơ chế hoạt động'}
+                      </div>
+                      <FormattedText text={pointAskResult.operationMechanism} className="text-slate-200" />
+                    </div>
+                  )}
+
+                  {pointAskResult.volumeCalculation && (
+                    <div className="rounded bg-sky-950/50 border border-sky-500/35 px-2 py-1.5">
+                      <div className="text-[10px] font-bold uppercase text-sky-300 mb-0.5">
+                        {isEn ? 'Volume & Geometry' : 'Thể tích & Kích thước'}
+                      </div>
+                      <FormattedText text={pointAskResult.volumeCalculation} className="text-sky-100" />
+                    </div>
+                  )}
+
+                  {pointAskResult.formula && (
+                    <div className="px-2 py-1 rounded bg-slate-950 border border-cyan-500/30 font-mono text-[10px] text-cyan-200">
+                      <FormattedText text={pointAskResult.formula} />
+                    </div>
+                  )}
+
+                  {pointAskResult.suggestedFollowUps.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {pointAskResult.suggestedFollowUps.map((f) => (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => void submitPointAndAsk(f)}
+                          className="text-left px-2 py-1 rounded bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[10px] text-amber-200 cursor-pointer"
+                        >
+                          ↳ {f}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
+
+      {/* Floating 3D-Projected Reticle Callout Badge on Canvas during Point & Ask */}
+      {!hudHidden &&
+        spaceMode === '3d' &&
+        pointAskActive &&
+        (pointAskLockedTarget || pointAskHover) && (
+          <div
+            className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-[125%] px-2.5 py-1 rounded-md bg-slate-950/90 border border-cyan-400/80 shadow-lg text-[10px] font-mono text-cyan-100 whitespace-nowrap"
+            style={{
+              left: `${Math.max(80, Math.min(window.innerWidth - 80, (pointAskLockedTarget || pointAskHover)!.screenX))}px`,
+              top: `${Math.max(76, Math.min(window.innerHeight - 120, (pointAskLockedTarget || pointAskHover)!.screenY))}px`
+            }}
+          >
+            <span className="font-bold text-amber-300">
+              {isEn
+                ? (pointAskLockedTarget || pointAskHover)!.partInfo.nameEn
+                : (pointAskLockedTarget || pointAskHover)!.partInfo.nameVi}
+            </span>
+            <span className="mx-1.5 text-slate-500">|</span>
+            <span>V ≈ {(pointAskLockedTarget || pointAskHover)!.volume} đv³</span>
+          </div>
+        )}
 
       {/* Toast Notification Banner */}
       {toastMsg && (

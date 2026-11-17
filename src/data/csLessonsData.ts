@@ -25,6 +25,18 @@ const BASE_CS_LESSONS: CSLesson[] = [
       {
         language: 'cpp',
         title: 'C++20 Fast I/O & Xử lý Tràn số',
+        basicTitle: 'C++ Cơ bản: Nhập xuất cin/cout trực tiếp trong main',
+        basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long a, b;
+    cin >> a >> b;
+    cout << "Tong: " << a + b << endl;
+    cout << "Tich: " << a * b << endl;
+    return 0;
+}`,
+        basicExplanation: 'Phiên bản tối giản chỉ khai báo hai biến long long a, b trong main() và dùng cin/cout cơ bản.',
         code: `#include <iostream>
 using namespace std;
 
@@ -47,6 +59,11 @@ int main() {
       {
         language: 'python',
         title: 'Python 3 Nhập xuất tối ưu sys.stdin',
+        basicTitle: 'Python Cơ bản: input().split() tuần tự',
+        basicCode: `a, b = map(int, input().split())
+print("Tong:", a + b)
+print("Tich:", a * b)`,
+        basicExplanation: 'Cách viết ngắn gọn nhất cho người mới: dùng input().split() và không cần định nghĩa hàm.',
         code: `import sys
 
 def main():
@@ -78,6 +95,20 @@ if __name__ == '__main__':
         }
       ],
       solutionAnalysis: 'Với giới hạn a, b lên tới 10⁹, tổng a+b tối đa 2·10⁹ (vẫn vừa int nhưng sát ngưỡng), còn tích a*b lên tới 10¹⁸ (bắt buộc dùng long long trong C++). Sử dụng phép nhân với kiểu long long để tránh tràn số.',
+      basicAnalysis: 'Cơ bản: Nhập trực tiếp a, b kiểu long long trong hàm main() và in a + b, a * b không cần cấu hình Fast I/O.',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long a, b;
+    cin >> a >> b;
+    cout << a + b << endl;
+    cout << a * b << endl;
+    return 0;
+}`,
+      basicSolutionPython: `a, b = map(int, input().split())
+print(a + b)
+print(a * b)`,
       fullSolutionCpp: `#include <iostream>
 using namespace std;
 
@@ -122,7 +153,24 @@ solve()`
     codeExamples: [
       {
         language: 'cpp',
-        title: 'C++ Kiểm tra Số nguyên tố O(√N)',
+        title: 'C++ Kiểm tra Số nguyên tố O(√N) bước nhảy 6k±1',
+        basicTitle: 'C++ Cơ bản: Vòng lặp kiểm tra ước viết thẳng trong main',
+        basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long n = 1000000007;
+    bool laNguyenTo = (n >= 2);
+    for (long long i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            laNguyenTo = false;
+            break;
+        }
+    }
+    if (laNguyenTo) cout << n << " la so nguyen to\\n";
+    return 0;
+}`,
+        basicExplanation: 'Duyệt đơn giản từng ước i từ 2 đến căn N ngay trong main(), không tách hàm phụ.',
         code: `#include <iostream>
 using namespace std;
 
@@ -147,7 +195,18 @@ int main() {
       },
       {
         language: 'python',
-        title: 'Python Hàm is_prime(n)',
+        title: 'Python Hàm is_prime(n) tối ưu 6k±1',
+        basicTitle: 'Python Cơ bản: Vòng lặp while i * i <= n tối giản',
+        basicCode: `n = 1000000007
+la_nt = n >= 2
+i = 2
+while i * i <= n:
+    if n % i == 0:
+        la_nt = False
+        break
+    i += 1
+print(la_nt)`,
+        basicExplanation: 'Chỉ dùng 1 vòng while đơn giản kiểm tra chia hết từ 2 tới căn N.',
         code: `def is_prime(n: int) -> bool:
     if n < 2:
         return False
@@ -180,7 +239,40 @@ print(is_prime(1000000007)) # True`,
           explanation: 'Các số nguyên tố ≤ 10 là: 2, 3, 5, 7. Tổng cộng có 4 số.'
         }
       ],
-      solutionAnalysis: 'Có thể dùng sàng nguyên tố Eratosthenes để đạt độ phức tạp O(N log log N) cực nhanh với N = 10⁵.',
+      solutionAnalysis: 'Dùng sàng nguyên tố Eratosthenes để đạt độ phức tạp O(N log log N) cực nhanh với N = 10⁵.',
+      basicAnalysis: 'Cơ bản: Duyệt từng số x từ 2 tới N, kiểm tra xem x có chia hết cho số nào từ 2 tới √x hay không và tăng biến đếm (O(N√N), không cần mảng sàng).',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    int n, dem = 0;
+    cin >> n;
+    for (int x = 2; x <= n; x++) {
+        bool ok = true;
+        for (int i = 2; i * i <= x; i++) {
+            if (x % i == 0) {
+                ok = false;
+                break;
+            }
+        }
+        if (ok) dem++;
+    }
+    cout << dem;
+    return 0;
+}`,
+      basicSolutionPython: `n = int(input())
+dem = 0
+for x in range(2, n + 1):
+    ok = True
+    i = 2
+    while i * i <= x:
+        if x % i == 0:
+            ok = False
+            break
+        i += 1
+    if ok:
+        dem += 1
+print(dem)`,
       fullSolutionCpp: `#include <iostream>
 #include <vector>
 using namespace std;
@@ -247,7 +339,21 @@ sieve()`
     codeExamples: [
       {
         language: 'cpp',
-        title: 'C++ Mảng đếm & Kiểm tra Palindrome',
+        title: 'C++ Hai con trỏ kiểm tra Palindrome tối ưu',
+        basicTitle: 'C++ Cơ bản: Đảo chuỗi bằng vòng lặp for',
+        basicCode: `#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+    string s = "radar", rev = "";
+    for (int i = (int)s.size() - 1; i >= 0; i--) {
+        rev += s[i];
+    }
+    cout << (s == rev ? "YES" : "NO") << '\\n';
+    return 0;
+}`,
+        basicExplanation: 'Tạo chuỗi đảo ngược rev bằng vòng for lùi và so sánh trực tiếp s == rev ngay trong main().',
         code: `#include <iostream>
 #include <string>
 #include <vector>
@@ -268,11 +374,20 @@ int main() {
     cout << (isPalindrome(str) ? "YES" : "NO") << '\\n';
     return 0;
 }`,
-        explanation: 'Kỹ thuật hai con trỏ so khớp đối xứng từ hai đầu chuỗi tiến về tâm trong O(N).'
+        explanation: 'Kỹ thuật hai con trỏ so khớp đối xứng từ hai đầu chuỗi tiến về tâm trong O(N) với O(1) bộ nhớ phụ.'
       },
       {
         language: 'python',
         title: 'Python Slicing chuỗi s == s[::-1]',
+        basicTitle: 'Python Cơ bản: Vòng lặp so sánh hai đầu chuỗi',
+        basicCode: `s = "radar"
+ok = True
+for i in range(len(s) // 2):
+    if s[i] != s[len(s) - 1 - i]:
+        ok = False
+        break
+print("YES" if ok else "NO")`,
+        basicExplanation: 'Dùng vòng for duyệt nửa đầu chuỗi, so sánh ký tự thứ i với ký tự đối xứng ở cuối.',
         code: `def is_palindrome(s: str) -> bool:
     # Slicing đảo ngược chuỗi cực nhanh
     return s == s[::-1]
@@ -295,7 +410,44 @@ print("YES" if is_palindrome("radar") else "NO")`,
           explanation: 'Số 2 xuất hiện 3 lần (nhiều nhất).'
         }
       ],
-      solutionAnalysis: 'Duyệt mảng một lần cập nhật cnt[a[i]]. Sau đó tìm max_count và phần tử nhỏ nhất đạt max_count.',
+      solutionAnalysis: 'Duyệt mảng một lần cập nhật cnt[a[i]]. Sau đó tìm max_count và phần tử nhỏ nhất đạt max_count trong O(N + maxA).',
+      basicAnalysis: 'Cơ bản: Nhập mảng a[N], với mỗi phần tử a[i] dùng một vòng lặp đếm xem a[i] xuất hiện bao nhiêu lần rồi cập nhật đáp án (O(N²), dễ hiểu không cần mảng đánh dấu).',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int a[1005];
+
+int main() {
+    int n;
+    cin >> n;
+    for (int i = 0; i < n; i++) cin >> a[i];
+    int bestVal = a[0], bestCnt = 0;
+    for (int i = 0; i < n; i++) {
+        int dem = 0;
+        for (int j = 0; j < n; j++) {
+            if (a[j] == a[i]) dem++;
+        }
+        if (dem > bestCnt || (dem == bestCnt && a[i] < bestVal)) {
+            bestCnt = dem;
+            bestVal = a[i];
+        }
+    }
+    cout << bestVal << " " << bestCnt;
+    return 0;
+}`,
+      basicSolutionPython: `n = int(input())
+a = list(map(int, input().split()))
+best_val = a[0]
+best_cnt = 0
+for x in a:
+    dem = 0
+    for y in a:
+        if y == x:
+            dem += 1
+    if dem > best_cnt or (dem == best_cnt and x < best_val):
+        best_cnt = dem
+        best_val = x
+print(best_val, best_cnt)`,
       fullSolutionCpp: `#include <iostream>
 #include <vector>
 using namespace std;
@@ -366,6 +518,24 @@ solve()`
       {
         language: 'cpp',
         title: 'C++ Quay lui Sinh Hoán vị',
+        basicTitle: 'C++ Cơ bản: Liệt kê hoán vị N = 3 bằng 3 vòng lặp lồng nhau',
+        basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    // Ý tưởng gốc trước khi dùng đệ quy: thử tất cả bộ (i, j, k) khác nhau
+    for (int i = 1; i <= 3; i++) {
+        for (int j = 1; j <= 3; j++) {
+            for (int k = 1; k <= 3; k++) {
+                if (i != j && j != k && i != k) {
+                    cout << i << " " << j << " " << k << '\\n';
+                }
+            }
+        }
+    }
+    return 0;
+}`,
+        basicExplanation: 'Viết trực tiếp bằng các vòng lặp for lồng nhau trong main() giúp hiểu bản chất sinh hoán vị trước khi tổng quát thành đệ quy.',
         code: `#include <iostream>
 #include <vector>
 using namespace std;
@@ -402,6 +572,13 @@ int main() {
       {
         language: 'python',
         title: 'Python Đệ quy Sinh Hoán vị',
+        basicTitle: 'Python Cơ bản: Vòng lặp lồng nhau không dùng đệ quy',
+        basicCode: `for i in range(1, 4):
+    for j in range(1, 4):
+        for k in range(1, 4):
+            if i != j and j != k and i != k:
+                print(i, j, k)`,
+        basicExplanation: 'Dùng 3 vòng lặp trực quan cho trường hợp N = 3 trước khi tổng quát hóa bằng quay lui.',
         code: `def permute(n: int):
     used = [False] * (n + 1)
     current = []
@@ -438,7 +615,62 @@ permute(3)`,
           explanation: 'Với bàn cờ 4x4, có đúng 2 cấu hình xếp hậu không ăn nhau.'
         }
       ],
-      solutionAnalysis: 'Duyệt từng hàng r từ 0 đến N-1. Ở mỗi hàng chọn cột c. Dùng các mảng đánh dấu cột `col[c]`, đường chéo chính `diag1[r - c + N]`, đường chéo phụ `diag2[r + c]`. Khi r == N nghĩa là tìm thấy 1 cách xếp.',
+      solutionAnalysis: 'Duyệt từng hàng r từ 0 đến N-1. Ở mỗi hàng chọn cột c. Dùng các mảng đánh dấu cột `col[c]`, đường chéo chính `diag1[r - c + N]`, đường chéo phụ `diag2[r + c]` để kiểm tra hợp lệ trong O(1).',
+      basicAnalysis: 'Cơ bản: Chỉ dùng 1 mảng cot[r] lưu vị trí cột của quân hậu ở hàng r; khi đặt hậu ở hàng r, chạy một vòng for kiểm tra xung đột với các hàng trước đó (dễ đọc, không cần công thức dịch chỉ số đường chéo).',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int n, ways = 0;
+int cot[20]; // cot[r] là cột đặt quân hậu ở hàng r
+
+void thu(int r) {
+    if (r == n) {
+        ways++;
+        return;
+    }
+    for (int c = 0; c < n; c++) {
+        bool anToan = true;
+        for (int i = 0; i < r; i++) {
+            int diff = r - i;
+            if (cot[i] == c || cot[i] - c == diff || c - cot[i] == diff) {
+                anToan = false;
+                break;
+            }
+        }
+        if (anToan) {
+            cot[r] = c;
+            thu(r + 1);
+        }
+    }
+}
+
+int main() {
+    cin >> n;
+    thu(0);
+    cout << ways;
+    return 0;
+}`,
+      basicSolutionPython: `n = int(input())
+cot = [0] * n
+ways = 0
+
+def thu(r):
+    global ways
+    if r == n:
+        ways += 1
+        return
+    for c in range(n):
+        ok = True
+        for i in range(r):
+            if cot[i] == c or abs(cot[i] - c) == r - i:
+                ok = False
+                break
+        if ok:
+            cot[r] = c
+            thu(r + 1)
+
+thu(0)
+print(ways)`,
       fullSolutionCpp: `#include <iostream>
 #include <vector>
 using namespace std;
@@ -519,6 +751,23 @@ solve()`
       {
         language: 'cpp',
         title: 'C++ Tìm kiếm Nhị phân & lower_bound',
+        basicTitle: 'C++ Cơ bản: Tìm vị trí X tuần tự bằng vòng lặp for (O(N))',
+        basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    int a[6] = {1, 3, 5, 7, 9, 11};
+    int x = 7, pos = -1;
+    for (int i = 0; i < 6; i++) {
+        if (a[i] == x) {
+            pos = i;
+            break;
+        }
+    }
+    cout << pos << '\\n'; // Index 3
+    return 0;
+}`,
+        basicExplanation: 'Tìm kiếm tuyến tính từng phần tử một ngay trong main() — thuật toán cơ bản trước khi tối ưu sang chia đôi nhị phân.',
         code: `#include <iostream>
 #include <vector>
 #include <algorithm>
@@ -545,6 +794,22 @@ int main() {
       {
         language: 'python',
         title: 'Python bisect_left chuẩn thư viện',
+        basicTitle: 'Python Cơ bản: Vòng lặp while left <= right tự cài',
+        basicCode: `a = [1, 3, 5, 7, 9, 11]
+x = 7
+l, r = 0, len(a) - 1
+ans = -1
+while l <= r:
+    mid = (l + r) // 2
+    if a[mid] == x:
+        ans = mid
+        break
+    elif a[mid] < x:
+        l = mid + 1
+    else:
+        r = mid - 1
+print(ans)`,
+        basicExplanation: 'Tự viết vòng while nhị phân không dùng module bisect để nắm rõ cách dịch hai biên.',
         code: `import bisect
 
 a = [1, 3, 5, 7, 9, 11]
@@ -568,6 +833,64 @@ print(f"Vi tri dau tien >= 7: {idx}")`,
         }
       ],
       solutionAnalysis: 'Chặt nhị phân giá trị tổng maxTarget từ max(a) đến sum(a). Với mỗi mid, dùng hàm tham lam đếm số đoạn cần thiết. Nếu số đoạn <= K thì thử giá trị nhỏ hơn.',
+      basicAnalysis: 'Cơ bản: Nhúng thẳng phần kiểm tra chia đoạn vào trong vòng lặp chặt nhị phân ngay trong hàm main(), dùng mảng tĩnh không cần tách hàm phụ hay thư viện <numeric>.',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+long long a[100005];
+
+int main() {
+    int n, k;
+    cin >> n >> k;
+    long long low = 0, high = 0;
+    for (int i = 0; i < n; i++) {
+        cin >> a[i];
+        if (a[i] > low) low = a[i];
+        high += a[i];
+    }
+    long long ans = high;
+    while (low <= high) {
+        long long mid = (low + high) / 2;
+        int doan = 1;
+        long long tong = 0;
+        for (int i = 0; i < n; i++) {
+            if (tong + a[i] > mid) {
+                doan++;
+                tong = a[i];
+            } else {
+                tong += a[i];
+            }
+        }
+        if (doan <= k) {
+            ans = mid;
+            high = mid - 1;
+        } else {
+            low = mid + 1;
+        }
+    }
+    cout << ans;
+    return 0;
+}`,
+      basicSolutionPython: `n, k = map(int, input().split())
+a = list(map(int, input().split()))
+low, high = max(a), sum(a)
+ans = high
+while low <= high:
+    mid = (low + high) // 2
+    doan = 1
+    tong = 0
+    for x in a:
+        if tong + x > mid:
+            doan += 1
+            tong = x
+        else:
+            tong += x
+    if doan <= k:
+        ans = mid
+        high = mid - 1
+    else:
+        low = mid + 1
+print(ans)`,
       fullSolutionCpp: `#include <iostream>
 #include <vector>
 #include <numeric>
@@ -670,7 +993,24 @@ solve()`
     codeExamples: [
       {
         language: 'cpp',
-        title: 'C++ Mảng cộng dồn & Hai con trỏ',
+        title: 'C++ Hai con trỏ tìm cặp có tổng bằng S (O(N))',
+        basicTitle: 'C++ Cơ bản: Hai vòng lặp for kiểm tra mọi cặp (O(N²))',
+        basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    int a[6] = {1, 2, 4, 7, 11, 15};
+    int S = 15;
+    bool timThay = false;
+    for (int i = 0; i < 6; i++) {
+        for (int j = i + 1; j < 6; j++) {
+            if (a[i] + a[j] == S) timThay = true;
+        }
+    }
+    cout << (timThay ? "YES" : "NO") << '\\n';
+    return 0;
+}`,
+        basicExplanation: 'Ý tưởng trực giác nhất: duyệt mọi cặp (i, j) bằng 2 vòng lặp for trong main().',
         code: `#include <iostream>
 #include <vector>
 #include <algorithm>
@@ -698,6 +1038,14 @@ int main() {
       {
         language: 'python',
         title: 'Python Prefix Sum itertools.accumulate',
+        basicTitle: 'Python Cơ bản: Tính mảng cộng dồn bằng vòng for đơn giản',
+        basicCode: `a = [3, 2, 4, 5, 1]
+pref = [0] * (len(a) + 1)
+for i in range(len(a)):
+    pref[i + 1] = pref[i] + a[i]
+L, R = 1, 3
+print("Tong doan:", pref[R + 1] - pref[L])`,
+        basicExplanation: 'Tự cộng dồn từng bước bằng vòng lặp for, không cần import itertools.',
         code: `from itertools import accumulate
 
 a = [3, 2, 4, 5, 1]
@@ -724,7 +1072,46 @@ print("Tong doan:", pref[R + 1] - pref[L])`,
           explanation: 'Đoạn con [2, 1, 3] có độ dài 3 và tổng = 6 ≤ 7.'
         }
       ],
-      solutionAnalysis: 'Dùng cửa sổ trượt (Sliding Window / Two Pointers). Mở rộng con trỏ right, khi tổng > S thì tăng left để thu hẹp. Cập nhật maxLen = max(maxLen, right - left + 1).',
+      solutionAnalysis: 'Dùng cửa sổ trượt (Sliding Window / Two Pointers). Mở rộng con trỏ right, khi tổng > S thì tăng left để thu hẹp. Cập nhật maxLen = max(maxLen, right - left + 1) trong O(N).',
+      basicAnalysis: 'Cơ bản: Thử mọi điểm đầu i và kéo dài điểm cuối j khi tổng đoạn [i..j] <= S để tìm độ dài lớn nhất (2 vòng lặp for O(N²), dễ cài với test vừa).',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+long long a[1005];
+
+int main() {
+    int n;
+    long long S;
+    cin >> n >> S;
+    for (int i = 0; i < n; i++) cin >> a[i];
+    int maxLen = 0;
+    for (int i = 0; i < n; i++) {
+        long long tong = 0;
+        for (int j = i; j < n; j++) {
+            tong += a[j];
+            if (tong <= S) {
+                if (j - i + 1 > maxLen) maxLen = j - i + 1;
+            } else {
+                break;
+            }
+        }
+    }
+    cout << maxLen;
+    return 0;
+}`,
+      basicSolutionPython: `n, S = map(int, input().split())
+a = list(map(int, input().split()))
+max_len = 0
+for i in range(n):
+    tong = 0
+    for j in range(i, n):
+        tong += a[j]
+        if tong <= S:
+            if j - i + 1 > max_len:
+                max_len = j - i + 1
+        else:
+            break
+print(max_len)`,
       fullSolutionCpp: `#include <iostream>
 #include <vector>
 #include <algorithm>
@@ -802,7 +1189,27 @@ solve()`
     codeExamples: [
       {
         language: 'cpp',
-        title: 'C++ Bài toán Cái túi 0/1 tối ưu mảng 1D',
+        title: 'C++ Bài toán Cái túi 0/1 tối ưu mảng 1D (DP Nâng cao)',
+        basicTitle: 'C++ Cơ bản: Bảng phương án 2 chiều trong main (dễ hình dung)',
+        basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    int W = 10, n = 4;
+    int w[4] = {2, 3, 5, 7}, v[4] = {1, 5, 2, 4};
+    int dp[5][11] = {0};
+    for (int i = 1; i <= n; i++) {
+        for (int j = 0; j <= W; j++) {
+            dp[i][j] = dp[i - 1][j];
+            if (j >= w[i - 1] && dp[i - 1][j - w[i - 1]] + v[i - 1] > dp[i][j]) {
+                dp[i][j] = dp[i - 1][j - w[i - 1]] + v[i - 1];
+            }
+        }
+    }
+    cout << "Max value: " << dp[n][W] << '\\n';
+    return 0;
+}`,
+        basicExplanation: 'Dùng bảng 2 chiều dp[i][j] trong main(): chọn hoặc không chọn đồ vật thứ i, không cần nhớ quy tắc duyệt ngược.',
         code: `#include <iostream>
 #include <vector>
 #include <algorithm>
@@ -831,7 +1238,20 @@ int main() {
       },
       {
         language: 'python',
-        title: 'Python Knapsack 1D Array',
+        title: 'Python Knapsack 1D Array (DP tối ưu)',
+        basicTitle: 'Python Cơ bản: Bảng DP 2 chiều trực quan',
+        basicCode: `W = 10
+w = [2, 3, 5, 7]
+v = [1, 5, 2, 4]
+n = len(w)
+dp = [[0] * (W + 1) for _ in range(n + 1)]
+for i in range(1, n + 1):
+    for j in range(W + 1):
+        dp[i][j] = dp[i - 1][j]
+        if j >= w[i - 1]:
+            dp[i][j] = max(dp[i][j], dp[i - 1][j - w[i - 1]] + v[i - 1])
+print("Max value:", dp[n][W])`,
+        basicExplanation: 'Bảng 2 chiều dp[i][j] tương ứng xét i đồ vật đầu tiên với sức chứa j.',
         code: `def knapsack(W: int, weights: list, values: list) -> int:
     dp = [0] * (W + 1)
     for w, v in zip(weights, values):
@@ -857,7 +1277,37 @@ print("Max value:", knapsack(10, [2, 3, 5, 7], [1, 5, 2, 4]))`,
           explanation: 'Dãy con tăng dài nhất là [1, 2, 3, 4, 7] có độ dài 5.'
         }
       ],
-      solutionAnalysis: 'Dùng mảng tails[len] lưu phần tử kết thúc nhỏ nhất của dãy con tăng độ dài len. Với mỗi x trong A, dùng lower_bound tìm vị trí đầu tiên >= x để thay thế, nếu không có thì nối thêm vào cuối.',
+      solutionAnalysis: 'Dùng mảng tails[len] lưu phần tử kết thúc nhỏ nhất của dãy con tăng độ dài len. Với mỗi x trong A, dùng lower_bound tìm vị trí đầu tiên >= x để thay thế, đạt O(N log N).',
+      basicAnalysis: 'Cơ bản: Quy hoạch động cổ điển O(N²) trong main(): f[i] là độ dài dãy con tăng kết thúc tại i, duyệt mọi j < i có a[j] < a[i] để cập nhật f[i] = max(f[i], f[j] + 1).',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int a[2005], f[2005];
+
+int main() {
+    int n, ans = 0;
+    cin >> n;
+    for (int i = 0; i < n; i++) {
+        cin >> a[i];
+        f[i] = 1;
+        for (int j = 0; j < i; j++) {
+            if (a[j] < a[i] && f[j] + 1 > f[i]) {
+                f[i] = f[j] + 1;
+            }
+        }
+        if (f[i] > ans) ans = f[i];
+    }
+    cout << ans;
+    return 0;
+}`,
+      basicSolutionPython: `n = int(input())
+a = list(map(int, input().split()))
+f = [1] * n
+for i in range(n):
+    for j in range(i):
+        if a[j] < a[i] and f[j] + 1 > f[i]:
+            f[i] = f[j] + 1
+print(max(f) if n > 0 else 0)`,
       fullSolutionCpp: `#include <iostream>
 #include <vector>
 #include <algorithm>
@@ -926,6 +1376,37 @@ solve()`
       {
         language: 'cpp',
         title: 'C++ Thuật toán Dijkstra với priority_queue',
+        basicTitle: 'C++ Cơ bản: Dijkstra cổ điển không dùng priority_queue (mảng tĩnh O(V²))',
+        basicCode: `#include <iostream>
+using namespace std;
+
+const long long INF = 1e18;
+long long c[505][505], distArr[505];
+bool daChon[505];
+
+int main() {
+    int n = 3; // Ví dụ ma trận trọng số 3 đỉnh
+    for (int i = 1; i <= n; i++) {
+        distArr[i] = INF;
+        for (int j = 1; j <= n; j++) c[i][j] = (i == j ? 0 : INF);
+    }
+    c[1][2] = 4; c[1][3] = 2; c[3][2] = 1;
+    distArr[1] = 0;
+    for (int step = 1; step <= n; step++) {
+        int u = -1;
+        for (int i = 1; i <= n; i++) {
+            if (!daChon[i] && (u == -1 || distArr[i] < distArr[u])) u = i;
+        }
+        if (u == -1 || distArr[u] == INF) break;
+        daChon[u] = true;
+        for (int v = 1; v <= n; v++) {
+            if (distArr[u] + c[u][v] < distArr[v]) distArr[v] = distArr[u] + c[u][v];
+        }
+    }
+    for (int i = 1; i <= n; i++) cout << distArr[i] << " ";
+    return 0;
+}`,
+        basicExplanation: 'Phiên bản Dijkstra nguyên thủy chỉ dùng mảng 2 chiều & vòng lặp tìm đỉnh nhỏ nhất trong main(), không cần priority_queue hay pair.',
         code: `#include <iostream>
 #include <vector>
 #include <queue>
@@ -963,6 +1444,27 @@ vector<long long> dijkstra(int n, int start, const vector<vector<pair<int, int>>
       {
         language: 'python',
         title: 'Python Dijkstra heapq',
+        basicTitle: 'Python Cơ bản: Tìm đỉnh nhỏ nhất bằng vòng lặp đơn giản',
+        basicCode: `INF = 10**18
+n = 3
+adj = {1: [(2, 4), (3, 2)], 2: [], 3: [(2, 1)]}
+dist = [INF] * (n + 1)
+visited = [False] * (n + 1)
+dist[1] = 0
+
+for _ in range(n):
+    u = -1
+    for i in range(1, n + 1):
+        if not visited[i] and (u == -1 or dist[i] < dist[u]):
+            u = i
+    if u == -1 or dist[u] == INF:
+        break
+    visited[u] = True
+    for v, w in adj[u]:
+        if dist[u] + w < dist[v]:
+            dist[v] = dist[u] + w
+print(dist[1:])`,
+        basicExplanation: 'Không cần thư viện heapq: chỉ chọn đỉnh chưa thăm có dist nhỏ nhất rồi nới lỏng các cạnh kề.',
         code: `import heapq
 
 def dijkstra(n: int, start: int, adj: list) -> list:
@@ -997,7 +1499,46 @@ def dijkstra(n: int, start: int, adj: list) -> list:
           explanation: 'Đường đi ngắn nhất từ 1 đến 2 là 1 -> 3 -> 2 với tổng trọng số 2 + 1 = 3.'
         }
       ],
-      solutionAnalysis: 'Áp dụng thuật toán Dijkstra với priority_queue. Khởi tạo dist[1] = 0, các đỉnh khác INF.',
+      solutionAnalysis: 'Áp dụng thuật toán Dijkstra với priority_queue. Khởi tạo dist[1] = 0, các đỉnh khác INF, đạt O((V+E) log V).',
+      basicAnalysis: 'Cơ bản: Thuật toán Bellman-Ford / nới lỏng đơn giản trên danh sách M cạnh viết trong main() (hoặc Dijkstra mảng O(N²)): không cần priority_queue hay struct phức tạp.',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+const long long INF = 1e18;
+int u[5005], v[5005];
+long long w[5005], distArr[1005];
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+    for (int i = 0; i < m; i++) cin >> u[i] >> v[i] >> w[i];
+    for (int i = 1; i <= n; i++) distArr[i] = INF;
+    distArr[1] = 0;
+    for (int step = 1; step < n; step++) {
+        for (int i = 0; i < m; i++) {
+            if (distArr[u[i]] != INF && distArr[u[i]] + w[i] < distArr[v[i]]) {
+                distArr[v[i]] = distArr[u[i]] + w[i];
+            }
+        }
+    }
+    for (int i = 1; i <= n; i++) {
+        cout << (distArr[i] == INF ? -1 : distArr[i]) << " ";
+    }
+    return 0;
+}`,
+      basicSolutionPython: `n, m = map(int, input().split())
+edges = []
+for _ in range(m):
+    a, b, c = map(int, input().split())
+    edges.append((a, b, c))
+INF = 10**18
+dist = [INF] * (n + 1)
+dist[1] = 0
+for _ in range(n - 1):
+    for a, b, c in edges:
+        if dist[a] != INF and dist[a] + c < dist[b]:
+            dist[b] = dist[a] + c
+print(*[d if d != INF else -1 for d in dist[1:]])`,
       fullSolutionCpp: `#include <iostream>
 #include <vector>
 #include <queue>
@@ -1103,6 +1644,19 @@ solve()`
       {
         language: 'cpp',
         title: 'C++ Segment Tree Cập nhật Điểm & Truy vấn Tổng',
+        basicTitle: 'C++ Cơ bản: Mảng thường — cập nhật O(1), tính tổng bằng vòng lặp',
+        basicCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long a[6] = {0, 2, 4, 1, 7, 3};
+    a[2] = 10; // Cập nhật tại vị trí 2
+    long long sum = 0;
+    for (int i = 1; i <= 4; i++) sum += a[i]; // Truy vấn tổng [1..4]
+    cout << sum << '\\n';
+    return 0;
+}`,
+        basicExplanation: 'Khi N và Q nhỏ, cập nhật trực tiếp mảng a[idx] = val và tính tổng bằng vòng lặp for rất đơn giản.',
         code: `#include <iostream>
 #include <vector>
 using namespace std;
@@ -1136,6 +1690,18 @@ struct SegmentTree {
       {
         language: 'python',
         title: 'Python DSU với Path Compression',
+        basicTitle: 'Python Cơ bản: Mảng nhãn nhóm (Union-Find tối giản không dùng class)',
+        basicCode: `n = 5
+nhom = list(range(n + 1))
+
+# Gộp nhóm của 2 phần tử u, v bằng cách đổi toàn bộ nhãn v sang nhãn u
+u, v = 1, 3
+cu, cv = nhom[u], nhom[v]
+for i in range(1, n + 1):
+    if nhom[i] == cv:
+        nhom[i] = cu
+print("Cung nhom:", nhom[1] == nhom[3])`,
+        basicExplanation: 'Quản lý tập hợp bằng mảng nhãn đơn thuần trong main(), không cần class hay đệ quy nén đường đi.',
         code: `class DSU:
     def __init__(self, n):
         self.parent = list(range(n + 1))
@@ -1177,6 +1743,48 @@ struct SegmentTree {
         }
       ],
       solutionAnalysis: 'Dùng Segment Tree quản lý Max đoạn. Nút lá lưu giá trị A[i], nút cha lưu max của 2 nút con. Cập nhật và truy vấn trong O(log N).',
+      basicAnalysis: 'Cơ bản: Dùng mảng tĩnh a[1..N] ngay trong main(): truy vấn loại 1 gán trực tiếp a[p] = x; truy vấn loại 2 duyệt vòng for từ l đến r tìm giá trị lớn nhất.',
+      basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int a[100005];
+
+int main() {
+    int n, q;
+    cin >> n >> q;
+    for (int i = 1; i <= n; i++) cin >> a[i];
+    while (q--) {
+        int loai;
+        cin >> loai;
+        if (loai == 1) {
+            int p, x;
+            cin >> p >> x;
+            a[p] = x;
+        } else {
+            int l, r;
+            cin >> l >> r;
+            int mx = a[l];
+            for (int i = l + 1; i <= r; i++) {
+                if (a[i] > mx) mx = a[i];
+            }
+            cout << mx << '\\n';
+        }
+    }
+    return 0;
+}`,
+      basicSolutionPython: `n, q = map(int, input().split())
+a = [0] + list(map(int, input().split()))
+for _ in range(q):
+    dong = list(map(int, input().split()))
+    if dong[0] == 1:
+        a[dong[1]] = dong[2]
+    else:
+        l, r = dong[1], dong[2]
+        mx = a[l]
+        for i in range(l + 1, r + 1):
+            if a[i] > mx:
+                mx = a[i]
+        print(mx)`,
       fullSolutionCpp: `#include <iostream>
 #include <vector>
 #include <algorithm>

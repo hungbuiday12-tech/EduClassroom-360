@@ -1476,6 +1476,9 @@ export interface CodeMistakeAnalysis {
   simpleSampleCode: string;
   simpleCodeExplanation: string;
   complexityNote: string;
+  advancedSampleCode?: string;
+  advancedCodeExplanation?: string;
+  advancedComplexityNote?: string;
   source: 'ai' | 'local';
 }
 
@@ -1496,6 +1499,8 @@ export interface AnalyzeCodeMistakeRequest {
   }>;
   fallbackSampleCpp?: string;
   fallbackSamplePython?: string;
+  fallbackAdvancedCpp?: string;
+  fallbackAdvancedPython?: string;
 }
 
 export async function analyzeCodeMistakeWithAI(
@@ -1529,6 +1534,9 @@ export async function analyzeCodeMistakeWithAI(
         simpleSampleCode: String(a.simpleSampleCode || ''),
         simpleCodeExplanation: String(a.simpleCodeExplanation || ''),
         complexityNote: String(a.complexityNote || ''),
+        advancedSampleCode: a.advancedSampleCode ? String(a.advancedSampleCode) : undefined,
+        advancedCodeExplanation: a.advancedCodeExplanation ? String(a.advancedCodeExplanation) : undefined,
+        advancedComplexityNote: a.advancedComplexityNote ? String(a.advancedComplexityNote) : undefined,
         source: 'ai'
       };
     }
@@ -1593,9 +1601,16 @@ export async function analyzeCodeMistakeWithAI(
   const fallbackSample =
     req.language === 'python'
       ? req.fallbackSamplePython ||
-        `import sys\n\ndef solve():\n    data = sys.stdin.read().split()\n    if not data:\n        return\n    # Xử lý dữ liệu từ data và in kết quả chuẩn\n\nsolve()`
+        `# Code Cơ bản: Đọc dữ liệu trực tiếp và xử lý tuần tự\ndata = input().split()\n# Xử lý và print kết quả`
       : req.fallbackSampleCpp ||
-        `#include <iostream>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Đọc input chuẩn xác và kiểm tra tràn số long long\n    return 0;\n}`;
+        `#include <iostream>\nusing namespace std;\n\nint main() {\n    // Code tối giản viết trực tiếp trong main\n    return 0;\n}`;
+
+  const fallbackAdv =
+    req.language === 'python'
+      ? req.fallbackAdvancedPython ||
+        `import sys\n\ndef solve():\n    data = sys.stdin.read().split()\n    if not data:\n        return\n    # Cài đặt tối ưu (DP / Fast I/O / cấu trúc dữ liệu)\n\nsolve()`
+      : req.fallbackAdvancedCpp ||
+        `#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Cài đặt tối ưu chuẩn Chuyên / HSG (STL / DP)\n    return 0;\n}`;
 
   return {
     summary: firstFail
@@ -1606,8 +1621,12 @@ export async function analyzeCodeMistakeWithAI(
     mistakes,
     simpleSampleCode: fallbackSample,
     simpleCodeExplanation:
-      'Đoạn code mẫu trên đọc dữ liệu an toàn theo đúng định dạng chuẩn và xử lý trọn vẹn các trường hợp biên.',
-    complexityNote: 'Đảm bảo đọc/ghi nhanh và dùng kiểu 64-bit khi số liệu lớn.',
+      'Phiên bản Cơ bản dùng cú pháp tối giản, viết tuần tự dễ đọc, không lạm dụng hàm phụ hay kỹ thuật phức tạp.',
+    complexityNote: 'Phù hợp để nắm chắc luồng nhập xuất và thuật toán gốc.',
+    advancedSampleCode: fallbackAdv,
+    advancedCodeExplanation:
+      'Phiên bản Nâng cao / Chuyên tối ưu tốc độ nhập xuất (Fast I/O) và cấu trúc dữ liệu / Quy hoạch động cho bộ test lớn.',
+    advancedComplexityNote: 'Đạt chuẩn hiệu năng thi HSG / VNOI.',
     source: 'local'
   };
 }

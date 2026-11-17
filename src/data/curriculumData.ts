@@ -1112,7 +1112,40 @@ def solve():
     print(a + b)
 
 if __name__ == '__main__':
-    solve()`
+    solve()`,
+    basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long a, b;
+    cin >> a >> b;
+    cout << a + b;
+    return 0;
+}`,
+    basicSolutionPython: `a, b = map(int, input().split())
+print(a + b)`,
+    advancedSolutionCpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    long long a, b;
+    while (cin >> a >> b) {
+        cout << a + b << '\\n';
+    }
+    return 0;
+}`,
+    advancedSolutionPython: `import sys
+
+def solve():
+    data = sys.stdin.read().split()
+    if len(data) >= 2:
+        print(int(data[0]) + int(data[1]))
+
+if __name__ == '__main__':
+    solve()`,
+    solutionAnalysis: 'Cơ bản: Nhập trực tiếp hai biến long long (tránh tràn int khi a, b tới 10^9) và in a + b. Nâng cao: Tắt đồng bộ stdio với Fast I/O và đọc theo luồng chuẩn.'
   },
   {
     id: 'PRIME',
@@ -1179,7 +1212,80 @@ def solve():
         print("NO")
 
 if __name__ == '__main__':
-    solve()`
+    solve()`,
+    basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long n;
+    cin >> n;
+    if (n < 2) {
+        cout << "NO";
+        return 0;
+    }
+    int dem = 0;
+    for (long long i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            dem++;
+            break;
+        }
+    }
+    if (dem == 0) cout << "YES";
+    else cout << "NO";
+    return 0;
+}`,
+    basicSolutionPython: `n = int(input())
+if n < 2:
+    print("NO")
+else:
+    ok = True
+    i = 2
+    while i * i <= n:
+        if n % i == 0:
+            ok = False
+            break
+        i += 1
+    print("YES" if ok else "NO")`,
+    advancedSolutionCpp: `#include <iostream>
+using namespace std;
+
+bool isPrime6k(long long n) {
+    if (n < 2) return false;
+    if (n == 2 || n == 3) return true;
+    if (n % 2 == 0 || n % 3 == 0) return false;
+    for (long long i = 5; i * i <= n; i += 6) {
+        if (n % i == 0 || n % (i + 2) == 0) return false;
+    }
+    return true;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    long long n;
+    if (cin >> n) cout << (isPrime6k(n) ? "YES" : "NO") << '\\n';
+    return 0;
+}`,
+    advancedSolutionPython: `import sys
+
+def is_prime_6k(n: int) -> bool:
+    if n < 2:
+        return False
+    if n in (2, 3):
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    return True
+
+line = sys.stdin.read().strip()
+if line:
+    print("YES" if is_prime_6k(int(line)) else "NO")`,
+    solutionAnalysis: 'Cơ bản: Duyệt trực tiếp trong main() từ 2 tới căn N để tìm ước. Nâng cao: Tối ưu bước nhảy 6k ± 1 giảm 3 lần số phép chia kết hợp Fast I/O.'
   },
   {
     id: 'FIBO',
@@ -1245,7 +1351,85 @@ def solve():
     print(curr)
 
 if __name__ == '__main__':
-    solve()`
+    solve()`,
+    basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    long long n;
+    cin >> n;
+    long long f0 = 0, f1 = 1, fn = 0;
+    if (n == 0) fn = 0;
+    else if (n == 1) fn = 1;
+    else {
+        for (int i = 2; i <= n; i++) {
+            fn = (f0 + f1) % 1000000007;
+            f0 = f1;
+            f1 = fn;
+        }
+    }
+    cout << fn;
+    return 0;
+}`,
+    basicSolutionPython: `n = int(input())
+MOD = 1000000007
+if n == 0:
+    print(0)
+elif n == 1:
+    print(1)
+else:
+    a, b = 0, 1
+    for _ in range(2, n + 1):
+        c = (a + b) % MOD
+        a = b
+        b = c
+    print(b)`,
+    advancedSolutionCpp: `#include <iostream>
+#include <vector>
+using namespace std;
+
+const long long MOD = 1000000007LL;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int n;
+    if (!(cin >> n)) return 0;
+    if (n <= 1) {
+        cout << n << '\\n';
+        return 0;
+    }
+    // Quy hoạch động mảng 1D lưu toàn bộ trạng thái F[i]
+    vector<long long> dp(n + 1, 0);
+    dp[1] = 1;
+    for (int i = 2; i <= n; i++) {
+        dp[i] = (dp[i - 1] + dp[i - 2]) % MOD;
+    }
+    cout << dp[n] << '\\n';
+    return 0;
+}`,
+    advancedSolutionPython: `import sys
+
+MOD = 1000000007
+
+def solve():
+    s = sys.stdin.read().strip()
+    if not s:
+        return
+    n = int(s)
+    if n <= 1:
+        print(n)
+        return
+    # Quy hoạch động F(i) = (F(i-1) + F(i-2)) mod (10^9 + 7)
+    dp = [0] * (n + 1)
+    dp[1] = 1
+    for i in range(2, n + 1):
+        dp[i] = (dp[i - 1] + dp[i - 2]) % MOD
+    print(dp[n])
+
+if __name__ == '__main__':
+    solve()`,
+    solutionAnalysis: 'Cơ bản: Chỉ dùng 3 biến đơn giản f0, f1, fn cập nhật cuốn chiếu trong main(). Nâng cao / Chuyên: Bảng phương án Quy hoạch động DP 1D (có thể nâng lên Nhân ma trận O(log N) nếu N tới 10^18).'
   },
   {
     id: 'BINSEARCH',
@@ -1320,7 +1504,81 @@ def solve():
     print(ans)
 
 if __name__ == '__main__':
-    solve()`
+    solve()`,
+    basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int a[100005];
+
+int main() {
+    int n;
+    long long x;
+    cin >> n >> x;
+    for (int i = 1; i <= n; i++) cin >> a[i];
+    int l = 1, r = n, kq = -1;
+    while (l <= r) {
+        int mid = (l + r) / 2;
+        if (a[mid] == x) {
+            kq = mid;
+            r = mid - 1; // Tìm tiếp bên trái để lấy vị trí đầu tiên
+        } else if (a[mid] < x) {
+            l = mid + 1;
+        } else {
+            r = mid - 1;
+        }
+    }
+    cout << kq;
+    return 0;
+}`,
+    basicSolutionPython: `tokens = input().split()
+n, x = int(tokens[0]), int(tokens[1])
+a = list(map(int, input().split()))
+kq = -1
+l, r = 0, n - 1
+while l <= r:
+    mid = (l + r) // 2
+    if a[mid] == x:
+        kq = mid + 1
+        r = mid - 1
+    elif a[mid] < x:
+        l = mid + 1
+    else:
+        r = mid - 1
+print(kq)`,
+    advancedSolutionCpp: `#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int n;
+    long long x;
+    if (!(cin >> n >> x)) return 0;
+    vector<long long> a(n);
+    for (int i = 0; i < n; i++) cin >> a[i];
+    // Dùng chuẩn STL lower_bound O(log N)
+    auto it = lower_bound(a.begin(), a.end(), x);
+    if (it != a.end() && *it == x) cout << (it - a.begin()) + 1 << '\\n';
+    else cout << -1 << '\\n';
+    return 0;
+}`,
+    advancedSolutionPython: `import sys
+import bisect
+
+def solve():
+    raw = sys.stdin.read().split()
+    if not raw:
+        return
+    n, x = int(raw[0]), int(raw[1])
+    arr = [int(v) for v in raw[2:2 + n]]
+    idx = bisect.bisect_left(arr, x)
+    print(idx + 1 if idx < n and arr[idx] == x else -1)
+
+if __name__ == '__main__':
+    solve()`,
+    solutionAnalysis: 'Cơ bản: Tự cài vòng while nhị phân với mảng tĩnh 1-indexed trong main(). Nâng cao / Chuyên: Dùng lower_bound (C++) / bisect_left (Python) tối ưu chuẩn thư viện STL.'
   },
   {
     id: 'PALINDROME',
@@ -1387,7 +1645,74 @@ def solve():
         print("NO")
 
 if __name__ == '__main__':
-    solve()`
+    solve()`,
+    basicSolutionCpp: `#include <iostream>
+#include <string>
+using namespace std;
+
+int main() {
+    string s, clean = "";
+    getline(cin, s);
+    for (int i = 0; i < (int)s.size(); i++) {
+        char c = s[i];
+        if (c >= 'A' && c <= 'Z') c = c + 32; // Đổi chữ hoa sang thường
+        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+            clean += c;
+        }
+    }
+    bool ok = true;
+    int len = clean.size();
+    for (int i = 0; i < len / 2; i++) {
+        if (clean[i] != clean[len - 1 - i]) {
+            ok = false;
+            break;
+        }
+    }
+    cout << (ok ? "YES" : "NO");
+    return 0;
+}`,
+    basicSolutionPython: `s = input()
+clean = ""
+for c in s:
+    if c.isalnum():
+        clean += c.lower()
+ok = True
+for i in range(len(clean) // 2):
+    if clean[i] != clean[len(clean) - 1 - i]:
+        ok = False
+        break
+print("YES" if ok else "NO")`,
+    advancedSolutionCpp: `#include <iostream>
+#include <string>
+#include <cctype>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    string s;
+    if (!getline(cin, s)) return 0;
+    // Hai con trỏ trực tiếp O(1) bộ nhớ phụ
+    int l = 0, r = (int)s.size() - 1;
+    while (l < r) {
+        while (l < r && !isalnum((unsigned char)s[l])) l++;
+        while (l < r && !isalnum((unsigned char)s[r])) r--;
+        if (tolower((unsigned char)s[l]) != tolower((unsigned char)s[r])) {
+            cout << "NO\\n";
+            return 0;
+        }
+        l++;
+        r--;
+    }
+    cout << "YES\\n";
+    return 0;
+}`,
+    advancedSolutionPython: `import sys
+
+s = sys.stdin.read().strip()
+filtered = [c.lower() for c in s if c.isalnum()]
+print("YES" if filtered == filtered[::-1] else "NO")`,
+    solutionAnalysis: 'Cơ bản: Lọc xâu vào chuỗi mới rồi so sánh đối xứng từ 2 đầu bằng vòng for. Nâng cao / Chuyên: Kỹ thuật Hai con trỏ tại chỗ O(1) bộ nhớ phụ.'
   },
   {
     id: 'KNAPSACK',
@@ -1450,7 +1775,83 @@ def solve():
     print(dp[w])
 
 if __name__ == '__main__':
-    solve()`
+    solve()`,
+    basicSolutionCpp: `#include <iostream>
+using namespace std;
+
+int w[105], v[105];
+int dp[105][1005];
+
+int main() {
+    int n, W;
+    cin >> n >> W;
+    for (int i = 1; i <= n; i++) cin >> w[i] >> v[i];
+    // Bảng quy hoạch động 2 chiều cơ bản dễ hình dung
+    for (int i = 1; i <= n; i++) {
+        for (int j = 0; j <= W; j++) {
+            dp[i][j] = dp[i - 1][j];
+            if (j >= w[i] && dp[i - 1][j - w[i]] + v[i] > dp[i][j]) {
+                dp[i][j] = dp[i - 1][j - w[i]] + v[i];
+            }
+        }
+    }
+    cout << dp[n][W];
+    return 0;
+}`,
+    basicSolutionPython: `n, W = map(int, input().split())
+w = [0] * (n + 1)
+v = [0] * (n + 1)
+for i in range(1, n + 1):
+    w[i], v[i] = map(int, input().split())
+
+dp = [[0] * (W + 1) for _ in range(n + 1)]
+for i in range(1, n + 1):
+    for j in range(W + 1):
+        dp[i][j] = dp[i - 1][j]
+        if j >= w[i]:
+            dp[i][j] = max(dp[i][j], dp[i - 1][j - w[i]] + v[i])
+print(dp[n][W])`,
+    advancedSolutionCpp: `#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int n, W;
+    if (!(cin >> n >> W)) return 0;
+    // Quy hoạch động tối ưu không gian 1D: duyệt ngược từ W về w[i]
+    vector<int> dp(W + 1, 0);
+    for (int i = 0; i < n; i++) {
+        int wt, val;
+        cin >> wt >> val;
+        for (int j = W; j >= wt; j--) {
+            dp[j] = max(dp[j], dp[j - wt] + val);
+        }
+    }
+    cout << dp[W] << '\\n';
+    return 0;
+}`,
+    advancedSolutionPython: `import sys
+
+def solve():
+    raw = sys.stdin.read().split()
+    if not raw:
+        return
+    n, W = int(raw[0]), int(raw[1])
+    dp = [0] * (W + 1)
+    idx = 2
+    for _ in range(n):
+        wt, val = int(raw[idx]), int(raw[idx + 1])
+        idx += 2
+        for j in range(W, wt - 1, -1):
+            dp[j] = max(dp[j], dp[j - wt] + val)
+    print(dp[W])
+
+if __name__ == '__main__':
+    solve()`,
+    solutionAnalysis: 'Cơ bản: Dùng bảng DP 2D dp[i][j] trực quan dễ truy vết, viết tuần tự trong main(). Nâng cao / Chuyên: Nén mảng 1 chiều dp[j] duyệt ngược giảm bộ nhớ từ O(N·W) xuống O(W).'
   }
 ];
 

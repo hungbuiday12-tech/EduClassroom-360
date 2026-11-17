@@ -308,8 +308,9 @@ export const AlgoThumbPreview: React.FC<AlgoThumbPreviewProps> = ({
             {/* Halving vertical bounds */}
             <line x1="92" y1="24" x2="92" y2="122" stroke="#64748b" strokeWidth="1.5" strokeDasharray="4 4" />
             <line x1="236" y1="24" x2="236" y2="122" stroke="#64748b" strokeWidth="1.5" strokeDasharray="4 4" />
-            <line x1="164" y1="22" x2="164" y2="124" stroke={accentHex} strokeWidth="2.4" />
-            <circle cx="164" cy="70" r="6" fill={accentHex} className="algo-node-pulse" />
+            <line x1="164" y1="22" x2="164" y2="124" stroke={accentHex} strokeWidth="2.4" className="holo-dash" />
+            <circle cx="164" cy="70" r="10" fill="none" stroke={accentHex} strokeOpacity="0.45" strokeWidth="1.4" className="algo-node-pulse" />
+            <circle cx="164" cy="70" r="5.5" fill={accentHex} className="algo-node-pulse" />
             <text x="164" y="136" fill={accentHex} fontFamily="JetBrains Mono, monospace" fontSize="10" fontWeight="700" textAnchor="middle">
               mid = (lo+hi)/2
             </text>
@@ -599,7 +600,7 @@ export const AlgoThumbPreview: React.FC<AlgoThumbPreviewProps> = ({
       {/* Binary / Hex Micro-stream along left edge */}
       <div
         aria-hidden="true"
-        className="algo-data-stream pointer-events-none absolute left-3 top-6 font-mono text-[9px] leading-3 text-emerald-400/45 select-none hidden sm:block"
+        className="algo-data-stream pointer-events-none absolute left-3 top-5 font-mono text-[9px] leading-3 text-emerald-400/50 select-none"
       >
         <div>0101</div>
         <div>1011</div>
@@ -622,12 +623,23 @@ export const AlgoThumbPreview: React.FC<AlgoThumbPreviewProps> = ({
         className="relative z-10 w-full h-full"
         aria-hidden="true"
       >
-        {renderDiagram()}
+        <defs>
+          <filter id="algo-thumb-glow" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="1.8" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <g filter="url(#algo-thumb-glow)">{renderDiagram()}</g>
       </svg>
 
-      {/* Crisp Corner Terminal Reticles */}
-      <span className="pointer-events-none absolute top-2.5 left-2.5 w-3.5 h-3.5 border-t-2 border-l-2 border-emerald-400/70 rounded-tl-xs" />
-      <span className="pointer-events-none absolute top-2.5 right-2.5 w-3.5 h-3.5 border-t-2 border-r-2 border-cyan-400/70 rounded-tr-xs" />
+      {/* Crisp 4-Corner Terminal Reticles */}
+      <span className="pointer-events-none absolute top-2.5 left-2.5 w-3.5 h-3.5 border-t-2 border-l-2 border-emerald-400/75 rounded-tl-xs" />
+      <span className="pointer-events-none absolute top-2.5 right-2.5 w-3.5 h-3.5 border-t-2 border-r-2 border-cyan-400/75 rounded-tr-xs" />
+      <span className="pointer-events-none absolute bottom-7 left-2.5 w-2.5 h-2.5 border-b border-l border-emerald-400/45 rounded-bl-xs" />
+      <span className="pointer-events-none absolute bottom-7 right-2.5 w-2.5 h-2.5 border-b border-r border-cyan-400/45 rounded-br-xs" />
 
       {/* Quiet Terminal Telemetry Corners (Unboxed monospace metadata) */}
       <div className="pointer-events-none absolute bottom-2 left-3.5 right-3.5 flex items-center justify-between font-mono text-[10px]">

@@ -133,8 +133,11 @@ export const CoordinateGeoCanvas: React.FC<CoordinateGeoCanvasProps> = ({
           }`}
         >
           <defs>
+            <pattern id="geo-cyber-dots" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="12" cy="12" r="0.8" fill="#1e4976" opacity="0.55" />
+            </pattern>
             <radialGradient id="geo-stage-glow" cx="50%" cy="48%" r="55%">
-              <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.14" />
+              <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.16" />
               <stop offset="60%" stopColor="#06142b" stopOpacity="0.06" />
               <stop offset="100%" stopColor="#040b18" stopOpacity="0" />
             </radialGradient>
@@ -148,7 +151,16 @@ export const CoordinateGeoCanvas: React.FC<CoordinateGeoCanvasProps> = ({
           </defs>
 
           <rect width={W} height={H} fill="#040b18" />
+          <rect width={W} height={H} fill="url(#geo-cyber-dots)" />
           <rect width={W} height={H} fill="url(#geo-stage-glow)" />
+
+          {/* Corner Binary Telemetry Stream */}
+          <g className="algo-data-stream font-mono text-[9.5px] fill-emerald-400/45 select-none pointer-events-none">
+            <text x={14} y={28}>0101</text>
+            <text x={14} y={40}>1011</text>
+            <text x={14} y={52}>0xAF</text>
+            <text x={14} y={64}>1100</text>
+          </g>
 
           {/* Grid lines */}
           {gridXs.map((gx) => {
@@ -247,9 +259,9 @@ export const CoordinateGeoCanvas: React.FC<CoordinateGeoCanvasProps> = ({
                   fill="none"
                   stroke="#38bdf8"
                   strokeWidth={2.8}
-                  strokeDasharray="7 4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className="holo-dash"
                   filter="url(#geo-neon)"
                 />
               )}
@@ -263,9 +275,9 @@ export const CoordinateGeoCanvas: React.FC<CoordinateGeoCanvasProps> = ({
                   fill="none"
                   stroke="#f59e0b"
                   strokeWidth={2.6}
-                  strokeDasharray="6 4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className="holo-dash"
                   filter="url(#geo-neon)"
                 />
               )}
@@ -326,11 +338,13 @@ export const CoordinateGeoCanvas: React.FC<CoordinateGeoCanvasProps> = ({
                       <circle
                         cx={toPxX(p.x)}
                         cy={toPxY(p.y)}
-                        r={10}
-                        fill="none"
+                        r={10.5}
+                        fill={fill}
+                        fillOpacity={0.14}
                         stroke={fill}
-                        strokeOpacity={0.4}
+                        strokeOpacity={0.55}
                         strokeWidth={1.5}
+                        className={isCheckingTarget || isCheckingPivot ? 'algo-node-pulse' : undefined}
                       />
                     )}
                     <circle
@@ -368,7 +382,7 @@ export const CoordinateGeoCanvas: React.FC<CoordinateGeoCanvasProps> = ({
                     y2={H - PAD / 2}
                     stroke="#f59e0b"
                     strokeWidth={2.2}
-                    strokeDasharray="6 4"
+                    className="holo-dash"
                     filter="url(#geo-neon)"
                   />
                   <circle
@@ -437,6 +451,17 @@ export const CoordinateGeoCanvas: React.FC<CoordinateGeoCanvasProps> = ({
               {(st.intersections as { x: number; y: number; s1: string; s2: string }[] | undefined)?.map(
                 (pt, idx) => (
                   <g key={`int-${idx}`}>
+                    <circle
+                      cx={toPxX(pt.x)}
+                      cy={toPxY(pt.y)}
+                      r={14}
+                      fill="#fbbf24"
+                      fillOpacity={0.18}
+                      stroke="#fbbf24"
+                      strokeOpacity={0.5}
+                      strokeWidth={1.2}
+                      className="algo-node-pulse"
+                    />
                     <polygon
                       points={`${toPxX(pt.x)},${toPxY(pt.y) - 9} ${toPxX(pt.x) + 9},${toPxY(pt.y)} ${toPxX(
                         pt.x

@@ -3,6 +3,10 @@ import { HAND_SKELETON_CONNECTIONS, type HandSkeletonData } from './handGestureT
 
 export type LocalGripVisualState = 'idle' | 'hover_part' | 'grab_part' | 'hold_model' | 'two_hand_zoom';
 
+// Landmark partitions (21 joints total = 16 palm/knuckle joints + 5 fingertips)
+const PALM_JOINT_INDICES: readonly number[] = [0, 1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 19];
+const TIP_INDICES: readonly number[] = [4, 8, 12, 16, 20];
+
 // Module-scope pre-allocated scratch math (zero GC allocations inside render loop)
 const _vA = new THREE.Vector3();
 const _vB = new THREE.Vector3();
@@ -10,6 +14,11 @@ const _vMid = new THREE.Vector3();
 const _vDir = new THREE.Vector3();
 const _upAxis = new THREE.Vector3(0, 1, 0);
 const _quat = new THREE.Quaternion();
+const _identQuat = new THREE.Quaternion();
+const _scaleVec = new THREE.Vector3(1, 1, 1);
+const _wristScaleVec = new THREE.Vector3(1.32, 1.32, 1.32);
+const _zeroScaleVec = new THREE.Vector3(0, 0, 0);
+const _mat4 = new THREE.Matrix4();
 const _camRight = new THREE.Vector3();
 const _camUp = new THREE.Vector3();
 const _camFwd = new THREE.Vector3();
@@ -51,8 +60,9 @@ const POINTER_HAND_OFFSETS: readonly [number, number, number][] = [
 
 interface LocalSingleHand {
   group: THREE.Group;
-  joints: THREE.Mesh[];
-  bones: THREE.Mesh[];
+  palmJointsInst: THREE.InstancedMesh;
+  tipsInst: THREE.InstancedMesh;
+  bonesInst: THREE.InstancedMesh;
   currentPoints: THREE.Vector3[];
   targetPoints: THREE.Vector3[];
   initialized: boolean;
@@ -60,10 +70,10 @@ interface LocalSingleHand {
 
 export class LocalHandRigManager {
   public readonly container = new THREE.Group();
-  private readonly sphereGeo = new THREE.SphereGeometry(0.044, 12, 12);
-  private readonly tipGeo = new THREE.SphereGeometry(0.058, 14, 14);
+  private readonly sphereGeo = new THREE.SphereGeometry(0.044, 10, 10);
+  private readonly tipGeo = new THREE.SphereGeometry(0.058, 12, 12);
   private readonly boneGeo = new THREE.CylinderGeometry(0.019, 0.019, 1, 8);
-  private readonly gripRingGeo = new THREE.TorusGeometry(0.16, 0.018, 12, 32);
+  private readonly gripRingGeo = new THREE.TorusGeometry(0.16, 0.018, 10, 28);
 
   private readonly jointMat: THREE.MeshStandardMaterial;
   private readonly tipMat: THREE.MeshStandardMaterial;
@@ -136,32 +146,42 @@ export class LocalHandRigManager {
   private createSingleHand(): LocalSingleHand {
     const group = new THREE.Group();
     group.visible = false;
-    const tipSet = new Set([4, 8, 12, 16, 20]);
-    const joints: THREE.Mesh[] = [];
+
+    const palmJointsInst = new THREE.InstancedMesh(
+      this.sphereGeo,
+      this.jointMat,
+      PALM_JOINT_INDICES.length
+    );
+    palmJointsInst.frustumCulled = false;
+
+    const tipsInst = new THREE.InstancedMesh(
+      this.tipGeo,
+      this.tipMat,
+      TIP_INDICES.length
+    );
+    tipsInst.frustumCulled = false;
+
+    const bonesInst = new THREE.InstancedMesh(
+      this.boneGeo,
+      this.boneMat,
+      HAND_SKELETON_CONNECTIONS.length
+    );
+    bonesInst.frustumCulled = false;
+
+    group.add(palmJointsInst, tipsInst, bonesInst);
+
     const targetPoints: THREE.Vector3[] = [];
     const currentPoints: THREE.Vector3[] = [];
-
     for (let i = 0; i < 21; i++) {
-      const isTip = tipSet.has(i);
-      const m = new THREE.Mesh(isTip ? this.tipGeo : this.sphereGeo, isTip ? this.tipMat : this.jointMat);
-      if (i === 0) m.scale.setScalar(1.32);
-      group.add(m);
-      joints.push(m);
       targetPoints.push(new THREE.Vector3(0, 1.5, 0.8));
       currentPoints.push(new THREE.Vector3(0, 1.5, 0.8));
     }
 
-    const bones: THREE.Mesh[] = [];
-    for (let b = 0; b < HAND_SKELETON_CONNECTIONS.length; b++) {
-      const bm = new THREE.Mesh(this.boneGeo, this.boneMat);
-      group.add(bm);
-      bones.push(bm);
-    }
-
     return {
       group,
-      joints,
-      bones,
+      palmJointsInst,
+      tipsInst,
+      bonesInst,
       currentPoints,
       targetPoints,
       initialized: false
@@ -171,7 +191,8 @@ export class LocalHandRigManager {
   private applyPaletteByState(state: LocalGripVisualState): void {
     let hex = 0x22d3ee;
     if (state === 'hover_part') hex = 0xfacc15;
-    else if (state === 'grab_part' || state === 'hold_model' || state === 'two_hand_zoom') hex = 0x34d399;
+    else if (state === 'grab_part') hex = 0xf59e0b;
+    else if (state === 'hold_model' || state === 'two_hand_zoom') hex = 0x34d399;
 
     this.jointMat.color.setHex(hex);
     this.jointMat.emissive.setHex(hex);
@@ -189,9 +210,26 @@ export class LocalHandRigManager {
       } else {
         hand.currentPoints[i].lerp(hand.targetPoints[i], alpha);
       }
-      hand.joints[i].position.copy(hand.currentPoints[i]);
     }
     hand.initialized = true;
+
+    for (let j = 0; j < PALM_JOINT_INDICES.length; j++) {
+      const lmIdx = PALM_JOINT_INDICES[j];
+      _mat4.compose(
+        hand.currentPoints[lmIdx],
+        _identQuat,
+        lmIdx === 0 ? _wristScaleVec : _scaleVec
+      );
+      hand.palmJointsInst.setMatrixAt(j, _mat4);
+    }
+    hand.palmJointsInst.instanceMatrix.needsUpdate = true;
+
+    for (let t = 0; t < TIP_INDICES.length; t++) {
+      const lmIdx = TIP_INDICES[t];
+      _mat4.compose(hand.currentPoints[lmIdx], _identQuat, _scaleVec);
+      hand.tipsInst.setMatrixAt(t, _mat4);
+    }
+    hand.tipsInst.instanceMatrix.needsUpdate = true;
 
     for (let b = 0; b < HAND_SKELETON_CONNECTIONS.length; b++) {
       const [ia, ib] = HAND_SKELETON_CONNECTIONS[b];
@@ -200,18 +238,18 @@ export class LocalHandRigManager {
       _vMid.addVectors(_vA, _vB).multiplyScalar(0.5);
       _vDir.subVectors(_vB, _vA);
       const len = _vDir.length();
-      const bone = hand.bones[b];
       if (len > 0.001) {
-        bone.visible = true;
-        bone.position.copy(_vMid);
         _vDir.divideScalar(len);
         _quat.setFromUnitVectors(_upAxis, _vDir);
-        bone.quaternion.copy(_quat);
-        bone.scale.set(1, len, 1);
+        _scaleVec.set(1, len, 1);
+        _mat4.compose(_vMid, _quat, _scaleVec);
       } else {
-        bone.visible = false;
+        _mat4.compose(_vMid, _identQuat, _zeroScaleVec);
       }
+      hand.bonesInst.setMatrixAt(b, _mat4);
     }
+    _scaleVec.set(1, 1, 1);
+    hand.bonesInst.instanceMatrix.needsUpdate = true;
   }
 
   public hideAll(): void {
@@ -252,7 +290,7 @@ export class LocalHandRigManager {
         mapNormalizedToWorld(pt[0], pt[1], pt[2], hand.targetPoints[i]);
       }
 
-      // When actively grabbing or holding with primary hand, pull virtual hand onto the grabbed anchor so fingers physically clasp it
+      // Pull primary virtual hand onto grabbed anchor so fingers physically clasp the detached part or held model
       if (slot === 0 && grabAnchorWorld && (gripState === 'grab_part' || gripState === 'hold_model')) {
         if (gripState === 'grab_part') {
           _pinchMid.addVectors(hand.targetPoints[4], hand.targetPoints[8]).multiplyScalar(0.5);
@@ -275,7 +313,7 @@ export class LocalHandRigManager {
       const h0 = this.hands[0];
       if (gripState === 'hold_model') {
         this.gripRingMesh.position.copy(h0.currentPoints[9]);
-        this.gripRingMesh.scale.setScalar(1.35);
+        this.gripRingMesh.scale.setScalar(1.38);
       } else {
         _pinchMid.addVectors(h0.currentPoints[4], h0.currentPoints[8]).multiplyScalar(0.5);
         this.gripRingMesh.position.copy(_pinchMid);
@@ -327,7 +365,7 @@ export class LocalHandRigManager {
     const isPinching = gripState === 'grab_part';
     const isFist = gripState === 'hold_model';
 
-    // Pull palm back slightly toward camera so fingers wrap in front of object surface
+    // Pull palm slightly toward camera so fingers wrap naturally in front of object surface
     _handAnchor.copy(worldAnchorPos).addScaledVector(_camFwd, isFist ? 0.52 : 0.14);
 
     for (let i = 0; i < 21; i++) {
@@ -339,28 +377,31 @@ export class LocalHandRigManager {
       if (isFist) {
         // Curl all fingers tightly into a fist gripping the object
         if (i >= 1 && i <= 4) {
-          lx *= 0.55;
-          ly = ly * 0.45 + 0.04;
-          lz = lz * 0.35 - 0.12;
+          lx *= 0.45;
+          ly = ly * 0.42 + 0.05;
+          lz = lz * 0.32 - 0.14;
         } else if (i >= 5) {
-          const curl = i % 4 === 0 ? 0.25 : i % 4 === 3 ? 0.45 : 0.72;
+          const curl = i % 4 === 0 ? 0.2 : i % 4 === 3 ? 0.4 : 0.68;
           ly *= curl;
-          lz = lz - (1 - curl) * 0.18;
+          lz = lz - (1 - curl) * 0.21;
         }
       } else if (isPinching) {
-        // Thumb tip #4 & Index tip #8 snap together right at anchor
+        // Thumb tip #4 & Index tip #8 pinch tight at anchor while remaining fingers tuck gently
         if (i === 4) {
-          lx = -0.02;
+          lx = -0.016;
           ly = -0.01;
-          lz = 0.01;
+          lz = 0.008;
         } else if (i === 3) {
-          lx = -0.09;
-          ly = -0.08;
-          lz = 0.06;
+          lx = -0.085;
+          ly = -0.075;
+          lz = 0.055;
         } else if (i === 8) {
-          lx = 0.02;
+          lx = 0.016;
           ly = 0.01;
-          lz = 0.01;
+          lz = 0.008;
+        } else if (i >= 11 && i % 4 !== 1) {
+          ly *= 0.72;
+          lz += 0.06;
         }
       }
 
@@ -375,11 +416,11 @@ export class LocalHandRigManager {
 
     if (isFist) {
       this.gripRingMesh.position.copy(hand.currentPoints[9]);
-      this.gripRingMesh.scale.setScalar(1.3);
+      this.gripRingMesh.scale.setScalar(1.34);
     } else {
       _pinchMid.addVectors(hand.currentPoints[4], hand.currentPoints[8]).multiplyScalar(0.5);
       this.gripRingMesh.position.copy(_pinchMid);
-      this.gripRingMesh.scale.setScalar(isPinching ? 0.62 : 1.05);
+      this.gripRingMesh.scale.setScalar(isPinching ? 0.58 : 1.05);
     }
     this.gripRingMesh.lookAt(camera.position);
     this.gripRingMesh.visible = true;
@@ -388,6 +429,12 @@ export class LocalHandRigManager {
   public dispose(): void {
     this.disposed = true;
     this.hideAll();
+    this.hands[0].palmJointsInst.dispose();
+    this.hands[0].tipsInst.dispose();
+    this.hands[0].bonesInst.dispose();
+    this.hands[1].palmJointsInst.dispose();
+    this.hands[1].tipsInst.dispose();
+    this.hands[1].bonesInst.dispose();
     this.sphereGeo.dispose();
     this.tipGeo.dispose();
     this.boneGeo.dispose();
@@ -410,8 +457,10 @@ interface TetherSlot {
 export class SocketTetherManager {
   public readonly container = new THREE.Group();
   private readonly lineMat: THREE.LineDashedMaterial;
+  private readonly snapLineMat: THREE.LineDashedMaterial;
   private readonly ringGeo = new THREE.RingGeometry(0.075, 0.125, 24);
   private readonly ringMat: THREE.MeshBasicMaterial;
+  private readonly snapRingMat: THREE.MeshBasicMaterial;
   private readonly slots: TetherSlot[] = [];
 
   constructor(maxSlots = 16) {
@@ -423,11 +472,26 @@ export class SocketTetherManager {
       opacity: 0.78,
       depthTest: false
     });
+    this.snapLineMat = new THREE.LineDashedMaterial({
+      color: 0x34d399,
+      dashSize: 0.14,
+      gapSize: 0.06,
+      transparent: true,
+      opacity: 0.95,
+      depthTest: false
+    });
     this.ringMat = new THREE.MeshBasicMaterial({
       color: 0x22d3ee,
       side: THREE.DoubleSide,
       transparent: true,
       opacity: 0.85,
+      depthTest: false
+    });
+    this.snapRingMat = new THREE.MeshBasicMaterial({
+      color: 0x34d399,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.98,
       depthTest: false
     });
 
@@ -453,7 +517,8 @@ export class SocketTetherManager {
     idx: number,
     socketWorld: THREE.Vector3,
     partWorld: THREE.Vector3,
-    camera: THREE.Camera
+    camera: THREE.Camera,
+    isNearSnap = false
   ): void {
     const slot = this.slots[idx];
     if (!slot) return;
@@ -462,10 +527,13 @@ export class SocketTetherManager {
     pos.setXYZ(1, partWorld.x, partWorld.y, partWorld.z);
     pos.needsUpdate = true;
     slot.line.computeLineDistances();
+    slot.line.material = isNearSnap ? this.snapLineMat : this.lineMat;
     slot.line.visible = true;
 
     slot.socketRing.position.copy(socketWorld);
     slot.socketRing.lookAt(camera.position);
+    slot.socketRing.scale.setScalar(isNearSnap ? 1.35 : 1.0);
+    slot.socketRing.material = isNearSnap ? this.snapRingMat : this.ringMat;
     slot.socketRing.visible = true;
   }
 
@@ -482,7 +550,9 @@ export class SocketTetherManager {
     }
     this.ringGeo.dispose();
     this.lineMat.dispose();
+    this.snapLineMat.dispose();
     this.ringMat.dispose();
+    this.snapRingMat.dispose();
   }
 }
 

@@ -169,6 +169,14 @@ export const GraphAlgoCanvas: React.FC<GraphAlgoCanvasProps> = ({
           <rect width={W} height={H} fill="url(#graph-cyber-grid)" />
           <rect width={W} height={H} fill="url(#graph-center-aura)" />
 
+          {/* Corner Binary Telemetry Stream */}
+          <g className="algo-data-stream font-mono text-[9.5px] fill-emerald-400/45 select-none pointer-events-none">
+            <text x={14} y={28}>0101</text>
+            <text x={14} y={40}>1011</text>
+            <text x={14} y={52}>0xAF</text>
+            <text x={14} y={64}>1100</text>
+          </g>
+
           {/* Edges */}
           {edges.map((e) => {
             const nu = nodeMap.get(e.u);
@@ -236,6 +244,7 @@ export const GraphAlgoCanvas: React.FC<GraphAlgoCanvasProps> = ({
                     strokeDasharray={dashArray}
                     markerEnd={markerEnd}
                     opacity={isSkipped ? 0.5 : 0.95}
+                    className={isPath || isRelax ? 'holo-dash' : undefined}
                     filter={isPath || isRelax || isTree ? 'url(#graph-glow)' : undefined}
                   />
                 ) : (
@@ -249,6 +258,7 @@ export const GraphAlgoCanvas: React.FC<GraphAlgoCanvasProps> = ({
                     strokeDasharray={dashArray}
                     markerEnd={markerEnd}
                     opacity={isSkipped ? 0.5 : 0.95}
+                    className={isPath || isRelax ? 'holo-dash' : undefined}
                     filter={isPath || isRelax || isTree ? 'url(#graph-glow)' : undefined}
                   />
                 )}
@@ -342,11 +352,13 @@ export const GraphAlgoCanvas: React.FC<GraphAlgoCanvasProps> = ({
                 {(isCurrent || isPathNode || isFrontier) && (
                   <circle
                     r={28}
-                    fill="none"
+                    fill={isPathNode ? '#34d399' : isCurrent ? '#fbbf24' : '#22d3ee'}
+                    fillOpacity={0.1}
                     stroke={isPathNode ? '#34d399' : isCurrent ? '#fbbf24' : '#22d3ee'}
                     strokeWidth={1.8}
                     strokeDasharray={isCurrent ? '4 3' : undefined}
-                    opacity={0.75}
+                    opacity={0.8}
+                    className="algo-node-pulse"
                     filter="url(#graph-glow)"
                   />
                 )}

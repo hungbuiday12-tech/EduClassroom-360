@@ -68,6 +68,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   ACTION_2D_OPTIONS,
   ACTION_3D_OPTIONS,
+  CameraResolutionId,
   DEFAULT_GESTURE_SETTINGS,
   GESTURE_DEFINITIONS,
   GESTURE_PRESETS,
@@ -78,7 +79,8 @@ import {
   HandGestureId,
   HandGestureTracker,
   HandTrackingFrame,
-  PointerSource
+  PointerSource,
+  REAL_GRAB_GESTURES
 } from './handGestureTracker';
 import {
   Free2DToolId,
@@ -156,6 +158,9 @@ function loadGestureSettings(): GestureSettings {
       ...parsed,
       rotationSensitivity: parsed.rotationSensitivity ?? DEFAULT_GESTURE_SETTINGS.rotationSensitivity,
       gestureHoldMs: parsed.gestureHoldMs ?? DEFAULT_GESTURE_SETTINGS.gestureHoldMs,
+      cameraResolution: parsed.cameraResolution ?? DEFAULT_GESTURE_SETTINGS.cameraResolution,
+      targetFpsCap: parsed.targetFpsCap ?? DEFAULT_GESTURE_SETTINGS.targetFpsCap,
+      renderScale: parsed.renderScale ?? DEFAULT_GESTURE_SETTINGS.renderScale,
       gestureActions3D: {
         ...DEFAULT_GESTURE_SETTINGS.gestureActions3D,
         ...(parsed.gestureActions3D || {})
@@ -168,6 +173,28 @@ function loadGestureSettings(): GestureSettings {
   } catch {
     return DEFAULT_GESTURE_SETTINGS;
   }
+}
+
+function resolveRenderScale(gs: GestureSettings): number {
+  if (gs.renderScale && gs.renderScale > 0) {
+    return THREE.MathUtils.clamp(gs.renderScale, 0.45, 1.5);
+  }
+  if (gs.graphicsQuality === 'ultra_light') return 0.5;
+  if (gs.graphicsQuality === 'light') return 0.85;
+  return 1.0;
+}
+
+function computeEffectiveDpr(softwareGl: boolean, gs: GestureSettings): number {
+  const rs = resolveRenderScale(gs);
+  const nativeDpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
+  if (softwareGl) {
+    return THREE.MathUtils.clamp(rs, 0.45, 1.0);
+  }
+  return THREE.MathUtils.clamp(nativeDpr * rs, 0.45, 2.0);
+}
+
+function isLowPerfSettings(softwareGl: boolean, gs: GestureSettings): boolean {
+  return softwareGl || gs.graphicsQuality !== 'high' || resolveRenderScale(gs) <= 0.75;
 }
 
 interface SpatialModeMeta {
@@ -386,7 +413,6 @@ interface LabRuntime {
   axesGroup: THREE.Group;
   floorGroup: THREE.Group;
   slicePlane: THREE.Plane;
-  sliceHelperMesh: THREE.Mesh;
   cursorMesh: THREE.Group;
   tipSensorMeshes: THREE.Mesh[];
   strokesGroup: THREE.Group;
@@ -404,6 +430,8 @@ interface LabRuntime {
   remoteHandManager: RemoteHandRigManager;
   localHandManager: LocalHandRigManager;
   tetherManager: SocketTetherManager;
+  keyLight: THREE.DirectionalLight;
+  floorDisc: THREE.Mesh;
 }
 
 interface PointAskTarget {
@@ -466,6 +494,57 @@ const _desiredLocalPos = new THREE.Vector3();
 const _dragDeltaWorld = new THREE.Vector3();
 const _grabAnchorWorld = new THREE.Vector3();
 const _handPinchWorld = new THREE.Vector3();
+const _partBox3 = new THREE.Box3();
+const _partChildBox = new THREE.Box3();
+const _partMatInv = new THREE.Matrix4();
+const _partRelMat = new THREE.Matrix4();
+const _unitScale = new THREE.Vector3(1, 1, 1);
+const _zeroVec = new THREE.Vector3(0, 0, 0);
+const _desiredScale = new THREE.Vector3(1, 1, 1);
+const _rowCamPosTarget = new THREE.Vector3();
+const _rowTargetCenter = new THREE.Vector3(0, 1.68, 0);
+
+function cachePartLocalCenters(model: DynamicModelRef): void {
+  model.group.updateMatrixWorld(true);
+  const partRootSet = new Set<THREE.Object3D>(model.explodables.map((p) => p.mesh));
+
+  const collectOwnMeshes = (obj: THREE.Object3D, root: THREE.Object3D, out: THREE.Mesh[]) => {
+    if (obj !== root && partRootSet.has(obj)) return;
+    if (obj instanceof THREE.Mesh && obj.geometry) {
+      out.push(obj);
+    }
+    for (const child of obj.children) {
+      collectOwnMeshes(child, root, out);
+    }
+  };
+
+  for (const part of model.explodables) {
+    part.baseScale = part.mesh.scale.clone();
+    _partBox3.makeEmpty();
+    _partMatInv.copy(part.mesh.matrixWorld).invert();
+    const ownMeshes: THREE.Mesh[] = [];
+    collectOwnMeshes(part.mesh, part.mesh, ownMeshes);
+
+    for (const m of ownMeshes) {
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      if (m.geometry.boundingBox) {
+        _partRelMat.multiplyMatrices(_partMatInv, m.matrixWorld);
+        _partChildBox.copy(m.geometry.boundingBox).applyMatrix4(_partRelMat);
+        _partBox3.union(_partChildBox);
+      }
+    }
+
+    if (_partBox3.isEmpty()) {
+      part.geomLocalCenter = new THREE.Vector3(0, 0, 0);
+      part.geomMaxDim = 1.0;
+    } else {
+      part.geomLocalCenter = _partBox3.getCenter(new THREE.Vector3());
+      const sz = _partBox3.getSize(_sizeTmp);
+      const bs = part.baseScale;
+      part.geomMaxDim = Math.max(sz.x * bs.x, sz.y * bs.y, sz.z * bs.z, 0.25);
+    }
+  }
+}
 
 function mapNormalizedToWorldHand(nx: number, ny: number, nz: number, out: THREE.Vector3): THREE.Vector3 {
   const x = (nx - 0.5) * 6.4;
@@ -745,6 +824,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     twoHandMovingCloser: false,
     twoHandAngle: 0,
     swipeEvent: null,
+    thumbUp: false,
     confidence: 0,
     tips: [],
     skeletons: []
@@ -910,9 +990,16 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const lastTwoFingerSelectAtRef = useRef<number>(0);
   const lastReassembleAtRef = useRef<number>(0);
   const prevGestureRef = useRef<HandGestureId>('none');
+  const prevThumbUpRef = useRef<boolean>(false);
+  const lastThumbSelectAtRef = useRef<number>(0);
+  const lastStableAimRef = useRef<{ idx: number; at: number }>({ idx: -1, at: 0 });
+  const prevRowSeparatedRef = useRef<boolean>(false);
+  const rowCameraGlideActiveRef = useRef<boolean>(false);
   const lastManualSwipeAtRef = useRef<number>(0);
   const pointerDownScreenRef = useRef<{ x: number; y: number } | null>(null);
   const awardFlagRef = useRef<boolean>(false);
+  const lastCamHoverRayAtRef = useRef<number>(0);
+  const cachedCamHoverIdxRef = useRef<number>(-1);
 
   const activePalette = useMemo(
     () => ACCENT_PALETTES.find((p) => p.id === paletteId) || ACCENT_PALETTES[0],
@@ -1103,7 +1190,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       clipPlane: THREE.Plane,
       softwareGl: boolean
     ) => {
-      const lowCostGlass = softwareGl || paramsRef.current.gestureSettings.graphicsQuality === 'light';
+      const lowCostGlass = isLowPerfSettings(softwareGl, paramsRef.current.gestureSettings);
       const makeMat = (isSecondary: boolean, isHighlight = false) => {
         const col = isHighlight ? 0xffffff : isSecondary ? palette.secondaryHex : palette.hex;
         if (finishMode === 'wireframe') {
@@ -1299,11 +1386,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         runtime.model = null;
       }
 
-      const mats = buildMaterials(nextFinish, palette, runtime.slicePlane, softwareGl);
+      const lowPerf = isLowPerfSettings(softwareGl, paramsRef.current.gestureSettings);
+      const mats = buildMaterials(nextFinish, palette, runtime.slicePlane, lowPerf);
 
       if (customSpec) {
-        const builtCustom = buildCustomSpatialModel(customSpec, mats, nextFinish, runtime.slicePlane, softwareGl);
+        const builtCustom = buildCustomSpatialModel(customSpec, mats, nextFinish, runtime.slicePlane, lowPerf);
         runtime.rootGroup.add(builtCustom.group);
+        cachePartLocalCenters(builtCustom);
         runtime.model = builtCustom;
         setModelParts(builtCustom.explodables.map((p) => p.info));
         return;
@@ -1323,11 +1412,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           palette.hex,
           palette.secondaryHex,
           runtime.slicePlane,
-          softwareGl
+          lowPerf
         );
         built.materials.push(mats.primary, mats.secondary, mats.highlight, mats.edge, mats.glow);
         runtime.rootGroup.add(built.group);
-        runtime.model = {
+        const nextAdvModel: DynamicModelRef = {
           group: built.group,
           explodables: built.explodables,
           turbofan: built.turbofan,
@@ -1337,6 +1426,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           windTurbine: built.windTurbine,
           disposables: { geometries: built.geometries, materials: built.materials }
         };
+        cachePartLocalCenters(nextAdvModel);
+        runtime.model = nextAdvModel;
         setModelParts(built.explodables.map((p) => p.info));
         return;
       }
@@ -1361,8 +1452,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         info: ExplodablePartInfo,
         addEdges = true
       ) => {
-        mesh.castShadow = !softwareGl;
-        mesh.receiveShadow = !softwareGl;
+        mesh.castShadow = !lowPerf;
+        mesh.receiveShadow = !lowPerf;
         group.add(mesh);
         explodables.push({
           mesh,
@@ -2099,7 +2190,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       }
 
       runtime.rootGroup.add(group);
-      runtime.model = {
+      const nextBuiltModel: DynamicModelRef = {
         group,
         explodables,
         waveGeo,
@@ -2108,6 +2199,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         sphereCutRing,
         disposables: { geometries, materials }
       };
+      cachePartLocalCenters(nextBuiltModel);
+      runtime.model = nextBuiltModel;
       setModelParts(explodables.map((p) => p.info));
     },
     [buildMaterials, disposeModel, restoreIsolatedPart]
@@ -2147,7 +2240,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           stabilityFrames: gs.stabilityFrames,
           gestureHoldMs: gs.gestureHoldMs,
           invertX: gs.invertX,
-          invertY: gs.invertY
+          invertY: gs.invertY,
+          minimalControlMode: cfg.spaceMode === '3d' && cfg.interactionStyle === 'real_grab'
         });
         handFrameRef.current = res;
 
@@ -2195,20 +2289,19 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 160);
     camera.position.set(6.4, 4.8, 7.6);
 
-    const isLightPref = paramsRef.current.gestureSettings.graphicsQuality === 'light';
+    const initGs = paramsRef.current.gestureSettings;
+    const isLowPerfInit = isLowPerfSettings(softwareGl, initGs);
     const renderer = new THREE.WebGLRenderer({
-      antialias: !softwareGl && !isLightPref,
+      antialias: !isLowPerfInit,
       powerPreference: 'high-performance',
       preserveDrawingBuffer: false
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(
-      softwareGl || isLightPref ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio, 2)
-    );
+    renderer.setPixelRatio(computeEffectiveDpr(softwareGl, initGs));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
-    renderer.shadowMap.enabled = !softwareGl && !isLightPref;
+    renderer.shadowMap.enabled = !isLowPerfInit;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.localClippingEnabled = true;
     mount.appendChild(renderer.domElement);
@@ -2224,13 +2317,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     controls.target.set(0, 1.65, 0);
     controls.minDistance = 2.6;
     controls.maxDistance = 26;
+    const cancelRowCamGlide = () => {
+      rowCameraGlideActiveRef.current = false;
+    };
+    controls.addEventListener('start', cancelRowCamGlide);
 
     const hemi = new THREE.HemisphereLight(0xbae6fd, 0x0f172a, 0.95);
     scene.add(hemi);
 
     const keyLight = new THREE.DirectionalLight(0xfff5e4, 2.2);
     keyLight.position.set(6.5, 11, 7.5);
-    keyLight.castShadow = !softwareGl && !isLightPref;
+    keyLight.castShadow = !isLowPerfInit;
     keyLight.shadow.mapSize.set(1024, 1024);
     keyLight.shadow.camera.left = -6;
     keyLight.shadow.camera.right = 6;
@@ -2262,7 +2359,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     });
     const floorDisc = new THREE.Mesh(discGeo, discMat);
     floorDisc.position.y = -0.02;
-    floorDisc.receiveShadow = !softwareGl;
+    floorDisc.receiveShadow = !isLowPerfInit;
     floorGroup.add(floorDisc);
     scene.add(floorGroup);
 
@@ -2293,23 +2390,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     scene.add(markersGroup);
 
     const slicePlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 100);
-    const sliceHelperGeo = new THREE.PlaneGeometry(5.8, 5.8);
-    sliceHelperGeo.rotateX(-Math.PI / 2);
-    const sliceHelperMat = new THREE.MeshBasicMaterial({
-      color: 0xa855f7,
-      transparent: true,
-      opacity: 0.16,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-    const sliceHelperMesh = new THREE.Mesh(sliceHelperGeo, sliceHelperMat);
-    const sliceBorder = new THREE.LineSegments(
-      new THREE.EdgesGeometry(sliceHelperGeo),
-      new THREE.LineBasicMaterial({ color: 0xd8b4fe, transparent: true, opacity: 0.85 })
-    );
-    sliceHelperMesh.add(sliceBorder);
-    sliceHelperMesh.visible = false;
-    scene.add(sliceHelperMesh);
 
     const cursorGroup = new THREE.Group();
     const cursorOrb = new THREE.Mesh(
@@ -2427,7 +2507,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       axesGroup,
       floorGroup,
       slicePlane,
-      sliceHelperMesh,
       cursorMesh: cursorGroup,
       tipSensorMeshes,
       strokesGroup,
@@ -2444,7 +2523,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       pointLaserLine,
       remoteHandManager,
       localHandManager,
-      tetherManager
+      tetherManager,
+      keyLight,
+      floorDisc
     };
     runtimeRef.current = runtime;
 
@@ -2558,12 +2639,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       if (e.button !== 0) return;
 
       const cfg = paramsRef.current;
+      // When separated into fixed horizontal row, lock all component positions — click selects only!
+      const rowLocked = smoothTargetRef.current.explode >= 0.25 || cfg.explodeVal >= 0.25;
       if (
         cfg.spaceMode !== '3d' ||
         !runtime.model ||
         pointAskActiveRef.current ||
         isolatedPartIdxRef.current !== null ||
-        cfg.interactionStyle !== 'real_grab'
+        cfg.interactionStyle !== 'real_grab' ||
+        rowLocked
       ) {
         controls.enabled = true;
         return;
@@ -2866,12 +2950,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
       if (matchedIdx !== -1) {
         setHighlightedPartIdx(matchedIdx);
-        if (paramsRef.current.interactionStyle === 'classic') {
+        setPartCardMinimized(false);
+        if (paramsRef.current.interactionStyle === 'classic' && smoothTargetRef.current.explode < 0.25) {
           setIsolatedPartIdx(matchedIdx);
-          setPartCardMinimized(false);
         }
         const info = runtime.model.explodables[matchedIdx].info;
-        showToast(`Đã chọn bộ phận: ${info.nameVi}`);
+        showToast(isEn ? `Selected: ${info.nameEn}` : `Đã chọn linh kiện: ${info.nameVi}`);
       }
     };
 
@@ -2919,6 +3003,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     let disposed = false;
     let loopSleeping = false;
     let lastUiPush = 0;
+    let lastRenderPerfMs = 0;
     let lastHighlightIdx = -1;
     let lastHighlightExp = -1;
     let highlightTick = 0;
@@ -3097,8 +3182,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           (mapped3DAction === 'pinch_stamp_scale' ||
             (handDetected && (res.hand1Pinching || res.hand2Pinching) && mapped3DAction !== 'none'));
 
-        // 1. UNIFIED SWIPE LEFT/RIGHT: cycle between exploded/isolated parts
-        if (handDetected && res.swipeEvent && modelPartsRef.current.length > 0) {
+        const isRealGrabMode = cfg.interactionStyle === 'real_grab';
+        const isRowSeparatedNow = !isIsolated && smoothTargetRef.current.explode >= 0.25;
+
+        // 1. Classic-only swipe left/right cycling (disabled in Real-Grab & fixed horizontal row so moving hand never jumps randomly!)
+        if (!isRealGrabMode && !isRowSeparatedNow && handDetected && res.swipeEvent && modelPartsRef.current.length > 0) {
           const total = modelPartsRef.current.length;
           if (smoothTargetRef.current.explode >= 0.25 || isIsolated) {
             const dir = res.swipeEvent === 'right' ? 1 : -1;
@@ -3118,88 +3206,146 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           }
         }
 
-        // 2. RISING-EDGE 2-FINGER SELECTION: isolate / exit highlighted part when exploded
+        // 2. RISING-EDGE 2-FINGER V-SIGN:
+        //    - In Real-Grab mode: Single clean toggle between Fixed Horizontal Row <-> Assembled Full Model!
+        //    - In Classic mode: Isolate / exit highlighted part when already exploded
         const nowPerfMs = performance.now();
-        const isTwoFingerSelectEdge =
-          handDetected &&
-          currentGesture === 'slice_2' &&
-          prevGestureRef.current !== 'slice_2' &&
-          nowPerfMs - lastTwoFingerSelectAtRef.current > 850 &&
-          modelPartsRef.current.length > 0 &&
-          (smoothTargetRef.current.explode >= 0.25 || isIsolated);
+        if (isRealGrabMode) {
+          const isRealGrabExplodeToggleEdge =
+            activeControl &&
+            currentGesture === 'slice_2' &&
+            prevGestureRef.current !== 'slice_2' &&
+            nowPerfMs - lastTwoFingerSelectAtRef.current > 850 &&
+            !pointAskActiveRef.current;
 
-        if (isTwoFingerSelectEdge) {
-          lastTwoFingerSelectAtRef.current = nowPerfMs;
-          if (isIsolated) {
-            setIsolatedPartIdx(null);
-            showToast('Quay lại toàn bộ mô hình đã tách');
-          } else {
-            const pickIdx = highlightedPartIdxRef.current ?? 0;
-            setHighlightedPartIdx(pickIdx);
-            setIsolatedPartIdx(pickIdx);
-            setPartCardMinimized(false);
-            showToast(`Xem chi tiết: ${modelPartsRef.current[pickIdx].nameVi}`);
-          }
-        }
-
-        // 3. RISING-EDGE 4-FINGER REASSEMBLE: snap all detached + separated/isolated parts smoothly back together
-        const hasAnyDetached = runtime.model ? countDetachedParts(runtime.model) > 0 : false;
-        const isReassembleEdge =
-          activeControl &&
-          mapped3DAction === 'reassemble_parts' &&
-          (currentGesture !== prevGestureRef.current || nowPerfMs - lastReassembleAtRef.current > 850) &&
-          (smoothTargetRef.current.explode > 0.04 || isIsolated || hasAnyDetached);
-
-        if (isReassembleEdge) {
-          lastReassembleAtRef.current = nowPerfMs;
-          smoothTargetRef.current.explode = 0;
-          smoothTargetRef.current.carryX = 0;
-          smoothTargetRef.current.carryY = 0;
-          smoothTargetRef.current.carryZ = 0;
-          if (runtime.model) {
-            for (const p of runtime.model.explodables) {
-              if (p.detachTarget) p.detachTarget.set(0, 0, 0);
+          if (isRealGrabExplodeToggleEdge) {
+            lastTwoFingerSelectAtRef.current = nowPerfMs;
+            const hasDetachedNow = runtime.model ? countDetachedParts(runtime.model) > 0 : false;
+            const currentlyExpanded = smoothTargetRef.current.explode >= 0.25 || hasDetachedNow || isIsolated;
+            if (currentlyExpanded) {
+              smoothTargetRef.current.explode = 0;
+              smoothTargetRef.current.carryX = 0;
+              smoothTargetRef.current.carryY = 0;
+              smoothTargetRef.current.carryZ = 0;
+              if (runtime.model) {
+                for (const p of runtime.model.explodables) {
+                  if (p.detachTarget) p.detachTarget.set(0, 0, 0);
+                }
+              }
+              setDetachedPartCount(0);
+              detachedPartsVersionRef.current += 1;
+              setExplodeVal(0);
+              setIsolatedPartIdx(null);
+              setHighlightedPartIdx(null);
+              playSpatialSfx('snap', cfg.tactileSfxEnabled);
+              showToast(
+                isEn
+                  ? '✌️ 2 Fingers · Reassembled full model!'
+                  : '✌️ 2 Ngón · Đã lắp khít toàn bộ mô hình về nguyên trạng!'
+              );
+            } else {
+              smoothTargetRef.current.explode = 1.25;
+              smoothTargetRef.current.carryX = 0;
+              smoothTargetRef.current.carryY = 0;
+              smoothTargetRef.current.carryZ = 0;
+              smoothTargetRef.current.rotOffset = 0;
+              smoothTargetRef.current.pitchOffset = 0;
+              smoothTargetRef.current.tiltOffset = 0;
+              if (cfg.sliceEnabled) setSliceEnabled(false);
+              setExplodeVal(1.25);
+              if (highlightedPartIdxRef.current === null && modelPartsRef.current.length > 0) {
+                setHighlightedPartIdx(0);
+              }
+              playSpatialSfx('detach', cfg.tactileSfxEnabled);
+              showToast(
+                isEn
+                  ? '✌️ 2 Fingers · Fixed Horizontal Row! Move hand & raise 👍 1 Thumb to select.'
+                  : '✌️ 2 Ngón · Đã xếp hàng ngang cố định! Di tay tới linh kiện và giơ 👍 1 ngón cái để chọn.'
+              );
             }
           }
-          setDetachedPartCount(0);
-          detachedPartsVersionRef.current += 1;
-          setExplodeVal(0);
-          setIsolatedPartIdx(null);
-          setHighlightedPartIdx(null);
-          playSpatialSfx('snap', cfg.tactileSfxEnabled);
-          showToast(
-            isEn
-              ? '4 Fingers · Reassembled full 3D model!'
-              : '4 Ngón · Đã lắp ráp toàn bộ mô hình về nguyên trạng!'
-          );
+        } else {
+          const isTwoFingerSelectEdge =
+            handDetected &&
+            currentGesture === 'slice_2' &&
+            prevGestureRef.current !== 'slice_2' &&
+            nowPerfMs - lastTwoFingerSelectAtRef.current > 850 &&
+            modelPartsRef.current.length > 0 &&
+            (smoothTargetRef.current.explode >= 0.25 || isIsolated);
+
+          if (isTwoFingerSelectEdge) {
+            lastTwoFingerSelectAtRef.current = nowPerfMs;
+            if (isIsolated) {
+              setIsolatedPartIdx(null);
+              showToast('Quay lại hàng ngang linh kiện');
+            } else {
+              const pickIdx = highlightedPartIdxRef.current ?? 0;
+              setHighlightedPartIdx(pickIdx);
+              setIsolatedPartIdx(pickIdx);
+              setPartCardMinimized(false);
+              showToast(`Xem chi tiết: ${modelPartsRef.current[pickIdx].nameVi}`);
+            }
+          }
+
+          // 3. Classic RISING-EDGE 4-FINGER REASSEMBLE: snap all detached + separated/isolated parts smoothly back together
+          const hasAnyDetached = runtime.model ? countDetachedParts(runtime.model) > 0 : false;
+          const isReassembleEdge =
+            activeControl &&
+            mapped3DAction === 'reassemble_parts' &&
+            (currentGesture !== prevGestureRef.current || nowPerfMs - lastReassembleAtRef.current > 850) &&
+            (smoothTargetRef.current.explode > 0.04 || isIsolated || hasAnyDetached);
+
+          if (isReassembleEdge) {
+            lastReassembleAtRef.current = nowPerfMs;
+            smoothTargetRef.current.explode = 0;
+            smoothTargetRef.current.carryX = 0;
+            smoothTargetRef.current.carryY = 0;
+            smoothTargetRef.current.carryZ = 0;
+            if (runtime.model) {
+              for (const p of runtime.model.explodables) {
+                if (p.detachTarget) p.detachTarget.set(0, 0, 0);
+              }
+            }
+            setDetachedPartCount(0);
+            detachedPartsVersionRef.current += 1;
+            setExplodeVal(0);
+            setIsolatedPartIdx(null);
+            setHighlightedPartIdx(null);
+            playSpatialSfx('snap', cfg.tactileSfxEnabled);
+            showToast(
+              isEn
+                ? '4 Fingers · Reassembled full 3D model!'
+                : '4 Ngón · Đã lắp ráp toàn bộ mô hình về nguyên trạng!'
+            );
+          }
         }
 
         let isZoomGestureActive = false;
         let camHoverPartIdx = -1;
-        const isRealGrabMode = cfg.interactionStyle === 'real_grab';
 
-        // REAL-LIFE PHYSICAL HAND INTERACTION (1-Hand Pinch Detach, 1-Hand Fist Hold/Carry, 2-Hand Zoom)
+        // CALM HAND SELECTION & ASSEMBLED CONTROL:
+        // - While separated in 1 Horizontal Row (isRowSeparatedNow):
+        //     • Positions are 100% LOCKED (no part pulling, no fist spin/carry, no Z-tilt)
+        //     • Move hand (🖐️) horizontally along the row to preview target
+        //     • Raise 1 Thumb (👍) to cleanly select & open component card!
+        //     • 2 Hands (👐) zooms smoothly
+        // - While assembled (!isRowSeparatedNow):
+        //     • Fist (✊) rotates whole model 360°
+        //     • Move hand + 👍 1 Thumb selects/highlights any part cleanly
+        //     • 2 Hands (👐) zooms smoothly
         if (isRealGrabMode && handDetected && !pointAskActiveRef.current && runtime.model) {
-          const sk0 = res.skeletons[0];
-          const pThumb = sk0?.landmarks?.[4];
-          const pIndex = sk0?.landmarks?.[8];
-          const pinchNx = pThumb && pIndex ? (pThumb[0] + pIndex[0]) * 0.5 : cursorNormX;
-          const pinchNy = pThumb && pIndex ? (pThumb[1] + pIndex[1]) * 0.5 : cursorNormY;
-          const pinchNz = pThumb && pIndex ? (pThumb[2] + pIndex[2]) * 0.5 : 0;
-          const pinchNdcX = pinchNx * 2 - 1;
-          const pinchNdcY = -(pinchNy * 2 - 1);
+          const aimNdcX = cursorNormX * 2 - 1;
+          const aimNdcY = -(cursorNormY * 2 - 1);
 
-          // Two hands -> Intuitive real-life Spread/Pinch Zoom (apart = zoom in, closer = zoom out)
+          // Two hands -> Smooth Spread/Close Zoom only (zero erratic Z-tilt)
           if (res.handCount === 2) {
-            if (camGrabRef.current.kind === 'part') {
-              finalizePartRelease(runtime.model, camGrabRef.current.partIdx);
+            if (camGrabRef.current.kind !== 'none') {
               camGrabRef.current.kind = 'none';
               camGrabRef.current.partIdx = -1;
-            } else if (camGrabRef.current.kind === 'hold_model') {
-              camGrabRef.current.kind = 'none';
               smoothTargetRef.current.carryX = 0;
               smoothTargetRef.current.carryY = 0;
               smoothTargetRef.current.carryZ = 0;
+              setActiveGrabInfo(null);
             }
             if (Math.abs(res.twoHandSpanDelta) > 0.0022) {
               isZoomGestureActive = true;
@@ -3213,14 +3359,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 setScaleVal(+nextScale.toFixed(2));
               }
             }
-            const nextTilt = THREE.MathUtils.clamp(res.twoHandAngle * 0.45, -0.45, 0.45);
-            smoothTargetRef.current.tiltOffset = nextTilt;
-          } else if (currentGesture === 'fist_0' && !isIsolated) {
-            // Closed fist -> Hold & carry/rotate the entire object in your palm
-            if (camGrabRef.current.kind === 'part') {
-              finalizePartRelease(runtime.model, camGrabRef.current.partIdx);
-              camGrabRef.current.partIdx = -1;
-            }
+          } else if (currentGesture === 'fist_0' && !isIsolated && !isRowSeparatedNow) {
+            // Closed fist -> Rotate whole assembled model cleanly 360° (disabled in horizontal row!)
             if (camGrabRef.current.kind !== 'hold_model') {
               camGrabRef.current.kind = 'hold_model';
               runtime.model.group.getWorldPosition(camGrabRef.current.grabAnchor);
@@ -3233,147 +3373,106 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 distance: 0
               });
             }
-            smoothTargetRef.current.rotOffset += res.cursorDX * Math.PI * 2.4 * rotSens;
+            smoothTargetRef.current.rotOffset += res.cursorDX * Math.PI * 2.2 * rotSens;
             smoothTargetRef.current.pitchOffset = THREE.MathUtils.clamp(
-              smoothTargetRef.current.pitchOffset + res.cursorDY * Math.PI * 1.6 * rotSens,
-              -1.15,
-              1.15
+              smoothTargetRef.current.pitchOffset + res.cursorDY * Math.PI * 1.4 * rotSens,
+              -1.05,
+              1.05
             );
-            smoothTargetRef.current.carryX = THREE.MathUtils.clamp((pinchNx - 0.5) * 1.45, -1.25, 1.25);
-            smoothTargetRef.current.carryY = THREE.MathUtils.clamp((0.5 - pinchNy) * 1.05, -0.55, 0.85);
             runtime.model.group.getWorldPosition(camGrabRef.current.grabAnchor);
             camGrabRef.current.grabAnchor.y += 1.45;
           } else {
-            // Release hold if exited fist_0
-            if (camGrabRef.current.kind === 'hold_model') {
+            if (camGrabRef.current.kind !== 'none') {
               camGrabRef.current.kind = 'none';
+              camGrabRef.current.partIdx = -1;
               smoothTargetRef.current.carryX = 0;
               smoothTargetRef.current.carryY = 0;
               smoothTargetRef.current.carryZ = 0;
               setActiveGrabInfo(null);
             }
 
-            // Pinch -> Instant grab & pull any part along camera-facing plane!
-            if (res.hand1Pinching && !isIsolated) {
-              if (camGrabRef.current.kind !== 'part') {
-                _pointerNdc.set(pinchNdcX, pinchNdcY);
+            // Aim cursor over horizontal row (or assembled parts) at ~20 Hz
+            if (!isIsolated) {
+              if (nowPerfMs - lastCamHoverRayAtRef.current > 48) {
+                lastCamHoverRayAtRef.current = nowPerfMs;
+                _pointerNdc.set(aimNdcX, aimNdcY);
                 _raycaster.setFromCamera(_pointerNdc, camera);
                 const hits = _raycaster.intersectObject(runtime.model.group, true);
-                let matchedIdx = -1;
-                let matchedWorldHit: THREE.Vector3 | null = null;
+                let nextHover = -1;
                 for (const h of hits) {
                   const found = findPartIndexFromObject(runtime.model, h.object);
                   if (found !== -1) {
-                    matchedIdx = found;
-                    matchedWorldHit = h.point;
+                    nextHover = found;
                     break;
                   }
                 }
-                // Magnetic finger assist: find nearest explodable center within 0.16 NDC if slightly off a thin part
-                if (matchedIdx === -1) {
-                  let bestNdcDist = 0.16;
+                // Generous magnetic row assist so gliding hand horizontally highlights each component cleanly
+                if (nextHover === -1 && runtime.model.explodables.length > 0) {
+                  let bestScore = isRowSeparatedNow ? 0.34 : 0.22;
                   for (let pi = 0; pi < runtime.model.explodables.length; pi++) {
                     const p = runtime.model.explodables[pi];
-                    p.mesh.getWorldPosition(_partWorldPos);
-                    _v3TmpB.copy(_partWorldPos).project(camera);
-                    const dNdc = Math.hypot(_v3TmpB.x - pinchNdcX, _v3TmpB.y - pinchNdcY);
-                    if (dNdc < bestNdcDist) {
-                      bestNdcDist = dNdc;
-                      matchedIdx = pi;
-                      matchedWorldHit = _partWorldPos;
+                    p.mesh.updateWorldMatrix(true, false);
+                    _v3TmpA.copy(p.geomLocalCenter || _zeroVec).applyMatrix4(p.mesh.matrixWorld);
+                    _v3TmpB.copy(_v3TmpA).project(camera);
+                    const dx = Math.abs(_v3TmpB.x - aimNdcX);
+                    const dy = Math.abs(_v3TmpB.y - aimNdcY);
+                    const score = isRowSeparatedNow ? Math.hypot(dx * 0.72, dy * 1.15) : Math.hypot(dx, dy);
+                    if (score < bestScore) {
+                      bestScore = score;
+                      nextHover = pi;
                     }
                   }
                 }
+                cachedCamHoverIdxRef.current = nextHover;
+              }
+              camHoverPartIdx = cachedCamHoverIdxRef.current;
 
-                if (matchedIdx !== -1 && matchedWorldHit) {
-                  camGrabRef.current.kind = 'part';
-                  camGrabRef.current.partIdx = matchedIdx;
-                  camGrabRef.current.grabAnchor.copy(matchedWorldHit);
-                  camera.getWorldDirection(_camDir).negate();
-                  _dragPlane.setFromNormalAndCoplanarPoint(_camDir, matchedWorldHit);
-                  _pointerNdc.set(pinchNdcX, pinchNdcY);
-                  _raycaster.setFromCamera(_pointerNdc, camera);
-                  if (_raycaster.ray.intersectPlane(_dragPlane, _planeHit)) {
-                    camGrabRef.current.prevWorld.copy(_planeHit);
-                  } else {
-                    mapNormalizedToWorldHand(pinchNx, pinchNy, pinchNz, camGrabRef.current.prevWorld);
-                  }
-                  setHighlightedPartIdx(matchedIdx);
-                  playSpatialSfx('grab', cfg.tactileSfxEnabled);
-                  const pInfo = runtime.model.explodables[matchedIdx].info;
-                  setActiveGrabInfo({
-                    kind: 'part',
-                    partIdx: matchedIdx,
-                    partName: isEn ? pInfo.nameEn : pInfo.nameVi,
-                    distance: +(runtime.model.explodables[matchedIdx].detachTarget?.length() || 0).toFixed(2)
-                  });
-                }
+              // Remember most recent aimed component before hand curls into 👍 1-Thumb
+              if (camHoverPartIdx >= 0 && !res.thumbUp) {
+                lastStableAimRef.current.idx = camHoverPartIdx;
+                lastStableAimRef.current.at = nowPerfMs;
               }
 
-              if (camGrabRef.current.kind === 'part' && camGrabRef.current.partIdx >= 0) {
-                const grabbedPart = runtime.model.explodables[camGrabRef.current.partIdx];
-                if (grabbedPart) {
-                  camera.getWorldDirection(_camDir).negate();
-                  _dragPlane.setFromNormalAndCoplanarPoint(_camDir, camGrabRef.current.grabAnchor);
-                  _pointerNdc.set(pinchNdcX, pinchNdcY);
-                  _raycaster.setFromCamera(_pointerNdc, camera);
-                  if (_raycaster.ray.intersectPlane(_dragPlane, _planeHit)) {
-                    _dragDeltaWorld.subVectors(_planeHit, camGrabRef.current.prevWorld);
-                    camGrabRef.current.prevWorld.copy(_planeHit);
-                    applyWorldDeltaToPartDetach(
-                      runtime.model,
-                      grabbedPart,
-                      _dragDeltaWorld,
-                      smoothTargetRef.current.explode
-                    );
-                    grabbedPart.mesh.getWorldPosition(camGrabRef.current.grabAnchor);
-                    if (nowPerfMs - camGrabRef.current.lastUiAt > 110) {
-                      camGrabRef.current.lastUiAt = nowPerfMs;
-                      detachedPartsVersionRef.current += 1;
-                      setDetachedPartCount(countDetachedParts(runtime.model));
-                      setActiveGrabInfo({
-                        kind: 'part',
-                        partIdx: camGrabRef.current.partIdx,
-                        partName: isEn ? grabbedPart.info.nameEn : grabbedPart.info.nameVi,
-                        distance: +(grabbedPart.detachTarget?.length() || 0).toFixed(2)
-                      });
-                    }
-                  }
+              // Rising edge of 👍 1-Thumb-Up -> Select the targeted component calmly!
+              if (res.thumbUp && !prevThumbUpRef.current && nowPerfMs - lastThumbSelectAtRef.current > 420) {
+                lastThumbSelectAtRef.current = nowPerfMs;
+                const recentValidIdx =
+                  lastStableAimRef.current.idx >= 0 && nowPerfMs - lastStableAimRef.current.at < 700
+                    ? lastStableAimRef.current.idx
+                    : -1;
+                const pickIdx =
+                  recentValidIdx >= 0
+                    ? recentValidIdx
+                    : camHoverPartIdx >= 0
+                    ? camHoverPartIdx
+                    : highlightedPartIdxRef.current ?? 0;
+                if (runtime.model.explodables[pickIdx]) {
+                  setHighlightedPartIdx(pickIdx);
+                  setPartCardMinimized(false);
+                  playSpatialSfx('grab', cfg.tactileSfxEnabled);
+                  const pInfo = runtime.model.explodables[pickIdx].info;
+                  showToast(
+                    isEn
+                      ? `👍 Selected: ${pInfo.nameEn} (${pickIdx + 1}/${runtime.model.explodables.length})`
+                      : `👍 Đã chọn: ${pInfo.nameVi} (${pickIdx + 1}/${runtime.model.explodables.length})`
+                  );
                 }
               }
             } else {
-              if (camGrabRef.current.kind === 'part') {
-                finalizePartRelease(runtime.model, camGrabRef.current.partIdx);
-                camGrabRef.current.kind = 'none';
-                camGrabRef.current.partIdx = -1;
-              }
-              // Hover raycast from open hand index/pinch midpoint
-              if (!isIsolated) {
-                _pointerNdc.set(pinchNdcX, pinchNdcY);
-                _raycaster.setFromCamera(_pointerNdc, camera);
-                const hits = _raycaster.intersectObject(runtime.model.group, true);
-                for (const h of hits) {
-                  const found = findPartIndexFromObject(runtime.model, h.object);
-                  if (found !== -1) {
-                    camHoverPartIdx = found;
-                    break;
-                  }
-                }
-              }
+              cachedCamHoverIdxRef.current = -1;
             }
           }
         } else if (camGrabRef.current.kind !== 'none') {
-          if (camGrabRef.current.kind === 'part' && runtime.model) {
-            finalizePartRelease(runtime.model, camGrabRef.current.partIdx);
-          } else if (camGrabRef.current.kind === 'hold_model') {
-            smoothTargetRef.current.carryX = 0;
-            smoothTargetRef.current.carryY = 0;
-            smoothTargetRef.current.carryZ = 0;
-            setActiveGrabInfo(null);
-          }
           camGrabRef.current.kind = 'none';
           camGrabRef.current.partIdx = -1;
+          smoothTargetRef.current.carryX = 0;
+          smoothTargetRef.current.carryY = 0;
+          smoothTargetRef.current.carryZ = 0;
+          setActiveGrabInfo(null);
         }
+
+        // Track thumbUp state continuously on every frame
+        prevThumbUpRef.current = handDetected ? res.thumbUp : false;
 
         if (activeControl && mapped3DAction !== 'none') {
           const targetX = (cursorNormX - 0.5) * 6.4;
@@ -3395,14 +3494,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             setAutoSpin((v) => !v);
           }
 
-          // Explode structure via 3 Fingers (morph_3) in real_grab mode, OR via 2-hand opposite spread in classic mode
-          if (isRealGrabMode) {
-            if (currentGesture === 'morph_3' && !isIsolated) {
-              const nextExp = THREE.MathUtils.clamp(smoothTargetRef.current.explode + dt * 0.85, 0, 1.85);
-              smoothTargetRef.current.explode = nextExp;
-              if (shouldPushUi) setExplodeVal(+nextExp.toFixed(2));
-            }
-          } else if (handDetected && res.handCount === 2) {
+          // Classic 2-hand opposite spread to explode / zoom out
+          if (!isRealGrabMode && handDetected && res.handCount === 2) {
             if (res.twoHandOppositeSpread && !isIsolated) {
               const step = Math.max(0.015, res.twoHandSpanDelta * 3.4);
               const nextExp = THREE.MathUtils.clamp(smoothTargetRef.current.explode + step, 0, 1.85);
@@ -3445,13 +3538,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          // 1-Finger OR 2-Hand Symmetrical Dual Neon Tube Sculpting (disabled when Point & Ask laser is active or grabbing part)
+          // 1-Finger OR 2-Hand Symmetrical Dual Neon Tube Sculpting (Classic / freehand_oxyz only)
           if (
+            !isRealGrabMode &&
             !isIsolated &&
+            !isRowSeparatedNow &&
             !pointAskActiveRef.current &&
             camGrabRef.current.kind === 'none' &&
             (mapped3DAction === 'draw_neon' ||
-              (!isRealGrabMode && cfg.modeId === 'freehand_oxyz' && mapped3DAction === 'dual_zoom_tilt'))
+              (cfg.modeId === 'freehand_oxyz' && mapped3DAction === 'dual_zoom_tilt'))
           ) {
             if (handDetected && res.handCount === 2 && res.hand1Index && res.hand2Index) {
               const p1x = (res.hand1Index.x - 0.5) * 6.4;
@@ -3476,11 +3571,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             if (runtime.activeStrokePointsH2.length > 0) finalizeStrokeChannel(true);
           }
 
-          // Pinch in Classic mode OR freehand_oxyz when not grabbing an existing part
+          // Pinch stamp ONLY in Classic / freehand_oxyz when not separated
           if (
+            !isRealGrabMode &&
+            !isRowSeparatedNow &&
             mapped3DAction === 'pinch_stamp_scale' &&
-            !pointAskActiveRef.current &&
-            (!isRealGrabMode || (cfg.modeId === 'freehand_oxyz' && camGrabRef.current.kind === 'none'))
+            !pointAskActiveRef.current
           ) {
             const nextHeight = THREE.MathUtils.clamp(0.55 + cursorNormX * 1.25, 0.5, 1.85);
             smoothTargetRef.current.height = nextHeight;
@@ -3499,8 +3595,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          // Slice plane ONLY when not exploded, not isolated, and not grabbing a part
+          // Classic Slice plane clipping (only when assembled in Classic mode, never in Real-Grab or horizontal row)
           if (
+            !isRealGrabMode &&
             mapped3DAction === 'slice_plane' &&
             !isIsolated &&
             camGrabRef.current.kind === 'none' &&
@@ -3514,8 +3611,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          // HIGH-SENSITIVITY MODEL ROTATION (when open palm_5 orbit_rotate and not holding/grabbing)
-          if (mapped3DAction === 'orbit_rotate' && !isZoomGestureActive && camGrabRef.current.kind === 'none') {
+          // Classic HIGH-SENSITIVITY MODEL ROTATION (disabled in real_grab & disabled when row separated)
+          if (!isRealGrabMode && !isRowSeparatedNow && mapped3DAction === 'orbit_rotate' && !isZoomGestureActive && camGrabRef.current.kind === 'none') {
             if (handDetected) {
               smoothTargetRef.current.rotOffset += res.cursorDX * Math.PI * 2.4 * rotSens;
               smoothTargetRef.current.pitchOffset = THREE.MathUtils.clamp(
@@ -3571,120 +3668,236 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         cursorRing.rotation.x += dt * 1.1;
 
         const model = runtime.model;
+        let isRowSeparated = false;
+        let sy = smoothTargetRef.current.scale;
         if (model) {
-          const activeTargetGroup = isIsolated ? runtime.isolatedHolder : model.group;
-          const s = THREE.MathUtils.damp(activeTargetGroup.scale.x, smoothTargetRef.current.scale, 10, dt);
-          const sy = isIsolated
-            ? s
-            : THREE.MathUtils.damp(
-                activeTargetGroup.scale.y,
-                smoothTargetRef.current.scale * smoothTargetRef.current.height,
-                10,
-                dt
-              );
-          activeTargetGroup.scale.set(s, sy, s);
+          const expTarget = smoothTargetRef.current.explode;
+          isRowSeparated = !isIsolated && expTarget >= 0.25;
 
-          if (!isIsolated) {
-            activeTargetGroup.position.x = THREE.MathUtils.damp(
-              activeTargetGroup.position.x,
-              smoothTargetRef.current.carryX,
-              12,
-              dt
-            );
-            activeTargetGroup.position.y = THREE.MathUtils.damp(
-              activeTargetGroup.position.y,
-              smoothTargetRef.current.carryY,
-              12,
-              dt
-            );
-            activeTargetGroup.position.z = THREE.MathUtils.damp(
-              activeTargetGroup.position.z,
-              smoothTargetRef.current.carryZ,
-              12,
-              dt
-            );
+          if (isRowSeparated && cfg.sliceEnabled) {
+            setSliceEnabled(false);
           }
 
-          activeTargetGroup.rotation.z = THREE.MathUtils.damp(
-            activeTargetGroup.rotation.z,
-            smoothTargetRef.current.tiltOffset,
-            8,
-            dt
-          );
+          if (isRowSeparated !== prevRowSeparatedRef.current) {
+            prevRowSeparatedRef.current = isRowSeparated;
+            rowCameraGlideActiveRef.current = isRowSeparated;
+          }
 
-          const isDirectHolding =
-            (pointerGrabRef.current.active && pointerGrabRef.current.kind === 'hold_model') ||
-            camGrabRef.current.kind === 'hold_model';
+          if (rowCameraGlideActiveRef.current && isRowSeparated) {
+            const rowCountCam = Math.max(1, model.explodables.length);
+            _rowCamPosTarget.set(0, 2.85, Math.max(9.2, rowCountCam * 1.42));
+            camera.position.lerp(_rowCamPosTarget, 1 - Math.exp(-6 * dt));
+            controls.target.lerp(_rowTargetCenter, 1 - Math.exp(-7 * dt));
+            if (camera.position.distanceTo(_rowCamPosTarget) < 0.08) {
+              rowCameraGlideActiveRef.current = false;
+            }
+          }
 
-          if (!cfg.frozen) {
-            const isHandOrbiting =
-              activeControl &&
-              (mapped3DAction === 'orbit_rotate' ||
-                (currentGesture === 'two_hand_10' && !res.twoHandOppositeSpread && !res.twoHandMovingCloser));
-            if (isHandOrbiting || isDirectHolding) {
-              activeTargetGroup.rotation.y = THREE.MathUtils.damp(
-                activeTargetGroup.rotation.y,
-                smoothTargetRef.current.rotOffset,
+          const activeTargetGroup = isIsolated ? runtime.isolatedHolder : model.group;
+          const rowCount = Math.max(1, model.explodables.length);
+          const rowSpacing = 1.65;
+          const rowFitScale = isRowSeparated
+            ? Math.min(1.0, 8.8 / Math.max(4.5, rowCount * rowSpacing))
+            : 1.0;
+          const targetGroupScale = smoothTargetRef.current.scale * rowFitScale;
+          const s = THREE.MathUtils.damp(activeTargetGroup.scale.x, targetGroupScale, 10, dt);
+          sy =
+            isIsolated || isRowSeparated
+              ? s
+              : THREE.MathUtils.damp(
+                  activeTargetGroup.scale.y,
+                  smoothTargetRef.current.scale * smoothTargetRef.current.height,
+                  10,
+                  dt
+                );
+          activeTargetGroup.scale.set(s, sy, s);
+
+          if (isRowSeparated) {
+            // Lock model root cleanly at origin facing front — components NEVER rotate/drift in row mode
+            smoothTargetRef.current.carryX = 0;
+            smoothTargetRef.current.carryY = 0;
+            smoothTargetRef.current.carryZ = 0;
+            smoothTargetRef.current.rotOffset = 0;
+            smoothTargetRef.current.pitchOffset = 0;
+            smoothTargetRef.current.tiltOffset = 0;
+            activeTargetGroup.position.x = THREE.MathUtils.damp(activeTargetGroup.position.x, 0, 14, dt);
+            activeTargetGroup.position.y = THREE.MathUtils.damp(activeTargetGroup.position.y, 0, 14, dt);
+            activeTargetGroup.position.z = THREE.MathUtils.damp(activeTargetGroup.position.z, 0, 14, dt);
+
+            const twoPi = Math.PI * 2;
+            let ry = activeTargetGroup.rotation.y % twoPi;
+            if (ry > Math.PI) ry -= twoPi;
+            if (ry < -Math.PI) ry += twoPi;
+            activeTargetGroup.rotation.y = THREE.MathUtils.damp(ry, 0, 14, dt);
+            activeTargetGroup.rotation.x = THREE.MathUtils.damp(activeTargetGroup.rotation.x, 0, 14, dt);
+            activeTargetGroup.rotation.z = THREE.MathUtils.damp(activeTargetGroup.rotation.z, 0, 14, dt);
+          } else {
+            if (!isIsolated) {
+              activeTargetGroup.position.x = THREE.MathUtils.damp(
+                activeTargetGroup.position.x,
+                smoothTargetRef.current.carryX,
                 12,
                 dt
               );
-              activeTargetGroup.rotation.x = THREE.MathUtils.damp(
-                activeTargetGroup.rotation.x,
-                smoothTargetRef.current.pitchOffset,
-                11,
+              activeTargetGroup.position.y = THREE.MathUtils.damp(
+                activeTargetGroup.position.y,
+                smoothTargetRef.current.carryY,
+                12,
                 dt
               );
-            } else {
-              if (cfg.autoSpin && (isIsolated || (cfg.modeId !== 'robot_arm' && !pointerGrabRef.current.active && camGrabRef.current.kind === 'none'))) {
-                activeTargetGroup.rotation.y += dt * (isIsolated ? 0.3 : 0.34) * cfg.simSpeed;
-                smoothTargetRef.current.rotOffset = activeTargetGroup.rotation.y;
+              activeTargetGroup.position.z = THREE.MathUtils.damp(
+                activeTargetGroup.position.z,
+                smoothTargetRef.current.carryZ,
+                12,
+                dt
+              );
+            }
+
+            activeTargetGroup.rotation.z = THREE.MathUtils.damp(
+              activeTargetGroup.rotation.z,
+              smoothTargetRef.current.tiltOffset,
+              8,
+              dt
+            );
+
+            const isDirectHolding =
+              (pointerGrabRef.current.active && pointerGrabRef.current.kind === 'hold_model') ||
+              camGrabRef.current.kind === 'hold_model';
+
+            if (!cfg.frozen) {
+              const isHandOrbiting =
+                activeControl &&
+                ((!isRealGrabMode && mapped3DAction === 'orbit_rotate') ||
+                  (currentGesture === 'two_hand_10' && !res.twoHandOppositeSpread && !res.twoHandMovingCloser));
+              if (isHandOrbiting || isDirectHolding) {
+                activeTargetGroup.rotation.y = THREE.MathUtils.damp(
+                  activeTargetGroup.rotation.y,
+                  smoothTargetRef.current.rotOffset,
+                  12,
+                  dt
+                );
+                activeTargetGroup.rotation.x = THREE.MathUtils.damp(
+                  activeTargetGroup.rotation.x,
+                  smoothTargetRef.current.pitchOffset,
+                  11,
+                  dt
+                );
+              } else {
+                if (
+                  cfg.autoSpin &&
+                  (isIsolated ||
+                    (cfg.modeId !== 'robot_arm' &&
+                      !pointerGrabRef.current.active &&
+                      camGrabRef.current.kind === 'none'))
+                ) {
+                  activeTargetGroup.rotation.y += dt * (isIsolated ? 0.3 : 0.34) * cfg.simSpeed;
+                  smoothTargetRef.current.rotOffset = activeTargetGroup.rotation.y;
+                }
+                activeTargetGroup.rotation.x = THREE.MathUtils.damp(
+                  activeTargetGroup.rotation.x,
+                  smoothTargetRef.current.pitchOffset,
+                  10,
+                  dt
+                );
               }
-              activeTargetGroup.rotation.x = THREE.MathUtils.damp(
-                activeTargetGroup.rotation.x,
-                smoothTargetRef.current.pitchOffset,
-                10,
-                dt
-              );
             }
           }
 
-          const expTarget = smoothTargetRef.current.explode;
           let tetherSlot = 0;
           if (!isIsolated) {
             const lerpAlpha = 1 - Math.exp(-14 * dt);
-            for (const part of model.explodables) {
-              _restLocalPos.copy(part.basePos).addScaledVector(part.explodeDir, expTarget * 2.85);
-              let hasDetach = false;
-              if (part.detachTarget || part.detachOffset) {
-                if (!part.detachOffset) part.detachOffset = new THREE.Vector3();
-                if (!part.detachTarget) part.detachTarget = new THREE.Vector3();
-                part.detachOffset.lerp(part.detachTarget, 1 - Math.exp(-18 * dt));
-                if (part.detachOffset.lengthSq() > 0.0005 || part.detachTarget.lengthSq() > 0.0005) {
-                  hasDetach = true;
-                }
-                _desiredLocalPos.copy(_restLocalPos).add(part.detachOffset);
-                part.mesh.position.lerp(_desiredLocalPos, lerpAlpha);
-              } else {
-                part.mesh.position.lerp(_restLocalPos, 1 - Math.exp(-9 * dt));
+            if (isRowSeparated) {
+              // Hide floating non-part decorations so the horizontal row stays crisp & uncluttered
+              if (model.supercar?.streamlines) {
+                for (const sl of model.supercar.streamlines) sl.mesh.visible = false;
+              }
+              if (model.windTurbine?.waveRing) {
+                model.windTurbine.waveRing.visible = false;
+              }
+              if (model.atomElectrons) {
+                for (const el of model.atomElectrons) el.mesh.visible = false;
+              }
+              if (model.sphereCutRing) {
+                model.sphereCutRing.visible = false;
               }
 
-              if (hasDetach && tetherSlot < 16) {
+              model.group.updateMatrixWorld(true);
+              for (let i = 0; i < model.explodables.length; i++) {
+                const part = model.explodables[i];
+                if (part.detachTarget) part.detachTarget.set(0, 0, 0);
+                if (part.detachOffset) part.detachOffset.set(0, 0, 0);
+
+                const slotX = -(rowCount - 1) * rowSpacing * 0.5 + i * rowSpacing;
+                const rowY = 1.72;
+                const baseSc = part.baseScale || _unitScale;
+                const maxDim = Math.max(0.45, part.geomMaxDim || 1.0);
+                const partRowMul = Math.min(1.0, 1.28 / maxDim);
+                _desiredScale.copy(baseSc).multiplyScalar(partRowMul);
+                part.mesh.scale.lerp(_desiredScale, lerpAlpha);
+
                 const parentObj = part.mesh.parent || model.group;
                 parentObj.updateWorldMatrix(true, false);
-                _socketWorldPos.copy(_restLocalPos).applyMatrix4(parentObj.matrixWorld);
-                part.mesh.getWorldPosition(_partWorldPos);
-                runtime.tetherManager.setSlot(tetherSlot++, _socketWorldPos, _partWorldPos, camera);
-              }
-            }
-            runtime.tetherManager.hideFrom(tetherSlot);
+                _mat4Inv.copy(parentObj.matrixWorld).invert();
+                _partWorldPos.set(slotX * s, rowY, 0);
+                _desiredLocalPos.copy(_partWorldPos).applyMatrix4(_mat4Inv);
+                _v3TmpA
+                  .copy(part.geomLocalCenter || _zeroVec)
+                  .multiply(part.mesh.scale)
+                  .applyQuaternion(part.mesh.quaternion);
+                _desiredLocalPos.sub(_v3TmpA);
 
-            // Highlight active hovered / grabbed / exploded part cleanly
+                part.mesh.position.lerp(_desiredLocalPos, lerpAlpha);
+                part.mesh.updateMatrixWorld(true);
+              }
+              runtime.tetherManager.hideFrom(0);
+            } else {
+              // Restore decorative meshes when assembled
+              if (model.supercar?.streamlines) {
+                for (const sl of model.supercar.streamlines) sl.mesh.visible = true;
+              }
+              if (model.windTurbine?.waveRing) {
+                model.windTurbine.waveRing.visible = true;
+              }
+              if (model.atomElectrons) {
+                for (const el of model.atomElectrons) el.mesh.visible = true;
+              }
+
+              for (const part of model.explodables) {
+                part.mesh.scale.lerp(part.baseScale || _unitScale, lerpAlpha);
+                _restLocalPos.copy(part.basePos).addScaledVector(part.explodeDir, expTarget * 2.85);
+                let hasDetach = false;
+                let isNearSnap = false;
+                if (part.detachTarget || part.detachOffset) {
+                  if (!part.detachOffset) part.detachOffset = new THREE.Vector3();
+                  if (!part.detachTarget) part.detachTarget = new THREE.Vector3();
+                  part.detachOffset.lerp(part.detachTarget, 1 - Math.exp(-18 * dt));
+                  if (part.detachOffset.lengthSq() > 0.0005 || part.detachTarget.lengthSq() > 0.0005) {
+                    hasDetach = true;
+                    isNearSnap = part.detachTarget.lengthSq() < 0.36 * 0.36;
+                  }
+                  _desiredLocalPos.copy(_restLocalPos).add(part.detachOffset);
+                  part.mesh.position.lerp(_desiredLocalPos, lerpAlpha);
+                } else {
+                  part.mesh.position.lerp(_restLocalPos, 1 - Math.exp(-9 * dt));
+                }
+
+                if (hasDetach && tetherSlot < 16) {
+                  const parentObj = part.mesh.parent || model.group;
+                  parentObj.updateWorldMatrix(true, false);
+                  _socketWorldPos.copy(_restLocalPos).applyMatrix4(parentObj.matrixWorld);
+                  part.mesh.getWorldPosition(_partWorldPos);
+                  runtime.tetherManager.setSlot(tetherSlot++, _socketWorldPos, _partWorldPos, camera, isNearSnap);
+                }
+              }
+              runtime.tetherManager.hideFrom(tetherSlot);
+            }
+
+            // Highlight active hovered / grabbed / row-selected part cleanly
             const pointerActivePartIdx =
               pointerGrabRef.current.active && pointerGrabRef.current.kind === 'part'
                 ? pointerGrabRef.current.partIdx
                 : hoverPartRef.current?.partIdx ?? -1;
-            const camActivePartIdx =
-              camGrabRef.current.kind === 'part' ? camGrabRef.current.partIdx : camHoverPartIdx;
+            const camActivePartIdx = camHoverPartIdx;
             const preferredHighlightIdx =
               pointerActivePartIdx >= 0
                 ? pointerActivePartIdx
@@ -3728,10 +3941,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           // Update Local 3D Articulated Skeleton Hand & Grip Halo
           if (isRealGrabMode && !pointAskActiveRef.current && !isIsolated) {
             let visualState: LocalGripVisualState = 'idle';
-            if (
-              camGrabRef.current.kind === 'part' ||
-              (pointerGrabRef.current.active && pointerGrabRef.current.kind === 'part')
-            ) {
+            if (pointerGrabRef.current.active && pointerGrabRef.current.kind === 'part') {
               visualState = 'grab_part';
             } else if (
               camGrabRef.current.kind === 'hold_model' ||
@@ -3740,7 +3950,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               visualState = 'hold_model';
             } else if (handDetected && res.handCount === 2) {
               visualState = 'two_hand_zoom';
-            } else if (camHoverPartIdx >= 0 || hoverPartRef.current) {
+            } else if (camHoverPartIdx >= 0 || hoverPartRef.current || (handDetected && res.thumbUp)) {
               visualState = 'hover_part';
             }
 
@@ -3885,7 +4095,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             runtime.pointLaserLine.visible = false;
           }
 
-          // Update 6 advanced kinetic rigs (skip IK joint clamping when viewing a single isolated robot part)
+          // Update 6 advanced kinetic rigs (straighten robot arm joints when in horizontal row or isolated 360)
           updateAdvancedKinematics(
             model,
             dt,
@@ -3901,7 +4111,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 }
               : { x: 0, y: 1.5, z: 0 },
             isPinchActive,
-            isIsolated
+            isIsolated || isRowSeparated
           );
 
           // Update AI-synthesized custom 3D model kinematics (spin / pulse / bob / orbit)
@@ -3912,7 +4122,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             cfg.simSpeed,
             cfg.heightVal,
             cfg.frozen,
-            isIsolated || expTarget >= 0.25
+            isIsolated || isRowSeparated
           );
 
           if (model.waveGeo && model.waveBaseZ && !cfg.frozen) {
@@ -3936,12 +4146,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
             pos.needsUpdate = true;
             col.needsUpdate = true;
-            if (cfg.gestureSettings.graphicsQuality !== 'light' || ++waveTick % 2 === 0) {
+            if (!isLowPerfSettings(softwareGl, cfg.gestureSettings) || ++waveTick % 3 === 0) {
               model.waveGeo.computeVertexNormals();
             }
           }
 
-          if (model.atomElectrons && !cfg.frozen && !isIsolated) {
+          if (model.atomElectrons && !cfg.frozen && !isIsolated && !isRowSeparated) {
             for (const item of model.atomElectrons) {
               const ang = elapsed * item.speed * cfg.simSpeed + item.phase;
               _v3TmpA.set(Math.cos(ang) * item.ringRadius, Math.sin(ang) * item.ringRadius, 0);
@@ -3957,7 +4167,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             const centerY = R + 0.15;
             const worldSliceY = smoothTargetRef.current.sliceY / Math.max(0.4, sy);
             const d = Math.abs(worldSliceY - centerY);
-            if (cfg.sliceEnabled && !isIsolated && d < R * 0.98) {
+            if (cfg.sliceEnabled && !isIsolated && !isRowSeparated && d < R * 0.98) {
               model.sphereCutRing.visible = true;
               const rCut = Math.sqrt(R * R - d * d);
               model.sphereCutRing.scale.set(rCut, rCut, 1);
@@ -3968,19 +4178,22 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           }
         }
 
-        if (cfg.sliceEnabled && !isIsolated) {
+        if (cfg.sliceEnabled && !isIsolated && smoothTargetRef.current.explode < 0.25) {
           const yClip = THREE.MathUtils.damp(runtime.slicePlane.constant, smoothTargetRef.current.sliceY, 12, dt);
           runtime.slicePlane.constant = yClip;
-          runtime.sliceHelperMesh.visible = true;
-          runtime.sliceHelperMesh.position.y = yClip;
         } else {
           runtime.slicePlane.constant = 100;
-          runtime.sliceHelperMesh.visible = false;
         }
 
         runtime.remoteHandManager.update(dt);
         controls.update();
-        renderer.render(scene, camera);
+
+        // Pace GPU rasterization cleanly on 30 FPS Weak-PC cap while keeping gesture tracking snappy
+        const capFps = cfg.gestureSettings.targetFpsCap <= 30;
+        if (!capFps || softwareGl || nowPerfMs - lastRenderPerfMs >= 31) {
+          lastRenderPerfMs = nowPerfMs;
+          renderer.render(scene, camera);
+        }
       }
 
       if (softwareGl) afterDraw(tick);
@@ -4057,8 +4270,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       (gridHelper.material as THREE.Material).dispose();
       discGeo.dispose();
       discMat.dispose();
-      sliceHelperGeo.dispose();
-      sliceHelperMat.dispose();
       cursorOrb.geometry.dispose();
       (cursorOrb.material as THREE.Material).dispose();
       cursorRing.geometry.dispose();
@@ -4557,12 +4768,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const rt = runtimeRef.current;
     if (!rt) return;
     const softwareGl = isSoftwareWebGL();
-    const isLight = gestureSettings.graphicsQuality === 'light';
-    rt.renderer.setPixelRatio(
-      softwareGl || isLight ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio, 2)
-    );
-    rt.renderer.shadowMap.enabled = !softwareGl && !isLight;
-  }, [gestureSettings.graphicsQuality]);
+    const lowPerf = isLowPerfSettings(softwareGl, gestureSettings);
+    rt.renderer.setPixelRatio(computeEffectiveDpr(softwareGl, gestureSettings));
+    rt.renderer.shadowMap.enabled = !lowPerf;
+    rt.keyLight.castShadow = !lowPerf;
+    rt.floorDisc.receiveShadow = !lowPerf;
+  }, [gestureSettings.graphicsQuality, gestureSettings.renderScale]);
 
   // Resize WebGL properly & wake Three.js RAF whenever entering Studio 3D mode
   useEffect(() => {
@@ -4617,6 +4828,21 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     videoEl.play().catch(() => {});
   }, [cameraActive, hudHidden]);
 
+  useEffect(() => {
+    if (!cameraActive || !streamRef.current) return;
+    const track = streamRef.current.getVideoTracks()[0];
+    if (!track || typeof track.applyConstraints !== 'function') return;
+    const [rw, rh] = (gestureSettings.cameraResolution || '480x360').split('x').map(Number);
+    if (!rw || !rh) return;
+    track
+      .applyConstraints({
+        width: { ideal: rw },
+        height: { ideal: rh },
+        frameRate: { ideal: 24, max: 30 }
+      })
+      .catch(() => {});
+  }, [cameraActive, gestureSettings.cameraResolution]);
+
   const startCamera = useCallback(async () => {
     setCameraError(null);
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -4630,10 +4856,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
     setCameraLoading(true);
     try {
+      const resStr = paramsRef.current.gestureSettings.cameraResolution || '480x360';
+      const [idealW, idealH] = resStr.split('x').map(Number);
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+          video: {
+            width: { ideal: idealW || 480 },
+            height: { ideal: idealH || 360 },
+            frameRate: { ideal: 24, max: 30 },
+            facingMode: 'user'
+          },
           audio: false
         });
       } catch (constraintErr) {
@@ -5250,10 +5483,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     setOxyzCursor({ x: tx, y: ty, z: tz });
   }, []);
 
+  const gestureCatalog =
+    spaceMode === '3d' && interactionStyle === 'real_grab'
+      ? REAL_GRAB_GESTURES
+      : GESTURE_DEFINITIONS;
+  const activeGestureId = cameraActive && handFrame.detected ? handFrame.gesture : virtualGesture;
   const currentGestureMeta =
-    GESTURE_DEFINITIONS.find(
-      (g) => g.id === (cameraActive && handFrame.detected ? handFrame.gesture : virtualGesture)
-    ) || GESTURE_DEFINITIONS[4];
+    gestureCatalog.find((g) => g.id === activeGestureId) || gestureCatalog[0];
 
   return (
     <>
@@ -5850,64 +6086,110 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             </div>
           )}
 
-          {/* Case 2: Exploded Model Selector Prompt Strip */}
+          {/* Case 2: Fixed Horizontal Row Component Selector & Live Info Card */}
           {spaceMode === '3d' &&
             isolatedPartIdx === null &&
             explodeVal >= 0.25 &&
-            modelParts.length > 0 && (
-              <div className="spatial-hud-frame spatial-step-reveal pointer-events-auto w-[min(316px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/50 shadow-xl p-2.5 space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-emerald-300">
-                  <span>
+            modelParts.length > 0 && (() => {
+              const selIdx = highlightedPartIdx ?? 0;
+              const selPart = modelParts[selIdx] || modelParts[0];
+              return (
+                <div className="spatial-hud-frame spatial-step-reveal pointer-events-auto w-[min(336px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/55 shadow-xl p-2.5 space-y-2">
+                  <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-bold text-emerald-300">
+                    <span className="truncate">
+                      {isEn
+                        ? `HORIZONTAL ROW · ${modelParts.length} PARTS`
+                        : `HÀNG NGANG CỐ ĐỊNH · ${modelParts.length} LINH KIỆN`}
+                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-cyan-300">
+                        {selIdx + 1}/{modelParts.length}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPartCardMinimized((v) => !v)}
+                        className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-300 cursor-pointer"
+                      >
+                        {partCardMinimized ? (isEn ? 'Details' : 'Chi tiết') : isEn ? 'Hide' : 'Thu gọn'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-xs sm:text-sm font-extrabold text-white leading-snug">
+                    {isEn ? selPart.nameEn : selPart.nameVi}
+                  </div>
+
+                  {!partCardMinimized && (
+                    <div className="space-y-1.5 text-[11px] leading-relaxed">
+                      <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
+                        <div className="text-[10px] font-bold uppercase tracking-wide text-cyan-300">
+                          {isEn ? 'Structure' : 'Giới thiệu cấu tạo'}
+                        </div>
+                        <p className="text-slate-200 mt-0.5">
+                          {isEn ? selPart.introEn : selPart.introVi}
+                        </p>
+                      </div>
+                      <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
+                        <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+                          {isEn ? 'Function & Role' : 'Chức năng & Vai trò'}
+                        </div>
+                        <p className="text-slate-200 mt-0.5">
+                          {isEn ? selPart.functionEn : selPart.functionVi}
+                        </p>
+                      </div>
+                      {selPart.specFormula && (
+                        <div className="px-2.5 py-1 rounded bg-sky-950/70 border border-sky-500/35 font-mono text-[10px] font-bold text-sky-200">
+                          {selPart.specFormula}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleCyclePart(-1)}
+                      className="p-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-200 cursor-pointer"
+                      title={isEn ? 'Previous part' : 'Linh kiện trước'}
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHighlightedPartIdx(selIdx);
+                        setIsolatedPartIdx(selIdx);
+                        setPartCardMinimized(false);
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-extrabold cursor-pointer truncate"
+                    >
+                      <Maximize2 className="w-3 h-3 shrink-0" />
+                      <span>{isEn ? 'Inspect 360°' : 'Soi 360°'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleReassembleAllParts()}
+                      className="px-2 py-1.5 rounded-md bg-slate-900 border border-emerald-400/55 hover:bg-emerald-500/15 text-emerald-200 text-[11px] font-bold cursor-pointer whitespace-nowrap"
+                    >
+                      {isEn ? '✌️ Reassemble' : '✌️ Lắp Lại'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCyclePart(1)}
+                      className="p-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-200 cursor-pointer"
+                      title={isEn ? 'Next part' : 'Linh kiện tiếp'}
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-slate-400 leading-snug">
                     {isEn
-                      ? `EXPLODED · ${modelParts.length} PARTS`
-                      : `ĐÃ TÁCH CẤU TRÚC · ${modelParts.length} BỘ PHẬN`}
-                  </span>
-                  <span>
-                    {(highlightedPartIdx ?? 0) + 1}/{modelParts.length}
-                  </span>
+                      ? 'Move hand horizontally over a part · Raise 👍 1 Thumb to select · Positions locked'
+                      : 'Di tay ngang qua linh kiện · Giơ 👍 1 ngón cái để chọn · Vị trí khóa cố định'}
+                  </div>
                 </div>
-                <div className="text-xs font-extrabold text-white truncate">
-                  {isEn
-                    ? modelParts[highlightedPartIdx ?? 0].nameEn
-                    : modelParts[highlightedPartIdx ?? 0].nameVi}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleCyclePart(-1)}
-                    className="p-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-200 cursor-pointer"
-                    title={isEn ? 'Previous part' : 'Bộ phận trước'}
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const pick = highlightedPartIdx ?? 0;
-                      setHighlightedPartIdx(pick);
-                      setIsolatedPartIdx(pick);
-                      setPartCardMinimized(false);
-                    }}
-                    className="flex-1 px-2.5 py-1.5 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-extrabold cursor-pointer truncate"
-                  >
-                    {isEn ? 'Inspect Selected (2 Fingers)' : 'Xem riêng bộ phận (2 ngón)'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleCyclePart(1)}
-                    className="p-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-200 cursor-pointer"
-                    title={isEn ? 'Next part' : 'Bộ phận tiếp'}
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  {isEn
-                    ? 'Raise 2 fingers or click a part · Swipe L/R to cycle'
-                    : 'Giơ 2 ngón tay (hoặc bấm vào khối) để xem riêng · Vuốt Trái/Phải chuyển'}
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
           {/* Case 2B: Real-Grab Active Manipulation / Detached Part Inspector Card */}
           {spaceMode === '3d' &&
@@ -5944,8 +6226,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                         ? `DETACHED: ${detachedPartCount} PART(S)`
                         : `ĐÃ THÁO RỜI: ${detachedPartCount} CHI TIẾT`
                       : isEn
-                      ? 'PART READY TO GRAB'
-                      : 'SẴN SÀNG CẦM THÁO';
+                      ? 'SELECTED PART'
+                      : 'LINH KIỆN ĐÃ CHỌN';
                   return (
                     <>
                       <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-bold">
@@ -5980,15 +6262,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       <div className="text-[10px] text-slate-400 leading-snug">
                         {activeGrabInfo?.kind === 'hold'
                           ? isEn
-                            ? 'Move hand or drag to rotate & carry the model; release to place.'
-                            : 'Di chuyển tay/chuột để xoay & di dời cả khối; thả ra để đặt lại.'
+                            ? 'Move hand or drag to rotate the assembled model; open hand to release.'
+                            : 'Di chuyển tay/chuột để xoay cả khối mô hình; mở tay để đặt lại.'
                           : activeGrabInfo?.kind === 'part'
                           ? isEn
                             ? 'Pull away to inspect, or drop near socket (<0.36m) for magnetic snap.'
                             : 'Kéo ra ngoài để tháo rời, hoặc thả gần khớp (<0.36m) để hít khít lại.'
                           : isEn
-                          ? 'Drag any part to disassemble · Shift+Drag holds whole model · 2-hand spreads zoom'
-                          : 'Chụm/kéo chi tiết để tháo · Giữ Shift+kéo để cầm cả khối · 2 tay phóng to/thu nhỏ'}
+                          ? '🖐️ Open Hand Aim · 👍 1 Thumb Select · ✌️ Horizontal Row / Snap · ✊ Fist Spin · 👐 2H Zoom'
+                          : '🖐️ Mở tay ngắm · 👍 1 ngón cái chọn · ✌️ Tách hàng ngang · ✊ Nắm xoay · 👐 2 tay thu phóng'}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -6441,7 +6723,47 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </button>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1">
+                {/* 1-Click Resolution Scale & FPS Cap for Weak PCs */}
+                <div
+                  className="hidden sm:flex items-center gap-0.5 bg-slate-900/95 border border-slate-700/80 rounded-md p-0.5"
+                  title={isEn ? '3D Render Resolution (lower = faster FPS on weak PCs)' : 'Độ phân giải 3D (hạ thấp để hết lag máy yếu)'}
+                >
+                  {([0.5, 0.65, 0.85, 1.0] as const).map((sc) => (
+                    <button
+                      key={sc}
+                      type="button"
+                      onClick={() => {
+                        updateGestureSetting('renderScale', sc);
+                        if (sc <= 0.65 && gestureSettings.graphicsQuality === 'high') {
+                          updateGestureSetting('graphicsQuality', sc <= 0.5 ? 'ultra_light' : 'light');
+                        }
+                      }}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${
+                        Math.abs((gestureSettings.renderScale || 0.85) - sc) < 0.05
+                          ? 'bg-sky-500 text-slate-950'
+                          : 'text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      {sc}x
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateGestureSetting('targetFpsCap', gestureSettings.targetFpsCap === 30 ? 60 : 30)
+                    }
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ml-0.5 ${
+                      gestureSettings.targetFpsCap === 30
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'text-cyan-300 hover:bg-slate-800'
+                    }`}
+                    title={isEn ? 'Toggle 30 FPS (Battery/Weak PC) vs 60 FPS' : 'Chuyển 30 FPS (Tiết kiệm cho máy yếu) / 60 FPS'}
+                  >
+                    {gestureSettings.targetFpsCap || 60}F
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={() =>
@@ -6520,7 +6842,18 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                             : `3D Models (${15 + customModels.length})`,
                         icon: Box
                       },
-                      { id: 'gesture', labelVi: '8 Cử Chỉ Tay', labelEn: '8 Gestures', icon: Hand },
+                      {
+                        id: 'gesture',
+                        labelVi:
+                          spaceMode === '3d' && interactionStyle === 'real_grab'
+                            ? '5 Cử Chỉ Cầm Nắm'
+                            : '8 Cử Chỉ Tay',
+                        labelEn:
+                          spaceMode === '3d' && interactionStyle === 'real_grab'
+                            ? '5 Grab Gestures'
+                            : '8 Gestures',
+                        icon: Hand
+                      },
                       {
                         id: 'params',
                         labelVi: spaceMode === '2d' ? 'Công Cụ 2D' : 'Sáng Tạo & Cắt',
@@ -6917,62 +7250,149 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               )}
 
-              {/* TAB: 8 HAND GESTURES & CAMERA TUNING */}
+              {/* TAB: MINIMAL 5 REAL-GRAB GESTURES (3D) OR 8 CLASSIC GESTURES */}
               {dockTab === 'gesture' && (
                 <div className="space-y-2.5">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
-                    {GESTURE_DEFINITIONS.map((g) => {
-                      const active =
-                        (cameraActive && handFrame.detected ? handFrame.gesture : virtualGesture) === g.id;
-                      return (
-                        <button
-                          key={g.id}
-                          type="button"
-                          onClick={() => {
-                            setVirtualGesture(g.id);
-                            if (g.id === 'two_hand_10' && spaceMode === '3d') {
-                              setExplodeVal((prev) => (prev >= 0.3 ? 0.0 : 1.35));
-                            } else if (g.id === 'reassemble_4' && spaceMode === '3d') {
-                              smoothTargetRef.current.explode = 0;
-                              setExplodeVal(0);
-                              setIsolatedPartIdx(null);
-                              setHighlightedPartIdx(null);
-                              showToast(
-                                isEn
-                                  ? '4 Fingers · Reassembled full 3D model!'
-                                  : '4 Ngón · Đã ghép mô hình về nguyên trạng!'
-                              );
-                            } else if (g.id === 'morph_3' && spaceMode === '2d') {
-                              canvas2DRef.current?.cycleSymmetry();
-                            } else if (g.id === 'slice_2' && spaceMode === '3d') {
-                              if (explodeVal >= 0.25 || isolatedPartIdx !== null) {
-                                setIsolatedPartIdx((prev) =>
-                                  prev !== null ? null : highlightedPartIdx ?? 0
+                  {spaceMode === '3d' && interactionStyle === 'real_grab' ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                      {REAL_GRAB_GESTURES.map((g) => {
+                        const active =
+                          (cameraActive && handFrame.detected ? handFrame.gesture : virtualGesture) === g.id;
+                        return (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => {
+                              setVirtualGesture(g.id);
+                              if (g.id === 'slice_2') {
+                                if (explodeVal >= 0.25 || detachedPartCount > 0 || isolatedPartIdx !== null) {
+                                  handleReassembleAllParts();
+                                } else {
+                                  smoothTargetRef.current.explode = 1.25;
+                                  smoothTargetRef.current.carryX = 0;
+                                  smoothTargetRef.current.carryY = 0;
+                                  smoothTargetRef.current.carryZ = 0;
+                                  smoothTargetRef.current.rotOffset = 0;
+                                  smoothTargetRef.current.pitchOffset = 0;
+                                  smoothTargetRef.current.tiltOffset = 0;
+                                  if (sliceEnabled) setSliceEnabled(false);
+                                  setExplodeVal(1.25);
+                                  if (highlightedPartIdx === null && modelParts.length > 0) {
+                                    setHighlightedPartIdx(0);
+                                  }
+                                  showToast(
+                                    isEn
+                                      ? '✌️ 2 Fingers · Fixed Horizontal Row! Move hand & raise 👍 1 Thumb to select.'
+                                      : '✌️ 2 Ngón · Đã xếp hàng ngang cố định! Di tay tới linh kiện và giơ 👍 1 ngón cái để chọn.'
+                                  );
+                                }
+                              } else if (g.id === 'point_1') {
+                                if (modelParts.length > 0) {
+                                  const nextIdx =
+                                    highlightedPartIdx === null ? 0 : (highlightedPartIdx + 1) % modelParts.length;
+                                  setHighlightedPartIdx(nextIdx);
+                                  setPartCardMinimized(false);
+                                  const pInfo = modelParts[nextIdx];
+                                  showToast(
+                                    isEn
+                                      ? `👍 Selected: ${pInfo.nameEn} (${nextIdx + 1}/${modelParts.length})`
+                                      : `👍 Đã chọn: ${pInfo.nameVi} (${nextIdx + 1}/${modelParts.length})`
+                                  );
+                                }
+                              } else if (g.id === 'fist_0') {
+                                setMouseHandTool('hold_model');
+                                showToast(
+                                  isEn
+                                    ? '✊ Drag mouse to hold & rotate assembled model'
+                                    : '✊ Chế độ Xoay Cả Khối: Kéo chuột để xoay mô hình (khi đang ghép)'
                                 );
-                              } else {
-                                setSliceEnabled(true);
+                              } else if (g.id === 'pinch' || g.id === 'palm_5') {
+                                setMouseHandTool('smart_grab');
+                              } else if (g.id === 'two_hand_10') {
+                                setExplodeVal((prev) => {
+                                  const next = prev >= 0.3 ? 0.0 : 1.25;
+                                  smoothTargetRef.current.explode = next;
+                                  if (next >= 0.3 && sliceEnabled) setSliceEnabled(false);
+                                  return next;
+                                });
                               }
-                            } else if (g.id === 'fist_0') {
-                              setFrozen((v) => !v);
-                            }
-                          }}
-                          className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
-                            active
-                              ? 'bg-slate-800 border-sky-400 text-white'
-                              : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between text-[11px] font-extrabold">
-                            <span style={{ color: g.accent }}>{g.fingers} {isEn ? 'Finger' : 'Ngón'}</span>
-                            {active && <span className="text-[9px] text-cyan-300">ACTIVE</span>}
-                          </div>
-                          <div className="text-[11px] font-bold mt-0.5 truncate">
-                            {isEn ? g.labelEn.split('·')[1] : g.labelVi.split('·')[1]}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            }}
+                            title={isEn ? g.actionEn : g.actionVi}
+                            className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
+                              active
+                                ? 'bg-slate-800 border-sky-400 text-white'
+                                : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-xs font-extrabold">
+                              <span style={{ color: g.accent }}>{g.fingers}</span>
+                              {active && <span className="text-[9px] text-cyan-300 font-mono">ACTIVE</span>}
+                            </div>
+                            <div className="text-[11px] font-bold mt-0.5 truncate">
+                              {isEn ? g.labelEn : g.labelVi}
+                            </div>
+                            <div className="text-[10px] text-slate-400 mt-0.5 line-clamp-2 leading-tight">
+                              {isEn ? g.actionEn : g.actionVi}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
+                      {GESTURE_DEFINITIONS.map((g) => {
+                        const active =
+                          (cameraActive && handFrame.detected ? handFrame.gesture : virtualGesture) === g.id;
+                        return (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => {
+                              setVirtualGesture(g.id);
+                              if (g.id === 'two_hand_10' && spaceMode === '3d') {
+                                setExplodeVal((prev) => (prev >= 0.3 ? 0.0 : 1.35));
+                              } else if (g.id === 'reassemble_4' && spaceMode === '3d') {
+                                smoothTargetRef.current.explode = 0;
+                                setExplodeVal(0);
+                                setIsolatedPartIdx(null);
+                                setHighlightedPartIdx(null);
+                                showToast(
+                                  isEn
+                                    ? '4 Fingers · Reassembled full 3D model!'
+                                    : '4 Ngón · Đã ghép mô hình về nguyên trạng!'
+                                );
+                              } else if (g.id === 'morph_3' && spaceMode === '2d') {
+                                canvas2DRef.current?.cycleSymmetry();
+                              } else if (g.id === 'slice_2' && spaceMode === '3d') {
+                                if (explodeVal >= 0.25 || isolatedPartIdx !== null) {
+                                  setIsolatedPartIdx((prev) =>
+                                    prev !== null ? null : highlightedPartIdx ?? 0
+                                  );
+                                } else {
+                                  setSliceEnabled(true);
+                                }
+                              } else if (g.id === 'fist_0') {
+                                setFrozen((v) => !v);
+                              }
+                            }}
+                            className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
+                              active
+                                ? 'bg-slate-800 border-sky-400 text-white'
+                                : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-[11px] font-extrabold">
+                              <span style={{ color: g.accent }}>{g.fingers} {isEn ? 'Finger' : 'Ngón'}</span>
+                              {active && <span className="text-[9px] text-cyan-300">ACTIVE</span>}
+                            </div>
+                            <div className="text-[11px] font-bold mt-0.5 truncate">
+                              {isEn ? g.labelEn.split('·')[1] : g.labelVi.split('·')[1]}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 items-center text-[11px]">
                     <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1.5 rounded-md border border-slate-800">
@@ -7113,7 +7533,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
                     <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
                       <label className="block font-bold text-slate-300">
-                        {isEn ? 'AI Camera Rate' : 'Tần số quét Camera AI'}
+                        {isEn ? 'AI Camera Rate & Res' : 'Cam AI (FPS · Phân giải)'}
                       </label>
                       <div className="grid grid-cols-3 gap-1">
                         {([12, 20, 30] as const).map((fps) => (
@@ -7127,7 +7547,29 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                                 : 'bg-slate-950 border-slate-700 text-slate-300'
                             }`}
                           >
-                            {fps} FPS
+                            {fps}F
+                          </button>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 pt-0.5">
+                        {(
+                          [
+                            { id: '320x240', label: '240p' },
+                            { id: '480x360', label: '360p' },
+                            { id: '640x480', label: '480p' }
+                          ] as const
+                        ).map((res) => (
+                          <button
+                            key={res.id}
+                            type="button"
+                            onClick={() => updateGestureSetting('cameraResolution', res.id)}
+                            className={`py-0.5 rounded text-[10px] font-mono font-bold border cursor-pointer ${
+                              (gestureSettings.cameraResolution || '480x360') === res.id
+                                ? 'bg-cyan-500 text-slate-950 border-cyan-300'
+                                : 'bg-slate-950 border-slate-700 text-slate-400'
+                            }`}
+                          >
+                            {res.label}
                           </button>
                         ))}
                       </div>
@@ -7135,30 +7577,61 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
                     <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
                       <label className="block font-bold text-slate-300">
-                        {isEn ? '3D Graphics Quality' : 'Chất lượng đồ họa 3D'}
+                        {isEn ? '3D Resolution & FPS Cap' : 'Độ phân giải & FPS 3D'}
                       </label>
-                      <div className="grid grid-cols-2 gap-1">
+                      <div className="grid grid-cols-3 gap-1">
+                        {(
+                          [
+                            { id: 'ultra_light', vi: 'Siêu nhẹ', en: 'Ultra', scale: 0.5, fps: 30 as const },
+                            { id: 'light', vi: 'Nhẹ', en: 'Smooth', scale: 0.85, fps: 60 as const },
+                            { id: 'high', vi: 'Nét', en: 'High', scale: 1.0, fps: 60 as const }
+                          ] as const
+                        ).map((q) => (
+                          <button
+                            key={q.id}
+                            type="button"
+                            onClick={() => {
+                              updateGestureSetting('graphicsQuality', q.id);
+                              updateGestureSetting('renderScale', q.scale);
+                              updateGestureSetting('targetFpsCap', q.fps);
+                            }}
+                            className={`py-1 rounded-md border font-bold cursor-pointer ${
+                              gestureSettings.graphicsQuality === q.id
+                                ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                                : 'bg-slate-950 border-slate-700 text-slate-300'
+                            }`}
+                          >
+                            {isEn ? q.en : q.vi}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1 pt-0.5">
+                        {([0.5, 0.65, 0.85, 1.0, 1.35] as const).map((sc) => (
+                          <button
+                            key={sc}
+                            type="button"
+                            onClick={() => updateGestureSetting('renderScale', sc)}
+                            className={`flex-1 py-0.5 rounded text-[10px] font-mono font-bold border cursor-pointer ${
+                              Math.abs((gestureSettings.renderScale || 0.85) - sc) < 0.05
+                                ? 'bg-sky-500 text-slate-950 border-sky-300'
+                                : 'bg-slate-950 border-slate-700 text-slate-400'
+                            }`}
+                          >
+                            {sc}x
+                          </button>
+                        ))}
                         <button
                           type="button"
-                          onClick={() => updateGestureSetting('graphicsQuality', 'light')}
-                          className={`py-1 rounded-md border font-bold cursor-pointer ${
-                            gestureSettings.graphicsQuality === 'light'
+                          onClick={() =>
+                            updateGestureSetting('targetFpsCap', gestureSettings.targetFpsCap === 30 ? 60 : 30)
+                          }
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border cursor-pointer ${
+                            gestureSettings.targetFpsCap === 30
                               ? 'bg-emerald-500 text-slate-950 border-emerald-300'
-                              : 'bg-slate-950 border-slate-700 text-slate-300'
+                              : 'bg-slate-950 border-slate-700 text-cyan-300'
                           }`}
                         >
-                          {isEn ? 'Smooth FPS' : 'Nhẹ (Mượt)'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateGestureSetting('graphicsQuality', 'high')}
-                          className={`py-1 rounded-md border font-bold cursor-pointer ${
-                            gestureSettings.graphicsQuality === 'high'
-                              ? 'bg-sky-500 text-slate-950 border-sky-300'
-                              : 'bg-slate-950 border-slate-700 text-slate-300'
-                          }`}
-                        >
-                          {isEn ? 'High Detail' : 'Sắc nét'}
+                          {gestureSettings.targetFpsCap || 60}F
                         </button>
                       </div>
                     </div>

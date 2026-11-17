@@ -447,6 +447,10 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
 
       const renderDynamicPreset = (now: number) => {
         animationFrameId = requestAnimationFrame(renderDynamicPreset);
+        if (document.hidden || pausedRef.current) {
+          lastTick = now;
+          return;
+        }
         if (targetMs > 0 && now - lastTick < targetMs) return;
         const dt = Math.min(48, now - lastTick) / 16.667;
         lastTick = now;

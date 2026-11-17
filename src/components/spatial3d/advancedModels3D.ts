@@ -20,6 +20,9 @@ export interface ExplodablePart {
   info: ExplodablePartInfo;
   detachTarget?: THREE.Vector3;
   detachOffset?: THREE.Vector3;
+  geomLocalCenter?: THREE.Vector3;
+  geomMaxDim?: number;
+  baseScale?: THREE.Vector3;
 }
 
 export interface DynamicModelRef {
@@ -1198,44 +1201,51 @@ export function updateAdvancedKinematics(
     }
   }
 
-  if (model.robotArm && !isolatedMode) {
-    // Live Inverse-Kinematics-inspired tracking toward hand cursor Oxyz (skipped during single-part isolation)
-    const targetWaist = Math.atan2(cursorTarget.x, Math.max(0.8, cursorTarget.z + 2.2));
-    const targetShoulder = THREE.MathUtils.clamp((1.8 - cursorTarget.y) * 0.34, -0.75, 0.75);
-    const targetElbow = THREE.MathUtils.clamp(-0.65 - (cursorTarget.y - 1.5) * 0.28, -1.5, -0.2);
+  if (model.robotArm) {
+    if (isolatedMode) {
+      // Straighten articulated arm joints cleanly when aligned in horizontal row or isolated 360 inspection
+      model.robotArm.waist.rotation.y = THREE.MathUtils.damp(model.robotArm.waist.rotation.y, 0, 12, dt);
+      model.robotArm.shoulder.rotation.z = THREE.MathUtils.damp(model.robotArm.shoulder.rotation.z, 0, 12, dt);
+      model.robotArm.elbow.rotation.z = THREE.MathUtils.damp(model.robotArm.elbow.rotation.z, 0, 12, dt);
+    } else {
+      // Live Inverse-Kinematics-inspired tracking toward hand cursor Oxyz
+      const targetWaist = Math.atan2(cursorTarget.x, Math.max(0.8, cursorTarget.z + 2.2));
+      const targetShoulder = THREE.MathUtils.clamp((1.8 - cursorTarget.y) * 0.34, -0.75, 0.75);
+      const targetElbow = THREE.MathUtils.clamp(-0.65 - (cursorTarget.y - 1.5) * 0.28, -1.5, -0.2);
 
-    model.robotArm.waist.rotation.y = THREE.MathUtils.damp(
-      model.robotArm.waist.rotation.y,
-      frozen ? model.robotArm.waist.rotation.y : targetWaist,
-      8,
-      dt
-    );
-    model.robotArm.shoulder.rotation.z = THREE.MathUtils.damp(
-      model.robotArm.shoulder.rotation.z,
-      frozen ? model.robotArm.shoulder.rotation.z : targetShoulder,
-      8,
-      dt
-    );
-    model.robotArm.elbow.rotation.z = THREE.MathUtils.damp(
-      model.robotArm.elbow.rotation.z,
-      frozen ? model.robotArm.elbow.rotation.z : targetElbow,
-      8,
-      dt
-    );
+      model.robotArm.waist.rotation.y = THREE.MathUtils.damp(
+        model.robotArm.waist.rotation.y,
+        frozen ? model.robotArm.waist.rotation.y : targetWaist,
+        8,
+        dt
+      );
+      model.robotArm.shoulder.rotation.z = THREE.MathUtils.damp(
+        model.robotArm.shoulder.rotation.z,
+        frozen ? model.robotArm.shoulder.rotation.z : targetShoulder,
+        8,
+        dt
+      );
+      model.robotArm.elbow.rotation.z = THREE.MathUtils.damp(
+        model.robotArm.elbow.rotation.z,
+        frozen ? model.robotArm.elbow.rotation.z : targetElbow,
+        8,
+        dt
+      );
 
-    const jawOpen = isPinching ? 0.055 : 0.16;
-    model.robotArm.jawLeft.position.x = THREE.MathUtils.damp(
-      model.robotArm.jawLeft.position.x,
-      -jawOpen,
-      14,
-      dt
-    );
-    model.robotArm.jawRight.position.x = THREE.MathUtils.damp(
-      model.robotArm.jawRight.position.x,
-      jawOpen,
-      14,
-      dt
-    );
+      const jawOpen = isPinching ? 0.055 : 0.16;
+      model.robotArm.jawLeft.position.x = THREE.MathUtils.damp(
+        model.robotArm.jawLeft.position.x,
+        -jawOpen,
+        14,
+        dt
+      );
+      model.robotArm.jawRight.position.x = THREE.MathUtils.damp(
+        model.robotArm.jawRight.position.x,
+        jawOpen,
+        14,
+        dt
+      );
+    }
   }
 
   if (model.supercar && !frozen) {

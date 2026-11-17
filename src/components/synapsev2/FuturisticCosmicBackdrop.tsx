@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
 
 interface StarNode {
   x: number;
@@ -31,6 +32,9 @@ interface WarpComet {
 
 export const FuturisticCosmicBackdrop: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { perfMode } = useBackgroundTheme();
+  const perfRef = useRef(perfMode);
+  perfRef.current = perfMode;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -42,14 +46,17 @@ export const FuturisticCosmicBackdrop: React.FC = () => {
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
+    const resolveMaxDpr = () =>
+      perfRef.current === 'smooth' ? 0.75 : perfRef.current === 'balanced' ? 1.0 : 1.5;
+
     let width = window.innerWidth;
     let height = window.innerHeight;
-    let dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+    let dpr = Math.min(window.devicePixelRatio || 1, resolveMaxDpr());
 
     const resize = () => {
       width = window.innerWidth;
       height = window.innerHeight;
-      dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+      dpr = Math.min(window.devicePixelRatio || 1, resolveMaxDpr());
       canvas.width = Math.max(1, Math.floor(width * dpr));
       canvas.height = Math.max(1, Math.floor(height * dpr));
       canvas.style.width = `${width}px`;
@@ -66,8 +73,9 @@ export const FuturisticCosmicBackdrop: React.FC = () => {
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('resize', resize);
 
-    // 1. Parallax Starfield
-    const starCount = 135;
+    // 1. Parallax Starfield (scaled by perfMode)
+    const isSmooth = perfMode === 'smooth';
+    const starCount = isSmooth ? 65 : perfMode === 'balanced' ? 95 : 135;
     const stars: StarNode[] = Array.from({ length: starCount }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
@@ -79,7 +87,7 @@ export const FuturisticCosmicBackdrop: React.FC = () => {
 
     // 2. Quantum Neural Constellation Nodes
     const nodePalette = ['#38bdf8', '#818cf8', '#22d3ee', '#c084fc', '#fbbf24'];
-    const nodeCount = 42;
+    const nodeCount = isSmooth ? 20 : perfMode === 'balanced' ? 30 : 42;
     const nodes: QuantumNode[] = Array.from({ length: nodeCount }, (_, idx) => ({
       x: Math.random() * width,
       y: Math.random() * height * 0.85,
@@ -95,9 +103,23 @@ export const FuturisticCosmicBackdrop: React.FC = () => {
 
     let rafId = 0;
     let lastTs = performance.now();
+    let lastDrawTs = 0;
     let elapsed = 0;
 
     const renderFrame = (now: number) => {
+      if (!prefersReducedMotion) {
+        rafId = requestAnimationFrame(renderFrame);
+      }
+      if (document.hidden) {
+        lastTs = now;
+        return;
+      }
+      const targetInterval = perfRef.current === 'smooth' ? 44 : perfRef.current === 'balanced' ? 28 : 0;
+      if (targetInterval > 0 && now - lastDrawTs < targetInterval) {
+        return;
+      }
+      lastDrawTs = now;
+
       const dt = Math.min(0.05, (now - lastTs) / 1000);
       lastTs = now;
       if (!prefersReducedMotion) {
@@ -335,9 +357,6 @@ export const FuturisticCosmicBackdrop: React.FC = () => {
         }
       }
 
-      if (!prefersReducedMotion) {
-        rafId = requestAnimationFrame(renderFrame);
-      }
     };
 
     rafId = requestAnimationFrame(renderFrame);
@@ -347,7 +366,7 @@ export const FuturisticCosmicBackdrop: React.FC = () => {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('resize', resize);
     };
-  }, []);
+  }, [perfMode]);
 
   return (
     <div
@@ -358,12 +377,16 @@ export const FuturisticCosmicBackdrop: React.FC = () => {
           'radial-gradient(ellipse 85% 55% at 50% 0%, rgba(14, 116, 144, 0.34) 0%, transparent 65%), radial-gradient(circle at 12% 35%, rgba(79, 70, 229, 0.30) 0%, transparent 50%), radial-gradient(circle at 88% 28%, rgba(168, 85, 247, 0.28) 0%, transparent 52%), linear-gradient(180deg, #06102d 0%, #091338 45%, #060d26 100%)'
       }}
     >
-      {/* Animated Floating Aurora Blobs */}
-      <div className="synapse-aurora-blob-a absolute -top-24 -left-24 w-[34rem] h-[34rem] rounded-full bg-cyan-500/20 blur-3xl" />
-      <div className="synapse-aurora-blob-b absolute top-1/4 -right-24 w-[36rem] h-[36rem] rounded-full bg-violet-600/20 blur-3xl" />
-      <div className="synapse-aurora-blob-c absolute -bottom-32 left-1/3 w-[38rem] h-[26rem] rounded-full bg-indigo-500/20 blur-3xl" />
+      {/* Animated Floating Aurora Blobs (skipped in Smooth mode for weak-PC zero lag) */}
+      {perfMode !== 'smooth' && (
+        <>
+          <div className="synapse-aurora-blob-a absolute -top-24 -left-24 w-[34rem] h-[34rem] rounded-full bg-cyan-500/20 blur-3xl" />
+          <div className="synapse-aurora-blob-b absolute top-1/4 -right-24 w-[36rem] h-[36rem] rounded-full bg-violet-600/20 blur-3xl" />
+          <div className="synapse-aurora-blob-c absolute -bottom-32 left-1/3 w-[38rem] h-[26rem] rounded-full bg-indigo-500/20 blur-3xl" />
+        </>
+      )}
 
-      {/* Live 60FPS Canvas Layer */}
+      {/* Live Canvas Layer */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
       {/* Subtle Horizon Scanline Sheen */}

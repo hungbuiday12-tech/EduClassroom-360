@@ -14,6 +14,7 @@ export type HandGestureId =
 export type HandControlMode = 'auto' | 'right_only' | 'left_only' | 'two_hands_split';
 export type PointerSource = 'index' | 'middle' | 'pinch_mid' | 'palm_center';
 export type GraphicsQuality = 'ultra_light' | 'light' | 'high';
+export type CameraResolutionId = '320x240' | '480x360' | '640x480';
 
 export type GestureAction3D =
   | 'draw_neon'
@@ -52,11 +53,13 @@ export interface GestureSettings {
   stabilityFrames: number; // 1 .. 8
   gestureHoldMs: number; // 0 .. 1000
   trackingFps: 12 | 15 | 20 | 30;
+  cameraResolution: CameraResolutionId;
+  targetFpsCap: 30 | 60;
   mirrorCamera: boolean;
   invertX: boolean;
   invertY: boolean;
   graphicsQuality: GraphicsQuality;
-  renderScale: number; // 0 = auto per graphicsQuality, or 0.55 | 0.7 | 0.85 | 1.0 | 1.5
+  renderScale: number; // 0 = auto per graphicsQuality, or 0.5 | 0.65 | 0.85 | 1.0 | 1.5
   gestureActions3D: Record<ActiveGestureKey, GestureAction3D>;
   gestureActions2D: Record<ActiveGestureKey, GestureAction2D>;
 }
@@ -67,18 +70,20 @@ export const DEFAULT_GESTURE_SETTINGS: GestureSettings = {
   sensitivityX: 1.2,
   sensitivityY: 1.15,
   rotationSensitivity: 2.35,
-  pinchSensitivity: 1.1,
+  pinchSensitivity: 1.15,
   fingerExtendSensitivity: 1.0,
-  smoothing: 0.44,
-  deadzone: 0.006,
+  smoothing: 0.4,
+  deadzone: 0.005,
   stabilityFrames: 2,
-  gestureHoldMs: 140,
+  gestureHoldMs: 120,
   trackingFps: 15,
+  cameraResolution: '480x360',
+  targetFpsCap: 60,
   mirrorCamera: true,
   invertX: false,
   invertY: false,
   graphicsQuality: 'light',
-  renderScale: 0,
+  renderScale: 0.85,
   gestureActions3D: {
     point_1: 'draw_neon',
     pinch: 'pinch_stamp_scale',
@@ -115,60 +120,66 @@ export const GESTURE_PRESETS: GesturePresetSpec[] = [
     id: 'potato_smooth',
     labelVi: 'Siêu nhẹ · Máy yếu',
     labelEn: 'Low-Spec Boost',
-    descVi: 'Giảm độ phân giải 0.65x, khóa 30 FPS, AI 12 FPS, tắt bóng đổ',
-    descEn: '0.65x render resolution, 30 FPS cap, 12 FPS AI, no shadows',
+    descVi: 'Độ phân giải 0.5x, khóa 30 FPS, Cam 240p @ 12 FPS — hết lag hoàn toàn',
+    descEn: '0.5x render resolution, 30 FPS cap, 240p Cam @ 12 FPS — zero lag',
     patch: {
-      sensitivityX: 1.15,
+      sensitivityX: 1.2,
       sensitivityY: 1.15,
-      pinchSensitivity: 1.15,
+      pinchSensitivity: 1.2,
       fingerExtendSensitivity: 1.05,
-      smoothing: 0.5,
-      deadzone: 0.008,
-      stabilityFrames: 2,
-      gestureHoldMs: 120,
+      smoothing: 0.42,
+      deadzone: 0.006,
+      stabilityFrames: 1,
+      gestureHoldMs: 90,
       trackingFps: 12,
+      cameraResolution: '320x240',
+      targetFpsCap: 30,
       graphicsQuality: 'ultra_light',
-      renderScale: 0.65
+      renderScale: 0.5
     }
   },
   {
     id: 'smooth_learn',
     labelVi: 'Mượt mà Cân bằng',
     labelEn: 'Balanced Smooth',
-    descVi: 'Độ phân giải 1.0x, chống rung chuẩn, 15 FPS camera AI',
-    descEn: '1.0x resolution, smooth anti-jitter, 15 FPS camera AI',
+    descVi: 'Độ phân giải 0.85x, Cam 360p @ 15 FPS, chống giật nhẹ nhàng',
+    descEn: '0.85x resolution, 360p Cam @ 15 FPS, smooth anti-jitter',
     patch: {
-      sensitivityX: 1.15,
+      sensitivityX: 1.2,
       sensitivityY: 1.15,
-      pinchSensitivity: 1.1,
+      pinchSensitivity: 1.15,
       fingerExtendSensitivity: 1.0,
-      smoothing: 0.5,
-      deadzone: 0.008,
+      smoothing: 0.42,
+      deadzone: 0.005,
       stabilityFrames: 2,
-      gestureHoldMs: 140,
+      gestureHoldMs: 120,
       trackingFps: 15,
+      cameraResolution: '480x360',
+      targetFpsCap: 60,
       graphicsQuality: 'light',
-      renderScale: 0
+      renderScale: 0.85
     }
   },
   {
     id: 'fast_creative',
     labelVi: 'Sắc nét · Nhạy cao',
     labelEn: 'Crisp & Fast',
-    descVi: 'Phản hồi tức thì, độ nét HD, camera AI 30 FPS',
-    descEn: 'Instant response, HD sharpness, 30 FPS camera AI',
+    descVi: 'Độ nét 1.0x HD, Cam 480p @ 30 FPS, phản hồi tức thì',
+    descEn: '1.0x HD sharpness, 480p Cam @ 30 FPS, instant response',
     patch: {
       sensitivityX: 1.35,
       sensitivityY: 1.35,
       pinchSensitivity: 1.2,
       fingerExtendSensitivity: 1.1,
-      smoothing: 0.3,
+      smoothing: 0.28,
       deadzone: 0.004,
-      stabilityFrames: 2,
-      gestureHoldMs: 90,
+      stabilityFrames: 1,
+      gestureHoldMs: 80,
       trackingFps: 30,
+      cameraResolution: '640x480',
+      targetFpsCap: 60,
       graphicsQuality: 'high',
-      renderScale: 0
+      renderScale: 1.0
     }
   }
 ];
@@ -270,6 +281,7 @@ export interface HandTrackingFrame {
   twoHandMovingCloser: boolean; // 2 hands moving from far apart closer together
   twoHandAngle: number; // angle between left & right hands (radians)
   swipeEvent: 'left' | 'right' | null; // edge-triggered horizontal swipe
+  thumbUp: boolean; // true when hand shows clean solo thumbs-up 👍 selection pose
   confidence: number; // 0..1
   tips: HandTipPoint[]; // up to 10 fingertip sensors locked to each fingertip
   skeletons: HandSkeletonData[]; // full 21-landmark skeletons for 3D Co-op rendering
@@ -288,47 +300,47 @@ export interface GestureMeta {
 export const REAL_GRAB_GESTURES: GestureMeta[] = [
   {
     id: 'palm_5',
-    fingers: '🖐️ Mở tay',
-    labelVi: 'Mở Tay · Nhắm Chọn Bộ Phận',
-    labelEn: 'Open Hand · Aim & Hover',
-    actionVi: 'Đưa tay rà lên bất kỳ chi tiết nào để sáng viền chọn đúng phần muốn tháo (mô hình đứng yên để ngắm chuẩn).',
-    actionEn: 'Hover open hand over any part to highlight it cleanly while the model holds steady.',
+    fingers: '🖐️',
+    labelVi: 'Mở Tay · Di Chuyển Ngắm',
+    labelEn: 'Open Hand · Move & Aim',
+    actionVi: 'Di chuyển bàn tay mở qua linh kiện trên hàng ngang (hoặc mô hình) để ngắm chuẩn mà không làm xoay loạn.',
+    actionEn: 'Glide your open hand over any component in the fixed horizontal row or model to aim steadily.',
     accent: '#22d3ee'
   },
   {
-    id: 'pinch',
-    fingers: '👌 Chụm',
-    labelVi: 'Chụm Cái–Trỏ · Cầm & Tháo Lắp',
-    labelEn: 'Pinch · Grab & Detach Part',
-    actionVi: 'Chụm ngón trỏ–cái để kéo tháo rời bộ phận ra ngoài; thả gần khớp cũ (<0.36m) tự hít khít lại.',
-    actionEn: 'Pinch thumb & index to pull any part off; release near its socket (<0.36m) to snap back.',
+    id: 'point_1',
+    fingers: '👍',
+    labelVi: '1 Ngón Cái · Chọn Linh Kiện',
+    labelEn: '1 Thumb Up · Select Part',
+    actionVi: 'Di tay tới linh kiện muốn xem rồi giơ 1 ngón cái 👍 để chọn cố định & đọc chi tiết cấu tạo, chức năng.',
+    actionEn: 'Move hand over a component and raise 1 thumb 👍 to select it and inspect its structure & function.',
     accent: '#f59e0b'
   },
   {
-    id: 'fist_0',
-    fingers: '✊ Nắm',
-    labelVi: 'Nắm Tay · Cầm Xoay Cả Khối',
-    labelEn: 'Fist · Hold & Rotate Model',
-    actionVi: 'Nắm chặt tay để cầm trọn mô hình, xoay 360° & nhấc di chuyển tự do; mở tay ra để đặt xuống.',
-    actionEn: 'Close fist to grip the entire model, turn 360° & carry; open hand to place down.',
-    accent: '#10b981'
-  },
-  {
     id: 'slice_2',
-    fingers: '✌️ 2 Ngón',
-    labelVi: '2 Ngón V · Tách Lớp / Lắp Khít',
-    labelEn: '2 Fingers · Explode / Snap All',
-    actionVi: 'Giơ 2 ngón chữ V để tách toàn bộ lớp ra quan sát, hoặc giơ lại 2 ngón để lắp khít tất cả về nguyên trạng.',
-    actionEn: 'Show 2 fingers (V-sign) to explode all layers, or show again to snap everything back together.',
+    fingers: '✌️',
+    labelVi: '2 Ngón V · Tách Hàng Ngang / Lắp',
+    labelEn: '2 Fingers · Horizontal Row / Snap',
+    actionVi: 'Giơ 2 ngón chữ V để xếp tất cả linh kiện thành 1 hàng ngang cố định; giơ lại 2 ngón để lắp khít về mô hình.',
+    actionEn: 'Show V-sign (2 fingers) to line up all parts in 1 fixed horizontal row; repeat to snap back.',
     accent: '#a855f7'
   },
   {
+    id: 'fist_0',
+    fingers: '✊',
+    labelVi: 'Nắm Đấm · Xoay Mô Hình (Khi Ghép)',
+    labelEn: 'Fist · Rotate Model (Assembled)',
+    actionVi: 'Khi mô hình đang ghép nguyên khối, nắm tay để xoay 360°; khi đã tách hàng ngang, vị trí linh kiện luôn cố định.',
+    actionEn: 'When assembled, close fist to rotate 360°; while separated in a row, all parts stay locked in place.',
+    accent: '#10b981'
+  },
+  {
     id: 'two_hand_10',
-    fingers: '👐 2 Tay',
-    labelVi: '2 Bàn Tay · Phóng To / Thu Nhỏ',
+    fingers: '👐',
+    labelVi: '2 Tay · Phóng To / Thu Nhỏ',
     labelEn: '2 Hands · Zoom In / Out',
-    actionVi: 'Đưa 2 bàn tay tách xa nhau để phóng to; khép 2 bàn tay lại gần để thu nhỏ mô hình.',
-    actionEn: 'Spread two hands apart to zoom in; bring both hands closer to zoom out.',
+    actionVi: 'Tách 2 bàn tay ra xa để Phóng To · Khép 2 bàn tay lại gần để Thu Nhỏ mượt mà.',
+    actionEn: 'Spread both hands apart to Zoom In · Bring them closer to Zoom Out smoothly.',
     accent: '#38bdf8'
   }
 ];
@@ -455,6 +467,7 @@ function isFingerExtended(
 
 export interface TrackerProcessOptions {
   mirror: boolean;
+  minimalControlMode?: boolean;
   sensitivity?: number;
   sensitivityX?: number;
   sensitivityY?: number;
@@ -808,44 +821,92 @@ export class HandGestureTracker {
     let twoHandSpan = 0.45;
     let twoHandAngle = this.smoothTwoHandAngle;
     const anyPinch = hand1Pinching || hand2Pinching;
+    const minimalControl = options.minimalControlMode ?? false;
+    let isThumbUpPose = false;
 
     if (indexedHands.length === 2) {
       if (h1IndexTip && h2IndexTip) {
         twoHandSpan = Math.hypot(h1IndexTip.x - h2IndexTip.x, h1IndexTip.y - h2IndexTip.y);
         twoHandAngle = Math.atan2(h2IndexTip.y - h1IndexTip.y, h2IndexTip.x - h1IndexTip.x);
       }
-      if (totalExtended === 0) {
+      if (totalExtended === 0 && !anyPinch) {
         rawGesture = 'fist_0';
       } else if (hand1Pinching && hand2Pinching) {
         rawGesture = 'pinch';
-      } else if (handMode === 'two_hands_split') {
+      } else if (handMode === 'two_hands_split' && !minimalControl) {
         // In split mode, allow single-hand sub-gestures or two_hand_10 when wide open
         rawGesture = totalExtended >= 7 ? 'two_hand_10' : hand1Pinching || hand2Pinching ? 'pinch' : 'point_1';
-      } else if (totalExtended >= 6) {
-        rawGesture = 'two_hand_10';
       } else {
         rawGesture = 'two_hand_10';
       }
     } else {
+      const thumbExt = tips[0]?.extended ?? false;
       const indexExt = tips[1]?.extended ?? false;
       const middleExt = tips[2]?.extended ?? false;
       const ringExt = tips[3]?.extended ?? false;
       const pinkyExt = tips[4]?.extended ?? false;
 
-      if (totalExtended === 0 && !anyPinch) {
-        rawGesture = 'fist_0';
-      } else if (anyPinch && !middleExt && !ringExt && !pinkyExt) {
-        rawGesture = 'pinch';
-      } else if (totalExtended === 1 || (indexExt && !middleExt && !ringExt && !pinkyExt)) {
-        rawGesture = 'point_1';
-      } else if (totalExtended === 2) {
-        rawGesture = anyPinch ? 'pinch' : 'slice_2';
-      } else if (totalExtended === 3) {
-        rawGesture = 'morph_3';
-      } else if (totalExtended === 4 || (indexExt && middleExt && ringExt && pinkyExt && !tips[0]?.extended)) {
-        rawGesture = 'reassemble_4';
+      // Robust solo 1-Thumb-Up 👍 detector: 4 fingers curled + thumb extended cleanly away from knuckles
+      const h0Lms = indexedHands[0].lmList;
+      if (h0Lms[0] && h0Lms[2] && h0Lms[3] && h0Lms[4] && h0Lms[5] && h0Lms[9] && h0Lms[10]) {
+        const scaleRef = Math.max(0.08, dist2D(h0Lms[0], h0Lms[9]));
+        const thumbOutIndex = dist2D(h0Lms[4], h0Lms[5]) / scaleRef;
+        const thumbOutMid = dist2D(h0Lms[4], h0Lms[10]) / scaleRef;
+        const thumbStraight = dist2D(h0Lms[4], h0Lms[2]) > dist2D(h0Lms[3], h0Lms[2]) * 1.12;
+        isThumbUpPose =
+          !hand1Pinching &&
+          !indexExt &&
+          !middleExt &&
+          !ringExt &&
+          !pinkyExt &&
+          thumbExt &&
+          thumbStraight &&
+          thumbOutIndex > 0.5 &&
+          thumbOutMid > 0.46;
+      }
+
+      if (minimalControl) {
+        // Crystal-clear minimal 3D poses:
+        // 👍 1 Thumb Up (select part), ✊ Fist (rotate when assembled), ✌️ 2 Fingers (toggle horizontal row), 🖐️ Open Hand (aim cleanly)
+        if (isThumbUpPose) {
+          rawGesture = 'point_1';
+        } else if (!indexExt && !middleExt && !ringExt && !pinkyExt && !anyPinch) {
+          rawGesture = 'fist_0';
+        } else if (anyPinch && !middleExt && !ringExt && !pinkyExt) {
+          rawGesture = 'pinch';
+        } else if (indexExt && middleExt && !ringExt && !pinkyExt && !anyPinch) {
+          rawGesture = 'slice_2';
+        } else if (
+          totalExtended >= 4 ||
+          (indexExt && middleExt && ringExt && pinkyExt)
+        ) {
+          rawGesture = 'palm_5';
+        } else {
+          // Transitional 1- or 3-finger pose between open hand and fist: keep current aim/hold state steady
+          rawGesture =
+            this.stableGesture === 'fist_0' ||
+            this.stableGesture === 'pinch' ||
+            this.stableGesture === 'palm_5' ||
+            this.stableGesture === 'point_1'
+              ? this.stableGesture
+              : 'palm_5';
+        }
       } else {
-        rawGesture = 'palm_5';
+        if (totalExtended === 0 && !anyPinch) {
+          rawGesture = 'fist_0';
+        } else if (anyPinch && !middleExt && !ringExt && !pinkyExt) {
+          rawGesture = 'pinch';
+        } else if (totalExtended === 1 || (indexExt && !middleExt && !ringExt && !pinkyExt) || isThumbUpPose) {
+          rawGesture = 'point_1';
+        } else if (totalExtended === 2) {
+          rawGesture = anyPinch ? 'pinch' : 'slice_2';
+        } else if (totalExtended === 3) {
+          rawGesture = 'morph_3';
+        } else if (totalExtended === 4 || (indexExt && middleExt && ringExt && pinkyExt && !thumbExt)) {
+          rawGesture = 'reassemble_4';
+        } else {
+          rawGesture = 'palm_5';
+        }
       }
     }
 
@@ -860,8 +921,25 @@ export class HandGestureTracker {
     const holdElapsedMs = Math.max(0, nowMs - this.candidateSinceMs);
     const isDirectGrabState =
       rawGesture === 'fist_0' || rawGesture === 'palm_5' || rawGesture === 'pinch' || rawGesture === 'two_hand_10';
-    const effectiveHoldMs = isDirectGrabState ? Math.min(gestureHoldMs, 100) : Math.max(gestureHoldMs, 240);
-    const effectiveStability = isDirectGrabState ? Math.min(stabilityFrames, 2) : stabilityFrames;
+    const isMinimalThumbSelect = minimalControl && rawGesture === 'point_1';
+    const effectiveHoldMs = minimalControl
+      ? isDirectGrabState
+        ? Math.min(gestureHoldMs, 45)
+        : isMinimalThumbSelect
+        ? Math.min(gestureHoldMs, 85)
+        : Math.max(gestureHoldMs, 220)
+      : isDirectGrabState
+      ? Math.min(gestureHoldMs, 90)
+      : Math.max(gestureHoldMs, 240);
+    const effectiveStability = minimalControl
+      ? isDirectGrabState
+        ? 1
+        : isMinimalThumbSelect
+        ? 2
+        : Math.max(2, stabilityFrames)
+      : isDirectGrabState
+      ? Math.min(stabilityFrames, 2)
+      : stabilityFrames;
     const timeSettled = holdElapsedMs >= effectiveHoldMs;
     const gestureHoldProgress =
       this.stableGesture === rawGesture
@@ -884,6 +962,10 @@ export class HandGestureTracker {
         targetCursorX = (h1.x + h2.x) * 0.5;
         targetCursorY = (h1.y + h2.y) * 0.5;
       }
+    } else if (minimalControl && palmCenterH1) {
+      // Keep aim cursor anchored on palm center so curling fingers into 👍 1-Thumb never jerks aim off-target!
+      targetCursorX = palmCenterH1.x;
+      targetCursorY = clamp01(palmCenterH1.y - 0.035);
     } else if (pointerSource === 'middle' && h1MiddleTip) {
       targetCursorX = h1MiddleTip.x;
       targetCursorY = h1MiddleTip.y;
@@ -1012,6 +1094,7 @@ export class HandGestureTracker {
       twoHandMovingCloser,
       twoHandAngle: this.smoothTwoHandAngle,
       swipeEvent,
+      thumbUp: minimalControl ? this.stableGesture === 'point_1' : isThumbUpPose,
       confidence: Math.min(0.99, confSum / indexedHands.length),
       tips,
       skeletons
@@ -1105,6 +1188,7 @@ export class HandGestureTracker {
       twoHandMovingCloser: false,
       twoHandAngle: this.smoothTwoHandAngle,
       swipeEvent: null,
+      thumbUp: false,
       confidence: 0,
       tips: [],
       skeletons: []

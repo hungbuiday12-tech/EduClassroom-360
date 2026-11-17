@@ -1843,7 +1843,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
               className="px-3 py-1.5 rounded-xl border border-cyan-500/35 bg-[#020710] text-xs font-bold text-emerald-100 focus:border-emerald-400 focus:outline-none max-w-[260px] cursor-pointer"
             >
               {ALGO_CATALOG.map((a) => (
-                <option key={a.id} value={a.id}>
+                <option key={a.id} value={a.id} className="bg-[#020710] text-emerald-100">
                   {a.titleVi}
                 </option>
               ))}
@@ -1887,11 +1887,22 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
               }}
             />
 
+            {/* Binary / Hex Micro-stream along left edge matching Cyber HUD */}
+            <div
+              aria-hidden="true"
+              className="algo-data-stream pointer-events-none absolute right-5 top-4 font-mono text-[9px] leading-3 text-emerald-400/40 select-none text-right hidden sm:block"
+            >
+              <div>0101</div>
+              <div>1011</div>
+              <div>0xAF</div>
+              <div>1100</div>
+            </div>
+
             {/* Crisp Corner HUD Reticles */}
-            <span className="pointer-events-none absolute top-2.5 left-2.5 w-3.5 h-3.5 border-t-2 border-l-2 border-emerald-400/70 rounded-tl-xs" />
-            <span className="pointer-events-none absolute top-2.5 right-2.5 w-3.5 h-3.5 border-t-2 border-r-2 border-cyan-400/70 rounded-tr-xs" />
-            <span className="pointer-events-none absolute bottom-2.5 left-2.5 w-3.5 h-3.5 border-b-2 border-l-2 border-cyan-400/60 rounded-bl-xs" />
-            <span className="pointer-events-none absolute bottom-2.5 right-2.5 w-3.5 h-3.5 border-b-2 border-r-2 border-emerald-400/60 rounded-br-xs" />
+            <span className="pointer-events-none absolute top-2.5 left-2.5 w-3.5 h-3.5 border-t-2 border-l-2 border-emerald-400/75 rounded-tl-xs" />
+            <span className="pointer-events-none absolute top-2.5 right-2.5 w-3.5 h-3.5 border-t-2 border-r-2 border-cyan-400/75 rounded-tr-xs" />
+            <span className="pointer-events-none absolute bottom-2.5 left-2.5 w-3.5 h-3.5 border-b-2 border-l-2 border-cyan-400/65 rounded-bl-xs" />
+            <span className="pointer-events-none absolute bottom-2.5 right-2.5 w-3.5 h-3.5 border-b-2 border-r-2 border-emerald-400/65 rounded-br-xs" />
 
             <div className="relative z-10">{renderVisualStage()}</div>
 

@@ -15,6 +15,15 @@ interface ArrayStringVisualizerProps {
   step: VizStep;
 }
 
+const HudCornerReticles: React.FC = () => (
+  <>
+    <span className="pointer-events-none absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t-2 border-l-2 border-emerald-400/70 rounded-tl-xs z-10" />
+    <span className="pointer-events-none absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t-2 border-r-2 border-cyan-400/70 rounded-tr-xs z-10" />
+    <span className="pointer-events-none absolute bottom-1.5 left-1.5 w-2.5 h-2.5 border-b-2 border-l-2 border-cyan-400/55 rounded-bl-xs z-10" />
+    <span className="pointer-events-none absolute bottom-1.5 right-1.5 w-2.5 h-2.5 border-b-2 border-r-2 border-emerald-400/55 rounded-br-xs z-10" />
+  </>
+);
+
 export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ algoId, step }) => {
   const st = step.state || {};
 
@@ -43,8 +52,9 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
               {phase === 'pi' ? 'Đang tính π[i]' : 'Đã hoàn tất π'}
             </span>
           </div>
-          <div className="overflow-x-auto pb-1">
-            <div className="inline-flex gap-1.5 min-w-max p-2.5 rounded-xl border border-emerald-500/25 bg-[#040b18]">
+          <div className="relative overflow-x-auto pb-1">
+            <div className="relative inline-flex gap-1.5 min-w-max p-3 rounded-xl border border-emerald-500/30 algo-stage-grid shadow-[inset_0_0_28px_rgba(16,185,129,0.08)]">
+              <HudCornerReticles />
               {P.split('').map((ch, idx) => {
                 const isActive = phase === 'pi' && (idx === i || idx === j);
                 return (
@@ -85,8 +95,9 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
             </span>
           </div>
 
-          <div className="overflow-x-auto pb-2 rounded-xl border border-cyan-500/25 bg-[#040b18] p-3">
-            <div className="inline-block min-w-max space-y-2">
+          <div className="relative overflow-x-auto pb-2 rounded-xl border border-cyan-500/30 algo-stage-grid p-3.5 shadow-[inset_0_0_28px_rgba(6,182,212,0.08)]">
+            <HudCornerReticles />
+            <div className="relative z-10 inline-block min-w-max space-y-2">
               {/* Text T row */}
               <div className="flex items-center gap-1">
                 <span className="w-7 text-[11px] font-mono font-bold text-cyan-300 shrink-0">T:</span>
@@ -170,8 +181,9 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-purple-500/25 bg-[#040b18] p-4">
-          <div className="inline-flex gap-1.5 min-w-max">
+        <div className="relative overflow-x-auto rounded-xl border border-purple-500/30 algo-stage-grid p-4 shadow-[inset_0_0_28px_rgba(168,85,247,0.08)]">
+          <HudCornerReticles />
+          <div className="relative z-10 inline-flex gap-1.5 min-w-max">
             {S.split('').map((ch, idx) => {
               const isPointer = idx === l || idx === r;
               const inWindow = idx >= l && idx <= r;
@@ -230,7 +242,8 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
 
         {/* Bar chart supporting negative & positive values */}
         <div className="overflow-x-auto pb-2">
-          <div className="inline-flex items-center gap-1.5 min-w-max h-48 px-3 bg-[#040b18] rounded-xl border border-amber-500/25 shadow-[inset_0_0_32px_rgba(245,158,11,0.06)]">
+          <div className="relative inline-flex items-center gap-1.5 min-w-max h-48 px-3.5 algo-stage-grid rounded-xl border border-amber-500/30 shadow-[inset_0_0_32px_rgba(245,158,11,0.08)]">
+            <HudCornerReticles />
             {arr.map((v, idx) => {
               const pct = Math.max(12, Math.round((Math.abs(v) / maxAbs) * 70));
               const inBest = st.bestR >= st.bestL && idx >= st.bestL && idx <= st.bestR;
@@ -359,7 +372,8 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
         </div>
 
         <div className="overflow-x-auto pb-2">
-          <div className="inline-flex items-end gap-2 min-w-max h-48 pt-6 px-3.5 bg-[#040b18] rounded-xl border border-cyan-500/25">
+          <div className="relative inline-flex items-end gap-2 min-w-max h-48 pt-6 px-4 algo-stage-grid rounded-xl border border-cyan-500/30 shadow-[inset_0_0_30px_rgba(34,211,238,0.08)]">
+            <HudCornerReticles />
             {arr.map((v, idx) => {
               const inWindow = R >= L && idx >= L && idx <= R;
               const inBest = st.bestR >= st.bestL && st.bestL >= 0 && idx >= st.bestL && idx <= st.bestR;
@@ -407,7 +421,8 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className={mode === 'monostack' ? 'lg:col-span-8' : 'lg:col-span-12'}>
             <div className="overflow-x-auto pb-2">
-              <div className="inline-flex items-end gap-1.5 min-w-max h-52 pt-6 px-3.5 bg-[#040b18] rounded-xl border border-rose-500/25">
+              <div className="relative inline-flex items-end gap-1.5 min-w-max h-52 pt-6 px-4 algo-stage-grid rounded-xl border border-rose-500/30 shadow-[inset_0_0_30px_rgba(244,63,94,0.08)]">
+                <HudCornerReticles />
                 {arr.map((v, idx) => {
                   const hPct = Math.max(14, Math.round((Math.abs(v) / maxVal) * 78));
                   const isCurr = idx === st.idx || idx === st.jPtr;
@@ -442,7 +457,8 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
           </div>
 
           {mode === 'monostack' && (
-            <div className="lg:col-span-4 bg-[#040b18] rounded-xl border border-cyan-500/25 p-3 flex flex-col justify-between">
+            <div className="relative lg:col-span-4 algo-stage-grid rounded-xl border border-cyan-500/30 p-3.5 flex flex-col justify-between shadow-[inset_0_0_26px_rgba(6,182,212,0.08)]">
+              <HudCornerReticles />
               <div className="text-xs font-mono font-bold text-cyan-200 mb-2">
                 MONOTONIC STACK (TOP ↑)
               </div>
@@ -499,8 +515,9 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
           <div className="font-mono text-xs text-lime-200">
             LOWER_BOUND({st.target}) — phần tử đầu tiên ≥ {st.target}
           </div>
-          <div className="overflow-x-auto pb-2 rounded-xl border border-lime-500/25 bg-[#040b18] p-3.5">
-            <div className="inline-flex gap-1.5 min-w-max pt-3">
+          <div className="relative overflow-x-auto pb-2 rounded-xl border border-lime-500/30 algo-stage-grid p-4 shadow-[inset_0_0_28px_rgba(132,204,22,0.08)]">
+            <HudCornerReticles />
+            <div className="relative z-10 inline-flex gap-1.5 min-w-max pt-3">
               {arr.map((v, idx) => {
                 const inRange = idx >= st.lo && idx <= st.hi;
                 const isMid = idx === st.mid;
@@ -566,12 +583,18 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
           </span>
         </div>
 
-        <div className="relative rounded-xl border border-lime-500/30 bg-[#040b18] overflow-hidden">
+        <div className="relative rounded-xl border border-lime-500/35 bg-[#040b18] overflow-hidden shadow-[inset_0_0_34px_rgba(132,204,22,0.09)]">
+          <HudCornerReticles />
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto max-h-[260px]">
             <defs>
               <pattern id="bs-grid" width="24" height="24" patternUnits="userSpaceOnUse">
                 <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#0d223f" strokeWidth="0.9" />
+                <circle cx="12" cy="12" r="0.8" fill="#1e4976" />
               </pattern>
+              <radialGradient id="bs-center-aura" cx="50%" cy="50%" r="55%">
+                <stop offset="0%" stopColor="#84cc16" stopOpacity="0.14" />
+                <stop offset="100%" stopColor="#040b18" stopOpacity="0" />
+              </radialGradient>
               <filter id="bs-glow" x="-30%" y="-30%" width="160%" height="160%">
                 <feGaussianBlur stdDeviation="2.5" result="blur" />
                 <feMerge>
@@ -583,6 +606,14 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
 
             <rect width={W} height={H} fill="#040b18" />
             <rect width={W} height={H} fill="url(#bs-grid)" />
+            <rect width={W} height={H} fill="url(#bs-center-aura)" />
+
+            {/* Corner Binary Stream */}
+            <g className="algo-data-stream font-mono text-[9px] fill-emerald-400/45 select-none pointer-events-none">
+              <text x={12} y={24}>0101</text>
+              <text x={12} y={35}>1011</text>
+              <text x={12} y={46}>0xAF</text>
+            </g>
 
             {/* Active search range [lo, hi] band */}
             {typeof st.lo === 'number' && typeof st.hi === 'number' && st.lo <= st.hi && (
@@ -607,7 +638,7 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
               y2={py(K)}
               stroke="#34d399"
               strokeWidth={1.6}
-              strokeDasharray="5 4"
+              className="holo-dash"
             />
             <text x={W - PAD} y={py(K) - 5} textAnchor="end" className="fill-emerald-400 text-[10px] font-bold font-mono">
               Giới hạn K = {K}
@@ -627,6 +658,19 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
             {/* Tested points */}
             {tested.map((tp, idx) => (
               <g key={idx}>
+                {tp.mid === st.mid && (
+                  <circle
+                    cx={px(tp.mid)}
+                    cy={py(tp.segs)}
+                    r={11}
+                    fill={tp.ok ? '#34d399' : '#fb7185'}
+                    fillOpacity={0.18}
+                    stroke={tp.ok ? '#34d399' : '#fb7185'}
+                    strokeOpacity={0.55}
+                    strokeWidth={1.3}
+                    className="algo-node-pulse"
+                  />
+                )}
                 <circle
                   cx={px(tp.mid)}
                   cy={py(tp.segs)}
@@ -693,7 +737,8 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
           <div className="text-xs font-mono font-semibold text-purple-200 tabular-nums">
             MODULAR_EXP · {st.origA}^{st.origB} mod {st.m} · Duyệt LSB → MSB
           </div>
-          <div className="flex flex-wrap gap-2 p-3.5 rounded-xl border border-purple-500/25 bg-[#040b18]">
+          <div className="relative flex flex-wrap gap-2 p-4 rounded-xl border border-purple-500/30 algo-stage-grid shadow-[inset_0_0_28px_rgba(168,85,247,0.08)]">
+            <HudCornerReticles />
             {bits.map((bit, idx) => (
               <div
                 key={idx}
@@ -731,7 +776,8 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
             <span className="text-rose-400">■ Hợp số (gạch)</span>
           </div>
         </div>
-        <div className="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-10 gap-1.5 p-3 rounded-xl border border-purple-500/25 bg-[#040b18]">
+        <div className="relative grid grid-cols-6 sm:grid-cols-9 md:grid-cols-10 gap-1.5 p-3.5 rounded-xl border border-purple-500/30 algo-stage-grid shadow-[inset_0_0_28px_rgba(192,132,252,0.08)]">
+          <HudCornerReticles />
           {Array.from({ length: N - 1 }, (_, k) => k + 2).map((num) => {
             const s = status[num] || 'unmarked';
             const isP = num === st.p;
@@ -798,12 +844,18 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
           </div>
         </div>
 
-        <div className="relative rounded-xl border border-emerald-500/30 bg-[#040b18] overflow-x-auto">
+        <div className="relative rounded-xl border border-emerald-500/35 bg-[#040b18] overflow-x-auto shadow-[inset_0_0_32px_rgba(16,185,129,0.08)]">
+          <HudCornerReticles />
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[560px] h-auto max-h-[340px]">
             <defs>
               <pattern id="segtree-grid" width="24" height="24" patternUnits="userSpaceOnUse">
                 <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#0d223f" strokeWidth="0.9" />
+                <circle cx="12" cy="12" r="0.8" fill="#1e4976" />
               </pattern>
+              <radialGradient id="segtree-aura" cx="50%" cy="48%" r="55%">
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.14" />
+                <stop offset="100%" stopColor="#040b18" stopOpacity="0" />
+              </radialGradient>
               <filter id="segtree-glow" x="-30%" y="-30%" width="160%" height="160%">
                 <feGaussianBlur stdDeviation="2.4" result="blur" />
                 <feMerge>
@@ -815,6 +867,15 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
 
             <rect width={W} height={H} fill="#040b18" />
             <rect width={W} height={H} fill="url(#segtree-grid)" />
+            <rect width={W} height={H} fill="url(#segtree-aura)" />
+
+            {/* Corner Binary Telemetry */}
+            <g className="algo-data-stream font-mono text-[9.5px] fill-emerald-400/45 select-none pointer-events-none">
+              <text x={14} y={28}>0101</text>
+              <text x={14} y={40}>1011</text>
+              <text x={14} y={52}>0xAF</text>
+              <text x={14} y={64}>1100</text>
+            </g>
 
             {/* Edges */}
             {nodeList.map((nd) => {
@@ -837,8 +898,10 @@ export const ArrayStringVisualizer: React.FC<ArrayStringVisualizerProps> = ({ al
                       ? '#fbbf24'
                       : '#1e3a5f'
                   }
-                  strokeOpacity={isLit ? 0.85 : 0.7}
-                  strokeWidth={isLit ? 2 : 1.4}
+                  strokeOpacity={isLit ? 0.9 : 0.7}
+                  strokeWidth={isLit ? 2.2 : 1.4}
+                  className={isLit ? 'holo-dash' : undefined}
+                  filter={isLit ? 'url(#segtree-glow)' : undefined}
                 />
               );
             })}

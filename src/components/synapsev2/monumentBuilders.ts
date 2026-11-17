@@ -794,8 +794,8 @@ function buildTokamakMonument(isSoftwareGl: boolean): BuiltMonument {
     metalness: 0.25,
     roughness: 0.15,
     transparent: true,
-    opacity: 0.22,
-    transmission: 0.35
+    opacity: isSoftwareGl ? 0.16 : 0.22,
+    transmission: isSoftwareGl ? 0 : 0.35
   });
   const vacuumVessel = new THREE.Mesh(vesselGeo, vesselMat);
   vacuumVessel.rotation.x = Math.PI / 2;
@@ -987,9 +987,9 @@ function buildTesseractMonument(isSoftwareGl: boolean): BuiltMonument {
     color: 0xc084fc,
     metalness: 0.15,
     roughness: 0.12,
-    transmission: 0.55,
+    transmission: isSoftwareGl ? 0 : 0.55,
     transparent: true,
-    opacity: 0.78
+    opacity: isSoftwareGl ? 0.52 : 0.78
   });
   const pillars = new THREE.InstancedMesh(pillarGeo, pillarMat, pillarCount);
   for (let i = 0; i < pillarCount; i++) {

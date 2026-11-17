@@ -1549,7 +1549,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     );
     if (extraTick) {
       sceneTickRef.current = extraTick;
-      sceneTickRef.current(0);
+      extraTick(0);
       return () => {
         sceneTickRef.current = null;
       };

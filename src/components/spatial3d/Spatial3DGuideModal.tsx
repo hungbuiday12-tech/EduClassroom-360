@@ -12,7 +12,7 @@ import {
   Sparkles,
   X
 } from 'lucide-react';
-import { GESTURE_DEFINITIONS } from './handGestureTracker';
+import { GESTURE_DEFINITIONS, REAL_GRAB_GESTURES } from './handGestureTracker';
 
 interface Spatial3DGuideModalProps {
   isOpen: boolean;
@@ -40,43 +40,43 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
   const steps3D = [
     {
       step: '01',
-      title: isEn ? 'Explode Structure (2 Hands L ↔ R)' : 'Tách Cấu Trúc (2 Tay Kéo Ngang Ngược Nhau)',
+      title: isEn ? '2 Fingers V · Line Up 1 Fixed Horizontal Row (✌️)' : '2 Ngón Chữ V · Tách Xếp 1 Hàng Ngang Cố Định (✌️)',
       desc: isEn
-        ? 'Pull your left hand left and right hand right smoothly to separate every 3D component outward in space.'
-        : 'Kéo 2 bàn tay ra trái và phải ngược chiều nhau để tách xa từng bộ phận của mô hình ra không gian.',
-      accent: 'text-sky-300 border-sky-500/45 bg-sky-500/10'
-    },
-    {
-      step: '02',
-      title: isEn ? 'Select Part (2 Fingers · Hold 0.5s)' : 'Chọn Bộ Phận (Giơ 2 Ngón · Đợi 0.5s)',
-      desc: isEn
-        ? 'Raise 2 fingers and hold steady for 0.5s (or click any exploded part) to isolate it with its Introduction & Function card.'
-        : 'Giơ 2 ngón tay giữ yên 0.5 giây (hoặc bấm trực tiếp vào khối) để tách riêng bộ phận và đọc Giới thiệu & Chức năng.',
+        ? 'Show a clear V-sign (2 fingers) to line all components up in a single fixed, immovable horizontal row (no purple plane, no spinning). Show ✌️ again to reassemble!'
+        : 'Giơ 2 ngón chữ V để xếp toàn bộ linh kiện thành 1 hàng ngang thẳng hàng và khóa cố định vị trí (không còn mặt cắt tím, không xoay loạn). Giơ ✌️ lại để lắp về nguyên bản!',
       accent: 'text-purple-300 border-purple-500/45 bg-purple-500/10'
     },
     {
-      step: '03',
-      title: isEn ? 'Switch Parts (Swipe Left / Right)' : 'Chuyển Bộ Phận Tiếp / Cũ (Vuốt Trái / Phải)',
+      step: '02',
+      title: isEn ? 'Open Hand · Move Along Row to Aim (🖐️)' : 'Mở Tay · Di Tay Ngang Qua Linh Kiện (🖐️)',
       desc: isEn
-        ? 'Swipe your hand horizontally left or right to jump cleanly between the previous or next isolated component.'
-        : 'Vuốt nhẹ bàn tay sang trái hoặc sang phải để chuyển nhanh qua bộ phận tiếp theo hoặc quay lại bộ phận cũ.',
-      accent: 'text-emerald-300 border-emerald-500/45 bg-emerald-500/10'
-    },
-    {
-      step: '04',
-      title: isEn ? 'Zoom & High-Speed 360° Orbit' : 'Xoay Nhạy Cao 360° · Phóng To · Thu Nhỏ',
-      desc: isEn
-        ? '5 fingers: high-sensitivity 360° spin · Pull 1 hand upward: Zoom In · Bring 2 hands closer together: Zoom Out.'
-        : 'Mở 5 ngón: xoay 360° cực nhạy · Kéo 1 tay lên trên: Phóng to · Đưa 2 tay từ xa lại gần: Thu nhỏ mô hình hoặc bộ phận.',
+        ? 'Slide your open hand left or right across the horizontal row — each component lights up steadily while every part stays locked in place.'
+        : 'Di chuyển bàn tay mở qua trái hoặc phải dọc theo hàng ngang — khung sáng tự bắt đúng linh kiện bạn đang trỏ tới mà không làm xê dịch vị trí.',
       accent: 'text-cyan-300 border-cyan-500/45 bg-cyan-500/10'
     },
     {
-      step: '05',
-      title: isEn ? 'Reassemble Full Model (4 Fingers · Hold 0.5s)' : 'Ghép Về Nguyên Trạng (Giơ 4 Ngón · Đợi 0.5s)',
+      step: '03',
+      title: isEn ? '1 Thumb Up · Select Component Calmly (👍)' : 'Giơ 1 Ngón Cái · Chọn & Đọc Thông Tin (👍)',
       desc: isEn
-        ? 'After exploding or inspecting parts, raise 4 fingers and hold 0.5s to smoothly merge every piece back together.'
-        : 'Sau khi đã tách bộ phận hoặc đang xem riêng từng phần, giơ 4 ngón tay và đợi 0.5 giây để ghép toàn bộ mô hình về lại!',
-      accent: 'text-orange-300 border-orange-500/55 bg-orange-500/15'
+        ? 'Keep your hand steady over a component and raise 1 Thumb (👍) to select it, highlight it, and open its Structure & Function card instantly.'
+        : 'Khi tay đang trỏ vào linh kiện cần xem, chỉ cần giơ 1 ngón cái (👍) để chọn dứt khoát và mở ngay bảng Cấu tạo & Chức năng.',
+      accent: 'text-amber-300 border-amber-500/45 bg-amber-500/10'
+    },
+    {
+      step: '04',
+      title: isEn ? 'Closed Fist · Rotate Assembled Model 360° (✊)' : 'Nắm Đấm · Xoay Cả Khối 360° Khi Đang Ghép (✊)',
+      desc: isEn
+        ? 'When the model is assembled, close a fist to rotate it 360° smoothly. While separated in the horizontal row, positions stay locked so nothing spins accidentally.'
+        : 'Khi mô hình đang ghép nguyên khối, nắm tay để xoay tròn 360° quan sát mọi mặt. Khi đang tách hàng ngang, các khối được khóa cố định tuyệt đối.',
+      accent: 'text-emerald-300 border-emerald-500/45 bg-emerald-500/10'
+    },
+    {
+      step: '05',
+      title: isEn ? '2 Hands · Zoom + Weak-PC 0.5x / 30 FPS (👐)' : '2 Tay Thu Phóng · Giảm Lag Máy Yếu 0.5x / 30 FPS (👐)',
+      desc: isEn
+        ? 'Spread both hands apart to Zoom In or bring closer to Zoom Out on either the assembled model or horizontal row. Pick 0.5x scale & 30F cap in Dock for weak PCs!'
+        : 'Tách 2 tay ra xa để Phóng To hoặc khép gần để Thu Nhỏ cả hàng ngang linh kiện. Trên máy yếu, bật độ phân giải 0.5x và 30F ở thanh công cụ để mượt 100%!',
+      accent: 'text-sky-300 border-sky-500/55 bg-sky-500/15'
     }
   ];
 
@@ -101,12 +101,12 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
               <div>
                 <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-cyan-300 uppercase tracking-wider">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>{isEn ? '3D Spatial Guide · Anti-Jitter 0.5s' : 'Hướng Dẫn Không Gian 3D · Chuẩn 0.5s'}</span>
+                  <span>{isEn ? '3D Real-Grab Guide · 5 Clear Gestures' : 'Hướng Dẫn 3D · 5 Cử Chỉ Cầm Nắm Rõ Ràng'}</span>
                 </div>
                 <h2 className="text-base sm:text-xl font-extrabold text-white mt-0.5">
                   {isEn
-                    ? 'How to Control 3D Models, Explode Parts & Reassemble'
-                    : 'Cách Điều Khiển Mô Hình 3D, Tách Bộ Phận & Ghép 4 Ngón'}
+                    ? 'Minimal 5-Gesture 3D Hand Control & Weak-PC Boost'
+                    : 'Điều Khiển Tay 3D Rõ Ràng (5 Cử Chỉ) & Giảm Độ Trễ Máy Yếu'}
                 </h2>
               </div>
             </div>
@@ -121,14 +121,14 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
             </button>
           </div>
 
-          {/* 0.5s Stability Rule Highlight */}
+          {/* Instant Grab Safety Highlight */}
           <div className="px-4 sm:px-6 py-2.5 bg-sky-950/55 border-b border-sky-500/30 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 text-sky-200 font-semibold">
               <Clock className="w-4 h-4 text-amber-300 shrink-0" />
               <span>
                 {isEn
-                  ? '0.5s Finger Settle Rule: Raise all fingers into position and hold for 0.5 seconds before an action fires — zero accidental misfires!'
-                  : 'Quy tắc đợi 0.5 giây: Giơ đủ số ngón và giữ yên 0.5s để AI khóa chắc cử chỉ rồi mới thực thi, tránh nhảy loạn qua các bước trung gian.'}
+                  ? 'Calm Horizontal Row Mode: ✌️ lines all parts into 1 immovable horizontal row, 🖐️ moves aim along the row, and 👍 1 Thumb selects cleanly!'
+                  : 'Chế độ Hàng Ngang Cố Định: ✌️ xếp mọi linh kiện thành 1 hàng ngang không xê dịch · 🖐️ Di tay ngắm · 👍 Giơ 1 ngón cái để chọn · ✊ Nắm xoay · 👐 2 tay thu phóng!'}
               </span>
             </div>
           </div>
@@ -139,20 +139,20 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
               [
                 {
                   id: 'workflow',
-                  labelVi: 'Quy Trình 5 Bước (Tách → Chọn → Ghép 4 Ngón)',
-                  labelEn: '5-Step Explode & 4-Finger Reassemble',
+                  labelVi: '5 Cử Chỉ Cầm Nắm Rõ Ràng (3D)',
+                  labelEn: '5 Clear Real-Grab Gestures (3D)',
                   icon: Layers
                 },
                 {
                   id: 'gestures',
-                  labelVi: 'Bảng 8 Cử Chỉ Tay',
-                  labelEn: '8 Hand Gestures',
+                  labelVi: 'Bảng Đầy Đủ (Thực Tế & Cổ Điển)',
+                  labelEn: 'Full Gesture Table',
                   icon: Hand
                 },
                 {
                   id: 'mouse',
-                  labelVi: 'Chuột & Bàn Di Không Cần Cam',
-                  labelEn: 'Mouse & Touchpad Controls',
+                  labelVi: 'Chuột · Phím Tắt · Chế Độ Máy Yếu',
+                  labelEn: 'Mouse · Keys · Weak-PC Mode',
                   icon: MousePointerClick
                 }
               ] as const
@@ -205,29 +205,66 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
             )}
 
             {activeTab === 'gestures' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {GESTURE_DEFINITIONS.map((g, idx) => (
-                  <div
-                    key={g.id}
-                    style={{ animationDelay: `${idx * 45}ms` }}
-                    className="spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-3 flex items-start gap-3"
-                  >
-                    <div
-                      className="w-10 h-10 rounded-md border border-slate-600/80 bg-slate-950 flex items-center justify-center font-mono text-sm font-extrabold shrink-0"
-                      style={{ color: g.accent }}
-                    >
-                      {g.fingers}
-                    </div>
-                    <div className="min-w-0 space-y-0.5">
-                      <div className="text-xs font-extrabold text-white">
-                        {isEn ? g.labelEn : g.labelVi}
-                      </div>
-                      <div className="text-[11px] text-slate-300 leading-snug">
-                        {isEn ? g.actionEn : g.actionVi}
-                      </div>
-                    </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="text-xs font-extrabold text-emerald-300 uppercase tracking-wider">
+                    {isEn ? '5 Real-Grab 3D Gestures (Recommended)' : '5 Cử Chỉ Cầm Nắm Thực Tế 3D (Khuyên Dùng)'}
                   </div>
-                ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {REAL_GRAB_GESTURES.map((g, idx) => (
+                      <div
+                        key={`rg-${g.id}`}
+                        style={{ animationDelay: `${idx * 40}ms` }}
+                        className="spatial-step-reveal rounded-lg bg-slate-900/95 border border-emerald-500/35 p-3 flex items-start gap-3"
+                      >
+                        <div
+                          className="w-10 h-10 rounded-md border border-slate-600/80 bg-slate-950 flex items-center justify-center text-lg shrink-0"
+                          style={{ color: g.accent }}
+                        >
+                          {g.fingers}
+                        </div>
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="text-xs font-extrabold text-white">
+                            {isEn ? g.labelEn : g.labelVi}
+                          </div>
+                          <div className="text-[11px] text-slate-300 leading-snug">
+                            {isEn ? g.actionEn : g.actionVi}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+                    {isEn ? 'Classic 8 Gestures (2D / Classic Mode)' : '8 Cử Chỉ Cổ Điển (Dành cho 2D / Chế Độ Cổ Điển)'}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {GESTURE_DEFINITIONS.map((g, idx) => (
+                      <div
+                        key={g.id}
+                        style={{ animationDelay: `${idx * 35}ms` }}
+                        className="spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-2.5 flex items-start gap-3"
+                      >
+                        <div
+                          className="w-9 h-9 rounded-md border border-slate-600/80 bg-slate-950 flex items-center justify-center font-mono text-xs font-extrabold shrink-0"
+                          style={{ color: g.accent }}
+                        >
+                          {g.fingers}
+                        </div>
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="text-xs font-extrabold text-white">
+                            {isEn ? g.labelEn : g.labelVi}
+                          </div>
+                          <div className="text-[11px] text-slate-400 leading-snug">
+                            {isEn ? g.actionEn : g.actionVi}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 

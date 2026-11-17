@@ -51,6 +51,7 @@ import { SubjectType } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useAudio } from '../../context/AudioContext';
+import { PerformanceMode, useBackgroundTheme } from '../../context/BackgroundContext';
 import {
   buildCitadelEnvironment,
   buildCosmicSkyDome,
@@ -77,6 +78,45 @@ interface SynapseV2StudioProps {
 type CameraPresetId = 'overview' | 'core' | 'zenith' | 'drone' | 'side' | 'lowAngle';
 type RenderStyleId = 'pbr' | 'wireframe' | 'xray';
 type LightingMoodId = 'cosmic' | 'studio' | 'solar';
+type SynapseResScale = 0.5 | 0.65 | 0.85 | 1.0 | 1.35;
+type SynapseFpsCap = 30 | 60;
+
+const SYNAPSE_PERF_KEY = 'synapse_v2_perf_prefs_v1';
+
+function loadSynapsePerfPrefs(perfMode: PerformanceMode): {
+  resolutionScale: SynapseResScale;
+  targetFps: SynapseFpsCap;
+} {
+  try {
+    const raw = localStorage.getItem(SYNAPSE_PERF_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<{
+        resolutionScale: SynapseResScale;
+        targetFps: SynapseFpsCap;
+      }>;
+      if (
+        parsed.resolutionScale &&
+        [0.5, 0.65, 0.85, 1.0, 1.35].includes(parsed.resolutionScale) &&
+        (parsed.targetFps === 30 || parsed.targetFps === 60)
+      ) {
+        return {
+          resolutionScale: parsed.resolutionScale,
+          targetFps: parsed.targetFps
+        };
+      }
+    }
+  } catch {}
+  if (perfMode === 'smooth') return { resolutionScale: 0.65, targetFps: 30 };
+  if (perfMode === 'ultra') return { resolutionScale: 1.0, targetFps: 60 };
+  return { resolutionScale: 0.85, targetFps: 60 };
+}
+
+function computeSynapseDpr(isSoftwareGl: boolean, scale: SynapseResScale): number {
+  const hostDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const maxDpr = scale >= 1.3 ? 2 : 1.75;
+  const effective = Math.min(hostDpr, maxDpr) * scale;
+  return Math.max(0.45, isSoftwareGl ? Math.min(effective, 1.0) : effective);
+}
 
 const CAMERA_PRESETS: Record<
   CameraPresetId,
@@ -196,6 +236,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const isEn = language === 'en';
   const { location, navigate } = useNavigation();
   const { bgSound, setBgSound, isBgPlaying, toggleBgPlaying } = useAudio();
+  const { perfMode } = useBackgroundTheme();
 
   // Synced with NavigationContext so clicking 'Lớp học ảo · Synapse v2' in Header always returns to 12-Chamber home
   const studioMode = location.synapseMode || 'catalog';
@@ -233,6 +274,25 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const [contextLost, setContextLost] = useState<boolean>(false);
   const [webglError, setWebglError] = useState<boolean>(false);
   const [visitedWonders, setVisitedWonders] = useState<MonumentId[]>(['dyson']);
+  const [perfPrefs, setPerfPrefs] = useState<{
+    resolutionScale: SynapseResScale;
+    targetFps: SynapseFpsCap;
+  }>(() => loadSynapsePerfPrefs(perfMode));
+  const resolutionScale = perfPrefs.resolutionScale;
+  const targetFps = perfPrefs.targetFps;
+
+  const updatePerfPrefs = useCallback(
+    (patch: Partial<{ resolutionScale: SynapseResScale; targetFps: SynapseFpsCap }>) => {
+      setPerfPrefs((prev) => {
+        const next = { ...prev, ...patch };
+        try {
+          localStorage.setItem(SYNAPSE_PERF_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    },
+    []
+  );
 
   // Ensure fullscreen exits & parameters stay synced when returning to catalog or navigating Back/Forward
   useEffect(() => {
@@ -393,11 +453,23 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   } | null>(null);
   const clipPlaneRef = useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, -1, 0), 3.5));
   const materialOrigRef = useRef<
-    WeakMap<THREE.Material, { wireframe: boolean; transparent: boolean; opacity: number; side: THREE.Side }>
+    WeakMap<
+      THREE.Material,
+      {
+        wireframe: boolean;
+        transparent: boolean;
+        opacity: number;
+        side: THREE.Side;
+        transmission: number;
+      }
+    >
   >(new WeakMap());
   const monumentSlotRef = useRef<THREE.Group | null>(null);
   const activeBuiltRef = useRef<BuiltMonument | null>(null);
+  const bgStarFieldRef = useRef<THREE.Points | null>(null);
   const isSoftwareGlRef = useRef<boolean>(false);
+  const perfPrefsRef = useRef(perfPrefs);
+  perfPrefsRef.current = perfPrefs;
 
   // Initialize Three.js World ONLY while in 'stage' mode
   useEffect(() => {
@@ -434,7 +506,9 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     const width = container.clientWidth || 960;
     const height = Math.max(container.clientHeight || 620, 480);
     renderer.setSize(width, height);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(
+      computeSynapseDpr(isSoftwareGl, perfPrefsRef.current.resolutionScale)
+    );
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
@@ -530,7 +604,9 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       blending: THREE.AdditiveBlending
     });
     const bgStarField = new THREE.Points(bgStarGeo, bgStarMat);
+    bgStarField.visible = perfPrefsRef.current.resolutionScale > 0.55;
     scene.add(bgStarField);
+    bgStarFieldRef.current = bgStarField;
 
     const circuitTex = createCircuitPlateTexture();
     const shadowTex = createContactShadowTexture();
@@ -575,6 +651,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     let paceTimer: number | null = null;
     let disposed = false;
     let lastTime = performance.now();
+    let lastRenderAt = 0;
     let elapsed = 0;
 
     const afterDraw = (cb: () => void) => {
@@ -638,7 +715,11 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       }
 
       controls.update();
-      renderer.render(scene, camera);
+      const fpsCap = perfPrefsRef.current.targetFps;
+      if (fpsCap > 30 || isSoftwareGl || now - lastRenderAt >= 31) {
+        lastRenderAt = now;
+        renderer.render(scene, camera);
+      }
 
       if (isSoftwareGl) {
         afterDraw(() => {
@@ -676,6 +757,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       }
       monumentSlotRef.current = null;
       activeBuiltRef.current = null;
+      bgStarFieldRef.current = null;
       rendererRef.current = null;
       cameraRef.current = null;
       citadelGroupRef.current = null;
@@ -684,9 +766,11 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     };
   }, [studioMode]);
 
-  // Apply Render Material Style (PBR / Wireframe / X-Ray Glass) cleanly on monument meshes
+  // Apply Render Material Style (PBR / Wireframe / X-Ray Glass) & adaptive low-spec transmission cleanly
   const applyRenderStyleToMonument = useCallback((root: THREE.Object3D | null, style: RenderStyleId) => {
     if (!root) return;
+    const disableTransmission =
+      isSoftwareGlRef.current || perfPrefsRef.current.resolutionScale <= 0.75;
     root.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh && !(obj as THREE.Line).isLine) return;
@@ -699,7 +783,9 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             wireframe: 'wireframe' in mat ? Boolean((mat as THREE.MeshStandardMaterial).wireframe) : false,
             transparent: Boolean(mat.transparent),
             opacity: typeof mat.opacity === 'number' ? mat.opacity : 1,
-            side: mat.side
+            side: mat.side,
+            transmission:
+              'transmission' in mat ? Number((mat as THREE.MeshPhysicalMaterial).transmission || 0) : 0
           };
           materialOrigRef.current.set(mat, orig);
         }
@@ -708,15 +794,20 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
           mat.transparent = orig.transparent;
           mat.opacity = orig.opacity;
           mat.side = orig.side;
+          if ('transmission' in mat) {
+            (mat as THREE.MeshPhysicalMaterial).transmission = disableTransmission ? 0 : orig.transmission;
+          }
         } else if (style === 'wireframe') {
           if ('wireframe' in mat) (mat as THREE.MeshStandardMaterial).wireframe = true;
           mat.transparent = true;
           mat.opacity = Math.max(0.45, Math.min(0.95, orig.opacity));
+          if ('transmission' in mat) (mat as THREE.MeshPhysicalMaterial).transmission = 0;
         } else if (style === 'xray') {
           if ('wireframe' in mat) (mat as THREE.MeshStandardMaterial).wireframe = false;
           mat.transparent = true;
           mat.opacity = Math.min(0.36, orig.opacity);
           mat.side = THREE.DoubleSide;
+          if ('transmission' in mat) (mat as THREE.MeshPhysicalMaterial).transmission = 0;
         }
         mat.needsUpdate = true;
       });
@@ -735,17 +826,27 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       activeBuiltRef.current = null;
     }
 
-    const nextBuilt = buildMonument(activeId, isSoftwareGlRef.current);
+    const nextBuilt = buildMonument(
+      activeId,
+      isSoftwareGlRef.current || perfPrefsRef.current.resolutionScale <= 0.65
+    );
     applyRenderStyleToMonument(nextBuilt.root, renderStyle);
     slot.add(nextBuilt.root);
     activeBuiltRef.current = nextBuilt;
   }, [activeId, studioMode, applyRenderStyleToMonument]);
 
-  // Live updates for FOV, RenderStyle, LightingMood, Cross-Section Slice Plane, and Citadel Platform
+  // Live updates for Resolution Scale, FOV, RenderStyle, LightingMood, Cross-Section Slice Plane, and Citadel Platform
   useEffect(() => {
     if (studioMode !== 'stage') return;
+    const r = rendererRef.current;
+    if (r) {
+      r.setPixelRatio(computeSynapseDpr(isSoftwareGlRef.current, resolutionScale));
+    }
+    if (bgStarFieldRef.current) {
+      bgStarFieldRef.current.visible = resolutionScale > 0.55;
+    }
     applyRenderStyleToMonument(activeBuiltRef.current?.root || null, renderStyle);
-  }, [renderStyle, studioMode, applyRenderStyleToMonument]);
+  }, [resolutionScale, studioMode, renderStyle, applyRenderStyleToMonument]);
 
   useEffect(() => {
     const cam = cameraRef.current;
@@ -857,7 +958,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
         <FuturisticCosmicBackdrop />
         <div className="relative z-10 space-y-7 pb-14">
           {/* Futuristic Quantum Command Header Banner */}
-          <section className="sci-scan-bar relative overflow-hidden rounded-xl border border-sky-400/45 bg-gradient-to-br from-[#06132b]/92 via-[#091b3a]/92 to-[#0b2540]/92 text-white p-6 sm:p-8 shadow-[0_26px_90px_-18px_rgba(2,132,199,0.45)] backdrop-blur-md">
+          <section className="sci-scan-bar relative overflow-hidden rounded-xl border border-sky-400/45 bg-gradient-to-br from-[#06132b] via-[#091b3a] to-[#0b2540] text-white p-6 sm:p-8 shadow-[0_26px_90px_-18px_rgba(2,132,199,0.45)]">
             {/* Animated Holographic Horizon Grid + Sweeping Scan Beam */}
             <div
               aria-hidden="true"
@@ -1114,7 +1215,6 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   // =========================================================================
   return (
     <>
-      {!isFullscreen && <FuturisticCosmicBackdrop />}
       <div
         className={
         isFullscreen
@@ -1222,6 +1322,43 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
               <Music className="w-3.5 h-3.5 text-sky-400" />
               <span>{bgSound === 'minecraft_calm' ? 'Vũ trụ' : 'Minecraft'}</span>
             </button>
+
+            {/* 1-Click Weak-PC Resolution Scale & FPS Cap */}
+            <div
+              className="flex items-center gap-0.5 p-1 rounded-lg bg-slate-950/92 border border-white/15"
+              title={
+                isEn
+                  ? '3D Resolution Scale & FPS Cap (lower for zero lag on weak PCs)'
+                  : 'Độ phân giải 3D & Giới hạn FPS (giảm thấp để hết giật trên máy yếu)'
+              }
+            >
+              {([0.5, 0.65, 0.85, 1.0] as const).map((sc) => (
+                <button
+                  key={sc}
+                  type="button"
+                  onClick={() => updatePerfPrefs({ resolutionScale: sc })}
+                  className={`px-1.5 py-1 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ${
+                    resolutionScale === sc
+                      ? 'bg-sky-500 text-slate-950'
+                      : 'text-slate-300 hover:bg-white/10'
+                  }`}
+                >
+                  {sc}x
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => updatePerfPrefs({ targetFps: targetFps === 30 ? 60 : 30 })}
+                className={`px-1.5 py-1 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ml-0.5 ${
+                  targetFps === 30
+                    ? 'bg-emerald-500 text-slate-950'
+                    : 'text-cyan-300 hover:bg-white/10'
+                }`}
+                title={isEn ? 'Switch 30 FPS / 60 FPS' : 'Đổi 30 FPS (Máy yếu) / 60 FPS'}
+              >
+                {targetFps}F
+              </button>
+            </div>
 
             <div className="hidden xl:flex items-center gap-1 p-1 rounded-lg bg-slate-950/92 border border-white/15">
               {(Object.keys(CAMERA_PRESETS) as CameraPresetId[]).map((pid) => (
@@ -1697,6 +1834,51 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                     }}
                     className="w-full accent-rose-400 cursor-pointer"
                   />
+                </div>
+
+                {/* Weak-PC Resolution & FPS Cap */}
+                <div className="sm:col-span-2 lg:col-span-6 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                  <span className="font-semibold text-sky-300">
+                    {isEn ? '3D Performance · Resolution & FPS Cap:' : 'Tối ưu Máy yếu · Độ phân giải & Khóa FPS:'}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {([0.5, 0.65, 0.85, 1.0, 1.35] as const).map((sc) => (
+                      <button
+                        key={sc}
+                        type="button"
+                        onClick={() => updatePerfPrefs({ resolutionScale: sc })}
+                        className={`px-2 py-1 rounded-md font-mono font-bold cursor-pointer border ${
+                          resolutionScale === sc
+                            ? 'bg-sky-500 text-slate-950 border-sky-300'
+                            : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/15'
+                        }`}
+                      >
+                        {sc}x
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => updatePerfPrefs({ targetFps: 30 })}
+                      className={`px-2.5 py-1 rounded-md font-mono font-bold cursor-pointer border ${
+                        targetFps === 30
+                          ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                          : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/15'
+                      }`}
+                    >
+                      {isEn ? '30 FPS (Weak PC)' : '30 FPS (Máy yếu)'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updatePerfPrefs({ targetFps: 60 })}
+                      className={`px-2.5 py-1 rounded-md font-mono font-bold cursor-pointer border ${
+                        targetFps === 60
+                          ? 'bg-cyan-500 text-slate-950 border-cyan-300'
+                          : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/15'
+                      }`}
+                    >
+                      60 FPS
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

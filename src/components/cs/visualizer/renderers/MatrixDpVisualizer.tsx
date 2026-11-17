@@ -9,6 +9,15 @@ interface MatrixDpVisualizerProps {
   onSelectRectCell?: (r: number, c: number) => void;
 }
 
+const CyberHudCorners: React.FC = () => (
+  <>
+    <span className="pointer-events-none absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t-2 border-l-2 border-emerald-400/70 rounded-tl-xs z-10" />
+    <span className="pointer-events-none absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t-2 border-r-2 border-cyan-400/70 rounded-tr-xs z-10" />
+    <span className="pointer-events-none absolute bottom-1.5 left-1.5 w-2.5 h-2.5 border-b-2 border-l-2 border-cyan-400/55 rounded-bl-xs z-10" />
+    <span className="pointer-events-none absolute bottom-1.5 right-1.5 w-2.5 h-2.5 border-b-2 border-r-2 border-emerald-400/55 rounded-br-xs z-10" />
+  </>
+);
+
 export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
   algoId,
   step,
@@ -46,8 +55,9 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {/* Matrix A */}
-            <div className="rounded-xl border border-cyan-500/25 bg-[#040b18] p-3.5 space-y-2">
-              <div className="text-xs font-mono font-bold text-cyan-200">
+            <div className="relative rounded-xl border border-cyan-500/30 algo-stage-grid p-4 space-y-2 shadow-[inset_0_0_26px_rgba(6,182,212,0.08)]">
+              <CyberHudCorners />
+              <div className="relative z-10 text-xs font-mono font-bold text-cyan-200">
                 MA TRẬN A (0-BASED)
               </div>
               <div className="overflow-x-auto">
@@ -100,8 +110,9 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
             </div>
 
             {/* Prefix Matrix P */}
-            <div className="rounded-xl border border-cyan-500/25 bg-[#040b18] p-3.5 space-y-2">
-              <div className="text-xs font-mono font-bold text-cyan-200">
+            <div className="relative rounded-xl border border-cyan-500/30 algo-stage-grid p-4 space-y-2 shadow-[inset_0_0_26px_rgba(6,182,212,0.08)]">
+              <CyberHudCorners />
+              <div className="relative z-10 text-xs font-mono font-bold text-cyan-200">
                 BẢNG CỘNG DỒN P[1..{R}][1..{C}]
               </div>
               <div className="overflow-x-auto">
@@ -170,7 +181,8 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
         </div>
 
         <div className="overflow-x-auto pb-1">
-          <div className="relative inline-block p-3 rounded-xl border border-cyan-500/30 bg-[#040b18] shadow-[inset_0_0_32px_rgba(6,182,212,0.08)]">
+          <div className="relative inline-block p-4 rounded-xl border border-cyan-500/35 algo-stage-grid shadow-[inset_0_0_32px_rgba(6,182,212,0.09)]">
+            <CyberHudCorners />
             {Array.from({ length: R }).map((_, r) => (
               <div key={r} className="flex gap-1.5 mb-1.5 last:mb-0">
                 {Array.from({ length: C }).map((__, c) => {
@@ -253,8 +265,9 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
           )}
         </div>
 
-        <div className="overflow-x-auto pb-2 rounded-xl border border-amber-500/25 bg-[#040b18] p-3">
-          <table className="border-collapse font-mono text-xs tabular-nums min-w-max">
+        <div className="relative overflow-x-auto pb-2 rounded-xl border border-amber-500/30 algo-stage-grid p-4 shadow-[inset_0_0_28px_rgba(245,158,11,0.08)]">
+          <CyberHudCorners />
+          <table className="relative z-10 border-collapse font-mono text-xs tabular-nums min-w-max">
             <thead>
               <tr>
                 <th className="p-1.5 text-left text-[11px] text-slate-400 border-b border-cyan-500/20">
@@ -323,7 +336,8 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
     return (
       <div className="space-y-5">
         <div className="overflow-x-auto pb-2">
-          <div className="inline-flex items-end gap-2 min-w-max h-48 pt-6 px-3.5 bg-[#040b18] rounded-xl border border-indigo-500/30 shadow-[inset_0_0_32px_rgba(129,140,248,0.08)]">
+          <div className="relative inline-flex items-end gap-2 min-w-max h-48 pt-6 px-4 algo-stage-grid rounded-xl border border-indigo-500/35 shadow-[inset_0_0_32px_rgba(129,140,248,0.09)]">
+            <CyberHudCorners />
             {arr.map((v, idx) => {
               const hPct = Math.max(15, Math.round((Math.abs(v) / maxVal) * 76));
               const isCurr = idx === st.idx;
@@ -404,8 +418,9 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
           )}
         </div>
 
-        <div className="overflow-x-auto pb-2 rounded-xl border border-pink-500/25 bg-[#040b18] p-3">
-          <table className="border-collapse font-mono text-xs tabular-nums min-w-max">
+        <div className="relative overflow-x-auto pb-2 rounded-xl border border-pink-500/30 algo-stage-grid p-4 shadow-[inset_0_0_28px_rgba(236,72,153,0.08)]">
+          <CyberHudCorners />
+          <table className="relative z-10 border-collapse font-mono text-xs tabular-nums min-w-max">
             <thead>
               <tr>
                 <th className="w-10 h-9 border-b border-cyan-500/20 text-slate-400">
@@ -489,7 +504,8 @@ export const MatrixDpVisualizer: React.FC<MatrixDpVisualizerProps> = ({
         <div className="font-mono text-[11px] text-orange-200/85">
           BACKTRACK_BOARD {N}×{N} · Các ô đỏ sẫm đang nằm trong tầm chiếu của Hậu đã đặt
         </div>
-        <div className="inline-block p-3 rounded-xl border border-orange-500/30 bg-[#040b18] shadow-[inset_0_0_32px_rgba(249,115,22,0.08)]">
+        <div className="relative inline-block p-4 rounded-xl border border-orange-500/35 algo-stage-grid shadow-[inset_0_0_32px_rgba(249,115,22,0.09)]">
+          <CyberHudCorners />
           {Array.from({ length: N }).map((_, r) => (
             <div key={r} className="flex">
               {Array.from({ length: N }).map((__, c) => {

@@ -17,18 +17,24 @@ import { GESTURE_DEFINITIONS } from './handGestureTracker';
 
 interface SpatialSenseHubProps {
   isEn: boolean;
+  savedCustomCount?: number;
   onBack?: () => void;
   onLaunch3D: () => void;
   onLaunch2D: () => void;
+  onLaunch2DGuide?: () => void;
+  onOpenAICreator?: () => void;
 }
 
 type GuideViewTab = 'workflow' | 'gestures' | 'fallback';
 
 export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
   isEn,
+  savedCustomCount = 0,
   onBack,
   onLaunch3D,
-  onLaunch2D
+  onLaunch2D,
+  onLaunch2DGuide,
+  onOpenAICreator
 }) => {
   const [guideTab, setGuideTab] = useState<GuideViewTab>('workflow');
 
@@ -124,6 +130,20 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {onOpenAICreator && (
+              <button
+                type="button"
+                onClick={onOpenAICreator}
+                className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/60 text-xs font-extrabold text-purple-200 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>
+                  {isEn
+                    ? `AI Create Model (${savedCustomCount})`
+                    : `AI Tạo Mô Hình (${savedCustomCount})`}
+                </span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onLaunch2D}
@@ -232,9 +252,20 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <span className="text-[11px] font-mono text-cyan-300">
-                  {isEn ? 'Opens 3D Usage Guide Frame on click' : 'Bấm mở ngay Không gian 3D + Khung hướng dẫn'}
-                </span>
+                {onOpenAICreator ? (
+                  <button
+                    type="button"
+                    onClick={onOpenAICreator}
+                    className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/55 text-xs font-bold text-purple-200 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{isEn ? 'AI Idea → 3D Model' : 'Sáng Tạo Tự Do (AI)'}</span>
+                  </button>
+                ) : (
+                  <span className="text-[11px] font-mono text-cyan-300">
+                    {isEn ? 'Opens 3D Usage Guide Frame on click' : 'Bấm mở ngay Không gian 3D + Khung hướng dẫn'}
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={onLaunch3D}
@@ -314,9 +345,20 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <span className="text-[11px] font-mono text-emerald-300">
-                  {isEn ? 'Supports Hand Pointer & Touch Screen' : 'Hỗ trợ vẽ bằng Ngón trỏ Camera hoặc Chuột'}
-                </span>
+                {onLaunch2DGuide ? (
+                  <button
+                    type="button"
+                    onClick={onLaunch2DGuide}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-900 border border-emerald-500/45 hover:border-emerald-400 text-xs font-bold text-emerald-200 cursor-pointer"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>{isEn ? '2D Guide' : 'Hướng dẫn 2D'}</span>
+                  </button>
+                ) : (
+                  <span className="text-[11px] font-mono text-emerald-300">
+                    {isEn ? 'Supports Hand Pointer & Touch Screen' : 'Hỗ trợ vẽ bằng Ngón trỏ Camera hoặc Chuột'}
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={onLaunch2D}

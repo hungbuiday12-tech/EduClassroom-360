@@ -28,7 +28,8 @@ import {
   Gauge,
   Type,
   Palette,
-  MousePointer2
+  MousePointer2,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -53,6 +54,7 @@ interface SettingsModalProps {
   isDark: boolean;
   onToggleTheme: () => void;
   onReturnToLanding?: () => void;
+  onOpenInstallApp?: () => void;
 }
 
 type SettingsTab = 'account' | 'security' | 'appearance' | 'audio';
@@ -70,7 +72,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   isDark,
   onToggleTheme,
-  onReturnToLanding
+  onReturnToLanding,
+  onOpenInstallApp
 }) => {
   const {
     user,
@@ -356,8 +359,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </nav>
           </div>
 
-          {/* Bottom Auth / Logout Action */}
-          <div className="pt-4 border-t border-slate-200/70 dark:border-white/10">
+          {/* Bottom Install & Auth / Logout Action */}
+          <div className="pt-4 border-t border-slate-200/70 dark:border-white/10 space-y-2">
+            {onOpenInstallApp && (
+              <button
+                type="button"
+                onClick={onOpenInstallApp}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-300/80 dark:border-sky-600/50 text-sky-700 dark:text-sky-300 text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>{isEn ? 'Install App (PC / Phone)' : 'Tải App (Laptop / Android / iOS)'}</span>
+              </button>
+            )}
             {user ? (
               <button
                 type="button"

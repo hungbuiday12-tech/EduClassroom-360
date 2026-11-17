@@ -47,7 +47,8 @@ import {
   Clock,
   Sliders,
   UploadCloud,
-  Layers
+  Layers,
+  Download
 } from 'lucide-react';
 import { useAudio } from '../../context/AudioContext';
 import { useNavigation } from '../../context/NavigationContext';
@@ -67,6 +68,7 @@ interface VisitorLandingPageProps {
   onEnterAsGuest: () => void;
   isDark?: boolean;
   onToggleTheme?: () => void;
+  onOpenInstallApp?: () => void;
 }
 
 type LandingSpotlightKey = 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'cs' | 'exams';
@@ -76,6 +78,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   onEnterAsGuest,
   isDark = true,
   onToggleTheme,
+  onOpenInstallApp,
 }) => {
   const {
     loginWithGoogle,
@@ -698,6 +701,18 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 ) : (
                   <Moon className="w-4 h-4 text-blue-700 group-hover:-rotate-12 transition-transform" />
                 )}
+              </button>
+            )}
+
+            {onOpenInstallApp && (
+              <button
+                type="button"
+                onClick={onOpenInstallApp}
+                className="group cs-deck-btn flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 text-xs font-bold rounded-md border border-sky-400/70 bg-sky-500/15 text-blue-700 dark:text-sky-200 hover:bg-sky-500 hover:text-white transition-all cursor-pointer whitespace-nowrap shrink-0"
+                title={isEn ? 'Install Synapse App (Laptop, Android & iPhone)' : 'Tải Ứng dụng cho Laptop, Android & iPhone'}
+              >
+                <Download className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden lg:inline">{isEn ? 'Get App' : 'Tải App'}</span>
               </button>
             )}
 

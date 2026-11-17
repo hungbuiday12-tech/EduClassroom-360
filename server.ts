@@ -2877,6 +2877,309 @@ ${transcript}`;
   }
 });
 
+// =====================================================================
+// SPATIAL 3D STUDIO: PERSISTENT "SÁNG TẠO TỰ DO" & AI MODEL SYNTHESIZER
+// =====================================================================
+const CUSTOM_MODELS_DB_PATH = path.resolve(process.cwd(), '.custom_models_db.json');
+const ALLOWED_PRIMITIVES = new Set([
+  'box',
+  'sphere',
+  'cylinder',
+  'cone',
+  'torus',
+  'octahedron',
+  'dodecahedron',
+  'icosahedron',
+  'ring',
+  'capsule',
+  'prism'
+]);
+const ALLOWED_ROLES = new Set(['primary', 'secondary', 'highlight', 'glow']);
+const ALLOWED_ANIMS = new Set(['none', 'spin_y', 'spin_x', 'spin_z', 'pulse', 'bob_y', 'orbit_y']);
+
+interface CustomModelsDb {
+  models: any[];
+}
+
+function loadCustomModelsDb(): CustomModelsDb {
+  try {
+    if (fs.existsSync(CUSTOM_MODELS_DB_PATH)) {
+      const raw = fs.readFileSync(CUSTOM_MODELS_DB_PATH, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.models)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read .custom_models_db.json, initializing clean store:', err);
+  }
+  return { models: [] };
+}
+
+function saveCustomModelsDb(data: CustomModelsDb) {
+  try {
+    fs.writeFileSync(CUSTOM_MODELS_DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to persist .custom_models_db.json:', err);
+  }
+}
+
+function clampNum(v: any, min: number, max: number, fallback: number): number {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function sanitizeCustomModel(raw: any, sourceMeta: { ideaText: string; hasImage?: boolean; fileName?: string }): any {
+  const rawParts = Array.isArray(raw?.parts) ? raw.parts.slice(0, 10) : [];
+  const sanitizedParts = rawParts.map((p: any, idx: number) => {
+    const px = clampNum(p?.pos?.[0], -3.2, 3.2, 0);
+    const py = clampNum(p?.pos?.[1], 0.25, 4.0, 1.3 + idx * 0.22);
+    const pz = clampNum(p?.pos?.[2], -3.2, 3.2, 0);
+
+    let ex = clampNum(p?.explodeDir?.[0], -2.0, 2.0, Math.cos(idx * 1.4) * 1.1);
+    let ey = clampNum(p?.explodeDir?.[1], -1.2, 2.0, 0.45);
+    let ez = clampNum(p?.explodeDir?.[2], -2.0, 2.0, Math.sin(idx * 1.4) * 1.1);
+    if (Math.hypot(ex, ey, ez) < 0.35) {
+      ex = Math.cos(idx * 1.5) * 1.2;
+      ey = 0.65;
+      ez = Math.sin(idx * 1.5) * 1.2;
+    }
+
+    const rawHex = typeof p?.customHex === 'string' && /^#[0-9a-fA-F]{6}$/.test(p.customHex) ? p.customHex : undefined;
+
+    return {
+      id: String(p?.id || `part_${idx + 1}`).replace(/[^a-zA-Z0-9_-]/g, '_'),
+      nameVi: String(p?.nameVi || `Cấu kiện ${idx + 1}`),
+      nameEn: String(p?.nameEn || `Component ${idx + 1}`),
+      badgeVi: String(p?.badgeVi || `PHẦN ${idx + 1}`).slice(0, 18),
+      badgeEn: String(p?.badgeEn || `PART ${idx + 1}`).slice(0, 18),
+      introVi: String(p?.introVi || 'Bộ phận cấu thành được Syn AI tổng hợp theo thiết kế.'),
+      introEn: String(p?.introEn || 'Structural module synthesized by Syn AI.'),
+      functionVi: String(p?.functionVi || 'Đóng vai trò liên kết cơ học hoặc truyền năng lượng trong mô hình.'),
+      functionEn: String(p?.functionEn || 'Supports structural stability and motion transmission.'),
+      specFormula: p?.specFormula ? String(p.specFormula).slice(0, 64) : undefined,
+      primitive: ALLOWED_PRIMITIVES.has(p?.primitive) ? p.primitive : 'box',
+      colorRole: ALLOWED_ROLES.has(p?.colorRole) ? p.colorRole : idx % 2 === 0 ? 'primary' : 'secondary',
+      ...(rawHex ? { customHex: rawHex } : {}),
+      pos: [px, py, pz],
+      rot: [
+        clampNum(p?.rot?.[0], -6.28, 6.28, 0),
+        clampNum(p?.rot?.[1], -6.28, 6.28, 0),
+        clampNum(p?.rot?.[2], -6.28, 6.28, 0)
+      ],
+      scale: [
+        clampNum(p?.scale?.[0], 0.15, 3.2, 0.85),
+        clampNum(p?.scale?.[1], 0.15, 3.2, 0.85),
+        clampNum(p?.scale?.[2], 0.15, 3.2, 0.85)
+      ],
+      explodeDir: [ex, ey, ez],
+      addEdges: Boolean(p?.addEdges ?? (idx === 0)),
+      anim: {
+        type: ALLOWED_ANIMS.has(p?.anim?.type) ? p.anim.type : 'none',
+        speed: clampNum(p?.anim?.speed, 0.1, 4.5, 1.0),
+        amplitude: clampNum(p?.anim?.amplitude, 0.05, 1.0, 0.25)
+      }
+    };
+  });
+
+  while (sanitizedParts.length < 4) {
+    const idx = sanitizedParts.length;
+    sanitizedParts.push({
+      id: `core_module_${idx + 1}`,
+      nameVi: `Cụm Cấu Trúc #${idx + 1}`,
+      nameEn: `Core Module #${idx + 1}`,
+      badgeVi: `MÔ-ĐUN ${idx + 1}`,
+      badgeEn: `MOD ${idx + 1}`,
+      introVi: 'Khối cấu trúc bổ trợ giúp hoàn thiện tỷ lệ và cân bằng không gian 3D.',
+      introEn: 'Supporting structural module balancing the 3D assembly.',
+      functionVi: 'Kết nối và truyền lực giữa các cụm bộ phận chính.',
+      functionEn: 'Connects and stabilizes primary structural modules.',
+      primitive: idx === 0 ? 'cylinder' : idx === 1 ? 'sphere' : 'torus',
+      colorRole: idx % 2 === 0 ? 'primary' : 'glow',
+      pos: [0, 0.9 + idx * 0.55, 0],
+      rot: [0, 0, 0],
+      scale: [0.9, 0.65, 0.9],
+      explodeDir: [Math.cos(idx * 1.5) * 1.2, 0.5, Math.sin(idx * 1.5) * 1.2],
+      addEdges: true,
+      anim: { type: idx === 2 ? 'spin_y' : 'none', speed: 1.0, amplitude: 0.2 }
+    });
+  }
+
+  return {
+    id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    titleVi: String(raw?.titleVi || sourceMeta.ideaText.slice(0, 46) || 'Mô Hình Sáng Tạo AI'),
+    titleEn: String(raw?.titleEn || sourceMeta.ideaText.slice(0, 46) || 'AI Custom 3D Model'),
+    badge: String(raw?.badge || 'SÁNG TẠO AI').toUpperCase().slice(0, 16),
+    formula: String(raw?.formula || 'Σ F = m·a · V = ∫ dV').slice(0, 80),
+    descVi: String(raw?.descVi || `Mô hình 3D do Syn AI thiết kế từ ý tưởng: ${sourceMeta.ideaText.slice(0, 120)}`),
+    descEn: String(raw?.descEn || `Interactive 3D assembly synthesized from: ${sourceMeta.ideaText.slice(0, 120)}`),
+    sourceIdea: sourceMeta.ideaText.slice(0, 500),
+    hasImageAttachment: Boolean(sourceMeta.hasImage),
+    attachmentName: sourceMeta.fileName ? String(sourceMeta.fileName).slice(0, 120) : undefined,
+    createdAt: new Date().toISOString(),
+    parts: sanitizedParts,
+    blueprint2D: raw?.blueprint2D
+      ? {
+          summaryVi: String(raw.blueprint2D.summaryVi || ''),
+          summaryEn: String(raw.blueprint2D.summaryEn || ''),
+          elements: Array.isArray(raw.blueprint2D.elements) ? raw.blueprint2D.elements.slice(0, 12) : []
+        }
+      : undefined
+  };
+}
+
+let customModelsDb: CustomModelsDb = loadCustomModelsDb();
+
+app.get('/api/spatial/models', (_req: Request, res: Response) => {
+  return res.json({ success: true, models: customModelsDb.models });
+});
+
+app.post('/api/spatial/models', (req: Request, res: Response) => {
+  const { model } = req.body || {};
+  if (!model || !Array.isArray(model.parts)) {
+    return res.status(400).json({ error: 'Thiếu dữ liệu mô hình hợp lệ.' });
+  }
+  const cleanId = String(model.id || `custom_${Date.now()}`);
+  const entry = { ...model, id: cleanId };
+  customModelsDb.models = [entry, ...customModelsDb.models.filter((m) => m.id !== cleanId)].slice(0, 80);
+  saveCustomModelsDb(customModelsDb);
+  return res.json({ success: true, model: entry });
+});
+
+app.delete('/api/spatial/models/:id', (req: Request, res: Response) => {
+  const targetId = String(req.params.id || '');
+  customModelsDb.models = customModelsDb.models.filter((m) => m.id !== targetId);
+  saveCustomModelsDb(customModelsDb);
+  return res.json({ success: true });
+});
+
+app.post('/api/spatial/generate-model', async (req: Request, res: Response) => {
+  const {
+    ideaText = '',
+    imageBase64 = '',
+    imageMimeType = 'image/jpeg',
+    attachmentText = '',
+    fileName = '',
+    language = 'vi'
+  } = req.body || {};
+
+  const trimmedIdea = String(ideaText || '').trim();
+  const trimmedDoc = String(attachmentText || '').trim().slice(0, 5000);
+  const cleanImg = typeof imageBase64 === 'string' && imageBase64.length > 24 ? imageBase64 : '';
+
+  if (!trimmedIdea && !trimmedDoc && !cleanImg) {
+    return res.status(400).json({ error: 'Vui lòng cung cấp ý tưởng, hình ảnh hoặc tệp tài liệu.' });
+  }
+
+  try {
+    const ai = getGenAI();
+    const isEn = language === 'en';
+
+    const systemInstruction = `You are a Principal 3D CAD & STEM Procedural Geometry Architect for Synapse.
+Your job is to convert the user's text idea, uploaded image/sketch, or technical document into a coherent, recognizable, multi-part interactive 3D assembly in Three.js.
+
+OUTPUT ONLY VALID JSON matching this exact schema:
+{
+  "titleVi": "Vietnamese title (concise, max 48 chars)",
+  "titleEn": "English title (concise, max 48 chars)",
+  "badge": "SHORT UPPERCASE BADGE (e.g. HÀNG KHÔNG, SINH HỌC, KIẾN TRÚC, CƠ KHÍ)",
+  "formula": "Key governing STEM formula (e.g. F = ṁ·v · P = ½ρAv³)",
+  "descVi": "1-2 sentences describing what this 3D model shows and how to interact (explode, inspect parts, slice).",
+  "descEn": "1-2 sentences in English.",
+  "parts": [
+    {
+      "id": "unique_snake_id",
+      "nameVi": "Part name in Vietnamese",
+      "nameEn": "Part name in English",
+      "badgeVi": "SHORT ROLE BADGE VI",
+      "badgeEn": "SHORT ROLE BADGE EN",
+      "introVi": "Clear 1-2 sentence structural description in Vietnamese.",
+      "introEn": "Clear 1-2 sentence structural description in English.",
+      "functionVi": "Clear 1-2 sentence functional engineering/scientific role in Vietnamese.",
+      "functionEn": "Clear 1-2 sentence functional role in English.",
+      "specFormula": "Optional short formula or dimension spec",
+      "primitive": "one of: box | sphere | cylinder | cone | torus | octahedron | dodecahedron | icosahedron | ring | capsule | prism",
+      "colorRole": "one of: primary | secondary | highlight | glow",
+      "customHex": "#38bdf8",
+      "pos": [x, y, z],
+      "rot": [rx, ry, rz],
+      "scale": [sx, sy, sz],
+      "explodeDir": [ex, ey, ez],
+      "addEdges": true,
+      "anim": {
+        "type": "one of: none | spin_y | spin_x | spin_z | pulse | bob_y | orbit_y",
+        "speed": 1.2,
+        "amplitude": 0.25
+      }
+    }
+  ],
+  "blueprint2D": {
+    "summaryVi": "Brief 1-sentence 2D cross-section note in Vietnamese",
+    "summaryEn": "Brief 1-sentence 2D cross-section note in English",
+    "elements": []
+  }
+}
+
+CRITICAL 3D ENGINEERING RULES:
+1. Build 5 to 9 parts that genuinely assemble into the recognizable silhouette of the requested object (never scatter random blobs!).
+2. Keep the assembled object grounded and centered neatly above the grid floor: x and z in [-2.2, 2.2], y in [0.4, 3.6].
+3. Scale values sx, sy, sz in [0.22, 2.8] to sculpt recognizable proportions (e.g. long cylinder for fuselage/rocket body, flattened boxes for wings/fins/solar panels, torus/ring for orbits/nozzles/rings, cone for nosecone/funnel, sphere/icosahedron for cores/chambers).
+4. Set explodeDir [ex, ey, ez] pointing cleanly outward from the assembly center so pulling 2 hands apart separates every part clearly without overlapping!
+5. Give dynamic parts subtle animations (e.g. spin_y for rotors/turbines, pulse for heart/plasma core, bob_y for floating modules).`;
+
+    const promptText = `User idea: ${trimmedIdea || 'Analyze the attached image/file and recreate it in 3D.'}
+${fileName ? `Attachment filename: ${fileName}` : ''}
+${trimmedDoc ? `Attachment content excerpt:\n${trimmedDoc}` : ''}
+Preferred primary UI language: ${isEn ? 'English (still include Vietnamese fields)' : 'Vietnamese (still include English fields)'}.`;
+
+    const contents: any = cleanImg
+      ? [
+          {
+            inlineData: {
+              data: cleanImg,
+              mimeType: imageMimeType || 'image/jpeg'
+            }
+          },
+          { text: promptText }
+        ]
+      : promptText;
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents,
+      systemInstruction,
+      responseMimeType: 'application/json',
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 24000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {});
+    if (!Array.isArray(parsed?.parts) || parsed.parts.length === 0) {
+      throw new Error('Syn AI chưa tạo được cấu trúc 3D hợp lệ. Vui lòng mô tả rõ hơn và thử lại.');
+    }
+
+    const finalModel = sanitizeCustomModel(parsed, {
+      ideaText: trimmedIdea || fileName || 'Sáng tạo 3D',
+      hasImage: Boolean(cleanImg),
+      fileName: fileName || undefined
+    });
+
+    customModelsDb.models = [finalModel, ...customModelsDb.models].slice(0, 80);
+    saveCustomModelsDb(customModelsDb);
+
+    return res.json({
+      success: true,
+      model: finalModel
+    });
+  } catch (err: any) {
+    console.error('Error in /api/spatial/generate-model:', err);
+    return res.status(500).json({
+      error: extractCleanErrorMessage(err)
+    });
+  }
+});
+
 // JSON guards for /api routes (never leak HTML pages to JSON clients)
 app.use('/api', (_req: Request, res: Response) => {
   res.status(404).json({ error: 'API endpoint không tồn tại.' });

@@ -67,6 +67,17 @@ export interface DynamicModelRef {
     coilMat: THREE.MeshStandardMaterial;
     waveRing: THREE.Mesh;
   };
+  customAnimatedParts?: {
+    mesh: THREE.Object3D;
+    basePos: THREE.Vector3;
+    baseScale: [number, number, number];
+    baseRot: [number, number, number];
+    anim: {
+      type: 'none' | 'spin_y' | 'spin_x' | 'spin_z' | 'pulse' | 'bob_y' | 'orbit_y';
+      speed: number;
+      amplitude: number;
+    };
+  }[];
   disposables: { geometries: THREE.BufferGeometry[]; materials: THREE.Material[] };
 }
 

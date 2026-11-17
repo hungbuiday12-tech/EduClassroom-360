@@ -23,6 +23,8 @@ import { VisitorLandingPage } from './components/landing/VisitorLandingPage';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 import { WaterRippleLayer } from './components/common/WaterRippleLayer';
 import { FloatingFocusTimer } from './components/common/FloatingFocusTimer';
+import { PWAInstallModal } from './components/common/PWAInstallModal';
+import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { useNavigation } from './context/NavigationContext';
 import { useLanguage } from './context/LanguageContext';
 import { EXAM_PAPERS } from './data/examData';
@@ -101,6 +103,8 @@ function MainApp() {
 
   const { user, addXP, loading } = useAuth();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const isHeavy3DActive = currentSubject === 'spatial_3d' || currentSubject === 'synapse_v2';
 
   // Guest explore mode state: allows unauthenticated visitors to explore the classroom
   const [isGuestExploring, setIsGuestExploring] = useState<boolean>(() => {
@@ -245,6 +249,7 @@ function MainApp() {
             onEnterAsGuest={handleEnterAsGuest}
             isDark={isDark}
             onToggleTheme={handleToggleTheme}
+            onOpenInstallApp={() => setIsInstallModalOpen(true)}
           />
         </motion.div>
       ) : (
@@ -261,6 +266,7 @@ function MainApp() {
             interactive={true}
             intensity="vibrant"
             isDark={isDark}
+            paused={isHeavy3DActive}
             className={isDark ? 'opacity-75' : 'opacity-100'}
           />
 
@@ -273,6 +279,8 @@ function MainApp() {
             mobileOpen={mobileMenuOpen}
             onCloseMobile={() => setMobileMenuOpen(false)}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenInstallApp={() => setIsInstallModalOpen(true)}
+            pauseParticles={isHeavy3DActive}
           />
 
           {/* Right Main Workspace Column */}
@@ -291,6 +299,7 @@ function MainApp() {
               onReturnToLanding={handleReturnToLanding}
               onOpenSettings={() => setIsSettingsOpen(true)}
               onOpenMobileMenu={() => setMobileMenuOpen(true)}
+              onOpenInstallApp={() => setIsInstallModalOpen(true)}
             />
 
             {/* Main Viewport Container */}
@@ -577,10 +586,19 @@ function MainApp() {
             isDark={isDark}
             onToggleTheme={handleToggleTheme}
             onReturnToLanding={handleReturnToLanding}
+            onOpenInstallApp={() => {
+              setIsSettingsOpen(false);
+              setIsInstallModalOpen(true);
+            }}
           />
         </motion.div>
       )}
       </AnimatePresence>
+      <PWAInstallModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+      />
+      <OfflineIndicator />
     </>
   );
 }

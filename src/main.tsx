@@ -8,6 +8,13 @@ import { BackgroundProvider } from './context/BackgroundContext';
 import { NavigationProvider } from './context/NavigationContext';
 import { AudioProvider } from './context/AudioContext';
 import { FocusTimerProvider } from './context/FocusTimerContext';
+import { registerSW } from 'virtual:pwa-register';
+
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  try {
+    registerSW({ immediate: true });
+  } catch {}
+}
 
 interface Props {
   children: ReactNode;

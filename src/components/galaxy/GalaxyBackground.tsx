@@ -10,6 +10,7 @@ interface GalaxyBackgroundProps {
   intensity?: 'subtle' | 'vibrant';
   isDark?: boolean;
   className?: string;
+  paused?: boolean;
 }
 
 interface Star {
@@ -111,10 +112,13 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
   interactive = true,
   intensity = 'vibrant',
   isDark,
-  className = ''
+  className = '',
+  paused = false
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { creatureTheme, perfMode, bgStyle, activePalette } = useBackgroundTheme();
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -203,7 +207,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
 
       const renderMolecules = (now: number) => {
         animationFrameId = requestAnimationFrame(renderMolecules);
-        if (document.hidden) {
+        if (document.hidden || pausedRef.current) {
           lastTick = now;
           return;
         }
@@ -1851,7 +1855,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
 
     const render = (nowMs: number) => {
       animationFrameId = requestAnimationFrame(render);
-      if (document.hidden) {
+      if (document.hidden || pausedRef.current) {
         lastRenderMs = nowMs;
         lastSimMs = nowMs;
         return;

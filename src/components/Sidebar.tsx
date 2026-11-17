@@ -17,7 +17,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ListOrdered,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigation } from '../context/NavigationContext';
@@ -31,6 +32,8 @@ interface SidebarProps {
   mobileOpen: boolean;
   onCloseMobile: () => void;
   onOpenSettings: () => void;
+  onOpenInstallApp?: () => void;
+  pauseParticles?: boolean;
 }
 
 interface NavItemDef {
@@ -54,8 +57,10 @@ const MOLECULE_PALETTE = [
   '#fb7185'  // rose
 ];
 
-const SidebarMolecularParticles: React.FC = () => {
+const SidebarMolecularParticles: React.FC<{ paused?: boolean }> = ({ paused = false }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -117,7 +122,7 @@ const SidebarMolecularParticles: React.FC = () => {
       if (!reduceMotion) {
         rafId = requestAnimationFrame(render);
       }
-      if (now - last < 26) return;
+      if (pausedRef.current || document.hidden || now - last < 26) return;
       const dt = Math.min(40, now - last) / 16.67;
       last = now;
       const t = now * 0.001;
@@ -219,7 +224,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   mobileOpen,
   onCloseMobile,
-  onOpenSettings
+  onOpenSettings,
+  onOpenInstallApp,
+  pauseParticles = false
 }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -421,7 +428,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (
       <div className="relative overflow-hidden flex flex-col h-full bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-r border-slate-200/90 dark:border-slate-800/90 select-none">
         {/* Moving Molecular Particles & Covalent Bonds Background */}
-        <SidebarMolecularParticles />
+        <SidebarMolecularParticles paused={pauseParticles} />
 
         {/* Top Brand + Collapse Row */}
         <div
@@ -583,6 +590,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Bottom Utility Actions */}
         <div className="relative z-10 p-3 border-t border-slate-200/80 dark:border-slate-800/80 space-y-1.5 shrink-0 bg-white/60 dark:bg-slate-950/55 backdrop-blur-sm">
+          {onOpenInstallApp && (
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => {
+                onCloseMobile();
+                onOpenInstallApp();
+              }}
+              title={isEn ? 'Install App (Laptop / Android / iPhone)' : 'Tải App (Laptop / Android / iPhone)'}
+              className={`group cs-deck-btn w-full min-h-[44px] flex items-center ${
+                isRail ? 'justify-center px-2.5 py-2.5' : 'gap-2.5 px-3 py-2'
+              } rounded text-[13px] font-bold bg-sky-50/90 dark:bg-sky-950/45 border border-sky-300/80 dark:border-sky-500/40 text-sky-800 dark:text-sky-200 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors cursor-pointer whitespace-nowrap`}
+            >
+              <Download className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+              {!isRail && (
+                <span className="truncate">{isEn ? 'Install App (PC/Mobile)' : 'Tải App (PC / Mobile)'}</span>
+              )}
+            </button>
+          )}
+
           <button
             type="button"
             data-ripple="true"

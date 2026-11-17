@@ -17,7 +17,8 @@ import {
   Gauge,
   Menu,
   Layers,
-  Sparkles
+  Sparkles,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -40,6 +41,7 @@ interface HeaderProps {
   onReturnToLanding?: () => void;
   onOpenSettings: () => void;
   onOpenMobileMenu: () => void;
+  onOpenInstallApp?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -48,7 +50,8 @@ export const Header: React.FC<HeaderProps> = ({
   xp,
   onReturnToLanding,
   onOpenSettings,
-  onOpenMobileMenu
+  onOpenMobileMenu,
+  onOpenInstallApp
 }) => {
   const { user, openAuthModal, logout } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
@@ -339,6 +342,19 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
           </button>
+
+          {/* Cross-Device App Install / Download */}
+          {onOpenInstallApp && (
+            <button
+              type="button"
+              onClick={onOpenInstallApp}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sky-400/55 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/70 text-sky-700 dark:text-sky-300 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              title={isEn ? 'Install App (Laptop, Android & iPhone)' : 'Tải App cho Laptop, Android & iPhone'}
+            >
+              <Download className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xl:inline">{isEn ? 'Install App' : 'Tải App'}</span>
+            </button>
+          )}
 
           {/* Settings */}
           <button

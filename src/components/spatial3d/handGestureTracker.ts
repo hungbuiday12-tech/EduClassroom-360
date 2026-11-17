@@ -410,6 +410,7 @@ export class HandGestureTracker {
   private stableGesture: HandGestureId = 'none';
   private missFrames = 0;
   private lastResultFrame: HandTrackingFrame | null = null;
+  private skipUntilMs = 0;
 
   public async ensureInitialized(): Promise<boolean> {
     if (this.landmarker) {
@@ -504,12 +505,23 @@ export class HandGestureTracker {
     }
     this.lastVideoTime = video.currentTime;
 
-    const nowMs = Math.max(this.lastTimestampMs + 1, performance.now());
+    const wallNow = performance.now();
+    if (wallNow < this.skipUntilMs && this.lastResultFrame) {
+      return this.lastResultFrame;
+    }
+
+    const nowMs = Math.max(this.lastTimestampMs + 1, wallNow);
     const dtSec = this.prevProcessMs > 0 ? Math.max(0.016, Math.min(0.2, (nowMs - this.prevProcessMs) / 1000)) : 0.05;
     this.prevProcessMs = nowMs;
     this.lastTimestampMs = nowMs;
 
+    const inferStart = performance.now();
     const result = this.landmarker.detectForVideo(video, nowMs);
+    const inferElapsed = performance.now() - inferStart;
+    if (inferElapsed > 34) {
+      // Back off gently on slower CPUs so main-thread UI & 3D rendering stay fluid
+      this.skipUntilMs = wallNow + Math.min(140, inferElapsed * 1.4);
+    }
     const hands = result.landmarks || [];
 
     if (hands.length === 0) {
@@ -664,10 +676,17 @@ export class HandGestureTracker {
       }
     }
 
-    const h1ThumbTip = tips.find((t) => t.id === 1) || null;
-    const h1IndexTip = tips.find((t) => t.id === 2) || null;
-    const h1MiddleTip = tips.find((t) => t.id === 3) || null;
-    const h2IndexTip = tips.find((t) => t.id === 7) || null;
+    let h1ThumbTip: HandTipPoint | null = null;
+    let h1IndexTip: HandTipPoint | null = null;
+    let h1MiddleTip: HandTipPoint | null = null;
+    let h2IndexTip: HandTipPoint | null = null;
+    for (let i = 0; i < tips.length; i++) {
+      const tp = tips[i];
+      if (tp.id === 1) h1ThumbTip = tp;
+      else if (tp.id === 2) h1IndexTip = tp;
+      else if (tp.id === 3) h1MiddleTip = tp;
+      else if (tp.id === 7) h2IndexTip = tp;
+    }
     const hand1Index = h1IndexTip ? { x: h1IndexTip.x, y: h1IndexTip.y } : null;
     const hand2Index = h2IndexTip ? { x: h2IndexTip.x, y: h2IndexTip.y } : null;
 

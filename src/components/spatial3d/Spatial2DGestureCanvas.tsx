@@ -420,6 +420,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
     const prevPointerDownRef = useRef<boolean>(false);
 
     const lastMetricPushRef = useRef<number>(0);
+    const prevMetricsRef = useRef<{ metricA: string; metricB: string; metricC: string } | null>(null);
 
     const worldToScreen = useCallback((wx: number, wy: number, w: number, h: number): Vec2 => {
       const s = worldScaleRef.current;
@@ -535,7 +536,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
       if (!canvas || !container) return;
 
       const updateSize = () => {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
         const w = container.clientWidth || 960;
         const h = container.clientHeight || 600;
         canvas.width = Math.floor(w * dpr);
@@ -567,11 +568,15 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
       [screenToWorld]
     );
 
-    // Main 60fps 2D geometry & gesture loop
+    // Main 60fps 2D geometry & gesture loop (pauses cleanly when tab is hidden)
     useEffect(() => {
       let rafId = 0;
 
       const renderFrame = (nowMs: number) => {
+        if (document.hidden) {
+          rafId = 0;
+          return;
+        }
         const canvas = canvasRef.current;
         const container = containerRef.current;
         if (!canvas || !container) {
@@ -1544,14 +1549,28 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
 
         if (nowMs - lastMetricPushRef.current > 90) {
           lastMetricPushRef.current = nowMs;
-          onMetricsChange({ metricA, metricB, metricC });
+          const prev = prevMetricsRef.current;
+          if (!prev || prev.metricA !== metricA || prev.metricB !== metricB || prev.metricC !== metricC) {
+            const next = { metricA, metricB, metricC };
+            prevMetricsRef.current = next;
+            onMetricsChange(next);
+          }
         }
 
         rafId = requestAnimationFrame(renderFrame);
       };
 
+      const onVisChange = () => {
+        if (!document.hidden && rafId === 0) {
+          rafId = requestAnimationFrame(renderFrame);
+        }
+      };
+      document.addEventListener('visibilitychange', onVisChange);
       rafId = requestAnimationFrame(renderFrame);
-      return () => cancelAnimationFrame(rafId);
+      return () => {
+        document.removeEventListener('visibilitychange', onVisChange);
+        if (rafId) cancelAnimationFrame(rafId);
+      };
     }, [accentCss, cameraActive, frozen, handFrameRef, mode2D, onMetricsChange, screenToWorld, virtualGesture, worldToScreen]);
 
     return (

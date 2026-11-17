@@ -48,6 +48,7 @@ export interface ExamQuestion {
 
 export interface ExamPaper {
   id: string;
+  examCode?: string;
   subject: ExamSubject;
   track: ExamTrack; // 'chuyen' | 'khong_chuyen'
   subjectTag: string; // e.g. "Toán Chuyên", "Vật Lý 12", "Tin Học ĐHQG"

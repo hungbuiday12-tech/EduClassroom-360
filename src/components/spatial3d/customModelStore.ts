@@ -88,6 +88,7 @@ export interface GenerateModelRequest {
   attachmentText?: string;
   fileName?: string;
   language: 'vi' | 'en';
+  scanMode?: 'ai_idea' | 'real_world_camera';
 }
 
 export async function requestAIGeneratedSpatialModel(

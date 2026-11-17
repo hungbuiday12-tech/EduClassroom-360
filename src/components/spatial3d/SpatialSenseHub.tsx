@@ -10,6 +10,7 @@ import {
   MousePointerClick,
   PenTool,
   RotateCcw,
+  Scan,
   Sparkles,
   Video
 } from 'lucide-react';
@@ -23,6 +24,7 @@ interface SpatialSenseHubProps {
   onLaunch2D: () => void;
   onLaunch2DGuide?: () => void;
   onOpenAICreator?: () => void;
+  onOpenRealScanner?: () => void;
 }
 
 type GuideViewTab = 'workflow' | 'gestures' | 'fallback';
@@ -34,7 +36,8 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
   onLaunch3D,
   onLaunch2D,
   onLaunch2DGuide,
-  onOpenAICreator
+  onOpenAICreator,
+  onOpenRealScanner
 }) => {
   const [guideTab, setGuideTab] = useState<GuideViewTab>('workflow');
 
@@ -130,6 +133,18 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {onOpenRealScanner && (
+              <button
+                type="button"
+                onClick={onOpenRealScanner}
+                className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/60 text-xs font-extrabold text-cyan-200 cursor-pointer"
+              >
+                <Scan className="w-3.5 h-3.5" />
+                <span>
+                  {isEn ? 'Scan Real Object → 3D' : 'Quét Thực Tế → 3D'}
+                </span>
+              </button>
+            )}
             {onOpenAICreator && (
               <button
                 type="button"
@@ -372,6 +387,73 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
             </div>
           </div>
         </div>
+
+        {/* PORTAL 3: HỌC QUA KHÔNG GIAN THỰC TẾ (CAMERA QUÉT ĐỒ VẬT XUNG QUANH → 3D) */}
+        {onOpenRealScanner && (
+          <div
+            style={{ animationDelay: '125ms' }}
+            className="spatial-holo-card spatial-step-reveal shadow-2xl"
+          >
+            <div className="spatial-holo-ring" />
+            <div className="relative z-10 rounded-[9px] bg-[#061224] p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 overflow-hidden">
+              <div className="spatial-laser-sweep" />
+
+              <div className="flex items-start gap-4 min-w-0">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-slate-950/90 border border-cyan-500/45 flex items-center justify-center shrink-0">
+                  <svg viewBox="0 0 100 100" className="w-16 h-16">
+                    <path d="M18 30 L18 18 L30 18" fill="none" stroke="#22d3ee" strokeWidth="3" />
+                    <path d="M70 18 L82 18 L82 30" fill="none" stroke="#22d3ee" strokeWidth="3" />
+                    <path d="M18 70 L18 82 L30 82" fill="none" stroke="#22d3ee" strokeWidth="3" />
+                    <path d="M70 82 L82 82 L82 70" fill="none" stroke="#22d3ee" strokeWidth="3" />
+                    <polygon
+                      points="50,24 72,38 72,62 50,76 28,62 28,38"
+                      fill="rgba(34,211,238,0.16)"
+                      stroke="#38bdf8"
+                      strokeWidth="2"
+                    />
+                    <line x1="20" y1="50" x2="80" y2="50" stroke="#f97316" strokeWidth="2" strokeDasharray="4 3" />
+                  </svg>
+                </div>
+
+                <div className="space-y-2 min-w-0">
+                  <div className="flex items-center gap-2 text-[11px] font-mono font-extrabold text-cyan-300 uppercase tracking-wider">
+                    <Scan className="w-4 h-4" />
+                    <span>
+                      {isEn
+                        ? 'SPACE MODULE 03 · REAL-WORLD AR CAMERA SCANNER'
+                        : 'PHẦN 03 · HỌC QUA KHÔNG GIAN THỰC TẾ'}
+                    </span>
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-white">
+                    {isEn
+                      ? 'Scan Surrounding Physical Objects → Interactive 3D Models'
+                      : 'Dùng Camera Quét Đồ Vật Xung Quanh → Tạo Mô Phỏng 3D Tương Tác'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Point your camera at any desk item, gadget, bottle, fan, or tool around you. AI recognizes its geometry and generates a full 3D assembly with identical Studio powers: 2-hand explode, 2-finger isolate, 4-finger reassemble, slice plane & .OBJ export.'
+                      : 'Hướng camera vào đồ vật thật xung quanh bạn (cốc, quạt, đèn bàn, tai nghe, khối hình...) để chụp và tải lên tạo mô hình 3D hoàn chỉnh — hỗ trợ đầy đủ tách lớp 2 tay, soi chi tiết 2 ngón, ghép 4 ngón, mặt cắt & xuất .OBJ như mô hình có sẵn.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={onOpenRealScanner}
+                  className="cs-deck-btn flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-slate-950 text-xs font-extrabold cursor-pointer whitespace-nowrap shadow-lg shadow-cyan-500/20"
+                >
+                  <Scan className="w-4 h-4" />
+                  <span>{isEn ? 'Open Camera Scanner' : 'Bật Camera Quét Đồ Vật'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <span className="text-[11px] font-mono text-cyan-300/90 text-center md:text-right">
+                  {isEn ? 'Also supports photo upload' : 'Hỗ trợ cả chụp trực tiếp & tải ảnh'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* SECTION 3: FLASHY ANIMATED CONTROLS & OPERATION MANUAL FRAME */}
         <div

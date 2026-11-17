@@ -63,6 +63,9 @@ export interface CustomSpatialModel {
   descVi: string;
   descEn: string;
   sourceIdea: string;
+  sourceType?: 'ai_idea' | 'real_world_camera';
+  detectedObjectVi?: string;
+  detectedObjectEn?: string;
   hasImageAttachment?: boolean;
   attachmentName?: string;
   createdAt: string;

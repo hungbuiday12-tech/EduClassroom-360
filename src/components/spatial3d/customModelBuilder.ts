@@ -13,13 +13,13 @@ export interface CustomAnimatedPartEntry {
 function createPrimitiveGeometry(kind: CustomModelPartSpec['primitive']): THREE.BufferGeometry {
   switch (kind) {
     case 'sphere':
-      return new THREE.SphereGeometry(0.55, 24, 18);
+      return new THREE.SphereGeometry(0.55, 28, 22);
     case 'cylinder':
-      return new THREE.CylinderGeometry(0.45, 0.45, 1.1, 24);
+      return new THREE.CylinderGeometry(0.45, 0.45, 1.1, 32);
     case 'cone':
-      return new THREE.ConeGeometry(0.55, 1.15, 24);
+      return new THREE.ConeGeometry(0.55, 1.15, 32);
     case 'torus':
-      return new THREE.TorusGeometry(0.58, 0.16, 14, 36);
+      return new THREE.TorusGeometry(0.58, 0.16, 16, 40);
     case 'octahedron':
       return new THREE.OctahedronGeometry(0.62, 0);
     case 'dodecahedron':
@@ -27,9 +27,9 @@ function createPrimitiveGeometry(kind: CustomModelPartSpec['primitive']): THREE.
     case 'icosahedron':
       return new THREE.IcosahedronGeometry(0.58, 0);
     case 'ring':
-      return new THREE.TorusGeometry(0.75, 0.055, 12, 40);
+      return new THREE.TorusGeometry(0.75, 0.055, 14, 44);
     case 'capsule':
-      return new THREE.CapsuleGeometry(0.32, 0.72, 8, 16);
+      return new THREE.CapsuleGeometry(0.32, 0.72, 10, 20);
     case 'prism':
       return new THREE.CylinderGeometry(0.52, 0.52, 1.05, 6);
     case 'box':

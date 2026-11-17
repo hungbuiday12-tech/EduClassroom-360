@@ -1,8 +1,9 @@
 import { ExamPaper } from '../types';
 import { EXTRA_EXAM_PAPERS } from './extraExamsData';
 import { EXTRA_EXAM_PAPERS_BATCH_2 } from './extraExamsBatch2Data';
+import { EXTRA_EXAM_PAPERS_BATCH_3 } from './extraExamsBatch3Data';
 
-export const EXAM_PAPERS: ExamPaper[] = [
+const RAW_EXAM_PAPERS: ExamPaper[] = [
   {
     "id": "math-chuyen-01",
     "subject": "math",
@@ -3764,5 +3765,68 @@ export const EXAM_PAPERS: ExamPaper[] = [
     ]
   },
   ...EXTRA_EXAM_PAPERS,
-  ...EXTRA_EXAM_PAPERS_BATCH_2
+  ...EXTRA_EXAM_PAPERS_BATCH_2,
+  ...EXTRA_EXAM_PAPERS_BATCH_3
 ];
+
+const EXAM_CODE_PREFIX: Record<string, string> = {
+  'math:chuyen': 'TC',
+  'math:khong_chuyen': 'TK',
+  'physics:chuyen': 'LC',
+  'physics:khong_chuyen': 'LK',
+  'cs:chuyen': 'IC',
+  'cs:khong_chuyen': 'IK'
+};
+
+export function normalizeExamCode(raw: string): string {
+  const cleaned = String(raw || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+  const match = cleaned.match(/^([A-Z]{2})0*(\d+)$/);
+  if (match) {
+    return `${match[1]}${match[2].padStart(3, '0')}`;
+  }
+  return cleaned;
+}
+
+const bucketCounters: Record<string, number> = {};
+const usedCodes = new Set<string>();
+
+export const EXAM_PAPERS: ExamPaper[] = RAW_EXAM_PAPERS.map((exam) => {
+  const bucketKey = `${exam.subject}:${exam.track}`;
+  const prefix = EXAM_CODE_PREFIX[bucketKey] || 'EX';
+  bucketCounters[bucketKey] = (bucketCounters[bucketKey] || 0) + 1;
+  let code = exam.examCode || `${prefix}-${String(bucketCounters[bucketKey]).padStart(3, '0')}`;
+  while (usedCodes.has(normalizeExamCode(code))) {
+    bucketCounters[bucketKey] += 1;
+    code = `${prefix}-${String(bucketCounters[bucketKey]).padStart(3, '0')}`;
+  }
+  usedCodes.add(normalizeExamCode(code));
+  return {
+    ...exam,
+    examCode: code
+  };
+});
+
+export function getExamCode(exam: ExamPaper): string {
+  return exam.examCode || exam.id.toUpperCase();
+}
+
+export const EXAM_BY_CODE: Map<string, ExamPaper> = new Map(
+  EXAM_PAPERS.flatMap((exam) => [
+    [normalizeExamCode(getExamCode(exam)), exam],
+    [exam.id.toUpperCase(), exam]
+  ])
+);
+
+export function findExamByCode(query: string): ExamPaper | null {
+  const trimmed = String(query || '').trim();
+  if (!trimmed) return null;
+  const byNorm = EXAM_BY_CODE.get(normalizeExamCode(trimmed));
+  if (byNorm) return byNorm;
+  const byUpper = EXAM_BY_CODE.get(trimmed.toUpperCase());
+  if (byUpper) return byUpper;
+  return null;
+}
+

@@ -3175,7 +3175,10 @@ function clampNum(v: any, min: number, max: number, fallback: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
-function sanitizeCustomModel(raw: any, sourceMeta: { ideaText: string; hasImage?: boolean; fileName?: string }): any {
+function sanitizeCustomModel(
+  raw: any,
+  sourceMeta: { ideaText: string; hasImage?: boolean; fileName?: string; scanMode?: string }
+): any {
   const rawParts = Array.isArray(raw?.parts) ? raw.parts.slice(0, 10) : [];
   const sanitizedParts = rawParts.map((p: any, idx: number) => {
     const px = clampNum(p?.pos?.[0], -3.2, 3.2, 0);
@@ -3255,11 +3258,14 @@ function sanitizeCustomModel(raw: any, sourceMeta: { ideaText: string; hasImage?
     id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     titleVi: String(raw?.titleVi || sourceMeta.ideaText.slice(0, 46) || 'Mô Hình Sáng Tạo AI'),
     titleEn: String(raw?.titleEn || sourceMeta.ideaText.slice(0, 46) || 'AI Custom 3D Model'),
-    badge: String(raw?.badge || 'SÁNG TẠO AI').toUpperCase().slice(0, 16),
+    badge: String(raw?.badge || (sourceMeta.scanMode === 'real_world_camera' ? 'QUÉT THỰC TẾ' : 'SÁNG TẠO AI')).toUpperCase().slice(0, 16),
     formula: String(raw?.formula || 'Σ F = m·a · V = ∫ dV').slice(0, 80),
     descVi: String(raw?.descVi || `Mô hình 3D do Syn AI thiết kế từ ý tưởng: ${sourceMeta.ideaText.slice(0, 120)}`),
     descEn: String(raw?.descEn || `Interactive 3D assembly synthesized from: ${sourceMeta.ideaText.slice(0, 120)}`),
     sourceIdea: sourceMeta.ideaText.slice(0, 500),
+    sourceType: sourceMeta.scanMode === 'real_world_camera' ? 'real_world_camera' : 'ai_idea',
+    detectedObjectVi: raw?.detectedObjectVi ? String(raw.detectedObjectVi).slice(0, 80) : undefined,
+    detectedObjectEn: raw?.detectedObjectEn ? String(raw.detectedObjectEn).slice(0, 80) : undefined,
     hasImageAttachment: Boolean(sourceMeta.hasImage),
     attachmentName: sourceMeta.fileName ? String(sourceMeta.fileName).slice(0, 120) : undefined,
     createdAt: new Date().toISOString(),
@@ -3306,7 +3312,8 @@ app.post('/api/spatial/generate-model', async (req: Request, res: Response) => {
     imageMimeType = 'image/jpeg',
     attachmentText = '',
     fileName = '',
-    language = 'vi'
+    language = 'vi',
+    scanMode = 'ai_idea'
   } = req.body || {};
 
   const trimmedIdea = String(ideaText || '').trim();
@@ -3320,16 +3327,29 @@ app.post('/api/spatial/generate-model', async (req: Request, res: Response) => {
   try {
     const ai = getGenAI();
     const isEn = language === 'en';
+    const isCameraScan = scanMode === 'real_world_camera';
+
+    const cameraScanAddendum = isCameraScan
+      ? `
+REAL-WORLD CAMERA OBJECT SCAN MODE:
+- You are looking at a live camera photo of a real physical object in the user's environment.
+- First, accurately identify the primary physical object in the foreground (include "detectedObjectVi" and "detectedObjectEn" in your JSON).
+- Reconstruct the object's authentic 3D silhouette, proportions, real surface colors (using accurate "customHex" values matching the object in the photo!), and internal/external structural parts (6 to 10 parts) so the user can explode, isolate every part with 2 fingers, slice it, and study its real-world geometry & STEM physics!
+- Set "badge" to "QUÉT THỰC TẾ" (or concise category like "VẬT THỂ THỰC TẾ").
+`
+      : '';
 
     const systemInstruction = `You are a Principal 3D CAD & STEM Procedural Geometry Architect for Synapse.
-Your job is to convert the user's text idea, uploaded image/sketch, or technical document into a coherent, recognizable, multi-part interactive 3D assembly in Three.js.
-
+Your job is to convert the user's text idea, uploaded image/sketch, camera scan photo, or technical document into a coherent, recognizable, multi-part interactive 3D assembly in Three.js.
+${cameraScanAddendum}
 OUTPUT ONLY VALID JSON matching this exact schema:
 {
+  "detectedObjectVi": "Short name of recognized real object in Vietnamese (if from photo)",
+  "detectedObjectEn": "Short name of recognized real object in English (if from photo)",
   "titleVi": "Vietnamese title (concise, max 48 chars)",
   "titleEn": "English title (concise, max 48 chars)",
-  "badge": "SHORT UPPERCASE BADGE (e.g. HÀNG KHÔNG, SINH HỌC, KIẾN TRÚC, CƠ KHÍ)",
-  "formula": "Key governing STEM formula (e.g. F = ṁ·v · P = ½ρAv³)",
+  "badge": "SHORT UPPERCASE BADGE (e.g. QUÉT THỰC TẾ, HÀNG KHÔNG, SINH HỌC, CƠ KHÍ)",
+  "formula": "Key governing STEM formula (e.g. V = πr²h · F = ṁ·v)",
   "descVi": "1-2 sentences describing what this 3D model shows and how to interact (explode, inspect parts, slice).",
   "descEn": "1-2 sentences in English.",
   "parts": [
@@ -3369,11 +3389,13 @@ OUTPUT ONLY VALID JSON matching this exact schema:
 CRITICAL 3D ENGINEERING RULES:
 1. Build 5 to 9 parts that genuinely assemble into the recognizable silhouette of the requested object (never scatter random blobs!).
 2. Keep the assembled object grounded and centered neatly above the grid floor: x and z in [-2.2, 2.2], y in [0.4, 3.6].
-3. Scale values sx, sy, sz in [0.22, 2.8] to sculpt recognizable proportions (e.g. long cylinder for fuselage/rocket body, flattened boxes for wings/fins/solar panels, torus/ring for orbits/nozzles/rings, cone for nosecone/funnel, sphere/icosahedron for cores/chambers).
+3. Scale values sx, sy, sz in [0.22, 2.8] to sculpt recognizable proportions (e.g. long cylinder for cup/bottle/fuselage, flattened boxes for wings/screens/blades, torus/ring for handles/rims/wheels, cone for lamp shades/funnels, sphere/icosahedron for bulbs/globes/joints).
 4. Set explodeDir [ex, ey, ez] pointing cleanly outward from the assembly center so pulling 2 hands apart separates every part clearly without overlapping!
-5. Give dynamic parts subtle animations (e.g. spin_y for rotors/turbines, pulse for heart/plasma core, bob_y for floating modules).`;
+5. Give dynamic parts subtle animations where natural (e.g. spin_y for fan blades/rotors/wheels, pulse for glowing indicator/core, none for static structural parts).`;
 
-    const promptText = `User idea: ${trimmedIdea || 'Analyze the attached image/file and recreate it in 3D.'}
+    const promptText = isCameraScan
+      ? `Analyze the real-world object photographed by the user's camera and reconstruct it faithfully as an interactive multi-part 3D model with accurate colors and STEM properties.${trimmedIdea ? `\nUser hint about this object: ${trimmedIdea}` : ''}\nPreferred primary UI language: ${isEn ? 'English (still include Vietnamese fields)' : 'Vietnamese (still include English fields)'}.`
+      : `User idea: ${trimmedIdea || 'Analyze the attached image/file and recreate it in 3D.'}
 ${fileName ? `Attachment filename: ${fileName}` : ''}
 ${trimmedDoc ? `Attachment content excerpt:\n${trimmedDoc}` : ''}
 Preferred primary UI language: ${isEn ? 'English (still include Vietnamese fields)' : 'Vietnamese (still include English fields)'}.`;
@@ -3401,13 +3423,14 @@ Preferred primary UI language: ${isEn ? 'English (still include Vietnamese field
 
     const parsed = safeParseGeminiJson<any>(response.text, {});
     if (!Array.isArray(parsed?.parts) || parsed.parts.length === 0) {
-      throw new Error('Syn AI chưa tạo được cấu trúc 3D hợp lệ. Vui lòng mô tả rõ hơn và thử lại.');
+      throw new Error('Syn AI chưa tạo được cấu trúc 3D hợp lệ. Vui lòng chụp rõ vật thể hơn và thử lại.');
     }
 
     const finalModel = sanitizeCustomModel(parsed, {
-      ideaText: trimmedIdea || fileName || 'Sáng tạo 3D',
+      ideaText: trimmedIdea || parsed?.detectedObjectVi || fileName || (isCameraScan ? 'Vật thể quét Camera' : 'Sáng tạo 3D'),
       hasImage: Boolean(cleanImg),
-      fileName: fileName || undefined
+      fileName: fileName || undefined,
+      scanMode: isCameraScan ? 'real_world_camera' : 'ai_idea'
     });
 
     customModelsDb.models = [finalModel, ...customModelsDb.models].slice(0, 80);

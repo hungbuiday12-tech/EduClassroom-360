@@ -34,6 +34,7 @@ import {
   Play,
   Plus,
   RotateCcw,
+  Scan,
   Scissors,
   Settings2,
   Sliders,
@@ -85,6 +86,7 @@ import { SpatialSenseHub } from './SpatialSenseHub';
 import { Spatial3DGuideModal } from './Spatial3DGuideModal';
 import { Spatial2DGuideModal } from './Spatial2DGuideModal';
 import { SpatialAIModelCreatorModal } from './SpatialAIModelCreatorModal';
+import { SpatialRealWorldScannerModal } from './SpatialRealWorldScannerModal';
 import { CustomSpatialModel } from './customModelTypes';
 import { buildCustomSpatialModel, updateCustomModelKinematics } from './customModelBuilder';
 import { deleteCustomSpatialModel, fetchCustomSpatialModels } from './customModelStore';
@@ -413,6 +415,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [show2DGuide, setShow2DGuide] = useState<boolean>(false);
   const [autoShow2DGuide, setAutoShow2DGuide] = useState<boolean>(true);
   const [showAICreator, setShowAICreator] = useState<boolean>(false);
+  const [showRealScanner, setShowRealScanner] = useState<boolean>(false);
   const [customModels, setCustomModels] = useState<CustomSpatialModel[]>([]);
   const [activeCustomId, setActiveCustomId] = useState<string | null>(null);
   const [spaceMode, setSpaceMode] = useState<SpaceMode>('3d');
@@ -2875,6 +2878,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     setCameraLoading(false);
   }, []);
 
+  const handleOpenRealScanner = useCallback(() => {
+    if (cameraActive) {
+      stopCamera();
+    }
+    setShowRealScanner(true);
+  }, [cameraActive, stopCamera]);
+
   useEffect(() => {
     return () => {
       stopCamera();
@@ -3192,6 +3202,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           onLaunch2D={() => handleEnter2DSpace(false)}
           onLaunch2DGuide={() => handleEnter2DSpace(true)}
           onOpenAICreator={() => setShowAICreator(true)}
+          onOpenRealScanner={handleOpenRealScanner}
         />
       )}
 
@@ -3315,6 +3326,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>{isEn ? '+ Create AI 3D' : '+ Tạo AI 3D'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenRealScanner}
+                    className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-cyan-500/90 hover:bg-cyan-400 border border-cyan-300 text-xs font-extrabold text-slate-950 cursor-pointer whitespace-nowrap shrink-0"
+                    title={isEn ? 'Scan Real Object with Camera → 3D' : 'Quét đồ vật thực tế bằng Camera → 3D'}
+                  >
+                    <Scan className="w-3.5 h-3.5" />
+                    <span>{isEn ? 'Scan Real → 3D' : 'Quét Thực Tế'}</span>
                   </button>
                 </>
               )}
@@ -4031,6 +4051,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                         <Sparkles className="w-3 h-3" />
                         <span>{isEn ? '+ AI Model' : '+ Tạo Mô Hình AI'}</span>
                       </button>
+                      <button
+                        type="button"
+                        onClick={handleOpenRealScanner}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-extrabold cursor-pointer"
+                      >
+                        <Scan className="w-3 h-3" />
+                        <span>{isEn ? 'Scan Real → 3D' : 'Quét Thực Tế'}</span>
+                      </button>
                     </div>
                     <span className="text-[11px] text-slate-400 truncate max-w-md">
                       {activeCustomModel
@@ -4057,14 +4085,24 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                             : 'Mô tả ý tưởng hoặc tải lên ảnh/tài liệu để AI dựng mô hình 3D hoàn chỉnh ngay tại đây.'}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowAICreator(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold shrink-0 cursor-pointer"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>{isEn ? 'Create First AI Model' : 'Tạo Mô Hình Đầu Tiên'}</span>
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={handleOpenRealScanner}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-extrabold cursor-pointer"
+                        >
+                          <Scan className="w-3.5 h-3.5" />
+                          <span>{isEn ? 'Scan Real Object' : 'Quét Đồ Vật Thực Tế'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowAICreator(true)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>{isEn ? 'Create First AI Model' : 'Tạo Mô Hình Đầu Tiên'}</span>
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 max-h-[146px] overflow-y-auto pr-0.5">
@@ -5056,6 +5094,28 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             isEn
               ? `Created & saved AI 3D model: ${created.titleEn}`
               : `Đã tạo & lưu vào Sáng tạo tự do: ${created.titleVi}`
+          );
+        }}
+      />
+
+      {/* Real-World Space Camera Scanner -> Complete 3D Model */}
+      <SpatialRealWorldScannerModal
+        isOpen={showRealScanner}
+        isEn={isEn}
+        onClose={() => setShowRealScanner(false)}
+        onCreated={(created) => {
+          setCustomModels((prev) => [created, ...prev.filter((m) => m.id !== created.id)]);
+          setActiveCustomId(created.id);
+          setEntryView('studio');
+          setSpaceMode('3d');
+          setDockTab('shapes');
+          setShapeFilter('custom');
+          setShowRealScanner(false);
+          setShow3DGuide(false);
+          showToast(
+            isEn
+              ? `Scanned real object → 3D: ${created.titleEn}`
+              : `Đã quét thực tế & dựng 3D: ${created.titleVi}`
           );
         }}
       />

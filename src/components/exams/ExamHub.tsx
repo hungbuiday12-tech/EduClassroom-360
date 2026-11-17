@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { EXAM_PAPERS } from '../../data/examData';
+import { EXAM_PAPERS, findExamByCode, getExamCode, normalizeExamCode } from '../../data/examData';
 import {
   ExamImageEvaluation,
   ExamPaper,
@@ -14,6 +14,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { safeFetchJson } from '../../lib/apiClient';
 import { VoiceMicButton } from '../common/VoiceMicButton';
+import { ExamQuestionDiagram } from './ExamQuestionDiagram';
 import {
   Search,
   Sparkles,
@@ -43,7 +44,9 @@ import {
   X,
   Check,
   FileUp,
-  ClipboardPaste
+  ClipboardPaste,
+  Hash,
+  Printer
 } from 'lucide-react';
 
 interface ExamHubProps {
@@ -120,6 +123,8 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
   const [selectedTrack, setSelectedTrack] = useState<'all' | ExamTrack>('all');
   const [selectedSubject, setSelectedSubject] = useState<'all' | ExamSubject>('all');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const EXAMS_PER_PAGE = 18;
 
   // Fast Problem / Exam Upload Workbench State
   const [quickSubject, setQuickSubject] = useState<ExamSubject>('math');
@@ -583,21 +588,41 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
     setTimeout(() => setCopiedText(null), 2000);
   };
 
+  const codeLookupExam = useMemo(() => findExamByCode(searchKeyword), [searchKeyword]);
+
   const filteredExams = useMemo(() => {
+    const kw = searchKeyword.trim().toLowerCase();
+    const kwNorm = normalizeExamCode(searchKeyword).toLowerCase();
     return EXAM_PAPERS.filter((exam) => {
       if (selectedTrack !== 'all' && exam.track !== selectedTrack) return false;
       if (selectedSubject !== 'all' && exam.subject !== selectedSubject) return false;
-      if (searchKeyword.trim()) {
-        const kw = searchKeyword.toLowerCase();
+      if (kw) {
+        const codeStr = getExamCode(exam).toLowerCase();
+        const codeNorm = normalizeExamCode(getExamCode(exam)).toLowerCase();
+        const matchCode =
+          codeStr.includes(kw) ||
+          (kwNorm.length >= 2 && codeNorm.includes(kwNorm)) ||
+          exam.id.toLowerCase().includes(kw);
         const matchTitle = exam.title.toLowerCase().includes(kw);
         const matchSchool = exam.school.toLowerCase().includes(kw);
         const matchTopics = exam.topics.some((topic) => topic.toLowerCase().includes(kw));
         const matchSnippet = exam.featuredSnippet.toLowerCase().includes(kw);
-        if (!matchTitle && !matchSchool && !matchTopics && !matchSnippet) return false;
+        if (!matchCode && !matchTitle && !matchSchool && !matchTopics && !matchSnippet) return false;
       }
       return true;
     });
   }, [selectedTrack, selectedSubject, searchKeyword]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTrack, selectedSubject, searchKeyword]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredExams.length / EXAMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedExams = useMemo(() => {
+    const start = (safePage - 1) * EXAMS_PER_PAGE;
+    return filteredExams.slice(start, start + EXAMS_PER_PAGE);
+  }, [filteredExams, safePage]);
 
   const totalExams = EXAM_PAPERS.length;
   const countChuyen = useMemo(() => EXAM_PAPERS.filter((e) => e.track === 'chuyen').length, []);
@@ -748,10 +773,22 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
             <div className="border-b-2 border-slate-900 dark:border-slate-100 pb-6 text-center space-y-2">
               <div className="flex flex-col sm:flex-row items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest gap-2">
                 <div>{activeExam.school}</div>
-                <div className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                  {activeExam.track === 'chuyen'
-                    ? isEn ? 'TRACK: SPECIALIZED & OLYMPIAD' : 'LĨNH VỰC: CHUYÊN & HSG'
-                    : isEn ? 'TRACK: STANDARD / HIGH SCHOOL' : 'LĨNH VỰC: KHÔNG CHUYÊN / THPT'}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(getExamCode(activeExam))}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/70 transition-colors"
+                    title={isEn ? 'Copy exam code' : 'Sao chép mã đề'}
+                  >
+                    <Hash className="w-3 h-3" />
+                    <span className="font-mono">{isEn ? 'CODE:' : 'MÃ ĐỀ:'} {getExamCode(activeExam)}</span>
+                    {copiedText === getExamCode(activeExam) ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                  <div className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                    {activeExam.track === 'chuyen'
+                      ? isEn ? 'TRACK: SPECIALIZED & OLYMPIAD' : 'LĨNH VỰC: CHUYÊN & HSG'
+                      : isEn ? 'TRACK: STANDARD / HIGH SCHOOL' : 'LĨNH VỰC: KHÔNG CHUYÊN / THPT'}
+                  </div>
                 </div>
               </div>
 
@@ -906,7 +943,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                     </div>
 
                     {isSingleSolutionRevealed && (
-                      <div className="p-5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/50 space-y-2 animate-fadeIn">
+                      <div className="p-5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/50 space-y-3 animate-fadeIn">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 text-xs font-bold text-blue-900 dark:text-blue-300">
                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -931,6 +968,11 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                             )}
                           </button>
                         </div>
+                        <ExamQuestionDiagram
+                          question={q}
+                          subject={activeExam.subject}
+                          isEn={isEn}
+                        />
                         <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
                           <FormattedText text={q.solution} />
                         </div>
@@ -1436,6 +1478,12 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                           </button>
                         </div>
 
+                        <ExamQuestionDiagram
+                          question={q}
+                          subject={activeExam.subject}
+                          isEn={isEn}
+                        />
+
                         <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
                           <FormattedText text={q.solution} />
                         </div>
@@ -1510,17 +1558,204 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
               </p>
             </div>
 
-            <div className="relative w-full md:w-72 shrink-0">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                placeholder={isEn ? 'Search school, exam title, topic...' : 'Tìm trường, từ khóa đề thi...'}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <div className="w-full md:w-80 shrink-0 space-y-1.5">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  placeholder={
+                    isEn
+                      ? 'Search exam code (TC-001), school, topic...'
+                      : 'Nhập mã đề (VD: TC-001), trường, từ khóa...'
+                  }
+                  className="w-full pl-10 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchKeyword && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchKeyword('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    title={isEn ? 'Clear search' : 'Xóa tìm kiếm'}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-1 text-[10px]">
+                <span className="text-slate-400 font-semibold">{isEn ? 'Try code:' : 'Tra nhanh:'}</span>
+                {['TC-001', 'TK-051', 'LC-010', 'LK-060', 'IC-005', 'IK-055'].map((sampleCode) => (
+                  <button
+                    key={sampleCode}
+                    type="button"
+                    onClick={() => setSearchKeyword(sampleCode)}
+                    className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/70 font-mono font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900 cursor-pointer"
+                  >
+                    {sampleCode}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* INSTANT EXAM CODE SOLUTION + DIAGRAM LOOKUP PANEL */}
+          {codeLookupExam && (
+            <div className="rounded-3xl bg-gradient-to-br from-indigo-50/90 via-white to-sky-50/80 dark:from-indigo-950/40 dark:via-slate-900 dark:to-slate-900 border-2 border-indigo-400/70 dark:border-indigo-700 p-5 sm:p-6 shadow-lg space-y-5 animate-fadeIn">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-indigo-200/80 dark:border-indigo-800/70">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-mono font-extrabold">
+                      <Hash className="w-3.5 h-3.5" />
+                      {getExamCode(codeLookupExam)}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[11px] font-bold">
+                      {isEn ? 'Instant Code Lookup · Full Solutions & Diagrams' : 'Tra Cứu Nhanh Mã Đề · Lời Giải Chi Tiết & Hình Vẽ'}
+                    </span>
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                    {codeLookupExam.title}
+                  </h2>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">
+                    {codeLookupExam.school} · {codeLookupExam.academicYear} · {codeLookupExam.questions.length}{' '}
+                    {isEn ? 'questions' : 'câu hỏi'}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0 print:hidden">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fullText = codeLookupExam.questions
+                        .map(
+                          (q) =>
+                            `=== ${q.number} (${q.points || ''}) ===\nĐỀ BÀI:\n${q.content}\n\nLỜI GIẢI CHI TIẾT:\n${q.solution}`
+                        )
+                        .join('\n\n');
+                      handleCopy(`[MÃ ĐỀ ${getExamCode(codeLookupExam)}] ${codeLookupExam.title}\n\n${fullText}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-indigo-400 cursor-pointer"
+                  >
+                    {copiedText?.startsWith(`[MÃ ĐỀ ${getExamCode(codeLookupExam)}]`) ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isEn ? 'Copy All Solutions' : 'Chép Toàn Bộ Lời Giải'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-indigo-400 cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>{isEn ? 'Print Solutions' : 'In Lời Giải'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenExam(codeLookupExam)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold cursor-pointer shadow-sm"
+                  >
+                    <span>{isEn ? 'Open Practice Exam' : 'Mở Phòng Thi Đề Này'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {codeLookupExam.questions.map((q, idx) => (
+                  <div
+                    key={`lookup-${codeLookupExam.id}-${idx}`}
+                    className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 space-y-3 shadow-xs"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-blue-600 text-white text-xs font-extrabold">
+                          {q.number}
+                        </span>
+                        {q.points && (
+                          <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                            ({q.points})
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(q.solution)}
+                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer print:hidden"
+                      >
+                        {copiedText === q.solution ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                        <span>{isEn ? 'Copy' : 'Chép lời giải'}</span>
+                      </button>
+                    </div>
+
+                    <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
+                      <FormattedText text={q.content} />
+                    </div>
+
+                    <ExamQuestionDiagram
+                      question={q}
+                      subject={codeLookupExam.subject}
+                      isEn={isEn}
+                    />
+
+                    {q.simulationLink && (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (q.simulationLink?.type === 'math') {
+                              const tab = q.simulationLink.targetId as 'grapher' | 'geometry' | 'math3d';
+                              navigate({ subject: 'math', mathTab: tab });
+                            } else if (q.simulationLink?.type === 'physics') {
+                              navigate({ subject: 'physics', physicsView: 'catalog' });
+                            } else if (q.simulationLink?.type === 'cs') {
+                              navigate({ subject: 'cs', csViewMode: 'visualizer' });
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 text-[11px] font-bold hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors cursor-pointer whitespace-nowrap print:hidden"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                          <span>
+                            {isEn ? `Open 2D/3D Lab: ${q.simulationLink.label}` : `Mở mô phỏng 2D/3D: ${q.simulationLink.label}`}
+                          </span>
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="p-4 rounded-xl bg-blue-50/75 dark:bg-blue-950/35 border border-blue-200/80 dark:border-blue-900/60 space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs font-extrabold text-blue-800 dark:text-blue-300">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span>{isEn ? 'Detailed Step-by-Step Solution:' : 'Lời Giải Chi Tiết:'}</span>
+                      </div>
+                      <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                        <FormattedText text={q.solution} />
+                      </div>
+                      {q.keyFormulasOrHints && q.keyFormulasOrHints.length > 0 && (
+                        <div className="pt-2 border-t border-blue-200/60 dark:border-blue-900/50 flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] font-bold text-slate-500">
+                            {isEn ? 'Key formulas:' : 'Công thức chốt:'}
+                          </span>
+                          {q.keyFormulasOrHints.map((hint, hIdx) => (
+                            <span
+                              key={hIdx}
+                              className="px-2 py-0.5 rounded text-[11px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                            >
+                              <FormattedText text={hint} />
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* FAST PROBLEM / EXAM UPLOAD WORKBENCH */}
           <div
@@ -1800,7 +2035,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
 
           {/* Exam Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredExams.map((exam) => (
+            {paginatedExams.map((exam) => (
               <div
                 key={exam.id}
                 onClick={() => handleOpenExam(exam)}
@@ -1808,18 +2043,24 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold ${
-                        exam.track === 'chuyen'
-                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                          : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                      }`}
-                    >
-                      {exam.track === 'chuyen'
-                        ? isEn ? 'Specialized' : 'Đề Chuyên'
-                        : isEn ? 'Standard' : 'Không Chuyên'}
-                    </span>
-                    <span className="text-[11px] font-medium text-slate-400">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-extrabold bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/25">
+                        <Hash className="w-3 h-3" />
+                        {getExamCode(exam)}
+                      </span>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold ${
+                          exam.track === 'chuyen'
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                            : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        }`}
+                      >
+                        {exam.track === 'chuyen'
+                          ? isEn ? 'Specialized' : 'Đề Chuyên'
+                          : isEn ? 'Standard' : 'Không Chuyên'}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-400 shrink-0">
                       {exam.timeMinutes} {isEn ? 'min' : 'phút'}
                     </span>
                   </div>
@@ -1861,6 +2102,37 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
               </div>
             ))}
           </div>
+
+          {filteredExams.length > EXAMS_PER_PAGE && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 px-4 py-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80">
+              <div className="text-xs text-slate-600 dark:text-slate-400 tabular-nums">
+                {isEn
+                  ? `Showing ${(safePage - 1) * EXAMS_PER_PAGE + 1}–${Math.min(safePage * EXAMS_PER_PAGE, filteredExams.length)} of ${filteredExams.length} exams`
+                  : `Đang hiển thị ${(safePage - 1) * EXAMS_PER_PAGE + 1}–${Math.min(safePage * EXAMS_PER_PAGE, filteredExams.length)} / ${filteredExams.length} đề thi`}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                <button
+                  type="button"
+                  disabled={safePage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                >
+                  {isEn ? 'Previous' : 'Trang trước'}
+                </button>
+                <span className="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tabular-nums">
+                  {safePage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                >
+                  {isEn ? 'Next' : 'Trang sau'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {filteredExams.length === 0 && (
             <div className="p-12 text-center bg-white/60 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800">

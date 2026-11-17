@@ -60,6 +60,7 @@ interface ArenaAttemptRecord {
   displayName: string;
   weekId: string;
   dateKey: string;
+  division?: string;
   subject: ArenaSubjectServer;
   mode: 'mcq' | 'essay';
   score: number;
@@ -980,6 +981,7 @@ app.get('/api/arena/state', (req: Request, res: Response) => {
   const weekId = String(req.query.weekId || '').trim();
   const dateKey = String(req.query.dateKey || '').trim();
   const userId = String(req.query.userId || '').trim();
+  const division = String(req.query.division || '').trim();
 
   if (!weekId) {
     return res.status(400).json({ error: 'Thiếu tham số weekId' });
@@ -1000,7 +1002,12 @@ app.get('/api/arena/state', (req: Request, res: Response) => {
     for (const subj of ['math', 'physics', 'cs'] as ArenaSubjectServer[]) {
       userAttemptsToday[subj] =
         arenaDb.attempts.find(
-          (a) => a.userId === userId && a.dateKey === dateKey && a.subject === subj
+          (a) =>
+            a.userId === userId &&
+            a.dateKey === dateKey &&
+            a.subject === subj &&
+            a.weekId === weekId &&
+            (!division || (a.division || division) === division)
         ) || null;
     }
   }
@@ -1008,6 +1015,7 @@ app.get('/api/arena/state', (req: Request, res: Response) => {
   return res.json({
     weekId,
     dateKey,
+    division: division || undefined,
     leaderboard,
     userAttemptsToday,
     userWeekAttempts
@@ -1021,6 +1029,7 @@ app.post('/api/arena/submit', (req: Request, res: Response) => {
     displayName,
     weekId,
     dateKey,
+    division,
     subject,
     mode,
     score,
@@ -1038,26 +1047,33 @@ app.post('/api/arena/submit', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Môn thi đấu không hợp lệ.' });
   }
 
-  // Enforce strictly 1 attempt per subject per day
+  const safeDivision = String(division || '12k').slice(0, 16);
+
+  // Enforce strictly 1 attempt per subject per day per division
   const alreadyDoneToday = arenaDb.attempts.find(
-    (a) => a.userId === userId && a.dateKey === dateKey && a.subject === subject
+    (a) =>
+      a.userId === userId &&
+      a.dateKey === dateKey &&
+      a.subject === subject &&
+      a.weekId === weekId
   );
 
   if (alreadyDoneToday) {
     return res.status(409).json({
-      error: 'Bạn đã hoàn thành lượt thi đấu môn này trong hôm nay (tối đa 1 lần/ngày/môn). Hãy quay lại vào ngày mai!',
+      error: 'Bạn đã hoàn thành lượt thi đấu môn này trong khu vực này hôm nay (tối đa 1 lần/ngày/môn). Hãy quay lại vào ngày mai hoặc thử khu vực khác!',
       existingAttempt: alreadyDoneToday
     });
   }
 
   const clampedScore = Math.max(0, Math.min(100, Math.round(score * 10) / 10));
   const record: ArenaAttemptRecord = {
-    id: `${userId}_${dateKey}_${subject}`,
+    id: `${userId}_${dateKey}_${subject}_${safeDivision}`,
     userId: String(userId).slice(0, 128),
     username: String(username || 'hocvien').slice(0, 40),
     displayName: String(displayName || 'Học viên').slice(0, 100),
     weekId: String(weekId).slice(0, 16),
     dateKey: String(dateKey).slice(0, 16),
+    division: safeDivision,
     subject,
     mode: mode === 'essay' ? 'essay' : 'mcq',
     score: clampedScore,

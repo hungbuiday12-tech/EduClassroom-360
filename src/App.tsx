@@ -42,10 +42,34 @@ function MainApp() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [isSynDockOpen, setIsSynDockOpen] = useState<boolean>(false);
+  const [isArenaMatchActive, setIsArenaMatchActive] = useState<boolean>(false);
+  const isArenaMatchActiveRef = useRef(false);
+  isArenaMatchActiveRef.current = isArenaMatchActive;
+  const currentSubjectRef = useRef(currentSubject);
+  currentSubjectRef.current = currentSubject;
   const synDockRef = useRef<HTMLDivElement | null>(null);
   const [tutorContext, setTutorContext] = useState<TutorContextPayload>({
     subject: 'math'
   });
+
+  useEffect(() => {
+    if (currentSubject !== 'arena' && isArenaMatchActive) {
+      setIsArenaMatchActive(false);
+    }
+  }, [currentSubject, isArenaMatchActive]);
+
+  const handleArenaMatchActiveChange = React.useCallback(
+    (active: boolean) => {
+      setIsArenaMatchActive(active);
+      if (active) {
+        setIsSynDockOpen(false);
+        if (isTutorOpenRef.current) {
+          navigate({ tutorOpen: false }, { replace: true });
+        }
+      }
+    },
+    [navigate]
+  );
 
   useEffect(() => {
     if (!isSynDockOpen) return;
@@ -59,6 +83,9 @@ function MainApp() {
   }, [isSynDockOpen]);
 
   const handleOpenTutor = (ctx?: TutorContextPayload) => {
+    if (currentSubjectRef.current === 'arena' && isArenaMatchActiveRef.current) {
+      return;
+    }
     const fallbackSubj: SubjectType =
       currentSubject === 'physics' || currentSubject === 'physics_sims'
         ? 'physics'
@@ -183,6 +210,8 @@ function MainApp() {
       }
 
       if (!e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+      // Disable AI shortcuts while actively competing in Arena match
+      if (currentSubjectRef.current === 'arena' && isArenaMatchActiveRef.current) return;
       // Only trigger for Left Ctrl (or when Ctrl was already held before focus and not Right Ctrl)
       const isLeftCtrlActive = leftCtrlDownRef.current || !rightCtrlDownRef.current;
       if (!isLeftCtrlActive) return;
@@ -361,6 +390,7 @@ function MainApp() {
                       onBack={goBack}
                       onEarnXP={handleEarnXP}
                       onOpenTutor={handleOpenTutor}
+                      onMatchActiveChange={handleArenaMatchActiveChange}
                     />
                   )}
 
@@ -455,7 +485,10 @@ function MainApp() {
           <FloatingFocusTimer />
 
           {/* Global 3-Subject x 3-Mode Syn AI Drawer & Compact Bottom-Right Syn AI Mini-Chat */}
-          {!isTutorOpen && currentSubject !== 'synapse_v2' && currentSubject !== 'spatial_3d' && (
+          {!isTutorOpen &&
+            currentSubject !== 'synapse_v2' &&
+            currentSubject !== 'spatial_3d' &&
+            !(currentSubject === 'arena' && isArenaMatchActive) && (
             <div
               ref={synDockRef}
               className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-[85] flex flex-col items-end gap-2"

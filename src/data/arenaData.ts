@@ -1,4 +1,28 @@
-import { ArenaEssayPrompt, ArenaQuestionMCQ, ArenaSubject } from '../types';
+import {
+  ArenaDivisionId,
+  ArenaDivisionMeta,
+  ArenaEssayPrompt,
+  ArenaQuestionMCQ,
+  ArenaSubject
+} from '../types';
+import {
+  ARENA_DIVISIONS,
+  ARENA_DIVISION_ESSAY_BANK,
+  ARENA_DIVISION_MCQ_BANK
+} from './arenaDivisionsData';
+
+export { ARENA_DIVISIONS, ARENA_DIVISION_ESSAY_BANK, ARENA_DIVISION_MCQ_BANK };
+
+export function getArenaDivisionMeta(division: ArenaDivisionId): ArenaDivisionMeta {
+  return ARENA_DIVISIONS.find((d) => d.id === division) || ARENA_DIVISIONS[6]; // default 12k
+}
+
+/**
+ * Scope weekId cleanly per division (<= 13 chars, compatible with Firestore rules <= 16 chars)
+ */
+export function getArenaScopedWeekId(baseWeekId: string, division: ArenaDivisionId): string {
+  return `${baseWeekId}_${division}`;
+}
 
 /**
  * Compute current dateKey ('YYYY-MM-DD') and ISO weekId ('YYYY-Www') in Vietnam Time (UTC+7)
@@ -444,19 +468,23 @@ if __name__ == '__main__':
 
 /**
  * Deterministically pick today's Arena MCQ set (5 questions) and Essay prompt (1 problem)
- * for a given subject and dateKey ('YYYY-MM-DD') so all students competing on the same day
- * receive the same fair challenge.
+ * for a given subject, dateKey ('YYYY-MM-DD'), and division so all students competing in
+ * the same grade/track zone on the same day receive the same fair challenge.
  */
 export function getDailyArenaSet(
   subject: ArenaSubject,
-  dateKey: string
+  dateKey: string,
+  division: ArenaDivisionId = '12k'
 ): { mcqs: ArenaQuestionMCQ[]; essay: ArenaEssayPrompt } {
-  const mcqPool = ARENA_MCQ_BANK[subject];
-  const essayPool = ARENA_ESSAY_BANK[subject];
+  const divMcqPool = ARENA_DIVISION_MCQ_BANK[division]?.[subject];
+  const divEssayPool = ARENA_DIVISION_ESSAY_BANK[division]?.[subject];
 
-  // Deterministic hash from dateKey + subject
+  const mcqPool = divMcqPool && divMcqPool.length > 0 ? divMcqPool : ARENA_MCQ_BANK[subject];
+  const essayPool = divEssayPool && divEssayPool.length > 0 ? divEssayPool : ARENA_ESSAY_BANK[subject];
+
+  // Deterministic hash from dateKey + division + subject
   let seed = 0;
-  const key = `${dateKey}_${subject}`;
+  const key = `${dateKey}_${division}_${subject}`;
   for (let i = 0; i < key.length; i++) {
     seed = (seed * 31 + key.charCodeAt(i)) >>> 0;
   }

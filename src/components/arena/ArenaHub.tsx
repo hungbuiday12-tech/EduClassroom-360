@@ -10,10 +10,13 @@ import {
   Compass,
   Eye,
   FileText,
+  GraduationCap,
   Image as ImageIcon,
+  Layers,
   Lock,
   Play,
   Send,
+  ShieldCheck,
   Sparkles,
   Trophy,
   Users,
@@ -24,14 +27,20 @@ import {
 } from 'lucide-react';
 import {
   ArenaAttempt,
+  ArenaDivisionId,
   ArenaEssayEvaluation,
+  ArenaGradeGroup,
   ArenaMode,
   ArenaSubject,
+  ArenaTrack,
   CodeLanguage,
   TutorContextPayload,
   WeeklyLeaderboardEntry
 } from '../../types';
 import {
+  ARENA_DIVISIONS,
+  getArenaDivisionMeta,
+  getArenaScopedWeekId,
   getDailyArenaSet,
   getDailyResetCountdown,
   getVietnamNowParts,
@@ -58,20 +67,58 @@ interface ArenaHubProps {
   onBack: () => void;
   onEarnXP: (xp: number) => void;
   onOpenTutor: (ctx: TutorContextPayload) => void;
+  onMatchActiveChange?: (active: boolean) => void;
 }
 
 const LOCAL_ATTEMPTS_KEY = 'educlassroom_arena_attempts_v1';
 const GUEST_ARENA_ID_KEY = 'educlassroom_arena_guest_profile_v1';
+const ARENA_DIVISION_KEY = 'educlassroom_arena_division_v1';
 
 type RankFilterTab = 'overall' | 'math' | 'physics' | 'cs';
 
-export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTutor }) => {
+export const ArenaHub: React.FC<ArenaHubProps> = ({
+  onBack,
+  onEarnXP,
+  onOpenTutor,
+  onMatchActiveChange
+}) => {
   const { user, firebaseUser, openAuthModal } = useAuth();
   const { language } = useLanguage();
   const isEn = language === 'en';
 
   const [{ dateKey, weekId }, setTimeParts] = useState(() => getVietnamNowParts());
   const [resetCountdown, setResetCountdown] = useState(() => getDailyResetCountdown());
+
+  const [selectedDivision, setSelectedDivision] = useState<ArenaDivisionId>(() => {
+    try {
+      const saved = localStorage.getItem(ARENA_DIVISION_KEY) as ArenaDivisionId | null;
+      if (saved && ARENA_DIVISIONS.some((d) => d.id === saved)) return saved;
+    } catch {}
+    return '12k';
+  });
+
+  const divisionMeta = useMemo(() => getArenaDivisionMeta(selectedDivision), [selectedDivision]);
+  const scopedWeekId = useMemo(
+    () => getArenaScopedWeekId(weekId, selectedDivision),
+    [weekId, selectedDivision]
+  );
+
+  const handleSelectDivision = (divId: ArenaDivisionId) => {
+    setSelectedDivision(divId);
+    try {
+      localStorage.setItem(ARENA_DIVISION_KEY, divId);
+    } catch {}
+  };
+
+  const handleSelectGradeAndTrack = (grade: ArenaGradeGroup, track?: ArenaTrack) => {
+    if (grade === 'olp') {
+      handleSelectDivision('olp');
+      return;
+    }
+    const nextTrack: ArenaTrack = track || divisionMeta.track;
+    const suffix = nextTrack === 'chuyen' ? 'c' : 'k';
+    handleSelectDivision(`${grade}${suffix}` as ArenaDivisionId);
+  };
 
   // Guest contestant identity fallback if not logged in
   const [guestIdentity, setGuestIdentity] = useState<{ uid: string; username: string; displayName: string }>(() => {
@@ -119,6 +166,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
   const [activeMatch, setActiveMatch] = useState<{
     subject: ArenaSubject;
     mode: ArenaMode;
+    division: ArenaDivisionId;
     startedAt: number;
   } | null>(null);
   const [matchElapsedSec, setMatchElapsedSec] = useState(0);
@@ -149,6 +197,18 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
     cs: 'mcq'
   });
 
+  // Notify parent App when entering/exiting an active competition round so Syn AI is turned off during match
+  const isMatchInProgress = Boolean(activeMatch && !mcqResult && !essayResult);
+  useEffect(() => {
+    onMatchActiveChange?.(isMatchInProgress);
+  }, [isMatchInProgress, onMatchActiveChange]);
+
+  useEffect(() => {
+    return () => {
+      onMatchActiveChange?.(false);
+    };
+  }, [onMatchActiveChange]);
+
   // Update Vietnam clock & daily reset countdown every second
   useEffect(() => {
     const timer = setInterval(() => {
@@ -167,11 +227,15 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
     return () => clearInterval(t);
   }, [activeMatch, mcqResult, essayResult]);
 
-  // Load local cached attempts as immediate hydration + fallback
+  // Load local cached attempts for current division as immediate hydration + fallback
   const syncLocalAttempts = useCallback(() => {
     try {
       const raw = localStorage.getItem(LOCAL_ATTEMPTS_KEY);
-      if (!raw) return;
+      if (!raw) {
+        setUserAttemptsToday({ math: null, physics: null, cs: null });
+        setUserWeekAttempts([]);
+        return;
+      }
       const all: ArenaAttempt[] = JSON.parse(raw);
       const mineToday: Record<ArenaSubject, ArenaAttempt | null> = {
         math: null,
@@ -184,29 +248,26 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
             (a) =>
               a.userId === activeContestant.uid &&
               a.dateKey === dateKey &&
-              a.subject === subj
+              a.subject === subj &&
+              (a.division || '12k') === selectedDivision &&
+              a.weekId === scopedWeekId
           ) || null;
       }
-      setUserAttemptsToday((prev) => ({
-        math: prev.math || mineToday.math,
-        physics: prev.physics || mineToday.physics,
-        cs: prev.cs || mineToday.cs
-      }));
+      setUserAttemptsToday(mineToday);
       const mineWeek = all.filter(
-        (a) => a.userId === activeContestant.uid && a.weekId === weekId
+        (a) => a.userId === activeContestant.uid && a.weekId === scopedWeekId
       );
-      if (mineWeek.length > 0) {
-        setUserWeekAttempts((prev) => (prev.length >= mineWeek.length ? prev : mineWeek));
-      }
+      setUserWeekAttempts(mineWeek);
     } catch {}
-  }, [activeContestant.uid, dateKey, weekId]);
+  }, [activeContestant.uid, dateKey, scopedWeekId, selectedDivision]);
 
   // Fetch initial state from Express server + subscribe to SSE live updates
   const fetchServerState = useCallback(async () => {
     try {
       const params = new URLSearchParams({
-        weekId,
+        weekId: scopedWeekId,
         dateKey,
+        division: selectedDivision,
         userId: activeContestant.uid
       });
       const res = await safeFetchJson<any>(`/api/arena/state?${params.toString()}`);
@@ -226,9 +287,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
         setUserWeekAttempts(data.userWeekAttempts);
       }
     } catch {}
-  }, [weekId, dateKey, activeContestant.uid]);
+  }, [scopedWeekId, dateKey, selectedDivision, activeContestant.uid]);
 
   useEffect(() => {
+    setServerLeaderboard([]);
+    setFirestoreLeaderboard([]);
     syncLocalAttempts();
     fetchServerState();
 
@@ -240,7 +303,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
         evtSource.onmessage = (event) => {
           try {
             const parsed = JSON.parse(event.data);
-            if (parsed.type === 'arena:update' && parsed.weekId === weekId && Array.isArray(parsed.leaderboard)) {
+            if (
+              parsed.type === 'arena:update' &&
+              parsed.weekId === scopedWeekId &&
+              Array.isArray(parsed.leaderboard)
+            ) {
               setServerLeaderboard(parsed.leaderboard);
             }
           } catch {}
@@ -257,14 +324,14 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
     return () => {
       evtSource?.close();
     };
-  }, [weekId, syncLocalAttempts, fetchServerState]);
+  }, [scopedWeekId, syncLocalAttempts, fetchServerState]);
 
-  // Subscribe to Firestore weekly_leaderboard when signed in (with handleFirestoreError)
+  // Subscribe to Firestore weekly_leaderboard when signed in (scoped by scopedWeekId)
   useEffect(() => {
     if (!firebaseUser) return;
     const lbQuery = query(
       collection(db, 'weekly_leaderboard'),
-      where('weekId', '==', weekId)
+      where('weekId', '==', scopedWeekId)
     );
     const unsub = onSnapshot(
       lbQuery,
@@ -282,7 +349,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
       }
     );
     return () => unsub();
-  }, [firebaseUser, weekId]);
+  }, [firebaseUser, scopedWeekId]);
 
   // Merge server + Firestore leaderboards seamlessly
   const mergedLeaderboard = useMemo(() => {
@@ -339,9 +406,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
 
   const startArenaMatch = (subject: ArenaSubject, mode: ArenaMode) => {
     if (userAttemptsToday[subject]) return;
-    const daily = getDailyArenaSet(subject, dateKey);
+    const daily = getDailyArenaSet(subject, dateKey, selectedDivision);
 
-    setActiveMatch({ subject, mode, startedAt: Date.now() });
+    setActiveMatch({ subject, mode, division: selectedDivision, startedAt: Date.now() });
     setMatchElapsedSec(0);
     setMcqAnswers({});
     setMcqResult(null);
@@ -371,6 +438,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
     let savedAttempt: ArenaAttempt;
     let myEntry: WeeklyLeaderboardEntry | undefined;
 
+    const divTag = payload.division || selectedDivision;
+
     if (res.ok && res.data?.attempt) {
       savedAttempt = res.data.attempt;
       myEntry = res.data.myEntry;
@@ -381,7 +450,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
       // Static-export fallback: compute attempt & weekly row locally
       savedAttempt = {
         ...payload,
-        id: `local_${payload.userId}_${payload.dateKey}_${payload.subject}`,
+        id: `local_${payload.userId}_${payload.dateKey}_${payload.subject}_${divTag}`,
         createdAt: new Date().toISOString()
       };
     } else {
@@ -396,7 +465,12 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
       allLocal = list.filter(
         (a) =>
           a.id !== savedAttempt.id &&
-          !(a.userId === payload.userId && a.dateKey === payload.dateKey && a.subject === payload.subject)
+          !(
+            a.userId === payload.userId &&
+            a.dateKey === payload.dateKey &&
+            a.subject === payload.subject &&
+            a.weekId === payload.weekId
+          )
       );
       allLocal.push(savedAttempt);
       localStorage.setItem(LOCAL_ATTEMPTS_KEY, JSON.stringify(allLocal));
@@ -447,10 +521,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
     setUserAttemptsToday((prev) => ({ ...prev, [payload.subject]: savedAttempt }));
     setUserWeekAttempts((prev) => [...prev.filter((a) => a.id !== savedAttempt.id), savedAttempt]);
 
-    // Sync to Firestore if signed into Firebase
+    // Sync to Firestore if signed into Firebase (weekId is already scoped <= 13 chars, strict schema compliance)
     if (firebaseUser && myEntry) {
       const data = { myEntry };
-      const attemptId = `${firebaseUser.uid}_${payload.dateKey}_${payload.subject}`;
+      const attemptId = `${firebaseUser.uid}_${payload.dateKey}_${payload.subject}_${divTag}`;
       try {
         await setDoc(doc(db, 'arena_attempts', attemptId), {
           userId: firebaseUser.uid,
@@ -514,20 +588,22 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
     setSubmitError(null);
 
     try {
-      const { mcqs } = getDailyArenaSet(activeMatch.subject, dateKey);
+      const { mcqs } = getDailyArenaSet(activeMatch.subject, dateKey, activeMatch.division);
       let correctCount = 0;
       mcqs.forEach((q) => {
         if (mcqAnswers[q.id] === q.correctIndex) correctCount += 1;
       });
       const score = Math.round((correctCount / mcqs.length) * 100);
       const durationSec = Math.max(5, Math.floor((Date.now() - activeMatch.startedAt) / 1000));
+      const matchWeekId = getArenaScopedWeekId(weekId, activeMatch.division);
 
       const attempt = await commitAttemptToBackendAndFirestore({
         userId: activeContestant.uid,
         username: activeContestant.username,
         displayName: activeContestant.displayName,
-        weekId,
+        weekId: matchWeekId,
         dateKey,
+        division: activeMatch.division,
         subject: activeMatch.subject,
         mode: 'mcq',
         score,
@@ -552,7 +628,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
   // Run CS sample tests inside Essay mode
   const handleRunCsSampleTests = () => {
     if (!activeMatch) return;
-    const { essay } = getDailyArenaSet(activeMatch.subject, dateKey);
+    const { essay } = getDailyArenaSet(activeMatch.subject, dateKey, activeMatch.division);
     const tests = essay.sampleCode?.tests || [];
     if (tests.length === 0) return;
 
@@ -591,7 +667,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
     setSubmitError(null);
 
     try {
-      const { essay } = getDailyArenaSet(activeMatch.subject, dateKey);
+      const { essay } = getDailyArenaSet(activeMatch.subject, dateKey, activeMatch.division);
 
       // Run sandbox tests automatically if CS problem has tests
       let extraCodeNote = '';
@@ -637,13 +713,15 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
 
       const evaluation: ArenaEssayEvaluation = gradeRes.data.evaluation;
       const durationSec = Math.max(10, Math.floor((Date.now() - activeMatch.startedAt) / 1000));
+      const matchWeekId = getArenaScopedWeekId(weekId, activeMatch.division);
 
       const attempt = await commitAttemptToBackendAndFirestore({
         userId: activeContestant.uid,
         username: activeContestant.username,
         displayName: activeContestant.displayName,
-        weekId,
+        weekId: matchWeekId,
         dateKey,
+        division: activeMatch.division,
         subject: activeMatch.subject,
         mode: 'essay',
         score: evaluation.score,
@@ -714,7 +792,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
   // VIEW: ACTIVE MATCH (TRẮC NGHIỆM HOẶC TỰ LUẬN)
   // =====================================================================
   if (activeMatch) {
-    const { mcqs, essay } = getDailyArenaSet(activeMatch.subject, dateKey);
+    const matchDivMeta = getArenaDivisionMeta(activeMatch.division);
+    const { mcqs, essay } = getDailyArenaSet(activeMatch.subject, dateKey, activeMatch.division);
     const meta = subjectMeta[activeMatch.subject];
 
     return (
@@ -724,16 +803,22 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
           <div className="flex items-center gap-3">
             <button
               onClick={() => setActiveMatch(null)}
-              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"
+              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{isEn ? 'Back to Arena Lobby' : 'Quay lại Sảnh Đấu Trường'}</span>
             </button>
             <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                {isEn ? meta.labelEn : meta.label} · {activeMatch.mode === 'mcq' ? (isEn ? 'Speed MCQ' : 'Trắc nghiệm tốc độ') : (isEn ? 'Deep Essay' : 'Tự luận chuyên sâu')} · {dateKey}
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <span className={`px-2 py-0.5 rounded-md border text-[11px] font-bold ${matchDivMeta.badgeColor}`}>
+                  {isEn ? matchDivMeta.labelEn : matchDivMeta.labelVi}
+                </span>
+                <span>·</span>
+                <span>
+                  {isEn ? meta.labelEn : meta.label} · {activeMatch.mode === 'mcq' ? (isEn ? 'Speed MCQ' : 'Trắc nghiệm tốc độ') : (isEn ? 'Deep Essay' : 'Tự luận chuyên sâu')} · {dateKey}
+                </span>
               </div>
-              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                 {activeMatch.mode === 'mcq' ? (isEn ? `Daily Paper ${dateKey} (${mcqs.length} Qs)` : `Bộ đề ngày ${dateKey} (${mcqs.length} câu)`) : essay.title}
               </h2>
             </div>
@@ -744,22 +829,33 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
               <Clock className="w-4 h-4 text-indigo-500" />
               <span>{formatDuration(matchElapsedSec)}</span>
             </div>
-            <button
-              onClick={() =>
-                onOpenTutor({
-                  subject: activeMatch.subject,
-                  topicTitle: activeMatch.mode === 'mcq' ? `${isEn ? 'Arena' : 'Thi đấu'} ${isEn ? meta.labelEn : meta.label}` : essay.title,
-                  problemStatement:
-                    activeMatch.mode === 'essay'
-                      ? essay.prompt
-                      : mcqs.map((q, idx) => `Câu ${idx + 1}: ${q.question}`).join('\n')
-                })
-              }
-              className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Hint via Syn AI' : 'Hỏi Syn AI'}</span>
-            </button>
+
+            {isMatchInProgress ? (
+              <div
+                className="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5"
+                title={isEn ? 'Syn AI Assistant is disabled during live competition for fair play' : 'Trợ lý Syn AI đã tạm tắt khi đang thi đấu để đảm bảo công bằng'}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>{isEn ? 'Fair Play · AI Disabled' : 'Đã tắt Syn AI khi thi'}</span>
+              </div>
+            ) : (
+              <button
+                onClick={() =>
+                  onOpenTutor({
+                    subject: activeMatch.subject,
+                    topicTitle: activeMatch.mode === 'mcq' ? `${isEn ? 'Arena' : 'Thi đấu'} ${isEn ? meta.labelEn : meta.label}` : essay.title,
+                    problemStatement:
+                      activeMatch.mode === 'essay'
+                        ? essay.prompt
+                        : mcqs.map((q, idx) => `Câu ${idx + 1}: ${q.question}`).join('\n')
+                  })
+                }
+                className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Review with Syn AI' : 'Hỏi Syn AI sau thi'}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -1253,11 +1349,118 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
         )}
       </div>
 
+      {/* Zone / Division Selector (Khối Lớp & Hệ Chuyên / Không Chuyên / Đội Tuyển HSG) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center shrink-0">
+              <GraduationCap className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                {isEn
+                  ? 'Select Arena Zone (Grade & Specialized / Standard Track)'
+                  : 'Khu Vực Thi Đấu Theo Lớp & Hệ Chuyên / Không Chuyên'}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {isEn
+                  ? 'Each zone has tailored daily challenges and an isolated weekly leaderboard. Syn AI is automatically disabled during active rounds.'
+                  : 'Mỗi khu vực có bộ đề riêng đúng trình độ và BXH tuần độc lập. Trợ lý Syn AI sẽ tự động tắt khi thí sinh bước vào phòng thi.'}
+              </p>
+            </div>
+          </div>
+
+          <span className={`self-start md:self-auto px-3 py-1 rounded-lg border text-xs font-bold shrink-0 ${divisionMeta.badgeColor}`}>
+            {isEn ? divisionMeta.labelEn : divisionMeta.labelVi}
+          </span>
+        </div>
+
+        {/* Grade Group + Track Selector */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">
+              {isEn ? 'Grade:' : 'Khối lớp:'}
+            </span>
+            {(
+              [
+                { id: '9', vi: 'Lớp 9', en: 'Grade 9' },
+                { id: '10', vi: 'Lớp 10', en: 'Grade 10' },
+                { id: '11', vi: 'Lớp 11', en: 'Grade 11' },
+                { id: '12', vi: 'Lớp 12', en: 'Grade 12' },
+                { id: 'olp', vi: 'Đội tuyển HSG / Olympic', en: 'HSG / Olympiad' }
+              ] as { id: ArenaGradeGroup; vi: string; en: string }[]
+            ).map((g) => {
+              const active = divisionMeta.gradeGroup === g.id;
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => handleSelectGradeAndTrack(g.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    active
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400'
+                  }`}
+                >
+                  {isEn ? g.en : g.vi}
+                </button>
+              );
+            })}
+          </div>
+
+          {divisionMeta.gradeGroup !== 'olp' ? (
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl self-start lg:self-auto">
+              {(
+                [
+                  { id: 'khong_chuyen', vi: 'Hệ Không Chuyên (Chuẩn)', en: 'Standard Track' },
+                  { id: 'chuyen', vi: 'Hệ Chuyên (Nâng cao)', en: 'Specialized Track' }
+                ] as { id: ArenaTrack; vi: string; en: string }[]
+              ).map((t) => {
+                const active = divisionMeta.track === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => handleSelectGradeAndTrack(divisionMeta.gradeGroup, t.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      active
+                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {isEn ? t.en : t.vi}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 text-xs font-bold text-purple-700 dark:text-purple-300">
+              <Layers className="w-3.5 h-3.5" />
+              <span>{isEn ? 'National Olympiad & VNOI Tier' : 'Bảng Chuyên Sâu HSG Tỉnh / Quốc Gia / VNOI'}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Active Zone Info Strip */}
+        <div className="px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="text-slate-600 dark:text-slate-300">
+            <strong className="text-slate-900 dark:text-white">
+              {isEn ? 'Zone Focus: ' : 'Trọng tâm khu vực: '}
+            </strong>
+            {isEn ? divisionMeta.descriptionEn : divisionMeta.descriptionVi}
+          </div>
+          <div className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-semibold shrink-0">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>{isEn ? 'AI Off in Match' : 'Tự tắt AI khi vào thi'}</span>
+          </div>
+        </div>
+      </div>
+
       {/* My Weekly Performance KPI Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
           <div className="text-xs text-slate-500 dark:text-slate-400">
-            {isEn ? 'Weekly Avg / Rank' : 'Điểm TB Tuần / Hạng'}
+            {isEn ? `Weekly Avg / Rank (${divisionMeta.shortLabelEn})` : `Điểm TB / Hạng (${divisionMeta.shortLabelVi})`}
           </div>
           <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums mt-1">
             {myLeaderboardRow.entry ? `${myLeaderboardRow.entry.overallAvg}${isEn ? 'pt' : 'đ'}` : '—'}
@@ -1404,9 +1607,13 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({ onBack, onEarnXP, onOpenTuto
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-500" />
-              <span>{isEn ? `Weekly Leaderboard (${weekId})` : `Bảng Xếp Hạng Thành Tích Tuần (${weekId})`}</span>
+              <span>
+                {isEn
+                  ? `Weekly Leaderboard (${weekId}) · ${divisionMeta.labelEn}`
+                  : `Bảng Xếp Hạng Tuần (${weekId}) · ${divisionMeta.labelVi}`}
+              </span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
               <span>{getWeekDateRangeLabel()}</span>

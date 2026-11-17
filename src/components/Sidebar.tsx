@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SubjectType } from '../types';
 import {
   LayoutDashboard,
@@ -23,6 +23,7 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigation } from '../context/NavigationContext';
 import { BrandLogo } from './common/BrandLogo';
+import { getPhysicsSimCounts } from '../data/physicsDomainsData';
 
 interface SidebarProps {
   currentSubject: SubjectType;
@@ -236,6 +237,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { requestScrollToReviews, requestScrollToDirectory } = useNavigation();
+  const [physicsSimTotal, setPhysicsSimTotal] = useState<number>(() => getPhysicsSimCounts().total);
+
+  useEffect(() => {
+    const syncSimCount = () => {
+      setPhysicsSimTotal(getPhysicsSimCounts().total);
+    };
+    syncSimCount();
+    window.addEventListener('educlassroom:physics-sims-updated', syncSimCount);
+    window.addEventListener('storage', syncSimCount);
+    return () => {
+      window.removeEventListener('educlassroom:physics-sims-updated', syncSimCount);
+      window.removeEventListener('storage', syncSimCount);
+    };
+  }, []);
 
   const navGroups: { titleVi: string; titleEn: string; items: NavItemDef[] }[] = [
     {
@@ -314,7 +329,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'physics_sims',
           labelVi: 'Mô phỏng Lí 2D/3D',
           labelEn: 'Physics 2D/3D Labs',
-          badge: '5',
+          badge: String(physicsSimTotal),
           icon: (
             <span className="icon-anim-atom">
               <Atom className="w-5 h-5 shrink-0" />

@@ -681,6 +681,31 @@ export interface PersonalizedRoadmapResult {
 // Weekly Online Competition Arena Types
 export type ArenaSubject = 'math' | 'physics' | 'cs';
 export type ArenaMode = 'mcq' | 'essay';
+export type ArenaGradeGroup = '9' | '10' | '11' | '12' | 'olp';
+export type ArenaTrack = 'khong_chuyen' | 'chuyen';
+export type ArenaDivisionId =
+  | '9k'
+  | '9c'
+  | '10k'
+  | '10c'
+  | '11k'
+  | '11c'
+  | '12k'
+  | '12c'
+  | 'olp';
+
+export interface ArenaDivisionMeta {
+  id: ArenaDivisionId;
+  gradeGroup: ArenaGradeGroup;
+  track: ArenaTrack;
+  labelVi: string;
+  labelEn: string;
+  shortLabelVi: string;
+  shortLabelEn: string;
+  descriptionVi: string;
+  descriptionEn: string;
+  badgeColor: string;
+}
 
 export interface ArenaQuestionMCQ {
   id: string;
@@ -725,6 +750,7 @@ export interface ArenaAttempt {
   displayName: string;
   weekId: string;
   dateKey: string;
+  division?: ArenaDivisionId;
   subject: ArenaSubject;
   mode: ArenaMode;
   score: number; // 0 - 100
@@ -741,6 +767,7 @@ export interface WeeklyLeaderboardEntry {
   username: string;
   displayName: string;
   weekId: string;
+  division?: ArenaDivisionId;
   mathBest: number | null;
   mathAvg: number | null;
   mathAttempts: number;

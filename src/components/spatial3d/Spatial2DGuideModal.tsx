@@ -181,7 +181,7 @@ export const Spatial2DGuideModal: React.FC<Spatial2DGuideModalProps> = ({
       aria-modal="true"
       aria-label={isEn ? '2D Spatial Studio Usage Guide' : 'Hướng dẫn Không gian 2D'}
     >
-      <div className="spatial-holo-card spatial-step-reveal w-full max-w-4xl shadow-2xl">
+      <div data-modal-shell="true" className="spatial-holo-card spatial-step-reveal w-full max-w-4xl shadow-2xl">
         <div className="spatial-holo-ring spatial-holo-ring-emerald" />
         <div className="relative z-10 rounded-[9px] bg-[#06101b] border border-emerald-500/40 overflow-hidden">
           <div className="spatial-laser-sweep" />
@@ -279,7 +279,7 @@ export const Spatial2DGuideModal: React.FC<Spatial2DGuideModalProps> = ({
                   <div
                     key={item.badge}
                     style={{ animationDelay: `${idx * 55}ms` }}
-                    className={`spatial-step-reveal rounded-lg border p-3.5 space-y-1.5 ${item.accent}`}
+                    className={`spatial-soft-frame spatial-soft-frame-emerald spatial-step-reveal rounded-lg border p-3.5 space-y-1.5 ${item.accent}`}
                   >
                     <div className="flex items-center justify-between text-[10px] font-mono font-extrabold">
                       <span>{item.badge}</span>
@@ -298,7 +298,7 @@ export const Spatial2DGuideModal: React.FC<Spatial2DGuideModalProps> = ({
                   <div
                     key={lab.code}
                     style={{ animationDelay: `${idx * 45}ms` }}
-                    className="spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-3 flex flex-col justify-between gap-2"
+                    className="spatial-soft-frame spatial-soft-frame-emerald spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-3 flex flex-col justify-between gap-2"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[10px] font-mono text-emerald-300 font-extrabold">
@@ -322,7 +322,7 @@ export const Spatial2DGuideModal: React.FC<Spatial2DGuideModalProps> = ({
                   <div
                     key={g.tag}
                     style={{ animationDelay: `${idx * 45}ms` }}
-                    className="spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-3 space-y-1.5"
+                    className="spatial-soft-frame spatial-soft-frame-emerald spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-3 space-y-1.5"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-[11px] font-extrabold px-2 py-0.5 rounded bg-slate-950 border border-emerald-500/40 text-emerald-300">

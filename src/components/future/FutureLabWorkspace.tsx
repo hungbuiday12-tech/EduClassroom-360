@@ -578,12 +578,12 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                     animationDelay: `${Math.min(index, 6) * 55}ms`
                   } as React.CSSProperties
                 }
-                className="pre-grand-frame pre-card-reveal group w-full max-w-[540px] lg:max-w-[580px] mx-auto shadow-[0_20px_55px_-18px_rgba(2,132,199,0.26)]"
+                className="pre-grand-frame pre-card-reveal group w-full max-w-[540px] lg:max-w-[580px] mx-auto shadow-sm"
               >
-                {/* Rotating Conic Plasma Energy Ring */}
+                {/* Clean Hairline Gradient Border */}
                 <div aria-hidden="true" className="pre-grand-conic" />
 
-                {/* Corner Illuminated Calipers */}
+                {/* Subtle Top Progress Accent Bar on Hover */}
                 <div aria-hidden="true" className="pre-grand-corners" />
 
                 {/* Compact Square-Proportioned Card Surface */}
@@ -597,14 +597,14 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                       openModulePage(studio.id);
                     }
                   }}
-                  className={`relative z-10 w-full min-h-[430px] rounded-[0.78rem] ${glassSurfaceClass} border border-white/60 dark:border-white/10 p-5 sm:p-6 flex flex-col justify-between gap-4 text-slate-900 dark:text-white cursor-pointer overflow-hidden`}
+                  className={`relative z-10 w-full min-h-[430px] rounded-[0.82rem] ${glassSurfaceClass} border border-slate-200/80 dark:border-white/10 p-5 sm:p-6 flex flex-col justify-between gap-4 text-slate-900 dark:text-white cursor-pointer overflow-hidden`}
                 >
-                  {/* Ambient inner accent halo */}
+                  {/* Subtle educational surface tint */}
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 opacity-20 dark:opacity-28 transition-opacity duration-500 group-hover:opacity-40"
+                    className="pointer-events-none absolute inset-0 opacity-10 dark:opacity-15 transition-opacity duration-300 group-hover:opacity-22"
                     style={{
-                      background: `radial-gradient(circle at 18% 12%, ${studio.accentHex}38 0%, transparent 45%), radial-gradient(circle at 86% 88%, ${studio.secondaryHex}30 0%, transparent 45%)`
+                      background: `radial-gradient(circle at 18% 12%, ${studio.accentHex}2a 0%, transparent 45%), radial-gradient(circle at 86% 88%, ${studio.secondaryHex}24 0%, transparent 45%)`
                     }}
                   />
 

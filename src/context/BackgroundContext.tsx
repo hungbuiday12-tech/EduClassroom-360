@@ -30,7 +30,8 @@ export type FontPresetId =
   | 'geometric_outfit'
   | 'editorial_serif'
   | 'friendly_nunito'
-  | 'stem_mono';
+  | 'stem_mono'
+  | 'pixel_determination';
 
 export type ColorPaletteId =
   | 'ocean_sky'
@@ -126,6 +127,14 @@ export const FONT_PRESET_OPTIONS: FontPresetOption[] = [
     sampleText: 'f(x) -> O(n)',
     displayFont: "'JetBrains Mono', 'Outfit', monospace",
     sansFont: "'Plus Jakarta Sans', 'Be Vietnam Pro', system-ui, sans-serif"
+  },
+  {
+    id: 'pixel_determination',
+    labelVi: 'SVN Determination Sans (Pixel)',
+    labelEn: 'SVN Determination Sans (Pixel)',
+    sampleText: 'Aa Bb · Pixel 8-bit',
+    displayFont: "'SVN Determination Sans', 'VT323', 'Tiny5', monospace",
+    sansFont: "'SVN Determination Sans', 'VT323', 'Be Vietnam Pro', system-ui, sans-serif"
   }
 ];
 
@@ -531,7 +540,8 @@ const VALID_FONT_PRESETS: FontPresetId[] = [
   'geometric_outfit',
   'editorial_serif',
   'friendly_nunito',
-  'stem_mono'
+  'stem_mono',
+  'pixel_determination'
 ];
 
 const VALID_COLOR_PALETTES: ColorPaletteId[] = [

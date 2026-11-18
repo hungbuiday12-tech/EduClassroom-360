@@ -233,7 +233,7 @@ export const AppearanceStudioBar: React.FC<AppearanceStudioBarProps> = ({ compac
           )}
 
           {openDrawer === 'font' && (
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-2">
               {FONT_PRESET_OPTIONS.map((f) => {
                 const selected = f.id === fontPreset;
                 return (

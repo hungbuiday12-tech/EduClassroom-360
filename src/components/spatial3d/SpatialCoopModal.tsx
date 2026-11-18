@@ -278,7 +278,9 @@ export const SpatialCoopModal: React.FC<SpatialCoopModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/85 flex items-center justify-center p-3 sm:p-5">
-      <div className="w-full max-w-2xl rounded-2xl bg-[#070d1e] border border-cyan-500/45 shadow-2xl overflow-hidden text-slate-100 flex flex-col max-h-[90vh]">
+      <div data-modal-shell="true" className="spatial-holo-card spatial-step-reveal w-full max-w-2xl shadow-2xl">
+        <div className="spatial-holo-ring spatial-holo-ring-emerald" />
+        <div className="relative z-10 w-full rounded-[9px] bg-[#070d1e] border border-cyan-500/45 overflow-hidden text-slate-100 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-5 py-4 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -360,7 +362,7 @@ export const SpatialCoopModal: React.FC<SpatialCoopModalProps> = ({
               {/* Create Room Form */}
               <form
                 onSubmit={handleCreateRoom}
-                className="rounded-xl bg-slate-900/90 border border-cyan-500/35 p-4 space-y-3"
+                className="spatial-soft-frame rounded-xl bg-slate-900/90 border border-cyan-500/35 p-4 space-y-3"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs font-extrabold text-cyan-300 uppercase tracking-wide flex items-center gap-1.5">
@@ -413,7 +415,7 @@ export const SpatialCoopModal: React.FC<SpatialCoopModalProps> = ({
               </form>
 
               {/* Join By Room Code */}
-              <div className="rounded-xl bg-slate-900/80 border border-slate-800 p-4 space-y-2.5">
+              <div className="spatial-soft-frame rounded-xl bg-slate-900/80 border border-slate-800 p-4 space-y-2.5">
                 <div className="text-xs font-extrabold text-slate-200">
                   {isEn ? 'Join by 6-Character Room Code' : 'Vào Phòng Nhanh Bằng Mã'}
                 </div>
@@ -474,7 +476,7 @@ export const SpatialCoopModal: React.FC<SpatialCoopModalProps> = ({
                       return (
                         <div
                           key={r.roomId}
-                          className="rounded-xl bg-slate-900/90 border border-slate-800 p-3 flex flex-col justify-between gap-2.5"
+                          className="spatial-soft-frame spatial-soft-frame-emerald rounded-xl bg-slate-900/90 border border-slate-800 p-3 flex flex-col justify-between gap-2.5"
                         >
                           <div>
                             <div className="flex items-center justify-between gap-2">
@@ -536,7 +538,7 @@ export const SpatialCoopModal: React.FC<SpatialCoopModalProps> = ({
           {tab === 'room' && activeRoom && (
             <div className="space-y-4">
               {/* Room Info & Invite Code */}
-              <div className="rounded-xl bg-slate-900/95 border border-emerald-500/40 p-4 space-y-3">
+              <div className="spatial-soft-frame spatial-soft-frame-emerald rounded-xl bg-slate-900/95 border border-emerald-500/40 p-4 space-y-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="text-[11px] font-mono font-bold text-emerald-300">
@@ -578,7 +580,7 @@ export const SpatialCoopModal: React.FC<SpatialCoopModalProps> = ({
                     return (
                       <div
                         key={peer.peerId}
-                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-950/90 border border-slate-800"
+                        className="spatial-soft-frame flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-950/90 border border-slate-800"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span
@@ -607,7 +609,7 @@ export const SpatialCoopModal: React.FC<SpatialCoopModalProps> = ({
               </div>
 
               {/* Send Invitation to Study Forum */}
-              <div className="rounded-xl bg-slate-900/95 border border-indigo-500/45 p-4 space-y-3">
+              <div className="spatial-soft-frame spatial-soft-frame-purple rounded-xl bg-slate-900/95 border border-indigo-500/45 p-4 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-xs font-extrabold text-indigo-300 uppercase tracking-wide flex items-center gap-1.5">
                     <Send className="w-4 h-4" />
@@ -735,6 +737,7 @@ export const SpatialCoopModal: React.FC<SpatialCoopModalProps> = ({
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

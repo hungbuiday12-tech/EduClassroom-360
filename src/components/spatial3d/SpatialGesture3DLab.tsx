@@ -5863,7 +5863,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             {/* Crystal-Clear 2D Quick Gesture Cheat-Sheet Strip */}
             {!hudHidden && (
               <div className="pointer-events-auto absolute top-40 left-3 z-20 max-w-[min(430px,calc(100vw-300px))] hidden md:block">
-                <div className="spatial-hud-frame rounded-md bg-slate-950/92 border border-emerald-500/45 px-3 py-2 shadow-xl space-y-1.5">
+                <div className="spatial-hud-frame spatial-hud-zoom rounded-md bg-slate-950/92 border border-emerald-500/45 px-3 py-2 shadow-xl space-y-1.5">
                   <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-bold text-emerald-300 uppercase tracking-wider">
                     <span>
                       {isEn
@@ -6253,7 +6253,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               />
             </div>
 
-            <div className="pointer-events-auto spatial-hud-frame w-[244px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
+            <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom w-[244px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
               <div className="font-mono font-bold text-cyan-300 truncate">
                 {spaceMode === '2d'
                   ? active2DMode.formula
@@ -6270,7 +6270,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             </div>
 
             {spaceMode === '3d' && coopActiveRoom && (
-              <div className="pointer-events-auto spatial-hud-frame w-[244px] rounded-lg bg-slate-950/95 border border-emerald-400/60 p-2.5 text-[11px] space-y-1.5">
+              <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom w-[244px] rounded-lg bg-slate-950/95 border border-emerald-400/60 p-2.5 text-[11px] space-y-1.5">
                 <div className="flex items-center justify-between gap-1">
                   <span className="font-mono font-extrabold text-emerald-300 text-[10px]">
                     {isEn ? 'CO-OP' : 'PHÒNG'} #{coopActiveRoom.roomId} · {coopPeers.length}/{coopActiveRoom.maxMembers}
@@ -6306,7 +6306,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             )}
 
             {cameraActive && (
-              <div className="pointer-events-auto spatial-hud-frame relative w-[240px] h-[180px] rounded-lg overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
+              <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom relative w-[240px] h-[180px] rounded-lg overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -6354,7 +6354,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
           {/* Virtual 3D Touch Pad when in 3D without webcam */}
           {spaceMode === '3d' && !cameraActive && showVirtualPad && (
-            <div className="pointer-events-auto w-[224px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2 space-y-1.5">
+            <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom w-[224px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2 space-y-1.5">
               <div className="flex items-center justify-between text-[10px] font-bold text-slate-300">
                 <span className="flex items-center gap-1">
                   <Hand className="w-3 h-3 text-cyan-400" />
@@ -6421,7 +6421,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
           {/* Case 1: Isolated Part Inspection Card */}
           {spaceMode === '3d' && isolatedPartIdx !== null && modelParts[isolatedPartIdx] && (
-            <div className="spatial-hud-frame spatial-step-reveal pointer-events-auto w-[min(316px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-cyan-400/60 shadow-2xl p-3 space-y-2">
+            <div className="spatial-hud-frame spatial-hud-zoom spatial-step-reveal pointer-events-auto w-[min(316px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-cyan-400/60 shadow-2xl p-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/40 text-[10px] font-mono font-bold text-cyan-300">
                   <Info className="w-3 h-3" />
@@ -6455,7 +6455,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
               {!partCardMinimized && (
                 <div className="space-y-1.5 text-[11px] leading-relaxed">
-                  <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
+                  <div className="spatial-soft-frame rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
                     <div className="text-[10px] font-bold uppercase tracking-wide text-cyan-300">
                       {isEn ? 'Introduction' : 'Giới thiệu cấu tạo'}
                     </div>
@@ -6463,7 +6463,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       {isEn ? modelParts[isolatedPartIdx].introEn : modelParts[isolatedPartIdx].introVi}
                     </p>
                   </div>
-                  <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
+                  <div className="spatial-soft-frame spatial-soft-frame-emerald rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
                     <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">
                       {isEn ? 'Function & Role' : 'Chức năng & Vai trò'}
                     </div>
@@ -6513,7 +6513,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               const selIdx = highlightedPartIdx ?? 0;
               const selPart = modelParts[selIdx] || modelParts[0];
               return (
-                <div className="spatial-hud-frame spatial-step-reveal pointer-events-auto w-[min(336px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/55 shadow-xl p-2.5 space-y-2">
+                <div className="spatial-hud-frame spatial-hud-zoom spatial-step-reveal pointer-events-auto w-[min(336px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/55 shadow-xl p-2.5 space-y-2">
                   <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-bold text-emerald-300">
                     <span className="truncate">
                       {isEn
@@ -6540,7 +6540,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
                   {!partCardMinimized && (
                     <div className="space-y-1.5 text-[11px] leading-relaxed">
-                      <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
+                      <div className="spatial-soft-frame rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
                         <div className="text-[10px] font-bold uppercase tracking-wide text-cyan-300">
                           {isEn ? 'Structure' : 'Giới thiệu cấu tạo'}
                         </div>
@@ -6548,7 +6548,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                           {isEn ? selPart.introEn : selPart.introVi}
                         </p>
                       </div>
-                      <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
+                      <div className="spatial-soft-frame spatial-soft-frame-emerald rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
                         <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">
                           {isEn ? 'Function & Role' : 'Chức năng & Vai trò'}
                         </div>
@@ -6620,7 +6620,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               (interactionStyle === 'real_grab' &&
                 highlightedPartIdx !== null &&
                 modelParts[highlightedPartIdx])) && (
-              <div className="spatial-hud-frame pointer-events-auto w-[min(320px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/55 shadow-2xl p-2.5 space-y-2">
+              <div className="spatial-hud-frame spatial-hud-zoom pointer-events-auto w-[min(320px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/55 shadow-2xl p-2.5 space-y-2">
                 {(() => {
                   const targetIdx =
                     activeGrabInfo?.partIdx !== undefined && activeGrabInfo?.partIdx !== null
@@ -6736,7 +6736,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
           {/* Case 3: Point & Ask AI Multimodal Panel */}
           {spaceMode === '3d' && pointAskActive && (
-            <div className="spatial-hud-frame spatial-step-reveal pointer-events-auto w-[min(356px,calc(100vw-24px))] max-h-[calc(100vh-215px)] overflow-y-auto rounded-lg bg-slate-950/95 border border-amber-400/65 shadow-2xl p-3 space-y-2.5">
+            <div className="spatial-hud-frame spatial-hud-zoom spatial-step-reveal pointer-events-auto w-[min(356px,calc(100vw-24px))] max-h-[calc(100vh-215px)] overflow-y-auto rounded-lg bg-slate-950/95 border border-amber-400/65 shadow-2xl p-3 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-400/15 border border-amber-400/45 text-[10px] font-mono font-bold text-amber-300">
                   <Crosshair className="w-3 h-3" />
@@ -6911,7 +6911,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
               {/* AI Multimodal Response Inspector */}
               {pointAskResult && !pointAskLoading && (
-                <div className="rounded-lg bg-slate-900/95 border border-cyan-500/45 p-2.5 space-y-2 text-[11px] leading-relaxed">
+                <div className="spatial-soft-frame rounded-lg bg-slate-900/95 border border-cyan-500/45 p-2.5 space-y-2 text-[11px] leading-relaxed">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-1.5">
                     <div>
                       <div className="text-[10px] font-mono uppercase text-amber-300">
@@ -7388,7 +7388,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                           key={m.id}
                           type="button"
                           onClick={() => setMode2D(m.id)}
-                          className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
+                          className={`spatial-soft-frame spatial-soft-frame-emerald text-left p-2 rounded-md border transition-all cursor-pointer ${
                             active
                               ? 'bg-sky-500/20 border-sky-400 text-white'
                               : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
@@ -7548,7 +7548,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   </div>
 
                   {shapeFilter === 'custom' && customModels.length === 0 ? (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-md bg-purple-950/30 border border-purple-500/40">
+                    <div className="spatial-soft-frame spatial-soft-frame-purple flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-md bg-purple-950/30 border border-purple-500/40">
                       <div className="space-y-0.5 text-center sm:text-left">
                         <div className="text-xs font-extrabold text-purple-200">
                           {isEn
@@ -7597,7 +7597,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                                   setActiveCustomId(cm.id);
                                 }
                               }}
-                              className={`group relative text-left p-2 rounded-md border transition-all cursor-pointer ${
+                              className={`spatial-soft-frame spatial-soft-frame-purple group relative text-left p-2 rounded-md border transition-all cursor-pointer ${
                                 active
                                   ? 'bg-purple-500/20 border-purple-400 text-white'
                                   : 'bg-slate-900/90 border-purple-500/30 text-slate-300 hover:border-purple-400/70'
@@ -7643,7 +7643,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                               setActiveCustomId(null);
                               setModeId(m.id);
                             }}
-                            className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
+                            className={`spatial-soft-frame text-left p-2 rounded-md border transition-all cursor-pointer ${
                               active
                                 ? 'bg-sky-500/20 border-sky-400 text-white'
                                 : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
@@ -7724,7 +7724,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                               }
                             }}
                             title={isEn ? g.actionEn : g.actionVi}
-                            className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
+                            className={`spatial-soft-frame spatial-soft-frame-emerald text-left p-2 rounded-md border transition-all cursor-pointer ${
                               active
                                 ? 'bg-slate-800 border-emerald-400 text-white'
                                 : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
@@ -7809,7 +7809,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                               }
                             }}
                             title={isEn ? g.actionEn : g.actionVi}
-                            className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
+                            className={`spatial-soft-frame text-left p-2 rounded-md border transition-all cursor-pointer ${
                               active
                                 ? 'bg-slate-800 border-sky-400 text-white'
                                 : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
@@ -7864,7 +7864,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                                 setFrozen((v) => !v);
                               }
                             }}
-                            className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
+                            className={`spatial-soft-frame text-left p-2 rounded-md border transition-all cursor-pointer ${
                               active
                                 ? 'bg-slate-800 border-sky-400 text-white'
                                 : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
@@ -7988,7 +7988,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
                   {/* Hand Mode, Pointer Source, FPS, Graphics Quality & Axes Invert */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                    <div className="spatial-soft-frame bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
                       <label className="block font-bold text-slate-300">
                         {isEn ? 'Hand Tracking Mode' : 'Phương thức tay'}
                       </label>
@@ -8004,7 +8004,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       </select>
                     </div>
 
-                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                    <div className="spatial-soft-frame bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
                       <label className="block font-bold text-slate-300">
                         {isEn ? 'Pointer Anchor' : 'Điểm neo con trỏ'}
                       </label>
@@ -8020,7 +8020,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       </select>
                     </div>
 
-                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                    <div className="spatial-soft-frame bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
                       <label className="block font-bold text-slate-300">
                         {isEn ? 'AI Camera Rate & Res' : 'Cam AI (FPS · Phân giải)'}
                       </label>
@@ -8064,7 +8064,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       </div>
                     </div>
 
-                    <div className="bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
+                    <div className="spatial-soft-frame spatial-soft-frame-emerald bg-slate-900 p-2 rounded-md border border-slate-800 space-y-1">
                       <label className="block font-bold text-slate-300">
                         {isEn ? '3D Resolution & FPS Cap' : 'Độ phân giải & FPS 3D'}
                       </label>
@@ -8323,7 +8323,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       {GESTURE_DEFINITIONS.map((g) => (
                         <div
                           key={g.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-slate-950/90 px-2.5 py-1.5 rounded-md border border-slate-800"
+                          className="spatial-soft-frame flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-slate-950/90 px-2.5 py-1.5 rounded-md border border-slate-800"
                         >
                           <div className="flex items-center gap-1.5 min-w-[140px]">
                             <span
@@ -8383,7 +8383,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               {dockTab === 'params' && spaceMode === '3d' && (
                 <div className="space-y-2.5 text-[11px]">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                    <div className="spatial-soft-frame bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
                       <div className="flex justify-between font-bold text-slate-200">
                         <span>{isEn ? 'Scale (1 Hand Up / 2 Closer)' : 'Phóng to / Thu nhỏ'}</span>
                         <span className="font-mono text-cyan-300">{scaleVal.toFixed(2)}x</span>
@@ -8399,7 +8399,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       />
                     </div>
 
-                    <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                    <div className="spatial-soft-frame spatial-soft-frame-amber bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
                       <div className="flex justify-between font-bold text-slate-200">
                         <span>{isEn ? 'RPM / Wind / Height' : 'Tốc độ Tua / Biên độ'}</span>
                         <span className="font-mono text-amber-300">{heightVal.toFixed(2)}x</span>
@@ -8415,7 +8415,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       />
                     </div>
 
-                    <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                    <div className="spatial-soft-frame spatial-soft-frame-emerald bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
                       <div className="flex justify-between font-bold text-slate-200">
                         <span>{isEn ? 'Explode Structure (2H L/R)' : 'Tách Cấu Trúc (Kéo 2 tay)'}</span>
                         <span className="font-mono text-emerald-300">{Math.round(explodeVal * 100)}%</span>
@@ -8431,7 +8431,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       />
                     </div>
 
-                    <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                    <div className="spatial-soft-frame bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
                       <div className="flex items-center justify-between font-bold text-slate-200">
                         <button
                           type="button"
@@ -8461,7 +8461,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   </div>
 
                   {/* 3D Pinch Creative Stamp Brush Selector */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+                  <div className="spatial-soft-frame flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
                     <span className="font-bold text-slate-300">
                       {isEn ? 'Pinch 3D Stamp Shape:' : 'Cọ Sáng Tạo Khi Chụm Ngón:'}
                     </span>

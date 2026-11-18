@@ -396,16 +396,13 @@ export const PreStudioDiagramPreview: React.FC<PreStudioDiagramPreviewProps> = (
       {/* Crisp Technical Blueprint Grid */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0 opacity-35"
         style={{
           backgroundImage:
             'linear-gradient(to right, rgba(56,189,248,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(56,189,248,0.12) 1px, transparent 1px)',
           backgroundSize: '20px 20px'
         }}
       />
-
-      {/* Sweeping Scan Beam */}
-      <div aria-hidden="true" className="pre-grand-img-scan" />
 
       {/* Direct Scientific Schematic SVG */}
       <svg
@@ -417,9 +414,9 @@ export const PreStudioDiagramPreview: React.FC<PreStudioDiagramPreviewProps> = (
       </svg>
 
       {/* Top Subtle Readout */}
-      <div className="pointer-events-none absolute top-2 left-3 right-3 flex items-center justify-between text-[10px] font-mono font-bold text-sky-300/90">
-        <span>{isEn ? '3D+ INTERACTIVE ENGINE' : 'MÔ PHỎNG TRỰC QUAN 3D+'}</span>
-        <span className="text-slate-400">WEBGL</span>
+      <div className="pointer-events-none absolute top-2 left-3 right-3 flex items-center justify-between text-[10px] font-mono font-semibold text-sky-200/80">
+        <span>{isEn ? '3D+ Interactive Schematic' : 'Sơ đồ Mô phỏng 3D+'}</span>
+        <span className="text-slate-400">WebGL</span>
       </div>
     </div>
   );

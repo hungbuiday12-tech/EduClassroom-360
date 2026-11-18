@@ -193,7 +193,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
         </div>
 
         {/* Summary Telemetry Strip (text + middots, zero pills) */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-xs font-mono text-slate-300">
+        <div className="spatial-soft-frame flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-xs font-mono text-slate-300">
           <span>
             {isEn
               ? '15 3D Models · 5 Clear Grab Gestures · Weak-PC 0.5x / 30 FPS Optimization'
@@ -234,7 +234,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
                 </div>
 
                 {/* Animated Vector Wireframe Cube & Rings */}
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg bg-slate-950/90 border border-sky-500/40 flex items-center justify-center shrink-0">
+                <div className="spatial-soft-frame w-24 h-24 sm:w-28 sm:h-28 rounded-lg bg-slate-950/90 border border-sky-500/40 flex items-center justify-center shrink-0">
                   <svg viewBox="0 0 100 100" className="w-20 h-20">
                     <circle
                       cx="50"
@@ -271,11 +271,11 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-200">
-                <div className="rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
+                <div className="spatial-soft-frame rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
                   <span className="text-sky-300 font-bold block">15 Mô Hình 3D</span>
                   Động cơ, Robot IK, Siêu xe, DNA, Oxyz
                 </div>
-                <div className="rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
+                <div className="spatial-soft-frame spatial-soft-frame-amber rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
                   <span className="text-orange-300 font-bold block">Tách & Ghép 4 Ngón</span>
                   Xem riêng từng phần + ghép về nguyên bản
                 </div>
@@ -336,7 +336,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
                 </div>
 
                 {/* Animated Vector Oxy Compass */}
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg bg-slate-950/90 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                <div className="spatial-soft-frame spatial-soft-frame-emerald w-24 h-24 sm:w-28 sm:h-28 rounded-lg bg-slate-950/90 border border-emerald-500/40 flex items-center justify-center shrink-0">
                   <svg viewBox="0 0 100 100" className="w-20 h-20">
                     <line x1="12" y1="50" x2="88" y2="50" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.2" />
                     <line x1="50" y1="12" x2="50" y2="88" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.2" />
@@ -364,11 +364,11 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-200">
-                <div className="rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
+                <div className="spatial-soft-frame spatial-soft-frame-emerald rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
                   <span className="text-emerald-300 font-bold block">Tự Do Tạo 2D</span>
                   7 công cụ vẽ, nắn nét & di chuyển hình
                 </div>
-                <div className="rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
+                <div className="spatial-soft-frame rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
                   <span className="text-cyan-300 font-bold block">6 Xưởng Hình Học</span>
                   Euler, Đường tròn lượng giác, Vector, Conic
                 </div>
@@ -414,7 +414,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
               <div className="spatial-laser-sweep" />
 
               <div className="flex items-start gap-4 min-w-0">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-slate-950/90 border border-cyan-500/45 flex items-center justify-center shrink-0">
+                <div className="spatial-soft-frame w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-slate-950/90 border border-cyan-500/45 flex items-center justify-center shrink-0">
                   <svg viewBox="0 0 100 100" className="w-16 h-16">
                     <path d="M18 30 L18 18 L30 18" fill="none" stroke="#22d3ee" strokeWidth="3" />
                     <path d="M70 18 L82 18 L82 30" fill="none" stroke="#22d3ee" strokeWidth="3" />
@@ -481,7 +481,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
               <div className="spatial-laser-sweep" />
 
               <div className="flex items-start gap-4 min-w-0">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-slate-950/90 border border-emerald-400/45 flex items-center justify-center shrink-0">
+                <div className="spatial-soft-frame spatial-soft-frame-emerald w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-slate-950/90 border border-emerald-400/45 flex items-center justify-center shrink-0">
                   <svg viewBox="0 0 100 100" className="w-16 h-16">
                     <circle cx="30" cy="48" r="14" fill="rgba(34,211,238,0.16)" stroke="#22d3ee" strokeWidth="2" />
                     <circle cx="70" cy="48" r="14" fill="rgba(245,158,11,0.16)" stroke="#f59e0b" strokeWidth="2" />
@@ -588,7 +588,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
                   <div
                     key={st.num}
                     style={{ animationDelay: `${idx * 60}ms` }}
-                    className={`spatial-step-reveal rounded-lg border p-3.5 flex flex-col justify-between gap-2 ${st.accent}`}
+                    className={`spatial-soft-frame spatial-soft-frame-amber spatial-step-reveal rounded-lg border p-3.5 flex flex-col justify-between gap-2 ${st.accent}`}
                   >
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between font-mono text-[10px] font-extrabold">
@@ -606,7 +606,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
             {guideTab === 'gestures' && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 rounded-md bg-slate-900/95 border border-emerald-500/40 px-3.5 py-2 text-xs text-emerald-200 font-bold">
+                  <div className="spatial-soft-frame spatial-soft-frame-emerald flex items-center gap-2 rounded-md bg-slate-900/95 border border-emerald-500/40 px-3.5 py-2 text-xs text-emerald-200 font-bold">
                     <Hand className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>
                       {isEn
@@ -619,7 +619,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
                       <div
                         key={`hub-rg-${g.id}`}
                         style={{ animationDelay: `${idx * 35}ms` }}
-                        className="spatial-step-reveal rounded-lg bg-slate-900/95 border border-emerald-500/35 p-3 space-y-1.5"
+                        className="spatial-soft-frame spatial-soft-frame-emerald spatial-step-reveal rounded-lg bg-slate-900/95 border border-emerald-500/35 p-3 space-y-1.5"
                       >
                         <div className="flex items-center justify-between">
                           <span
@@ -650,7 +650,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
                       <div
                         key={g.id}
                         style={{ animationDelay: `${idx * 30}ms` }}
-                        className="spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-2.5 space-y-1"
+                        className="spatial-soft-frame spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-2.5 space-y-1"
                       >
                         <div className="flex items-center justify-between">
                           <span
@@ -675,7 +675,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
 
             {guideTab === 'fallback' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <div className="rounded-lg bg-slate-900/95 border border-slate-700/80 p-4 space-y-2">
+                <div className="spatial-soft-frame rounded-lg bg-slate-900/95 border border-slate-700/80 p-4 space-y-2">
                   <div className="flex items-center gap-2 font-extrabold text-cyan-300">
                     <MousePointerClick className="w-4 h-4" />
                     <span>{isEn ? 'Mouse & Touchpad' : 'Chuột & Cảm Ứng 3D/2D'}</span>
@@ -686,7 +686,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
                       : 'Kéo chuột hoặc vuốt màn hình để xoay mô hình 3D, cuộn để thu phóng và bấm chọn trực tiếp từng bộ phận đã tách.'}
                   </p>
                 </div>
-                <div className="rounded-lg bg-slate-900/95 border border-slate-700/80 p-4 space-y-2">
+                <div className="spatial-soft-frame spatial-soft-frame-emerald rounded-lg bg-slate-900/95 border border-slate-700/80 p-4 space-y-2">
                   <div className="flex items-center gap-2 font-extrabold text-emerald-300">
                     <Video className="w-4 h-4" />
                     <span>{isEn ? '10-Fingertip Webcam AI' : 'Bàn Di Ảo & 8 Nút Cử Chỉ'}</span>
@@ -697,7 +697,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
                       : 'Không có Webcam vẫn dùng đầy đủ 8 cử chỉ thông qua thanh nút dưới màn hình và Bàn Di Cử Chỉ 3D Ảo.'}
                   </p>
                 </div>
-                <div className="rounded-lg bg-slate-900/95 border border-slate-700/80 p-4 space-y-2">
+                <div className="spatial-soft-frame spatial-soft-frame-amber rounded-lg bg-slate-900/95 border border-slate-700/80 p-4 space-y-2">
                   <div className="flex items-center gap-2 font-extrabold text-amber-300">
                     <RotateCcw className="w-4 h-4" />
                     <span>{isEn ? 'Keyboard & Custom Remap' : 'Phím Tắt & Tùy Chỉnh Độ Nhạy'}</span>

@@ -262,7 +262,9 @@ export const SpatialRealWorldScannerModal: React.FC<SpatialRealWorldScannerModal
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/90 p-3 sm:p-5 overflow-y-auto">
-      <div className="relative w-full max-w-2xl rounded-xl border border-cyan-500/50 bg-[#070c1b] text-slate-100 shadow-2xl overflow-hidden my-auto">
+      <div data-modal-shell="true" className="spatial-holo-card spatial-step-reveal w-full max-w-2xl shadow-2xl my-auto">
+        <div className="spatial-holo-ring" />
+        <div className="relative z-10 w-full rounded-[9px] border border-cyan-500/45 bg-[#070c1b] text-slate-100 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-800 bg-slate-950/90">
           <div className="flex items-center gap-2.5">
@@ -469,7 +471,7 @@ export const SpatialRealWorldScannerModal: React.FC<SpatialRealWorldScannerModal
                       </span>
                     </button>
                   ) : (
-                    <div className="p-3.5 rounded-xl bg-emerald-950/35 border border-emerald-500/45 space-y-2.5">
+                    <div className="spatial-soft-frame spatial-soft-frame-emerald p-3.5 rounded-xl bg-emerald-950/35 border border-emerald-500/45 space-y-2.5">
                       <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-300">
                         <CheckCircle2 className="w-4 h-4 shrink-0" />
                         <span>
@@ -509,13 +511,14 @@ export const SpatialRealWorldScannerModal: React.FC<SpatialRealWorldScannerModal
           )}
 
           {/* Feature Parity Notice */}
-          <div className="px-3.5 py-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-2">
+          <div className="spatial-soft-frame px-3.5 py-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-2">
             <span>
               {isEn
                 ? 'Scanned 3D objects unlock full Lab features: 2-hand explode, 2-finger isolate + STEM info, 4-finger reassemble, slice plane & .OBJ export.'
                 : 'Mô hình 3D tạo từ camera hỗ trợ đầy đủ tính năng: tách lớp 2 tay, soi từng bộ phận 2 ngón, ghép 4 ngón, mặt cắt & xuất .OBJ.'}
             </span>
           </div>
+        </div>
         </div>
       </div>
     </div>

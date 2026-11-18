@@ -87,7 +87,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
       aria-modal="true"
       aria-label={isEn ? '3D Spatial Studio Usage Guide' : 'Hướng dẫn sử dụng Không gian 3D'}
     >
-      <div className="spatial-holo-card spatial-step-reveal w-full max-w-4xl shadow-2xl">
+      <div data-modal-shell="true" className="spatial-holo-card spatial-step-reveal w-full max-w-4xl shadow-2xl">
         <div className="spatial-holo-ring" />
         <div className="relative z-10 rounded-[9px] bg-[#060b18] border border-sky-500/35 overflow-hidden">
           <div className="spatial-laser-sweep" />
@@ -185,7 +185,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
                   <div
                     key={s.step}
                     style={{ animationDelay: `${idx * 65}ms` }}
-                    className={`spatial-step-reveal rounded-lg border p-3.5 flex flex-col justify-between gap-2 ${s.accent} ${
+                    className={`spatial-soft-frame spatial-step-reveal rounded-lg border p-3.5 flex flex-col justify-between gap-2 ${s.accent} ${
                       idx === 4 ? 'sm:col-span-2 lg:col-span-2' : ''
                     }`}
                   >
@@ -215,7 +215,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
                       <div
                         key={`rg-${g.id}`}
                         style={{ animationDelay: `${idx * 40}ms` }}
-                        className="spatial-step-reveal rounded-lg bg-slate-900/95 border border-emerald-500/35 p-3 flex items-start gap-3"
+                        className="spatial-soft-frame spatial-soft-frame-emerald spatial-step-reveal rounded-lg bg-slate-900/95 border border-emerald-500/35 p-3 flex items-start gap-3"
                       >
                         <div
                           className="w-10 h-10 rounded-md border border-slate-600/80 bg-slate-950 flex items-center justify-center text-lg shrink-0"
@@ -245,7 +245,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
                       <div
                         key={g.id}
                         style={{ animationDelay: `${idx * 35}ms` }}
-                        className="spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-2.5 flex items-start gap-3"
+                        className="spatial-soft-frame spatial-step-reveal rounded-lg bg-slate-900/95 border border-slate-700/80 p-2.5 flex items-start gap-3"
                       >
                         <div
                           className="w-9 h-9 rounded-md border border-slate-600/80 bg-slate-950 flex items-center justify-center font-mono text-xs font-extrabold shrink-0"
@@ -270,7 +270,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
 
             {activeTab === 'mouse' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="rounded-lg bg-slate-900 border border-slate-700/80 p-3.5 space-y-1.5">
+                <div className="spatial-soft-frame rounded-lg bg-slate-900 border border-slate-700/80 p-3.5 space-y-1.5">
                   <div className="font-extrabold text-cyan-300">
                     {isEn ? 'Mouse & Touch Viewport' : 'Chuột & Màn Hình Cảm Ứng'}
                   </div>
@@ -282,7 +282,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
                   </ul>
                 </div>
 
-                <div className="rounded-lg bg-slate-900 border border-slate-700/80 p-3.5 space-y-1.5">
+                <div className="spatial-soft-frame spatial-soft-frame-emerald rounded-lg bg-slate-900 border border-slate-700/80 p-3.5 space-y-1.5">
                   <div className="font-extrabold text-emerald-300">
                     {isEn ? 'Virtual Gesture Pad & Dock Shortcuts' : 'Bàn Di Cử Chỉ Ảo & Phím Tắt'}
                   </div>

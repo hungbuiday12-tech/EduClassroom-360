@@ -162,7 +162,7 @@ export const SpatialAIModelCreatorModal: React.FC<SpatialAIModelCreatorModalProp
       aria-modal="true"
       aria-label={isEn ? 'Syn AI Custom 3D Model Creator' : 'Tạo Mô Hình 3D Sáng Tạo Tự Do Bằng AI'}
     >
-      <div className="spatial-holo-card spatial-step-reveal w-full max-w-3xl shadow-2xl">
+      <div data-modal-shell="true" className="spatial-holo-card spatial-step-reveal w-full max-w-3xl shadow-2xl">
         <div className="spatial-holo-ring" />
         <div className="relative z-10 rounded-[9px] bg-[#060c1b] border border-sky-500/40 overflow-hidden">
           <div className="spatial-laser-sweep" />
@@ -208,7 +208,7 @@ export const SpatialAIModelCreatorModal: React.FC<SpatialAIModelCreatorModalProp
                     key={idx}
                     type="button"
                     onClick={() => setIdeaText(isEn ? preset.en : preset.vi)}
-                    className="text-left px-3 py-2 rounded-md bg-slate-900/90 border border-slate-800 hover:border-sky-400/60 text-[11px] text-slate-200 hover:text-white transition-colors cursor-pointer"
+                    className="spatial-soft-frame spatial-soft-frame-purple text-left px-3 py-2 rounded-md bg-slate-900/90 border border-slate-800 hover:border-sky-400/60 text-[11px] text-slate-200 hover:text-white transition-colors cursor-pointer"
                   >
                     + {isEn ? preset.en : preset.vi}
                   </button>
@@ -237,7 +237,7 @@ export const SpatialAIModelCreatorModal: React.FC<SpatialAIModelCreatorModalProp
             {/* Multimodal Attachments: Image + File */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Image Upload */}
-              <div className="rounded-lg bg-slate-900/80 border border-slate-700/80 p-3 space-y-2">
+              <div className="spatial-soft-frame rounded-lg bg-slate-900/80 border border-slate-700/80 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
                     <ImagePlus className="w-4 h-4" />
@@ -290,7 +290,7 @@ export const SpatialAIModelCreatorModal: React.FC<SpatialAIModelCreatorModalProp
               </div>
 
               {/* Document / Spec File Upload */}
-              <div className="rounded-lg bg-slate-900/80 border border-slate-700/80 p-3 space-y-2">
+              <div className="spatial-soft-frame spatial-soft-frame-emerald rounded-lg bg-slate-900/80 border border-slate-700/80 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
                     <FileText className="w-4 h-4" />
@@ -344,7 +344,7 @@ export const SpatialAIModelCreatorModal: React.FC<SpatialAIModelCreatorModalProp
 
             {/* Generated Model Preview Card */}
             {previewModel && (
-              <div className="spatial-step-reveal rounded-lg bg-emerald-950/35 border border-emerald-400/55 p-4 space-y-2.5">
+              <div className="spatial-soft-frame spatial-soft-frame-emerald spatial-step-reveal rounded-lg bg-emerald-950/35 border border-emerald-400/55 p-4 space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-300">
                     <CheckCircle2 className="w-4 h-4" />
@@ -373,7 +373,7 @@ export const SpatialAIModelCreatorModal: React.FC<SpatialAIModelCreatorModalProp
                   {previewModel.parts.map((pt, i) => (
                     <div
                       key={pt.id || i}
-                      className="rounded bg-slate-950/90 border border-slate-800 px-2.5 py-1.5 text-[11px]"
+                      className="spatial-soft-frame rounded bg-slate-950/90 border border-slate-800 px-2.5 py-1.5 text-[11px]"
                     >
                       <div className="font-mono text-[9px] text-amber-300 uppercase">
                         {isEn ? pt.badgeEn : pt.badgeVi}

@@ -16,6 +16,7 @@ import {
 import { useLanguage } from '../../context/LanguageContext';
 import { setLiveWorkspaceContext } from '../../lib/liveCoPilotBridge';
 import { FormattedText } from '../common/MathRenderer';
+import { LivePhoneTelemetry, PhoneSensor3DViewport } from './PhoneSensor3DViewport';
 
 export interface SensorTelemetrySample {
   t: number; // elapsed sec
@@ -81,6 +82,13 @@ export const PhoneSensorPhysicsLab: React.FC<PhoneSensorPhysicsLabProps> = ({ in
 
   const wsRef = useRef<WebSocket | null>(null);
   const oscCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const liveTelemetryRef = useRef<LivePhoneTelemetry>({
+    ax: 0,
+    ay: 0,
+    az: 9.81,
+    beta: 0,
+    gamma: 0
+  });
 
   const pairUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
@@ -126,6 +134,7 @@ export const PhoneSensorPhysicsLab: React.FC<PhoneSensorPhysicsLabProps> = ({ in
 
   const pushSample = useCallback(
     (rawAx: number, rawAy: number, rawAz: number, beta: number, gamma: number) => {
+      liveTelemetryRef.current = { ax: rawAx, ay: rawAy, az: rawAz, beta, gamma };
       const now = Date.now();
       const t = (now - startMsRef.current) / 1000;
       const theo = computeTheoreticalValue(t);
@@ -437,7 +446,7 @@ export const PhoneSensorPhysicsLab: React.FC<PhoneSensorPhysicsLabProps> = ({ in
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="font-mono text-[11px] font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
-              <Radio className={`w-3.5 h-3.5 ${wsConnected ? 'animate-pulse text-emerald-500' : ''}`} />
+              <Radio className={`w-3.5 h-3.5 ${wsConnected ? 'text-emerald-500' : ''}`} />
               <span>WEBSOCKET SENSOR TELEMETRY · ROOM {roomCode}</span>
             </div>
             <h3 className="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">
@@ -694,8 +703,10 @@ export const PhoneSensorPhysicsLab: React.FC<PhoneSensorPhysicsLabProps> = ({ in
             </div>
           </div>
 
+          <PhoneSensor3DViewport expMode={expMode} telemetryRef={liveTelemetryRef} />
+
           <div className="rounded-lg overflow-hidden border border-slate-800 bg-[#070b14]">
-            <canvas ref={oscCanvasRef} width={760} height={280} className="w-full h-auto block" />
+            <canvas ref={oscCanvasRef} width={760} height={240} className="w-full h-auto block" />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">

@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Brain, Cpu, Play, Pause, RotateCcw, Sparkles, Zap } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import {
+  NeuralGraphSnapshot,
+  SiliconDieSnapshot,
+  SiliconNeural3DViewport
+} from './SiliconNeural3DViewport';
 
 type PlaygroundTab = 'silicon' | 'neural';
 
@@ -193,6 +198,22 @@ export const SiliconNeuralPlayground: React.FC = () => {
     return { sumBits, carries, cout: c, decA, decB, decSum };
   }, [bitsA, bitsB, carryIn]);
 
+  const siliconSnap: SiliconDieSnapshot = useMemo(
+    () => ({
+      circuitPreset,
+      bitsA,
+      bitsB,
+      carryIn,
+      sumBits: adder4Result.sumBits,
+      carries: adder4Result.carries,
+      cout: adder4Result.cout,
+      srSet,
+      srReset,
+      srQ
+    }),
+    [adder4Result, bitsA, bitsB, carryIn, circuitPreset, srQ, srReset, srSet]
+  );
+
   // === Neural Playground State ===
   const [datasetKind, setDatasetKind] = useState<DatasetKind>('spiral');
   const [hiddenLayers, setHiddenLayers] = useState<number>(2);
@@ -205,14 +226,28 @@ export const SiliconNeuralPlayground: React.FC = () => {
 
   const dataRef = useRef<DataPt[]>(generateDataset('spiral'));
   const mlpRef = useRef<TinyMLP>(new TinyMLP(6, 2, 'tanh'));
-  const nnCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const graphCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const buildSnapshot = (): NeuralGraphSnapshot => {
+    const mlp = mlpRef.current;
+    return {
+      sizes: mlp.sizes,
+      weights: mlp.weights,
+      predict: (x: number, y: number) => {
+        const { acts } = mlp.forward(x, y);
+        return acts[acts.length - 1][0];
+      },
+      points: dataRef.current
+    };
+  };
+
+  const neuralSnapRef = useRef<NeuralGraphSnapshot>(buildSnapshot());
 
   const rebuildNetwork = (nextDataset?: DatasetKind, hLayers = hiddenLayers, hNeurons = hiddenNeurons, act = activation) => {
     if (nextDataset) {
       dataRef.current = generateDataset(nextDataset);
     }
     mlpRef.current = new TinyMLP(hNeurons, hLayers, act);
+    neuralSnapRef.current = buildSnapshot();
     setEpoch(0);
     setLossVal(0.5);
   };
@@ -225,127 +260,16 @@ export const SiliconNeuralPlayground: React.FC = () => {
     if (tab !== 'neural') return;
     let rafId = 0;
 
-    const drawNeuralVis = () => {
-      const nnC = nnCanvasRef.current;
-      const gC = graphCanvasRef.current;
-      const mlp = mlpRef.current;
-      const pts = dataRef.current;
-
-      // 1. Decision Boundary Heatmap
-      if (nnC) {
-        const ctx = nnC.getContext('2d');
-        const W = 340;
-        const H = 300;
-        if (ctx) {
-          if (nnC.width !== W || nnC.height !== H) {
-            nnC.width = W;
-            nnC.height = H;
-          }
-          const cell = 10;
-          for (let py = 0; py < H; py += cell) {
-            for (let px = 0; px < W; px += cell) {
-              const x = (px / W) * 2 - 1;
-              const y = -((py / H) * 2 - 1);
-              const { acts } = mlp.forward(x, y);
-              const v = acts[acts.length - 1][0]; // -1..1
-              const t = Math.max(0, Math.min(1, (v + 1) * 0.5));
-              const r = Math.round(244 * (1 - t) + 14 * t);
-              const g = Math.round(63 * (1 - t) + 165 * t);
-              const b = Math.round(94 * (1 - t) + 233 * t);
-              ctx.fillStyle = `rgba(${r},${g},${b},0.48)`;
-              ctx.fillRect(px, py, cell, cell);
-            }
-          }
-
-          // Scatter points
-          for (const p of pts) {
-            const sx = ((p.x + 1) * 0.5) * W;
-            const sy = ((1 - p.y) * 0.5) * H;
-            ctx.fillStyle = p.label > 0 ? '#38bdf8' : '#fb7185';
-            ctx.strokeStyle = '#0f172a';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(sx, sy, 3.6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-          }
-        }
-      }
-
-      // 2. Network Weights Graph Visualization
-      if (gC) {
-        const ctx = gC.getContext('2d');
-        const W = 420;
-        const H = 300;
-        if (ctx) {
-          if (gC.width !== W || gC.height !== H) {
-            gC.width = W;
-            gC.height = H;
-          }
-          ctx.fillStyle = '#070b14';
-          ctx.fillRect(0, 0, W, H);
-
-          const layers = mlp.sizes.length;
-          const nodePositions: { x: number; y: number }[][] = [];
-          for (let l = 0; l < layers; l++) {
-            const count = mlp.sizes[l];
-            const x = 45 + (l / Math.max(1, layers - 1)) * (W - 90);
-            const col: { x: number; y: number }[] = [];
-            for (let j = 0; j < count; j++) {
-              const y = ((j + 1) / (count + 1)) * H;
-              col.push({ x, y });
-            }
-            nodePositions.push(col);
-          }
-
-          // Draw synapses colored by live weight sign & thickness
-          for (let l = 0; l < mlp.weights.length; l++) {
-            for (let j = 0; j < mlp.weights[l].length; j++) {
-              for (let k = 0; k < mlp.weights[l][j].length; k++) {
-                const w = mlp.weights[l][j][k];
-                const from = nodePositions[l][k];
-                const to = nodePositions[l + 1][j];
-                ctx.strokeStyle =
-                  w >= 0
-                    ? `rgba(56, 189, 248, ${Math.min(0.95, 0.2 + Math.abs(w) * 0.45)})`
-                    : `rgba(251, 113, 133, ${Math.min(0.95, 0.2 + Math.abs(w) * 0.45)})`;
-                ctx.lineWidth = Math.min(4.2, 0.6 + Math.abs(w) * 1.4);
-                ctx.beginPath();
-                ctx.moveTo(from.x, from.y);
-                ctx.lineTo(to.x, to.y);
-                ctx.stroke();
-              }
-            }
-          }
-
-          // Draw neurons
-          for (let l = 0; l < layers; l++) {
-            for (let j = 0; j < nodePositions[l].length; j++) {
-              const pos = nodePositions[l][j];
-              ctx.fillStyle = l === 0 ? '#a78bfa' : l === layers - 1 ? '#fbbf24' : '#0f172a';
-              ctx.strokeStyle = '#38bdf8';
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.arc(pos.x, pos.y, 9, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.stroke();
-            }
-          }
-        }
-      }
-    };
-
     const tick = () => {
       rafId = requestAnimationFrame(tick);
       if (document.hidden) return;
       if (isTraining) {
         const loss = mlpRef.current.trainEpoch(dataRef.current, learningRate);
+        neuralSnapRef.current = buildSnapshot();
         setEpoch((e) => e + 1);
         setLossVal(loss);
       }
-      drawNeuralVis();
     };
-    drawNeuralVis();
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
   }, [tab, isTraining, learningRate]);
@@ -392,6 +316,15 @@ export const SiliconNeuralPlayground: React.FC = () => {
             <span>{isEn ? 'Silicon Logic CPU' : 'Mạch Logic 4-Bit'}</span>
           </button>
         </div>
+      </div>
+
+      {/* Persistent WebGL 3D Stage across both Neural Manifold and Silicon Die modes */}
+      <div className="px-4 pt-4">
+        <SiliconNeural3DViewport
+          mode={tab}
+          neuralSnapRef={neuralSnapRef}
+          siliconSnap={siliconSnap}
+        />
       </div>
 
       {/* === TAB 1: LIVE NEURAL NET === */}
@@ -484,21 +417,20 @@ export const SiliconNeuralPlayground: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-            <div className="lg:col-span-7 bg-[#070b14] rounded border border-slate-800 p-3 flex flex-col items-center">
-              <div className="w-full flex justify-between text-[11px] font-mono text-slate-400 mb-2">
-                <span>{isEn ? 'Live Synaptic Weights Graph' : 'Đồ thị Trọng số Nơ-ron (Xanh: +, Hồng: -)'}</span>
-                <span>2 → {Array(hiddenLayers).fill(hiddenNeurons).join(' → ')} → 1</span>
-              </div>
-              <canvas ref={graphCanvasRef} className="w-full max-w-[440px] rounded" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+            <div className="p-3 rounded bg-slate-900/75 border border-slate-800 flex items-center justify-between">
+              <span className="text-slate-300">
+                {isEn ? '3D Topology Architecture' : 'Kiến trúc Mạng 3D'}
+              </span>
+              <span className="text-cyan-300 font-bold">
+                2 → {Array(hiddenLayers).fill(hiddenNeurons).join(' → ')} → 1
+              </span>
             </div>
-
-            <div className="lg:col-span-5 bg-[#070b14] rounded border border-slate-800 p-3 flex flex-col items-center">
-              <div className="w-full flex justify-between text-[11px] font-mono text-slate-400 mb-2">
-                <span>{isEn ? 'Decision Boundary Field' : 'Vùng Ranh giới Phân loại'}</span>
-                <span className="text-sky-400">Blue (+1) / Rose (-1)</span>
-              </div>
-              <canvas ref={nnCanvasRef} className="w-full max-w-[340px] rounded border border-slate-800" />
+            <div className="p-3 rounded bg-slate-900/75 border border-slate-800 flex items-center justify-between">
+              <span className="text-slate-300">
+                {isEn ? 'Decision Manifold Heightfield' : 'Mặt cong Quyết định 3D'}
+              </span>
+              <span className="text-sky-400 font-bold">Cyan (+1) / Rose (-1)</span>
             </div>
           </div>
         </div>

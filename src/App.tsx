@@ -10,6 +10,7 @@ import { MathSimulationsPage } from './components/math/MathSimulationsPage';
 import { PhysicsLab } from './components/physics/PhysicsLab';
 import { PhysicsDomainsPage } from './components/physics/PhysicsDomainsPage';
 import { CodeJudgeLab } from './components/cs/CodeJudgeLab';
+import { CodeSimulationsPage } from './components/cs/CodeSimulationsPage';
 import { ExamHub } from './components/exams/ExamHub';
 import { LearningRoadmap } from './components/roadmap/LearningRoadmap';
 import { ArenaHub } from './components/arena/ArenaHub';
@@ -99,7 +100,7 @@ function MainApp() {
     const fallbackSubj: SubjectType =
       currentSubject === 'physics' || currentSubject === 'physics_sims'
         ? 'physics'
-        : currentSubject === 'cs'
+        : currentSubject === 'cs' || currentSubject === 'cs_sims'
         ? 'cs'
         : 'math';
     const targetSubj: SubjectType = ctx?.subject || fallbackSubj;
@@ -164,10 +165,26 @@ function MainApp() {
     }
     prevPomodoroRef.current = completedSessions;
   }, [completedSessions, user?.uid, firebaseUser?.uid]);
+  const isPreWebGLStage =
+    (currentSubject === 'synapse_v2' || currentSubject === 'future_lab') &&
+    (location.futureTab === 'galaxy3d' ||
+      location.futureTab === 'audio_fft' ||
+      location.futureTab === 'dual_hand_sandbox' ||
+      location.futureTab === 'cannon_ballistics_3d' ||
+      location.futureTab === 'rocket_launch_3d' ||
+      location.futureTab === 'jet_engine_3d' ||
+      location.futureTab === 'four_d_lectures' ||
+      location.futureTab === 'robotics_ik_3d' ||
+      location.futureTab === 'text_to_sim' ||
+      location.futureTab === 'paper_to_sim' ||
+      location.futureTab === 'silicon_neural' ||
+      location.futureTab === 'phone_sensor_lab' ||
+      ((!location.futureTab || location.futureTab === 'megastructures') &&
+        location.synapseMode === 'stage'));
   const isHeavy3DActive =
     currentSubject === 'spatial_3d' ||
-    currentSubject === 'synapse_v2' ||
-    currentSubject === 'future_lab';
+    isPreWebGLStage ||
+    (currentSubject === 'cs_sims' && location.csSimTab === 'viz3d');
 
   // Guest explore mode state: allows unauthenticated visitors to explore the classroom
   const [isGuestExploring, setIsGuestExploring] = useState<boolean>(() => {
@@ -366,7 +383,7 @@ function MainApp() {
 
           {/* Right Main Workspace Column */}
           <div
-            className={`relative z-10 flex-1 min-w-0 flex flex-col transition-[padding] duration-200 ${
+            className={`pre-main-col relative z-10 flex-1 min-w-0 flex flex-col transition-[padding] duration-200 ${
               sidebarCollapsed ? 'lg:pl-[78px]' : 'lg:pl-[272px]'
             }`}
           >
@@ -435,6 +452,10 @@ function MainApp() {
 
                   {currentSubject === 'cs' && (
                     <CodeJudgeLab onScoreEarned={handleEarnXP} onBack={goBack} />
+                  )}
+
+                  {currentSubject === 'cs_sims' && (
+                    <CodeSimulationsPage onBack={goBack} />
                   )}
 
                   {currentSubject === 'exams' && (
@@ -538,6 +559,12 @@ function MainApp() {
                     className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold text-blue-600 dark:text-sky-400 cursor-pointer"
                   >
                     {isEn ? 'Physics 2D/3D' : 'Mô phỏng Vật lí'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('cs_sims')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold text-emerald-600 dark:text-emerald-400 cursor-pointer"
+                  >
+                    {isEn ? 'Code 2D/3D' : 'Mô phỏng Code'}
                   </button>
                   <button
                     onClick={() => selectSubject('cs')}

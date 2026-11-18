@@ -458,6 +458,15 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
     }
   },
   {
+    phrases: ['mo phong code', 'mo phong tin hoc', 'mo phong thuat toan', 'code 2d', 'code 3d', 'mo phong code 3d', 'cs sim'],
+    minScore: 0.45,
+    plan: {
+      replyVi: 'Đang mở phòng Mô phỏng Code & Thuật toán 2D/3D.',
+      actionType: 'navigate',
+      targetSubject: 'cs_sims'
+    }
+  },
+  {
     phrases: ['mach logic', 'mang no ron', 'neural net', 'bo cong 4 bit', 'flip flop', 'silicon'],
     minScore: 0.48,
     plan: {
@@ -626,6 +635,51 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
       replyVi: 'Đang mở Sandbox Trường Hạt GPU Hai Tay trong Synapse Pre.',
       actionType: 'navigate_future',
       targetFutureTab: 'dual_hand_sandbox'
+    }
+  },
+  {
+    phrases: ['ban phao', 'phao 3d', 'quy dao dan dao', 'duong bay ban phao', 'artillery', 'cannon'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Phòng Lab Mô Phỏng Quỹ Đạo Bắn Pháo 3D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'cannon_ballistics_3d'
+    }
+  },
+  {
+    phrases: ['ten lua', 'phong ten lua', 'rocket launch', 'quy dao ten lua', 'tach tang'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Mô Phỏng Phóng Tên Lửa Đa Tầng & Quỹ Đạo 3D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'rocket_launch_3d'
+    }
+  },
+  {
+    phrases: ['phan luc', 'dong co phan luc', 'jet engine', 'turbofan', 'tuabin phan luc'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Mô Hình Động Cơ Phản Lực Turbofan 3D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'jet_engine_3d'
+    }
+  },
+  {
+    phrases: ['4d', 'bai giang 4d', 'sieu lap phuong 4d', 'khong thoi gian 4d', 'tesseract 4d'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Phòng Bài Giảng Hình Học & Không-Thời Gian 4D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'four_d_lectures'
+    }
+  },
+  {
+    phrases: ['canh tay robot', 'robot 6 dof', 'dong hoc nguoc', 'robotics ik'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Phòng Lab Cánh Tay Robot 6-DOF & Động Học Ngược 3D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'robotics_ik_3d'
     }
   },
   {

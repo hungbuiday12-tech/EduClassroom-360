@@ -373,6 +373,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
             'bg-blue-100 dark:bg-blue-900/70 border border-blue-300/80 dark:border-blue-600/50 text-blue-800 dark:text-blue-200',
           activeClass:
             'bg-gradient-to-r from-blue-600 to-indigo-600 border border-blue-400 text-white shadow-md shadow-blue-600/25'
+        },
+        {
+          id: 'cs_sims',
+          labelVi: 'Mô phỏng Code',
+          labelEn: 'Code 2D/3D Sims',
+          badge: '2D·3D',
+          icon: (
+            <span className="icon-anim-zap">
+              <Code2 className="w-5 h-5 shrink-0" />
+            </span>
+          ),
+          idleClass:
+            'bg-emerald-50/85 dark:bg-emerald-950/35 border border-emerald-300/80 dark:border-emerald-500/35 text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/55 hover:border-emerald-400',
+          badgeIdleClass:
+            'bg-emerald-100 dark:bg-emerald-900/70 border border-emerald-300/80 dark:border-emerald-600/50 text-emerald-800 dark:text-emerald-200',
+          activeClass:
+            'bg-gradient-to-r from-emerald-600 to-teal-500 border border-emerald-400 text-white shadow-md shadow-emerald-600/25'
         }
       ]
     },

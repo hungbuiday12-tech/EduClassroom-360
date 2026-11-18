@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Loader2, Pause, Play, RotateCcw, Sparkles, Wand2 } from 'lucide-react';
 import { GeneratedSimConfig } from '../../types';
 import { safeFetchJson } from '../../lib/apiClient';
 import { FormattedText } from '../common/MathRenderer';
+import { StemSim3DViewport } from './StemSim3DViewport';
 
 interface TextToSimStudioProps {
   language?: 'vi' | 'en';
@@ -67,21 +68,8 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [playing, setPlaying] = useState(true);
-  const [simTime, setSimTime] = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  useEffect(() => {
-    let raf = 0;
-    let prev = performance.now();
-    const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - prev) / 1000);
-      prev = now;
-      if (playing) setSimTime((t) => t + dt);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [playing]);
+  const [speedMult, setSpeedMult] = useState(1);
+  const [resetSignal, setResetSignal] = useState(0);
 
   const handleGenerate = async (customPrompt?: string) => {
     const q = (customPrompt ?? prompt).trim();
@@ -103,7 +91,7 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
       return;
     }
     setSimConfig(res.data.config);
-    setSimTime(0);
+    setResetSignal((r) => r + 1);
     setPlaying(true);
   };
 
@@ -114,268 +102,6 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
     }));
   };
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const W = canvas.width;
-    const H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#060f1f';
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
-    for (let x = 0; x <= W; x += 32) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, H);
-      ctx.stroke();
-    }
-    for (let y = 0; y <= H; y += 32) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(W, y);
-      ctx.stroke();
-    }
-
-    const p = (i: number, fb: number) => simConfig.parameters[i]?.value ?? fb;
-    const eng = simConfig.engine;
-
-    if (eng === 'collision_1d') {
-      const m1 = p(0, 4);
-      const m2 = p(1, 2);
-      const v1 = p(2, 6);
-      const v1p = ((m1 - m2) / (m1 + m2)) * v1;
-      const v2p = ((2 * m1) / (m1 + m2)) * v1;
-
-      const floorY = H - 64;
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(30, floorY);
-      ctx.lineTo(W - 30, floorY);
-      ctx.stroke();
-
-      const tCycle = simTime % 4.4;
-      const tHit = 1.6;
-      const hitX = W * 0.45;
-      let x1 = hitX - 180 + (tCycle / tHit) * 155;
-      let x2 = hitX + 25;
-      if (tCycle >= tHit) {
-        const dtHit = tCycle - tHit;
-        x1 = hitX - 25 + v1p * dtHit * 22;
-        x2 = hitX + 25 + v2p * dtHit * 22;
-      }
-
-      const r1 = 16 + m1 * 1.4;
-      const r2 = 16 + m2 * 1.4;
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(x1, floorY - r1, r1, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(x2, floorY - r2, r2, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText(
-        `Sau va chạm: v₁' = ${v1p.toFixed(2)} m/s | v₂' = ${v2p.toFixed(2)} m/s`,
-        24,
-        30
-      );
-    } else if (eng === 'wave_standing') {
-      const k = Math.max(1, Math.round(p(0, 4)));
-      const amp = p(1, 36);
-      const freq = p(2, 1.8);
-      const leftX = 48;
-      const rightX = W - 48;
-      const L = rightX - leftX;
-      const midY = H / 2;
-
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
-      ctx.beginPath();
-      ctx.moveTo(leftX, midY);
-      ctx.lineTo(rightX, midY);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#22d3ee';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      for (let i = 0; i <= 140; i++) {
-        const u = i / 140;
-        const y = amp * Math.sin(k * Math.PI * u) * Math.cos(simTime * freq * Math.PI * 2);
-        const px = leftX + u * L;
-        const py = midY - y;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-
-      ctx.fillStyle = '#fbbf24';
-      for (let n = 0; n <= k; n++) {
-        ctx.beginPath();
-        ctx.arc(leftX + (n / k) * L, midY, 4.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText(`Số bó sóng k = ${k} · Số nút = ${k + 1}`, 24, 28);
-    } else if (eng === 'optics_lens') {
-      const f = p(0, 90);
-      const d = p(1, 150);
-      const h = p(2, 44);
-      const cx = W / 2;
-      const cy = H / 2;
-
-      ctx.strokeStyle = '#64748b';
-      ctx.beginPath();
-      ctx.moveTo(20, cy);
-      ctx.lineTo(W - 20, cy);
-      ctx.stroke();
-
-      // Converging Lens
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - 110);
-      ctx.lineTo(cx, cy + 110);
-      ctx.stroke();
-
-      // Focal points
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(cx - f, cy, 4, 0, Math.PI * 2);
-      ctx.arc(cx + f, cy, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Object AB
-      const objX = cx - d;
-      const objTopY = cy - h;
-      ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(objX, cy);
-      ctx.lineTo(objX, objTopY);
-      ctx.stroke();
-
-      // Image A'B'
-      const denom = d - f;
-      const dp = Math.abs(denom) < 2 ? 9999 : (d * f) / denom;
-      const hp = (-dp / d) * h;
-      const imgX = cx + dp;
-      const imgTopY = cy - hp;
-
-      ctx.strokeStyle = dp > 0 ? '#f43f5e' : '#a78bfa';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(objX, objTopY);
-      ctx.lineTo(cx, objTopY);
-      ctx.lineTo(imgX, imgTopY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(objX, objTopY);
-      ctx.lineTo(imgX, imgTopY);
-      ctx.stroke();
-
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(imgX, cy);
-      ctx.lineTo(imgX, imgTopY);
-      ctx.stroke();
-
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText(`d' = ${dp.toFixed(1)} cm · Độ phóng đại k = ${(-dp / d).toFixed(2)}`, 24, 28);
-    } else if (eng === 'math_tangent') {
-      const a = p(0, 0.5);
-      const b = p(1, -1.8);
-      const x0 = p(2, 0.8);
-      const cx = W / 2;
-      const cy = H / 2;
-      const sx = 54;
-      const sy = 28;
-
-      ctx.strokeStyle = '#475569';
-      ctx.beginPath();
-      ctx.moveTo(20, cy);
-      ctx.lineTo(W - 20, cy);
-      ctx.moveTo(cx, 20);
-      ctx.lineTo(cx, H - 20);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      for (let px = 30; px <= W - 30; px += 2) {
-        const x = (px - cx) / sx;
-        const y = a * x * x * x + b * x;
-        const py = cy - y * sy;
-        if (px === 30) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-
-      const y0 = a * x0 * x0 * x0 + b * x0;
-      const slope = 3 * a * x0 * x0 + b;
-      ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      const tx1 = x0 - 1.8;
-      const ty1 = y0 + slope * (tx1 - x0);
-      const tx2 = x0 + 1.8;
-      const ty2 = y0 + slope * (tx2 - x0);
-      ctx.moveTo(cx + tx1 * sx, cy - ty1 * sy);
-      ctx.lineTo(cx + tx2 * sx, cy - ty2 * sy);
-      ctx.stroke();
-
-      ctx.fillStyle = '#f43f5e';
-      ctx.beginPath();
-      ctx.arc(cx + x0 * sx, cy - y0 * sy, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText(`Tiếp điểm x₀ = ${x0.toFixed(1)} · Hệ số góc k = ${slope.toFixed(2)}`, 24, 28);
-    } else {
-      // incline_forces or projectile_drag dynamic preview
-      const v0 = p(0, 14);
-      const deg = p(1, 35);
-      const mu = p(2, 0.12);
-      const rad = (deg * Math.PI) / 180;
-      const x0 = 90;
-      const y0 = H - 44;
-      const dx = 320;
-      const dy = Math.min(180, dx * Math.tan(rad) * 0.65);
-
-      ctx.fillStyle = 'rgba(14, 165, 233, 0.18)';
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x0, y0);
-      ctx.lineTo(x0 + dx, y0);
-      ctx.lineTo(x0, y0 - dy);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      const acc = Math.max(0.2, 9.8 * (Math.sin(rad) - mu * Math.cos(rad)));
-      const t = (simTime % 3.0) / 3.0;
-      const bx = x0 + dx * (0.1 + 0.72 * t * t);
-      const by = y0 - dy + dy * (0.1 + 0.72 * t * t);
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(bx, by - 12, 13, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText(`v₀=${v0} · α=${deg}° · μ=${mu} · a=${acc.toFixed(2)} m/s²`, 24, 28);
-    }
-  }, [simConfig, simTime]);
-
   return (
     <div className="space-y-4">
       {/* Prompt Bar */}
@@ -383,10 +109,10 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              TEXT-TO-INTERACTIVE SIMULATION ENGINE
+              TEXT-TO-3D INTERACTIVE SIMULATION ENGINE
             </div>
             <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-              Gõ Câu Lệnh Tự Nhiên → AI Tự Dựng Phòng Thí Nghiệm Tương Tác
+              Gõ Câu Lệnh Tự Nhiên → AI Tự Dựng Phòng Thí Nghiệm 3D WebGL
             </h3>
           </div>
           <Wand2 className="w-5 h-5 text-amber-500" />
@@ -407,7 +133,7 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
             className="cs-deck-btn px-4 py-2.5 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shrink-0"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            <span>{loading ? 'Đang biên dịch...' : 'Sinh Mô Phỏng Ngay'}</span>
+            <span>{loading ? 'Đang biên dịch 3D...' : 'Sinh Mô Phỏng 3D'}</span>
           </button>
         </div>
 
@@ -421,7 +147,7 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
               onClick={() => {
                 setSimConfig(pr);
                 setPrompt(pr.title);
-                setSimTime(0);
+                setResetSignal((r) => r + 1);
               }}
               className={`px-2.5 py-1 rounded border text-[11px] font-semibold cursor-pointer ${
                 simConfig.title === pr.title
@@ -435,14 +161,28 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
         </div>
       </div>
 
-      {/* Interactive Runtime Stage */}
+      {/* Interactive 3D Runtime Stage */}
       <div className="sci-frame rounded-md bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 p-4 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h4 className="text-base font-extrabold text-slate-900 dark:text-white">{simConfig.title}</h4>
             <p className="text-xs text-slate-500 dark:text-slate-400">{simConfig.summary}</p>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[0.5, 1, 2].map((spd) => (
+              <button
+                key={spd}
+                type="button"
+                onClick={() => setSpeedMult(spd)}
+                className={`px-2 py-1 rounded border text-[11px] font-mono font-bold cursor-pointer ${
+                  speedMult === spd
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-600 dark:text-amber-300'
+                    : 'border-slate-300 dark:border-slate-700 text-slate-500'
+                }`}
+              >
+                {spd}x
+              </button>
+            ))}
             <button
               type="button"
               onClick={() => setPlaying((p) => !p)}
@@ -453,7 +193,7 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
             </button>
             <button
               type="button"
-              onClick={() => setSimTime(0)}
+              onClick={() => setResetSignal((r) => r + 1)}
               className="p-1.5 rounded border border-slate-300 dark:border-slate-700 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -465,11 +205,13 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
           <FormattedText text={simConfig.formulaLatex} />
         </div>
 
-        <canvas
-          ref={canvasRef}
-          width={760}
-          height={320}
-          className="w-full rounded-md border border-slate-800 bg-[#060f1f]"
+        <StemSim3DViewport
+          simKind={simConfig.engine}
+          params={simConfig.parameters}
+          playing={playing}
+          speedMultiplier={speedMult}
+          resetSignal={resetSignal}
+          heightClass="h-[360px] sm:h-[410px]"
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

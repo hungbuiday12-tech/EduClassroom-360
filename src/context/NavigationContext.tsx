@@ -21,6 +21,7 @@ export interface NavLocation {
   csTrackId: CSTrackId;
   csLessonId: string;
   csLessonTab: 'lecture' | 'code' | 'practice' | 'visualizer';
+  csSimTab?: 'viz2d' | 'viz3d';
   csAlgoId?: string;
   examId: string | null;
   synapseMode: 'catalog' | 'stage';
@@ -56,6 +57,7 @@ const DEFAULT_LOCATION: NavLocation = {
   csTrackId: 'vnoi',
   csLessonId: 'cs-1',
   csLessonTab: 'lecture',
+  csSimTab: 'viz2d',
   csAlgoId: 'coord_hull',
   examId: null,
   synapseMode: 'catalog',
@@ -102,7 +104,12 @@ function getInitialLocation(): NavLocation {
           'audio_fft',
           'silicon_neural',
           'phone_sensor_lab',
-          'dual_hand_sandbox'
+          'dual_hand_sandbox',
+          'cannon_ballistics_3d',
+          'rocket_launch_3d',
+          'jet_engine_3d',
+          'four_d_lectures',
+          'robotics_ik_3d'
         ].includes(rawFutureTab)
       ) {
         return {
@@ -130,15 +137,20 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       return isEn ? 'Classroom' : 'Lớp học';
     case 'synapse_v2':
       if (!loc.futureTab || loc.futureTab === 'hub') {
-        return isEn ? 'Synapse Pre · Next-Gen Studios Hub' : 'Synapse Pre · Phòng Lab Tương Lai';
+        return isEn ? 'Synapse Pre · Next-Gen 3D & 4D Hub' : 'Synapse Pre · Phòng Lab 3D & 4D';
       }
       if (loc.futureTab === 'galaxy3d') return isEn ? 'Synapse Pre · 3D Neural Galaxy' : 'Synapse Pre · Vũ Trụ Tri Thức 3D';
-      if (loc.futureTab === 'text_to_sim') return isEn ? 'Synapse Pre · AI Simulation Studio' : 'Synapse Pre · Sinh Mô Phỏng AI';
-      if (loc.futureTab === 'paper_to_sim') return isEn ? 'Synapse Pre · Paper to Sim Vision' : 'Synapse Pre · Giấy Nháp → Sim';
+      if (loc.futureTab === 'text_to_sim') return isEn ? 'Synapse Pre · 3D AI Simulation Studio' : 'Synapse Pre · Sinh Mô Phỏng 3D AI';
+      if (loc.futureTab === 'paper_to_sim') return isEn ? 'Synapse Pre · Paper to 3D Sim' : 'Synapse Pre · Giấy Nháp → Mô Hình 3D';
       if (loc.futureTab === 'audio_fft') return isEn ? 'Synapse Pre · Audio FFT 3D Lab' : 'Synapse Pre · Sóng Âm FFT 3D';
-      if (loc.futureTab === 'silicon_neural') return isEn ? 'Synapse Pre · Silicon & Neural Lab' : 'Synapse Pre · Mạch Logic & Neural Net';
-      if (loc.futureTab === 'phone_sensor_lab') return isEn ? 'Synapse Pre · Phone Sensor QR Lab' : 'Synapse Pre · Cảm biến Điện thoại QR';
+      if (loc.futureTab === 'silicon_neural') return isEn ? 'Synapse Pre · 3D Silicon & Neural Lab' : 'Synapse Pre · Chip Silicon & Neural 3D';
+      if (loc.futureTab === 'phone_sensor_lab') return isEn ? 'Synapse Pre · 3D Phone Sensor Twin' : 'Synapse Pre · Cảm Biến 3D Digital Twin';
       if (loc.futureTab === 'dual_hand_sandbox') return isEn ? 'Synapse Pre · Dual-Hand GPU Field' : 'Synapse Pre · Trường Hạt GPU 2 Tay';
+      if (loc.futureTab === 'cannon_ballistics_3d') return isEn ? 'Synapse Pre · 3D Artillery Ballistics' : 'Synapse Pre · Quỹ Đạo Bắn Pháo 3D';
+      if (loc.futureTab === 'rocket_launch_3d') return isEn ? 'Synapse Pre · 3D Multi-Stage Rocket Launch' : 'Synapse Pre · Phóng Tên Lửa Đa Tầng 3D';
+      if (loc.futureTab === 'jet_engine_3d') return isEn ? 'Synapse Pre · 3D Turbofan Jet Engine' : 'Synapse Pre · Động Cơ Phản Lực 3D';
+      if (loc.futureTab === 'four_d_lectures') return isEn ? 'Synapse Pre · 4D Hypergeometry Lectures' : 'Synapse Pre · Bài Giảng Không Gian 4D';
+      if (loc.futureTab === 'robotics_ik_3d') return isEn ? 'Synapse Pre · 6-DOF Robotics IK 3D' : 'Synapse Pre · Cánh Tay Robot 6-DOF 3D';
       return loc.synapseMode === 'stage'
         ? isEn
           ? 'Synapse Pre · 3D Megastructure Stage'
@@ -186,6 +198,10 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
         return isEn ? 'CS Lecture' : 'Bài giảng Tin học';
       }
       return isEn ? 'CS · 5 Roadmaps' : 'Tin học · 5 Lộ trình';
+    case 'cs_sims':
+      return loc.csSimTab === 'viz3d'
+        ? isEn ? 'Code 3D Hologram Sims' : 'Mô phỏng Code 3D'
+        : isEn ? 'Code 2D/3D Simulations' : 'Mô phỏng Code 2D/3D';
     case 'exams':
       return loc.examId
         ? isEn ? 'Exam Paper' : 'Đề thi chi tiết'
@@ -227,6 +243,7 @@ function isSameLocation(a: NavLocation, b: NavLocation): boolean {
     a.csTrackId === b.csTrackId &&
     a.csLessonId === b.csLessonId &&
     a.csLessonTab === b.csLessonTab &&
+    a.csSimTab === b.csSimTab &&
     a.csAlgoId === b.csAlgoId &&
     a.examId === b.examId &&
     a.synapseMode === b.synapseMode &&
@@ -351,6 +368,8 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         patch.csViewMode = 'curriculum';
         patch.csSubView = 'roadmap';
         patch.csLessonTab = 'lecture';
+      } else if (subject === 'cs_sims') {
+        patch.csSimTab = prev.csSimTab === 'viz3d' ? 'viz3d' : 'viz2d';
       } else if (subject === 'exams') {
         patch.examId = null;
       } else if (subject === 'synapse_v2') {

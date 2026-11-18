@@ -3153,6 +3153,280 @@
   transition-duration: 80ms !important;
 }
 
+/* ================= SYNAPSE PRE GRANDIOSE SQUARE SHOWCASE ANIMATIONS ================= */
+@keyframes preGrandConicSpin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes preGrandImgScan {
+  0% {
+    transform: translate3d(0, -130%, 0);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.72;
+  }
+  82% {
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate3d(0, 420%, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes preGrandFloat {
+  0%, 100% {
+    transform: translate3d(0, 0px, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@keyframes preGrandAuraPulse {
+  0%, 100% {
+    opacity: 0.48;
+    transform: scale(0.99);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.01);
+  }
+}
+
+@keyframes preGrandBtnEnergy {
+  0%, 62% {
+    transform: translate3d(-175%, 0, 0) skewX(-24deg);
+    opacity: 0;
+  }
+  70% {
+    opacity: 0.85;
+  }
+  94% {
+    transform: translate3d(265%, 0, 0) skewX(-24deg);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(265%, 0, 0) skewX(-24deg);
+    opacity: 0;
+  }
+}
+
+.pre-grand-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color 240ms ease;
+}
+
+.pre-grand-hero::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220%;
+  height: 220%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--accent-primary-light, #38bdf8) 45deg,
+    transparent 125deg,
+    var(--accent-secondary, #14b8a6) 210deg,
+    transparent 300deg,
+    var(--accent-primary-light, #38bdf8) 360deg
+  );
+  opacity: 0.22;
+  animation: preGrandConicSpin 18s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pre-grand-frame {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: 2px;
+  border-radius: 0.875rem;
+  transition:
+    transform 340ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pre-grand-conic {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 230%;
+  height: 230%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--pre-card-accent, var(--accent-primary-light, #38bdf8)) 48deg,
+    transparent 118deg,
+    var(--pre-card-secondary, var(--accent-secondary, #14b8a6)) 205deg,
+    transparent 290deg,
+    var(--pre-card-accent, var(--accent-primary-light, #38bdf8)) 360deg
+  );
+  opacity: 0.56;
+  animation: preGrandConicSpin 9.5s linear infinite;
+  transition: opacity 280ms ease;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+
+.pre-grand-corners {
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+  z-index: 25;
+  opacity: 0.65;
+  background:
+    linear-gradient(to right, var(--pre-card-accent, #38bdf8) 18px, transparent 18px) 0 0 / 100% 2px no-repeat,
+    linear-gradient(to bottom, var(--pre-card-accent, #38bdf8) 18px, transparent 18px) 0 0 / 2px 100% no-repeat,
+    linear-gradient(to left, var(--pre-card-secondary, #2dd4bf) 18px, transparent 18px) 100% 100% / 100% 2px no-repeat,
+    linear-gradient(to top, var(--pre-card-secondary, #2dd4bf) 18px, transparent 18px) 100% 100% / 2px 100% no-repeat;
+  transition: opacity 260ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pre-grand-img-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 24%;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.24) 50%,
+    transparent 100%
+  );
+  animation: preGrandImgScan 4.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 4;
+  will-change: transform, opacity;
+}
+
+.pre-grand-icon-float {
+  animation: preGrandFloat 4s ease-in-out infinite;
+}
+
+.pre-grand-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 0.5rem !important;
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 220ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease !important;
+}
+
+.pre-grand-btn::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.45;
+  background:
+    linear-gradient(to right, currentColor 9px, transparent 9px) 0 0 / 100% 1.5px no-repeat,
+    linear-gradient(to bottom, currentColor 9px, transparent 9px) 0 0 / 1.5px 100% no-repeat,
+    linear-gradient(to left, currentColor 9px, transparent 9px) 100% 100% / 100% 1.5px no-repeat,
+    linear-gradient(to top, currentColor 9px, transparent 9px) 100% 100% / 1.5px 100% no-repeat;
+  transition: opacity 200ms ease, transform 240ms ease;
+}
+
+.pre-grand-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 52%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.42) 48%,
+    rgba(255, 255, 255, 0.1) 66%,
+    transparent 100%
+  );
+  transform: translate3d(-185%, 0, 0) skewX(-24deg);
+  pointer-events: none;
+  z-index: 1;
+  animation: preGrandBtnEnergy 4.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pre-grand-frame:hover {
+    transform: translate3d(0, -10px, 0) scale(1.01);
+    box-shadow: 0 34px 80px -18px var(--accent-ring, rgba(56, 189, 248, 0.48));
+  }
+  .pre-grand-frame:hover .pre-grand-conic {
+    opacity: 1;
+    animation-duration: 3s;
+  }
+  .pre-grand-frame:hover .pre-grand-corners {
+    opacity: 1;
+    transform: scale(0.985);
+  }
+  .pre-grand-btn:not(:disabled):hover {
+    transform: translate3d(0, -3px, 0) scale(1.02) !important;
+    box-shadow: 0 18px 40px -10px var(--accent-ring, rgba(56, 189, 248, 0.55)) !important;
+  }
+  .pre-grand-btn:not(:disabled):hover::before {
+    opacity: 1;
+  }
+  .pre-grand-btn:not(:disabled):hover::after {
+    animation: sheen-slide 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+.pre-grand-frame:active {
+  transform: translate3d(0, -2px, 0) scale(0.988) !important;
+  transition-duration: 100ms !important;
+}
+
+.pre-grand-btn:not(:disabled):active {
+  transform: translate3d(0, 1px, 0) scale(0.965) !important;
+  transition-duration: 90ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pre-grand-hero::before,
+  .pre-grand-conic,
+  .pre-grand-img-scan,
+  .pre-grand-icon-float,
+  .pre-grand-btn::after {
+    animation: none !important;
+  }
+}
+
+.pre-fullscreen-active {
+  overflow: hidden !important;
+}
+.pre-fullscreen-active aside,
+.pre-fullscreen-active header,
+.pre-fullscreen-active footer {
+  display: none !important;
+}
+.pre-fullscreen-active .pre-main-col {
+  padding-left: 0 !important;
+  z-index: 140 !important;
+}
+.pre-fullscreen-active main {
+  max-width: 100% !important;
+  padding: 0 !important;
+}
+
+
+
 
 
 

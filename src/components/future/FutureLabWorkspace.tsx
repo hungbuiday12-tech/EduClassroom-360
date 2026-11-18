@@ -1,13 +1,20 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
+  Bot,
+  Box,
   Building2,
   Camera,
   ChevronLeft,
   ChevronRight,
   Cpu,
+  Crosshair,
+  Gauge,
+  Maximize2,
+  Minimize2,
   Orbit,
+  Rocket,
   Smartphone,
   Sparkles,
   Wand2,
@@ -15,6 +22,11 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import {
+  BACKGROUND_STYLE_OPTIONS,
+  CREATURE_THEME_OPTIONS,
+  useBackgroundTheme
+} from '../../context/BackgroundContext';
 import { FutureLabTabId, SubjectType } from '../../types';
 import { SynapseV2Studio } from '../synapsev2/SynapseV2Studio';
 import { NeuralGalaxyTwin3D } from './NeuralGalaxyTwin3D';
@@ -24,6 +36,12 @@ import { AudioFFT3DLab } from './AudioFFT3DLab';
 import { SiliconNeuralPlayground } from './SiliconNeuralPlayground';
 import { PhoneSensorPhysicsLab } from './PhoneSensorPhysicsLab';
 import { DualHandGPUParticleLab } from './DualHandGPUParticleLab';
+import { CannonBallistics3DLab } from './CannonBallistics3DLab';
+import { RocketLaunch3DLab } from './RocketLaunch3DLab';
+import { JetPropulsion3DLab } from './JetPropulsion3DLab';
+import { FourDLecture3DLab } from './FourDLecture3DLab';
+import { RoboticsIK3DLab } from './RoboticsIK3DLab';
+import { PreStudioDiagramPreview } from './PreStudioDiagramPreview';
 
 interface FutureLabWorkspaceProps {
   onBack?: () => void;
@@ -42,361 +60,276 @@ interface PreStudioItem {
   descEn: string;
   specsVi: string;
   specsEn: string;
-  accentBorder: string;
-  accentText: string;
-  accentGlow: string;
-  iconBg: string;
+  accentHex: string;
+  secondaryHex: string;
+  accentTextClass: string;
+  iconBgClass: string;
+  btnGradientClass: string;
   icon: React.FC<{ className?: string }>;
 }
 
 const PRE_STUDIOS: PreStudioItem[] = [
   {
-    id: 'megastructures',
+    id: 'rocket_launch_3d',
     indexLabel: '01',
+    titleVi: 'Phóng Tên Lửa Đa Tầng & Quỹ Đạo 3D',
+    titleEn: 'Multi-Stage Rocket Launch & Orbit 3D',
+    metaVi: 'Động lực học Khối lượng Biến thiên 3D · Tách Tầng & Đưa Vệ tinh lên Quỹ đạo',
+    metaEn: '3D Variable-Mass Propulsion · Max-Q, MECO & Fairing Jettison',
+    descVi:
+      'Vận hành quy trình phóng tên lửa 2 tầng theo phương trình Tsiolkovsky: đánh lửa, vượt Max-Q, tắt động cơ tầng 1 (MECO), tách tầng đẩy, bung chóp bảo vệ và triển khai vệ tinh quỹ đạo với mặt cắt thùng nhiên liệu LOX/RP-1 trực quan.',
+    descEn:
+      'Command a two-stage orbital launch following Tsiolkovsky rocket dynamics: liftoff, Max-Q, MECO stage separation, fairing jettison, and satellite deployment with cutaway LOX/RP-1 propellant tanks.',
+    specsVi: 'Mặt cắt bình nhiên liệu 3D · 4 Góc Camera · Sơ đồ Đếm ngược T+',
+    specsEn: 'Cutaway Tank Telemetry · 4 Chase Cameras · T+ Mission Sequence',
+    accentHex: '#f97316',
+    secondaryHex: '#38bdf8',
+    accentTextClass: 'text-orange-600 dark:text-orange-300',
+    iconBgClass: 'bg-orange-500/15 border-orange-500/40 text-orange-600 dark:text-orange-300',
+    btnGradientClass: 'from-orange-500 via-amber-500 to-sky-500 text-slate-950',
+    icon: Rocket
+  },
+  {
+    id: 'jet_engine_3d',
+    indexLabel: '02',
+    titleVi: 'Động Cơ Phản Lực Tua-bin 3D (Brayton)',
+    titleEn: '3D Turbofan Jet Propulsion & Brayton Cycle',
+    metaVi: 'Mô hình 3D Exploded View · Quạt Nạp, Máy Nén, Buồng Đốt & Mach Shock',
+    metaEn: '3D Exploded Cutaway · Fan, Compressor, Combustor & Afterburner',
+    descVi:
+      'Khám phá nguyên lí vận hành động cơ phản lực hai luồng với chế độ tách lớp trục 0–100%, luồng hạt khí động học phân màu theo nhiệt độ, kim cương xung kích siêu âm và thanh kiểm tra 5 tầng chu trình nhiệt động Brayton.',
+    descEn:
+      'Inspect a high-bypass turbofan engine with an interactive 0–100% axial exploded view, thermal airflow particles, supersonic Mach shock diamonds, and a 5-stage Brayton cycle inspector.',
+    specsVi: 'Tách lớp Exploded View 3D · Tăng áp Afterburner · WebAudio Tua-bin',
+    specsEn: 'Axial Exploded View · Afterburner Mode · Turbine Synth Audio',
+    accentHex: '#06b6d4',
+    secondaryHex: '#f59e0b',
+    accentTextClass: 'text-cyan-600 dark:text-cyan-300',
+    iconBgClass: 'bg-cyan-500/15 border-cyan-500/40 text-cyan-600 dark:text-cyan-300',
+    btnGradientClass: 'from-cyan-500 via-sky-500 to-amber-400 text-slate-950',
+    icon: Gauge
+  },
+  {
+    id: 'four_d_lectures',
+    indexLabel: '03',
+    titleVi: 'Bài Giảng Không Gian 4D & Tương Đối',
+    titleEn: '4D Space, Hypersphere & Spacetime Lectures',
+    metaVi: 'Hình học 4D R⁴ → R³ · Tesseract, S³, Nón Ánh Sáng Minkowski & Klein',
+    metaEn: '4D-to-3D Stereographic Projection · Tesseract, Hopf S³ & Spacetime',
+    descVi:
+      'Trực quan hóa toán học và vật lí bậc 4D: xoay khối siêu lập phương Tesseract trên mặt phẳng XW kèm lát cắt siêu phẳng w, quan sát thớ Hopf trên siêu cầu S³, kéo tốc độ tương đối β=v/c làm biến dạng nón ánh sáng Minkowski và dò điểm trên chai Klein.',
+    descEn:
+      'Master 4D geometry & relativity: rotate a 4D Tesseract in XW space with live w-hyperplane slicing, inspect S³ Hopf fibration rings, tilt Minkowski spacetime worldlines with β=v/c, and trace a 4D Klein bottle.',
+    specsVi: '4 Mô-đun Bài giảng 4D · Điều khiển góc XW & β=v/c · Thuyết minh từng bước',
+    specsEn: '4 Interactive 4D Modules · XW & Lorentz Controls · Guided Lectures',
+    accentHex: '#a855f7',
+    secondaryHex: '#38bdf8',
+    accentTextClass: 'text-purple-600 dark:text-purple-300',
+    iconBgClass: 'bg-purple-500/15 border-purple-500/40 text-purple-600 dark:text-purple-300',
+    btnGradientClass: 'from-purple-500 via-violet-500 to-cyan-400 text-white',
+    icon: Box
+  },
+  {
+    id: 'robotics_ik_3d',
+    indexLabel: '04',
+    titleVi: 'Cánh Tay Robot 6-DOF & Động Học Ngược 3D',
+    titleEn: '6-DOF Robot Arm & 3D Inverse Kinematics',
+    metaVi: 'Động học Robot 3D · Giải IK Thời gian thực, Vùng Khả dụng & Quỹ đạo Laser',
+    metaEn: '3D Robotics Kinematics · Live IK Solver, Workspace Dome & Laser Trail',
+    descVi:
+      'Điều khiển cánh tay robot công nghiệp 6 bậc tự do bám đuổi mục tiêu trong không gian (X, Y, Z) bằng bộ giải động học ngược thời gian thực. Bật chế độ tuần tra tự động, vòm giới hạn tầm với và kẹp từ tính.',
+    descEn:
+      'Command a 6-DOF industrial robotic manipulator chasing 3D target coordinates in real time. Toggle Auto Patrol trajectories, spherical reachability dome, magnetic end-effector gripper, and laser path.',
+    specsVi: 'Giải IK 6 khớp 60fps · Vòm Workspace 3D · Đo sai số mục tiêu mm',
+    specsEn: 'Real-Time 6-Joint IK · 3D Reachability Dome · Precision Telemetry',
+    accentHex: '#10b981',
+    secondaryHex: '#38bdf8',
+    accentTextClass: 'text-emerald-600 dark:text-emerald-300',
+    iconBgClass: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-300',
+    btnGradientClass: 'from-emerald-400 via-teal-400 to-sky-400 text-slate-950',
+    icon: Bot
+  },
+  {
+    id: 'cannon_ballistics_3d',
+    indexLabel: '05',
+    titleVi: 'Quỹ Đạo Đường Bay Bắn Pháo 3D',
+    titleEn: '3D Artillery Ballistic Trajectory',
+    metaVi: 'Động lực học 3D WebGL · Đạn đạo có Lực cản & Gió ngang',
+    metaEn: 'WebGL 3D Ballistics · Drag, Crosswind & Vacuum Comparison',
+    descVi:
+      'Vận hành khẩu đại bác 3D với hệ thống ngắm góc ngẩng θ, xoay phương vị φ, điều chỉnh sơ tốc đầu nòng v₀, lực cản không khí và gió ngang. Đối chiếu parabol chân không lý tưởng và bắn hạ mục tiêu trên trường thử 3D.',
+    descEn:
+      'Aim a composite 3D artillery cannon across pitch θ, azimuth yaw φ, muzzle velocity v₀, air drag, and crosswind. Compare live aerodynamic arcs against ideal vacuum parabolas and strike targets.',
+    specsVi: 'Pháo 3D giật lùi · So sánh Chân không / Lực cản · Đạn bay 60fps',
+    specsEn: 'Recoil Mechanics · Vacuum vs Drag Arcs · Target Scoring',
+    accentHex: '#f59e0b',
+    secondaryHex: '#38bdf8',
+    accentTextClass: 'text-amber-600 dark:text-amber-300',
+    iconBgClass: 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-300',
+    btnGradientClass: 'from-amber-500 via-orange-500 to-sky-500 text-slate-950',
+    icon: Crosshair
+  },
+  {
+    id: 'megastructures',
+    indexLabel: '06',
     titleVi: 'Đại công trình tương lai',
     titleEn: 'Futuristic Megastructures',
-    metaVi: '30 Mô hình 3D WebGL · Khám phá Toàn cảnh',
-    metaEn: '30 WebGL 3D Models · Fullscreen Stage',
+    metaVi: '30 Mô hình 3D WebGL · Không gian Khám phá Toàn cảnh',
+    metaEn: '30 WebGL 3D Models · Fullscreen Observatory Stage',
     descVi:
-      'Chiêm ngưỡng và vận hành trực tiếp 30 đại công trình khoa học từ Cầu Dyson, Máy gia tốc hạt đến Trạm quỹ đạo với bảng thông số vật lí sống.',
+      'Chiêm ngưỡng và vận hành trực tiếp 30 đại công trình khoa học kỳ vĩ từ Cầu Dyson thu năng lượng sao, Máy gia tốc hạt LHC, Kính thiên văn James Webb đến Trạm quỹ đạo với chế độ tách lớp cơ khí và thông số vật lí sống động.',
     descEn:
-      'Explore and pilot 30 large-scale scientific megastructures from Dyson Swarms to Particle Colliders with live telemetry.',
-    specsVi: 'Khung cảnh 3D 60fps · Góc nhìn tự do · Chỉ dẫn trực quan',
-    specsEn: '60fps 3D Stage · Free Orbit · Live Parameters',
-    accentBorder: 'border-sky-500/45 hover:border-sky-400',
-    accentText: 'text-sky-300',
-    accentGlow: 'from-sky-500/20 via-cyan-500/10 to-slate-900',
-    iconBg: 'bg-sky-500/15 border-sky-400/40 text-sky-300',
+      'Explore and pilot 30 large-scale scientific megastructures from Dyson Swarms and Particle Colliders to Orbital Habitats with exploded cutaways and live telemetry.',
+    specsVi: 'Khung cảnh 3D 60fps · Tách lớp trực quan · Chỉ dẫn thông số',
+    specsEn: '60fps 3D Stage · Exploded Cutaway · Live Telemetry',
+    accentHex: '#0ea5e9',
+    secondaryHex: '#2dd4bf',
+    accentTextClass: 'text-sky-600 dark:text-sky-300',
+    iconBgClass: 'bg-sky-500/15 border-sky-500/40 text-sky-600 dark:text-sky-300',
+    btnGradientClass: 'from-sky-500 via-cyan-500 to-teal-500 text-slate-950',
     icon: Building2
   },
   {
     id: 'galaxy3d',
-    indexLabel: '02',
+    indexLabel: '07',
     titleVi: 'Vũ Trụ Tri Thức 3D',
     titleEn: '3D Neural Galaxy Twin',
-    metaVi: 'Bản đồ Tri thức 3D · Hành tinh Trọng tâm',
+    metaVi: 'Bản đồ Tri thức 3D · Hành tinh Trọng tâm & Chòm sao',
     metaEn: '3D Knowledge Twin · Orbiting Mastery Nodes',
     descVi:
-      'Quan sát toàn bộ năng lực Toán, Vật lí, Tin học dưới dạng thiên hà 3D tương tác để phát hiện lỗ hổng kiến thức và lộ trình bù đắp.',
+      'Quan sát toàn bộ năng lực Toán, Vật lí và Tin học dưới dạng thiên hà 3D tương tác nhiều tầng quỹ đạo. Hệ thống đánh dấu các hành tinh kiến thức vững vàng, phát hiện lỗ hổng cần ôn tập và định hướng lộ trình bứt phá.',
     descEn:
-      'Navigate your Math, Physics, and CS mastery as an interactive 3D constellation revealing weak nodes and learning vectors.',
-    specsVi: 'Chòm sao Tri thức · Bộ lọc Môn học · Gợi ý ôn tập',
-    specsEn: 'Mastery Orbitals · Subject Filter · Study Nodes',
-    accentBorder: 'border-indigo-500/45 hover:border-indigo-400',
-    accentText: 'text-indigo-300',
-    accentGlow: 'from-indigo-500/20 via-sky-500/10 to-slate-900',
-    iconBg: 'bg-indigo-500/15 border-indigo-400/40 text-indigo-300',
+      'Navigate your Math, Physics, and CS mastery as an interactive 3D orbital galaxy that highlights strong foundations, weak constellations, and targeted study paths.',
+    specsVi: 'Thiên hà 3 Môn học · Bộ lọc quỹ đạo · Gợi ý ôn tập cá nhân',
+    specsEn: '3-Subject Orbitals · Constellation Filter · Smart Revision',
+    accentHex: '#6366f1',
+    secondaryHex: '#38bdf8',
+    accentTextClass: 'text-indigo-600 dark:text-indigo-300',
+    iconBgClass: 'bg-indigo-500/15 border-indigo-500/40 text-indigo-600 dark:text-indigo-300',
+    btnGradientClass: 'from-indigo-500 via-blue-500 to-cyan-400 text-white',
     icon: Orbit
   },
   {
     id: 'text_to_sim',
-    indexLabel: '03',
-    titleVi: 'Sinh Mô Phỏng AI',
-    titleEn: 'Text → Simulation Studio',
-    metaVi: 'Nhập Đề bài · Tạo Đồ họa Tương tác 60fps',
-    metaEn: 'Prompt to Engine · 60fps Interactive Sim',
+    indexLabel: '08',
+    titleVi: 'Sinh Mô Phỏng 3D AI',
+    titleEn: 'Text → 3D Simulation Studio',
+    metaVi: 'Nhập Đề bài · Biên dịch Sân khấu WebGL 3D Tương tác 60fps',
+    metaEn: 'Prompt to Engine · Interactive 3D WebGL Physics & Math',
     descVi:
-      'Nhập văn bản đề bài Toán hoặc Vật lí bất kì để AI biên dịch thành mô phỏng chuyển động thực thời kèm thanh trượt thông số.',
+      'Nhập bất kỳ mô tả đề bài Toán học hay Vật lí nào bằng ngôn ngữ tự nhiên để AI biên dịch trực tiếp thành mô hình 3D WebGL có thể xoay góc nhìn, bật khung dây, đổi tốc độ 0.5x/1x/2x và chỉnh tham số theo thời gian thực.',
     descEn:
-      'Type any Math or Physics scenario and compile it into a real-time interactive simulation with dynamic parameter sliders.',
-    specsVi: 'Va chạm 1D · Ném xiên · Quang học · Tiếp tuyến đồ thị',
-    specsEn: 'Collisions · Projectiles · Wave Optics · Tangents',
-    accentBorder: 'border-cyan-500/45 hover:border-cyan-400',
-    accentText: 'text-cyan-300',
-    accentGlow: 'from-cyan-500/20 via-teal-500/10 to-slate-900',
-    iconBg: 'bg-cyan-500/15 border-cyan-400/40 text-cyan-300',
+      'Type any Math or Physics problem statement and watch AI compile it into a live 3D WebGL simulation with orbital camera controls, wireframe inspection, and tunable parameters.',
+    specsVi: 'Engine 3D WebGL · Va chạm, Ném xiên, Sóng & Hình khối · Xoay Camera 360°',
+    specsEn: '3D WebGL Engine · Wireframe Mode · OrbitControls & Speed',
+    accentHex: '#06b6d4',
+    secondaryHex: '#10b981',
+    accentTextClass: 'text-cyan-600 dark:text-cyan-300',
+    iconBgClass: 'bg-cyan-500/15 border-cyan-500/40 text-cyan-600 dark:text-cyan-300',
+    btnGradientClass: 'from-cyan-500 via-teal-400 to-emerald-400 text-slate-950',
     icon: Wand2
   },
   {
     id: 'paper_to_sim',
-    indexLabel: '04',
-    titleVi: 'Giấy Nháp → Sim Vision',
-    titleEn: 'Paper → Sim Vision',
-    metaVi: 'Chụp Vở viết · Dựng Mô hình & Soi lỗi',
-    metaEn: 'Notebook Capture · Formula & Error Check',
+    indexLabel: '09',
+    titleVi: 'Giấy Nháp → 3D Sim Vision',
+    titleEn: 'Paper → 3D Sim Vision',
+    metaVi: 'Chụp Vở viết · Dựng Mô hình WebGL 3D & Chẩn đoán từng bước',
+    metaEn: 'Notebook Capture · 3D WebGL Reconstruction & Step Diagnostics',
     descVi:
-      'Quét ảnh bài giải viết tay hoặc hình vẽ phác thảo trên giấy nháp để dựng lại mô phỏng kiểm chứng và chỉ rõ dòng biến đổi sai.',
+      'Quét ảnh bài giải viết tay hoặc hình vẽ phác thảo trên giấy nháp để AI dựng ngay thành vật thể và chuyển động 3D WebGL kiểm chứng trên màn hình, đồng thời rà soát từng dòng biến đổi đại số hoặc định luật vật lí.',
     descEn:
-      'Scan handwritten homework or notebook sketches to reconstruct a verifying simulation and pinpoint calculation steps.',
-    specsVi: 'Nhận diện công thức · Dựng hình 2D/3D · Gợi ý sửa bài',
-    specsEn: 'Handwriting Scan · Live Rebuild · Step Diagnostics',
-    accentBorder: 'border-teal-500/45 hover:border-teal-400',
-    accentText: 'text-teal-300',
-    accentGlow: 'from-teal-500/20 via-emerald-500/10 to-slate-900',
-    iconBg: 'bg-teal-500/15 border-teal-400/40 text-teal-300',
+      'Scan handwritten homework or notebook diagrams to reconstruct a live 3D WebGL verifying simulation and pinpoint exact algebraic or physical transformation steps.',
+    specsVi: 'Vision AI · Dựng mô hình 3D WebGL · Kiểm tra từng bước giải',
+    specsEn: 'Handwriting Vision · 3D Reconstruction · Step Check',
+    accentHex: '#14b8a6',
+    secondaryHex: '#38bdf8',
+    accentTextClass: 'text-teal-600 dark:text-teal-300',
+    iconBgClass: 'bg-teal-500/15 border-teal-500/40 text-teal-600 dark:text-teal-300',
+    btnGradientClass: 'from-teal-400 via-emerald-400 to-sky-400 text-slate-950',
     icon: Camera
   },
   {
     id: 'audio_fft',
-    indexLabel: '05',
+    indexLabel: '10',
     titleVi: 'Sóng Âm FFT 3D Lab',
     titleEn: 'Audio FFT 3D Lab',
-    metaVi: 'Phân tích Phổ WebAudio · Sóng Đứng & Doppler',
-    metaEn: 'WebAudio FFT · Standing Waves & Doppler',
+    metaVi: 'Phân tích Phổ WebAudio · Sóng Đứng 3D & Hiệu ứng Doppler',
+    metaEn: 'WebAudio 3D FFT · Standing Waves & Doppler Shifts',
     descVi:
-      'Thu âm thanh thực từ Micro hoặc bộ phát chuẩn để quan sát phổ tần số FFT 3D, cộng hưởng sóng dừng và hiệu ứng Doppler theo thời gian thực.',
+      'Thu tín hiệu âm thanh thực từ micro hoặc sử dụng bộ phát tần số chuẩn để quan sát phổ biến đổi Fourier FFT 3D, cộng hưởng sóng dừng trên dây và hiện tượng dịch chuyển tần số Doppler theo thời gian thực.',
     descEn:
-      'Capture live microphone audio or tone generators to visualize 3D FFT spectra, standing wave harmonics, and Doppler shifts.',
-    specsVi: 'Phổ tần 3D trực tiếp · Bộ phát Hz · Giao thoa sóng',
-    specsEn: 'Live Mic FFT · Precision Tone Synth · Interference',
-    accentBorder: 'border-amber-500/45 hover:border-amber-400',
-    accentText: 'text-amber-300',
-    accentGlow: 'from-amber-500/20 via-orange-500/10 to-slate-900',
-    iconBg: 'bg-amber-500/15 border-amber-400/40 text-amber-300',
+      'Capture live microphone input or precision tone synthesizers to inspect 3D Fast Fourier Transform spectra, harmonic standing waves, and Doppler shifts.',
+    specsVi: 'Phổ tần 3D trực tiếp · Bộ phát Hz chuẩn · Giao thoa sóng âm',
+    specsEn: 'Live Mic FFT · Precision Tone Synth · Acoustic Interference',
+    accentHex: '#f59e0b',
+    secondaryHex: '#f97316',
+    accentTextClass: 'text-amber-600 dark:text-amber-300',
+    iconBgClass: 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-300',
+    btnGradientClass: 'from-amber-400 via-orange-400 to-rose-400 text-slate-950',
     icon: Waves
   },
   {
     id: 'silicon_neural',
-    indexLabel: '06',
-    titleVi: 'Mạch Logic & Neural Net',
-    titleEn: 'Silicon & Neural Playground',
-    metaVi: 'Cổng Logic CPU · Mạng Nơ-ron Từng Lớp',
-    metaEn: 'Digital Gates · Layer Activation Lab',
+    indexLabel: '11',
+    titleVi: 'Mạch Silicon & Neural 3D',
+    titleEn: 'Silicon Die & 3D Neural Manifold',
+    metaVi: 'Bề mặt Decision Manifold 3D · Mạch Cộng 4-Bit & SR-Latch trên Đế 3D',
+    metaEn: '3D Backprop Heightfield · 3D Silicon ALU & Synapse Graph',
     descVi:
-      'Lắp ghép các cổng logic số AND/OR/XOR, mạch cộng nhị phân và quan sát trực tiếp dòng truyền trọng số bên trong mạng nơ-ron đa tầng.',
+      'Quan sát mặt cong phân loại Neural Network uốn lượn 3D theo từng Epoch cùng đồ thị trọng số synap 3 chiều; chuyển sang chế độ Silicon để kích hoạt bộ cộng 4-bit và Flip-Flop nhớ bit phát sáng ngay trên đế chip PCB 3D.',
     descEn:
-      'Wire digital logic gates, binary adders, and watch live forward-pass activations propagate across neural layers.',
-    specsVi: 'Cổng số thời gian thực · Lan truyền Neural · Bảng chân trị',
-    specsEn: 'Live Gate Sim · Weight Propagation · Truth Table',
-    accentBorder: 'border-violet-500/45 hover:border-violet-400',
-    accentText: 'text-violet-300',
-    accentGlow: 'from-violet-500/20 via-indigo-500/10 to-slate-900',
-    iconBg: 'bg-violet-500/15 border-violet-400/40 text-violet-300',
+      'Watch a 3D neural decision manifold deform live per training epoch alongside a 3D synaptic graph, or toggle into a glowing 3D silicon PCB die simulating 4-bit Ripple Adders and SR-Latches.',
+    specsVi: 'Mặt cong 3D Manifold · Đồ thị Synap 3D · Đế Chip ALU 3D',
+    specsEn: '3D Decision Surface · 3D Synapse Graph · 3D Silicon Die',
+    accentHex: '#8b5cf6',
+    secondaryHex: '#38bdf8',
+    accentTextClass: 'text-violet-600 dark:text-violet-300',
+    iconBgClass: 'bg-violet-500/15 border-violet-500/40 text-violet-600 dark:text-violet-300',
+    btnGradientClass: 'from-violet-500 via-indigo-500 to-sky-500 text-white',
     icon: Cpu
   },
   {
     id: 'phone_sensor_lab',
-    indexLabel: '07',
-    titleVi: 'Cảm biến Điện thoại QR',
-    titleEn: 'Phone Sensor QR Lab',
-    metaVi: 'Ghép nối WebSocket · Dao động ký Thực tế',
-    metaEn: 'Live QR WebSocket · Dual-Trace Oscilloscope',
+    indexLabel: '12',
+    titleVi: 'Cảm Biến Điện Thoại & Bản Sao 3D',
+    titleEn: 'Phone Sensor 3D Digital Twin Lab',
+    metaVi: 'Bản sao Số 3D Đồng bộ Gyro · WebSocket & Dao động ký Thực nghiệm',
+    metaEn: 'Live 3D Smartphone Twin · QR WebSocket & Real-Time Oscilloscope',
     descVi:
-      'Quét mã QR biến điện thoại thành cảm biến gia tốc & con quay hồi chuyển thật, đối chiếu trực tiếp với đường cong SHM lí thuyết và xuất CSV.',
+      'Quét QR ghép nối điện thoại để xoay mô hình Bản sao Số 3D (Digital Twin) cùng vector gia tốc 3 trục và hệ lò xo/con lắc/mặt nghiêng đồng bộ, đồng thời đối chiếu sai số RMSE trên dao động ký và xuất CSV.',
     descEn:
-      'Scan a QR code to turn any smartphone into a live accelerometer/gyroscope streaming against theoretical SHM curves.',
-    specsVi: 'Gia tốc kế & Con quay · Sai số RMSE · Xuất file CSV',
-    specsEn: 'Accelerometer & Gyro · Live RMSE Fit · CSV Export',
-    accentBorder: 'border-emerald-500/45 hover:border-emerald-400',
-    accentText: 'text-emerald-300',
-    accentGlow: 'from-emerald-500/20 via-teal-500/10 to-slate-900',
-    iconBg: 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300',
+      'Scan a QR code to drive a live 3D smartphone Digital Twin, 3-axis acceleration vectors, and synchronized 3D physics rigs while fitting theoretical SHM curves and exporting CSV telemetry.',
+    specsVi: 'Digital Twin 3D + Vector Gia tốc · Sai số RMSE · Xuất CSV',
+    specsEn: '3D Gyro Digital Twin · Live RMSE Fit · CSV Export',
+    accentHex: '#10b981',
+    secondaryHex: '#06b6d4',
+    accentTextClass: 'text-emerald-600 dark:text-emerald-300',
+    iconBgClass: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-300',
+    btnGradientClass: 'from-emerald-400 via-teal-400 to-cyan-400 text-slate-950',
     icon: Smartphone
   },
   {
     id: 'dual_hand_sandbox',
-    indexLabel: '08',
-    titleVi: 'Trường Hạt GPU 2 Tay',
-    titleEn: 'Dual-Hand 28K GPU Field',
-    metaVi: 'Shader 28.000 Hạt · Điều khiển 2 Bàn tay',
-    metaEn: '28K GPU Particle Shader · Dual-Hand Tracking',
+    indexLabel: '13',
+    titleVi: 'Trường Hạt GPU 3D 2 Tay',
+    titleEn: 'Dual-Hand 3D 28K GPU Field',
+    metaVi: 'Shader 28.000 Hạt 3D · Điều khiển Song Song 2 Bàn tay',
+    metaEn: '28K 3D GPU Particle Shader · Dual-Hand Tracking',
     descVi:
-      'Dùng hai bàn tay trước Webcam hoặc chuột điều khiển đồng thời tới 28.000 hạt trong 4 trường vật lí: Hấp dẫn nhị phân, Lorentz, Sóng & Rutherford.',
+      'Sử dụng cả hai bàn tay trước webcam hoặc con trỏ đa cực để điều khiển đồng thời 28.000 hạt trong 4 trường lực vật lí 3D: Hấp dẫn nhị phân, Trường từ Lorentz, Giao thoa sóng và Tán xạ hạt nhân Rutherford.',
     descEn:
-      'Drive up to 28,000 GPU particles with two hands or mouse poles across Binary Gravity, Lorentz, Wave Interference & Rutherford.',
-    specsVi: 'GLSL Shader mượt mà · 4 Trường vật lí · Webcam & Chuột',
-    specsEn: 'GLSL Particle Field · 4 Physics Modes · Dual Pole',
-    accentBorder: 'border-blue-500/45 hover:border-blue-400',
-    accentText: 'text-blue-300',
-    accentGlow: 'from-blue-500/20 via-cyan-500/10 to-slate-900',
-    iconBg: 'bg-blue-500/15 border-blue-400/40 text-blue-300',
+      'Sculpt up to 28,000 real-time 3D GPU particles using two hands via webcam or dual magnetic poles across Binary Gravity, Lorentz, Wave Interference & Rutherford modes.',
+    specsVi: 'GLSL Shader 60fps · 4 Trường lực vật lí 3D · Webcam & Chuột',
+    specsEn: 'GLSL 3D Particle Field · 4 Physics Modes · Dual Pole Control',
+    accentHex: '#3b82f6',
+    secondaryHex: '#818cf8',
+    accentTextClass: 'text-blue-600 dark:text-blue-300',
+    iconBgClass: 'bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-300',
+    btnGradientClass: 'from-blue-500 via-indigo-500 to-cyan-400 text-white',
     icon: Sparkles
   }
 ];
-
-const ModuleAnimatedPreview: React.FC<{ id: FutureLabTabId }> = ({ id }) => {
-  switch (id) {
-    case 'megastructures':
-      return (
-        <svg viewBox="0 0 280 86" className="w-full h-20 opacity-90" aria-hidden="true">
-          <defs>
-            <linearGradient id="megaGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.2" />
-              <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.95" />
-              <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0.25" />
-            </linearGradient>
-          </defs>
-          <g className="animate-orbit-slow" style={{ transformOrigin: '140px 43px' }}>
-            <ellipse cx="140" cy="43" rx="68" ry="20" fill="none" stroke="url(#megaGrad)" strokeWidth="1.5" strokeDasharray="6 4" />
-            <ellipse cx="140" cy="43" rx="46" ry="30" fill="none" stroke="#818cf8" strokeOpacity="0.55" strokeWidth="1.2" transform="rotate(28 140 43)" />
-          </g>
-          <polygon points="140,20 160,31 160,55 140,66 120,55 120,31" fill="#0ea5e9" fillOpacity="0.16" stroke="#38bdf8" strokeWidth="1.8" className="pre-float-slow" />
-          <line x1="140" y1="20" x2="140" y2="66" stroke="#7dd3fc" strokeOpacity="0.65" strokeWidth="1" />
-          <line x1="120" y1="31" x2="160" y2="55" stroke="#7dd3fc" strokeOpacity="0.5" strokeWidth="1" />
-          <circle cx="140" cy="43" r="4" fill="#38bdf8" />
-        </svg>
-      );
-
-    case 'galaxy3d':
-      return (
-        <svg viewBox="0 0 280 86" className="w-full h-20 opacity-90" aria-hidden="true">
-          <path
-            d="M42 54 L96 24 L148 50 L204 20 L244 46"
-            fill="none"
-            stroke="#818cf8"
-            strokeWidth="1.6"
-            className="animate-electric-flow"
-          />
-          <path
-            d="M42 54 L108 66 L148 50 L192 66 L244 46"
-            fill="none"
-            stroke="#38bdf8"
-            strokeOpacity="0.55"
-            strokeWidth="1.2"
-            strokeDasharray="4 4"
-          />
-          {[
-            [42, 54, 4, '#38bdf8'],
-            [96, 24, 5.5, '#818cf8'],
-            [148, 50, 6.5, '#34d399'],
-            [204, 20, 5, '#38bdf8'],
-            [108, 66, 3.5, '#a5b4fc'],
-            [192, 66, 3.5, '#7dd3fc'],
-            [244, 46, 4.5, '#818cf8']
-          ].map(([cx, cy, r, fill], idx) => (
-            <circle key={idx} cx={Number(cx)} cy={Number(cy)} r={Number(r)} fill={String(fill)} fillOpacity="0.88" className="pre-float-slow" />
-          ))}
-        </svg>
-      );
-
-    case 'text_to_sim':
-      return (
-        <svg viewBox="0 0 280 86" className="w-full h-20 opacity-90" aria-hidden="true">
-          <rect x="26" y="18" width="64" height="50" rx="4" fill="#0f172a" stroke="#22d3ee" strokeOpacity="0.5" strokeWidth="1.2" />
-          <line x1="36" y1="30" x2="78" y2="30" stroke="#67e8f9" strokeWidth="2" />
-          <line x1="36" y1="42" x2="70" y2="42" stroke="#38bdf8" strokeOpacity="0.7" strokeWidth="2" />
-          <line x1="36" y1="54" x2="62" y2="54" stroke="#2dd4bf" strokeOpacity="0.7" strokeWidth="2" />
-          <path d="M98 43 L134 43" stroke="#22d3ee" strokeWidth="1.8" className="animate-electric-flow-fast" />
-          <polygon points="134,38 143,43 134,48" fill="#22d3ee" />
-          <path
-            d="M152 60 Q186 12 222 48 T262 34"
-            fill="none"
-            stroke="#2dd4bf"
-            strokeWidth="2.2"
-            className="sci-oscilloscope-path"
-          />
-          <circle cx="192" cy="31" r="4.5" fill="#22d3ee" className="pre-float-slow" />
-        </svg>
-      );
-
-    case 'paper_to_sim':
-      return (
-        <svg viewBox="0 0 280 86" className="w-full h-20 opacity-90" aria-hidden="true">
-          <rect x="44" y="14" width="192" height="58" rx="4" fill="#0f172a" fillOpacity="0.7" stroke="#2dd4bf" strokeOpacity="0.45" strokeWidth="1.2" />
-          <path d="M68 56 Q112 20 156 54 T218 28" fill="none" stroke="#5eead4" strokeWidth="1.8" strokeDasharray="5 3" />
-          <line x1="56" y1="24" x2="96" y2="24" stroke="#99f6e4" strokeOpacity="0.75" strokeWidth="2" />
-          <rect x="44" y="14" width="192" height="3" fill="#2dd4bf" fillOpacity="0.75" className="animate-matrix-sweep" />
-          <path d="M44 26 L44 14 L56 14 M224 14 L236 14 L236 26 M44 60 L44 72 L56 72 M224 72 L236 72 L236 60" fill="none" stroke="#14b8a6" strokeWidth="2" />
-        </svg>
-      );
-
-    case 'audio_fft':
-      return (
-        <svg viewBox="0 0 280 86" className="w-full h-20 opacity-90" aria-hidden="true">
-          {[40, 62, 84, 106, 128, 150, 172, 194, 216, 238].map((x, idx) => {
-            const heights = [24, 42, 54, 34, 60, 48, 30, 56, 40, 26];
-            const cls = idx % 4 === 0 ? 'sci-meter-1' : idx % 4 === 1 ? 'sci-meter-2' : idx % 4 === 2 ? 'sci-meter-3' : 'sci-meter-4';
-            const h = heights[idx];
-            return (
-              <rect
-                key={x}
-                x={x - 6}
-                y={72 - h}
-                width="10"
-                height={h}
-                rx="2"
-                fill={idx % 2 === 0 ? '#f59e0b' : '#fbbf24'}
-                fillOpacity="0.85"
-                className={cls}
-              />
-            );
-          })}
-          <line x1="28" y1="72" x2="252" y2="72" stroke="#f59e0b" strokeOpacity="0.4" strokeWidth="1.2" />
-        </svg>
-      );
-
-    case 'silicon_neural':
-      return (
-        <svg viewBox="0 0 280 86" className="w-full h-20 opacity-90" aria-hidden="true">
-          {[24, 44, 64].map((y1, i) =>
-            [28, 58].map((y2, j) => (
-              <line
-                key={`${i}-${j}`}
-                x1="72"
-                y1={y1}
-                x2="146"
-                y2={y2}
-                stroke="#a78bfa"
-                strokeOpacity="0.55"
-                strokeWidth="1.4"
-                className="animate-electric-flow"
-              />
-            ))
-          )}
-          {[28, 58].map((y2, j) => (
-            <line
-              key={`out-${j}`}
-              x1="146"
-              y1={y2}
-              x2="214"
-              y2="43"
-              stroke="#38bdf8"
-              strokeWidth="1.6"
-              className="animate-electric-flow-fast"
-            />
-          ))}
-          {[24, 44, 64].map((y) => (
-            <rect key={`in-${y}`} x="60" y={y - 6} width="12" height="12" rx="2" fill="#8b5cf6" fillOpacity="0.85" stroke="#ddd6fe" strokeWidth="1" />
-          ))}
-          {[28, 58].map((y) => (
-            <rect key={`mid-${y}`} x="140" y={y - 7} width="14" height="14" rx="2" fill="#6366f1" fillOpacity="0.85" stroke="#c7d2fe" strokeWidth="1" />
-          ))}
-          <rect x="208" y="35" width="16" height="16" rx="2" fill="#38bdf8" fillOpacity="0.9" stroke="#e0f2fe" strokeWidth="1.2" />
-        </svg>
-      );
-
-    case 'phone_sensor_lab':
-      return (
-        <svg viewBox="0 0 280 86" className="w-full h-20 opacity-90" aria-hidden="true">
-          <line x1="24" y1="43" x2="256" y2="43" stroke="#334155" strokeWidth="1" strokeDasharray="3 3" />
-          <path
-            d="M24 43 C48 12, 72 12, 96 43 C120 74, 144 74, 168 43 C192 12, 216 12, 240 43 L256 43"
-            fill="none"
-            stroke="#10b981"
-            strokeWidth="2.2"
-            className="sci-oscilloscope-path"
-          />
-          <path
-            d="M24 46 C48 22, 72 18, 96 44 C120 68, 144 65, 168 42 C192 19, 216 20, 240 45"
-            fill="none"
-            stroke="#38bdf8"
-            strokeOpacity="0.75"
-            strokeWidth="1.6"
-            strokeDasharray="5 3"
-          />
-        </svg>
-      );
-
-    case 'dual_hand_sandbox':
-      return (
-        <svg viewBox="0 0 280 86" className="w-full h-20 opacity-90" aria-hidden="true">
-          <g className="animate-orbit-slow" style={{ transformOrigin: '92px 43px' }}>
-            <circle cx="92" cy="43" r="24" fill="none" stroke="#38bdf8" strokeOpacity="0.65" strokeWidth="1.3" strokeDasharray="4 4" />
-            <circle cx="116" cy="43" r="2.8" fill="#7dd3fc" />
-            <circle cx="68" cy="43" r="2.5" fill="#2dd4bf" />
-          </g>
-          <g className="animate-orbit-slow" style={{ transformOrigin: '188px 43px' }}>
-            <circle cx="188" cy="43" r="24" fill="none" stroke="#60a5fa" strokeOpacity="0.65" strokeWidth="1.3" strokeDasharray="4 4" />
-            <circle cx="188" cy="19" r="2.8" fill="#93c5fd" />
-            <circle cx="188" cy="67" r="2.5" fill="#38bdf8" />
-          </g>
-          <circle cx="92" cy="43" r="6" fill="#0ea5e9" fillOpacity="0.8" />
-          <circle cx="188" cy="43" r="6" fill="#6366f1" fillOpacity="0.8" />
-          <path d="M98 43 Q140 24 182 43 Q140 62 98 43" fill="none" stroke="#38bdf8" strokeOpacity="0.5" strokeWidth="1.2" className="animate-electric-flow" />
-        </svg>
-      );
-  }
-};
 
 export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
   onBack,
@@ -406,13 +339,80 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { location, navigate } = useNavigation();
+  const { bgStyle, creatureTheme, activePalette, perfMode } = useBackgroundTheme();
 
   const rawTab = location.futureTab;
   const activeView: 'hub' | FutureLabTabId =
     rawTab && rawTab !== 'infinite_canvas' ? rawTab : 'hub';
 
+  const [isStudioFullscreen, setIsStudioFullscreen] = useState<boolean>(false);
+  const studioStageRef = useRef<HTMLDivElement | null>(null);
+  const enteredNativeFsRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (activeView === 'hub' && isStudioFullscreen) {
+      setIsStudioFullscreen(false);
+      enteredNativeFsRef.current = false;
+    }
+  }, [activeView, isStudioFullscreen]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.classList.toggle('pre-fullscreen-active', isStudioFullscreen);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isStudioFullscreen) {
+        enteredNativeFsRef.current = false;
+        setIsStudioFullscreen(false);
+        try {
+          if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+        } catch {}
+      }
+    };
+    const onFsChange = () => {
+      if (!document.fullscreenElement && enteredNativeFsRef.current) {
+        enteredNativeFsRef.current = false;
+        setIsStudioFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => {
+      document.documentElement.classList.remove('pre-fullscreen-active');
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('fullscreenchange', onFsChange);
+    };
+  }, [isStudioFullscreen]);
+
+  const toggleStudioFullscreen = () => {
+    if (!isStudioFullscreen) {
+      setIsStudioFullscreen(true);
+      try {
+        const req = studioStageRef.current?.requestFullscreen?.();
+        if (req && typeof req.then === 'function') {
+          req.then(() => {
+            enteredNativeFsRef.current = true;
+          }).catch(() => {});
+        }
+      } catch {}
+    } else {
+      enteredNativeFsRef.current = false;
+      setIsStudioFullscreen(false);
+      try {
+        if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+      } catch {}
+    }
+  };
+
   const isMegastructureStage =
     activeView === 'megastructures' && location.synapseMode === 'stage';
+
+  const bgStyleMeta = BACKGROUND_STYLE_OPTIONS.find((b) => b.id === bgStyle);
+  const creatureMeta = CREATURE_THEME_OPTIONS.find((c) => c.id === creatureTheme);
+
+  const glassSurfaceClass =
+    perfMode === 'ultra'
+      ? 'bg-white/72 dark:bg-slate-950/60 backdrop-blur-xl'
+      : 'bg-white/82 dark:bg-slate-950/72';
 
   const openModulePage = (tab: FutureLabTabId) => {
     navigate({
@@ -457,123 +457,218 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
     );
   }
 
-  /* ==================== VIEW 1: SYNAPSE PRE HUB (2 FRAMES PER ROW) ==================== */
+  /* ==================== VIEW 1: SYNAPSE PRE HUB (1 COMPACT SQUARE FRAME PER ROW) ==================== */
   if (activeView === 'hub') {
     return (
-      <div className="synapse-pre-scope max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 pre-page-enter">
-        {/* Hero Frame (Mini Scratchpad button removed as requested) */}
-        <div className="sci-frame pre-scan-beam relative overflow-hidden rounded-md border border-cyan-500/45 bg-gradient-to-br from-slate-950 via-[#0a1632] to-indigo-950 text-white p-5 sm:p-6 shadow-[0_20px_60px_-18px_rgba(14,165,233,0.32)]">
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-2 max-w-3xl">
-              <div className="flex flex-wrap items-center gap-3 text-xs">
+      <div className="synapse-pre-scope max-w-6xl mx-auto px-4 sm:px-6 py-4 space-y-7 pre-page-enter">
+        {/* Compact Adaptive Hero: Text cleanly on top, buttons underneath */}
+        <section
+          style={{
+            borderColor: activePalette.ring,
+            boxShadow: `0 16px 45px -18px ${activePalette.ring}`
+          }}
+          className={`pre-grand-hero sci-frame rounded-xl border ${glassSurfaceClass} p-4 sm:p-5 text-slate-900 dark:text-white`}
+        >
+          {/* Ambient dynamic gradient wash matching activePalette */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-25 dark:opacity-35"
+            style={{
+              background: `radial-gradient(circle at 12% 18%, ${activePalette.primaryLight}44 0%, transparent 48%), radial-gradient(circle at 88% 80%, ${activePalette.secondary}40 0%, transparent 50%)`
+            }}
+          />
+
+          <div className="relative z-10 flex flex-col gap-3.5">
+            {/* TOP: Metadata, Heading & Concise Subtitle */}
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs">
                 {onBack && (
                   <button
                     type="button"
                     data-ripple="true"
                     onClick={onBack}
-                    className="pre-btn-kinetic inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-700 bg-slate-900/90 hover:bg-slate-800 hover:border-slate-500 text-xs font-semibold text-slate-200 cursor-pointer whitespace-nowrap"
+                    className="pre-grand-btn inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300/80 dark:border-slate-700 bg-white/85 dark:bg-slate-900/85 hover:bg-white dark:hover:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer whitespace-nowrap shrink-0"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>{isEn ? 'Back' : 'Quay lại'}</span>
                   </button>
                 )}
-                <span className="inline-flex items-center gap-1.5 text-cyan-300 font-semibold tracking-wide">
-                  <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+
+                <span
+                  style={{ color: activePalette.primaryLight }}
+                  className="inline-flex items-center gap-1.5 font-mono font-bold tracking-wider uppercase whitespace-nowrap"
+                >
+                  <Cpu className="w-3.5 h-3.5 icon-anim-cosmos shrink-0" />
                   <span>
                     {isEn
-                      ? 'Synapse Pre · 08 Dedicated AI & 3D Studios'
-                      : 'Synapse Pre · 08 Không Gian Độc Lập AI & 3D'}
+                      ? `Synapse Pre · ${PRE_STUDIOS.length} Studios (3D+)`
+                      : `Synapse Pre · ${PRE_STUDIOS.length} Phòng Lab 3D/4D`}
                   </span>
+                </span>
+
+                <span className="text-slate-400" aria-hidden="true">·</span>
+
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                  {isEn
+                    ? `Theme: ${bgStyleMeta?.shortEn || bgStyle} · ${creatureMeta?.shortEn || creatureTheme}`
+                    : `Nền động: ${bgStyleMeta?.shortVi || bgStyle} · ${creatureMeta?.shortVi || creatureTheme}`}
                 </span>
               </div>
 
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              <h1 className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-accent-gradient hero-blend-shadow leading-snug">
                 {isEn
-                  ? 'Synapse Pre — Megastructures & Next-Gen AI 3D Labs'
-                  : 'Synapse Pre — Đại Công Trình Tương Lai & Phòng Lab AI 3D'}
+                  ? 'Synapse Pre — 3D/4D Aerospace, Physics & Neural Studios'
+                  : 'Synapse Pre — Không Gian 3D/4D, Phản Lực & Tên Lửa Tương Lai'}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+
+              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed max-w-4xl">
                 {isEn
-                  ? 'Select any studio card below to launch its dedicated full-page interactive laboratory.'
-                  : 'Chọn bất kỳ khung không gian nào bên dưới để mở trang làm việc chuyên sâu riêng biệt với đồ họa thời gian thực.'}
+                  ? 'Interactive 3D+ WebGL laboratories with crisp technical schematic previews, synchronized seamlessly with your live background and color palette.'
+                  : 'Toàn bộ phòng thí nghiệm đạt chuẩn 3D/4D WebGL tương tác trực tiếp với sơ đồ kỹ thuật gọn gàng, đồng bộ hoàn toàn với nền động và bảng màu của bạn.'}
               </p>
             </div>
 
-            <div className="flex items-center shrink-0">
+            {/* BOTTOM: Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2.5 pt-1 border-t border-slate-200/70 dark:border-slate-800/70">
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => openModulePage('rocket_launch_3d')}
+                className="pre-grand-btn inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 via-amber-500 to-sky-500 text-slate-950 text-xs font-extrabold cursor-pointer whitespace-nowrap shadow-md"
+              >
+                <Rocket className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Launch 3D Rocket' : 'Phóng Tên Lửa 3D'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => openModulePage('cannon_ballistics_3d')}
+                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-amber-500/50 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+              >
+                <Crosshair className="w-3.5 h-3.5" />
+                <span>{isEn ? '3D Artillery' : 'Bắn Pháo 3D'}</span>
+              </button>
+
               <button
                 type="button"
                 data-ripple="true"
                 onClick={() => onNavigateSubject('spatial_3d')}
-                className="pre-btn-kinetic inline-flex items-center gap-2 px-4 py-2.5 rounded-md border border-emerald-400/60 bg-emerald-600/25 hover:bg-emerald-600/40 text-emerald-200 text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap shadow-lg shadow-emerald-950/40"
+                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-emerald-500/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-200 text-xs font-bold cursor-pointer whitespace-nowrap"
               >
-                <Sparkles className="w-4 h-4 text-emerald-300" />
+                <Sparkles className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-300" />
                 <span>{isEn ? 'WebAR & Hand 3D' : 'WebAR & Cảm Giác 3D'}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-emerald-300" />
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* 2 Square Frames Per Row (4 Balanced Rows x 2 Columns) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Single-Column Stack: 1 Compact Square Card Per Row (Title -> Compact Schematic Diagram -> Detailed Description) */}
+        <div className="flex flex-col items-center gap-8">
           {PRE_STUDIOS.map((studio, index) => {
             const Icon = studio.icon;
             return (
-              <button
+              <div
                 key={studio.id}
-                type="button"
-                data-ripple="true"
-                onClick={() => openModulePage(studio.id)}
-                style={{ animationDelay: `${index * 45}ms` }}
-                className={`pre-card-shell pre-card-reveal group text-left rounded-md border bg-slate-950/95 dark:bg-slate-950 p-5 sm:p-6 flex flex-col justify-between gap-4 cursor-pointer text-white shadow-lg ${studio.accentBorder}`}
+                style={
+                  {
+                    '--pre-card-accent': studio.accentHex,
+                    '--pre-card-secondary': studio.secondaryHex,
+                    animationDelay: `${Math.min(index, 6) * 55}ms`
+                  } as React.CSSProperties
+                }
+                className="pre-grand-frame pre-card-reveal group w-full max-w-[540px] lg:max-w-[580px] mx-auto shadow-[0_20px_55px_-18px_rgba(2,132,199,0.26)]"
               >
-                {/* Live Animated Preview Canvas Strip */}
-                <div
-                  className={`relative rounded-md border border-slate-800/90 bg-gradient-to-br ${studio.accentGlow} px-4 py-2.5 overflow-hidden`}
-                >
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-                    <span className={`font-mono font-bold ${studio.accentText}`}>
-                      {studio.indexLabel}
-                    </span>
-                    <span className="truncate ml-2">
-                      {isEn ? studio.metaEn : studio.metaVi}
-                    </span>
-                  </div>
-                  <ModuleAnimatedPreview id={studio.id} />
-                </div>
+                {/* Rotating Conic Plasma Energy Ring */}
+                <div aria-hidden="true" className="pre-grand-conic" />
 
-                {/* Title, Narrative & Typographic Specs */}
-                <div className="space-y-2.5 flex-1">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-md border flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${studio.iconBg}`}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-base sm:text-lg font-bold tracking-tight text-white group-hover:text-cyan-200 transition-colors">
+                {/* Corner Illuminated Calipers */}
+                <div aria-hidden="true" className="pre-grand-corners" />
+
+                {/* Compact Square-Proportioned Card Surface */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openModulePage(studio.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openModulePage(studio.id);
+                    }
+                  }}
+                  className={`relative z-10 w-full min-h-[430px] rounded-[0.78rem] ${glassSurfaceClass} border border-white/60 dark:border-white/10 p-5 sm:p-6 flex flex-col justify-between gap-4 text-slate-900 dark:text-white cursor-pointer overflow-hidden`}
+                >
+                  {/* Ambient inner accent halo */}
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 opacity-20 dark:opacity-28 transition-opacity duration-500 group-hover:opacity-40"
+                    style={{
+                      background: `radial-gradient(circle at 18% 12%, ${studio.accentHex}38 0%, transparent 45%), radial-gradient(circle at 86% 88%, ${studio.secondaryHex}30 0%, transparent 45%)`
+                    }}
+                  />
+
+                  {/* 1. TITLE AT THE TOP */}
+                  <header className="relative z-10 flex items-start justify-between gap-3 shrink-0">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+                        <span className={`font-extrabold ${studio.accentTextClass}`}>
+                          {studio.indexLabel}
+                        </span>
+                        <span className="text-slate-400" aria-hidden="true">·</span>
+                        <span className="text-slate-600 dark:text-slate-300 font-semibold truncate">
+                          {isEn ? studio.metaEn : studio.metaVi}
+                        </span>
+                      </div>
+                      <h2 className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-cyan-300 transition-colors leading-tight">
                         {isEn ? studio.titleEn : studio.titleVi}
                       </h2>
-                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mt-1 line-clamp-2">
-                        {isEn ? studio.descEn : studio.descVi}
-                      </p>
                     </div>
-                  </div>
-                </div>
 
-                {/* Bottom Specs + Dynamic Action Trigger */}
-                <div className="pt-3 border-t border-slate-800/90 flex items-center justify-between gap-3">
-                  <span className="text-[11px] sm:text-xs text-slate-400 truncate">
-                    {isEn ? studio.specsEn : studio.specsVi}
-                  </span>
-                  <span
-                    className={`pre-btn-kinetic inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-700/90 bg-slate-900 group-hover:bg-sky-600 group-hover:border-sky-400 group-hover:text-white text-xs font-bold shrink-0 transition-colors ${studio.accentText}`}
-                  >
-                    <span>{isEn ? 'Open Studio' : 'Mở Trang Riêng'}</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-                  </span>
+                    <div
+                      className={`pre-grand-icon-float w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 shadow-md ${studio.iconBgClass}`}
+                    >
+                      <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </div>
+                  </header>
+
+                  {/* 2. COMPACT TECHNICAL SCHEMATIC DIAGRAM IN THE MIDDLE */}
+                  <div className="relative z-10 w-full">
+                    <PreStudioDiagramPreview
+                      id={studio.id}
+                      accentHex={studio.accentHex}
+                      secondaryHex={studio.secondaryHex}
+                      isEn={isEn}
+                    />
+                  </div>
+
+                  {/* 3. DETAILED DESCRIPTION + GRAND BUTTON AT THE BOTTOM */}
+                  <footer className="relative z-10 space-y-3.5 shrink-0">
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                      {isEn ? studio.descEn : studio.descVi}
+                    </p>
+
+                    <div className="pt-2.5 border-t border-slate-200/80 dark:border-slate-800/90 flex flex-wrap items-center justify-between gap-2.5">
+                      <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400">
+                        {isEn ? studio.specsEn : studio.specsVi}
+                      </span>
+
+                      <button
+                        type="button"
+                        data-ripple="true"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openModulePage(studio.id);
+                        }}
+                        className={`pre-grand-btn inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${studio.btnGradientClass} text-xs font-extrabold shadow-lg cursor-pointer whitespace-nowrap`}
+                      >
+                        <span>{isEn ? 'Launch 3D Studio' : 'Khởi Chạy 3D'}</span>
+                        <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                      </button>
+                    </div>
+                  </footer>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -585,37 +680,54 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
   const ActiveIcon = currentStudio?.icon || Cpu;
 
   return (
-    <div key={activeView} className="synapse-pre-scope max-w-7xl mx-auto px-4 sm:px-6 py-5 space-y-5 pre-page-enter">
-      {/* Dedicated Standalone Module Header (NO Mini Scratchpad button) */}
-      <div className="sci-frame pre-scan-beam relative overflow-hidden rounded-md border border-cyan-500/45 bg-gradient-to-r from-slate-950 via-[#0a1632] to-indigo-950 text-white px-4 py-3.5 sm:px-5 sm:py-4 shadow-[0_14px_40px_-16px_rgba(14,165,233,0.35)]">
+    <div
+      ref={studioStageRef}
+      key={activeView}
+      className={
+        isStudioFullscreen
+          ? 'synapse-pre-scope fixed inset-0 z-[140] w-screen h-screen overflow-y-auto bg-slate-50/98 dark:bg-slate-950/98 px-3 sm:px-5 py-3 space-y-3 pre-page-enter'
+          : 'synapse-pre-scope max-w-7xl mx-auto px-4 sm:px-6 py-5 space-y-5 pre-page-enter'
+      }
+    >
+      {/* Adaptive Standalone Studio Header synced with user theme */}
+      <div
+        style={{ borderColor: activePalette.ring }}
+        className={`pre-grand-hero sci-frame rounded-xl border ${glassSurfaceClass} text-slate-900 dark:text-white px-4 py-3 sm:px-5 sm:py-3.5 shadow-[0_14px_40px_-16px_rgba(14,165,233,0.3)]`}
+      >
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3 min-w-0">
             <button
               type="button"
               data-ripple="true"
-              onClick={backToHub}
-              className="pre-btn-kinetic inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-slate-700 bg-slate-900/90 hover:bg-slate-800 hover:border-cyan-400/60 text-xs font-bold text-slate-100 cursor-pointer whitespace-nowrap"
+              onClick={() => {
+                setIsStudioFullscreen(false);
+                try {
+                  if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+                } catch {}
+                backToHub();
+              }}
+              className="pre-grand-btn inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer whitespace-nowrap"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-cyan-400" />
-              <span>{isEn ? 'All 8 Studios' : '8 Không gian Synapse Pre'}</span>
+              <ArrowLeft className="w-3.5 h-3.5 text-sky-500 dark:text-cyan-400" />
+              <span>{isEn ? `All ${PRE_STUDIOS.length} Studios` : `${PRE_STUDIOS.length} Không gian Synapse Pre`}</span>
             </button>
 
             <div className="flex items-center gap-2.5 min-w-0">
               <div
-                className={`w-9 h-9 rounded-md border flex items-center justify-center shrink-0 ${
-                  currentStudio?.iconBg || 'bg-cyan-500/15 border-cyan-400/40 text-cyan-300'
+                className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${
+                  currentStudio?.iconBgClass || 'bg-cyan-500/15 border-cyan-400/40 text-cyan-500 dark:text-cyan-300'
                 }`}
               >
                 <ActiveIcon className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight text-white truncate">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white truncate">
                   {currentStudio
                     ? `${currentStudio.indexLabel}. ${isEn ? currentStudio.titleEn : currentStudio.titleVi}`
                     : 'Synapse Pre Studio'}
                 </h1>
                 {currentStudio && (
-                  <p className="text-[11px] sm:text-xs text-slate-300 truncate">
+                  <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 truncate">
                     {isEn ? currentStudio.metaEn : currentStudio.metaVi}
                   </p>
                 )}
@@ -628,7 +740,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               type="button"
               data-ripple="true"
               onClick={() => openModulePage(prevStudio.id)}
-              className="pre-btn-kinetic inline-flex items-center gap-1 px-2.5 py-2 rounded-md border border-slate-700 bg-slate-900/90 hover:bg-slate-800 hover:border-cyan-400/50 text-xs font-semibold text-slate-200 cursor-pointer whitespace-nowrap"
+              className="pre-grand-btn inline-flex items-center gap-1 px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer whitespace-nowrap"
               title={isEn ? prevStudio.titleEn : prevStudio.titleVi}
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -639,7 +751,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               type="button"
               data-ripple="true"
               onClick={() => openModulePage(nextStudio.id)}
-              className="pre-btn-kinetic inline-flex items-center gap-1 px-2.5 py-2 rounded-md border border-slate-700 bg-slate-900/90 hover:bg-slate-800 hover:border-cyan-400/50 text-xs font-semibold text-slate-200 cursor-pointer whitespace-nowrap"
+              className="pre-grand-btn inline-flex items-center gap-1 px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer whitespace-nowrap"
               title={isEn ? nextStudio.titleEn : nextStudio.titleVi}
             >
               <span className="hidden sm:inline">{isEn ? 'Next' : 'Tiếp'}</span>
@@ -649,10 +761,36 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             <button
               type="button"
               data-ripple="true"
-              onClick={() => onNavigateSubject('spatial_3d')}
-              className="pre-btn-kinetic inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-emerald-400/55 bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+              onClick={toggleStudioFullscreen}
+              className={`pre-grand-btn inline-flex items-center gap-1.5 px-3.5 py-2 border text-xs font-bold cursor-pointer whitespace-nowrap ${
+                isStudioFullscreen
+                  ? 'border-amber-400/70 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30'
+                  : 'border-sky-500/50 bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-200'
+              }`}
+              title={isStudioFullscreen ? (isEn ? 'Exit Fullscreen (Esc)' : 'Thu nhỏ (Esc)') : (isEn ? 'Fullscreen' : 'Toàn màn hình')}
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+              {isStudioFullscreen ? (
+                <Minimize2 className="w-3.5 h-3.5" />
+              ) : (
+                <Maximize2 className="w-3.5 h-3.5" />
+              )}
+              <span>
+                {isStudioFullscreen
+                  ? isEn ? 'Exit Fullscreen' : 'Thu nhỏ'
+                  : isEn ? 'Fullscreen' : 'Toàn màn hình'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => {
+                setIsStudioFullscreen(false);
+                onNavigateSubject('spatial_3d');
+              }}
+              className="pre-grand-btn inline-flex items-center gap-1.5 px-3.5 py-2 border border-emerald-500/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-300" />
               <span>{isEn ? 'WebAR & Hand 3D' : 'WebAR & Cảm Giác 3D'}</span>
             </button>
           </div>
@@ -661,6 +799,11 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
 
       {/* Dedicated Module Content Canvas */}
       <div>
+        {activeView === 'rocket_launch_3d' && <RocketLaunch3DLab onEarnXP={onEarnXP} />}
+        {activeView === 'jet_engine_3d' && <JetPropulsion3DLab onEarnXP={onEarnXP} />}
+        {activeView === 'four_d_lectures' && <FourDLecture3DLab onEarnXP={onEarnXP} />}
+        {activeView === 'robotics_ik_3d' && <RoboticsIK3DLab onEarnXP={onEarnXP} />}
+        {activeView === 'cannon_ballistics_3d' && <CannonBallistics3DLab onEarnXP={onEarnXP} />}
         {activeView === 'megastructures' && (
           <SynapseV2Studio
             embeddedInPre
@@ -682,3 +825,4 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
     </div>
   );
 };
+

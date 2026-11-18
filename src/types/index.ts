@@ -1,4 +1,4 @@
-export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'math_sims' | 'physics' | 'physics_sims' | 'cs' | 'exams' | 'arena' | 'forum' | 'growth_hub' | 'showcase' | 'future_lab';
+export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'math_sims' | 'physics' | 'physics_sims' | 'cs' | 'cs_sims' | 'exams' | 'arena' | 'forum' | 'growth_hub' | 'showcase' | 'future_lab';
 
 export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
 
@@ -998,7 +998,12 @@ export type FutureLabTabId =
   | 'audio_fft'
   | 'silicon_neural'
   | 'phone_sensor_lab'
-  | 'dual_hand_sandbox';
+  | 'dual_hand_sandbox'
+  | 'cannon_ballistics_3d'
+  | 'rocket_launch_3d'
+  | 'jet_engine_3d'
+  | 'four_d_lectures'
+  | 'robotics_ik_3d';
 
 export type PaperSimKind =
   | 'parabola'

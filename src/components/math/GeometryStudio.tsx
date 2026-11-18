@@ -1808,12 +1808,12 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
       <div
         className={
           isFullScreen
-            ? 'fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col lg:flex-row gap-4 overflow-y-auto lg:overflow-hidden'
-            : 'flex flex-col lg:flex-row gap-6 h-full'
+            ? 'sim-math-scope fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col lg:flex-row gap-4 overflow-y-auto lg:overflow-hidden'
+            : 'sim-math-scope flex flex-col lg:flex-row gap-6 h-full'
         }
       >
         {/* MAIN: Geometry Drawing Stage */}
-        <div className={`flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-xs ${isFullScreen ? 'min-h-[420px] lg:min-h-0' : ''}`}>
+        <div className={`flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-[4px] overflow-hidden shadow-xs ${isFullScreen ? 'min-h-[420px] lg:min-h-0' : ''}`}>
           {/* Top Studio Switcher & Fullscreen Action */}
           <div className="flex flex-wrap items-center justify-between px-3 sm:px-4 py-2.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 gap-2 shrink-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -1826,31 +1826,33 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
                       onBack();
                     }
                   }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs"
+                  className="sim-btn-math sim-btn-hero flex items-center gap-1.5 px-2.5 py-1.5 rounded-[3px] border border-indigo-400/60 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>{isFullScreen ? 'Thu nhỏ (Esc)' : 'Quay lại'}</span>
                 </button>
               )}
               {/* Studio Mode Selector */}
-              <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-800 rounded-lg">
+              <div className="sim-seg-box flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-800 rounded-[4px] border border-slate-300/70 dark:border-slate-700">
             <button
               onClick={() => setStudioMode('free_construction')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              className={`group sim-btn-math flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[3px] border cursor-pointer ${
                 studioMode === 'free_construction'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-xs'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
-              <Compass className="w-3.5 h-3.5" />
+              <span className="icon-anim-compass">
+                <Compass className="w-3.5 h-3.5" />
+              </span>
               Vẽ hình tự do & Đo đạc
             </button>
             <button
               onClick={() => setStudioMode('presets')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              className={`sim-btn-math flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[3px] border cursor-pointer ${
                 studioMode === 'presets'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-xs'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -1866,10 +1868,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
                 <button
                   onClick={() => setShowGrid(!showGrid)}
                   title={showGrid ? 'Ẩn lưới toạ độ' : 'Hiện lưới toạ độ'}
-                  className={`p-1.5 rounded-md text-xs font-medium transition-colors ${
+                  className={`sim-btn-math p-1.5 rounded-[3px] border text-xs font-medium cursor-pointer ${
                     showGrid
-                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                      ? 'sim-btn-active bg-indigo-100 border-indigo-400 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                      : 'text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'
                   }`}
                 >
                   <Grid className="w-4 h-4" />
@@ -1877,10 +1879,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
                 <button
                   onClick={() => setShowMeasurements(!showMeasurements)}
                   title={showMeasurements ? 'Ẩn số đo kích thước' : 'Hiện số đo kích thước'}
-                  className={`p-1.5 rounded-md text-xs font-medium transition-colors ${
+                  className={`sim-btn-math p-1.5 rounded-[3px] border text-xs font-medium cursor-pointer ${
                     showMeasurements
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                      ? 'sim-btn-active bg-emerald-100 border-emerald-400 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                      : 'text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'
                   }`}
                 >
                   <Ruler className="w-4 h-4" />
@@ -1889,14 +1891,14 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
                   onClick={handleUndo}
                   disabled={history.length === 0}
                   title="Hoàn tác (Ctrl+Z)"
-                  className="p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md disabled:opacity-40 transition-colors"
+                  className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] disabled:opacity-40 cursor-pointer"
                 >
                   <Undo2 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={handleClearAll}
                   title="Xoá toàn bộ hình vẽ"
-                  className="p-1.5 text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
+                  className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-red-50 hover:text-red-600 rounded-[3px] cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -1906,7 +1908,7 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
             <button
               onClick={handleExportPNG}
               title="Xuất ảnh PNG chất lượng cao"
-              className="p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+              className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] cursor-pointer"
             >
               <Camera className="w-4 h-4" />
             </button>
@@ -1915,10 +1917,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
             <button
               onClick={() => setIsFullScreen(!isFullScreen)}
               title={isFullScreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình hình học (Full Screen)'}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              className={`sim-btn-math flex items-center gap-1 px-2.5 py-1.5 rounded-[3px] border text-xs font-bold cursor-pointer ${
                 isFullScreen
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-slate-200/70 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
+                  ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-sm'
+                  : 'bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
               }`}
             >
               {isFullScreen ? (
@@ -1942,10 +1944,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
             <div className="flex sm:flex-wrap items-center gap-1.5 overflow-x-auto sm:overflow-visible scrollbar-none pb-0.5 sm:pb-0 max-w-full [&>button]:whitespace-nowrap [&>button]:shrink-0">
               <button
                 onClick={() => setActiveTool('select')}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[3px] border cursor-pointer ${
                   activeTool === 'select'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                    ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <Move className="w-3.5 h-3.5" />
@@ -1954,10 +1956,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
               <button
                 onClick={() => setActiveTool('segment')}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[3px] border cursor-pointer ${
                   activeTool === 'segment'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                    ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <Slash className="w-3.5 h-3.5" />
@@ -1966,10 +1968,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
               <button
                 onClick={() => setActiveTool('angle_degree')}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[3px] border cursor-pointer ${
                   activeTool === 'angle_degree'
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                    ? 'sim-btn-active bg-amber-600 border-amber-400 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <Compass className="w-3.5 h-3.5" />
@@ -1978,22 +1980,22 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
               <button
                 onClick={() => setActiveTool('point')}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[3px] border cursor-pointer ${
                   activeTool === 'point'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                    ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
+                <span className="w-2 h-2 rounded-[1px] bg-blue-500 inline-block" />
                 Vẽ điểm
               </button>
 
               <button
                 onClick={() => setActiveTool('midpoint')}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[3px] border cursor-pointer ${
                   activeTool === 'midpoint'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                    ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 Trung điểm M
@@ -2001,10 +2003,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
               <button
                 onClick={() => setActiveTool('circle')}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[3px] border cursor-pointer ${
                   activeTool === 'circle'
-                    ? 'bg-cyan-600 text-white shadow-xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                    ? 'sim-btn-active bg-cyan-600 border-cyan-400 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <CircleIcon className="w-3.5 h-3.5" />
@@ -2013,10 +2015,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
               <button
                 onClick={() => setProtractor((p) => ({ ...p, visible: !p.visible }))}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[3px] border cursor-pointer ${
                   protractor.visible
-                    ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300/50'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                    ? 'sim-btn-active bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-400'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 Thước đo độ ảo {protractor.visible ? '✓' : ''}
@@ -2024,10 +2026,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
               <button
                 onClick={() => setActiveTool('eraser')}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[3px] border cursor-pointer ${
                   activeTool === 'eraser'
-                    ? 'bg-rose-600 text-white shadow-xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                    ? 'sim-btn-active bg-rose-600 border-rose-400 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <Scissors className="w-3.5 h-3.5" />
@@ -2037,15 +2039,15 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
             {/* Quick Angle Degree Switcher */}
             {activeTool === 'angle_degree' && (
-              <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-md border border-amber-200/60 dark:border-amber-900/60">
+              <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-[3px] border border-amber-200/60 dark:border-amber-900/60">
                 <span className="text-[11px] font-semibold text-amber-900 dark:text-amber-200">Góc:</span>
                 {[30, 45, 60, 90, 120, 135].map((deg) => (
                   <button
                     key={deg}
                     onClick={() => setSelectedAngleDegree(deg)}
-                    className={`px-1.5 py-0.5 text-[11px] font-mono rounded font-semibold transition-colors ${
+                    className={`sim-btn-math px-1.5 py-0.5 text-[11px] font-mono rounded-[3px] font-semibold cursor-pointer ${
                       selectedAngleDegree === deg
-                        ? 'bg-amber-600 text-white'
+                        ? 'sim-btn-active bg-amber-600 text-white'
                         : 'text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900'
                     }`}
                   >
@@ -2058,7 +2060,7 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
                   max="359"
                   value={selectedAngleDegree}
                   onChange={(e) => setSelectedAngleDegree(Math.max(1, Math.min(359, parseInt(e.target.value) || 60)))}
-                  className="w-12 px-1 text-center text-xs font-mono bg-white dark:bg-slate-800 border border-amber-300 rounded text-slate-800 dark:text-slate-200"
+                  className="w-12 px-1 text-center text-xs font-mono bg-white dark:bg-slate-800 border border-amber-300 rounded-[3px] text-slate-800 dark:text-slate-200"
                 />
               </div>
             )}

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { AnaglyphEffect } from 'three/addons/effects/AnaglyphEffect.js';
+import { StereoEffect } from 'three/addons/effects/StereoEffect.js';
 import {
   RotateCcw,
   Play,
@@ -21,13 +23,22 @@ import {
   Grid,
   Sparkles,
   Cpu,
+  FileCode2,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { ViewportPortal } from '../common/ViewportPortal';
-import { PHYSICS_3D_SIMS } from '../../data/physicsDomainsData';
+import { PHYSICS_3D_SIMS, getDomainFor3DSim } from '../../data/physicsDomainsData';
 import { Physics3DMode as SharedPhysics3DMode } from '../../types';
 import { EXTRA_3D_SCENE_CONFIGS, ExtraPhysics3DModeId } from '../../data/physicsExtraSimsData';
 import { buildExtra3DScene } from './physics3DExtraScenes';
+import { PhysicsApparatusWorkbench } from './PhysicsApparatusWorkbench';
+import {
+  applyOffAxisProjection,
+  HologramDisplayMode,
+  useHeadTrackedHologram
+} from '../../hooks/useHeadTrackedHologram';
+import { HologramModeControls } from '../common/HologramModeControls';
+import { SimToCodeModal } from './SimToCodeModal';
 
 interface Numeric3DControlProps {
   label: string;
@@ -150,6 +161,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   const [isControlsExpanded, setIsControlsExpanded] = useState(true);
   const [showGrid3D, setShowGrid3D] = useState(true);
   const [quality3D, setQuality3D] = useState<'light' | 'high'>('light');
+  const [hologramMode, setHologramMode] = useState<HologramDisplayMode>('normal');
+  const hologramModeRef = useRef<HologramDisplayMode>('normal');
+  hologramModeRef.current = hologramMode;
+  const { headOffsetRef, camStatus } = useHeadTrackedHologram(hologramMode);
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
 
   // Simulation physics parameters
   // 1. Pendulum / Spring
@@ -373,6 +389,13 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     scene.add(dynamicGroup);
     dynamicGroupRef.current = dynamicGroup;
 
+    // Anaglyph & Stereo VR Effects
+    const anaglyphEffect = new AnaglyphEffect(renderer);
+    anaglyphEffect.setSize(container.clientWidth, Math.max(container.clientHeight, 300));
+    const stereoEffect = new StereoEffect(renderer);
+    stereoEffect.setSize(container.clientWidth, Math.max(container.clientHeight, 300));
+    let lastHoloMode: HologramDisplayMode = 'normal';
+
     // Unified single Animation Loop (time integration + scene kinematics + WebGL render)
     let frameId = 0;
     let lastTime = performance.now();
@@ -401,7 +424,27 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       }
 
       controls.update();
-      renderer.render(scene, camera);
+
+      const curHolo = hologramModeRef.current;
+      if (curHolo === 'head_cam' || curHolo === 'head_mouse') {
+        applyOffAxisProjection(camera, headOffsetRef.current, 12, 3.8);
+      } else if (lastHoloMode === 'head_cam' || lastHoloMode === 'head_mouse') {
+        camera.updateProjectionMatrix();
+      }
+      if ((lastHoloMode === 'anaglyph' || lastHoloMode === 'vr_stereo') && curHolo !== lastHoloMode) {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w > 0 && h > 0) renderer.setSize(w, h);
+      }
+      lastHoloMode = curHolo;
+
+      if (curHolo === 'anaglyph') {
+        anaglyphEffect.render(scene, camera);
+      } else if (curHolo === 'vr_stereo') {
+        stereoEffect.render(scene, camera);
+      } else {
+        renderer.render(scene, camera);
+      }
     };
     animate();
 
@@ -426,6 +469,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
+      anaglyphEffect.setSize(width, height);
+      stereoEffect.setSize(width, height);
     };
     window.addEventListener('resize', handleResize);
     const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
@@ -438,6 +483,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
       resizeObserver?.disconnect();
       controls.dispose();
+      anaglyphEffect.dispose();
       scene.traverse((obj: any) => {
         if (obj.geometry) obj.geometry.dispose();
         if (obj.material) {
@@ -1693,18 +1739,51 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   const hMax = ((projV0 * Math.sin(radVal)) ** 2 / (2 * gVal)).toFixed(2);
   const rangeL = ((projV0 ** 2 * Math.sin(2 * radVal)) / gVal).toFixed(2);
 
+  const active3DProbeParams = {
+    mass,
+    springK,
+    projAngle,
+    projV0,
+    magneticB: extraParams.p1 ?? magneticB,
+    fieldB: genFieldB3D,
+    freq: mode === 'wave_ripple' ? waveFrequency : mode === 'doppler_effect_3d' ? dopplerFreq : extraParams.p1 ?? 2.5,
+    tempK: mode === 'thermal_gas_3d' ? gasTempK : extraParams.p1 ?? 320,
+    volume: gasVolumeFactor * 10,
+    wavelengthNm: mode === 'photoelectric_3d' ? photoLambdaNm : youngLambdaUm * 1000,
+    polarizerAngle: extraParams.p1 ?? 35,
+    voltage: extraParams.p2 ?? 12,
+    currentI: extraParams.p1 ?? 4,
+    p1: extraParams.p1,
+    p2: extraParams.p2
+  };
+
   return (
     <ViewportPortal active={isFullscreen}>
       <div
-        className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col lg:block ${
+        className={
           isFullscreen
-            ? 'fixed inset-0 z-[100] h-[100dvh] w-screen rounded-none'
-            : 'rounded-lg min-h-[560px] lg:min-h-0 lg:h-[650px]'
-        }`}
+            ? 'sim-physics-scope fixed inset-0 z-[100] h-[100dvh] w-screen bg-slate-950 p-2 sm:p-3 flex flex-col gap-2 overflow-y-auto'
+            : 'sim-physics-scope space-y-2'
+        }
       >
+        <PhysicsApparatusWorkbench
+          dimension="3d"
+          simId={mode}
+          domainId={getDomainFor3DSim(mode)}
+          simParams={active3DProbeParams}
+          simTime={simStateRef.current.time}
+          stageClassName={isFullscreen ? 'flex-1 min-h-0 flex flex-col' : ''}
+        >
+          <div
+            className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col lg:block ${
+              isFullscreen
+                ? 'flex-1 min-h-[420px] rounded-[4px]'
+                : 'rounded-[4px] min-h-[560px] lg:min-h-0 lg:h-[640px]'
+            }`}
+          >
         {/* TOP HEADER OVERLAY (No backdrop-blur over WebGL; stacked on < lg, floating on lg+) */}
         <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:top-4 lg:left-4 lg:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/95 lg:bg-transparent border-b border-slate-800/80 lg:border-b-0 lg:pointer-events-none shrink-0">
-          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 text-white shadow-lg max-w-full">
+          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-slate-900/95 border border-slate-700/80 text-white shadow-lg max-w-full">
             {(isFullscreen || onBack) && (
               <button
                 onClick={() => {
@@ -1714,7 +1793,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
                     onBack();
                   }
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white transition-colors shrink-0"
+                className="sim-btn-phy flex items-center gap-1 px-2.5 py-1 rounded-[3px] border border-amber-400/60 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white shrink-0 cursor-pointer"
                 title={isFullscreen ? 'Thu nhỏ (Esc)' : 'Quay lại trang trước'}
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -1744,7 +1823,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
 
           <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
             {/* Domain-scoped Mode Switcher Buttons */}
-            <div className="flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-lg shadow-lg overflow-x-auto max-w-full scrollbar-none">
+            <div className="sim-seg-box flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-[4px] shadow-lg overflow-x-auto max-w-full scrollbar-none">
               {visibleModeTabs.map((m) => (
                 <button
                   key={m.id}
@@ -1752,8 +1831,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
                     setMode(m.id);
                     onSelectMode?.(m.id);
                   }}
-                  className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-md whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-                    mode === m.id ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                  className={`sim-btn-phy px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
+                    mode === m.id
+                      ? 'sim-btn-active bg-amber-600 border-amber-300/70 text-white shadow-sm'
+                      : 'border-transparent text-slate-300 hover:text-white'
                   }`}
                 >
                   {m.label}
@@ -1802,6 +1883,23 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
             >
               <Cpu className="w-3.5 h-3.5" />
               <span>{quality3D === 'high' ? 'HD' : 'Mượt'}</span>
+            </button>
+
+            <HologramModeControls
+              mode={hologramMode}
+              onChangeMode={setHologramMode}
+              camStatus={camStatus}
+              compact
+            />
+
+            <button
+              type="button"
+              onClick={() => setIsCodeModalOpen(true)}
+              className="hidden sm:flex items-center gap-1 px-2.5 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold transition-colors shadow-lg cursor-pointer shrink-0 whitespace-nowrap"
+              title="Dịch ngược mô hình 3D sang Phương trình Vi phân & Code Python/C++"
+            >
+              <FileCode2 className="w-3.5 h-3.5" />
+              <span>Code RK4</span>
             </button>
 
             <button
@@ -2424,7 +2522,16 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
           )}
         </div>
       </div>
-    </div>
+        </div>
+      </PhysicsApparatusWorkbench>
+      <SimToCodeModal
+        isOpen={isCodeModalOpen}
+        onClose={() => setIsCodeModalOpen(false)}
+        simId={mode}
+        simTitle={current3DSpec?.title || mode}
+        params={active3DProbeParams}
+      />
+      </div>
     </ViewportPortal>
   );
 };

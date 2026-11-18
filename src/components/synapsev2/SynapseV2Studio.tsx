@@ -69,6 +69,7 @@ import {
 import { FuturisticThumbPreview } from './FuturisticThumbPreview';
 import { FuturisticCosmicBackdrop } from './FuturisticCosmicBackdrop';
 import { SpatialVoiceMentor } from '../spatial3d/SpatialVoiceMentor';
+import { WonderStageVoiceCommand } from '../../lib/voiceIntentEngine';
 
 interface SynapseV2StudioProps {
   onBack?: () => void;
@@ -271,8 +272,11 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const [sliceHeight, setSliceHeight] = useState<number>(3.5);
   const [showPlatform, setShowPlatform] = useState<boolean>(true);
   const [cameraPreset, setCameraPreset] = useState<CameraPresetId>('drone');
-  const [isDockOpen, setIsDockOpen] = useState<boolean>(true);
+  const [isDockOpen, setIsDockOpen] = useState<boolean>(false);
   const [isAdvancedDockOpen, setIsAdvancedDockOpen] = useState<boolean>(true);
+  const [isWonderStripOpen, setIsWonderStripOpen] = useState<boolean>(false);
+  const [isCameraMenuOpen, setIsCameraMenuOpen] = useState<boolean>(false);
+  const [isPerfMenuOpen, setIsPerfMenuOpen] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [contextLost, setContextLost] = useState<boolean>(false);
   const [webglError, setWebglError] = useState<boolean>(false);
@@ -1217,6 +1221,66 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     );
   }
 
+  const handleWonderVoiceCommand = (cmd: WonderStageVoiceCommand) => {
+    switch (cmd.kind) {
+      case 'select_monument':
+        if (cmd.monument) handleSelectMonument(cmd.monument.id, false);
+        break;
+      case 'next_monument': {
+        const curIdx = MONUMENT_CATALOG.findIndex((m) => m.id === activeId);
+        const nextM = MONUMENT_CATALOG[(curIdx + 1) % MONUMENT_CATALOG.length];
+        if (nextM) handleSelectMonument(nextM.id, false);
+        break;
+      }
+      case 'prev_monument': {
+        const curIdx = MONUMENT_CATALOG.findIndex((m) => m.id === activeId);
+        const prevM =
+          MONUMENT_CATALOG[(curIdx - 1 + MONUMENT_CATALOG.length) % MONUMENT_CATALOG.length];
+        if (prevM) handleSelectMonument(prevM.id, false);
+        break;
+      }
+      case 'back_catalog':
+        setIsFullscreen(false);
+        navigate({ subject: 'synapse_v2', futureTab: 'megastructures', synapseMode: 'catalog' });
+        break;
+      case 'camera': {
+        const mapPreset: Record<NonNullable<typeof cmd.cameraPreset>, CameraPresetId> = {
+          orbit: 'drone',
+          overview: 'overview',
+          core: 'core',
+          top: 'zenith',
+          side: 'side',
+          low: 'lowAngle'
+        };
+        if (cmd.cameraPreset) applyCameraPreset(mapPreset[cmd.cameraPreset]);
+        break;
+      }
+      case 'explode':
+        setExplodeFactor(cmd.explodeValue ?? 0.7);
+        break;
+      case 'pause':
+        setIsPaused(true);
+        break;
+      case 'play':
+        setIsPaused(false);
+        break;
+      case 'music_track':
+        if (cmd.musicTrack) setBgSound(cmd.musicTrack);
+        break;
+      case 'music_toggle':
+        if (isBgPlaying) toggleBgPlaying();
+        break;
+      case 'low_spec':
+        updatePerfPrefs({ resolutionScale: 0.5, targetFps: 30 });
+        break;
+      case 'high_spec':
+        updatePerfPrefs({ resolutionScale: 1.0, targetFps: 60 });
+        break;
+      default:
+        break;
+    }
+  };
+
   // =========================================================================
   // VIEW 2: FULL INTERACTIVE 3D WEBGL OBSERVATORY STAGE
   // =========================================================================
@@ -1224,8 +1288,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     <>
       <div
         className={
-        isFullscreen
-            ? 'fixed inset-0 z-[120] bg-[#07102a] text-white flex flex-col overflow-hidden'
+          isFullscreen
+            ? 'fixed inset-y-0 right-0 left-0 lg:left-[var(--sidebar-w,272px)] z-[45] bg-[#07102a] text-white flex flex-col overflow-hidden'
             : 'relative z-10 w-full min-h-[700px] h-[calc(100vh-146px)] rounded-xl overflow-hidden border border-sky-400/50 bg-[#07102a] text-white shadow-[0_28px_90px_-14px_rgba(2,132,199,0.45)]'
         }
       >
@@ -1252,18 +1316,18 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
           </div>
         )}
 
-        {/* TOP FLOATING HEADER STRIP (Solid obsidian over WebGL - no backdrop-blur stalling) */}
-        <div className="relative z-20 pointer-events-none p-3 sm:p-4 flex flex-col gap-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {/* Catalog Back + Brand Title */}
-            <div className="pointer-events-auto flex items-center gap-2 sm:gap-3 bg-slate-950/92 border border-sky-400/30 rounded-lg px-3 py-2 shadow-lg">
+        {/* COMPACT SINGLE-ROW TOP HUD BAR (Zero viewport clutter, clear of sidebar) */}
+        <div className="relative z-20 pointer-events-none p-2.5 sm:p-3 flex flex-col gap-2">
+          <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-2 bg-slate-950/88 border border-white/15 rounded-xl px-2.5 py-1.5 shadow-xl">
+            {/* Left Cluster: Back + Prev/Next + Wonder Title + Toggleable Strip */}
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <button
                 type="button"
                 onClick={() => {
                   setIsFullscreen(false);
                   navigate({ subject: 'synapse_v2', futureTab: 'megastructures', synapseMode: 'catalog' });
                 }}
-                className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 title={
                   isEn
                     ? `Return to ${MONUMENT_CATALOG.length} Megastructures`
@@ -1271,205 +1335,275 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 }
               >
                 <LayoutGrid className="w-3.5 h-3.5 text-sky-300" />
-                <span>
-                  {isEn ? `${MONUMENT_CATALOG.length} Structures` : `${MONUMENT_CATALOG.length} Công trình`}
-                </span>
+                <span>{MONUMENT_CATALOG.length}</span>
               </button>
-            <Orbit className="w-5 h-5 text-sky-400 icon-anim-cosmos shrink-0 hidden sm:inline" />
-            <div>
-              <div className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-sky-300">
-                {activeDef.code}
-              </div>
-              <h1 className="font-display text-xs sm:text-sm font-extrabold text-white leading-tight">
-                {isEn ? activeDef.titleEn : activeDef.titleVi}
-              </h1>
-            </div>
-          </div>
 
-          {/* Right Quick Actions: Music (Minecraft/Cosmic) + Camera Presets + Snapshot + Hide Dock + Fullscreen */}
-          <div className="pointer-events-auto flex items-center gap-1.5 flex-wrap">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isBgPlaying || bgSound === 'off') {
-                  setBgSound('minecraft_calm');
-                } else {
-                  toggleBgPlaying();
-                }
-              }}
-              className={`group flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
-                isBgPlaying && bgSound !== 'off'
-                  ? 'bg-emerald-500/25 border-emerald-400/70 text-emerald-200'
-                  : 'bg-slate-950/92 border-white/15 text-slate-200 hover:border-sky-400/60'
-              }`}
-              title={isEn ? 'Play Minecraft Calm Piano / Background Audio' : 'Bật/Tắt Nhạc nền Minecraft & Không gian'}
-            >
-              {isBgPlaying && bgSound !== 'off' ? (
-                <Volume2 className="w-4 h-4 icon-anim-wave text-emerald-300" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-slate-400" />
-              )}
-              <span className="hidden md:inline">
-                {isBgPlaying && bgSound === 'minecraft_calm'
-                  ? 'Minecraft Piano'
-                  : isBgPlaying && bgSound !== 'off'
-                  ? isEn ? 'Audio On' : 'Đang phát nhạc'
-                  : isEn ? 'Minecraft Music' : 'Nhạc Minecraft'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setBgSound(bgSound === 'minecraft_calm' ? 'cosmic_drone' : 'minecraft_calm')
-              }
-              className="hidden sm:flex items-center gap-1 px-2.5 py-2 rounded-md bg-slate-950/92 border border-white/15 hover:border-sky-400/60 text-[11px] font-bold text-slate-200 cursor-pointer whitespace-nowrap"
-              title={isEn ? 'Switch Music Track (Minecraft / Cosmic)' : 'Đổi nhạc (Minecraft Piano / Vũ trụ)'}
-            >
-              <Music className="w-3.5 h-3.5 text-sky-400" />
-              <span>{bgSound === 'minecraft_calm' ? 'Vũ trụ' : 'Minecraft'}</span>
-            </button>
-
-            {/* 1-Click Weak-PC Resolution Scale & FPS Cap */}
-            <div
-              className="flex items-center gap-0.5 p-1 rounded-lg bg-slate-950/92 border border-white/15"
-              title={
-                isEn
-                  ? '3D Resolution Scale & FPS Cap (lower for zero lag on weak PCs)'
-                  : 'Độ phân giải 3D & Giới hạn FPS (giảm thấp để hết giật trên máy yếu)'
-              }
-            >
-              {([0.5, 0.65, 0.85, 1.0] as const).map((sc) => (
+              <div className="flex items-center gap-0.5 shrink-0">
                 <button
-                  key={sc}
                   type="button"
-                  onClick={() => updatePerfPrefs({ resolutionScale: sc })}
-                  className={`px-1.5 py-1 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ${
-                    resolutionScale === sc
-                      ? 'bg-sky-500 text-slate-950'
-                      : 'text-slate-300 hover:bg-white/10'
-                  }`}
+                  onClick={() => {
+                    const idx = MONUMENT_CATALOG.findIndex((m) => m.id === activeId);
+                    const prevM =
+                      MONUMENT_CATALOG[(idx - 1 + MONUMENT_CATALOG.length) % MONUMENT_CATALOG.length];
+                    if (prevM) handleSelectMonument(prevM.id, false);
+                  }}
+                  className="p-1.5 rounded-md bg-white/5 hover:bg-white/15 text-slate-300 cursor-pointer"
+                  title={isEn ? 'Previous Wonder' : 'Công trình trước'}
                 >
-                  {sc}x
+                  <ArrowLeft className="w-3.5 h-3.5" />
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = MONUMENT_CATALOG.findIndex((m) => m.id === activeId);
+                    const nextM = MONUMENT_CATALOG[(idx + 1) % MONUMENT_CATALOG.length];
+                    if (nextM) handleSelectMonument(nextM.id, false);
+                  }}
+                  className="p-1.5 rounded-md bg-white/5 hover:bg-white/15 text-slate-300 cursor-pointer"
+                  title={isEn ? 'Next Wonder' : 'Công trình tiếp theo'}
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="min-w-0 px-1">
+                <div className="text-[10px] font-mono font-bold text-sky-300 leading-none">
+                  #{String(activeDef.index).padStart(2, '0')} · {activeDef.code}
+                </div>
+                <h1 className="font-display text-xs sm:text-sm font-extrabold text-white truncate max-w-[180px] sm:max-w-[290px] leading-tight mt-0.5">
+                  {isEn ? activeDef.titleEn : activeDef.titleVi}
+                </h1>
+              </div>
+
               <button
                 type="button"
-                onClick={() => updatePerfPrefs({ targetFps: targetFps === 30 ? 60 : 30 })}
-                className={`px-1.5 py-1 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ml-0.5 ${
-                  targetFps === 30
-                    ? 'bg-emerald-500 text-slate-950'
-                    : 'text-cyan-300 hover:bg-white/10'
+                onClick={() => setIsWonderStripOpen((v) => !v)}
+                className={`hidden md:flex items-center gap-1 px-2 py-1.5 rounded-md border text-[11px] font-bold cursor-pointer whitespace-nowrap shrink-0 ${
+                  isWonderStripOpen
+                    ? 'bg-sky-500/25 border-sky-400 text-sky-200'
+                    : 'bg-white/5 border-white/15 text-slate-300 hover:text-white'
                 }`}
-                title={isEn ? 'Switch 30 FPS / 60 FPS' : 'Đổi 30 FPS (Máy yếu) / 60 FPS'}
+                title={isEn ? 'Toggle quick 30-wonder switcher bar' : 'Mở/Ẩn dải chọn nhanh 30 công trình'}
               >
-                {targetFps}F
+                <Layers className="w-3.5 h-3.5 text-sky-400" />
+                <span>{isEn ? 'List' : 'Chọn nhanh'}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${isWonderStripOpen ? 'rotate-180' : ''}`}
+                />
               </button>
             </div>
 
-            <div className="hidden xl:flex items-center gap-1 p-1 rounded-lg bg-slate-950/92 border border-white/15">
-              {(Object.keys(CAMERA_PRESETS) as CameraPresetId[]).map((pid) => (
+            {/* Right Cluster: Music + Compact Perf + Compact Camera + Voice AI + Snapshot + Dock + Fullscreen */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isBgPlaying || bgSound === 'off') {
+                    setBgSound('minecraft_calm');
+                  } else {
+                    toggleBgPlaying();
+                  }
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                  isBgPlaying && bgSound !== 'off'
+                    ? 'bg-emerald-500/25 border-emerald-400/70 text-emerald-200'
+                    : 'bg-white/5 border-white/15 text-slate-200 hover:border-sky-400/60'
+                }`}
+                title={isEn ? 'Toggle Minecraft / Cosmic Music' : 'Bật/Tắt Nhạc nền'}
+              >
+                {isBgPlaying && bgSound !== 'off' ? (
+                  <Volume2 className="w-3.5 h-3.5 text-emerald-300" />
+                ) : (
+                  <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+                )}
+                <span className="hidden lg:inline">
+                  {bgSound === 'cosmic_drone' ? 'Vũ trụ' : 'Minecraft'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setBgSound(bgSound === 'minecraft_calm' ? 'cosmic_drone' : 'minecraft_calm')
+                }
+                className="p-1.5 rounded-md bg-white/5 border border-white/15 hover:border-sky-400/60 text-sky-300 cursor-pointer"
+                title={isEn ? 'Switch track (Minecraft / Cosmic)' : 'Đổi bài (Minecraft / Vũ trụ)'}
+              >
+                <Music className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Compact Performance Menu */}
+              <div className="relative">
                 <button
-                  key={pid}
                   type="button"
-                  onClick={() => applyCameraPreset(pid)}
-                  className={`px-2 py-1.5 rounded-md text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap ${
-                    cameraPreset === pid
-                      ? 'bg-sky-500 text-slate-950'
-                      : 'text-slate-300 hover:bg-white/10'
-                  }`}
+                  onClick={() => {
+                    setIsPerfMenuOpen((v) => !v);
+                    setIsCameraMenuOpen(false);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-white/5 border border-white/15 hover:border-sky-400/60 text-[11px] font-mono font-bold text-cyan-200 cursor-pointer whitespace-nowrap"
+                  title={isEn ? '3D Resolution & FPS' : 'Độ phân giải & FPS'}
                 >
-                  <Camera className="w-3 h-3" />
-                  <span>{isEn ? CAMERA_PRESETS[pid].labelEn : CAMERA_PRESETS[pid].labelVi}</span>
+                  <Gauge className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{resolutionScale}x · {targetFps}F</span>
                 </button>
-              ))}
-            </div>
+                {isPerfMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 z-50 w-52 rounded-lg bg-slate-950/98 border border-white/20 p-2.5 shadow-2xl space-y-2">
+                    <div className="text-[10px] font-mono font-bold uppercase text-slate-400">
+                      {isEn ? 'Resolution Scale' : 'Độ phân giải 3D'}
+                    </div>
+                    <div className="grid grid-cols-4 gap-1">
+                      {([0.5, 0.65, 0.85, 1.0] as const).map((sc) => (
+                        <button
+                          key={sc}
+                          type="button"
+                          onClick={() => updatePerfPrefs({ resolutionScale: sc })}
+                          className={`py-1 rounded text-[11px] font-mono font-bold cursor-pointer ${
+                            resolutionScale === sc
+                              ? 'bg-sky-500 text-slate-950'
+                              : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                          }`}
+                        >
+                          {sc}x
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-white/10">
+                      <span className="text-[11px] text-slate-300">FPS Cap</span>
+                      <button
+                        type="button"
+                        onClick={() => updatePerfPrefs({ targetFps: targetFps === 30 ? 60 : 30 })}
+                        className={`px-2 py-1 rounded text-[11px] font-mono font-bold cursor-pointer ${
+                          targetFps === 30 ? 'bg-emerald-500 text-slate-950' : 'bg-cyan-500 text-slate-950'
+                        }`}
+                      >
+                        {targetFps} FPS
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            <button
-              type="button"
-              onClick={handleCaptureSnapshot}
-              className="p-2 rounded-md bg-slate-950/92 border border-white/15 hover:border-sky-400/60 text-slate-200 cursor-pointer"
-              title={isEn ? 'Save 3D Snapshot PNG' : 'Chụp ảnh PNG Đại công trình'}
-            >
-              <Download className="w-4 h-4 text-sky-300" />
-            </button>
+              {/* Compact Camera Preset Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCameraMenuOpen((v) => !v);
+                    setIsPerfMenuOpen(false);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-white/5 border border-white/15 hover:border-sky-400/60 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap"
+                  title={isEn ? 'Camera Angles' : 'Chọn góc máy'}
+                >
+                  <Camera className="w-3.5 h-3.5 text-sky-400" />
+                  <span className="hidden sm:inline">
+                    {isEn ? CAMERA_PRESETS[cameraPreset].labelEn : CAMERA_PRESETS[cameraPreset].labelVi}
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                </button>
+                {isCameraMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 z-50 w-40 rounded-lg bg-slate-950/98 border border-white/20 p-1.5 shadow-2xl space-y-0.5">
+                    {(Object.keys(CAMERA_PRESETS) as CameraPresetId[]).map((pid) => (
+                      <button
+                        key={pid}
+                        type="button"
+                        onClick={() => {
+                          applyCameraPreset(pid);
+                          setIsCameraMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold text-left cursor-pointer ${
+                          cameraPreset === pid
+                            ? 'bg-sky-500 text-slate-950 font-bold'
+                            : 'text-slate-200 hover:bg-white/10'
+                        }`}
+                      >
+                        <Camera className="w-3 h-3 shrink-0" />
+                        <span>{isEn ? CAMERA_PRESETS[pid].labelEn : CAMERA_PRESETS[pid].labelVi}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setIsDockOpen((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/92 border border-white/15 hover:border-sky-400/60 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap"
-              title={isEn ? 'Toggle Control Console (H)' : 'Thu gọn/Mở bảng điều khiển (Phím H)'}
-            >
-              {isDockOpen ? (
-                <EyeOff className="w-4 h-4 text-sky-400" />
-              ) : (
-                <Eye className="w-4 h-4 text-sky-400" />
-              )}
-              <span className="hidden sm:inline">
-                {isDockOpen
-                  ? isEn
-                    ? 'Hide HUD (H)'
-                    : 'Thu gọn (H)'
-                  : isEn
-                  ? 'Show HUD (H)'
-                  : 'Mở điều khiển (H)'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsFullscreen((v) => !v)}
-              className="p-2 rounded-md bg-slate-950/92 border border-white/15 hover:border-sky-400/60 text-slate-200 cursor-pointer"
-              title={isEn ? 'Toggle Fullscreen' : 'Toàn màn hình'}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-          </div>
-          </div>
-
-          <div className="flex justify-end pointer-events-none">
-            <div className="pointer-events-auto">
+              {/* Integrated 3D Voice Mentor right inside top bar */}
               <SpatialVoiceMentor
+                compactButton
                 spaceName="Synapse Pre · Đại công trình tương lai"
                 modelTitle={isEn ? activeDef.titleEn : activeDef.titleVi}
                 partName={activeDef.code}
                 partDescription={isEn ? activeDef.descriptionEn : activeDef.descriptionVi}
                 formula={`${isEn ? activeDef.primaryLabelEn : activeDef.primaryLabelVi}: ${primaryParam} ${activeDef.primaryUnit}`}
                 language={language}
+                onWonderCommand={handleWonderVoiceCommand}
               />
+
+              <button
+                type="button"
+                onClick={handleCaptureSnapshot}
+                className="p-1.5 rounded-md bg-white/5 border border-white/15 hover:border-sky-400/60 text-slate-200 cursor-pointer"
+                title={isEn ? 'Save 3D Snapshot PNG' : 'Chụp ảnh PNG'}
+              >
+                <Download className="w-3.5 h-3.5 text-sky-300" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsDockOpen((v) => !v)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-white/5 border border-white/15 hover:border-sky-400/60 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap"
+                title={isEn ? 'Toggle Control Console (H)' : 'Bảng điều khiển thông số (Phím H)'}
+              >
+                {isDockOpen ? (
+                  <EyeOff className="w-3.5 h-3.5 text-sky-400" />
+                ) : (
+                  <Sliders className="w-3.5 h-3.5 text-sky-400" />
+                )}
+                <span className="hidden sm:inline">
+                  {isDockOpen ? (isEn ? 'Hide' : 'Ẩn') : (isEn ? 'Controls' : 'Thông số')}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsFullscreen((v) => !v)}
+                className="p-1.5 rounded-md bg-white/5 border border-white/15 hover:border-sky-400/60 text-slate-200 cursor-pointer"
+                title={isEn ? 'Toggle Fullscreen' : 'Toàn màn hình'}
+              >
+                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
             </div>
           </div>
 
-        {/* Quick Strip of All Futuristic Chambers */}
-        <div className="pointer-events-auto flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {MONUMENT_CATALOG.map((m) => {
-            const selected = m.id === activeId;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                data-ripple="true"
-                onClick={() => handleSelectMonument(m.id, false)}
-                className={`group flex items-center gap-2 px-3 py-1.5 rounded-md border text-left transition-all shrink-0 cursor-pointer ${
-                  selected
-                    ? 'bg-sky-950/95 border-sky-400 text-white shadow-lg'
-                    : 'bg-slate-950/88 border-white/12 text-slate-300 hover:border-white/35 hover:text-white'
-                }`}
-              >
-                {renderMonumentIcon(m.id, 'w-3.5 h-3.5 shrink-0')}
-                <div className="leading-tight">
-                  <div className="text-[9px] font-mono text-sky-300/90 font-bold">
-                    #{String(m.index).padStart(2, '0')}
-                  </div>
-                  <div className="text-[11px] font-extrabold whitespace-nowrap">
-                    {isEn ? m.titleEn.split('&')[0].trim() : m.titleVi.split('&')[0].trim()}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+          {/* Toggleable Quick Strip of All 30 Futuristic Chambers (hidden by default to keep 3D viewport unobstructed) */}
+          {isWonderStripOpen && (
+            <div className="pointer-events-auto flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none bg-slate-950/85 border border-white/10 rounded-lg p-1.5">
+              {MONUMENT_CATALOG.map((m) => {
+                const selected = m.id === activeId;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    data-ripple="true"
+                    onClick={() => handleSelectMonument(m.id, false)}
+                    className={`group flex items-center gap-2 px-2.5 py-1 rounded-md border text-left transition-all shrink-0 cursor-pointer ${
+                      selected
+                        ? 'bg-sky-950/95 border-sky-400 text-white shadow-md'
+                        : 'bg-slate-900/80 border-white/12 text-slate-300 hover:border-white/35 hover:text-white'
+                    }`}
+                  >
+                    {renderMonumentIcon(m.id, 'w-3.5 h-3.5 shrink-0')}
+                    <div className="leading-tight">
+                      <div className="text-[9px] font-mono text-sky-300/90 font-bold">
+                        #{String(m.index).padStart(2, '0')}
+                      </div>
+                      <div className="text-[11px] font-extrabold whitespace-nowrap">
+                        {isEn ? m.titleEn.split('&')[0].trim() : m.titleVi.split('&')[0].trim()}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
 
       {/* COLLAPSIBLE BOTTOM CONTROL & SCIENTIFIC TELEMETRY DOCK */}
       <div className="absolute inset-x-0 bottom-0 z-20 p-3 sm:p-4 pointer-events-none flex flex-col items-center">

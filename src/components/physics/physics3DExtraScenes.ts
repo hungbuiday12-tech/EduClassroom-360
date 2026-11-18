@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ExtraPhysics3DModeId } from '../../data/physicsExtraSimsData';
+import { buildBatch2Extra3DScene } from './physics3DExtraBatch2Scenes';
 
 export interface Extra3DStateGetter {
   (): { p1: number; p2: number };
@@ -882,6 +883,6 @@ export function buildExtra3DScene(
     }
 
     default:
-      return null;
+      return buildBatch2Extra3DScene(mode, group, getParams, getElapsed);
   }
 }

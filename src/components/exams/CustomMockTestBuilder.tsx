@@ -31,6 +31,7 @@ import {
 import { saveCustomMockResult } from '../../lib/customLessonsStore';
 import { FormattedText } from '../common/MathRenderer';
 import { InteractiveScratchpad } from '../common/InteractiveScratchpad';
+import { CognitiveRadarPanel, QuestionTelemetry } from './CognitiveRadarPanel';
 
 interface CustomMockTestBuilderProps {
   onEarnXP?: (xp: number) => void;
@@ -52,6 +53,8 @@ export const CustomMockTestBuilder: React.FC<CustomMockTestBuilderProps> = ({ on
   const [tabWarnings, setTabWarnings] = useState<number>(0);
   const [submittedResult, setSubmittedResult] = useState<CustomMockTestResult | null>(null);
   const [showScratchpad, setShowScratchpad] = useState<boolean>(false);
+  const [telemetry, setTelemetry] = useState<Record<string, QuestionTelemetry>>({});
+  const lastActionTsRef = React.useRef<number>(Date.now());
 
   // Gather weak keywords from Error Notebook & Lesson Assessments
   const weakHints = useMemo(() => {
@@ -211,9 +214,33 @@ export const CustomMockTestBuilder: React.FC<CustomMockTestBuilderProps> = ({ on
     if (picked.length === 0) return;
     setActiveQuestions(picked);
     setAnswers({});
+    setTelemetry({});
+    lastActionTsRef.current = Date.now();
     setTimeLeftSec(durationMinutes * 60);
     setTabWarnings(0);
     setSubmittedResult(null);
+  };
+
+  const handlePickOption = (questionId: string, optIdx: number) => {
+    const now = Date.now();
+    const deltaMs = Math.min(180000, Math.max(400, now - lastActionTsRef.current));
+    lastActionTsRef.current = now;
+    const prevChosen = answers[questionId];
+    setTelemetry((prev) => {
+      const cur = prev[questionId];
+      const isSwitch = prevChosen !== undefined && prevChosen !== optIdx;
+      return {
+        ...prev,
+        [questionId]: {
+          questionId,
+          switches: (cur?.switches ?? 0) + (isSwitch ? 1 : 0),
+          firstPickIndex: cur?.firstPickIndex ?? optIdx,
+          lastPickAtMs: now,
+          totalHesitationMs: (cur?.totalHesitationMs ?? 0) + deltaMs
+        }
+      };
+    });
+    setAnswers((prev) => ({ ...prev, [questionId]: optIdx }));
   };
 
   const handleGradeTest = () => {
@@ -354,6 +381,12 @@ export const CustomMockTestBuilder: React.FC<CustomMockTestBuilderProps> = ({ on
                 </div>
               ))}
             </div>
+            <CognitiveRadarPanel
+              questions={activeQuestions}
+              answers={answers}
+              telemetry={telemetry}
+              totalDurationSec={submittedResult.durationUsedSec}
+            />
           </div>
         )}
 
@@ -398,7 +431,7 @@ export const CustomMockTestBuilder: React.FC<CustomMockTestBuilderProps> = ({ on
                         key={optIdx}
                         type="button"
                         disabled={isGraded}
-                        onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: optIdx }))}
+                        onClick={() => handlePickOption(q.id, optIdx)}
                         className={`p-2.5 rounded border text-left text-xs flex items-start gap-2 cursor-pointer transition-colors ${cls}`}
                       >
                         <span className="font-mono font-bold shrink-0">

@@ -1,4 +1,5 @@
 import { PhysicsSimType } from '../../types';
+import { renderBatch2Extra2DPhysicsSim } from './physics2DExtraBatch2Renderer';
 
 export interface Extra2DTelemetryPayload {
   metric1Label: string;
@@ -1360,6 +1361,6 @@ export function renderExtra2DPhysicsSim(
     }
 
     default:
-      return false;
+      return renderBatch2Extra2DPhysicsSim(simType, ctx, w, h, t, isDark, p, ov, pushTelemetry);
   }
 }

@@ -22,6 +22,8 @@ import {
 } from '../../data/physicsDomainsData';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { FreeformOpticsRayLab } from './FreeformOpticsRayLab';
+import { ChladniPlateLab } from './ChladniPlateLab';
 
 type GradeFilter = 'all' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
 type DimFilter = 'all' | '2d' | '3d';
@@ -247,6 +249,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>('all');
   const [dimFilter, setDimFilter] = useState<DimFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [activeStudioLab, setActiveStudioLab] = useState<'none' | 'optics_ray' | 'chladni'>('optics_ray');
 
   const total2DCount = Object.keys(PHYSICS_2D_SIMS).length;
   const total3DCount = Object.keys(PHYSICS_3D_SIMS).length;
@@ -310,34 +313,34 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
   }, [gradeFilter, dimFilter, searchQuery]);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="sim-physics-scope space-y-6 pb-12">
       {/* Header Command Banner */}
-      <section className="sci-frame rounded-lg bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs space-y-5">
+      <section className="sci-frame rounded-[4px] bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs space-y-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5 min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
               <button
                 type="button"
                 onClick={onBack || goBack}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="group sim-btn-phy flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300/80 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>{isEn ? 'Back' : 'Quay lại'}</span>
               </button>
               <span className="font-mono font-bold text-blue-700 dark:text-sky-400 uppercase tracking-wider">
-                {isEn ? 'PHET-STYLE PHYSICS LABS · GRADES 9–12' : 'PHÒNG THÍ NGHIỆM VẬT LÍ TÁCH RIÊNG · LỚP 9–12'}
+                {isEn ? 'SYNAPSE INTERACTIVE PHYSICS LABS · GRADES 9–12' : 'PHÒNG THÍ NGHIỆM VẬT LÍ TÁCH RIÊNG · LỚP 9–12'}
               </span>
             </div>
 
             <h1 className="font-display text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {isEn
-                ? 'Interactive 2D & 3D Physics Simulations by Domain'
-                : 'Trang Mô Phỏng Vật Lí 2D & 3D Theo 5 Lĩnh Vực'}
+                ? `Interactive 2D & 3D Physics Simulations (${PHYSICS_DOMAINS.length} Domains)`
+                : `Trang Mô Phỏng Vật Lí 2D & 3D Theo ${PHYSICS_DOMAINS.length} Lĩnh Vực`}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-3xl">
               {isEn
-                ? `Explore ${total2DCount} 2D real-time labs and ${total3DCount} interactive 3D WebGL experiments (${totalSimCount} total) across Mechanics, Waves, Electromagnetism, Optics, and Nuclear Physics.`
-                : `Tổng hợp ${total2DCount} phòng thí nghiệm 2D và ${total3DCount} mô hình 3D tương tác (tổng ${totalSimCount} mô phỏng) theo 5 phân môn độc lập — đầy đủ thanh trượt thông số, đồ thị thời gian thực và bảng ghi số liệu thực hành.`}
+                ? `Explore ${total2DCount} 2D real-time labs and ${total3DCount} interactive 3D WebGL experiments (${totalSimCount} total) across ${PHYSICS_DOMAINS.length} domains, plus Freeform Optical Raytracing & Chladni Resonance Plate.`
+                : `Tổng hợp ${total2DCount} phòng thí nghiệm 2D và ${total3DCount} mô hình 3D tương tác (tổng ${totalSimCount} mô phỏng) theo ${PHYSICS_DOMAINS.length} lĩnh vực độc lập, tích hợp Quang học Raytracing tự do và Bản cát cộng hưởng Chladni.`}
             </p>
           </div>
 
@@ -345,25 +348,33 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
             <button
               type="button"
               onClick={() => navigate({ subject: 'physics', physicsView: 'catalog' })}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+              className="group sim-btn-phy sim-btn-hero flex items-center gap-2 px-4 py-2 rounded-[3px] border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/95 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold cursor-pointer whitespace-nowrap"
             >
-              <BookOpen className="w-4 h-4 text-amber-500" />
+              <span className="icon-anim-book">
+                <BookOpen className="w-4 h-4 text-amber-500" />
+              </span>
               <span>{isEn ? 'Open Physics Lectures' : 'Mở Bài giảng Vật lí'}</span>
             </button>
             <button
               type="button"
               onClick={() => openDomain2D('mechanics')}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+              className="group sim-btn-phy sim-btn-hero sim-btn-active flex items-center gap-2 px-4 py-2 rounded-[3px] border border-sky-400/70 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer whitespace-nowrap"
             >
-              <Zap className="w-4 h-4" />
+              <span className="sim-led-square text-cyan-200" />
+              <span className="icon-anim-zap">
+                <Zap className="w-4 h-4" />
+              </span>
               <span>{isEn ? `All 2D (${total2DCount})` : `Phòng 2D (${total2DCount})`}</span>
             </button>
             <button
               type="button"
               onClick={() => openDomain3D('mechanics')}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+              className="group sim-btn-phy sim-btn-hero sim-btn-active flex items-center gap-2 px-4 py-2 rounded-[3px] border border-amber-300/80 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold cursor-pointer whitespace-nowrap"
             >
-              <Box className="w-4 h-4" />
+              <span className="sim-led-square text-slate-900" />
+              <span className="icon-anim-3d-cube">
+                <Box className="w-4 h-4" />
+              </span>
               <span>{isEn ? `All 3D (${total3DCount})` : `Phòng 3D (${total3DCount})`}</span>
             </button>
           </div>
@@ -376,20 +387,24 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
               <Sliders className="w-3.5 h-3.5" />
               {isEn ? 'Grade:' : 'Khối lớp:'}
             </span>
-            {(['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as GradeFilter[]).map((g) => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => setGradeFilter(g)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                  gradeFilter === g
-                    ? 'bg-slate-900 dark:bg-sky-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                {g === 'all' ? (isEn ? 'All Grades' : 'Tất cả (9–12)') : g}
-              </button>
-            ))}
+            {(['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as GradeFilter[]).map((g) => {
+              const active = gradeFilter === g;
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGradeFilter(g)}
+                  className={`sim-btn-phy px-3 py-1.5 rounded-[3px] text-xs font-bold border cursor-pointer whitespace-nowrap ${
+                    active
+                      ? 'sim-btn-active bg-slate-900 dark:bg-sky-600 text-white border-sky-400/70'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {active && <span className="sim-led-square mr-1.5 text-cyan-300 align-middle" />}
+                  {g === 'all' ? (isEn ? 'All Grades' : 'Tất cả (9–12)') : g}
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 flex-1 sm:flex-initial justify-end">
@@ -399,8 +414,8 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={isEn ? 'Search 73 labs or formula...' : 'Tìm 73 mô phỏng hoặc công thức...'}
-                className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sky-500"
+                placeholder={isEn ? `Search ${totalSimCount} labs or formula...` : `Tìm ${totalSimCount} mô phỏng hoặc công thức...`}
+                className="w-full pl-8 pr-8 py-1.5 rounded-[3px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sky-500"
               />
               {searchQuery && (
                 <button
@@ -414,30 +429,80 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+            <div className="sim-seg-box flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-[4px] border border-slate-200/80 dark:border-slate-700">
               {(
                 [
                   { id: 'all', label: isEn ? '2D + 3D' : 'Cả 2D & 3D' },
                   { id: '2d', label: isEn ? '2D Only' : 'Chỉ 2D' },
                   { id: '3d', label: isEn ? '3D Only' : 'Chỉ 3D' }
                 ] as { id: DimFilter; label: string }[]
-              ).map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => setDimFilter(f.id)}
-                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                    dimFilter === f.id
-                      ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
+              ).map((f) => {
+                const active = dimFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setDimFilter(f.id)}
+                    className={`sim-btn-phy px-3 py-1 rounded-[3px] text-xs font-bold cursor-pointer whitespace-nowrap ${
+                      active
+                        ? 'sim-btn-active bg-slate-900 dark:bg-sky-600 text-white border border-sky-400/60 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Next-Gen Interactive Physics Workbenches (Freeform Optics Raytracing & Chladni Acoustic Plate) */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-[4px] px-4 py-2.5">
+          <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <Compass className="w-4 h-4 text-violet-500" />
+            <span>
+              {isEn
+                ? 'Next-Gen Interactive Studios (Included inside Physics 2D/3D)'
+                : 'Studio Vật Lí Thế Hệ Mới (Tích hợp trực tiếp trong trang Mô phỏng 2D/3D Lí)'}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveStudioLab((v) => (v === 'optics_ray' ? 'none' : 'optics_ray'))}
+              className={`group sim-btn-phy sim-btn-hero px-3.5 py-1.5 rounded-[3px] font-bold border flex items-center gap-1.5 cursor-pointer ${
+                activeStudioLab === 'optics_ray'
+                  ? 'sim-btn-active bg-violet-600 border-violet-300 text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+              }`}
+            >
+              <span className="icon-anim-compass">
+                <Compass className="w-3.5 h-3.5" />
+              </span>
+              <span>{isEn ? 'Freeform Raytracing Optics' : 'Quang học Raytracing Tự Do'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveStudioLab((v) => (v === 'chladni' ? 'none' : 'chladni'))}
+              className={`group sim-btn-phy sim-btn-hero px-3.5 py-1.5 rounded-[3px] font-bold border flex items-center gap-1.5 cursor-pointer ${
+                activeStudioLab === 'chladni'
+                  ? 'sim-btn-active bg-amber-500 border-amber-200 text-slate-950'
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+              }`}
+            >
+              <span className="icon-anim-wave">
+                <Atom className="w-3.5 h-3.5" />
+              </span>
+              <span>{isEn ? 'Acoustic Chladni Plate' : 'Bản Cát Cộng Hưởng Chladni'}</span>
+            </button>
+          </div>
+        </div>
+
+        {activeStudioLab === 'optics_ray' && <FreeformOpticsRayLab embedded />}
+        {activeStudioLab === 'chladni' && <ChladniPlateLab />}
       </section>
 
       {/* Empty Filter State */}
@@ -457,7 +522,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
             }}
             className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer"
           >
-            {isEn ? 'Reset All Filters' : 'Đặt lại bộ lọc (Xem tất cả 73 mô phỏng)'}
+            {isEn ? `Reset All Filters (${totalSimCount} sims)` : `Đặt lại bộ lọc (Xem tất cả ${totalSimCount} mô phỏng)`}
           </button>
         </div>
       )}
@@ -507,7 +572,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
                           key={sim.id}
                           type="button"
                           onClick={() => openDomain2D(dom.id, sim.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50/90 dark:bg-blue-950/40 hover:bg-blue-600 hover:text-white border border-blue-200/80 dark:border-blue-800/60 text-[11px] font-semibold text-blue-800 dark:text-sky-200 transition-colors cursor-pointer"
+                          className="group sim-btn-tile sim-btn-phy inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] bg-blue-50/90 dark:bg-blue-950/40 hover:bg-blue-600 hover:text-white border border-blue-200/90 dark:border-blue-800/70 text-[11px] font-semibold text-blue-800 dark:text-sky-200 cursor-pointer"
                           title={sim.subtitle}
                         >
                           <Play className="w-2.5 h-2.5 shrink-0" />
@@ -533,7 +598,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
                           key={sim.id}
                           type="button"
                           onClick={() => openDomain3D(dom.id, sim.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-50/90 dark:bg-amber-950/35 hover:bg-amber-500 hover:text-slate-950 border border-amber-200/80 dark:border-amber-800/60 text-[11px] font-semibold text-amber-800 dark:text-amber-200 transition-colors cursor-pointer"
+                          className="group sim-btn-tile sim-btn-tile-amber sim-btn-phy inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] bg-amber-50/90 dark:bg-amber-950/35 hover:bg-amber-500 hover:text-slate-950 border border-amber-200/90 dark:border-amber-800/70 text-[11px] font-semibold text-amber-800 dark:text-amber-200 cursor-pointer"
                           title={sim.subtitle}
                         >
                           <Box className="w-2.5 h-2.5 shrink-0" />
@@ -546,24 +611,45 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
               </div>
             </div>
 
+            {dom.id === 'optics_quantum' && (
+              <div className="px-5 pb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveStudioLab('optics_ray');
+                    window.scrollTo({ top: 180, behavior: 'smooth' });
+                  }}
+                  className="group sim-btn-phy sim-btn-hero w-full py-2 px-3 rounded-[3px] bg-violet-600/15 hover:bg-violet-600 hover:text-white border border-violet-400/60 text-violet-700 dark:text-violet-300 text-xs font-bold cursor-pointer"
+                >
+                  {isEn
+                    ? 'Open Freeform Laser & Caustics Raytracing Studio ↑'
+                    : 'Mở Studio Quang học Raytracing Tự Do & Sợi quang ↑'}
+                </button>
+              </div>
+            )}
+
             {/* Domain Action Footer (2D / 3D Square Launch Buttons) */}
             <div className="px-5 pb-5 pt-2 grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => openDomain2D(dom.id, sims2d[0]?.id)}
                 disabled={sims2d.length === 0}
-                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded text-xs font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white transition-colors cursor-pointer whitespace-nowrap"
+                className="group sim-btn-phy sim-btn-hero flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[3px] border border-sky-400/60 text-xs font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white cursor-pointer whitespace-nowrap"
               >
-                <Zap className="w-3.5 h-3.5 shrink-0" />
+                <span className="icon-anim-zap">
+                  <Zap className="w-3.5 h-3.5 shrink-0" />
+                </span>
                 <span>2D ({sims2d.length})</span>
               </button>
               <button
                 type="button"
                 onClick={() => openDomain3D(dom.id, sims3d[0]?.id)}
                 disabled={sims3d.length === 0}
-                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded text-xs font-semibold bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-slate-950 transition-colors cursor-pointer whitespace-nowrap"
+                className="group sim-btn-phy sim-btn-hero flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[3px] border border-amber-300/70 text-xs font-bold bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 cursor-pointer whitespace-nowrap"
               >
-                <Box className="w-3.5 h-3.5 shrink-0" />
+                <span className="icon-anim-3d-cube">
+                  <Box className="w-3.5 h-3.5 shrink-0" />
+                </span>
                 <span>3D ({sims3d.length})</span>
               </button>
             </div>

@@ -15,8 +15,10 @@ import {
   get2DSimsByDomain,
   get3DSimsByDomain,
   getDomainFor2DSim,
-  getDomainFor3DSim
+  getDomainFor3DSim,
+  getPhysicsSimCounts
 } from '../../data/physicsDomainsData';
+import { PhysicsApparatusWorkbench } from './PhysicsApparatusWorkbench';
 import {
   Play,
   Pause,
@@ -52,7 +54,8 @@ import {
   ArrowRightLeft,
   Eye,
   Atom,
-  Layers
+  Layers,
+  FileCode2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MathFormula, FormattedText } from '../common/MathRenderer';
@@ -65,6 +68,8 @@ import { buildPhysicsLectureSteps } from '../../data/lectureStepsBuilder';
 import { useNavigation } from '../../context/NavigationContext';
 import { renderExtra2DPhysicsSim } from './physics2DExtraRenderer';
 import { LabDataLoggerPanel } from '../common/LabDataLoggerPanel';
+import { LabTimeMachineBar } from './LabTimeMachineBar';
+import { SimToCodeModal } from './SimToCodeModal';
 
 interface OverlayState {
   showRulerGrid: boolean;
@@ -357,13 +362,14 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
   const activePresets = active2DSpec?.presets || [];
 
   const [isSimFullscreen, setIsSimFullscreen] = useState<boolean>(false);
+  const [isCodeCompilerOpen, setIsCodeCompilerOpen] = useState<boolean>(false);
 
   // Simulation controls & params
   const [isRunning, setIsRunning] = useState<boolean>(true);
   const [simSpeed, setSimSpeed] = useState<number>(1.0);
   const [params, setParams] = useState<Record<string, number>>(activeDefaultParams);
 
-  // PhET-inspired scientific overlays, experiment flags, stopwatch & data logger
+  // Interactive scientific overlays, experiment flags, stopwatch & data logger
   const [overlays, setOverlays] = useState<OverlayState>({
     showRulerGrid: true,
     showVectors: true,
@@ -1657,7 +1663,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     ctx.lineTo(w, midY);
     ctx.stroke();
 
-    // Protractor overlay (Thước đo góc PhET)
+    // Protractor overlay (Thước đo góc 360°)
     if (flags.showProtractor) {
       const pR = Math.min(110, Math.min(w, h) * 0.28);
       ctx.strokeStyle = isDark ? 'rgba(248, 250, 252, 0.22)' : 'rgba(15, 23, 42, 0.22)';
@@ -2580,7 +2586,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     const x1 = w / 2 - drawSpan / 2;
     const x2 = w / 2 + drawSpan / 2;
 
-    // 2D E-Field Grid Arrows (PhET style)
+    // 2D E-Field Grid Arrows
     if (flags.showFieldGrid) {
       const step = 42;
       for (let gx = 30; gx < w - 20; gx += step) {
@@ -3653,26 +3659,33 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               </div>
 
               {/* Quick Dedicated Domain 2D / 3D Simulation Launch Buttons */}
-              <div className="flex flex-wrap items-center gap-2 shrink-0 self-start lg:self-center">
-                <button
-                  type="button"
-                  data-ripple="true"
-                  onClick={() => openDomain2D(location.physicsDomain || 'mechanics')}
-                  className="group cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-md text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white shadow-sm whitespace-nowrap cursor-pointer"
-                >
-                  <Zap className="w-4 h-4 icon-anim-zap" />
-                  <span>Mô phỏng 2D (5 Lĩnh Vực)</span>
-                </button>
-                <button
-                  type="button"
-                  data-ripple="true"
-                  onClick={() => openDomain3D(location.physicsDomain || 'mechanics')}
-                  className="group sim-btn-3d cs-deck-btn flex items-center gap-2 px-4 py-2.5 rounded-md text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm whitespace-nowrap cursor-pointer"
-                >
-                  <Box className="w-4 h-4 icon-anim-3d-cube" />
-                  <span>Mô phỏng 3D (5 Lĩnh Vực)</span>
-                </button>
-              </div>
+              {(() => {
+                const counts = getPhysicsSimCounts();
+                return (
+                  <div className="sim-physics-scope flex flex-wrap items-center gap-2 shrink-0 self-start lg:self-center">
+                    <button
+                      type="button"
+                      data-ripple="true"
+                      onClick={() => openDomain2D(location.physicsDomain || 'mechanics')}
+                      className="group sim-btn-phy sim-btn-hero sim-btn-active flex items-center gap-2 px-4 py-2.5 rounded-[3px] border border-sky-400/70 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white shadow-sm whitespace-nowrap cursor-pointer"
+                    >
+                      <span className="sim-led-square text-cyan-200" />
+                      <Zap className="w-4 h-4 icon-anim-zap" />
+                      <span>Mô phỏng 2D ({counts.domainCount} Lĩnh Vực · {counts.count2D} Lab)</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-ripple="true"
+                      onClick={() => openDomain3D(location.physicsDomain || 'mechanics')}
+                      className="group sim-btn-phy sim-btn-hero sim-btn-active flex items-center gap-2 px-4 py-2.5 rounded-[3px] border border-amber-300/80 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap cursor-pointer"
+                    >
+                      <span className="sim-led-square text-slate-900" />
+                      <Box className="w-4 h-4 icon-anim-3d-cube" />
+                      <span>Mô phỏng 3D ({counts.domainCount} Lĩnh Vực · {counts.count3D} Lab)</span>
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Dedicated Simulation Page Banner (opens standalone Physics 2D/3D Domains view) */}
@@ -3680,10 +3693,10 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
                   <Layers className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
-                  <span>Trang Mô Phỏng Vật Lí Tách Riêng Theo 5 Lĩnh Vực (Lớp 9 – 12 · PhET Interactive)</span>
+                  <span>Trang Mô Phỏng Vật Lí Tách Riêng Theo {PHYSICS_DOMAINS.length} Lĩnh Vực (Lớp 9 – 12 · Tương Tác 2D/3D)</span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Cơ học · Dao động &amp; Sóng · Điện &amp; Từ · Quang &amp; Lượng tử · Nhiệt &amp; Hạt nhân — kèm animation Vật lí riêng
+                  {PHYSICS_DOMAINS.map((d) => d.shortName).join(' · ')} — kèm Quang học Raytracing, Bản cát Chladni &amp; animation Vật lí riêng
                 </p>
               </div>
               <button
@@ -4235,7 +4248,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
             />
           )}
 
-          {/* VIEW 2: PhET-INSPIRED 2D INTERACTIVE PHYSICS LAB */}
+          {/* VIEW 2: 2D INTERACTIVE PHYSICS LAB */}
           {activeTab === 'simulation' && (
             <ViewportPortal active={isSimFullscreen}>
               <div
@@ -4305,7 +4318,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   </div>
                 </div>
 
-                {/* PhET Quick Experiment Presets Strip */}
+                {/* Quick Experiment Presets Strip */}
                 {activePresets.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2 bg-white/95 dark:bg-slate-900/95 px-3 py-2 rounded-lg border border-slate-200/80 dark:border-slate-800/80 shadow-xs text-xs">
                     <span className="flex items-center gap-1 font-bold text-slate-600 dark:text-slate-300">
@@ -4410,10 +4423,19 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
                           <button
                             onClick={handleLogSample}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
                           >
                             <Camera className="w-3.5 h-3.5" />
                             <span>Ghi mẫu đo</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsCodeCompilerOpen(true)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold bg-cyan-600 text-white hover:bg-cyan-500 transition-colors cursor-pointer"
+                            title="Dịch ngược mô hình sang Phương trình Vi phân & Code Python/C++"
+                          >
+                            <FileCode2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Code RK4</span>
                           </button>
                         </div>
                       </div>
@@ -4468,7 +4490,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                           </button>
                         </div>
 
-                        {/* Experiment-Specific PhET Action Controls */}
+                        {/* Experiment-Specific Action Controls */}
                         <div className="flex flex-wrap items-center gap-1.5">
                           {activeSimType === 'ohm_circuit' && (
                             <>
@@ -4745,10 +4767,30 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         </div>
                       </div>
 
-                      {/* HTML5 Canvas */}
-                      <div className={`relative w-full bg-slate-950 ${isSimFullscreen ? 'h-[280px] sm:h-[450px] lg:h-[500px]' : 'h-[280px] sm:h-[380px]'}`}>
-                        <canvas ref={canvasRef} className="w-full h-full block" />
+                      {/* Interactive Apparatus Bench + HTML5 Canvas */}
+                      <div className="p-2.5 bg-slate-900/95">
+                        <PhysicsApparatusWorkbench
+                          dimension="2d"
+                          simId={activeSimType}
+                          domainId={getDomainFor2DSim(activeSimType)}
+                          simParams={params}
+                          simTimeRef={simTimeRef}
+                          stageClassName={`relative w-full bg-slate-950 rounded-md overflow-hidden ${isSimFullscreen ? 'h-[280px] sm:h-[450px] lg:h-[500px]' : 'h-[280px] sm:h-[380px]'}`}
+                        >
+                          <canvas ref={canvasRef} className="w-full h-full block" />
+                        </PhysicsApparatusWorkbench>
                       </div>
+
+                      {/* Lab Time-Machine Scrubber + Stroboscope Multi-Exposure */}
+                      <LabTimeMachineBar
+                        simKey={`lec-${activeSimType}`}
+                        canvasRef={canvasRef}
+                        isRunning={isRunning}
+                        onSetRunning={setIsRunning}
+                        simSpeed={simSpeed}
+                        onSetSimSpeed={setSimSpeed}
+                        simTimeRef={simTimeRef}
+                      />
 
                       {/* Real-time Telemetry Dashboard */}
                       <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -4923,9 +4965,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       {/* STANDALONE SEPARATE DOMAIN PAGE: MÔ PHỎNG 2D (GRADES 9–12)   */}
       {/* ============================================================ */}
       {is2DHub && active2DSpec && (
-        <div className="space-y-4">
+        <div className="sim-physics-scope space-y-4">
           {/* Top Domain Page Header & Cross-Nav */}
-          <div className="bg-white/95 dark:bg-slate-900/95 rounded-lg p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
+          <div className="sci-frame bg-white/95 dark:bg-slate-900/95 rounded-[4px] p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -4933,12 +4975,12 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     setIsSimFullscreen(false);
                     navigate({ physicsView: 'catalog' });
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  className="group sim-btn-phy flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Tất cả Vật Lí</span>
                 </button>
-                <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${activeDomainMeta.accentBadgeClass}`}>
+                <span className={`px-2.5 py-1 rounded-[3px] text-[11px] font-bold border ${activeDomainMeta.accentBadgeClass}`}>
                   Mô phỏng 2D · {activeDomainMeta.name} ({activeDomainMeta.grades})
                 </span>
               </div>
@@ -4946,9 +4988,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => openDomain3D(activeDomainMeta.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-colors cursor-pointer"
+                  className="group sim-btn-phy sim-btn-hero sim-btn-active flex items-center gap-1.5 px-3.5 py-1.5 rounded-[3px] border border-amber-300/70 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer"
                 >
-                  <Box className="w-3.5 h-3.5" />
+                  <span className="icon-anim-3d-cube">
+                    <Box className="w-3.5 h-3.5" />
+                  </span>
                   <span>Sang Mô phỏng 3D · {activeDomainMeta.shortName}</span>
                 </button>
                 <button
@@ -4956,15 +5000,17 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     const targetLesson = PHYSICS_LESSONS.find((l) => l.id === active2DSpec.linkedLessonId) || lesson;
                     handleOpenLesson(targetLesson, 'theory');
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors cursor-pointer"
+                  className="group sim-btn-phy sim-btn-hero flex items-center gap-1.5 px-3.5 py-1.5 rounded-[3px] text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-800 hover:bg-blue-100 cursor-pointer"
                 >
-                  <BookOpen className="w-3.5 h-3.5" />
+                  <span className="icon-anim-book">
+                    <BookOpen className="w-3.5 h-3.5" />
+                  </span>
                   <span>Mở Bài Giảng Liên Quan</span>
                 </button>
               </div>
             </div>
 
-            {/* 5 Domain Switcher Tabs (Each opens its own separate domain 2D page) */}
+            {/* Domain Switcher Tabs (Each opens its own separate domain 2D page) */}
             <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/70 dark:border-slate-800">
               {PHYSICS_DOMAINS.map((dom) => {
                 const isSelected = dom.id === activeDomainMeta.id;
@@ -4972,12 +5018,13 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   <button
                     key={dom.id}
                     onClick={() => openDomain2D(dom.id)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-colors cursor-pointer ${
+                    className={`sim-btn-phy px-3 py-1.5 rounded-[3px] text-xs font-bold border cursor-pointer ${
                       isSelected
-                        ? dom.bgActiveClass
+                        ? `sim-btn-active ${dom.bgActiveClass}`
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
+                    {isSelected && <span className="sim-led-square mr-1.5 align-middle" />}
                     {dom.shortName} ({get2DSimsByDomain(dom.id).length})
                   </button>
                 );
@@ -4992,9 +5039,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   <button
                     key={spec.id}
                     onClick={() => openDomain2D(activeDomainMeta.id, spec.id)}
-                    className={`text-left p-3 rounded-md border transition-colors cursor-pointer space-y-1 ${
+                    className={`group sim-btn-tile sim-btn-phy text-left p-3 rounded-[3px] border cursor-pointer space-y-1 ${
                       isActiveSim
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                        ? 'sim-btn-active bg-blue-600 text-white border-sky-300 shadow-sm'
                         : 'bg-slate-50 dark:bg-slate-800/70 text-slate-800 dark:text-slate-100 border-slate-200/80 dark:border-slate-700/80 hover:border-blue-400'
                     }`}
                   >
@@ -5016,12 +5063,12 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
             <div
               className={
                 isSimFullscreen
-                  ? 'fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 flex flex-col gap-4 overflow-y-auto'
+                  ? 'sim-physics-scope fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 flex flex-col gap-4 overflow-y-auto'
                   : 'space-y-4'
               }
             >
               {/* Top Lab Controls + Formula */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-white/95 dark:bg-slate-900/95 p-3 rounded-lg border border-slate-200/80 dark:border-slate-800/80 shadow-xs shrink-0">
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white/95 dark:bg-slate-900/95 p-3 rounded-[4px] border border-slate-200/80 dark:border-slate-800/80 shadow-xs shrink-0">
                 <div className="space-y-0.5 min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                     {active2DSpec.title} · <span className="font-mono text-blue-600 dark:text-blue-400">{active2DSpec.formula}</span>
@@ -5037,14 +5084,14 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                       type="button"
                       onClick={() => setParams({ ...activeDefaultParams, ...pr.params })}
                       title={pr.description}
-                      className="hidden md:inline-flex px-2.5 py-1.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 transition-colors cursor-pointer"
+                      className="hidden md:inline-flex sim-btn-phy px-2.5 py-1.5 rounded-[3px] text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-200 border border-slate-300/80 dark:border-slate-700 cursor-pointer"
                     >
                       {pr.label}
                     </button>
                   ))}
                   <button
                     onClick={() => setIsSimFullscreen(!isSimFullscreen)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    className="sim-btn-phy sim-btn-hero flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] border border-sky-400/60 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
                   >
                     {isSimFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                     <span>{isSimFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
@@ -5054,16 +5101,16 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <div className="lg:col-span-2 space-y-4">
-                  <div className="bg-white/95 dark:bg-slate-900/95 rounded-lg border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
+                  <div className="bg-white/95 dark:bg-slate-900/95 rounded-[4px] border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
                     {/* Transport & Stopwatch Toolbar */}
                     <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/70 dark:bg-slate-800/50">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <button
                           onClick={() => setIsRunning(!isRunning)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                          className={`sim-btn-phy sim-btn-hero sim-btn-active flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] border text-xs font-bold cursor-pointer ${
                             isRunning
-                              ? 'bg-amber-500 text-white hover:bg-amber-600'
-                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                              ? 'bg-amber-500 border-amber-300 text-slate-950 hover:bg-amber-400'
+                              : 'bg-emerald-600 border-emerald-400 text-white hover:bg-emerald-700'
                           }`}
                         >
                           {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
@@ -5071,14 +5118,14 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         </button>
                         <button
                           onClick={handleStepOnce}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                          className="sim-btn-phy flex items-center gap-1 px-2.5 py-1.5 rounded-[3px] text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
                         >
                           <StepForward className="w-3.5 h-3.5 text-blue-500" />
                           <span>+0.05s</span>
                         </button>
                         <button
                           onClick={handleResetSim}
-                          className="p-1.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                          className="sim-btn-phy p-1.5 rounded-[3px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
                         >
                           <RotateCcw className="w-4 h-4" />
                         </button>
@@ -5087,10 +5134,10 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                             <button
                               key={spd}
                               onClick={() => setSimSpeed(spd)}
-                              className={`px-2 py-1 rounded-md text-[11px] font-mono ${
+                              className={`sim-btn-phy px-2 py-1 rounded-[3px] border text-[11px] font-mono cursor-pointer ${
                                 simSpeed === spd
-                                  ? 'bg-blue-600 text-white font-bold'
-                                  : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                                  ? 'sim-btn-active bg-blue-600 border-sky-400 text-white font-bold'
+                                  : 'bg-slate-200/80 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                               }`}
                             >
                               {spd}x
@@ -5128,10 +5175,19 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         </div>
                         <button
                           onClick={handleLogSample}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
                         >
                           <Camera className="w-3.5 h-3.5" />
                           <span>Ghi mẫu đo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsCodeCompilerOpen(true)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold bg-cyan-600 text-white hover:bg-cyan-500 transition-colors cursor-pointer"
+                          title="Dịch ngược mô hình sang Phương trình Vi phân & Code Python/C++"
+                        >
+                          <FileCode2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Code RK4</span>
                         </button>
                       </div>
                     </div>
@@ -5323,9 +5379,28 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                       </div>
                     </div>
 
-                    <div className={`relative w-full bg-slate-950 ${isSimFullscreen ? 'h-[280px] sm:h-[450px] lg:h-[500px]' : 'h-[300px] sm:h-[400px]'}`}>
-                      <canvas ref={canvasRef} className="w-full h-full block" />
+                    <div className="p-2.5 bg-slate-900/95">
+                      <PhysicsApparatusWorkbench
+                        dimension="2d"
+                        simId={activeSimType}
+                        domainId={activeDomainMeta.id}
+                        simParams={params}
+                        simTimeRef={simTimeRef}
+                        stageClassName={`relative w-full bg-slate-950 rounded-md overflow-hidden ${isSimFullscreen ? 'h-[280px] sm:h-[450px] lg:h-[500px]' : 'h-[300px] sm:h-[400px]'}`}
+                      >
+                        <canvas ref={canvasRef} className="w-full h-full block" />
+                      </PhysicsApparatusWorkbench>
                     </div>
+
+                    <LabTimeMachineBar
+                      simKey={`hub-${activeSimType}`}
+                      canvasRef={canvasRef}
+                      isRunning={isRunning}
+                      onSetRunning={setIsRunning}
+                      simSpeed={simSpeed}
+                      onSetSimSpeed={setSimSpeed}
+                      simTimeRef={simTimeRef}
+                    />
 
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="bg-white dark:bg-slate-900 p-3 rounded-md border border-slate-200/60 dark:border-slate-800/60">
@@ -5510,18 +5585,18 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       {/* STANDALONE SEPARATE DOMAIN PAGE: MÔ PHỎNG 3D (GRADES 9–12)   */}
       {/* ============================================================ */}
       {is3DHub && active3DSpec && (
-        <div className="space-y-4">
-          <div className="bg-white/95 dark:bg-slate-900/95 rounded-lg p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
+        <div className="sim-physics-scope space-y-4">
+          <div className="sci-frame bg-white/95 dark:bg-slate-900/95 rounded-[4px] p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => navigate({ physicsView: 'catalog' })}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  className="group sim-btn-phy flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Tất cả Vật Lí</span>
                 </button>
-                <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${activeDomainMeta.accentBadgeClass}`}>
+                <span className={`px-2.5 py-1 rounded-[3px] text-[11px] font-bold border ${activeDomainMeta.accentBadgeClass}`}>
                   Mô phỏng 3D · {activeDomainMeta.name} ({activeDomainMeta.grades})
                 </span>
               </div>
@@ -5529,9 +5604,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => openDomain2D(activeDomainMeta.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer"
+                  className="group sim-btn-phy sim-btn-hero sim-btn-active flex items-center gap-1.5 px-3.5 py-1.5 rounded-[3px] border border-sky-400/70 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
                 >
-                  <Zap className="w-3.5 h-3.5" />
+                  <span className="icon-anim-zap">
+                    <Zap className="w-3.5 h-3.5" />
+                  </span>
                   <span>Sang Mô phỏng 2D · {activeDomainMeta.shortName}</span>
                 </button>
                 <button
@@ -5539,15 +5616,17 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     const targetLesson = PHYSICS_LESSONS.find((l) => l.id === active3DSpec.linkedLessonId) || lesson;
                     handleOpenLesson(targetLesson, 'theory');
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
+                  className="group sim-btn-phy sim-btn-hero flex items-center gap-1.5 px-3.5 py-1.5 rounded-[3px] text-xs font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 hover:bg-amber-100 cursor-pointer"
                 >
-                  <BookOpen className="w-3.5 h-3.5" />
+                  <span className="icon-anim-book">
+                    <BookOpen className="w-3.5 h-3.5" />
+                  </span>
                   <span>Mở Bài Giảng Liên Quan</span>
                 </button>
               </div>
             </div>
 
-            {/* 5 Domain Switcher Tabs (Each opens its own separate domain 3D page) */}
+            {/* Domain Switcher Tabs (Each opens its own separate domain 3D page) */}
             <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/70 dark:border-slate-800">
               {PHYSICS_DOMAINS.map((dom) => {
                 const isSelected = dom.id === activeDomainMeta.id;
@@ -5555,12 +5634,13 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   <button
                     key={dom.id}
                     onClick={() => openDomain3D(dom.id)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-colors cursor-pointer ${
+                    className={`sim-btn-phy px-3 py-1.5 rounded-[3px] text-xs font-bold border cursor-pointer ${
                       isSelected
-                        ? dom.bgActiveClass
+                        ? `sim-btn-active ${dom.bgActiveClass}`
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
+                    {isSelected && <span className="sim-led-square mr-1.5 align-middle" />}
                     {dom.shortName} ({get3DSimsByDomain(dom.id).length})
                   </button>
                 );
@@ -5575,9 +5655,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   <button
                     key={spec.id}
                     onClick={() => openDomain3D(activeDomainMeta.id, spec.id)}
-                    className={`text-left p-3 rounded-md border transition-colors cursor-pointer space-y-1 ${
+                    className={`group sim-btn-tile sim-btn-tile-amber sim-btn-phy text-left p-3 rounded-[3px] border cursor-pointer space-y-1 ${
                       isActive3D
-                        ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm'
+                        ? 'sim-btn-active bg-amber-500 text-slate-950 border-amber-300 shadow-sm'
                         : 'bg-slate-50 dark:bg-slate-800/70 text-slate-800 dark:text-slate-100 border-slate-200/80 dark:border-slate-700/80 hover:border-amber-400'
                     }`}
                   >
@@ -5831,6 +5911,14 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
           )}
         </div>
       )}
+
+      <SimToCodeModal
+        isOpen={isCodeCompilerOpen}
+        onClose={() => setIsCodeCompilerOpen(false)}
+        simId={activeSimType}
+        simTitle={activeSimTitle}
+        params={params}
+      />
     </div>
   );
 };

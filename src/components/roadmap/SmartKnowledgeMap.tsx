@@ -18,6 +18,9 @@ import { PersonalizedRoadmapResult, RoadmapNode, SubjectType } from '../../types
 import { ROADMAP_NODES } from '../../data/roadmapData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
 import { CS_LESSONS } from '../../data/csLessonsData';
+import { getPhysicsSimCounts } from '../../data/physicsDomainsData';
+
+const SIM_COUNTS = getPhysicsSimCounts();
 
 type MapFocusFilter = 'all' | 'math' | 'physics' | 'cs';
 
@@ -91,10 +94,10 @@ const GRAPH_NODES: GraphNodeDef[] = [
     id: 'physics_pillar',
     xPct: 77,
     yPct: 20,
-    labelVi: 'Vật Lí · 5 Chuyên Đề',
-    labelEn: 'Physics · 5 Domains',
-    subVi: '41 Lab 2D + 32 Lab 3D',
-    subEn: 'PhET-style 2D/3D',
+    labelVi: `Vật Lí · ${SIM_COUNTS.domainCount} Chuyên Đề`,
+    labelEn: `Physics · ${SIM_COUNTS.domainCount} Domains`,
+    subVi: `${SIM_COUNTS.count2D} Lab 2D + ${SIM_COUNTS.count3D} Lab 3D`,
+    subEn: 'Interactive 2D/3D Labs',
     tone: 'amber',
     subjectTag: 'physics'
   },
@@ -339,11 +342,13 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
         };
       case 'physics_pillar':
         return {
-          title: isEn ? 'Physics · 5 Interactive Simulation Domains' : 'Vật Lí · 5 Chuyên Đề PhET 2D & 3D 60 FPS',
+          title: isEn
+            ? `Physics · ${SIM_COUNTS.domainCount} Interactive Simulation Domains`
+            : `Vật Lí · ${SIM_COUNTS.domainCount} Chuyên Đề Tương Tác 2D & 3D 60 FPS`,
           metric: `${metrics.physDone}/${metrics.physTotal} (${metrics.physPct}%)`,
           desc: isEn
-            ? `41 2D Labs + 32 3D Labs. Recommended next: ${nextPhys?.titleEn || 'Harmonic Oscillation'}`
-            : `41 Lab 2D + 32 Lab 3D. Chặng tiếp theo: ${nextPhys?.title || 'Dao động điều hòa & Mạch RLC'}`,
+            ? `${SIM_COUNTS.count2D} 2D Labs + ${SIM_COUNTS.count3D} 3D Labs. Recommended next: ${nextPhys?.titleEn || 'Harmonic Oscillation'}`
+            : `${SIM_COUNTS.count2D} Lab 2D + ${SIM_COUNTS.count3D} Lab 3D. Chặng tiếp theo: ${nextPhys?.title || 'Dao động điều hòa & Mạch RLC'}`,
           ctaLabel: isEn ? 'Launch Physics Lab' : 'Vào Lab & Bài Vật Lí',
           onLaunch: () => onOpenNodeLesson('physics', nextPhys?.targetLessonId),
           onInspect: () => nextPhys && onSelectRoadmapNode(nextPhys.id)

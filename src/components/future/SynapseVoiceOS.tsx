@@ -16,6 +16,7 @@ import { BackgroundStyle, useBackgroundTheme } from '../../context/BackgroundCon
 import { useFocusTimer } from '../../context/FocusTimerContext';
 import { useSpeechRecognition } from '../../lib/useSpeechRecognition';
 import { safeFetchJson } from '../../lib/apiClient';
+import { matchFuzzyVoiceOSCommand, buildLocalVoiceMentorAnswer } from '../../lib/voiceIntentEngine';
 import { SubjectType, VoiceOSActionPlan } from '../../types';
 
 interface SynapseVoiceOSProps {
@@ -26,127 +27,13 @@ interface SynapseVoiceOSProps {
   onOpenTutor: (subject?: SubjectType, promptText?: string) => void;
 }
 
-function normalizeText(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .trim();
-}
-
-function tryLocalCommandMatch(rawCmd: string): VoiceOSActionPlan | null {
-  const cmd = normalizeText(rawCmd);
-  if (!cmd) return null;
-
-  // Theme switches
-  if (/(nen toi|che do toi|dark mode|ban dem|tat den)/.test(cmd)) {
-    return { replyVi: 'Đã chuyển sang giao diện Nền tối.', actionType: 'toggle_theme', darkMode: true };
-  }
-  if (/(nen sang|che do sang|light mode|ban ngay|bat den)/.test(cmd)) {
-    return { replyVi: 'Đã chuyển sang giao diện Nền sáng.', actionType: 'toggle_theme', darkMode: false };
-  }
-
-  // Pomodoro controls
-  if (/(pomodoro|dong ho|tap trung)/.test(cmd)) {
-    if (/(dat lai|reset|lam lai)/.test(cmd)) {
-      return { replyVi: 'Đã đặt lại đồng hồ tập trung Pomodoro.', actionType: 'timer', timerAction: 'reset' };
-    }
-    if (/(dung|tam dung|pause|stop|tat)/.test(cmd)) {
-      return { replyVi: 'Đã tạm dừng đồng hồ Pomodoro.', actionType: 'timer', timerAction: 'pause' };
-    }
-    return { replyVi: 'Đã bật đồng hồ tập trung Pomodoro!', actionType: 'timer', timerAction: 'start' };
-  }
-
-  // Backgrounds
-  const bgMap: { regex: RegExp; style: BackgroundStyle; label: string }[] = [
-    { regex: /(he sinh thai|ca koi|ecosystem)/, style: 'ecosystem', label: 'Hệ sinh thái' },
-    { regex: /(phan tu|nguyen tu|molecules)/, style: 'molecules', label: 'Mạng hạt Phân tử' },
-    { regex: /(dai duong|bien sau|ocean|sua bien)/, style: 'ocean', label: 'Đại dương sâu' },
-    { regex: /(bau troi|may bay|sky)/, style: 'sky', label: 'Bầu trời mây' },
-    { regex: /(chom sao|thien van|constellation)/, style: 'constellations', label: 'Chòm sao 3D' },
-    { regex: /(ngan ha|vu tru|galaxy)/, style: 'cosmic_galaxy', label: 'Ngân hà sống động' },
-    { regex: /(ban ve|ky thuat|blueprint)/, style: 'blueprint_tech', label: 'Bản vẽ STEM' },
-    { regex: /(luoi song|studio grid)/, style: 'studio_grid', label: 'Lưới sóng Studio' },
-    { regex: /(tinh van|sao roi|aurora)/, style: 'aurora_clean', label: 'Tinh vân sao rơi' },
-    { regex: /(sieu muot|toi gian|minimal)/, style: 'minimal_solid', label: 'Nền siêu mượt' }
-  ];
-  if (/(doi nen|hinh nen|nen dong|background)/.test(cmd)) {
-    const matchedBg = bgMap.find((b) => b.regex.test(cmd));
-    if (matchedBg) {
-      return {
-        replyVi: `Đã đổi nền động sang ${matchedBg.label}.`,
-        actionType: 'set_background',
-        bgStyle: matchedBg.style
-      };
-    }
-  }
-
-  // Future Lab Tabs
-  if (/(vu tru tri thuc|galaxy twin|ban sao 3d)/.test(cmd)) {
-    return { replyVi: 'Đang mở Vũ trụ Tri thức 3D cá nhân.', actionType: 'navigate_future', targetFutureTab: 'galaxy3d' };
-  }
-  if (/(sinh mo phong|text to sim|tao mo phong)/.test(cmd)) {
-    return { replyVi: 'Đang mở trình Sinh Mô Phỏng AI.', actionType: 'navigate_future', targetFutureTab: 'text_to_sim' };
-  }
-  if (/(giay nhap|paper to sim|quet giay|anh bai tap)/.test(cmd)) {
-    return { replyVi: 'Đang mở máy quét Giấy Nháp → Mô phỏng.', actionType: 'navigate_future', targetFutureTab: 'paper_to_sim' };
-  }
-  if (/(bang vo cuc|bang nhap|infinite canvas|whiteboard|scratchpad)/.test(cmd)) {
-    return { replyVi: 'Đang mở Bảng Nháp Mini-Chat.', actionType: 'navigate_future', targetFutureTab: 'infinite_canvas' };
-  }
-  if (/(song am|fft|am thanh|micro 3d)/.test(cmd)) {
-    return { replyVi: 'Đang mở Phòng Lab Sóng Âm FFT 3D trong Synapse Pre.', actionType: 'navigate_future', targetFutureTab: 'audio_fft' };
-  }
-
-  // Core Route Navigation
-  if (/(webar|cam giac 3d|ar ban hoc|tay 3d|khong gian 3d)/.test(cmd)) {
-    return { replyVi: 'Đang mở Học cảm giác 3D & WebAR.', actionType: 'navigate', targetSubject: 'spatial_3d' };
-  }
-  if (/(synapse pre|dai cong trinh|phong lab tuong lai|future lab|synapse v2|lop hoc ao)/.test(cmd)) {
-    return { replyVi: 'Đang mở Synapse Pre · Đại công trình tương lai & Phòng Lab AI.', actionType: 'navigate_future', targetFutureTab: 'megastructures' };
-  }
-  if (/(so tay loi|sm2|flashcard|loi sai)/.test(cmd)) {
-    return { replyVi: 'Đang mở Sổ tay Lỗi sai & Thẻ SM-2.', actionType: 'navigate', targetSubject: 'growth_hub' };
-  }
-  if (/(thu vien sang tao|showcase)/.test(cmd)) {
-    return { replyVi: 'Đang mở Thư viện Sáng tạo 2D/3D.', actionType: 'navigate', targetSubject: 'showcase' };
-  }
-  if (/(de thi|kiem tra|luyen de)/.test(cmd)) {
-    return { replyVi: 'Đang mở Ngân hàng Đề thi.', actionType: 'navigate', targetSubject: 'exams' };
-  }
-  if (/(dau truong|thi dau|xep hang)/.test(cmd)) {
-    return { replyVi: 'Đang mở Đấu trường Tuần.', actionType: 'navigate', targetSubject: 'arena' };
-  }
-  if (/(dien dan|hoi nhom)/.test(cmd)) {
-    return { replyVi: 'Đang mở Diễn đàn học tập.', actionType: 'navigate', targetSubject: 'forum' };
-  }
-  if (/(lo trinh|roadmap)/.test(cmd)) {
-    return { replyVi: 'Đang mở Lộ trình học thông minh.', actionType: 'navigate', targetSubject: 'roadmap' };
-  }
-  if (/(online judge|tin hoc|code c\+\+|lap trinh)/.test(cmd) && /(mo|vao|chuyen)/.test(cmd)) {
-    return { replyVi: 'Đang mở phân hệ Tin học & Online Judge.', actionType: 'navigate', targetSubject: 'cs' };
-  }
-  if (/(vat li|mo phong li)/.test(cmd) && /(mo|vao|chuyen)/.test(cmd)) {
-    return { replyVi: 'Đang mở phòng Lab Vật lí.', actionType: 'navigate', targetSubject: 'physics' };
-  }
-  if (/(toan hoc|do thi oxyz)/.test(cmd) && /(mo|vao|chuyen)/.test(cmd)) {
-    return { replyVi: 'Đang mở phòng Toán học 2D/3D.', actionType: 'navigate', targetSubject: 'math' };
-  }
-  if (/(trang chu|lop hoc|tong quan)/.test(cmd) && /(ve|mo|quay)/.test(cmd)) {
-    return { replyVi: 'Đang quay về Lớp học Tổng quan.', actionType: 'navigate', targetSubject: 'overview' };
-  }
-
-  return null;
-}
-
 const QUICK_CHIPS = [
-  'Mở Synapse Pre',
-  'Mở Vũ trụ Tri thức 3D',
-  'Mở Sinh Mô Phỏng AI',
-  'Mở Bảng Nháp Mini',
+  'Mở Mô phỏng & Vẽ Toán',
+  'Mở Quang học Raytracing Lí',
+  'Mở Mạch Logic & Neural Net',
+  'Mở Đại công trình số 2 Tokamak',
   'Đổi nền Đại dương',
-  'Hỏi Syn AI về định luật bảo toàn động lượng'
+  'Giải thích định luật khúc xạ Snell'
 ];
 
 export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
@@ -169,8 +56,8 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
     {
       role: 'os',
       text: isEn
-        ? 'Synapse Voice OS ready. Speak or type any command to navigate, switch labs, control Pomodoro, or ask Syn AI.'
-        : 'Synapse Voice OS đã sẵn sàng! Hãy nói hoặc gõ lệnh để chuyển phòng Lab 3D, đổi nền, bấm giờ Pomodoro hoặc hỏi nhanh Syn AI.'
+        ? 'Synapse Voice OS ready. Speak naturally — even approximate commands (~70%+ intent match) or STEM questions work immediately.'
+        : 'Synapse Voice OS đã nâng cấp nhận diện ý định linh hoạt! Bạn có thể nói gần đúng, ra lệnh mở công trình/mô phỏng Toán-Lí-Tin, hoặc hỏi kiến thức trực tiếp.'
     }
   ]);
 
@@ -199,6 +86,22 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
           if (plan.targetSubject) {
             selectSubject(plan.targetSubject);
           }
+          break;
+        case 'navigate_math_sim':
+          navigate({
+            subject: 'math_sims',
+            mathTab: plan.targetMathTab || 'grapher',
+            tutorOpen: false
+          });
+          break;
+        case 'navigate_monument':
+          navigate({
+            subject: 'synapse_v2',
+            futureTab: 'megastructures',
+            synapseMode: 'stage',
+            synapseMonumentId: plan.targetMonumentId || 'dyson',
+            tutorOpen: false
+          });
           break;
         case 'navigate_future':
           if (plan.targetFutureTab === 'infinite_canvas') {
@@ -234,6 +137,7 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
           onOpenTutor(plan.tutorSubject || 'math', plan.tutorQuestion);
           onClose();
           break;
+        case 'answer_qa':
         default:
           break;
       }
@@ -260,12 +164,14 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
       setInputCmd('');
       setLogs((prev) => [...prev.slice(-8), { role: 'user', text: clean }]);
 
-      const localPlan = tryLocalCommandMatch(clean);
+      // 1. Permissive fuzzy intent matcher first (~65-90% intent similarity triggers instantly)
+      const localPlan = matchFuzzyVoiceOSCommand(clean);
       if (localPlan) {
         executePlan(localPlan);
         return;
       }
 
+      // 2. Ask Gemini Intent + Q&A Router (never rejects lightly)
       setProcessing(true);
       const res = await safeFetchJson<{ success: boolean; plan: VoiceOSActionPlan }>(
         '/api/gemini/voice-os-intent',
@@ -274,22 +180,31 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ command: clean, language })
         },
-        15000
+        10000
       );
       setProcessing(false);
 
-      if (res.ok && res.data?.plan) {
+      if (res.ok && res.data?.plan && res.data.plan.actionType !== 'none') {
         executePlan(res.data.plan);
-      } else {
-        const msg =
-          res.error ||
-          (isEn
-            ? 'Could not parse voice command right now.'
-            : 'Chưa nhận diện được lệnh lúc này, thử nói rõ hơn nhé!');
-        setLogs((prev) => [...prev.slice(-8), { role: 'os', text: msg }]);
+        return;
       }
+
+      // 3. Even if Gemini is offline or returns 'none', synthesize an intelligent answer or route cleanly
+      const qaFallback = buildLocalVoiceMentorAnswer({
+        question: clean,
+        modelTitle: 'Hệ sinh thái Synapse STEM',
+        partDescription: res.data?.plan?.replyVi || undefined,
+        language
+      });
+      const fallbackReply =
+        res.ok && res.data?.plan?.replyVi
+          ? res.data.plan.replyVi
+          : qaFallback.spokenAnswer;
+
+      setLogs((prev) => [...prev.slice(-8), { role: 'os', text: fallbackReply }]);
+      speakFeedback(fallbackReply);
     },
-    [executePlan, isEn, language]
+    [executePlan, language, speakFeedback]
   );
 
   const {
@@ -303,7 +218,7 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
     language,
     continuous: false,
     onFinalTranscript: (transcript) => {
-      runCommand(transcript);
+      void runCommand(transcript);
     }
   });
 
@@ -334,13 +249,13 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
               <div className="text-sm font-bold tracking-tight flex items-center gap-1.5">
                 Synapse Voice OS
                 <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px] font-bold uppercase">
-                  AI Control
+                  Fuzzy AI
                 </span>
               </div>
               <div className="text-[11px] text-slate-400">
                 {isEn
-                  ? 'Hands-free voice & command palette'
-                  : 'Điều khiển toàn bộ phòng Lab, giao diện & Syn AI bằng giọng nói'}
+                  ? 'Flexible intent recognition & live STEM Q&A'
+                  : 'Hiểu ý định linh hoạt (gần đúng vẫn chạy) & Trả lời kiến thức STEM'}
               </div>
             </div>
           </div>
@@ -386,7 +301,7 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
               </span>
             </button>
 
-            <div className="flex-1 w-full space-y-2 max-h-44 overflow-y-auto pr-1">
+            <div className="flex-1 w-full space-y-2 max-h-48 overflow-y-auto pr-1">
               {logs.map((item, idx) => (
                 <div
                   key={idx}
@@ -410,7 +325,7 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
               {processing && (
                 <div className="inline-flex items-center gap-2 text-xs text-cyan-300">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  {isEn ? 'Routing command via Gemini...' : 'Đang phân tích ý định lệnh...'}
+                  {isEn ? 'Analyzing intent...' : 'Đang phân tích ý định & tri thức...'}
                 </div>
               )}
               {speechError && (
@@ -419,11 +334,11 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
             </div>
           </div>
 
-          {/* Text Command Fallback */}
+          {/* Text Command Input */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              runCommand(inputCmd);
+              void runCommand(inputCmd);
             }}
             className="flex gap-2"
           >
@@ -433,8 +348,8 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
               onChange={(e) => setInputCmd(e.target.value)}
               placeholder={
                 isEn
-                  ? 'Type a command (e.g., "Open Audio FFT Lab" or "Switch background to Ocean")...'
-                  : 'Gõ nhanh lệnh điều khiển (vd: "Mở Giấy Nháp → Sim", "Đổi nền Chòm sao", "Bật Pomodoro")...'
+                  ? 'Speak or type naturally (e.g., "open math draw", "wonder 2", "explain Snell law")...'
+                  : 'Nói/gõ tự nhiên ("vẽ toán", "công trình 5", "quang học", "hố đen Kerr là gì?")...'
               }
               className="flex-1 px-3 py-2.5 rounded border border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
             />
@@ -452,14 +367,14 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              {isEn ? 'Instant Voice / Command Presets' : 'Lệnh mẫu thử ngay 1 chạm'}
+              {isEn ? 'Instant Voice / Command Presets' : 'Lệnh & Câu hỏi mẫu thử ngay'}
             </div>
             <div className="flex flex-wrap gap-2">
               {QUICK_CHIPS.map((chip) => (
                 <button
                   key={chip}
                   type="button"
-                  onClick={() => runCommand(chip)}
+                  onClick={() => void runCommand(chip)}
                   className="px-2.5 py-1.5 rounded border border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-cyan-500 text-xs text-slate-200 transition cursor-pointer"
                 >
                   {chip}

@@ -1,4 +1,4 @@
-export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'physics_sims' | 'cs' | 'exams' | 'arena' | 'forum' | 'growth_hub' | 'showcase' | 'future_lab';
+export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'math_sims' | 'physics' | 'physics_sims' | 'cs' | 'exams' | 'arena' | 'forum' | 'growth_hub' | 'showcase' | 'future_lab';
 
 export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
 
@@ -388,7 +388,26 @@ export type PhysicsSimType =
   | 'pv_thermodynamics'
   | 'calorimetry_mixing'
   | 'bernoulli_flow'
-  | 'nuclear_fission';
+  | 'nuclear_fission'
+  // +18 New Batch-2 2D Physics Simulations
+  | 'archimedes_buoyancy'
+  | 'spring_oscillation_horizontal'
+  | 'centrifuge_banked_curve'
+  | 'planetary_escape_velocity'
+  | 'single_slit_diffraction'
+  | 'mach_shockwave'
+  | 'coupled_oscillators_2d'
+  | 'hall_effect'
+  | 'cyclotron_accelerator'
+  | 'electromagnet_crane'
+  | 'diode_rectifier'
+  | 'telescope_microscope'
+  | 'thin_film_interference'
+  | 'compton_scattering'
+  | 'fiber_optic_tir'
+  | 'carnot_cycle_pv'
+  | 'thermal_conduction_bar'
+  | 'binding_energy_curve';
 
 export type Physics3DMode =
   | 'pendulum_spring'
@@ -423,7 +442,24 @@ export type Physics3DMode =
   | 'blackbody_cavity_3d'
   | 'carnot_piston_3d'
   | 'nuclear_fission_3d'
-  | 'rutherford_scattering_3d';
+  | 'rutherford_scattering_3d'
+  // +16 New Batch-2 3D Physics Simulations
+  | 'atwood_pulley_3d'
+  | 'newtons_cradle_3d'
+  | 'foucault_pendulum_3d'
+  | 'transverse_longitudinal_3d'
+  | 'lissajous_3d'
+  | 'acoustic_interference_3d'
+  | 'cyclotron_3d'
+  | 'cathode_ray_tube_3d'
+  | 'helmholtz_coils_3d'
+  | 'electroscope_3d'
+  | 'fiber_optic_3d'
+  | 'compton_3d'
+  | 'double_lens_microscope_3d'
+  | 'diffusion_gases_3d'
+  | 'brownian_motion_3d'
+  | 'tokamak_fusion_3d';
 
 export type PhysicsDomainId =
   | 'mechanics'
@@ -959,7 +995,8 @@ export type FutureLabTabId =
   | 'text_to_sim'
   | 'paper_to_sim'
   | 'infinite_canvas'
-  | 'audio_fft';
+  | 'audio_fft'
+  | 'silicon_neural';
 
 export type PaperSimKind =
   | 'parabola'
@@ -1036,16 +1073,23 @@ export interface VoiceOSActionPlan {
   actionType:
     | 'navigate'
     | 'navigate_future'
+    | 'navigate_monument'
+    | 'navigate_math_sim'
     | 'set_background'
     | 'toggle_theme'
     | 'timer'
     | 'open_tutor'
+    | 'answer_qa'
     | 'none';
   targetSubject?: SubjectType;
+  targetMathTab?: 'grapher' | 'geometry' | 'math3d';
   targetFutureTab?: FutureLabTabId;
+  targetMonumentId?: string;
   bgStyle?: string;
   darkMode?: boolean;
   timerAction?: 'start' | 'pause' | 'reset';
   tutorSubject?: 'math' | 'physics' | 'cs';
   tutorQuestion?: string;
+  formulaHighlight?: string;
+  confidence?: number;
 }

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { FutureLabTabId, Physics3DMode, PhysicsDomainId, PhysicsSimType, SubjectType } from '../types';
+import { FunctionPlotConfig, FutureLabTabId, MathLecture, Physics3DMode, PhysicsDomainId, PhysicsSimType, SubjectType } from '../types';
 import { CSTrackId } from '../data/csTracksData';
 import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
@@ -110,12 +110,13 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
     case 'roadmap':
       return isEn ? 'Study Roadmap' : 'Lộ trình học';
     case 'math':
-      if (loc.mathTab === 'grapher') return isEn ? '2D Grapher' : 'Đồ thị Oxy 2D';
-      if (loc.mathTab === 'geometry') return isEn ? '2D Geometry' : 'Hình học 2D';
-      if (loc.mathTab === 'math3d') return isEn ? '3D Oxyz' : 'Mô phỏng 3D Toán';
       return loc.mathViewMode === 'lecture'
         ? isEn ? 'Math Lecture' : 'Bài giảng Toán'
-        : isEn ? 'Mathematics' : 'Toán học';
+        : isEn ? 'Mathematics Lessons' : 'Toán học (Bài giảng)';
+    case 'math_sims':
+      if (loc.mathTab === 'geometry') return isEn ? 'Math 2D Geometry & Draw' : 'Vẽ Hình học Toán 2D';
+      if (loc.mathTab === 'math3d') return isEn ? 'Math 3D Oxyz Studio' : 'Mô phỏng Toán 3D Oxyz';
+      return isEn ? 'Math 2D Grapher & Sims' : 'Mô phỏng & Vẽ Toán 2D/3D';
     case 'physics_sims':
       return isEn ? 'Physics 2D & 3D Simulations' : 'Mô phỏng Vật lí 2D & 3D';
     case 'physics': {
@@ -209,6 +210,10 @@ interface NavigationContextValue {
   directoryScrollTick: number;
   directoryFilterRequest: 'all' | 'math' | 'physics' | 'cs';
   requestScrollToDirectory: (filter?: 'all' | 'math' | 'physics' | 'cs') => void;
+  mathGraphConfig: Partial<FunctionPlotConfig> | null;
+  setMathGraphConfig: (cfg: Partial<FunctionPlotConfig> | null) => void;
+  math3DMode: NonNullable<MathLecture['sim3dMode']>;
+  setMath3DMode: (mode: NonNullable<MathLecture['sim3dMode']>) => void;
 }
 
 const NavigationContext = createContext<NavigationContextValue | null>(null);
@@ -219,6 +224,8 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [reviewScrollTick, setReviewScrollTick] = useState<number>(0);
   const [directoryScrollTick, setDirectoryScrollTick] = useState<number>(0);
   const [directoryFilterRequest, setDirectoryFilterRequest] = useState<'all' | 'math' | 'physics' | 'cs'>('all');
+  const [mathGraphConfig, setMathGraphConfig] = useState<Partial<FunctionPlotConfig> | null>(null);
+  const [math3DMode, setMath3DMode] = useState<NonNullable<MathLecture['sim3dMode']>>('oxyz_vector');
 
   const locationRef = useRef<NavLocation>(location);
   const stackRef = useRef<NavLocation[]>(historyStack);
@@ -291,6 +298,11 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (subject === 'math') {
         patch.mathTab = 'lectures';
         patch.mathViewMode = 'catalog';
+      } else if (subject === 'math_sims') {
+        patch.mathTab =
+          prev.mathTab === 'grapher' || prev.mathTab === 'geometry' || prev.mathTab === 'math3d'
+            ? prev.mathTab
+            : 'grapher';
       } else if (subject === 'physics') {
         patch.physicsView = 'catalog';
         patch.physicsTab = 'theory';
@@ -391,7 +403,11 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         requestScrollToReviews,
         directoryScrollTick,
         directoryFilterRequest,
-        requestScrollToDirectory
+        requestScrollToDirectory,
+        mathGraphConfig,
+        setMathGraphConfig,
+        math3DMode,
+        setMath3DMode
       }}
     >
       {children}

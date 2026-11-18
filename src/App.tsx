@@ -6,6 +6,7 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ClassroomOverview } from './components/ClassroomOverview';
 import { MathStudio } from './components/math/MathStudio';
+import { MathSimulationsPage } from './components/math/MathSimulationsPage';
 import { PhysicsLab } from './components/physics/PhysicsLab';
 import { PhysicsDomainsPage } from './components/physics/PhysicsDomainsPage';
 import { CodeJudgeLab } from './components/cs/CodeJudgeLab';
@@ -412,6 +413,10 @@ function MainApp() {
                     <MathStudio onBack={goBack} />
                   )}
 
+                  {currentSubject === 'math_sims' && (
+                    <MathSimulationsPage onBack={goBack} />
+                  )}
+
                   {currentSubject === 'physics' && (
                     <PhysicsLab onBack={goBack} onScoreEarned={handleEarnXP} />
                   )}
@@ -513,6 +518,12 @@ function MainApp() {
                     className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
                   >
                     {isEn ? 'Mathematics' : 'Toán học'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('math_sims')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold text-blue-600 dark:text-sky-400 cursor-pointer"
+                  >
+                    {isEn ? 'Math 2D/3D' : 'Mô phỏng Toán'}
                   </button>
                   <button
                     onClick={() => selectSubject('physics_sims')}

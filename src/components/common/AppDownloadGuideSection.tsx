@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { DevicePlatform, usePWAInstall } from '../../hooks/usePWAInstall';
 import { useLanguage } from '../../context/LanguageContext';
+import { getPhysicsSimCounts } from '../../data/physicsDomainsData';
 
 interface AppDownloadGuideSectionProps {
   id: string;
@@ -81,10 +82,12 @@ export const AppDownloadGuideSection: React.FC<AppDownloadGuideSectionProps> = (
     }
   };
 
+  const simCounts = getPhysicsSimCounts();
+
   const fullEcosystemBadges = isEn
     ? [
         { icon: <Compass className="w-3.5 h-3.5 text-sky-300" />, label: 'Math 2D Graphs & 8 Oxyz 3D' },
-        { icon: <Zap className="w-3.5 h-3.5 text-amber-300" />, label: 'Physics 5 Domains · 41 2D + 32 3D' },
+        { icon: <Zap className="w-3.5 h-3.5 text-amber-300" />, label: `Physics ${simCounts.domainCount} Domains · ${simCounts.count2D} 2D + ${simCounts.count3D} 3D` },
         { icon: <Code2 className="w-3.5 h-3.5 text-emerald-300" />, label: 'CS 5 Paths · Sublime 4 & Judge' },
         { icon: <Orbit className="w-3.5 h-3.5 text-cyan-300" />, label: 'Synapse Pre · 30 3D Megastructures' },
         { icon: <Hand className="w-3.5 h-3.5 text-teal-300" />, label: 'Spatial 3D · 10-Finger + Free 2D Draw' },
@@ -92,7 +95,7 @@ export const AppDownloadGuideSection: React.FC<AppDownloadGuideSectionProps> = (
       ]
     : [
         { icon: <Compass className="w-3.5 h-3.5 text-sky-300" />, label: 'Toán: Đồ thị 2D & 8 Oxyz 3D' },
-        { icon: <Zap className="w-3.5 h-3.5 text-amber-300" />, label: 'Vật lí: 5 Chuyên đề · 41 Lab 2D + 32 Lab 3D' },
+        { icon: <Zap className="w-3.5 h-3.5 text-amber-300" />, label: `Vật lí: ${simCounts.domainCount} Chuyên đề · ${simCounts.count2D} Lab 2D + ${simCounts.count3D} Lab 3D` },
         { icon: <Code2 className="w-3.5 h-3.5 text-emerald-300" />, label: 'Tin học: 5 Lộ trình + Sublime Text 4 Judge' },
         { icon: <Orbit className="w-3.5 h-3.5 text-cyan-300" />, label: 'Synapse Pre · 30 Đại công trình & Lab AI' },
         { icon: <Hand className="w-3.5 h-3.5 text-teal-300" />, label: 'Học cảm giác 3D · 10 ngón & 2D Tự do tạo' },

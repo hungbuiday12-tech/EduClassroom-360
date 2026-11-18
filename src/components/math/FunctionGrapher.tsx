@@ -699,12 +699,12 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
       <div
         className={
           isFullScreen
-            ? 'fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col lg:flex-row gap-4 overflow-y-auto lg:overflow-hidden'
-            : 'flex flex-col lg:flex-row gap-6 h-full'
+            ? 'sim-math-scope fixed inset-0 z-[100] h-[100dvh] w-screen p-3 sm:p-5 bg-slate-100/98 dark:bg-slate-950/98 backdrop-blur-xl flex flex-col lg:flex-row gap-4 overflow-y-auto lg:overflow-hidden'
+            : 'sim-math-scope flex flex-col lg:flex-row gap-6 h-full'
         }
       >
         {/* LEFT / MAIN: Graphing Stage */}
-        <div className={`flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-xs ${isFullScreen ? 'min-h-[380px] lg:min-h-0' : ''}`}>
+        <div className={`flex-1 flex flex-col bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-[4px] overflow-hidden shadow-xs ${isFullScreen ? 'min-h-[380px] lg:min-h-0' : ''}`}>
           {/* Stage Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 shrink-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -717,7 +717,7 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
                       onBack();
                     }
                   }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs"
+                  className="sim-btn-math sim-btn-hero flex items-center gap-1.5 px-2.5 py-1.5 rounded-[3px] border border-indigo-400/60 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>{isFullScreen ? 'Thu nhỏ (Esc)' : 'Quay lại'}</span>
@@ -734,45 +734,45 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
               <button
                 onClick={zoomIn}
                 title="Phóng to (Zoom In)"
-                className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+                className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] cursor-pointer"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={zoomOut}
                 title="Thu nhỏ (Zoom Out)"
-                className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+                className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] cursor-pointer"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
               <button
                 onClick={resetView}
                 title="Khôi phục vị trí ban đầu"
-                className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+                className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setShowTable(!showTable)}
                 title="Bảng giá trị biến thiên"
-                className={`p-1.5 rounded-md transition-colors ${showTable ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                className={`sim-btn-math p-1.5 rounded-[3px] border cursor-pointer ${showTable ? 'sim-btn-active bg-indigo-100 border-indigo-400 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
               >
                 <TableIcon className="w-4 h-4" />
               </button>
               <button
                 onClick={handleExportPNG}
                 title="Xuất ảnh đồ thị PNG"
-                className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+                className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsFullScreen(!isFullScreen)}
                 title={isFullScreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình (Full Screen)'}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1.5 rounded-[3px] border text-xs font-semibold cursor-pointer ${
                   isFullScreen
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                    ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white hover:bg-indigo-700 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -831,7 +831,7 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
       {/* RIGHT: Parameter & Function Controls */}
       <div className={`w-full lg:w-96 flex flex-col gap-4 ${isFullScreen ? 'lg:overflow-y-auto lg:pr-1 shrink-0 pb-4 lg:pb-0' : ''}`}>
         {/* Function Tabs */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[4px] p-4 shadow-xs">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Sliders className="w-4 h-4 text-indigo-500" />
@@ -839,9 +839,11 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
             </h3>
             <button
               onClick={addNewFunction}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors"
+              className="group sim-btn-math sim-btn-hero sim-btn-active flex items-center gap-1 px-2.5 py-1 text-xs font-bold border border-indigo-400/60 text-white bg-indigo-600 hover:bg-indigo-700 rounded-[3px] cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <span className="icon-anim-plus">
+                <Plus className="w-3.5 h-3.5" />
+              </span>
               Thêm hàm
             </button>
           </div>
@@ -948,7 +950,7 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
                         )
                       );
                     }}
-                    className="px-2 py-1 text-[11px] font-semibold rounded-md bg-slate-100 hover:bg-indigo-100 text-slate-700 hover:text-indigo-700 dark:bg-slate-800 dark:hover:bg-indigo-950/60 dark:text-slate-300 dark:hover:text-indigo-300 transition-colors"
+                    className="sim-btn-tile sim-btn-tile-math sim-btn-math px-2.5 py-1 text-[11px] font-semibold rounded-[3px] border border-slate-300/80 dark:border-slate-700 bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white dark:bg-slate-800 dark:hover:bg-indigo-600 dark:text-slate-200 dark:hover:text-white cursor-pointer"
                   >
                     {preset.label}
                   </button>

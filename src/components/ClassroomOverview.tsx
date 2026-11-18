@@ -53,6 +53,7 @@ import { BELL_SOUND_OPTIONS } from '../lib/soundEngine';
 import { EXAM_PAPERS } from '../data/examData';
 import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
+import { getPhysicsSimCounts } from '../data/physicsDomainsData';
 import { CS_LESSONS } from '../data/csLessonsData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../data/csTracksData';
 import {
@@ -373,11 +374,14 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           />
 
           <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-200 leading-relaxed max-w-3xl mx-auto hero-blend-shadow">
-            {t(
-              'overview.heroDesc',
-              'Hệ sinh thái học tập STEM toàn diện cho Toán (2D & Oxyz 3D), Vật lí (41 Lab 2D & 32 mô hình 3D PhET), Tin học (5 lộ trình VNOI & C++ Quốc tế · IDE Sublime Text 4), Synapse Pre (30 Đại công trình tương lai & Phòng Lab AI 3D), Học cảm giác 3D 10 ngón tay, Syn AI (Syn Math · Syn Physics · Syn Code), Kho Đề thi chấm ảnh AI, Đấu trường tuần & App đa thiết bị.',
-              'Complete interactive STEM ecosystem: Math (2D & Oxyz 3D), Physics (41 2D + 32 3D PhET labs), CS (5 VNOI & C++ roadmaps + Sublime Text 4 IDE), Synapse Pre (30 Futuristic Megastructures & AI 3D Labs), 10-finger Spatial 3D, Syn AI suite, AI-graded Exams, Weekly Arena & Cross-Device App.'
-            )}
+            {(() => {
+              const phyCounts = getPhysicsSimCounts();
+              return t(
+                'overview.heroDesc',
+                `Hệ sinh thái học tập STEM toàn diện cho Toán (2D & Oxyz 3D tách trang riêng), Vật lí (${phyCounts.domainCount} lĩnh vực · ${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D + 36 dụng cụ kéo thả), Tin học (5 lộ trình VNOI & C++ Quốc tế · IDE Sublime Text 4), Synapse Pre (30 Đại công trình tương lai & Phòng Lab AI 3D), Học cảm giác 3D 10 ngón tay, Syn AI (Syn Math · Syn Physics · Syn Code), Kho Đề thi chấm ảnh AI, Đấu trường tuần & App đa thiết bị.`,
+                `Complete interactive STEM ecosystem: Math (standalone 2D & Oxyz 3D Studio), Physics (${phyCounts.domainCount} domains · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D labs + 36 drag-and-drop tools), CS (5 VNOI & C++ roadmaps + Sublime Text 4 IDE), Synapse Pre (30 Futuristic Megastructures & AI 3D Labs), 10-finger Spatial 3D, Syn AI suite, AI-graded Exams, Weekly Arena & Cross-Device App.`
+              );
+            })()}
           </p>
 
           {/* Primary Action Buttons */}

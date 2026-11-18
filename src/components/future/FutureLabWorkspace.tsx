@@ -18,6 +18,7 @@ import { NeuralGalaxyTwin3D } from './NeuralGalaxyTwin3D';
 import { TextToSimStudio } from './TextToSimStudio';
 import { PaperToSimPanel } from './PaperToSimPanel';
 import { AudioFFT3DLab } from './AudioFFT3DLab';
+import { SiliconNeuralPlayground } from './SiliconNeuralPlayground';
 
 interface FutureLabWorkspaceProps {
   onBack?: () => void;
@@ -66,6 +67,13 @@ const PRE_TABS: {
     titleEn: 'Audio FFT 3D Lab',
     badge: 'WebAudio',
     icon: Waves
+  },
+  {
+    id: 'silicon_neural',
+    titleVi: 'Mạch Logic & Neural Net',
+    titleEn: 'Silicon & Neural Lab',
+    badge: 'AI·CPU',
+    icon: Cpu
   }
 ];
 
@@ -159,8 +167,8 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             </div>
           </div>
 
-          {/* 5 Crisp Square Mode Switchers */}
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          {/* 6 Crisp Square Mode Switchers */}
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2.5">
             {PRE_TABS.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
@@ -210,6 +218,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
         {activeTab === 'text_to_sim' && <TextToSimStudio language={language} />}
         {activeTab === 'paper_to_sim' && <PaperToSimPanel language={language} />}
         {activeTab === 'audio_fft' && <AudioFFT3DLab language={language} />}
+        {activeTab === 'silicon_neural' && <SiliconNeuralPlayground />}
       </div>
     </div>
   );

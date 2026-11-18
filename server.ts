@@ -4093,15 +4093,15 @@ app.post('/api/gemini/voice-mentor-3d', async (req: Request, res: Response) => {
     const ai = getGenAI();
     const isEn = language === 'en';
     const systemInstruction = isEn
-      ? 'You are Syn AI 3D Voice Mentor guiding a student who is using hands-free gestures in 3D space. Keep spokenAnswer concise (2-4 clear sentences, natural when read aloud) and put exact math/physics notation in formulaHighlight.'
-      : 'Bạn là Trợ lý Giọng nói Syn AI song hành khi học sinh đang thao tác 3D rảnh tay. Hãy trả lời phần spokenAnswer thật súc tích (2–4 câu tự nhiên dễ nghe khi đọc thành tiếng), không viết ký tự markdown rối mắt trong spokenAnswer, và đặt công thức chuẩn KaTeX (nếu có) vào formulaHighlight.';
+      ? 'You are Syn AI 3D Voice Mentor guiding a student inside interactive 3D STEM labs & 30 Megastructures. Answer ANY question warmly and clearly (even if only partially related to the model, connect it to physics/math/engineering intuitively). Keep spokenAnswer concise (2-4 clear natural sentences) and put exact math/physics notation in formulaHighlight.'
+      : 'Bạn là Trợ lý Giọng nói Syn AI trong 30 Đại Công Trình 3D & Phòng Lab STEM. Hãy LUÔN trả lời thân thiện và rõ ràng mọi câu hỏi của học sinh (dù hỏi tổng quát, hỏi kiến thức Toán/Lí/Tin xung quanh, hay hỏi cách dùng mô hình — luôn giải thích trực quan và gắn với nguyên lí khoa học). Giữ spokenAnswer 2–4 câu tự nhiên dễ nghe khi đọc thành tiếng, không dùng ký tự markdown rối mắt, và đặt công thức KaTeX (nếu có) vào formulaHighlight.';
 
     const promptText = `Ngữ cảnh 3D hiện tại:
 - Phòng lab: ${spaceName}
 - Mô hình đang xem: ${modelTitle || 'Mô hình 3D tương tác'}
 - Bộ phận đang chọn/tách: ${partName || 'Toàn bộ mô hình'}
-- Mô tả bộ phận: ${partDescription || 'Chưa có mô tả thêm'}
-- Công thức tham chiếu: ${formula || 'Chưa rõ'}
+- Mô tả bộ phận: ${partDescription || 'Mô hình khoa học tương tác 3D'}
+- Công thức tham chiếu: ${formula || 'Theo nguyên lí vật lí / toán học tương ứng'}
 - Câu hỏi bằng giọng nói của học sinh: "${q}"`;
 
     const responseSchema = {
@@ -4650,14 +4650,15 @@ app.post('/api/gemini/voice-os-intent', async (req: Request, res: Response) => {
     }
 
     const ai = getGenAI();
-    const systemInstruction = `Bạn là Synapse Voice OS Router. Phân tích câu lệnh tự nhiên và trả về hành động JSON để điều khiển giao diện web học tập Synapse.
-- actionType chỉ nhận: "navigate" | "navigate_future" | "set_background" | "toggle_theme" | "timer" | "open_tutor" | "none"
-- targetSubject (khi navigate): "overview" | "roadmap" | "synapse_v2" | "spatial_3d" | "math" | "physics" | "physics_sims" | "cs" | "exams" | "arena" | "forum" | "growth_hub" | "showcase" | "future_lab"
-- targetFutureTab (khi navigate_future): "galaxy3d" | "text_to_sim" | "paper_to_sim" | "infinite_canvas" | "audio_fft"
+    const systemInstruction = `Bạn là Synapse Voice OS Router thông minh. Hãy linh hoạt hiểu ý định tự nhiên (dù người dùng nói tắt, hơi sai chính tả hoặc ý giống ~70–90% cũng ưu tiên thực thi đúng hành động phù hợp nhất, hoặc trả lời câu hỏi kiến thức trực tiếp bằng actionType="answer_qa" thay vì từ chối!).
+- actionType nhận: "navigate" | "navigate_math_sim" | "navigate_future" | "navigate_monument" | "set_background" | "toggle_theme" | "timer" | "open_tutor" | "answer_qa" | "none"
+- targetSubject (khi navigate): "overview" | "roadmap" | "synapse_v2" | "spatial_3d" | "math" | "math_sims" | "physics" | "physics_sims" | "cs" | "exams" | "arena" | "forum" | "growth_hub" | "showcase"
+- targetMathTab (khi navigate_math_sim): "grapher" | "geometry" | "math3d"
+- targetFutureTab (khi navigate_future): "megastructures" | "galaxy3d" | "text_to_sim" | "paper_to_sim" | "infinite_canvas" | "audio_fft" | "silicon_neural"
 - bgStyle (khi set_background): "ecosystem" | "molecules" | "ocean" | "sky" | "constellations" | "cosmic_galaxy" | "blueprint_tech" | "studio_grid" | "aurora_clean" | "minimal_solid"
 - timerAction: "start" | "pause" | "reset"
 - tutorSubject: "math" | "physics" | "cs"
-Luôn trả lời replyVi ngắn gọn, thân thiện (< 25 từ) xác nhận thao tác đã làm.`;
+- Nếu người dùng hỏi kiến thức/công thức/khái niệm khoa học -> chọn actionType="answer_qa" và viết câu trả lời súc tích dễ hiểu (2-3 câu) vào replyVi.`;
 
     const responseSchema = {
       type: Type.OBJECT,
@@ -4665,7 +4666,9 @@ Luôn trả lời replyVi ngắn gọn, thân thiện (< 25 từ) xác nhận th
         replyVi: { type: Type.STRING },
         actionType: { type: Type.STRING },
         targetSubject: { type: Type.STRING },
+        targetMathTab: { type: Type.STRING },
         targetFutureTab: { type: Type.STRING },
+        targetMonumentId: { type: Type.STRING },
         bgStyle: { type: Type.STRING },
         darkMode: { type: Type.BOOLEAN },
         timerAction: { type: Type.STRING },

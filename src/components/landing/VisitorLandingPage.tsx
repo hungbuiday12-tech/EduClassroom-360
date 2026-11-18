@@ -63,6 +63,7 @@ import {
 import { EXAM_PAPERS } from '../../data/examData';
 import { MATH_LECTURES } from '../../data/curriculumData';
 import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
+import { getPhysicsSimCounts } from '../../data/physicsDomainsData';
 import { CS_LESSONS } from '../../data/csLessonsData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
 
@@ -93,6 +94,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
   const { navigate } = useNavigation();
   const isEn = language === 'en';
+  const phyCounts = getPhysicsSimCounts();
   const [directorySubject, setDirectorySubject] = useState<DirectorySubjectFilter>('all');
 
   const scrollToVisitorReviews = () => {
@@ -370,23 +372,23 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     physics: {
       label: isEn ? 'Physics 2D & 3D' : 'Vật Lí 2D & 3D',
       badge: isEn
-        ? `5 Domains · ${PHYSICS_LESSONS.length} lessons (Grades 9–12)`
-        : `5 Lĩnh vực tách riêng · ${PHYSICS_LESSONS.length} bài 9–12`,
+        ? `${phyCounts.domainCount} Domains · ${PHYSICS_LESSONS.length} lessons (Grades 9–12)`
+        : `${phyCounts.domainCount} Lĩnh vực tách riêng · ${PHYSICS_LESSONS.length} bài 9–12`,
       headline: isEn
-        ? '5 Dedicated Physics Simulation Domains (2D & 3D) + Standard THPT/Specialized Lectures'
-        : 'Mô Phỏng Vật Lí 2D/3D Tách Riêng 5 Chuyên Đề (Lớp 9–12) & Bài Giảng Chuẩn THPT/Chuyên',
+        ? `${phyCounts.domainCount} Dedicated Physics Simulation Domains (2D & 3D) + Standard THPT/Specialized Lectures`
+        : `Mô Phỏng Vật Lí 2D/3D Tách Riêng ${phyCounts.domainCount} Chuyên Đề (Lớp 9–12) & Bài Giảng Chuẩn THPT/Chuyên`,
       summary: isEn
-        ? 'Separate pages for Mechanics, Waves/Oscillations, Electricity/Magnetism, Optics/Quantum & Thermal/Nuclear with full PhET-inspired controls, separated 2D/3D views, and clear THPT/Specialized explanations.'
-        : 'Tách riêng 5 trang thực hành (Cơ học, Sóng & Dao động, Điện & Điện từ, Quang & Lượng tử, Nhiệt & Hạt nhân) tham khảo PhET với đầy đủ thanh trượt thông số, tách biệt 2D/3D và văn phong chuẩn THPT/Chuyên.',
+        ? `Separate pages for Mechanics, Waves/Oscillations, Electricity/Magnetism, Optics/Quantum & Thermal/Nuclear with interactive parameter controls, drag-and-drop 36-tool lab bench, separated 2D/3D views, and clear THPT/Specialized explanations.`
+        : `Tách riêng ${phyCounts.domainCount} chuyên đề (Cơ học, Sóng & Dao động, Điện & Điện từ, Quang & Lượng tử, Nhiệt & Hạt nhân) kèm bộ 36 dụng cụ thí nghiệm kéo thả, tách biệt 2D/3D và văn phong chuẩn THPT/Chuyên.`,
       highlights: isEn
         ? [
-            '41 2D Labs & 32 3D Models across 5 dedicated domain pages',
-            'RLC phasors, Doppler cones, Photoelectric tube & Bohr Atom',
+            `${phyCounts.count2D} 2D Labs & ${phyCounts.count3D} 3D Models across ${phyCounts.domainCount} domains`,
+            'Drag-and-drop Ammeter, Voltmeter, Oscilloscope, Ruler & 32 more tools',
             'Adaptive difficulty labels for Grade 9–12 & Olympiad',
           ]
         : [
-            '41 Lab 2D & 32 mô hình 3D chia thành 5 trang lĩnh vực riêng',
-            'Mạch RLC, hiệu ứng Doppler, Quang điện ngoài & Nguyên tử Bohr',
+            `${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D chia thành ${phyCounts.domainCount} lĩnh vực riêng`,
+            'Kéo thả 36 dụng cụ đo trực tiếp & gợi ý dụng cụ riêng cho mỗi bài',
             'Bài giảng tinh gọn, chuẩn mực theo cấp độ THPT & Chuyên',
           ],
       accentClass: 'text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10',
@@ -848,7 +850,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'Physics 2D & 3D' : 'Vật Lí 2D & 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '5 Domains · 41 2D + 32 3D' : '5 Lĩnh vực · 41 2D + 32 3D'}
+                  {isEn
+                    ? `${phyCounts.domainCount} Domains · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D`
+                    : `${phyCounts.domainCount} Lĩnh vực · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D`}
                 </p>
               </button>
 
@@ -1015,8 +1019,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </div>
                   <p className="text-[11px] leading-relaxed text-sky-50/90">
                     {isEn
-                      ? 'Inspect solar systems, RLC circuits, 3D geometry & 73 Physics labs with real-time sliders.'
-                      : 'Xoay 360° Hệ Mặt Trời, mạch RLC, hình học Oxyz & kho 73 mô phỏng Vật lí có đồ thị trực tiếp.'}
+                      ? 'Inspect solar systems, RLC circuits, 3D geometry & 107 Physics labs with real-time sliders.'
+                      : 'Xoay 360° Hệ Mặt Trời, mạch RLC, hình học Oxyz & kho 107 mô phỏng Vật lí có đồ thị trực tiếp.'}
                   </p>
                 </button>
 
@@ -2614,21 +2618,27 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <Atom className="w-6 h-6 icon-anim-atom" />
                     </div>
                     <span className="font-mono text-[11px] font-semibold text-amber-700 dark:text-amber-300">
-                      03 · 5 DOMAINS
+                      03 · {phyCounts.domainCount} DOMAINS
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
-                    {isEn ? 'Physics 2D/3D · 5 Separate Domains' : 'Mô Phỏng Vật Lí 2D/3D · 5 Lĩnh Vực Riêng'}
+                    {isEn
+                      ? `Physics 2D/3D · ${phyCounts.domainCount} Separate Domains`
+                      : `Mô Phỏng Vật Lí 2D/3D · ${phyCounts.domainCount} Lĩnh Vực Riêng`}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'PhET-inspired Grade 9–12 labs split into 5 clean pages: Mechanics, Waves, Electricity/RLC, Optics/Quantum & Thermal/Nuclear, plus clear THPT & Specialized lessons.'
-                      : 'Tổng hợp thí nghiệm Lớp 9–12 chuẩn PhET tách riêng 5 trang: Cơ học, Dao động & Sóng, Điện từ & RLC, Quang & Lượng tử, Nhiệt & Hạt nhân.'}
+                      ? `Interactive Grade 9–12 labs split into ${phyCounts.domainCount} clean domains: Mechanics, Waves, Electricity/RLC, Optics/Quantum & Thermal/Nuclear, plus drag-and-drop lab apparatus and clear THPT/Specialized lessons.`
+                      : `Tổng hợp thí nghiệm Lớp 9–12 tương tác tách riêng ${phyCounts.domainCount} lĩnh vực: Cơ học, Dao động & Sóng, Điện từ & RLC, Quang & Lượng tử, Nhiệt & Hạt nhân kèm dụng cụ kéo thả.`}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      <span>{isEn ? '41 2D interactive canvases + 32 3D 60FPS labs' : 'Tách rõ 41 Lab 2D & 32 mô phỏng 3D 60 FPS'}</span>
+                      <span>
+                        {isEn
+                          ? `${phyCounts.count2D} 2D interactive canvases + ${phyCounts.count3D} 3D 60FPS labs`
+                          : `Tách rõ ${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô phỏng 3D 60 FPS`}
+                      </span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -2645,7 +2655,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Open 5 Physics Domains' : 'Mở 5 Chuyên đề Vật lí'}</span>
+                  <span>{isEn ? `Open ${phyCounts.domainCount} Physics Domains` : `Mở ${phyCounts.domainCount} Chuyên đề Vật lí`}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -2656,7 +2666,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <div
                 data-ripple="true"
                 onClick={() => {
-                  navigate({ subject: 'math', mathTab: 'grapher', tutorOpen: false });
+                  navigate({ subject: 'math_sims', mathTab: 'grapher', tutorOpen: false });
                   onEnterAsGuest();
                 }}
                 className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-blue-300/85 dark:border-blue-500/35 hover:border-blue-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
@@ -2697,7 +2707,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate({ subject: 'math', mathTab: 'grapher', tutorOpen: false });
+                    navigate({ subject: 'math_sims', mathTab: 'grapher', tutorOpen: false });
                     onEnterAsGuest();
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"

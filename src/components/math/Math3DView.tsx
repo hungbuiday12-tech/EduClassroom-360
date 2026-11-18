@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { AnaglyphEffect } from 'three/addons/effects/AnaglyphEffect.js';
+import { StereoEffect } from 'three/addons/effects/StereoEffect.js';
 import {
   RotateCcw,
   Maximize2,
@@ -18,6 +20,12 @@ import {
 import { useLanguage } from '../../context/LanguageContext';
 import { MathFormula } from '../common/MathRenderer';
 import { ViewportPortal } from '../common/ViewportPortal';
+import {
+  applyOffAxisProjection,
+  HologramDisplayMode,
+  useHeadTrackedHologram
+} from '../../hooks/useHeadTrackedHologram';
+import { HologramModeControls } from '../common/HologramModeControls';
 
 export type Math3DMode =
   | 'oxyz_vector'
@@ -47,6 +55,10 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   }, [initialMode]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isControlsExpanded, setIsControlsExpanded] = useState(true);
+  const [hologramMode, setHologramMode] = useState<HologramDisplayMode>('normal');
+  const hologramModeRef = useRef<HologramDisplayMode>('normal');
+  hologramModeRef.current = hologramMode;
+  const { headOffsetRef, camStatus } = useHeadTrackedHologram(hologramMode);
 
   // Interactive parameters
   // Vector mode
@@ -186,15 +198,42 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     dynamicGroupRef.current = dynamicGroup;
     needsRenderRef.current = true;
 
+    const anaglyphEffect = new AnaglyphEffect(renderer);
+    anaglyphEffect.setSize(container.clientWidth, Math.max(container.clientHeight, 300));
+    const stereoEffect = new StereoEffect(renderer);
+    stereoEffect.setSize(container.clientWidth, Math.max(container.clientHeight, 300));
+    let lastHolo: HologramDisplayMode = 'normal';
+
     // On-demand + damping animation loop (0% GPU when idle or hidden)
     let frameId = 0;
     const animate = () => {
       frameId = requestAnimationFrame(animate);
       if (document.hidden) return;
       const moved = controls.update();
-      if (needsRenderRef.current || moved) {
+      const curHolo = hologramModeRef.current;
+      const holoChanged = curHolo !== lastHolo;
+
+      if (curHolo === 'head_cam' || curHolo === 'head_mouse') {
+        applyOffAxisProjection(camera, headOffsetRef.current, 11, 3.6);
+      } else if (lastHolo === 'head_cam' || lastHolo === 'head_mouse') {
+        camera.updateProjectionMatrix();
+      }
+      if ((lastHolo === 'anaglyph' || lastHolo === 'vr_stereo') && holoChanged) {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w > 0 && h > 0) renderer.setSize(w, h);
+      }
+      lastHolo = curHolo;
+
+      if (needsRenderRef.current || moved || curHolo !== 'normal' || holoChanged) {
         needsRenderRef.current = false;
-        renderer.render(scene, camera);
+        if (curHolo === 'anaglyph') {
+          anaglyphEffect.render(scene, camera);
+        } else if (curHolo === 'vr_stereo') {
+          stereoEffect.render(scene, camera);
+        } else {
+          renderer.render(scene, camera);
+        }
       }
     };
     animate();
@@ -221,6 +260,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
+      anaglyphEffect.setSize(width, height);
+      stereoEffect.setSize(width, height);
       needsRenderRef.current = true;
     };
     window.addEventListener('resize', handleResize);
@@ -878,15 +919,15 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   return (
     <ViewportPortal active={isFullscreen}>
       <div
-        className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col lg:block ${
+        className={`sim-math-scope relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col lg:block ${
           isFullscreen
             ? 'fixed inset-0 z-[100] h-[100dvh] w-screen rounded-none'
-            : 'rounded-2xl sm:rounded-3xl min-h-[540px] lg:min-h-0 lg:h-[620px]'
+            : 'rounded-[4px] min-h-[540px] lg:min-h-0 lg:h-[620px]'
         }`}
       >
         {/* TOP HEADER OVERLAY (Stacked on < lg to prevent overlapping 3D viewport, floating on lg+) */}
         <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:top-4 lg:left-4 lg:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/95 lg:bg-transparent border-b border-slate-800/80 lg:border-b-0 lg:pointer-events-none shrink-0">
-          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-800/70 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white shadow-lg max-w-full">
+          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-slate-800/80 lg:bg-slate-900/95 border border-slate-700/80 text-white shadow-lg max-w-full">
             {(isFullscreen || onBack) && (
               <button
                 onClick={() => {
@@ -896,7 +937,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                     onBack();
                   }
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shrink-0"
+                className="sim-btn-math flex items-center gap-1 px-2.5 py-1 rounded-[3px] border border-indigo-400/60 text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>{isFullscreen ? 'Thu nhỏ' : 'Quay lại'}</span>
@@ -916,8 +957,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
           </div>
 
           <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
-            {/* Mode Switcher Pills (scrollable on phones & iPads) */}
-            <div className="flex items-center gap-1 p-1 bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-lg overflow-x-auto max-w-full scrollbar-none">
+            {/* Mode Switcher Tabs (scrollable on phones & iPads) */}
+            <div className="sim-seg-box flex items-center gap-1 p-1 bg-slate-800/90 lg:bg-slate-900/95 border border-slate-700/80 rounded-[4px] shadow-lg overflow-x-auto max-w-full scrollbar-none">
               {[
                 { id: 'oxyz_vector' as Math3DMode, label: 'Vector Oxyz' },
                 { id: 'circle_theorems_3d' as Math3DMode, label: 'Đường Tròn 3D' },
@@ -931,8 +972,10 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                 <button
                   key={m.id}
                   onClick={() => setMode(m.id)}
-                  className={`px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-xl whitespace-nowrap transition-all shrink-0 ${
-                    mode === m.id ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+                  className={`sim-btn-math px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
+                    mode === m.id
+                      ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-sm'
+                      : 'border-transparent text-slate-300 hover:text-white'
                   }`}
                 >
                   {m.label}
@@ -940,10 +983,17 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
               ))}
             </div>
 
+            <HologramModeControls
+              mode={hologramMode}
+              onChangeMode={setHologramMode}
+              camStatus={camStatus}
+              compact
+            />
+
             {/* Fullscreen Toggle */}
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2 rounded-xl bg-slate-800/80 lg:bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
+              className="sim-btn-math p-2 rounded-[3px] bg-slate-800/90 lg:bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white shadow-lg cursor-pointer shrink-0"
               title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}

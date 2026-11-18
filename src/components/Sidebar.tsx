@@ -21,7 +21,9 @@ import {
   Download,
   Flame,
   Layers,
-  Cpu
+  Cpu,
+  BookOpen,
+  ChevronDown
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigation } from '../context/NavigationContext';
@@ -242,6 +244,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { requestScrollToReviews, requestScrollToDirectory } = useNavigation();
   const [physicsSimTotal, setPhysicsSimTotal] = useState<number>(() => getPhysicsSimCounts().total);
 
+  const [isSubjectsOpen, setIsSubjectsOpen] = useState<boolean>(
+    () => currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs'
+  );
+
+  useEffect(() => {
+    if (currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs') {
+      setIsSubjectsOpen(true);
+    }
+  }, [currentSubject]);
+
   useEffect(() => {
     const syncSimCount = () => {
       setPhysicsSimTotal(getPhysicsSimCounts().total);
@@ -346,9 +358,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             'bg-gradient-to-r from-orange-500 to-amber-500 border border-orange-300 text-slate-950 font-semibold shadow-md shadow-orange-500/25'
         },
         {
-          id: 'math',
-          labelVi: 'Toán 2D/3D & Oxyz',
-          labelEn: 'Math 2D/3D',
+          id: 'math_sims',
+          labelVi: 'Mô phỏng & Vẽ Toán',
+          labelEn: 'Math 2D/3D & Draw',
+          badge: '2D·3D',
           icon: (
             <span className="icon-anim-compass">
               <Compass className="w-5 h-5 shrink-0" />
@@ -356,36 +369,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ),
           idleClass:
             'bg-blue-50/85 dark:bg-blue-950/35 border border-blue-300/80 dark:border-blue-500/35 text-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/55 hover:border-blue-400',
+          badgeIdleClass:
+            'bg-blue-100 dark:bg-blue-900/70 border border-blue-300/80 dark:border-blue-600/50 text-blue-800 dark:text-blue-200',
           activeClass:
-            'bg-gradient-to-r from-blue-600 to-sky-500 border border-blue-400 text-white shadow-md shadow-blue-600/25'
-        },
-        {
-          id: 'physics',
-          labelVi: 'Bài giảng Vật lí',
-          labelEn: 'Physics Lessons',
-          icon: (
-            <span className="icon-anim-zap">
-              <Zap className="w-5 h-5 shrink-0" />
-            </span>
-          ),
-          idleClass:
-            'bg-amber-50/85 dark:bg-amber-950/35 border border-amber-300/80 dark:border-amber-500/35 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/55 hover:border-amber-400',
-          activeClass:
-            'bg-gradient-to-r from-amber-500 to-yellow-500 border border-amber-300 text-slate-950 font-semibold shadow-md shadow-amber-500/25'
-        },
-        {
-          id: 'cs',
-          labelVi: 'IDE Tin học & Code',
-          labelEn: 'Sublime CS IDE',
-          icon: (
-            <span className="icon-anim-code">
-              <Code2 className="w-5 h-5 shrink-0" />
-            </span>
-          ),
-          idleClass:
-            'bg-emerald-50/85 dark:bg-emerald-950/35 border border-emerald-300/80 dark:border-emerald-500/35 text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/55 hover:border-emerald-400',
-          activeClass:
-            'bg-gradient-to-r from-emerald-600 to-teal-500 border border-emerald-400 text-white shadow-md shadow-emerald-600/25'
+            'bg-gradient-to-r from-blue-600 to-indigo-600 border border-blue-400 text-white shadow-md shadow-blue-600/25'
         }
       ]
     },
@@ -588,6 +575,109 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </button>
                 );
               })}
+
+              {/* Grouped "Môn học" Folder Button right inside Disciplines & Labs group */}
+              {group.titleEn === 'Disciplines & Labs' && (
+                <div className="space-y-1.5 pt-0.5">
+                  <button
+                    type="button"
+                    data-ripple="true"
+                    aria-expanded={isSubjectsOpen}
+                    onClick={() => {
+                      if (isRail) {
+                        onToggleCollapse();
+                        setIsSubjectsOpen(true);
+                      } else {
+                        setIsSubjectsOpen((v) => !v);
+                      }
+                    }}
+                    title={isEn ? 'Subjects (Math · Physics · CS)' : 'Môn học (Toán · Vật lí · Tin học)'}
+                    className={`group cs-deck-btn w-full min-h-[46px] flex items-center ${
+                      isRail
+                        ? 'justify-center px-2.5 py-3'
+                        : 'justify-between gap-2.5 px-3 py-2.5'
+                    } rounded text-[13.5px] font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                      currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs'
+                        ? 'bg-slate-900 dark:bg-sky-600 border border-sky-400 text-white shadow-md'
+                        : 'bg-blue-50/85 dark:bg-slate-900/85 border border-blue-300/80 dark:border-slate-700 text-slate-900 dark:text-slate-100 hover:border-sky-400'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <BookOpen className="w-5 h-5 shrink-0" />
+                      {!isRail && (
+                        <span className="truncate">{isEn ? 'Subjects (3)' : 'Môn học'}</span>
+                      )}
+                    </span>
+                    {!isRail && (
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[11px] font-mono opacity-80">3</span>
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform duration-150 ${
+                            isSubjectsOpen ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </span>
+                    )}
+                  </button>
+
+                  {!isRail && isSubjectsOpen && (
+                    <div className="pl-3 space-y-1.5 border-l border-slate-200 dark:border-slate-800 ml-3">
+                      {(
+                        [
+                          {
+                            id: 'math',
+                            labelVi: 'Toán học (Bài giảng)',
+                            labelEn: 'Math Lessons',
+                            icon: <Compass className="w-4 h-4 shrink-0" />,
+                            idleClass:
+                              'bg-blue-50/85 dark:bg-blue-950/35 border border-blue-300/80 dark:border-blue-500/35 text-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/55',
+                            activeClass:
+                              'bg-gradient-to-r from-blue-600 to-sky-500 border border-blue-400 text-white shadow-sm'
+                          },
+                          {
+                            id: 'physics',
+                            labelVi: 'Vật lí (Bài giảng)',
+                            labelEn: 'Physics Lessons',
+                            icon: <Zap className="w-4 h-4 shrink-0" />,
+                            idleClass:
+                              'bg-amber-50/85 dark:bg-amber-950/35 border border-amber-300/80 dark:border-amber-500/35 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/55',
+                            activeClass:
+                              'bg-gradient-to-r from-amber-500 to-yellow-500 border border-amber-300 text-slate-950 font-bold shadow-sm'
+                          },
+                          {
+                            id: 'cs',
+                            labelVi: 'Tin học & IDE Code',
+                            labelEn: 'CS & Code IDE',
+                            icon: <Code2 className="w-4 h-4 shrink-0" />,
+                            idleClass:
+                              'bg-emerald-50/85 dark:bg-emerald-950/35 border border-emerald-300/80 dark:border-emerald-500/35 text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/55',
+                            activeClass:
+                              'bg-gradient-to-r from-emerald-600 to-teal-500 border border-emerald-400 text-white shadow-sm'
+                          }
+                        ] as NavItemDef[]
+                      ).map((subItem) => {
+                        const subActive = currentSubject === subItem.id;
+                        return (
+                          <button
+                            key={subItem.id}
+                            type="button"
+                            data-ripple="true"
+                            onClick={() => handleSelect(subItem)}
+                            className={`group cs-deck-btn w-full min-h-[40px] flex items-center gap-2.5 px-3 py-2 rounded text-[13px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                              subActive ? subItem.activeClass : subItem.idleClass
+                            }`}
+                          >
+                            {subItem.icon}
+                            <span className="truncate">
+                              {isEn ? subItem.labelEn : subItem.labelVi}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
 

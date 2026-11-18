@@ -714,8 +714,14 @@ export function getDomainFor3DSim(modeId: Physics3DMode): PhysicsDomainId {
   return PHYSICS_3D_SIMS[modeId]?.domainId ?? 'mechanics';
 }
 
-export function getPhysicsSimCounts(): { count2D: number; count3D: number; total: number } {
+export function getPhysicsSimCounts(): {
+  domainCount: number;
+  count2D: number;
+  count3D: number;
+  total: number;
+} {
+  const domainCount = PHYSICS_DOMAINS.length;
   const count2D = Object.keys(PHYSICS_2D_SIMS).length;
   const count3D = Object.keys(PHYSICS_3D_SIMS).length;
-  return { count2D, count3D, total: count2D + count3D };
+  return { domainCount, count2D, count3D, total: count2D + count3D };
 }

@@ -1,5 +1,12 @@
 import { Physics3DMode, PhysicsSimType } from '../types';
 import { Physics2DSimSpec, Physics3DSimSpec } from './physicsDomainsData';
+import {
+  BATCH2_3D_SCENE_CONFIGS,
+  BATCH2_PHYSICS_2D_SIMS,
+  BATCH2_PHYSICS_3D_SIMS,
+  Batch2Physics3DModeId,
+  Batch2PhysicsSim2DId
+} from './physicsExtraSimsBatch2Data';
 
 export type ExtraPhysicsSim2DId =
   | 'atwood_pulley'
@@ -23,7 +30,8 @@ export type ExtraPhysicsSim2DId =
   | 'pv_thermodynamics'
   | 'calorimetry_mixing'
   | 'bernoulli_flow'
-  | 'nuclear_fission';
+  | 'nuclear_fission'
+  | Batch2PhysicsSim2DId;
 
 export type ExtraPhysics3DModeId =
   | 'inclined_plane_3d'
@@ -43,7 +51,8 @@ export type ExtraPhysics3DModeId =
   | 'blackbody_cavity_3d'
   | 'carnot_piston_3d'
   | 'nuclear_fission_3d'
-  | 'rutherford_scattering_3d';
+  | 'rutherford_scattering_3d'
+  | Batch2Physics3DModeId;
 
 export interface Extra3DParamDef {
   key: string;
@@ -65,6 +74,7 @@ export interface Extra3DSceneConfig {
 }
 
 export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec> = {
+  ...BATCH2_PHYSICS_2D_SIMS,
   // --------------------------------------------------------------------------
   // DOMAIN 1: MECHANICS (+5)
   // --------------------------------------------------------------------------
@@ -532,6 +542,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
 };
 
 export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpec> = {
+  ...BATCH2_PHYSICS_3D_SIMS,
   // Mechanics 3D (+4)
   inclined_plane_3d: {
     id: 'inclined_plane_3d',
@@ -778,6 +789,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
 };
 
 export const EXTRA_3D_SCENE_CONFIGS: Record<ExtraPhysics3DModeId, Extra3DSceneConfig> = {
+  ...BATCH2_3D_SCENE_CONFIGS,
   inclined_plane_3d: {
     mode: 'inclined_plane_3d',
     shortLabel: 'Mặt Phẳng Nghiêng 3D',

@@ -987,7 +987,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                           onClick={() => {
                             if (q.simulationLink?.type === 'math') {
                               const tab = q.simulationLink.targetId as 'grapher' | 'geometry' | 'math3d';
-                              navigate({ subject: 'math', mathTab: tab });
+                              navigate({ subject: 'math_sims', mathTab: tab });
                             } else if (q.simulationLink?.type === 'physics') {
                               navigate({ subject: 'physics', physicsView: 'catalog' });
                             } else if (q.simulationLink?.type === 'cs') {
@@ -1777,7 +1777,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                           onClick={() => {
                             if (q.simulationLink?.type === 'math') {
                               const tab = q.simulationLink.targetId as 'grapher' | 'geometry' | 'math3d';
-                              navigate({ subject: 'math', mathTab: tab });
+                              navigate({ subject: 'math_sims', mathTab: tab });
                             } else if (q.simulationLink?.type === 'physics') {
                               navigate({ subject: 'physics', physicsView: 'catalog' });
                             } else if (q.simulationLink?.type === 'cs') {

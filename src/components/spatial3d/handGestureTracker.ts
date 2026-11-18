@@ -100,7 +100,7 @@ export const DEFAULT_GESTURE_SETTINGS: GestureSettings = {
     slice_2: 'sweep_tangent',
     morph_3: 'cycle_symmetry',
     reassemble_4: 'none',
-    palm_5: 'rotate_pan',
+    palm_5: 'none',
     two_hand_10: 'dual_compass',
     fist_0: 'freeze_lock'
   }
@@ -342,6 +342,54 @@ export const REAL_GRAB_GESTURES: GestureMeta[] = [
     actionVi: 'Tách 2 bàn tay ra xa để Phóng To · Khép 2 bàn tay lại gần để Thu Nhỏ mượt mà.',
     actionEn: 'Spread both hands apart to Zoom In · Bring them closer to Zoom Out smoothly.',
     accent: '#38bdf8'
+  }
+];
+
+export const SIMPLE_2D_GESTURES: GestureMeta[] = [
+  {
+    id: 'palm_5',
+    fingers: '🖐️',
+    labelVi: 'Mở 5 Ngón · Di Chuyển Ngắm (Không Vẽ)',
+    labelEn: 'Open Hand · Aim & Hover Safely',
+    actionVi: 'Di chuyển con trỏ trên bảng Oxy tự do mà không làm vẽ nhầm hay kéo lệch hình.',
+    actionEn: 'Move your cursor freely across the Oxy board without drawing or dragging objects.',
+    accent: '#22d3ee'
+  },
+  {
+    id: 'point_1',
+    fingers: '☝️',
+    labelVi: '1 Ngón Trỏ · Vẽ Nét & Tạo Hình',
+    labelEn: '1 Index Finger · Draw & Create',
+    actionVi: 'Giơ 1 ngón trỏ (hoặc kéo chuột) để vẽ nét tự do, vẽ hình chuẩn, kẻ Kính vạn hoa & uốn Parabol.',
+    actionEn: 'Point 1 index finger (or drag mouse) to draw freehand, shapes, Kaleidoscope & curves.',
+    accent: '#34d399'
+  },
+  {
+    id: 'pinch',
+    fingers: '🤏',
+    labelVi: 'Chụm Ngón · Gắp & Kéo Di Chuyển',
+    labelEn: 'Pinch · Grab & Drag Anything',
+    actionVi: 'Chụm ngón cái + trỏ để gắp & kéo đỉnh tam giác A/B/C, điểm P tiếp tuyến, hình đã vẽ hoặc mảnh Tangram.',
+    actionEn: 'Pinch thumb + index to grab & drag vertices, tangent point P, drawn shapes or Tangram tiles.',
+    accent: '#f59e0b'
+  },
+  {
+    id: 'slice_2',
+    fingers: '✌️',
+    labelVi: '2 Ngón V · Xoay / Đổi Nhanh',
+    labelEn: '2 Fingers · Rotate / Cycle Mode',
+    actionVi: 'Giơ 2 ngón chữ V để xoay 45° mảnh Tangram, đổi số cánh Kính vạn hoa (4/6/8/12) hoặc quét đường cắt.',
+    actionEn: 'Show 2 fingers to rotate Tangram tiles 45°, cycle Kaleidoscope axes, or sweep secant line.',
+    accent: '#a855f7'
+  },
+  {
+    id: 'fist_0',
+    fingers: '✊',
+    labelVi: 'Nắm Đấm · Khóa Bảng Đọc Tọa Độ',
+    labelEn: 'Fist · Freeze Board & Inspect',
+    actionVi: 'Nắm tay (0 ngón) để đứng yên bảng Oxy tức thì, dễ dàng đọc số đo chu vi, diện tích & phương trình.',
+    actionEn: 'Close fist (0 fingers) to freeze the Oxy board instantly to inspect coordinates and metrics.',
+    accent: '#64748b'
   }
 ];
 

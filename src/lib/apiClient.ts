@@ -7,6 +7,8 @@ export interface SafeApiResponse<T = any> {
 }
 
 const BUILTIN_CLOUD_API_BASE =
+  'https://ais-pre-qrbmu7cs5wp47n6nlbl4ci-223538708453.asia-east1.run.app';
+const PREVIOUS_CLOUD_API_BASE =
   'https://ais-pre-zoetjpf6ywpdfftq66dzuz-183305151918.asia-southeast1.run.app';
 const LEGACY_CLOUD_API_BASE =
   'https://ais-pre-2cajz7v7fqng2hy3peejkj-489067186717.asia-southeast1.run.app';
@@ -154,9 +156,16 @@ function isNonHttpPackagedProtocol(): boolean {
 
 export function isPackagedOrStaticOrigin(): boolean {
   if (typeof window === 'undefined') return false;
+  if (import.meta.env.VITE_STATIC_HOST === 'true') return true;
   if (isNonHttpPackagedProtocol()) return true;
   const { hostname } = window.location;
-  if (hostname.endsWith('.github.io')) return true;
+  if (
+    hostname.endsWith('.github.io') ||
+    hostname.endsWith('.pages.dev') ||
+    hostname.endsWith('.netlify.app')
+  ) {
+    return true;
+  }
   if (hostname === 'tauri.localhost') return true;
   return false;
 }
@@ -217,6 +226,7 @@ async function probeHealthyBackendBase(): Promise<string | null> {
   if (stored) candidates.push(stored);
   candidates.push(DEFAULT_REMOTE_API_BASE);
   candidates.push(BUILTIN_CLOUD_API_BASE);
+  candidates.push(PREVIOUS_CLOUD_API_BASE);
   candidates.push(LEGACY_CLOUD_API_BASE);
   candidates.push('http://127.0.0.1:3000');
   candidates.push('http://localhost:3000');

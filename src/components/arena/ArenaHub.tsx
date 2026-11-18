@@ -799,18 +799,19 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
     return (
       <div className="space-y-6">
         {/* Match Top Bar */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="arena-beam-sweep" />
+          <div className="flex items-center gap-3 relative z-10">
             <button
               onClick={() => setActiveMatch(null)}
-              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
+              className="arena-btn cs-deck-btn px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{isEn ? 'Back to Arena Lobby' : 'Quay lại Sảnh Đấu Trường'}</span>
             </button>
             <div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <span className={`px-2 py-0.5 rounded-md border text-[11px] font-bold ${matchDivMeta.badgeColor}`}>
+                <span className={`px-2 py-0.5 rounded-sm border text-[11px] font-bold ${matchDivMeta.badgeColor}`}>
                   {isEn ? matchDivMeta.labelEn : matchDivMeta.labelVi}
                 </span>
                 <span>·</span>
@@ -824,15 +825,15 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5 tabular-nums">
+          <div className="flex items-center gap-2.5 shrink-0 relative z-10">
+            <div className="px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300/70 dark:border-slate-700 font-mono text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5 tabular-nums">
               <Clock className="w-4 h-4 text-indigo-500" />
               <span>{formatDuration(matchElapsedSec)}</span>
             </div>
 
             {isMatchInProgress ? (
               <div
-                className="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5"
+                className="px-3 py-2 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5"
                 title={isEn ? 'Syn AI Assistant is disabled during live competition for fair play' : 'Trợ lý Syn AI đã tạm tắt khi đang thi đấu để đảm bảo công bằng'}
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -850,7 +851,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                         : mcqs.map((q, idx) => `Câu ${idx + 1}: ${q.question}`).join('\n')
                   })
                 }
-                className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                className="arena-btn cs-deck-btn px-3 py-2 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{isEn ? 'Review with Syn AI' : 'Hỏi Syn AI sau thi'}</span>
@@ -863,13 +864,16 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         {activeMatch.mode === 'mcq' && (
           <div className="space-y-4">
             {mcqResult && (
-              <div className="bg-slate-900 text-white rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="text-xs text-amber-300 font-semibold">
+              <div className="arena-frame arena-stagger-in bg-slate-900 border border-sky-500/40 text-white rounded-md p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="arena-beam-sweep" />
+                <div className="space-y-1 relative z-10">
+                  <div className="text-xs text-amber-300 font-mono font-bold uppercase tracking-wider">
                     {isEn ? `Official Today (${dateKey}) · Recorded on ${weekId} Leaderboard` : `Kết quả chính thức hôm nay (${dateKey}) · Đã ghi nhận vào BXH ${weekId}`}
                   </div>
                   <h3 className="text-2xl font-extrabold tabular-nums">
-                    {isEn ? `Score: ${mcqResult.attempt.score}/100 (${mcqResult.correctCount}/${mcqResult.total} correct)` : `Điểm số: ${mcqResult.attempt.score}/100 (${mcqResult.correctCount}/{mcqResult.total} câu đúng)`}
+                    {isEn
+                      ? `Score: ${mcqResult.attempt.score}/100 (${mcqResult.correctCount}/${mcqResult.total} correct)`
+                      : `Điểm số: ${mcqResult.attempt.score}/100 (${mcqResult.correctCount}/${mcqResult.total} câu đúng)`}
                   </h3>
                   <p className="text-xs text-slate-300">
                     {isEn
@@ -879,7 +883,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                 </div>
                 <button
                   onClick={() => setActiveMatch(null)}
-                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold shrink-0"
+                  className="arena-btn arena-btn-primary cs-deck-btn relative z-10 px-5 py-2.5 rounded-md bg-amber-400 hover:bg-amber-300 border border-amber-200 text-slate-950 text-xs font-extrabold shrink-0 cursor-pointer"
                 >
                   {isEn ? 'View Weekly Leaderboard' : 'Xem Bảng Xếp Hạng Tuần'}
                 </button>
@@ -894,13 +898,14 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               return (
                 <div
                   key={q.id}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3"
+                  style={{ animationDelay: `${idx * 45}ms` }}
+                  className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 space-y-3"
                 >
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
                       {isEn ? `Question ${idx + 1}` : `Câu ${idx + 1}`} · {q.grade}
                     </span>
-                    <span className="tabular-nums font-mono">{q.points} {isEn ? 'pts' : 'điểm'}</span>
+                    <span className="tabular-nums font-mono font-semibold">{q.points} {isEn ? 'pts' : 'điểm'}</span>
                   </div>
 
                   <div className="text-sm text-slate-900 dark:text-slate-100 leading-relaxed font-medium">
@@ -923,7 +928,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                         }
                       } else if (selected) {
                         stateStyle =
-                          'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-600 text-indigo-900 dark:text-indigo-200 font-semibold';
+                          'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-600 text-indigo-900 dark:text-indigo-200 font-semibold shadow-sm';
                       }
 
                       return (
@@ -931,9 +936,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                           key={optIdx}
                           disabled={isSubmitted}
                           onClick={() => setMcqAnswers((prev) => ({ ...prev, [q.id]: optIdx }))}
-                          className={`p-3 rounded-xl border text-left text-xs sm:text-sm flex items-start gap-2.5 transition-all ${stateStyle}`}
+                          className={`arena-btn p-3 rounded-md border text-left text-xs sm:text-sm flex items-start gap-2.5 cursor-pointer disabled:cursor-default ${stateStyle}`}
                         >
-                          <span className="w-6 h-6 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-mono text-xs font-bold flex items-center justify-center shrink-0">
+                          <span className="w-6 h-6 rounded-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-mono text-xs font-bold flex items-center justify-center shrink-0">
                             {String.fromCharCode(65 + optIdx)}
                           </span>
                           <div className="flex-1 pt-0.5">
@@ -945,7 +950,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   </div>
 
                   {isSubmitted && (
-                    <div className="mt-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                    <div className="mt-3 p-3.5 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
                       <div className="flex items-center justify-between">
                         <span
                           className={`font-bold flex items-center gap-1.5 ${
@@ -966,7 +971,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                                 problemStatement: `${q.question}\nCác lựa chọn: ${q.options.join(' | ')}`
                               })
                             }
-                            className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1"
+                            className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                             <span>{isEn ? 'Ask Syn AI to explain' : 'Hỏi Syn AI giảng lại câu này'}</span>
@@ -983,21 +988,21 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             })}
 
             {submitError && (
-              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+              <div className="p-3 rounded-md bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{submitError}</span>
               </div>
             )}
 
             {!mcqResult && (
-              <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
-                <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+              <div className="arena-frame flex items-center justify-between bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-md p-4">
+                <span className="text-xs font-mono text-slate-600 dark:text-slate-400 tabular-nums">
                   {isEn ? `Selected ${Object.keys(mcqAnswers).length}/${mcqs.length} questions` : `Đã chọn ${Object.keys(mcqAnswers).length}/${mcqs.length} câu`}
                 </span>
                 <button
                   onClick={handleSubmitMCQ}
                   disabled={isSubmittingMatch}
-                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 disabled:opacity-50"
+                  className="arena-btn arena-btn-primary cs-deck-btn px-6 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-700 border border-indigo-400/50 text-white text-xs font-extrabold flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   <span>
@@ -1016,8 +1021,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Prompt & Official Rubric */}
             <div className="lg:col-span-5 space-y-4">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
-                <div className="text-xs text-slate-500 dark:text-slate-400">
+              <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-md p-5 space-y-4">
+                <div className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
                   {essay.grade} · {isEn ? '100-point Scale' : 'Thang điểm 100'}
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{essay.title}</h3>
@@ -1025,7 +1030,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   <FormattedText text={essay.prompt} />
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
                   <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
                     {isEn ? 'Essay Grading Rubric:' : 'Biểu điểm chấm Tự luận:'}
                   </div>
@@ -1046,10 +1051,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             {/* Right: Answer Composer & Grading Result */}
             <div className="lg:col-span-7 space-y-4">
               {essayResult ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5">
-                  <div className="bg-slate-900 text-white rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <div className="text-xs text-amber-300 font-semibold">
+                <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-md p-6 space-y-5">
+                  <div className="arena-frame bg-slate-900 border border-amber-400/40 text-white rounded-md p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="arena-beam-sweep" />
+                    <div className="relative z-10">
+                      <div className="text-xs text-amber-300 font-mono font-bold uppercase tracking-wider">
                         {isEn ? `Official Essay Score (${dateKey})` : `Điểm Tự Luận Chính Thức (${dateKey})`}
                       </div>
                       <div className="text-3xl font-extrabold tabular-nums mt-1">
@@ -1058,7 +1064,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     </div>
                     <button
                       onClick={() => setActiveMatch(null)}
-                      className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold"
+                      className="arena-btn arena-btn-primary cs-deck-btn relative z-10 px-4 py-2.5 rounded-md bg-amber-400 hover:bg-amber-300 border border-amber-200 text-slate-950 text-xs font-extrabold cursor-pointer"
                     >
                       {isEn ? 'View Weekly Leaderboard' : 'Xem Bảng Xếp Hạng Tuần'}
                     </button>
@@ -1074,7 +1080,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                         {essayResult.evaluation.stepScores.map((st, idx) => (
                           <div
                             key={idx}
-                            className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-1"
+                            className="p-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-1"
                           >
                             <div className="flex items-center justify-between font-bold text-slate-900 dark:text-slate-100">
                               <span>{st.criterion}</span>
@@ -1092,7 +1098,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 space-y-1.5">
+                    <div className="p-3.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 space-y-1.5">
                       <div className="font-bold text-emerald-700 dark:text-emerald-300">Điểm làm tốt:</div>
                       {essayResult.evaluation.strengths.map((s, i) => (
                         <div key={i} className="text-slate-700 dark:text-slate-300">
@@ -1100,7 +1106,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                         </div>
                       ))}
                     </div>
-                    <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1.5">
+                    <div className="p-3.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1.5">
                       <div className="font-bold text-amber-700 dark:text-amber-300">Phần cần khắc phục:</div>
                       {essayResult.evaluation.mistakes.length > 0 ? (
                         essayResult.evaluation.mistakes.map((m, i) => (
@@ -1114,7 +1120,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+                  <div className="p-3.5 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
                     <div className="font-bold text-slate-800 dark:text-slate-200">Nhận xét & Đáp án tham khảo:</div>
                     <div className="text-slate-600 dark:text-slate-300">
                       <FormattedText text={essayResult.evaluation.detailedFeedback} />
@@ -1126,7 +1132,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
+                <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-md p-5 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
                       <FileText className="w-4 h-4 text-indigo-500" />
@@ -1135,12 +1141,12 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
                     <div className="flex items-center gap-1.5">
                       {activeMatch.subject === 'cs' && (
-                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 rounded-md">
                           {(['cpp', 'python'] as CodeLanguage[]).map((lg) => (
                             <button
                               key={lg}
                               onClick={() => setCsLang(lg)}
-                              className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold ${
+                              className={`px-2 py-0.5 rounded-sm text-[11px] font-mono font-bold cursor-pointer ${
                                 csLang === lg
                                   ? 'bg-indigo-600 text-white'
                                   : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -1161,7 +1167,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                       />
                       <button
                         onClick={() => setShowEssayPreview(!showEssayPreview)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 cursor-pointer"
+                        className="arena-btn px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>{showEssayPreview ? 'Soạn thảo' : 'Xem trước KaTeX'}</span>
@@ -1184,7 +1190,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                           key={sym.label}
                           type="button"
                           onClick={() => insertLatexSnippet(sym.val)}
-                          className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-[11px] font-medium text-slate-700 dark:text-slate-300"
+                          className="arena-btn px-2 py-1 rounded-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-[11px] font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
                         >
                           + {sym.label}
                         </button>
@@ -1193,7 +1199,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   )}
 
                   {showEssayPreview ? (
-                    <div className="min-h-[220px] p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
+                    <div className="min-h-[220px] p-4 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
                       {essayText.trim() ? <FormattedText text={essayText} /> : 'Chưa có nội dung bài giải.'}
                     </div>
                   ) : (
@@ -1206,7 +1212,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                           ? 'Viết giải thích thuật toán & code C++/Python tại đây...'
                           : 'Trình bày từng bước giải rõ ràng (có thể dùng $...$ cho công thức Toán/Lí)...'
                       }
-                      className={`w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 ${
+                      className={`w-full p-3.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 ${
                         activeMatch.subject === 'cs' ? 'font-mono text-xs' : 'text-sm'
                       }`}
                     />
@@ -1218,13 +1224,13 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                       <button
                         type="button"
                         onClick={handleRunCsSampleTests}
-                        className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1.5"
+                        className="arena-btn px-3.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                       >
                         <Play className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Chạy thử {essay.sampleCode.tests.length} test mẫu</span>
                       </button>
                       {csTestOutput && (
-                        <pre className="p-3 rounded-xl bg-slate-950 text-emerald-300 font-mono text-[11px] whitespace-pre-wrap border border-slate-800">
+                        <pre className="p-3 rounded-md bg-slate-950 text-emerald-300 font-mono text-[11px] whitespace-pre-wrap border border-slate-800">
                           {csTestOutput}
                         </pre>
                       )}
@@ -1232,8 +1238,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   )}
 
                   {/* Optional handwritten image upload */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200/80 dark:border-slate-800">
+                    <label className="arena-btn inline-flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
                       <ImageIcon className="w-4 h-4 text-indigo-500" />
                       <span>
                         {essayImage
@@ -1246,7 +1252,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     <button
                       onClick={handleSubmitEssay}
                       disabled={isSubmittingMatch}
-                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 disabled:opacity-50"
+                      className="arena-btn arena-btn-primary cs-deck-btn px-5 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-700 border border-indigo-400/50 text-white text-xs font-extrabold flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                     >
                       <Send className="w-4 h-4" />
                       <span>
@@ -1258,7 +1264,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   </div>
 
                   {submitError && (
-                    <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                    <div className="p-3 rounded-md bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0" />
                       <span>{submitError}</span>
                     </div>
@@ -1277,13 +1283,14 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   // =====================================================================
   return (
     <div className="space-y-6">
-      {/* Top Arena Header */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      {/* Top Arena Header (Crisp Square-Cut Architectural Frame) */}
+      <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm">
+        <div className="arena-beam-sweep" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div className="space-y-2">
             <button
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="arena-btn cs-deck-btn inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:border-indigo-400 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{isEn ? 'Back to Classroom' : 'Quay lại Lớp học'}</span>
@@ -1302,11 +1309,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs space-y-1">
-              <div className="font-bold text-slate-900 dark:text-slate-100">
+            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-4 py-3 text-xs space-y-1">
+              <div className="font-mono font-bold text-slate-900 dark:text-slate-100">
                 {weekId} · {getWeekDateRangeLabel()}
               </div>
-              <div className="text-slate-500 dark:text-slate-400 tabular-nums flex items-center gap-1.5">
+              <div className="text-slate-500 dark:text-slate-400 tabular-nums flex items-center gap-1.5 font-mono">
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
                 <span>{isEn ? `Next daily reset in: ${resetCountdown}` : `Mở lượt ngày mới sau: ${resetCountdown}`}</span>
               </div>
@@ -1315,7 +1322,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             {!user && (
               <button
                 onClick={() => openAuthModal('login')}
-                className="px-4 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5"
+                className="arena-btn arena-btn-primary cs-deck-btn px-4 py-3 rounded-md bg-slate-900 dark:bg-white border border-slate-700 dark:border-slate-200 text-white dark:text-slate-900 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
                 <span>{isEn ? 'Sign In to Save Rank' : 'Đăng nhập lưu hạng'}</span>
@@ -1326,7 +1333,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
         {/* Contestant Name Bar (when playing as guest) */}
         {!user && (
-          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="mt-4 pt-4 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
             <div className="text-xs text-slate-600 dark:text-slate-400">
               Bạn đang thi đấu với tên hiển thị khách (hoặc đăng nhập tài khoản để đồng bộ đa thiết bị):
             </div>
@@ -1336,11 +1343,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                 value={editingGuestName}
                 onChange={(e) => setEditingGuestName(e.target.value)}
                 maxLength={40}
-                className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100"
+                className="px-3 py-1.5 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
               />
               <button
                 onClick={handleUpdateGuestName}
-                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold"
+                className="arena-btn cs-deck-btn px-3.5 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-700 border border-indigo-400/50 text-white text-xs font-bold cursor-pointer"
               >
                 Lưu tên
               </button>
@@ -1350,10 +1357,13 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       </div>
 
       {/* Zone / Division Selector (Khối Lớp & Hệ Chuyên / Không Chuyên / Đội Tuyển HSG) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div
+        style={{ animationDelay: '60ms' }}
+        className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm space-y-4"
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-700 flex items-center justify-center shrink-0">
               <GraduationCap className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
@@ -1370,13 +1380,13 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             </div>
           </div>
 
-          <span className={`self-start md:self-auto px-3 py-1 rounded-lg border text-xs font-bold shrink-0 ${divisionMeta.badgeColor}`}>
+          <span className={`self-start md:self-auto px-3 py-1 rounded-sm border text-xs font-bold shrink-0 ${divisionMeta.badgeColor}`}>
             {isEn ? divisionMeta.labelEn : divisionMeta.labelVi}
           </span>
         </div>
 
         {/* Grade Group + Track Selector */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-slate-200/80 dark:border-slate-800 relative z-10">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">
               {isEn ? 'Grade:' : 'Khối lớp:'}
@@ -1396,10 +1406,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   key={g.id}
                   type="button"
                   onClick={() => handleSelectGradeAndTrack(g.id)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  className={`arena-btn cs-deck-btn px-3.5 py-2 rounded-md text-xs font-bold border cursor-pointer ${
                     active
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                      : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400'
+                      ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
+                      : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
                   }`}
                 >
                   {isEn ? g.en : g.vi}
@@ -1409,7 +1419,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
           </div>
 
           {divisionMeta.gradeGroup !== 'olp' ? (
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl self-start lg:self-auto">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md self-start lg:self-auto">
               {(
                 [
                   { id: 'khong_chuyen', vi: 'Hệ Không Chuyên (Chuẩn)', en: 'Standard Track' },
@@ -1422,10 +1432,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     key={t.id}
                     type="button"
                     onClick={() => handleSelectGradeAndTrack(divisionMeta.gradeGroup, t.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    className={`arena-btn px-3 py-1.5 rounded-sm text-xs font-bold cursor-pointer whitespace-nowrap border ${
                       active
-                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                        : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     {isEn ? t.en : t.vi}
@@ -1434,7 +1444,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               })}
             </div>
           ) : (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 text-xs font-bold text-purple-700 dark:text-purple-300">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-purple-50 dark:bg-purple-950/50 border border-purple-300 dark:border-purple-700 text-xs font-bold text-purple-700 dark:text-purple-300">
               <Layers className="w-3.5 h-3.5" />
               <span>{isEn ? 'National Olympiad & VNOI Tier' : 'Bảng Chuyên Sâu HSG Tỉnh / Quốc Gia / VNOI'}</span>
             </div>
@@ -1442,7 +1452,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         </div>
 
         {/* Active Zone Info Strip */}
-        <div className="px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <div className="px-3.5 py-2.5 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs relative z-10">
           <div className="text-slate-600 dark:text-slate-300">
             <strong className="text-slate-900 dark:text-white">
               {isEn ? 'Zone Focus: ' : 'Trọng tâm khu vực: '}
@@ -1458,19 +1468,23 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
       {/* My Weekly Performance KPI Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div
+          style={{ animationDelay: '100ms' }}
+          className="arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm"
+        >
+          <div className="h-[2px] w-10 bg-indigo-500 mb-2" />
           <div className="text-xs text-slate-500 dark:text-slate-400">
             {isEn ? `Weekly Avg / Rank (${divisionMeta.shortLabelEn})` : `Điểm TB / Hạng (${divisionMeta.shortLabelVi})`}
           </div>
           <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums mt-1">
             {myLeaderboardRow.entry ? `${myLeaderboardRow.entry.overallAvg}${isEn ? 'pt' : 'đ'}` : '—'}
-            <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 ml-2">
+            <span className="text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 ml-2">
               {myLeaderboardRow.rank ? `#${myLeaderboardRow.rank}` : (isEn ? 'Unranked' : 'Chưa có hạng')}
             </span>
           </div>
         </div>
 
-        {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj) => {
+        {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj, kIdx) => {
           const avg =
             subj === 'math'
               ? myLeaderboardRow.entry?.mathAvg
@@ -1484,11 +1498,15 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               ? myLeaderboardRow.entry?.physicsBest
               : myLeaderboardRow.entry?.csBest;
           const meta = subjectMeta[subj];
+          const topBarColor =
+            subj === 'math' ? 'bg-blue-500' : subj === 'physics' ? 'bg-amber-500' : 'bg-emerald-500';
           return (
             <div
               key={subj}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs"
+              style={{ animationDelay: `${145 + kIdx * 45}ms` }}
+              className="arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm"
             >
+              <div className={`h-[2px] w-10 ${topBarColor} mb-2`} />
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>{isEn ? `${meta.labelEn} (Weekly Avg)` : `${meta.label} (TB tuần)`}</span>
                 {meta.icon}
@@ -1496,7 +1514,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums mt-1">
                 {avg !== null && avg !== undefined ? `${avg}${isEn ? 'pt' : 'đ'}` : '—'}
                 {best !== null && best !== undefined && (
-                  <span className="text-xs font-medium text-slate-500 ml-2">Max {best}</span>
+                  <span className="text-xs font-mono font-medium text-slate-500 ml-2">Max {best}</span>
                 )}
               </div>
             </div>
@@ -1506,26 +1524,37 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
       {/* Daily Arena Subject Cards (1 Attempt / Day / Subject) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj) => {
+        {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj, sIdx) => {
           const meta = subjectMeta[subj];
           const todayAttempt = userAttemptsToday[subj];
           const chosenMode = selectedLobbyMode[subj];
+          const accentStrip =
+            subj === 'math'
+              ? 'from-blue-500 via-cyan-400 to-indigo-500'
+              : subj === 'physics'
+              ? 'from-amber-500 via-orange-400 to-yellow-400'
+              : 'from-emerald-500 via-teal-400 to-cyan-500';
 
           return (
             <div
               key={subj}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between gap-4"
+              style={{ animationDelay: `${220 + sIdx * 60}ms` }}
+              className="arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm flex flex-col justify-between gap-4"
             >
-              <div className="space-y-3">
+              <div className={`absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r ${accentStrip}`} />
+
+              <div className="space-y-3 pt-1 relative z-10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {meta.icon}
+                    <div className="w-8 h-8 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                      {meta.icon}
+                    </div>
                     <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                       {isEn ? meta.labelEn : meta.label}
                     </h3>
                   </div>
                   <span
-                    className={`text-xs font-semibold tabular-nums ${
+                    className={`text-xs font-mono font-bold tabular-nums ${
                       todayAttempt ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                     }`}
                   >
@@ -1536,7 +1565,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                 </div>
 
                 {todayAttempt ? (
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
+                  <div className="p-3.5 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
                     <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
                       <Lock className="w-3.5 h-3.5 text-amber-500" />
                       <span>{isEn ? `Completed today's round (${dateKey})` : `Đã hoàn thành lượt thi hôm nay (${dateKey})`}</span>
@@ -1545,8 +1574,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                       {isEn ? 'Mode:' : 'Hình thức:'}{' '}
                       {todayAttempt.mode === 'mcq' ? (isEn ? 'MCQ' : 'Trắc nghiệm') : (isEn ? 'Essay' : 'Tự luận')} ·{' '}
                       {isEn ? 'Score:' : 'Điểm:'}{' '}
-                      <strong className="text-indigo-600 dark:text-indigo-400">{todayAttempt.score}/100</strong> ·{' '}
-                      {formatDuration(todayAttempt.durationSec)}
+                      <strong className="font-mono text-indigo-600 dark:text-indigo-400">{todayAttempt.score}/100</strong> ·{' '}
+                      <span className="font-mono">{formatDuration(todayAttempt.durationSec)}</span>
                     </div>
                     <div className="text-[11px] text-slate-500">{todayAttempt.summary}</div>
                   </div>
@@ -1555,23 +1584,23 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     <div className="text-xs text-slate-500 dark:text-slate-400">
                       {isEn ? "Select round mode for today's single attempt:" : 'Chọn hình thức thi đấu cho lượt duy nhất hôm nay:'}
                     </div>
-                    <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                    <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
                       <button
                         onClick={() => setSelectedLobbyMode((prev) => ({ ...prev, [subj]: 'mcq' }))}
-                        className={`py-2 px-2 rounded-lg text-xs font-semibold transition-colors ${
+                        className={`arena-btn py-2 px-2 rounded-sm text-xs font-bold cursor-pointer border ${
                           chosenMode === 'mcq'
-                            ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                            : 'text-slate-600 dark:text-slate-400'
+                            ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-slate-900 dark:text-white shadow-xs'
+                            : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         {isEn ? 'MCQ (5 Qs)' : 'Trắc nghiệm (5 câu)'}
                       </button>
                       <button
                         onClick={() => setSelectedLobbyMode((prev) => ({ ...prev, [subj]: 'essay' }))}
-                        className={`py-2 px-2 rounded-lg text-xs font-semibold transition-colors ${
+                        className={`arena-btn py-2 px-2 rounded-sm text-xs font-bold cursor-pointer border ${
                           chosenMode === 'essay'
-                            ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                            : 'text-slate-600 dark:text-slate-400'
+                            ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-slate-900 dark:text-white shadow-xs'
+                            : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         {isEn ? 'Essay (AI Graded)' : 'Tự luận (AI Chấm)'}
@@ -1582,13 +1611,13 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               </div>
 
               {todayAttempt ? (
-                <div className="text-center py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 tabular-nums">
+                <div className="text-center py-2.5 px-4 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 tabular-nums relative z-10">
                   {isEn ? `Reopens in ${resetCountdown}` : `Mở lại sau ${resetCountdown}`}
                 </div>
               ) : (
                 <button
                   onClick={() => startArenaMatch(subj, chosenMode)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors"
+                  className="arena-btn arena-btn-primary cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded-md bg-indigo-600 hover:bg-indigo-700 border border-indigo-400/60 text-white text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>
@@ -1604,29 +1633,38 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       </div>
 
       {/* WEEKLY LEADERBOARD (MULTI-SUBJECT + OVERALL AVERAGE) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div
+        style={{ animationDelay: '300ms' }}
+        className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm space-y-4"
+      >
+        <div className="arena-beam-sweep" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-500" />
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
+              <div className="w-8 h-8 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-amber-500" />
+              </div>
               <span>
                 {isEn
                   ? `Weekly Leaderboard (${weekId}) · ${divisionMeta.labelEn}`
                   : `Bảng Xếp Hạng Tuần (${weekId}) · ${divisionMeta.labelVi}`}
               </span>
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
-              <span>{getWeekDateRangeLabel()}</span>
+            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
+              <span className="font-mono">{getWeekDateRangeLabel()}</span>
               <span aria-hidden="true">·</span>
-              <span>
-                {isStreamLive
-                  ? (isEn ? 'Live Real-Time Sync' : 'Đồng bộ trực tuyến thời gian thực')
-                  : (isEn ? 'Server Sync' : 'Đồng bộ máy chủ')}
+              <span className="inline-flex items-center gap-1.5">
+                {isStreamLive && <span className="arena-live-dot" />}
+                <span>
+                  {isStreamLive
+                    ? (isEn ? 'Live Real-Time Sync' : 'Đồng bộ trực tuyến thời gian thực')
+                    : (isEn ? 'Server Sync' : 'Đồng bộ máy chủ')}
+                </span>
               </span>
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+          <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
             {[
               { id: 'overall' as RankFilterTab, label: isEn ? 'Overall Avg' : 'Trung Bình Chung' },
               { id: 'math' as RankFilterTab, label: isEn ? 'Math' : 'Môn Toán' },
@@ -1636,10 +1674,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               <button
                 key={t.id}
                 onClick={() => setRankTab(t.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                className={`arena-btn px-3 py-1.5 rounded-sm text-xs font-bold whitespace-nowrap cursor-pointer border ${
                   rankTab === t.id
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {t.label}
@@ -1649,7 +1687,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         </div>
 
         {mergedLeaderboard.length === 0 ? (
-          <div className="py-10 text-center space-y-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+          <div className="py-10 text-center space-y-2 border border-dashed border-slate-300 dark:border-slate-700 rounded-md relative z-10">
             <Users className="w-8 h-8 text-slate-400 mx-auto" />
             <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
               {isEn ? `No submissions yet for week ${weekId}` : `Chưa có thí sinh nào nộp bài trong tuần ${weekId}`}
@@ -1661,10 +1699,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto relative z-10 border border-slate-200 dark:border-slate-800 rounded-md">
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs">
+                <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-mono">
                   <th className="py-2.5 px-3 font-semibold">{isEn ? 'Rank' : 'Hạng'}</th>
                   <th className="py-2.5 px-3 font-semibold">{isEn ? 'Contestant' : 'Thí sinh'}</th>
                   <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'Math (Avg)' : 'Toán (TB)'}</th>
@@ -1677,17 +1715,38 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {mergedLeaderboard.map((row, idx) => {
                   const isMe = row.userId === activeContestant.uid;
+                  const podiumBg =
+                    idx === 0
+                      ? 'bg-amber-50/45 dark:bg-amber-950/15'
+                      : idx === 1
+                      ? 'bg-slate-50/60 dark:bg-slate-800/25'
+                      : idx === 2
+                      ? 'bg-orange-50/40 dark:bg-orange-950/15'
+                      : '';
                   return (
                     <tr
                       key={row.userId}
-                      className={
+                      style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                      className={`arena-row-in transition-colors ${
                         isMe
-                          ? 'bg-indigo-50/70 dark:bg-indigo-950/30 font-semibold'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
-                      }
+                          ? 'bg-indigo-50/80 dark:bg-indigo-950/35 font-semibold'
+                          : `${podiumBg} hover:bg-slate-50 dark:hover:bg-slate-800/45`
+                      }`}
                     >
                       <td className="py-3 px-3 font-mono font-bold tabular-nums">
-                        {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
+                        <span
+                          className={`inline-flex items-center justify-center min-w-[44px] px-2 py-0.5 rounded-sm border text-xs ${
+                            idx === 0
+                              ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-600 text-amber-800 dark:text-amber-300'
+                              : idx === 1
+                              ? 'bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200'
+                              : idx === 2
+                              ? 'bg-orange-100 dark:bg-orange-950/60 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-300'
+                              : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
+                        </span>
                       </td>
                       <td className="py-3 px-3">
                         <div className="font-bold text-slate-900 dark:text-slate-100">
@@ -1721,7 +1780,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
       {/* My Weekly Attempts History */}
       {userWeekAttempts.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
+        <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm space-y-3">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Award className="w-4 h-4 text-indigo-500" />
             <span>
@@ -1731,10 +1790,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             </span>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {userWeekAttempts.map((att) => (
+            {userWeekAttempts.map((att, hIdx) => (
               <div
                 key={att.id}
-                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
+                style={{ animationDelay: `${hIdx * 35}ms` }}
+                className="arena-card-hover arena-row-in p-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
               >
                 <div className="min-w-0">
                   <div className="font-bold text-slate-900 dark:text-slate-100">

@@ -2706,9 +2706,215 @@
   .sim-btn-hero::after,
   .sim-btn-phy:hover::after,
   .sim-btn-math:hover::after,
-  .sim-btn-tile-bar {
+  .sim-btn-tile-bar,
+  .arena-beam-sweep,
+  .arena-live-dot,
+  .arena-stagger-in,
+  .arena-row-in,
+  .arena-btn-primary::after {
     animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
+
+/* ============================================================================
+   ONLINE ARENA & WEEKLY LEADERBOARD — ARCHITECTURAL FRAMES & KINETIC BUTTONS
+   ============================================================================ */
+@keyframes arena-beam-scan {
+  0% {
+    transform: translate3d(-110%, 0, 0);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  82% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(220%, 0, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes arena-stagger-enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes arena-live-pulse {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.72;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes arena-primary-sheen {
+  0%, 58% {
+    transform: translate3d(-180%, 0, 0) skewX(-22deg);
+    opacity: 0;
+  }
+  68% {
+    opacity: 0.78;
+  }
+  92% {
+    transform: translate3d(260%, 0, 0) skewX(-22deg);
+    opacity: 0.78;
+  }
+  100% {
+    transform: translate3d(260%, 0, 0) skewX(-22deg);
+    opacity: 0;
+  }
+}
+
+.arena-frame {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 200ms ease,
+    box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.arena-frame::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.42;
+  background:
+    linear-gradient(to right, rgba(99, 102, 241, 0.7) 10px, transparent 10px) 0 0 / 100% 1.5px no-repeat,
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.7) 10px, transparent 10px) 0 0 / 1.5px 100% no-repeat,
+    linear-gradient(to left, rgba(56, 189, 248, 0.7) 10px, transparent 10px) 100% 100% / 100% 1.5px no-repeat,
+    linear-gradient(to top, rgba(56, 189, 248, 0.7) 10px, transparent 10px) 100% 100% / 1.5px 100% no-repeat;
+  transition: opacity 220ms ease;
+}
+
+.arena-frame:hover::before {
+  opacity: 0.88;
+}
+
+.arena-card-hover {
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 200ms ease,
+    box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.arena-card-hover:hover {
+  transform: translate3d(0, -3px, 0);
+  box-shadow: 0 14px 28px -14px rgba(79, 70, 229, 0.28);
+}
+
+.dark .arena-card-hover:hover {
+  box-shadow: 0 16px 32px -14px rgba(14, 165, 233, 0.28);
+}
+
+.arena-beam-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 38%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #818cf8, #fbbf24, transparent);
+  pointer-events: none;
+  z-index: 3;
+  animation: arena-beam-scan 5.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.arena-stagger-in {
+  animation: arena-stagger-enter 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.arena-row-in {
+  animation: arena-stagger-enter 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.arena-live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 1.5px;
+  background: #10b981;
+  animation: arena-live-pulse 2s ease-in-out infinite;
+}
+
+.arena-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 5px;
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.arena-btn::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  background:
+    linear-gradient(to right, currentColor 6px, transparent 6px) 0 0 / 100% 1.5px no-repeat,
+    linear-gradient(to bottom, currentColor 6px, transparent 6px) 0 0 / 1.5px 100% no-repeat,
+    linear-gradient(to left, currentColor 6px, transparent 6px) 100% 100% / 100% 1.5px no-repeat,
+    linear-gradient(to top, currentColor 6px, transparent 6px) 100% 100% / 1.5px 100% no-repeat;
+  transition: opacity 180ms ease;
+}
+
+.arena-btn:not(:disabled):hover {
+  transform: translate3d(0, -2px, 0);
+}
+
+.arena-btn:not(:disabled):hover::before {
+  opacity: 0.68;
+}
+
+.arena-btn:not(:disabled):active {
+  transform: translate3d(0, 1px, 0) scale(0.975) !important;
+  transition-duration: 90ms !important;
+}
+
+.arena-btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.34) 50%,
+    transparent 100%
+  );
+  transform: translate3d(-180%, 0, 0) skewX(-22deg);
+  pointer-events: none;
+  z-index: 1;
+  animation: arena-primary-sheen 4.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.arena-btn-primary:not(:disabled):hover::after {
+  animation: sheen-slide 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 
 

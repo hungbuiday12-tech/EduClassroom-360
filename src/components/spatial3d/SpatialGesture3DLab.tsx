@@ -80,7 +80,8 @@ import {
   HandGestureTracker,
   HandTrackingFrame,
   PointerSource,
-  REAL_GRAB_GESTURES
+  REAL_GRAB_GESTURES,
+  SIMPLE_2D_GESTURES
 } from './handGestureTracker';
 import {
   Free2DToolId,
@@ -633,6 +634,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const isEn = language === 'en';
   const { bgSound, isBgPlaying, setBgSound, toggleBgPlaying } = useAudio();
   const { user } = useAuth();
+  const onEarnXPRef = useRef(onEarnXP);
+  onEarnXPRef.current = onEarnXP;
 
   // Top-level Dual Entry View: Dedicated Spatial Hub vs Interactive Studio (3D / 2D)
   const [entryView, setEntryView] = useState<'hub' | 'studio'>(initialCoopRoomCode ? 'studio' : 'hub');
@@ -2995,7 +2998,19 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     window.addEventListener('pointerup', handleCanvasPointerUp);
     window.addEventListener('pointercancel', handleCanvasPointerUp);
 
-    rebuildModel(runtime, paramsRef.current.modeId, paramsRef.current.finish, ACCENT_PALETTES[0], softwareGl);
+    const initialCustom = paramsRef.current.activeCustomId
+      ? customModelsRef.current.find((m) => m.id === paramsRef.current.activeCustomId) || null
+      : null;
+    const initialPalette =
+      ACCENT_PALETTES.find((p) => p.id === paramsRef.current.paletteId) || ACCENT_PALETTES[0];
+    rebuildModel(
+      runtime,
+      paramsRef.current.modeId,
+      paramsRef.current.finish,
+      initialPalette,
+      softwareGl,
+      initialCustom
+    );
 
     if (!softwareGl) {
       renderer.compile(scene, camera);
@@ -3646,9 +3661,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
 
-          if (!awardFlagRef.current && onEarnXP) {
+          if (!awardFlagRef.current && onEarnXPRef.current) {
             awardFlagRef.current = true;
-            onEarnXP(25);
+            onEarnXPRef.current(25);
           }
         } else {
           if (runtime.activeStrokePoints.length > 0 && !virtualPadDownRef.current) finalizeStrokeChannel(false);
@@ -4302,7 +4317,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       }
       runtimeRef.current = null;
     };
-  }, [disposeModel, onEarnXP, rebuildModel, restoreIsolatedPart, showToast]);
+  }, [disposeModel, rebuildModel, restoreIsolatedPart, showToast]);
 
   useEffect(() => {
     const rt = runtimeRef.current;
@@ -5513,7 +5528,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   }, []);
 
   const gestureCatalog =
-    spaceMode === '3d' && interactionStyle === 'real_grab'
+    spaceMode === '2d'
+      ? SIMPLE_2D_GESTURES
+      : spaceMode === '3d' && interactionStyle === 'real_grab'
       ? REAL_GRAB_GESTURES
       : GESTURE_DEFINITIONS;
   const activeGestureId = cameraActive && handFrame.detected ? handFrame.gesture : virtualGesture;
@@ -5604,6 +5621,54 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               onFreeCountChange={setFree2DCount}
               onMetricsChange={setMetrics2D}
             />
+
+            {/* Crystal-Clear 2D Quick Gesture Cheat-Sheet Strip */}
+            {!hudHidden && (
+              <div className="pointer-events-auto absolute top-40 left-3 z-20 max-w-[min(430px,calc(100vw-300px))] hidden md:block">
+                <div className="spatial-hud-frame rounded-md bg-slate-950/92 border border-emerald-500/45 px-3 py-2 shadow-xl space-y-1.5">
+                  <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-bold text-emerald-300 uppercase tracking-wider">
+                    <span>
+                      {isEn
+                        ? 'SIMPLE 2D HAND & MOUSE CONTROLS'
+                        : 'CỬ CHỈ 2D ĐƠN GIẢN (TAY HOẶC KÉO CHUỘT)'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShow2DGuide(true)}
+                      className="text-cyan-300 hover:text-white underline cursor-pointer font-sans normal-case font-bold"
+                    >
+                      {isEn ? 'Full Guide' : 'Xem hướng dẫn'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1 text-[11px] text-slate-200">
+                    <div>
+                      <span className="font-bold text-cyan-300">🖐️ {isEn ? 'Open:' : 'Mở 5:'}</span>{' '}
+                      {isEn ? 'Aim safely' : 'Di chuyển ngắm'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-emerald-300">☝️ {isEn ? '1 Finger:' : '1 Ngón:'}</span>{' '}
+                      {isEn ? 'Draw curve' : 'Vẽ nét / Hình'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-amber-300">🤏 {isEn ? 'Pinch:' : 'Chụm:'}</span>{' '}
+                      {isEn ? 'Grab & move' : 'Gắp & kéo điểm'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-purple-300">✌️ {isEn ? '2 Fingers:' : '2 Ngón:'}</span>{' '}
+                      {isEn ? 'Rotate / Swap' : 'Xoay 45° / Đổi'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-300">✊ {isEn ? 'Fist:' : 'Nắm tay:'}</span>{' '}
+                      {isEn ? 'Freeze Oxy' : 'Khóa bảng Oxy'}
+                    </div>
+                    <div>
+                      <span className="font-bold text-sky-300">👐 {isEn ? '2 Hands:' : '2 Tay:'}</span>{' '}
+                      {isEn ? 'Compass / u+v' : 'Compa / Vector'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -6961,11 +7026,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       {
                         id: 'gesture',
                         labelVi:
-                          spaceMode === '3d' && interactionStyle === 'real_grab'
+                          spaceMode === '2d'
+                            ? '5 Cử Chỉ 2D Dễ Dùng'
+                            : spaceMode === '3d' && interactionStyle === 'real_grab'
                             ? '5 Cử Chỉ Cầm Nắm'
                             : '8 Cử Chỉ Tay',
                         labelEn:
-                          spaceMode === '3d' && interactionStyle === 'real_grab'
+                          spaceMode === '2d'
+                            ? '5 Simple 2D Gestures'
+                            : spaceMode === '3d' && interactionStyle === 'real_grab'
                             ? '5 Grab Gestures'
                             : '8 Gestures',
                         icon: Hand
@@ -7366,10 +7435,78 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               )}
 
-              {/* TAB: MINIMAL 5 REAL-GRAB GESTURES (3D) OR 8 CLASSIC GESTURES */}
+              {/* TAB: 5 SIMPLE 2D GESTURES, 5 REAL-GRAB 3D GESTURES, OR 8 CLASSIC GESTURES */}
               {dockTab === 'gesture' && (
                 <div className="space-y-2.5">
-                  {spaceMode === '3d' && interactionStyle === 'real_grab' ? (
+                  {spaceMode === '2d' ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                      {SIMPLE_2D_GESTURES.map((g) => {
+                        const active =
+                          (cameraActive && handFrame.detected ? handFrame.gesture : virtualGesture) === g.id;
+                        return (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => {
+                              setVirtualGesture(g.id);
+                              if (g.id === 'fist_0') {
+                                setFrozen((v) => !v);
+                                showToast(
+                                  isEn
+                                    ? '✊ Toggled Oxy board freeze lock!'
+                                    : '✊ Đã bật/tắt Khóa bảng Oxy để đọc thông số!'
+                                );
+                              } else if (g.id === 'slice_2') {
+                                if (mode2D === 'symmetry_kaleido') {
+                                  canvas2DRef.current?.cycleSymmetry();
+                                }
+                                showToast(
+                                  isEn
+                                    ? '✌️ 2 Fingers Mode: Rotate Tangram 45° / Cycle Symmetry / Sweep Secant!'
+                                    : '✌️ Chế độ 2 Ngón: Xoay Tangram 45° / Đổi số cánh Kính vạn hoa / Xoay cát tuyến!'
+                                );
+                              } else if (g.id === 'point_1') {
+                                showToast(
+                                  isEn
+                                    ? '☝️ 1 Finger Mode: Drag cursor/finger on canvas to draw!'
+                                    : '☝️ Chế độ 1 Ngón: Kéo chuột hoặc giơ 1 ngón trỏ để vẽ nét!'
+                                );
+                              } else if (g.id === 'pinch') {
+                                showToast(
+                                  isEn
+                                    ? '🤏 Pinch Mode: Drag on canvas to grab & move points or shapes!'
+                                    : '🤏 Chế độ Chụm Ngón: Kéo chuột hoặc chụm tay để gắp & dời hình/đỉnh!'
+                                );
+                              } else {
+                                showToast(
+                                  isEn
+                                    ? '🖐️ Open Hand Mode: Safe cursor aiming without drawing!'
+                                    : '🖐️ Mở 5 Ngón: Di chuyển ngắm an toàn, không vẽ nhầm!'
+                                );
+                              }
+                            }}
+                            title={isEn ? g.actionEn : g.actionVi}
+                            className={`text-left p-2 rounded-md border transition-all cursor-pointer ${
+                              active
+                                ? 'bg-slate-800 border-emerald-400 text-white'
+                                : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-xs font-extrabold">
+                              <span style={{ color: g.accent }}>{g.fingers}</span>
+                              {active && <span className="text-[9px] text-emerald-300 font-mono">ĐANG CHỌN</span>}
+                            </div>
+                            <div className="text-[11px] font-bold mt-0.5 truncate">
+                              {isEn ? g.labelEn : g.labelVi}
+                            </div>
+                            <div className="text-[10px] text-slate-400 mt-0.5 line-clamp-2 leading-tight">
+                              {isEn ? g.actionEn : g.actionVi}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : spaceMode === '3d' && interactionStyle === 'real_grab' ? (
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
                       {REAL_GRAB_GESTURES.map((g) => {
                         const active =
@@ -7477,9 +7614,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                                     ? '4 Fingers · Reassembled full 3D model!'
                                     : '4 Ngón · Đã ghép mô hình về nguyên trạng!'
                                 );
-                              } else if (g.id === 'morph_3' && spaceMode === '2d') {
-                                canvas2DRef.current?.cycleSymmetry();
-                              } else if (g.id === 'slice_2' && spaceMode === '3d') {
+                              } else if (g.id === 'slice_2') {
                                 if (explodeVal >= 0.25 || isolatedPartIdx !== null) {
                                   setIsolatedPartIdx((prev) =>
                                     prev !== null ? null : highlightedPartIdx ?? 0

@@ -71,6 +71,7 @@ import {
   DirectorySubjectFilter,
   LectureDirectoryTarget
 } from './common/LectureDirectorySection';
+import { downloadSynapsePresentationDocx } from '../utils/productDocxExporter';
 
 interface ClassroomOverviewProps {
   onNavigate: (subject: SubjectType) => void;
@@ -100,6 +101,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   } = useNavigation();
   const [directorySubject, setDirectorySubject] = useState<DirectorySubjectFilter>('all');
   const [growthTick, setGrowthTick] = useState(0);
+  const [downloadingDocx, setDownloadingDocx] = useState(false);
 
   useEffect(() => {
     const onGrowthUpdate = () => setGrowthTick((t) => t + 1);
@@ -408,6 +410,28 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               <Atom className="w-5 h-5 text-amber-500 dark:text-amber-300 icon-anim-atom shrink-0" />
               <span>{isEn ? 'Open 2D/3D Simulations' : 'Mở Phòng Mô phỏng 2D/3D'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
+            </button>
+
+            <button
+              type="button"
+              disabled={downloadingDocx}
+              onClick={() => {
+                if (downloadingDocx) return;
+                setDownloadingDocx(true);
+                void downloadSynapsePresentationDocx().finally(() => setDownloadingDocx(false));
+              }}
+              className="group cs-deck-btn min-h-[50px] px-6 py-3.5 rounded bg-emerald-600/95 hover:bg-emerald-500 disabled:opacity-70 border border-emerald-400/70 text-white text-sm sm:text-base font-semibold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Download className={`w-4 h-4 shrink-0 ${downloadingDocx ? 'animate-bounce' : ''}`} />
+              <span>
+                {downloadingDocx
+                  ? isEn
+                    ? 'Preparing (.docx)...'
+                    : 'Đang tải (.docx)...'
+                  : isEn
+                  ? 'Product Spec (.docx)'
+                  : 'Tải Thuyết Minh (.docx)'}
+              </span>
             </button>
           </div>
 

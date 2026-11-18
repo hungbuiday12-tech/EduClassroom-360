@@ -413,6 +413,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
     // Mode 6: Tangram pieces
     const tangramRef = useRef<TangramPiece[]>(makeTangramPieces());
     const grabbedPieceRef = useRef<number | null>(null);
+    const lastTangramSpinRef = useRef<number>(0);
 
     // Pointer interaction (mouse/touch fallback when webcam is off)
     const pointerDownRef = useRef<boolean>(false);
@@ -849,7 +850,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
                 verts[1].x += (h2World.x - verts[1].x) * 0.35;
                 verts[1].y += (h2World.y - verts[1].y) * 0.35;
               }
-            } else if (isPinchActive || isRotateAction) {
+            } else if (isPinchActive || pointerDownRef.current) {
               if (draggedPolyIdxRef.current === null) {
                 let bestIdx = 0;
                 let bestD = Infinity;
@@ -860,7 +861,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
                     bestIdx = idx;
                   }
                 });
-                if (bestD < 2.2) draggedPolyIdxRef.current = bestIdx;
+                if (bestD < 2.4) draggedPolyIdxRef.current = bestIdx;
               }
               if (draggedPolyIdxRef.current !== null && verts[draggedPolyIdxRef.current]) {
                 const target = verts[draggedPolyIdxRef.current];
@@ -877,7 +878,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
               circleCenterRef.current.y += (h1World.y - circleCenterRef.current.y) * 0.35;
               const newR = Math.max(0.8, Math.min(4.8, Math.hypot(h2World.x - h1World.x, h2World.y - h1World.y)));
               circleRadiusRef.current += (newR - circleRadiusRef.current) * 0.35;
-            } else if (isPinchActive) {
+            } else if (isPinchActive || (pointerDownRef.current && mapped2DAction !== 'sweep_tangent')) {
               externalPtRef.current.x += (primaryWorld.x - externalPtRef.current.x) * 0.4;
               externalPtRef.current.y += (primaryWorld.y - externalPtRef.current.y) * 0.4;
             } else if (isSweepAction) {
@@ -885,9 +886,6 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
                 primaryWorld.y - circleCenterRef.current.y,
                 primaryWorld.x - circleCenterRef.current.x
               );
-            } else if (pointerDownRef.current && mapped2DAction === 'dual_compass') {
-              const newR = Math.max(0.8, Math.min(4.8, Math.hypot(primaryWorld.x - circleCenterRef.current.x, primaryWorld.y - circleCenterRef.current.y)));
-              circleRadiusRef.current = newR;
             }
           } else if (mode2D === 'vectors_oxy') {
             if (isTwoHand && h2World) {
@@ -907,7 +905,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
               }
             }
           } else if (mode2D === 'symmetry_kaleido') {
-            if (isCycleSymAction && nowMs - lastSymToggleRef.current > 1100) {
+            if ((isCycleSymAction || isSweepAction) && nowMs - lastSymToggleRef.current > 1050) {
               lastSymToggleRef.current = nowMs;
               const orders = [4, 6, 8, 12];
               const next = orders[(orders.indexOf(kaleidoOrderRef.current) + 1) % orders.length];
@@ -915,17 +913,17 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
               setKaleidoOrderUI(next);
             }
             if (isRotateAction && (hasHand || pointerDownRef.current)) {
-              boardRotRef.current += (primaryWorld.x * 0.015);
+              boardRotRef.current += primaryWorld.x * 0.015;
             }
 
-            if (isPointDraw) {
+            if (isPointDraw || pointerDownRef.current) {
               const pts1 = activeKaleidoH1Ref.current;
               const last1 = pts1[pts1.length - 1];
               if (!last1 || Math.hypot(h1World.x - last1.x, h1World.y - last1.y) > 0.08) {
                 pts1.push({ x: h1World.x, y: h1World.y });
                 if (pts1.length > 200) pts1.shift();
               }
-              if (isTwoHand && h2World) {
+              if (hasHand && isTwoHand && h2World) {
                 const pts2 = activeKaleidoH2Ref.current;
                 const last2 = pts2[pts2.length - 1];
                 if (!last2 || Math.hypot(h2World.x - last2.x, h2World.y - last2.y) > 0.08) {
@@ -946,7 +944,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
               activeKaleidoH2Ref.current = [];
             }
           } else if (mode2D === 'conic_wave') {
-            if (isPinchActive || isPointDraw) {
+            if (isPinchActive || isPointDraw || (pointerDownRef.current && mapped2DAction !== 'sweep_tangent')) {
               const targetA = Math.max(-0.8, Math.min(0.85, primaryWorld.y * 0.16));
               const targetB = Math.max(-1.6, Math.min(1.6, -primaryWorld.x * 0.28));
               conicRef.current.a += (targetA - conicRef.current.a) * 0.35;
@@ -959,7 +957,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
             }
           } else if (mode2D === 'tangram_build') {
             const pieces = tangramRef.current;
-            if (isPinchActive || (pointerDownRef.current && virtualGesture === 'point_1')) {
+            if (isPinchActive || (pointerDownRef.current && mapped2DAction !== 'sweep_tangent' && mapped2DAction !== 'rotate_pan')) {
               if (grabbedPieceRef.current === null) {
                 // Find piece containing pointer or closest piece center
                 let picked: number | null = null;
@@ -999,8 +997,21 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
                 pc.rot = Math.round(pc.rot / step) * step;
               }
               grabbedPieceRef.current = null;
-              if (isRotateAction && (hasHand || pointerDownRef.current)) {
-                // Rotate nearest piece gently
+              if (isSweepAction && nowMs - lastTangramSpinRef.current > 550) {
+                lastTangramSpinRef.current = nowMs;
+                let bestIdx = 0;
+                let bestD = Infinity;
+                pieces.forEach((pc, i) => {
+                  const d = Math.hypot(pc.x - primaryWorld.x, pc.y - primaryWorld.y);
+                  if (d < bestD) {
+                    bestD = d;
+                    bestIdx = i;
+                  }
+                });
+                if (bestD < 2.6) {
+                  pieces[bestIdx].rot += Math.PI / 4;
+                }
+              } else if (isRotateAction && (hasHand || pointerDownRef.current)) {
                 let bestIdx = 0;
                 let bestD = Infinity;
                 pieces.forEach((pc, i) => {

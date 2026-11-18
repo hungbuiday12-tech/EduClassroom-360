@@ -4988,6 +4988,32 @@ function attachSpatialCoopWebSocket(httpServer: http.Server): void {
   });
 }
 
+app.get('/api/docs/thuyet-minh-synapse', (_req: Request, res: Response) => {
+  const candidates = [
+    path.resolve(__dirname, 'public', 'downloads', 'Thuyet_Minh_San_Pham_Synapse.docx'),
+    path.resolve(process.cwd(), 'public', 'downloads', 'Thuyet_Minh_San_Pham_Synapse.docx'),
+    path.resolve(__dirname, 'dist', 'downloads', 'Thuyet_Minh_San_Pham_Synapse.docx'),
+    path.resolve(process.cwd(), 'dist', 'downloads', 'Thuyet_Minh_San_Pham_Synapse.docx'),
+    path.resolve(__dirname, 'docs', 'downloads', 'Thuyet_Minh_San_Pham_Synapse.docx')
+  ];
+  const filePath = candidates.find((p) => fs.existsSync(p));
+  if (!filePath) {
+    return res.status(404).json({ error: 'Tài liệu thuyết minh chưa được tạo.' });
+  }
+  const fileBuf = fs.readFileSync(filePath);
+  res.setHeader(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  );
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename="Thuyet_Minh_San_Pham_Synapse.docx"'
+  );
+  res.setHeader('Content-Length', String(fileBuf.byteLength));
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(200).send(fileBuf);
+});
+
 // JSON guards for /api routes (never leak HTML pages to JSON clients)
 app.use('/api', (_req: Request, res: Response) => {
   res.status(404).json({ error: 'API endpoint không tồn tại.' });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
@@ -36,6 +36,7 @@ import { CommunityShowcaseView } from './components/showcase/CommunityShowcaseVi
 import { FutureLabWorkspace } from './components/future/FutureLabWorkspace';
 import { SynapseVoiceOS } from './components/future/SynapseVoiceOS';
 import { progressDailyQuest, recordGrowthStat, touchDailyActivity } from './lib/learningGrowthStore';
+import { downloadSynapsePresentationDocx } from './utils/productDocxExporter';
 
 function MainApp() {
   const { location, navigate, selectSubject, goBack } = useNavigation();
@@ -213,19 +214,22 @@ function MainApp() {
     } catch {}
   };
 
-  const handleEarnXP = (earned: number) => {
-    if (user) {
-      addXP(earned);
-    } else {
-      setGuestXP((prev) => {
-        const updated = prev + earned;
-        try {
-          localStorage.setItem('edusim_xp', updated.toString());
-        } catch {}
-        return updated;
-      });
-    }
-  };
+  const handleEarnXP = useCallback(
+    (earned: number) => {
+      if (user) {
+        addXP(earned);
+      } else {
+        setGuestXP((prev) => {
+          const updated = prev + earned;
+          try {
+            localStorage.setItem('edusim_xp', updated.toString());
+          } catch {}
+          return updated;
+        });
+      }
+    },
+    [user, addXP]
+  );
 
   const activeXP = user ? user.xp : guestXP;
 
@@ -555,6 +559,13 @@ function MainApp() {
                     className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold cursor-pointer"
                   >
                     {isEn ? 'Settings' : 'Cài đặt'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void downloadSynapsePresentationDocx()}
+                    className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors font-semibold cursor-pointer"
+                  >
+                    {isEn ? 'Product Spec (.docx)' : 'Thuyết minh (.docx)'}
                   </button>
                 </div>
               </div>

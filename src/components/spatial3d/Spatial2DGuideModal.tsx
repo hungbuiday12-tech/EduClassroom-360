@@ -125,46 +125,52 @@ export const Spatial2DGuideModal: React.FC<Spatial2DGuideModalProps> = ({
 
   const gestures2D = [
     {
-      tag: '1 NGÓN TRỎ',
-      title: isEn ? 'Draw Freehand / Trace Curves' : 'Vẽ Nét Tự Do / Kẻ Đường Trên Oxy',
+      tag: '🖐️ MỞ 5 NGÓN',
+      title: isEn ? 'Aim & Hover Safely (No Draw)' : 'Di Chuyển Con Trỏ Ngắm (Không Vẽ)',
       desc: isEn
-        ? 'Used in Free Create & Kaleidoscope to draw curves directly from fingertip position.'
-        : 'Dùng trong Tự do tạo hình & Kính vạn hoa để vẽ nét hoặc dựng hình theo đầu ngón trỏ.'
+        ? 'Keep your hand open with 5 fingers to aim freely across the Oxy board without accidentally drawing lines or pulling vertices.'
+        : 'Mở 5 ngón tay để rê con trỏ ngắm thoải mái trên bảng Oxy mà không sợ vẽ nhầm nét hay làm lệch hình.',
+      accent: 'text-cyan-300 border-cyan-500/45'
     },
     {
-      tag: 'CHỤM NGÓN',
-      title: isEn ? 'Grab, Move & Stretch Parameters' : 'Gắp Hình, Kéo Đỉnh & Uốn Parabol',
+      tag: '☝️ 1 NGÓN TRỎ',
+      title: isEn ? 'Draw Freehand, Shapes & Curves' : 'Vẽ Nét Tự Do, Hình Chuẩn & Đường Cong',
       desc: isEn
-        ? 'Pinch thumb + index to grab shapes, move triangle vertices A/B/C, drag tangent point P, or pick Tangram tiles.'
-        : 'Chụm cái + trỏ để gắp di chuyển hình đã vẽ, kéo đỉnh tam giác, dời điểm P tiếp tuyến hoặc gắp mảnh Tangram.'
+        ? 'Point 1 index finger (or drag with mouse) to sketch curves, place Line/Circle/Rect/Triangle/Star, paint Kaleidoscope, or bend Parabola.'
+        : 'Giơ 1 ngón trỏ (hoặc kéo chuột) để vẽ nét tự do, đặt Đoạn/Tròn/Vuông/Tam giác/Sao, vẽ Kính vạn hoa hoặc uốn Parabol.',
+      accent: 'text-emerald-300 border-emerald-500/45'
     },
     {
-      tag: '2 BÀN TAY',
-      title: isEn ? 'Dual-Hand Compass, Vector & Dual Sketch' : 'Compa 2 Tay, Cộng Vector & Vẽ Đôi',
+      tag: '🤏 CHỤM NGÓN',
+      title: isEn ? 'Grab & Drag Any Point or Shape' : 'Gắp & Kéo Bất Kỳ Hình / Đỉnh Nào',
       desc: isEn
-        ? 'Drive two handles at once: center + radius in Compass, u + v in Vectors, vertices A + B in Euler, or two strokes in Free Create.'
-        : 'Điều khiển 2 điểm cùng lúc: Tâm + Bán kính (Compa), Vector u + v, 2 đỉnh A + B (Euler) hoặc 2 nét song song.'
+        ? 'Pinch thumb + index to grab drawn shapes, move Triangle vertices A/B/C, drag tangent point P, or pick & move Tangram tiles.'
+        : 'Chụm ngón cái + trỏ để gắp di chuyển hình đã vẽ, kéo đỉnh A/B/C (Euler), dời điểm P tiếp tuyến hoặc xếp mảnh Tangram.',
+      accent: 'text-amber-300 border-amber-500/45'
     },
     {
-      tag: '2 NGÓN · 3 NGÓN',
-      title: isEn ? 'Sweep Line (2) · Cycle Symmetry (3)' : 'Xoay Cát Tuyến (2) · Đổi Số Cánh (3)',
+      tag: '✌️ 2 NGÓN CHỮ V',
+      title: isEn ? 'Rotate 45° / Cycle Mode / Sweep Secant' : 'Xoay 45° · Đổi Bậc · Quét Đường Cắt',
       desc: isEn
-        ? '2 fingers sweep secant line / tangent angle; 3 fingers held 0.5s cycle 4/6/8/12 symmetry axes in Kaleidoscope.'
-        : '2 ngón xoay đường thẳng cắt Parabol; 3 ngón giữ 0.5s đổi bậc đối xứng 4→6→8→12 trong Kính vạn hoa.'
+        ? 'One simple V-sign does every secondary toggle: rotates Tangram piece +45°, cycles Kaleidoscope 4/6/8/12 axes, or sweeps secant line.'
+        : '1 động tác chữ V cho mọi lệnh phụ: Xoay 45° mảnh Tangram, đổi số cánh Kính vạn hoa (4/6/8/12), hoặc xoay đường cắt.',
+      accent: 'text-purple-300 border-purple-500/45'
     },
     {
-      tag: '5 NGÓN · NẮM ĐẤM',
-      title: isEn ? 'Rotate Board (5) · Freeze Lock (0)' : 'Xoay Khung / Tangram (5) · Khóa (Nắm Đấm)',
+      tag: '✊ NẮM ĐẤM · 👐 2 TAY',
+      title: isEn ? 'Freeze Board (0) · Dual-Hand Mode (2H)' : 'Khóa Bảng (Nắm Đấm) · Chế Độ 2 Tay Song Song',
       desc: isEn
-        ? 'Open 5 fingers to rotate Kaleidoscope or Tangram piece; close fist (0 fingers) to freeze board and inspect metrics.'
-        : 'Mở 5 ngón để xoay bàn Kính vạn hoa hoặc mảnh Tangram; nắm đấm (0 ngón) để đóng băng đọc thông số tọa độ.'
+        ? 'Close fist (0) to lock metrics cleanly. Show 2 hands anytime to drive Compass (center + radius), Vector u+v, or dual strokes!'
+        : 'Nắm đấm (0 ngón) để đứng yên bảng đọc tọa độ. Đưa 2 tay vào để làm Compa 2 tay, kéo 2 Vector u & v, hoặc vẽ đôi 2 màu!',
+      accent: 'text-sky-300 border-sky-500/45'
     },
     {
-      tag: 'CHUỘT / PHÍM TẮT',
-      title: isEn ? 'Zero-Webcam Mouse & Touch Support' : 'Vẽ Bằng Chuột / Cảm Ứng & Phím Tắt',
+      tag: '🖱️ CHUỘT & PHÍM TẮT',
+      title: isEn ? 'Full Mouse / Touch + Shortcuts' : 'Vẽ Chuột / Cảm Ứng & Phím Tắt Nhanh',
       desc: isEn
-        ? 'Drag directly on the canvas with mouse/touch, pick virtual gestures in the Dock, or press Space (Freeze), R (Reset), H (Hide HUD).'
-        : 'Không cần Webcam: kéo chuột/chạm tay vẽ trực tiếp, chọn cử chỉ ảo dưới Dock, hoặc dùng Space (Khóa), R (Đặt lại), H (Ẩn HUD).'
+        ? 'No Webcam needed: drag directly with mouse/touchpad to draw or move points. Press Space (Lock), R (Reset), H (Hide HUD).'
+        : 'Không cần Webcam: kéo chuột hoặc chạm màn hình để vẽ & kéo điểm trực tiếp. Phím tắt: Space (Khóa), R (Đặt lại), H (Ẩn HUD).',
+      accent: 'text-slate-300 border-slate-600'
     }
   ];
 
@@ -189,12 +195,12 @@ export const Spatial2DGuideModal: React.FC<Spatial2DGuideModalProps> = ({
               <div>
                 <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-emerald-300 uppercase tracking-wider">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>{isEn ? '2D Oxy Studio Guide · 7 Labs' : 'Hướng Dẫn Không Gian 2D · Tự Do & Hình Học'}</span>
+                  <span>{isEn ? '2D Oxy Studio Guide · 4+1 Simple Gestures' : 'Hướng Dẫn Không Gian 2D · Cử Chỉ Siêu Đơn Giản'}</span>
                 </div>
                 <h2 className="text-base sm:text-xl font-extrabold text-white mt-0.5">
                   {isEn
                     ? 'How to Draw, Snap Shapes & Run 2D Interactive Labs'
-                    : 'Cách Vẽ Tự Do 2D, Nắn Nét Hình Học & Điều Khiển 7 Xưởng Oxy'}
+                    : 'Chỉ 4 Cử Chỉ Chính: Mở Tay Ngắm · 1 Ngón Vẽ · Chụm Kéo · 2 Ngón Xoay/Đổi'}
                 </h2>
               </div>
             </div>
@@ -209,14 +215,14 @@ export const Spatial2DGuideModal: React.FC<Spatial2DGuideModalProps> = ({
             </button>
           </div>
 
-          {/* 0.5s Rule Strip */}
+          {/* Simplified Gesture Strip */}
           <div className="px-4 sm:px-6 py-2.5 bg-emerald-950/45 border-b border-emerald-500/30 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 text-emerald-200 font-semibold">
               <Clock className="w-4 h-4 text-amber-300 shrink-0" />
               <span>
                 {isEn
-                  ? 'Anti-Jitter 0.5s Dwell + Instant Mouse/Touch: Draw seamlessly by fingertip (Webcam) or directly with mouse/touchpad.'
-                  : 'Mẹo 2D: Có thể vẽ trực tiếp bằng chuột/cảm ứng bất kỳ lúc nào, hoặc bật Webcam giữ cử chỉ tay 0.5s để AI khóa nét mượt.'}
+                  ? 'Super Simple 2D Rule: 🖐️ Open Hand = Aim · ☝️ 1 Finger = Draw · 🤏 Pinch = Grab & Move · ✌️ 2 Fingers = Rotate/Cycle · ✊ Fist = Lock.'
+                  : 'Quy tắc 2D cực dễ nhớ: 🖐️ Mở tay = Di chuyển ngắm · ☝️ 1 ngón = Vẽ · 🤏 Chụm = Gắp kéo · ✌️ 2 ngón = Xoay/Đổi · ✊ Nắm = Khóa bảng.'}
               </span>
             </div>
           </div>

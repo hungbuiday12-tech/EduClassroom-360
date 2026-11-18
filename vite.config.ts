@@ -1,3 +1,4 @@
+import fs from 'fs';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -5,8 +6,15 @@ import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
-  // Use repository name if on GitHub Actions, otherwise relative './'
-  const repoName = process.env.GITHUB_REPOSITORY
+  // Priority: explicit VITE_BASE_PATH -> custom domain CNAME / Vercel / Cloudflare Pages ('/') -> GitHub repo subpath -> relative './'
+  const hasCname = fs.existsSync(path.resolve(process.cwd(), 'public/CNAME'));
+  const explicitBase = process.env.VITE_BASE_PATH?.trim();
+  const isRootStaticHost = process.env.VERCEL === '1' || process.env.CF_PAGES === '1';
+  const repoName = explicitBase
+    ? explicitBase
+    : hasCname || isRootStaticHost
+    ? '/'
+    : process.env.GITHUB_REPOSITORY
     ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/`
     : './';
 
@@ -61,7 +69,7 @@ export default defineConfig(() => {
         workbox: {
           maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
           globIgnores: ['**/mediapipe/**'],
-          navigateFallbackDenylist: [/^\/api\//, /\/mediapipe\//],
+          navigateFallbackDenylist: [/^\/api\//, /\/mediapipe\//, /\/downloads\//],
           runtimeCaching: [
             {
               urlPattern: /\/mediapipe\/.*/i,

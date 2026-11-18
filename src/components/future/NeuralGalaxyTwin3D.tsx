@@ -25,6 +25,7 @@ import {
   getStreakState
 } from '../../lib/learningGrowthStore';
 import { RoadmapNode } from '../../types';
+import { FormattedText } from '../common/MathRenderer';
 
 interface NeuralGalaxyTwin3DProps {
   language?: 'vi' | 'en';
@@ -707,9 +708,9 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
                 />
               </div>
 
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                {selectedPlanet.node.goal}
-              </p>
+              <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                <FormattedText text={selectedPlanet.node.goal} />
+              </div>
 
               {selectedPlanet.errorCount > 0 && (
                 <div className="p-2.5 rounded border border-rose-300 dark:border-rose-700/70 bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-700 dark:text-rose-200 flex items-center gap-2">
@@ -728,9 +729,9 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                     {isEn ? 'Quick Recall Check' : 'Câu hỏi tự kiểm tra'}
                   </div>
-                  <p className="text-xs text-slate-700 dark:text-slate-200">
-                    {selectedPlanet.node.checkQuestions[0]}
-                  </p>
+                  <div className="text-xs text-slate-700 dark:text-slate-200">
+                    <FormattedText text={selectedPlanet.node.checkQuestions[0]} />
+                  </div>
                 </div>
               )}
             </div>

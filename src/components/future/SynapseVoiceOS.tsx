@@ -92,22 +92,19 @@ function tryLocalCommandMatch(rawCmd: string): VoiceOSActionPlan | null {
   if (/(giay nhap|paper to sim|quet giay|anh bai tap)/.test(cmd)) {
     return { replyVi: 'Đang mở máy quét Giấy Nháp → Mô phỏng.', actionType: 'navigate_future', targetFutureTab: 'paper_to_sim' };
   }
-  if (/(bang vo cuc|infinite canvas|whiteboard)/.test(cmd)) {
-    return { replyVi: 'Đang mở Bảng Vô Cực STEM.', actionType: 'navigate_future', targetFutureTab: 'infinite_canvas' };
+  if (/(bang vo cuc|bang nhap|infinite canvas|whiteboard|scratchpad)/.test(cmd)) {
+    return { replyVi: 'Đang mở Bảng Nháp Mini-Chat.', actionType: 'navigate_future', targetFutureTab: 'infinite_canvas' };
   }
   if (/(song am|fft|am thanh|micro 3d)/.test(cmd)) {
-    return { replyVi: 'Đang mở Phòng Lab Sóng Âm FFT 3D.', actionType: 'navigate_future', targetFutureTab: 'audio_fft' };
+    return { replyVi: 'Đang mở Phòng Lab Sóng Âm FFT 3D trong Synapse Pre.', actionType: 'navigate_future', targetFutureTab: 'audio_fft' };
   }
 
   // Core Route Navigation
   if (/(webar|cam giac 3d|ar ban hoc|tay 3d|khong gian 3d)/.test(cmd)) {
     return { replyVi: 'Đang mở Học cảm giác 3D & WebAR.', actionType: 'navigate', targetSubject: 'spatial_3d' };
   }
-  if (/(phong lab tuong lai|future lab)/.test(cmd)) {
-    return { replyVi: 'Đang mở Phòng Lab Tương Lai.', actionType: 'navigate', targetSubject: 'future_lab' };
-  }
-  if (/(synapse v2|lop hoc ao)/.test(cmd)) {
-    return { replyVi: 'Đang mở Lớp ảo Synapse v2.', actionType: 'navigate', targetSubject: 'synapse_v2' };
+  if (/(synapse pre|dai cong trinh|phong lab tuong lai|future lab|synapse v2|lop hoc ao)/.test(cmd)) {
+    return { replyVi: 'Đang mở Synapse Pre · Đại công trình tương lai & Phòng Lab AI.', actionType: 'navigate_future', targetFutureTab: 'megastructures' };
   }
   if (/(so tay loi|sm2|flashcard|loi sai)/.test(cmd)) {
     return { replyVi: 'Đang mở Sổ tay Lỗi sai & Thẻ SM-2.', actionType: 'navigate', targetSubject: 'growth_hub' };
@@ -144,11 +141,11 @@ function tryLocalCommandMatch(rawCmd: string): VoiceOSActionPlan | null {
 }
 
 const QUICK_CHIPS = [
+  'Mở Synapse Pre',
   'Mở Vũ trụ Tri thức 3D',
   'Mở Sinh Mô Phỏng AI',
-  'Mở Bảng Vô Cực STEM',
+  'Mở Bảng Nháp Mini',
   'Đổi nền Đại dương',
-  'Bật đồng hồ Pomodoro',
   'Hỏi Syn AI về định luật bảo toàn động lượng'
 ];
 
@@ -204,9 +201,15 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
           }
           break;
         case 'navigate_future':
+          if (plan.targetFutureTab === 'infinite_canvas') {
+            window.dispatchEvent(new CustomEvent('synapse:open-scratchpad-mini'));
+            onClose();
+            break;
+          }
           navigate({
-            subject: 'future_lab',
-            futureTab: plan.targetFutureTab || 'galaxy3d',
+            subject: 'synapse_v2',
+            futureTab: plan.targetFutureTab || 'megastructures',
+            synapseMode: 'catalog',
             tutorOpen: false
           });
           break;

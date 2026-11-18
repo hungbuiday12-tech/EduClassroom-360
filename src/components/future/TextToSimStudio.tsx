@@ -504,7 +504,7 @@ export const TextToSimStudio: React.FC<TextToSimStudioProps> = () => {
                 key={idx}
                 className="px-3 py-1.5 rounded bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-xs text-sky-800 dark:text-sky-200"
               >
-                • {n}
+                • <FormattedText text={n} />
               </div>
             ))}
           </div>

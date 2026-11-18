@@ -40,7 +40,9 @@ import {
   Camera,
   Grid3X3,
   Waves,
-  Mic
+  Mic,
+  Building2,
+  PenTool
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -373,8 +375,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-200 leading-relaxed max-w-3xl mx-auto hero-blend-shadow">
             {t(
               'overview.heroDesc',
-              'Hệ sinh thái học tập STEM toàn diện cho Toán (2D & Oxyz 3D), Vật lí (41 Lab 2D & 32 mô hình 3D PhET), Tin học (5 lộ trình VNOI & C++ Quốc tế · IDE Sublime Text 4), 30 đại công trình Synapse v2, Học cảm giác 3D 10 ngón tay, Syn AI (Syn Math · Syn Physics · Syn Code), Kho Đề thi chấm ảnh AI, Đấu trường tuần & App đa thiết bị.',
-              'Complete interactive STEM ecosystem: Math (2D & Oxyz 3D), Physics (41 2D + 32 3D PhET labs), CS (5 VNOI & C++ roadmaps + Sublime Text 4 IDE), 30 Synapse v2 chambers, 10-finger Spatial 3D, Syn AI suite, AI-graded Exams, Weekly Arena & Cross-Device App.'
+              'Hệ sinh thái học tập STEM toàn diện cho Toán (2D & Oxyz 3D), Vật lí (41 Lab 2D & 32 mô hình 3D PhET), Tin học (5 lộ trình VNOI & C++ Quốc tế · IDE Sublime Text 4), Synapse Pre (30 Đại công trình tương lai & Phòng Lab AI 3D), Học cảm giác 3D 10 ngón tay, Syn AI (Syn Math · Syn Physics · Syn Code), Kho Đề thi chấm ảnh AI, Đấu trường tuần & App đa thiết bị.',
+              'Complete interactive STEM ecosystem: Math (2D & Oxyz 3D), Physics (41 2D + 32 3D PhET labs), CS (5 VNOI & C++ roadmaps + Sublime Text 4 IDE), Synapse Pre (30 Futuristic Megastructures & AI 3D Labs), 10-finger Spatial 3D, Syn AI suite, AI-graded Exams, Weekly Arena & Cross-Device App.'
             )}
           </p>
 
@@ -677,12 +679,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </div>
       </section>
 
-      {/* FLAGSHIP GATEWAY: LỚP HỌC ẢO · SYNAPSE V2 */}
-      <section
-        data-ripple="true"
-        onClick={() => onNavigate('synapse_v2')}
-        className="group sci-frame relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-[#0a1a36] to-slate-900 text-white p-6 sm:p-8 border border-sky-400/45 hover:border-sky-300/85 hover:-translate-y-0.5 shadow-[0_20px_55px_-16px_rgba(2,132,199,0.34)] cursor-pointer transition-all"
-      >
+      {/* FLAGSHIP GATEWAY: SYNAPSE PRE (ĐẠI CÔNG TRÌNH TƯƠNG LAI & PHÒNG LAB AI 3D) */}
+      <section className="group sci-frame relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-950 via-[#0a1a36] to-[#0f172a] text-white p-6 sm:p-8 border border-sky-400/50 shadow-[0_20px_55px_-16px_rgba(2,132,199,0.38)] space-y-5">
         <div className="absolute inset-0 sci-blueprint-bg opacity-35 pointer-events-none" />
         <span
           aria-hidden="true"
@@ -691,48 +689,135 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         <svg
           aria-hidden="true"
           viewBox="0 0 220 220"
-          className="hidden md:block absolute right-10 -top-10 w-56 h-56 opacity-20 group-hover:opacity-40 pointer-events-none animate-orbit-slow transition-opacity"
+          className="hidden md:block absolute right-10 -top-10 w-56 h-56 opacity-20 group-hover:opacity-35 pointer-events-none animate-orbit-slow transition-opacity"
         >
           <circle cx="110" cy="110" r="88" fill="none" stroke="#38bdf8" strokeWidth="1.3" strokeDasharray="8 6" />
           <circle cx="110" cy="110" r="56" fill="none" stroke="#818cf8" strokeWidth="1.2" strokeDasharray="4 5" />
           <circle cx="110" cy="22" r="4" fill="#38bdf8" />
           <circle cx="166" cy="110" r="3.5" fill="#2dd4bf" />
         </svg>
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="flex items-start sm:items-center gap-4 sm:gap-5 min-w-0">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gradient-to-br from-sky-500/30 to-blue-600/40 border border-sky-300/50 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gradient-to-br from-sky-500/30 to-indigo-600/40 border border-sky-300/50 flex items-center justify-center shrink-0 shadow-inner">
               <Orbit className="w-8 h-8 text-sky-300 icon-anim-cosmos" />
             </div>
             <div className="space-y-1.5 min-w-0">
-              <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.2em] text-sky-300">
-                {isEn ? 'SYNAPSE V2 · 30 FUTURISTIC 3D HOLOGRAPHIC CHAMBERS' : 'LỚP HỌC ẢO · SYNAPSE V2 · 30 ĐẠI CÔNG TRÌNH TƯƠNG LAI'}
+              <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.2em] text-cyan-300">
+                {isEn
+                  ? 'SYNAPSE PRE · 30 FUTURISTIC MEGASTRUCTURES & AI 3D LAB'
+                  : 'SYNAPSE PRE · ĐẠI CÔNG TRÌNH TƯƠNG LAI & PHÒNG LAB AI 3D'}
               </div>
               <h2 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-white">
                 {isEn
-                  ? 'Explore 30 Futuristic 3D Physics, Space Science, Computer Science & Math Megastructures'
-                  : 'Bước vào 30 Khung Lớp Học Ảo Vật Lí, Vũ Trụ, Khoa Học Vi Tính & Đại Công Trình 3D'}
+                  ? '30 Futuristic 3D Megastructures, 3D Neural Galaxy, AI Sim Compiler & Audio FFT 3D'
+                  : '30 Đại Công Trình Tương Lai 3D, Vũ Trụ Tri Thức 3D, Sinh Mô Phỏng AI & Quét Giấy Nháp'}
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
                 {isEn
-                  ? 'CERN LHC · Double-Slit Laser · James Webb · Dyson Black Hole · Tokamak Fusion · LiDAR SLAM Core · Solar Thermal Tower · 7T MRI Ring · Sagnac Gyro · Metamaterial Cloak · Acoustic Levitation & Photonic Tensor Core.'
-                  : 'Máy Gia Tốc LHC · Laser Khe Kép · Kính James Webb · Hố Đen Dyson · Lò Tokamak · LiDAR SLAM · Tháp Nhiệt Mặt Trời · Vòng Cộng Hưởng MRI 7T · Con Quay Laser Sagnac · Áo Tàng Hình Siêu Vật Liệu · Bẫy Sóng Âm & Chip Quang Tử.'}
+                  ? 'CERN LHC · James Webb · Dyson Black Hole · Tokamak Fusion alongside personal 3D Knowledge Galaxy, Text-to-Sim, Paper-to-Sim Vision & FFT 3D Acoustics.'
+                  : 'Hợp nhất 30 đại công trình 3D (CERN LHC, James Webb, Hố đen Dyson, Lò Tokamak) cùng Vũ trụ Tri thức 3D, Sinh Mô Phỏng AI, Giấy Nháp → Sim & Sóng Âm FFT 3D.'}
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            data-ripple="true"
-            onClick={(e) => {
-              e.stopPropagation();
-              onNavigate('synapse_v2');
-            }}
-            className="group/btn cs-deck-btn shrink-0 px-6 py-3.5 rounded bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400 hover:from-sky-300 hover:to-blue-300 text-slate-950 font-semibold text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
-          >
-            <Orbit className="w-4 h-4 icon-anim-cosmos" />
-            <span>{isEn ? 'Launch Synapse v2 World' : 'Khởi động Lớp học ảo · Synapse v2'}</span>
-            <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('synapse:open-scratchpad-mini'))}
+              className="cs-deck-btn px-3.5 py-2.5 rounded bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/60 text-amber-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <PenTool className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Scratchpad Mini' : 'Bảng Nháp Mini'}</span>
+            </button>
+            {onOpenVoiceOS && (
+              <button
+                type="button"
+                onClick={onOpenVoiceOS}
+                className="cs-deck-btn px-3.5 py-2.5 rounded bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/60 text-cyan-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <Mic className="w-3.5 h-3.5" />
+                <span>Voice OS</span>
+              </button>
+            )}
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => navigate({ subject: 'synapse_v2', futureTab: 'megastructures', synapseMode: 'catalog', tutorOpen: false })}
+              className="group/btn cs-deck-btn px-5 py-3 rounded bg-gradient-to-r from-sky-400 via-cyan-400 to-indigo-400 hover:from-sky-300 hover:to-indigo-300 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+            >
+              <Orbit className="w-4 h-4 icon-anim-cosmos" />
+              <span>{isEn ? 'Enter Synapse Pre' : 'Mở Synapse Pre'}</span>
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </div>
+
+        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          {(
+            [
+              {
+                tab: 'megastructures',
+                titleVi: 'Đại công trình tương lai',
+                titleEn: 'Futuristic Megastructures',
+                descVi: '30 mô hình WebGL 3D',
+                icon: Building2
+              },
+              {
+                tab: 'galaxy3d',
+                titleVi: 'Vũ trụ Tri thức 3D',
+                titleEn: '3D Knowledge Galaxy',
+                descVi: 'Bản sao năng lực + hành tinh lỗi',
+                icon: Orbit
+              },
+              {
+                tab: 'text_to_sim',
+                titleVi: 'Sinh Mô Phỏng AI',
+                titleEn: 'Text → Simulation',
+                descVi: 'Gõ đề bài → đồ họa 60fps',
+                icon: Wand2
+              },
+              {
+                tab: 'paper_to_sim',
+                titleVi: 'Giấy Nháp → Sim',
+                titleEn: 'Paper → Sim Vision',
+                descVi: 'Chụp vở → mô phỏng & soi lỗi',
+                icon: Camera
+              },
+              {
+                tab: 'audio_fft',
+                titleVi: 'Sóng Âm FFT 3D',
+                titleEn: 'Audio FFT 3D Lab',
+                descVi: 'Micro / Doppler giao thoa 3D',
+                icon: Waves
+              }
+            ] as const
+          ).map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.tab}
+                type="button"
+                onClick={() =>
+                  navigate({
+                    subject: 'synapse_v2',
+                    futureTab: item.tab,
+                    synapseMode: 'catalog',
+                    tutorOpen: false
+                  })
+                }
+                className="text-left p-3 rounded border border-slate-700/90 bg-slate-900/80 hover:bg-slate-800 hover:border-cyan-400/70 transition cursor-pointer group/tile"
+              >
+                <div className="flex items-center gap-2 text-xs font-bold text-cyan-300 group-hover/tile:text-white">
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{isEn ? item.titleEn : item.titleVi}</span>
+                </div>
+                <div className="text-[11px] text-slate-400 mt-1 truncate">
+                  {item.descVi}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -798,113 +883,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </div>
       </section>
 
-      {/* GATEWAY: PHÒNG LAB TƯƠNG LAI · AI & KHÔNG GIAN 3D */}
-      <section className="sci-frame relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-950 via-[#0d1633] to-slate-900 text-white p-6 sm:p-7 border border-indigo-400/50 shadow-[0_20px_55px_-16px_rgba(99,102,241,0.34)]">
-        <div className="relative z-10 space-y-5">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex items-start sm:items-center gap-4 min-w-0">
-              <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-indigo-500/35 to-cyan-500/35 border border-cyan-300/50 flex items-center justify-center shrink-0">
-                <Cpu className="w-7 h-7 text-cyan-300" />
-              </div>
-              <div className="space-y-1 min-w-0">
-                <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-cyan-300">
-                  {isEn
-                    ? 'FUTURE LAB SUITE · WEBAR · AI SIM COMPILER · VOICE OS'
-                    : 'PHÒNG LAB TƯƠNG LAI · 7 CÔNG NGHỆ AI & KHÔNG GIAN 3D THẾ HỆ MỚI'}
-                </div>
-                <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-white">
-                  {isEn
-                    ? '3D Knowledge Galaxy, Text/Paper-to-Simulation, Infinite Canvas & Audio FFT 3D'
-                    : 'Vũ Trụ Tri Thức 3D, Sinh Mô Phỏng AI, Giấy Nháp → Sim, Bảng Vô Cực & Sóng FFT 3D'}
-                </h2>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              {onOpenVoiceOS && (
-                <button
-                  type="button"
-                  onClick={onOpenVoiceOS}
-                  className="cs-deck-btn px-3.5 py-2.5 rounded bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/60 text-cyan-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Mic className="w-3.5 h-3.5" />
-                  <span>Voice OS</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => navigate({ subject: 'future_lab', futureTab: 'galaxy3d', tutorOpen: false })}
-                className="cs-deck-btn px-4 py-2.5 rounded bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>{isEn ? 'Enter Future Lab' : 'Vào Phòng Lab Tương Lai'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-            {(
-              [
-                {
-                  tab: 'galaxy3d',
-                  titleVi: 'Vũ trụ Tri thức 3D',
-                  titleEn: '3D Knowledge Galaxy',
-                  descVi: 'Bản sao năng lực + hành tinh lỗi',
-                  icon: Orbit
-                },
-                {
-                  tab: 'text_to_sim',
-                  titleVi: 'Sinh Mô Phỏng AI',
-                  titleEn: 'Text → Simulation',
-                  descVi: 'Gõ đề bài → đồ họa 60fps',
-                  icon: Wand2
-                },
-                {
-                  tab: 'paper_to_sim',
-                  titleVi: 'Giấy Nháp → Sim',
-                  titleEn: 'Paper → Sim Vision',
-                  descVi: 'Chụp vở → mô phỏng & soi lỗi',
-                  icon: Camera
-                },
-                {
-                  tab: 'infinite_canvas',
-                  titleVi: 'Bảng Vô Cực STEM',
-                  titleEn: 'Infinite Canvas',
-                  descVi: 'Đồ thị + 3D + C++ nối dây',
-                  icon: Grid3X3
-                },
-                {
-                  tab: 'audio_fft',
-                  titleVi: 'Sóng Âm FFT 3D',
-                  titleEn: 'Audio FFT 3D Lab',
-                  descVi: 'Micro / Doppler giao thoa 3D',
-                  icon: Waves
-                }
-              ] as const
-            ).map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.tab}
-                  type="button"
-                  onClick={() =>
-                    navigate({ subject: 'future_lab', futureTab: item.tab, tutorOpen: false })
-                  }
-                  className="text-left p-3 rounded border border-slate-700/90 bg-slate-900/80 hover:bg-slate-800 hover:border-cyan-400/70 transition cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-300 group-hover:text-white">
-                    <Icon className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{isEn ? item.titleEn : item.titleVi}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-1 truncate">
-                    {item.descVi}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      {/* GATEWAY: HỌC CẢM GIÁC 3D · WEBCAM HAND-GESTURE & OXYZ LAB (already above) */}
 
       {/* GROWTH SUITE BENTO STRIP: Streak, Daily Quests, Sổ Lỗi Sai SM-2, PDF Studio & Community Showcase */}
       <section className="space-y-3">

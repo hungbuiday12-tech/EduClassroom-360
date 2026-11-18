@@ -302,11 +302,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     }
   > = {
     synapse_v2: {
-      label: isEn ? 'Synapse v2 · 30 Worlds' : 'Synapse v2 · 30 Công trình',
-      badge: isEn ? '30 Interactive 3D Chambers' : '30 Đại Công Trình 3D WebGL',
+      label: isEn ? 'Synapse Pre · 30 Worlds' : 'Synapse Pre · Đại công trình',
+      badge: isEn ? '30 Interactive 3D Megastructures' : '30 Đại Công Trình Tương Lai 3D',
       headline: isEn
-        ? 'Virtual Science Campus: 30 Futuristic 3D Physics, Space, CS & Math Chambers'
-        : 'Lớp Học Ảo Synapse v2: 30 Đại Công Trình 3D Vật Lí, Vũ Trụ, Vi Tính & Toán',
+        ? 'Synapse Pre: 30 Futuristic 3D Megastructures & Next-Gen AI Labs'
+        : 'Synapse Pre: 30 Đại Công Trình Tương Lai & Phòng Lab AI 3D',
       summary: isEn
         ? 'Step inside 30 real-time 3D scientific chambers with live formulas: CERN LHC, Double-Slit Laser, James Webb, Dyson Black Hole, Tokamak Fusion, LiDAR SLAM, 7T MRI, Sagnac Gyro, Acoustic Levitation & Photonic Tensor Core.'
         : 'Khám phá 30 không gian 3D tương tác trực tiếp cùng công thức: Máy gia tốc CERN LHC, Laser Khe kép, Kính James Webb, Hố đen Dyson, Lò Tokamak, LiDAR SLAM, MRI 7T, Con quay Sagnac & Chip quang tử.',
@@ -773,7 +773,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               {isEn ? (
                 <>
                   Complete Grades 9–12 &amp; Olympiad STEM workspace featuring{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">30 Synapse v2 3D chambers</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">30 Synapse Pre megastructures</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">10-fingertip webcam 2D/3D labs</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">5 Physics simulation domains</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Sublime Text 4 Judge</strong>,{' '}
@@ -783,7 +783,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               ) : (
                 <>
                   Hệ sinh thái học tập toàn diện cho học sinh THCS, THPT &amp; Đội tuyển Chuyên: tích hợp{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">30 đại công trình 3D Synapse v2</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (30 Đại công trình tương lai &amp; AI Lab)</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Học cảm giác 3D bằng 10 đầu ngón tay</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">5 chuyên đề Mô phỏng Vật lí</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">IDE Sublime Text 4</strong>,{' '}
@@ -807,10 +807,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               >
                 <Orbit className="w-5 h-5 text-sky-600 dark:text-sky-400 mb-1.5 icon-anim-cosmos" />
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                  {isEn ? 'Synapse v2 · 3D' : 'Synapse v2 · 3D'}
+                  {isEn ? 'Synapse Pre · 3D' : 'Synapse Pre · AI·3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '30 3D Chambers' : '30 Đại công trình 3D'}
+                  {isEn ? '30 3D Megastructures' : '30 Đại công trình 3D'}
                 </p>
               </button>
 
@@ -2509,7 +2509,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors">
-                    {isEn ? 'Synapse v2 · 30 3D Chambers' : 'Lớp Học Ảo Synapse v2 · 30 Đại Công Trình'}
+                    {isEn ? 'Synapse Pre · 30 Megastructures' : 'Synapse Pre · 30 Đại Công Trình Tương Lai'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
@@ -3091,7 +3091,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               : 'Synapse · Hệ thống giáo dục mô phỏng vũ trụ học thuật'}
           </span>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
-            <span>{isEn ? 'Synapse v2 (30)' : 'Synapse v2 (30)'}</span>
+            <span>{isEn ? 'Synapse Pre (30)' : 'Synapse Pre (30)'}</span>
             <span aria-hidden="true">·</span>
             <span>{isEn ? 'Spatial 3D (10-Finger)' : 'Học cảm giác 3D'}</span>
             <span aria-hidden="true">·</span>

@@ -655,8 +655,12 @@ export const PaperToSimPanel: React.FC<PaperToSimPanelProps> = ({ language = 'vi
                     <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
                   )}
                   <div>
-                    <div className="font-mono font-bold">{st.line}</div>
-                    <div className="opacity-90 mt-0.5">{st.note}</div>
+                    <div className="font-mono font-bold">
+                      <FormattedText text={st.line} />
+                    </div>
+                    <div className="opacity-90 mt-0.5">
+                      <FormattedText text={st.note} />
+                    </div>
                   </div>
                 </div>
               ))}

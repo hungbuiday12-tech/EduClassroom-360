@@ -58,7 +58,7 @@ const DEFAULT_LOCATION: NavLocation = {
   examId: null,
   synapseMode: 'catalog',
   synapseMonumentId: 'dyson',
-  futureTab: 'galaxy3d',
+  futureTab: 'megastructures',
   coopRoomCode: null,
   coopInviteMeta: null,
   tutorOpen: false,
@@ -95,13 +95,16 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
     case 'overview':
       return isEn ? 'Classroom' : 'Lớp học';
     case 'synapse_v2':
+      if (loc.futureTab && loc.futureTab !== 'megastructures') {
+        return isEn ? 'Synapse Pre · AI & 3D Lab' : 'Synapse Pre · Phòng Lab AI & 3D';
+      }
       return loc.synapseMode === 'stage'
         ? isEn
-          ? '3D Observatory'
-          : 'Không gian 3D Ảo'
+          ? 'Synapse Pre · 3D Megastructure Stage'
+          : 'Synapse Pre · Không gian 3D Đại công trình'
         : isEn
-        ? 'Virtual Campus · Synapse v2'
-        : 'Lớp học ảo · Synapse v2';
+        ? 'Synapse Pre · Futuristic Megastructures'
+        : 'Synapse Pre · Đại công trình tương lai';
     case 'spatial_3d':
       return isEn ? 'Spatial 3D Gesture Lab' : 'Học cảm giác 3D';
     case 'roadmap':
@@ -154,7 +157,12 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
     case 'showcase':
       return isEn ? '2D/3D Community Showcase' : 'Thư viện Sáng tạo 2D/3D';
     case 'future_lab':
-      return isEn ? 'Future AI & 3D Lab' : 'Phòng Lab Tương Lai · AI & 3D';
+      if (!loc.futureTab || loc.futureTab === 'megastructures') {
+        return isEn
+          ? 'Synapse Pre · Futuristic Megastructures'
+          : 'Synapse Pre · Đại công trình tương lai';
+      }
+      return isEn ? 'Synapse Pre · AI & 3D Lab' : 'Synapse Pre · Phòng Lab AI & 3D';
     default:
       return isEn ? 'Classroom' : 'Lớp học';
   }
@@ -294,6 +302,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         patch.examId = null;
       } else if (subject === 'synapse_v2') {
         patch.synapseMode = 'catalog';
+        patch.futureTab = 'megastructures';
+      } else if (subject === 'future_lab') {
+        patch.futureTab = prev.futureTab || 'megastructures';
       }
 
       if (isSameLocation(prev, { ...prev, ...patch })) {

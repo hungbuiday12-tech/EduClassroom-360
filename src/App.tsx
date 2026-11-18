@@ -13,7 +13,6 @@ import { ExamHub } from './components/exams/ExamHub';
 import { LearningRoadmap } from './components/roadmap/LearningRoadmap';
 import { ArenaHub } from './components/arena/ArenaHub';
 import { StudyForum } from './components/forum/StudyForum';
-import { SynapseV2Studio } from './components/synapsev2/SynapseV2Studio';
 import { SpatialGesture3DLab } from './components/spatial3d/SpatialGesture3DLab';
 import { SocraticAITutor } from './components/tutor/SocraticAITutor';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -446,10 +445,10 @@ function MainApp() {
                     <StudyForum onBack={goBack} />
                   )}
 
-                  {currentSubject === 'synapse_v2' && (
-                    <SynapseV2Studio
+                  {(currentSubject === 'synapse_v2' || currentSubject === 'future_lab') && (
+                    <FutureLabWorkspace
                       onBack={goBack}
-                      onNavigate={selectSubject}
+                      onNavigateSubject={selectSubject}
                       onEarnXP={handleEarnXP}
                     />
                   )}
@@ -481,13 +480,6 @@ function MainApp() {
                       onBack={goBack}
                       onNavigateSubject={selectSubject}
                       onEarnXP={handleEarnXP}
-                    />
-                  )}
-
-                  {currentSubject === 'future_lab' && (
-                    <FutureLabWorkspace
-                      onBack={goBack}
-                      onNavigateSubject={selectSubject}
                     />
                   )}
                 </motion.div>
@@ -545,7 +537,7 @@ function MainApp() {
                     className="inline-flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold cursor-pointer"
                   >
                     <Orbit className="w-3.5 h-3.5 shrink-0" />
-                    <span>Synapse v2 (30)</span>
+                    <span>Synapse Pre</span>
                   </button>
                   <button
                     onClick={() => setIsSettingsOpen(true)}
@@ -563,7 +555,11 @@ function MainApp() {
 
           {/* Global 3-Subject x 3-Mode Syn AI Drawer & Compact Bottom-Right Syn AI Mini-Chat */}
           {!isTutorOpen &&
-            currentSubject !== 'synapse_v2' &&
+            !(
+              (currentSubject === 'synapse_v2' || currentSubject === 'future_lab') &&
+              location.synapseMode === 'stage' &&
+              (!location.futureTab || location.futureTab === 'megastructures')
+            ) &&
             currentSubject !== 'spatial_3d' &&
             !(currentSubject === 'arena' && isArenaMatchActive) && (
             <div

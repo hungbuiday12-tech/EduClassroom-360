@@ -86,7 +86,7 @@ export const AppDownloadGuideSection: React.FC<AppDownloadGuideSectionProps> = (
         { icon: <Compass className="w-3.5 h-3.5 text-sky-300" />, label: 'Math 2D Graphs & 8 Oxyz 3D' },
         { icon: <Zap className="w-3.5 h-3.5 text-amber-300" />, label: 'Physics 5 Domains · 41 2D + 32 3D' },
         { icon: <Code2 className="w-3.5 h-3.5 text-emerald-300" />, label: 'CS 5 Paths · Sublime 4 & Judge' },
-        { icon: <Orbit className="w-3.5 h-3.5 text-cyan-300" />, label: 'Synapse v2 · 30 3D Megastructures' },
+        { icon: <Orbit className="w-3.5 h-3.5 text-cyan-300" />, label: 'Synapse Pre · 30 3D Megastructures' },
         { icon: <Hand className="w-3.5 h-3.5 text-teal-300" />, label: 'Spatial 3D · 10-Finger + Free 2D Draw' },
         { icon: <Sparkles className="w-3.5 h-3.5 text-indigo-300" />, label: 'Syn AI ×3 · Exams · Arena · Forum' }
       ]
@@ -94,7 +94,7 @@ export const AppDownloadGuideSection: React.FC<AppDownloadGuideSectionProps> = (
         { icon: <Compass className="w-3.5 h-3.5 text-sky-300" />, label: 'Toán: Đồ thị 2D & 8 Oxyz 3D' },
         { icon: <Zap className="w-3.5 h-3.5 text-amber-300" />, label: 'Vật lí: 5 Chuyên đề · 41 Lab 2D + 32 Lab 3D' },
         { icon: <Code2 className="w-3.5 h-3.5 text-emerald-300" />, label: 'Tin học: 5 Lộ trình + Sublime Text 4 Judge' },
-        { icon: <Orbit className="w-3.5 h-3.5 text-cyan-300" />, label: 'Lớp ảo Synapse v2 · 30 Đại công trình 3D' },
+        { icon: <Orbit className="w-3.5 h-3.5 text-cyan-300" />, label: 'Synapse Pre · 30 Đại công trình & Lab AI' },
         { icon: <Hand className="w-3.5 h-3.5 text-teal-300" />, label: 'Học cảm giác 3D · 10 ngón & 2D Tự do tạo' },
         { icon: <Sparkles className="w-3.5 h-3.5 text-indigo-300" />, label: 'Syn AI ×3 · Đề thi · Thi đấu · Diễn đàn' }
       ];
@@ -136,8 +136,8 @@ export const AppDownloadGuideSection: React.FC<AppDownloadGuideSectionProps> = (
 
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
                 {isEn
-                  ? 'Run the full STEM universe (Math 2D/Oxyz 3D, Physics 2D/3D Labs, CS 5 Paths & Sublime Text 4 IDE, Synapse v2 30 chambers, 10-finger Spatial 3D & Syn AI) as an independent standalone app.'
-                  : 'Cài đặt trọn bộ ứng dụng học tập Toán · Vật lí · Tin học, phòng mô phỏng 3D thực tiễn, Lớp ảo Synapse v2, Học cảm giác 10 ngón tay & Syn AI thành app độc lập cực mượt trên mọi thiết bị.'}
+                  ? 'Run the full STEM universe (Math 2D/Oxyz 3D, Physics 2D/3D Labs, CS 5 Paths & Sublime Text 4 IDE, Synapse Pre 30 megastructures, 10-finger Spatial 3D & Syn AI) as an independent standalone app.'
+                  : 'Cài đặt trọn bộ ứng dụng học tập Toán · Vật lí · Tin học, phòng mô phỏng 3D thực tiễn, Synapse Pre (Đại công trình tương lai & Lab AI 3D), Học cảm giác 10 ngón tay & Syn AI thành app độc lập cực mượt trên mọi thiết bị.'}
               </p>
 
               {/* Included Capabilities inside the Installed App */}

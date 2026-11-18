@@ -74,6 +74,7 @@ interface SynapseV2StudioProps {
   onBack?: () => void;
   onNavigate?: (subject: SubjectType) => void;
   onEarnXP?: (xp: number) => void;
+  embeddedInPre?: boolean;
 }
 
 type CameraPresetId = 'overview' | 'core' | 'zenith' | 'drone' | 'side' | 'lowAngle';
@@ -231,7 +232,8 @@ function renderMonumentIcon(id: MonumentId, className = 'w-4 h-4') {
 export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   onBack,
   onNavigate,
-  onEarnXP
+  onEarnXP,
+  embeddedInPre = false
 }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -344,13 +346,17 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       navigate(
         {
           subject: 'synapse_v2',
+          futureTab: 'megastructures',
           synapseMonumentId: nextId,
           synapseMode: openStage ? 'stage' : studioMode
         },
         { replace: !openStage && studioMode === 'stage' }
       );
     } else {
-      navigate({ subject: 'synapse_v2', synapseMonumentId: nextId }, { replace: true });
+      navigate(
+        { subject: 'synapse_v2', futureTab: 'megastructures', synapseMonumentId: nextId },
+        { replace: true }
+      );
     }
 
     if (!visitedWonders.includes(nextId)) {
@@ -956,7 +962,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
     return (
       <>
-        <FuturisticCosmicBackdrop />
+        {!embeddedInPre && <FuturisticCosmicBackdrop />}
         <div className="relative z-10 space-y-7 pb-14">
           {/* Futuristic Quantum Command Header Banner */}
           <section className="sci-scan-bar relative overflow-hidden rounded-xl border border-sky-400/45 bg-gradient-to-br from-[#06132b] via-[#091b3a] to-[#0b2540] text-white p-6 sm:p-8 shadow-[0_26px_90px_-18px_rgba(2,132,199,0.45)]">
@@ -988,7 +994,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-3.5 max-w-3xl">
                 <div className="flex flex-wrap items-center gap-3">
-                  {onBack && (
+                  {onBack && !embeddedInPre && (
                     <button
                       type="button"
                       onClick={onBack}
@@ -1000,19 +1006,19 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   )}
                   <span className="inline-flex items-center gap-2 text-xs font-mono font-extrabold uppercase tracking-[0.22em] text-sky-300">
                     <Orbit className="w-4 h-4 text-sky-300 icon-anim-cosmos" />
-                    {isEn ? 'SYNAPSE V2 · ORBITAL OBSERVATORY' : 'LỚP HỌC ẢO · SYNAPSE V2'}
+                    {isEn ? 'SYNAPSE PRE · FUTURISTIC MEGASTRUCTURES' : 'ĐẠI CÔNG TRÌNH TƯƠNG LAI · SYNAPSE PRE'}
                   </span>
                   <span className="text-slate-500" aria-hidden="true">·</span>
                   <span className="inline-flex items-center gap-1.5 text-xs font-mono text-emerald-300 font-bold tabular-nums">
                     <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    {visitedWonders.length}/{totalChambers} {isEn ? 'Chambers Unlocked' : 'Công trình đã thám hiểm'}
+                    {visitedWonders.length}/{totalChambers} {isEn ? 'Megastructures Unlocked' : 'Công trình đã thám hiểm'}
                   </span>
                 </div>
 
                 <h1 className="font-display text-2xl sm:text-4xl lg:text-[2.6rem] font-extrabold tracking-tight bg-gradient-to-r from-white via-sky-100 to-teal-200 bg-clip-text text-transparent leading-tight">
                   {isEn
-                    ? `${totalChambers} Futuristic Holographic 3D Chambers`
-                    : `${totalChambers} Đại Công Trình & Phòng Học Ảo Tương Lai`}
+                    ? `${totalChambers} Futuristic Holographic 3D Megastructures`
+                    : `${totalChambers} Đại Công Trình Tương Lai 3D Thời Gian Thực`}
                 </h1>
 
                 <p className="text-sm text-sky-100/85 leading-relaxed">
@@ -1255,18 +1261,18 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 type="button"
                 onClick={() => {
                   setIsFullscreen(false);
-                  navigate({ subject: 'synapse_v2', synapseMode: 'catalog' });
+                  navigate({ subject: 'synapse_v2', futureTab: 'megastructures', synapseMode: 'catalog' });
                 }}
                 className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
                 title={
                   isEn
-                    ? `Return to ${MONUMENT_CATALOG.length} Virtual Chambers`
-                    : `Quay lại ${MONUMENT_CATALOG.length} Khung Lớp Học Ảo`
+                    ? `Return to ${MONUMENT_CATALOG.length} Megastructures`
+                    : `Quay lại ${MONUMENT_CATALOG.length} Đại Công Trình Tương Lai`
                 }
               >
                 <LayoutGrid className="w-3.5 h-3.5 text-sky-300" />
                 <span>
-                  {isEn ? `${MONUMENT_CATALOG.length} Chambers` : `${MONUMENT_CATALOG.length} Khung Ảo`}
+                  {isEn ? `${MONUMENT_CATALOG.length} Structures` : `${MONUMENT_CATALOG.length} Công trình`}
                 </span>
               </button>
             <Orbit className="w-5 h-5 text-sky-400 icon-anim-cosmos shrink-0 hidden sm:inline" />
@@ -1424,7 +1430,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
           <div className="flex justify-end pointer-events-none">
             <div className="pointer-events-auto">
               <SpatialVoiceMentor
-                spaceName="Lớp học ảo · Synapse v2"
+                spaceName="Synapse Pre · Đại công trình tương lai"
                 modelTitle={isEn ? activeDef.titleEn : activeDef.titleVi}
                 partName={activeDef.code}
                 partDescription={isEn ? activeDef.descriptionEn : activeDef.descriptionVi}

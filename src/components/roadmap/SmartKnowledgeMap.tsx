@@ -125,7 +125,7 @@ const GRAPH_NODES: GraphNodeDef[] = [
     yPct: 80,
     labelVi: 'Phòng Lab 3D & Judge',
     labelEn: '3D Labs & Sublime IDE',
-    subVi: 'Synapse v2 · 10-Ngón · IDE',
+    subVi: 'Synapse Pre · 10-Ngón · IDE',
     subEn: 'Simulations & Judge',
     tone: 'indigo'
   },
@@ -383,11 +383,11 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
         };
       case 'practice_labs':
         return {
-          title: isEn ? 'Synapse v2 · Spatial 3D & Sublime Judge' : 'Thực Hành Trực Quan · Synapse v2 & Cảm Giác 3D',
+          title: isEn ? 'Synapse Pre · Spatial 3D & Sublime Judge' : 'Thực Hành Trực Quan · Synapse Pre & Cảm Giác 3D',
           metric: '30 Công trình · 15 Mô hình 3D · 16 Algos',
           desc: isEn
             ? 'Reinforce abstract concepts via 10-finger 3D manipulation, 2D freehand drawing, and Sublime Text 4 C++/Python grading.'
-            : 'Củng cố trực giác bằng 30 đại công trình Synapse v2, 10 đầu ngón tay + vẽ 2D tự do và chấm code Sublime Text 4.',
+            : 'Củng cố trực giác bằng 30 đại công trình tương lai Synapse Pre, 10 đầu ngón tay + vẽ 2D tự do và chấm code Sublime Text 4.',
           ctaLabel: isEn ? 'Open Spatial 3D Lab' : 'Mở Học Cảm Giác 3D',
           onLaunch: () => onNavigateSubject('spatial_3d'),
           onInspect: () => nextPhys && onSelectRoadmapNode(nextPhys.id)

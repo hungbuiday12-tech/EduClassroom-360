@@ -954,6 +954,7 @@ export interface CustomMockTestResult {
 }
 
 export type FutureLabTabId =
+  | 'megastructures'
   | 'galaxy3d'
   | 'text_to_sim'
   | 'paper_to_sim'

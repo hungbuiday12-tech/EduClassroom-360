@@ -4654,7 +4654,7 @@ app.post('/api/gemini/voice-os-intent', async (req: Request, res: Response) => {
 - actionType nhận: "navigate" | "navigate_math_sim" | "navigate_future" | "navigate_monument" | "set_background" | "toggle_theme" | "timer" | "open_tutor" | "answer_qa" | "none"
 - targetSubject (khi navigate): "overview" | "roadmap" | "synapse_v2" | "spatial_3d" | "math" | "math_sims" | "physics" | "physics_sims" | "cs" | "exams" | "arena" | "forum" | "growth_hub" | "showcase"
 - targetMathTab (khi navigate_math_sim): "grapher" | "geometry" | "math3d"
-- targetFutureTab (khi navigate_future): "megastructures" | "galaxy3d" | "text_to_sim" | "paper_to_sim" | "infinite_canvas" | "audio_fft" | "silicon_neural"
+- targetFutureTab (khi navigate_future): "megastructures" | "galaxy3d" | "text_to_sim" | "paper_to_sim" | "infinite_canvas" | "audio_fft" | "silicon_neural" | "phone_sensor_lab" | "dual_hand_sandbox"
 - bgStyle (khi set_background): "ecosystem" | "molecules" | "ocean" | "sky" | "constellations" | "cosmic_galaxy" | "blueprint_tech" | "studio_grid" | "aurora_clean" | "minimal_solid"
 - timerAction: "start" | "pause" | "reset"
 - tutorSubject: "math" | "physics" | "cs"
@@ -4700,17 +4700,662 @@ app.post('/api/gemini/voice-os-intent', async (req: Request, res: Response) => {
   }
 });
 
+// =====================================================================
+// FEATURE #1: LIVE VOICE + SCREEN VISION CO-PILOT
+// =====================================================================
+app.post('/api/gemini/live-copilot', async (req: Request, res: Response) => {
+  try {
+    const {
+      question = '',
+      subject = 'general',
+      language = 'vi',
+      workspaceTitle = '',
+      workspaceSummary = '',
+      codeSnippet = '',
+      codeLanguage = '',
+      paramsSummary = '',
+      formula = '',
+      imageBase64 = '',
+      mimeType = 'image/jpeg'
+    } = req.body || {};
+
+    const cleanQ = String(question || '').trim().slice(0, 800);
+    if (!cleanQ) {
+      return res.status(400).json({ error: 'Vui lòng nói hoặc nhập câu hỏi cho Live Co-Pilot.' });
+    }
+
+    const ai = getGenAI();
+    const systemInstruction = `Bạn là Synapse Live Voice + Vision Co-Pilot (đọc thành tiếng tự nhiên, súc tích 2–4 câu, trực diện vào màn hình/canvas/code đang mở).
+- Luôn trả lời bằng ${language === 'en' ? 'English' : 'Tiếng Việt chuẩn học thuật, gần gũi như thầy cô đang đứng cạnh bàn học'}.
+- Quan sát ảnh chụp màn hình / canvas mô phỏng (nếu có) và mã nguồn / thông số hiện tại để chỉ ra đúng chi tiết học sinh đang xem hoặc chỗ sai cần sửa.
+- Không đọc ký hiệu LaTeX rườm rà trong spokenAnswer (hãy diễn đạt tự nhiên để Web Speech đọc hay), đưa công thức LaTeX chuẩn vào formulaLatex nếu cần.`;
+
+    const contextPrompt = [
+      `Môn / Khu vực đang mở: ${subject}`,
+      workspaceTitle ? `Tiêu đề workspace: ${workspaceTitle}` : '',
+      workspaceSummary ? `Mô tả bối cảnh: ${workspaceSummary}` : '',
+      paramsSummary ? `Thông số hiện tại: ${paramsSummary}` : '',
+      formula ? `Công thức hiện tại: ${formula}` : '',
+      codeSnippet ? `Mã nguồn (${codeLanguage || 'code'}):\n\`\`\`\n${String(codeSnippet).slice(0, 3500)}\n\`\`\`` : '',
+      `Câu hỏi của học sinh: "${cleanQ}"`
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const contents: any[] = [{ text: contextPrompt }];
+    if (typeof imageBase64 === 'string' && imageBase64.length > 100) {
+      const cleanB64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+      contents.push({
+        inlineData: {
+          mimeType: String(mimeType || 'image/jpeg'),
+          data: cleanB64
+        }
+      });
+    }
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        spokenAnswer: { type: Type.STRING },
+        visualPinHint: { type: Type.STRING },
+        formulaLatex: { type: Type.STRING },
+        highlightLines: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+        nextStepQuestion: { type: Type.STRING }
+      },
+      required: ['spokenAnswer']
+    };
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents,
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema,
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 15000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {
+      spokenAnswer: 'Mình đã tiếp nhận câu hỏi của bạn, hãy kiểm tra lại các bước biến đổi và thông số trên màn hình nhé.',
+      visualPinHint: '',
+      formulaLatex: formula || '',
+      highlightLines: [],
+      nextStepQuestion: ''
+    });
+
+    return res.json({ success: true, data: parsed });
+  } catch (err: any) {
+    console.error('live-copilot error:', err);
+    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+  }
+});
+
+// =====================================================================
+// FEATURE #6: AI 3BLUE1BROWN MOTION REEL GENERATOR
+// =====================================================================
+app.post('/api/gemini/motion-reel', async (req: Request, res: Response) => {
+  try {
+    const { topic = '', subject = 'math', language = 'vi' } = req.body || {};
+    const cleanTopic = String(topic || '').trim().slice(0, 300);
+    if (!cleanTopic) {
+      return res.status(400).json({ error: 'Vui lòng nhập chủ đề Toán / Vật lí / Thuật toán để dựng Motion Reel.' });
+    }
+
+    const ai = getGenAI();
+    const systemInstruction = `Bạn là Đạo diễn Đồ họa STEM phong cách 3Blue1Brown (nền tối #070b14, nét vector phát sáng sắc nét, giảng trực quan từng cảnh).
+Hãy thiết kế một kịch bản video ngắn 5 cảnh (tổng ~25-32 giây) giải thích sâu bản chất của chủ đề được hỏi.
+Mỗi cảnh chọn visualKind PHÙ HỢP NHẤT trong danh sách:
+- "derivative_tangent": tiếp tuyến trượt dọc đường cong f(x) và đạo hàm f'(x)
+- "integral_area": tổng Riemann & diện tích dưới đường cong f(x)
+- "vector_addition": quy tắc hình bình hành & phép biến đổi vector 2D
+- "phasor_circle": chuyển động tròn đều chiếu sang đồ thị sin/cos (dao động điều hòa / RLC)
+- "wave_superposition": giao thoa sóng & sóng dừng
+- "parabola_vertex": khảo sát cực trị parabol & quỹ đạo ném xiên
+- "binary_search": thu hẹp đoạn [L, R] tìm kiếm nhị phân trên mảng tăng dần
+Ngôn ngữ thuyết minh: ${language === 'en' ? 'English' : 'Tiếng Việt'}.`;
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        topicSummary: { type: Type.STRING },
+        scenes: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              caption: { type: Type.STRING },
+              narration: { type: Type.STRING },
+              formula: { type: Type.STRING },
+              visualKind: { type: Type.STRING },
+              durationSec: { type: Type.NUMBER },
+              accentHex: { type: Type.STRING },
+              paramA: { type: Type.NUMBER },
+              paramB: { type: Type.NUMBER },
+              keyLabels: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            required: ['title', 'caption', 'narration', 'formula', 'visualKind', 'durationSec', 'accentHex']
+          }
+        }
+      },
+      required: ['title', 'topicSummary', 'scenes']
+    };
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: `Hãy tạo kịch bản 5 cảnh 3Blue1Brown cho chủ đề (${subject}): "${cleanTopic}".`,
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema,
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 18000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, null);
+    if (!parsed || !Array.isArray(parsed.scenes) || parsed.scenes.length === 0) {
+      return res.status(502).json({ error: 'Không phân tích được kịch bản Motion Reel từ AI.' });
+    }
+
+    const validKinds = [
+      'derivative_tangent',
+      'integral_area',
+      'vector_addition',
+      'phasor_circle',
+      'wave_superposition',
+      'parabola_vertex',
+      'binary_search'
+    ];
+
+    const normalized = {
+      title: String(parsed.title || cleanTopic).slice(0, 120),
+      topicSummary: String(parsed.topicSummary || ''),
+      scenes: parsed.scenes.slice(0, 6).map((s: any, idx: number) => ({
+        id: `scene-${idx + 1}`,
+        title: String(s.title || `Cảnh ${idx + 1}`),
+        caption: String(s.caption || ''),
+        narration: String(s.narration || s.caption || ''),
+        formula: String(s.formula || ''),
+        visualKind: validKinds.includes(s.visualKind) ? s.visualKind : 'derivative_tangent',
+        durationSec: Math.min(10, Math.max(4, Number(s.durationSec) || 5.5)),
+        accentHex: /^#[0-9a-fA-F]{6}$/.test(String(s.accentHex || '')) ? String(s.accentHex) : '#38bdf8',
+        paramA: Number.isFinite(Number(s.paramA)) ? Number(s.paramA) : 1.2,
+        paramB: Number.isFinite(Number(s.paramB)) ? Number(s.paramB) : 0.8,
+        keyLabels: Array.isArray(s.keyLabels) ? s.keyLabels.slice(0, 4).map(String) : []
+      }))
+    };
+
+    return res.json({ success: true, reel: normalized });
+  } catch (err: any) {
+    console.error('motion-reel error:', err);
+    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+  }
+});
+
+// =====================================================================
+// FEATURE #5: LIVE CODE-TO-ANIMATION LINE-BY-LINE STEP TRACER (PYTHON & C++)
+// =====================================================================
+function execPythonTraceInTempDir(
+  pyCode: string,
+  inputData: string,
+  timeoutMs = 1500
+): Promise<{
+  ok: boolean;
+  error?: string;
+  stdout: string;
+  steps: Array<{
+    step: number;
+    line: number;
+    event: string;
+    note: string;
+    variables: Record<string, any>;
+    arrayPreview?: { name: string; values: number[]; highlightIndices: number[] };
+    outputSoFar: string;
+  }>;
+}> {
+  return new Promise((resolve) => {
+    let tmpDir = '';
+    try {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'syn-trace-py-'));
+      const userPath = path.join(tmpDir, 'user_sol.py');
+      const driverPath = path.join(tmpDir, 'trace_driver.py');
+      fs.writeFileSync(userPath, pyCode, 'utf8');
+
+      const driverCode = `
+import sys, json, io, os
+
+USER_FILE = ${JSON.stringify(userPath)}
+MAX_STEPS = 150
+steps = []
+buf = io.StringIO()
+orig_stdout = sys.stdout
+sys.stdout = buf
+
+def serialize_val(v):
+    if isinstance(v, (int, float, bool)):
+        return v
+    if isinstance(v, str):
+        return v[:40]
+    if isinstance(v, (list, tuple)):
+        return [serialize_val(x) for x in list(v)[:18]]
+    if isinstance(v, dict):
+        out = {}
+        for k, val in list(v.items())[:10]:
+            out[str(k)] = serialize_val(val)
+        return out
+    return str(type(v).__name__)
+
+def pick_array(vars_map):
+    for k, v in vars_map.items():
+        if isinstance(v, list) and len(v) > 0 and all(isinstance(x, (int, float)) for x in v):
+            hl = []
+            for idx_name in ('i', 'j', 'l', 'r', 'mid', 'low', 'high', 'idx', 'p', 'pos'):
+                iv = vars_map.get(idx_name)
+                if isinstance(iv, int) and 0 <= iv < len(v):
+                    hl.append(iv)
+            return {'name': str(k), 'values': [float(x) for x in v[:18]], 'highlightIndices': hl}
+    return None
+
+def tracer(frame, event, arg):
+    if os.path.abspath(frame.f_code.co_filename) != os.path.abspath(USER_FILE):
+        return None
+    if event in ('line', 'return') and len(steps) < MAX_STEPS:
+        loc = {}
+        for k, v in frame.f_locals.items():
+            if k.startswith('__') or callable(v) or getattr(v, '__name__', '') == 'sys':
+                continue
+            loc[k] = serialize_val(v)
+        arr = pick_array(frame.f_locals)
+        steps.append({
+            'step': len(steps) + 1,
+            'line': int(frame.f_lineno),
+            'event': event,
+            'note': f"{frame.f_code.co_name or 'main'} · line {frame.f_lineno}",
+            'variables': loc,
+            'arrayPreview': arr,
+            'outputSoFar': buf.getvalue()[:500]
+        })
+    return tracer
+
+code_src = open(USER_FILE, 'r', encoding='utf-8').read()
+compiled = compile(code_src, USER_FILE, 'exec')
+glb = {'__name__': '__main__', '__file__': USER_FILE}
+err_msg = None
+sys.settrace(tracer)
+try:
+    exec(compiled, glb, glb)
+except Exception as ex:
+    err_msg = f"{type(ex).__name__}: {ex}"
+finally:
+    sys.settrace(None)
+    sys.stdout = orig_stdout
+
+print(json.dumps({
+    'ok': err_msg is None,
+    'error': err_msg,
+    'stdout': buf.getvalue(),
+    'steps': steps
+}, ensure_ascii=False))
+`;
+      fs.writeFileSync(driverPath, driverCode, 'utf8');
+
+      const child = execFile(
+        'python3',
+        ['-I', driverPath],
+        { cwd: tmpDir, timeout: timeoutMs, maxBuffer: 2 * 1024 * 1024 },
+        (error, stdout, stderr) => {
+          try {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+          } catch {}
+          if (stdout) {
+            try {
+              const parsed = JSON.parse(stdout);
+              return resolve(parsed);
+            } catch {}
+          }
+          resolve({
+            ok: false,
+            error: String(stderr || error?.message || 'Lỗi chạy Python Tracer'),
+            stdout: '',
+            steps: []
+          });
+        }
+      );
+      if (child.stdin) {
+        child.stdin.write(inputData || '');
+        child.stdin.end();
+      }
+    } catch (e: any) {
+      if (tmpDir) {
+        try {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+        } catch {}
+      }
+      resolve({ ok: false, error: e?.message || 'Trace init failed', stdout: '', steps: [] });
+    }
+  });
+}
+
+function compileAndRunCppInTempDir(
+  cppCode: string,
+  inputData: string,
+  timeoutMs = 1500
+): Promise<{ ok: boolean; stdout: string; stderr: string; runtimeMs: number }> {
+  return new Promise((resolve) => {
+    let tmpDir = '';
+    try {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'syn-cpp-'));
+      const srcPath = path.join(tmpDir, 'main.cpp');
+      const binPath = path.join(tmpDir, 'main.out');
+      fs.writeFileSync(srcPath, cppCode, 'utf8');
+
+      execFile(
+        'g++',
+        ['-std=c++20', '-O0', srcPath, '-o', binPath],
+        { cwd: tmpDir, timeout: 6000, maxBuffer: 1024 * 1024 },
+        (compileErr, _cOut, compileStderr) => {
+          if (compileErr) {
+            try {
+              fs.rmSync(tmpDir, { recursive: true, force: true });
+            } catch {}
+            return resolve({
+              ok: false,
+              stdout: '',
+              stderr: String(compileStderr || compileErr.message || 'Compile error'),
+              runtimeMs: 0
+            });
+          }
+          const start = Date.now();
+          const child = execFile(
+            binPath,
+            [],
+            { cwd: tmpDir, timeout: timeoutMs, maxBuffer: 1024 * 1024 },
+            (runErr, runOut, runErrStr) => {
+              const elapsed = Date.now() - start;
+              try {
+                fs.rmSync(tmpDir, { recursive: true, force: true });
+              } catch {}
+              resolve({
+                ok: !runErr,
+                stdout: String(runOut || ''),
+                stderr: runErr ? String(runErrStr || (runErr.killed ? 'Time Limit Exceeded (TLE)' : runErr.message)) : '',
+                runtimeMs: elapsed
+              });
+            }
+          );
+          if (child.stdin) {
+            child.stdin.write(inputData || '');
+            child.stdin.end();
+          }
+        }
+      );
+    } catch (e: any) {
+      if (tmpDir) {
+        try {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+        } catch {}
+      }
+      resolve({ ok: false, stdout: '', stderr: e?.message || 'Execution error', runtimeMs: 0 });
+    }
+  });
+}
+
+app.post('/api/cs/trace-code', async (req: Request, res: Response) => {
+  try {
+    const { code = '', language = 'cpp', input = '' } = req.body || {};
+    const cleanCode = String(code || '');
+    if (!cleanCode.trim()) {
+      return res.status(400).json({ error: 'Mã nguồn không được để trống.' });
+    }
+
+    if (language === 'python') {
+      const pyTrace = await execPythonTraceInTempDir(cleanCode, String(input || ''));
+      if (!pyTrace.ok && pyTrace.steps.length === 0) {
+        return res.status(400).json({ error: pyTrace.error || 'Lỗi chạy Python.' });
+      }
+      return res.json({
+        success: true,
+        engine: 'python_sys_settrace',
+        stdout: pyTrace.stdout,
+        steps: pyTrace.steps
+      });
+    }
+
+    // C++20: verify compilation and real stdout via g++, then generate accurate line-by-line execution trace
+    const cppRun = await compileAndRunCppInTempDir(cleanCode, String(input || ''));
+    if (!cppRun.ok && cppRun.stderr) {
+      return res.status(400).json({ error: cppRun.stderr });
+    }
+
+    const numberedCode = cleanCode
+      .split('\n')
+      .map((ln, idx) => `${idx + 1}: ${ln}`)
+      .join('\n')
+      .slice(0, 5000);
+
+    const ai = getGenAI();
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        summary: { type: Type.STRING },
+        steps: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              step: { type: Type.INTEGER },
+              line: { type: Type.INTEGER },
+              note: { type: Type.STRING },
+              varsJson: { type: Type.STRING },
+              arrayName: { type: Type.STRING },
+              arrayValues: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+              highlightIndices: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+              outputSoFar: { type: Type.STRING }
+            },
+            required: ['step', 'line', 'note', 'varsJson', 'outputSoFar']
+          }
+        }
+      },
+      required: ['summary', 'steps']
+    };
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: `Hãy truy vết từng bước thực thi (tối đa 45 bước quan trọng nhất, đúng từng dòng lệnh) cho mã nguồn C++20 sau với input "${String(input || '').slice(0, 600)}". Đầu ra thực tế đã biên dịch bằng g++ là: "${cppRun.stdout.slice(0, 600)}".
+Mã nguồn có số dòng:
+${numberedCode}
+Lưu ý: varsJson là chuỗi JSON object chứa giá trị các biến đang thay đổi tại dòng đó (ví dụ '{"i":2,"sum":6}'). Nếu có mảng/vector/DP 1D, điền arrayName, arrayValues, highlightIndices.`,
+      responseMimeType: 'application/json',
+      responseSchema,
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 16000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, { summary: '', steps: [] });
+    const steps = Array.isArray(parsed?.steps)
+      ? parsed.steps.map((st: any, idx: number) => {
+          let variables: Record<string, any> = {};
+          try {
+            variables = JSON.parse(String(st.varsJson || '{}'));
+          } catch {}
+          const arrVals = Array.isArray(st.arrayValues) ? st.arrayValues.map(Number) : [];
+          return {
+            step: idx + 1,
+            line: Math.max(1, Number(st.line) || 1),
+            event: 'line',
+            note: String(st.note || `Step ${idx + 1}`),
+            variables,
+            arrayPreview:
+              arrVals.length > 0
+                ? {
+                    name: String(st.arrayName || 'a'),
+                    values: arrVals.slice(0, 20),
+                    highlightIndices: Array.isArray(st.highlightIndices)
+                      ? st.highlightIndices.map(Number)
+                      : []
+                  }
+                : undefined,
+            outputSoFar: String(st.outputSoFar || '')
+          };
+        })
+      : [];
+
+    return res.json({
+      success: true,
+      engine: 'g++_verified_trace',
+      summary: String(parsed?.summary || ''),
+      stdout: cppRun.stdout,
+      runtimeMs: cppRun.runtimeMs,
+      steps
+    });
+  } catch (err: any) {
+    console.error('trace-code error:', err);
+    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+  }
+});
+
+// =====================================================================
+// FEATURE #3: LIVE PHONE SENSOR TELEMETRY ROOMS (/ws/sensor-lab)
+// =====================================================================
+interface SensorLabRoom {
+  roomCode: string;
+  createdAt: number;
+  emptySince: number | null;
+  experimentMode: string;
+  hosts: Set<WebSocket>;
+  mobiles: Set<WebSocket>;
+}
+const sensorLabRooms = new Map<string, SensorLabRoom>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of sensorLabRooms.entries()) {
+    if (room.hosts.size === 0 && room.mobiles.size === 0 && room.emptySince && now - room.emptySince > 5 * 60 * 1000) {
+      sensorLabRooms.delete(code);
+    }
+  }
+}, 45000);
+
+function broadcastSensorRoster(room: SensorLabRoom) {
+  const payload = JSON.stringify({
+    type: 'sensor:roster',
+    roomCode: room.roomCode,
+    hostCount: room.hosts.size,
+    mobileCount: room.mobiles.size,
+    experimentMode: room.experimentMode
+  });
+  for (const ws of [...room.hosts, ...room.mobiles]) {
+    if (ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(payload);
+      } catch {}
+    }
+  }
+}
+
 function attachSpatialCoopWebSocket(httpServer: http.Server): void {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 512 * 1024 });
+  const wssSensor = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024 });
 
   httpServer.on('upgrade', (request, socket, head) => {
     const reqUrl = request.url || '';
     const pathname = reqUrl.split('?')[0];
-    if (pathname !== '/ws/spatial-coop') {
+    if (pathname === '/ws/spatial-coop') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
       return;
     }
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
+    if (pathname === '/ws/sensor-lab') {
+      wssSensor.handleUpgrade(request, socket, head, (ws) => {
+        wssSensor.emit('connection', ws, request);
+      });
+      return;
+    }
+  });
+
+  wssSensor.on('connection', (ws: WebSocket) => {
+    let joinedCode: string | null = null;
+    let role: 'host' | 'mobile' = 'host';
+
+    const leaveSensorRoom = () => {
+      if (!joinedCode) return;
+      const room = sensorLabRooms.get(joinedCode);
+      if (room) {
+        room.hosts.delete(ws);
+        room.mobiles.delete(ws);
+        if (room.hosts.size === 0 && room.mobiles.size === 0) {
+          room.emptySince = Date.now();
+        }
+        broadcastSensorRoster(room);
+      }
+      joinedCode = null;
+    };
+
+    ws.on('close', leaveSensorRoom);
+    ws.on('error', leaveSensorRoom);
+
+    ws.on('message', (raw) => {
+      let msg: any = null;
+      try {
+        msg = JSON.parse(raw.toString());
+      } catch {
+        return;
+      }
+      if (!msg || typeof msg.type !== 'string') return;
+
+      if (msg.type === 'sensor:join') {
+        const code = String(msg.roomCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+        if (!code) return;
+        if (joinedCode && joinedCode !== code) leaveSensorRoom();
+
+        role = msg.role === 'mobile' ? 'mobile' : 'host';
+        let room = sensorLabRooms.get(code);
+        if (!room) {
+          room = {
+            roomCode: code,
+            createdAt: Date.now(),
+            emptySince: null,
+            experimentMode: String(msg.experimentMode || 'shm_spring'),
+            hosts: new Set(),
+            mobiles: new Set()
+          };
+          sensorLabRooms.set(code, room);
+        }
+        room.emptySince = null;
+        if (role === 'mobile') room.mobiles.add(ws);
+        else room.hosts.add(ws);
+        joinedCode = code;
+        broadcastSensorRoster(room);
+        return;
+      }
+
+      if (!joinedCode) return;
+      const room = sensorLabRooms.get(joinedCode);
+      if (!room) return;
+
+      if (msg.type === 'sensor:sample') {
+        const relay = JSON.stringify({
+          type: 'sensor:sample',
+          ax: Number(msg.ax) || 0,
+          ay: Number(msg.ay) || 0,
+          az: Number(msg.az) || 0,
+          alpha: Number(msg.alpha) || 0,
+          beta: Number(msg.beta) || 0,
+          gamma: Number(msg.gamma) || 0,
+          t: Number(msg.t) || Date.now()
+        });
+        for (const hostWs of room.hosts) {
+          if (hostWs !== ws && hostWs.readyState === WebSocket.OPEN) {
+            try {
+              hostWs.send(relay);
+            } catch {}
+          }
+        }
+      } else if (msg.type === 'sensor:mode' && typeof msg.experimentMode === 'string') {
+        room.experimentMode = msg.experimentMode.slice(0, 40);
+        broadcastSensorRoster(room);
+      }
     });
   });
 

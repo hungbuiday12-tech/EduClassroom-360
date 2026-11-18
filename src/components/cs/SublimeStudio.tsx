@@ -19,12 +19,15 @@ import {
   UserSamplePair
 } from './problemAnalyzer';
 import { CodeMistakeAnalysisPanel } from './CodeMistakeAnalysisPanel';
+import { LiveCodeTraceVisualizer, ThoughtSnapshot } from './LiveCodeTraceVisualizer';
+import { setLiveWorkspaceContext } from '../../lib/liveCoPilotBridge';
 import { SublimeEditor, SublimeTabItem } from './SublimeEditor';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { useLanguage } from '../../context/LanguageContext';
 import { FormattedText } from '../common/MathRenderer';
 import { VoiceMicButton } from '../common/VoiceMicButton';
 import {
+  Activity,
   Play,
   Send,
   Upload,
@@ -62,9 +65,22 @@ function getTimeLimitMsFromInput(enabled: boolean, secStr: string): number | nul
   return Math.max(50, Math.round(parsed * 1000));
 }
 
+export interface SublimeStarterPreset {
+  key: string;
+  title: string;
+  description: string;
+  inputFormat: string;
+  outputFormat: string;
+  sampleInput: string;
+  sampleOutput: string;
+  starterCpp: string;
+}
+
 interface SublimeStudioProps {
   onScoreEarned?: (xp: number) => void;
   onBack?: () => void;
+  initialPreset?: SublimeStarterPreset | null;
+  onPresetConsumed?: () => void;
 }
 
 const DEFAULT_CLEAN_CPP = `#include <iostream>
@@ -92,7 +108,12 @@ if __name__ == '__main__':
     solve()
 `;
 
-export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onBack }) => {
+export const SublimeStudio: React.FC<SublimeStudioProps> = ({
+  onScoreEarned,
+  onBack,
+  initialPreset,
+  onPresetConsumed
+}) => {
   const { language: uiLang } = useLanguage();
 
   // Current analyzed problem
@@ -135,7 +156,9 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isConsoleOpen, setIsConsoleOpen] = useState<boolean>(true);
-  const [consoleTab, setConsoleTab] = useState<'output' | 'judge'>('output');
+  const [consoleTab, setConsoleTab] = useState<'output' | 'judge' | 'trace'>('output');
+  const [thoughtHistory, setThoughtHistory] = useState<ThoughtSnapshot[]>([]);
+  const lastThoughtCodeRef = useRef<string>('');
   const [mobilePane, setMobilePane] = useState<'problem' | 'editor' | 'console'>('editor');
   const [fontSize, setFontSize] = useState<number>(14);
   const [saveFlash, setSaveFlash] = useState<boolean>(false);
@@ -178,6 +201,64 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
     return () => window.removeEventListener('keydown', onKey);
   }, [isFullscreen]);
 
+  // Hydrate problem & starter code when launched from a C++ Roadmap Stage
+  useEffect(() => {
+    if (!initialPreset) return;
+    const isEn = uiLang === 'en';
+    const hydratedProblem: CodingProblem = {
+      id: initialPreset.key,
+      title: initialPreset.title,
+      category: 'C++ Track Practice',
+      difficulty: 'Medium',
+      timeLimit: '1.0s',
+      timeLimitEnabled: true,
+      timeLimitMs: 1000,
+      ioMode: 'standard',
+      memoryLimit: '256MB',
+      description: initialPreset.description,
+      inputFormat: initialPreset.inputFormat,
+      outputFormat: initialPreset.outputFormat,
+      constraints: [isEn ? 'Time limit: 1.0s · Standard I/O (stdin/stdout)' : 'Giới hạn thời gian: 1.0s · Đọc/ghi chuẩn (stdin/stdout)'],
+      sampleCases: [
+        {
+          id: 1,
+          input: initialPreset.sampleInput,
+          expectedOutput: initialPreset.sampleOutput,
+          isSample: true,
+          difficulty: 'Cơ bản'
+        }
+      ],
+      hiddenCases: [],
+      cppTemplate: initialPreset.starterCpp,
+      pythonTemplate: DEFAULT_CLEAN_PYTHON
+    };
+    setProblem(hydratedProblem);
+    setCppCode(initialPreset.starterCpp);
+    setSelectedLang('cpp');
+    setActiveFile('main.cpp');
+    setCustomInput(initialPreset.sampleInput);
+    setCustomOutput('');
+    setCustomStderr('');
+    setCustomRuntimeMs(null);
+    setJudgeResults(null);
+    setJudgeScore(null);
+    setJudgeVerdict(null);
+    setMistakeAnalysis(null);
+    setShowUploadModal(false);
+    setIsSidebarOpen(true);
+    setConsoleTab('output');
+    setCfgTimeLimitEnabled(true);
+    setCfgTimeLimitSec('1.0');
+    setCfgIoMode('standard');
+    setAnalysisSource('template');
+    setDiagnosticNote(
+      isEn
+        ? 'Loaded practice problem from C++ Roadmap — press Run (Ctrl+Enter) or add hidden tests to judge.'
+        : 'Đã nạp bài thực hành từ lộ trình C++ — bấm Chạy Test (Ctrl+Enter) hoặc Thêm test ẩn để tự chấm.'
+    );
+    onPresetConsumed?.();
+  }, [initialPreset, uiLang, onPresetConsumed]);
+
   const effectiveIoMode: ProblemIOMode = problem ? problem.ioMode || 'standard' : cfgIoMode;
   const activeInputFileName =
     effectiveIoMode === 'file'
@@ -193,10 +274,56 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
   const activeEditorValue =
     activeFile === 'main.cpp' ? cppCode : activeFile === 'solution.py' ? pyCode : customInput;
 
+  const recordThought = (
+    eventLabel: string,
+    verdictBadge?: string,
+    overrideCode?: string,
+    overrideLang?: 'cpp' | 'python'
+  ) => {
+    const lang: 'cpp' | 'python' =
+      overrideLang || (activeFile === 'solution.py' || selectedLang === 'python' ? 'python' : 'cpp');
+    const snapshotCode = overrideCode ?? (lang === 'python' ? pyCode : cppCode);
+    const charDelta = snapshotCode.length - lastThoughtCodeRef.current.length;
+    lastThoughtCodeRef.current = snapshotCode;
+    const snap: ThoughtSnapshot = {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      eventLabel,
+      verdictBadge,
+      language: lang,
+      code: snapshotCode,
+      charDelta
+    };
+    setThoughtHistory((prev) => [...prev.slice(-24), snap]);
+  };
+
+  useEffect(() => {
+    const lang: 'cpp' | 'python' = activeFile === 'solution.py' || selectedLang === 'python' ? 'python' : 'cpp';
+    const currentCode = lang === 'python' ? pyCode : cppCode;
+    setLiveWorkspaceContext({
+      subject: 'cs',
+      title: problem?.title || 'Sublime Text 4 Studio',
+      summary: `Lang: ${lang} · I/O: ${effectiveIoMode}${judgeVerdict ? ` · Verdict: ${judgeVerdict} (${judgeScore}/100)` : ''}`,
+      codeSnippet: currentCode.slice(0, 1500),
+      language: lang,
+      paramsSummary: customStderr ? customStderr.slice(0, 400) : undefined
+    });
+  }, [activeFile, selectedLang, pyCode, cppCode, problem?.title, effectiveIoMode, judgeVerdict, judgeScore, customStderr]);
+
   const handleEditorChange = (val: string) => {
-    if (activeFile === 'main.cpp') setCppCode(val);
-    else if (activeFile === 'solution.py') setPyCode(val);
-    else setCustomInput(val);
+    if (activeFile === 'main.cpp') {
+      setCppCode(val);
+      if (Math.abs(val.length - lastThoughtCodeRef.current.length) >= 25) {
+        recordThought('Gõ C++', undefined, val, 'cpp');
+      }
+    } else if (activeFile === 'solution.py') {
+      setPyCode(val);
+      if (Math.abs(val.length - lastThoughtCodeRef.current.length) >= 25) {
+        recordThought('Gõ Python', undefined, val, 'python');
+      }
+    } else {
+      setCustomInput(val);
+    }
   };
 
   const handleSelectTab = (tabId: string) => {
@@ -416,6 +543,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
     setCustomOutput(res.stdout);
     setCustomStderr(res.stderr);
     setCustomRuntimeMs(res.runtimeMs);
+    recordThought('Chạy thử', res.stderr ? 'ERR' : `${res.runtimeMs}ms`, codeToRun, langToRun);
   };
 
   const runMistakeAnalysis = async (
@@ -480,6 +608,7 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
     setJudgeResults(judgeRes.results);
     setJudgeScore(judgeRes.score);
     setJudgeVerdict(judgeRes.verdict);
+    recordThought('Nộp chấm', `${judgeRes.score}/100 · ${judgeRes.verdict}`, codeToRun, langToRun);
 
     if (judgeRes.score === 100 && allCases.length > 0) {
       confetti({ particleCount: 95, spread: 75, origin: { y: 0.6 } });
@@ -647,6 +776,261 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
   };
 
   const isDarkIDE = isFullscreen;
+
+  const renderStudioActionToolbar = (detached: boolean) => (
+    <div
+      className={`bg-slate-950 px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0 ${
+        detached
+          ? isConsoleOpen || mobilePane === 'console'
+            ? 'border-b border-slate-800'
+            : ''
+          : 'border-t border-slate-800'
+      }`}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleRunCustom}
+          disabled={isRunningCustom || isJudging}
+          className="sheen-btn px-3.5 py-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/60 text-slate-100 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap"
+        >
+          <Play className="w-3.5 h-3.5 text-sky-400" />
+          <span>{isRunningCustom ? 'Đang chạy...' : 'Chạy Test (Ctrl+Enter)'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleJudgeAll}
+          disabled={isJudging || isRunningCustom || !problem}
+          className="cs-deck-btn sheen-btn px-4 py-1.5 rounded-[4px] bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-[0_6px_18px_-6px_rgba(16,185,129,0.55)] transition-all disabled:opacity-50 whitespace-nowrap"
+        >
+          <Send className="w-3.5 h-3.5" />
+          <span>{isJudging ? 'Đang chấm...' : `Nộp Chấm (${allTests.length} tests)`}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsConsoleOpen(true);
+            setConsoleTab('trace');
+            setMobilePane('console');
+          }}
+          className="px-3 py-1.5 rounded-[4px] bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-200 text-xs font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
+        >
+          <Activity className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Trace 1-1</span>
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2.5 shrink-0">
+        {judgeScore !== null && (
+          <span
+            className={`text-xs font-mono font-bold tabular-nums ${
+              judgeVerdict === 'Accepted'
+                ? 'text-emerald-400'
+                : judgeScore > 0
+                ? 'text-amber-400'
+                : 'text-rose-400'
+            }`}
+          >
+            {judgeVerdict} · {judgeScore}/100
+          </span>
+        )}
+        {detached && (
+          <button
+            type="button"
+            onClick={() => setIsConsoleOpen((p) => !p)}
+            className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-slate-300 whitespace-nowrap"
+          >
+            <Terminal className="w-3 h-3 text-amber-400" />
+            <span>{isConsoleOpen ? 'Thu gọn I/O' : 'Mở Input / Output'}</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderStudioConsole = (detached: boolean) => {
+    if (!isConsoleOpen && mobilePane !== 'console') return null;
+    return (
+      <div
+        className={`${
+          detached
+            ? mobilePane === 'console'
+              ? 'flex min-h-[380px] h-[64vh] md:h-[290px]'
+              : consoleTab === 'trace'
+              ? 'hidden md:flex h-[340px]'
+              : 'hidden md:flex h-[280px]'
+            : mobilePane === 'console'
+            ? 'flex-1 md:flex-none md:h-64'
+            : consoleTab === 'judge' || consoleTab === 'trace'
+            ? 'hidden md:flex md:h-80'
+            : 'hidden md:flex md:h-48'
+        } ${detached ? '' : 'border-t border-slate-800'} bg-slate-950 flex-col font-mono text-xs text-slate-100 shrink-0 overflow-hidden`}
+      >
+        <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-800 bg-slate-900 overflow-x-auto">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setConsoleTab('output')}
+              className={`relative px-2.5 py-1 rounded-[4px] text-[11px] font-bold transition-colors whitespace-nowrap ${
+                consoleTab === 'output'
+                  ? 'bg-sky-600 text-white'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Terminal className="w-3 h-3 inline mr-1" />
+              {problem?.ioMode === 'file'
+                ? `${problem.inputFileName || 'INPUT.INP'} / ${problem.outputFileName || 'OUTPUT.OUT'}`
+                : 'Stdin / Output'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConsoleTab('judge')}
+              className={`relative px-2.5 py-1 rounded-[4px] text-[11px] font-bold transition-colors whitespace-nowrap ${
+                consoleTab === 'judge'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              Kết quả Chấm ({judgeResults ? `${judgeResults.filter((r) => r.passed).length}/${judgeResults.length}` : allTests.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setConsoleTab('trace')}
+              className={`relative px-2.5 py-1 rounded-[4px] text-[11px] font-bold transition-colors whitespace-nowrap ${
+                consoleTab === 'trace'
+                  ? 'bg-cyan-600 text-white'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Activity className="w-3 h-3 inline mr-1" />
+              Trace &amp; Replay ({thoughtHistory.length})
+            </button>
+          </div>
+          {customRuntimeMs !== null && consoleTab === 'output' && (
+            <span className="text-[10px] text-sky-400 tabular-nums">{customRuntimeMs}ms</span>
+          )}
+        </div>
+
+        {consoleTab === 'output' ? (
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-2.5 overflow-hidden">
+            <div className="flex flex-col min-h-0">
+              <span className="text-slate-400 text-[10px] mb-1">
+                {problem?.ioMode === 'file'
+                  ? `Nội dung File Input (${problem.inputFileName || 'INPUT.INP'}):`
+                  : 'Standard Input (stdin):'}
+              </span>
+              <textarea
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                placeholder="Nhập input chạy thử..."
+                className="flex-1 p-2.5 bg-[#131722] border border-slate-800 rounded-[4px] text-slate-100 text-xs font-mono resize-none focus:outline-none focus:border-sky-500"
+              />
+            </div>
+            <div className="flex flex-col min-h-0">
+              <span className="text-slate-400 text-[10px] mb-1">
+                {problem?.ioMode === 'file'
+                  ? `Nội dung File Output (${problem.outputFileName || 'OUTPUT.OUT'}) / Log:`
+                  : 'Output / Compiler Log:'}
+              </span>
+              <div className="flex-1 p-2.5 bg-[#131722] border border-slate-800 rounded-[4px] text-xs font-mono whitespace-pre-wrap overflow-y-auto">
+                {customStderr ? (
+                  <span className="text-rose-400">{customStderr}</span>
+                ) : customOutput ? (
+                  <span className="text-emerald-400">{customOutput}</span>
+                ) : (
+                  <span className="text-slate-500">// Kết quả thực thi C++ / Python sẽ hiện tại đây...</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : consoleTab === 'trace' ? (
+          <LiveCodeTraceVisualizer
+            code={activeFile === 'solution.py' || selectedLang === 'python' ? pyCode : cppCode}
+            language={activeFile === 'solution.py' || selectedLang === 'python' ? 'python' : 'cpp'}
+            stdinInput={customInput}
+            isEn={uiLang === 'en'}
+            thoughtHistory={thoughtHistory}
+            onRestoreCode={(restored, lang) => {
+              if (lang === 'python') {
+                setPyCode(restored);
+                setActiveFile('solution.py');
+                setSelectedLang('python');
+              } else {
+                setCppCode(restored);
+                setActiveFile('main.cpp');
+                setSelectedLang('cpp');
+              }
+            }}
+          />
+        ) : (
+          <div className="flex-1 overflow-y-auto p-2.5 space-y-2 font-sans">
+            {judgeResults && judgeResults.length > 0 ? (
+              isFullscreen ? (
+                <CodeMistakeAnalysisPanel
+                  darkSurface={true}
+                  score={judgeScore}
+                  verdict={judgeVerdict}
+                  results={judgeResults}
+                  language={activeFile === 'solution.py' ? 'python' : selectedLang}
+                  analysis={mistakeAnalysis}
+                  isAnalyzingMistake={isAnalyzingMistake}
+                  onRetryAnalyze={() => {
+                    if (!problem || !judgeResults || judgeScore === null) return;
+                    const lang = activeFile === 'solution.py' ? 'python' : selectedLang;
+                    const codeToAnalyze = lang === 'python' ? pyCode : cppCode;
+                    void runMistakeAnalysis(problem, lang, codeToAnalyze, judgeScore, judgeResults);
+                  }}
+                  onApplySampleCode={(sample) => {
+                    const lang = activeFile === 'solution.py' ? 'python' : selectedLang;
+                    if (lang === 'python') {
+                      setPyCode(sample);
+                      setActiveFile('solution.py');
+                      setSelectedLang('python');
+                    } else {
+                      setCppCode(sample);
+                      setActiveFile('main.cpp');
+                      setSelectedLang('cpp');
+                    }
+                  }}
+                />
+              ) : (
+                <div className="space-y-1.5 font-mono">
+                  {judgeResults.map((tr, i) => (
+                    <div
+                      key={i}
+                      className={`p-2 rounded-[4px] border text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                        tr.passed
+                          ? 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
+                          : 'bg-rose-500/10 border-rose-500/35 text-rose-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-bold shrink-0">
+                        {tr.passed ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                        <span>Test #{i + 1}: {tr.status}</span>
+                        <span className="text-[10px] font-normal text-slate-400 tabular-nums">({tr.runtimeMs}ms)</span>
+                      </div>
+                      {!tr.passed && (
+                        <div className="text-[10px] text-slate-200 truncate">
+                          Exp: <span className="text-emerald-400">{tr.expected.replace(/\n/g, ' ')}</span> | Got:{' '}
+                          <span className="text-rose-400">{tr.actual.replace(/\n/g, ' ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              <div className="text-center py-6 text-slate-500 font-mono">
+                Bấm "Nộp Chấm" để chạy kiểm tra toàn bộ test cases và phân tích lỗi AI.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -1424,20 +1808,20 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
           </div>
 
           {/* MAIN SPLIT-SCREEN IDE WORKSPACE */}
-          <div className={isFullscreen ? 'flex flex-1 min-h-0 overflow-hidden' : 'syn-conic-border shadow-xl'}>
+          <div className={isFullscreen ? 'flex flex-1 min-h-0 overflow-hidden' : `syn-conic-border shadow-xl ${mobilePane === 'console' ? 'hidden md:block' : ''}`}>
             {!isFullscreen && <div className="syn-conic-border-spin" aria-hidden="true" />}
             <div
               className={`relative z-10 flex flex-1 min-h-0 overflow-hidden ${
                 isFullscreen
                   ? 'border-0 rounded-none bg-slate-950'
-                  : 'rounded-[5px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 h-[72vh] sm:h-[76vh] min-h-[480px] sm:min-h-[560px]'
+                  : 'rounded-[5px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 h-[68vh] sm:h-[74vh] min-h-[540px] sm:min-h-[600px]'
               }`}
             >
               {/* LEFT PANEL: PROBLEM STATEMENT & TEST SUITE */}
               {(isSidebarOpen || mobilePane === 'problem') && (
                 <div
                   className={`${
-                    mobilePane === 'problem' ? 'flex w-full' : 'hidden md:flex md:w-[40%] lg:w-[35%]'
+                    mobilePane === 'problem' ? 'flex w-full' : 'hidden md:flex md:w-[34%] lg:w-[30%]'
                   } ${
                     isDarkIDE
                       ? 'bg-slate-950 border-r border-slate-800 text-slate-100'
@@ -2088,190 +2472,20 @@ export const SublimeStudio: React.FC<SublimeStudioProps> = ({ onScoreEarned, onB
                   />
                 </div>
 
-                {/* Action Toolbar */}
-                <div className="bg-slate-950 border-t border-slate-800 px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleRunCustom}
-                      disabled={isRunningCustom || isJudging}
-                      className="sheen-btn px-3.5 py-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/60 text-slate-100 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap"
-                    >
-                      <Play className="w-3.5 h-3.5 text-sky-400" />
-                      <span>{isRunningCustom ? 'Đang chạy...' : 'Chạy Test (Ctrl+Enter)'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleJudgeAll}
-                      disabled={isJudging || isRunningCustom || !problem}
-                      className="cs-deck-btn sheen-btn px-4 py-1.5 rounded-[4px] bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-[0_6px_18px_-6px_rgba(16,185,129,0.55)] transition-all disabled:opacity-50 whitespace-nowrap"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>{isJudging ? 'Đang chấm...' : `Nộp Chấm (${allTests.length} tests)`}</span>
-                    </button>
-                  </div>
-
-                  {judgeScore !== null && (
-                    <span
-                      className={`text-xs font-mono font-bold tabular-nums ${
-                        judgeVerdict === 'Accepted'
-                          ? 'text-emerald-400'
-                          : judgeScore > 0
-                          ? 'text-amber-400'
-                          : 'text-rose-400'
-                      }`}
-                    >
-                      {judgeVerdict} · {judgeScore}/100
-                    </span>
-                  )}
-                </div>
-
-                {/* Console / Judge Output */}
-                {(isConsoleOpen || mobilePane === 'console') && (
-                  <div
-                    className={`${
-                      mobilePane === 'console'
-                        ? 'flex-1 md:flex-none md:h-52'
-                        : isFullscreen && consoleTab === 'judge'
-                        ? 'hidden md:flex md:h-80'
-                        : 'hidden md:flex md:h-48'
-                    } bg-slate-950 border-t border-slate-800 flex-col font-mono text-xs text-slate-100 shrink-0 overflow-hidden`}
-                  >
-                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-800 bg-slate-900">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setConsoleTab('output')}
-                          className={`relative px-2.5 py-1 rounded-[4px] text-[11px] font-bold transition-colors whitespace-nowrap ${
-                            consoleTab === 'output'
-                              ? 'bg-sky-600 text-white'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                          }`}
-                        >
-                          <Terminal className="w-3 h-3 inline mr-1" />
-                          {problem?.ioMode === 'file'
-                            ? `${problem.inputFileName || 'INPUT.INP'} / ${problem.outputFileName || 'OUTPUT.OUT'}`
-                            : 'Stdin / Output'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConsoleTab('judge')}
-                          className={`relative px-2.5 py-1 rounded-[4px] text-[11px] font-bold transition-colors whitespace-nowrap ${
-                            consoleTab === 'judge'
-                              ? 'bg-emerald-600 text-white'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                          }`}
-                        >
-                          Kết quả Chấm ({judgeResults ? `${judgeResults.filter((r) => r.passed).length}/${judgeResults.length}` : allTests.length})
-                        </button>
-                      </div>
-                      {customRuntimeMs !== null && consoleTab === 'output' && (
-                        <span className="text-[10px] text-sky-400 tabular-nums">{customRuntimeMs}ms</span>
-                      )}
-                    </div>
-
-                    {consoleTab === 'output' ? (
-                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-2.5 overflow-hidden">
-                        <div className="flex flex-col min-h-0">
-                          <span className="text-slate-400 text-[10px] mb-1">
-                            {problem?.ioMode === 'file'
-                              ? `Nội dung File Input (${problem.inputFileName || 'INPUT.INP'}):`
-                              : 'Standard Input (stdin):'}
-                          </span>
-                          <textarea
-                            value={customInput}
-                            onChange={(e) => setCustomInput(e.target.value)}
-                            placeholder="Nhập input chạy thử..."
-                            className="flex-1 p-2 bg-[#131722] border border-slate-800 rounded-[4px] text-slate-100 text-xs font-mono resize-none focus:outline-none focus:border-sky-500"
-                          />
-                        </div>
-                        <div className="flex flex-col min-h-0">
-                          <span className="text-slate-400 text-[10px] mb-1">
-                            {problem?.ioMode === 'file'
-                              ? `Nội dung File Output (${problem.outputFileName || 'OUTPUT.OUT'}) / Log:`
-                              : 'Output / Compiler Log:'}
-                          </span>
-                          <div className="flex-1 p-2 bg-[#131722] border border-slate-800 rounded-[4px] text-xs font-mono whitespace-pre-wrap overflow-y-auto">
-                            {customStderr ? (
-                              <span className="text-rose-400">{customStderr}</span>
-                            ) : customOutput ? (
-                              <span className="text-emerald-400">{customOutput}</span>
-                            ) : (
-                              <span className="text-slate-500">// Kết quả thực thi C++ / Python sẽ hiện tại đây...</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex-1 overflow-y-auto p-2.5 space-y-2 font-sans">
-                        {judgeResults && judgeResults.length > 0 ? (
-                          isFullscreen ? (
-                            <CodeMistakeAnalysisPanel
-                              darkSurface={true}
-                              score={judgeScore}
-                              verdict={judgeVerdict}
-                              results={judgeResults}
-                              language={activeFile === 'solution.py' ? 'python' : selectedLang}
-                              analysis={mistakeAnalysis}
-                              isAnalyzingMistake={isAnalyzingMistake}
-                              onRetryAnalyze={() => {
-                                if (!problem || !judgeResults || judgeScore === null) return;
-                                const lang = activeFile === 'solution.py' ? 'python' : selectedLang;
-                                const codeToAnalyze = lang === 'python' ? pyCode : cppCode;
-                                void runMistakeAnalysis(problem, lang, codeToAnalyze, judgeScore, judgeResults);
-                              }}
-                              onApplySampleCode={(sample) => {
-                                const lang = activeFile === 'solution.py' ? 'python' : selectedLang;
-                                if (lang === 'python') {
-                                  setPyCode(sample);
-                                  setActiveFile('solution.py');
-                                  setSelectedLang('python');
-                                } else {
-                                  setCppCode(sample);
-                                  setActiveFile('main.cpp');
-                                  setSelectedLang('cpp');
-                                }
-                              }}
-                            />
-                          ) : (
-                            <div className="space-y-1.5 font-mono">
-                              {judgeResults.map((tr, i) => (
-                                <div
-                                  key={i}
-                                  className={`p-2 rounded-[4px] border text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-                                    tr.passed
-                                      ? 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
-                                      : 'bg-rose-500/10 border-rose-500/35 text-rose-400'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2 font-bold shrink-0">
-                                    {tr.passed ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                                    <span>Test #{i + 1}: {tr.status}</span>
-                                    <span className="text-[10px] font-normal text-slate-400 tabular-nums">({tr.runtimeMs}ms)</span>
-                                  </div>
-                                  {!tr.passed && (
-                                    <div className="text-[10px] text-slate-200 truncate">
-                                      Exp: <span className="text-emerald-400">{tr.expected.replace(/\n/g, ' ')}</span> | Got:{' '}
-                                      <span className="text-rose-400">{tr.actual.replace(/\n/g, ' ')}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )
-                        ) : (
-                          <div className="text-center py-6 text-slate-500 font-mono">
-                            Bấm "Nộp Chấm" để chạy kiểm tra toàn bộ test cases và phân tích lỗi AI.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Action Toolbar & Console stay docked inside right pane in Fullscreen */}
+                {isFullscreen && renderStudioActionToolbar(false)}
+                {isFullscreen && renderStudioConsole(false)}
               </div>
             </div>
           </div>
+
+          {/* BELOW CODE EDITOR (Normal mode): Dedicated Action Toolbar + Input/Output & Judge Console */}
+          {!isFullscreen && (
+            <div className="mt-3 rounded-[5px] border border-slate-200 dark:border-slate-800 bg-slate-950 shadow-xl overflow-hidden">
+              {renderStudioActionToolbar(true)}
+              {renderStudioConsole(true)}
+            </div>
+          )}
 
           {/* BELOW IDE: DETAILED SCORE, FAILED TESTS & AI CODE MISTAKE ANALYSIS */}
           {!isFullscreen && (judgeResults || isJudging) && (

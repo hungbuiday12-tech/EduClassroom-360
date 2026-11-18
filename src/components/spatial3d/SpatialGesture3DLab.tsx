@@ -186,13 +186,14 @@ function resolveRenderScale(gs: GestureSettings): number {
   return 1.0;
 }
 
-function computeEffectiveDpr(softwareGl: boolean, gs: GestureSettings): number {
+function computeEffectiveDpr(softwareGl: boolean, gs: GestureSettings, reduceForVideo = false): number {
   const rs = resolveRenderScale(gs);
   const nativeDpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
   if (softwareGl) {
     return THREE.MathUtils.clamp(rs, 0.45, 1.0);
   }
-  return THREE.MathUtils.clamp(nativeDpr * rs, 0.45, 2.0);
+  const maxDpr = reduceForVideo ? 1.25 : 1.75;
+  return THREE.MathUtils.clamp(nativeDpr * rs, 0.45, maxDpr);
 }
 
 function isLowPerfSettings(softwareGl: boolean, gs: GestureSettings): boolean {
@@ -655,6 +656,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const arModeRef = useRef<boolean>(false);
   arModeRef.current = arMode;
   const arBgVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [arFacingMode, setArFacingMode] = useState<'user' | 'environment'>('environment');
+  const [arOpacity, setArOpacity] = useState<number>(0.92);
+  const [arDeskTiltDeg, setArDeskTiltDeg] = useState<number>(0);
   const [mode2D, setMode2D] = useState<Spatial2DModeId>('free_create');
   const [free2DTool, setFree2DTool] = useState<Free2DToolId>('freehand');
   const [free2DColor, setFree2DColor] = useState<string>('#22d3ee');
@@ -908,7 +912,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     virtualGesture,
     interactionStyle,
     mouseHandTool,
-    tactileSfxEnabled
+    tactileSfxEnabled,
+    arFacingMode,
+    arOpacity,
+    arDeskTiltDeg
   });
   paramsRef.current = {
     entryView,
@@ -936,7 +943,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     virtualGesture,
     interactionStyle,
     mouseHandTool,
-    tactileSfxEnabled
+    tactileSfxEnabled,
+    arFacingMode,
+    arOpacity,
+    arDeskTiltDeg
   };
 
   const smoothTargetRef = useRef({
@@ -1004,7 +1014,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const prevRowSeparatedRef = useRef<boolean>(false);
   const rowCameraGlideActiveRef = useRef<boolean>(false);
   const lastManualSwipeAtRef = useRef<number>(0);
-  const pointerDownScreenRef = useRef<{ x: number; y: number } | null>(null);
+  const lastSwipeSpinAtRef = useRef<number>(0);
+  const pointerDownScreenRef = useRef<{ x: number; y: number; at: number } | null>(null);
   const awardFlagRef = useRef<boolean>(false);
   const lastCamHoverRayAtRef = useRef<number>(0);
   const cachedCamHoverIdxRef = useRef<number>(-1);
@@ -2220,6 +2231,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     let rafId = 0;
     let cancelled = false;
     let lastInferMs = 0;
+    let adaptiveGapMs = 0;
     let lastPush = 0;
     let lastHadHand = false;
 
@@ -2231,10 +2243,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       }
       const cfg = paramsRef.current;
       const gs = cfg.gestureSettings;
-      const minIntervalMs = 1000 / Math.max(10, gs.trackingFps || 20);
+      const baseIntervalMs = 1000 / Math.max(10, gs.trackingFps || 15);
+      const effectiveInterval = Math.max(baseIntervalMs, adaptiveGapMs);
 
-      if (videoRef.current && trackerRef.current && nowMs - lastInferMs >= minIntervalMs) {
+      if (videoRef.current && trackerRef.current && nowMs - lastInferMs >= effectiveInterval) {
         lastInferMs = nowMs;
+        const tInfer0 = performance.now();
         const res = trackerRef.current.process(videoRef.current, {
           mirror: gs.mirrorCamera,
           handMode: gs.handMode,
@@ -2251,9 +2265,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           invertY: gs.invertY,
           minimalControlMode: cfg.spaceMode === '3d' && cfg.interactionStyle === 'real_grab'
         });
+        const inferDur = performance.now() - tInfer0;
+        // Back off gracefully on slower CPUs so 3D/WebAR stage stays fluid
+        adaptiveGapMs = inferDur > 20 ? Math.min(130, inferDur * 2.5) : 0;
         handFrameRef.current = res;
 
-        if (overlayCanvasRef.current) {
+        if (overlayCanvasRef.current && overlayCanvasRef.current.offsetParent !== null) {
           const pal = ACCENT_PALETTES.find((p) => p.id === cfg.paletteId) || ACCENT_PALETTES[0];
           trackerRef.current.drawOverlay(overlayCanvasRef.current, res, pal.css);
         }
@@ -2307,12 +2324,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     });
     renderer.setClearColor(0x050914, 1);
     renderer.setSize(width, height);
-    renderer.setPixelRatio(computeEffectiveDpr(softwareGl, initGs));
+    renderer.setPixelRatio(computeEffectiveDpr(softwareGl, initGs, false));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
     renderer.shadowMap.enabled = !isLowPerfInit;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     renderer.localClippingEnabled = true;
     mount.appendChild(renderer.domElement);
 
@@ -2645,7 +2664,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     };
 
     const handleCanvasPointerDown = (e: PointerEvent) => {
-      pointerDownScreenRef.current = { x: e.clientX, y: e.clientY };
+      pointerDownScreenRef.current = { x: e.clientX, y: e.clientY, at: performance.now() };
       if (e.button !== 0) return;
 
       const cfg = paramsRef.current;
@@ -2906,7 +2925,41 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       const down = pointerDownScreenRef.current;
       pointerDownScreenRef.current = null;
       if (!down) return;
-      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) return;
+      const dxSwipe = e.clientX - down.x;
+      const dySwipe = e.clientY - down.y;
+      const swipeDur = performance.now() - down.at;
+
+      // Touch/Mouse crisp horizontal swipe when model is exploded -> step forward/back across components
+      if (
+        paramsRef.current.spaceMode === '3d' &&
+        (smoothTargetRef.current.explode >= 0.25 || isolatedPartIdxRef.current !== null) &&
+        modelPartsRef.current.length > 0 &&
+        !pointAskActiveRef.current &&
+        Math.abs(dxSwipe) >= 56 &&
+        Math.abs(dxSwipe) > Math.abs(dySwipe) * 1.65 &&
+        swipeDur < 480
+      ) {
+        const total = modelPartsRef.current.length;
+        const dir = dxSwipe > 0 ? 1 : -1;
+        const baseIdx =
+          isolatedPartIdxRef.current !== null
+            ? isolatedPartIdxRef.current
+            : highlightedPartIdxRef.current ?? 0;
+        const nextIdx = (baseIdx + dir + total) % total;
+        setHighlightedPartIdx(nextIdx);
+        if (isolatedPartIdxRef.current !== null) {
+          setIsolatedPartIdx(nextIdx);
+        }
+        setPartCardMinimized(false);
+        playSpatialSfx('grab', paramsRef.current.tactileSfxEnabled);
+        const nextInfo = modelPartsRef.current[nextIdx];
+        showToast(
+          `${dir > 0 ? 'Tiếp →' : '← Lùi'} ${isEn ? nextInfo.nameEn : nextInfo.nameVi} (${nextIdx + 1}/${total})`
+        );
+        return;
+      }
+
+      if (Math.hypot(dxSwipe, dySwipe) > 6) return;
       if (paramsRef.current.spaceMode !== '3d' || !runtime.model) {
         return;
       }
@@ -3207,10 +3260,27 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         const isRealGrabMode = cfg.interactionStyle === 'real_grab';
         const isRowSeparatedNow = !isIsolated && smoothTargetRef.current.explode >= 0.25;
 
-        // 1. Classic-only swipe left/right cycling (disabled in Real-Grab & fixed horizontal row so moving hand never jumps randomly!)
-        if (!isRealGrabMode && !isRowSeparatedNow && handDetected && res.swipeEvent && modelPartsRef.current.length > 0) {
-          const total = modelPartsRef.current.length;
-          if (smoothTargetRef.current.explode >= 0.25 || isIsolated) {
+        // 1. Context-aware horizontal Swipe Left/Right (active in BOTH Real-Grab & Classic, normal & AR):
+        //    - Assembled (còn nguyên mô hình): swipe left/right rotates model smoothly
+        //    - Exploded / Isolated (đã tách ra): swipe left/right steps prev/next component
+        if (handDetected && res.swipeEvent) {
+          const isModelExplodedNow = smoothTargetRef.current.explode >= 0.25 || isIsolated;
+          if (!isModelExplodedNow) {
+            const dir = res.swipeEvent === 'right' ? 1 : -1;
+            smoothTargetRef.current.rotOffset += dir * Math.PI * 0.45;
+            lastSwipeSpinAtRef.current = performance.now();
+            playSpatialSfx('hold', cfg.tactileSfxEnabled);
+            showToast(
+              res.swipeEvent === 'right'
+                ? isEn
+                  ? 'Swipe Right → Rotate model clockwise'
+                  : 'Vuốt phải → Xoay mô hình'
+                : isEn
+                ? '← Swipe Left · Rotate model counter-clockwise'
+                : '← Vuốt trái · Xoay mô hình'
+            );
+          } else if (modelPartsRef.current.length > 0) {
+            const total = modelPartsRef.current.length;
             const dir = res.swipeEvent === 'right' ? 1 : -1;
             const baseIdx =
               isolatedPartIdxRef.current !== null
@@ -3221,9 +3291,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             if (isIsolated) {
               setIsolatedPartIdx(nextIdx);
             }
+            setPartCardMinimized(false);
+            playSpatialSfx('grab', cfg.tactileSfxEnabled);
             const nextInfo = modelPartsRef.current[nextIdx];
             showToast(
-              `${res.swipeEvent === 'right' ? 'Tiếp →' : '← Trước'} ${nextInfo.nameVi} (${nextIdx + 1}/${total})`
+              `${res.swipeEvent === 'right' ? 'Tiếp →' : '← Lùi'} ${isEn ? nextInfo.nameEn : nextInfo.nameVi} (${nextIdx + 1}/${total})`
             );
           }
         }
@@ -3683,6 +3755,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         runtime.axesGroup.visible = cfg.showAxes;
         runtime.floorGroup.visible = arModeRef.current ? true : cfg.showAxes;
         runtime.floorDisc.visible = !arModeRef.current;
+        runtime.floorGroup.rotation.x = arModeRef.current
+          ? (cfg.arDeskTiltDeg * Math.PI) / 180
+          : 0;
 
         cursorGroup.position.x = THREE.MathUtils.damp(cursorGroup.position.x, smoothTargetRef.current.cursorX, 12, dt);
         cursorGroup.position.y = THREE.MathUtils.damp(cursorGroup.position.y, smoothTargetRef.current.cursorY, 12, dt);
@@ -3788,11 +3863,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               camGrabRef.current.kind === 'hold_model';
 
             if (!cfg.frozen) {
+              const isSwipeSpinning = nowPerfMs - lastSwipeSpinAtRef.current < 900;
               const isHandOrbiting =
                 activeControl &&
                 ((!isRealGrabMode && mapped3DAction === 'orbit_rotate') ||
                   (currentGesture === 'two_hand_10' && !res.twoHandOppositeSpread && !res.twoHandMovingCloser));
-              if (isHandOrbiting || isDirectHolding) {
+              if (isHandOrbiting || isDirectHolding || isSwipeSpinning) {
                 activeTargetGroup.rotation.y = THREE.MathUtils.damp(
                   activeTargetGroup.rotation.y,
                   smoothTargetRef.current.rotOffset,
@@ -3844,7 +3920,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 model.sphereCutRing.visible = false;
               }
 
-              model.group.updateMatrixWorld(true);
+              model.group.updateWorldMatrix(true, true);
               for (let i = 0; i < model.explodables.length; i++) {
                 const part = model.explodables[i];
                 if (part.detachTarget) part.detachTarget.set(0, 0, 0);
@@ -3859,7 +3935,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 part.mesh.scale.lerp(_desiredScale, lerpAlpha);
 
                 const parentObj = part.mesh.parent || model.group;
-                parentObj.updateWorldMatrix(true, false);
                 _mat4Inv.copy(parentObj.matrixWorld).invert();
                 _partWorldPos.set(slotX * s, rowY, 0);
                 _desiredLocalPos.copy(_partWorldPos).applyMatrix4(_mat4Inv);
@@ -3870,7 +3945,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 _desiredLocalPos.sub(_v3TmpA);
 
                 part.mesh.position.lerp(_desiredLocalPos, lerpAlpha);
-                part.mesh.updateMatrixWorld(true);
               }
               runtime.tetherManager.hideFrom(0);
             } else {
@@ -3938,8 +4012,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               if (hPart) {
                 if (
                   preferredHighlightIdx !== lastHighlightIdx ||
-                  Math.abs(expTarget - lastHighlightExp) > 0.015 ||
-                  ++highlightTick % 4 === 0
+                  Math.abs(expTarget - lastHighlightExp) > 0.025
                 ) {
                   lastHighlightIdx = preferredHighlightIdx;
                   lastHighlightExp = expTarget;
@@ -4211,10 +4284,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         runtime.remoteHandManager.update(dt);
         controls.update();
 
-        // Pace GPU rasterization cleanly on 30 FPS Weak-PC cap while keeping gesture tracking snappy
+        // Pace GPU rasterization cleanly & update shadow map at ~6 Hz instead of 60 Hz
         const capFps = cfg.gestureSettings.targetFpsCap <= 30;
         if (!capFps || softwareGl || nowPerfMs - lastRenderPerfMs >= 31) {
           lastRenderPerfMs = nowPerfMs;
+          if (renderer.shadowMap.enabled && ++highlightTick % 10 === 0) {
+            renderer.shadowMap.needsUpdate = true;
+          }
           renderer.render(scene, camera);
         }
       }
@@ -4791,12 +4867,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const rt = runtimeRef.current;
     if (!rt) return;
     const softwareGl = isSoftwareWebGL();
-    const lowPerf = isLowPerfSettings(softwareGl, gestureSettings);
-    rt.renderer.setPixelRatio(computeEffectiveDpr(softwareGl, gestureSettings));
+    const reduceForVideo = arMode || cameraActive;
+    const lowPerf = isLowPerfSettings(softwareGl, gestureSettings) || arMode;
+    rt.renderer.setPixelRatio(computeEffectiveDpr(softwareGl, gestureSettings, reduceForVideo));
     rt.renderer.shadowMap.enabled = !lowPerf;
     rt.keyLight.castShadow = !lowPerf;
     rt.floorDisc.receiveShadow = !lowPerf;
-  }, [gestureSettings.graphicsQuality, gestureSettings.renderScale]);
+    if (!lowPerf) rt.renderer.shadowMap.needsUpdate = true;
+  }, [gestureSettings.graphicsQuality, gestureSettings.renderScale, arMode, cameraActive]);
 
   // Resize WebGL properly & wake Three.js RAF whenever entering Studio 3D mode
   useEffect(() => {
@@ -4858,19 +4936,22 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       const isAr = arMode && spaceMode === '3d';
       rt.renderer.setClearColor(isAr ? 0x000000 : 0x050914, isAr ? 0 : 1);
       rt.renderer.domElement.style.background = isAr ? 'transparent' : '';
+      rt.renderer.domElement.style.opacity = isAr ? String(arOpacity) : '1';
       rt.scene.background = isAr ? null : new THREE.Color(0x050914);
       rt.scene.fog = isAr ? null : new THREE.FogExp2(0x050914, 0.022);
       rt.floorDisc.visible = !isAr;
       if (isAr) rt.floorGroup.visible = true;
     }
-    if (arMode && spaceMode === '3d' && cameraActive && streamRef.current && arBgVideoRef.current) {
-      const bgVid = arBgVideoRef.current;
+    const bgVid = arBgVideoRef.current;
+    if (arMode && spaceMode === '3d' && cameraActive && streamRef.current && bgVid) {
       if (bgVid.srcObject !== streamRef.current) {
         bgVid.srcObject = streamRef.current;
       }
       bgVid.play().catch(() => {});
+    } else if (bgVid && bgVid.srcObject) {
+      bgVid.srcObject = null;
     }
-  }, [arMode, spaceMode, cameraActive, entryView]);
+  }, [arMode, spaceMode, cameraActive, entryView, arOpacity]);
 
   useEffect(() => {
     if (!cameraActive || !streamRef.current) return;
@@ -4887,70 +4968,150 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       .catch(() => {});
   }, [cameraActive, gestureSettings.cameraResolution]);
 
-  const startCamera = useCallback(async () => {
-    setCameraError(null);
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError(
-        isEn
-          ? 'Camera API unavailable. Use the touch pad or mouse directly.'
-          : 'Trình duyệt không hỗ trợ Camera API. Bạn vẫn dùng được Bàn di Cử chỉ hoặc chuột trực tiếp!'
-      );
-      return;
-    }
-
-    setCameraLoading(true);
-    try {
-      const resStr = paramsRef.current.gestureSettings.cameraResolution || '480x360';
-      const [idealW, idealH] = resStr.split('x').map(Number);
-      let stream: MediaStream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: idealW || 480 },
-            height: { ideal: idealH || 360 },
-            frameRate: { ideal: 24, max: 30 },
-            facingMode: 'user'
-          },
-          audio: false
-        });
-      } catch (constraintErr) {
-        const name = constraintErr instanceof Error ? constraintErr.name : '';
-        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') throw constraintErr;
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+  const startCamera = useCallback(
+    async (facingOverride?: 'user' | 'environment') => {
+      setCameraError(null);
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError(
+          isEn
+            ? 'Camera API unavailable. Use the touch pad or mouse directly.'
+            : 'Trình duyệt không hỗ trợ Camera API. Bạn vẫn dùng được Bàn di Cử chỉ hoặc chuột trực tiếp!'
+        );
+        return;
       }
 
-      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = stream;
-      setCameraActive(true);
-      setCameraLoading(false);
-
-      if (!trackerRef.current) trackerRef.current = new HandGestureTracker();
-      void trackerRef.current.ensureInitialized().then((ok) => {
-        if (!ok) {
-          setCameraError(
-            isEn
-              ? 'Could not load 10-finger AI tracker model.'
-              : 'Không thể tải bộ AI nhận diện 10 đầu ngón tay.'
-          );
+      const desiredFacing = facingOverride ?? paramsRef.current.arFacingMode ?? 'user';
+      setCameraLoading(true);
+      try {
+        const resStr = paramsRef.current.gestureSettings.cameraResolution || '480x360';
+        const [idealW, idealH] = resStr.split('x').map(Number);
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: idealW || 480 },
+              height: { ideal: idealH || 360 },
+              frameRate: { ideal: 24, max: 30 },
+              facingMode: { ideal: desiredFacing }
+            },
+            audio: false
+          });
+        } catch (constraintErr) {
+          const name = constraintErr instanceof Error ? constraintErr.name : '';
+          if (name === 'NotAllowedError' || name === 'PermissionDeniedError') throw constraintErr;
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         }
-      });
 
-      showToast(
-        isEn
-          ? 'Camera active! Use 1 or 2 hands in both 2D & 3D spaces.'
-          : 'Webcam đã bật! Dùng 1 hoặc 2 bàn tay (10 cảm biến) cho cả 2D và 3D.'
-      );
-    } catch (err) {
-      setCameraLoading(false);
-      setCameraActive(false);
-      const message = err instanceof Error ? err.message : 'Permission denied';
-      setCameraError(
-        isEn
-          ? `Camera access unavailable (${message}). Please allow Camera in browser bar.`
-          : `Chưa cấp quyền Webcam (${message}). Hãy chọn "Cho phép (Allow)" trên thanh địa chỉ rồi bấm lại.`
-      );
+        if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = stream;
+
+        if (!facingOverride) {
+          const trackSettings = stream.getVideoTracks()[0]?.getSettings?.();
+          const actualFacing = trackSettings?.facingMode;
+          if (actualFacing === 'user' || actualFacing === 'environment') {
+            if (actualFacing !== paramsRef.current.arFacingMode) {
+              setArFacingMode(actualFacing);
+              updateGestureSetting('mirrorCamera', actualFacing === 'user');
+            }
+          } else if (paramsRef.current.arFacingMode === 'environment') {
+            setArFacingMode('user');
+            updateGestureSetting('mirrorCamera', true);
+          }
+        }
+
+        setCameraActive(true);
+        setCameraLoading(false);
+
+        if (!trackerRef.current) trackerRef.current = new HandGestureTracker();
+        void trackerRef.current.ensureInitialized().then((ok) => {
+          if (!ok) {
+            setCameraError(
+              isEn
+                ? 'Could not load 10-finger AI tracker model.'
+                : 'Không thể tải bộ AI nhận diện 10 đầu ngón tay.'
+            );
+          }
+        });
+
+        showToast(
+          isEn
+            ? 'Camera active! Use 1 or 2 hands in both 2D & 3D spaces.'
+            : 'Webcam đã bật! Dùng 1 hoặc 2 bàn tay (10 cảm biến) cho cả 2D và 3D.'
+        );
+      } catch (err) {
+        setCameraLoading(false);
+        setCameraActive(false);
+        const message = err instanceof Error ? err.message : 'Permission denied';
+        setCameraError(
+          isEn
+            ? `Camera access unavailable (${message}). Please allow Camera in browser bar.`
+            : `Chưa cấp quyền Webcam (${message}). Hãy chọn "Cho phép (Allow)" trên thanh địa chỉ rồi bấm lại.`
+        );
+      }
+    },
+    [isEn, showToast, updateGestureSetting]
+  );
+
+  const handleToggleArFacing = useCallback(() => {
+    const next: 'user' | 'environment' = arFacingMode === 'environment' ? 'user' : 'environment';
+    setArFacingMode(next);
+    updateGestureSetting('mirrorCamera', next === 'user');
+    if (cameraActive) {
+      void startCamera(next);
     }
-  }, [isEn, showToast]);
+    showToast(
+      isEn
+        ? `WebAR switched to ${next === 'environment' ? 'Rear Desk Camera' : 'Front Camera'}`
+        : `Đã chuyển AR sang ${next === 'environment' ? 'Camera Sau (soi bàn học)' : 'Camera Trước'}`
+    );
+  }, [arFacingMode, cameraActive, startCamera, updateGestureSetting, isEn, showToast]);
+
+  const handleCaptureArSnapshot = useCallback(() => {
+    const rt = runtimeRef.current;
+    if (!rt) return;
+    rt.renderer.render(rt.scene, rt.camera);
+    const glCanvas = rt.renderer.domElement;
+    const w = glCanvas.width || 1280;
+    const h = glCanvas.height || 720;
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = w;
+    outCanvas.height = h;
+    const ctx = outCanvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#050914';
+    ctx.fillRect(0, 0, w, h);
+
+    const bgVid = arBgVideoRef.current;
+    if (cameraActive && bgVid && bgVid.readyState >= 2) {
+      ctx.save();
+      if (mirrorCamera && arFacingMode === 'user') {
+        ctx.translate(w, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(bgVid, 0, 0, w, h);
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.globalAlpha = arOpacity;
+    ctx.drawImage(glCanvas, 0, 0, w, h);
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    ctx.fillRect(14, h - 38, 300, 24);
+    ctx.fillStyle = '#34d399';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(`SYNAPSE WEBAR PRO · ${(10 * scaleVal).toFixed(1)}cm GRID`, 22, h - 22);
+
+    const a = document.createElement('a');
+    a.href = outCanvas.toDataURL('image/png');
+    a.download = `Synapse_AR_Desk_${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast(isEn ? 'Saved WebAR desk snapshot (PNG)!' : 'Đã chụp & lưu ảnh bàn học AR (PNG)!');
+  }, [cameraActive, mirrorCamera, arFacingMode, arOpacity, scaleVal, isEn, showToast]);
 
   const handleUndoStroke = useCallback(() => {
     if (spaceMode === '2d') {
@@ -5568,31 +5729,108 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             : 'h-[calc(100vh-128px)] min-h-[640px]'
         }`}
       >
-        {/* WebAR Spatial Desk Video Underlay */}
+        {/* WebAR Spatial Desk Video Underlay + AR Bàn Học Pro Calibration Bar */}
         {entryView === 'studio' && spaceMode === '3d' && arMode && (
-          <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none bg-slate-950">
-            {cameraActive ? (
-              <video
-                ref={arBgVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-cover opacity-90 ${mirrorCamera ? '-scale-x-100' : ''}`}
-              />
-            ) : (
-              <div className="w-full h-full bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.16),rgba(2,6,23,0.96))] flex items-center justify-center">
-                <div className="text-center px-4 py-2 rounded border border-cyan-500/40 bg-slate-950/85 text-xs text-cyan-200">
-                  {isEn
-                    ? 'Starting camera for WebAR spatial desk overlay...'
-                    : 'Đang kích hoạt Camera để chiếu mô hình 3D lên bàn học thật...'}
+          <>
+            <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none bg-slate-950">
+              {cameraActive ? (
+                <video
+                  ref={arBgVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  onLoadedMetadata={(e) => {
+                    e.currentTarget.play().catch(() => {});
+                  }}
+                  className={`w-full h-full object-cover opacity-95 ${mirrorCamera && arFacingMode === 'user' ? '-scale-x-100' : ''}`}
+                />
+              ) : (
+                <div className="w-full h-full bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.16),rgba(2,6,23,0.96))] flex items-center justify-center">
+                  <div className="text-center px-4 py-2 rounded border border-cyan-500/40 bg-slate-950/85 text-xs text-cyan-200">
+                    {isEn
+                      ? 'Starting camera for WebAR spatial desk overlay...'
+                      : 'Đang kích hoạt Camera để chiếu mô hình 3D lên bàn học thật...'}
+                  </div>
                 </div>
+              )}
+              <div className="absolute top-16 left-4 flex items-center gap-2 px-2.5 py-1 rounded border border-emerald-400/50 bg-slate-950/80 text-[10px] font-mono font-bold text-emerald-300 tracking-wider">
+                <span className="w-3 h-3 rounded-full border border-dashed border-emerald-400 ar-reticle-spin" />
+                <span>WEBAR PRO · {(10 * scaleVal).toFixed(1)} cm GRID</span>
               </div>
-            )}
-            <div className="absolute top-16 left-4 flex items-center gap-2 px-2.5 py-1 rounded border border-emerald-400/50 bg-slate-950/75 text-[10px] font-mono font-bold text-emerald-300 tracking-wider">
-              <span className="w-3 h-3 rounded-full border border-dashed border-emerald-400 ar-reticle-spin" />
-              <span>WEBAR SPATIAL OVERLAY ACTIVE</span>
             </div>
-          </div>
+
+            {/* AR Bàn Học Pro Control Dock */}
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-40 max-w-[95%] flex flex-wrap items-center justify-center gap-2 px-3 py-2 rounded-md border border-emerald-400/55 bg-slate-950/92 text-slate-100 shadow-2xl text-[11px]">
+              <button
+                type="button"
+                onClick={handleToggleArFacing}
+                className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-300 font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                title={isEn ? 'Switch Front / Rear Camera' : 'Đổi Camera Trước / Sau bàn học'}
+              >
+                <FlipHorizontal className="w-3.5 h-3.5" />
+                <span>{arFacingMode === 'environment' ? (isEn ? 'Rear Cam' : 'Cam Sau') : isEn ? 'Front Cam' : 'Cam Trước'}</span>
+              </button>
+
+              <label className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700">
+                <span className="font-mono text-[10px] text-emerald-300">Alpha {Math.round(arOpacity * 100)}%</span>
+                <input
+                  type="range"
+                  min={0.35}
+                  max={1}
+                  step={0.05}
+                  value={arOpacity}
+                  onChange={(e) => setArOpacity(Number(e.target.value))}
+                  className="w-16 accent-emerald-400 cursor-pointer"
+                />
+              </label>
+
+              <label className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700">
+                <span className="font-mono text-[10px] text-sky-300">Nghiêng {arDeskTiltDeg}°</span>
+                <input
+                  type="range"
+                  min={-35}
+                  max={35}
+                  step={1}
+                  value={arDeskTiltDeg}
+                  onChange={(e) => setArDeskTiltDeg(Number(e.target.value))}
+                  className="w-16 accent-sky-400 cursor-pointer"
+                />
+              </label>
+
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setSliceEnabled((v) => !v)}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer ${
+                    sliceEnabled ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'
+                  }`}
+                >
+                  <Scissors className="w-3 h-3 inline mr-0.5" />
+                  {sliceEnabled ? 'Cắt Y: BẬT' : 'Mặt cắt AR'}
+                </button>
+                {sliceEnabled && (
+                  <input
+                    type="range"
+                    min={-1.5}
+                    max={3.5}
+                    step={0.1}
+                    value={sliceY}
+                    onChange={(e) => setSliceY(Number(e.target.value))}
+                    className="w-16 accent-amber-400 cursor-pointer"
+                  />
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCaptureArSnapshot}
+                className="px-2.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span>{isEn ? 'AR Photo' : 'Chụp AR (.png)'}</span>
+              </button>
+            </div>
+          </>
         )}
 
         {/* Dedicated Three.js 3D Viewport */}
@@ -5872,7 +6110,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto">
               <button
                 type="button"
-                onClick={cameraActive ? stopCamera : startCamera}
+                onClick={() => (cameraActive ? stopCamera() : void startCamera())}
               disabled={cameraLoading}
               className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                 cameraActive

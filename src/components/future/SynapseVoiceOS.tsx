@@ -8,7 +8,8 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
-  X
+  X,
+  Eye
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
@@ -17,6 +18,12 @@ import { useFocusTimer } from '../../context/FocusTimerContext';
 import { useSpeechRecognition } from '../../lib/useSpeechRecognition';
 import { safeFetchJson } from '../../lib/apiClient';
 import { matchFuzzyVoiceOSCommand, buildLocalVoiceMentorAnswer } from '../../lib/voiceIntentEngine';
+import {
+  cancelActiveSpeech,
+  captureWorkspaceSnapshot,
+  requestLiveCoPilotReply,
+  useLiveWorkspaceContext
+} from '../../lib/liveCoPilotBridge';
 import { SubjectType, VoiceOSActionPlan } from '../../types';
 
 interface SynapseVoiceOSProps {
@@ -52,12 +59,14 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
   const [inputCmd, setInputCmd] = useState('');
   const [processing, setProcessing] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [visionCoPilot, setVisionCoPilot] = useState(true);
+  const workspaceCtx = useLiveWorkspaceContext();
   const [logs, setLogs] = useState<{ role: 'user' | 'os'; text: string }[]>([
     {
       role: 'os',
       text: isEn
-        ? 'Synapse Voice OS ready. Speak naturally — even approximate commands (~70%+ intent match) or STEM questions work immediately.'
-        : 'Synapse Voice OS đã nâng cấp nhận diện ý định linh hoạt! Bạn có thể nói gần đúng, ra lệnh mở công trình/mô phỏng Toán-Lí-Tin, hoặc hỏi kiến thức trực tiếp.'
+        ? 'Synapse Voice OS ready. Speak naturally — Voice OS sees your active workspace/canvas & supports instant barge-in!'
+        : 'Synapse Voice OS đã tích hợp Live Co-Pilot Mắt Thần & Ngắt lời tức thì! Ra lệnh mở công trình/mô phỏng hoặc hỏi trực tiếp về hình/code đang hiện trên màn hình.'
     }
   ]);
 
@@ -65,7 +74,7 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
     (text: string) => {
       if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
       try {
-        window.speechSynthesis.cancel();
+        cancelActiveSpeech();
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = isEn ? 'en-US' : 'vi-VN';
         utter.rate = 1.06;
@@ -161,17 +170,41 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
     async (rawText: string) => {
       const clean = rawText.trim();
       if (!clean) return;
+      // Barge-in: stop previous speech immediately
+      cancelActiveSpeech();
       setInputCmd('');
       setLogs((prev) => [...prev.slice(-8), { role: 'user', text: clean }]);
 
-      // 1. Permissive fuzzy intent matcher first (~65-90% intent similarity triggers instantly)
+      // 1. Permissive fuzzy intent matcher first
       const localPlan = matchFuzzyVoiceOSCommand(clean);
       if (localPlan) {
         executePlan(localPlan);
         return;
       }
 
-      // 2. Ask Gemini Intent + Q&A Router (never rejects lightly)
+      // 2. If Vision Co-Pilot is active and user asks about current screen/canvas/code, answer with multimodal Live Co-Pilot
+      const asksAboutScreen = /(màn hình|đây|hình|code|lỗi|sai|giải thích|phân tích|tại sao|this|screen|why|wrong|fix)/i.test(clean);
+      if (visionCoPilot && asksAboutScreen) {
+        setProcessing(true);
+        const snap = await captureWorkspaceSnapshot();
+        const coReply = await requestLiveCoPilotReply({
+          question: clean,
+          subject: workspaceCtx.subject,
+          language,
+          workspaceCtx,
+          imageBase64: snap.imageBase64,
+          mimeType: snap.mimeType
+        });
+        setProcessing(false);
+        const fullText = coReply.visualPinHint
+          ? `${coReply.spokenAnswer} (${coReply.visualPinHint})`
+          : coReply.spokenAnswer;
+        setLogs((prev) => [...prev.slice(-8), { role: 'os', text: fullText }]);
+        speakFeedback(coReply.spokenAnswer);
+        return;
+      }
+
+      // 3. Ask Gemini Intent + Q&A Router
       setProcessing(true);
       const res = await safeFetchJson<{ success: boolean; plan: VoiceOSActionPlan }>(
         '/api/gemini/voice-os-intent',
@@ -189,11 +222,12 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
         return;
       }
 
-      // 3. Even if Gemini is offline or returns 'none', synthesize an intelligent answer or route cleanly
+      // 4. Fallback with multimodal workspace vision context
       const qaFallback = buildLocalVoiceMentorAnswer({
         question: clean,
-        modelTitle: 'Hệ sinh thái Synapse STEM',
-        partDescription: res.data?.plan?.replyVi || undefined,
+        modelTitle: workspaceCtx.title || 'Hệ sinh thái Synapse STEM',
+        partDescription: res.data?.plan?.replyVi || workspaceCtx.summary,
+        formula: workspaceCtx.formula,
         language
       });
       const fallbackReply =
@@ -204,7 +238,7 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
       setLogs((prev) => [...prev.slice(-8), { role: 'os', text: fallbackReply }]);
       speakFeedback(fallbackReply);
     },
-    [executePlan, language, speakFeedback]
+    [executePlan, language, speakFeedback, visionCoPilot, workspaceCtx]
   );
 
   const {
@@ -263,7 +297,24 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setTtsEnabled((v) => !v)}
+              onClick={() => setVisionCoPilot((v) => !v)}
+              className={`px-2 py-1.5 rounded border text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
+                visionCoPilot
+                  ? 'bg-emerald-600/25 border-emerald-400 text-emerald-300'
+                  : 'bg-slate-800 border-slate-700 text-slate-400'
+              }`}
+              title={isEn ? 'Live Screen/Canvas Vision Co-Pilot' : 'Mắt Thần quan sát mô phỏng & code trên màn hình'}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isEn ? 'Screen Vision' : 'Mắt Thần AI'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !ttsEnabled;
+                setTtsEnabled(next);
+                if (!next) cancelActiveSpeech();
+              }}
               className="p-2 rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
               title={ttsEnabled ? 'Tắt giọng đọc phản hồi' : 'Bật giọng đọc phản hồi'}
             >
@@ -285,7 +336,10 @@ export const SynapseVoiceOS: React.FC<SynapseVoiceOSProps> = ({
           <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded border border-slate-800 bg-slate-900/70">
             <button
               type="button"
-              onClick={toggleListening}
+              onClick={() => {
+                cancelActiveSpeech();
+                toggleListening();
+              }}
               disabled={!isSupported}
               className={`w-16 h-16 rounded-md flex flex-col items-center justify-center border transition shrink-0 cursor-pointer ${
                 isListening

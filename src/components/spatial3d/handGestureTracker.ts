@@ -1099,15 +1099,14 @@ export class HandGestureTracker {
       this.prevH2X = null;
     }
 
-    // Detect crisp single-hand horizontal swipe (left or right) with cooldown (after fingers settle)
+    // Detect crisp single-hand horizontal swipe (left or right) with snappy cooldown
     let swipeEvent: 'left' | 'right' | null = null;
     if (
       indexedHands.length === 1 &&
       this.stableGesture !== 'none' &&
-      this.stableGesture !== 'fist_0' &&
-      nowMs - this.lastSwipeAtMs > 620 &&
-      Math.abs(hand1VelX) > 0.85 &&
-      Math.abs(hand1VelX) > Math.abs(hand1VelY) * 1.45
+      nowMs - this.lastSwipeAtMs > 480 &&
+      Math.abs(hand1VelX) > 0.58 &&
+      Math.abs(hand1VelX) > Math.abs(hand1VelY) * 1.35
     ) {
       swipeEvent = hand1VelX > 0 ? 'right' : 'left';
       this.lastSwipeAtMs = nowMs;

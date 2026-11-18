@@ -25,7 +25,8 @@ export interface NavLocation {
   examId: string | null;
   synapseMode: 'catalog' | 'stage';
   synapseMonumentId: string;
-  futureTab?: FutureLabTabId;
+  futureTab?: 'hub' | FutureLabTabId;
+  sensorRoomCode?: string | null;
   coopRoomCode: string | null;
   coopInviteMeta?: {
     roomId?: string;
@@ -36,6 +37,7 @@ export interface NavLocation {
   } | null;
   tutorOpen: boolean;
   tutorSubject: SubjectType;
+  tutorTab?: 'chat' | 'motion_reel';
 }
 
 const DEFAULT_LOCATION: NavLocation = {
@@ -58,11 +60,13 @@ const DEFAULT_LOCATION: NavLocation = {
   examId: null,
   synapseMode: 'catalog',
   synapseMonumentId: 'dyson',
-  futureTab: 'megastructures',
+  futureTab: 'hub',
+  sensorRoomCode: null,
   coopRoomCode: null,
   coopInviteMeta: null,
   tutorOpen: false,
-  tutorSubject: 'math'
+  tutorSubject: 'math',
+  tutorTab: 'chat'
 };
 
 function getInitialLocation(): NavLocation {
@@ -75,6 +79,36 @@ function getInitialLocation(): NavLocation {
           ...DEFAULT_LOCATION,
           subject: 'spatial_3d',
           coopRoomCode: rawCode
+        };
+      }
+      const rawSensorRoom = params.get('sensorRoom')?.trim().toUpperCase();
+      const rawFutureTab = params.get('futureTab')?.trim() as FutureLabTabId | undefined;
+      if (rawSensorRoom && /^[A-Z0-9]{4,12}$/.test(rawSensorRoom)) {
+        return {
+          ...DEFAULT_LOCATION,
+          subject: 'synapse_v2',
+          futureTab: 'phone_sensor_lab',
+          sensorRoomCode: rawSensorRoom
+        };
+      }
+      if (
+        rawFutureTab &&
+        [
+          'megastructures',
+          'galaxy3d',
+          'text_to_sim',
+          'paper_to_sim',
+          'infinite_canvas',
+          'audio_fft',
+          'silicon_neural',
+          'phone_sensor_lab',
+          'dual_hand_sandbox'
+        ].includes(rawFutureTab)
+      ) {
+        return {
+          ...DEFAULT_LOCATION,
+          subject: 'synapse_v2',
+          futureTab: rawFutureTab
         };
       }
     }
@@ -95,9 +129,16 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
     case 'overview':
       return isEn ? 'Classroom' : 'Lớp học';
     case 'synapse_v2':
-      if (loc.futureTab && loc.futureTab !== 'megastructures') {
-        return isEn ? 'Synapse Pre · AI & 3D Lab' : 'Synapse Pre · Phòng Lab AI & 3D';
+      if (!loc.futureTab || loc.futureTab === 'hub') {
+        return isEn ? 'Synapse Pre · Next-Gen Studios Hub' : 'Synapse Pre · Phòng Lab Tương Lai';
       }
+      if (loc.futureTab === 'galaxy3d') return isEn ? 'Synapse Pre · 3D Neural Galaxy' : 'Synapse Pre · Vũ Trụ Tri Thức 3D';
+      if (loc.futureTab === 'text_to_sim') return isEn ? 'Synapse Pre · AI Simulation Studio' : 'Synapse Pre · Sinh Mô Phỏng AI';
+      if (loc.futureTab === 'paper_to_sim') return isEn ? 'Synapse Pre · Paper to Sim Vision' : 'Synapse Pre · Giấy Nháp → Sim';
+      if (loc.futureTab === 'audio_fft') return isEn ? 'Synapse Pre · Audio FFT 3D Lab' : 'Synapse Pre · Sóng Âm FFT 3D';
+      if (loc.futureTab === 'silicon_neural') return isEn ? 'Synapse Pre · Silicon & Neural Lab' : 'Synapse Pre · Mạch Logic & Neural Net';
+      if (loc.futureTab === 'phone_sensor_lab') return isEn ? 'Synapse Pre · Phone Sensor QR Lab' : 'Synapse Pre · Cảm biến Điện thoại QR';
+      if (loc.futureTab === 'dual_hand_sandbox') return isEn ? 'Synapse Pre · Dual-Hand GPU Field' : 'Synapse Pre · Trường Hạt GPU 2 Tay';
       return loc.synapseMode === 'stage'
         ? isEn
           ? 'Synapse Pre · 3D Megastructure Stage'
@@ -314,9 +355,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         patch.examId = null;
       } else if (subject === 'synapse_v2') {
         patch.synapseMode = 'catalog';
-        patch.futureTab = 'megastructures';
+        patch.futureTab = 'hub';
       } else if (subject === 'future_lab') {
-        patch.futureTab = prev.futureTab || 'megastructures';
+        patch.futureTab = prev.futureTab || 'hub';
       }
 
       if (isSameLocation(prev, { ...prev, ...patch })) {

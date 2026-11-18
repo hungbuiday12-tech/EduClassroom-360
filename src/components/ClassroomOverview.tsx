@@ -330,24 +330,33 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
     }
   ];
 
-  const aiModes = [
+  const aiModes: {
+    mode: 'explain_no_answer' | 'full_solution' | 'diagnostic_roadmap' | 'motion_reel';
+    label: string;
+  }[] = [
     {
-      mode: 'explain_no_answer' as const,
+      mode: 'explain_no_answer',
       label: isEn
         ? '1. Guided Explain (No Final Answer)'
         : '1. Giảng gợi mở (Không lộ đáp án)'
     },
     {
-      mode: 'full_solution' as const,
+      mode: 'full_solution',
       label: isEn
         ? '2. Full Solution & 4-Step Method'
         : '2. Giải chi tiết & Phương pháp 4 bước'
     },
     {
-      mode: 'diagnostic_roadmap' as const,
+      mode: 'diagnostic_roadmap',
       label: isEn
         ? '3. Skill Test & Personalized Roadmap'
         : '3. Test năng lực & Vẽ lộ trình ngành'
+    },
+    {
+      mode: 'motion_reel',
+      label: isEn
+        ? '4. Syn Reel · 3B1B Motion Video Studio'
+        : '4. Syn Reel · Dựng Video 3B1B Trực Quan'
     }
   ];
 
@@ -380,8 +389,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               const phyCounts = getPhysicsSimCounts();
               return t(
                 'overview.heroDesc',
-                `Hệ sinh thái học tập STEM toàn diện cho Toán (2D & Oxyz 3D tách trang riêng), Vật lí (${phyCounts.domainCount} lĩnh vực · ${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D + 36 dụng cụ kéo thả), Tin học (5 lộ trình VNOI & C++ Quốc tế · IDE Sublime Text 4), Synapse Pre (30 Đại công trình tương lai & Phòng Lab AI 3D), Học cảm giác 3D 10 ngón tay, Syn AI (Syn Math · Syn Physics · Syn Code), Kho Đề thi chấm ảnh AI, Đấu trường tuần & App đa thiết bị.`,
-                `Complete interactive STEM ecosystem: Math (standalone 2D & Oxyz 3D Studio), Physics (${phyCounts.domainCount} domains · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D labs + 36 drag-and-drop tools), CS (5 VNOI & C++ roadmaps + Sublime Text 4 IDE), Synapse Pre (30 Futuristic Megastructures & AI 3D Labs), 10-finger Spatial 3D, Syn AI suite, AI-graded Exams, Weekly Arena & Cross-Device App.`
+                `Hệ sinh thái STEM toàn diện cho Toán (2D & Oxyz 3D), Vật lí (${phyCounts.domainCount} lĩnh vực · ${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D + 36 dụng cụ), Tin học (5 lộ trình VNOI & C++ · IDE Sublime 4 · Truy vết Code 1-1 & Replay Tư Duy), Synapse Pre (30 Đại công trình 3D · Hộp cát Hạt GPU 28K 2 tay · Cảm biến Điện thoại QR Oscilloscope), AR Bàn Học Pro 10 ngón tay, Syn AI Mắt Thần + Ngắt lời Voice & Syn Reel Video 3B1B, Đề thi chấm ảnh AI & App đa thiết bị.`,
+                `Complete STEM ecosystem: Math (2D & Oxyz 3D), Physics (${phyCounts.domainCount} domains · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D labs + 36 tools), CS (5 VNOI/C++ roadmaps · Sublime 4 · Live Code-to-Animation Trace & Thought Replay), Synapse Pre (30 Megastructures · Dual-Hand 28K GPU Particle Sandbox · QR Phone Sensor Oscilloscope), WebAR Desk Pro 10-finger lab, Live Vision + Barge-In Syn AI & Syn Reel 3B1B Motion Video, AI-graded Exams & Cross-Device App.`
               );
             })()}
           </p>
@@ -733,18 +742,18 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <div className="space-y-1.5 min-w-0">
               <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.2em] text-cyan-300">
                 {isEn
-                  ? 'SYNAPSE PRE · 30 FUTURISTIC MEGASTRUCTURES & AI 3D LAB'
-                  : 'SYNAPSE PRE · ĐẠI CÔNG TRÌNH TƯƠNG LAI & PHÒNG LAB AI 3D'}
+                  ? 'SYNAPSE PRE · 30 MEGASTRUCTURES · PHONE SENSOR LAB · 28K GPU SANDBOX'
+                  : 'SYNAPSE PRE · 30 ĐẠI CÔNG TRÌNH · CẢM BIẾN QR · HỘP CÁT GPU 28K'}
               </div>
               <h2 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-white">
                 {isEn
-                  ? '30 Futuristic 3D Megastructures, 3D Neural Galaxy, AI Sim Compiler & Audio FFT 3D'
-                  : '30 Đại Công Trình Tương Lai 3D, Vũ Trụ Tri Thức 3D, Sinh Mô Phỏng AI & Quét Giấy Nháp'}
+                  ? '30 Futuristic 3D Megastructures, Phone Sensor QR Telemetry, Dual-Hand 28K GPU Particles & AI Labs'
+                  : '30 Đại Công Trình 3D, Cảm Biến Điện Thoại QR Live, Hộp Cát Hạt 28K GPU & Sinh Mô Phỏng AI'}
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
                 {isEn
-                  ? 'CERN LHC · James Webb · Dyson Black Hole · Tokamak Fusion alongside personal 3D Knowledge Galaxy, Text-to-Sim, Paper-to-Sim Vision & FFT 3D Acoustics.'
-                  : 'Hợp nhất 30 đại công trình 3D (CERN LHC, James Webb, Hố đen Dyson, Lò Tokamak) cùng Vũ trụ Tri thức 3D, Sinh Mô Phỏng AI, Giấy Nháp → Sim & Sóng Âm FFT 3D.'}
+                  ? 'Pair your smartphone via QR WebSocket oscilloscope, sculpt 28,000 WebGL particles with both hands, alongside 30 3D Megastructures, 3D Galaxy, Text-to-Sim, Paper-to-Sim & FFT Acoustics.'
+                  : 'Kết nối cảm biến gia tốc điện thoại qua QR WebSocket đo dao động thực, điều khiển 28.000 hạt lực trường GPU bằng 2 tay cùng 30 Đại công trình 3D, Vũ trụ Tri thức, Sinh Mô Phỏng AI & Quét Nháp.'}
               </p>
             </div>
           </div>
@@ -771,7 +780,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <button
               type="button"
               data-ripple="true"
-              onClick={() => navigate({ subject: 'synapse_v2', futureTab: 'megastructures', synapseMode: 'catalog', tutorOpen: false })}
+              onClick={() => navigate({ subject: 'synapse_v2', futureTab: 'hub', synapseMode: 'catalog', tutorOpen: false })}
               className="group/btn cs-deck-btn px-5 py-3 rounded bg-gradient-to-r from-sky-400 via-cyan-400 to-indigo-400 hover:from-sky-300 hover:to-indigo-300 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
             >
               <Orbit className="w-4 h-4 icon-anim-cosmos" />
@@ -847,9 +856,64 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             );
           })}
         </div>
+
+        {/* Highlighted New Hardware & GPU Physics Labs inside Synapse Pre */}
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={() =>
+              navigate({
+                subject: 'synapse_v2',
+                futureTab: 'phone_sensor_lab',
+                synapseMode: 'catalog',
+                tutorOpen: false
+              })
+            }
+            className="text-left p-3.5 rounded border border-emerald-400/50 bg-emerald-950/35 hover:bg-emerald-900/45 hover:border-emerald-300 transition cursor-pointer flex items-center justify-between gap-3"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-300">
+                <Waves className="w-4 h-4 shrink-0" />
+                <span>{isEn ? 'NEW · Phone Sensor QR Telemetry Lab' : 'MỚI · Cảm Biến Điện Thoại QR Live Oscilloscope'}</span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-1">
+                {isEn
+                  ? 'Scan QR on mobile to stream real accelerometer/gyroscope into a dual-trace SHM pendulum curve & export CSV.'
+                  : 'Quét mã QR bằng điện thoại để truyền gia tốc kế/con quay hồi chuyển lên dao động ký đôi & xuất CSV.'}
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-emerald-300 shrink-0" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate({
+                subject: 'synapse_v2',
+                futureTab: 'dual_hand_sandbox',
+                synapseMode: 'catalog',
+                tutorOpen: false
+              })
+            }
+            className="text-left p-3.5 rounded border border-cyan-400/50 bg-cyan-950/35 hover:bg-cyan-900/45 hover:border-cyan-300 transition cursor-pointer flex items-center justify-between gap-3"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-xs font-extrabold text-cyan-300">
+                <Hand className="w-4 h-4 shrink-0" />
+                <span>{isEn ? 'NEW · Dual-Hand 28K GPU Particle Sandbox' : 'MỚI · Hộp Cát Hạt Lực Trường 2 Tay GPU 28.000 Hạt'}</span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-1">
+                {isEn
+                  ? 'Control Binary Gravity, Lorentz Magnetic, Wave Interference & Rutherford Scattering in real time with both hands.'
+                  : 'Điều khiển Trọng lực đôi, Từ trường Lorentz, Giao thoa sóng & Tán xạ Rutherford mượt 60 FPS bằng 2 tay.'}
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-cyan-300 shrink-0" />
+          </button>
+        </div>
       </section>
 
-      {/* GATEWAY: HỌC CẢM GIÁC 3D · WEBCAM HAND-GESTURE & OXYZ LAB */}
+      {/* GATEWAY: HỌC CẢM GIÁC 3D · WEBCAM HAND-GESTURE & WEBAR BÀN HỌC PRO */}
       <section
         data-ripple="true"
         onClick={() => onNavigate('spatial_3d')}
@@ -879,18 +943,18 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <div className="space-y-1 min-w-0">
               <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-teal-300">
                 {isEn
-                  ? 'SPATIAL 2D/3D GESTURE LAB · 10-FINGERTIP AI SENSOR'
-                  : 'KHU VỰC MỚI · HỌC CẢM GIÁC 3D · CẢM BIẾN 10 ĐẦU NGÓN TAY'}
+                  ? 'SPATIAL 2D/3D · 10-FINGERTIP AI · WEBAR DESK PRO'
+                  : 'HỌC CẢM GIÁC 3D · 10 ĐẦU NGÓN TAY · AR BÀN HỌC PRO'}
               </div>
               <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-white">
                 {isEn
-                  ? '2D Interactive Geometry Studio & 15 Realistic 3D Models via Live Webcam Hand Tracking'
-                  : 'Xưởng Hình Học 2D Trực Quan & 15 Mô Hình 3D Thực Tế Điều Khiển Bằng 10 Đầu Ngón Tay'}
+                  ? 'WebAR Desk Hologram Pro, 2D Geometry Studio & 15 Realistic 3D Models via 10 Fingers'
+                  : 'WebAR Chiếu Bàn Học Pro (Cam Sau/Cắt Lớp/Chụp PNG) & 15 Mô Hình 3D 10 Ngón Tay'}
               </h2>
               <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
                 {isEn
-                  ? '6 2D Interactive Labs · 15 3D Kinetic Systems (Turbofan, Solar Orrery, Live Hand-IK Robot Arm, Wind Tunnel, Bridge) · Dual-Hand Sculpting.'
-                  : '6 Xưởng hình học 2D (Đa giác Euler, Compa, Vector Oxy, Đối xứng, Conic) · 15 Mô hình 3D tiên tiến (Động cơ phản lực, Hệ Mặt Trời, Cánh tay Robot IK, Hầm gió) · Chụm ngón sáng tạo.'}
+                  ? 'Project 3D holograms onto your desk with rear/front camera switch, opacity, desk-tilt calibration, live Y-slicing & PNG snapshot, plus Point & Ask Live Co-Pilot.'
+                  : 'Chiếu mô hình trực tiếp lên mặt bàn thật với Camera Trước/Sau, chỉnh độ mờ Alpha, nghiêng bàn, mặt cắt Y trực tiếp & chụp ảnh PNG, kèm Point & Ask Mắt Thần AI.'}
               </p>
             </div>
           </div>
@@ -1280,8 +1344,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isEn
-                  ? '5 complete paths (VNOI CP + OpenEDG, Roadmap.sh, LearnCpp & GitHub C++ Career), Sublime Text 4 IDE, C++20/Python 3 Judge & 16 algo visualizers.'
-                  : 'Đủ 5 lộ trình (VNOI Thi đấu + OpenEDG C++, Roadmap.sh, LearnCpp & GitHub C++), IDE Sublime Text 4, trình chấm C++/Python + AI & 16 đồ thị thuật toán.'}
+                  ? '5 complete paths (VNOI CP + OpenEDG, Roadmap.sh, LearnCpp & GitHub C++ Career), Sublime Text 4 IDE, C++20/Python 3 Judge, Live Code-to-Animation Tracer, Thought Replay & 16 algo graphs.'
+                  : 'Đủ 5 lộ trình (VNOI + OpenEDG, Roadmap.sh, LearnCpp & GitHub C++), IDE Sublime Text 4, trình chấm C++/Python, Truy vết Biến Từng Dòng + Replay Tư Duy & 16 đồ thị thuật toán.'}
               </p>
             </div>
 
@@ -1470,12 +1534,12 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 <Sparkles className="w-6 h-6 icon-anim-star" />
               </div>
               <h3 className="font-display text-lg sm:text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                {isEn ? 'Syn AI Command Suite (3 Engines)' : 'Hệ Sinh Thái Syn AI (3 Động Cơ)'}
+                {isEn ? 'Syn AI Live Co-Pilot & Syn Reel (3 Engines)' : 'Syn AI Live Co-Pilot & Syn Reel (3 Động Cơ)'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isEn
-                  ? 'Independent Syn Math, Syn Physics & Syn Code engines with Guided Hints, Full Solution, and Diagnostic Roadmap modes.'
-                  : 'Bộ 3 Syn Math · Syn Physics · Syn Code độc lập với 3 chế độ thực chiến: Giảng gợi mở, Giải 4 bước, và Test vẽ lộ trình.'}
+                  ? 'Live Voice + Screen/Canvas Vision Co-Pilot with instant Voice Barge-In, plus Syn Reel 3B1B Motion Video generator across Syn Math, Syn Physics & Syn Code.'
+                  : 'Hợp nhất Mắt Thần AI (nhìn trực tiếp màn hình/canvas + ngắt lời tức thì Voice Barge-In) và Syn Reel dựng Video 3B1B trên cả Syn Math · Syn Physics · Syn Code.'}
               </p>
             </div>
 
@@ -1490,15 +1554,15 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 className="cs-deck-btn w-full px-5 py-3 rounded bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 text-white text-sm font-semibold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 icon-anim-star" />
-                <span>{t('overview.openTutor', 'Mở Trung Tâm Syn AI', 'Launch Syn AI Suite')}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <span>{t('overview.openTutor', 'Mở Trung Tâm Syn AI & Syn Reel', 'Launch Syn AI & Syn Reel')}</span>
+                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 3: Dedicated Syn AI (Syn Math · Syn Physics · Syn Code) × 3 Modes */}
+      {/* SECTION 3: Dedicated Syn AI (Syn Math · Syn Physics · Syn Code) × Live Co-Pilot & Syn Reel */}
       {onOpenTutor && (
         <section className="sci-frame sci-scan-bar rounded-md bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/90 dark:border-white/10 p-6 sm:p-7 shadow-[0_14px_42px_-16px_rgba(15,23,42,0.12)] space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200/70 dark:border-white/10">
@@ -1507,16 +1571,31 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 <Sparkles className="w-4 h-4 icon-anim-star" />
                 <span>
                   {isEn
-                    ? 'Syn AI Neural Suite · 3 Engines × 3 Tactical Modes'
-                    : 'Syn AI Neural Suite · 3 Động Cơ × 3 Chế Độ Thực Chiến'}
+                    ? 'Syn AI Neural Suite · Live Vision Co-Pilot & Syn Reel 3B1B Studio'
+                    : 'Syn AI Neural Suite · Mắt Thần Co-Pilot & Dựng Video 3B1B (Syn Reel)'}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                 {isEn
-                  ? 'Real-time streaming & Voice Mic input. Launch Syn Math (Left Ctrl+D), Syn Physics (Left Ctrl+F), or Syn Code (Left Ctrl+G).'
-                  : 'Hỗ trợ AI thời gian thực & nhập đề bằng Giọng nói. Mở nhanh bằng Ctrl(trái)+D (Syn Math), Ctrl(trái)+F (Syn Physics), Ctrl(trái)+G (Syn Code).'}
+                  ? 'Live Canvas/Screen Vision + Instant Voice Barge-In & 16:9 3Blue1Brown Motion Reels. Shortcuts: Left Ctrl+D/F/G.'
+                  : 'Hỗ trợ Mắt Thần nhìn trực tiếp bài/màn hình + Voice Ngắt lời tức thì & Syn Reel xuất video .webm 3Blue1Brown. Mở nhanh: Ctrl(trái)+D/F/G.'}
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() =>
+                navigate({
+                  subject: 'overview',
+                  tutorOpen: true,
+                  tutorSubject: 'math',
+                  tutorTab: 'motion_reel'
+                })
+              }
+              className="cs-deck-btn px-3.5 py-2 rounded bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-400 hover:to-sky-500 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Open Syn Reel Mini-Chat' : 'Mở Syn Reel · Tạo Video 3B1B'}</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1563,7 +1642,18 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                         key={m.mode}
                         type="button"
                         data-ripple="true"
-                        onClick={() => onOpenTutor(item.subj, m.mode)}
+                        onClick={() => {
+                          if (m.mode === 'motion_reel') {
+                            navigate({
+                              subject: 'overview',
+                              tutorOpen: true,
+                              tutorSubject: item.subj,
+                              tutorTab: 'motion_reel'
+                            });
+                          } else {
+                            onOpenTutor(item.subj, m.mode);
+                          }
+                        }}
                         className={`group/mode cs-deck-btn w-full text-left px-3.5 py-2.5 rounded bg-white/95 dark:bg-slate-900/90 border border-slate-200/90 dark:border-white/10 text-xs font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${item.btn}`}
                       >
                         <span className="truncate">{m.label}</span>

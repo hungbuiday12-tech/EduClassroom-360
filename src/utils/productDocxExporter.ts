@@ -206,36 +206,35 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
               })
             ]
           }),
-          heading1('I. TỔNG QUAN SẢN PHẨM'),
+          heading1('I. TỔNG QUAN SẢN PHẨM (SYNAPSE STEM · synapse-stem.is-a.dev)'),
           bodyPara(
-            'Synapse tích hợp 231 bài giảng chuyên sâu, 107 mô phỏng Vật lí 2D/3D + Phòng Lab Toán Oxyz/2D, 30 Đại công trình Synapse Pre, Trình chấm Code IDE Tin học 5 lộ trình quốc tế, Ngân hàng 450 Đề thi có mã đề & xuất DOCX, Đấu trường Xếp hạng theo khối lớp và Phòng Học Cảm Giác 3D/2D điều khiển bằng 10 ngón tay (MediaPipe), Quét đồ vật thực tế thành mô hình 3D và Point & Ask AI.'
+            'Synapse tích hợp 231 bài giảng chuyên sâu, 107 mô phỏng Vật lí 2D/3D + Phòng Lab Toán Oxyz/2D, Synapse Pre (30 Đại công trình tương lai, Phòng Lab Cảm biến Điện thoại QR Live Oscilloscope & Hộp cát Hạt Lực Trường 2 Tay GPU 28.000 hạt), Trình chấm Code IDE Tin học 5 lộ trình quốc tế (Truy vết Code-to-Animation 1-1 & Replay Tư Duy WA → AC), Ngân hàng 450 Đề thi có mã đề & xuất DOCX, Đấu trường Xếp hạng, Hệ thống 3 AI Mắt Thần Live Co-Pilot (Ngắt lời Voice Barge-in & Syn Reel Video 3B1B) và WebAR Bàn Học Pro điều khiển 10 ngón tay.'
           ),
-          heading1('II. TOÀN BỘ TÍNH NĂNG CỐT LÕI'),
-          heading2('1. Bài giảng 3 môn & 5 Lộ trình Tin học Quốc tế + Code Judge'),
-          bulletItem('5 Lộ trình', 'VNOI, C++ Institute (OpenEDG), Roadmap.sh, LearnCpp.com và GitHub Career Track.'),
-          bulletItem('2 Chế độ Code mẫu', 'Song song Code Cơ bản (tối giản) và Code Nâng cao/Chuyên (DP, Segment Tree, Dijkstra); chấm test tự động hỗ trợ cả stdin/stdout và freopen.'),
-          heading2('2. Mô phỏng Vật lí 2D/3D (107 Lab) & Toán học tách trang riêng'),
+          heading1('II. TOÀN BỘ TÍNH NĂNG CỐT LÕI & 6 MODULE ĐỘT PHÁ MỚI'),
+          heading2('1. Hệ 3 AI Mắt Thần Live Co-Pilot (Voice Barge-in) & Syn Reel Video 3B1B'),
+          bulletItem('Mắt Thần AI hợp nhất 3 động cơ', 'Syn Math, Syn Physics, Syn Code (kèm Voice OS & Spatial Voice Mentor) tự động nhìn ảnh chụp Canvas/Màn hình chia sẻ và ngữ cảnh Workspace đang mở để hướng dẫn trực tiếp theo điểm đang vẽ/code.'),
+          bulletItem('Voice Barge-in (Ngắt lời tức thì)', 'Người học bấm micro hoặc nói khi AI đang giảng để ngắt luồng phát âm thanh cũ ngay lập tức, tạo cảm giác đối thoại tự nhiên.'),
+          bulletItem('Syn Reel Mini-Chat (Video 3B1B)', 'Tạo nhanh video 5 cảnh chuẩn 16:9 phong cách 3Blue1Brown kèm thuyết minh song ngữ và xuất trực tiếp file .webm.'),
+          heading2('2. WebAR Bàn Học Pro & Học Cảm Giác 3D/2D (10 Đầu Ngón Tay)'),
+          bulletItem('AR Bàn Học Pro', 'Chiếu mô hình 3D lên mặt bàn thật với Camera Trước/Sau, chỉnh độ mờ Alpha (35–100%), cân góc nghiêng bàn (-35°..+35°), mặt cắt Y-clipping trực tiếp, thước tỷ lệ cm và chụp ảnh PNG.'),
+          bulletItem('Không gian 3D & 2D', '15 mô hình tương tác 10 ngón tay, Quét đồ vật thật PBR, Point & Ask và hệ cử chỉ 2D tối giản 4+1 kèm Sáng tạo tự do AI.'),
+          heading2('3. Synapse Pre: Cảm Biến Điện Thoại QR Live & Hộp Cát Hạt GPU 28.000 Hạt'),
+          bulletItem('Phone Sensor QR Telemetry Lab', 'Quét QR kết nối điện thoại qua WebSocket độ trễ thấp, stream dữ liệu Gia tốc kế / Con quay lên Dao động ký đôi so sánh đường cong lý thuyết (RMSE, Hz) và xuất CSV.'),
+          bulletItem('Dual-Hand GPU Particle Sandbox', 'Mô phỏng 28.000 hạt lực trường trên GPU Shader (Trọng lực đôi, Từ trường Lorentz, Giao thoa sóng, Tán xạ Rutherford) điều khiển mượt 60 FPS bằng 2 bàn tay hoặc chuột.'),
+          heading2('4. Tin Học 5 Lộ Trình · Code-to-Animation Trace 1-1 & Thought-Trace Replay'),
+          bulletItem('5 Lộ trình Quốc tế & IDE Sublime 4', 'VNOI, C++ Institute (OpenEDG), Roadmap.sh, LearnCpp.com và GitHub Career Track kèm Code mẫu Cơ bản/Nâng cao, chấm TLE & File I/O thật.'),
+          bulletItem('Live Code Trace & Replay Tư Duy', 'Truy vết giá trị biến, mảng DP và stdout khớp từng dòng lệnh Python (sys.settrace) / C++ (g++) kết hợp thanh thời gian Replay Tư Duy (lưu lịch sử gõ, chạy, nộp WA → AC).'),
+          heading2('5. Mô phỏng Vật lí 2D/3D (107 Lab), Toán học & Kho 450 Đề thi DOCX'),
           bodyPara(
-            '59 phòng thí nghiệm 2D và 48 mô hình 3D theo 5 lĩnh vực, tích hợp Quang học Raytracing tự do và Bản cát cộng hưởng Chladni.'
+            '59 phòng thí nghiệm Vật lí 2D và 48 mô hình 3D theo 5 lĩnh vực, Toán 2D & Oxyz 3D, cùng 450 Đề thi Chuyên/Không Chuyên cho phép tải DOCX sạch đáp án và chấm ảnh viết tay AI 0–10.'
           ),
-          heading2('3. Kho 450 Đề thi Quốc gia Có Mã đề & Xuất DOCX'),
-          bodyPara(
-            '450 đề (225 Chuyên + 225 Không Chuyên) đầy đủ toàn bộ câu hỏi, cho phép tải file Word (.docx) không kèm đáp án để làm trên giấy và tra ngược bằng mã đề trên web để xem lời giải + hình vẽ + chấm ảnh AI.'
-          ),
-          heading2('4. Đấu trường Online & Bảng Xếp Hạng Tuần'),
-          bodyPara(
-            'Chia khu vực theo Khối 9–12, Đội tuyển HSG & Hệ Chuyên/Không Chuyên; tự động tắt Syn AI khi vào phòng thi để đảm bảo công bằng.'
-          ),
-          heading2('5. Học cảm giác 3D/2D, Quét Thực tế & Point & Ask AI'),
-          bulletItem('Không gian 3D', '15 mô hình tương tác 10 ngón tay, Quét đồ vật thật dựng mô hình 3D chuẩn PBR, và Point & Ask (chỉ ngón tay + hỏi giọng nói).'),
-          bulletItem('Không gian 2D Oxy', 'Chuẩn hóa 4+1 cử chỉ siêu đơn giản (Mở 5 ngón ngắm · 1 ngón vẽ · Chụm kéo · 2 ngón xoay/đổi · Nắm tay khóa bảng) kèm bảng hướng dẫn trực quan.'),
           heading1('III. TÍNH MỚI, TÍNH THỰC TẾ & HIỆU QUẢ GIÁO DỤC'),
           makeTable(
             ['Khía cạnh Đánh giá', 'Giá trị Nổi bật trên Synapse'],
             [
-              ['Tính mới & Sáng tạo', 'Point & Ask đa phương thức (chỉ tay 3D + giọng nói), Quét đồ vật thật thành lab 3D PBR, hệ cử chỉ 2D tối giản 4+1.'],
-              ['Tính thực tế', 'Chạy trực tiếp trên trình duyệt phổ thông (không cần kính VR), hỗ trợ song song Webcam 10 ngón lẫn Chuột/Cảm ứng và PWA đa thiết bị.'],
-              ['Hiệu quả giáo dục', 'Giúp học sinh hiểu bản chất trực giác thay vì học vẹt; giáo viên có sẵn 107 mô phỏng và kho 450 đề xuất DOCX sạch đáp án.']
+              ['Tính mới & Sáng tạo', 'Mắt Thần Live Co-Pilot đa phương thức có Voice Barge-in, WebAR Bàn Học Pro, Điện thoại làm cảm biến Vật lí QR, 28K hạt GPU 2 tay, Truy vết Code 1-1 & Syn Reel Video 3B1B.'],
+              ['Tính thực tế', 'Chạy trực tiếp trên trình duyệt phổ thông & PWA đa thiết bị (PC, Android, iPhone) tại https://synapse-stem.is-a.dev, không cần thiết bị VR chuyên dụng.'],
+              ['Hiệu quả giáo dục', 'Giúp học sinh hiểu bản chất trực giác, tự gỡ lỗi tư duy qua Thought Replay và rèn luyện với kho 231 bài giảng, 107 lab, 450 đề xuất DOCX.']
             ]
           )
         ]

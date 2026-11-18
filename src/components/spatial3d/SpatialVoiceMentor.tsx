@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Mic, MicOff, Volume2, VolumeX, Cpu, Loader2, Send, X } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Cpu, Loader2, Send, X, Eye } from 'lucide-react';
 import { useSpeechRecognition } from '../../lib/useSpeechRecognition';
 import { safeFetchJson } from '../../lib/apiClient';
 import { MathFormula } from '../common/MathRenderer';
@@ -8,6 +8,12 @@ import {
   matchWonderStageCommand,
   WonderStageVoiceCommand
 } from '../../lib/voiceIntentEngine';
+import {
+  cancelActiveSpeech,
+  captureWorkspaceSnapshot,
+  requestLiveCoPilotReply,
+  setLiveWorkspaceContext
+} from '../../lib/liveCoPilotBridge';
 
 interface SpatialVoiceMentorProps {
   spaceName: string;
@@ -33,6 +39,7 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
   const isEn = language === 'en';
   const [isOpen, setIsOpen] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [vision3dCoPilot, setVision3dCoPilot] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [draftQuestion, setDraftQuestion] = useState('');
@@ -40,8 +47,18 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
     question: string;
     spokenAnswer: string;
     formulaHighlight: string;
+    visualPinHint?: string;
     suggestedFollowUps: string[];
   } | null>(null);
+
+  useEffect(() => {
+    setLiveWorkspaceContext({
+      subject: 'spatial_3d',
+      title: partName ? `${modelTitle} — ${partName}` : modelTitle,
+      summary: partDescription || `${spaceName}: ${modelTitle}`,
+      formula
+    });
+  }, [spaceName, modelTitle, partName, partDescription, formula]);
 
   const speakText = (text: string) => {
     if (!autoSpeak || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -68,8 +85,10 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
   const askVoiceMentor = async (questionText: string) => {
     const clean = questionText.trim();
     if (!clean) return;
+    // Barge-in: cancel ongoing AI speech immediately when learner speaks/asks
+    cancelActiveSpeech();
 
-    // 1. Check if the user is giving a live 3D wonder/camera/music/explode command (even fuzzy ~70-90%)
+    // 1. Check if the user is giving a live 3D wonder/camera/music/explode command
     if (onWonderCommand) {
       const stageCmd = matchWonderStageCommand(clean);
       if (stageCmd) {
@@ -89,8 +108,40 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
       }
     }
 
-    // 2. Ask Gemini 3D Voice Mentor, with seamless zero-error local encyclopedia fallback
+    // 2. If Vision 3D Co-Pilot is ON, inspect current 3D viewport canvas alongside context
     setIsThinking(true);
+    if (vision3dCoPilot) {
+      const snap = await captureWorkspaceSnapshot();
+      if (snap.imageBase64) {
+        const coRes = await requestLiveCoPilotReply({
+          question: clean,
+          subject: 'spatial_3d',
+          language,
+          workspaceCtx: {
+            subject: 'spatial_3d',
+            title: partName ? `${modelTitle} → ${partName}` : modelTitle,
+            summary: partDescription || spaceName,
+            formula,
+            updatedAt: Date.now()
+          },
+          imageBase64: snap.imageBase64,
+          mimeType: snap.mimeType
+        });
+        setIsThinking(false);
+        setLastAnswer({
+          question: clean,
+          spokenAnswer: coRes.spokenAnswer,
+          formulaHighlight: coRes.formulaLatex || formula || '',
+          visualPinHint: coRes.visualPinHint,
+          suggestedFollowUps: coRes.nextStepQuestion ? [coRes.nextStepQuestion] : []
+        });
+        setDraftQuestion('');
+        speakText(coRes.spokenAnswer);
+        return;
+      }
+    }
+
+    // 3. Fallback to dedicated 3D Voice Mentor API + local encyclopedia
     const res = await safeFetchJson<{
       success: boolean;
       spokenAnswer: string;
@@ -185,6 +236,19 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
+                onClick={() => setVision3dCoPilot((v) => !v)}
+                className={`px-1.5 py-1 rounded border text-[10px] font-bold flex items-center gap-1 cursor-pointer ${
+                  vision3dCoPilot
+                    ? 'bg-cyan-600/30 border-cyan-400 text-cyan-200'
+                    : 'bg-slate-900 border-slate-700 text-slate-400'
+                }`}
+                title={isEn ? '3D Angle Vision Co-Pilot' : 'Quét góc 3D hiện tại (Mắt Thần AI)'}
+              >
+                <Eye className="w-3 h-3" />
+                <span>3D</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   const next = !autoSpeak;
                   setAutoSpeak(next);
@@ -216,7 +280,10 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
           <div className="flex items-center gap-2.5 bg-slate-900/90 border border-slate-800 rounded p-2">
             <button
               type="button"
-              onClick={toggleListening}
+              onClick={() => {
+                cancelActiveSpeech();
+                toggleListening();
+              }}
               disabled={!isSupported || isThinking}
               className={`px-3 py-2 rounded font-bold text-xs flex items-center gap-1.5 cursor-pointer shrink-0 ${
                 isListening
@@ -281,6 +348,11 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
                 {isEn ? 'You:' : 'Bạn:'} {lastAnswer.question}
               </p>
               <p className="text-slate-200 leading-relaxed">{lastAnswer.spokenAnswer}</p>
+              {lastAnswer.visualPinHint && (
+                <div className="px-2 py-1 rounded bg-emerald-950/50 border border-emerald-500/40 text-[11px] text-emerald-300 font-semibold">
+                  {lastAnswer.visualPinHint}
+                </div>
+              )}
               {lastAnswer.formulaHighlight && (
                 <div className="p-2 rounded bg-slate-950 border border-slate-800 overflow-x-auto text-cyan-300">
                   <MathFormula formula={lastAnswer.formulaHighlight} />

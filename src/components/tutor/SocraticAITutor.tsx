@@ -24,7 +24,13 @@ import {
   Check,
   Cpu,
   Radio,
-  PenTool
+  PenTool,
+  Film,
+  Monitor,
+  MonitorOff,
+  Volume2,
+  VolumeX,
+  Eye
 } from 'lucide-react';
 import {
   AITutorMode,
@@ -41,6 +47,14 @@ import { safeFetchJson, streamTutorChat } from '../../lib/apiClient';
 import { useNavigation, getLocationLabel } from '../../context/NavigationContext';
 import { VoiceMicButton } from '../common/VoiceMicButton';
 import { InteractiveScratchpad } from '../common/InteractiveScratchpad';
+import { MotionReelMiniChat } from './MotionReelMiniChat';
+import {
+  captureWorkspaceSnapshot,
+  cancelActiveSpeech,
+  requestLiveCoPilotReply,
+  speakCoPilotReply,
+  useLiveWorkspaceContext
+} from '../../lib/liveCoPilotBridge';
 
 export const AI_ROADMAPS_STORAGE_KEY = 'educlassroom_ai_roadmaps_v1';
 
@@ -162,7 +176,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   onNavigateSubject
 }) => {
   const { language } = useLanguage();
-  const { previousLocation } = useNavigation();
+  const { location, previousLocation, navigate } = useNavigation();
   const isEn = language === 'en';
   const backLabel = previousLocation
     ? getLocationLabel(previousLocation, language)
@@ -172,6 +186,16 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
   const [activeSubject, setActiveSubject] = useState<AISubjectKey>(() => normalizeSubject(context.subject));
   const [activeMode, setActiveMode] = useState<AITutorMode>(() => context.mode || 'explain_no_answer');
+  const [studioTab, setStudioTab] = useState<'tutor' | 'motion_reel'>(() =>
+    location.tutorTab === 'motion_reel' ? 'motion_reel' : 'tutor'
+  );
+  const [reelTopicSeed, setReelTopicSeed] = useState<string>('');
+  const liveWorkspaceCtx = useLiveWorkspaceContext();
+  const [liveCoPilotEnabled, setLiveCoPilotEnabled] = useState<boolean>(false);
+  const [coPilotVoiceAuto, setCoPilotVoiceAuto] = useState<boolean>(true);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  screenStreamRef.current = screenStream;
 
   const getAiPersonaMeta = (subj: AISubjectKey) => {
     if (subj === 'physics') {
@@ -383,6 +407,47 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   }, [context.subject, context.mode]);
 
   useEffect(() => {
+    if (location.tutorTab === 'motion_reel') {
+      setStudioTab('motion_reel');
+    } else if (location.tutorTab === 'chat') {
+      setStudioTab('tutor');
+    }
+  }, [location.tutorTab]);
+
+  useEffect(() => {
+    return () => {
+      cancelActiveSpeech();
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, []);
+
+  const toggleScreenVisionShare = async () => {
+    if (screenStream) {
+      screenStream.getTracks().forEach((t) => t.stop());
+      setScreenStream(null);
+      return;
+    }
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
+      setErrorMsg(
+        isEn
+          ? 'Screen share unsupported here — Syn AI automatically captures your active simulation canvas.'
+          : 'Trình duyệt không hỗ trợ Chia sẻ màn hình — Syn AI vẫn tự động quan sát Canvas mô phỏng & Code đang mở.'
+      );
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => setScreenStream(null));
+      setScreenStream(stream);
+      setLiveCoPilotEnabled(true);
+    } catch {
+      // User cancelled picker cleanly
+    }
+  };
+
+  useEffect(() => {
     if (context.topicTitle || context.problemStatement || context.initialImageBase64) {
       const s = normalizeSubject(context.subject);
       const m = context.mode || activeMode;
@@ -531,18 +596,44 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     attachImageFile(file);
   };
 
-  const handleSend = async (overrideText?: string) => {
+  const handleSend = async (overrideText?: string, fromVoiceBargeIn = false) => {
     const textToSend = (overrideText ?? inputText).trim();
     if (!textToSend && !pendingImage) return;
     if (isLoading) return;
+
+    // Barge-in: immediately interrupt active TTS when learner speaks or submits
+    cancelActiveSpeech();
+
+    let attachedImage = pendingImage;
+    let visionTag = '';
+    if ((liveCoPilotEnabled || fromVoiceBargeIn) && !attachedImage) {
+      const snap = await captureWorkspaceSnapshot(screenStreamRef.current);
+      if (snap.imageBase64) {
+        attachedImage = { base64: snap.imageBase64, mimeType: snap.mimeType };
+        visionTag =
+          snap.sourceKind === 'screen_share'
+            ? isEn
+              ? '[Screen Vision] '
+              : '[Mắt Thần Màn Hình] '
+            : isEn
+            ? '[Canvas Vision] '
+            : '[Mắt Thần Mô Phỏng] ';
+      }
+    }
 
     const targetThreadKey = threadKey;
     const userMsg: TutorMessage = {
       id: `u_${Date.now()}`,
       role: 'user',
-      text: textToSend || (isEn ? 'Here is the problem/step I uploaded:' : 'Đây là đề bài / bài làm em gửi lên:'),
+      text:
+        (visionTag ? `${visionTag}` : '') +
+        (textToSend || (isEn ? 'Here is the problem/step I uploaded:' : 'Đây là đề bài / bài làm em gửi lên:')),
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      imagePreview: pendingImage?.base64
+      imagePreview: attachedImage
+        ? attachedImage.base64.startsWith('data:')
+          ? attachedImage.base64
+          : `data:${attachedImage.mimeType};base64,${attachedImage.base64}`
+        : undefined
     };
 
     const nextHistory = [...currentMessages, userMsg];
@@ -556,12 +647,43 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
     setThreads((prev) => ({ ...prev, [targetThreadKey]: [...nextHistory, placeholderTutorMsg] }));
     if (!overrideText) setInputText('');
-    const imageToSend = pendingImage;
+    const imageToSend = attachedImage;
     setPendingImage(null);
     setErrorMsg(null);
     setIsLoading(true);
 
     try {
+      // Live Co-Pilot Vision fast-path when Live Co-Pilot mode is active
+      if (liveCoPilotEnabled || fromVoiceBargeIn) {
+        const coRes = await requestLiveCoPilotReply({
+          question: textToSend || (isEn ? 'Analyze what is on my workspace right now.' : 'Phân tích giúp em nội dung đang hiển thị trên màn hình lúc này.'),
+          subject: activeSubject,
+          language,
+          workspaceCtx: liveWorkspaceCtx,
+          imageBase64: imageToSend?.base64,
+          mimeType: imageToSend?.mimeType
+        });
+        const formattedReply = [
+          coRes.spokenAnswer,
+          coRes.visualPinHint ? `\n\n**${isEn ? 'Visual Focus' : 'Vị trí cần chú ý'}:** ${coRes.visualPinHint}` : '',
+          coRes.formulaLatex ? `\n\n$$${coRes.formulaLatex}$$` : '',
+          coRes.nextStepQuestion ? `\n\n*${coRes.nextStepQuestion}*` : ''
+        ]
+          .filter(Boolean)
+          .join('');
+
+        setThreads((prev) => ({
+          ...prev,
+          [targetThreadKey]: (prev[targetThreadKey] || []).map((m) =>
+            m.id === tutorMsgId ? { ...m, text: formattedReply } : m
+          )
+        }));
+        if (coPilotVoiceAuto) {
+          speakCoPilotReply(coRes.spokenAnswer, language);
+        }
+        return;
+      }
+
       const apiMessages = nextHistory.map((m, idx) => ({
         role: m.role,
         text: m.text,
@@ -939,12 +1061,12 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         </div>
       </div>
 
-      {/* 3 PEDAGOGICAL MODES TACTICAL BAR */}
+      {/* 3 PEDAGOGICAL MODES + MOTION REEL & LIVE CO-PILOT BAR */}
       <div className="px-3.5 sm:px-5 py-2.5 bg-slate-100/95 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 shrink-0">
-        <div className={`space-y-1.5 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+        <div className={`space-y-2 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             {modeTabs.map((m) => {
-              const selected = activeMode === m.id;
+              const selected = studioTab === 'tutor' && activeMode === m.id;
               const modeIcon =
                 m.id === 'explain_no_answer' ? (
                   <HelpCircle className="w-3.5 h-3.5 shrink-0" />
@@ -958,10 +1080,12 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                   key={m.id}
                   data-ripple="true"
                   onClick={() => {
+                    setStudioTab('tutor');
+                    navigate({ tutorTab: 'chat' }, { replace: true });
                     setActiveMode(m.id);
                     setErrorMsg(null);
                   }}
-                  className={`group sheen-btn flex items-center justify-center sm:justify-start gap-1.5 px-2.5 py-2 rounded-md text-[11px] sm:text-xs font-bold whitespace-nowrap border transition-all cursor-pointer ${
+                  className={`group sheen-btn flex items-center justify-center sm:justify-start gap-1.5 px-2.5 py-2 rounded-md text-[11px] font-bold whitespace-nowrap border transition-all cursor-pointer ${
                     selected
                       ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 border-slate-950 dark:border-white shadow-sm'
                       : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-slate-900 dark:hover:text-white'
@@ -981,18 +1105,107 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                 </button>
               );
             })}
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => {
+                setStudioTab('motion_reel');
+                navigate({ tutorTab: 'motion_reel' }, { replace: true });
+                setErrorMsg(null);
+              }}
+              className={`group sheen-btn flex items-center justify-center sm:justify-start gap-1.5 px-2.5 py-2 rounded-md text-[11px] font-bold whitespace-nowrap border transition-all cursor-pointer ${
+                studioTab === 'motion_reel'
+                  ? 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white border-sky-400 shadow-sm'
+                  : 'bg-white dark:bg-slate-800/80 text-sky-700 dark:text-sky-300 border-slate-200 dark:border-slate-700 hover:border-sky-400'
+              }`}
+            >
+              <span className="px-1 py-0.5 rounded font-mono text-[10px] bg-sky-500/20 text-current">
+                04
+              </span>
+              <Film className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{isEn ? 'Motion Reel (3B1B)' : 'Video 3B1B (Reel)'}</span>
+            </button>
           </div>
-          <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug flex items-center gap-1.5 px-0.5">
-            <Sparkles className="w-3 h-3 text-sky-500 shrink-0" />
-            <span>{isEn ? activeModeMeta.descEn : activeModeMeta.descVi}</span>
-          </p>
+
+          {studioTab === 'tutor' && (
+            <div className="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-sky-500 shrink-0" />
+                <span className="truncate">{isEn ? activeModeMeta.descEn : activeModeMeta.descVi}</span>
+              </p>
+
+              {/* Feature #1: Live Voice + Vision Co-Pilot Bar inside Syn AI */}
+              <div className="flex items-center gap-1 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !liveCoPilotEnabled;
+                    setLiveCoPilotEnabled(next);
+                    if (!next) cancelActiveSpeech();
+                  }}
+                  className={`px-2 py-1 rounded text-[10px] font-bold border flex items-center gap-1 cursor-pointer transition-colors ${
+                    liveCoPilotEnabled
+                      ? 'bg-emerald-600 border-emerald-400 text-white shadow-xs'
+                      : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-emerald-400'
+                  }`}
+                  title={
+                    isEn
+                      ? `Live Co-Pilot sees workspace: ${liveWorkspaceCtx.title}`
+                      : `Live Co-Pilot tự nhìn Canvas/Code đang mở: ${liveWorkspaceCtx.title}`
+                  }
+                >
+                  <Eye className="w-3 h-3 shrink-0" />
+                  <span>{isEn ? 'Live Co-Pilot' : 'Mắt Thần AI'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void toggleScreenVisionShare()}
+                  className={`px-2 py-1 rounded text-[10px] font-bold border flex items-center gap-1 cursor-pointer transition-colors ${
+                    screenStream
+                      ? 'bg-cyan-600 border-cyan-400 text-white'
+                      : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-cyan-400'
+                  }`}
+                  title={isEn ? 'Share full screen with Co-Pilot' : 'Chia sẻ màn hình cho Syn AI nhìn trực tiếp'}
+                >
+                  {screenStream ? <MonitorOff className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
+                  <span className="hidden md:inline">{screenStream ? (isEn ? 'Stop Share' : 'Dừng Share') : isEn ? 'Share Screen' : 'Share Màn Hình'}</span>
+                </button>
+                {liveCoPilotEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !coPilotVoiceAuto;
+                      setCoPilotVoiceAuto(next);
+                      if (!next) cancelActiveSpeech();
+                    }}
+                    className={`p-1 rounded border cursor-pointer ${
+                      coPilotVoiceAuto
+                        ? 'bg-sky-600 border-sky-400 text-white'
+                        : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-400'
+                    }`}
+                    title={isEn ? 'Toggle Co-Pilot Auto Voice Reply (Barge-in ready)' : 'Bật/tắt tự đọc giọng nói Co-Pilot (Ngắt lời tức thì)'}
+                  >
+                    {coPilotVoiceAuto ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* MAIN NEURAL VIEWPORT */}
       <div className="relative flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 bg-gradient-to-b from-slate-50 via-white to-slate-100/80 dark:from-slate-950 dark:via-[#060c1a] dark:to-slate-950 syn-neural-grid">
         <div className={`space-y-4 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
-          {activeMode === 'diagnostic_roadmap' && (
+          {studioTab === 'motion_reel' ? (
+            <MotionReelMiniChat
+              language={language}
+              subject={activeSubject}
+              initialTopic={reelTopicSeed}
+            />
+          ) : (
+            <>
+              {activeMode === 'diagnostic_roadmap' && (
             <div className="space-y-3.5 roadmap-card-enter">
               {/* Step 1: Configuration Card */}
               <div className="sci-frame bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-indigo-200 dark:border-indigo-500/30 rounded-md p-4 space-y-3.5 shadow-sm">
@@ -1367,26 +1580,40 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                         </div>
                       )}
                       {msg.role === 'tutor' && (
-                        <button
-                          type="button"
-                          onClick={() => handleCopyMessage(msg.id, msg.text)}
-                          className="mt-2.5 inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 border border-slate-200/80 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-300 transition-colors cursor-pointer"
-                          title={isEn ? 'Copy response' : 'Sao chép nội dung'}
-                        >
-                          {copiedMsgId === msg.id ? (
-                            <>
-                              <Check className="w-3 h-3 text-emerald-500" />
-                              <span className="text-emerald-600 dark:text-emerald-400">
-                                {isEn ? 'Copied' : 'Đã chép'}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3" />
-                              <span>{isEn ? 'Copy' : 'Sao chép'}</span>
-                            </>
-                          )}
-                        </button>
+                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleCopyMessage(msg.id, msg.text)}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 border border-slate-200/80 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-300 transition-colors cursor-pointer"
+                            title={isEn ? 'Copy response' : 'Sao chép nội dung'}
+                          >
+                            {copiedMsgId === msg.id ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-500" />
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  {isEn ? 'Copied' : 'Đã chép'}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>{isEn ? 'Copy' : 'Sao chép'}</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReelTopicSeed(msg.text.slice(0, 140));
+                              setStudioTab('motion_reel');
+                              navigate({ tutorTab: 'motion_reel' }, { replace: true });
+                            }}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-700 text-[10px] font-bold text-sky-700 dark:text-sky-300 transition-colors cursor-pointer"
+                          >
+                            <Film className="w-3 h-3" />
+                            <span>{isEn ? 'Animate 3B1B' : 'Dựng Video 3B1B'}</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1451,10 +1678,13 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             )}
             <div ref={messagesEndRef} />
           </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* QUICK TACTICAL PROMPTS */}
+      {studioTab === 'tutor' && (
       <div className="px-3.5 sm:px-5 py-2.5 bg-white/95 dark:bg-slate-900/95 border-t border-slate-200 dark:border-slate-800 shrink-0">
         <div className={`${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">
@@ -1481,8 +1711,10 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           </div>
         </div>
       </div>
+      )}
 
       {/* MULTIMODAL COMPOSER */}
+      {studioTab === 'tutor' && (
       <div className="px-3.5 sm:px-5 py-3 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 shrink-0">
         <div className={`space-y-2.5 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           {pendingImage && (
@@ -1525,9 +1757,14 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             <VoiceMicButton
               language={language}
               disabled={isLoading}
-              onTranscript={(spoken) =>
-                setInputText((prev) => (prev.trim() ? `${prev.trim()} ${spoken}` : spoken))
-              }
+              onTranscript={(spoken) => {
+                cancelActiveSpeech();
+                if (liveCoPilotEnabled) {
+                  void handleSend(spoken, true);
+                } else {
+                  setInputText((prev) => (prev.trim() ? `${prev.trim()} ${spoken}` : spoken));
+                }
+              }}
             />
 
             <button
@@ -1550,7 +1787,11 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
               }}
               rows={2}
               placeholder={
-                activeMode === 'full_solution'
+                liveCoPilotEnabled
+                  ? isEn
+                    ? `Live Co-Pilot watching "${liveWorkspaceCtx.title}" — speak or type...`
+                    : `Mắt Thần AI đang quan sát "${liveWorkspaceCtx.title}" — bấm Mic nói ngay hoặc nhập câu hỏi...`
+                  : activeMode === 'full_solution'
                   ? isEn
                     ? 'Paste a problem, drop image, Ctrl+V or click Mic to speak...'
                     : 'Dán đề, kéo thả/Ctrl+V ảnh đề hoặc bấm Mic để đọc câu hỏi...'
@@ -1576,6 +1817,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           </div>
         </div>
       </div>
+      )}
       <InteractiveScratchpad
         isOpen={isScratchpadOpen}
         onClose={() => setIsScratchpadOpen(false)}

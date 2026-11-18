@@ -611,6 +611,24 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
     }
   },
   {
+    phrases: ['cam bien dien thoai', 'phone sensor', 'con lac dien thoai', 'qr vat li', 'sensor lab'],
+    minScore: 0.48,
+    plan: {
+      replyVi: 'Đang mở Phòng Lab Cảm biến Điện thoại thời gian thực qua QR & WebSocket.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'phone_sensor_lab'
+    }
+  },
+  {
+    phrases: ['hat gpu', 'hai tay hat', 'dual hand', 'truong hat gpu', 'particle sandbox'],
+    minScore: 0.48,
+    plan: {
+      replyVi: 'Đang mở Sandbox Trường Hạt GPU Hai Tay trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'dual_hand_sandbox'
+    }
+  },
+  {
     phrases: ['trang chu', 'lop hoc', 'tong quan', 've home'],
     minScore: 0.5,
     plan: {

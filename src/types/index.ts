@@ -996,7 +996,9 @@ export type FutureLabTabId =
   | 'paper_to_sim'
   | 'infinite_canvas'
   | 'audio_fft'
-  | 'silicon_neural';
+  | 'silicon_neural'
+  | 'phone_sensor_lab'
+  | 'dual_hand_sandbox';
 
 export type PaperSimKind =
   | 'parabola'

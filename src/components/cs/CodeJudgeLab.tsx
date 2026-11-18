@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { CS_LESSONS } from '../../data/csLessonsData';
 import { CODING_PROBLEMS } from '../../data/curriculumData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
+import { CS_TRACK_STAGE_DETAILS } from '../../data/csTrackStageDetails';
 import {
   CodeLanguage,
   CodingProblem,
@@ -19,7 +20,9 @@ import {
   LESSON_HIDDEN_TEST_CASES
 } from './problemAnalyzer';
 import { CodeMistakeAnalysisPanel } from './CodeMistakeAnalysisPanel';
-import { SublimeStudio } from './SublimeStudio';
+import { LiveCodeTraceVisualizer, ThoughtSnapshot } from './LiveCodeTraceVisualizer';
+import { setLiveWorkspaceContext } from '../../lib/liveCoPilotBridge';
+import { SublimeStudio, SublimeStarterPreset } from './SublimeStudio';
 import { SublimeEditor, MonokaiCodeBlock } from './SublimeEditor';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { FormattedText } from '../common/MathRenderer';
@@ -36,6 +39,7 @@ import {
   recordMistake
 } from '../../lib/learningGrowthStore';
 import {
+  Activity,
   Play,
   Send,
   RotateCcw,
@@ -107,7 +111,8 @@ interface LessonPracticeRunState {
 }
 
 export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBack }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const isEn = language === 'en';
   const { location, navigate, goBack } = useNavigation();
   // Top View Mode: 'curriculum' (VNOI Roadmap & Bài giảng), 'judge' (Trình chấm online), or 'custom' (Sublime Studio)
   const viewMode = location.csViewMode;
@@ -128,6 +133,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       return [];
     }
   });
+  const [expandedStageId, setExpandedStageId] = useState<string | null>(null);
+  const [trackQuizSelections, setTrackQuizSelections] = useState<Record<string, number>>({});
+  const [trackQuizChecked, setTrackQuizChecked] = useState<Record<string, boolean>>({});
+  const [sublimePreset, setSublimePreset] = useState<SublimeStarterPreset | null>(null);
 
   const toggleTrackStageCompleted = (stageId: string) => {
     setCompletedTrackStageIds((prev) => {
@@ -141,6 +150,35 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
       }
       return next;
     });
+  };
+
+  const launchStageInSublime = (stageId: string, overrideCppCode?: string) => {
+    const detail = CS_TRACK_STAGE_DETAILS[stageId];
+    if (!detail) {
+      navigate({ csViewMode: 'custom' });
+      return;
+    }
+    const { labStarter } = detail;
+    setSublimePreset({
+      key: `${stageId}-${Date.now()}`,
+      title: isEn ? labStarter.titleEn : labStarter.title,
+      description: isEn ? labStarter.descriptionEn : labStarter.description,
+      inputFormat: labStarter.inputFormat,
+      outputFormat: labStarter.outputFormat,
+      sampleInput: labStarter.sampleInput,
+      sampleOutput: labStarter.sampleOutput,
+      starterCpp: overrideCppCode || labStarter.starterCpp
+    });
+    navigate({ csViewMode: 'custom' });
+  };
+
+  const handleCheckStageQuiz = (quizId: string, selectedIdx: number, correctIdx: number) => {
+    const alreadyChecked = Boolean(trackQuizChecked[quizId]);
+    setTrackQuizSelections((prev) => ({ ...prev, [quizId]: selectedIdx }));
+    setTrackQuizChecked((prev) => ({ ...prev, [quizId]: true }));
+    if (!alreadyChecked && selectedIdx === correctIdx && onScoreEarned) {
+      onScoreEarned(15);
+    }
   };
 
   const activeSpecializedTrack = useMemo(
@@ -241,8 +279,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
   const [isJudgeSidebarOpen, setIsJudgeSidebarOpen] = useState<boolean>(true);
   const [mobileJudgePane, setMobileJudgePane] = useState<'problem' | 'editor' | 'console'>('editor');
 
-  // Bottom tabs: 'custom_run' | 'judge_results' | 'history'
-  const [activeConsoleTab, setActiveConsoleTab] = useState<'custom_run' | 'judge_results' | 'history'>('custom_run');
+  // Bottom tabs: 'custom_run' | 'judge_results' | 'history' | 'trace'
+  const [activeConsoleTab, setActiveConsoleTab] = useState<'custom_run' | 'judge_results' | 'history' | 'trace'>('custom_run');
+  const [thoughtHistory, setThoughtHistory] = useState<ThoughtSnapshot[]>([]);
+  const lastThoughtCodeRef = React.useRef<string>('');
 
   // Custom Run state
   const [customInput, setCustomInput] = useState<string>(currentProblem.sampleCases[0]?.input || '');
@@ -259,6 +299,34 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
 
   // Submissions history
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>([]);
+
+  const recordThought = (eventLabel: string, verdictBadge?: string, overrideCode?: string) => {
+    const snapCode = overrideCode ?? code;
+    const charDelta = snapCode.length - lastThoughtCodeRef.current.length;
+    lastThoughtCodeRef.current = snapCode;
+    const snap: ThoughtSnapshot = {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      eventLabel,
+      verdictBadge,
+      language: judgeLang,
+      code: snapCode,
+      charDelta
+    };
+    setThoughtHistory((prev) => [...prev.slice(-24), snap]);
+  };
+
+  React.useEffect(() => {
+    if (viewMode !== 'judge') return;
+    setLiveWorkspaceContext({
+      subject: 'cs',
+      title: currentProblem.title,
+      summary: `Lang: ${judgeLang} · Difficulty: ${currentProblem.difficulty}${judgeVerdict ? ` · Verdict: ${judgeVerdict} (${judgeScore}/100)` : ''}`,
+      codeSnippet: code.slice(0, 1500),
+      language: judgeLang,
+      paramsSummary: customStderr ? customStderr.slice(0, 400) : undefined
+    });
+  }, [viewMode, currentProblem.title, currentProblem.difficulty, judgeLang, code, judgeVerdict, judgeScore, customStderr]);
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -332,6 +400,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
     setCustomOutput(res.stdout);
     setCustomStderr(res.stderr);
     setCustomRuntime(res.runtimeMs);
+    recordThought('Chạy thử', res.stderr ? 'ERR' : `${res.runtimeMs}ms`, code);
   };
 
   // Submit and Judge
@@ -345,6 +414,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
     setJudgeResults(result.results);
     setJudgeScore(result.score);
     setJudgeVerdict(result.verdict);
+    recordThought('Nộp bài', `${result.score}/100 · ${result.verdict}`, code);
 
     // Save submission
     const newSub: SubmissionRecord = {
@@ -603,6 +673,279 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
     void runLessonMistakeAnalysis(prob, curriculumLang, codeToJudge, result.score, result.results);
   };
 
+  const renderJudgeActionToolbar = (detached: boolean) => (
+    <div
+      className={`flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-slate-950 shrink-0 ${
+        detached ? 'border-b border-slate-800' : 'border-t border-slate-800'
+      }`}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => {
+            handleRunCustom();
+            setMobileJudgePane('console');
+          }}
+          disabled={isRunningCustom || isJudging}
+          className="sheen-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/60 text-slate-100 text-xs font-bold transition-colors disabled:opacity-50 whitespace-nowrap"
+        >
+          <Play className="w-3.5 h-3.5 text-sky-400" />
+          <span>{isRunningCustom ? 'Đang chạy...' : 'Chạy thử (Run)'}</span>
+        </button>
+
+        <button
+          onClick={() => {
+            handleSubmitCode();
+            setMobileJudgePane('console');
+          }}
+          disabled={isRunningCustom || isJudging}
+          className="cs-deck-btn sheen-btn flex items-center gap-1.5 px-4 py-1.5 rounded-[4px] bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold transition-all shadow disabled:opacity-50 whitespace-nowrap"
+        >
+          <Send className="w-3.5 h-3.5" />
+          <span>{isJudging ? 'Đang chấm...' : 'Nộp bài (Submit)'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveConsoleTab('trace');
+            setMobileJudgePane('console');
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-200 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer"
+        >
+          <Activity className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Trace 1-1</span>
+        </button>
+      </div>
+
+      {judgeScore !== null && (
+        <span
+          className={`text-xs font-mono font-bold tabular-nums ${
+            judgeScore === 100
+              ? 'text-emerald-400'
+              : judgeScore > 0
+              ? 'text-amber-400'
+              : 'text-rose-400'
+          }`}
+        >
+          {judgeVerdict} · {judgeScore}/100
+        </span>
+      )}
+    </div>
+  );
+
+  const renderJudgeConsole = (detached: boolean) => (
+    <div
+      className={`${
+        detached
+          ? mobileJudgePane === 'console'
+            ? 'flex min-h-[380px] h-[64vh] lg:h-[290px]'
+            : activeConsoleTab === 'trace'
+            ? 'hidden lg:flex h-[340px]'
+            : 'hidden lg:flex h-[280px]'
+          : mobileJudgePane === 'console'
+          ? 'flex-1 lg:flex-none lg:h-64'
+          : activeConsoleTab === 'trace'
+          ? 'hidden lg:flex lg:h-72'
+          : 'hidden lg:flex lg:h-52'
+      } ${detached ? '' : 'border-t border-slate-800'} bg-slate-950 flex-col shrink-0 overflow-hidden font-mono text-xs text-slate-100`}
+    >
+      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-slate-800 bg-slate-900 overflow-x-auto">
+        <button
+          onClick={() => setActiveConsoleTab('custom_run')}
+          className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
+            activeConsoleTab === 'custom_run'
+              ? 'bg-sky-600 text-white'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          Custom Test Stdin
+        </button>
+        <button
+          onClick={() => setActiveConsoleTab('judge_results')}
+          className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
+            activeConsoleTab === 'judge_results'
+              ? 'bg-emerald-600 text-white'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          Kết quả Chấm {judgeScore !== null ? `(${judgeScore}/100)` : ''}
+        </button>
+        <button
+          onClick={() => setActiveConsoleTab('trace')}
+          className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
+            activeConsoleTab === 'trace'
+              ? 'bg-cyan-600 text-white'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Activity className="w-3 h-3 inline mr-1" />
+          Trace &amp; Replay ({thoughtHistory.length})
+        </button>
+        <button
+          onClick={() => setActiveConsoleTab('history')}
+          className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
+            activeConsoleTab === 'history'
+              ? 'bg-sky-600 text-white'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          Lịch sử ({submissions.length})
+        </button>
+      </div>
+
+      <div className="flex-1 p-3 overflow-y-auto">
+        {activeConsoleTab === 'custom_run' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-full">
+            <div className="flex flex-col">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Input Stdin tùy chỉnh:
+              </div>
+              <textarea
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                className="flex-1 min-h-[110px] p-2.5 bg-[#131722] text-slate-100 font-mono text-xs rounded-[4px] focus:outline-none focus:border-sky-500 resize-none border border-slate-800"
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                <span>Output chương trình:</span>
+                {customRuntime !== null && (
+                  <span className="text-sky-400 font-mono tabular-nums">{customRuntime}ms</span>
+                )}
+              </div>
+              <div className="flex-1 min-h-[110px] p-2.5 bg-[#131722] text-slate-100 font-mono text-xs rounded-[4px] overflow-y-auto border border-slate-800">
+                {customStderr ? (
+                  <span className="text-rose-400">{customStderr}</span>
+                ) : customOutput ? (
+                  <span className="text-emerald-400 whitespace-pre">{customOutput}</span>
+                ) : (
+                  <span className="text-slate-500 italic">
+                    Bấm "Chạy thử (Run)" để xem kết quả xuất ra...
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeConsoleTab === 'judge_results' && (
+          <div className="space-y-2.5">
+            {judgeResults ? (
+              <>
+                <div className="flex items-center justify-between p-2.5 rounded-[4px] bg-[#131722] border border-slate-800">
+                  <span
+                    className={`text-xs font-bold ${
+                      judgeScore === 100
+                        ? 'text-emerald-400'
+                        : judgeScore && judgeScore > 0
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
+                    }`}
+                  >
+                    {judgeVerdict}
+                  </span>
+                  <span className="text-sm font-bold text-white tabular-nums">{judgeScore} / 100 Điểm</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {judgeResults.map((tr, tIdx) => (
+                    <div
+                      key={tIdx}
+                      className={`p-2 rounded-[4px] border text-[11px] font-mono space-y-1 ${
+                        tr.passed
+                          ? 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
+                          : 'bg-rose-500/10 border-rose-500/35 text-rose-400'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between font-bold gap-2">
+                        <span>
+                          Test #{tIdx + 1}
+                          {tr.difficulty ? ` · ${tr.difficulty}` : ''}
+                        </span>
+                        <span>{tr.passed ? 'ACCEPTED' : tr.status}</span>
+                      </div>
+                      {!tr.passed && (
+                        <div className="text-[10px] text-slate-200 truncate">
+                          Exp: {tr.expected.replace(/\n/g, ' ')} | Got: {tr.actual.replace(/\n/g, ' ')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-6 text-xs text-slate-500">
+                Bấm "Nộp bài (Submit)" để chấm điểm với bộ test tự động.
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeConsoleTab === 'history' && (
+          <div className="space-y-2">
+            {submissions.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400">
+                      <th className="py-1.5">Thời gian</th>
+                      <th>Bài</th>
+                      <th>Ngôn ngữ</th>
+                      <th>Điểm</th>
+                      <th>Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {submissions.map((sub) => (
+                      <tr key={sub.id} className="border-b border-slate-800/60 font-mono">
+                        <td className="py-1.5 text-slate-400 tabular-nums">{sub.submittedAt}</td>
+                        <td className="font-sans font-medium text-slate-100">{sub.problemTitle}</td>
+                        <td className="uppercase text-sky-400">{sub.language}</td>
+                        <td className="font-bold text-emerald-400 tabular-nums">{sub.score}/100</td>
+                        <td>
+                          <span
+                            className={`text-[11px] font-bold ${
+                              sub.status === 'Accepted'
+                                ? 'text-emerald-400'
+                                : 'text-rose-400'
+                            }`}
+                          >
+                            {sub.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-xs text-slate-500">
+                Chưa có lượt nộp bài nào.
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeConsoleTab === 'trace' && (
+          <div className="-m-3 h-full flex flex-col">
+            <LiveCodeTraceVisualizer
+              code={code}
+              language={judgeLang}
+              stdinInput={customInput}
+              isEn={isEn}
+              thoughtHistory={thoughtHistory}
+              onRestoreCode={(restored, lang) => {
+                setJudgeLang(lang);
+                setCode(restored);
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6 animate-fadeIn pb-20 overflow-x-hidden">
       {/* Header Banner */}
@@ -786,18 +1129,26 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                 <div>
                   <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
                     {selectedTrackId === 'vnoi'
-                      ? `Lộ Trình VNOI Roadmap (${CS_LESSONS.length} Bài Giảng Chuyên Đề)`
+                      ? isEn
+                        ? `VNOI Competitive Roadmap (${CS_LESSONS.length} Core Lessons)`
+                        : `Lộ Trình VNOI Roadmap (${CS_LESSONS.length} Bài Giảng Chuyên Đề)`
+                      : isEn
+                      ? activeSpecializedTrack?.titleEn
                       : activeSpecializedTrack?.title}
                   </h2>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                     {selectedTrackId === 'vnoi'
-                      ? 'Chọn lộ trình học tập phù hợp (VNOI Thi đấu, Chứng chỉ OpenEDG, Roadmap.sh, LearnCpp.com hoặc GitHub Career Track) và bấm vào bài học để thực hành.'
+                      ? isEn
+                        ? 'Choose a structured CS & C++ track (VNOI Competitive, OpenEDG Certification, Roadmap.sh, LearnCpp.com, or GitHub Career Track) and practice step by step.'
+                        : 'Chọn lộ trình học tập phù hợp (VNOI Thi đấu, Chứng chỉ OpenEDG, Roadmap.sh, LearnCpp.com hoặc GitHub Career Track) và bấm vào bài học để thực hành.'
+                      : isEn
+                      ? activeSpecializedTrack?.summaryEn
                       : activeSpecializedTrack?.summary}
                   </p>
                 </div>
               </div>
               <span className="text-xs font-mono text-slate-500 dark:text-slate-400 tabular-nums shrink-0">
-                5 Lộ trình Tin học &amp; C++
+                {isEn ? '5 CS & C++ Roadmaps' : '5 Lộ trình Tin học & C++'}
               </span>
             </div>
 
@@ -812,7 +1163,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-500/60'
                 }`}
               >
-                VNOI Roadmap ({CS_LESSONS.length} bài)
+                {isEn ? `VNOI Roadmap (${CS_LESSONS.length})` : `VNOI Roadmap (${CS_LESSONS.length} bài)`}
               </button>
               {CS_SPECIALIZED_TRACKS.map((track) => {
                 const isActive = selectedTrackId === track.id;
@@ -847,7 +1198,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-sky-500/60'
                   }`}
                 >
-                  Tất cả Phase ({CS_LESSONS.length})
+                  {isEn ? `All Phases (${CS_LESSONS.length})` : `Tất cả Phase (${CS_LESSONS.length})`}
                 </button>
                 {vnoiPhases.map((phase) => (
                   <button
@@ -912,7 +1263,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       {l.topic}
                     </p>
                     <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 rounded px-2.5 py-1.5 leading-snug">
-                      <span className="font-bold">Học xong làm được: </span>
+                      <span className="font-bold">{isEn ? 'Outcome: ' : 'Học xong làm được: '}</span>
                       {l.practiceProblem?.title || l.topic}
                     </div>
                   </div>
@@ -943,7 +1294,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     <div className="space-y-1.5">
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span className="font-bold text-sky-600 dark:text-sky-400">
-                          {activeSpecializedTrack.categoryLabel}
+                          {isEn ? activeSpecializedTrack.categoryLabelEn : activeSpecializedTrack.categoryLabel}
                         </span>
                         <span className="text-slate-400" aria-hidden="true">·</span>
                         <span className="font-mono text-slate-500 dark:text-slate-400">
@@ -951,20 +1302,24 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                         </span>
                         <span className="text-slate-400" aria-hidden="true">·</span>
                         <span className="text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">
-                          ~{activeSpecializedTrack.estimatedWeeks} tuần học
+                          ~{activeSpecializedTrack.estimatedWeeks} {isEn ? 'weeks' : 'tuần học'}
                         </span>
                       </div>
                       <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                        <strong className="text-slate-900 dark:text-white">Đối tượng: </strong>
-                        {activeSpecializedTrack.targetAudience}
+                        <strong className="text-slate-900 dark:text-white">
+                          {isEn ? 'Target Audience: ' : 'Đối tượng: '}
+                        </strong>
+                        {isEn ? activeSpecializedTrack.targetAudienceEn : activeSpecializedTrack.targetAudience}
                       </p>
                     </div>
 
                     <div className="min-w-[220px] space-y-1.5">
                       <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-slate-600 dark:text-slate-300">Tiến độ hoàn thành</span>
+                        <span className="text-slate-600 dark:text-slate-300">
+                          {isEn ? 'Completion Progress' : 'Tiến độ hoàn thành'}
+                        </span>
                         <span className="text-sky-600 dark:text-sky-400 tabular-nums">
-                          {doneStages}/{totalStages} chặng ({pct}%)
+                          {doneStages}/{totalStages} {isEn ? 'stages' : 'chặng'} ({pct}%)
                         </span>
                       </div>
                       <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -979,15 +1334,19 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               })()}
 
               {/* Stages Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
                 {activeSpecializedTrack.stages.map((stage) => {
                   const isDone = completedTrackStageIds.includes(stage.id);
+                  const isExpanded = expandedStageId === stage.id;
+                  const stageDetail = CS_TRACK_STAGE_DETAILS[stage.id];
                   const linkedLessons = CS_LESSONS.filter((l) => stage.linkedLessonIds.includes(l.id));
                   return (
                     <div
                       key={stage.id}
                       className={`sci-frame bg-white/95 dark:bg-slate-900/95 border rounded-md p-5 shadow-sm flex flex-col justify-between gap-4 transition-colors ${
-                        isDone
+                        isExpanded
+                          ? 'lg:col-span-2 border-sky-500 dark:border-sky-500'
+                          : isDone
                           ? 'border-emerald-400/70 dark:border-emerald-600/60'
                           : 'border-slate-200 dark:border-slate-800'
                       }`}
@@ -997,7 +1356,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                           <div className="space-y-1">
                             <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                               <span className="font-mono font-bold text-sky-600 dark:text-sky-400">
-                                Chặng {stage.stepNumber}
+                                {isEn ? `Stage ${stage.stepNumber}` : `Chặng ${stage.stepNumber}`}
                               </span>
                               <span className="text-slate-400" aria-hidden="true">·</span>
                               <span className="font-semibold text-indigo-600 dark:text-indigo-400">
@@ -1005,11 +1364,11 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                               </span>
                               <span className="text-slate-400" aria-hidden="true">·</span>
                               <span className="text-slate-500 dark:text-slate-400 tabular-nums">
-                                ~{stage.estimatedHours} giờ
+                                ~{stage.estimatedHours} {isEn ? 'hrs' : 'giờ'}
                               </span>
                             </div>
                             <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">
-                              {stage.title}
+                              {isEn ? stage.titleEn : stage.title}
                             </h3>
                           </div>
 
@@ -1023,17 +1382,17 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                             }`}
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>{isDone ? 'Đã xong' : 'Đánh dấu'}</span>
+                            <span>{isDone ? (isEn ? 'Done' : 'Đã xong') : (isEn ? 'Mark Done' : 'Đánh dấu')}</span>
                           </button>
                         </div>
 
                         <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                          {stage.description}
+                          {isEn ? stage.descriptionEn : stage.description}
                         </p>
 
                         <div className="space-y-1.5">
                           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Kiến thức trọng tâm
+                            {isEn ? 'Core Topics' : 'Kiến thức trọng tâm'}
                           </div>
                           <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-200">
                             {stage.topics.map((tp, idx) => (
@@ -1046,12 +1405,148 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                         </div>
 
                         <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 rounded px-3 py-2 leading-snug">
-                          <span className="font-bold">Mục tiêu đầu ra: </span>
-                          {stage.practiceGoal}
+                          <span className="font-bold">{isEn ? 'Exit Goal: ' : 'Mục tiêu đầu ra: '}</span>
+                          {isEn ? stage.practiceGoalEn : stage.practiceGoal}
                         </div>
+
+                        {/* Expandable Interactive Mini-Classroom: 30s Intuition, C++20 Sample, Common Pitfalls, Interactive Quiz */}
+                        {isExpanded && stageDetail && (
+                          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                            {/* 1. 30-Second Intuition */}
+                            <div className="rounded-[4px] bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200/80 dark:border-sky-900/60 p-3.5 space-y-1">
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                                <Zap className="w-3.5 h-3.5" />
+                                <span>{isEn ? '30-Second Intuition' : 'Hiểu nhanh bản chất trong 30 giây'}</span>
+                              </div>
+                              <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
+                                {isEn ? stageDetail.quickIntuitionEn : stageDetail.quickIntuition}
+                              </p>
+                            </div>
+
+                            {/* 2. Runnable C++20 Code Sample */}
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                  <Code2 className="w-4 h-4 text-indigo-500" />
+                                  <span>{isEn ? stageDetail.codeTitleEn : stageDetail.codeTitle}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => launchStageInSublime(stage.id, stageDetail.cppCode)}
+                                  className="px-2.5 py-1 rounded-[4px] bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                >
+                                  <Play className="w-3 h-3" />
+                                  <span>{isEn ? 'Run Sample in Sublime Studio' : 'Chạy Code mẫu trong Sublime Studio'}</span>
+                                </button>
+                              </div>
+                              <MonokaiCodeBlock code={stageDetail.cppCode} language="cpp" />
+                            </div>
+
+                            {/* 3. Common Pitfalls & Checkpoint Quiz */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                              {/* Common Mistakes */}
+                              <div className="rounded-[4px] bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/50 p-3.5 space-y-2">
+                                <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                                  {isEn ? 'Common Pitfalls to Avoid' : 'Lỗi hay gặp cần tránh'}
+                                </div>
+                                <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-200">
+                                  {(isEn ? stageDetail.commonMistakesEn : stageDetail.commonMistakes).map((err, i) => (
+                                    <li key={i} className="flex items-start gap-2">
+                                      <span className="text-amber-600 dark:text-amber-400 font-bold">!</span>
+                                      <span>{err}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+
+                              {/* Checkpoint Quiz (2 questions) */}
+                              <div className="rounded-[4px] bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-3.5 space-y-3">
+                                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center justify-between">
+                                  <span>{isEn ? 'Stage Self-Check Quiz' : 'Quiz kiểm tra chặng (+15 XP/câu)'}</span>
+                                </div>
+                                {stageDetail.checkpointQuiz.map((q, qIdx) => {
+                                  const selectedOpt = trackQuizSelections[q.id];
+                                  const isChecked = Boolean(trackQuizChecked[q.id]);
+                                  const isCorrect = selectedOpt === q.correctIndex;
+                                  const opts = isEn ? q.optionsEn : q.options;
+                                  return (
+                                    <div key={q.id} className="space-y-2 pb-2.5 border-b last:border-b-0 last:pb-0 border-slate-200 dark:border-slate-800">
+                                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+                                        {qIdx + 1}. {isEn ? q.questionEn : q.question}
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                        {opts.map((opt, optIdx) => {
+                                          const picked = selectedOpt === optIdx;
+                                          const rightOpt = optIdx === q.correctIndex;
+                                          let btnCls =
+                                            'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-sky-500';
+                                          if (isChecked) {
+                                            if (rightOpt) {
+                                              btnCls = 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 text-emerald-800 dark:text-emerald-200';
+                                            } else if (picked) {
+                                              btnCls = 'bg-rose-50 dark:bg-rose-950/50 border-rose-500 text-rose-800 dark:text-rose-200';
+                                            }
+                                          }
+                                          return (
+                                            <button
+                                              key={optIdx}
+                                              type="button"
+                                              onClick={() => handleCheckStageQuiz(q.id, optIdx, q.correctIndex)}
+                                              className={`text-left px-2.5 py-1.5 rounded-[4px] border text-[11px] font-medium transition-colors cursor-pointer ${btnCls}`}
+                                            >
+                                              {opt}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                      {isChecked && (
+                                        <div
+                                          className={`text-[11px] leading-relaxed flex items-start gap-1.5 ${
+                                            isCorrect
+                                              ? 'text-emerald-700 dark:text-emerald-300'
+                                              : 'text-amber-700 dark:text-amber-300'
+                                          }`}
+                                        >
+                                          {isCorrect ? (
+                                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                          ) : (
+                                            <XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                          )}
+                                          <span>{isEn ? q.explanationEn : q.explanation}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
+                        {stageDetail && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedStageId(isExpanded ? null : stage.id)}
+                            className={`px-2.5 py-1.5 rounded-[4px] border text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                              isExpanded
+                                ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white text-white dark:text-slate-900'
+                                : 'bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                            }`}
+                          >
+                            <Zap className="w-3 h-3" />
+                            <span>
+                              {isExpanded
+                                ? isEn
+                                  ? 'Hide Mini-Lesson'
+                                  : 'Thu gọn bài học'
+                                : isEn
+                                ? '30s Lesson & Quiz'
+                                : 'Bài học & Quiz (30s + C++20)'}
+                            </span>
+                          </button>
+                        )}
                         {linkedLessons.map((lesson) => (
                           <button
                             key={lesson.id}
@@ -1067,7 +1562,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                             className="px-2.5 py-1.5 rounded-[4px] bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                           >
                             <BookOpen className="w-3 h-3" />
-                            <span>Bài {lesson.lessonNumber}</span>
+                            <span>{isEn ? `Lesson ${lesson.lessonNumber}` : `Bài ${lesson.lessonNumber}`}</span>
                           </button>
                         ))}
                         {stage.linkedAlgoId && (
@@ -1079,16 +1574,16 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                             className="px-2.5 py-1.5 rounded-[4px] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                           >
                             <GitBranch className="w-3 h-3" />
-                            <span>Mô phỏng thuật toán</span>
+                            <span>{isEn ? 'Algorithm Visual' : 'Mô phỏng thuật toán'}</span>
                           </button>
                         )}
                         <button
                           type="button"
-                          onClick={() => navigate({ csViewMode: 'custom' })}
+                          onClick={() => launchStageInSublime(stage.id)}
                           className="ml-auto px-2.5 py-1.5 rounded-[4px] bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-300/70 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
                         >
                           <Sparkles className="w-3 h-3" />
-                          <span>Thực hành Sublime Studio</span>
+                          <span>{isEn ? 'Practice in Sublime Studio' : 'Thực hành Sublime Studio'}</span>
                         </button>
                       </div>
                     </div>
@@ -1904,20 +2399,20 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               ))}
             </div>
 
-            <div className={isJudgeFullscreen ? 'flex flex-1 min-h-0 overflow-hidden' : 'syn-conic-border shadow-xl'}>
+            <div className={isJudgeFullscreen ? 'flex flex-1 min-h-0 overflow-hidden' : `syn-conic-border shadow-xl ${mobileJudgePane === 'console' ? 'hidden lg:block' : ''}`}>
               {!isJudgeFullscreen && <div className="syn-conic-border-spin" aria-hidden="true" />}
               <div
                 className={`relative z-10 flex flex-1 min-h-0 overflow-hidden ${
                   isJudgeFullscreen
                     ? 'border-0 rounded-none bg-slate-950'
-                    : 'rounded-[5px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 min-h-[460px] sm:min-h-[560px] lg:h-[78vh]'
+                    : 'rounded-[5px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 min-h-[540px] sm:min-h-[600px] lg:h-[74vh]'
                 }`}
               >
                 {/* Left Column: Problem details & Sample cases */}
                 {(isJudgeSidebarOpen || mobileJudgePane === 'problem') && (
                   <div
                     className={`${
-                      mobileJudgePane === 'problem' ? 'flex w-full' : 'hidden lg:flex lg:w-[38%] xl:w-[35%]'
+                      mobileJudgePane === 'problem' ? 'flex w-full' : 'hidden lg:flex lg:w-[33%] xl:w-[30%]'
                     } ${
                       isJudgeFullscreen
                         ? 'bg-slate-950 border-r border-slate-800 text-slate-100'
@@ -2238,7 +2733,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                   <div className={`${mobileJudgePane === 'console' ? 'hidden lg:flex' : 'flex'} flex-1 flex-col min-h-0 overflow-hidden`}>
                     <SublimeEditor
                       value={code}
-                      onChange={setCode}
+                      onChange={(val) => {
+                        setCode(val);
+                        if (Math.abs(val.length - lastThoughtCodeRef.current.length) >= 25) {
+                          recordThought(judgeLang === 'python' ? 'Gõ Python' : 'Gõ C++', undefined, val);
+                        }
+                      }}
                       language={judgeLang}
                       tabs={[
                         { id: 'cpp', label: 'main.cpp', language: 'cpp', dirty: true },
@@ -2258,226 +2758,20 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                     />
                   </div>
 
-                  {/* Action Toolbar */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-slate-800 bg-slate-950 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          handleRunCustom();
-                          setMobileJudgePane('console');
-                        }}
-                        disabled={isRunningCustom || isJudging}
-                        className="sheen-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/60 text-slate-100 text-xs font-bold transition-colors disabled:opacity-50 whitespace-nowrap"
-                      >
-                        <Play className="w-3.5 h-3.5 text-sky-400" />
-                        <span>{isRunningCustom ? 'Đang chạy...' : 'Chạy thử (Run)'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          handleSubmitCode();
-                          setMobileJudgePane('console');
-                        }}
-                        disabled={isRunningCustom || isJudging}
-                        className="cs-deck-btn sheen-btn flex items-center gap-1.5 px-4 py-1.5 rounded-[4px] bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold transition-all shadow disabled:opacity-50 whitespace-nowrap"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>{isJudging ? 'Đang chấm...' : 'Nộp bài (Submit)'}</span>
-                      </button>
-                    </div>
-
-                    {judgeScore !== null && (
-                      <span
-                        className={`text-xs font-mono font-bold tabular-nums ${
-                          judgeScore === 100
-                            ? 'text-emerald-400'
-                            : judgeScore > 0
-                            ? 'text-amber-400'
-                            : 'text-rose-400'
-                        }`}
-                      >
-                        {judgeVerdict} · {judgeScore}/100
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Console Output Bar */}
-                  <div
-                    className={`${
-                      mobileJudgePane === 'console' ? 'flex-1 lg:flex-none lg:h-52' : 'hidden lg:flex lg:h-52'
-                    } border-t border-slate-800 bg-slate-950 flex-col shrink-0 overflow-hidden font-mono text-xs text-slate-100`}
-                  >
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-slate-800 bg-slate-900 overflow-x-auto">
-                      <button
-                        onClick={() => setActiveConsoleTab('custom_run')}
-                        className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
-                          activeConsoleTab === 'custom_run'
-                            ? 'bg-sky-600 text-white'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        }`}
-                      >
-                        Custom Test Stdin
-                      </button>
-                      <button
-                        onClick={() => setActiveConsoleTab('judge_results')}
-                        className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
-                          activeConsoleTab === 'judge_results'
-                            ? 'bg-emerald-600 text-white'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        }`}
-                      >
-                        Kết quả Chấm {judgeScore !== null ? `(${judgeScore}/100)` : ''}
-                      </button>
-                      <button
-                        onClick={() => setActiveConsoleTab('history')}
-                        className={`px-2.5 py-1 text-[11px] font-bold rounded-[4px] transition-all shrink-0 whitespace-nowrap ${
-                          activeConsoleTab === 'history'
-                            ? 'bg-sky-600 text-white'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        }`}
-                      >
-                        Lịch sử ({submissions.length})
-                      </button>
-                    </div>
-
-                    <div className="flex-1 p-3 overflow-y-auto">
-                      {activeConsoleTab === 'custom_run' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-full">
-                          <div className="flex flex-col">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                              Input Stdin tùy chỉnh:
-                            </div>
-                            <textarea
-                              value={customInput}
-                              onChange={(e) => setCustomInput(e.target.value)}
-                              className="flex-1 min-h-[84px] p-2.5 bg-[#131722] text-slate-100 font-mono text-xs rounded-[4px] focus:outline-none focus:border-sky-500 resize-none border border-slate-800"
-                            />
-                          </div>
-
-                          <div className="flex flex-col">
-                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                              <span>Output chương trình:</span>
-                              {customRuntime !== null && (
-                                <span className="text-sky-400 font-mono tabular-nums">{customRuntime}ms</span>
-                              )}
-                            </div>
-                            <div className="flex-1 min-h-[84px] p-2.5 bg-[#131722] text-slate-100 font-mono text-xs rounded-[4px] overflow-y-auto border border-slate-800">
-                              {customStderr ? (
-                                <span className="text-rose-400">{customStderr}</span>
-                              ) : customOutput ? (
-                                <span className="text-emerald-400 whitespace-pre">{customOutput}</span>
-                              ) : (
-                                <span className="text-slate-500 italic">
-                                  Bấm "Chạy thử (Run)" để xem kết quả xuất ra...
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {activeConsoleTab === 'judge_results' && (
-                        <div className="space-y-2.5">
-                          {judgeResults ? (
-                            <>
-                              <div className="flex items-center justify-between p-2.5 rounded-[4px] bg-[#131722] border border-slate-800">
-                                <span
-                                  className={`text-xs font-bold ${
-                                    judgeScore === 100
-                                      ? 'text-emerald-400'
-                                      : judgeScore && judgeScore > 0
-                                      ? 'text-amber-400'
-                                      : 'text-rose-400'
-                                  }`}
-                                >
-                                  {judgeVerdict}
-                                </span>
-                                <span className="text-sm font-bold text-white tabular-nums">{judgeScore} / 100 Điểm</span>
-                              </div>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                {judgeResults.map((tr, tIdx) => (
-                                  <div
-                                    key={tIdx}
-                                    className={`p-2 rounded-[4px] border text-[11px] font-mono space-y-1 ${
-                                      tr.passed
-                                        ? 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
-                                        : 'bg-rose-500/10 border-rose-500/35 text-rose-400'
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between font-bold gap-2">
-                                      <span>
-                                        Test #{tIdx + 1}
-                                        {tr.difficulty ? ` · ${tr.difficulty}` : ''}
-                                      </span>
-                                      <span>{tr.passed ? 'ACCEPTED' : tr.status}</span>
-                                    </div>
-                                    {!tr.passed && (
-                                      <div className="text-[10px] text-slate-200 truncate">
-                                        Exp: {tr.expected.replace(/\n/g, ' ')} | Got: {tr.actual.replace(/\n/g, ' ')}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="text-center py-6 text-xs text-slate-500">
-                              Bấm "Nộp bài (Submit)" để chấm điểm với bộ test tự động.
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {activeConsoleTab === 'history' && (
-                        <div className="space-y-2">
-                          {submissions.length > 0 ? (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left text-xs">
-                                <thead>
-                                  <tr className="border-b border-slate-800 text-slate-400">
-                                    <th className="py-1.5">Thời gian</th>
-                                    <th>Bài</th>
-                                    <th>Ngôn ngữ</th>
-                                    <th>Điểm</th>
-                                    <th>Trạng thái</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {submissions.map((sub) => (
-                                    <tr key={sub.id} className="border-b border-slate-800/60 font-mono">
-                                      <td className="py-1.5 text-slate-400 tabular-nums">{sub.submittedAt}</td>
-                                      <td className="font-sans font-medium text-slate-100">{sub.problemTitle}</td>
-                                      <td className="uppercase text-sky-400">{sub.language}</td>
-                                      <td className="font-bold text-emerald-400 tabular-nums">{sub.score}/100</td>
-                                      <td>
-                                        <span
-                                          className={`text-[11px] font-bold ${
-                                            sub.status === 'Accepted'
-                                              ? 'text-emerald-400'
-                                              : 'text-rose-400'
-                                          }`}
-                                        >
-                                          {sub.status}
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          ) : (
-                            <div className="text-center py-6 text-xs text-slate-500">
-                              Chưa có lượt nộp bài nào.
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  {/* Action Toolbar & Console docked inside right column when Fullscreen */}
+                  {isJudgeFullscreen && renderJudgeActionToolbar(false)}
+                  {isJudgeFullscreen && renderJudgeConsole(false)}
                 </div>
               </div>
             </div>
+
+            {/* BELOW CODE EDITOR (Normal mode): Dedicated Action Toolbar + Input/Output & Console */}
+            {!isJudgeFullscreen && (
+              <div className="mt-3 rounded-[5px] border border-slate-200 dark:border-slate-800 bg-slate-950 shadow-xl overflow-hidden">
+                {renderJudgeActionToolbar(true)}
+                {renderJudgeConsole(true)}
+              </div>
+            )}
           </div>
         </ViewportPortal>
       )}
@@ -2489,6 +2783,8 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
         <SublimeStudio
           onScoreEarned={onScoreEarned}
           onBack={goBack}
+          initialPreset={sublimePreset}
+          onPresetConsumed={() => setSublimePreset(null)}
         />
       )}
 

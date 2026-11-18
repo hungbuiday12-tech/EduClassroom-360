@@ -129,7 +129,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   }, []);
 
   const handleEnterSynapseV2 = () => {
-    navigate({ subject: 'synapse_v2', tutorOpen: false });
+    navigate({ subject: 'synapse_v2', futureTab: 'hub', synapseMode: 'catalog', tutorOpen: false });
     onEnterAsGuest();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -304,46 +304,46 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     }
   > = {
     synapse_v2: {
-      label: isEn ? 'Synapse Pre · 30 Worlds' : 'Synapse Pre · Đại công trình',
-      badge: isEn ? '30 Interactive 3D Megastructures' : '30 Đại Công Trình Tương Lai 3D',
+      label: isEn ? 'Synapse Pre · 30 Worlds & Labs' : 'Synapse Pre · Công trình & Lab',
+      badge: isEn ? '30 3D Chambers · QR Sensor · 28K GPU Sandbox' : '30 Đại Công Trình · Cảm Biến QR · Hộp Cát 28K',
       headline: isEn
-        ? 'Synapse Pre: 30 Futuristic 3D Megastructures & Next-Gen AI Labs'
-        : 'Synapse Pre: 30 Đại Công Trình Tương Lai & Phòng Lab AI 3D',
+        ? 'Synapse Pre: 30 Megastructures, QR Phone Sensor Lab & Dual-Hand 28K GPU Sandbox'
+        : 'Synapse Pre: 30 Đại Công Trình, Cảm Biến Điện Thoại QR & Hộp Cát Hạt 28K GPU',
       summary: isEn
-        ? 'Step inside 30 real-time 3D scientific chambers with live formulas: CERN LHC, Double-Slit Laser, James Webb, Dyson Black Hole, Tokamak Fusion, LiDAR SLAM, 7T MRI, Sagnac Gyro, Acoustic Levitation & Photonic Tensor Core.'
-        : 'Khám phá 30 không gian 3D tương tác trực tiếp cùng công thức: Máy gia tốc CERN LHC, Laser Khe kép, Kính James Webb, Hố đen Dyson, Lò Tokamak, LiDAR SLAM, MRI 7T, Con quay Sagnac & Chip quang tử.',
+        ? 'Pair your smartphone via QR WebSocket to plot real-time accelerometer oscillations, sculpt 28,000 GPU particles with both hands, and explore 30 WebGL chambers (CERN LHC, James Webb, Dyson Black Hole, Tokamak).'
+        : 'Quét mã QR bằng điện thoại truyền cảm biến thật vào Dao động ký đôi, điều khiển 28.000 hạt lực trường GPU bằng 2 tay cùng 30 Đại công trình WebGL (LHC, James Webb, Dyson, Tokamak) & Quét Nháp AI.',
       highlights: isEn
         ? [
-            '30 holographic chambers across Physics, Space, AI & Math',
-            'Real-time Three.js WebGL controls & live equations',
-            'Instant launch directly inside any observatory chamber',
+            'Phone Sensor QR Lab (WebSocket Oscilloscope + CSV export)',
+            'Dual-Hand 28,000 GPU Particle Field Sandbox (Gravity/Lorentz)',
+            '30 holographic 3D chambers + Text-to-Sim & Paper-to-Sim Vision',
           ]
         : [
-            '30 phòng thí nghiệm 3D Vật lí, Vũ trụ, Tin học & Toán',
-            'Điều chỉnh thông số & công thức trực tiếp trong WebGL',
-            'Chuyển cảnh mượt, tối ưu FPS theo cấu hình máy',
+            'Cảm biến Điện thoại QR truyền dữ liệu thật lên Oscilloscope & xuất CSV',
+            'Hộp cát Hạt Lực Trường 2 Tay GPU 28.000 hạt (60 FPS)',
+            '30 phòng thí nghiệm 3D + Sinh Mô Phỏng AI & Giấy Nháp → Sim',
           ],
       accentClass: 'text-sky-600 dark:text-sky-300 border-sky-500/30 bg-sky-500/10',
     },
     spatial_3d: {
-      label: isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D',
-      badge: isEn ? '10-Fingertip AI Sensor' : 'Cảm biến Webcam 10 ngón',
+      label: isEn ? 'Spatial 3D & WebAR Pro' : 'Học 3D & AR Bàn Học Pro',
+      badge: isEn ? '10-Finger AI · WebAR Desk Pro' : '10 Ngón Tay · WebAR Bàn Học Pro',
       headline: isEn
-        ? 'Control 6 2D Geometry Labs & 15 Advanced 3D Models Using Your Real Hands'
-        : 'Điều Khiển 6 Xưởng Hình Học 2D & 15 Mô Hình 3D Tiên Tiến Bằng 10 Đầu Ngón Tay',
+        ? 'WebAR Desk Hologram Pro, 6 2D Geometry Labs & 15 Realistic 3D Models by Hand'
+        : 'WebAR Bàn Học Pro (Cam Sau/Cắt Lớp/Chụp PNG) & 15 Mô Hình 3D 10 Ngón Tay',
       summary: isEn
-        ? 'Strict 5-finger per hand MediaPipe tracking locks circular pins directly onto your fingertips. Customize sensitivity, 1-hand or dual-hand interaction modes, and sculpt 2D geometry or 3D turbines & robot arms.'
-        : 'AI chỉ nhận diện đúng 10 đầu ngón tay chống nhảy loạn. Tự do chỉnh độ nhạy, phương thức 1/2 tay để dựng 6 xưởng 2D (Euler, Compa, Vector, Conic) và xoay 15 mô hình 3D thực tế (Động cơ phản lực, Robot IK, Hầm gió).',
+        ? 'Strict 10-fingertip tracking projects 3D holograms directly onto your real desk with front/rear cam switch, opacity slider, desk-tilt calibration, live Y-slicing, PNG snapshot & Point & Ask Live Co-Pilot.'
+        : 'Chiếu mô hình trực tiếp lên bàn học thật với Camera Trước/Sau, chỉnh độ mờ Alpha, nghiêng bàn, mặt cắt Y trực tiếp, chụp PNG và Point & Ask Mắt Thần điều khiển 10 đầu ngón tay.',
       highlights: isEn
         ? [
-            'Locked 10-fingertip tracking with zero random jumps',
-            '6 2D Geometry Workshops + 15 Kinetic 3D Models',
-            'Custom sensitivity sliders & per-gesture action mapping',
+            'WebAR Pro: Rear/Front cam, opacity, desk tilt, Y-slice & PNG capture',
+            'Locked 10-fingertip tracking across 6 2D + 15 Kinetic 3D Models',
+            'Point & Ask Live Vision Co-Pilot + AI Free-Creation Model Upload',
           ]
         : [
-            'Gắn chặt điểm tròn lên đúng 10 đầu ngón tay chống loạn',
-            '6 Xưởng Hình học 2D + 15 Mô hình 3D thực tế sáng tạo',
-            'Tùy chỉnh độ nhạy, chế độ tay & nút tính năng theo ý thích',
+            'AR Bàn Học Pro: Đổi Cam Sau/Trước, Alpha, Nghiêng bàn, Cắt Y & Lưu PNG',
+            'Nhận diện chuẩn 10 đầu ngón tay cho 6 xưởng 2D + 15 mô hình 3D',
+            'Point & Ask Mắt Thần AI + Tự upload ảnh/ý tưởng dựng 3D tự do',
           ],
       accentClass: 'text-teal-600 dark:text-teal-300 border-teal-500/30 bg-teal-500/10',
     },
@@ -394,50 +394,50 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       accentClass: 'text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10',
     },
     cs: {
-      label: isEn ? 'CS 5 Roadmaps & IDE' : 'Tin Học · 5 Lộ Trình',
+      label: isEn ? 'CS · Trace & 5 Roadmaps' : 'Tin Học · Trace & 5 Lộ Trình',
       badge: isEn
-        ? `5 CS Roadmaps (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++) · 16 Algos`
-        : `5 Lộ trình Tin (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++) · 16 Thuật toán`,
+        ? `5 Roadmaps · Code Trace 1-1 & Thought Replay`
+        : `5 Lộ trình · Truy vết 1-1 & Replay Tư Duy`,
       headline: isEn
-        ? '5 Complete CS Roadmaps, Sublime Text 4 Studio & Online Judge'
-        : '5 Lộ Trình Tin Học Toàn Diện, IDE Sublime Text 4 & Online Judge',
+        ? '5 Complete CS Roadmaps, Sublime 4, Live Code-to-Animation Trace & Thought Replay'
+        : '5 Lộ Trình Tin Học, IDE Sublime 4, Truy Vết Biến Từng Dòng & Replay Tư Duy',
       summary: isEn
-        ? 'Master VNOI Competitive Programming alongside 4 international C++ tracks (OpenEDG CPE/CPA/CPP, Roadmap.sh C++, LearnCpp Modern C++20/23 & GitHub Systems), full Sublime Text 4 menus, auto test-gen, and 16 visualizers.'
-        : 'Đầy đủ VNOI Thi đấu + 4 lộ trình C++ Quốc tế (OpenEDG CPE/CPA/CPP, Roadmap.sh, LearnCpp Modern C++20/23 & GitHub C++ Career). Menu Sublime Text 4, gửi đề Ảnh/Ctrl+V/Giọng nói sinh test ẩn & 16 đồ thị thuật toán.',
+        ? 'Master VNOI + 4 international C++ tracks, compile real C++20/Python 3 with TLE/File I/O modes, animate variables & arrays line-by-line (Code-to-Animation Trace), and scrub Thought-Trace Replay snapshots.'
+        : 'Đủ VNOI + 4 lộ trình C++ Quốc tế, biên dịch g++/Python thật có TLE & File I/O, hoạt hình hóa giá trị biến/mảng từng dòng lệnh (Code-to-Animation Trace) và tua lại quá trình sửa lỗi WA → AC.',
       highlights: isEn
         ? [
-            `5 Roadmaps: VNOI (${CS_LESSONS.length}) + OpenEDG, Roadmap.sh, LearnCpp & GitHub (${csSpecializedStageCount} stages)`,
-            'Full Sublime menus: 60-step Undo/Redo, Find & Replace, Snippets & 16 Algo graphs',
-            'Upload problem via Image / Ctrl+V / Voice for instant AI test grading',
+            'Live Code-to-Animation Trace (Python sys.settrace & C++ g++ trace)',
+            'Thought-Trace Replay timeline (restore past code snapshots anytime)',
+            `5 Roadmaps (${CS_LESSONS.length}+${csSpecializedStageCount}), Sublime 4 & 16 Algo graphs`,
           ]
         : [
-            `5 Lộ trình: VNOI (${CS_LESSONS.length} bài) + OpenEDG, Roadmap.sh, LearnCpp & GitHub (${csSpecializedStageCount} chặng)`,
-            'IDE Sublime Text 4 + 16 mô phỏng thuật toán (Oxy, Xâu, DP, Dijkstra...)',
-            'Nhận đề bằng Ảnh / Ctrl+V / Giọng nói & chấm test ẩn tự động',
+            'Truy vết từng dòng Code-to-Animation (biến, mảng DP, stdout tức thì)',
+            'Replay Tư Duy lưu mọi mốc gõ/chạy/chấm & khôi phục tức thì',
+            `5 Lộ trình (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++), Sublime 4 & 16 Đồ thị`,
           ],
       accentClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
     },
     exams: {
       label: isEn ? `${totalExams} Exams & Syn AI` : `${totalExams} Đề Thi & Syn AI`,
       badge: isEn
-        ? `${chuyenExams} Spec · ${khongChuyenExams} Std · Fast Upload`
-        : `${chuyenExams} Chuyên · ${khongChuyenExams} THPT · Tải Đề Nhanh`,
+        ? `${chuyenExams} Spec · Live Co-Pilot · Syn Reel Video`
+        : `${chuyenExams} Chuyên · Mắt Thần AI · Video Syn Reel`,
       headline: isEn
-        ? `${totalExams} Exam Bank + Drag-Drop / Ctrl+V / Voice & Syn AI`
-        : `Kho ${totalExams} Đề Thi + Nộp Ảnh/Dán Ctrl+V/Giọng Nói & Syn AI`,
+        ? `${totalExams} Exam Bank + Live Vision Co-Pilot (Barge-In) & Syn Reel 3B1B Studio`
+        : `Kho ${totalExams} Đề Thi + Syn AI Mắt Thần (Ngắt Lời Voice) & Dựng Video 3B1B`,
       summary: isEn
-        ? 'Drop an exam photo, paste via Ctrl+V, or dictate via Voice Recognition to solve or launch a timed exam room immediately. Includes AI handwritten scoring (0–10) and Syn AI (Syn Math, Syn Physics, Syn Code).'
-        : 'Kéo-thả ảnh, dán Ctrl+V hoặc đọc đề bằng Giọng nói để AI giải ngay hoặc tạo phòng thi bấm giờ. Nộp ảnh bài làm viết tay cho AI chấm điểm 0–10 và hỏi đáp cùng Syn AI (Syn Math · Syn Physics · Syn Code).',
+        ? 'Grade handwritten solutions via photo (0–10), ask Syn AI (Math/Physics/Code) via Live Screen/Canvas Vision with instant Voice Barge-In, or generate 16:9 3Blue1Brown Motion Reels (.webm export).'
+        : 'Chấm ảnh bài viết tay 0–10, hỏi 3 AI bằng Mắt Thần (xem màn hình/canvas + ngắt lời giọng nói tức thì), hoặc dựng Video giải thích 3Blue1Brown (Syn Reel) xuất file .webm ngay trong Syn AI.',
       highlights: isEn
         ? [
-            `Complete ${totalExams} papers (Specialized/Olympic & THPT)`,
-            'Fast upload: Drag & Drop, Ctrl+V Paste, Voice Recognition Mic',
-            'Handwritten photo AI grading (0–10) & Syn AI (Ctrl+D/F/G)',
+            'Live Voice + Screen/Canvas Vision Co-Pilot across all 3 Syn AIs',
+            'Syn Reel Mini-Chat: 5-scene 3B1B Math/Physics Video (.webm)',
+            `Complete ${totalExams} official exams + Drag-Drop / Ctrl+V / Voice upload`,
           ]
         : [
-            `Đủ ${totalExams} đề Toán · Lí · Tin (Chuyên & Không chuyên)`,
-            'Tải đề siêu tốc: Kéo thả ảnh, dán Ctrl+V, Giọng nói Micro',
-            'Chấm bài viết tay 0–10 & Syn AI giọng nói (Ctrl+D/F/G)',
+            'Mắt Thần Live Co-Pilot xem màn hình/canvas + Voice Ngắt lời ở cả 3 AI',
+            'Syn Reel Mini-Chat: dựng Video 3B1B giải Toán/Lí & xuất .webm',
+            `Đủ ${totalExams} đề Toán · Lí · Tin + Kéo thả/Ctrl+V/Giọng nói`,
           ],
       accentClass: 'text-teal-600 dark:text-teal-400 border-teal-500/30 bg-teal-500/10',
     },
@@ -775,21 +775,20 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               {isEn ? (
                 <>
                   Complete Grades 9–12 &amp; Olympiad STEM workspace featuring{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">30 Synapse Pre megastructures</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">10-fingertip webcam 2D/3D labs</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">5 Physics simulation domains</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Sublime Text 4 Judge</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Syn AI (Syn Math · Syn Physics · Syn Code)</strong> and{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (30 3D worlds · QR Phone Sensor Lab · Dual-Hand 28K GPU Sandbox)</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">WebAR Desk Pro 10-finger labs</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">5 Physics domains</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Sublime 4 Code-to-Animation Trace</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Live Vision + Barge-In Syn AI &amp; Syn Reel 3B1B Video</strong>, and{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">{totalExams} official exams</strong>.
                 </>
               ) : (
                 <>
                   Hệ sinh thái học tập toàn diện cho học sinh THCS, THPT &amp; Đội tuyển Chuyên: tích hợp{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (30 Đại công trình tương lai &amp; AI Lab)</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Học cảm giác 3D bằng 10 đầu ngón tay</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">5 chuyên đề Mô phỏng Vật lí</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">IDE Sublime Text 4</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Syn AI (Syn Math · Syn Physics · Syn Code)</strong> cùng kho{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (30 Đại công trình 3D · Cảm biến Điện thoại QR · Hộp cát Hạt GPU 28K)</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">AR Bàn Học Pro 10 ngón tay</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">IDE Sublime 4 Truy vết Code 1-1 &amp; Replay Tư Duy</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Syn AI Mắt Thần (Ngắt lời Voice &amp; Video 3B1B Syn Reel)</strong> cùng{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">{totalLessons} bài giảng &amp; {totalExams} đề thi</strong>.
                 </>
               )}
@@ -1008,10 +1007,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       </span>
                       <div className="min-w-0">
                         <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
-                          {isEn ? 'Synapse 2.0 · 30 3D Mega-Models' : 'Synapse 2.0 · 30 Đại Công Trình 3D'}
+                          {isEn ? 'Synapse Pre · QR Sensor & 28K GPU' : 'Synapse Pre · Cảm Biến QR & GPU 28K'}
                         </div>
                         <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-sky-100/90">
-                          {isEn ? '360° WebGL · Live Math & Physics' : 'WebGL 360° · Tương tác thông số sống'}
+                          {isEn ? '30 3D Worlds · Real Phone Telemetry' : '30 Công Trình 3D · Hộp Cát Hạt 2 Tay'}
                         </div>
                       </div>
                     </div>
@@ -1019,8 +1018,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </div>
                   <p className="text-[11px] leading-relaxed text-sky-50/90">
                     {isEn
-                      ? 'Inspect solar systems, RLC circuits, 3D geometry & 107 Physics labs with real-time sliders.'
-                      : 'Xoay 360° Hệ Mặt Trời, mạch RLC, hình học Oxyz & kho 107 mô phỏng Vật lí có đồ thị trực tiếp.'}
+                      ? 'Stream phone accelerometer via QR WebSocket, sculpt 28,000 GPU particles & inspect 30 3D worlds.'
+                      : 'Quét QR truyền cảm biến điện thoại thật, chơi 28.000 hạt lực trường GPU & xoay 30 đại công trình 3D.'}
                   </p>
                 </button>
 
@@ -1037,10 +1036,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       </span>
                       <div className="min-w-0">
                         <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
-                          {isEn ? '3D Hand Lab & AI Sandbox' : 'Học Cảm Giác 3D Bằng Tay (AI)'}
+                          {isEn ? 'WebAR Desk Pro & 10-Finger 3D' : 'AR Bàn Học Pro & Cảm Giác 3D'}
                         </div>
                         <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-100/90">
-                          {isEn ? '10-Finger Tracking · 6 2D + 15 3D' : 'Webcam 10 ngón · 6 2D + 15 3D + Tạo AI'}
+                          {isEn ? 'Rear Cam · Slice Y · PNG Snapshot' : 'Cam Sau · Cắt Lớp Y · Chụp Ảnh AR'}
                         </div>
                       </div>
                     </div>
@@ -1048,8 +1047,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </div>
                   <p className="text-[11px] leading-relaxed text-emerald-50/90">
                     {isEn
-                      ? 'Pinch, rotate & grab 3D models via webcam or upload your own sketch for AI to build.'
-                      : 'Cầm nắm, xoay phóng mô hình bằng cử chỉ tay hoặc gửi ý tưởng/ảnh để AI dựng mô hình tự do.'}
+                      ? 'Project 3D holograms onto your real desk, calibrate tilt & Y-slice, save PNG & ask AI with Point & Ask.'
+                      : 'Chiếu mô hình lên bàn học thật với Cam sau, độ mờ, mặt cắt Y & Point & Ask Mắt Thần AI.'}
                   </p>
                 </button>
 
@@ -2513,21 +2512,21 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors">
-                    {isEn ? 'Synapse Pre · 30 Megastructures' : 'Synapse Pre · 30 Đại Công Trình Tương Lai'}
+                    {isEn ? 'Synapse Pre · 30 Worlds, QR Sensor & 28K GPU' : 'Synapse Pre · 30 Công Trình, Cảm Biến QR & GPU 28K'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'CERN LHC, Double-Slit Laser, James Webb, Dyson Black Hole, Tokamak Fusion, LiDAR SLAM, 7T MRI Ring, Sagnac Gyro, Metamaterial Cloak & Photonic Chip.'
-                      : '30 không gian 3D tương tác trực tiếp: LHC, Laser khe kép, James Webb, Hố đen Dyson, Tokamak, LiDAR SLAM, MRI 7T, Con quay Sagnac, Áo tàng hình & Chip quang tử.'}
+                      ? 'Pair your phone via QR WebSocket Oscilloscope, control 28,000 dual-hand GPU force-field particles, plus 30 3D Megastructures, 3D Galaxy, Text-to-Sim, Paper-to-Sim & FFT 3D.'
+                      : 'Kết nối điện thoại qua QR WebSocket đo gia tốc trên Dao động ký đôi, điều khiển 28.000 hạt lực trường GPU bằng 2 tay cùng 30 Đại công trình 3D, Sinh Mô Phỏng AI & Quét Giấy Nháp.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                      <span>{isEn ? 'Live formula tuning inside 3D chambers' : 'Chỉnh thông số & công thức sống trong 3D'}</span>
+                      <span>{isEn ? 'Phone Sensor QR Lab + 28K GPU Particle Sandbox' : 'Cảm biến Điện thoại QR + Hộp cát Hạt GPU 28.000 hạt'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                      <span>{isEn ? 'Physics · Space · CS · Pure Math' : 'Đủ 4 nhóm: Vật lí, Vũ trụ, Vi tính & Toán'}</span>
+                      <span>{isEn ? '30 3D Megastructures + Paper/Text-to-Sim AI' : '30 Đại công trình 3D + Sinh Mô Phỏng từ Chữ & Ảnh'}</span>
                     </li>
                   </ul>
                 </div>
@@ -2539,7 +2538,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Launch 30 3D Worlds' : 'Mở 30 Đại công trình 3D'}</span>
+                  <span>{isEn ? 'Launch Synapse Pre Lab' : 'Mở Synapse Pre & Lab Mới'}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -2566,21 +2565,21 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-300 transition-colors">
-                    {isEn ? 'Spatial 3D · 10-Fingertip Webcam' : 'Học Cảm Giác 3D · Cảm Biến 10 Ngón Tay'}
+                    {isEn ? 'WebAR Desk Pro & 10-Finger 3D' : 'WebAR Bàn Học Pro & Cảm Biến 10 Ngón Tay'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Strict 10-fingertip webcam lock with zero jumping. Build 6 2D labs + "Tự do tạo" freehand geometry canvas, explode & pinch-reassemble (4 fingers) 15 realistic 3D models.'
-                      : 'Nhận diện cố định 10 đầu ngón tay chống loạn. 6 xưởng 2D + bảng "Tự do tạo" vẽ tay tự do; 15 mô hình 3D tách cấu trúc, chọn từng bộ phận bằng 2 ngón & ghép lại với 4 ngón tay.'}
+                      ? 'Project 3D holograms onto your real desk (rear/front cam switch, opacity slider, tilt, Y-slice & PNG capture), sculpt 6 2D + 15 3D models by hand, plus Point & Ask Live Co-Pilot.'
+                      : 'Chiếu mô hình lên bàn học thật với Camera Trước/Sau, chỉnh độ mờ, nghiêng mặt bàn, cắt lớp Y & lưu ảnh PNG; điều khiển 6 xưởng 2D + 15 mô hình 3D bằng 10 đầu ngón tay + Point & Ask.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                      <span>{isEn ? 'Explode layers, inspect parts & 4-finger reassemble' : 'Tách lớp, soi chi tiết bộ phận & ghép lại bằng 4 ngón'}</span>
+                      <span>{isEn ? 'AR Desk Pro: Rear cam, Y-slice, PNG capture & reticle' : 'AR Bàn Học Pro: Đổi Cam sau, mặt cắt Y & chụp ảnh PNG'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                      <span>{isEn ? 'Freehand 2D drawing + mouse/touch fallback' : 'Tự do tạo hình học 2D & kéo chuột mượt khi tắt cam'}</span>
+                      <span>{isEn ? 'Freehand 2D/3D + AI upload + mouse/touch fallback' : 'Tự do tạo hình + Upload AI + kéo chuột mượt'}</span>
                     </li>
                   </ul>
                 </div>
@@ -2592,7 +2591,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Open Spatial 3D Lab' : 'Vào Học cảm giác 3D'}</span>
+                  <span>{isEn ? 'Open Spatial 3D & AR Pro' : 'Vào Học 3D & AR Bàn Học Pro'}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -2742,25 +2741,25 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
-                    {isEn ? '5 CS Roadmaps · Sublime 4 & 16 Algos' : 'Tin Học 5 Lộ Trình & Sublime 4 IDE'}
+                    {isEn ? '5 CS Roadmaps · Sublime 4 & Trace 1-1' : 'Tin Học 5 Lộ Trình · Trace 1-1 & Replay Tư Duy'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? '5 curated roadmaps (VNOI CP + OpenEDG, Roadmap.sh, LearnCpp & GitHub C++ Career), Monokai Sublime Text 4 IDE, Online Judge with auto test generation, and 16 interactive algorithm graphs.'
-                      : 'Đủ 5 lộ trình chuẩn (VNOI Thi đấu + OpenEDG CPE/CPA/CPP, Roadmap.sh, LearnCpp Modern C++ & GitHub C++ Career), trình code Sublime Text 4 Monokai, Online Judge & 16 đồ thị thuật toán.'}
+                      ? '5 curated roadmaps, Monokai Sublime 4 IDE, C++20/Python 3 Judge with Live Code-to-Animation Tracer (variable/array animation), Thought-Trace Replay & 16 algorithm graphs.'
+                      : '5 lộ trình chuẩn (VNOI + OpenEDG, Roadmap.sh, LearnCpp & GitHub C++), IDE Sublime Text 4, Truy vết Biến từng dòng (Code-to-Animation Trace) & Replay Tư Duy WA → AC.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                       <span>
                         {isEn
-                          ? `5 Roadmaps: ${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++ stages`
-                          : `5 Lộ trình: ${CS_LESSONS.length} bài VNOI + ${csSpecializedStageCount} chặng C++ Quốc tế`}
+                          ? 'Live Code Trace 1-1 & Thought-Trace Replay'
+                          : 'Truy vết biến & mảng DP từng dòng + Replay Tư Duy'}
                       </span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span>{isEn ? '16 interactive algorithm graphs + AI debug' : '16 đồ thị chạy từng bước + Sinh test ẩn bằng ảnh/giọng nói'}</span>
+                      <span>{isEn ? '5 Roadmaps + 16 Algo Graphs + AI test generator' : '5 Lộ trình + 16 Đồ thị thuật toán + Sinh test tự động'}</span>
                     </li>
                   </ul>
                 </div>
@@ -2773,7 +2772,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Open Code Judge IDE' : 'Mở IDE & 16 Thuật toán'}</span>
+                  <span>{isEn ? 'Open Code Judge & Trace 1-1' : 'Mở IDE, Trace 1-1 & 16 Thuật toán'}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -2860,21 +2859,21 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
-                    {isEn ? 'Syn AI (Syn Math · Syn Physics · Syn Code)' : 'Syn AI (Syn Math · Syn Physics · Syn Code)'}
+                    {isEn ? 'Syn AI Live Co-Pilot & Syn Reel Video' : 'Syn AI Mắt Thần Co-Pilot & Syn Reel Video 3B1B'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Dedicated Syn Math, Syn Physics & Syn Code engines (Left Ctrl + D/F/G) with real-time Voice Mic, image paste, and 3 modes: Guided Hints, 4-Step Solution & Roadmap.'
-                      : '3 động cơ độc lập Syn Math · Syn Physics · Syn Code (Ctrl trái + D/F/G). Hỗ trợ Micro giọng nói Việt/Anh, dán ảnh đề và 3 chế độ: Gợi mở, Giải 4 bước & Test vẽ lộ trình.'}
+                      ? 'Unified across Syn Math, Syn Physics & Syn Code (Ctrl+D/F/G): Live Screen/Canvas Vision Co-Pilot with instant Voice Barge-In, plus Syn Reel Mini-Chat creating 5-scene 3B1B Math/Physics videos.'
+                      : 'Tích hợp đồng bộ vào cả 3 động cơ Syn Math · Syn Physics · Syn Code: Mắt Thần xem trực tiếp màn hình/canvas + Ngắt lời Voice tức thì & Syn Reel dựng Video 3B1B xuất file .webm.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                      <span>{isEn ? 'Live Voice-to-Text inside Syn AI HUD' : 'Micro nhận diện giọng nói trong giao diện Syn AI'}</span>
+                      <span>{isEn ? 'Live Screen/Canvas Co-Pilot + Instant Voice Barge-In' : 'Mắt Thần xem màn hình/canvas + Ngắt lời giọng nói tức thì'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                      <span>{isEn ? 'Shortcuts: Ctrl+D (Syn Math) · Ctrl+F (Syn Physics) · Ctrl+G (Syn Code)' : 'Phím tắt: Ctrl+D (Syn Math), Ctrl+F (Syn Physics), Ctrl+G (Syn Code)'}</span>
+                      <span>{isEn ? 'Syn Reel Mini-Chat: AI 3Blue1Brown Video (.webm)' : 'Syn Reel Mini-Chat: dựng Video 3B1B Toán/Lí (.webm)'}</span>
                     </li>
                   </ul>
                 </div>
@@ -2887,7 +2886,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Launch Syn AI' : 'Mở Syn AI Command Center'}</span>
+                  <span>{isEn ? 'Launch Syn AI & Syn Reel' : 'Mở Syn AI Co-Pilot & Syn Reel'}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -3101,15 +3100,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               : 'Synapse · Hệ thống giáo dục mô phỏng vũ trụ học thuật'}
           </span>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
-            <span>{isEn ? 'Synapse Pre (30)' : 'Synapse Pre (30)'}</span>
+            <span>{isEn ? 'Synapse Pre (QR & 28K GPU)' : 'Synapse Pre (QR & 28K GPU)'}</span>
             <span aria-hidden="true">·</span>
-            <span>{isEn ? 'Spatial 3D (10-Finger)' : 'Học cảm giác 3D'}</span>
+            <span>{isEn ? 'WebAR Desk Pro (10-Finger)' : 'AR Bàn Học Pro'}</span>
             <span aria-hidden="true">·</span>
-            <span>{isEn ? '5 Physics Domains' : '5 Chuyên đề Vật lí'}</span>
+            <span>{isEn ? 'Live Co-Pilot & Syn Reel' : 'Syn AI Mắt Thần & Video 3B1B'}</span>
             <span aria-hidden="true">·</span>
-            <span>{isEn ? 'Math Oxyz 3D' : 'Toán 2D & Oxyz'}</span>
-            <span aria-hidden="true">·</span>
-            <span>Sublime Text 4 Judge</span>
+            <span>{isEn ? 'Sublime 4 Trace & Replay' : 'IDE Trace 1-1 & Replay'}</span>
             <span aria-hidden="true">·</span>
             <span className="tabular-nums">
               {isEn ? `${totalExams} Official Exams` : `${totalExams} Đề Khảo Thí`}

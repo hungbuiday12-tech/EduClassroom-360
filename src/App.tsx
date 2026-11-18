@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff } from 'lucide-react';
+import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff, Film } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -92,7 +92,7 @@ function MainApp() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [isSynDockOpen]);
 
-  const handleOpenTutor = (ctx?: TutorContextPayload) => {
+  const handleOpenTutor = (ctx?: TutorContextPayload & { tutorTab?: 'chat' | 'motion_reel' }) => {
     if (currentSubjectRef.current === 'arena' && isArenaMatchActiveRef.current) {
       return;
     }
@@ -108,7 +108,11 @@ function MainApp() {
         subject: targetSubj
       }
     );
-    navigate({ tutorOpen: true, tutorSubject: targetSubj });
+    navigate({
+      tutorOpen: true,
+      tutorSubject: targetSubj,
+      tutorTab: ctx?.tutorTab || 'chat'
+    });
   };
 
   useEffect(() => {
@@ -170,7 +174,7 @@ function MainApp() {
     try {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('coopRoom')) return true;
+        if (params.get('coopRoom') || params.get('sensorRoom')) return true;
       }
       return sessionStorage.getItem('educlassroom_guest_exploring') === 'true';
     } catch {
@@ -689,6 +693,22 @@ function MainApp() {
                       <kbd className="px-1.5 py-0.5 rounded bg-emerald-950/70 border border-emerald-300/30 font-mono text-[9px] text-emerald-100">
                         Ctrl+G
                       </kbd>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSynDockOpen(false);
+                        handleOpenTutor({ subject: 'math', tutorTab: 'motion_reel' });
+                      }}
+                      className="cs-deck-btn w-full px-3 py-2 rounded bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 border border-sky-400/45 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Film className="w-3.5 h-3.5 shrink-0" />
+                        <span>{isEn ? 'Syn Reel (3B1B Video)' : 'Syn Reel (Video 3B1B)'}</span>
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-slate-950/60 border border-sky-300/30 font-mono text-[9px] text-sky-200">
+                        REEL
+                      </span>
                     </button>
                   </div>
                 </div>

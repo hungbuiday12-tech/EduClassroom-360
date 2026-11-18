@@ -49,7 +49,8 @@ import {
   loadAllLessonAssessments
 } from '../../lib/lessonProgressStore';
 import { SmartKnowledgeMap } from './SmartKnowledgeMap';
-import { CSTrackId } from '../../data/csTracksData';
+import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
+import { CS_LESSONS } from '../../data/csLessonsData';
 
 interface LearningRoadmapProps {
   onBack: () => void;
@@ -113,6 +114,14 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
   const [readinessFilter, setReadinessFilter] = useState<ReadinessFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedNodeId, setSelectedNodeId] = useState<string>(ROADMAP_NODES[0].id);
+  const [completedCsStageIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('synapse_cs_track_completed_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const [planProfile, setPlanProfile] = useState<StudentPlanProfile>(() => {
     try {
@@ -1600,6 +1609,102 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             <span>{isEn ? 'Inspect Step' : 'Xem hướng dẫn'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
+        </div>
+      </div>
+
+      {/* SPECIALIZED CS & C++ LEARNING ROADMAPS (5 TRACKS) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>
+                {isEn
+                  ? 'Specialized Computer Science & C++ Roadmaps (5 Tracks)'
+                  : 'Lộ Trình Tin Học & C++ Chuyên Sâu (5 Lộ Trình Chuẩn Quốc Tế)'}
+              </span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {isEn
+                ? 'Follow VNOI Competitive Programming or switch seamlessly across OpenEDG Certification, Roadmap.sh, LearnCpp.com, and GitHub Career Track with built-in C++20 mini-lessons & quizzes.'
+                : 'Chọn theo mục tiêu: Thi đấu HSG VNOI, Chứng chỉ Quốc tế OpenEDG, Thực chiến Roadmap.sh, Tự học bài bản LearnCpp.com hoặc Sự nghiệp GitHub Career Track.'}
+            </p>
+          </div>
+          <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums shrink-0">
+            {isEn ? '18 Interactive C++ Stages' : '18 Chặng Thực Hành C++'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3.5">
+          {/* VNOI Card */}
+          <div className="p-4 rounded-xl bg-slate-50/90 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 flex flex-col justify-between gap-3">
+            <div className="space-y-1.5">
+              <div className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                {isEn ? 'Competitive Track' : 'Thi Đấu / HSG'}
+              </div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                {isEn ? 'VNOI Competitive Roadmap' : 'Lộ trình VNOI Thi đấu & HSG'}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                {isEn
+                  ? `${CS_LESSONS.length} structured algorithm lessons from Complexity, DP, Graphs to HSG problem solving.`
+                  : `${CS_LESSONS.length} bài giảng thuật toán có trình chấm tự động từ cơ bản đến Quy hoạch động & Đồ thị.`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleOpenSavedLesson('cs', undefined, 'vnoi')}
+              className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>{isEn ? 'Open VNOI' : 'Mở lộ trình'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* 4 Specialized International/Career C++ Tracks */}
+          {CS_SPECIALIZED_TRACKS.map((track) => {
+            const doneCount = track.stages.filter((s) => completedCsStageIds.includes(s.id)).length;
+            const totalCount = track.stages.length;
+            const pct = Math.round((doneCount / Math.max(1, totalCount)) * 100);
+            return (
+              <div
+                key={track.id}
+                className="p-4 rounded-xl bg-slate-50/90 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 flex flex-col justify-between gap-3"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2 text-[11px]">
+                    <span className="font-bold text-sky-600 dark:text-sky-400 truncate">
+                      {isEn ? track.categoryLabelEn : track.categoryLabel}
+                    </span>
+                    <span className="font-mono font-bold text-slate-500 dark:text-slate-400 tabular-nums shrink-0">
+                      {doneCount}/{totalCount}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                    {track.shortName}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                    {isEn ? track.summaryEn : track.summary}
+                  </p>
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 transition-all duration-300"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenSavedLesson('cs', undefined, track.id)}
+                  className="w-full py-2 px-3 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 text-xs font-bold flex items-center justify-center gap-1.5 transition-opacity cursor-pointer"
+                >
+                  <span>{isEn ? 'Open Track' : 'Mở lộ trình'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 

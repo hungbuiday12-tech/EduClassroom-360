@@ -160,6 +160,8 @@ export function isPackagedOrStaticOrigin(): boolean {
   if (isNonHttpPackagedProtocol()) return true;
   const { hostname } = window.location;
   if (
+    hostname === 'synapse-stem.is-a.dev' ||
+    hostname.endsWith('.is-a.dev') ||
     hostname.endsWith('.github.io') ||
     hostname.endsWith('.pages.dev') ||
     hostname.endsWith('.netlify.app')

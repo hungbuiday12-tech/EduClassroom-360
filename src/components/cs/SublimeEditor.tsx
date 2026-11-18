@@ -1437,286 +1437,6 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
         </div>
       )}
 
-      {/* Compact Edit / Find / Snippets Toolbar */}
-      <div className="bg-slate-950/90 border-b border-slate-800 px-2 py-1.5 flex items-center gap-1 overflow-x-auto scrollbar-none text-[11px] shrink-0">
-        <button
-          type="button"
-          onClick={handleUndo}
-          disabled={historyStack.past.length === 0}
-          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 disabled:opacity-35 text-slate-300 flex items-center gap-1 shrink-0 whitespace-nowrap"
-          title="Undo (Ctrl+Z)"
-        >
-          <Undo2 className="w-3 h-3" />
-          <span className="hidden sm:inline">Undo</span>
-        </button>
-        <button
-          type="button"
-          onClick={handleRedo}
-          disabled={historyStack.future.length === 0}
-          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 disabled:opacity-35 text-slate-300 flex items-center gap-1 shrink-0 whitespace-nowrap"
-          title="Redo (Ctrl+Y)"
-        >
-          <Redo2 className="w-3 h-3" />
-          <span className="hidden sm:inline">Redo</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setShowFindBar((p) => !p);
-            setShowReplaceRow(false);
-          }}
-          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
-            showFindBar && !showReplaceRow
-              ? 'bg-sky-600 border-sky-500 text-white font-bold'
-              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-sky-300'
-          }`}
-          title="Find (Ctrl+F)"
-        >
-          <Search className="w-3 h-3" />
-          <span>Find</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setShowFindBar(true);
-            setShowReplaceRow((p) => !p);
-          }}
-          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
-            showFindBar && showReplaceRow
-              ? 'bg-amber-500 border-amber-400 text-slate-950 font-bold'
-              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-amber-300'
-          }`}
-          title="Replace (Ctrl+H)"
-        >
-          <Replace className="w-3 h-3" />
-          <span>Replace</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowGotoBar((p) => !p)}
-          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
-            showGotoBar
-              ? 'bg-cyan-500 border-cyan-400 text-slate-950 font-bold'
-              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-cyan-300'
-          }`}
-          title="Goto Line (Ctrl+G)"
-        >
-          <Hash className="w-3 h-3" />
-          <span>Goto</span>
-        </button>
-        <button
-          type="button"
-          onClick={duplicateCurrentLine}
-          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 shrink-0 whitespace-nowrap"
-          title="Duplicate Line (Ctrl+D)"
-        >
-          Dup Line
-        </button>
-        <button
-          type="button"
-          onClick={toggleCurrentLineComment}
-          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 shrink-0 whitespace-nowrap"
-          title="Comment (Ctrl+/)"
-        >
-          Comment
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowSnippetsDrawer((p) => !p)}
-          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
-            showSnippetsDrawer
-              ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold'
-              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-emerald-300'
-          }`}
-        >
-          <Sparkles className="w-3 h-3" />
-          <span>Snippets</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setWordWrap((p) => !p)}
-          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
-            wordWrap
-              ? 'bg-indigo-500 border-indigo-400 text-white font-bold'
-              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
-          }`}
-          title="Toggle Word Wrap"
-        >
-          <Sliders className="w-3 h-3" />
-          <span>{wordWrap ? 'Wrap: ON' : 'Wrap'}</span>
-        </button>
-        <button
-          type="button"
-          onClick={handleDownloadFile}
-          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 flex items-center gap-1 shrink-0 whitespace-nowrap"
-          title="Tải file code"
-        >
-          <Download className="w-3 h-3" />
-          <span className="hidden sm:inline">Save As</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowShortcutsModal(true)}
-          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 flex items-center gap-1 shrink-0"
-          title="Phím tắt IDE"
-        >
-          <HelpCircle className="w-3 h-3" />
-        </button>
-        {toastMsg && (
-          <span className="ml-auto px-2 py-0.5 rounded-[4px] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[10px] font-mono shrink-0 whitespace-nowrap">
-            {toastMsg}
-          </span>
-        )}
-      </div>
-
-      {/* Inline Collapsible Find & Replace Panel */}
-      {showFindBar && (
-        <div className="bg-slate-900 border-b border-slate-800 px-2.5 py-2 space-y-1.5 text-xs shrink-0">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <input
-              type="text"
-              value={findQuery}
-              onChange={(e) => {
-                setFindQuery(e.target.value);
-                setFindMatchIdx(0);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleFindStep(e.shiftKey ? -1 : 1);
-                if (e.key === 'Escape') setShowFindBar(false);
-              }}
-              placeholder="Tìm trong file (Ctrl+F)..."
-              className="flex-1 min-w-[140px] px-2.5 py-1 rounded-[4px] bg-slate-950 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-400"
-            />
-            <button
-              type="button"
-              onClick={() => setMatchCase((p) => !p)}
-              className={`px-2 py-1 rounded-[4px] font-mono text-[10px] border ${
-                matchCase
-                  ? 'bg-sky-500 text-white border-sky-400 font-bold'
-                  : 'bg-slate-950 border-slate-700 text-slate-400'
-              }`}
-              title="Phân biệt HOA/thường"
-            >
-              Aa
-            </button>
-            <span className="text-[10px] font-mono text-slate-400 px-1 tabular-nums">
-              {findMatches.length > 0 ? `${(findMatchIdx % findMatches.length) + 1}/${findMatches.length}` : '0/0'}
-            </span>
-            <button
-              type="button"
-              onClick={() => handleFindStep(-1)}
-              className="p-1 rounded-[4px] bg-slate-950 hover:bg-slate-800 border border-slate-700"
-              title="Tìm trước"
-            >
-              <ChevronUp className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFindStep(1)}
-              className="p-1 rounded-[4px] bg-slate-950 hover:bg-slate-800 border border-slate-700"
-              title="Tìm tiếp"
-            >
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowFindBar(false)}
-              className="p-1 rounded-[4px] hover:bg-slate-800 text-slate-400 hover:text-white"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {showReplaceRow && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <input
-                type="text"
-                value={replaceQuery}
-                onChange={(e) => setReplaceQuery(e.target.value)}
-                placeholder="Thay thế bằng..."
-                className="flex-1 min-w-[140px] px-2.5 py-1 rounded-[4px] bg-slate-950 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-amber-400"
-              />
-              <button
-                type="button"
-                onClick={handleReplaceCurrent}
-                className="px-2.5 py-1 rounded-[4px] bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-[11px] font-semibold"
-              >
-                Replace
-              </button>
-              <button
-                type="button"
-                onClick={handleReplaceAll}
-                className="px-2.5 py-1 rounded-[4px] bg-amber-500 text-slate-950 text-[11px] font-bold"
-              >
-                Replace All
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Inline Goto Line Bar */}
-      {showGotoBar && (
-        <div className="bg-slate-900 border-b border-slate-800 px-2.5 py-1.5 flex items-center gap-2 text-xs shrink-0">
-          <span className="font-mono text-sky-400 text-[11px] shrink-0">Goto Line (1–{lines.length}):</span>
-          <input
-            type="number"
-            min={1}
-            max={lines.length}
-            value={gotoInput}
-            onChange={(e) => setGotoInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleGotoLine();
-              if (e.key === 'Escape') setShowGotoBar(false);
-            }}
-            placeholder=":line"
-            className="w-24 px-2 py-0.5 rounded-[4px] bg-slate-950 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-400"
-          />
-          <button
-            type="button"
-            onClick={() => handleGotoLine()}
-            className="px-2.5 py-0.5 rounded-[4px] bg-sky-500 text-slate-950 font-bold text-[11px]"
-          >
-            Đi tới
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowGotoBar(false)}
-            className="p-0.5 rounded-[4px] hover:bg-slate-800 text-slate-400 ml-auto"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* Snippets Quick Drawer */}
-      {showSnippetsDrawer && (
-        <div className="bg-slate-900 border-b border-slate-800 px-2.5 py-2 flex flex-wrap items-center gap-1.5 text-[11px] shrink-0">
-          <span className="text-emerald-400 font-bold mr-1">Chèn Snippet ({language.toUpperCase()}):</span>
-          {cpSnippets.map((sn) => (
-            <button
-              key={sn.label}
-              type="button"
-              onClick={() => {
-                insertSnippet(sn.code);
-                setShowSnippetsDrawer(false);
-                flashToast(`Đã chèn ${sn.label}`);
-              }}
-              className="px-2.5 py-1 rounded-[4px] bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/60 text-slate-200 font-mono text-[10px]"
-            >
-              + {sn.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => setShowSnippetsDrawer(false)}
-            className="ml-auto text-slate-400 hover:text-white p-0.5"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
       {/* Main Editor Canvas: Sticky Gutter + Monokai Token Overlay + Minimap */}
       <div className="relative flex-1 flex bg-[#131722] overflow-hidden min-h-0">
         <div
@@ -1867,6 +1587,287 @@ export const SublimeEditor: React.FC<SublimeEditorProps> = ({
           </div>
         )}
       </div>
+
+      {/* Inline Collapsible Find & Replace Panel (docked below code canvas) */}
+      {showFindBar && (
+        <div className="bg-slate-900 border-t border-slate-800 px-2.5 py-2 space-y-1.5 text-xs shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <input
+              type="text"
+              value={findQuery}
+              onChange={(e) => {
+                setFindQuery(e.target.value);
+                setFindMatchIdx(0);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleFindStep(e.shiftKey ? -1 : 1);
+                if (e.key === 'Escape') setShowFindBar(false);
+              }}
+              placeholder="Tìm trong file (Ctrl+F)..."
+              className="flex-1 min-w-[140px] px-2.5 py-1 rounded-[4px] bg-slate-950 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-400"
+            />
+            <button
+              type="button"
+              onClick={() => setMatchCase((p) => !p)}
+              className={`px-2 py-1 rounded-[4px] font-mono text-[10px] border ${
+                matchCase
+                  ? 'bg-sky-500 text-white border-sky-400 font-bold'
+                  : 'bg-slate-950 border-slate-700 text-slate-400'
+              }`}
+              title="Phân biệt HOA/thường"
+            >
+              Aa
+            </button>
+            <span className="text-[10px] font-mono text-slate-400 px-1 tabular-nums">
+              {findMatches.length > 0 ? `${(findMatchIdx % findMatches.length) + 1}/${findMatches.length}` : '0/0'}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleFindStep(-1)}
+              className="p-1 rounded-[4px] bg-slate-950 hover:bg-slate-800 border border-slate-700"
+              title="Tìm trước"
+            >
+              <ChevronUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFindStep(1)}
+              className="p-1 rounded-[4px] bg-slate-950 hover:bg-slate-800 border border-slate-700"
+              title="Tìm tiếp"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowFindBar(false)}
+              className="p-1 rounded-[4px] hover:bg-slate-800 text-slate-400 hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {showReplaceRow && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <input
+                type="text"
+                value={replaceQuery}
+                onChange={(e) => setReplaceQuery(e.target.value)}
+                placeholder="Thay thế bằng..."
+                className="flex-1 min-w-[140px] px-2.5 py-1 rounded-[4px] bg-slate-950 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-amber-400"
+              />
+              <button
+                type="button"
+                onClick={handleReplaceCurrent}
+                className="px-2.5 py-1 rounded-[4px] bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-[11px] font-semibold"
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                onClick={handleReplaceAll}
+                className="px-2.5 py-1 rounded-[4px] bg-amber-500 text-slate-950 text-[11px] font-bold"
+              >
+                Replace All
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Inline Goto Line Bar (docked below code canvas) */}
+      {showGotoBar && (
+        <div className="bg-slate-900 border-t border-slate-800 px-2.5 py-1.5 flex items-center gap-2 text-xs shrink-0">
+          <span className="font-mono text-sky-400 text-[11px] shrink-0">Goto Line (1–{lines.length}):</span>
+          <input
+            type="number"
+            min={1}
+            max={lines.length}
+            value={gotoInput}
+            onChange={(e) => setGotoInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleGotoLine();
+              if (e.key === 'Escape') setShowGotoBar(false);
+            }}
+            placeholder=":line"
+            className="w-24 px-2 py-0.5 rounded-[4px] bg-slate-950 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-400"
+          />
+          <button
+            type="button"
+            onClick={() => handleGotoLine()}
+            className="px-2.5 py-0.5 rounded-[4px] bg-sky-500 text-slate-950 font-bold text-[11px]"
+          >
+            Đi tới
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowGotoBar(false)}
+            className="p-0.5 rounded-[4px] hover:bg-slate-800 text-slate-400 ml-auto"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Snippets Quick Drawer (docked below code canvas) */}
+      {showSnippetsDrawer && (
+        <div className="bg-slate-900 border-t border-slate-800 px-2.5 py-2 flex flex-wrap items-center gap-1.5 text-[11px] shrink-0">
+          <span className="text-emerald-400 font-bold mr-1">Chèn Snippet ({language.toUpperCase()}):</span>
+          {cpSnippets.map((sn) => (
+            <button
+              key={sn.label}
+              type="button"
+              onClick={() => {
+                insertSnippet(sn.code);
+                setShowSnippetsDrawer(false);
+                flashToast(`Đã chèn ${sn.label}`);
+              }}
+              className="px-2.5 py-1 rounded-[4px] bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/60 text-slate-200 font-mono text-[10px]"
+            >
+              + {sn.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setShowSnippetsDrawer(false)}
+            className="ml-auto text-slate-400 hover:text-white p-0.5"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Compact Edit / Find / Snippets Toolbar (docked below code canvas to maximize code height) */}
+      <div className="bg-slate-950/90 border-t border-slate-800 px-2 py-1.5 flex items-center gap-1 overflow-x-auto scrollbar-none text-[11px] shrink-0">
+        <button
+          type="button"
+          onClick={handleUndo}
+          disabled={historyStack.past.length === 0}
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 disabled:opacity-35 text-slate-300 flex items-center gap-1 shrink-0 whitespace-nowrap"
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo2 className="w-3 h-3" />
+          <span className="hidden sm:inline">Undo</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleRedo}
+          disabled={historyStack.future.length === 0}
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 disabled:opacity-35 text-slate-300 flex items-center gap-1 shrink-0 whitespace-nowrap"
+          title="Redo (Ctrl+Y)"
+        >
+          <Redo2 className="w-3 h-3" />
+          <span className="hidden sm:inline">Redo</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowFindBar((p) => !p);
+            setShowReplaceRow(false);
+          }}
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
+            showFindBar && !showReplaceRow
+              ? 'bg-sky-600 border-sky-500 text-white font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-sky-300'
+          }`}
+          title="Find (Ctrl+F)"
+        >
+          <Search className="w-3 h-3" />
+          <span>Find</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowFindBar(true);
+            setShowReplaceRow((p) => !p);
+          }}
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
+            showFindBar && showReplaceRow
+              ? 'bg-amber-500 border-amber-400 text-slate-950 font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-amber-300'
+          }`}
+          title="Replace (Ctrl+H)"
+        >
+          <Replace className="w-3 h-3" />
+          <span>Replace</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowGotoBar((p) => !p)}
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
+            showGotoBar
+              ? 'bg-cyan-500 border-cyan-400 text-slate-950 font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-cyan-300'
+          }`}
+          title="Goto Line (Ctrl+G)"
+        >
+          <Hash className="w-3 h-3" />
+          <span>Goto</span>
+        </button>
+        <button
+          type="button"
+          onClick={duplicateCurrentLine}
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 shrink-0 whitespace-nowrap"
+          title="Duplicate Line (Ctrl+D)"
+        >
+          Dup Line
+        </button>
+        <button
+          type="button"
+          onClick={toggleCurrentLineComment}
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 shrink-0 whitespace-nowrap"
+          title="Comment (Ctrl+/)"
+        >
+          Comment
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowSnippetsDrawer((p) => !p)}
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
+            showSnippetsDrawer
+              ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-emerald-300'
+          }`}
+        >
+          <Sparkles className="w-3 h-3" />
+          <span>Snippets</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setWordWrap((p) => !p)}
+          className={`px-2 py-1 rounded-[4px] border flex items-center gap-1 shrink-0 whitespace-nowrap ${
+            wordWrap
+              ? 'bg-indigo-500 border-indigo-400 text-white font-bold'
+              : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
+          }`}
+          title="Toggle Word Wrap"
+        >
+          <Sliders className="w-3 h-3" />
+          <span>{wordWrap ? 'Wrap: ON' : 'Wrap'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleDownloadFile}
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 flex items-center gap-1 shrink-0 whitespace-nowrap"
+          title="Tải file code"
+        >
+          <Download className="w-3 h-3" />
+          <span className="hidden sm:inline">Save As</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowShortcutsModal(true)}
+          className="px-2 py-1 rounded-[4px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 flex items-center gap-1 shrink-0"
+          title="Phím tắt IDE"
+        >
+          <HelpCircle className="w-3 h-3" />
+        </button>
+        {toastMsg && (
+          <span className="ml-auto px-2 py-0.5 rounded-[4px] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[10px] font-mono shrink-0 whitespace-nowrap">
+            {toastMsg}
+          </span>
+        )}
+      </div>
+
 
       {/* Mobile & iPad Quick Coding Key Bar */}
       <div className="lg:hidden bg-slate-950 border-t border-slate-800 px-2 py-1.5 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">

@@ -2341,3 +2341,101 @@
     animation: none !important;
   }
 }
+
+/* ============================================================================
+   GROWTH SUITE: 3D FLASHCARD FLIP, VOICE WAVEFORM, QUEST SHIMMER & PRINT PDF
+   ============================================================================ */
+.flip-card-3d {
+  perspective: 1200px;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  min-height: 290px;
+  transform-style: preserve-3d;
+  transition: transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.flip-card-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+@keyframes voice-eq-pulse {
+  0%, 100% { transform: scaleY(0.28); }
+  50% { transform: scaleY(1); }
+}
+
+.voice-eq-bar {
+  transform-origin: bottom center;
+  animation: voice-eq-pulse 0.85s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes streak-flame-dance {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(0, -2px, 0) scale(1.08); }
+}
+
+.streak-flame-pulse {
+  animation: streak-flame-dance 2.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes quest-sweep {
+  0% { transform: translate3d(-110%, 0, 0); }
+  100% { transform: translate3d(210%, 0, 0); }
+}
+
+.quest-bar-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.quest-bar-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: quest-sweep 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-card-inner {
+    transition: none !important;
+  }
+  .voice-eq-bar,
+  .streak-flame-pulse,
+  .quest-bar-shimmer::after {
+    animation: none !important;
+  }
+}
+
+@media print {
+  body.synapse-printing-report > *:not(#synapse-print-report-root) {
+    display: none !important;
+  }
+  #synapse-print-report-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+

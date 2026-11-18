@@ -18,7 +18,9 @@ import {
   Menu,
   Layers,
   Sparkles,
-  Download
+  Download,
+  Flame,
+  UserCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -31,6 +33,7 @@ import {
 import { useNavigation, getLocationLabel } from '../context/NavigationContext';
 import { useAudio } from '../context/AudioContext';
 import { BrandLogo } from './common/BrandLogo';
+import { getStreakState, GROWTH_UPDATED_EVENT } from '../lib/learningGrowthStore';
 
 interface HeaderProps {
   currentSubject: SubjectType;
@@ -42,6 +45,7 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onOpenMobileMenu: () => void;
   onOpenInstallApp?: () => void;
+  onOpenPortfolio?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -51,9 +55,18 @@ export const Header: React.FC<HeaderProps> = ({
   onReturnToLanding,
   onOpenSettings,
   onOpenMobileMenu,
-  onOpenInstallApp
+  onOpenInstallApp,
+  onOpenPortfolio
 }) => {
-  const { user, openAuthModal, logout } = useAuth();
+  const { user, firebaseUser, openAuthModal, logout } = useAuth();
+  const uid = user?.uid || firebaseUser?.uid;
+  const [streakDays, setStreakDays] = useState<number>(() => getStreakState(uid).currentStreak);
+  useEffect(() => {
+    const sync = () => setStreakDays(getStreakState(uid).currentStreak);
+    sync();
+    window.addEventListener(GROWTH_UPDATED_EVENT, sync);
+    return () => window.removeEventListener(GROWTH_UPDATED_EVENT, sync);
+  }, [uid]);
   const { language, toggleLanguage, t } = useLanguage();
   const isEn = language === 'en';
   const { bgStyle, setBgStyle, creatureTheme, setCreatureTheme, perfMode, setPerfMode } =
@@ -308,11 +321,20 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* XP Readout */}
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/50 rounded-lg text-xs font-mono font-bold text-amber-800 dark:text-amber-300 shrink-0 whitespace-nowrap">
+          {/* XP & Streak Readout -> Opens Portfolio */}
+          <button
+            type="button"
+            onClick={onOpenPortfolio}
+            title={isEn ? 'Open STEM Portfolio & PDF Report' : 'Mở Hồ sơ Năng lực & Xuất PDF'}
+            className="hidden md:flex items-center gap-2 px-2.5 py-1.5 bg-amber-50/85 dark:bg-amber-950/45 border border-amber-300/80 dark:border-amber-700/60 hover:border-amber-500 rounded text-xs font-mono font-bold text-amber-800 dark:text-amber-300 shrink-0 whitespace-nowrap cursor-pointer transition-colors"
+          >
+            <Flame className="w-3.5 h-3.5 text-rose-500 streak-flame-pulse shrink-0" />
+            <span className="tabular-nums">{streakDays}d</span>
+            <span className="text-amber-300 dark:text-amber-700">|</span>
             <Award className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
             <span className="tabular-nums">{user ? user.xp : xp} XP</span>
-          </div>
+            <UserCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+          </button>
 
           {/* Background Soundscape Toggle */}
           <button

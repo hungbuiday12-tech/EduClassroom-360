@@ -147,6 +147,10 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       return isEn ? 'Weekly Arena' : 'Thi đấu & BXH';
     case 'forum':
       return isEn ? 'Study Forum' : 'Diễn đàn học tập';
+    case 'growth_hub':
+      return isEn ? 'Error Notebook · SM-2 · PDF Studio' : 'Sổ tay Lỗi sai & Thẻ SM-2';
+    case 'showcase':
+      return isEn ? '2D/3D Community Showcase' : 'Thư viện Sáng tạo 2D/3D';
     default:
       return isEn ? 'Classroom' : 'Lớp học';
   }

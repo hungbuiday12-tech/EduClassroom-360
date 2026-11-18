@@ -50,6 +50,11 @@ import {
   loadLessonAssessment,
   saveLessonAssessment
 } from '../../lib/lessonProgressStore';
+import {
+  progressDailyQuest,
+  recordGrowthStat,
+  recordMistake
+} from '../../lib/learningGrowthStore';
 
 export interface LectureActionItem {
   label: string;
@@ -336,6 +341,23 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
 
     if (isCorrect) {
       triggerXP(`${lessonKey}-s${stepIdx}-mcq-${qIdx}`, 15);
+      recordGrowthStat('mcqCorrectCount', 1, user?.uid);
+      progressDailyQuest('practice_quiz_or_code', 1, user?.uid);
+    } else {
+      recordMistake(
+        {
+          subject: subject === 'physics' || subject === 'cs' ? subject : 'math',
+          sourceType: 'lecture_mcq',
+          lessonKey,
+          lessonTitle: title,
+          stepTitle: step.stepTitle,
+          prompt: targetQ.question,
+          userAnswer: targetQ.options[selected] || `Phương án ${selected + 1}`,
+          correctAnswer: targetQ.options[targetQ.correctIndex] || '',
+          explanation: targetQ.explanation || ''
+        },
+        user?.uid
+      );
     }
   };
 
@@ -398,6 +420,22 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
     if (evaluation.score >= 6) {
       triggerXP(`${lessonKey}-s${stepIdx}-essay`, 25);
     }
+    if (evaluation.score < 6.5) {
+      recordMistake(
+        {
+          subject: subject === 'physics' || subject === 'cs' ? subject : 'math',
+          sourceType: 'lecture_essay',
+          lessonKey,
+          lessonTitle: title,
+          stepTitle: step.stepTitle,
+          prompt: essaySpec.question,
+          userAnswer: studentAnswer,
+          correctAnswer: essaySpec.sampleAnswer,
+          explanation: evaluation.feedback || (evaluation.mistakes || []).join(' ')
+        },
+        user?.uid
+      );
+    }
   };
 
   const handleSelfGradeEssay = (stepIdx: number, score: number) => {
@@ -428,6 +466,25 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
     }));
     if (score >= 6) {
       triggerXP(`${lessonKey}-s${stepIdx}-essay`, 15);
+    } else {
+      const saved = getStepSaved(stepIdx, step);
+      const essaySpec = saved.customQuiz?.miniEssay || step.miniEssay;
+      if (essaySpec) {
+        recordMistake(
+          {
+            subject: subject === 'physics' || subject === 'cs' ? subject : 'math',
+            sourceType: 'lecture_essay',
+            lessonKey,
+            lessonTitle: title,
+            stepTitle: step.stepTitle,
+            prompt: essaySpec.question,
+            userAnswer: saved.essayAnswer || 'Tự chấm dưới 6 điểm',
+            correctAnswer: essaySpec.sampleAnswer,
+            explanation: evaluation.feedback
+          },
+          user?.uid
+        );
+      }
     }
   };
 

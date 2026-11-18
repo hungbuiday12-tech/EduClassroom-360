@@ -102,6 +102,7 @@ import { Spatial2DGuideModal } from './Spatial2DGuideModal';
 import { SpatialAIModelCreatorModal } from './SpatialAIModelCreatorModal';
 import { SpatialRealWorldScannerModal } from './SpatialRealWorldScannerModal';
 import { SpatialCoopModal } from './SpatialCoopModal';
+import { SpatialVoiceMentor } from './SpatialVoiceMentor';
 import { RemoteHandRigManager, synthesizePointerSkeleton } from './remoteHandSkeleton';
 import {
   LocalGripVisualState,
@@ -5831,10 +5832,51 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         </button>
       )}
 
-        {/* Top-Right Corner Live Telemetry & 10-Fingertip Webcam PiP */}
+        {/* Top-Right Corner Voice Mentor, Live Telemetry & 10-Fingertip Webcam PiP */}
         {!hudHidden && (
-          <div className="absolute top-16 right-3 z-20 flex flex-col items-end gap-2 max-w-[244px]">
-            <div className="spatial-hud-frame w-full rounded-lg bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
+          <div className="absolute top-16 right-3 z-20 flex flex-col items-end gap-2 max-w-[360px] pointer-events-none">
+            <div className="pointer-events-auto">
+              <SpatialVoiceMentor
+                spaceName={spaceMode === '2d' ? 'Học Cảm Giác 2D' : 'Học Cảm Giác 3D'}
+                modelTitle={
+                  spaceMode === '2d'
+                    ? isEn
+                      ? active2DMode.titleEn
+                      : active2DMode.titleVi
+                    : activeCustomModel
+                    ? isEn
+                      ? activeCustomModel.titleEn
+                      : activeCustomModel.titleVi
+                    : isEn
+                    ? activeMode.titleEn
+                    : activeMode.titleVi
+                }
+                partName={
+                  spaceMode === '3d' && isolatedPartIdx !== null && modelParts[isolatedPartIdx]
+                    ? isEn
+                      ? modelParts[isolatedPartIdx].nameEn
+                      : modelParts[isolatedPartIdx].nameVi
+                    : undefined
+                }
+                partDescription={
+                  spaceMode === '3d' && isolatedPartIdx !== null && modelParts[isolatedPartIdx]
+                    ? isEn
+                      ? modelParts[isolatedPartIdx].introEn
+                      : modelParts[isolatedPartIdx].introVi
+                    : undefined
+                }
+                formula={
+                  spaceMode === '2d'
+                    ? active2DMode.formula
+                    : activeCustomModel
+                    ? activeCustomModel.formula
+                    : activeMode.formula
+                }
+                language={language}
+              />
+            </div>
+
+            <div className="pointer-events-auto spatial-hud-frame w-[244px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
               <div className="font-mono font-bold text-cyan-300 truncate">
                 {spaceMode === '2d'
                   ? active2DMode.formula
@@ -5851,7 +5893,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             </div>
 
             {spaceMode === '3d' && coopActiveRoom && (
-              <div className="spatial-hud-frame w-full rounded-lg bg-slate-950/95 border border-emerald-400/60 p-2.5 text-[11px] space-y-1.5">
+              <div className="pointer-events-auto spatial-hud-frame w-[244px] rounded-lg bg-slate-950/95 border border-emerald-400/60 p-2.5 text-[11px] space-y-1.5">
                 <div className="flex items-center justify-between gap-1">
                   <span className="font-mono font-extrabold text-emerald-300 text-[10px]">
                     {isEn ? 'CO-OP' : 'PHÒNG'} #{coopActiveRoom.roomId} · {coopPeers.length}/{coopActiveRoom.maxMembers}
@@ -5887,7 +5929,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             )}
 
             {cameraActive && (
-              <div className="spatial-hud-frame relative w-[240px] h-[180px] rounded-lg overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
+              <div className="pointer-events-auto spatial-hud-frame relative w-[240px] h-[180px] rounded-lg overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -5935,7 +5977,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
           {/* Virtual 3D Touch Pad when in 3D without webcam */}
           {spaceMode === '3d' && !cameraActive && showVirtualPad && (
-            <div className="w-[224px] rounded-2xl bg-slate-950/95 border border-slate-700/85 p-2 space-y-1.5">
+            <div className="pointer-events-auto w-[224px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2 space-y-1.5">
               <div className="flex items-center justify-between text-[10px] font-bold text-slate-300">
                 <span className="flex items-center gap-1">
                   <Hand className="w-3 h-3 text-cyan-400" />

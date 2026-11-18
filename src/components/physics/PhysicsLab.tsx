@@ -64,6 +64,7 @@ import { LectureThumbnail } from '../common/LectureThumbnail';
 import { buildPhysicsLectureSteps } from '../../data/lectureStepsBuilder';
 import { useNavigation } from '../../context/NavigationContext';
 import { renderExtra2DPhysicsSim } from './physics2DExtraRenderer';
+import { LabDataLoggerPanel } from '../common/LabDataLoggerPanel';
 
 interface OverlayState {
   showRulerGrid: boolean;
@@ -4786,46 +4787,13 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                       </div>
                     </div>
 
-                    {/* Data Logger Table */}
+                    {/* Data Logger & Regression Analysis Panel (#3) */}
                     {dataLogs.length > 0 && (
-                      <div className="bg-white/95 dark:bg-slate-900/95 rounded-lg p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-2.5">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                            Bảng Ghi Số Liệu Thực Nghiệm ({dataLogs.length} mẫu)
-                          </h4>
-                          <button
-                            onClick={() => setDataLogs([])}
-                            className="flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            <span>Xóa bảng</span>
-                          </button>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs text-left border-collapse">
-                            <thead>
-                              <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                                <th className="py-1.5 pr-3">Lần</th>
-                                <th className="py-1.5 pr-3">t</th>
-                                <th className="py-1.5 pr-3">{dataLogs[0].m1Label}</th>
-                                <th className="py-1.5 pr-3">{dataLogs[0].m2Label}</th>
-                                <th className="py-1.5">{dataLogs[0].m3Label}</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {dataLogs.map((row) => (
-                                <tr key={row.id} className="border-b border-slate-100 dark:border-slate-800/80 font-mono">
-                                  <td className="py-1.5 pr-3 text-slate-400">#{row.id}</td>
-                                  <td className="py-1.5 pr-3 text-slate-700 dark:text-slate-300">{row.timeStr}</td>
-                                  <td className="py-1.5 pr-3 text-blue-600 dark:text-blue-400 font-bold">{row.m1Val}</td>
-                                  <td className="py-1.5 pr-3 text-emerald-600 dark:text-emerald-400 font-bold">{row.m2Val}</td>
-                                  <td className="py-1.5 text-amber-600 dark:text-amber-400 font-bold">{row.m3Val}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                      <LabDataLoggerPanel
+                        title={active2DSpec?.title || lesson?.title || 'Thí nghiệm Vật lí 2D'}
+                        rows={dataLogs}
+                        onClear={() => setDataLogs([])}
+                      />
                     )}
                   </div>
 
@@ -5381,44 +5349,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   </div>
 
                   {dataLogs.length > 0 && (
-                    <div className="bg-white/95 dark:bg-slate-900/95 rounded-lg p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                          Bảng Ghi Số Liệu Thực Nghiệm ({dataLogs.length} mẫu)
-                        </h4>
-                        <button
-                          onClick={() => setDataLogs([])}
-                          className="flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Xóa bảng</span>
-                        </button>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs text-left border-collapse">
-                          <thead>
-                            <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                              <th className="py-1.5 pr-3">Lần</th>
-                              <th className="py-1.5 pr-3">t</th>
-                              <th className="py-1.5 pr-3">{dataLogs[0].m1Label}</th>
-                              <th className="py-1.5 pr-3">{dataLogs[0].m2Label}</th>
-                              <th className="py-1.5">{dataLogs[0].m3Label}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {dataLogs.map((row) => (
-                              <tr key={row.id} className="border-b border-slate-100 dark:border-slate-800/80 font-mono">
-                                <td className="py-1.5 pr-3 text-slate-400">#{row.id}</td>
-                                <td className="py-1.5 pr-3 text-slate-700 dark:text-slate-300">{row.timeStr}</td>
-                                <td className="py-1.5 pr-3 text-blue-600 dark:text-blue-400 font-bold">{row.m1Val}</td>
-                                <td className="py-1.5 pr-3 text-emerald-600 dark:text-emerald-400 font-bold">{row.m2Val}</td>
-                                <td className="py-1.5 text-amber-600 dark:text-amber-400 font-bold">{row.m3Val}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                    <LabDataLoggerPanel
+                      title={lesson?.title || active2DSpec?.title || 'Thí nghiệm Vật lí'}
+                      rows={dataLogs}
+                      onClear={() => setDataLogs([])}
+                    />
                   )}
                 </div>
 

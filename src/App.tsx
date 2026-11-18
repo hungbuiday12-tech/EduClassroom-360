@@ -27,8 +27,13 @@ import { PWAInstallModal } from './components/common/PWAInstallModal';
 import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { useNavigation } from './context/NavigationContext';
 import { useLanguage } from './context/LanguageContext';
+import { useFocusTimer } from './context/FocusTimerContext';
 import { useDraggableWidget } from './hooks/useDraggableWidget';
 import { EXAM_PAPERS } from './data/examData';
+import { GrowthWorkspace } from './components/learning/GrowthWorkspace';
+import { LearnerPortfolioModal } from './components/learning/LearnerPortfolioModal';
+import { CommunityShowcaseView } from './components/showcase/CommunityShowcaseView';
+import { progressDailyQuest, recordGrowthStat, touchDailyActivity } from './lib/learningGrowthStore';
 
 function MainApp() {
   const { location, navigate, selectSubject, goBack } = useNavigation();
@@ -130,9 +135,27 @@ function MainApp() {
     return false;
   });
 
-  const { user, addXP, loading } = useAuth();
+  const { user, firebaseUser, addXP, loading } = useAuth();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+  const { completedSessions } = useFocusTimer();
+  const prevPomodoroRef = useRef<number>(completedSessions);
+
+  useEffect(() => {
+    const uid = user?.uid || firebaseUser?.uid;
+    touchDailyActivity(uid);
+  }, [user?.uid, firebaseUser?.uid]);
+
+  useEffect(() => {
+    if (completedSessions > prevPomodoroRef.current) {
+      const diff = completedSessions - prevPomodoroRef.current;
+      const uid = user?.uid || firebaseUser?.uid;
+      recordGrowthStat('pomodoroCompleted', diff, uid);
+      progressDailyQuest('focus_pomodoro', diff, uid);
+    }
+    prevPomodoroRef.current = completedSessions;
+  }, [completedSessions, user?.uid, firebaseUser?.uid]);
   const isHeavy3DActive = currentSubject === 'spatial_3d' || currentSubject === 'synapse_v2';
 
   // Guest explore mode state: allows unauthenticated visitors to explore the classroom
@@ -335,6 +358,7 @@ function MainApp() {
               onOpenSettings={() => setIsSettingsOpen(true)}
               onOpenMobileMenu={() => setMobileMenuOpen(true)}
               onOpenInstallApp={() => setIsInstallModalOpen(true)}
+              onOpenPortfolio={() => setIsPortfolioOpen(true)}
             />
 
             {/* Main Viewport Container */}
@@ -423,6 +447,23 @@ function MainApp() {
                       onConsumeCoopRoom={() =>
                         navigate({ coopRoomCode: null, coopInviteMeta: null }, { replace: true })
                       }
+                    />
+                  )}
+
+                  {currentSubject === 'growth_hub' && (
+                    <GrowthWorkspace
+                      onBack={goBack}
+                      onNavigateSubject={selectSubject}
+                      onEarnXP={handleEarnXP}
+                      onOpenPortfolio={() => setIsPortfolioOpen(true)}
+                    />
+                  )}
+
+                  {currentSubject === 'showcase' && (
+                    <CommunityShowcaseView
+                      onBack={goBack}
+                      onNavigateSubject={selectSubject}
+                      onEarnXP={handleEarnXP}
                     />
                   )}
                 </motion.div>
@@ -686,6 +727,11 @@ function MainApp() {
       <PWAInstallModal
         isOpen={isInstallModalOpen}
         onClose={() => setIsInstallModalOpen(false)}
+      />
+      <LearnerPortfolioModal
+        isOpen={isPortfolioOpen}
+        onClose={() => setIsPortfolioOpen(false)}
+        xp={activeXP}
       />
       <OfflineIndicator />
     </>

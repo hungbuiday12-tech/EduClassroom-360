@@ -68,6 +68,7 @@ import {
 } from './monumentBuilders';
 import { FuturisticThumbPreview } from './FuturisticThumbPreview';
 import { FuturisticCosmicBackdrop } from './FuturisticCosmicBackdrop';
+import { SpatialVoiceMentor } from '../spatial3d/SpatialVoiceMentor';
 
 interface SynapseV2StudioProps {
   onBack?: () => void;
@@ -1418,7 +1419,20 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>
-        </div>
+          </div>
+
+          <div className="flex justify-end pointer-events-none">
+            <div className="pointer-events-auto">
+              <SpatialVoiceMentor
+                spaceName="Lớp học ảo · Synapse v2"
+                modelTitle={isEn ? activeDef.titleEn : activeDef.titleVi}
+                partName={activeDef.code}
+                partDescription={isEn ? activeDef.descriptionEn : activeDef.descriptionVi}
+                formula={`${isEn ? activeDef.primaryLabelEn : activeDef.primaryLabelVi}: ${primaryParam} ${activeDef.primaryUnit}`}
+                language={language}
+              />
+            </div>
+          </div>
 
         {/* Quick Strip of All Futuristic Chambers */}
         <div className="pointer-events-auto flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">

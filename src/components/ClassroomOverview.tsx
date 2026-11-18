@@ -29,7 +29,12 @@ import {
   Orbit,
   Hand,
   Atom,
-  Download
+  Download,
+  Flame,
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardCheck,
+  Images
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -42,6 +47,12 @@ import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
 import { CS_LESSONS } from '../data/csLessonsData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../data/csTracksData';
+import {
+  GROWTH_UPDATED_EVENT,
+  getErrorNotebook,
+  getFlashcards,
+  getStreakState
+} from '../lib/learningGrowthStore';
 import { PlatformReviews } from './common/PlatformReviews';
 import { AppDownloadGuideSection } from './common/AppDownloadGuideSection';
 import { CursorDodgeText } from './common/CursorDodgeText';
@@ -77,6 +88,28 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
     navigate
   } = useNavigation();
   const [directorySubject, setDirectorySubject] = useState<DirectorySubjectFilter>('all');
+  const [growthTick, setGrowthTick] = useState(0);
+
+  useEffect(() => {
+    const onGrowthUpdate = () => setGrowthTick((t) => t + 1);
+    window.addEventListener(GROWTH_UPDATED_EVENT, onGrowthUpdate);
+    return () => window.removeEventListener(GROWTH_UPDATED_EVENT, onGrowthUpdate);
+  }, []);
+
+  const streakSummary = React.useMemo(() => {
+    void growthTick;
+    const streak = getStreakState(user?.uid);
+    const unresolvedErrors = getErrorNotebook(user?.uid).filter((e) => !e.resolved).length;
+    const dueCards = getFlashcards(user?.uid).filter((c) => new Date(c.dueAt).getTime() <= Date.now()).length;
+    const doneQuests = streak.dailyQuests.filter((q) => q.progress >= q.target).length;
+    return {
+      streak,
+      unresolvedErrors,
+      dueCards,
+      doneQuests,
+      totalQuests: streak.dailyQuests.length
+    };
+  }, [growthTick, user?.uid]);
 
   const scrollToSection = (sectionId: string) => {
     const el = document.getElementById(sectionId);
@@ -753,6 +786,154 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <Hand className="w-4 h-4 icon-anim-hand" />
             <span>{isEn ? 'Open Spatial 3D Lab' : 'Vào Học cảm giác 3D'}</span>
             <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      </section>
+
+      {/* GROWTH SUITE BENTO STRIP: Streak, Daily Quests, Sổ Lỗi Sai SM-2, PDF Studio & Community Showcase */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">
+              {isEn ? 'DAILY GROWTH & STEM TOOLS' : 'TĂNG TỐC HỌC TẬP & CỘNG ĐỒNG'}
+            </div>
+            <h2 className="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              {isEn ? 'Streak, Error Notebook, AI Studio & 2D/3D Gallery' : 'Chuỗi Học, Sổ Lỗi Sai SM-2, Studio PDF & Thư Viện Sáng Tạo'}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('growth_hub')}
+            className="cs-deck-btn px-3 py-1.5 rounded bg-slate-900 dark:bg-sky-500 hover:bg-slate-800 dark:hover:bg-sky-400 text-white dark:text-slate-950 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <Flame className="w-3.5 h-3.5 text-amber-400 dark:text-slate-950" />
+            <span>{isEn ? 'Open Growth Hub' : 'Mở Trung Tâm Ôn Lỗi & SM-2'}</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Card 1: Streak & Daily Quests */}
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => onNavigate('growth_hub')}
+            className="group sci-frame text-left rounded-md bg-white/95 dark:bg-slate-900/90 border border-amber-300/80 dark:border-amber-500/35 hover:border-amber-500 p-4 shadow-xs transition-all cursor-pointer flex flex-col justify-between gap-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-amber-700 dark:text-amber-300">
+                <Flame className="w-4 h-4 streak-flame-pulse text-amber-500" />
+                {isEn ? 'Daily Streak & Quests' : 'Chuỗi Học & Nhiệm Vụ'}
+              </span>
+              <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 tabular-nums">
+                {streakSummary.streak.currentStreak}d
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {streakSummary.streak.dailyQuests.slice(0, 2).map((q) => {
+                const pct = Math.min(100, Math.round((q.progress / Math.max(1, q.target)) * 100));
+                return (
+                  <div key={q.id} className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] text-slate-700 dark:text-slate-300">
+                      <span className="truncate font-semibold">{isEn ? q.titleEn : q.titleVi}</span>
+                      <span className="font-mono text-[10px] text-slate-500 tabular-nums shrink-0 ml-1">
+                        {q.progress}/{q.target}
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                      <div
+                        className="h-full bg-amber-500 quest-bar-shimmer"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-[11px] font-bold text-amber-700 dark:text-amber-300 flex items-center justify-between">
+              <span>{streakSummary.doneQuests}/{streakSummary.totalQuests} {isEn ? 'completed' : 'nhiệm vụ xong'}</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </button>
+
+          {/* Card 2: Error Notebook & SM-2 Flashcards */}
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => onNavigate('growth_hub')}
+            className="group sci-frame text-left rounded-md bg-white/95 dark:bg-slate-900/90 border border-rose-300/80 dark:border-rose-500/35 hover:border-rose-500 p-4 shadow-xs transition-all cursor-pointer flex flex-col justify-between gap-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-rose-700 dark:text-rose-300">
+                <AlertTriangle className="w-4 h-4 text-rose-500" />
+                {isEn ? 'Error Notebook & SM-2' : 'Sổ Lỗi Sai & Thẻ SM-2'}
+              </span>
+              <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 tabular-nums">
+                {streakSummary.dueCards} {isEn ? 'due' : 'thẻ'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              {isEn
+                ? `${streakSummary.unresolvedErrors} unresolved mistakes auto-captured from lectures & C++ judge.`
+                : `${streakSummary.unresolvedErrors} câu sai/chưa đạt đang chờ ôn lại bằng thẻ ghi nhớ ngắt quãng SM-2.`}
+            </p>
+            <div className="text-[11px] font-bold text-rose-700 dark:text-rose-300 flex items-center justify-between">
+              <span>{isEn ? 'Review Smart Cards' : 'Ôn tập thẻ SM-2 ngay'}</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </button>
+
+          {/* Card 3: PDF / Image -> 5-Step Lesson & Custom Weak-Spot Exam */}
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => onNavigate('exams')}
+            className="group sci-frame text-left rounded-md bg-white/95 dark:bg-slate-900/90 border border-sky-300/80 dark:border-sky-500/35 hover:border-sky-500 p-4 shadow-xs transition-all cursor-pointer flex flex-col justify-between gap-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-sky-700 dark:text-sky-300">
+                <ClipboardCheck className="w-4 h-4 text-sky-500" />
+                {isEn ? 'Weak-Spot Mock Builder' : 'Đề Thi Theo Điểm Yếu'}
+              </span>
+              <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300">
+                PDF + AI
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              {isEn
+                ? 'Generate targeted mock tests from your weak topics & draw directly on Scratchpad.'
+                : 'Tự tạo đề thi 5–20 câu tập trung vào các lỗi sai gần đây kèm Bảng Nháp vẽ công thức.'}
+            </p>
+            <div className="text-[11px] font-bold text-sky-700 dark:text-sky-300 flex items-center justify-between">
+              <span>{isEn ? 'Build Custom Exam' : 'Mở Kho Đề & Tạo Đề'}</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </button>
+
+          {/* Card 4: Community 2D/3D/CS Showcase */}
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => onNavigate('showcase')}
+            className="group sci-frame text-left rounded-md bg-white/95 dark:bg-slate-900/90 border border-emerald-300/80 dark:border-emerald-500/35 hover:border-emerald-500 p-4 shadow-xs transition-all cursor-pointer flex flex-col justify-between gap-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-700 dark:text-emerald-300">
+                <Images className="w-4 h-4 text-emerald-500" />
+                {isEn ? 'Community Showcase' : 'Thư Viện Sáng Tạo'}
+              </span>
+              <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
+                2D/3D
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              {isEn
+                ? 'Explore, like, and 1-click remix community 3D models, physics presets & algorithms.'
+                : 'Khám phá, bình chọn và Remix 1 chạm các mô hình 3D, thí nghiệm Lí & code C++ hay nhất.'}
+            </p>
+            <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+              <span>{isEn ? 'Browse Gallery' : 'Vào Thư Viện Sáng Tạo'}</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </div>
           </button>
         </div>
       </section>

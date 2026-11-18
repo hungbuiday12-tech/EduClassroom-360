@@ -815,20 +815,40 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={() =>
-                onOpenTutor({
-                  subject: activeNode.subject,
-                  mode: 'diagnostic_roadmap',
-                  topicTitle: activeNode.title,
-                  grade: activeNode.grade
-                })
-              }
-              className="cs-deck-btn px-4 py-3 rounded-md bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors whitespace-nowrap shrink-0"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>{isEn ? 'Syn AI Mode 3: Build My Roadmap' : 'Syn AI Chế Độ 3: Tạo Sơ Đồ Riêng'}</span>
-            </button>
+            <div className="flex flex-col gap-2 shrink-0">
+              <button
+                onClick={() =>
+                  onOpenTutor({
+                    subject: activeNode.subject,
+                    mode: 'diagnostic_roadmap',
+                    topicTitle: activeNode.title,
+                    grade: activeNode.grade
+                  })
+                }
+                className="cs-deck-btn px-4 py-2.5 rounded-md bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{isEn ? 'Syn AI Mode 3: Build My Roadmap' : 'Syn AI Chế Độ 3: Tạo Sơ Đồ Riêng'}</span>
+              </button>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onNavigateSubject('growth_hub')}
+                  className="cs-deck-btn px-2.5 py-1.5 rounded bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/70 border border-rose-300/80 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isEn ? 'Error SM-2' : 'Sổ Lỗi & SM-2'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigateSubject('exams')}
+                  className="cs-deck-btn px-2.5 py-1.5 rounded bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/70 border border-sky-300/80 dark:border-sky-500/40 text-sky-700 dark:text-sky-200 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                >
+                  <Target className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isEn ? 'Weak Mock' : 'Đề Điểm Yếu'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

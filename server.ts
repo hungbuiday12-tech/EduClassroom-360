@@ -3903,6 +3903,525 @@ app.get('/api/spatial/coop/rooms/:roomId', (req: Request, res: Response) => {
   });
 });
 
+// =====================================================================
+// #7 PDF / IMAGE TO 5-STEP LESSON STUDIO
+// =====================================================================
+app.post('/api/gemini/pdf-to-lesson', async (req: Request, res: Response) => {
+  try {
+    const {
+      titleHint = '',
+      subject = 'math',
+      grade = 'Lớp 12',
+      extractedText = '',
+      imageBase64 = '',
+      mimeType = 'image/jpeg',
+      language = 'vi'
+    } = req.body || {};
+
+    const cleanText = String(extractedText || '').trim().slice(0, 14000);
+    const cleanImg = typeof imageBase64 === 'string' && imageBase64.includes(',')
+      ? imageBase64.split(',')[1]
+      : String(imageBase64 || '').trim();
+
+    if (!cleanText && !cleanImg) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp văn bản, file PDF/TXT hoặc ảnh tài liệu.' });
+    }
+
+    const ai = getGenAI();
+    const isEn = language === 'en';
+    const subjLabel = subject === 'physics' ? 'Vật lí' : subject === 'cs' ? 'Tin học' : 'Toán học';
+
+    const systemInstruction = isEn
+      ? `You are a master ${subjLabel} curriculum architect for grades 9–12. Transform the provided document/image into a crisp, mathematically accurate 5-step interactive Synapse lesson using LaTeX ($...$ / $$...$$).`
+      : `Bạn là kiến trúc sư bài giảng ${subjLabel} THPT (lớp 9–12) tại Synapse. Hãy chuyển tài liệu/ảnh trang sách thành một bài giảng 5 bước chuẩn mực, dùng LaTeX ($...$ / $$...$$) rõ ràng, mỗi bước gồm: Khái niệm, Công thức, Giải thích sâu, đúng 2 câu Trắc nghiệm 4 lựa chọn và 1 câu Tự luận ngắn kèm rubric + đáp án mẫu.`;
+
+    const promptText = `Tạo bài giảng 5 bước hoàn chỉnh từ tài liệu sau:
+- Môn học: ${subjLabel}
+- Khối lớp: ${grade}
+- Tiêu đề gợi ý: ${titleHint || 'Tự suy ra từ nội dung'}
+- Nội dung văn bản trích xuất:
+${cleanText || '(Xem trực tiếp trong hình ảnh trang tài liệu đính kèm)'}`;
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        description: { type: Type.STRING },
+        sourceSummary: { type: Type.STRING },
+        keyFormulas: { type: Type.ARRAY, items: { type: Type.STRING } },
+        steps: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              stepTitle: { type: Type.STRING },
+              conceptSection: { type: Type.STRING },
+              primaryFormula: { type: Type.STRING },
+              variablesNote: { type: Type.STRING },
+              deepDiveSection: { type: Type.STRING },
+              keyTakeaway: { type: Type.STRING },
+              miniQuiz: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    correctIndex: { type: Type.INTEGER },
+                    explanation: { type: Type.STRING }
+                  },
+                  required: ['question', 'options', 'correctIndex', 'explanation']
+                }
+              },
+              miniEssay: {
+                type: Type.OBJECT,
+                properties: {
+                  question: { type: Type.STRING },
+                  hint: { type: Type.STRING },
+                  rubricChecklist: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  sampleAnswer: { type: Type.STRING }
+                },
+                required: ['question', 'rubricChecklist', 'sampleAnswer']
+              }
+            },
+            required: ['stepTitle', 'conceptSection', 'primaryFormula', 'deepDiveSection', 'miniQuiz', 'miniEssay']
+          }
+        }
+      },
+      required: ['title', 'description', 'keyFormulas', 'steps']
+    };
+
+    const contents: any = cleanImg
+      ? [{ inlineData: { data: cleanImg, mimeType: mimeType || 'image/jpeg' } }, { text: promptText }]
+      : promptText;
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents,
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema,
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 45000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {});
+    const rawSteps = Array.isArray(parsed?.steps) ? parsed.steps : [];
+    const normalizedSteps = rawSteps.slice(0, 5).map((st: any, idx: number) => {
+      const rawQuiz = Array.isArray(st?.miniQuiz) ? st.miniQuiz : [];
+      const miniQuiz = rawQuiz.slice(0, 2).map((q: any, qIdx: number) => {
+        const opts = Array.isArray(q?.options) && q.options.length >= 2
+          ? q.options.slice(0, 4).map(String)
+          : ['Phương án A', 'Phương án B', 'Phương án C', 'Phương án D'];
+        return {
+          id: `pdf-s${idx}-q${qIdx}`,
+          question: String(q?.question || `Câu hỏi kiểm tra bước ${idx + 1}`),
+          options: opts,
+          correctIndex: Math.min(opts.length - 1, Math.max(0, Number(q?.correctIndex) || 0)),
+          explanation: String(q?.explanation || 'Đối chiếu lại phần Khái niệm và Công thức ở bước này.')
+        };
+      });
+      return {
+        stepTitle: String(st?.stepTitle || `Bước ${idx + 1}: Trọng tâm kiến thức`),
+        stepType: idx === 0 ? 'concept' : idx === 1 ? 'derivation' : idx === 2 ? 'example' : idx === 3 ? 'pitfall' : 'intuition',
+        conceptSection: String(st?.conceptSection || st?.deepDiveSection || ''),
+        teacherExplanation: String(st?.conceptSection || ''),
+        formulaSection: {
+          primaryFormula: String(st?.primaryFormula || ''),
+          variablesNote: String(st?.variablesNote || '')
+        },
+        formulaHighlight: String(st?.primaryFormula || ''),
+        deepDiveSection: String(st?.deepDiveSection || ''),
+        keyTakeaway: String(st?.keyTakeaway || ''),
+        miniQuiz,
+        miniEssay: {
+          id: `pdf-s${idx}-essay`,
+          question: String(st?.miniEssay?.question || `Hãy tóm tắt bản chất và một ứng dụng của ${st?.stepTitle || 'bước này'}.`),
+          hint: String(st?.miniEssay?.hint || ''),
+          rubricChecklist: Array.isArray(st?.miniEssay?.rubricChecklist)
+            ? st.miniEssay.rubricChecklist.slice(0, 4).map(String)
+            : ['Nêu đúng định nghĩa/điều kiện', 'Viết đúng công thức liên hệ', 'Giải thích rõ ý nghĩa thực tế'],
+          sampleAnswer: String(st?.miniEssay?.sampleAnswer || '')
+        }
+      };
+    });
+
+    if (normalizedSteps.length === 0) {
+      return res.status(500).json({ error: 'AI chưa trích xuất được cấu trúc 5 bước từ tài liệu này.' });
+    }
+
+    return res.json({
+      success: true,
+      lesson: {
+        id: `custom_lesson_${Date.now()}`,
+        subject: subject === 'physics' || subject === 'cs' ? subject : 'math',
+        grade: String(grade || 'Lớp 12'),
+        title: String(parsed?.title || titleHint || 'Bài giảng 5 bước từ tài liệu'),
+        description: String(parsed?.description || 'Bài giảng được hệ thống Synapse AI cấu trúc hóa thành 5 bước học chủ động.'),
+        sourceSummary: String(parsed?.sourceSummary || cleanText.slice(0, 220)),
+        keyFormulas: Array.isArray(parsed?.keyFormulas) ? parsed.keyFormulas.slice(0, 8).map(String) : [],
+        steps: normalizedSteps,
+        createdAt: new Date().toISOString()
+      }
+    });
+  } catch (err: any) {
+    console.error('Error in /api/gemini/pdf-to-lesson:', err);
+    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+  }
+});
+
+// =====================================================================
+// #5 HANDS-FREE SYN AI VOICE MENTOR IN 3D
+// =====================================================================
+app.post('/api/gemini/voice-mentor-3d', async (req: Request, res: Response) => {
+  try {
+    const {
+      question = '',
+      spaceName = 'Không gian 3D',
+      modelTitle = '',
+      partName = '',
+      partDescription = '',
+      formula = '',
+      language = 'vi'
+    } = req.body || {};
+
+    const q = String(question || '').trim();
+    if (!q) {
+      return res.status(400).json({ error: 'Vui lòng nói hoặc nhập câu hỏi.' });
+    }
+
+    const ai = getGenAI();
+    const isEn = language === 'en';
+    const systemInstruction = isEn
+      ? 'You are Syn AI 3D Voice Mentor guiding a student who is using hands-free gestures in 3D space. Keep spokenAnswer concise (2-4 clear sentences, natural when read aloud) and put exact math/physics notation in formulaHighlight.'
+      : 'Bạn là Trợ lý Giọng nói Syn AI song hành khi học sinh đang thao tác 3D rảnh tay. Hãy trả lời phần spokenAnswer thật súc tích (2–4 câu tự nhiên dễ nghe khi đọc thành tiếng), không viết ký tự markdown rối mắt trong spokenAnswer, và đặt công thức chuẩn KaTeX (nếu có) vào formulaHighlight.';
+
+    const promptText = `Ngữ cảnh 3D hiện tại:
+- Phòng lab: ${spaceName}
+- Mô hình đang xem: ${modelTitle || 'Mô hình 3D tương tác'}
+- Bộ phận đang chọn/tách: ${partName || 'Toàn bộ mô hình'}
+- Mô tả bộ phận: ${partDescription || 'Chưa có mô tả thêm'}
+- Công thức tham chiếu: ${formula || 'Chưa rõ'}
+- Câu hỏi bằng giọng nói của học sinh: "${q}"`;
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        spokenAnswer: { type: Type.STRING },
+        formulaHighlight: { type: Type.STRING },
+        suggestedFollowUps: { type: Type.ARRAY, items: { type: Type.STRING } }
+      },
+      required: ['spokenAnswer', 'formulaHighlight', 'suggestedFollowUps']
+    };
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: promptText,
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema,
+      thinkingLevel: ThinkingLevel.MINIMAL,
+      timeoutMs: 18000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {});
+    return res.json({
+      success: true,
+      spokenAnswer: String(parsed?.spokenAnswer || (isEn ? 'Observe how this component interacts with the whole assembly as you rotate or explode it.' : 'Em hãy quan sát cách bộ phận này liên kết với tổng thể khi tách cấu trúc và xoay quanh trục nhé.')),
+      formulaHighlight: String(parsed?.formulaHighlight || formula || ''),
+      suggestedFollowUps: Array.isArray(parsed?.suggestedFollowUps)
+        ? parsed.suggestedFollowUps.slice(0, 3).map(String)
+        : isEn
+        ? ['Explain the main physics law', 'What happens if I scale it 2x?']
+        : ['Định luật nào chi phối cơ cấu này?', 'Nếu tăng kích thước gấp đôi thì sao?']
+    });
+  } catch (err: any) {
+    console.error('Error in /api/gemini/voice-mentor-3d:', err);
+    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+  }
+});
+
+// =====================================================================
+// #8 COMMUNITY 2D/3D/CS SHOWCASE GALLERY STORE
+// =====================================================================
+const SHOWCASE_DB_PATH = path.resolve(process.cwd(), '.showcase_db.json');
+
+interface ShowcaseItemServer {
+  id: string;
+  category: '3d_model' | '2d_canvas' | 'cs_algo';
+  subject: 'math' | 'physics' | 'cs';
+  title: string;
+  description: string;
+  authorName: string;
+  authorHandle?: string;
+  tags: string[];
+  likes: number;
+  previewImageDataUrl?: string;
+  payload3dModel?: any;
+  payloadCode?: { language: 'cpp' | 'python'; code: string; complexity?: string };
+  payload2dMeta?: { modeId: string; shapeCount: number; caption?: string };
+  createdAt: string;
+}
+
+const DEFAULT_SHOWCASE_ITEMS: ShowcaseItemServer[] = [
+  {
+    id: 'sc_seed_orbital_armillary',
+    category: '3d_model',
+    subject: 'physics',
+    title: 'Hệ Thiên Cầu Con Quay Hồi Chuyển 3 Trục',
+    description: 'Mô hình lắp ráp 4 vòng gimbal đồng tâm minh họa bảo toàn mô-men động lượng khi tách lớp 3D.',
+    authorName: 'Minh Khôi · 11 Lý',
+    authorHandle: '@khoi_optics',
+    tags: ['Cơ học', 'Gymbal 3D', 'Lắp ráp'],
+    likes: 42,
+    payload3dModel: {
+      id: 'custom_seed_gimbal',
+      titleVi: 'Thiên Cầu Hồi Chuyển 3 Trục',
+      titleEn: '3-Axis Gyroscope Armillary',
+      category: 'Vật lí · Cơ học',
+      descriptionVi: 'Cơ cấu vòng gimbal đồng tâm với trục quay trung tâm bằng titan và đĩa quán tính.',
+      descriptionEn: 'Concentric 3-axis gyroscope rings with flywheel core.',
+      palette: { accent: '#38bdf8', secondary: '#f59e0b', glow: '#22d3ee' },
+      formula: '\\vec{L} = I\\vec{\\omega},\\quad \\vec{\\tau} = \\frac{d\\vec{L}}{dt}',
+      createdAt: '2026-03-10T09:00:00.000Z',
+      parts: [
+        { id: 'flywheel', nameVi: 'Đĩa đà trung tâm', nameEn: 'Central Flywheel', functionVi: 'Tích trữ mô-men động lượng L quanh trục quay.', shape: 'cylinder', position: [0, 0, 0], size: [1.1, 0.28, 1.1], rotation: [0, 0, 0], color: '#f59e0b', explodeVec: [0, 0, 0] },
+        { id: 'inner_ring', nameVi: 'Vòng gimbal trong', nameEn: 'Inner Gimbal', functionVi: 'Cho phép nghiêng trục tự do theo phương X.', shape: 'torus', position: [0, 0, 0], size: [1.45, 0.12, 1.45], rotation: [1.57, 0, 0], color: '#38bdf8', explodeVec: [0, 1.4, 0] },
+        { id: 'outer_ring', nameVi: 'Vòng gimbal ngoài', nameEn: 'Outer Gimbal', functionVi: 'Khung cố định gắn trục đứng bảo toàn phương.', shape: 'torus', position: [0, 0, 0], size: [1.9, 0.14, 1.9], rotation: [0, 0.4, 0], color: '#6366f1', explodeVec: [1.6, 0, 0] },
+        { id: 'base_pedestal', nameVi: 'Chân đế từ tính', nameEn: 'Magnetic Base', functionVi: 'Bệ đỡ giảm chấn giữ ổn định trục quay.', shape: 'cone', position: [0, -1.8, 0], size: [0.9, 0.7, 0.9], rotation: [0, 0, 0], color: '#334155', explodeVec: [0, -1.5, 0] }
+      ]
+    },
+    createdAt: '2026-03-10T09:00:00.000Z'
+  },
+  {
+    id: 'sc_seed_oxyz_pyramid',
+    category: '3d_model',
+    subject: 'math',
+    title: 'Khối Chóp Tứ Giác Đều & Thiết Diện Oxyz',
+    description: 'Tạo trực tiếp trong Xưởng 3D để minh họa góc giữa mặt bên và mặt đáy $S.ABCD$.',
+    authorName: 'Thảo Vy · 12 Toán',
+    authorHandle: '@vy_geometry',
+    tags: ['Hình học Oxyz', 'Khối chóp', 'Toán 12'],
+    likes: 37,
+    payload3dModel: {
+      id: 'custom_seed_pyramid',
+      titleVi: 'Chóp Tứ Giác S.ABCD & Mặt Đáy',
+      titleEn: 'Regular Square Pyramid S.ABCD',
+      category: 'Toán · Oxyz',
+      descriptionVi: 'Mô hình khối chóp đều có tâm đáy O, đường cao SO và mặt đáy vuông góc.',
+      descriptionEn: 'Square pyramid with height SO and base plate.',
+      palette: { accent: '#2563eb', secondary: '#14b8a6', glow: '#60a5fa' },
+      formula: 'V = \\frac{1}{3} S_{\\text{đáy}} \\cdot h,\\quad d(O, (SBC)) = \\frac{ah}{\\sqrt{a^2 + 4h^2}}',
+      createdAt: '2026-03-11T10:15:00.000Z',
+      parts: [
+        { id: 'apex', nameVi: 'Đỉnh S & khối nón dẫn', nameEn: 'Apex S', functionVi: 'Đỉnh hình chóp tạo góc phẳng với 4 cạnh bên.', shape: 'cone', position: [0, 0.65, 0], size: [1.35, 2.2, 1.35], rotation: [0, 0.785, 0], color: '#3b82f6', explodeVec: [0, 1.5, 0] },
+        { id: 'height_axis', nameVi: 'Đường cao SO', nameEn: 'Altitude SO', functionVi: 'Đoạn vuông góc hạ từ đỉnh S xuống tâm O.', shape: 'cylinder', position: [0, 0.4, 0], size: [0.09, 2.1, 0.09], rotation: [0, 0, 0], color: '#f43f5e', explodeVec: [-1.4, 0.4, 0] },
+        { id: 'base_square', nameVi: 'Mặt đáy ABCD', nameEn: 'Base ABCD', functionVi: 'Hình vuông cạnh a nằm trên mặt phẳng (Oxy).', shape: 'box', position: [0, -0.55, 0], size: [2.1, 0.16, 2.1], rotation: [0, 0, 0], color: '#14b8a6', explodeVec: [0, -1.4, 0] }
+      ]
+    },
+    createdAt: '2026-03-11T10:15:00.000Z'
+  },
+  {
+    id: 'sc_seed_2d_conic_art',
+    category: '2d_canvas',
+    subject: 'math',
+    title: 'Quỹ Đạo Giao Điểm Parabol & Elip 2D',
+    description: 'Bản phác thảo tay 2D trong chế độ Tự do tạo minh họa tiêu điểm quang học của Elip.',
+    authorName: 'Gia Bảo · Chuyên Toán',
+    authorHandle: '@bao_conic',
+    tags: ['Tự do tạo 2D', 'Elip', 'Parabol'],
+    likes: 29,
+    payload2dMeta: {
+      modeId: 'free_create',
+      shapeCount: 7,
+      caption: 'Hệ trục Oxy + Elip + 2 tia phản xạ tiêu điểm F1, F2'
+    },
+    createdAt: '2026-03-12T14:20:00.000Z'
+  },
+  {
+    id: 'sc_seed_cs_segtree',
+    category: 'cs_algo',
+    subject: 'cs',
+    title: 'Segment Tree Lazy Propagation Chuẩn VNOI',
+    description: 'Template C++20 cập nhật đoạn + truy vấn tổng/max chạy O(log N) không tràn số long long.',
+    authorName: 'Hoàng Nam · Tin OLP',
+    authorHandle: '@nam_vnoi',
+    tags: ['C++20', 'Segment Tree', 'VNOI'],
+    likes: 54,
+    payloadCode: {
+      language: 'cpp',
+      complexity: 'O((N + Q) log N)',
+      code: `#include <bits/stdc++.h>
+using namespace std;
+
+const int MAXN = 200005;
+long long st[4 * MAXN], lazy[4 * MAXN];
+
+void push(int id, int l, int r) {
+    if (!lazy[id]) return;
+    int mid = (l + r) >> 1;
+    st[id << 1] += lazy[id] * (mid - l + 1);
+    st[id << 1 | 1] += lazy[id] * (r - mid);
+    lazy[id << 1] += lazy[id];
+    lazy[id << 1 | 1] += lazy[id];
+    lazy[id] = 0;
+}
+
+void update(int id, int l, int r, int u, int v, long long val) {
+    if (v < l || r < u) return;
+    if (u <= l && r <= v) {
+        st[id] += val * (r - l + 1);
+        lazy[id] += val;
+        return;
+    }
+    push(id, l, r);
+    int mid = (l + r) >> 1;
+    update(id << 1, l, mid, u, v, val);
+    update(id << 1 | 1, mid + 1, r, u, v, val);
+    st[id] = st[id << 1] + st[id << 1 | 1];
+}
+
+long long query(int id, int l, int r, int u, int v) {
+    if (v < l || r < u) return 0;
+    if (u <= l && r <= v) return st[id];
+    push(id, l, r);
+    int mid = (l + r) >> 1;
+    return query(id << 1, l, mid, u, v) + query(id << 1 | 1, mid + 1, r, u, v);
+}`
+    },
+    createdAt: '2026-03-13T18:05:00.000Z'
+  },
+  {
+    id: 'sc_seed_cs_dijkstra',
+    category: 'cs_algo',
+    subject: 'cs',
+    title: 'Dijkstra Priority Queue + Truy Vết Đường Đi',
+    description: 'Mã nguồn sạch tối ưu cho bài toán đồ thị có hướng trọng số dương trong đề HSG.',
+    authorName: 'Lan Anh · 11 Tin',
+    authorHandle: '@lananh_graph',
+    tags: ['Dijkstra', 'Đồ thị', 'Python / C++'],
+    likes: 31,
+    payloadCode: {
+      language: 'cpp',
+      complexity: 'O((V + E) log V)',
+      code: `#include <bits/stdc++.h>
+using namespace std;
+using pii = pair<long long, int>;
+const long long INF = 1e18;
+
+vector<long long> dijkstra(int s, int n, const vector<vector<pair<int, int>>>& adj) {
+    vector<long long> dist(n + 1, INF);
+    priority_queue<pii, vector<pii>, greater<pii>> pq;
+    dist[s] = 0;
+    pq.push({0, s});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+        if (d > dist[u]) continue;
+        for (auto [v, w] : adj[u]) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return dist;
+}`
+    },
+    createdAt: '2026-03-14T11:30:00.000Z'
+  }
+];
+
+function loadShowcaseDb(): ShowcaseItemServer[] {
+  try {
+    if (fs.existsSync(SHOWCASE_DB_PATH)) {
+      const raw = fs.readFileSync(SHOWCASE_DB_PATH, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
+        return parsed.items;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read .showcase_db.json, seeding defaults:', err);
+  }
+  saveShowcaseDb(DEFAULT_SHOWCASE_ITEMS);
+  return [...DEFAULT_SHOWCASE_ITEMS];
+}
+
+function saveShowcaseDb(items: ShowcaseItemServer[]) {
+  try {
+    fs.writeFileSync(SHOWCASE_DB_PATH, JSON.stringify({ items: items.slice(0, 120) }, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to persist .showcase_db.json:', err);
+  }
+}
+
+let showcaseItemsCache: ShowcaseItemServer[] = loadShowcaseDb();
+
+app.get('/api/showcase', (_req: Request, res: Response) => {
+  const sorted = [...showcaseItemsCache].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  return res.json({ items: sorted });
+});
+
+app.post('/api/showcase', (req: Request, res: Response) => {
+  const body = req.body || {};
+  const title = String(body.title || '').trim().slice(0, 110);
+  if (!title) {
+    return res.status(400).json({ error: 'Vui lòng nhập tiêu đề tác phẩm.' });
+  }
+
+  const category =
+    body.category === '2d_canvas' || body.category === 'cs_algo' ? body.category : '3d_model';
+  const subject =
+    body.subject === 'physics' || body.subject === 'cs' ? body.subject : 'math';
+
+  const newItem: ShowcaseItemServer = {
+    id: `sc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    category,
+    subject,
+    title,
+    description: String(body.description || 'Tác phẩm STEM chia sẻ từ xưởng Synapse.').trim().slice(0, 500),
+    authorName: String(body.authorName || 'Thành viên Synapse').trim().slice(0, 60),
+    authorHandle: typeof body.authorHandle === 'string' ? body.authorHandle.slice(0, 40) : undefined,
+    tags: Array.isArray(body.tags) ? body.tags.slice(0, 5).map((t: any) => String(t).slice(0, 28)) : ['STEM'],
+    likes: 1,
+    previewImageDataUrl:
+      typeof body.previewImageDataUrl === 'string' && body.previewImageDataUrl.length < 400000
+        ? body.previewImageDataUrl
+        : undefined,
+    payload3dModel: body.payload3dModel || undefined,
+    payloadCode: body.payloadCode || undefined,
+    payload2dMeta: body.payload2dMeta || undefined,
+    createdAt: new Date().toISOString()
+  };
+
+  showcaseItemsCache = [newItem, ...showcaseItemsCache].slice(0, 120);
+  saveShowcaseDb(showcaseItemsCache);
+  return res.status(201).json({ success: true, item: newItem });
+});
+
+app.post('/api/showcase/:id/like', (req: Request, res: Response) => {
+  const id = String(req.params.id || '');
+  const delta = Number(req.body?.delta) < 0 ? -1 : 1;
+  const idx = showcaseItemsCache.findIndex((i) => i.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ error: 'Không tìm thấy tác phẩm.' });
+  }
+  const updatedLikes = Math.max(0, (showcaseItemsCache[idx].likes || 0) + delta);
+  showcaseItemsCache[idx] = { ...showcaseItemsCache[idx], likes: updatedLikes };
+  saveShowcaseDb(showcaseItemsCache);
+  return res.json({ success: true, likes: updatedLikes });
+});
+
+app.delete('/api/showcase/:id', (req: Request, res: Response) => {
+  const id = String(req.params.id || '');
+  showcaseItemsCache = showcaseItemsCache.filter((i) => i.id !== id);
+  saveShowcaseDb(showcaseItemsCache);
+  return res.json({ success: true });
+});
+
 function attachSpatialCoopWebSocket(httpServer: http.Server): void {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 512 * 1024 });
 

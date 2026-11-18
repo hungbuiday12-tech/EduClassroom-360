@@ -18,7 +18,9 @@ import {
   PanelLeftOpen,
   ListOrdered,
   X,
-  Download
+  Download,
+  Flame,
+  Layers
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigation } from '../context/NavigationContext';
@@ -431,6 +433,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
             'bg-violet-50/85 dark:bg-violet-950/30 border border-violet-300/80 dark:border-violet-500/35 text-violet-900 dark:text-violet-200 hover:bg-violet-100 dark:hover:bg-violet-900/50 hover:border-violet-400',
           activeClass:
             'bg-gradient-to-r from-violet-600 to-purple-600 border border-violet-400 text-white shadow-md shadow-violet-600/25'
+        },
+        {
+          id: 'growth_hub',
+          labelVi: 'Sổ Lỗi Sai & SM-2',
+          labelEn: 'Error Notebook & SM-2',
+          icon: (
+            <span className="icon-anim-zap">
+              <Flame className="w-5 h-5 shrink-0" />
+            </span>
+          ),
+          idleClass:
+            'bg-rose-50/85 dark:bg-rose-950/30 border border-rose-300/80 dark:border-rose-500/35 text-rose-900 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-900/50 hover:border-rose-400',
+          activeClass:
+            'bg-gradient-to-r from-rose-600 to-amber-500 border border-rose-400 text-white shadow-md shadow-rose-600/25'
+        },
+        {
+          id: 'showcase',
+          labelVi: 'Thư viện Sáng tạo',
+          labelEn: '2D/3D Showcase',
+          icon: (
+            <span className="icon-anim-cosmos">
+              <Layers className="w-5 h-5 shrink-0" />
+            </span>
+          ),
+          idleClass:
+            'bg-cyan-50/85 dark:bg-cyan-950/30 border border-cyan-300/80 dark:border-cyan-500/35 text-cyan-900 dark:text-cyan-200 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 hover:border-cyan-400',
+          activeClass:
+            'bg-gradient-to-r from-cyan-600 to-indigo-600 border border-cyan-400 text-white shadow-md shadow-cyan-600/25'
         }
       ]
     }

@@ -1,4 +1,4 @@
-export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'physics_sims' | 'cs' | 'exams' | 'arena' | 'forum';
+export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'physics_sims' | 'cs' | 'exams' | 'arena' | 'forum' | 'growth_hub' | 'showcase';
 
 export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
 
@@ -805,4 +805,152 @@ export interface WeeklyLeaderboardEntry {
   totalTimeSec: number;
   updatedAt: string;
 }
+
+// ============================================================================
+// GROWTH SUITE: ERROR NOTEBOOK, SM-2 FLASHCARDS, QUESTS, BADGES, SHOWCASE
+// ============================================================================
+
+export type GrowthSubject = 'math' | 'physics' | 'cs';
+
+export interface ErrorNotebookEntry {
+  id: string;
+  subject: GrowthSubject;
+  sourceType: 'lecture_mcq' | 'lecture_essay' | 'cs_judge' | 'mock_test';
+  lessonKey?: string;
+  lessonTitle: string;
+  stepTitle?: string;
+  prompt: string;
+  userAnswer: string;
+  correctAnswer: string;
+  explanation: string;
+  resolved: boolean;
+  reviewCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FlashcardSM2Item {
+  id: string;
+  subject: GrowthSubject;
+  topic: string;
+  front: string;
+  back: string;
+  tip?: string;
+  sourceErrorId?: string;
+  easeFactor: number;
+  intervalDays: number;
+  repetitions: number;
+  dueAt: string;
+  lastReviewedAt?: string;
+  createdAt: string;
+}
+
+export interface DailyQuestItem {
+  id: 'focus_pomodoro' | 'practice_quiz_or_code' | 'review_errors_or_cards';
+  titleVi: string;
+  titleEn: string;
+  descriptionVi: string;
+  descriptionEn: string;
+  target: number;
+  progress: number;
+  xpReward: number;
+  claimed: boolean;
+}
+
+export interface StemBadge {
+  id: string;
+  titleVi: string;
+  titleEn: string;
+  descriptionVi: string;
+  descriptionEn: string;
+  tier: 'bronze' | 'silver' | 'gold' | 'diamond';
+  unlocked: boolean;
+  unlockedAt?: string;
+  progressText: string;
+}
+
+export interface LearningStreakState {
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: string; // YYYY-MM-DD
+  activeDates: string[];
+  dailyQuestsDate: string;
+  dailyQuests: DailyQuestItem[];
+  stats: {
+    pomodoroCompleted: number;
+    mcqCorrectCount: number;
+    codeAcceptedCount: number;
+    flashcardsReviewed: number;
+    errorsResolved: number;
+    mockTestsCompleted: number;
+    customLessonsCreated: number;
+    showcasePublished: number;
+  };
+}
+
+export interface CustomGeneratedLesson {
+  id: string;
+  subject: GrowthSubject;
+  grade: string;
+  title: string;
+  description: string;
+  sourceSummary: string;
+  keyFormulas: string[];
+  steps: LectureStep[];
+  createdAt: string;
+}
+
+export type ShowcaseCategory = '3d_model' | '2d_canvas' | 'cs_algo';
+
+export interface CommunityShowcaseItem {
+  id: string;
+  category: ShowcaseCategory;
+  subject: GrowthSubject;
+  title: string;
+  description: string;
+  authorName: string;
+  authorHandle?: string;
+  tags: string[];
+  likes: number;
+  likedByMe?: boolean;
+  previewImageDataUrl?: string;
+  payload3dModel?: any;
+  payloadCode?: {
+    language: CodeLanguage;
+    code: string;
+    complexity?: string;
+  };
+  payload2dMeta?: {
+    modeId: string;
+    shapeCount: number;
+    caption?: string;
+  };
+  createdAt: string;
+}
+
+export interface CustomMockQuestionItem {
+  id: string;
+  subject: GrowthSubject;
+  topic: string;
+  grade: string;
+  isWeakTopic: boolean;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+export interface CustomMockTestResult {
+  id: string;
+  title: string;
+  subjects: GrowthSubject[];
+  score10: number;
+  correctCount: number;
+  totalCount: number;
+  durationUsedSec: number;
+  tabSwitchWarnings: number;
+  topicBreakdown: { topic: string; correct: number; total: number }[];
+  completedAt: string;
+}
+
 

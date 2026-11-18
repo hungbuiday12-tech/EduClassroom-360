@@ -47,8 +47,11 @@ import {
   FileUp,
   ClipboardPaste,
   Hash,
-  FileDown
+  FileDown,
+  PenTool
 } from 'lucide-react';
+import { CustomMockTestBuilder } from './CustomMockTestBuilder';
+import { InteractiveScratchpad } from '../common/InteractiveScratchpad';
 
 interface ExamHubProps {
   onNavigateToSubject?: (subject: SubjectType) => void;
@@ -174,6 +177,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
   const [revealedQuestionSolutions, setRevealedQuestionSolutions] = useState<Record<string, boolean>>({});
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [downloadingDocxId, setDownloadingDocxId] = useState<string | null>(null);
+  const [isScratchpadOpen, setIsScratchpadOpen] = useState<boolean>(false);
 
   // Timer countdown
   useEffect(() => {
@@ -781,6 +785,15 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                 <span>{isEn ? 'Download .docx' : 'Tải đề .docx'}</span>
               </button>
 
+              <button
+                type="button"
+                onClick={() => setIsScratchpadOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 hover:bg-sky-100 cursor-pointer"
+              >
+                <PenTool className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Scratchpad' : 'Bảng Nháp'}</span>
+              </button>
+
               {!isExamCompleted ? (
                 <button
                   onClick={handleFinishExam}
@@ -796,6 +809,13 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
               )}
             </div>
           </div>
+
+          <InteractiveScratchpad
+            isOpen={isScratchpadOpen}
+            onClose={() => setIsScratchpadOpen(false)}
+            defaultSubject={activeExam.subject}
+            contextTitle={activeExam.title}
+          />
 
           {/* Official Exam Paper Sheet */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-200/80 dark:border-slate-800/80 shadow-md space-y-8">
@@ -1803,6 +1823,9 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
               </div>
             </div>
           )}
+
+          {/* #6 WEAK-SPOT CUSTOM MOCK TEST BUILDER */}
+          <CustomMockTestBuilder onEarnXP={onEarnXP} />
 
           {/* FAST PROBLEM / EXAM UPLOAD WORKBENCH */}
           <div

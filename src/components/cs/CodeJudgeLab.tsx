@@ -31,6 +31,11 @@ import { useNavigation } from '../../context/NavigationContext';
 import { AlgorithmVisualizer } from './AlgorithmVisualizer';
 import { AlgoId, LESSON_TO_ALGO_MAP } from './visualizer/types';
 import {
+  progressDailyQuest,
+  recordGrowthStat,
+  recordMistake
+} from '../../lib/learningGrowthStore';
+import {
   Play,
   Send,
   RotateCcw,
@@ -371,8 +376,22 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
         origin: { y: 0.6 }
       });
       if (onScoreEarned) onScoreEarned(100);
-    } else if (result.score > 0) {
-      if (onScoreEarned) onScoreEarned(Math.floor(result.score * 0.4));
+      recordGrowthStat('codeAcceptedCount', 1);
+      progressDailyQuest('practice_quiz_or_code', 1);
+    } else {
+      if (result.score > 0 && onScoreEarned) {
+        onScoreEarned(Math.floor(result.score * 0.4));
+      }
+      recordMistake({
+        subject: 'cs',
+        sourceType: 'cs_judge',
+        lessonKey: currentProblem.id,
+        lessonTitle: currentProblem.title,
+        prompt: `${currentProblem.title}: ${currentProblem.description.slice(0, 260)}`,
+        userAnswer: `${judgeLang.toUpperCase()} (${result.passedCount}/${result.totalCount} test · ${result.verdict})`,
+        correctAnswer: currentProblem.advancedSolutionCpp || currentProblem.basicSolutionCpp || currentProblem.solutionAnalysis || 'Xem lời giải tối ưu',
+        explanation: currentProblem.solutionAnalysis || `Cần vượt qua toàn bộ ${result.totalCount} test (cả test ẩn & giới hạn thời gian).`
+      });
     }
   };
 
@@ -563,6 +582,19 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
 
     if (result.score === 100) {
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      recordGrowthStat('codeAcceptedCount', 1);
+      progressDailyQuest('practice_quiz_or_code', 1);
+    } else {
+      recordMistake({
+        subject: 'cs',
+        sourceType: 'cs_judge',
+        lessonKey: codingProb.id,
+        lessonTitle: codingProb.title,
+        prompt: `${codingProb.title}: ${codingProb.description.slice(0, 260)}`,
+        userAnswer: `${curriculumLang.toUpperCase()} (${result.passedCount}/${result.totalCount} test · ${result.verdict})`,
+        correctAnswer: codingProb.advancedSolutionCpp || codingProb.basicSolutionCpp || codingProb.solutionAnalysis || 'Xem lời giải mẫu',
+        explanation: codingProb.solutionAnalysis || 'Kiểm tra lại điều kiện biên và độ phức tạp thuật toán.'
+      });
     }
     if (xpDelta > 0 && onScoreEarned) {
       onScoreEarned(xpDelta);

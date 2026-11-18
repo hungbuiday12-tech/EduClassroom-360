@@ -23,7 +23,8 @@ import {
   Copy,
   Check,
   Cpu,
-  Radio
+  Radio,
+  PenTool
 } from 'lucide-react';
 import {
   AITutorMode,
@@ -39,6 +40,7 @@ import { ViewportPortal } from '../common/ViewportPortal';
 import { safeFetchJson, streamTutorChat } from '../../lib/apiClient';
 import { useNavigation, getLocationLabel } from '../../context/NavigationContext';
 import { VoiceMicButton } from '../common/VoiceMicButton';
+import { InteractiveScratchpad } from '../common/InteractiveScratchpad';
 
 export const AI_ROADMAPS_STORAGE_KEY = 'educlassroom_ai_roadmaps_v1';
 
@@ -353,6 +355,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   });
   const [diagLoadingQuiz, setDiagLoadingQuiz] = useState(false);
   const [diagLoadingRoadmap, setDiagLoadingRoadmap] = useState(false);
+  const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
   const [diagError, setDiagError] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
 
@@ -1527,6 +1530,15 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
               }
             />
 
+            <button
+              type="button"
+              onClick={() => setIsScratchpadOpen(true)}
+              className="p-2.5 rounded-md bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950/60 text-slate-600 dark:text-slate-300 hover:text-sky-600 border border-slate-200 dark:border-slate-700 cursor-pointer shrink-0 transition-all"
+              title={isEn ? 'Open Scratchpad & Math Ink' : 'Mở Bảng Nháp Vẽ Tay & Công Thức'}
+            >
+              <PenTool className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+            </button>
+
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -1564,6 +1576,21 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           </div>
         </div>
       </div>
+      <InteractiveScratchpad
+        isOpen={isScratchpadOpen}
+        onClose={() => setIsScratchpadOpen(false)}
+        defaultSubject={activeSubject}
+        contextTitle={context.topicTitle || activeMeta.nameVi}
+        onAttachToTutor={(imgDataUrl, latexNote) => {
+          const cleanBase64 = imgDataUrl.includes(',') ? imgDataUrl.split(',')[1] : imgDataUrl;
+          setPendingImage({ base64: cleanBase64, mimeType: 'image/jpeg' });
+          if (latexNote) {
+            setInputText((prev) => (prev.trim() ? `${prev.trim()}\n$$${latexNote}$$` : `$$${latexNote}$$`));
+          } else if (!inputText.trim()) {
+            setInputText('Hãy kiểm tra giúp em từng bước trong ảnh bài nháp này.');
+          }
+        }}
+      />
     </div>
   );
 

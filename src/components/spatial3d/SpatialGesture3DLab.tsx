@@ -648,6 +648,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   customModelsRef.current = customModels;
   const [activeCustomId, setActiveCustomId] = useState<string | null>(null);
   const [spaceMode, setSpaceMode] = useState<SpaceMode>('3d');
+  const [arMode, setArMode] = useState<boolean>(false);
+  const arModeRef = useRef<boolean>(false);
+  arModeRef.current = arMode;
+  const arBgVideoRef = useRef<HTMLVideoElement | null>(null);
   const [mode2D, setMode2D] = useState<Spatial2DModeId>('free_create');
   const [free2DTool, setFree2DTool] = useState<Free2DToolId>('freehand');
   const [free2DColor, setFree2DColor] = useState<string>('#22d3ee');
@@ -2293,10 +2297,12 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const initGs = paramsRef.current.gestureSettings;
     const isLowPerfInit = isLowPerfSettings(softwareGl, initGs);
     const renderer = new THREE.WebGLRenderer({
+      alpha: true,
       antialias: !isLowPerfInit,
       powerPreference: 'high-performance',
       preserveDrawingBuffer: false
     });
+    renderer.setClearColor(0x050914, 1);
     renderer.setSize(width, height);
     renderer.setPixelRatio(computeEffectiveDpr(softwareGl, initGs));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -3660,7 +3666,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         prevGestureRef.current = currentGesture;
 
         runtime.axesGroup.visible = cfg.showAxes;
-        runtime.floorGroup.visible = cfg.showAxes;
+        runtime.floorGroup.visible = arModeRef.current ? true : cfg.showAxes;
+        runtime.floorDisc.visible = !arModeRef.current;
 
         cursorGroup.position.x = THREE.MathUtils.damp(cursorGroup.position.x, smoothTargetRef.current.cursorX, 12, dt);
         cursorGroup.position.y = THREE.MathUtils.damp(cursorGroup.position.y, smoothTargetRef.current.cursorY, 12, dt);
@@ -4829,6 +4836,27 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     videoEl.play().catch(() => {});
   }, [cameraActive, hudHidden]);
 
+  // Sync WebAR transparent WebGL background & live webcam desk feed
+  useEffect(() => {
+    const rt = runtimeRef.current;
+    if (rt) {
+      const isAr = arMode && spaceMode === '3d';
+      rt.renderer.setClearColor(isAr ? 0x000000 : 0x050914, isAr ? 0 : 1);
+      rt.renderer.domElement.style.background = isAr ? 'transparent' : '';
+      rt.scene.background = isAr ? null : new THREE.Color(0x050914);
+      rt.scene.fog = isAr ? null : new THREE.FogExp2(0x050914, 0.022);
+      rt.floorDisc.visible = !isAr;
+      if (isAr) rt.floorGroup.visible = true;
+    }
+    if (arMode && spaceMode === '3d' && cameraActive && streamRef.current && arBgVideoRef.current) {
+      const bgVid = arBgVideoRef.current;
+      if (bgVid.srcObject !== streamRef.current) {
+        bgVid.srcObject = streamRef.current;
+      }
+      bgVid.play().catch(() => {});
+    }
+  }, [arMode, spaceMode, cameraActive, entryView]);
+
   useEffect(() => {
     if (!cameraActive || !streamRef.current) return;
     const track = streamRef.current.getVideoTracks()[0];
@@ -5523,6 +5551,33 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             : 'h-[calc(100vh-128px)] min-h-[640px]'
         }`}
       >
+        {/* WebAR Spatial Desk Video Underlay */}
+        {entryView === 'studio' && spaceMode === '3d' && arMode && (
+          <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none bg-slate-950">
+            {cameraActive ? (
+              <video
+                ref={arBgVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover opacity-90 ${mirrorCamera ? '-scale-x-100' : ''}`}
+              />
+            ) : (
+              <div className="w-full h-full bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.16),rgba(2,6,23,0.96))] flex items-center justify-center">
+                <div className="text-center px-4 py-2 rounded border border-cyan-500/40 bg-slate-950/85 text-xs text-cyan-200">
+                  {isEn
+                    ? 'Starting camera for WebAR spatial desk overlay...'
+                    : 'Đang kích hoạt Camera để chiếu mô hình 3D lên bàn học thật...'}
+                </div>
+              </div>
+            )}
+            <div className="absolute top-16 left-4 flex items-center gap-2 px-2.5 py-1 rounded border border-emerald-400/50 bg-slate-950/75 text-[10px] font-mono font-bold text-emerald-300 tracking-wider">
+              <span className="w-3 h-3 rounded-full border border-dashed border-emerald-400 ar-reticle-spin" />
+              <span>WEBAR SPATIAL OVERLAY ACTIVE</span>
+            </div>
+          </div>
+        )}
+
         {/* Dedicated Three.js 3D Viewport */}
         <div
           ref={canvasMountRef}
@@ -5642,6 +5697,25 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   >
                     <Scan className="w-3.5 h-3.5" />
                     <span>{isEn ? 'Scan Real → 3D' : 'Quét Thực Tế'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !arMode;
+                      setArMode(next);
+                      if (next && !cameraActive) {
+                        void startCamera();
+                      }
+                    }}
+                    className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
+                      arMode
+                        ? 'bg-emerald-500 border-emerald-300 text-slate-950 shadow-md shadow-emerald-500/30'
+                        : 'bg-slate-950/95 border-emerald-400/50 hover:border-emerald-300 text-emerald-200'
+                    }`}
+                    title={isEn ? 'Toggle WebAR Hologram Over Real Desk' : 'Chiếu Hologram 3D trực tiếp lên bàn học thật (WebAR)'}
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>{arMode ? (isEn ? 'AR Active' : 'Đang bật AR') : isEn ? 'AR Desk' : 'AR Bàn Học'}</span>
                   </button>
                   <button
                     type="button"

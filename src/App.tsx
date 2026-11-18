@@ -33,6 +33,8 @@ import { EXAM_PAPERS } from './data/examData';
 import { GrowthWorkspace } from './components/learning/GrowthWorkspace';
 import { LearnerPortfolioModal } from './components/learning/LearnerPortfolioModal';
 import { CommunityShowcaseView } from './components/showcase/CommunityShowcaseView';
+import { FutureLabWorkspace } from './components/future/FutureLabWorkspace';
+import { SynapseVoiceOS } from './components/future/SynapseVoiceOS';
 import { progressDailyQuest, recordGrowthStat, touchDailyActivity } from './lib/learningGrowthStore';
 
 function MainApp() {
@@ -139,6 +141,7 @@ function MainApp() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+  const [isVoiceOSOpen, setIsVoiceOSOpen] = useState(false);
   const { completedSessions } = useFocusTimer();
   const prevPomodoroRef = useRef<number>(completedSessions);
 
@@ -156,7 +159,10 @@ function MainApp() {
     }
     prevPomodoroRef.current = completedSessions;
   }, [completedSessions, user?.uid, firebaseUser?.uid]);
-  const isHeavy3DActive = currentSubject === 'spatial_3d' || currentSubject === 'synapse_v2';
+  const isHeavy3DActive =
+    currentSubject === 'spatial_3d' ||
+    currentSubject === 'synapse_v2' ||
+    currentSubject === 'future_lab';
 
   // Guest explore mode state: allows unauthenticated visitors to explore the classroom
   const [isGuestExploring, setIsGuestExploring] = useState<boolean>(() => {
@@ -282,11 +288,20 @@ function MainApp() {
     window.addEventListener('blur', resetCtrl);
     document.addEventListener('visibilitychange', resetCtrl);
 
+    const onVoiceShortcut = (e: KeyboardEvent) => {
+      if (e.altKey && e.code === 'Space') {
+        e.preventDefault();
+        setIsVoiceOSOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', onVoiceShortcut);
+
     return () => {
       window.removeEventListener('keydown', onKeyDown, { capture: true });
       window.removeEventListener('keyup', onKeyUp, { capture: true });
       window.removeEventListener('blur', resetCtrl);
       document.removeEventListener('visibilitychange', resetCtrl);
+      window.removeEventListener('keydown', onVoiceShortcut);
     };
   }, [navigate, user]);
 
@@ -359,6 +374,7 @@ function MainApp() {
               onOpenMobileMenu={() => setMobileMenuOpen(true)}
               onOpenInstallApp={() => setIsInstallModalOpen(true)}
               onOpenPortfolio={() => setIsPortfolioOpen(true)}
+              onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
             />
 
             {/* Main Viewport Container */}
@@ -380,6 +396,7 @@ function MainApp() {
                       }
                       onOpenSettings={() => setIsSettingsOpen(true)}
                       onOpenInstallApp={() => setIsInstallModalOpen(true)}
+                      onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
                     />
                   )}
 
@@ -464,6 +481,13 @@ function MainApp() {
                       onBack={goBack}
                       onNavigateSubject={selectSubject}
                       onEarnXP={handleEarnXP}
+                    />
+                  )}
+
+                  {currentSubject === 'future_lab' && (
+                    <FutureLabWorkspace
+                      onBack={goBack}
+                      onNavigateSubject={selectSubject}
                     />
                   )}
                 </motion.div>
@@ -732,6 +756,18 @@ function MainApp() {
         isOpen={isPortfolioOpen}
         onClose={() => setIsPortfolioOpen(false)}
         xp={activeXP}
+      />
+      <SynapseVoiceOS
+        isOpen={isVoiceOSOpen}
+        onClose={() => setIsVoiceOSOpen(false)}
+        isDark={isDark}
+        onToggleTheme={handleToggleTheme}
+        onOpenTutor={(subj, promptText) =>
+          handleOpenTutor({
+            subject: subj || 'math',
+            problemStatement: promptText
+          })
+        }
       />
       <OfflineIndicator />
     </>

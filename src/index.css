@@ -2419,9 +2419,42 @@
   }
   .voice-eq-bar,
   .streak-flame-pulse,
-  .quest-bar-shimmer::after {
+  .quest-bar-shimmer::after,
+  .ar-reticle-spin,
+  .voice-os-orb-pulse {
     animation: none !important;
   }
+}
+
+/* ============================================================================
+   FUTURE AI & SPATIAL LAB ANIMATIONS (GPU-Composited)
+   ============================================================================ */
+@keyframes ar-reticle-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ar-reticle-spin {
+  animation: ar-reticle-rotate 18s linear infinite;
+  will-change: transform;
+}
+
+@keyframes voice-orb-breath {
+  0%, 100% { transform: scale(1); opacity: 0.78; }
+  50% { transform: scale(1.12); opacity: 1; }
+}
+
+.voice-os-orb-pulse {
+  animation: voice-orb-breath 2.2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.infinite-canvas-dots {
+  background-image: radial-gradient(rgba(56, 189, 248, 0.24) 1px, transparent 1px);
+}
+
+.dark .infinite-canvas-dots {
+  background-image: radial-gradient(rgba(56, 189, 248, 0.18) 1px, transparent 1px);
 }
 
 @media print {

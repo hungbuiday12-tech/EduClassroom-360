@@ -20,7 +20,8 @@ import {
   Sparkles,
   Download,
   Flame,
-  UserCheck
+  UserCheck,
+  Mic
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -46,6 +47,7 @@ interface HeaderProps {
   onOpenMobileMenu: () => void;
   onOpenInstallApp?: () => void;
   onOpenPortfolio?: () => void;
+  onOpenVoiceOS?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -56,7 +58,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onOpenMobileMenu,
   onOpenInstallApp,
-  onOpenPortfolio
+  onOpenPortfolio,
+  onOpenVoiceOS
 }) => {
   const { user, firebaseUser, openAuthModal, logout } = useAuth();
   const uid = user?.uid || firebaseUser?.uid;
@@ -320,6 +323,19 @@ export const Header: React.FC<HeaderProps> = ({
               EN
             </span>
           </button>
+
+          {/* Voice OS Command Button */}
+          {onOpenVoiceOS && (
+            <button
+              type="button"
+              onClick={onOpenVoiceOS}
+              title={isEn ? 'Open Synapse Voice OS (Alt+Space)' : 'Mở Synapse Voice OS · Ra lệnh giọng nói (Alt+Space)'}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-cyan-400/60 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/70 text-cyan-800 dark:text-cyan-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <Mic className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-300 shrink-0" />
+              <span className="hidden lg:inline">Voice OS</span>
+            </button>
+          )}
 
           {/* XP & Streak Readout -> Opens Portfolio */}
           <button

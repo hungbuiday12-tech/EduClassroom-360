@@ -34,7 +34,13 @@ import {
   AlertTriangle,
   CheckCircle2,
   ClipboardCheck,
-  Images
+  Images,
+  Cpu,
+  Wand2,
+  Camera,
+  Grid3X3,
+  Waves,
+  Mic
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -69,6 +75,7 @@ interface ClassroomOverviewProps {
   onOpenTutor?: (subject?: 'math' | 'physics' | 'cs', mode?: AITutorMode) => void;
   onOpenSettings?: () => void;
   onOpenInstallApp?: () => void;
+  onOpenVoiceOS?: () => void;
 }
 
 export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
@@ -76,7 +83,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   xp,
   onOpenTutor,
   onOpenSettings,
-  onOpenInstallApp
+  onOpenInstallApp,
+  onOpenVoiceOS
 }) => {
   const { user, openAuthModal } = useAuth();
   const { t, language } = useLanguage();
@@ -787,6 +795,114 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <span>{isEn ? 'Open Spatial 3D Lab' : 'Vào Học cảm giác 3D'}</span>
             <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
           </button>
+        </div>
+      </section>
+
+      {/* GATEWAY: PHÒNG LAB TƯƠNG LAI · AI & KHÔNG GIAN 3D */}
+      <section className="sci-frame relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-950 via-[#0d1633] to-slate-900 text-white p-6 sm:p-7 border border-indigo-400/50 shadow-[0_20px_55px_-16px_rgba(99,102,241,0.34)]">
+        <div className="relative z-10 space-y-5">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-4 min-w-0">
+              <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-indigo-500/35 to-cyan-500/35 border border-cyan-300/50 flex items-center justify-center shrink-0">
+                <Cpu className="w-7 h-7 text-cyan-300" />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-cyan-300">
+                  {isEn
+                    ? 'FUTURE LAB SUITE · WEBAR · AI SIM COMPILER · VOICE OS'
+                    : 'PHÒNG LAB TƯƠNG LAI · 7 CÔNG NGHỆ AI & KHÔNG GIAN 3D THẾ HỆ MỚI'}
+                </div>
+                <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-white">
+                  {isEn
+                    ? '3D Knowledge Galaxy, Text/Paper-to-Simulation, Infinite Canvas & Audio FFT 3D'
+                    : 'Vũ Trụ Tri Thức 3D, Sinh Mô Phỏng AI, Giấy Nháp → Sim, Bảng Vô Cực & Sóng FFT 3D'}
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {onOpenVoiceOS && (
+                <button
+                  type="button"
+                  onClick={onOpenVoiceOS}
+                  className="cs-deck-btn px-3.5 py-2.5 rounded bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/60 text-cyan-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                  <span>Voice OS</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => navigate({ subject: 'future_lab', futureTab: 'galaxy3d', tutorOpen: false })}
+                className="cs-deck-btn px-4 py-2.5 rounded bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>{isEn ? 'Enter Future Lab' : 'Vào Phòng Lab Tương Lai'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+            {(
+              [
+                {
+                  tab: 'galaxy3d',
+                  titleVi: 'Vũ trụ Tri thức 3D',
+                  titleEn: '3D Knowledge Galaxy',
+                  descVi: 'Bản sao năng lực + hành tinh lỗi',
+                  icon: Orbit
+                },
+                {
+                  tab: 'text_to_sim',
+                  titleVi: 'Sinh Mô Phỏng AI',
+                  titleEn: 'Text → Simulation',
+                  descVi: 'Gõ đề bài → đồ họa 60fps',
+                  icon: Wand2
+                },
+                {
+                  tab: 'paper_to_sim',
+                  titleVi: 'Giấy Nháp → Sim',
+                  titleEn: 'Paper → Sim Vision',
+                  descVi: 'Chụp vở → mô phỏng & soi lỗi',
+                  icon: Camera
+                },
+                {
+                  tab: 'infinite_canvas',
+                  titleVi: 'Bảng Vô Cực STEM',
+                  titleEn: 'Infinite Canvas',
+                  descVi: 'Đồ thị + 3D + C++ nối dây',
+                  icon: Grid3X3
+                },
+                {
+                  tab: 'audio_fft',
+                  titleVi: 'Sóng Âm FFT 3D',
+                  titleEn: 'Audio FFT 3D Lab',
+                  descVi: 'Micro / Doppler giao thoa 3D',
+                  icon: Waves
+                }
+              ] as const
+            ).map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.tab}
+                  type="button"
+                  onClick={() =>
+                    navigate({ subject: 'future_lab', futureTab: item.tab, tutorOpen: false })
+                  }
+                  className="text-left p-3 rounded border border-slate-700/90 bg-slate-900/80 hover:bg-slate-800 hover:border-cyan-400/70 transition cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-300 group-hover:text-white">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{isEn ? item.titleEn : item.titleVi}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-1 truncate">
+                    {item.descVi}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 

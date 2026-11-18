@@ -20,7 +20,8 @@ import {
   X,
   Download,
   Flame,
-  Layers
+  Layers,
+  Cpu
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigation } from '../context/NavigationContext';
@@ -326,6 +327,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
             'bg-teal-50/85 dark:bg-teal-950/35 border border-teal-300/80 dark:border-teal-500/35 text-teal-900 dark:text-teal-200 hover:bg-teal-100 dark:hover:bg-teal-900/55 hover:border-teal-400',
           activeClass:
             'bg-gradient-to-r from-teal-500 to-emerald-600 border border-teal-300 text-slate-950 font-semibold shadow-md shadow-teal-500/25'
+        },
+        {
+          id: 'future_lab',
+          labelVi: 'Phòng Lab Tương Lai',
+          labelEn: 'Future AI & 3D Lab',
+          badge: 'NEW',
+          icon: (
+            <span className="icon-anim-cosmos">
+              <Cpu className="w-5 h-5 shrink-0" />
+            </span>
+          ),
+          idleClass:
+            'bg-indigo-50/85 dark:bg-indigo-950/35 border border-indigo-300/80 dark:border-indigo-500/35 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/55 hover:border-indigo-400',
+          badgeIdleClass:
+            'bg-indigo-100 dark:bg-indigo-900/70 border border-indigo-300/80 dark:border-indigo-600/50 text-indigo-800 dark:text-indigo-200',
+          activeClass:
+            'bg-gradient-to-r from-indigo-600 to-cyan-500 border border-cyan-300 text-white font-semibold shadow-md shadow-indigo-500/25'
         },
         {
           id: 'physics_sims',

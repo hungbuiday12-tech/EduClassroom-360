@@ -4422,6 +4422,281 @@ app.delete('/api/showcase/:id', (req: Request, res: Response) => {
   return res.json({ success: true });
 });
 
+// =====================================================================
+// FUTURE LAB #2: LIVE PAPER / SKETCH -> INTERACTIVE SIMULATION
+// =====================================================================
+app.post('/api/gemini/paper-to-sim', async (req: Request, res: Response) => {
+  try {
+    const { imageBase64 = '', mimeType = 'image/jpeg', hint = '', language = 'vi' } = req.body || {};
+    const cleanImg =
+      typeof imageBase64 === 'string' && imageBase64.includes(',')
+        ? imageBase64.split(',')[1]
+        : String(imageBase64 || '').trim();
+
+    if (!cleanImg && !String(hint).trim()) {
+      return res.status(400).json({ error: 'Vui lòng chụp ảnh giấy nháp hoặc nhập mô tả hình/phương trình.' });
+    }
+
+    const ai = getGenAI();
+    const isEn = language === 'en';
+
+    const systemInstruction = isEn
+      ? `You are Synapse Multimodal Paper-to-Simulation AI. Inspect the handwritten diagram, graph, geometry, or physics equation in the image (or hint) and convert it into a runnable simulation configuration (simKind must be one of: parabola, trig_wave, projectile, pendulum, spring, incline, oxyz_solid). Also provide a line-by-line stepsCheck pointing out any math/physics errors if equations appear.`
+      : `Bạn là AI Thị giác Đa phương thức của Synapse. Hãy đọc hình vẽ/biểu thức viết tay trên giấy nháp (hoặc gợi ý văn bản) và chuyển thành cấu hình mô phỏng chạy tương tác ngay (simKind bắt buộc thuộc 1 trong 7 loại: parabola, trig_wave, projectile, pendulum, spring, incline, oxyz_solid). Đồng thời kiểm tra từng dòng bài làm (stepsCheck) để chỉ ra bước đúng hoặc chỗ sai dấu/sai công thức nếu có.`;
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        detectedSubject: { type: Type.STRING },
+        title: { type: Type.STRING },
+        detectedFormula: { type: Type.STRING },
+        simKind: { type: Type.STRING },
+        summary: { type: Type.STRING },
+        params: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              key: { type: Type.STRING },
+              label: { type: Type.STRING },
+              unit: { type: Type.STRING },
+              min: { type: Type.NUMBER },
+              max: { type: Type.NUMBER },
+              step: { type: Type.NUMBER },
+              value: { type: Type.NUMBER }
+            },
+            required: ['key', 'label', 'unit', 'min', 'max', 'step', 'value']
+          }
+        },
+        stepsCheck: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              line: { type: Type.STRING },
+              status: { type: Type.STRING },
+              note: { type: Type.STRING }
+            },
+            required: ['line', 'status', 'note']
+          }
+        }
+      },
+      required: ['detectedSubject', 'title', 'detectedFormula', 'simKind', 'summary', 'params', 'stepsCheck']
+    };
+
+    const promptText = `Phân tích tờ giấy nháp STEM và tạo mô phỏng tương tác. Gợi ý bổ sung từ học sinh: ${String(hint || 'Không có')}. Hãy chọn simKind phù hợp nhất và 2–4 thông số slider thực tế.`;
+    const contents: any = cleanImg
+      ? [{ inlineData: { data: cleanImg, mimeType: mimeType || 'image/jpeg' } }, { text: promptText }]
+      : promptText;
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents,
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema,
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 35000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {});
+    const validKinds = ['parabola', 'trig_wave', 'projectile', 'pendulum', 'spring', 'incline', 'oxyz_solid'];
+    const simKind = validKinds.includes(parsed?.simKind) ? parsed.simKind : 'parabola';
+
+    const result = {
+      detectedSubject: parsed?.detectedSubject === 'physics' ? 'physics' : 'math',
+      title: String(parsed?.title || 'Mô phỏng trích xuất từ giấy nháp').slice(0, 120),
+      detectedFormula: String(parsed?.detectedFormula || '$y = ax^2 + bx + c$'),
+      simKind,
+      summary: String(parsed?.summary || 'Đã nhận diện cấu trúc toán/lí và dựng lại thành mô phỏng có thanh trượt.'),
+      params:
+        Array.isArray(parsed?.params) && parsed.params.length > 0
+          ? parsed.params.slice(0, 4).map((p: any, idx: number) => ({
+              key: String(p.key || `p${idx}`),
+              label: String(p.label || `Tham số ${idx + 1}`),
+              unit: String(p.unit || ''),
+              min: Number.isFinite(Number(p.min)) ? Number(p.min) : -5,
+              max: Number.isFinite(Number(p.max)) ? Number(p.max) : 10,
+              step: Number.isFinite(Number(p.step)) && Number(p.step) > 0 ? Number(p.step) : 0.1,
+              value: Number.isFinite(Number(p.value)) ? Number(p.value) : 1
+            }))
+          : [
+              { key: 'a', label: 'Hệ số a', unit: '', min: -3, max: 3, step: 0.1, value: 1 },
+              { key: 'b', label: 'Hệ số b', unit: '', min: -5, max: 5, step: 0.2, value: -2 },
+              { key: 'c', label: 'Hệ số c', unit: '', min: -5, max: 5, step: 0.2, value: 1 }
+            ],
+      stepsCheck: Array.isArray(parsed?.stepsCheck)
+        ? parsed.stepsCheck.slice(0, 6).map((s: any) => ({
+            line: String(s.line || ''),
+            status: s.status === 'error' || s.status === 'warning' ? s.status : 'ok',
+            note: String(s.note || '')
+          }))
+        : []
+    };
+
+    return res.json({ success: true, result });
+  } catch (err: any) {
+    console.error('paper-to-sim error:', err);
+    return res.status(500).json({ error: err?.message || 'Không phân tích được ảnh giấy nháp.' });
+  }
+});
+
+// =====================================================================
+// FUTURE LAB #3: TEXT-TO-INTERACTIVE SIMULATION ENGINE
+// =====================================================================
+app.post('/api/gemini/text-to-sim', async (req: Request, res: Response) => {
+  try {
+    const { prompt = '', language = 'vi' } = req.body || {};
+    const cleanPrompt = String(prompt || '').trim().slice(0, 1000);
+    if (!cleanPrompt) {
+      return res.status(400).json({ error: 'Vui lòng nhập mô tả thí nghiệm hoặc mô hình muốn tạo.' });
+    }
+
+    const ai = getGenAI();
+    const isEn = language === 'en';
+    const systemInstruction = isEn
+      ? `Convert the user's natural language STEM prompt into a structured interactive simulation JSON. "engine" MUST be strictly one of: collision_1d, incline_forces, wave_standing, projectile_drag, optics_lens, math_tangent.`
+      : `Bạn là bộ biên dịch Text-to-Simulation của Synapse. Hãy chuyển câu lệnh mô tả tự nhiên của học sinh thành cấu hình mô phỏng Vật lí/Toán học tương tác chuẩn JSON. Trường "engine" BẮT BUỘC là 1 trong 6 mã: collision_1d, incline_forces, wave_standing, projectile_drag, optics_lens, math_tangent. Cung cấp 3–4 thông số slider sát với câu lệnh.`;
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        engine: { type: Type.STRING },
+        title: { type: Type.STRING },
+        summary: { type: Type.STRING },
+        formulaLatex: { type: Type.STRING },
+        parameters: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              key: { type: Type.STRING },
+              label: { type: Type.STRING },
+              unit: { type: Type.STRING },
+              min: { type: Type.NUMBER },
+              max: { type: Type.NUMBER },
+              step: { type: Type.NUMBER },
+              value: { type: Type.NUMBER }
+            },
+            required: ['key', 'label', 'unit', 'min', 'max', 'step', 'value']
+          }
+        },
+        notes: { type: Type.ARRAY, items: { type: Type.STRING } }
+      },
+      required: ['engine', 'title', 'summary', 'formulaLatex', 'parameters', 'notes']
+    };
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: `Yêu cầu mô phỏng: "${cleanPrompt}"`,
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema,
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 28000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {});
+    const validEngines = [
+      'collision_1d',
+      'incline_forces',
+      'wave_standing',
+      'projectile_drag',
+      'optics_lens',
+      'math_tangent'
+    ];
+    const engine = validEngines.includes(parsed?.engine) ? parsed.engine : 'incline_forces';
+
+    const config = {
+      engine,
+      title: String(parsed?.title || cleanPrompt).slice(0, 110),
+      summary: String(parsed?.summary || 'Mô phỏng được tạo tự động từ câu lệnh của bạn.'),
+      formulaLatex: String(parsed?.formulaLatex || '$\\vec{F} = m\\vec{a}$'),
+      parameters:
+        Array.isArray(parsed?.parameters) && parsed.parameters.length > 0
+          ? parsed.parameters.slice(0, 4).map((p: any, i: number) => ({
+              key: String(p.key || `k${i}`),
+              label: String(p.label || `Thông số ${i + 1}`),
+              unit: String(p.unit || ''),
+              min: Number.isFinite(Number(p.min)) ? Number(p.min) : 0,
+              max: Number.isFinite(Number(p.max)) ? Number(p.max) : 100,
+              step: Number.isFinite(Number(p.step)) && Number(p.step) > 0 ? Number(p.step) : 1,
+              value: Number.isFinite(Number(p.value)) ? Number(p.value) : 10
+            }))
+          : [
+              { key: 'p1', label: 'Biên độ / Vận tốc', unit: 'm/s', min: 1, max: 30, step: 0.5, value: 12 },
+              { key: 'p2', label: 'Góc nghiêng / Tần số', unit: '°', min: 5, max: 75, step: 1, value: 30 },
+              { key: 'p3', label: 'Hệ số ma sát / Tắt dần', unit: '', min: 0, max: 0.8, step: 0.02, value: 0.12 }
+            ],
+      notes: Array.isArray(parsed?.notes) ? parsed.notes.slice(0, 4).map((n: any) => String(n)) : []
+    };
+
+    return res.json({ success: true, config });
+  } catch (err: any) {
+    console.error('text-to-sim error:', err);
+    return res.status(500).json({ error: err?.message || 'Không biên dịch được mô phỏng từ văn bản.' });
+  }
+});
+
+// =====================================================================
+// FUTURE LAB #5: SYNAPSE VOICE OS INTENT ROUTER
+// =====================================================================
+app.post('/api/gemini/voice-os-intent', async (req: Request, res: Response) => {
+  try {
+    const { command = '', language = 'vi' } = req.body || {};
+    const cleanCmd = String(command || '').trim().slice(0, 400);
+    if (!cleanCmd) {
+      return res.status(400).json({ error: 'Vui lòng nói hoặc nhập lệnh điều khiển.' });
+    }
+
+    const ai = getGenAI();
+    const systemInstruction = `Bạn là Synapse Voice OS Router. Phân tích câu lệnh tự nhiên và trả về hành động JSON để điều khiển giao diện web học tập Synapse.
+- actionType chỉ nhận: "navigate" | "navigate_future" | "set_background" | "toggle_theme" | "timer" | "open_tutor" | "none"
+- targetSubject (khi navigate): "overview" | "roadmap" | "synapse_v2" | "spatial_3d" | "math" | "physics" | "physics_sims" | "cs" | "exams" | "arena" | "forum" | "growth_hub" | "showcase" | "future_lab"
+- targetFutureTab (khi navigate_future): "galaxy3d" | "text_to_sim" | "paper_to_sim" | "infinite_canvas" | "audio_fft"
+- bgStyle (khi set_background): "ecosystem" | "molecules" | "ocean" | "sky" | "constellations" | "cosmic_galaxy" | "blueprint_tech" | "studio_grid" | "aurora_clean" | "minimal_solid"
+- timerAction: "start" | "pause" | "reset"
+- tutorSubject: "math" | "physics" | "cs"
+Luôn trả lời replyVi ngắn gọn, thân thiện (< 25 từ) xác nhận thao tác đã làm.`;
+
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        replyVi: { type: Type.STRING },
+        actionType: { type: Type.STRING },
+        targetSubject: { type: Type.STRING },
+        targetFutureTab: { type: Type.STRING },
+        bgStyle: { type: Type.STRING },
+        darkMode: { type: Type.BOOLEAN },
+        timerAction: { type: Type.STRING },
+        tutorSubject: { type: Type.STRING },
+        tutorQuestion: { type: Type.STRING }
+      },
+      required: ['replyVi', 'actionType']
+    };
+
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: `Lệnh người dùng (${language}): "${cleanCmd}"`,
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema,
+      thinkingLevel: ThinkingLevel.MINIMAL,
+      timeoutMs: 12000
+    });
+
+    const parsed = safeParseGeminiJson<any>(response.text, {
+      replyVi: 'Đã ghi nhận yêu cầu của bạn.',
+      actionType: 'none'
+    });
+
+    return res.json({ success: true, plan: parsed });
+  } catch (err: any) {
+    console.error('voice-os-intent error:', err);
+    return res.status(500).json({ error: err?.message || 'Lỗi xử lý lệnh Voice OS.' });
+  }
+});
+
 function attachSpatialCoopWebSocket(httpServer: http.Server): void {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 512 * 1024 });
 

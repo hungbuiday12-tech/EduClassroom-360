@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Physics3DMode, PhysicsDomainId, PhysicsSimType, SubjectType } from '../types';
+import { FutureLabTabId, Physics3DMode, PhysicsDomainId, PhysicsSimType, SubjectType } from '../types';
 import { CSTrackId } from '../data/csTracksData';
 import { MATH_LECTURES } from '../data/curriculumData';
 import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
@@ -25,6 +25,7 @@ export interface NavLocation {
   examId: string | null;
   synapseMode: 'catalog' | 'stage';
   synapseMonumentId: string;
+  futureTab?: FutureLabTabId;
   coopRoomCode: string | null;
   coopInviteMeta?: {
     roomId?: string;
@@ -57,6 +58,7 @@ const DEFAULT_LOCATION: NavLocation = {
   examId: null,
   synapseMode: 'catalog',
   synapseMonumentId: 'dyson',
+  futureTab: 'galaxy3d',
   coopRoomCode: null,
   coopInviteMeta: null,
   tutorOpen: false,
@@ -151,6 +153,8 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       return isEn ? 'Error Notebook · SM-2 · PDF Studio' : 'Sổ tay Lỗi sai & Thẻ SM-2';
     case 'showcase':
       return isEn ? '2D/3D Community Showcase' : 'Thư viện Sáng tạo 2D/3D';
+    case 'future_lab':
+      return isEn ? 'Future AI & 3D Lab' : 'Phòng Lab Tương Lai · AI & 3D';
     default:
       return isEn ? 'Classroom' : 'Lớp học';
   }
@@ -177,6 +181,7 @@ function isSameLocation(a: NavLocation, b: NavLocation): boolean {
     a.examId === b.examId &&
     a.synapseMode === b.synapseMode &&
     a.synapseMonumentId === b.synapseMonumentId &&
+    a.futureTab === b.futureTab &&
     a.coopRoomCode === b.coopRoomCode &&
     a.tutorOpen === b.tutorOpen &&
     a.tutorSubject === b.tutorSubject

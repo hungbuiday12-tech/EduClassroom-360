@@ -1,4 +1,4 @@
-export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'physics_sims' | 'cs' | 'exams' | 'arena' | 'forum' | 'growth_hub' | 'showcase';
+export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'physics_sims' | 'cs' | 'exams' | 'arena' | 'forum' | 'growth_hub' | 'showcase' | 'future_lab';
 
 export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
 
@@ -953,4 +953,98 @@ export interface CustomMockTestResult {
   completedAt: string;
 }
 
+export type FutureLabTabId =
+  | 'galaxy3d'
+  | 'text_to_sim'
+  | 'paper_to_sim'
+  | 'infinite_canvas'
+  | 'audio_fft';
 
+export type PaperSimKind =
+  | 'parabola'
+  | 'trig_wave'
+  | 'projectile'
+  | 'pendulum'
+  | 'spring'
+  | 'incline'
+  | 'oxyz_solid';
+
+export interface PaperToSimParam {
+  key: string;
+  label: string;
+  unit: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+}
+
+export interface PaperToSimResult {
+  detectedSubject: 'math' | 'physics';
+  title: string;
+  detectedFormula: string;
+  simKind: PaperSimKind;
+  summary: string;
+  params: PaperToSimParam[];
+  stepsCheck: { line: string; status: 'ok' | 'warning' | 'error'; note: string }[];
+}
+
+export type SimEngineKind =
+  | 'collision_1d'
+  | 'incline_forces'
+  | 'wave_standing'
+  | 'projectile_drag'
+  | 'optics_lens'
+  | 'math_tangent';
+
+export interface GeneratedSimConfig {
+  engine: SimEngineKind;
+  title: string;
+  summary: string;
+  formulaLatex: string;
+  parameters: PaperToSimParam[];
+  notes: string[];
+}
+
+export type InfiniteNodeKind = 'graph' | 'solid3d' | 'formula' | 'code' | 'note';
+
+export interface InfiniteCanvasNode {
+  id: string;
+  kind: InfiniteNodeKind;
+  x: number;
+  y: number;
+  width: number;
+  title: string;
+  accent: 'sky' | 'amber' | 'emerald' | 'violet' | 'rose';
+  content: string;
+  paramA?: number;
+  paramB?: number;
+  graphType?: 'quadratic' | 'sine' | 'cubic';
+  solidKind?: 'cube' | 'octahedron' | 'helix';
+}
+
+export interface InfiniteCanvasEdge {
+  id: string;
+  fromId: string;
+  toId: string;
+  label?: string;
+}
+
+export interface VoiceOSActionPlan {
+  replyVi: string;
+  actionType:
+    | 'navigate'
+    | 'navigate_future'
+    | 'set_background'
+    | 'toggle_theme'
+    | 'timer'
+    | 'open_tutor'
+    | 'none';
+  targetSubject?: SubjectType;
+  targetFutureTab?: FutureLabTabId;
+  bgStyle?: string;
+  darkMode?: boolean;
+  timerAction?: 'start' | 'pause' | 'reset';
+  tutorSubject?: 'math' | 'physics' | 'cs';
+  tutorQuestion?: string;
+}

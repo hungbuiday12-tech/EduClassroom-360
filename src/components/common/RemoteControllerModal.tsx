@@ -157,8 +157,8 @@ export const RemoteControllerModal: React.FC = () => {
               </li>
               <li>
                 {isEn
-                  ? 'Switch Lecture / Syn Reel slides (Prev/Next) and project a live red Laser Pointer onto the screen.'
-                  : 'Bấm chuyển Slide bài giảng / cảnh Syn Reel và chiếu tia Laser đỏ trực tiếp lên màn hình.'}
+                  ? 'Switch slides (Prev/Next), project a live red Laser dot on hover, and drag-then-release on phone to click any button on screen.'
+                  : 'Bấm chuyển Slide, di chuột hiện ngay chấm Laser đỏ, hoặc trên điện thoại đè tay rê tới đúng nút cần bấm rồi buông tay để tự động Click.'}
               </li>
             </ul>
           </div>

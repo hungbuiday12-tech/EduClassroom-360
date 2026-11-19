@@ -33,6 +33,11 @@ export type RemoteControlCommand =
       active: boolean;
     }
   | {
+      type: 'laser_click';
+      x: number; // 0..1
+      y: number; // 0..1
+    }
+  | {
       type: 'navigate';
       subject: string;
     };

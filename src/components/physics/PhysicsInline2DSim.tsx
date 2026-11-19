@@ -12,223 +12,45 @@ import {
   StepForward,
   Zap
 } from 'lucide-react';
-import { PhysicsLesson } from '../../types';
-import { PHYSICS_2D_SIMS } from '../../data/physicsDomainsData';
+import { PhysicsLesson, PhysicsSimType } from '../../types';
 import {
-  DEFAULT_PHYSICS_2D_FLAGS,
   DEFAULT_PHYSICS_2D_OVERLAYS,
   Physics2DFlags,
   Physics2DOverlayState,
   Physics2DTelemetry,
   renderPhysics2DSimulation
 } from './physics2DEngine';
+import { CustomStepSimId, renderCustomStepPhysicsSim } from './physicsStepCustomRenderers';
+import { resolveStepSimulation } from './physicsStepSimResolver';
 
 interface PhysicsInline2DSimProps {
   lesson: PhysicsLesson;
   stepIndex: number;
   totalSteps: number;
   stepTitle?: string;
+  stepConcept?: string;
   onOpenSim2D?: () => void;
   onOpenSim3D?: () => void;
-}
-
-interface StepRegimeConfig {
-  label: string;
-  observationGoal: string;
-  params: Record<string, number>;
-  flags: Physics2DFlags;
-}
-
-function clampAndSnap(val: number, min: number, max: number, step: number): number {
-  const clamped = Math.min(max, Math.max(min, val));
-  const steps = Math.round((clamped - min) / step);
-  const decimals = (step.toString().split('.')[1] || '').length;
-  return Number((min + steps * step).toFixed(Math.max(decimals, 2)));
-}
-
-function deriveStepRegime(lesson: PhysicsLesson, stepIndex: number): StepRegimeConfig {
-  const baseParams = { ...lesson.defaultParams };
-  const baseFlags: Physics2DFlags = { ...DEFAULT_PHYSICS_2D_FLAGS };
-  const boundsEntries = Object.entries(lesson.paramBounds || {});
-  const simType = lesson.simulationType;
-
-  // Step 0: Chuẩn mực khái niệm cơ bản
-  if (stepIndex === 0) {
-    return {
-      label: 'Trạng thái cơ bản · Quan sát hiện tượng nền',
-      observationGoal:
-        'Quan sát chuyển động/hiện tượng ở tham số chuẩn trước khi kéo thanh trượt để kiểm nghiệm mối quan hệ định luật.',
-      params: baseParams,
-      flags: baseFlags
-    };
-  }
-
-  // Clone and craft step-specific instructive presets
-  const nextParams = { ...baseParams };
-  const nextFlags = { ...baseFlags };
-
-  if (stepIndex === 1) {
-    // Khảo sát định luật / công thức: tăng hoặc tối ưu thông số chính để thấy biến thiên định lượng
-    if (boundsEntries.length > 0) {
-      const [k0, b0] = boundsEntries[0];
-      const cur0 = nextParams[k0] ?? b0.min;
-      const midHi = cur0 + (b0.max - cur0) * 0.42;
-      nextParams[k0] = clampAndSnap(midHi, b0.min, b0.max, b0.step);
-    }
-    return {
-      label: 'Khảo sát định lượng · Thay đổi thông số chính',
-      observationGoal:
-        'Tham số chính đã được tăng lên để bạn thấy rõ tốc độ biến thiên của các đại lượng trên thanh đo SI trực tiếp.',
-      params: nextParams,
-      flags: nextFlags
-    };
-  }
-
-  if (stepIndex === 2) {
-    // Trường hợp đặc biệt / Giới hạn vật lí theo từng loại mô phỏng
-    if (simType === 'lens_optics' && nextParams.f != null) {
-      // Đặt vật trong khoảng d < f để thấy ảnh ảo phóng đại (kính lúp)
-      const fVal = Math.abs(nextParams.f || 15);
-      const bD = lesson.paramBounds.d;
-      if (bD) {
-        nextParams.d = clampAndSnap(Math.max(bD.min, fVal * 0.65), bD.min, bD.max, bD.step);
-      }
-      return {
-        label: 'Trường hợp đặc biệt · Vật trong tiêu cự (d < f)',
-        observationGoal:
-          'Khi đưa vật vào gần thấu kính hơn tiêu cự F (d < f), tia ló phân kì cho ảnh ảo cùng chiều, lớn hơn vật.',
-        params: nextParams,
-        flags: nextFlags
-      };
-    }
-
-    if (simType === 'projectile_motion' && nextParams.angle != null) {
-      nextParams.angle = 45;
-      return {
-        label: 'Cực trị động học · Góc ném tối ưu α = 45°',
-        observationGoal:
-          'Tại α = 45° (không có lực cản không khí), tầm xa L đạt giá trị cực đại với cùng vận tốc ban đầu v₀.',
-        params: nextParams,
-        flags: nextFlags
-      };
-    }
-
-    if (simType === 'ohm_circuit' && boundsEntries.length >= 2) {
-      nextParams.circuitType = 1;
-      return {
-        label: 'Biến thể mạch điện · Mắc song song (U₁ = U₂)',
-        observationGoal:
-          'So sánh cường độ dòng điện tổng I và độ sáng đèn khi chuyển sang mạch song song làm giảm Rtđ.',
-        params: nextParams,
-        flags: nextFlags
-      };
-    }
-
-    if (boundsEntries.length >= 2) {
-      const [k1, b1] = boundsEntries[1];
-      const cur1 = nextParams[k1] ?? b1.min;
-      const target1 = cur1 + (b1.max - cur1) * 0.55;
-      nextParams[k1] = clampAndSnap(target1, b1.min, b1.max, b1.step);
-    } else if (boundsEntries.length === 1) {
-      const [k0, b0] = boundsEntries[0];
-      nextParams[k0] = clampAndSnap(b0.min + (b0.max - b0.min) * 0.8, b0.min, b0.max, b0.step);
-    }
-
-    return {
-      label: 'Thử nghiệm mở rộng · Thay đổi tham số thứ cấp',
-      observationGoal:
-        'Thay đổi thông số thứ cấp giúp kiểm tra vai trò của từng biến độc lập trong công thức vật lí.',
-      params: nextParams,
-      flags: nextFlags
-    };
-  }
-
-  // Step 3+: Thực tế / Lỗi sai cần tránh / Ma sát / Tán sắc / Ngắt mạch
-  if (simType === 'projectile_motion' || simType === 'free_fall_energy') {
-    nextFlags.airDrag = true;
-    return {
-      label: 'Điều kiện thực tế · Bật lực cản không khí',
-      observationGoal:
-        'Quan sát sự hao hụt cơ năng / thu hẹp tầm xa khi xuất hiện lực cản môi trường — lỗi sai hay gặp khi áp dụng máy móc công thức lí tưởng!',
-      params: nextParams,
-      flags: nextFlags
-    };
-  }
-
-  if (simType === 'spring_pendulum' || simType === 'simple_pendulum') {
-    nextFlags.hasFriction = true;
-    return {
-      label: 'Điều kiện thực tế · Dao động tắt dần có ma sát',
-      observationGoal:
-        'Biên độ giảm dần theo hàm mũ vì công của lực ma sát chuyển hóa cơ năng thành nhiệt năng.',
-      params: nextParams,
-      flags: nextFlags
-    };
-  }
-
-  if (simType === 'lens_optics') {
-    nextFlags.isDiverging = true;
-    return {
-      label: 'So sánh đối chiếu · Chuyển sang Thấu kính phân kì',
-      observationGoal:
-        'Nhận biết bẫy dấu tiêu cự f < 0: Thấu kính phân kì luôn tạo ảnh ảo, cùng chiều và nhỏ hơn vật.',
-      params: nextParams,
-      flags: nextFlags
-    };
-  }
-
-  if (simType === 'magnetic_induction') {
-    nextFlags.flipMagnet = true;
-    return {
-      label: 'Kiểm chứng định luật Len-xơ · Đảo cực nam châm',
-      observationGoal:
-        'Khi đảo chiều cực Bắc–Nam của nam châm, chiều dòng điện cảm ứng i_c và kim điện kế đảo dấu ngược lại.',
-      params: nextParams,
-      flags: nextFlags
-    };
-  }
-
-  if (simType === 'wave_interference') {
-    nextFlags.showNodalLines = true;
-    return {
-      label: 'Phân tích vân cực đại – cực tiểu giao thoa',
-      observationGoal:
-        'Quan sát số dãy hyperbol cực đại nằm giữa hai nguồn S1S2 và điều chỉnh khoảng cách/tần số để thấy vân thay đổi.',
-      params: nextParams,
-      flags: nextFlags
-    };
-  }
-
-  if (boundsEntries.length > 0) {
-    const idxParam = stepIndex % boundsEntries.length;
-    const [kp, bp] = boundsEntries[idxParam];
-    const ratio = stepIndex % 2 === 1 ? 0.22 : 0.85;
-    nextParams[kp] = clampAndSnap(bp.min + (bp.max - bp.min) * ratio, bp.min, bp.max, bp.step);
-  }
-
-  return {
-    label: `Thực hành trực quan · Kịch bản #${stepIndex + 1}`,
-    observationGoal:
-      'Kéo các thanh trượt bên dưới để tự kiểm chứng điều kiện áp dụng công thức và phát hiện trường hợp giới hạn.',
-    params: nextParams,
-    flags: nextFlags
-  };
 }
 
 export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
   lesson,
   stepIndex,
   totalSteps,
+  stepTitle,
+  stepConcept,
   onOpenSim2D,
   onOpenSim3D
 }) => {
-  const simSpec = PHYSICS_2D_SIMS[lesson.simulationType];
-  const regime = useMemo(() => deriveStepRegime(lesson, stepIndex), [lesson, stepIndex]);
+  const resolved = useMemo(
+    () => resolveStepSimulation(lesson, stepIndex, stepTitle, stepConcept),
+    [lesson, stepIndex, stepTitle, stepConcept]
+  );
 
   const [isRunning, setIsRunning] = useState<boolean>(true);
   const [simSpeed, setSimSpeed] = useState<number>(1.0);
-  const [params, setParams] = useState<Record<string, number>>(regime.params);
-  const [flags, setFlags] = useState<Physics2DFlags>(regime.flags);
+  const [params, setParams] = useState<Record<string, number>>(resolved.defaultParams);
+  const [flags, setFlags] = useState<Physics2DFlags>(resolved.flags);
   const [overlays, setOverlays] = useState<Physics2DOverlayState>(DEFAULT_PHYSICS_2D_OVERLAYS);
 
   const [telemetry, setTelemetry] = useState<Physics2DTelemetry>({
@@ -238,7 +60,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
     metric2Val: '--',
     metric3Label: 'Thông số 3',
     metric3Val: '--',
-    note: regime.observationGoal
+    note: resolved.observationGoal
   });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -253,18 +75,19 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
   const forceTelemetryRef = useRef<boolean>(true);
   const lastTelemetryMsRef = useRef<number>(0);
 
-  // Sync step regime when moving between lessons or lecture steps
+  // Sync resolved simulation & regime whenever step changes
   useEffect(() => {
-    setParams(regime.params);
-    setFlags(regime.flags);
-    paramsRef.current = regime.params;
-    flagsRef.current = regime.flags;
+    setParams(resolved.defaultParams);
+    setFlags(resolved.flags);
+    paramsRef.current = resolved.defaultParams;
+    flagsRef.current = resolved.flags;
     simTimeRef.current = 0;
     oscHistoryRef.current = [];
     setIsRunning(true);
     isRunningRef.current = true;
     forceTelemetryRef.current = true;
-  }, [lesson.id, stepIndex, regime]);
+    setTelemetry((prev) => ({ ...prev, note: resolved.observationGoal }));
+  }, [resolved]);
 
   useEffect(() => {
     isRunningRef.current = isRunning;
@@ -298,7 +121,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
     }
   }, []);
 
-  // 60 FPS Canvas Animation Loop
+  // 60 FPS Canvas Animation Loop supporting BOTH 59 catalog sims & 10 custom step sims
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -350,32 +173,48 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const w = cachedW || canvas.clientWidth;
       const h = cachedH || canvas.clientHeight;
-      if (w <= 0 || h <= 0) return;
+      if (w < 40 || h < 40) return;
 
-      const targetCw = Math.floor(w * dpr);
-      const targetCh = Math.floor(h * dpr);
-      if (canvas.width !== targetCw || canvas.height !== targetCh) {
-        canvas.width = targetCw;
-        canvas.height = targetCh;
+      const targetW = Math.floor(w * dpr);
+      const targetH = Math.floor(h * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
       }
 
       ctx.save();
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
 
-      renderPhysics2DSimulation({
-        simType: lesson.simulationType,
-        ctx,
-        w,
-        h,
-        t: simTimeRef.current,
-        isDark: cachedDark,
-        isRunning: isRunningRef.current,
-        params: paramsRef.current,
-        flags: flagsRef.current,
-        overlays: overlaysRef.current,
-        oscHistory: oscHistoryRef.current,
-        pushTelemetry
-      });
+      if (resolved.isCustomEngine) {
+        renderCustomStepPhysicsSim({
+          ctx,
+          w,
+          h,
+          t: simTimeRef.current,
+          isDark: cachedDark,
+          simId: resolved.simId as CustomStepSimId,
+          params: paramsRef.current,
+          flags: flagsRef.current,
+          overlays: overlaysRef.current,
+          pushTelemetry
+        });
+      } else {
+        renderPhysics2DSimulation({
+          ctx,
+          w,
+          h,
+          t: simTimeRef.current,
+          isRunning: isRunningRef.current,
+          isDark: cachedDark,
+          simType: resolved.simId as PhysicsSimType,
+          params: paramsRef.current,
+          flags: flagsRef.current,
+          overlays: overlaysRef.current,
+          oscHistory: oscHistoryRef.current,
+          pushTelemetry
+        });
+      }
 
       ctx.restore();
     };
@@ -386,7 +225,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
       resizeObs?.disconnect();
       classObs.disconnect();
     };
-  }, [lesson.simulationType, pushTelemetry]);
+  }, [resolved.simId, resolved.isCustomEngine, pushTelemetry]);
 
   const handleStepOnce = () => {
     setIsRunning(false);
@@ -398,24 +237,46 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
   const handleResetStep = () => {
     simTimeRef.current = 0;
     oscHistoryRef.current = [];
-    setParams(regime.params);
-    setFlags(regime.flags);
-    paramsRef.current = regime.params;
-    flagsRef.current = regime.flags;
+    setParams(resolved.defaultParams);
+    setFlags(resolved.flags);
+    paramsRef.current = resolved.defaultParams;
+    flagsRef.current = resolved.flags;
     setIsRunning(true);
     forceTelemetryRef.current = true;
   };
 
   const quickSliders = useMemo(
-    () => Object.entries(lesson.paramBounds || {}).slice(0, 3),
-    [lesson.paramBounds]
+    () => Object.entries(resolved.paramBounds || {}).slice(0, 3),
+    [resolved.paramBounds]
   );
 
-  // Contextual experiment toggles relevant to the active physics simulation
+  // Contextual experiment toggles matched directly to the active simulation
   const flagControls = useMemo(() => {
-    const controls: { key: keyof Physics2DFlags; label: string; active: boolean; toggle: () => void }[] = [];
-    const sim = lesson.simulationType;
-    if (sim === 'ohm_circuit') {
+    const controls: { key: string; label: string; active: boolean; toggle: () => void }[] = [];
+    const sim = resolved.simId;
+
+    if (sim === 'average_velocity_stages') {
+      controls.push({
+        key: 'equalTime',
+        label: flags.airDrag ? 'Đang bật: Chia theo Thời gian (t₁=t₂)' : 'Chế độ: Chia theo Thời gian (t₁=t₂)',
+        active: flags.airDrag,
+        toggle: () => setFlags((f) => ({ ...f, airDrag: !f.airDrag }))
+      });
+    } else if (sim === 'distance_displacement_rel') {
+      controls.push({
+        key: 'turn1D',
+        label: flags.airDrag ? 'Đang bật: Đi thẳng & Quay đầu 1D' : 'Chế độ: Đi thẳng & Quay đầu 1D',
+        active: flags.airDrag,
+        toggle: () => setFlags((f) => ({ ...f, airDrag: !f.airDrag }))
+      });
+    } else if (sim === 'em_wave_3axis') {
+      controls.push({
+        key: 'amMod',
+        label: 'Điều chế Biên độ AM',
+        active: flags.airDrag,
+        toggle: () => setFlags((f) => ({ ...f, airDrag: !f.airDrag }))
+      });
+    } else if (sim === 'ohm_circuit') {
       controls.push(
         {
           key: 'circuitOpen',
@@ -452,7 +313,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
         active: flags.airDrag,
         toggle: () => setFlags((f) => ({ ...f, airDrag: !f.airDrag }))
       });
-    } else if (sim === 'spring_pendulum' || sim === 'simple_pendulum') {
+    } else if (sim === 'spring_pendulum' || sim === 'simple_pendulum' || sim === 'damped_resonance') {
       controls.push({
         key: 'hasFriction',
         label: 'Ma sát tắt dần',
@@ -462,43 +323,48 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
     } else if (sim === 'magnetic_induction') {
       controls.push({
         key: 'flipMagnet',
-        label: 'Đảo cực N/S',
+        label: 'Đảo cực Nam châm',
         active: flags.flipMagnet,
         toggle: () => setFlags((f) => ({ ...f, flipMagnet: !f.flipMagnet }))
       });
     } else if (sim === 'wave_interference') {
-      controls.push(
-        {
-          key: 'showNodalLines',
-          label: 'Vân cực đại',
-          active: flags.showNodalLines,
-          toggle: () => setFlags((f) => ({ ...f, showNodalLines: !f.showNodalLines }))
-        },
-        {
-          key: 'singleSource',
-          label: '1 nguồn đơn',
-          active: flags.singleSource,
-          toggle: () => setFlags((f) => ({ ...f, singleSource: !f.singleSource }))
-        }
-      );
+      controls.push({
+        key: 'showNodalLines',
+        label: 'Hiện vân cực đại/tiểu',
+        active: flags.showNodalLines,
+        toggle: () => setFlags((f) => ({ ...f, showNodalLines: !f.showNodalLines }))
+      });
+    } else if (sim === 'light_refraction') {
+      controls.push({
+        key: 'showProtractor',
+        label: 'Thước đo góc',
+        active: flags.showProtractor,
+        toggle: () => setFlags((f) => ({ ...f, showProtractor: !f.showProtractor }))
+      });
     }
     return controls;
-  }, [lesson.simulationType, flags]);
+  }, [resolved.simId, flags]);
 
   return (
-    <section className="rm-arch-frame rounded-md border border-sky-200/90 dark:border-sky-800/70 bg-white dark:bg-slate-950/90 overflow-hidden shadow-xs">
-      <div className="h-0.5 w-full roadmap-shimmer-bar" />
-
-      {/* Header bar */}
-      <div className="px-4 py-2.5 bg-sky-50/80 dark:bg-slate-900/95 border-b border-sky-200/70 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[10px] font-mono font-extrabold uppercase tracking-wider bg-sky-600 text-white shrink-0">
-            <span className="w-1.5 h-1.5 bg-emerald-300 arena-live-dot" />
-            Mô phỏng 2D Trực tiếp · Phần {stepIndex + 1}/{totalSteps}
+    <section
+      data-testid={`physics-inline-2d-step-${stepIndex}`}
+      className="rounded-md border border-sky-300/80 dark:border-sky-800/70 bg-white dark:bg-slate-950/90 shadow-sm overflow-hidden"
+    >
+      {/* Top Bar: Step-matched Title, Formula & Quick Launch */}
+      <div className="px-4 py-2.5 bg-gradient-to-r from-sky-50 via-white to-indigo-50/60 dark:from-slate-900 dark:via-slate-950 dark:to-sky-950/40 border-b border-sky-200/80 dark:border-sky-800/60 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-sky-600 text-white text-[10px] font-mono font-extrabold tracking-wider uppercase shrink-0">
+            <span className="w-1.5 h-1.5 rounded-xs bg-emerald-300 animate-pulse" />
+            MÔ PHỎNG 2D · PHẦN {stepIndex + 1}/{totalSteps}
           </span>
-          <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 truncate">
-            {simSpec?.title || lesson.title}
-          </span>
+          <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+            {resolved.title}
+          </h4>
+          {resolved.formula && (
+            <span className="hidden xl:inline-block px-2 py-0.5 rounded-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[10px] text-sky-700 dark:text-sky-300 truncate max-w-[320px]">
+              {resolved.formula}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
@@ -525,30 +391,55 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
         </div>
       </div>
 
-      {/* Step Regime Banner */}
-      <div className="px-4 py-2 bg-slate-50/90 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-        <div className="flex items-center gap-1.5 text-sky-700 dark:text-sky-300 font-bold">
-          <Activity className="w-3.5 h-3.5 shrink-0" />
-          <span>{regime.label}</span>
+      {/* Step Regime Banner + Quick Presets */}
+      <div className="px-4 py-2 bg-slate-50/90 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-800/80 flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <div className="flex items-center gap-1.5 text-sky-700 dark:text-sky-300 font-bold">
+            <Activity className="w-3.5 h-3.5 shrink-0" />
+            <span>{resolved.regimeLabel}</span>
+          </div>
+          {resolved.presets.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              {resolved.presets.slice(0, 3).map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => {
+                    const merged = { ...resolved.defaultParams, ...preset.params };
+                    setParams(merged);
+                    paramsRef.current = merged;
+                    simTimeRef.current = 0;
+                    forceTelemetryRef.current = true;
+                  }}
+                  title={preset.description}
+                  className="px-2 py-0.5 rounded-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-sky-400 hover:text-sky-700 dark:hover:text-sky-300 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <span className="text-slate-600 dark:text-slate-400 leading-snug">
-          {regime.observationGoal}
-        </span>
+        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+          {resolved.observationGoal}
+        </p>
       </div>
 
-      {/* Live Canvas Stage */}
+      {/* Live Unobstructed 2D Canvas Stage */}
       <div className="relative bg-slate-50 dark:bg-[#0c101d] border-b border-slate-200/80 dark:border-slate-800">
         <canvas
           ref={canvasRef}
-          className="w-full h-[240px] sm:h-[268px] block select-none"
+          className="w-full h-[250px] sm:h-[280px] block select-none"
         />
+      </div>
 
-        {/* Floating Overlay Transport Toolbar (bottom-left over canvas) */}
-        <div className="absolute bottom-2.5 left-2.5 flex flex-wrap items-center gap-1 bg-white/92 dark:bg-slate-900/92 border border-slate-200 dark:border-slate-700 rounded-sm p-1 shadow-sm">
+      {/* Dedicated Transport & Visual Overlay Strip BELOW Canvas (Never covers canvas objects!) */}
+      <div className="px-3 py-2 bg-slate-50/95 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => setIsRunning((r) => !r)}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[11px] font-bold cursor-pointer transition-colors ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-sm text-[11px] font-bold cursor-pointer transition-colors ${
               isRunning
                 ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
                 : 'bg-emerald-600 text-white hover:bg-emerald-500'
@@ -562,7 +453,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
             type="button"
             onClick={handleStepOnce}
             title="Nhích từng bước +0.05s"
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
           >
             <StepForward className="w-3 h-3" />
             <span>+0.05s</span>
@@ -571,41 +462,40 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
           <button
             type="button"
             onClick={handleResetStep}
-            title="Khôi phục kịch bản bước này"
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+            title="Đặt lại tham số chuẩn của mục này"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Đặt lại</span>
           </button>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
+          <span className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-0.5 hidden sm:inline-block" />
 
-          {[0.5, 1, 1.5].map((spd) => (
+          {[0.5, 1, 1.5].map((sp) => (
             <button
-              key={spd}
+              key={sp}
               type="button"
-              onClick={() => setSimSpeed(spd)}
-              className={`px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-bold tabular-nums cursor-pointer ${
-                simSpeed === spd
+              onClick={() => setSimSpeed(sp)}
+              className={`px-2 py-1 rounded-sm text-[10px] font-mono font-bold tabular-nums cursor-pointer ${
+                simSpeed === sp
                   ? 'bg-sky-600 text-white'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
               }`}
             >
-              {spd}x
+              {sp}x
             </button>
           ))}
+        </div>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
-
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setOverlays((o) => ({ ...o, showVectors: !o.showVectors }))}
-            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold cursor-pointer ${
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold cursor-pointer ${
               overlays.showVectors
-                ? 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'
-                : 'text-slate-500 dark:text-slate-400'
+                ? 'bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700'
+                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500'
             }`}
-            title="Bật/tắt vectơ"
           >
             <Compass className="w-3 h-3" />
             <span>Vectơ</span>
@@ -613,12 +503,11 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
           <button
             type="button"
             onClick={() => setOverlays((o) => ({ ...o, showRulerGrid: !o.showRulerGrid }))}
-            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold cursor-pointer ${
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold cursor-pointer ${
               overlays.showRulerGrid
-                ? 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'
-                : 'text-slate-500 dark:text-slate-400'
+                ? 'bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700'
+                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500'
             }`}
-            title="Bật/tắt lưới đo"
           >
             <Grid className="w-3 h-3" />
             <span>Lưới</span>
@@ -627,102 +516,102 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
       </div>
 
       {/* Live SI Telemetry Readout Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 bg-slate-50/75 dark:bg-slate-900/75 border-b border-slate-200/80 dark:border-slate-800">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-slate-800 bg-white dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800">
         <div className="px-3.5 py-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 truncate">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {telemetry.metric1Label}
           </div>
-          <div className="text-xs sm:text-sm font-mono font-extrabold text-sky-700 dark:text-sky-300 tabular-nums mt-0.5">
+          <div className="text-sm font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums">
             {telemetry.metric1Val}
           </div>
         </div>
         <div className="px-3.5 py-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 truncate">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {telemetry.metric2Label}
           </div>
-          <div className="text-xs sm:text-sm font-mono font-extrabold text-emerald-700 dark:text-emerald-300 tabular-nums mt-0.5">
+          <div className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
             {telemetry.metric2Val}
           </div>
         </div>
         <div className="px-3.5 py-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 truncate">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {telemetry.metric3Label}
           </div>
-          <div className="text-xs sm:text-sm font-mono font-extrabold text-amber-700 dark:text-amber-300 tabular-nums mt-0.5">
+          <div className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400 tabular-nums">
             {telemetry.metric3Val}
           </div>
         </div>
       </div>
 
-      {/* Parameter Sliders + Flags + Scientific Note */}
-      <div className="p-3.5 space-y-2.5 bg-white dark:bg-slate-950/80">
-        {(quickSliders.length > 0 || flagControls.length > 0) && (
-          <div className="space-y-2.5">
-            {quickSliders.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {quickSliders.map(([key, bound]) => {
-                  const val = params[key] ?? lesson.defaultParams[key] ?? bound.min;
-                  return (
-                    <div
-                      key={key}
-                      className="p-2 rounded-sm bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1"
-                    >
-                      <div className="flex items-center justify-between gap-1 text-[11px]">
-                        <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 truncate">
-                          <Sliders className="w-3 h-3 text-sky-500 shrink-0" />
-                          <span className="truncate">{bound.label}</span>
-                        </span>
-                        <span className="font-mono font-bold text-sky-700 dark:text-sky-300 tabular-nums shrink-0">
-                          {val} {bound.unit}
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min={bound.min}
-                        max={bound.max}
-                        step={bound.step}
-                        value={Math.min(bound.max, Math.max(bound.min, val))}
-                        onChange={(e) => {
-                          const nextVal = parseFloat(e.target.value);
-                          setParams((prev) => ({ ...prev, [key]: nextVal }));
-                        }}
-                        className="w-full accent-sky-600 cursor-pointer h-1.5"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {flagControls.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">
-                  Công tắc thí nghiệm:
-                </span>
-                {flagControls.map((ctrl) => (
-                  <button
-                    key={String(ctrl.key)}
-                    type="button"
-                    onClick={ctrl.toggle}
-                    className={`px-2.5 py-1 rounded-sm text-[11px] font-bold border transition-colors cursor-pointer ${
-                      ctrl.active
-                        ? 'bg-sky-600 text-white border-sky-500'
-                        : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-sky-400'
-                    }`}
+      {/* Interactive Sliders + Experiment Flags matched to this step */}
+      {(quickSliders.length > 0 || flagControls.length > 0 || telemetry.note) && (
+        <div className="p-3 sm:p-3.5 bg-slate-50/75 dark:bg-slate-900/50 space-y-2.5">
+          {quickSliders.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {quickSliders.map(([key, bound]) => {
+                const curVal = params[key] ?? bound.min;
+                return (
+                  <div
+                    key={key}
+                    className="rounded-sm bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 px-3 py-2 space-y-1"
                   >
-                    {ctrl.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                    <div className="flex items-center justify-between gap-2 text-[11px]">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 truncate">
+                        <Sliders className="w-3 h-3 text-sky-500 shrink-0" />
+                        <span className="truncate">{bound.label}</span>
+                      </span>
+                      <span className="font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums shrink-0">
+                        {curVal} {bound.unit}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={bound.min}
+                      max={bound.max}
+                      step={bound.step}
+                      value={curVal}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        setParams((prev) => ({ ...prev, [key]: v }));
+                      }}
+                      className="w-full h-1.5 accent-sky-600 cursor-pointer"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-        <div className="flex items-start gap-2 px-3 py-2 rounded-sm bg-sky-50/70 dark:bg-sky-950/25 border border-sky-200/60 dark:border-sky-900/50 text-[11px] text-slate-700 dark:text-slate-200 leading-relaxed">
-          <Zap className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
-          <span>{telemetry.note}</span>
+          {flagControls.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Công tắc thí nghiệm:
+              </span>
+              {flagControls.map((fc) => (
+                <button
+                  key={fc.key}
+                  type="button"
+                  onClick={fc.toggle}
+                  className={`px-2.5 py-1 rounded-sm text-[11px] font-bold border transition-colors cursor-pointer ${
+                    fc.active
+                      ? 'bg-sky-600 text-white border-sky-500 shadow-xs'
+                      : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-sky-400'
+                  }`}
+                >
+                  {fc.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {telemetry.note && (
+            <div className="flex items-start gap-2 rounded-sm bg-sky-50/90 dark:bg-sky-950/30 border border-sky-200/80 dark:border-sky-800/60 px-3 py-1.5 text-[11px] text-slate-700 dark:text-slate-300">
+              <Zap className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+              <span className="leading-snug">{telemetry.note}</span>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </section>
   );
 };

@@ -72,9 +72,12 @@ export const RemoteControllerProvider: React.FC<RemoteControllerProviderProps> =
     y: 0.5,
     active: false
   });
+  const [laserPulse, setLaserPulse] = useState<{ x: number; y: number; id: number } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const laserHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const laserPulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevControllerCountRef = useRef<number>(0);
   const currentLabel = getLocationLabel(location, language);
 
   const pairUrl = useMemo(() => {
@@ -128,7 +131,12 @@ export const RemoteControllerProvider: React.FC<RemoteControllerProviderProps> =
         try {
           const msg = JSON.parse(String(ev.data || ''));
           if (msg.type === 'remote:roster') {
-            setControllerCount(Number(msg.controllerCount) || 0);
+            const nextCount = Number(msg.controllerCount) || 0;
+            if (prevControllerCountRef.current === 0 && nextCount > 0) {
+              setIsModalOpen(false);
+            }
+            prevControllerCountRef.current = nextCount;
+            setControllerCount(nextCount);
             return;
           }
           if (msg.type === 'remote:cmd' && msg.command) {
@@ -139,7 +147,54 @@ export const RemoteControllerProvider: React.FC<RemoteControllerProviderProps> =
               if (cmd.active) {
                 laserHideTimerRef.current = setTimeout(() => {
                   setLaserDot((prev) => ({ ...prev, active: false }));
-                }, 4000);
+                }, 6000);
+              }
+              return;
+            }
+            if (cmd.type === 'laser_click') {
+              const clampedX = Math.max(0, Math.min(1, Number(cmd.x) || 0));
+              const clampedY = Math.max(0, Math.min(1, Number(cmd.y) || 0));
+              const px = Math.max(1, Math.min(window.innerWidth - 2, clampedX * window.innerWidth));
+              const py = Math.max(1, Math.min(window.innerHeight - 2, clampedY * window.innerHeight));
+
+              setLaserPulse({ x: clampedX, y: clampedY, id: Date.now() });
+              if (laserPulseTimerRef.current) clearTimeout(laserPulseTimerRef.current);
+              laserPulseTimerRef.current = setTimeout(() => {
+                setLaserPulse(null);
+              }, 550);
+
+              const rawEl = document.elementFromPoint(px, py) as HTMLElement | null;
+              if (rawEl) {
+                const clickable =
+                  (rawEl.closest(
+                    'button, a, [role="button"], input, select, textarea, label, [tabindex]:not([tabindex="-1"]), .cursor-pointer'
+                  ) as HTMLElement | null) || rawEl;
+
+                const isDisabled = Boolean((clickable as HTMLButtonElement).disabled);
+                if (!isDisabled) {
+                  try {
+                    if (
+                      clickable.tagName === 'INPUT' ||
+                      clickable.tagName === 'TEXTAREA' ||
+                      clickable.tagName === 'SELECT'
+                    ) {
+                      clickable.focus({ preventScroll: true });
+                    }
+                    if (typeof clickable.click === 'function') {
+                      clickable.click();
+                    } else {
+                      clickable.dispatchEvent(
+                        new MouseEvent('click', {
+                          bubbles: true,
+                          cancelable: true,
+                          clientX: px,
+                          clientY: py,
+                          view: window
+                        })
+                      );
+                    }
+                  } catch {}
+                }
               }
               return;
             }
@@ -164,6 +219,7 @@ export const RemoteControllerProvider: React.FC<RemoteControllerProviderProps> =
       alive = false;
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (laserHideTimerRef.current) clearTimeout(laserHideTimerRef.current);
+      if (laserPulseTimerRef.current) clearTimeout(laserPulseTimerRef.current);
       try {
         wsRef.current?.close();
       } catch {}
@@ -215,6 +271,7 @@ export const RemoteControllerProvider: React.FC<RemoteControllerProviderProps> =
       {/* Global Presentation Laser Pointer Overlay */}
       {laserDot.active && (
         <div
+          data-testid="remote-laser-dot"
           className="fixed z-[300] pointer-events-none"
           style={{
             left: `${(laserDot.x * 100).toFixed(2)}vw`,
@@ -222,9 +279,25 @@ export const RemoteControllerProvider: React.FC<RemoteControllerProviderProps> =
             transform: 'translate(-50%, -50%)'
           }}
         >
-          <div className="w-6 h-6 rounded-full bg-rose-500/35 blur-[2px] flex items-center justify-center">
-            <div className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_16px_4px_rgba(244,63,94,0.95)] ring-2 ring-white" />
+          <div className="w-7 h-7 rounded-full bg-rose-500/35 blur-[2px] flex items-center justify-center">
+            <div className="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-[0_0_18px_5px_rgba(244,63,94,0.95)] ring-2 ring-white" />
           </div>
+        </div>
+      )}
+
+      {/* Visual Click Confirmation Ripple at Laser Release Position */}
+      {laserPulse && (
+        <div
+          key={laserPulse.id}
+          data-testid="remote-laser-pulse"
+          className="fixed z-[301] pointer-events-none"
+          style={{
+            left: `${(laserPulse.x * 100).toFixed(2)}vw`,
+            top: `${(laserPulse.y * 100).toFixed(2)}vh`,
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          <span className="block w-11 h-11 rounded-full border-2 border-rose-400 bg-rose-500/25 animate-ping" />
         </div>
       )}
     </RemoteControllerContext.Provider>

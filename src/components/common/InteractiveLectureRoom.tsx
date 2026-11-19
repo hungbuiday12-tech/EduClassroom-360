@@ -1307,6 +1307,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
             stepIndex={idx}
             totalSteps={steps.length}
             stepTitle={step.stepTitle}
+            stepConcept={step.conceptSection}
             onOpenSim2D={onOpenSim2D}
             onOpenSim3D={onOpenSim3D}
           />

@@ -45,10 +45,15 @@ export const PhoneRemoteControllerScreen: React.FC<PhoneRemoteControllerScreenPr
   const [gyroEnabled, setGyroEnabled] = useState(false);
   const [gyroStatus, setGyroStatus] = useState<string>('');
   const [laserActive, setLaserActive] = useState(false);
+  const [laserPos, setLaserPos] = useState<{ x: number; y: number } | null>(null);
+  const [laserClickFlash, setLaserClickFlash] = useState<{ x: number; y: number; id: number } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   const lastEmitRef = useRef<number>(0);
+  const lastLaserEmitRef = useRef<number>(0);
+  const isLaserPressedRef = useRef<boolean>(false);
+  const laserClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gyroBaseRef = useRef<{ alpha: number; beta: number; gamma: number } | null>(null);
   const lastGyroSentRef = useRef<{ yaw: number; pitch: number }>({ yaw: 0, pitch: 0 });
   const laserPadRef = useRef<HTMLDivElement | null>(null);
@@ -226,15 +231,41 @@ export const PhoneRemoteControllerScreen: React.FC<PhoneRemoteControllerScreenPr
     lastTouchRef.current = null;
   };
 
-  // Presentation Laser Touchpad handlers
-  const updateLaserFromPointer = (clientX: number, clientY: number, active: boolean) => {
+  // Presentation Laser Touchpad helpers (hover-to-show red dot + press-drag-release-to-click)
+  const getNormalizedLaserCoords = (clientX: number, clientY: number) => {
     const el = laserPadRef.current;
-    if (!el) return;
+    if (!el) return { x: 0.5, y: 0.5, inside: false };
     const rect = el.getBoundingClientRect();
+    const inside =
+      clientX >= rect.left &&
+      clientX <= rect.right &&
+      clientY >= rect.top &&
+      clientY <= rect.bottom;
     const x = Math.max(0, Math.min(1, (clientX - rect.left) / Math.max(1, rect.width)));
     const y = Math.max(0, Math.min(1, (clientY - rect.top) / Math.max(1, rect.height)));
-    sendCmd({ type: 'laser', x, y, active });
+    return { x, y, inside };
   };
+
+  const emitLaserMove = (clientX: number, clientY: number, active: boolean, bypassThrottle = false) => {
+    const { x, y, inside } = getNormalizedLaserCoords(clientX, clientY);
+    if (active) {
+      setLaserPos({ x, y });
+    } else {
+      setLaserPos(null);
+    }
+    const now = performance.now();
+    if (bypassThrottle || now - lastLaserEmitRef.current >= 18) {
+      lastLaserEmitRef.current = now;
+      sendCmd({ type: 'laser', x, y, active });
+    }
+    return { x, y, inside };
+  };
+
+  useEffect(() => {
+    return () => {
+      if (laserClickTimerRef.current) clearTimeout(laserClickTimerRef.current);
+    };
+  }, []);
 
   const quickRooms: { id: string; vi: string; en: string }[] = [
     { id: 'overview', vi: 'Trang chủ', en: 'Home' },
@@ -490,43 +521,122 @@ export const PhoneRemoteControllerScreen: React.FC<PhoneRemoteControllerScreenPr
               </button>
             </div>
 
-            {/* Laser Pointer Touchpad */}
+            {/* Laser Pointer Touchpad (Mouse Hover = Immediate Dot · Touch Drag + Release = Click) */}
             <div
               ref={laserPadRef}
+              data-testid="laser-pad"
+              onPointerEnter={(e) => {
+                if (e.pointerType !== 'touch') {
+                  setLaserActive(true);
+                  emitLaserMove(e.clientX, e.clientY, true, true);
+                }
+              }}
               onPointerDown={(e) => {
-                e.currentTarget.setPointerCapture(e.pointerId);
+                try {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                } catch {}
+                isLaserPressedRef.current = true;
                 setLaserActive(true);
-                updateLaserFromPointer(e.clientX, e.clientY, true);
+                emitLaserMove(e.clientX, e.clientY, true, true);
               }}
               onPointerMove={(e) => {
-                if (!laserActive) return;
-                const now = performance.now();
-                if (now - lastEmitRef.current < 24) return;
-                lastEmitRef.current = now;
-                updateLaserFromPointer(e.clientX, e.clientY, true);
+                if (e.pointerType === 'touch' && !isLaserPressedRef.current) return;
+                setLaserActive(true);
+                emitLaserMove(e.clientX, e.clientY, true, false);
               }}
-              onPointerUp={() => {
+              onPointerUp={(e) => {
+                try {
+                  e.currentTarget.releasePointerCapture(e.pointerId);
+                } catch {}
+                if (!isLaserPressedRef.current) return;
+                isLaserPressedRef.current = false;
+                const { x, y, inside } = getNormalizedLaserCoords(e.clientX, e.clientY);
+
+                // Emit exact final coordinates & click at release position
+                sendCmd({ type: 'laser', x, y, active: e.pointerType !== 'touch' && inside });
+                sendCmd({ type: 'laser_click', x, y });
+
+                setLaserClickFlash({ x, y, id: Date.now() });
+                if (laserClickTimerRef.current) clearTimeout(laserClickTimerRef.current);
+                laserClickTimerRef.current = setTimeout(() => {
+                  setLaserClickFlash(null);
+                }, 480);
+
+                if (e.pointerType === 'touch' || !inside) {
+                  setLaserActive(false);
+                  setLaserPos(null);
+                } else {
+                  setLaserActive(true);
+                  setLaserPos({ x, y });
+                }
+              }}
+              onPointerLeave={(e) => {
+                if (isLaserPressedRef.current) return;
                 setLaserActive(false);
-                sendCmd({ type: 'laser', x: 0.5, y: 0.5, active: false });
+                setLaserPos(null);
+                const { x, y } = getNormalizedLaserCoords(e.clientX, e.clientY);
+                sendCmd({ type: 'laser', x, y, active: false });
               }}
               onPointerCancel={() => {
+                isLaserPressedRef.current = false;
                 setLaserActive(false);
+                setLaserPos(null);
                 sendCmd({ type: 'laser', x: 0.5, y: 0.5, active: false });
               }}
-              className={`flex-1 min-h-[240px] rounded-xl border-2 flex flex-col items-center justify-center gap-2 text-center p-4 touch-none transition-colors ${
+              className={`relative flex-1 min-h-[250px] rounded-xl border-2 flex flex-col items-center justify-center gap-2 text-center p-4 touch-none select-none overflow-hidden transition-colors cursor-crosshair ${
                 laserActive
                   ? 'border-rose-500 bg-rose-950/35'
-                  : 'border-slate-800 bg-slate-900/90'
+                  : 'border-slate-800 bg-slate-900/90 hover:border-rose-500/60'
               }`}
             >
-              <Crosshair className={`w-9 h-9 ${laserActive ? 'text-rose-400' : 'text-slate-400'}`} />
-              <div className="text-sm font-extrabold text-white">
-                {isEn ? 'Live Laser Pointer Pad' : 'Bàn Di Tia Laser Thuyết Trình'}
+              {/* Subtle Screen Proportion Crosshair */}
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-slate-700/35" />
+              <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-slate-700/35" />
+
+              {laserActive && laserPos && (
+                <span className="pointer-events-none absolute top-2 right-2.5 px-2 py-0.5 rounded bg-slate-950/80 border border-rose-500/40 font-mono text-[10px] text-rose-300 tabular-nums">
+                  {Math.round(laserPos.x * 100)}% · {Math.round(laserPos.y * 100)}%
+                </span>
+              )}
+
+              {/* Live Red Dot inside Touchpad mirroring projector screen position */}
+              {laserActive && laserPos && (
+                <div
+                  data-testid="remote-pad-laser-dot"
+                  className="pointer-events-none absolute z-20 w-5 h-5 rounded-full bg-rose-500/35 flex items-center justify-center"
+                  style={{
+                    left: `${(laserPos.x * 100).toFixed(2)}%`,
+                    top: `${(laserPos.y * 100).toFixed(2)}%`,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                >
+                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white shadow-[0_0_12px_3px_rgba(244,63,94,0.95)]" />
+                </div>
+              )}
+
+              {/* Release Click Ripple Feedback inside Touchpad */}
+              {laserClickFlash && (
+                <div
+                  key={laserClickFlash.id}
+                  className="pointer-events-none absolute z-20"
+                  style={{
+                    left: `${(laserClickFlash.x * 100).toFixed(2)}%`,
+                    top: `${(laserClickFlash.y * 100).toFixed(2)}%`,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                >
+                  <span className="block w-9 h-9 rounded-full border-2 border-rose-400 bg-rose-500/30 animate-ping" />
+                </div>
+              )}
+
+              <Crosshair className={`relative z-10 w-9 h-9 ${laserActive ? 'text-rose-400' : 'text-slate-400'}`} />
+              <div className="relative z-10 text-sm font-extrabold text-white">
+                {isEn ? 'Live Laser Pointer & Click Pad' : 'Bàn Di Tia Laser & Click Từ Xa'}
               </div>
-              <p className="text-xs text-slate-400 max-w-xs">
+              <p className="relative z-10 text-xs text-slate-300/90 max-w-xs leading-relaxed">
                 {isEn
-                  ? 'Touch and slide to project a bright red laser pointer onto the projector screen.'
-                  : 'Chạm và rê ngón tay tại đây để chiếu chấm Laser đỏ trực tiếp lên màn hình máy chiếu.'}
+                  ? 'Hover mouse to show the red laser dot immediately. On phone: hold & drag the dot onto any button (e.g. Synapse Pre), then release to click!'
+                  : 'Di chuột vào ô để hiện ngay chấm đỏ. Trên điện thoại: đè tay rê chấm đỏ tới đúng nút cần bấm (vd: Synapse Pre) rồi buông tay để tự động Click!'}
               </p>
             </div>
 

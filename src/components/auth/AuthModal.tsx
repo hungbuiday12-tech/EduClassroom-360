@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth, SYNAPSE_ADMIN_EMAIL } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { EXAM_PAPERS } from '../../data/examData';
+import { CURRICULUM_COUNTS } from '../../data/curriculumCounts';
 import { BrandLogo } from '../common/BrandLogo';
 import {
   Lock,
@@ -258,8 +258,8 @@ export const AuthModal: React.FC = () => {
               </h2>
               <p className="text-xs text-indigo-200/80 mt-2 leading-relaxed">
                 {isEn
-                  ? `Specialized STEM platform with real-time interactive simulations, automated C++/Python judge, and ${EXAM_PAPERS.length} curated exam papers.`
-                  : `Nền tảng học tập chuyên sâu tích hợp đồ họa tương tác thời gian thực, trình chấm bài chuẩn Olympic và ngân hàng ${EXAM_PAPERS.length} đề thi chuẩn & chuyên quốc gia.`}
+                  ? `Specialized STEM platform with real-time interactive simulations, automated C++/Python judge, and ${CURRICULUM_COUNTS.totalExams} curated exam papers.`
+                  : `Nền tảng học tập chuyên sâu tích hợp đồ họa tương tác thời gian thực, trình chấm bài chuẩn Olympic và ngân hàng ${CURRICULUM_COUNTS.totalExams} đề thi chuẩn & chuyên quốc gia.`}
               </p>
             </div>
 

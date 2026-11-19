@@ -1,8 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { FunctionPlotConfig, FutureLabTabId, MathLecture, Physics3DMode, PhysicsDomainId, PhysicsSimType, SubjectType } from '../types';
 import { CSTrackId } from '../data/csTracksData';
-import { MATH_LECTURES } from '../data/curriculumData';
-import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
+import { CURRICULUM_COUNTS } from '../data/curriculumCounts';
 import { PHYSICS_DOMAINS } from '../data/physicsDomainsData';
 
 export interface NavLocation {
@@ -45,12 +44,12 @@ const DEFAULT_LOCATION: NavLocation = {
   subject: 'overview',
   mathTab: 'lectures',
   mathViewMode: 'catalog',
-  mathLectureId: MATH_LECTURES[0]?.id || '',
+  mathLectureId: CURRICULUM_COUNTS.defaultMathLectureId,
   physicsView: 'catalog',
   physicsDomain: 'mechanics',
   physicsSim2D: 'kinematics_graphs',
   physicsSim3D: 'kinematics_3d',
-  physicsLessonId: PHYSICS_LESSONS[0]?.id || '',
+  physicsLessonId: CURRICULUM_COUNTS.defaultPhysicsLessonId,
   physicsTab: 'theory',
   csViewMode: 'curriculum',
   csSubView: 'roadmap',

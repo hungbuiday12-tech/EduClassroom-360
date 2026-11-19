@@ -26,6 +26,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useBackgroundTheme } from '../context/BackgroundContext';
 import { useNavigation } from '../context/NavigationContext';
 import { BrandLogo } from './common/BrandLogo';
 import { getPhysicsSimCounts } from '../data/physicsDomainsData';
@@ -241,6 +242,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
+  const { perfMode } = useBackgroundTheme();
   const { requestScrollToReviews, requestScrollToDirectory } = useNavigation();
   const [physicsSimTotal, setPhysicsSimTotal] = useState<number>(() => getPhysicsSimCounts().total);
 
@@ -482,8 +484,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const isRail = !isMobileDrawer && collapsed;
     return (
       <div className="relative overflow-hidden flex flex-col h-full bg-white/95 dark:bg-slate-950/95 border-r border-slate-200/90 dark:border-slate-800/90 select-none">
-        {/* Moving Molecular Particles & Covalent Bonds Background */}
-        <SidebarMolecularParticles paused={pauseParticles || isRail} />
+        {/* Moving Molecular Particles & Covalent Bonds Background (skipped in smooth mode to save CPU) */}
+        {perfMode !== 'smooth' && <SidebarMolecularParticles paused={pauseParticles || isRail} />}
 
         {/* Top Brand + Collapse Row */}
         <div

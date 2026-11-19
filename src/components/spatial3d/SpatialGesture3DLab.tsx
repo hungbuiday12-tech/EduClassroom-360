@@ -40,6 +40,7 @@ import {
   Plus,
   RotateCcw,
   Scan,
+  ScanFace,
   Scissors,
   Send,
   Settings2,
@@ -83,6 +84,7 @@ import {
   REAL_GRAB_GESTURES,
   SIMPLE_2D_GESTURES
 } from './handGestureTracker';
+import { HeadGazeFrame, HeadGazeTracker } from './headGazeTracker';
 import {
   Free2DToolId,
   SPATIAL_2D_MODES,
@@ -506,6 +508,10 @@ const _zeroVec = new THREE.Vector3(0, 0, 0);
 const _desiredScale = new THREE.Vector3(1, 1, 1);
 const _rowCamPosTarget = new THREE.Vector3();
 const _rowTargetCenter = new THREE.Vector3(0, 1.68, 0);
+const _camRight = new THREE.Vector3();
+const _camUp = new THREE.Vector3();
+const _camFwd = new THREE.Vector3();
+const _parallaxTarget = new THREE.Vector3();
 
 function cachePartLocalCenters(model: DynamicModelRef): void {
   model.group.updateMatrixWorld(true);
@@ -781,6 +787,55 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   pointAskMicListeningRef.current = pointAskMicListening;
   pointAskHandsFreeRef.current = pointAskHandsFree;
   pointAskLockedRef.current = pointAskLockedTarget;
+
+  // Hologram Parallax & Eye-Cockpit (Head-Tracked Window Parallax + Gaze HUD)
+  const [hologramCockpitOn, setHologramCockpitOn] = useState<boolean>(false);
+  const [hologramModeSource, setHologramModeSource] = useState<'face' | 'mouse'>('mouse');
+  const [hologramGazeHud, setHologramGazeHud] = useState<{
+    screenX: number;
+    screenY: number;
+    gazeScreenX: number;
+    gazeScreenY: number;
+    partIdx: number | null;
+    partInfo: ExplodablePartInfo | null;
+    dims: [number, number, number] | null;
+    volume: number | null;
+    dwellPct: number;
+    headX: number;
+    headY: number;
+    headZ: number;
+  } | null>(null);
+  const hologramCockpitOnRef = useRef<boolean>(false);
+  hologramCockpitOnRef.current = hologramCockpitOn;
+  const headTrackerRef = useRef<HeadGazeTracker | null>(null);
+  const headGazeFrameRef = useRef<HeadGazeFrame>({
+    ready: false,
+    detected: false,
+    usingFallback: false,
+    headX: 0,
+    headY: 0,
+    headZ: 0,
+    gazeNdcX: 0,
+    gazeNdcY: 0,
+    gazeScreenX: 50,
+    gazeScreenY: 50,
+    blinking: false,
+    blinkJustTriggered: false
+  });
+  const appliedParallaxRef = useRef<THREE.Vector3>(new THREE.Vector3());
+  const gazeDwellRef = useRef<{
+    partIdx: number;
+    startedAt: number;
+    triggered: boolean;
+    lastRayAt: number;
+    lastUiAt: number;
+  }>({
+    partIdx: -1,
+    startedAt: 0,
+    triggered: false,
+    lastRayAt: 0,
+    lastUiAt: 0
+  });
 
   // Camera & Hand Gesture Tracking states (persisted user settings)
   const [cameraActive, setCameraActive] = useState<boolean>(false);
@@ -2275,6 +2330,27 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           trackerRef.current.drawOverlay(overlayCanvasRef.current, res, pal.css);
         }
 
+        if (hologramCockpitOnRef.current && cfg.spaceMode === '3d' && headTrackerRef.current) {
+          const hg = headTrackerRef.current.processVideo(videoRef.current, gs.mirrorCamera);
+          headGazeFrameRef.current = hg;
+          if (hg.blinkJustTriggered && gazeDwellRef.current.partIdx >= 0 && !gazeDwellRef.current.triggered) {
+            const pIdx = gazeDwellRef.current.partIdx;
+            gazeDwellRef.current.triggered = true;
+            setHighlightedPartIdx(pIdx);
+            setIsolatedPartIdx(pIdx);
+            setPartCardMinimized(false);
+            playSpatialSfx('grab', cfg.tactileSfxEnabled);
+            const pInfo = modelPartsRef.current[pIdx];
+            if (pInfo) {
+              showToast(
+                isEn
+                  ? `👁️ Blink Isolate: ${pInfo.nameEn}`
+                  : `👁️ Chớp mắt tách lớp: ${isEn ? pInfo.nameEn : pInfo.nameVi}`
+              );
+            }
+          }
+        }
+
         if ((res.detected || lastHadHand || !res.ready) && nowMs - lastPush > 150) {
           lastPush = nowMs;
           lastHadHand = res.detected;
@@ -2296,7 +2372,58 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       document.removeEventListener('visibilitychange', onVis);
       cancelAnimationFrame(rafId);
     };
-  }, [cameraActive]);
+  }, [cameraActive, isEn, showToast]);
+
+  // Lifecycle for Hologram Parallax & Eye-Cockpit (FaceLandmarker when camera on, smooth pointer tilt fallback otherwise)
+  useEffect(() => {
+    if (!hologramCockpitOn || spaceMode !== '3d') {
+      setHologramGazeHud(null);
+      gazeDwellRef.current = { partIdx: -1, startedAt: 0, triggered: false, lastRayAt: 0, lastUiAt: 0 };
+      headGazeFrameRef.current = {
+        ...headGazeFrameRef.current,
+        detected: false,
+        headX: 0,
+        headY: 0,
+        headZ: 0
+      };
+      return;
+    }
+
+    if (!headTrackerRef.current) {
+      headTrackerRef.current = new HeadGazeTracker();
+    }
+
+    if (cameraActive) {
+      void headTrackerRef.current.ensureInitialized().then((ok) => {
+        setHologramModeSource(ok ? 'face' : 'mouse');
+      });
+    } else {
+      setHologramModeSource('mouse');
+    }
+
+    const onPointerFallback = (ev: PointerEvent) => {
+      if (!hologramCockpitOnRef.current) return;
+      const tracker = headTrackerRef.current;
+      const canUseFace = cameraActive && tracker && !tracker.hasFailed() && headGazeFrameRef.current.detected;
+      if (canUseFace) {
+        setHologramModeSource('face');
+        return;
+      }
+      const mount = canvasMountRef.current;
+      if (!mount || !tracker) return;
+      const rect = mount.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const ndcX = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      const ndcY = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      headGazeFrameRef.current = tracker.processMouseFallback(ndcX, ndcY);
+      setHologramModeSource('mouse');
+    };
+
+    window.addEventListener('pointermove', onPointerFallback, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', onPointerFallback);
+    };
+  }, [hologramCockpitOn, spaceMode, cameraActive]);
 
   // Initialize Three.js WebGL 3D Stage once
   useEffect(() => {
@@ -4191,6 +4318,88 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             runtime.pointLaserLine.visible = false;
           }
 
+          // Hologram Gaze HUD Raycast ("Nhìn đâu sáng đó" + Dwell/Blink Isolate)
+          if (
+            hologramCockpitOnRef.current &&
+            cfg.spaceMode === '3d' &&
+            !pointAskActiveRef.current &&
+            !isIsolated &&
+            nowPerfMs - gazeDwellRef.current.lastRayAt > 65
+          ) {
+            gazeDwellRef.current.lastRayAt = nowPerfMs;
+            const hg = headGazeFrameRef.current;
+            const gazeHit = raycastPointTargetFromNdc(hg.gazeNdcX, hg.gazeNdcY, 'finger');
+            runtime.reticleGroup.visible = false;
+
+            if (gazeHit) {
+              const gPart = model.explodables[gazeHit.partIdx];
+              if (gPart) {
+                runtime.highlightHelper.setFromObject(gPart.mesh);
+                runtime.highlightHelper.visible = true;
+              }
+              if (gazeDwellRef.current.partIdx !== gazeHit.partIdx) {
+                gazeDwellRef.current.partIdx = gazeHit.partIdx;
+                gazeDwellRef.current.startedAt = nowPerfMs;
+                gazeDwellRef.current.triggered = false;
+                setHighlightedPartIdx(gazeHit.partIdx);
+              }
+              const elapsedDwell = nowPerfMs - gazeDwellRef.current.startedAt;
+              const dwellPct = Math.min(1, elapsedDwell / 1450);
+              if (
+                dwellPct >= 1 &&
+                !gazeDwellRef.current.triggered &&
+                hg.detected &&
+                !hg.usingFallback
+              ) {
+                // Auto-isolate on sustained eye gaze only with active webcam iris lock (mouse preview uses button or click)
+                gazeDwellRef.current.triggered = true;
+                setIsolatedPartIdx(gazeHit.partIdx);
+                setPartCardMinimized(false);
+                playSpatialSfx('grab', cfg.tactileSfxEnabled);
+              }
+              if (nowPerfMs - gazeDwellRef.current.lastUiAt > 75) {
+                gazeDwellRef.current.lastUiAt = nowPerfMs;
+                setHologramGazeHud({
+                  screenX: gazeHit.screenX,
+                  screenY: gazeHit.screenY,
+                  gazeScreenX: hg.gazeScreenX,
+                  gazeScreenY: hg.gazeScreenY,
+                  partIdx: gazeHit.partIdx,
+                  partInfo: gazeHit.partInfo,
+                  dims: gazeHit.dims,
+                  volume: gazeHit.volume,
+                  dwellPct,
+                  headX: hg.headX,
+                  headY: hg.headY,
+                  headZ: hg.headZ
+                });
+              }
+            } else {
+              gazeDwellRef.current.partIdx = -1;
+              gazeDwellRef.current.triggered = false;
+              if (expTarget < 0.25) {
+                runtime.highlightHelper.visible = false;
+              }
+              if (nowPerfMs - gazeDwellRef.current.lastUiAt > 90) {
+                gazeDwellRef.current.lastUiAt = nowPerfMs;
+                setHologramGazeHud({
+                  screenX: -100,
+                  screenY: -100,
+                  gazeScreenX: hg.gazeScreenX,
+                  gazeScreenY: hg.gazeScreenY,
+                  partIdx: null,
+                  partInfo: null,
+                  dims: null,
+                  volume: null,
+                  dwellPct: 0,
+                  headX: hg.headX,
+                  headY: hg.headY,
+                  headZ: hg.headZ
+                });
+              }
+            }
+          }
+
           // Update 6 advanced kinetic rigs (straighten robot arm joints when in horizontal row or isolated 360)
           updateAdvancedKinematics(
             model,
@@ -4282,7 +4491,33 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         }
 
         runtime.remoteHandManager.update(dt);
+
+        // Reversible Head-Tracked Window Parallax (never fights OrbitControls drag)
+        camera.position.sub(appliedParallaxRef.current);
         controls.update();
+
+        if (hologramCockpitOnRef.current && cfg.spaceMode === '3d') {
+          const hg = headGazeFrameRef.current;
+          camera.getWorldDirection(_camFwd);
+          _camRight.crossVectors(_camFwd, camera.up).normalize();
+          _camUp.crossVectors(_camRight, _camFwd).normalize();
+          _parallaxTarget
+            .set(0, 0, 0)
+            .addScaledVector(_camRight, hg.headX * 1.45)
+            .addScaledVector(_camUp, hg.headY * 1.05)
+            .addScaledVector(_camFwd, hg.headZ * 1.15);
+          appliedParallaxRef.current.x = THREE.MathUtils.damp(appliedParallaxRef.current.x, _parallaxTarget.x, 8, dt);
+          appliedParallaxRef.current.y = THREE.MathUtils.damp(appliedParallaxRef.current.y, _parallaxTarget.y, 8, dt);
+          appliedParallaxRef.current.z = THREE.MathUtils.damp(appliedParallaxRef.current.z, _parallaxTarget.z, 8, dt);
+        } else {
+          appliedParallaxRef.current.x = THREE.MathUtils.damp(appliedParallaxRef.current.x, 0, 10, dt);
+          appliedParallaxRef.current.y = THREE.MathUtils.damp(appliedParallaxRef.current.y, 0, 10, dt);
+          appliedParallaxRef.current.z = THREE.MathUtils.damp(appliedParallaxRef.current.z, 0, 10, dt);
+        }
+        if (appliedParallaxRef.current.lengthSq() > 1e-6) {
+          camera.position.add(appliedParallaxRef.current);
+          camera.lookAt(controls.target);
+        }
 
         // Pace GPU rasterization cleanly & update shadow map at ~6 Hz instead of 60 Hz
         const capFps = cfg.gestureSettings.targetFpsCap <= 30;
@@ -6051,6 +6286,40 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   </button>
                   <button
                     type="button"
+                    onClick={() => {
+                      setHologramCockpitOn((prev) => {
+                        const next = !prev;
+                        if (next) {
+                          if (pointAskActive) setPointAskActive(false);
+                          showToast(
+                            cameraActive
+                              ? isEn
+                                ? 'Hologram Parallax & Gaze HUD ON! Tilt head or blink on any part to isolate.'
+                                : 'Đã bật Hologram Mắt & Đầu! Nghiêng đầu tạo chiều sâu 3D, nhìn & chớp mắt để tách lớp.'
+                              : isEn
+                              ? 'Hologram Parallax Preview ON (Move pointer, or enable Webcam for real Head & Iris tracking).'
+                              : 'Đã bật Buồng Lái Hologram (Di chuyển chuột giả lập thị sai, hoặc bật Webcam để theo dõi Đầu & Mắt thật).'
+                          );
+                        }
+                        return next;
+                      });
+                    }}
+                    className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
+                      hologramCockpitOn
+                        ? 'bg-cyan-400 hover:bg-cyan-300 border-cyan-200 text-slate-950 shadow-lg shadow-cyan-500/25'
+                        : 'bg-slate-950/95 hover:border-cyan-400 border-cyan-400/55 text-cyan-200'
+                    }`}
+                    title={
+                      isEn
+                        ? 'Head-Tracked 3D Window Parallax & Gaze HUD (Vision mode)'
+                        : 'Hiệu ứng Thị sai Cửa sổ 3D theo Đầu & Nhìn đâu sáng đó (Gaze HUD)'
+                    }
+                  >
+                    <ScanFace className="w-3.5 h-3.5" />
+                    <span>{isEn ? 'Hologram Eye/Head' : 'Hologram Mắt/Đầu'}</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setShowCoopModal(true)}
                     className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
                       coopActiveRoom
@@ -7010,6 +7279,108 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             <span className="mx-1.5 text-slate-500">|</span>
             <span>V ≈ {(pointAskLockedTarget || pointAskHover)!.volume} đv³</span>
           </div>
+        )}
+
+      {/* Hologram Parallax & Eye-Cockpit Gaze Reticle + Floating Part Callout */}
+      {!hudHidden &&
+        spaceMode === '3d' &&
+        hologramCockpitOn &&
+        hologramGazeHud && (
+          <>
+            {/* Status Telemetry Chip */}
+            <div className="pointer-events-none absolute top-16 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1 rounded-md bg-slate-950/90 border border-cyan-400/60 text-[10px] font-mono text-cyan-200 shadow-lg">
+              <ScanFace className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
+              <span>
+                {hologramModeSource === 'face'
+                  ? isEn ? 'WEBCAM HEAD + IRIS TRACKING' : 'CAMERA THEO DÕI ĐẦU & MẮT'
+                  : isEn ? 'POINTER PARALLAX PREVIEW' : 'THỊ SAI HOLOGRAM (CHUỘT / ĐẦU)'}
+              </span>
+              <span className="text-slate-500">·</span>
+              <span className="tabular-nums text-sky-300">
+                Δ({hologramGazeHud.headX.toFixed(2)}, {hologramGazeHud.headY.toFixed(2)}, {hologramGazeHud.headZ.toFixed(2)})
+              </span>
+            </div>
+
+            {/* Eye/Gaze Crosshair Reticle */}
+            <div
+              className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-1/2"
+              style={{
+                left: `${Math.max(5, Math.min(95, hologramGazeHud.gazeScreenX))}%`,
+                top: `${Math.max(10, Math.min(88, hologramGazeHud.gazeScreenY))}%`
+              }}
+            >
+              <svg width="44" height="44" viewBox="0 0 44 44" className="overflow-visible">
+                <circle
+                  cx="22"
+                  cy="22"
+                  r="17"
+                  fill="rgba(34, 211, 238, 0.08)"
+                  stroke="rgba(56, 189, 248, 0.45)"
+                  strokeWidth="1.5"
+                />
+                <circle
+                  cx="22"
+                  cy="22"
+                  r="17"
+                  fill="none"
+                  stroke="#facc15"
+                  strokeWidth="2.5"
+                  strokeDasharray={106.8}
+                  strokeDashoffset={106.8 * (1 - hologramGazeHud.dwellPct)}
+                  transform="rotate(-90 22 22)"
+                />
+                <circle cx="22" cy="22" r="2.5" fill="#22d3ee" />
+              </svg>
+            </div>
+
+            {/* Gaze HUD Callout Card ("Nhìn đâu sáng đó") */}
+            {hologramGazeHud.partInfo && (
+              <div
+                className="pointer-events-auto absolute z-20 -translate-x-1/2 -translate-y-[115%] w-[260px] rounded-lg bg-slate-950/92 border border-cyan-400/75 p-2.5 shadow-2xl space-y-1.5"
+                style={{
+                  left: `${Math.max(145, Math.min((typeof window !== 'undefined' ? window.innerWidth : 1200) - 145, hologramGazeHud.screenX))}px`,
+                  top: `${Math.max(130, Math.min((typeof window !== 'undefined' ? window.innerHeight : 760) - 150, hologramGazeHud.screenY))}px`
+                }}
+              >
+                <div className="flex items-center justify-between gap-2 text-[10px] font-mono">
+                  <span className="text-cyan-300 font-bold">
+                    {isEn ? hologramGazeHud.partInfo.badgeEn : hologramGazeHud.partInfo.badgeVi}
+                  </span>
+                  {hologramGazeHud.volume !== null && (
+                    <span className="text-emerald-300">V ≈ {hologramGazeHud.volume} đv³</span>
+                  )}
+                </div>
+                <div className="text-xs font-extrabold text-white leading-snug">
+                  {isEn ? hologramGazeHud.partInfo.nameEn : hologramGazeHud.partInfo.nameVi}
+                </div>
+                {hologramGazeHud.partInfo.specFormula && (
+                  <div className="px-2 py-0.5 rounded bg-sky-950/80 border border-sky-500/35 font-mono text-[10px] text-sky-200 truncate">
+                    {hologramGazeHud.partInfo.specFormula}
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <span className="text-[9px] text-slate-400">
+                    {hologramModeSource === 'face'
+                      ? isEn ? 'Blink or hold gaze to isolate' : 'Chớp mắt hoặc nhìn lâu để tách'
+                      : isEn ? 'Click to isolate part' : 'Bấm để tách riêng chi tiết'}
+                  </span>
+                  {hologramGazeHud.partIdx !== null && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHighlightedPartIdx(hologramGazeHud.partIdx);
+                        setIsolatedPartIdx(hologramGazeHud.partIdx);
+                        setPartCardMinimized(false);
+                      }}
+                      className="px-2 py-0.5 rounded bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-[10px] font-extrabold cursor-pointer shrink-0"
+                    >
+                      {isEn ? 'Isolate 360°' : 'Tách lớp'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
       {/* Toast Notification Banner */}

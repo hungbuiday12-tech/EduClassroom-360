@@ -25,6 +25,15 @@
   --hero-grad-light-via: #0369a1;
   --hero-grad-light-to: #0f766e;
   --accent-contrast: #ffffff;
+  --scene-frame-a: #6366f1;
+  --scene-frame-b: #a855f7;
+  --scene-frame-c: #38bdf8;
+  --scene-frame-border: rgba(99, 102, 241, 0.44);
+  --scene-frame-border-hover: rgba(129, 140, 248, 0.78);
+  --scene-frame-ring: rgba(99, 102, 241, 0.24);
+  --scene-frame-glow: rgba(99, 102, 241, 0.24);
+  --scene-frame-glow-strong: rgba(168, 85, 247, 0.36);
+  --scene-frame-tint: rgba(99, 102, 241, 0.14);
 }
 
 @font-face {
@@ -76,29 +85,15 @@
     line-height: 1.38;
   }
 
-  /* Tactile floating hover-lift & crisp architectural square-ish buttons (6px crisp corner) */
-  button:not([data-circle]),
-  [role="button"]:not([data-circle]) {
-    border-radius: 0.375rem;
+  /* Tactile floating hover-lift & crisp architectural square-cut buttons (4px unified corner) */
+  button:not([data-circle]):not([role="switch"]),
+  [role="button"]:not([data-circle]):not([role="switch"]) {
+    border-radius: 4px;
   }
 
-  button[class*="rounded-md"]:not([data-circle]),
-  button[class*="rounded-lg"]:not([data-circle]),
-  button[class*="rounded-xl"]:not([data-circle]),
-  [role="button"][class*="rounded-lg"]:not([data-circle]),
-  [role="button"][class*="rounded-xl"]:not([data-circle]) {
-    border-radius: 0.375rem;
-  }
-
-  button[class*="rounded-2xl"]:not([data-circle]),
-  button[class*="rounded-3xl"]:not([data-circle]),
-  [role="button"][class*="rounded-2xl"]:not([data-circle]) {
-    border-radius: 0.375rem;
-  }
-
-  button[class*="rounded-full"]:not([data-circle]):not(.w-6):not(.w-7):not(.w-8),
-  [role="button"][class*="rounded-full"]:not([data-circle]) {
-    border-radius: 0.375rem;
+  button[class*="rounded-"]:not([data-circle]):not([role="switch"]),
+  [role="button"][class*="rounded-"]:not([data-circle]):not([role="switch"]) {
+    border-radius: 4px;
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -373,14 +368,14 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      var(--accent-primary, #0284c7) 25%,
-      var(--accent-primary-light, #38bdf8) 50%,
-      var(--accent-secondary, #14b8a6) 75%,
+      var(--scene-frame-a, #0284c7) 25%,
+      var(--scene-frame-b, #38bdf8) 55%,
+      var(--scene-frame-c, #14b8a6) 80%,
       transparent 100%
     );
     background-size: 200% 100%;
     animation: eduColorDrift 7s ease-in-out infinite;
-    opacity: 0.32;
+    opacity: 0.56;
     pointer-events: none;
     transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 3;
@@ -389,7 +384,7 @@
     content: none;
   }
   .sci-frame:hover::before {
-    opacity: 0.92;
+    opacity: 0.96;
   }
   @media (hover: hover) and (pointer: fine) {
     button.sci-frame:hover,
@@ -906,13 +901,13 @@
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
-    var(--holo-accent, #38bdf8) 55deg,
+    color-mix(in srgb, var(--scene-frame-a, #38bdf8) 72%, var(--holo-accent, #38bdf8) 28%) 55deg,
     transparent 125deg,
-    var(--holo-secondary, #818cf8) 215deg,
+    color-mix(in srgb, var(--scene-frame-b, #818cf8) 72%, var(--holo-secondary, #818cf8) 28%) 215deg,
     transparent 290deg,
-    var(--holo-accent, #38bdf8) 360deg
+    color-mix(in srgb, var(--scene-frame-a, #38bdf8) 72%, var(--holo-accent, #38bdf8) 28%) 360deg
   );
-  opacity: 0.42;
+  opacity: 0.48;
   animation: orbit-spin 8.5s linear infinite;
   transition: opacity 280ms ease;
   pointer-events: none;
@@ -1065,13 +1060,13 @@
   background: conic-gradient(
     from 90deg,
     transparent 0deg,
-    var(--algo-accent, #10b981) 45deg,
+    color-mix(in srgb, var(--scene-frame-a, #10b981) 72%, var(--algo-accent, #10b981) 28%) 45deg,
     transparent 110deg,
-    var(--algo-secondary, #06b6d4) 210deg,
+    color-mix(in srgb, var(--scene-frame-b, #06b6d4) 72%, var(--algo-secondary, #06b6d4) 28%) 210deg,
     transparent 275deg,
-    var(--algo-accent, #10b981) 360deg
+    color-mix(in srgb, var(--scene-frame-a, #10b981) 72%, var(--algo-accent, #10b981) 28%) 360deg
   );
-  opacity: 0.36;
+  opacity: 0.42;
   animation: orbit-spin 10s linear infinite;
   transition: opacity 240ms ease;
   pointer-events: none;
@@ -1179,13 +1174,13 @@
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
-    var(--phy-accent, #0ea5e9) 55deg,
+    color-mix(in srgb, var(--scene-frame-a, #0ea5e9) 72%, var(--phy-accent, #0ea5e9) 28%) 55deg,
     transparent 125deg,
-    var(--phy-secondary, #f59e0b) 220deg,
+    color-mix(in srgb, var(--scene-frame-b, #f59e0b) 72%, var(--phy-secondary, #f59e0b) 28%) 220deg,
     transparent 290deg,
-    var(--phy-accent, #0ea5e9) 360deg
+    color-mix(in srgb, var(--scene-frame-a, #0ea5e9) 72%, var(--phy-accent, #0ea5e9) 28%) 360deg
   );
-  opacity: 0.22;
+  opacity: 0.34;
   animation: orbit-spin 11s linear infinite;
   transition: opacity 240ms ease;
   pointer-events: none;
@@ -1299,13 +1294,13 @@
   background: conic-gradient(
     from 45deg,
     transparent 0deg,
-    var(--math-accent, #0284c7) 50deg,
+    color-mix(in srgb, var(--scene-frame-a, #0284c7) 72%, var(--math-accent, #0284c7) 28%) 50deg,
     transparent 120deg,
-    var(--math-secondary, #38bdf8) 215deg,
+    color-mix(in srgb, var(--scene-frame-b, #38bdf8) 72%, var(--math-secondary, #38bdf8) 28%) 215deg,
     transparent 290deg,
-    var(--math-accent, #0284c7) 360deg
+    color-mix(in srgb, var(--scene-frame-a, #0284c7) 72%, var(--math-accent, #0284c7) 28%) 360deg
   );
-  opacity: 0.22;
+  opacity: 0.34;
   animation: orbit-spin 12s linear infinite;
   transition: opacity 240ms ease;
   pointer-events: none;
@@ -1531,7 +1526,136 @@
 [data-perf="smooth"] .animate-wave-glide,
 [data-perf="smooth"] .animate-matrix-sweep,
 [data-perf="smooth"] .animate-orbit-slow {
-  will-change: transform;
+  will-change: auto;
+}
+
+/* Weak PC / Smooth Performance Mode: stop continuous decorative animations & heavy multi-layer glow shadows */
+html[data-perf="smooth"] .sci-frame::before,
+html[data-perf="smooth"] .sci-scan-bar::after,
+html[data-perf="smooth"] .sci-blueprint-bg,
+html[data-perf="smooth"] .sci-oscilloscope-path,
+html[data-perf="smooth"] .sci-meter-1,
+html[data-perf="smooth"] .sci-meter-2,
+html[data-perf="smooth"] .sci-meter-3,
+html[data-perf="smooth"] .sci-meter-4,
+html[data-perf="smooth"] .animate-electric-flow,
+html[data-perf="smooth"] .animate-electric-flow-fast,
+html[data-perf="smooth"] .animate-wave-glide,
+html[data-perf="smooth"] .animate-matrix-sweep,
+html[data-perf="smooth"] .animate-orbit-slow,
+html[data-perf="smooth"] .animate-pulse-halo,
+html[data-perf="smooth"] .icon-anim-compass,
+html[data-perf="smooth"] .icon-anim-zap,
+html[data-perf="smooth"] .icon-anim-code,
+html[data-perf="smooth"] .icon-anim-orbit,
+html[data-perf="smooth"] .icon-anim-orbit-fast,
+html[data-perf="smooth"] .icon-anim-orbit-tight,
+html[data-perf="smooth"] .icon-anim-trophy,
+html[data-perf="smooth"] .icon-anim-star,
+html[data-perf="smooth"] .icon-anim-wand,
+html[data-perf="smooth"] .icon-anim-branch,
+html[data-perf="smooth"] .icon-anim-wave,
+html[data-perf="smooth"] .icon-anim-award,
+html[data-perf="smooth"] .icon-anim-list,
+html[data-perf="smooth"] .icon-anim-book,
+html[data-perf="smooth"] .icon-anim-grid,
+html[data-perf="smooth"] .icon-anim-hand,
+html[data-perf="smooth"] .icon-anim-gear,
+html[data-perf="smooth"] .icon-anim-clock,
+html[data-perf="smooth"] .icon-anim-bell,
+html[data-perf="smooth"] .timer-active-glow,
+html[data-perf="smooth"] .holo-conic-ring,
+html[data-perf="smooth"] .holo-scan-beam,
+html[data-perf="smooth"] .holo-orbit-cw,
+html[data-perf="smooth"] .holo-orbit-ccw,
+html[data-perf="smooth"] .holo-float,
+html[data-perf="smooth"] .holo-dash,
+html[data-perf="smooth"] .holo-ring-pulse,
+html[data-perf="smooth"] .holo-radar-sweep,
+html[data-perf="smooth"] .synapse-aurora-blob-a,
+html[data-perf="smooth"] .synapse-aurora-blob-b,
+html[data-perf="smooth"] .synapse-aurora-blob-c,
+html[data-perf="smooth"] .algo-circuit-ring,
+html[data-perf="smooth"] .algo-cursor-blink,
+html[data-perf="smooth"] .algo-sweep-x,
+html[data-perf="smooth"] .algo-window-slide,
+html[data-perf="smooth"] .algo-bar-oscillate,
+html[data-perf="smooth"] .algo-data-stream,
+html[data-perf="smooth"] .algo-node-pulse,
+html[data-perf="smooth"] .physics-orbit-ring,
+html[data-perf="smooth"] .physics-energy-sweep,
+html[data-perf="smooth"] .physics-pendulum-anim,
+html[data-perf="smooth"] .physics-wave-bob,
+html[data-perf="smooth"] .physics-anim-projectile,
+html[data-perf="smooth"] .physics-anim-spring,
+html[data-perf="smooth"] .physics-anim-wave,
+html[data-perf="smooth"] .physics-anim-orbit,
+html[data-perf="smooth"] .physics-anim-orbit-rev,
+html[data-perf="smooth"] .physics-anim-flux,
+html[data-perf="smooth"] .physics-anim-beam,
+html[data-perf="smooth"] .physics-anim-thermal-a,
+html[data-perf="smooth"] .physics-anim-thermal-b,
+html[data-perf="smooth"] .icon-anim-3d-cube,
+html[data-perf="smooth"] .math-geo-ring,
+html[data-perf="smooth"] .math-grid-sheen,
+html[data-perf="smooth"] .math-focus-pulse,
+html[data-perf="smooth"] .math-bar-breathe,
+html[data-perf="smooth"] .math-compass-tilt,
+html[data-perf="smooth"] .roadmap-connector-flow,
+html[data-perf="smooth"] .roadmap-beam-sweep::after,
+html[data-perf="smooth"] .roadmap-node-aura,
+html[data-perf="smooth"] .roadmap-shimmer-bar,
+html[data-perf="smooth"] .showcase-float-slow,
+html[data-perf="smooth"] .showcase-beam-glide,
+html[data-perf="smooth"] .showcase-node-ping,
+html[data-perf="smooth"] .cta-beacon-glow,
+html[data-perf="smooth"] .spatial-holo-ring,
+html[data-perf="smooth"] .spatial-orbit-spin,
+html[data-perf="smooth"] .spatial-orbit-spin-rev,
+html[data-perf="smooth"] .spatial-hud-frame::before,
+html[data-perf="smooth"] .spatial-soft-frame::before,
+html[data-perf="smooth"] .syn-core-pulse,
+html[data-perf="smooth"] .syn-neural-grid,
+html[data-perf="smooth"] .syn-header-beam::after,
+html[data-perf="smooth"] .syn-dock-halo,
+html[data-perf="smooth"] .syn-conic-border-spin,
+html[data-perf="smooth"] .app-device-float-a,
+html[data-perf="smooth"] .app-device-float-b,
+html[data-perf="smooth"] .app-scan-beam,
+html[data-perf="smooth"] .app-telemetry-flow,
+html[data-perf="smooth"] .kmap-packet-flow,
+html[data-perf="smooth"] .kmap-packet-flow-rev,
+html[data-perf="smooth"] .kmap-core-orbit,
+html[data-perf="smooth"] .kmap-core-orbit-rev,
+html[data-perf="smooth"] .kmap-laser-scan::before,
+html[data-perf="smooth"] .streak-flame-pulse,
+html[data-perf="smooth"] .quest-bar-shimmer::after,
+html[data-perf="smooth"] .ar-reticle-spin,
+html[data-perf="smooth"] .voice-os-orb-pulse,
+html[data-perf="smooth"] .sim-btn-tile-bar,
+html[data-perf="smooth"] .arena-frame::before,
+html[data-perf="smooth"] .arena-live-dot,
+html[data-perf="smooth"] .pre-grand-hero::before,
+html[data-perf="smooth"] .pre-grand-conic,
+html[data-perf="smooth"] .pre-grand-corners {
+  animation: none !important;
+}
+
+html[data-perf="smooth"] .synapse-aurora-blob-a,
+html[data-perf="smooth"] .synapse-aurora-blob-b,
+html[data-perf="smooth"] .synapse-aurora-blob-c {
+  display: none !important;
+}
+
+html[data-perf="smooth"] .sci-frame,
+html[data-perf="smooth"] .arena-frame,
+html[data-perf="smooth"] .spatial-hud-frame,
+html[data-perf="smooth"] .spatial-soft-frame,
+html[data-perf="smooth"] .pre-grand-hero,
+html[data-perf="smooth"] .pre-card-shell {
+  box-shadow:
+    inset 0 0 0 1px var(--scene-frame-ring),
+    0 4px 12px -6px var(--scene-frame-glow) !important;
 }
 
 .cv-auto {
@@ -1872,7 +1996,7 @@
 
 .spatial-holo-card:not([data-modal-shell]):hover {
   transform: translate3d(0, -3px, 0) scale(1.013);
-  box-shadow: 0 18px 36px -16px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 18px 36px -16px var(--scene-frame-glow-strong, rgba(14, 165, 233, 0.3));
 }
 
 .spatial-holo-ring {
@@ -1881,14 +2005,14 @@
   pointer-events: none;
   background: linear-gradient(
     135deg,
-    rgba(14, 165, 233, 0.48) 0%,
-    rgba(99, 102, 241, 0.24) 48%,
-    rgba(16, 185, 129, 0.44) 100%
+    color-mix(in srgb, var(--scene-frame-a, #0ea5e9) 74%, transparent) 0%,
+    color-mix(in srgb, var(--scene-frame-b, #6366f1) 46%, transparent) 48%,
+    color-mix(in srgb, var(--scene-frame-c, #10b981) 70%, transparent) 100%
   );
   background-size: 200% 200%;
   animation: eduColorDrift 7.5s ease-in-out infinite;
   transition: opacity 220ms ease;
-  opacity: 0.74;
+  opacity: 0.82;
 }
 
 .spatial-holo-card:hover .spatial-holo-ring {
@@ -1898,9 +2022,9 @@
 .spatial-holo-ring-emerald {
   background: linear-gradient(
     135deg,
-    rgba(16, 185, 129, 0.5) 0%,
-    rgba(20, 184, 166, 0.22) 50%,
-    rgba(14, 165, 233, 0.45) 100%
+    color-mix(in srgb, var(--scene-frame-a, #10b981) 68%, #10b981 32%) 0%,
+    color-mix(in srgb, var(--scene-frame-b, #14b8a6) 44%, transparent) 50%,
+    color-mix(in srgb, var(--scene-frame-c, #0ea5e9) 68%, transparent) 100%
   );
   background-size: 200% 200%;
 }
@@ -1908,9 +2032,9 @@
 .spatial-holo-ring-amber {
   background: linear-gradient(
     135deg,
-    rgba(245, 158, 11, 0.5) 0%,
-    rgba(249, 115, 22, 0.22) 50%,
-    rgba(14, 165, 233, 0.42) 100%
+    color-mix(in srgb, var(--scene-frame-a, #f59e0b) 65%, #f59e0b 35%) 0%,
+    color-mix(in srgb, var(--scene-frame-b, #f97316) 44%, transparent) 50%,
+    color-mix(in srgb, var(--scene-frame-c, #0ea5e9) 65%, transparent) 100%
   );
   background-size: 200% 200%;
 }
@@ -1939,7 +2063,7 @@
 .spatial-hud-frame {
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.28), 0 14px 32px -14px rgba(14, 165, 233, 0.28);
+  box-shadow: 0 0 0 1px var(--scene-frame-ring, rgba(56, 189, 248, 0.28)), 0 14px 32px -14px var(--scene-frame-glow, rgba(14, 165, 233, 0.28));
   transition:
     transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -1955,13 +2079,13 @@
   height: 2px;
   pointer-events: none;
   z-index: 3;
-  opacity: 0.42;
+  opacity: 0.62;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(56, 189, 248, 0.78) 25%,
-    rgba(45, 212, 191, 0.78) 55%,
-    rgba(99, 102, 241, 0.68) 80%,
+    var(--scene-frame-a, #38bdf8) 25%,
+    var(--scene-frame-b, #2dd4bf) 55%,
+    var(--scene-frame-c, #6366f1) 80%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -1974,13 +2098,13 @@
 }
 
 .spatial-hud-frame:hover::before {
-  opacity: 0.95;
+  opacity: 0.96;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .spatial-hud-frame.spatial-hud-zoom:hover {
     transform: translate3d(0, -2px, 0) scale(1.014);
-    box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.45), 0 18px 36px -14px rgba(14, 165, 233, 0.34);
+    box-shadow: 0 0 0 1px var(--scene-frame-border-hover, rgba(56, 189, 248, 0.45)), 0 18px 36px -14px var(--scene-frame-glow-strong, rgba(14, 165, 233, 0.34));
   }
 }
 
@@ -2004,12 +2128,12 @@
   height: 2px;
   pointer-events: none;
   z-index: 2;
-  opacity: 0.28;
+  opacity: 0.52;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(56, 189, 248, 0.75) 28%,
-    rgba(20, 184, 166, 0.72) 64%,
+    var(--scene-frame-a, #38bdf8) 28%,
+    var(--scene-frame-b, #14b8a6) 64%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -2021,8 +2145,8 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(16, 185, 129, 0.78) 28%,
-    rgba(56, 189, 248, 0.72) 64%,
+    color-mix(in srgb, var(--scene-frame-a, #10b981) 68%, #10b981 32%) 28%,
+    color-mix(in srgb, var(--scene-frame-b, #38bdf8) 68%, #38bdf8 32%) 64%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -2032,8 +2156,8 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(245, 158, 11, 0.78) 28%,
-    rgba(56, 189, 248, 0.72) 64%,
+    color-mix(in srgb, var(--scene-frame-a, #f59e0b) 68%, #f59e0b 32%) 28%,
+    color-mix(in srgb, var(--scene-frame-b, #38bdf8) 68%, #38bdf8 32%) 64%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -2043,8 +2167,8 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(168, 85, 247, 0.78) 28%,
-    rgba(56, 189, 248, 0.72) 64%,
+    color-mix(in srgb, var(--scene-frame-a, #a855f7) 68%, #a855f7 32%) 28%,
+    color-mix(in srgb, var(--scene-frame-b, #38bdf8) 68%, #38bdf8 32%) 64%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -2320,13 +2444,13 @@
   pointer-events: none;
   background: linear-gradient(
     135deg,
-    rgba(14, 165, 233, 0.4) 0%,
-    rgba(99, 102, 241, 0.22) 50%,
-    rgba(20, 184, 166, 0.4) 100%
+    color-mix(in srgb, var(--scene-frame-a, #0ea5e9) 55%, transparent) 0%,
+    color-mix(in srgb, var(--scene-frame-b, #6366f1) 34%, transparent) 50%,
+    color-mix(in srgb, var(--scene-frame-c, #14b8a6) 55%, transparent) 100%
   );
   background-size: 200% 200%;
   animation: eduColorDrift 8s ease-in-out infinite;
-  opacity: 0.76;
+  opacity: 0.82;
   transition: opacity 200ms ease;
   z-index: 0;
 }
@@ -2355,8 +2479,13 @@
   right: 0;
   height: 2px;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(14, 165, 233, 0.55), rgba(20, 184, 166, 0.55));
-  opacity: 0.55;
+  background: linear-gradient(
+    90deg,
+    var(--scene-frame-a, #0ea5e9),
+    var(--scene-frame-b, #14b8a6),
+    var(--scene-frame-c, #38bdf8)
+  );
+  opacity: 0.7;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2887,15 +3016,20 @@
   height: 2px;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.35;
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.65), rgba(14, 165, 233, 0.65), rgba(20, 184, 166, 0.65));
+  opacity: 0.55;
+  background: linear-gradient(
+    90deg,
+    var(--scene-frame-a, #6366f1),
+    var(--scene-frame-b, #0ea5e9),
+    var(--scene-frame-c, #14b8a6)
+  );
   background-size: 200% 100%;
   animation: eduColorDrift 7s ease-in-out infinite;
   transition: opacity 200ms ease;
 }
 
 .arena-frame:hover::before {
-  opacity: 0.92;
+  opacity: 0.95;
 }
 
 .arena-card-hover {
@@ -2907,11 +3041,11 @@
 
 .arena-card-hover:hover {
   transform: translate3d(0, -3px, 0) scale(1.012);
-  box-shadow: 0 14px 28px -14px rgba(14, 165, 233, 0.25);
+  box-shadow: 0 14px 28px -14px var(--scene-frame-glow-strong, rgba(14, 165, 233, 0.25));
 }
 
 .dark .arena-card-hover:hover {
-  box-shadow: 0 16px 30px -14px rgba(14, 165, 233, 0.28);
+  box-shadow: 0 16px 30px -14px var(--scene-frame-glow-strong, rgba(14, 165, 233, 0.28));
 }
 
 .arena-beam-sweep {
@@ -3185,14 +3319,14 @@
   height: 3px;
   background: linear-gradient(
     90deg,
-    var(--accent-primary, #0284c7) 0%,
-    var(--accent-primary-light, #38bdf8) 35%,
-    var(--accent-secondary, #14b8a6) 70%,
-    var(--accent-primary, #0284c7) 100%
+    var(--scene-frame-a, #0284c7) 0%,
+    var(--scene-frame-b, #38bdf8) 38%,
+    var(--scene-frame-c, #14b8a6) 72%,
+    var(--scene-frame-a, #0284c7) 100%
   );
   background-size: 200% 100%;
   animation: eduColorDrift 6.5s ease-in-out infinite;
-  opacity: 0.9;
+  opacity: 0.92;
   pointer-events: none;
   z-index: 2;
 }
@@ -3208,19 +3342,19 @@
     box-shadow 230ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Smooth modern color drift along the card frame edge */
+/* Smooth modern color drift along the card frame edge (blended with dynamic background scene) */
 .pre-grand-conic {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--pre-card-accent, #0284c7) 44%, transparent) 0%,
-    color-mix(in srgb, var(--pre-card-secondary, #14b8a6) 24%, rgba(148, 163, 184, 0.2)) 50%,
-    color-mix(in srgb, var(--pre-card-accent, #0284c7) 42%, transparent) 100%
+    color-mix(in srgb, var(--scene-frame-a, #0284c7) 68%, var(--pre-card-accent, #0284c7) 32%) 0%,
+    color-mix(in srgb, var(--scene-frame-b, #14b8a6) 62%, var(--pre-card-secondary, #14b8a6) 38%) 50%,
+    color-mix(in srgb, var(--scene-frame-c, #38bdf8) 68%, var(--pre-card-accent, #0284c7) 32%) 100%
   );
   background-size: 200% 200%;
   animation: eduColorDrift 7.5s ease-in-out infinite;
-  opacity: 0.78;
+  opacity: 0.72;
   transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
   z-index: 0;
@@ -3236,14 +3370,14 @@
   border-radius: 0 0 4px 4px;
   pointer-events: none;
   z-index: 25;
-  opacity: 0.65;
+  opacity: 0.72;
   transform: scaleX(0.36);
   transform-origin: center;
   background: linear-gradient(
     90deg,
-    var(--pre-card-accent, #0284c7),
-    var(--pre-card-secondary, #14b8a6),
-    var(--pre-card-accent, #0284c7)
+    color-mix(in srgb, var(--scene-frame-a, #0284c7) 70%, var(--pre-card-accent, #0284c7) 30%),
+    color-mix(in srgb, var(--scene-frame-b, #14b8a6) 70%, var(--pre-card-secondary, #14b8a6) 30%),
+    color-mix(in srgb, var(--scene-frame-c, #38bdf8) 70%, var(--pre-card-accent, #0284c7) 30%)
   );
   background-size: 200% 100%;
   animation: eduColorDrift 6s ease-in-out infinite;
@@ -3358,6 +3492,234 @@
   max-width: 100% !important;
   padding: 0 !important;
 }
+
+/* ================= SCENE-SYNCHRONIZED FRAME BORDERS & TINT ================= */
+html[data-bg-style] .sci-frame,
+html[data-bg-style] .arena-frame,
+html[data-bg-style] .spatial-hud-frame,
+html[data-bg-style] .spatial-soft-frame,
+html[data-bg-style] .pre-grand-hero,
+html[data-bg-style] .pre-card-shell {
+  border-color: var(--scene-frame-border);
+  box-shadow:
+    inset 0 0 0 1px var(--scene-frame-ring),
+    inset 0 26px 56px -38px var(--scene-frame-tint),
+    0 12px 30px -18px var(--scene-frame-glow);
+}
+
+html[data-bg-style] .sci-frame:hover,
+html[data-bg-style] .arena-frame:hover,
+html[data-bg-style] .spatial-hud-frame:hover,
+html[data-bg-style] .spatial-soft-frame:hover,
+html[data-bg-style] .pre-grand-hero:hover,
+html[data-bg-style] .pre-card-shell:hover,
+html[data-bg-style] .pre-grand-frame:hover {
+  border-color: var(--scene-frame-border-hover);
+  box-shadow:
+    inset 0 0 0 1px var(--scene-frame-border),
+    inset 0 30px 64px -34px var(--scene-frame-tint),
+    0 18px 40px -16px var(--scene-frame-glow-strong);
+}
+
+html[data-bg-style] .pre-grand-frame > [role="button"] {
+  border-color: var(--scene-frame-border);
+  box-shadow: inset 0 24px 52px -36px var(--scene-frame-tint);
+}
+
+html[data-bg-style] header.sticky,
+html[data-bg-style] footer {
+  border-color: var(--scene-frame-border);
+}
+
+/* White Dynamic (Low-Lag) backdrop compositor relief (unless Pro mode explicitly overrides) */
+html[data-bg-style='white_breeze']:not([data-perf="ultra"]) .backdrop-blur-md,
+html[data-bg-style='white_breeze']:not([data-perf="ultra"]) .backdrop-blur-xl,
+html[data-bg-style='white_breeze']:not([data-perf="ultra"]) .backdrop-blur-2xl {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-bg-style='white_breeze'][data-perf="smooth"] .sci-scan-bar::after,
+html[data-bg-style='white_breeze'][data-perf="smooth"] .sci-blueprint-bg {
+  animation: none !important;
+}
+
+/* ============================================================================
+   3-TIER GRAPHICS ENGINE: TIER 2 (BALANCED / MEDIUM) & TIER 3 (ULTRA / PRO)
+   ============================================================================ */
+/* Tier 2 — Medium Graphics: Lively, crisp motion across buttons & frames */
+html[data-perf="balanced"] .sci-frame,
+html[data-perf="balanced"] .arena-frame,
+html[data-perf="balanced"] .spatial-hud-frame,
+html[data-perf="balanced"] .pre-grand-hero,
+html[data-perf="balanced"] .pre-card-shell {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease;
+}
+
+html[data-perf="balanced"] .cs-deck-btn,
+html[data-perf="balanced"] .pre-btn-kinetic,
+html[data-perf="balanced"] .pre-grand-btn {
+  box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.18);
+}
+
+/* Tier 3 — Pro Graphics: Ultra-modern futuristic holographic motion across buttons & frames */
+@keyframes pro-holo-glow-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 1px var(--scene-frame-border-hover, rgba(56, 189, 248, 0.55)),
+      inset 0 28px 60px -34px var(--scene-frame-tint, rgba(56, 189, 248, 0.2)),
+      0 14px 36px -14px var(--scene-frame-glow-strong, rgba(56, 189, 248, 0.38));
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px var(--scene-frame-a, #38bdf8),
+      inset 0 32px 68px -30px var(--scene-frame-tint, rgba(99, 102, 241, 0.26)),
+      0 18px 46px -12px var(--scene-frame-glow-strong, rgba(99, 102, 241, 0.48));
+  }
+}
+
+html[data-perf="ultra"] .sci-frame,
+html[data-perf="ultra"] .arena-frame,
+html[data-perf="ultra"] .spatial-hud-frame,
+html[data-perf="ultra"] .spatial-soft-frame,
+html[data-perf="ultra"] .pre-grand-hero,
+html[data-perf="ultra"] .pre-card-shell {
+  border-color: var(--scene-frame-border-hover) !important;
+  animation: pro-holo-glow-pulse 4.4s ease-in-out infinite;
+}
+
+html[data-perf="ultra"] .sci-frame::before,
+html[data-perf="ultra"] .arena-frame::before,
+html[data-perf="ultra"] .spatial-hud-frame::before,
+html[data-perf="ultra"] .pre-grand-hero::before {
+  height: 2.5px;
+  opacity: 0.98;
+  animation-duration: 3.8s;
+}
+
+html[data-perf="ultra"] .pre-scan-beam::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 36%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.24) 48%,
+    rgba(20, 184, 166, 0.16) 65%,
+    transparent 100%
+  );
+  animation: preScanBeam 4.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 4;
+}
+
+html[data-perf="ultra"] .spatial-laser-sweep {
+  display: block;
+  animation: spatial-laser-sweep 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+html[data-perf="ultra"] .arena-beam-sweep {
+  display: block;
+  animation: arena-beam-scan 4.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+html[data-perf="ultra"] .cs-deck-btn,
+html[data-perf="ultra"] .pre-btn-kinetic,
+html[data-perf="ultra"] .pre-grand-btn,
+html[data-perf="ultra"] .arena-btn-primary,
+html[data-perf="ultra"] .sim-btn-phy,
+html[data-perf="ultra"] .sim-btn-math {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 8px 22px -10px var(--scene-frame-glow-strong, rgba(14, 165, 233, 0.42));
+}
+
+html[data-perf="ultra"] .cs-deck-btn::before,
+html[data-perf="ultra"] .pre-btn-kinetic::after,
+html[data-perf="ultra"] .pre-grand-btn::after,
+html[data-perf="ultra"] .arena-btn-primary::after {
+  animation: sim-hero-ambient-sheen 4.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+html[data-perf="ultra"] .cs-deck-btn:not(:disabled):hover,
+html[data-perf="ultra"] .pre-btn-kinetic:not(:disabled):hover,
+html[data-perf="ultra"] .pre-grand-btn:not(:disabled):hover,
+html[data-perf="ultra"] .arena-btn:not(:disabled):hover {
+  transform: translate3d(0, -3px, 0) scale(1.015) !important;
+  box-shadow:
+    0 14px 30px -10px var(--scene-frame-glow-strong, rgba(56, 189, 248, 0.5)),
+    0 0 0 1px var(--scene-frame-a, #38bdf8) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-perf="ultra"] .sci-frame,
+  html[data-perf="ultra"] .arena-frame,
+  html[data-perf="ultra"] .spatial-hud-frame,
+  html[data-perf="ultra"] .spatial-soft-frame,
+  html[data-perf="ultra"] .pre-grand-hero,
+  html[data-perf="ultra"] .pre-card-shell,
+  html[data-perf="ultra"] .pre-scan-beam::after,
+  html[data-perf="ultra"] .cs-deck-btn::before,
+  html[data-perf="ultra"] .pre-btn-kinetic::after,
+  html[data-perf="ultra"] .pre-grand-btn::after,
+  html[data-perf="ultra"] .arena-btn-primary::after {
+    animation: none !important;
+  }
+}
+
+/* ============================================================================
+   UNIFIED ARCHITECTURAL SQUARE-CUT GEOMETRY (4px UNIFORM STANDARD)
+   Applies consistently across cards, frames, buttons, pills, inputs & modals,
+   while preserving genuinely circular indicators, swatches, radars & blur blobs.
+   ============================================================================ */
+.rounded-md,
+.rounded-lg,
+.rounded-xl,
+.rounded-2xl,
+.rounded-3xl,
+.sci-frame,
+.arena-frame,
+.spatial-hud-frame,
+.spatial-soft-frame,
+.spatial-holo-card,
+.holo-card-frame,
+.algo-card-frame,
+.physics-card-frame,
+.physics-zone-frame,
+.pre-card-shell,
+.pre-grand-frame,
+.syn-conic-border,
+.sim-btn-phy,
+.sim-btn-math,
+.arena-btn,
+.pre-btn-kinetic,
+.pre-grand-btn {
+  border-radius: 4px !important;
+}
+
+button:not([data-circle]):not([role="switch"]),
+[role="button"]:not([data-circle]):not([role="switch"]),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  border-radius: 4px !important;
+}
+
+/* Convert bubbly pill badges/tags (px-* + rounded-full) into crisp 4px architectural tags */
+.rounded-full[class*="px-"]:not([data-circle]):not([role="switch"]):not(.synapse-aurora-blob-a):not(.synapse-aurora-blob-b):not(.synapse-aurora-blob-c):not([class*="blur-3xl"]):not([class*="blur-2xl"]) {
+  border-radius: 4px !important;
+}
+
+/* Explicit opt-in for circular swatches, avatars & status dots */
+[data-circle="true"] {
+  border-radius: 9999px !important;
+}
+
+
 
 
 

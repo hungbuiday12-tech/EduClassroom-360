@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { Orbit, Play, Pause, RotateCcw, Sparkles } from 'lucide-react';
+import { Check, Copy, Orbit, Pause, Play, RotateCcw, Share2 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface UniverseForge3DLabProps {
@@ -42,6 +42,44 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
   const [paused, setPaused] = useState<boolean>(false);
   const [dockCollapsed, setDockCollapsed] = useState<boolean>(false);
   const [resetNonce, setResetNonce] = useState<number>(0);
+  const [shareCopied, setShareCopied] = useState<boolean>(false);
+  const [codeInput, setCodeInput] = useState<string>('');
+  const [codeNotice, setCodeNotice] = useState<string | null>(null);
+
+  const universeCode = useMemo(
+    () => `SYN-U1:${gravityG.toFixed(2)}:${forceExp.toFixed(2)}:${Math.round(speedOfLight)}:${betaFrac.toFixed(2)}`,
+    [gravityG, forceExp, speedOfLight, betaFrac]
+  );
+
+  const handleCopyUniverseCode = async () => {
+    try {
+      await navigator.clipboard.writeText(universeCode);
+    } catch {}
+    setShareCopied(true);
+    window.setTimeout(() => setShareCopied(false), 1800);
+  };
+
+  const handleApplyUniverseCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    const raw = codeInput.trim();
+    const m = raw.match(/^(?:SYN-U1:)?(-?\d+(?:\.\d+)?):(\d+(?:\.\d+)?):(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/i);
+    if (!m) {
+      setCodeNotice(isEn ? 'Invalid code format' : 'Mã vũ trụ không đúng định dạng');
+      return;
+    }
+    const g = THREE.MathUtils.clamp(parseFloat(m[1]), -1.2, 3.0);
+    const n = THREE.MathUtils.clamp(parseFloat(m[2]), 1.4, 3.1);
+    const c = THREE.MathUtils.clamp(parseFloat(m[3]), 15, 120);
+    const b = THREE.MathUtils.clamp(parseFloat(m[4]), 0.08, 0.96);
+    setGravityG(g);
+    setForceExp(n);
+    setSpeedOfLight(c);
+    setBetaFrac(b);
+    setResetNonce((prev) => prev + 1);
+    setCodeNotice(isEn ? 'Loaded shared universe!' : 'Đã nạp thành công vũ trụ!');
+    window.setTimeout(() => setCodeNotice(null), 2000);
+    onEarnXP?.(8);
+  };
 
   const lorentzGamma = useMemo(() => 1 / Math.sqrt(Math.max(0.02, 1 - betaFrac * betaFrac)), [betaFrac]);
   const lengthRatio = useMemo(() => Math.sqrt(Math.max(0.02, 1 - betaFrac * betaFrac)), [betaFrac]);
@@ -526,6 +564,42 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
                   <span>{isEn ? 'Reset Orbit' : 'Đặt lại'}</span>
                 </button>
               </div>
+            </div>
+
+            {/* Row 3: Universe Share Code */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
+              <div className="flex items-center gap-1.5">
+                <Share2 className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                <span className="text-slate-400 font-semibold">{isEn ? 'Share Code:' : 'Mã Vũ Trụ:'}</span>
+                <code className="px-2 py-0.5 rounded bg-slate-900 border border-amber-500/30 font-mono text-amber-200">
+                  {universeCode}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyUniverseCode()}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/50 hover:bg-amber-500/30 text-amber-200 font-bold cursor-pointer"
+                >
+                  {shareCopied ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3" />}
+                  <span>{shareCopied ? (isEn ? 'Copied' : 'Đã chép') : isEn ? 'Copy' : 'Lưu mã'}</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleApplyUniverseCode} className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value)}
+                  placeholder="SYN-U1:1.35:2.00:40:0.68"
+                  className="w-44 px-2 py-1 rounded bg-slate-900 border border-slate-700 focus:border-sky-400 font-mono text-[10px] text-white outline-none"
+                />
+                <button
+                  type="submit"
+                  className="px-2.5 py-1 rounded bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold text-[10px] cursor-pointer"
+                >
+                  {isEn ? 'Load Code' : 'Nạp Mã'}
+                </button>
+                {codeNotice && <span className="text-emerald-300 font-semibold">{codeNotice}</span>}
+              </form>
             </div>
           </div>
         )}

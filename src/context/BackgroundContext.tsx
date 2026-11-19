@@ -15,6 +15,7 @@ export type PerformanceMode = 'smooth' | 'balanced' | 'ultra';
 
 export type BackgroundStyle =
   | 'ecosystem'
+  | 'white_breeze'
   | 'molecules'
   | 'ocean'
   | 'sky'
@@ -321,6 +322,19 @@ export const BACKGROUND_STYLE_OPTIONS: BackgroundStyleOption[] = [
     previewGradient: 'linear-gradient(135deg, #064e3b 0%, #0d9488 55%, #38bdf8 100%)'
   },
   {
+    id: 'white_breeze',
+    labelVi: 'Nền Trắng Động (Giảm Lag)',
+    labelEn: 'Crisp White Dynamic (Low-Lag)',
+    shortVi: 'Nền trắng',
+    shortEn: 'White Light',
+    specBadgeVi: 'Siêu nhẹ · Nền trắng mượt 22 FPS tiết kiệm pin',
+    specBadgeEn: 'Ultra-Light · Pure White · Zero Lag',
+    descVi: 'Nền trắng tinh khiết tối ưu giảm lag GPU/CPU với vòng quỹ đạo tối giản, dải sóng nhẹ và hạt sáng trôi êm.',
+    descEn: 'Crisp white background engineered for zero lag with minimalist orbital arcs, a gentle wave ribbon, and soft drifting dust motes.',
+    recommendedPerf: 'smooth',
+    previewGradient: 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 62%, #dbeafe 100%)'
+  },
+  {
     id: 'molecules',
     labelVi: 'Mạng Hạt Phân Tử & Nguyên Tử',
     labelEn: 'Molecular Particle Lattice',
@@ -452,30 +466,30 @@ export interface PerformanceModeOption {
 export const PERFORMANCE_MODE_OPTIONS: PerformanceModeOption[] = [
   {
     id: 'smooth',
-    labelVi: 'Mượt Tối Đa (Máy yếu / 60 FPS)',
-    labelEn: 'Max Smooth (Low-Spec / 60 FPS)',
-    shortVi: 'Mượt FPS',
-    shortEn: 'Smooth',
-    descVi: 'Tối ưu bộ nhớ đệm Canvas, tắt blur GPU nặng để giữ tốc độ phản hồi nhanh nhất.',
-    descEn: 'Caches Canvas layers & trims heavy GPU blur for instant responsiveness.'
+    labelVi: '1. Đồ họa Thấp (Mặc định · Siêu nhẹ)',
+    labelEn: '1. Low Graphics (Default · Ultra-Light)',
+    shortVi: 'Đồ họa Thấp',
+    shortEn: 'Low Graphics',
+    descVi: 'Cấu hình mặc định nhẹ nhất cho mọi thiết bị & máy cấu hình yếu: tắt blur GPU, giảm chuyển động nền để đạt phản hồi tức thì.',
+    descEn: 'Default ultra-light configuration for all PCs: disables heavy GPU blur & background animations for instant responsiveness.'
   },
   {
     id: 'balanced',
-    labelVi: 'Cân Bằng (Laptop phổ thông)',
-    labelEn: 'Balanced (Standard Laptop)',
-    shortVi: 'Cân bằng',
-    shortEn: 'Balanced',
-    descVi: 'Cân bằng độ nét Retina và mức tiêu thụ CPU/pin hợp lý.',
-    descEn: 'Balances crisp visuals with modest CPU and battery usage.'
+    labelVi: '2. Đồ họa Trung bình (Animation sống động)',
+    labelEn: '2. Medium Graphics (Lively Motion)',
+    shortVi: 'Trung bình',
+    shortEn: 'Medium',
+    descVi: 'Các nút và khung hiển thị có animation cơ bản sống động: hiệu ứng nhấc nổi khi trỏ chuột, viền màu chuyển động dịu & quét sáng mượt.',
+    descEn: 'Buttons and frames feature crisp, lively animations: tactile hover lift, gentle color border drift, and smooth sweep highlights.'
   },
   {
     id: 'ultra',
-    labelVi: 'Chi Tiết Cao (GPU rời / PC mạnh)',
-    labelEn: 'High Detail (Dedicated GPU)',
-    shortVi: 'Chi tiết cao',
-    shortEn: 'High Detail',
-    descVi: 'Hiển thị đầy đủ mật độ hạt, ánh sáng kính mờ sâu và tốc độ quét màn hình gốc.',
-    descEn: 'Full particle density, deep glass blur, and native refresh rate.'
+    labelVi: '3. Đồ họa Pro (Siêu hiện đại · Tương lai)',
+    labelEn: '3. Pro Graphics (Futuristic · 60 FPS)',
+    shortVi: 'Đồ họa Pro',
+    shortEn: 'Pro Graphics',
+    descVi: 'Animation siêu hiện đại, sống động tương lai cho nút & khung: tia quét hologram, kính mờ sâu, hào quang đa tầng 60 FPS.',
+    descEn: 'Futuristic holographic animations across every button and frame: active laser scan beams, deep glass blur, and 60 FPS multi-layer glow.'
   }
 ];
 
@@ -569,6 +583,7 @@ const VALID_PERF_MODES: PerformanceMode[] = ['smooth', 'balanced', 'ultra'];
 
 const VALID_BG_STYLES: BackgroundStyle[] = [
   'ecosystem',
+  'white_breeze',
   'molecules',
   'ocean',
   'sky',
@@ -579,6 +594,142 @@ const VALID_BG_STYLES: BackgroundStyle[] = [
   'aurora_clean',
   'minimal_solid'
 ];
+
+export interface SceneFrameTheme {
+  accentA: string;
+  accentB: string;
+  accentC: string;
+  border: string;
+  borderHover: string;
+  ring: string;
+  glow: string;
+  glowStrong: string;
+  tint: string;
+}
+
+export const SCENE_FRAME_THEMES: Record<BackgroundStyle, SceneFrameTheme> = {
+  ecosystem: {
+    accentA: '#10b981',
+    accentB: '#14b8a6',
+    accentC: '#84cc16',
+    border: 'rgba(16, 185, 129, 0.44)',
+    borderHover: 'rgba(16, 185, 129, 0.78)',
+    ring: 'rgba(20, 184, 166, 0.24)',
+    glow: 'rgba(16, 185, 129, 0.22)',
+    glowStrong: 'rgba(16, 185, 129, 0.36)',
+    tint: 'rgba(16, 185, 129, 0.14)'
+  },
+  white_breeze: {
+    accentA: '#0284c7',
+    accentB: '#38bdf8',
+    accentC: '#64748b',
+    border: 'rgba(148, 163, 184, 0.55)',
+    borderHover: 'rgba(2, 132, 199, 0.65)',
+    ring: 'rgba(56, 189, 248, 0.18)',
+    glow: 'rgba(15, 23, 42, 0.1)',
+    glowStrong: 'rgba(2, 132, 199, 0.2)',
+    tint: 'rgba(226, 232, 240, 0.28)'
+  },
+  molecules: {
+    accentA: '#06b6d4',
+    accentB: '#3b82f6',
+    accentC: '#22d3ee',
+    border: 'rgba(6, 182, 212, 0.44)',
+    borderHover: 'rgba(34, 211, 238, 0.78)',
+    ring: 'rgba(56, 189, 248, 0.25)',
+    glow: 'rgba(6, 182, 212, 0.24)',
+    glowStrong: 'rgba(34, 211, 238, 0.38)',
+    tint: 'rgba(6, 182, 212, 0.14)'
+  },
+  ocean: {
+    accentA: '#0ea5e9',
+    accentB: '#2dd4bf',
+    accentC: '#0284c7',
+    border: 'rgba(45, 212, 191, 0.44)',
+    borderHover: 'rgba(45, 212, 191, 0.8)',
+    ring: 'rgba(20, 184, 166, 0.25)',
+    glow: 'rgba(14, 165, 233, 0.24)',
+    glowStrong: 'rgba(45, 212, 191, 0.38)',
+    tint: 'rgba(20, 184, 166, 0.15)'
+  },
+  sky: {
+    accentA: '#0ea5e9',
+    accentB: '#f59e0b',
+    accentC: '#38bdf8',
+    border: 'rgba(56, 189, 248, 0.46)',
+    borderHover: 'rgba(245, 158, 11, 0.72)',
+    ring: 'rgba(56, 189, 248, 0.22)',
+    glow: 'rgba(56, 189, 248, 0.22)',
+    glowStrong: 'rgba(245, 158, 11, 0.32)',
+    tint: 'rgba(56, 189, 248, 0.14)'
+  },
+  constellations: {
+    accentA: '#6366f1',
+    accentB: '#a855f7',
+    accentC: '#38bdf8',
+    border: 'rgba(99, 102, 241, 0.46)',
+    borderHover: 'rgba(129, 140, 248, 0.8)',
+    ring: 'rgba(99, 102, 241, 0.25)',
+    glow: 'rgba(99, 102, 241, 0.26)',
+    glowStrong: 'rgba(168, 85, 247, 0.38)',
+    tint: 'rgba(99, 102, 241, 0.15)'
+  },
+  cosmic_galaxy: {
+    accentA: '#8b5cf6',
+    accentB: '#ec4899',
+    accentC: '#22d3ee',
+    border: 'rgba(168, 85, 247, 0.48)',
+    borderHover: 'rgba(236, 72, 153, 0.78)',
+    ring: 'rgba(168, 85, 247, 0.26)',
+    glow: 'rgba(168, 85, 247, 0.28)',
+    glowStrong: 'rgba(236, 72, 153, 0.4)',
+    tint: 'rgba(168, 85, 247, 0.16)'
+  },
+  blueprint_tech: {
+    accentA: '#2563eb',
+    accentB: '#06b6d4',
+    accentC: '#38bdf8',
+    border: 'rgba(37, 99, 235, 0.46)',
+    borderHover: 'rgba(56, 189, 248, 0.8)',
+    ring: 'rgba(37, 99, 235, 0.24)',
+    glow: 'rgba(37, 99, 235, 0.24)',
+    glowStrong: 'rgba(56, 189, 248, 0.36)',
+    tint: 'rgba(37, 99, 235, 0.14)'
+  },
+  studio_grid: {
+    accentA: '#f59e0b',
+    accentB: '#0ea5e9',
+    accentC: '#f97316',
+    border: 'rgba(245, 158, 11, 0.44)',
+    borderHover: 'rgba(245, 158, 11, 0.78)',
+    ring: 'rgba(245, 158, 11, 0.22)',
+    glow: 'rgba(245, 158, 11, 0.2)',
+    glowStrong: 'rgba(245, 158, 11, 0.34)',
+    tint: 'rgba(245, 158, 11, 0.13)'
+  },
+  aurora_clean: {
+    accentA: '#14b8a6',
+    accentB: '#818cf8',
+    accentC: '#34d399',
+    border: 'rgba(20, 184, 166, 0.46)',
+    borderHover: 'rgba(129, 140, 248, 0.78)',
+    ring: 'rgba(20, 184, 166, 0.25)',
+    glow: 'rgba(20, 184, 166, 0.24)',
+    glowStrong: 'rgba(129, 140, 248, 0.36)',
+    tint: 'rgba(20, 184, 166, 0.14)'
+  },
+  minimal_solid: {
+    accentA: '#475569',
+    accentB: '#0284c7',
+    accentC: '#94a3b8',
+    border: 'rgba(100, 116, 139, 0.4)',
+    borderHover: 'rgba(2, 132, 199, 0.68)',
+    ring: 'rgba(100, 116, 139, 0.18)',
+    glow: 'rgba(71, 85, 105, 0.16)',
+    glowStrong: 'rgba(2, 132, 199, 0.26)',
+    tint: 'rgba(148, 163, 184, 0.14)'
+  }
+};
 
 const VALID_FONT_PRESETS: FontPresetId[] = [
   'modern_lexend',
@@ -603,6 +754,17 @@ const VALID_COLOR_PALETTES: ColorPaletteId[] = [
   'slate_monochrome'
 ];
 
+export interface HardwareProfile {
+  cores: number;
+  memoryGb: number | null;
+  reduceMotion: boolean;
+  saveData: boolean;
+  effectiveType: string | null;
+  recommendedMode: PerformanceMode;
+  reasonVi: string;
+  reasonEn: string;
+}
+
 interface BackgroundContextValue {
   creatureTheme: BackgroundCreatureTheme;
   setCreatureTheme: (theme: BackgroundCreatureTheme) => void;
@@ -619,6 +781,12 @@ interface BackgroundContextValue {
   setDodgeEnabled: (enabled: boolean) => void;
   dodgeIntensity: DodgeIntensity;
   setDodgeIntensity: (intensity: DodgeIntensity) => void;
+  isLowSpecDevice: boolean;
+  hardwareProfile: HardwareProfile;
+  applyGraphicsTier: (tier: PerformanceMode, syncBackground?: boolean) => void;
+  isGraphicsModalOpen: boolean;
+  openGraphicsModal: () => void;
+  closeGraphicsModal: () => void;
 }
 
 const STORAGE_KEY = 'educlassroom_bg_creature';
@@ -629,25 +797,159 @@ const PALETTE_STORAGE_KEY = 'educlassroom_color_palette_v1';
 const DODGE_ENABLED_KEY = 'educlassroom_dodge_enabled_v1';
 const DODGE_INTENSITY_KEY = 'educlassroom_dodge_intensity_v1';
 
+const OPTIONAL_FONT_URLS: Partial<Record<FontPresetId, string>> = {
+  geometric_outfit:
+    'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap',
+  editorial_serif:
+    'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap',
+  friendly_nunito:
+    'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap',
+  pixel_determination:
+    'https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=VT323&display=swap',
+  pixel_pixelify:
+    'https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap',
+  pixel_silkscreen:
+    'https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap',
+  pixel_arcade:
+    'https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap',
+  pixel_dotmatrix:
+    'https://fonts.googleapis.com/css2?family=DotGothic16&family=Pixelify+Sans:wght@400;500;600;700&display=swap',
+  pixel_jersey:
+    'https://fonts.googleapis.com/css2?family=Jersey+15&family=Pixelify+Sans:wght@400;500;600;700&display=swap'
+};
+
+export function detectHardwareProfile(): HardwareProfile {
+  const defaultProfile: HardwareProfile = {
+    cores: 4,
+    memoryGb: null,
+    reduceMotion: false,
+    saveData: false,
+    effectiveType: null,
+    recommendedMode: 'smooth',
+    reasonVi: 'Thiết bị cơ bản hoặc trình duyệt ẩn thông số — khuyên dùng Đồ họa Thấp để mượt tối đa.',
+    reasonEn: 'Entry hardware or restricted telemetry — Low Graphics ensures zero lag.'
+  };
+
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return defaultProfile;
+  }
+
+  try {
+    const nav = navigator as Navigator & {
+      deviceMemory?: number;
+      connection?: { saveData?: boolean; effectiveType?: string };
+    };
+    const cores = Math.max(1, nav.hardwareConcurrency || 4);
+    const memoryGb = typeof nav.deviceMemory === 'number' ? nav.deviceMemory : null;
+    const reduceMotion = Boolean(
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    );
+    const saveData = Boolean(nav.connection?.saveData);
+    const effectiveType = nav.connection?.effectiveType || null;
+    const slowNet = effectiveType === '2g' || effectiveType === 'slow-2g';
+
+    if (reduceMotion) {
+      return {
+        cores,
+        memoryGb,
+        reduceMotion,
+        saveData,
+        effectiveType,
+        recommendedMode: 'smooth',
+        reasonVi: 'Hệ điều hành đang bật Giảm chuyển động — nên dùng Đồ họa Thấp.',
+        reasonEn: 'OS Reduced Motion is active — Low Graphics fits best.'
+      };
+    }
+
+    if (saveData || slowNet) {
+      return {
+        cores,
+        memoryGb,
+        reduceMotion,
+        saveData,
+        effectiveType,
+        recommendedMode: 'smooth',
+        reasonVi: 'Đang bật tiết kiệm dữ liệu / mạng chậm — khuyên dùng Đồ họa Thấp.',
+        reasonEn: 'Data Saver or slow network detected — Low Graphics recommended.'
+      };
+    }
+
+    if ((memoryGb !== null && memoryGb <= 4) || cores <= 4) {
+      return {
+        cores,
+        memoryGb,
+        reduceMotion,
+        saveData,
+        effectiveType,
+        recommendedMode: 'smooth',
+        reasonVi: `Phát hiện ${cores} luồng CPU${memoryGb ? ` · ${memoryGb} GB RAM` : ''} — Đồ họa Thấp giúp tránh giật lag tuyệt đối.`,
+        reasonEn: `Detected ${cores} CPU threads${memoryGb ? ` · ${memoryGb} GB RAM` : ''} — Low Graphics keeps frame rates snappy.`
+      };
+    }
+
+    if (cores >= 8 && (memoryGb === null || memoryGb >= 8)) {
+      return {
+        cores,
+        memoryGb,
+        reduceMotion,
+        saveData,
+        effectiveType,
+        recommendedMode: 'ultra',
+        reasonVi: `Máy mạnh (${cores} luồng CPU${memoryGb ? ` · ${memoryGb}+ GB RAM` : ''}) — đủ sức chạy mượt Đồ họa Pro 60 FPS & hiệu ứng Hologram.`,
+        reasonEn: `High-spec hardware (${cores} CPU threads${memoryGb ? ` · ${memoryGb}+ GB RAM` : ''}) — ready for Pro Graphics 60 FPS.`
+      };
+    }
+
+    return {
+      cores,
+      memoryGb,
+      reduceMotion,
+      saveData,
+      effectiveType,
+      recommendedMode: 'balanced',
+      reasonVi: `Cấu hình tầm trung (${cores} luồng CPU${memoryGb ? ` · ${memoryGb} GB RAM` : ''}) — phù hợp nhất với Đồ họa Trung bình sống động.`,
+      reasonEn: `Mid-range hardware (${cores} CPU threads${memoryGb ? ` · ${memoryGb} GB RAM` : ''}) — Medium Graphics gives smooth lively motion.`
+    };
+  } catch {
+    return defaultProfile;
+  }
+}
+
+export function detectLowSpecDevice(): boolean {
+  return detectHardwareProfile().recommendedMode === 'smooth';
+}
+
+const DEFAULT_HARDWARE_PROFILE = detectHardwareProfile();
+
 const BackgroundContext = createContext<BackgroundContextValue>({
-  creatureTheme: 'all',
+  creatureTheme: 'galaxy',
   setCreatureTheme: () => {},
-  perfMode: 'balanced',
+  perfMode: 'smooth',
   setPerfMode: () => {},
-  bgStyle: 'constellations',
+  bgStyle: 'white_breeze',
   setBgStyle: () => {},
   fontPreset: 'modern_lexend',
   setFontPreset: () => {},
   colorPalette: 'ocean_sky',
   setColorPalette: () => {},
   activePalette: COLOR_PALETTE_OPTIONS[0],
-  dodgeEnabled: true,
+  dodgeEnabled: false,
   setDodgeEnabled: () => {},
-  dodgeIntensity: 'lively',
-  setDodgeIntensity: () => {}
+  dodgeIntensity: 'gentle',
+  setDodgeIntensity: () => {},
+  isLowSpecDevice: true,
+  hardwareProfile: DEFAULT_HARDWARE_PROFILE,
+  applyGraphicsTier: () => {},
+  isGraphicsModalOpen: false,
+  openGraphicsModal: () => {},
+  closeGraphicsModal: () => {}
 });
 
 export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [hardwareProfile] = useState<HardwareProfile>(() => detectHardwareProfile());
+  const isLowSpecDevice = hardwareProfile.recommendedMode === 'smooth';
+  const [isGraphicsModalOpen, setIsGraphicsModalOpen] = useState<boolean>(false);
+
   const [creatureTheme, setCreatureThemeState] = useState<BackgroundCreatureTheme>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY) as BackgroundCreatureTheme | null;
@@ -655,9 +957,10 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return saved;
       }
     } catch {}
-    return 'all';
+    return 'galaxy';
   });
 
+  // Always start in Low Graphics ('smooth') on first visit regardless of PC specs
   const [perfMode, setPerfModeState] = useState<PerformanceMode>(() => {
     try {
       const saved = localStorage.getItem(PERF_STORAGE_KEY) as PerformanceMode | null;
@@ -665,9 +968,10 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return saved;
       }
     } catch {}
-    return 'balanced';
+    return 'smooth';
   });
 
+  // Always start on Crisp White Dynamic ('white_breeze') on first visit for instant boot
   const [bgStyle, setBgStyleState] = useState<BackgroundStyle>(() => {
     try {
       const saved = localStorage.getItem(BG_STYLE_STORAGE_KEY) as BackgroundStyle | null;
@@ -675,7 +979,7 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return saved;
       }
     } catch {}
-    return 'constellations';
+    return 'white_breeze';
   });
 
   const [fontPreset, setFontPresetState] = useState<FontPresetId>(() => {
@@ -702,8 +1006,9 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const saved = localStorage.getItem(DODGE_ENABLED_KEY);
       if (saved === 'false') return false;
+      if (saved === 'true') return true;
     } catch {}
-    return true;
+    return false;
   });
 
   const [dodgeIntensity, setDodgeIntensityState] = useState<DodgeIntensity>(() => {
@@ -711,7 +1016,7 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const saved = localStorage.getItem(DODGE_INTENSITY_KEY) as DodgeIntensity | null;
       if (saved === 'gentle' || saved === 'lively') return saved;
     } catch {}
-    return 'lively';
+    return 'gentle';
   });
 
   const activePalette =
@@ -724,9 +1029,19 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [perfMode]);
 
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.dataset.bgStyle = bgStyle;
-    }
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    root.dataset.bgStyle = bgStyle;
+    const frameTheme = SCENE_FRAME_THEMES[bgStyle] || SCENE_FRAME_THEMES.constellations;
+    root.style.setProperty('--scene-frame-a', frameTheme.accentA);
+    root.style.setProperty('--scene-frame-b', frameTheme.accentB);
+    root.style.setProperty('--scene-frame-c', frameTheme.accentC);
+    root.style.setProperty('--scene-frame-border', frameTheme.border);
+    root.style.setProperty('--scene-frame-border-hover', frameTheme.borderHover);
+    root.style.setProperty('--scene-frame-ring', frameTheme.ring);
+    root.style.setProperty('--scene-frame-glow', frameTheme.glow);
+    root.style.setProperty('--scene-frame-glow-strong', frameTheme.glowStrong);
+    root.style.setProperty('--scene-frame-tint', frameTheme.tint);
   }, [bgStyle]);
 
   useEffect(() => {
@@ -735,6 +1050,18 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     document.documentElement.style.setProperty('--font-display', preset.displayFont);
     document.documentElement.style.setProperty('--font-sans', preset.sansFont);
     document.documentElement.dataset.fontPreset = fontPreset;
+
+    const optionalUrl = OPTIONAL_FONT_URLS[fontPreset];
+    if (optionalUrl) {
+      const linkId = `synapse-opt-font-${fontPreset}`;
+      if (!document.getElementById(linkId)) {
+        const link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = optionalUrl;
+        document.head.appendChild(link);
+      }
+    }
   }, [fontPreset]);
 
   useEffect(() => {
@@ -775,6 +1102,9 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       localStorage.setItem(BG_STYLE_STORAGE_KEY, style);
     } catch {}
+    if (style === 'white_breeze' && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('synapse:sync-light-theme'));
+    }
     if (syncRecommendedPerf) {
       const opt = BACKGROUND_STYLE_OPTIONS.find((o) => o.id === style);
       if (opt) {
@@ -811,6 +1141,46 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch {}
   };
 
+  const applyGraphicsTier = (tier: PerformanceMode, syncBackground = true) => {
+    setPerfMode(tier);
+    if (tier === 'smooth') {
+      setDodgeEnabled(false);
+      setDodgeIntensity('gentle');
+      if (syncBackground) {
+        setBgStyle('white_breeze', false);
+        setCreatureTheme('galaxy');
+      }
+      return;
+    }
+
+    if (tier === 'balanced') {
+      setDodgeEnabled(true);
+      setDodgeIntensity('gentle');
+      if (syncBackground) {
+        if (bgStyle === 'white_breeze' || bgStyle === 'minimal_solid') {
+          setBgStyle('studio_grid', false);
+        }
+      }
+      return;
+    }
+
+    // tier === 'ultra' (Pro Graphics)
+    setDodgeEnabled(true);
+    setDodgeIntensity('lively');
+    if (syncBackground) {
+      if (
+        bgStyle === 'white_breeze' ||
+        bgStyle === 'minimal_solid' ||
+        bgStyle === 'studio_grid'
+      ) {
+        setBgStyle('constellations', false);
+      }
+      if (creatureTheme === 'galaxy') {
+        setCreatureTheme('all');
+      }
+    }
+  };
+
   return (
     <BackgroundContext.Provider
       value={{
@@ -828,7 +1198,13 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         dodgeEnabled,
         setDodgeEnabled,
         dodgeIntensity,
-        setDodgeIntensity
+        setDodgeIntensity,
+        isLowSpecDevice,
+        hardwareProfile,
+        applyGraphicsTier,
+        isGraphicsModalOpen,
+        openGraphicsModal: () => setIsGraphicsModalOpen(true),
+        closeGraphicsModal: () => setIsGraphicsModalOpen(false)
       }}
     >
       {children}

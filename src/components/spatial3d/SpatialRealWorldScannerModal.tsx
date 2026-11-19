@@ -321,7 +321,7 @@ export const SpatialRealWorldScannerModal: React.FC<SpatialRealWorldScannerModal
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border border-cyan-400/50 flex items-center justify-center">
                       <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
                     </div>
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-slate-950/85 border border-cyan-500/40 text-[11px] font-mono text-cyan-200 whitespace-nowrap">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-[4px] bg-slate-950/85 border border-cyan-500/40 text-[11px] font-mono text-cyan-200 whitespace-nowrap">
                       {isEn ? 'Center object clearly in frame' : 'Đưa đồ vật vào giữa khung ngắm & đủ sáng'}
                     </div>
                   </div>

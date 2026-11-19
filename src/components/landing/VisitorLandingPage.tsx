@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { GalaxyBackground } from '../galaxy/GalaxyBackground';
 import { useAuth } from '../../context/AuthContext';
@@ -7,6 +7,7 @@ import { useBackgroundTheme, CREATURE_THEME_OPTIONS } from '../../context/Backgr
 import { BrandLogo } from '../common/BrandLogo';
 import { CursorDodgeText } from '../common/CursorDodgeText';
 import { AppearanceStudioBar } from '../common/AppearanceStudioBar';
+import { GraphicsTierTriggerButton } from '../common/GraphicsTierTriggerButton';
 import {
   Sparkles,
   Compass,
@@ -54,18 +55,18 @@ import { useAudio } from '../../context/AudioContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { PlatformReviews } from '../common/PlatformReviews';
 import { AppDownloadGuideSection } from '../common/AppDownloadGuideSection';
-import {
-  LectureDirectorySection,
+import type {
   DirectorySubjectFilter,
   LectureDirectoryTarget
 } from '../common/LectureDirectorySection';
 
-import { EXAM_PAPERS } from '../../data/examData';
-import { MATH_LECTURES } from '../../data/curriculumData';
-import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
+import { CURRICULUM_COUNTS } from '../../data/curriculumCounts';
 import { getPhysicsSimCounts } from '../../data/physicsDomainsData';
-import { CS_LESSONS } from '../../data/csLessonsData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
+
+const LectureDirectorySection = lazy(() =>
+  import('../common/LectureDirectorySection').then((m) => ({ default: m.LectureDirectorySection }))
+);
 
 interface VisitorLandingPageProps {
   onEnterAsGuest: () => void;
@@ -286,11 +287,14 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const activeCreature =
     CREATURE_THEME_OPTIONS.find((opt) => opt.id === creatureTheme) || CREATURE_THEME_OPTIONS[0];
 
-  const totalExams = EXAM_PAPERS.length;
-  const chuyenExams = EXAM_PAPERS.filter((e) => e.track === 'chuyen').length;
-  const khongChuyenExams = EXAM_PAPERS.filter((e) => e.track === 'khong_chuyen').length;
+  const totalExams = CURRICULUM_COUNTS.totalExams;
+  const chuyenExams = CURRICULUM_COUNTS.chuyenExams;
+  const khongChuyenExams = CURRICULUM_COUNTS.standardExams;
   const csSpecializedStageCount = CS_SPECIALIZED_TRACKS.reduce((s, t) => s + t.stages.length, 0);
-  const totalLessons = MATH_LECTURES.length + PHYSICS_LESSONS.length + CS_LESSONS.length;
+  const totalLessons = CURRICULUM_COUNTS.totalLessons;
+  const mathCount = CURRICULUM_COUNTS.mathLectures;
+  const physicsCount = CURRICULUM_COUNTS.physicsLessons;
+  const csCount = CURRICULUM_COUNTS.csLessons;
 
   const spotlightDetails: Record<
     LandingSpotlightKey,
@@ -349,7 +353,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     },
     math: {
       label: isEn ? 'Math 2D & 3D' : 'Toán 2D & 3D',
-      badge: isEn ? `${MATH_LECTURES.length} Grades 9–12 topics` : `${MATH_LECTURES.length} chuyên đề 9–12`,
+      badge: isEn ? `${mathCount} Grades 9–12 topics` : `${mathCount} chuyên đề 9–12`,
       headline: isEn
         ? 'Oxy Analytic Grapher, Circle Geometry & 8 Oxyz 3D Scenes'
         : 'Đồ thị Oxy, Đường tròn Tương tác & 8 mô hình Oxyz 3D',
@@ -372,8 +376,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     physics: {
       label: isEn ? 'Physics 2D & 3D' : 'Vật Lí 2D & 3D',
       badge: isEn
-        ? `${phyCounts.domainCount} Domains · ${PHYSICS_LESSONS.length} lessons (Grades 9–12)`
-        : `${phyCounts.domainCount} Lĩnh vực tách riêng · ${PHYSICS_LESSONS.length} bài 9–12`,
+        ? `${phyCounts.domainCount} Domains · ${physicsCount} lessons (Grades 9–12)`
+        : `${phyCounts.domainCount} Lĩnh vực tách riêng · ${physicsCount} bài 9–12`,
       headline: isEn
         ? `${phyCounts.domainCount} Dedicated Physics Simulation Domains (2D & 3D) + Standard THPT/Specialized Lectures`
         : `Mô Phỏng Vật Lí 2D/3D Tách Riêng ${phyCounts.domainCount} Chuyên Đề (Lớp 9–12) & Bài Giảng Chuẩn THPT/Chuyên`,
@@ -408,12 +412,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         ? [
             'Live Code-to-Animation Trace (Python sys.settrace & C++ g++ trace)',
             'Thought-Trace Replay timeline (restore past code snapshots anytime)',
-            `5 Roadmaps (${CS_LESSONS.length}+${csSpecializedStageCount}), Sublime 4 & 16 Algo graphs`,
+            `5 Roadmaps (${csCount}+${csSpecializedStageCount}), Sublime 4 & 16 Algo graphs`,
           ]
         : [
             'Truy vết từng dòng Code-to-Animation (biến, mảng DP, stdout tức thì)',
             'Replay Tư Duy lưu mọi mốc gõ/chạy/chấm & khôi phục tức thì',
-            `5 Lộ trình (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++), Sublime 4 & 16 Đồ thị`,
+            `5 Lộ trình (${csCount} VNOI + ${csSpecializedStageCount} C++), Sublime 4 & 16 Đồ thị`,
           ],
       accentClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
     },
@@ -870,7 +874,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'Math 2D / Oxyz 3D' : 'Toán 2D / Oxyz 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${MATH_LECTURES.length} topics · 8 3D scenes` : `${MATH_LECTURES.length} bài · 8 cảnh 3D`}
+                  {isEn ? `${mathCount} topics · 8 3D scenes` : `${mathCount} bài · 8 cảnh 3D`}
                 </p>
               </button>
 
@@ -889,7 +893,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'CS · 5 Roadmaps' : 'Tin Học · 5 Lộ Trình'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${CS_LESSONS.length}+${csSpecializedStageCount} · 16 Algos` : `${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++`}
+                  {isEn ? `${csCount}+${csSpecializedStageCount} · 16 Algos` : `${csCount} VNOI + ${csSpecializedStageCount} C++`}
                 </p>
               </button>
 
@@ -953,7 +957,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </div>
             </div>
 
-            {/* Live Dynamic Scene, Font, Palette & Cursor Dodge Bar */}
+            {/* Prominent 3-Tier Graphics Setup Button + Live Studio Bar */}
+            <GraphicsTierTriggerButton variant="landing" />
             <AppearanceStudioBar compact />
 
             {/* Quick Guest Enter Action + Synapse 2.0 + Học tương tác 3D + Diễn đàn học tập + All Features */}
@@ -1552,8 +1557,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 </div>
                 <p className="text-xs sm:text-sm text-sky-100/95 font-medium truncate">
                   {isEn
-                    ? `Math (${MATH_LECTURES.length}) · Physics (${PHYSICS_LESSONS.length}) · CS (${CS_LESSONS.length}) · ${totalExams} Official Exam Papers`
-                    : `Toán học (${MATH_LECTURES.length} bài) · Vật lí (${PHYSICS_LESSONS.length} bài) · Tin học (${CS_LESSONS.length} bài) · ${totalExams} Đề thi chuẩn`}
+                    ? `Math (${mathCount}) · Physics (${physicsCount}) · CS (${csCount}) · ${totalExams} Official Exam Papers`
+                    : `Toán học (${mathCount} bài) · Vật lí (${physicsCount} bài) · Tin học (${csCount} bài) · ${totalExams} Đề thi chuẩn`}
                 </p>
               </div>
             </div>
@@ -1643,7 +1648,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   03 · {isEn ? 'MATHEMATICS' : 'TOÁN HỌC'}
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-300 truncate block transition-colors">
-                  {isEn ? `Math Lectures (${MATH_LECTURES.length})` : `Bài giảng Toán (${MATH_LECTURES.length} bài)`}
+                  {isEn ? `Math Lectures (${mathCount})` : `Bài giảng Toán (${mathCount} bài)`}
                 </span>
               </div>
               <span className="relative z-10 w-8 h-8 rounded bg-sky-500/10 group-hover:bg-sky-600 text-sky-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -1666,7 +1671,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   04 · {isEn ? 'PHYSICS' : 'VẬT LÍ'}
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
-                  {isEn ? `Physics Labs & Lessons (${PHYSICS_LESSONS.length})` : `Bài giảng Vật lí (${PHYSICS_LESSONS.length} bài)`}
+                  {isEn ? `Physics Labs & Lessons (${physicsCount})` : `Bài giảng Vật lí (${physicsCount} bài)`}
                 </span>
               </div>
               <span className="relative z-10 w-8 h-8 rounded bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -1690,8 +1695,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
                   {isEn
-                    ? `CS 5 Roadmaps (${CS_LESSONS.length} + ${csSpecializedStageCount})`
-                    : `Tin học · 5 lộ trình (${CS_LESSONS.length} + ${csSpecializedStageCount} chặng)`}
+                    ? `CS 5 Roadmaps (${csCount} + ${csSpecializedStageCount})`
+                    : `Tin học · 5 lộ trình (${csCount} + ${csSpecializedStageCount} chặng)`}
                 </span>
               </div>
               <span className="relative z-10 w-8 h-8 rounded bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -2641,7 +2646,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      <span>{isEn ? `${PHYSICS_LESSONS.length} THPT & Specialized lectures` : `${PHYSICS_LESSONS.length} bài giảng chuẩn cấp độ THPT / Chuyên`}</span>
+                      <span>{isEn ? `${physicsCount} THPT & Specialized lectures` : `${physicsCount} bài giảng chuẩn cấp độ THPT / Chuyên`}</span>
                     </li>
                   </ul>
                 </div>
@@ -2684,7 +2689,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
-                    {isEn ? `Math 2D & Oxyz 3D (${MATH_LECTURES.length})` : `Toán Học 2D & Oxyz 3D (${MATH_LECTURES.length} bài)`}
+                    {isEn ? `Math 2D & Oxyz 3D (${mathCount})` : `Toán Học 2D & Oxyz 3D (${mathCount} bài)`}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
@@ -3072,17 +3077,25 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
           </div>
         </section>
 
-        {/* Full Lecture Directory on Welcome Page */}
+        {/* Full Lecture Directory on Welcome Page (Lazy-Loaded) */}
         <div className="cv-auto mt-12 sm:mt-16">
-          <LectureDirectorySection
-            id="visitor-lecture-directory"
-            subjectFilter={directorySubject}
-            onSubjectFilterChange={setDirectorySubject}
-            onSelectLecture={handleOpenLectureFromVisitor}
-            onSelectCsTrack={handleOpenCsTrackFromVisitor}
-            actionHintVi="Bấm vào bất kỳ bài giảng hoặc lộ trình nào để vào ngay lớp học mô phỏng 5 bước (không cần đăng nhập)."
-            actionHintEn="Click any lecture or roadmap below to launch directly into its 5-step simulation classroom (no sign-in required)."
-          />
+          <Suspense
+            fallback={
+              <div className="py-10 text-center text-xs text-slate-400">
+                {isEn ? 'Loading lecture directory...' : 'Đang tải mục lục bài giảng...'}
+              </div>
+            }
+          >
+            <LectureDirectorySection
+              id="visitor-lecture-directory"
+              subjectFilter={directorySubject}
+              onSubjectFilterChange={setDirectorySubject}
+              onSelectLecture={handleOpenLectureFromVisitor}
+              onSelectCsTrack={handleOpenCsTrackFromVisitor}
+              actionHintVi="Bấm vào bất kỳ bài giảng hoặc lộ trình nào để vào ngay lớp học mô phỏng 5 bước (không cần đăng nhập)."
+              actionHintEn="Click any lecture or roadmap below to launch directly into its 5-step simulation classroom (no sign-in required)."
+            />
+          </Suspense>
         </div>
 
         {/* Community Reviews & Ratings Section on Landing */}

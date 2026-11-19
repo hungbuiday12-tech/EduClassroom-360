@@ -1,43 +1,100 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff, Film } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
-import { ClassroomOverview } from './components/ClassroomOverview';
-import { MathStudio } from './components/math/MathStudio';
-import { MathSimulationsPage } from './components/math/MathSimulationsPage';
-import { PhysicsLab } from './components/physics/PhysicsLab';
-import { PhysicsDomainsPage } from './components/physics/PhysicsDomainsPage';
-import { CodeJudgeLab } from './components/cs/CodeJudgeLab';
-import { CodeSimulationsPage } from './components/cs/CodeSimulationsPage';
-import { ExamHub } from './components/exams/ExamHub';
-import { LearningRoadmap } from './components/roadmap/LearningRoadmap';
-import { ArenaHub } from './components/arena/ArenaHub';
-import { StudyForum } from './components/forum/StudyForum';
-import { SpatialGesture3DLab } from './components/spatial3d/SpatialGesture3DLab';
-import { SocraticAITutor } from './components/tutor/SocraticAITutor';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { AuthModal } from './components/auth/AuthModal';
-import { SettingsModal } from './components/settings/SettingsModal';
-import { VisitorLandingPage } from './components/landing/VisitorLandingPage';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 import { WaterRippleLayer } from './components/common/WaterRippleLayer';
 import { FloatingFocusTimer } from './components/common/FloatingFocusTimer';
-import { PWAInstallModal } from './components/common/PWAInstallModal';
 import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { useNavigation } from './context/NavigationContext';
 import { useLanguage } from './context/LanguageContext';
 import { useFocusTimer } from './context/FocusTimerContext';
+import { useBackgroundTheme } from './context/BackgroundContext';
 import { useDraggableWidget } from './hooks/useDraggableWidget';
-import { EXAM_PAPERS } from './data/examData';
-import { GrowthWorkspace } from './components/learning/GrowthWorkspace';
-import { LearnerPortfolioModal } from './components/learning/LearnerPortfolioModal';
-import { CommunityShowcaseView } from './components/showcase/CommunityShowcaseView';
-import { FutureLabWorkspace } from './components/future/FutureLabWorkspace';
-import { SynapseVoiceOS } from './components/future/SynapseVoiceOS';
+import { CURRICULUM_COUNTS } from './data/curriculumCounts';
 import { progressDailyQuest, recordGrowthStat, touchDailyActivity } from './lib/learningGrowthStore';
-import { downloadSynapsePresentationDocx } from './utils/productDocxExporter';
+
+const VisitorLandingPage = lazy(() =>
+  import('./components/landing/VisitorLandingPage').then((m) => ({ default: m.VisitorLandingPage }))
+);
+const ClassroomOverview = lazy(() =>
+  import('./components/ClassroomOverview').then((m) => ({ default: m.ClassroomOverview }))
+);
+const MathStudio = lazy(() =>
+  import('./components/math/MathStudio').then((m) => ({ default: m.MathStudio }))
+);
+const MathSimulationsPage = lazy(() =>
+  import('./components/math/MathSimulationsPage').then((m) => ({ default: m.MathSimulationsPage }))
+);
+const PhysicsLab = lazy(() =>
+  import('./components/physics/PhysicsLab').then((m) => ({ default: m.PhysicsLab }))
+);
+const PhysicsDomainsPage = lazy(() =>
+  import('./components/physics/PhysicsDomainsPage').then((m) => ({ default: m.PhysicsDomainsPage }))
+);
+const CodeJudgeLab = lazy(() =>
+  import('./components/cs/CodeJudgeLab').then((m) => ({ default: m.CodeJudgeLab }))
+);
+const CodeSimulationsPage = lazy(() =>
+  import('./components/cs/CodeSimulationsPage').then((m) => ({ default: m.CodeSimulationsPage }))
+);
+const ExamHub = lazy(() =>
+  import('./components/exams/ExamHub').then((m) => ({ default: m.ExamHub }))
+);
+const LearningRoadmap = lazy(() =>
+  import('./components/roadmap/LearningRoadmap').then((m) => ({ default: m.LearningRoadmap }))
+);
+const ArenaHub = lazy(() =>
+  import('./components/arena/ArenaHub').then((m) => ({ default: m.ArenaHub }))
+);
+const StudyForum = lazy(() =>
+  import('./components/forum/StudyForum').then((m) => ({ default: m.StudyForum }))
+);
+const SpatialGesture3DLab = lazy(() =>
+  import('./components/spatial3d/SpatialGesture3DLab').then((m) => ({ default: m.SpatialGesture3DLab }))
+);
+const FutureLabWorkspace = lazy(() =>
+  import('./components/future/FutureLabWorkspace').then((m) => ({ default: m.FutureLabWorkspace }))
+);
+const GrowthWorkspace = lazy(() =>
+  import('./components/learning/GrowthWorkspace').then((m) => ({ default: m.GrowthWorkspace }))
+);
+const CommunityShowcaseView = lazy(() =>
+  import('./components/showcase/CommunityShowcaseView').then((m) => ({ default: m.CommunityShowcaseView }))
+);
+const SocraticAITutor = lazy(() =>
+  import('./components/tutor/SocraticAITutor').then((m) => ({ default: m.SocraticAITutor }))
+);
+const SynapseVoiceOS = lazy(() =>
+  import('./components/future/SynapseVoiceOS').then((m) => ({ default: m.SynapseVoiceOS }))
+);
+const AuthModal = lazy(() =>
+  import('./components/auth/AuthModal').then((m) => ({ default: m.AuthModal }))
+);
+const SettingsModal = lazy(() =>
+  import('./components/settings/SettingsModal').then((m) => ({ default: m.SettingsModal }))
+);
+const PWAInstallModal = lazy(() =>
+  import('./components/common/PWAInstallModal').then((m) => ({ default: m.PWAInstallModal }))
+);
+const LearnerPortfolioModal = lazy(() =>
+  import('./components/learning/LearnerPortfolioModal').then((m) => ({ default: m.LearnerPortfolioModal }))
+);
+const GraphicsTierModal = lazy(() =>
+  import('./components/common/GraphicsTierModal').then((m) => ({ default: m.GraphicsTierModal }))
+);
+
+const LazyViewFallback: React.FC<{ isEn?: boolean }> = ({ isEn }) => (
+  <div className="min-h-[46vh] flex flex-col items-center justify-center gap-3 py-16 text-center">
+    <div className="w-9 h-9 rounded-lg border-2 border-slate-300 dark:border-slate-700 border-t-sky-600 dark:border-t-sky-400 animate-spin" />
+    <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+      {isEn ? 'Loading interactive workspace...' : 'Đang tải phòng học tương tác...'}
+    </p>
+  </div>
+);
 
 function MainApp() {
   const { location, navigate, selectSubject, goBack } = useNavigation();
@@ -133,17 +190,29 @@ function MainApp() {
   }, [sidebarCollapsed]);
 
   const [isDark, setIsDark] = useState<boolean>(() => {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      try {
-        return window.matchMedia('(prefers-color-scheme: dark)').matches;
-      } catch {
-        return false;
+    try {
+      if (typeof window !== 'undefined') {
+        const savedStyle = localStorage.getItem('educlassroom_bg_style_v1');
+        // First visit defaults to Crisp White Dynamic + Low Graphics
+        if (!savedStyle || savedStyle === 'white_breeze') return false;
       }
+      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+    } catch {
+      return false;
     }
     return false;
   });
 
-  const { user, firebaseUser, addXP, loading } = useAuth();
+  useEffect(() => {
+    const onSyncLight = () => setIsDark(false);
+    window.addEventListener('synapse:sync-light-theme', onSyncLight);
+    return () => window.removeEventListener('synapse:sync-light-theme', onSyncLight);
+  }, []);
+
+  const { user, firebaseUser, addXP, loading, isAuthModalOpen } = useAuth();
+  const { isGraphicsModalOpen } = useBackgroundTheme();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
@@ -343,12 +412,14 @@ function MainApp() {
           transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
           className="min-h-screen"
         >
-          <VisitorLandingPage
-            onEnterAsGuest={handleEnterAsGuest}
-            isDark={isDark}
-            onToggleTheme={handleToggleTheme}
-            onOpenInstallApp={() => setIsInstallModalOpen(true)}
-          />
+          <Suspense fallback={<LazyViewFallback isEn={isEn} />}>
+            <VisitorLandingPage
+              onEnterAsGuest={handleEnterAsGuest}
+              isDark={isDark}
+              onToggleTheme={handleToggleTheme}
+              onOpenInstallApp={() => setIsInstallModalOpen(true)}
+            />
+          </Suspense>
         </motion.div>
       ) : (
         <motion.div
@@ -412,110 +483,112 @@ function MainApp() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  {currentSubject === 'overview' && (
-                    <ClassroomOverview
-                      onNavigate={selectSubject}
-                      xp={activeXP}
-                      onOpenTutor={(subj, mode) =>
-                        handleOpenTutor({ subject: subj || 'math', mode })
-                      }
-                      onOpenSettings={() => setIsSettingsOpen(true)}
-                      onOpenInstallApp={() => setIsInstallModalOpen(true)}
-                      onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
-                    />
-                  )}
+                  <Suspense fallback={<LazyViewFallback isEn={isEn} />}>
+                    {currentSubject === 'overview' && (
+                      <ClassroomOverview
+                        onNavigate={selectSubject}
+                        xp={activeXP}
+                        onOpenTutor={(subj, mode) =>
+                          handleOpenTutor({ subject: subj || 'math', mode })
+                        }
+                        onOpenSettings={() => setIsSettingsOpen(true)}
+                        onOpenInstallApp={() => setIsInstallModalOpen(true)}
+                        onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
+                      />
+                    )}
 
-                  {currentSubject === 'roadmap' && (
-                    <LearningRoadmap
-                      onBack={goBack}
-                      onNavigateSubject={selectSubject}
-                      onOpenTutor={handleOpenTutor}
-                      onEarnXP={handleEarnXP}
-                    />
-                  )}
+                    {currentSubject === 'roadmap' && (
+                      <LearningRoadmap
+                        onBack={goBack}
+                        onNavigateSubject={selectSubject}
+                        onOpenTutor={handleOpenTutor}
+                        onEarnXP={handleEarnXP}
+                      />
+                    )}
 
-                  {currentSubject === 'math' && (
-                    <MathStudio onBack={goBack} />
-                  )}
+                    {currentSubject === 'math' && (
+                      <MathStudio onBack={goBack} />
+                    )}
 
-                  {currentSubject === 'math_sims' && (
-                    <MathSimulationsPage onBack={goBack} />
-                  )}
+                    {currentSubject === 'math_sims' && (
+                      <MathSimulationsPage onBack={goBack} />
+                    )}
 
-                  {currentSubject === 'physics' && (
-                    <PhysicsLab onBack={goBack} onScoreEarned={handleEarnXP} />
-                  )}
+                    {currentSubject === 'physics' && (
+                      <PhysicsLab onBack={goBack} onScoreEarned={handleEarnXP} />
+                    )}
 
-                  {currentSubject === 'physics_sims' && (
-                    <PhysicsDomainsPage onBack={goBack} />
-                  )}
+                    {currentSubject === 'physics_sims' && (
+                      <PhysicsDomainsPage onBack={goBack} />
+                    )}
 
-                  {currentSubject === 'cs' && (
-                    <CodeJudgeLab onScoreEarned={handleEarnXP} onBack={goBack} />
-                  )}
+                    {currentSubject === 'cs' && (
+                      <CodeJudgeLab onScoreEarned={handleEarnXP} onBack={goBack} />
+                    )}
 
-                  {currentSubject === 'cs_sims' && (
-                    <CodeSimulationsPage onBack={goBack} />
-                  )}
+                    {currentSubject === 'cs_sims' && (
+                      <CodeSimulationsPage onBack={goBack} />
+                    )}
 
-                  {currentSubject === 'exams' && (
-                    <ExamHub
-                      onNavigateToSubject={selectSubject}
-                      onEarnXP={handleEarnXP}
-                      onBack={goBack}
-                    />
-                  )}
+                    {currentSubject === 'exams' && (
+                      <ExamHub
+                        onNavigateToSubject={selectSubject}
+                        onEarnXP={handleEarnXP}
+                        onBack={goBack}
+                      />
+                    )}
 
-                  {currentSubject === 'arena' && (
-                    <ArenaHub
-                      onBack={goBack}
-                      onEarnXP={handleEarnXP}
-                      onOpenTutor={handleOpenTutor}
-                      onMatchActiveChange={handleArenaMatchActiveChange}
-                    />
-                  )}
+                    {currentSubject === 'arena' && (
+                      <ArenaHub
+                        onBack={goBack}
+                        onEarnXP={handleEarnXP}
+                        onOpenTutor={handleOpenTutor}
+                        onMatchActiveChange={handleArenaMatchActiveChange}
+                      />
+                    )}
 
-                  {currentSubject === 'forum' && (
-                    <StudyForum onBack={goBack} />
-                  )}
+                    {currentSubject === 'forum' && (
+                      <StudyForum onBack={goBack} />
+                    )}
 
-                  {(currentSubject === 'synapse_v2' || currentSubject === 'future_lab') && (
-                    <FutureLabWorkspace
-                      onBack={goBack}
-                      onNavigateSubject={selectSubject}
-                      onEarnXP={handleEarnXP}
-                    />
-                  )}
+                    {(currentSubject === 'synapse_v2' || currentSubject === 'future_lab') && (
+                      <FutureLabWorkspace
+                        onBack={goBack}
+                        onNavigateSubject={selectSubject}
+                        onEarnXP={handleEarnXP}
+                      />
+                    )}
 
-                  {currentSubject === 'spatial_3d' && (
-                    <SpatialGesture3DLab
-                      onBack={goBack}
-                      onNavigate={selectSubject}
-                      onEarnXP={handleEarnXP}
-                      initialCoopRoomCode={location.coopRoomCode}
-                      coopInviteMeta={location.coopInviteMeta}
-                      onConsumeCoopRoom={() =>
-                        navigate({ coopRoomCode: null, coopInviteMeta: null }, { replace: true })
-                      }
-                    />
-                  )}
+                    {currentSubject === 'spatial_3d' && (
+                      <SpatialGesture3DLab
+                        onBack={goBack}
+                        onNavigate={selectSubject}
+                        onEarnXP={handleEarnXP}
+                        initialCoopRoomCode={location.coopRoomCode}
+                        coopInviteMeta={location.coopInviteMeta}
+                        onConsumeCoopRoom={() =>
+                          navigate({ coopRoomCode: null, coopInviteMeta: null }, { replace: true })
+                        }
+                      />
+                    )}
 
-                  {currentSubject === 'growth_hub' && (
-                    <GrowthWorkspace
-                      onBack={goBack}
-                      onNavigateSubject={selectSubject}
-                      onEarnXP={handleEarnXP}
-                      onOpenPortfolio={() => setIsPortfolioOpen(true)}
-                    />
-                  )}
+                    {currentSubject === 'growth_hub' && (
+                      <GrowthWorkspace
+                        onBack={goBack}
+                        onNavigateSubject={selectSubject}
+                        onEarnXP={handleEarnXP}
+                        onOpenPortfolio={() => setIsPortfolioOpen(true)}
+                      />
+                    )}
 
-                  {currentSubject === 'showcase' && (
-                    <CommunityShowcaseView
-                      onBack={goBack}
-                      onNavigateSubject={selectSubject}
-                      onEarnXP={handleEarnXP}
-                    />
-                  )}
+                    {currentSubject === 'showcase' && (
+                      <CommunityShowcaseView
+                        onBack={goBack}
+                        onNavigateSubject={selectSubject}
+                        onEarnXP={handleEarnXP}
+                      />
+                    )}
+                  </Suspense>
                 </motion.div>
               </AnimatePresence>
             </main>
@@ -576,7 +649,9 @@ function MainApp() {
                     onClick={() => selectSubject('exams')}
                     className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
                   >
-                    {isEn ? `Exams (${EXAM_PAPERS.length})` : `Đề Thi (${EXAM_PAPERS.length})`}
+                    {isEn
+                      ? `Exams (${CURRICULUM_COUNTS.totalExams})`
+                      : `Đề Thi (${CURRICULUM_COUNTS.totalExams})`}
                   </button>
                   <button
                     onClick={() => selectSubject('synapse_v2')}
@@ -593,7 +668,11 @@ function MainApp() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void downloadSynapsePresentationDocx()}
+                    onClick={() =>
+                      void import('./utils/productDocxExporter').then((m) =>
+                        m.downloadSynapsePresentationDocx()
+                      )
+                    }
                     className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors font-semibold cursor-pointer"
                   >
                     {isEn ? 'Product Spec (.docx)' : 'Thuyết minh (.docx)'}
@@ -773,67 +852,96 @@ function MainApp() {
               </button>
             </div>
           )}
-          <SocraticAITutor
-            isOpen={isTutorOpen}
-            onClose={goBack}
-            onBack={goBack}
-            context={{
-              ...tutorContext,
-              subject:
-                location.tutorSubject === 'physics' ||
-                location.tutorSubject === 'cs' ||
-                location.tutorSubject === 'math'
-                  ? location.tutorSubject
-                  : tutorContext.subject
-            }}
-            onChangeSubject={(subj) => {
-              setTutorContext((prev) => ({ ...prev, subject: subj }));
-              navigate({ tutorSubject: subj }, { replace: true });
-            }}
-            onNavigateSubject={(subj) => {
-              selectSubject(subj);
-            }}
-          />
+          {isTutorOpen && (
+            <Suspense fallback={null}>
+              <SocraticAITutor
+                isOpen={isTutorOpen}
+                onClose={goBack}
+                onBack={goBack}
+                context={{
+                  ...tutorContext,
+                  subject:
+                    location.tutorSubject === 'physics' ||
+                    location.tutorSubject === 'cs' ||
+                    location.tutorSubject === 'math'
+                      ? location.tutorSubject
+                      : tutorContext.subject
+                }}
+                onChangeSubject={(subj) => {
+                  setTutorContext((prev) => ({ ...prev, subject: subj }));
+                  navigate({ tutorSubject: subj }, { replace: true });
+                }}
+                onNavigateSubject={(subj) => {
+                  selectSubject(subj);
+                }}
+              />
+            </Suspense>
+          )}
 
           {/* Welcome Screen & Authentication Modal for in-app login */}
-          <AuthModal />
+          {isAuthModalOpen && (
+            <Suspense fallback={null}>
+              <AuthModal />
+            </Suspense>
+          )}
 
           {/* Account, Gmail, Password & Theme Settings Modal */}
-          <SettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            isDark={isDark}
-            onToggleTheme={handleToggleTheme}
-            onReturnToLanding={handleReturnToLanding}
-            onOpenInstallApp={() => {
-              setIsSettingsOpen(false);
-              setIsInstallModalOpen(true);
-            }}
-          />
+          {isSettingsOpen && (
+            <Suspense fallback={null}>
+              <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                isDark={isDark}
+                onToggleTheme={handleToggleTheme}
+                onReturnToLanding={handleReturnToLanding}
+                onOpenInstallApp={() => {
+                  setIsSettingsOpen(false);
+                  setIsInstallModalOpen(true);
+                }}
+              />
+            </Suspense>
+          )}
         </motion.div>
       )}
       </AnimatePresence>
-      <PWAInstallModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-      />
-      <LearnerPortfolioModal
-        isOpen={isPortfolioOpen}
-        onClose={() => setIsPortfolioOpen(false)}
-        xp={activeXP}
-      />
-      <SynapseVoiceOS
-        isOpen={isVoiceOSOpen}
-        onClose={() => setIsVoiceOSOpen(false)}
-        isDark={isDark}
-        onToggleTheme={handleToggleTheme}
-        onOpenTutor={(subj, promptText) =>
-          handleOpenTutor({
-            subject: subj || 'math',
-            problemStatement: promptText
-          })
-        }
-      />
+      {isInstallModalOpen && (
+        <Suspense fallback={null}>
+          <PWAInstallModal
+            isOpen={isInstallModalOpen}
+            onClose={() => setIsInstallModalOpen(false)}
+          />
+        </Suspense>
+      )}
+      {isPortfolioOpen && (
+        <Suspense fallback={null}>
+          <LearnerPortfolioModal
+            isOpen={isPortfolioOpen}
+            onClose={() => setIsPortfolioOpen(false)}
+            xp={activeXP}
+          />
+        </Suspense>
+      )}
+      {isVoiceOSOpen && (
+        <Suspense fallback={null}>
+          <SynapseVoiceOS
+            isOpen={isVoiceOSOpen}
+            onClose={() => setIsVoiceOSOpen(false)}
+            isDark={isDark}
+            onToggleTheme={handleToggleTheme}
+            onOpenTutor={(subj, promptText) =>
+              handleOpenTutor({
+                subject: subj || 'math',
+                problemStatement: promptText
+              })
+            }
+          />
+        </Suspense>
+      )}
+      {isGraphicsModalOpen && (
+        <Suspense fallback={null}>
+          <GraphicsTierModal />
+        </Suspense>
+      )}
       <OfflineIndicator />
     </>
   );

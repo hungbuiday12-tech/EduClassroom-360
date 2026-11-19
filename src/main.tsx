@@ -2,18 +2,40 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import 'katex/dist/katex.min.css';
 import { LanguageProvider } from './context/LanguageContext';
 import { BackgroundProvider } from './context/BackgroundContext';
 import { NavigationProvider } from './context/NavigationContext';
 import { AudioProvider } from './context/AudioContext';
 import { FocusTimerProvider } from './context/FocusTimerContext';
-import { registerSW } from 'virtual:pwa-register';
 
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  try {
-    registerSW({ immediate: true });
-  } catch {}
+  const scheduleSW = () => {
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (conn?.saveData) return;
+
+    const register = () => {
+      import('virtual:pwa-register')
+        .then(({ registerSW }) => {
+          registerSW({ immediate: false });
+        })
+        .catch(() => {});
+    };
+
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+    };
+    if (typeof win.requestIdleCallback === 'function') {
+      win.requestIdleCallback(register, { timeout: 5000 });
+    } else {
+      window.setTimeout(register, 4000);
+    }
+  };
+
+  if (document.readyState === 'complete') {
+    scheduleSW();
+  } else {
+    window.addEventListener('load', scheduleSW, { once: true });
+  }
 }
 
 interface Props {
@@ -41,24 +63,38 @@ class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const isChunkError = /loading chunk|dynamically imported module|failed to fetch/i.test(
+        this.state.errorMessage
+      );
       return (
         <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-slate-800 border border-slate-700 rounded-2xl p-6 text-center space-y-4 shadow-xl">
-            <h2 className="text-xl font-bold text-red-400">Đã xảy ra sự cố hiển thị</h2>
+            <h2 className="text-xl font-bold text-red-400">
+              {isChunkError ? 'Kết nối mạng chậm khi tải mô-đun' : 'Đã xảy ra sự cố hiển thị'}
+            </h2>
             <p className="text-xs text-slate-300 font-mono bg-slate-950 p-3 rounded-lg overflow-x-auto text-left">
               {this.state.errorMessage}
             </p>
-            <button
-              onClick={() => {
-                try {
-                  localStorage.clear();
-                } catch {}
-                window.location.reload();
-              }}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors"
-            >
-              Tải lại trang và khôi phục
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                Tải lại ngay
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.setItem('educlassroom_perf_mode_v1', 'smooth');
+                    localStorage.setItem('educlassroom_bg_style_v1', 'white_breeze');
+                  } catch {}
+                  window.location.reload();
+                }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                Vào chế độ Siêu Nhẹ (PC yếu)
+              </button>
+            </div>
           </div>
         </div>
       );

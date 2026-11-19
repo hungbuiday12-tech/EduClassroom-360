@@ -98,7 +98,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     creatureTheme,
     setCreatureTheme,
     perfMode,
-    setPerfMode,
+    applyGraphicsTier,
+    hardwareProfile,
+    openGraphicsModal,
     bgStyle,
     setBgStyle,
     fontPreset,
@@ -848,7 +850,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       >
                         <span
                           aria-hidden="true"
-                          className="w-8 h-8 rounded-md border border-white/25 shrink-0 mt-0.5 shadow-inner"
+                          className="w-8 h-8 rounded-md border border-slate-300/70 dark:border-white/25 shrink-0 mt-0.5 shadow-inner"
                           style={{ background: opt.previewGradient }}
                         />
                         <div className="min-w-0 flex-1">
@@ -1034,26 +1036,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* FPS & Graphics Performance Tier */}
-              <div className="p-4 sm:p-5 rounded-md bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
-                  <Gauge className="w-4 h-4 text-sky-500" />
-                  <span>{isEn ? 'FPS & Graphics Performance Mode' : 'Tối ưu FPS & Chất lượng Đồ họa'}</span>
+              <div className="p-4 sm:p-5 rounded-[4px] bg-slate-50/90 dark:bg-slate-800/45 border border-slate-200/80 dark:border-white/10 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                    <Gauge className="w-4 h-4 text-sky-500" />
+                    <span>{isEn ? '3-Tier Graphics & Animation Mode' : 'Thiết lập 3 Cấp độ Đồ họa & Animation'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      openGraphicsModal();
+                    }}
+                    className="px-2.5 py-1 rounded-[4px] border border-sky-400/50 bg-sky-500/10 text-[11px] font-bold text-blue-700 dark:text-sky-300 hover:bg-sky-500/20 cursor-pointer"
+                  >
+                    {isEn ? 'Open Interactive Tuner' : 'Mở bảng chi tiết + Cấu hình máy'}
+                  </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {PERFORMANCE_MODE_OPTIONS.map((opt) => {
                     const selected = opt.id === perfMode;
+                    const isRecommended = opt.id === hardwareProfile.recommendedMode;
                     return (
                       <button
                         key={opt.id}
                         type="button"
-                        onClick={() => setPerfMode(opt.id)}
-                        className={`p-3 rounded border text-left transition-all cursor-pointer ${
+                        onClick={() => applyGraphicsTier(opt.id, true)}
+                        className={`p-3 rounded-[4px] border text-left transition-all cursor-pointer ${
                           selected
                             ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/10 hover:border-sky-400'
                         }`}
                       >
-                        <div className="text-xs font-bold">{isEn ? opt.labelEn : opt.labelVi}</div>
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="text-xs font-bold">{isEn ? opt.shortEn : opt.shortVi}</span>
+                          {isRecommended && (
+                            <span
+                              className={`px-1.5 py-0.5 rounded-[3px] font-mono text-[9px] font-bold uppercase ${
+                                selected
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300'
+                              }`}
+                            >
+                              {isEn ? 'Suggested' : 'Gợi ý'}
+                            </span>
+                          )}
+                        </div>
                         <div
                           className={`text-[11px] mt-1 leading-snug ${
                             selected ? 'text-sky-100' : 'text-slate-500 dark:text-slate-400'

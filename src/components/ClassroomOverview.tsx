@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { AITutorMode, SubjectType } from '../types';
 import {
   Compass,
@@ -50,11 +50,8 @@ import { useNavigation } from '../context/NavigationContext';
 import { useFocusTimer, STUDY_FORMAT_PRESETS } from '../context/FocusTimerContext';
 import { useAudio } from '../context/AudioContext';
 import { BELL_SOUND_OPTIONS } from '../lib/soundEngine';
-import { EXAM_PAPERS } from '../data/examData';
-import { MATH_LECTURES } from '../data/curriculumData';
-import { PHYSICS_LESSONS } from '../data/physicsLessonsData';
+import { CURRICULUM_COUNTS } from '../data/curriculumCounts';
 import { getPhysicsSimCounts } from '../data/physicsDomainsData';
-import { CS_LESSONS } from '../data/csLessonsData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../data/csTracksData';
 import {
   GROWTH_UPDATED_EVENT,
@@ -66,12 +63,15 @@ import { PlatformReviews } from './common/PlatformReviews';
 import { AppDownloadGuideSection } from './common/AppDownloadGuideSection';
 import { CursorDodgeText } from './common/CursorDodgeText';
 import { AppearanceStudioBar } from './common/AppearanceStudioBar';
-import {
-  LectureDirectorySection,
+import { GraphicsTierTriggerButton } from './common/GraphicsTierTriggerButton';
+import type {
   DirectorySubjectFilter,
   LectureDirectoryTarget
 } from './common/LectureDirectorySection';
-import { downloadSynapsePresentationDocx } from '../utils/productDocxExporter';
+
+const LectureDirectorySection = lazy(() =>
+  import('./common/LectureDirectorySection').then((m) => ({ default: m.LectureDirectorySection }))
+);
 
 interface ClassroomOverviewProps {
   onNavigate: (subject: SubjectType) => void;
@@ -209,11 +209,14 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   const currentXP = user ? user.xp : xp;
   const currentLevel = Math.floor(currentXP / 500) + 1;
   const xpProgressPct = Math.min(((currentXP % 500) / 500) * 100, 100);
-  const totalExams = EXAM_PAPERS.length;
-  const chuyenExams = EXAM_PAPERS.filter((e) => e.track === 'chuyen').length;
-  const standardExams = EXAM_PAPERS.filter((e) => e.track === 'khong_chuyen').length;
+  const totalExams = CURRICULUM_COUNTS.totalExams;
+  const chuyenExams = CURRICULUM_COUNTS.chuyenExams;
+  const standardExams = CURRICULUM_COUNTS.standardExams;
   const csSpecializedStageCount = CS_SPECIALIZED_TRACKS.reduce((s, t) => s + t.stages.length, 0);
-  const totalLessons = MATH_LECTURES.length + PHYSICS_LESSONS.length + CS_LESSONS.length;
+  const totalLessons = CURRICULUM_COUNTS.totalLessons;
+  const mathCount = CURRICULUM_COUNTS.mathLectures;
+  const physicsCount = CURRICULUM_COUNTS.physicsLessons;
+  const csCount = CURRICULUM_COUNTS.csLessons;
 
   useEffect(() => {
     if (reviewScrollTick === 0) return;
@@ -427,7 +430,9 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               onClick={() => {
                 if (downloadingDocx) return;
                 setDownloadingDocx(true);
-                void downloadSynapsePresentationDocx().finally(() => setDownloadingDocx(false));
+                void import('../utils/productDocxExporter')
+                  .then((m) => m.downloadSynapsePresentationDocx())
+                  .finally(() => setDownloadingDocx(false));
               }}
               className="group cs-deck-btn min-h-[50px] px-6 py-3.5 rounded bg-emerald-600/95 hover:bg-emerald-500 disabled:opacity-70 border border-emerald-400/70 text-white text-sm sm:text-base font-semibold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
             >
@@ -444,8 +449,11 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </button>
           </div>
 
-          {/* Live Dynamic Background, Creature, Font, Color Palette & Cursor-Dodge Studio Bar */}
-          <AppearanceStudioBar />
+          {/* Prominent 3-Tier Graphics Setup Button + Live Appearance Studio Bar */}
+          <div className="pt-1 space-y-2.5">
+            <GraphicsTierTriggerButton variant="overview" />
+            <AppearanceStudioBar />
+          </div>
 
           {/* Frameless Inline Academic Metrics & Learner Mastery Strip */}
           <div className="mt-4 pt-5 border-t border-slate-300/50 dark:border-white/12 grid grid-cols-1 md:grid-cols-12 gap-5 items-center text-left">
@@ -582,7 +590,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 02 · {isEn ? 'MATHEMATICS' : 'TOÁN HỌC'}
               </span>
               <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-sky-700 dark:group-hover:text-sky-300 truncate block transition-colors">
-                {isEn ? `Math (${MATH_LECTURES.length} lessons)` : `Bài giảng Toán (${MATH_LECTURES.length} bài)`}
+                {isEn ? `Math (${mathCount} lessons)` : `Bài giảng Toán (${mathCount} bài)`}
               </span>
             </div>
             <span className="relative z-10 w-8 h-8 rounded bg-sky-500/10 group-hover:bg-sky-600 text-sky-600 dark:text-sky-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -605,7 +613,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                 03 · {isEn ? 'PHYSICS' : 'VẬT LÍ'}
               </span>
               <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
-                {isEn ? `Physics (${PHYSICS_LESSONS.length} labs)` : `Bài giảng Vật lí (${PHYSICS_LESSONS.length} bài)`}
+                {isEn ? `Physics (${physicsCount} labs)` : `Bài giảng Vật lí (${physicsCount} bài)`}
               </span>
             </div>
             <span className="relative z-10 w-8 h-8 rounded bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -629,8 +637,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </span>
               <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
                 {isEn
-                  ? `CS 5 Roadmaps (${CS_LESSONS.length}+${csSpecializedStageCount})`
-                  : `Tin học · 5 lộ trình (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++)`}
+                  ? `CS 5 Roadmaps (${csCount}+${csSpecializedStageCount})`
+                  : `Tin học · 5 lộ trình (${csCount} VNOI + ${csSpecializedStageCount} C++)`}
               </span>
             </div>
             <span className="relative z-10 w-8 h-8 rounded bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -1185,8 +1193,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </div>
               <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn
-                  ? `Interactive Math (${MATH_LECTURES.length})`
-                  : `Toán học tương tác (${MATH_LECTURES.length} bài)`}
+                  ? `Interactive Math (${mathCount})`
+                  : `Toán học tương tác (${mathCount} bài)`}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isEn
@@ -1258,8 +1266,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </div>
               <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn
-                  ? `Experimental Physics (${PHYSICS_LESSONS.length})`
-                  : `Vật lí thực nghiệm (${PHYSICS_LESSONS.length} bài)`}
+                  ? `Experimental Physics (${physicsCount})`
+                  : `Vật lí thực nghiệm (${physicsCount} bài)`}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isEn
@@ -1339,8 +1347,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </div>
               <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
                 {isEn
-                  ? `CS · 5 Roadmaps (${CS_LESSONS.length}+${csSpecializedStageCount})`
-                  : `Tin học · 5 Lộ Trình (${CS_LESSONS.length} VNOI + ${csSpecializedStageCount} C++)`}
+                  ? `CS · 5 Roadmaps (${csCount}+${csSpecializedStageCount})`
+                  : `Tin học · 5 Lộ Trình (${csCount} VNOI + ${csSpecializedStageCount} C++)`}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isEn
@@ -2031,14 +2039,24 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </div>
       </section>
 
-      {/* SECTION 6: Complete Lecture Directory (Target of Mục lục) */}
-      <LectureDirectorySection
-        id="classroom-lecture-directory"
-        subjectFilter={directorySubject}
-        onSubjectFilterChange={setDirectorySubject}
-        onSelectLecture={handleSelectLectureFromDirectory}
-        onSelectCsTrack={handleSelectCsTrackFromDirectory}
-      />
+      {/* SECTION 6: Complete Lecture Directory (Target of Mục lục, Lazy-Loaded) */}
+      <div className="cv-auto">
+        <Suspense
+          fallback={
+            <div className="py-10 text-center text-xs text-slate-400">
+              {isEn ? 'Loading lecture directory...' : 'Đang tải mục lục bài giảng...'}
+            </div>
+          }
+        >
+          <LectureDirectorySection
+            id="classroom-lecture-directory"
+            subjectFilter={directorySubject}
+            onSubjectFilterChange={setDirectorySubject}
+            onSelectLecture={handleSelectLectureFromDirectory}
+            onSelectCsTrack={handleSelectCsTrackFromDirectory}
+          />
+        </Suspense>
+      </div>
 
       {/* SECTION 7: Multi-Device App Download Guide & Full Feature Matrix */}
       <div className="cv-auto">

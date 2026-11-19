@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, [uid]);
   const { language, toggleLanguage, t } = useLanguage();
   const isEn = language === 'en';
-  const { bgStyle, setBgStyle, creatureTheme, setCreatureTheme, perfMode, setPerfMode } =
+  const { bgStyle, setBgStyle, creatureTheme, setCreatureTheme, perfMode, openGraphicsModal } =
     useBackgroundTheme();
   const { location, canGoBack, previousLocation, goBack, goClassroom } = useNavigation();
   const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
@@ -142,11 +142,6 @@ export const Header: React.FC<HeaderProps> = ({
 
   const activePerf =
     PERFORMANCE_MODE_OPTIONS.find((p) => p.id === perfMode) || PERFORMANCE_MODE_OPTIONS[0];
-  const cyclePerfMode = () => {
-    const order: Array<'smooth' | 'balanced' | 'ultra'> = ['smooth', 'balanced', 'ultra'];
-    const idx = order.indexOf(perfMode);
-    setPerfMode(order[(idx + 1) % order.length]);
-  };
 
   return (
     <header className="sticky top-0 z-30 w-full h-14 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200/85 dark:border-slate-800/90">
@@ -290,18 +285,18 @@ export const Header: React.FC<HeaderProps> = ({
               )}
           </div>
 
-          {/* Performance / FPS Cycler */}
+          {/* Graphics Tier Setup Trigger */}
           <button
             type="button"
-            onClick={cyclePerfMode}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-sky-500/60 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            onClick={openGraphicsModal}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-sky-500/60 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
             title={
               isEn
                 ? `Graphics Mode: ${activePerf.labelEn}`
-                : `Chế độ đồ họa: ${activePerf.labelVi} (bấm để đổi)`
+                : `Thiết lập đồ họa: ${activePerf.labelVi} (bấm để mở bảng 3 mức)`
             }
           >
-            <Gauge className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+            <Gauge className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
             <span className="hidden 2xl:inline">
               {isEn ? activePerf.shortEn : activePerf.shortVi}
             </span>
@@ -311,7 +306,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={toggleLanguage}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:border-sky-500/60 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:border-sky-500/60 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             title={language === 'vi' ? 'Switch interface to English' : 'Chuyển sang Tiếng Việt'}
           >
             <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />

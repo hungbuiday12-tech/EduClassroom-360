@@ -67,10 +67,47 @@ export default defineConfig(() => {
           ]
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
-          globIgnores: ['**/mediapipe/**'],
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+          globIgnores: [
+            '**/mediapipe/**',
+            '**/vendor-three*',
+            '**/vendor-mediapipe*',
+            '**/vendor-docs*',
+            '**/vendor-ai*',
+            '**/vendor-katex*',
+            '**/vendor-firebase*',
+            '**/vendor-motion*',
+            '**/lectureStepsBuilder*',
+            '**/FutureLabWorkspace*',
+            '**/SpatialGesture3DLab*',
+            '**/examData*',
+            '**/physicsLessonsData*',
+            '**/curriculumData*',
+            '**/csLessonsData*',
+            '**/PhysicsLab*',
+            '**/CodeJudgeLab*',
+            '**/AlgorithmVisualizer*',
+            '**/ArenaHub*',
+            '**/ExamHub*',
+            '**/MathSimulationsPage*',
+            '**/InteractiveLectureRoom*',
+            '**/LearningRoadmap*',
+            '**/SocraticAITutor*',
+            '**/KaTeX_*'
+          ],
           navigateFallbackDenylist: [/^\/api\//, /\/mediapipe\//, /\/downloads\//],
           runtimeCaching: [
+            {
+              urlPattern: /\/assets\/.*\.(js|css|woff2?|ttf|woff)$/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'synapse-lazy-assets',
+                expiration: {
+                  maxEntries: 120,
+                  maxAgeSeconds: 60 * 60 * 24 * 14
+                }
+              }
+            },
             {
               urlPattern: /\/mediapipe\/.*/i,
               handler: 'CacheFirst',
@@ -104,6 +141,46 @@ export default defineConfig(() => {
         }
       })
     ],
+    build: {
+      target: 'es2020',
+      cssCodeSplit: true,
+      chunkSizeWarningLimit: 1200,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('react-dom') || id.includes('/react/') || id.includes('scheduler')) {
+              return 'vendor-react';
+            }
+            if (id.includes('/three/')) {
+              return 'vendor-three';
+            }
+            if (id.includes('@mediapipe')) {
+              return 'vendor-mediapipe';
+            }
+            if (id.includes('/firebase/') || id.includes('@firebase')) {
+              return 'vendor-firebase';
+            }
+            if (id.includes('/docx/') || id.includes('/jszip/') || id.includes('/qrcode/')) {
+              return 'vendor-docs';
+            }
+            if (id.includes('/katex/')) {
+              return 'vendor-katex';
+            }
+            if (id.includes('/@google/genai/')) {
+              return 'vendor-ai';
+            }
+            if (id.includes('/motion/') || id.includes('framer-motion')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            return undefined;
+          }
+        }
+      }
+    },
     resolve: {
       alias: {
         '@': path.resolve(process.cwd(), '.'),

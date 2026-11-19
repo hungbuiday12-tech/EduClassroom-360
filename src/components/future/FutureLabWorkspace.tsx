@@ -631,10 +631,6 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
     return (
       <div className="synapse-pre-scope max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 pre-page-enter">
         <section
-          style={{
-            borderColor: activePalette.ring,
-            boxShadow: `0 24px 60px -20px ${activePalette.ring}`
-          }}
           className={`pre-grand-hero sci-frame rounded-2xl border ${glassSurfaceClass} p-6 sm:p-9 text-slate-900 dark:text-white space-y-6`}
         >
           <div
@@ -780,10 +776,6 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
       <div className="synapse-pre-scope max-w-6xl mx-auto px-4 sm:px-6 py-4 space-y-6 pre-page-enter">
         {/* Compact Adaptive Hero + Search + Category Filter */}
         <section
-          style={{
-            borderColor: activePalette.ring,
-            boxShadow: `0 16px 45px -18px ${activePalette.ring}`
-          }}
           className={`pre-grand-hero sci-frame rounded-xl border ${glassSurfaceClass} p-4 sm:p-5 text-slate-900 dark:text-white`}
         >
           <div

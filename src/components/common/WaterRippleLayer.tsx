@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAudio } from '../../context/AudioContext';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
 
 interface WaterRippleItem {
   id: number;
@@ -18,6 +19,8 @@ let rippleCounter = 0;
 export const WaterRippleLayer: React.FC = () => {
   const [ripples, setRipples] = useState<WaterRippleItem[]>([]);
   const { playClick } = useAudio();
+  const { perfMode } = useBackgroundTheme();
+  const isSmoothLowSpec = perfMode === 'smooth';
 
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
@@ -32,6 +35,7 @@ export const WaterRippleLayer: React.FC = () => {
       if (!interactiveEl) return;
 
       playClick();
+      if (isSmoothLowSpec) return;
 
       const rect = interactiveEl.getBoundingClientRect();
       if (rect.width < 8 || rect.height < 8) return;
@@ -69,7 +73,7 @@ export const WaterRippleLayer: React.FC = () => {
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown, { capture: true });
     };
-  }, [playClick]);
+  }, [playClick, isSmoothLowSpec]);
 
   if (ripples.length === 0) return null;
 

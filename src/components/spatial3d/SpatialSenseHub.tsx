@@ -11,6 +11,7 @@ import {
   PenTool,
   RotateCcw,
   Scan,
+  ScanFace,
   Sparkles,
   Users,
   Video
@@ -93,7 +94,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
   ];
 
   return (
-    <div className="w-full min-h-[calc(100vh-110px)] rounded-xl bg-[#040814] text-slate-100 border border-sky-500/35 shadow-2xl overflow-hidden relative">
+    <div className="sci-frame w-full min-h-[calc(100vh-110px)] rounded-xl bg-[#040814] text-slate-100 border border-sky-500/35 shadow-2xl overflow-hidden relative">
       {/* Subtle architectural coordinate backdrop */}
       <div
         className="absolute inset-0 opacity-20 pointer-events-none"
@@ -196,14 +197,14 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
         <div className="spatial-soft-frame flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-xs font-mono text-slate-300">
           <span>
             {isEn
-              ? '15 3D Models · 5 Clear Grab Gestures · Weak-PC 0.5x / 30 FPS Optimization'
-              : '15 Mô hình 3D · 5 Cử chỉ Cầm Nắm Rõ Ràng · Tối ưu Máy Yếu 0.5x / 30 FPS'}
+              ? '15 3D Models · Hologram Head/Eye Parallax · 5 Grab Gestures · Weak-PC 0.5x / 30 FPS'
+              : '15 Mô hình 3D · Thị Sai Hologram Mắt/Đầu · 5 Cử chỉ Rõ Ràng · Tối ưu Máy Yếu'}
           </span>
           <span className="text-emerald-300 font-bold flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             {isEn
-              ? 'Fixed horizontal row + 👍 1-Thumb select · Zero spin/drift chaos'
-              : 'Hàng ngang cố định + 👍 Giơ 1 ngón cái chọn · Không xoay loạn, không mặt tím'}
+              ? 'Fixed horizontal row + Eye-Gaze HUD & Blink Isolate'
+              : 'Hàng ngang cố định + Nhìn đâu sáng đó (Gaze HUD) & Chớp mắt tách lớp'}
           </span>
         </div>
 
@@ -270,10 +271,17 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-medium text-slate-200">
                 <div className="spatial-soft-frame rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
                   <span className="text-sky-300 font-bold block">15 Mô Hình 3D</span>
                   Động cơ, Robot IK, Siêu xe, DNA, Oxyz
+                </div>
+                <div className="spatial-soft-frame rounded-md bg-slate-900/90 border border-cyan-500/40 px-3 py-2">
+                  <span className="text-cyan-300 font-bold flex items-center gap-1">
+                    <ScanFace className="w-3.5 h-3.5 shrink-0" />
+                    Thị Sai Mắt & Đầu
+                  </span>
+                  Cửa sổ 3D thực + Gaze HUD chớp mắt tách lớp
                 </div>
                 <div className="spatial-soft-frame spatial-soft-frame-amber rounded-md bg-slate-900/90 border border-slate-800 px-3 py-2">
                   <span className="text-orange-300 font-bold block">Tách & Ghép 4 Ngón</span>

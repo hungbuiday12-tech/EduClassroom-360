@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { EXAM_PAPERS } from '../data/examData';
+import { CURRICULUM_COUNTS } from '../data/curriculumCounts';
 
-const TOTAL_EXAMS = EXAM_PAPERS.length;
-const CHUYEN_EXAMS = EXAM_PAPERS.filter((e) => e.track === 'chuyen').length;
-const STANDARD_EXAMS = TOTAL_EXAMS - CHUYEN_EXAMS;
+const TOTAL_EXAMS = CURRICULUM_COUNTS.totalExams;
+const CHUYEN_EXAMS = CURRICULUM_COUNTS.chuyenExams;
+const STANDARD_EXAMS = CURRICULUM_COUNTS.standardExams;
 
 export type Language = 'vi' | 'en';
 

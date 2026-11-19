@@ -6,14 +6,16 @@ import {
   MousePointer2,
   Wand2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Gauge
 } from 'lucide-react';
 import {
   useBackgroundTheme,
   BACKGROUND_STYLE_OPTIONS,
   CREATURE_THEME_OPTIONS,
   FONT_PRESET_OPTIONS,
-  COLOR_PALETTE_OPTIONS
+  COLOR_PALETTE_OPTIONS,
+  PERFORMANCE_MODE_OPTIONS
 } from '../../context/BackgroundContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -29,6 +31,8 @@ export const AppearanceStudioBar: React.FC<AppearanceStudioBarProps> = ({ compac
     setBgStyle,
     creatureTheme,
     setCreatureTheme,
+    perfMode,
+    openGraphicsModal,
     fontPreset,
     setFontPreset,
     colorPalette,
@@ -52,11 +56,35 @@ export const AppearanceStudioBar: React.FC<AppearanceStudioBarProps> = ({ compac
     BACKGROUND_STYLE_OPTIONS.find((b) => b.id === bgStyle)?.[isEn ? 'shortEn' : 'shortVi'] || '';
   const currentFontLabel =
     FONT_PRESET_OPTIONS.find((f) => f.id === fontPreset)?.[isEn ? 'labelEn' : 'labelVi'] || '';
+  const activePerfOpt =
+    PERFORMANCE_MODE_OPTIONS.find((p) => p.id === perfMode) || PERFORMANCE_MODE_OPTIONS[0];
 
   return (
-    <div className="w-full max-w-4xl mx-auto pt-2">
-      {/* Minimal frameless interactive pill-less studio strip */}
+    <div className="w-full max-w-4xl mx-auto pt-1">
+      {/* Minimal frameless interactive square-cut studio strip */}
       <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 text-xs">
+        <button
+          type="button"
+          onClick={openGraphicsModal}
+          className={`px-3 py-1.5 rounded-[4px] border backdrop-blur-md transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap font-semibold ${
+            perfMode === 'ultra'
+              ? 'bg-indigo-600 border-indigo-400 text-white shadow-sm'
+              : perfMode === 'balanced'
+              ? 'bg-sky-600 border-sky-500 text-white shadow-sm'
+              : 'bg-emerald-600 border-emerald-500 text-white shadow-sm'
+          }`}
+          title={
+            isEn
+              ? 'Configure Graphics Tier (Low / Medium / Pro) with hardware suggestion'
+              : 'Mở bảng Thiết lập Đồ họa 3 cấp (Thấp / Trung bình / Pro)'
+          }
+        >
+          <Gauge className="w-3.5 h-3.5 shrink-0" />
+          <span>
+            {isEn ? `Graphics: ${activePerfOpt.shortEn}` : `Đồ họa: ${activePerfOpt.shortVi}`}
+          </span>
+        </button>
+
         <button
           type="button"
           onClick={() => setOpenDrawer(openDrawer === 'bg' ? 'none' : 'bg')}
@@ -149,18 +177,18 @@ export const AppearanceStudioBar: React.FC<AppearanceStudioBarProps> = ({ compac
 
       {/* Quick Inline Color Swatches always 1-click accessible unless ultra compact */}
       {!compact && openDrawer === 'none' && (
-        <div className="flex items-center justify-center gap-2 mt-2.5">
-          {BACKGROUND_STYLE_OPTIONS.slice(0, 5).map((bg) => {
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-2.5">
+          {BACKGROUND_STYLE_OPTIONS.slice(0, 6).map((bg) => {
             const active = bg.id === bgStyle;
             return (
               <button
                 key={bg.id}
                 type="button"
-                onClick={() => setBgStyle(bg.id)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                onClick={() => setBgStyle(bg.id, bg.id === 'white_breeze')}
+                className={`px-2.5 py-1 rounded border text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                   active
-                    ? 'bg-slate-900/85 dark:bg-white/90 text-white dark:text-slate-950 font-semibold shadow-sm'
-                    : 'bg-white/45 dark:bg-slate-950/35 text-slate-700 dark:text-slate-300 hover:bg-white/75 dark:hover:bg-slate-900/60'
+                    ? 'bg-slate-900/90 dark:bg-white/95 text-white dark:text-slate-950 border-transparent font-semibold shadow-sm'
+                    : 'bg-white/70 dark:bg-slate-950/35 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-white/95 dark:hover:bg-slate-900/60'
                 }`}
               >
                 {isEn ? bg.shortEn : bg.shortVi}
@@ -175,14 +203,14 @@ export const AppearanceStudioBar: React.FC<AppearanceStudioBarProps> = ({ compac
         <div className="mt-3 p-3.5 sm:p-4 rounded border border-slate-300/60 dark:border-white/15 bg-white/80 dark:bg-slate-950/75 backdrop-blur-xl shadow-lg text-left space-y-3">
           {openDrawer === 'bg' && (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
                 {BACKGROUND_STYLE_OPTIONS.map((opt) => {
                   const selected = opt.id === bgStyle;
                   return (
                     <button
                       key={opt.id}
                       type="button"
-                      onClick={() => setBgStyle(opt.id)}
+                      onClick={() => setBgStyle(opt.id, opt.id === 'white_breeze')}
                       className={`p-2 rounded border text-left transition-all cursor-pointer flex items-center gap-2 ${
                         selected
                           ? 'bg-accent-solid border-transparent shadow-sm'
@@ -191,7 +219,7 @@ export const AppearanceStudioBar: React.FC<AppearanceStudioBarProps> = ({ compac
                     >
                       <span
                         aria-hidden="true"
-                        className="w-5 h-5 rounded shrink-0 border border-white/30"
+                        className="w-5 h-5 rounded shrink-0 border border-slate-300/60 dark:border-white/30"
                         style={{ background: opt.previewGradient }}
                       />
                       <span className="text-[11px] font-semibold truncate">

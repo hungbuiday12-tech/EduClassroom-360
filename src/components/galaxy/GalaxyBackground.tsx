@@ -126,6 +126,11 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     let animationFrameId = 0;
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
@@ -238,18 +243,27 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         molBgH = height;
       };
 
+      let molPaintedOnce = false;
+      let molSlowStreak = 0;
+      let molExtraThrottleMs = 0;
+
       const renderMolecules = (now: number) => {
-        animationFrameId = requestAnimationFrame(renderMolecules);
+        if (!prefersReducedMotion) {
+          animationFrameId = requestAnimationFrame(renderMolecules);
+        }
         if (document.hidden || pausedRef.current) {
           lastTick = now;
           return;
         }
-        if (perfMode !== 'ultra' && now - lastMolScrollMs < 130) {
+        if (perfMode !== 'ultra' && now - lastMolScrollMs < 130 && molPaintedOnce) {
           return;
         }
-        if (targetMs > 0 && now - lastTick < targetMs) return;
+        const effTargetMs = Math.max(targetMs, molExtraThrottleMs);
+        if (effTargetMs > 0 && now - lastTick < effTargetMs && molPaintedOnce) return;
+        const tStart = performance.now();
         const dt = Math.min(48, now - lastTick) / 16.667;
         lastTick = now;
+        molPaintedOnce = true;
         const t = now * 0.001;
 
         const [rA, gA, bA] = darkMode ? [pR_d, pG_d, pB_d] : [pR_l, pG_l, pB_l];
@@ -260,8 +274,8 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           ctx.drawImage(molBgCanvas, 0, 0, width, height);
         }
 
-        // Soft cursor magnetic field aura
-        if (ptr.active) {
+        // Soft cursor magnetic field aura (skipped in smooth/low-spec mode to save GPU fill)
+        if (!low && molExtraThrottleMs === 0 && ptr.active) {
           const halo = ctx.createRadialGradient(ptr.x, ptr.y, 4, ptr.x, ptr.y, 190);
           halo.addColorStop(0, `rgba(${rA},${gA},${bA},${darkMode ? 0.14 : 0.1})`);
           halo.addColorStop(1, 'rgba(0,0,0,0)');
@@ -401,6 +415,16 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
           ctx.stroke();
         }
+
+        const molFrameCost = performance.now() - tStart;
+        if (molFrameCost > 26) {
+          molSlowStreak++;
+          if (molSlowStreak >= 4) {
+            molExtraThrottleMs = 90;
+          }
+        } else {
+          molSlowStreak = 0;
+        }
       };
 
       animationFrameId = requestAnimationFrame(renderMolecules);
@@ -416,74 +440,170 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       };
     }
 
-    // Dynamic animated modes for Minimal Ambient Drift, Studio Dot Wave, and Live Blueprint STEM
+    // Dynamic animated modes for White Breeze (Ultra Low-Lag), Minimal Ambient Drift, Studio Dot Wave, and Live Blueprint STEM
     if (
+      bgStyle === 'white_breeze' ||
       bgStyle === 'minimal_solid' ||
       bgStyle === 'studio_grid' ||
       bgStyle === 'blueprint_tech'
     ) {
       let darkMode = resolveDarkMode();
       let lastTick = performance.now();
-      const targetMs = perfMode === 'smooth' ? 33 : perfMode === 'balanced' ? 20 : 0;
+      let isScrolling = false;
+      let scrollTimeout = 0;
+      const targetMs =
+        bgStyle === 'white_breeze'
+          ? perfMode === 'ultra'
+            ? 24
+            : perfMode === 'balanced'
+            ? 34
+            : 52
+          : perfMode === 'smooth'
+          ? 48
+          : perfMode === 'balanced'
+          ? 28
+          : 0;
 
-      const nodes = Array.from({ length: bgStyle === 'minimal_solid' ? 14 : 26 }, (_, idx) => ({
-        x: ((idx * 193) % 997) / 997,
-        y: ((idx * 389) % 991) / 991,
-        vx: (((idx % 5) - 2) || 1) * 0.00018,
-        vy: (((idx % 7) - 3) || -1) * 0.00014,
-        r: 1.4 + (idx % 3) * 0.85,
-        phase: idx * 0.7
-      }));
+      const nodes = Array.from(
+        { length: bgStyle === 'white_breeze' ? 10 : bgStyle === 'minimal_solid' ? 12 : perfMode === 'smooth' ? 16 : 24 },
+        (_, idx) => ({
+          x: ((idx * 193) % 997) / 997,
+          y: ((idx * 389) % 991) / 991,
+          vx: (((idx % 5) - 2) || 1) * 0.00014,
+          vy: (((idx % 7) - 3) || -1) * 0.00012,
+          r: 1.4 + (idx % 3) * 0.85,
+          phase: idx * 0.7
+        })
+      );
+
+      let dynBgCanvas: HTMLCanvasElement | null = document.createElement('canvas');
+      let dynBgDark: boolean | null = null;
+      let dynBgStyle: string | null = null;
+      let dynBgW = 0;
+      let dynBgH = 0;
+      const rebuildDynBg = (dm: boolean) => {
+        if (!dynBgCanvas) return;
+        const cw = Math.max(64, Math.floor(width * 0.5));
+        const ch = Math.max(64, Math.floor(height * 0.5));
+        dynBgCanvas.width = cw;
+        dynBgCanvas.height = ch;
+        const dctx = dynBgCanvas.getContext('2d', { alpha: false });
+        if (!dctx) return;
+        const grad = dctx.createLinearGradient(0, 0, cw, ch);
+        if (bgStyle === 'studio_grid') {
+          if (dm) {
+            grad.addColorStop(0, '#070d19');
+            grad.addColorStop(1, '#0c1629');
+          } else {
+            grad.addColorStop(0, '#f8fafc');
+            grad.addColorStop(1, '#eef4fb');
+          }
+        } else {
+          if (dm) {
+            grad.addColorStop(0, '#040a17');
+            grad.addColorStop(0.55, '#08152b');
+            grad.addColorStop(1, '#040914');
+          } else {
+            grad.addColorStop(0, '#f4f8fd');
+            grad.addColorStop(0.55, '#ebf3fc');
+            grad.addColorStop(1, '#f7fbff');
+          }
+        }
+        dctx.fillStyle = grad;
+        dctx.fillRect(0, 0, cw, ch);
+        dynBgDark = dm;
+        dynBgStyle = bgStyle;
+        dynBgW = width;
+        dynBgH = height;
+      };
+
+      // Preallocated dot bucket arrays for batch-drawing studio_grid without GC or 2000+ fillStyle switches
+      const gridBuckets: [number[], number[], number[]] = [[], [], []];
 
       const onResizeDyn = () => {
         width = canvas.width = window.innerWidth;
         height = canvas.height = window.innerHeight;
+      };
+      const onScrollDyn = () => {
+        isScrolling = true;
+        window.clearTimeout(scrollTimeout);
+        scrollTimeout = window.setTimeout(() => {
+          isScrolling = false;
+        }, 120);
       };
       const classObs = new MutationObserver(() => {
         darkMode = resolveDarkMode();
       });
       classObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
       window.addEventListener('resize', onResizeDyn);
+      window.addEventListener('scroll', onScrollDyn, { passive: true });
+
+      let paintedWhiteOnce = false;
+      let dynSlowStreak = 0;
+      let dynExtraThrottleMs = 0;
 
       const renderDynamicPreset = (now: number) => {
-        animationFrameId = requestAnimationFrame(renderDynamicPreset);
-        if (document.hidden || pausedRef.current) {
+        if (!prefersReducedMotion) {
+          animationFrameId = requestAnimationFrame(renderDynamicPreset);
+        }
+        if (document.hidden || pausedRef.current || (isScrolling && paintedWhiteOnce)) {
           lastTick = now;
           return;
         }
-        if (targetMs > 0 && now - lastTick < targetMs) return;
-        const dt = Math.min(48, now - lastTick) / 16.667;
+        const effTargetMs = Math.max(targetMs, dynExtraThrottleMs);
+        if (effTargetMs > 0 && now - lastTick < effTargetMs && paintedWhiteOnce) return;
+        const tStart = performance.now();
+        const dt = Math.min(48, Math.max(8, now - lastTick)) / 16.667;
         lastTick = now;
         const t = now * 0.001;
+        paintedWhiteOnce = true;
 
-        if (bgStyle === 'minimal_solid') {
-          ctx.fillStyle = darkMode ? '#080d18' : '#f7faff';
+        if (bgStyle === 'white_breeze') {
+          // Pure crisp white background with ultra-light geometric animation (~0.3ms/frame, zero heavy blur/loops)
+          ctx.fillStyle = darkMode ? '#0f172a' : '#ffffff';
           ctx.fillRect(0, 0, width, height);
 
-          // Drifting dual ambient glow pools
-          const g1x = width * (0.28 + 0.12 * Math.sin(t * 0.28));
-          const g1y = height * (0.32 + 0.1 * Math.cos(t * 0.22));
-          const g1 = ctx.createRadialGradient(g1x, g1y, 10, g1x, g1y, width * 0.42);
-          g1.addColorStop(0, darkMode ? 'rgba(14, 165, 233, 0.11)' : 'rgba(56, 189, 248, 0.12)');
-          g1.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = g1;
-          ctx.fillRect(0, 0, width, height);
+          // Soft hairline horizon tint at bottom 22%
+          ctx.fillStyle = darkMode ? 'rgba(30, 41, 59, 0.35)' : 'rgba(241, 245, 249, 0.55)';
+          ctx.fillRect(0, height * 0.78, width, height * 0.22);
 
-          const g2x = width * (0.72 + 0.11 * Math.cos(t * 0.24));
-          const g2y = height * (0.68 + 0.09 * Math.sin(t * 0.31));
-          const g2 = ctx.createRadialGradient(g2x, g2y, 10, g2x, g2y, width * 0.38);
-          g2.addColorStop(0, darkMode ? 'rgba(20, 184, 166, 0.09)' : 'rgba(37, 99, 235, 0.08)');
-          g2.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = g2;
-          ctx.fillRect(0, 0, width, height);
+          // Two minimalist slow-breathing geometric orbital arcs
+          const r1 = Math.min(width, height) * (0.28 + 0.015 * Math.sin(t * 0.45));
+          const r2 = Math.min(width, height) * (0.18 + 0.012 * Math.cos(t * 0.55));
+          ctx.lineWidth = 1.1;
 
-          for (const n of nodes) {
+          ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.14)' : 'rgba(2, 132, 199, 0.08)';
+          ctx.beginPath();
+          ctx.arc(width * 0.82, height * 0.22, r1, t * 0.14, t * 0.14 + Math.PI * 1.45);
+          ctx.stroke();
+
+          ctx.strokeStyle = darkMode ? 'rgba(148, 163, 184, 0.14)' : 'rgba(100, 116, 139, 0.1)';
+          ctx.beginPath();
+          ctx.arc(width * 0.16, height * 0.76, r2, -t * 0.18, -t * 0.18 + Math.PI * 1.35);
+          ctx.stroke();
+
+          // One gentle lightweight sine ribbon
+          ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.16)' : 'rgba(14, 165, 233, 0.11)';
+          ctx.lineWidth = 1.25;
+          ctx.beginPath();
+          const stepX = 48;
+          for (let x = 0; x <= width + stepX; x += stepX) {
+            const y = height * 0.66 + Math.sin(x * 0.0055 + t * 0.75) * 24;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          // Gentle floating motes (batched circles)
+          for (let i = 0; i < nodes.length; i++) {
+            const n = nodes[i];
             n.x = (n.x + n.vx * dt + 1) % 1;
             n.y = (n.y + n.vy * dt + 1) % 1;
-            const pulse = 0.35 + 0.35 * Math.sin(t * 1.4 + n.phase);
-            ctx.fillStyle = darkMode
-              ? `rgba(125, 211, 252, ${pulse * 0.45})`
-              : `rgba(2, 132, 199, ${pulse * 0.3})`;
+            const alpha = 0.16 + 0.12 * Math.sin(t * 1.2 + n.phase);
+            ctx.fillStyle =
+              i % 2 === 0
+                ? `rgba(${darkMode ? '56, 189, 248' : '2, 132, 199'}, ${alpha.toFixed(2)})`
+                : `rgba(${darkMode ? '148, 163, 184' : '100, 116, 139'}, ${(alpha * 0.85).toFixed(2)})`;
             ctx.beginPath();
             ctx.arc(n.x * width, n.y * height, n.r, 0, Math.PI * 2);
             ctx.fill();
@@ -491,31 +611,79 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           return;
         }
 
-        if (bgStyle === 'studio_grid') {
-          const grad = ctx.createLinearGradient(0, 0, width, height);
-          if (darkMode) {
-            grad.addColorStop(0, '#070d19');
-            grad.addColorStop(1, '#0c1629');
-          } else {
-            grad.addColorStop(0, '#f8fafc');
-            grad.addColorStop(1, '#eef4fb');
-          }
-          ctx.fillStyle = grad;
+        if (bgStyle === 'minimal_solid') {
+          ctx.fillStyle = darkMode ? '#080d18' : '#f7faff';
           ctx.fillRect(0, 0, width, height);
 
-          // Harmonic wave dot matrix
-          const gap = 30;
-          const waveSpeed = t * 1.8;
-          for (let x = gap / 2; x < width; x += gap) {
-            for (let y = gap / 2; y < height; y += gap) {
+          if (perfMode !== 'smooth' && dynExtraThrottleMs === 0) {
+            // Drifting dual ambient glow pools
+            const g1x = width * (0.28 + 0.12 * Math.sin(t * 0.28));
+            const g1y = height * (0.32 + 0.1 * Math.cos(t * 0.22));
+            const g1 = ctx.createRadialGradient(g1x, g1y, 10, g1x, g1y, width * 0.42);
+            g1.addColorStop(0, darkMode ? 'rgba(14, 165, 233, 0.11)' : 'rgba(56, 189, 248, 0.12)');
+            g1.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g1;
+            ctx.fillRect(0, 0, width, height);
+
+            const g2x = width * (0.72 + 0.11 * Math.cos(t * 0.24));
+            const g2y = height * (0.68 + 0.09 * Math.sin(t * 0.31));
+            const g2 = ctx.createRadialGradient(g2x, g2y, 10, g2x, g2y, width * 0.38);
+            g2.addColorStop(0, darkMode ? 'rgba(20, 184, 166, 0.09)' : 'rgba(37, 99, 235, 0.08)');
+            g2.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g2;
+            ctx.fillRect(0, 0, width, height);
+          }
+
+          for (const n of nodes) {
+            n.x = (n.x + n.vx * dt + 1) % 1;
+            n.y = (n.y + n.vy * dt + 1) % 1;
+            const pulse = 0.35 + 0.35 * Math.sin(t * 1.4 + n.phase);
+            ctx.fillStyle = darkMode
+              ? `rgba(125, 211, 252, ${(pulse * 0.45).toFixed(2)})`
+              : `rgba(2, 132, 199, ${(pulse * 0.3).toFixed(2)})`;
+            ctx.beginPath();
+            ctx.arc(n.x * width, n.y * height, n.r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          return;
+        }
+
+        if (!dynBgCanvas || dynBgDark !== darkMode || dynBgStyle !== bgStyle || dynBgW !== width || dynBgH !== height) {
+          rebuildDynBg(darkMode);
+        }
+        if (dynBgCanvas) {
+          ctx.drawImage(dynBgCanvas, 0, 0, width, height);
+        }
+
+        if (bgStyle === 'studio_grid') {
+          // Harmonic wave dot matrix — quantized into 3 fill passes (only 3 canvas fill calls instead of 2000+)
+          const gap = perfMode === 'smooth' || dynExtraThrottleMs > 0 ? 54 : perfMode === 'balanced' ? 40 : 32;
+          const waveSpeed = t * 1.6;
+          gridBuckets[0].length = 0;
+          gridBuckets[1].length = 0;
+          gridBuckets[2].length = 0;
+          for (let x = gap * 0.5; x < width; x += gap) {
+            for (let y = gap * 0.5; y < height; y += gap) {
               const w = Math.sin(x * 0.011 + y * 0.009 - waveSpeed) * 0.5 + 0.5;
-              const radius = 1.0 + w * 1.15;
-              const alpha = (darkMode ? 0.11 : 0.14) + w * (darkMode ? 0.22 : 0.18);
-              ctx.fillStyle = darkMode
-                ? `rgba(56, 189, 248, ${alpha.toFixed(3)})`
-                : `rgba(2, 132, 199, ${alpha.toFixed(3)})`;
-              ctx.fillRect(x - radius * 0.5, y - radius * 0.5, radius, radius);
+              const bucketIdx = w < 0.34 ? 0 : w < 0.68 ? 1 : 2;
+              gridBuckets[bucketIdx].push(x, y);
             }
+          }
+          const alphas = darkMode ? [0.12, 0.22, 0.33] : [0.14, 0.22, 0.32];
+          const sizes = [1.2, 1.7, 2.2];
+          for (let b = 0; b < 3; b++) {
+            const pts = gridBuckets[b];
+            if (pts.length === 0) continue;
+            const sz = sizes[b];
+            const half = sz * 0.5;
+            ctx.fillStyle = darkMode
+              ? `rgba(56, 189, 248, ${alphas[b]})`
+              : `rgba(2, 132, 199, ${alphas[b]})`;
+            ctx.beginPath();
+            for (let k = 0; k < pts.length; k += 2) {
+              ctx.rect(pts[k] - half, pts[k + 1] - half, sz, sz);
+            }
+            ctx.fill();
           }
 
           // Floating gentle constellation vertices
@@ -540,90 +708,94 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
               ctx.stroke();
             }
           }
-          return;
-        }
-
-        // blueprint_tech — live panning STEM Oxy coordinate blueprint + calibration sweep
-        const grad = ctx.createLinearGradient(0, 0, width, height);
-        if (darkMode) {
-          grad.addColorStop(0, '#040a17');
-          grad.addColorStop(0.55, '#08152b');
-          grad.addColorStop(1, '#040914');
         } else {
-          grad.addColorStop(0, '#f4f8fd');
-          grad.addColorStop(0.55, '#ebf3fc');
-          grad.addColorStop(1, '#f7fbff');
-        }
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, width, height);
+          // blueprint_tech — live panning STEM Oxy coordinate blueprint + calibration sweep
+          const minor = perfMode === 'smooth' ? 48 : 36;
+          const major = minor * 4;
+          const panX = (t * 10) % minor;
+          const panY = (t * 6) % minor;
 
-        const minor = 36;
-        const major = minor * 4;
-        const panX = (t * 10) % minor;
-        const panY = (t * 6) % minor;
+          ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.065)' : 'rgba(2, 132, 199, 0.07)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let x = panX; x < width; x += minor) {
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
+          }
+          for (let y = panY; y < height; y += minor) {
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+          }
+          ctx.stroke();
 
-        ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.065)' : 'rgba(2, 132, 199, 0.07)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let x = panX; x < width; x += minor) {
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, height);
-        }
-        for (let y = panY; y < height; y += minor) {
-          ctx.moveTo(0, y);
-          ctx.lineTo(width, y);
-        }
-        ctx.stroke();
+          // Sweeping calibration laser line (single lightweight translucent band in smooth mode)
+          const sweepY = ((t * 48) % (height + 160)) - 80;
+          if (perfMode === 'smooth' || dynExtraThrottleMs > 0) {
+            ctx.fillStyle = darkMode ? 'rgba(56, 189, 248, 0.07)' : 'rgba(2, 132, 199, 0.06)';
+            ctx.fillRect(0, sweepY - 12, width, 24);
+          } else {
+            const sweepGrad = ctx.createLinearGradient(0, sweepY - 35, 0, sweepY + 35);
+            sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0)');
+            sweepGrad.addColorStop(0.5, darkMode ? 'rgba(56, 189, 248, 0.14)' : 'rgba(2, 132, 199, 0.11)');
+            sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+            ctx.fillStyle = sweepGrad;
+            ctx.fillRect(0, sweepY - 35, width, 70);
+          }
 
-        // Sweeping calibration laser line
-        const sweepY = ((t * 48) % (height + 160)) - 80;
-        const sweepGrad = ctx.createLinearGradient(0, sweepY - 35, 0, sweepY + 35);
-        sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0)');
-        sweepGrad.addColorStop(0.5, darkMode ? 'rgba(56, 189, 248, 0.14)' : 'rgba(2, 132, 199, 0.11)');
-        sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
-        ctx.fillStyle = sweepGrad;
-        ctx.fillRect(0, sweepY - 35, width, 70);
+          const panMajorX = (t * 10) % major;
+          const panMajorY = (t * 6) % major;
+          ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(37, 99, 235, 0.14)';
+          ctx.beginPath();
+          for (let x = panMajorX; x < width; x += major) {
+            for (let y = panMajorY; y < height; y += major) {
+              ctx.moveTo(x - 4, y);
+              ctx.lineTo(x + 4, y);
+              ctx.moveTo(x, y - 4);
+              ctx.lineTo(x, y + 4);
+            }
+          }
+          ctx.stroke();
 
-        const panMajorX = (t * 10) % major;
-        const panMajorY = (t * 6) % major;
-        ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.18)' : 'rgba(37, 99, 235, 0.14)';
-        ctx.beginPath();
-        for (let x = panMajorX; x < width; x += major) {
-          for (let y = panMajorY; y < height; y += major) {
-            ctx.moveTo(x - 4, y);
-            ctx.lineTo(x + 4, y);
-            ctx.moveTo(x, y - 4);
-            ctx.lineTo(x, y + 4);
+          // Moving sine guide curve
+          ctx.strokeStyle = darkMode ? 'rgba(45, 212, 191, 0.18)' : 'rgba(13, 148, 136, 0.15)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          for (let x = 0; x <= width; x += 32) {
+            const y = height * 0.5 + Math.sin(x * 0.008 + t * 0.9) * 44;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          for (const n of nodes) {
+            n.x = (n.x + n.vx * dt + 1) % 1;
+            n.y = (n.y + n.vy * dt + 1) % 1;
+            ctx.fillStyle = darkMode ? 'rgba(56, 189, 248, 0.48)' : 'rgba(2, 132, 199, 0.35)';
+            ctx.beginPath();
+            ctx.arc(n.x * width, n.y * height, n.r, 0, Math.PI * 2);
+            ctx.fill();
           }
         }
-        ctx.stroke();
 
-        // Moving sine guide curve
-        ctx.strokeStyle = darkMode ? 'rgba(45, 212, 191, 0.18)' : 'rgba(13, 148, 136, 0.15)';
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        for (let x = 0; x <= width; x += 24) {
-          const y = height * 0.5 + Math.sin(x * 0.008 + t * 0.9) * 44;
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-
-        for (const n of nodes) {
-          n.x = (n.x + n.vx * dt + 1) % 1;
-          n.y = (n.y + n.vy * dt + 1) % 1;
-          ctx.fillStyle = darkMode ? 'rgba(56, 189, 248, 0.48)' : 'rgba(2, 132, 199, 0.35)';
-          ctx.beginPath();
-          ctx.arc(n.x * width, n.y * height, n.r, 0, Math.PI * 2);
-          ctx.fill();
+        const dynCost = performance.now() - tStart;
+        if (dynCost > 26) {
+          dynSlowStreak++;
+          if (dynSlowStreak >= 4) {
+            dynExtraThrottleMs = 95;
+          }
+        } else {
+          dynSlowStreak = 0;
         }
       };
 
       animationFrameId = requestAnimationFrame(renderDynamicPreset);
       return () => {
         cancelAnimationFrame(animationFrameId);
+        window.clearTimeout(scrollTimeout);
         window.removeEventListener('resize', onResizeDyn);
+        window.removeEventListener('scroll', onScrollDyn);
         classObs.disconnect();
+        dynBgCanvas = null;
       };
     }
 
@@ -1894,25 +2066,34 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
     let lastRenderMs = performance.now();
     let lastSimMs = lastRenderMs;
     const minFrameMs = TARGET_FRAME_MS[perfMode];
+    let slowFrameStreak = 0;
+    let adaptiveLowPower = false;
+    let adaptiveThrottleMs = 0;
+    let mainPaintedOnce = false;
     // Preallocated scratch coordinates for constellation rendering (zero per-frame GC)
     const constellationPtsScratch: Array<{ x: number; y: number; mag: number }> = [];
 
     const render = (nowMs: number) => {
-      animationFrameId = requestAnimationFrame(render);
+      if (!prefersReducedMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
       if (document.hidden || pausedRef.current) {
         lastRenderMs = nowMs;
         lastSimMs = nowMs;
         return;
       }
 
-      if (perfMode !== 'ultra' && nowMs - lastScrollMs < 130) {
+      if (perfMode !== 'ultra' && nowMs - lastScrollMs < 130 && mainPaintedOnce) {
         return;
       }
 
-      if (minFrameMs > 0 && nowMs - lastRenderMs < minFrameMs) {
+      const effectiveMinMs = Math.max(minFrameMs, adaptiveThrottleMs);
+      if (effectiveMinMs > 0 && nowMs - lastRenderMs < effectiveMinMs && mainPaintedOnce) {
         return;
       }
+      const frameStartMs = performance.now();
       lastRenderMs = nowMs;
+      mainPaintedOnce = true;
 
       // Normalize simulation step relative to 60 FPS (16.667ms) so pacing changes never alter motion speed
       const dtMs = Math.min(nowMs - lastSimMs, 64);
@@ -1921,6 +2102,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
 
       const nowSec = nowMs * 0.001;
       const darkMode = currentDarkMode;
+      const lowPowerFrame = isLowPower || adaptiveLowPower;
 
       mouse.x += (mouse.targetX - mouse.x) * Math.min(1, 0.06 * dtScale);
       mouse.y += (mouse.targetY - mouse.y) * Math.min(1, 0.06 * dtScale);
@@ -2215,7 +2397,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           ctx.beginPath();
           ctx.arc(renderX, renderY, s.size, 0, Math.PI * 2);
           ctx.fill();
-          if (s.alpha > 0.45 && !isLowPower) {
+          if (s.alpha > 0.45 && !lowPowerFrame) {
             stampGlow(renderX, renderY, s.size * 2.5, col, 0.32);
           }
         }
@@ -2449,6 +2631,17 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         } else {
           drawFirefly(c, darkMode, creatureTime);
         }
+      }
+
+      const frameElapsed = performance.now() - frameStartMs;
+      if (frameElapsed > 30) {
+        slowFrameStreak++;
+        if (slowFrameStreak >= 4) {
+          adaptiveLowPower = true;
+          adaptiveThrottleMs = Math.max(minFrameMs, 85);
+        }
+      } else {
+        slowFrameStreak = 0;
       }
     };
 

@@ -381,6 +381,93 @@ export const PreStudioDiagramPreview: React.FC<PreStudioDiagramPreviewProps> = (
           </g>
         );
 
+      case 'quantum_holodeck_3d':
+        return (
+          <g>
+            {/* Bloch Sphere Left */}
+            <circle cx="96" cy="76" r="42" fill={accentHex} fillOpacity="0.1" stroke={accentHex} strokeWidth="1.8" />
+            <ellipse cx="96" cy="76" rx="42" ry="13" fill="none" stroke="#38bdf8" strokeWidth="1.2" strokeDasharray="3 3" />
+            <line x1="96" y1="30" x2="96" y2="122" stroke="#94a3b8" strokeWidth="1" />
+            <line x1="96" y1="76" x2="124" y2="46" stroke="#fde047" strokeWidth="2.4" strokeLinecap="round" />
+            <circle cx="124" cy="46" r="4" fill="#fde047" className="holo-ring-pulse" />
+            <text x="90" y="25" fill="#7dd3fc" fontSize="8" fontFamily="monospace" fontWeight="bold">|0⟩</text>
+            <text x="90" y="135" fill="#fda4af" fontSize="8" fontFamily="monospace" fontWeight="bold">|1⟩</text>
+            {/* Entanglement Bridge */}
+            <path d="M 138 76 Q 176 42, 214 76" fill="none" stroke="#c084fc" strokeWidth="2" className="holo-dash" />
+            {/* Coupled Qubit B */}
+            <circle cx="238" cy="76" r="24" fill="#a855f7" fillOpacity="0.14" stroke="#c084fc" strokeWidth="1.6" strokeDasharray="4 3" className="holo-orbit-cw" />
+            <circle cx="238" cy="76" r="6" fill="#2dd4bf" className="holo-ring-pulse" />
+            <text x="150" y="138" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+              BLOCH SPHERE · H · CNOT · MEASURE
+            </text>
+          </g>
+        );
+
+      case 'universe_forge_3d':
+        return (
+          <g>
+            {/* Spacetime Funnel Grid Arcs */}
+            <path d="M 32 58 Q 160 72, 288 58" fill="none" stroke="#38bdf8" strokeOpacity="0.35" strokeWidth="1.2" />
+            <path d="M 38 78 Q 160 124, 282 78" fill="none" stroke="#38bdf8" strokeOpacity="0.55" strokeWidth="1.4" />
+            <path d="M 54 98 Q 160 142, 266 98" fill="none" stroke="#38bdf8" strokeOpacity="0.35" strokeWidth="1.2" />
+            {/* Black Hole Singularity & Accretion */}
+            <ellipse cx="160" cy="76" rx="46" ry="14" fill="none" stroke="#f97316" strokeWidth="2.4" className="holo-orbit-cw" />
+            <circle cx="160" cy="76" r="14" fill="#020617" stroke="#fbbf24" strokeWidth="2" />
+            {/* Relativistic Probe Orbit */}
+            <ellipse cx="160" cy="76" rx="92" ry="30" fill="none" stroke="#22d3ee" strokeWidth="1.6" strokeDasharray="5 4" className="holo-dash" />
+            <polygon points="244,64 258,70 244,76" fill="#38bdf8" />
+            <text x="20" y="138" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+              LORENTZ γ · DOPPLER · LAW 1/rⁿ
+            </text>
+          </g>
+        );
+
+      case 'nanobot_bioswarm_4d':
+        return (
+          <g>
+            {/* Artery Walls */}
+            <line x1="20" y1="36" x2="300" y2="36" stroke="#fb7185" strokeWidth="2.2" />
+            <line x1="20" y1="116" x2="300" y2="116" stroke="#fb7185" strokeWidth="2.2" />
+            {/* Target Clot Cluster */}
+            <circle cx="242" cy="64" r="15" fill="#f59e0b" fillOpacity="0.35" stroke="#fbbf24" strokeWidth="1.8" className="holo-ring-pulse" />
+            <circle cx="254" cy="74" r="10" fill="#f59e0b" fillOpacity="0.45" stroke="#fbbf24" strokeWidth="1.4" />
+            {/* Red Blood Cells */}
+            <ellipse cx="74" cy="86" rx="10" ry="5" fill="#e11d48" fillOpacity="0.7" />
+            <ellipse cx="136" cy="54" rx="10" ry="5" fill="#e11d48" fillOpacity="0.7" />
+            <ellipse cx="182" cy="94" rx="10" ry="5" fill="#e11d48" fillOpacity="0.7" />
+            {/* Autonomous Nanobots */}
+            {[
+              [62, 58], [98, 68], [156, 72], [198, 62], [212, 76]
+            ].map(([bx, by], i) => (
+              <g key={i}>
+                <polygon points={`${bx},${by - 4} ${bx + 9},${by} ${bx},${by + 4}`} fill="#22d3ee" />
+                <line x1={bx + 9} y1={by} x2="236" y2="66" stroke="#22d3ee" strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 2" />
+              </g>
+            ))}
+            <text x="20" y="138" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+              BOIDS SWARM AI · NAVIER-STOKES ARTERY
+            </text>
+          </g>
+        );
+
+      case 'timemachine_holo_3d':
+        return (
+          <g>
+            {/* Hologram Rings */}
+            <ellipse cx="160" cy="112" rx="88" ry="14" fill="#6366f1" fillOpacity="0.16" stroke="#818cf8" strokeWidth="1.8" />
+            <line x1="94" y1="110" x2="112" y2="34" stroke="#38bdf8" strokeOpacity="0.35" strokeWidth="1.2" />
+            <line x1="226" y1="110" x2="208" y2="34" stroke="#38bdf8" strokeOpacity="0.35" strokeWidth="1.2" />
+            {/* 3 Enigma Rotors Silhouette */}
+            {[120, 160, 200].map((rx) => (
+              <rect key={rx} x={rx - 12} y="48" width="24" height="44" rx="4" fill="#1e293b" stroke="#fbbf24" strokeWidth="1.8" />
+            ))}
+            <circle cx="160" cy="30" r="7" fill="#38bdf8" className="holo-ring-pulse" />
+            <text x="20" y="138" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+              1940 ENIGMA · 1801 SLIT · 1609 GALILEO
+            </text>
+          </g>
+        );
+
       default:
         return null;
     }

@@ -1003,7 +1003,11 @@ export type FutureLabTabId =
   | 'rocket_launch_3d'
   | 'jet_engine_3d'
   | 'four_d_lectures'
-  | 'robotics_ik_3d';
+  | 'robotics_ik_3d'
+  | 'quantum_holodeck_3d'
+  | 'universe_forge_3d'
+  | 'nanobot_bioswarm_4d'
+  | 'timemachine_holo_3d';
 
 export type PaperSimKind =
   | 'parabola'

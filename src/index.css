@@ -57,17 +57,23 @@
     font-family: var(--font-mono);
   }
 
-  html[data-font-preset='pixel_determination'] body {
+  html[data-font-preset^='pixel_'] body {
     letter-spacing: 0.02em;
     line-height: 1.55;
   }
 
-  html[data-font-preset='pixel_determination'] h1,
-  html[data-font-preset='pixel_determination'] h2,
-  html[data-font-preset='pixel_determination'] h3,
-  html[data-font-preset='pixel_determination'] .font-display {
+  html[data-font-preset^='pixel_'] h1,
+  html[data-font-preset^='pixel_'] h2,
+  html[data-font-preset^='pixel_'] h3,
+  html[data-font-preset^='pixel_'] .font-display {
     letter-spacing: 0.015em;
     font-weight: 600;
+  }
+
+  html[data-font-preset='pixel_arcade'] h1,
+  html[data-font-preset='pixel_arcade'] h2 {
+    letter-spacing: 0.03em;
+    line-height: 1.38;
   }
 
   /* Tactile floating hover-lift & crisp architectural square-ish buttons (6px crisp corner) */

@@ -31,7 +31,12 @@ export type FontPresetId =
   | 'editorial_serif'
   | 'friendly_nunito'
   | 'stem_mono'
-  | 'pixel_determination';
+  | 'pixel_determination'
+  | 'pixel_pixelify'
+  | 'pixel_silkscreen'
+  | 'pixel_arcade'
+  | 'pixel_dotmatrix'
+  | 'pixel_jersey';
 
 export type ColorPaletteId =
   | 'ocean_sky'
@@ -133,8 +138,48 @@ export const FONT_PRESET_OPTIONS: FontPresetOption[] = [
     labelVi: 'SVN Determination Sans (Pixel)',
     labelEn: 'SVN Determination Sans (Pixel)',
     sampleText: 'Aa Bb · Pixel 8-bit',
-    displayFont: "'SVN Determination Sans', 'VT323', 'Tiny5', monospace",
-    sansFont: "'SVN Determination Sans', 'VT323', 'Be Vietnam Pro', system-ui, sans-serif"
+    displayFont: "'SVN Determination Sans', 'Pixelify Sans', 'VT323', monospace",
+    sansFont: "'SVN Determination Sans', 'Pixelify Sans', 'Be Vietnam Pro', system-ui, sans-serif"
+  },
+  {
+    id: 'pixel_pixelify',
+    labelVi: 'Pixelify Sans (Pixel Việt)',
+    labelEn: 'Pixelify Sans (Modern Pixel)',
+    sampleText: 'Synapse · Toán Lí',
+    displayFont: "'Pixelify Sans', 'SVN Determination Sans', monospace",
+    sansFont: "'Pixelify Sans', 'Be Vietnam Pro', system-ui, sans-serif"
+  },
+  {
+    id: 'pixel_silkscreen',
+    labelVi: 'Silkscreen (Pixel Kỹ thuật)',
+    labelEn: 'Silkscreen (Tech Pixel)',
+    sampleText: 'LAB 3D · v2030',
+    displayFont: "'Silkscreen', 'Pixelify Sans', monospace",
+    sansFont: "'Silkscreen', 'Pixelify Sans', 'Be Vietnam Pro', sans-serif"
+  },
+  {
+    id: 'pixel_arcade',
+    labelVi: 'Press Start 2P (Arcade 8-bit)',
+    labelEn: 'Press Start 2P (8-bit Arcade)',
+    sampleText: 'START 3D!',
+    displayFont: "'Press Start 2P', 'Pixelify Sans', monospace",
+    sansFont: "'Pixelify Sans', 'Silkscreen', 'Be Vietnam Pro', sans-serif"
+  },
+  {
+    id: 'pixel_dotmatrix',
+    labelVi: 'DotGothic16 (Ma trận Sci-Fi)',
+    labelEn: 'DotGothic16 (Dot Matrix)',
+    sampleText: 'Matrix · 1010',
+    displayFont: "'DotGothic16', 'Pixelify Sans', monospace",
+    sansFont: "'DotGothic16', 'Be Vietnam Pro', system-ui, sans-serif"
+  },
+  {
+    id: 'pixel_jersey',
+    labelVi: 'Jersey 15 (Retro Display)',
+    labelEn: 'Jersey 15 (Retro Pixel)',
+    sampleText: 'STEM 3D · 9–12',
+    displayFont: "'Jersey 15', 'Pixelify Sans', monospace",
+    sansFont: "'Pixelify Sans', 'Be Vietnam Pro', system-ui, sans-serif"
   }
 ];
 
@@ -541,7 +586,12 @@ const VALID_FONT_PRESETS: FontPresetId[] = [
   'editorial_serif',
   'friendly_nunito',
   'stem_mono',
-  'pixel_determination'
+  'pixel_determination',
+  'pixel_pixelify',
+  'pixel_silkscreen',
+  'pixel_arcade',
+  'pixel_dotmatrix',
+  'pixel_jersey'
 ];
 
 const VALID_COLOR_PALETTES: ColorPaletteId[] = [

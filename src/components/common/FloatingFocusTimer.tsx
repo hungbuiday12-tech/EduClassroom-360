@@ -26,6 +26,7 @@ import {
 import { useFocusTimer, STUDY_FORMAT_PRESETS } from '../../context/FocusTimerContext';
 import { useAudio } from '../../context/AudioContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNavigation } from '../../context/NavigationContext';
 import { BELL_SOUND_OPTIONS, BG_SOUND_OPTIONS, BellSoundId, BgSoundId } from '../../lib/soundEngine';
 import { useDraggableWidget } from '../../hooks/useDraggableWidget';
 import { InfiniteStemCanvas } from '../future/InfiniteStemCanvas';
@@ -64,6 +65,13 @@ function formatClock(secs: number): string {
 }
 
 export const FloatingFocusTimer: React.FC = () => {
+  const { location } = useNavigation();
+  const isMobileSimOrExamRoute =
+    ['math_sims', 'physics_sims', 'cs_sims', 'synapse_v2', 'future_lab', 'spatial_3d', 'exams', 'arena'].includes(
+      location.subject
+    ) ||
+    (location.subject === 'physics' && location.physicsView !== 'catalog') ||
+    (location.subject === 'cs' && location.csViewMode === 'visualizer');
   const { language } = useLanguage();
   const isEn = language === 'en';
   const {
@@ -373,9 +381,11 @@ export const FloatingFocusTimer: React.FC = () => {
         ref={containerRef}
         style={position ? { left: `${position.x}px`, top: `${position.y}px` } : undefined}
         className={`fixed z-[85] ${
+          isMobileSimOrExamRoute ? 'hidden lg:block' : ''
+        } ${
           position
             ? ''
-            : 'bottom-3 left-3 sm:bottom-5 sm:left-5 lg:left-[calc(var(--sidebar-w,248px)+16px)] transition-[left] duration-200'
+            : 'bottom-[74px] left-3 sm:left-4 lg:bottom-5 lg:left-[calc(var(--sidebar-w,248px)+16px)] transition-[left] duration-200'
         }`}
       >
         {/* Combined Mini-Chat Drawer (Focus Studio OR Bảng Nháp STEM) */}
@@ -387,9 +397,9 @@ export const FloatingFocusTimer: React.FC = () => {
               isRightHalf ? 'right-0' : 'left-0'
             } ${
               dockMode === 'scratchpad'
-                ? 'w-[336px] sm:w-[392px]'
-                : 'w-[312px] sm:w-[344px]'
-            } max-w-[calc(100vw-24px)] rounded-md bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-300 dark:border-slate-700 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.58)] overflow-hidden text-xs`}
+                ? 'w-[min(392px,calc(100vw-24px))]'
+                : 'w-[min(344px,calc(100vw-24px))]'
+            } rounded-md bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-300 dark:border-slate-700 shadow-[0_24px_60px_-14px_rgba(15,23,42,0.58)] overflow-hidden text-xs`}
           >
             {/* Shared Header with Instant Mode Switcher */}
             <div className="px-3 py-2.5 bg-slate-900 border-b border-slate-800 text-white flex items-center justify-between gap-2">

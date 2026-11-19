@@ -220,7 +220,7 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
       </button>
 
       {isOpen && (
-        <div className="sci-frame syn-top-laser absolute right-0 top-full mt-2 z-50 w-[305px] sm:w-[355px] bg-slate-950/96 border border-cyan-500/50 rounded-lg shadow-2xl p-3 text-slate-100 space-y-2.5">
+        <div className="sci-frame syn-top-laser absolute right-0 top-full mt-2 z-50 w-[min(355px,calc(100vw-24px))] max-h-[68dvh] overflow-y-auto bg-slate-950/96 border border-cyan-500/50 rounded-lg shadow-2xl p-3 text-slate-100 space-y-2.5">
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800">
             <div className="flex items-center gap-2 min-w-0">
               <Cpu className="w-4 h-4 text-cyan-400 shrink-0" />

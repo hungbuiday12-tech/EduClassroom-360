@@ -84,10 +84,10 @@ const Numeric3DControl: React.FC<Numeric3DControlProps> = ({
           <button
             type="button"
             onClick={() => onChange(Number((value - step).toFixed(4)))}
-            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+            className="w-9 h-9 md:w-7 md:h-7 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
             title={`Giảm ${step}`}
           >
-            <Minus className="w-3 h-3" />
+            <Minus className="w-3.5 h-3.5" />
           </button>
           <input
             type="number"
@@ -102,15 +102,15 @@ const Numeric3DControl: React.FC<Numeric3DControlProps> = ({
               setDraft(String(value));
             }}
             onChange={(e) => handleText(e.target.value)}
-            className="w-16 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 focus:border-amber-500 text-right font-mono font-bold text-white text-xs outline-none"
+            className="w-16 min-h-[36px] md:min-h-0 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 focus:border-amber-500 text-right font-mono font-bold text-white text-xs outline-none"
           />
           <button
             type="button"
             onClick={() => onChange(Number((value + step).toFixed(4)))}
-            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+            className="w-9 h-9 md:w-7 md:h-7 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
             title={`Tăng ${step}`}
           >
-            <Plus className="w-3 h-3" />
+            <Plus className="w-3.5 h-3.5" />
           </button>
           <span className="text-[11px] text-slate-400 font-mono min-w-[28px]">{unit}</span>
         </div>
@@ -1821,9 +1821,9 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
             </span>
           </div>
 
-          <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
+          <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full overflow-x-auto lg:overflow-visible scrollbar-none pb-0.5 lg:pb-0">
             {/* Domain-scoped Mode Switcher Buttons */}
-            <div className="sim-seg-box flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-[4px] shadow-lg overflow-x-auto max-w-full scrollbar-none">
+            <div className="sim-seg-box flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-[4px] shadow-lg overflow-x-auto max-w-[68vw] sm:max-w-full scrollbar-none shrink-0">
               {visibleModeTabs.map((m) => (
                 <button
                   key={m.id}
@@ -1831,7 +1831,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
                     setMode(m.id);
                     onSelectMode?.(m.id);
                   }}
-                  className={`sim-btn-phy px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`sim-btn-phy min-h-[34px] px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
                     mode === m.id
                       ? 'sim-btn-active bg-amber-600 border-amber-300/70 text-white shadow-sm'
                       : 'border-transparent text-slate-300 hover:text-white'

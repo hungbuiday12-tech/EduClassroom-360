@@ -1941,7 +1941,7 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
         {/* Free Construction Active Tool Palette Banner */}
         {studioMode === 'free_construction' && (
           <div className="flex flex-wrap items-center justify-between px-3 sm:px-4 py-2 border-b border-slate-200/60 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/40 gap-2">
-            <div className="flex sm:flex-wrap items-center gap-1.5 overflow-x-auto sm:overflow-visible scrollbar-none pb-0.5 sm:pb-0 max-w-full [&>button]:whitespace-nowrap [&>button]:shrink-0">
+            <div className="flex sm:flex-wrap items-center gap-1.5 overflow-x-auto sm:overflow-visible scrollbar-none pb-0.5 sm:pb-0 max-w-full [&>button]:whitespace-nowrap [&>button]:shrink-0 [&>button]:min-h-[38px]">
               <button
                 onClick={() => setActiveTool('select')}
                 className={`sim-btn-math flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-[3px] border cursor-pointer ${

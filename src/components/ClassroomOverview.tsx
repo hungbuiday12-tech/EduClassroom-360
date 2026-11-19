@@ -42,7 +42,9 @@ import {
   Waves,
   Mic,
   Building2,
-  PenTool
+  PenTool,
+  LineChart,
+  Binary
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -399,12 +401,12 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           </p>
 
           {/* Primary Action Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-3.5 pt-1">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center gap-2.5 sm:gap-3.5 pt-1">
             <button
               type="button"
               data-ripple="true"
               onClick={() => scrollToLectureDirectory('all')}
-              className="group cs-deck-btn min-h-[50px] px-7 py-3.5 rounded bg-accent-solid text-sm sm:text-base font-semibold shadow-lg flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
+              className="group cs-deck-btn min-h-[48px] px-5 sm:px-7 py-3 rounded bg-accent-solid text-sm sm:text-base font-semibold shadow-lg flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
             >
               <BookOpen className="w-5 h-5 icon-anim-book shrink-0" />
               <span>
@@ -417,7 +419,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               type="button"
               data-ripple="true"
               onClick={() => onNavigate('physics_sims')}
-              className="group cs-deck-btn min-h-[50px] px-7 py-3.5 rounded bg-white/60 dark:bg-slate-900/50 backdrop-blur-md border border-slate-300/75 dark:border-white/20 hover:border-sky-400 text-slate-900 dark:text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
+              className="group cs-deck-btn min-h-[48px] px-5 sm:px-7 py-3 rounded bg-white/60 dark:bg-slate-900/50 backdrop-blur-md border border-slate-300/75 dark:border-white/20 hover:border-sky-400 text-slate-900 dark:text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
             >
               <Atom className="w-5 h-5 text-amber-500 dark:text-amber-300 icon-anim-atom shrink-0" />
               <span>{isEn ? 'Open 2D/3D Simulations' : 'Mở Phòng Mô phỏng 2D/3D'}</span>
@@ -434,7 +436,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   .then((m) => m.downloadSynapsePresentationDocx())
                   .finally(() => setDownloadingDocx(false));
               }}
-              className="group cs-deck-btn min-h-[50px] px-6 py-3.5 rounded bg-emerald-600/95 hover:bg-emerald-500 disabled:opacity-70 border border-emerald-400/70 text-white text-sm sm:text-base font-semibold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
+              className="group cs-deck-btn min-h-[48px] px-5 sm:px-6 py-3 rounded bg-emerald-600/95 hover:bg-emerald-500 disabled:opacity-70 border border-emerald-400/70 text-white text-sm sm:text-base font-semibold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
             >
               <Download className={`w-4 h-4 shrink-0 ${downloadingDocx ? 'animate-bounce' : ''}`} />
               <span>
@@ -447,6 +449,108 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   : 'Tải Thuyết Minh (.docx)'}
               </span>
             </button>
+          </div>
+
+          {/* Mobile & iPad Quick 1-Tap Simulation Launcher (< lg) */}
+          <div className="lg:hidden pt-1 text-left">
+            <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2 flex items-center justify-between">
+              <span>
+                {isEn
+                  ? 'Quick Simulation Launch (2D / 3D / AR)'
+                  : 'Truy cập nhanh Phòng Mô Phỏng 2D / 3D / AR'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => onNavigate('math_sims')}
+                className="min-h-[48px] flex items-center gap-2.5 p-2.5 rounded-[4px] bg-white/85 dark:bg-slate-900/85 border border-blue-500/35 hover:border-blue-400 text-left shadow-xs cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-[4px] bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <LineChart className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                    {isEn ? 'Math 2D/3D' : 'Toán 2D & Oxyz'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    {isEn ? 'Grapher & 3D' : 'Đồ thị & Hình học'}
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigate('physics_sims')}
+                className="min-h-[48px] flex items-center gap-2.5 p-2.5 rounded-[4px] bg-white/85 dark:bg-slate-900/85 border border-amber-500/35 hover:border-amber-400 text-left shadow-xs cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-[4px] bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Atom className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                    {isEn ? 'Physics 2D/3D' : 'Vật lí 2D & 3D'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    {isEn ? '10 Domains' : '10 Lĩnh vực'}
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigate('cs_sims')}
+                className="min-h-[48px] flex items-center gap-2.5 p-2.5 rounded-[4px] bg-white/85 dark:bg-slate-900/85 border border-emerald-500/35 hover:border-emerald-400 text-left shadow-xs cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-[4px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <Binary className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                    {isEn ? 'Code 2D/3D' : 'Code 2D & 3D'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    {isEn ? '16 2D + 5 3D' : '16 Thuật toán'}
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigate('synapse_v2')}
+                className="min-h-[48px] flex items-center gap-2.5 p-2.5 rounded-[4px] bg-white/85 dark:bg-slate-900/85 border border-cyan-500/35 hover:border-cyan-400 text-left shadow-xs cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-[4px] bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                  <Orbit className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                    Synapse Pre
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    {isEn ? '30 3D/4D Labs' : '30 Lab 3D/4D'}
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigate('spatial_3d')}
+                className="min-h-[48px] col-span-2 sm:col-span-1 flex items-center gap-2.5 p-2.5 rounded-[4px] bg-white/85 dark:bg-slate-900/85 border border-teal-500/35 hover:border-teal-400 text-left shadow-xs cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-[4px] bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+                  <Hand className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                    {isEn ? 'Spatial 3D & AR' : 'Cảm Giác 3D & AR'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    {isEn ? 'Hand & Scan 3D' : 'Quét vật & Tay'}
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
 
           {/* Prominent 3-Tier Graphics Setup Button + Live Appearance Studio Bar */}

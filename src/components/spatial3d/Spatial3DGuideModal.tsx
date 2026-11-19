@@ -87,13 +87,13 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
       aria-modal="true"
       aria-label={isEn ? '3D Spatial Studio Usage Guide' : 'Hướng dẫn sử dụng Không gian 3D'}
     >
-      <div data-modal-shell="true" className="spatial-holo-card spatial-step-reveal w-full max-w-4xl shadow-2xl">
+      <div data-modal-shell="true" className="spatial-holo-card spatial-step-reveal w-full max-w-4xl max-h-[92dvh] flex flex-col shadow-2xl">
         <div className="spatial-holo-ring" />
-        <div className="relative z-10 rounded-[9px] bg-[#060b18] border border-sky-500/35 overflow-hidden">
+        <div className="relative z-10 flex flex-col max-h-[92dvh] rounded-[9px] bg-[#060b18] border border-sky-500/35 overflow-hidden">
           <div className="spatial-laser-sweep" />
 
           {/* Modal Header */}
-          <div className="relative flex items-start sm:items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-slate-800 bg-slate-950/90">
+          <div className="relative shrink-0 flex items-start sm:items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-sky-500/15 border border-sky-400/50 flex items-center justify-center text-sky-300 shrink-0">
                 <Box className="w-5 h-5" />
@@ -122,7 +122,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
           </div>
 
           {/* Instant Grab Safety Highlight */}
-          <div className="px-4 sm:px-6 py-2.5 bg-sky-950/55 border-b border-sky-500/30 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="shrink-0 px-4 sm:px-6 py-2 bg-sky-950/55 border-b border-sky-500/30 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs">
             <div className="flex items-center gap-2 text-sky-200 font-semibold">
               <Clock className="w-4 h-4 text-amber-300 shrink-0" />
               <span>
@@ -134,7 +134,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
           </div>
 
           {/* Tabs */}
-          <div className="px-4 sm:px-6 pt-3 flex flex-wrap items-center gap-2 border-b border-slate-800/80 pb-3 bg-slate-950/60">
+          <div className="shrink-0 px-4 sm:px-6 pt-2.5 flex flex-nowrap sm:flex-wrap items-center gap-2 overflow-x-auto scrollbar-none border-b border-slate-800/80 pb-2.5 bg-slate-950/60">
             {(
               [
                 {
@@ -164,13 +164,13 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
                   key={t.id}
                   type="button"
                   onClick={() => setActiveTab(t.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-bold cursor-pointer transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
                     active
                       ? 'bg-sky-500 text-slate-950 border-sky-300'
                       : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-sky-400'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
                   <span>{isEn ? t.labelEn : t.labelVi}</span>
                 </button>
               );
@@ -178,7 +178,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
           </div>
 
           {/* Body Content */}
-          <div className="p-4 sm:p-6 max-h-[54vh] overflow-y-auto space-y-3">
+          <div className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto space-y-3">
             {activeTab === 'workflow' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {steps3D.map((s, idx) => (
@@ -297,7 +297,7 @@ export const Spatial3DGuideModal: React.FC<Spatial3DGuideModalProps> = ({
           </div>
 
           {/* Footer Action Row */}
-          <div className="px-4 sm:px-6 py-3.5 border-t border-slate-800 bg-slate-950/95 flex flex-wrap items-center justify-between gap-3">
+          <div className="shrink-0 px-4 sm:px-6 py-3 border-t border-slate-800 bg-slate-950/95 flex flex-wrap items-center justify-between gap-2.5">
             <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
               <input
                 type="checkbox"

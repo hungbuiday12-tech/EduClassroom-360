@@ -1616,7 +1616,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
 
           {/* Filter & Search Bar */}
           <div className="relative z-10 mt-6 pt-5 border-t border-emerald-400/20 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-2 scrollbar-none pb-1 sm:pb-0 max-w-full">
               {CATEGORY_TABS.map((cat) => {
                 const selected = category === cat.id;
                 return (
@@ -1624,7 +1624,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     key={cat.id}
                     type="button"
                     onClick={() => setCategory(cat.id)}
-                    className={`group cs-deck-btn px-3.5 py-2 rounded-md text-xs font-bold whitespace-nowrap cursor-pointer border transition-all ${
+                    className={`group cs-deck-btn min-h-[38px] px-3.5 py-2 rounded-md text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer border transition-all ${
                       selected
                         ? 'bg-gradient-to-r from-emerald-500 to-sky-500 text-slate-950 border-emerald-200 shadow-[0_8px_20px_-4px_rgba(16,185,129,0.55)]'
                         : 'bg-slate-900/75 text-slate-200 border-emerald-500/25 hover:bg-emerald-950/60 hover:text-white hover:border-emerald-400/60'
@@ -1904,20 +1904,20 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
             <span className="pointer-events-none absolute bottom-2.5 left-2.5 w-3.5 h-3.5 border-b-2 border-l-2 border-cyan-400/65 rounded-bl-xs" />
             <span className="pointer-events-none absolute bottom-2.5 right-2.5 w-3.5 h-3.5 border-b-2 border-r-2 border-emerald-400/65 rounded-br-xs" />
 
-            <div className="relative z-10">{renderVisualStage()}</div>
+            <div className="relative z-10 overflow-x-auto max-w-full scrollbar-none">{renderVisualStage()}</div>
 
             <div className="relative z-10 mt-3 pt-2 border-t border-cyan-500/15 flex items-center justify-between font-mono text-[10px] text-slate-400">
-              <span className="text-emerald-300/85 font-bold">
+              <span className="text-emerald-300/85 font-bold truncate">
                 {activePalette.codeTag} · INTERACTIVE TRACE STAGE
               </span>
-              <span className="text-cyan-300/85 tabular-nums">{currentMeta.complexity}</span>
+              <span className="text-cyan-300/85 tabular-nums shrink-0">{currentMeta.complexity}</span>
             </div>
           </div>
 
           {/* Cyber Playback Scrubber Bar */}
           <div className="rounded-2xl p-3.5 bg-[#061121] border border-cyan-500/25 text-white shadow-xs space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap max-w-full scrollbar-none">
                 <button
                   type="button"
                   onClick={() => {
@@ -1925,7 +1925,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     setStepIdx(0);
                   }}
                   title="Về bước đầu"
-                  className="p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 hover:border-emerald-400/60 hover:text-white cursor-pointer"
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 hover:border-emerald-400/60 hover:text-white shrink-0 cursor-pointer"
                 >
                   <ChevronFirst className="w-4 h-4" />
                 </button>
@@ -1937,7 +1937,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   }}
                   disabled={stepIdx <= 0}
                   title="Lùi 1 bước"
-                  className="p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 disabled:opacity-35 hover:border-emerald-400/60 hover:text-white cursor-pointer"
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 disabled:opacity-35 hover:border-emerald-400/60 hover:text-white shrink-0 cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -1947,7 +1947,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                     if (stepIdx >= steps.length - 1) setStepIdx(0);
                     setIsPlaying((p) => !p);
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-xs font-extrabold shadow-[0_8px_24px_-4px_rgba(16,185,129,0.55)] transition-all cursor-pointer"
+                  className="min-h-[40px] flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-xs font-extrabold shadow-[0_8px_24px_-4px_rgba(16,185,129,0.55)] transition-all shrink-0 whitespace-nowrap cursor-pointer"
                 >
                   {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   <span>{isPlaying ? 'Tạm dừng' : stepIdx >= steps.length - 1 ? 'Chạy lại' : 'Chạy tự động'}</span>
@@ -1960,7 +1960,7 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                   }}
                   disabled={stepIdx >= steps.length - 1}
                   title="Tiến 1 bước"
-                  className="p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 disabled:opacity-35 hover:border-emerald-400/60 hover:text-white cursor-pointer"
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-lg border border-cyan-500/25 bg-[#020710] text-cyan-200 disabled:opacity-35 hover:border-emerald-400/60 hover:text-white shrink-0 cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>

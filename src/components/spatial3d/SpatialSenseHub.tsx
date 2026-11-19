@@ -136,14 +136,14 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="w-full lg:w-auto flex flex-nowrap sm:flex-wrap items-center gap-2 overflow-x-auto sm:overflow-visible scrollbar-none pb-0.5 sm:pb-0">
             {onOpenRealScanner && (
               <button
                 type="button"
                 onClick={onOpenRealScanner}
-                className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/60 text-xs font-extrabold text-cyan-200 cursor-pointer"
+                className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-md bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/60 text-xs font-extrabold text-cyan-200 cursor-pointer whitespace-nowrap shrink-0"
               >
-                <Scan className="w-3.5 h-3.5" />
+                <Scan className="w-3.5 h-3.5 shrink-0" />
                 <span>
                   {isEn ? 'Scan Real Object → 3D' : 'Quét Thực Tế → 3D'}
                 </span>
@@ -153,9 +153,9 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
               <button
                 type="button"
                 onClick={onOpenAICreator}
-                className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/60 text-xs font-extrabold text-purple-200 cursor-pointer"
+                className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-md bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/60 text-xs font-extrabold text-purple-200 cursor-pointer whitespace-nowrap shrink-0"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
                 <span>
                   {isEn
                     ? `AI Create Model (${savedCustomCount})`
@@ -166,27 +166,27 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
             <button
               type="button"
               onClick={onLaunch2D}
-              className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-slate-900 hover:bg-emerald-950/60 border border-emerald-500/50 text-xs font-extrabold text-emerald-300 cursor-pointer"
+              className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-md bg-slate-900 hover:bg-emerald-950/60 border border-emerald-500/50 text-xs font-extrabold text-emerald-300 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <Compass className="w-3.5 h-3.5" />
+              <Compass className="w-3.5 h-3.5 shrink-0" />
               <span>{isEn ? 'Open 2D Space' : 'Vào Không Gian 2D'}</span>
             </button>
             <button
               type="button"
               onClick={onLaunch3D}
-              className="cs-deck-btn flex items-center gap-1.5 px-4 py-2 rounded-md bg-sky-500 hover:bg-sky-400 border border-sky-300 text-xs font-extrabold text-slate-950 cursor-pointer"
+              className="cs-deck-btn flex items-center gap-1.5 px-4 py-2 min-h-[38px] rounded-md bg-sky-500 hover:bg-sky-400 border border-sky-300 text-xs font-extrabold text-slate-950 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <Box className="w-3.5 h-3.5" />
+              <Box className="w-3.5 h-3.5 shrink-0" />
               <span>{isEn ? 'Open 3D Space' : 'Vào Không Gian 3D'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </button>
             {onOpenCoop && (
               <button
                 type="button"
                 onClick={onOpenCoop}
-                className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/60 text-xs font-extrabold text-emerald-200 cursor-pointer"
+                className="cs-deck-btn flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-md bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/60 text-xs font-extrabold text-emerald-200 cursor-pointer whitespace-nowrap shrink-0"
               >
-                <Users className="w-3.5 h-3.5" />
+                <Users className="w-3.5 h-3.5 shrink-0" />
                 <span>{isEn ? 'Co-op Hands (2–4)' : 'Bàn Tay Bạn Học (2–4)'}</span>
               </button>
             )}

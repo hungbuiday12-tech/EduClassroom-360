@@ -1387,8 +1387,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
         {/* Grade Group + Track Selector */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-slate-200/80 dark:border-slate-800 relative z-10">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">
+          <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 max-w-full scrollbar-none pb-0.5 sm:pb-0">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1 shrink-0">
               {isEn ? 'Grade:' : 'Khối lớp:'}
             </span>
             {(
@@ -1406,7 +1406,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   key={g.id}
                   type="button"
                   onClick={() => handleSelectGradeAndTrack(g.id)}
-                  className={`arena-btn cs-deck-btn px-3.5 py-2 rounded-md text-xs font-bold border cursor-pointer ${
+                  className={`arena-btn cs-deck-btn min-h-[38px] px-3.5 py-2 rounded-md text-xs font-bold border whitespace-nowrap shrink-0 cursor-pointer ${
                     active
                       ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
                       : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
@@ -1419,7 +1419,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
           </div>
 
           {divisionMeta.gradeGroup !== 'olp' ? (
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md self-start lg:self-auto">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md w-full sm:w-auto overflow-x-auto scrollbar-none">
               {(
                 [
                   { id: 'khong_chuyen', vi: 'Hệ Không Chuyên (Chuẩn)', en: 'Standard Track' },
@@ -1432,7 +1432,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     key={t.id}
                     type="button"
                     onClick={() => handleSelectGradeAndTrack(divisionMeta.gradeGroup, t.id)}
-                    className={`arena-btn px-3 py-1.5 rounded-sm text-xs font-bold cursor-pointer whitespace-nowrap border ${
+                    className={`arena-btn min-h-[36px] flex-1 sm:flex-initial px-3 py-1.5 rounded-sm text-xs font-bold cursor-pointer whitespace-nowrap shrink-0 border ${
                       active
                         ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-indigo-600 dark:text-indigo-300 shadow-xs'
                         : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'

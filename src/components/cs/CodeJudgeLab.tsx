@@ -1679,10 +1679,10 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               </div>
 
               {/* 4 Lesson Room Sub-tabs */}
-              <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100/90 dark:bg-slate-950/80 rounded-md border border-slate-200 dark:border-slate-800 shrink-0">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 p-1.5 bg-slate-100/90 dark:bg-slate-950/80 rounded-md border border-slate-200 dark:border-slate-800 shrink-0">
                 <button
                   onClick={() => navigate({ csLessonTab: 'lecture' })}
-                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
+                  className={`group cs-deck-btn min-h-[40px] flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-[4px] text-[11px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'lecture'
                       ? 'text-white shadow-md shadow-blue-500/30'
                       : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 hover:text-blue-600 dark:hover:text-blue-300'
@@ -1695,12 +1695,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-blue-600 to-indigo-600 z-0"
                     />
                   )}
-                  <BookOpen className="relative z-10 w-4 h-4 icon-anim-book" />
-                  <span className="relative z-10">{t('', '1. Bài Giảng Chi Tiết', '1. Detailed Lecture')}</span>
+                  <BookOpen className="relative z-10 w-4 h-4 icon-anim-book shrink-0" />
+                  <span className="relative z-10 truncate">{t('', '1. Bài Giảng', '1. Lecture')}</span>
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'code' })}
-                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
+                  className={`group cs-deck-btn min-h-[40px] flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-[4px] text-[11px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'code'
                       ? 'text-white shadow-md shadow-emerald-500/30'
                       : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 hover:text-emerald-600 dark:hover:text-emerald-300'
@@ -1713,12 +1713,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-emerald-600 to-teal-600 z-0"
                     />
                   )}
-                  <Code2 className="relative z-10 w-4 h-4 icon-anim-code" />
-                  <span className="relative z-10">2. Code Mẫu C++ / Python</span>
+                  <Code2 className="relative z-10 w-4 h-4 icon-anim-code shrink-0" />
+                  <span className="relative z-10 truncate">2. Code C++ / Py</span>
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'practice' })}
-                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
+                  className={`group cs-deck-btn min-h-[40px] flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-[4px] text-[11px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'practice'
                       ? 'text-white shadow-md shadow-amber-500/30'
                       : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 hover:text-amber-600 dark:hover:text-amber-300'
@@ -1731,12 +1731,12 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-amber-600 to-orange-500 z-0"
                     />
                   )}
-                  <Award className="relative z-10 w-4 h-4 icon-anim-award" />
-                  <span className="relative z-10">3. Bài Tập &amp; Chấm Code</span>
+                  <Award className="relative z-10 w-4 h-4 icon-anim-award shrink-0" />
+                  <span className="relative z-10 truncate">3. Chấm Code</span>
                 </button>
                 <button
                   onClick={() => navigate({ csLessonTab: 'visualizer' })}
-                  className={`group cs-deck-btn flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
+                  className={`group cs-deck-btn min-h-[40px] flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-[4px] text-[11px] sm:text-[13px] font-bold whitespace-nowrap cursor-pointer ${
                     lessonTab === 'visualizer'
                       ? 'text-white shadow-md shadow-sky-500/30'
                       : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-800 hover:text-sky-600 dark:hover:text-sky-300'
@@ -1749,8 +1749,8 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
                       className="absolute inset-0 rounded-[4px] bg-gradient-to-r from-sky-500 to-cyan-600 z-0"
                     />
                   )}
-                  <GitBranch className="relative z-10 w-4 h-4 icon-anim-branch" />
-                  <span className="relative z-10">4. Mô Phỏng Trực Quan</span>
+                  <GitBranch className="relative z-10 w-4 h-4 icon-anim-branch shrink-0" />
+                  <span className="relative z-10 truncate">4. Mô Phỏng</span>
                 </button>
               </div>
             </div>

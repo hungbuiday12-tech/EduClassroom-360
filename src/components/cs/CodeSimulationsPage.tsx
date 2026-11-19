@@ -75,11 +75,11 @@ export const CodeSimulationsPage: React.FC<CodeSimulationsPageProps> = ({ onBack
           </div>
 
           {/* 2D / 3D Switcher Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/90 border border-slate-300/80 dark:border-slate-700 rounded-[4px] self-start lg:self-center">
+          <div className="flex flex-nowrap overflow-x-auto lg:overflow-visible items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/90 border border-slate-300/80 dark:border-slate-700 rounded-[4px] w-full lg:w-auto scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTab('viz2d')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap cursor-pointer ${
+              className={`min-h-[40px] flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
                 activeTab === 'viz2d'
                   ? 'bg-emerald-600 border-emerald-300/70 text-white shadow-sm'
                   : 'border-transparent text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700'
@@ -91,7 +91,7 @@ export const CodeSimulationsPage: React.FC<CodeSimulationsPageProps> = ({ onBack
             <button
               type="button"
               onClick={() => setActiveTab('viz3d')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap cursor-pointer ${
+              className={`min-h-[40px] flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
                 activeTab === 'viz3d'
                   ? 'bg-teal-600 border-teal-300/70 text-white shadow-sm'
                   : 'border-transparent text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700'

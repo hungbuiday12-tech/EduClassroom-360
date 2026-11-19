@@ -92,11 +92,11 @@ export const MathSimulationsPage: React.FC<MathSimulationsPageProps> = ({ onBack
           </div>
 
           {/* 3 Workspace Switcher Tabs */}
-          <div className="sim-seg-box flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/90 border border-slate-300/80 dark:border-slate-700 rounded-[4px] self-start lg:self-center">
+          <div className="sim-seg-box flex flex-nowrap overflow-x-auto lg:overflow-visible items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/90 border border-slate-300/80 dark:border-slate-700 rounded-[4px] w-full lg:w-auto scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTab('grapher')}
-              className={`group sim-btn-math sim-btn-hero flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap cursor-pointer ${
+              className={`group sim-btn-math sim-btn-hero min-h-[40px] flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
                 activeTab === 'grapher'
                   ? 'sim-btn-active bg-blue-600 border-sky-300/70 text-white shadow-sm'
                   : 'border-transparent text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700'
@@ -111,7 +111,7 @@ export const MathSimulationsPage: React.FC<MathSimulationsPageProps> = ({ onBack
             <button
               type="button"
               onClick={() => setActiveTab('geometry')}
-              className={`group sim-btn-math sim-btn-hero flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap cursor-pointer ${
+              className={`group sim-btn-math sim-btn-hero min-h-[40px] flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
                 activeTab === 'geometry'
                   ? 'sim-btn-active bg-emerald-600 border-emerald-300/70 text-white shadow-sm'
                   : 'border-transparent text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700'
@@ -126,7 +126,7 @@ export const MathSimulationsPage: React.FC<MathSimulationsPageProps> = ({ onBack
             <button
               type="button"
               onClick={() => setActiveTab('math3d')}
-              className={`group sim-btn-math sim-btn-hero flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap cursor-pointer ${
+              className={`group sim-btn-math sim-btn-hero min-h-[40px] flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
                 activeTab === 'math3d'
                   ? 'sim-btn-active bg-indigo-600 border-indigo-300/70 text-white shadow-sm'
                   : 'border-transparent text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700'

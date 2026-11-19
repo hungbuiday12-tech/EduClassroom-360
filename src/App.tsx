@@ -4,6 +4,7 @@ import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff, Fi
 import { SubjectType, TutorContextPayload } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
+import { MobileBottomNav } from './components/common/MobileBottomNav';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 import { WaterRippleLayer } from './components/common/WaterRippleLayer';
@@ -106,7 +107,9 @@ function MainApp() {
   isTutorOpenRef.current = isTutorOpen;
   const leftCtrlDownRef = useRef(false);
   const rightCtrlDownRef = useRef(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() =>
+    typeof window !== 'undefined' && window.innerWidth >= 1024 && window.innerWidth < 1280
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [isSynDockOpen, setIsSynDockOpen] = useState<boolean>(false);
   const [isArenaMatchActive, setIsArenaMatchActive] = useState<boolean>(false);
@@ -460,7 +463,7 @@ function MainApp() {
 
           {/* Right Main Workspace Column */}
           <div
-            className={`pre-main-col relative z-10 flex-1 min-w-0 flex flex-col transition-[padding] duration-200 ${
+            className={`pre-main-col relative z-10 flex-1 min-w-0 flex flex-col pb-16 lg:pb-0 transition-[padding] duration-200 ${
               sidebarCollapsed ? 'lg:pl-[78px]' : 'lg:pl-[272px]'
             }`}
           >
@@ -712,12 +715,20 @@ function MainApp() {
                   : undefined
               }
               className={`fixed z-[85] select-none ${
-                synWidget.position ? '' : 'bottom-3 right-3 sm:bottom-5 sm:right-5'
+                ['math_sims', 'physics_sims', 'cs_sims', 'synapse_v2', 'future_lab', 'spatial_3d', 'exams', 'arena'].includes(
+                  currentSubject
+                ) ||
+                (currentSubject === 'physics' && location.physicsView !== 'catalog') ||
+                (currentSubject === 'cs' && location.csViewMode === 'visualizer')
+                  ? 'hidden lg:block'
+                  : ''
+              } ${
+                synWidget.position ? '' : 'bottom-[74px] right-3 sm:right-4 lg:bottom-5 lg:right-5'
               }`}
             >
               {isSynDockOpen && (
                 <div
-                  className={`sci-frame syn-window-enter absolute w-[256px] rounded-md bg-slate-950/95 border border-cyan-500/45 shadow-[0_24px_60px_-14px_rgba(6,182,212,0.45)] backdrop-blur-xl overflow-hidden ${
+                  className={`sci-frame syn-window-enter absolute w-[min(256px,calc(100vw-24px))] rounded-md bg-slate-950/95 border border-cyan-500/45 shadow-[0_24px_60px_-14px_rgba(6,182,212,0.45)] backdrop-blur-xl overflow-hidden ${
                     synWidget.isBottomHalf ? 'bottom-full mb-2' : 'top-full mt-2'
                   } ${synWidget.isRightHalf ? 'right-0' : 'left-0'}`}
                 >
@@ -948,6 +959,23 @@ function MainApp() {
         <Suspense fallback={null}>
           <GraphicsTierModal />
         </Suspense>
+      )}
+      {(user || isGuestExploring) && !loading && (
+        <MobileBottomNav
+          currentSubject={currentSubject}
+          onSelectSubject={selectSubject}
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          onOpenTutor={(subj) => handleOpenTutor({ subject: subj || 'math' })}
+          isHidden={
+            isTutorOpen ||
+            currentSubject === 'spatial_3d' ||
+            location.futureTab === 'spatial_gesture_3d' ||
+            ((currentSubject === 'synapse_v2' || currentSubject === 'future_lab') &&
+              (!location.futureTab || location.futureTab === 'megastructures') &&
+              location.synapseMode === 'stage') ||
+            (currentSubject === 'arena' && isArenaMatchActive)
+          }
+        />
       )}
       <OfflineIndicator />
     </>

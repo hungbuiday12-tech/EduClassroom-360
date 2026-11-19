@@ -1290,35 +1290,12 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
         className={
           isFullscreen
             ? 'fixed inset-y-0 right-0 left-0 lg:left-[var(--sidebar-w,272px)] z-[45] bg-[#07102a] text-white flex flex-col overflow-hidden'
-            : 'relative z-10 w-full min-h-[700px] h-[calc(100vh-146px)] rounded-xl overflow-hidden border border-sky-400/50 bg-[#07102a] text-white shadow-[0_28px_90px_-14px_rgba(2,132,199,0.45)]'
+            : 'relative z-10 w-full flex flex-col lg:block lg:min-h-[680px] lg:h-[calc(100vh-146px)] rounded-xl overflow-hidden border border-sky-400/50 bg-[#07102a] text-white shadow-[0_28px_90px_-14px_rgba(2,132,199,0.45)]'
         }
       >
-        {/* Full-Viewport 3D Observatory Canvas */}
-        <div
-          ref={mountRef}
-          className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
-        />
-
-        {/* Fallback UI if WebGL Unavailable or Context Lost */}
-        {(webglError || contextLost) && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/95 p-6 text-center">
-            <div className="max-w-md space-y-3 rounded-xl border border-sky-500/40 bg-slate-900 p-6">
-              <Orbit className="w-10 h-10 text-sky-400 mx-auto" />
-              <h3 className="font-display text-lg font-bold text-white">
-                {isEn ? 'Reconnecting WebGL Observatory...' : 'Đang khôi phục Không gian 3D WebGL...'}
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {isEn
-                  ? 'Your graphics context paused momentarily. Return to the gallery or switch chambers to resume.'
-                  : 'Bộ tăng tốc đồ họa tạm ngắt kết nối. Quay lại danh sách hoặc đổi công trình để tiếp tục.'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* COMPACT SINGLE-ROW TOP HUD BAR (Zero viewport clutter, clear of sidebar) */}
-        <div className="relative z-20 pointer-events-none p-2.5 sm:p-3 flex flex-col gap-2">
-          <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-2 bg-slate-950/88 border border-white/15 rounded-xl px-2.5 py-1.5 shadow-xl">
+        {/* COMPACT TOP HUD BAR (Above canvas on < lg, floating overlay on lg+) */}
+        <div className="relative z-20 p-2 sm:p-2.5 lg:p-3 lg:pointer-events-none flex flex-col gap-2 shrink-0 bg-slate-950/90 lg:bg-transparent border-b border-white/10 lg:border-b-0">
+          <div className="pointer-events-auto flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 bg-slate-950/88 border border-white/15 rounded-xl px-2 sm:px-2.5 py-1.5 shadow-xl">
             {/* Left Cluster: Back + Prev/Next + Wonder Title + Toggleable Strip */}
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <button
@@ -1605,8 +1582,38 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
           )}
         </div>
 
+      {/* 3D Observatory Canvas (Dedicated unobstructed stage on < lg, full-bleed on lg+) */}
+      <div
+        className={
+          isFullscreen
+            ? 'relative flex-1 min-h-[260px] w-full'
+            : 'relative w-full h-[300px] sm:h-[390px] lg:absolute lg:inset-0 lg:h-full'
+        }
+      >
+        <div
+          ref={mountRef}
+          className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
+        />
+
+        {(webglError || contextLost) && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/95 p-6 text-center">
+            <div className="max-w-md space-y-3 rounded-xl border border-sky-500/40 bg-slate-900 p-6">
+              <Orbit className="w-10 h-10 text-sky-400 mx-auto" />
+              <h3 className="font-display text-lg font-bold text-white">
+                {isEn ? 'Reconnecting WebGL Observatory...' : 'Đang khôi phục Không gian 3D WebGL...'}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {isEn
+                  ? 'Your graphics context paused momentarily. Return to the gallery or switch chambers to resume.'
+                  : 'Bộ tăng tốc đồ họa tạm ngắt kết nối. Quay lại danh sách hoặc đổi công trình để tiếp tục.'}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* COLLAPSIBLE BOTTOM CONTROL & SCIENTIFIC TELEMETRY DOCK */}
-      <div className="absolute inset-x-0 bottom-0 z-20 p-3 sm:p-4 pointer-events-none flex flex-col items-center">
+      <div className="relative lg:absolute lg:inset-x-0 lg:bottom-0 z-20 p-2.5 sm:p-3.5 lg:p-4 lg:pointer-events-none flex flex-col items-center bg-slate-950/95 lg:bg-transparent border-t border-white/10 lg:border-t-0 shrink-0">
         {!isDockOpen ? (
           <button
             type="button"
@@ -1619,7 +1626,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             </span>
           </button>
         ) : (
-          <div className="pointer-events-auto w-full max-w-6xl rounded-xl bg-slate-950/94 border border-white/15 shadow-2xl p-4 sm:p-5 space-y-4">
+          <div className="pointer-events-auto w-full max-w-6xl rounded-xl bg-slate-950/94 border border-white/15 shadow-2xl p-3.5 sm:p-5 space-y-3 sm:space-y-4 max-h-[42dvh] lg:max-h-none overflow-y-auto">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-white/10">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-cyan-300">

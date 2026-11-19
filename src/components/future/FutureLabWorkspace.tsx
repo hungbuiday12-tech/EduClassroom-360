@@ -929,7 +929,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 scrollbar-none pb-0.5 sm:pb-0">
                 {categories.map((cat) => {
                   const active = selectedCategory === cat.id;
                   return (
@@ -937,7 +937,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                       key={cat.id}
                       type="button"
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                      className={`min-h-[36px] px-3 py-1.5 rounded-md text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                         active
                           ? 'bg-sky-600 border-sky-400 text-white shadow-sm'
                           : 'bg-white/80 dark:bg-slate-900/80 border-slate-300/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-sky-400'
@@ -951,12 +951,12 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             </div>
 
             {/* BOTTOM: Quick Shortcut Buttons */}
-            <div className="flex flex-wrap items-center gap-2.5 pt-1 border-t border-slate-200/70 dark:border-slate-800/70">
+            <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-2 sm:gap-2.5 pt-1 border-t border-slate-200/70 dark:border-slate-800/70 scrollbar-none pb-0.5 sm:pb-0">
               <button
                 type="button"
                 data-ripple="true"
                 onClick={() => openModulePage('quantum_holodeck_3d')}
-                className="pre-grand-btn inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 via-sky-500 to-purple-500 text-white text-xs font-extrabold cursor-pointer whitespace-nowrap shadow-md"
+                className="pre-grand-btn min-h-[38px] inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 via-sky-500 to-purple-500 text-white text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 shadow-md"
               >
                 <Atom className="w-3.5 h-3.5" />
                 <span>{isEn ? 'Quantum Holodeck' : 'Máy Tính Lượng Tử 3D'}</span>
@@ -967,7 +967,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => openModulePage('tech_teardown_3d')}
-                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-amber-500/50 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+                className="pre-grand-btn min-h-[38px] inline-flex items-center gap-2 px-3.5 py-2 border border-amber-500/50 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-200 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Wrench className="w-3.5 h-3.5" />
                 <span>{isEn ? '3D Teardown Workshop' : 'Xưởng Phẫu Thuật 3D'}</span>
@@ -977,7 +977,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => openModulePage('spatial_gesture_3d')}
-                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-teal-500/50 bg-teal-500/15 hover:bg-teal-500/25 text-teal-700 dark:text-teal-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+                className="pre-grand-btn min-h-[38px] inline-flex items-center gap-2 px-3.5 py-2 border border-teal-500/50 bg-teal-500/15 hover:bg-teal-500/25 text-teal-700 dark:text-teal-200 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Hand className="w-3.5 h-3.5 text-teal-500 dark:text-teal-300" />
                 <span>{isEn ? 'Spatial 3D & WebAR Desk' : 'Học Cảm Giác 3D & AR'}</span>
@@ -987,7 +987,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => openModulePage('rocket_launch_3d')}
-                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-orange-500/50 bg-orange-500/15 hover:bg-orange-500/25 text-orange-700 dark:text-orange-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+                className="pre-grand-btn min-h-[38px] inline-flex items-center gap-2 px-3.5 py-2 border border-orange-500/50 bg-orange-500/15 hover:bg-orange-500/25 text-orange-700 dark:text-orange-200 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Rocket className="w-3.5 h-3.5" />
                 <span>{isEn ? 'Launch 3D Rocket' : 'Phóng Tên Lửa 3D'}</span>
@@ -1136,17 +1136,17 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
       key={activeView}
       className={
         isStudioFullscreen
-          ? 'synapse-pre-scope fixed inset-0 z-[140] w-screen h-screen overflow-y-auto bg-slate-50/98 dark:bg-slate-950/98 px-3 sm:px-5 py-3 space-y-3 pre-page-enter'
-          : 'synapse-pre-scope max-w-7xl mx-auto px-4 sm:px-6 py-5 space-y-5 pre-page-enter'
+          ? 'synapse-pre-scope fixed inset-0 z-[140] w-screen h-[100dvh] overflow-y-auto bg-slate-50/98 dark:bg-slate-950/98 px-3 sm:px-5 py-3 space-y-3 pre-page-enter'
+          : 'synapse-pre-scope max-w-7xl mx-auto px-2.5 sm:px-6 py-3 sm:py-5 space-y-4 sm:space-y-5 pre-page-enter'
       }
     >
       {/* Adaptive Standalone Studio Header synced with user theme */}
       <div
         style={{ borderColor: activePalette.ring }}
-        className={`pre-grand-hero sci-frame rounded-xl border ${glassSurfaceClass} text-slate-900 dark:text-white px-4 py-3 sm:px-5 sm:py-3.5 shadow-[0_14px_40px_-16px_rgba(14,165,233,0.3)]`}
+        className={`pre-grand-hero sci-frame rounded-xl border ${glassSurfaceClass} text-slate-900 dark:text-white px-3 py-2.5 sm:px-5 sm:py-3.5 shadow-[0_14px_40px_-16px_rgba(14,165,233,0.3)]`}
       >
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 min-w-0">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 min-w-0">
             <button
               type="button"
               data-ripple="true"
@@ -1157,22 +1157,22 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                 } catch {}
                 backToHub();
               }}
-              className="pre-grand-btn inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer whitespace-nowrap"
+              className="pre-grand-btn min-h-[38px] inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer whitespace-nowrap shrink-0"
             >
               <ArrowLeft className="w-3.5 h-3.5 text-sky-500 dark:text-cyan-400" />
-              <span>{isEn ? `All ${PRE_STUDIOS.length} Studios` : `${PRE_STUDIOS.length} Không gian Synapse Pre`}</span>
+              <span>{isEn ? `All ${PRE_STUDIOS.length}` : `${PRE_STUDIOS.length} Lab`}</span>
             </button>
 
-            <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <div
-                className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg border flex items-center justify-center shrink-0 ${
                   currentStudio?.iconBgClass || 'bg-cyan-500/15 border-cyan-400/40 text-cyan-500 dark:text-cyan-300'
                 }`}
               >
                 <ActiveIcon className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white truncate">
+                <h1 className="text-sm sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white truncate">
                   {currentStudio
                     ? `${currentStudio.indexLabel}. ${isEn ? currentStudio.titleEn : currentStudio.titleVi}`
                     : 'Synapse Pre Studio'}
@@ -1186,7 +1186,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 sm:gap-2 shrink-0 scrollbar-none pb-0.5 sm:pb-0">
             <button
               type="button"
               data-ripple="true"

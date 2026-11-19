@@ -21,7 +21,8 @@ import {
   Download,
   Flame,
   UserCheck,
-  Mic
+  Mic,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -79,15 +80,19 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isBgMenuOpen, setIsBgMenuOpen] = useState(false);
+  const [isCompactToolsOpen, setIsCompactToolsOpen] = useState(false);
 
   const bgMenuRef = useRef<HTMLDivElement | null>(null);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const compactToolsRef = useRef<HTMLDivElement | null>(null);
 
   const bgPanelRef = useRef<HTMLDivElement | null>(null);
   const userPanelRef = useRef<HTMLDivElement | null>(null);
+  const compactToolsPanelRef = useRef<HTMLDivElement | null>(null);
 
   const [bgCoords, setBgCoords] = useState<{ top: number; right: number }>({ top: 56, right: 16 });
   const [userCoords, setUserCoords] = useState<{ top: number; right: number }>({ top: 56, right: 16 });
+  const [toolsCoords, setToolsCoords] = useState<{ top: number; right: number }>({ top: 56, right: 12 });
 
   const syncMenuCoords = useCallback(() => {
     if (bgMenuRef.current) {
@@ -98,10 +103,14 @@ export const Header: React.FC<HeaderProps> = ({
       const r = userMenuRef.current.getBoundingClientRect();
       setUserCoords({ top: r.bottom + 8, right: Math.max(12, window.innerWidth - r.right) });
     }
+    if (compactToolsRef.current) {
+      const r = compactToolsRef.current.getBoundingClientRect();
+      setToolsCoords({ top: r.bottom + 8, right: Math.max(12, window.innerWidth - r.right) });
+    }
   }, []);
 
   useEffect(() => {
-    if (!isBgMenuOpen && !isUserMenuOpen) return;
+    if (!isBgMenuOpen && !isUserMenuOpen && !isCompactToolsOpen) return;
     syncMenuCoords();
     window.addEventListener('resize', syncMenuCoords);
     window.addEventListener('scroll', syncMenuCoords, true);
@@ -124,6 +133,14 @@ export const Header: React.FC<HeaderProps> = ({
       ) {
         setIsUserMenuOpen(false);
       }
+      if (
+        isCompactToolsOpen &&
+        compactToolsRef.current &&
+        !compactToolsRef.current.contains(target) &&
+        !(compactToolsPanelRef.current && compactToolsPanelRef.current.contains(target))
+      ) {
+        setIsCompactToolsOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
@@ -131,7 +148,7 @@ export const Header: React.FC<HeaderProps> = ({
       window.removeEventListener('scroll', syncMenuCoords, true);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isBgMenuOpen, isUserMenuOpen, syncMenuCoords]);
+  }, [isBgMenuOpen, isUserMenuOpen, isCompactToolsOpen, syncMenuCoords]);
 
   const activeBgOption =
     BACKGROUND_STYLE_OPTIONS.find((opt) => opt.id === bgStyle) || BACKGROUND_STYLE_OPTIONS[1];
@@ -144,14 +161,14 @@ export const Header: React.FC<HeaderProps> = ({
     PERFORMANCE_MODE_OPTIONS.find((p) => p.id === perfMode) || PERFORMANCE_MODE_OPTIONS[0];
 
   return (
-    <header className="sticky top-0 z-30 w-full h-14 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200/85 dark:border-slate-800/90">
-      <div className="w-full h-full px-3 sm:px-5 lg:px-6 flex items-center justify-between gap-2 flex-nowrap">
-        {/* Left Cluster: Mobile Sidebar Button + Back + Active View Title */}
-        <div className="flex items-center gap-2 min-w-0 flex-nowrap">
+    <header className="sticky top-0 z-30 w-full h-14 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200/85 dark:border-slate-800/90 overflow-x-clip">
+      <div className="w-full h-full px-2.5 sm:px-5 lg:px-6 flex items-center justify-between gap-2 flex-nowrap">
+        {/* Left Cluster: Mobile Sidebar Button + Logo + Back + Truncated Page Label */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 flex-nowrap overflow-hidden">
           <button
             type="button"
             onClick={onOpenMobileMenu}
-            className="lg:hidden p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 cursor-pointer"
+            className="lg:hidden min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 cursor-pointer"
             aria-label={isEn ? 'Open navigation sidebar' : 'Mở thanh điều hướng'}
           >
             <Menu className="w-4 h-4" />
@@ -160,7 +177,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={goClassroom}
-            className="lg:hidden flex items-center gap-2 font-display font-extrabold text-sm text-slate-900 dark:text-white shrink-0 cursor-pointer"
+            className="lg:hidden flex items-center gap-1.5 font-display font-extrabold text-sm text-slate-900 dark:text-white shrink-0 cursor-pointer p-1"
+            aria-label="Synapse"
           >
             <BrandLogo sizeClass="w-6 h-6" />
           </button>
@@ -169,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={goBack}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-800 shrink-0 whitespace-nowrap cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 min-h-[36px] py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-800 shrink-0 whitespace-nowrap cursor-pointer transition-colors"
               title={`${isEn ? 'Back to' : 'Quay lại'}: ${prevLabel}`}
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -177,27 +195,28 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          <div className="hidden sm:flex items-center gap-2 min-w-0 pl-1">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 pl-0.5 sm:pl-1">
+            <span className="hidden sm:inline text-[11px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0">
               Synapse
             </span>
-            <span className="text-slate-300 dark:text-slate-700 shrink-0">/</span>
-            <span className="font-display text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+            <span className="hidden sm:inline text-slate-300 dark:text-slate-700 shrink-0">/</span>
+            <span className="font-display text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
               {currentLabel}
             </span>
           </div>
         </div>
 
-        {/* Right Cluster: Background Presets, FPS, Lang, XP, Sound, Theme, Settings, Auth */}
-        <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
-          {/* Quick Background / PC-Spec Theme Selector */}
-          <div className="relative shrink-0" ref={bgMenuRef}>
+        {/* Right Cluster: Full desktop bar on xl+, clean condensed utilities on Phone & iPad */}
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0">
+          {/* Quick Background / PC-Spec Theme Selector (Desktop xl+) */}
+          <div className="hidden xl:block relative shrink-0" ref={bgMenuRef}>
             <button
               type="button"
               onClick={() => {
                 syncMenuCoords();
                 setIsBgMenuOpen((v) => !v);
                 setIsUserMenuOpen(false);
+                setIsCompactToolsOpen(false);
               }}
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-sky-500/60 transition-colors cursor-pointer whitespace-nowrap shrink-0"
               title={isEn ? 'Background & PC spec preset' : 'Chọn giao diện nền theo cấu hình máy'}
@@ -285,11 +304,11 @@ export const Header: React.FC<HeaderProps> = ({
               )}
           </div>
 
-          {/* Graphics Tier Setup Trigger */}
+          {/* Graphics Tier Setup Trigger (Desktop xl+) */}
           <button
             type="button"
             onClick={openGraphicsModal}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-sky-500/60 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-sky-500/60 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
             title={
               isEn
                 ? `Graphics Mode: ${activePerf.labelEn}`
@@ -302,11 +321,11 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* VI / EN Toggle */}
+          {/* VI / EN Toggle (Desktop xl+) */}
           <button
             type="button"
             onClick={toggleLanguage}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:border-sky-500/60 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            className="hidden xl:flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:border-sky-500/60 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             title={language === 'vi' ? 'Switch interface to English' : 'Chuyển sang Tiếng Việt'}
           >
             <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
@@ -319,25 +338,25 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* Voice OS Command Button */}
+          {/* Voice OS Command Button (iPad Landscape lg/xl+ inline, inside Tools drawer on < md) */}
           {onOpenVoiceOS && (
             <button
               type="button"
               onClick={onOpenVoiceOS}
               title={isEn ? 'Open Synapse Voice OS (Alt+Space)' : 'Mở Synapse Voice OS · Ra lệnh giọng nói (Alt+Space)'}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-cyan-400/60 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/70 text-cyan-800 dark:text-cyan-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-cyan-400/60 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/70 text-cyan-800 dark:text-cyan-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
               <Mic className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-300 shrink-0" />
-              <span className="hidden lg:inline">Voice OS</span>
+              <span className="hidden xl:inline">Voice OS</span>
             </button>
           )}
 
-          {/* XP & Streak Readout -> Opens Portfolio */}
+          {/* XP & Streak Readout -> Opens Portfolio (Desktop xl+) */}
           <button
             type="button"
             onClick={onOpenPortfolio}
             title={isEn ? 'Open STEM Portfolio & PDF Report' : 'Mở Hồ sơ Năng lực & Xuất PDF'}
-            className="hidden md:flex items-center gap-2 px-2.5 py-1.5 bg-amber-50/85 dark:bg-amber-950/45 border border-amber-300/80 dark:border-amber-700/60 hover:border-amber-500 rounded text-xs font-mono font-bold text-amber-800 dark:text-amber-300 shrink-0 whitespace-nowrap cursor-pointer transition-colors"
+            className="hidden xl:flex items-center gap-2 px-2.5 py-1.5 bg-amber-50/85 dark:bg-amber-950/45 border border-amber-300/80 dark:border-amber-700/60 hover:border-amber-500 rounded text-xs font-mono font-bold text-amber-800 dark:text-amber-300 shrink-0 whitespace-nowrap cursor-pointer transition-colors"
           >
             <Flame className="w-3.5 h-3.5 text-rose-500 streak-flame-pulse shrink-0" />
             <span className="tabular-nums">{streakDays}d</span>
@@ -347,11 +366,11 @@ export const Header: React.FC<HeaderProps> = ({
             <UserCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
           </button>
 
-          {/* Background Soundscape Toggle */}
+          {/* Background Soundscape Toggle (Desktop xl+) */}
           <button
             type="button"
             onClick={toggleBgPlaying}
-            className={`p-2 rounded-lg border transition-colors cursor-pointer shrink-0 ${
+            className={`hidden xl:flex p-2 rounded-lg border transition-colors cursor-pointer shrink-0 ${
               isBgPlaying && bgSound !== 'off'
                 ? 'border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
                 : 'border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -365,35 +384,197 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
+          {/* Compact Utility Drawer Button for Phone & iPad (< xl) */}
+          <div className="xl:hidden relative shrink-0" ref={compactToolsRef}>
+            <button
+              type="button"
+              onClick={() => {
+                syncMenuCoords();
+                setIsCompactToolsOpen((v) => !v);
+                setIsUserMenuOpen(false);
+                setIsBgMenuOpen(false);
+              }}
+              className="min-h-[38px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-sky-500/60 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+              aria-label={isEn ? 'Quick tools & preferences' : 'Công cụ & Tùy chọn nhanh'}
+              title={isEn ? 'Quick tools & preferences' : 'Công cụ, XP & Tùy chọn nhanh'}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+              <span className="hidden sm:inline">{isEn ? 'Tools' : 'Tiện ích'}</span>
+            </button>
+
+            {isCompactToolsOpen &&
+              typeof document !== 'undefined' &&
+              createPortal(
+                <div
+                  ref={compactToolsPanelRef}
+                  style={{ top: toolsCoords.top, right: toolsCoords.right }}
+                  className="fixed w-[min(320px,calc(100vw-24px))] bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-3 z-[220] text-xs max-h-[78dvh] overflow-y-auto space-y-2.5"
+                >
+                  {/* Portfolio / XP */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCompactToolsOpen(false);
+                      onOpenPortfolio?.();
+                    }}
+                    className="w-full min-h-[42px] flex items-center justify-between gap-2 px-3 py-2 bg-amber-50/85 dark:bg-amber-950/45 border border-amber-300/80 dark:border-amber-700/60 rounded text-xs font-mono font-bold text-amber-800 dark:text-amber-300 cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-rose-500 shrink-0" />
+                      <span>{streakDays}d Streak · {user ? user.xp : xp} XP</span>
+                    </span>
+                    <UserCheck className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                  </button>
+
+                  {/* 2x2 Quick Toggle Grid */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={toggleLanguage}
+                      className="min-h-[40px] flex items-center justify-center gap-1.5 px-2.5 py-2 rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+                    >
+                      <Globe className="w-3.5 h-3.5 text-sky-500" />
+                      <span>{language === 'vi' ? 'VI / EN' : 'EN / VI'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={toggleBgPlaying}
+                      className={`min-h-[40px] flex items-center justify-center gap-1.5 px-2.5 py-2 rounded border font-bold cursor-pointer ${
+                        isBgPlaying && bgSound !== 'off'
+                          ? 'border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200'
+                      }`}
+                    >
+                      {isBgPlaying && bgSound !== 'off' ? (
+                        <Volume2 className="w-3.5 h-3.5" />
+                      ) : (
+                        <VolumeX className="w-3.5 h-3.5" />
+                      )}
+                      <span>{isEn ? 'Sound' : 'Âm thanh'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCompactToolsOpen(false);
+                        openGraphicsModal();
+                      }}
+                      className="min-h-[40px] flex items-center justify-center gap-1.5 px-2.5 py-2 rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+                    >
+                      <Gauge className="w-3.5 h-3.5 text-sky-500" />
+                      <span>{isEn ? activePerf.shortEn : activePerf.shortVi}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCompactToolsOpen(false);
+                        onOpenSettings();
+                      }}
+                      className="min-h-[40px] flex items-center justify-center gap-1.5 px-2.5 py-2 rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+                    >
+                      <Settings className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{isEn ? 'Settings' : 'Cài đặt'}</span>
+                    </button>
+                  </div>
+
+                  {/* Voice OS + Install App */}
+                  <div className="space-y-1.5">
+                    {onOpenVoiceOS && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCompactToolsOpen(false);
+                          onOpenVoiceOS();
+                        }}
+                        className="w-full min-h-[40px] flex items-center justify-between px-3 py-2 rounded border border-cyan-400/60 bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-200 font-bold cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Mic className="w-4 h-4 text-cyan-600 dark:text-cyan-300" />
+                          <span>Synapse Voice OS</span>
+                        </span>
+                        <span className="text-[10px] font-mono opacity-80">VOICE</span>
+                      </button>
+                    )}
+
+                    {onOpenInstallApp && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCompactToolsOpen(false);
+                          onOpenInstallApp();
+                        }}
+                        className="w-full min-h-[40px] flex items-center justify-between px-3 py-2 rounded border border-sky-400/55 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-bold cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Download className="w-4 h-4" />
+                          <span>{isEn ? 'Install App (iOS / Android)' : 'Cài App trên Điện thoại / iPad'}</span>
+                        </span>
+                        <span className="text-[10px] font-mono opacity-80">PWA</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Background Presets */}
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1">
+                    <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-400">
+                      {isEn ? 'Background Theme' : 'Giao diện nền'}
+                    </div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {BACKGROUND_STYLE_OPTIONS.map((opt) => {
+                        const selected = opt.id === bgStyle;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setBgStyle(opt.id, true)}
+                            className={`min-h-[34px] px-2 py-1 rounded text-left text-[11px] truncate cursor-pointer border ${
+                              selected
+                                ? 'bg-sky-600 border-sky-400 text-white font-bold'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            {isEn ? opt.labelEn : opt.labelVi}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )}
+          </div>
+
           {/* Light / Dark Toggle */}
           <button
             type="button"
             onClick={onToggleTheme}
-            className="p-2 text-slate-600 dark:text-slate-200 bg-slate-50/90 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0"
+            className="min-w-[38px] min-h-[38px] flex items-center justify-center p-2 text-slate-600 dark:text-slate-200 bg-slate-50/90 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0"
             title={isDark ? (isEn ? 'Light Mode' : 'Chế độ Sáng') : isEn ? 'Dark Mode' : 'Chế độ Tối'}
             aria-label={isDark ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối'}
           >
             {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
           </button>
 
-          {/* Cross-Device App Install / Download */}
+          {/* Cross-Device App Install / Download (Desktop xl+) */}
           {onOpenInstallApp && (
             <button
               type="button"
               onClick={onOpenInstallApp}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sky-400/55 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/70 text-sky-700 dark:text-sky-300 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sky-400/55 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/70 text-sky-700 dark:text-sky-300 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
               title={isEn ? 'Install App (Laptop, Android & iPhone)' : 'Tải App cho Laptop, Android & iPhone'}
             >
               <Download className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xl:inline">{isEn ? 'Install App' : 'Tải App'}</span>
+              <span>{isEn ? 'Install App' : 'Tải App'}</span>
             </button>
           )}
 
-          {/* Settings */}
+          {/* Settings (Desktop xl+) */}
           <button
             type="button"
             onClick={onOpenSettings}
-            className="p-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shrink-0"
+            className="hidden xl:flex p-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shrink-0"
             title={isEn ? 'Settings' : 'Cài đặt'}
           >
             <Settings className="w-4 h-4 shrink-0" />
@@ -408,8 +589,9 @@ export const Header: React.FC<HeaderProps> = ({
                   syncMenuCoords();
                   setIsUserMenuOpen((v) => !v);
                   setIsBgMenuOpen(false);
+                  setIsCompactToolsOpen(false);
                 }}
-                className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors text-xs cursor-pointer whitespace-nowrap"
+                className="min-h-[38px] flex items-center gap-1.5 sm:gap-2 pl-1.5 pr-2 sm:pr-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors text-xs cursor-pointer whitespace-nowrap"
               >
                 {user.role === 'admin' ? (
                   <BrandLogo sizeClass="w-6 h-6 rounded" />
@@ -482,7 +664,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   type="button"
                   onClick={onReturnToLanding}
-                  className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
+                  className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>{t('nav.landing', 'Chào mừng', 'Welcome')}</span>
@@ -491,10 +673,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => openAuthModal('login')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-blue-700 dark:hover:bg-sky-100 font-bold text-xs transition-colors whitespace-nowrap cursor-pointer"
+                className="min-h-[38px] flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-blue-700 dark:hover:bg-sky-100 font-bold text-xs transition-colors whitespace-nowrap cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5 shrink-0" />
-                <span>{t('nav.login', 'Đăng Nhập', 'Sign In')}</span>
+                <span className="hidden sm:inline">{t('nav.login', 'Đăng Nhập', 'Sign In')}</span>
               </button>
             </div>
           )}

@@ -381,9 +381,9 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
         </div>
 
         {/* Grade, Search & Dimension Filter Bar */}
-        <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
+        <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 max-w-full scrollbar-none pb-0.5 sm:pb-0">
+            <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1 shrink-0">
               <Sliders className="w-3.5 h-3.5" />
               {isEn ? 'Grade:' : 'Khối lớp:'}
             </span>
@@ -394,7 +394,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
                   key={g}
                   type="button"
                   onClick={() => setGradeFilter(g)}
-                  className={`sim-btn-phy px-3 py-1.5 rounded-[3px] text-xs font-bold border cursor-pointer whitespace-nowrap ${
+                  className={`sim-btn-phy min-h-[38px] px-3 py-1.5 rounded-[3px] text-xs font-bold border cursor-pointer whitespace-nowrap shrink-0 ${
                     active
                       ? 'sim-btn-active bg-slate-900 dark:bg-sky-600 text-white border-sky-400/70'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -407,15 +407,15 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
             })}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 flex-1 sm:flex-initial justify-end">
-            <div className="relative min-w-[210px] sm:w-64">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 flex-1 sm:flex-initial justify-end min-w-0">
+            <div className="relative w-full sm:w-64 min-w-0">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isEn ? `Search ${totalSimCount} labs or formula...` : `Tìm ${totalSimCount} mô phỏng hoặc công thức...`}
-                className="w-full pl-8 pr-8 py-1.5 rounded-[3px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sky-500"
+                className="w-full min-h-[38px] pl-8 pr-8 py-1.5 rounded-[3px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-sky-500"
               />
               {searchQuery && (
                 <button
@@ -429,7 +429,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
               )}
             </div>
 
-            <div className="sim-seg-box flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-[4px] border border-slate-200/80 dark:border-slate-700">
+            <div className="sim-seg-box flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-[4px] border border-slate-200/80 dark:border-slate-700 overflow-x-auto scrollbar-none">
               {(
                 [
                   { id: 'all', label: isEn ? '2D + 3D' : 'Cả 2D & 3D' },
@@ -443,7 +443,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
                     key={f.id}
                     type="button"
                     onClick={() => setDimFilter(f.id)}
-                    className={`sim-btn-phy px-3 py-1 rounded-[3px] text-xs font-bold cursor-pointer whitespace-nowrap ${
+                    className={`sim-btn-phy min-h-[34px] px-3 py-1 rounded-[3px] text-xs font-bold cursor-pointer whitespace-nowrap shrink-0 ${
                       active
                         ? 'sim-btn-active bg-slate-900 dark:bg-sky-600 text-white border border-sky-400/60 shadow-xs'
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'

@@ -730,46 +730,46 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap max-w-full scrollbar-none">
               <button
                 onClick={zoomIn}
                 title="Phóng to (Zoom In)"
-                className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] cursor-pointer"
+                className="sim-btn-math min-w-[38px] min-h-[38px] flex items-center justify-center p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] shrink-0 cursor-pointer"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={zoomOut}
                 title="Thu nhỏ (Zoom Out)"
-                className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] cursor-pointer"
+                className="sim-btn-math min-w-[38px] min-h-[38px] flex items-center justify-center p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] shrink-0 cursor-pointer"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
               <button
                 onClick={resetView}
                 title="Khôi phục vị trí ban đầu"
-                className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] cursor-pointer"
+                className="sim-btn-math min-w-[38px] min-h-[38px] flex items-center justify-center p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] shrink-0 cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setShowTable(!showTable)}
                 title="Bảng giá trị biến thiên"
-                className={`sim-btn-math p-1.5 rounded-[3px] border cursor-pointer ${showTable ? 'sim-btn-active bg-indigo-100 border-indigo-400 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                className={`sim-btn-math min-w-[38px] min-h-[38px] flex items-center justify-center p-1.5 rounded-[3px] border shrink-0 cursor-pointer ${showTable ? 'sim-btn-active bg-indigo-100 border-indigo-400 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
               >
                 <TableIcon className="w-4 h-4" />
               </button>
               <button
                 onClick={handleExportPNG}
                 title="Xuất ảnh đồ thị PNG"
-                className="sim-btn-math p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] cursor-pointer"
+                className="sim-btn-math min-w-[38px] min-h-[38px] flex items-center justify-center p-1.5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-[3px] shrink-0 cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsFullScreen(!isFullScreen)}
                 title={isFullScreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình (Full Screen)'}
-                className={`sim-btn-math flex items-center gap-1 px-2.5 py-1.5 rounded-[3px] border text-xs font-semibold cursor-pointer ${
+                className={`sim-btn-math min-h-[38px] flex items-center gap-1 px-2.5 py-1.5 rounded-[3px] border text-xs font-semibold shrink-0 whitespace-nowrap cursor-pointer ${
                   isFullScreen
                     ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white hover:bg-indigo-700 shadow-sm'
                     : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'

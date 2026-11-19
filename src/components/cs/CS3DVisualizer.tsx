@@ -1062,13 +1062,13 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
       }
     >
       {/* Top Mode Switcher + Playback Bar */}
-      <div className="px-4 py-3 bg-slate-900/95 border-b border-slate-800 rounded-lg flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-900/95 border-b border-slate-800 rounded-lg flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-2">
+        <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 scrollbar-none pb-0.5 sm:pb-0">
           {onBack && !isFullscreen && (
             <button
               type="button"
               onClick={onBack}
-              className="px-2.5 py-1.5 rounded bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1 cursor-pointer"
+              className="min-h-[38px] px-2.5 py-1.5 rounded bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1 shrink-0 whitespace-nowrap cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{isEn ? 'Back' : 'Quay lại'}</span>
@@ -1082,7 +1082,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
                 key={item.id}
                 type="button"
                 onClick={() => setMode(item.id)}
-                className={`px-3 py-1.5 rounded text-xs font-bold border flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                className={`min-h-[38px] px-3 py-1.5 rounded text-xs font-bold border flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                   active
                     ? 'bg-emerald-600 border-emerald-400 text-white'
                     : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
@@ -1098,7 +1098,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
         <button
           type="button"
           onClick={handleToggleFullscreen}
-          className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-slate-100 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          className="min-h-[38px] px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-slate-100 flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
           title={isFullscreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình'}
         >
           {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -1111,10 +1111,10 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
         <div className="lg:col-span-8 flex flex-col gap-3 min-h-0">
           <div
             className={`relative w-full rounded-lg overflow-hidden border border-emerald-500/30 bg-[#050b18] ${
-              isFullscreen ? 'flex-1 min-h-[380px]' : 'h-[360px] sm:h-[430px]'
+              isFullscreen ? 'flex-1 min-h-[260px] sm:min-h-[380px]' : 'h-[280px] sm:h-[380px] lg:h-[430px]'
             }`}
           >
-            <div ref={mountRef} className="absolute inset-0 w-full h-full" />
+            <div ref={mountRef} className="absolute inset-0 w-full h-full touch-none" />
 
             {contextLost && (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/90 text-emerald-300 text-xs font-mono">
@@ -1122,14 +1122,14 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
               </div>
             )}
 
-            <div className="pointer-events-none absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded bg-slate-950/88 border border-emerald-400/35 text-[11px] font-mono font-bold text-emerald-300">
+            <div className="pointer-events-none absolute top-2.5 left-2.5 z-10 max-w-[calc(100%-56px)] truncate px-2.5 py-1 rounded bg-slate-950/88 border border-emerald-400/35 text-[11px] font-mono font-bold text-emerald-300">
               {isEn ? activeMeta.titleEn : activeMeta.titleVi} · {activeMeta.tag}
             </div>
 
             <button
               type="button"
               onClick={() => resetCamRef.current?.()}
-              className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded border border-slate-700 bg-slate-950/88 text-slate-200 cursor-pointer"
+              className="absolute top-2.5 right-2.5 z-10 min-w-[34px] min-h-[34px] flex items-center justify-center p-1.5 rounded border border-slate-700 bg-slate-950/88 text-slate-200 cursor-pointer"
               title="Reset 3D Camera"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -1138,7 +1138,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
 
           {/* Step Playback Bar */}
           <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="font-mono text-emerald-300 font-semibold truncate max-w-md">
+            <div className="font-mono text-emerald-300 font-semibold truncate max-w-full sm:max-w-md">
               {currentFrame.label}
             </div>
 
@@ -1150,7 +1150,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
                     setIsPlaying(false);
                     setStepIdx((s) => Math.max(0, s - 1));
                   }}
-                  className="p-1.5 rounded bg-slate-800 border border-slate-700 cursor-pointer"
+                  className="min-w-[38px] min-h-[38px] flex items-center justify-center p-1.5 rounded bg-slate-800 border border-slate-700 cursor-pointer"
                   title="Prev step"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -1161,7 +1161,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
                     if (safeStepIdx >= steps.length - 1) setStepIdx(0);
                     setIsPlaying((p) => !p);
                   }}
-                  className={`px-3 py-1.5 rounded font-bold flex items-center gap-1 cursor-pointer ${
+                  className={`min-h-[38px] px-3 py-1.5 rounded font-bold flex items-center gap-1 cursor-pointer ${
                     isPlaying ? 'bg-amber-500 text-slate-950' : 'bg-emerald-600 text-white'
                   }`}
                 >

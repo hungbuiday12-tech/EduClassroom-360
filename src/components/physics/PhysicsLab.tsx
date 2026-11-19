@@ -163,10 +163,10 @@ const NumericParamField: React.FC<NumericParamFieldProps> = ({
           <button
             type="button"
             onClick={() => handleStep(-1)}
-            className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="w-9 h-9 md:w-7 md:h-7 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
             title={`Giảm ${step}`}
           >
-            <Minus className="w-3 h-3" />
+            <Minus className="w-3.5 h-3.5" />
           </button>
           <input
             type="number"
@@ -194,15 +194,15 @@ const NumericParamField: React.FC<NumericParamFieldProps> = ({
                 (e.target as HTMLInputElement).blur();
               }
             }}
-            className="w-20 px-2 py-1 text-right font-mono text-xs font-bold bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="w-20 min-h-[36px] md:min-h-0 px-2 py-1 text-right font-mono text-xs font-bold bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/40"
           />
           <button
             type="button"
             onClick={() => handleStep(1)}
-            className="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="w-9 h-9 md:w-7 md:h-7 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
             title={`Tăng ${step}`}
           >
-            <Plus className="w-3 h-3" />
+            <Plus className="w-3.5 h-3.5" />
           </button>
           {unit && (
             <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 min-w-[24px]">
@@ -3156,11 +3156,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
     // Coherent wave arcs radiating from S1 and S2
     const waveStep = Math.max(12, lambdaUm * 32);
-    const phaseShift = (t * 50) % waveStep;
+    const phaseShift = (((t * 50) % waveStep) + waveStep) % waveStep;
     ctx.strokeStyle = lightColor;
     ctx.lineWidth = 1.3;
-    for (let rad = phaseShift; rad < screenX - slitX; rad += waveStep) {
-      ctx.globalAlpha = Math.max(0.08, 0.45 * (1 - rad / (screenX - slitX)));
+    for (let rad = Math.max(1, phaseShift); rad < screenX - slitX; rad += waveStep) {
+      ctx.globalAlpha = Math.max(0.08, 0.45 * (1 - rad / Math.max(1, screenX - slitX)));
       ctx.beginPath();
       ctx.arc(slitX, s1Y, rad, -Math.PI / 2.6, Math.PI / 2.6);
       ctx.stroke();
@@ -4344,8 +4344,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                   <div className="lg:col-span-2 space-y-4">
                     <div className="bg-white/95 dark:bg-slate-900/95 rounded-lg border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
                       {/* Transport, Step, Speed & Stopwatch Toolbar */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/70 dark:bg-slate-800/50">
-                        <div className="flex flex-wrap items-center gap-1.5">
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-slate-200/60 dark:border-slate-800/60 bg-slate-50/70 dark:bg-slate-800/50">
+                        <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 scrollbar-none pb-0.5 sm:pb-0 [&>button]:shrink-0 [&>button]:whitespace-nowrap [&>button]:min-h-[36px]">
                           <button
                             onClick={() => setIsRunning(!isRunning)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
@@ -4369,18 +4369,18 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
                           <button
                             onClick={handleResetSim}
-                            className="p-1.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            className="p-2 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                             title="Đặt lại trạng thái ban đầu"
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
 
-                          <div className="flex items-center gap-1 ml-1 text-xs text-slate-500 dark:text-slate-400">
+                          <div className="flex items-center gap-1 ml-1 text-xs text-slate-500 dark:text-slate-400 shrink-0">
                             {[0.25, 0.5, 1.0, 2.0].map((spd) => (
                               <button
                                 key={spd}
                                 onClick={() => setSimSpeed(spd)}
-                                className={`px-2 py-1 rounded-md text-[11px] font-mono ${
+                                className={`min-h-[34px] px-2 py-1 rounded-md text-[11px] font-mono ${
                                   simSpeed === spd
                                     ? 'bg-blue-600 text-white font-bold'
                                     : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
@@ -4393,8 +4393,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         </div>
 
                         {/* Built-in Stopwatch + Log Sample */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs">
+                        <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-2 scrollbar-none pb-0.5 sm:pb-0 [&>button]:shrink-0 [&>button]:whitespace-nowrap [&>button]:min-h-[36px]">
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs shrink-0">
                             <Clock className="w-3.5 h-3.5 text-indigo-500" />
                             <span className="font-mono font-bold text-slate-800 dark:text-slate-100 min-w-[54px]">
                               {stopwatchElapsed.toFixed(2)}s
@@ -4435,14 +4435,14 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                             title="Dịch ngược mô hình sang Phương trình Vi phân & Code Python/C++"
                           >
                             <FileCode2 className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Code RK4</span>
+                            <span>Code RK4</span>
                           </button>
                         </div>
                       </div>
 
                       {/* Visual Overlays & Experiment Actions Bar */}
                       <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 text-[11px]">
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 max-w-full scrollbar-none [&>button]:shrink-0 [&>button]:whitespace-nowrap [&>button]:min-h-[34px]">
                           <span className="font-semibold text-slate-500 dark:text-slate-400 mr-0.5">Hiển thị:</span>
                           <button
                             onClick={() => setOverlays((o) => ({ ...o, showRulerGrid: !o.showRulerGrid }))}

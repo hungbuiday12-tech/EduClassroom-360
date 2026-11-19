@@ -5960,8 +5960,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           entryView === 'hub'
             ? 'hidden'
             : isFullscreen
-            ? 'h-screen rounded-none border-0'
-            : 'h-[calc(100vh-128px)] min-h-[640px]'
+            ? 'h-[100dvh] rounded-none border-0'
+            : 'h-[calc(100dvh-76px)] min-h-[540px] sm:min-h-[620px]'
         }`}
       >
         {/* WebAR Spatial Desk Video Underlay + AR Bàn Học Pro Calibration Bar */}
@@ -5995,7 +5995,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             </div>
 
             {/* AR Bàn Học Pro Control Dock */}
-            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-40 max-w-[95%] flex flex-wrap items-center justify-center gap-2 px-3 py-2 rounded-md border border-emerald-400/55 bg-slate-950/92 text-slate-100 shadow-2xl text-[11px]">
+            <div className="absolute bottom-[68px] sm:bottom-20 left-1/2 -translate-x-1/2 z-40 max-w-[95%] flex flex-nowrap overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center scrollbar-none gap-2 px-3 py-2 rounded-md border border-emerald-400/55 bg-slate-950/92 text-slate-100 shadow-2xl text-[11px]">
               <button
                 type="button"
                 onClick={handleToggleArFacing}
@@ -6145,10 +6145,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           </div>
         )}
 
-        {/* Top HUD Bar */}
+        {/* Top HUD Bar (Single scrollable strip on phone/iPad so 3D canvas stays unobstructed) */}
         {!hudHidden && (
-          <div className="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-            <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
+          <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 z-20 flex flex-nowrap lg:flex-wrap items-center justify-between gap-1.5 sm:gap-2 overflow-x-auto lg:overflow-visible scrollbar-none pointer-events-auto lg:pointer-events-none">
+            <div className="flex flex-nowrap lg:flex-wrap items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0 lg:shrink">
               <button
                 type="button"
                 onClick={() => setEntryView('hub')}
@@ -6376,7 +6376,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             </div>
 
             {/* Right Quick Actions */}
-            <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto">
+            <div className="flex flex-nowrap lg:flex-wrap items-center gap-1.5 pointer-events-auto shrink-0">
               <button
                 type="button"
                 onClick={() => (cameraActive ? stopCamera() : void startCamera())}
@@ -6480,9 +6480,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
         {/* Top-Right Corner Voice Mentor, Live Telemetry & 10-Fingertip Webcam PiP */}
         {!hudHidden && (
-          <div className="absolute top-16 right-3 z-20 flex flex-col items-end gap-2 max-w-[360px] pointer-events-none">
+          <div className="absolute top-[60px] sm:top-16 right-2 sm:right-3 z-20 flex flex-col items-end gap-1.5 sm:gap-2 max-w-[calc(100vw-16px)] sm:max-w-[360px] pointer-events-none">
             <div className="pointer-events-auto">
               <SpatialVoiceMentor
+                compactButton
                 spaceName={spaceMode === '2d' ? 'Học Cảm Giác 2D' : 'Học Cảm Giác 3D'}
                 modelTitle={
                   spaceMode === '2d'
@@ -6522,7 +6523,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               />
             </div>
 
-            <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom w-[244px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
+            <div className="hidden md:block pointer-events-auto spatial-hud-frame spatial-hud-zoom w-[244px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
               <div className="font-mono font-bold text-cyan-300 truncate">
                 {spaceMode === '2d'
                   ? active2DMode.formula
@@ -6575,7 +6576,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             )}
 
             {cameraActive && (
-              <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom relative w-[240px] h-[180px] rounded-lg overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
+              <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom relative w-[128px] h-[96px] sm:w-[200px] sm:h-[150px] md:w-[240px] md:h-[180px] rounded-lg overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -6681,7 +6682,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
       {/* Top-Left Stack: Camera Warning + 3D Part Selection / Isolation Card */}
       {!hudHidden && (
-        <div className="absolute top-16 left-3 z-20 flex flex-col gap-2 max-w-[320px] pointer-events-none">
+        <div className="absolute top-[60px] sm:top-16 left-2 sm:left-3 z-20 flex flex-col gap-2 max-w-[calc(100vw-16px)] sm:max-w-[320px] max-h-[34dvh] md:max-h-none overflow-y-auto scrollbar-none pointer-events-none">
           {cameraError && (
             <div className="pointer-events-auto rounded-lg bg-amber-950/95 border border-amber-500/50 px-3 py-2 text-[11px] text-amber-200">
               {cameraError}
@@ -7393,9 +7394,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
       {/* UNIFIED COLLAPSIBLE BOTTOM CONTROL DOCK */}
       {!hudHidden && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[min(980px,96vw)] flex flex-col items-center">
+        <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 z-20 w-[min(980px,96vw)] flex flex-col items-center">
           {spaceMode === '3d' && !pointAskActive && isolatedPartIdx === null && (
-            <div className="mb-1.5 flex flex-wrap items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/95 border border-slate-700/85 shadow-xl max-w-full">
+            <div className="mb-1.5 flex flex-nowrap overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center scrollbar-none gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/95 border border-slate-700/85 shadow-xl max-w-full">
               {interactionStyle === 'real_grab' && (
                 <div className="flex items-center gap-1 pr-1.5 border-r border-slate-800">
                   {(
@@ -7614,10 +7615,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           </button>
 
           {!dockCollapsed && (
-            <div className="spatial-hud-frame w-full rounded-xl bg-slate-950/95 border border-slate-700/85 shadow-2xl p-3 space-y-2.5">
+            <div className="spatial-hud-frame w-full rounded-xl bg-slate-950/95 border border-slate-700/85 shadow-2xl p-2.5 sm:p-3 space-y-2.5 max-h-[38dvh] sm:max-h-[44vh] overflow-y-auto">
               {/* Dock Tabs + Quick Action Shortcuts */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-                <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 scrollbar-none pb-0.5 sm:pb-0">
                   {(
                     [
                       {

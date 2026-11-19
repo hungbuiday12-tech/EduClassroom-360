@@ -734,9 +734,9 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-2 shrink-0 scrollbar-none pb-0.5 sm:pb-0 [&>button]:shrink-0 [&>button]:whitespace-nowrap [&>button]:min-h-[38px]">
               <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-mono text-sm font-bold border transition-all ${
+                className={`flex items-center gap-2 px-3 py-1.5 min-h-[38px] rounded-xl font-mono text-sm font-bold border transition-all shrink-0 ${
                   timerSeconds < 300 && timerSeconds > 0
                     ? 'bg-red-500/10 border-red-500/30 text-red-600 animate-pulse'
                     : isTimerRunning
@@ -764,7 +764,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
 
               <button
                 onClick={handleResetTimer}
-                className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="min-w-[38px] p-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
                 title={t('exam.reset', 'Đặt lại thời gian làm bài', 'Reset Timer')}
               >
                 <RotateCcw className="w-4 h-4" />
@@ -803,7 +803,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                   <span>{t('exam.finish', 'Xem đáp án (+50 XP)', 'Finish & Solutions (+50 XP)')}</span>
                 </button>
               ) : (
-                <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 whitespace-nowrap">
                   {isEn ? 'Completed!' : 'Đã hoàn thành!'}
                 </span>
               )}
@@ -1667,14 +1667,14 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-1 text-[10px]">
-                <span className="text-slate-400 font-semibold">{isEn ? 'Try code:' : 'Tra nhanh:'}</span>
+              <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 text-[10px] scrollbar-none pb-0.5 sm:pb-0">
+                <span className="text-slate-400 font-semibold shrink-0">{isEn ? 'Try code:' : 'Tra nhanh:'}</span>
                 {['TC-001', 'TK-051', 'LC-010', 'LK-060', 'IC-005', 'IK-055'].map((sampleCode) => (
                   <button
                     key={sampleCode}
                     type="button"
                     onClick={() => setSearchKeyword(sampleCode)}
-                    className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/70 font-mono font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900 cursor-pointer"
+                    className="min-h-[28px] px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/70 font-mono font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900 shrink-0 cursor-pointer"
                   >
                     {sampleCode}
                   </button>

@@ -8,11 +8,14 @@ import {
   RotateCcw,
   Sparkles,
   Volume2,
-  VolumeX
+  VolumeX,
+  Activity
 } from 'lucide-react';
 import { safeFetchJson } from '../../lib/apiClient';
 import { cancelActiveSpeech, speakCoPilotReply } from '../../lib/liveCoPilotBridge';
 import { FormattedText } from '../common/MathRenderer';
+import { subscribeRemoteCommand } from '../../lib/remoteControlBus';
+import { MotionVideoTracker } from './MotionVideoTracker';
 
 export type MotionVisualKind =
   | 'derivative_tangent'
@@ -527,6 +530,7 @@ export const MotionReelMiniChat: React.FC<MotionReelMiniChatProps> = ({
   initialTopic = ''
 }) => {
   const isEn = language === 'en';
+  const [reelMode, setReelMode] = useState<'ai_reel' | 'video_tracker'>('ai_reel');
   const [prompt, setPrompt] = useState(initialTopic);
   const [reel, setReel] = useState<MotionReelScript>(PRESET_REELS.derivative.reel);
   const [sceneIdx, setSceneIdx] = useState(0);
@@ -539,6 +543,27 @@ export const MotionReelMiniChat: React.FC<MotionReelMiniChatProps> = ({
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastSpokenIdxRef = useRef<number>(-1);
+
+  useEffect(() => {
+    return subscribeRemoteCommand((cmd) => {
+      if (reelMode !== 'ai_reel') return;
+      if (cmd.type === 'toggle_play') {
+        setIsPlaying((prev) => !prev);
+      } else if (cmd.type === 'reset_view') {
+        setSceneIdx(0);
+        setSceneProgress(0);
+        lastSpokenIdxRef.current = -1;
+      } else if (cmd.type === 'slide_prev') {
+        setSceneIdx((prev) => (prev - 1 + reel.scenes.length) % reel.scenes.length);
+        setSceneProgress(0);
+        lastSpokenIdxRef.current = -1;
+      } else if (cmd.type === 'slide_next') {
+        setSceneIdx((prev) => (prev + 1) % reel.scenes.length);
+        setSceneProgress(0);
+        lastSpokenIdxRef.current = -1;
+      }
+    });
+  }, [reel.scenes.length, reelMode]);
 
   const activeScene = reel.scenes[sceneIdx] || reel.scenes[0];
 
@@ -671,6 +696,46 @@ export const MotionReelMiniChat: React.FC<MotionReelMiniChatProps> = ({
 
   return (
     <div className="space-y-3">
+      {/* Sub-mode switcher: AI 3B1B Reel vs Real Motion Video Tracker */}
+      <div className="grid grid-cols-2 gap-1.5 p-1 rounded-md bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800">
+        <button
+          type="button"
+          data-testid="synreel-tab-3b1b"
+          onClick={() => setReelMode('ai_reel')}
+          className={`px-3 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+            reelMode === 'ai_reel'
+              ? 'bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 shadow-xs'
+              : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Film className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">{isEn ? '3B1B Vector Reel (AI)' : 'Video 3B1B AI'}</span>
+        </button>
+        <button
+          type="button"
+          data-testid="synreel-tab-tracker"
+          onClick={() => {
+            cancelActiveSpeech();
+            setIsPlaying(false);
+            setReelMode('video_tracker');
+          }}
+          className={`px-3 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+            reelMode === 'video_tracker'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">
+            {isEn ? 'Real Motion Video Tracker' : 'Phân tích Video Thí nghiệm'}
+          </span>
+        </button>
+      </div>
+
+      {reelMode === 'video_tracker' ? (
+        <MotionVideoTracker language={language} />
+      ) : (
+        <>
       {/* Header + Built-in Quick Reels */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
@@ -834,6 +899,8 @@ export const MotionReelMiniChat: React.FC<MotionReelMiniChatProps> = ({
           </button>
         </form>
       </div>
+        </>
+      )}
     </div>
   );
 };

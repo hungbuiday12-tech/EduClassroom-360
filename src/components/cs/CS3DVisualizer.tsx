@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
 
 export type CS3DSimMode = 'sort_3d' | 'bst_3d' | 'graph_3d' | 'maze_3d' | 'stack_queue_3d';
 
@@ -1009,7 +1010,33 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
     if (isSoftwareGl) afterDraw(tick);
     else rafId = requestAnimationFrame(tick);
 
+    const unsubRemote = subscribeRemoteCommand((cmd) => {
+      if (cmd.type === 'orbit') {
+        applySphericalOrbitDelta(
+          camera,
+          controls.target,
+          cmd.yawDelta,
+          cmd.pitchDelta,
+          cmd.zoomDelta,
+          controls.minDistance || 2,
+          controls.maxDistance || 40
+        );
+        controls.update();
+      } else if (cmd.type === 'reset_view') {
+        resetCamRef.current?.();
+      } else if (cmd.type === 'toggle_play') {
+        setIsPlaying((prev) => !prev);
+      } else if (cmd.type === 'slide_prev') {
+        setIsPlaying(false);
+        setStepIdx((prev) => Math.max(0, prev - 1));
+      } else if (cmd.type === 'slide_next') {
+        setIsPlaying(false);
+        setStepIdx((prev) => prev + 1);
+      }
+    });
+
     return () => {
+      unsubRemote();
       alive = false;
       cancelAnimationFrame(rafId);
       clearTimeout(rafId);

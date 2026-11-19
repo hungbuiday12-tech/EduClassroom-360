@@ -914,7 +914,11 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           ? `syn-window-enter fixed inset-0 z-[115] w-screen h-[100dvh] bg-slate-950 flex flex-col overflow-hidden ${
               isDraggingImage ? 'ring-2 ring-inset ring-sky-400' : ''
             }`
-          : `syn-window-enter sci-frame fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] sm:w-[560px] md:w-[630px] h-[min(770px,89dvh)] bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border ${
+          : `syn-window-enter sci-frame fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] ${
+              studioTab === 'motion_reel'
+                ? 'sm:w-[680px] lg:w-[860px]'
+                : 'sm:w-[560px] md:w-[630px]'
+            } h-[min(770px,89dvh)] bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border ${
               isDraggingImage ? 'border-sky-400 ring-2 ring-sky-400/50' : activeMeta.glowRing
             } rounded-md shadow-[0_32px_90px_-16px_rgba(2,6,23,0.68)] flex flex-col overflow-hidden`
       }

@@ -49,10 +49,12 @@ import {
   Sliders,
   UploadCloud,
   Layers,
-  Download
+  Download,
+  QrCode
 } from 'lucide-react';
 import { useAudio } from '../../context/AudioContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { useRemoteController } from '../../context/RemoteControllerContext';
 import { PlatformReviews } from '../common/PlatformReviews';
 import { AppDownloadGuideSection } from '../common/AppDownloadGuideSection';
 import type {
@@ -94,6 +96,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const { language, toggleLanguage } = useLanguage();
   const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
   const { navigate } = useNavigation();
+  const { openModal: openRemoteModal, controllerCount } = useRemoteController();
   const isEn = language === 'en';
   const phyCounts = getPhysicsSimCounts();
   const [directorySubject, setDirectorySubject] = useState<DirectorySubjectFilter>('all');
@@ -736,6 +739,30 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 <span className="hidden lg:inline">{isEn ? 'Get App' : 'Tải App'}</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={openRemoteModal}
+              data-testid="landing-qr-remote-btn"
+              className={`group cs-deck-btn flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 text-xs font-bold rounded-md border shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                controllerCount > 0
+                  ? 'border-emerald-500/70 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                  : 'border-indigo-400/60 bg-indigo-500/10 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-600 hover:text-white'
+              }`}
+              title={
+                isEn
+                  ? 'Scan QR to control Synapse 3D & Slides from Phone'
+                  : 'Quét QR biến Điện thoại thành tay cầm 3D & Thuyết trình từ xa'
+              }
+            >
+              <QrCode className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden lg:inline">{isEn ? 'QR Remote' : 'QR Điều khiển'}</span>
+              {controllerCount > 0 && (
+                <span className="px-1 rounded bg-emerald-600 text-white text-[10px] font-mono tabular-nums">
+                  {controllerCount}
+                </span>
+              )}
+            </button>
 
             <button
               onClick={onEnterAsGuest}

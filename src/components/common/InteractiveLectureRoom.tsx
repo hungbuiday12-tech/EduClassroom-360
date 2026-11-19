@@ -45,6 +45,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { VoiceMicButton } from './VoiceMicButton';
 import { useNavigation } from '../../context/NavigationContext';
+import { subscribeRemoteCommand } from '../../lib/remoteControlBus';
 import {
   computeAssessmentMetrics,
   loadLessonAssessment,
@@ -294,6 +295,28 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
       setViewLayout('slides');
     }
   };
+
+  useEffect(() => {
+    const total = safeSteps.length;
+    if (total === 0) return;
+    return subscribeRemoteCommand((cmd) => {
+      if (cmd.type === 'slide_prev') {
+        setCurrentStepIdx((prev) => {
+          const next = Math.max(0, prev - 1);
+          setVisitedSteps((v) => (v.includes(next) ? v : [...v, next]));
+          return next;
+        });
+        setViewLayout((vl) => (vl === 'analytics' ? 'slides' : vl));
+      } else if (cmd.type === 'slide_next') {
+        setCurrentStepIdx((prev) => {
+          const next = Math.min(total - 1, prev + 1);
+          setVisitedSteps((v) => (v.includes(next) ? v : [...v, next]));
+          return next;
+        });
+        setViewLayout((vl) => (vl === 'analytics' ? 'slides' : vl));
+      }
+    });
+  }, [safeSteps.length]);
 
   const handleCopyFormula = (f: string) => {
     try {

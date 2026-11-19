@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
 import {
   ArrowLeft,
   BookOpen,
@@ -4569,7 +4570,54 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     };
     window.addEventListener('resize', handleResize);
 
+    const unsubRemote = subscribeRemoteCommand((cmd) => {
+      if (paramsRef.current.spaceMode !== '3d') return;
+      if (cmd.type === 'orbit') {
+        rowCameraGlideActiveRef.current = false;
+        applySphericalOrbitDelta(
+          camera,
+          controls.target,
+          cmd.yawDelta,
+          cmd.pitchDelta,
+          cmd.zoomDelta,
+          controls.minDistance || 2.6,
+          controls.maxDistance || 26
+        );
+        controls.update();
+      } else if (cmd.type === 'explode_set') {
+        const clamped = Math.max(0, Math.min(1, cmd.value));
+        setExplodeVal(clamped);
+        smoothTargetRef.current.explode = clamped;
+      } else if (cmd.type === 'explode_toggle') {
+        setExplodeVal((prev) => {
+          const next = prev >= 0.25 ? 0 : 0.75;
+          smoothTargetRef.current.explode = next;
+          return next;
+        });
+      } else if (cmd.type === 'toggle_play') {
+        setFrozen((prev) => !prev);
+      } else if (cmd.type === 'reset_view') {
+        camera.position.set(6.4, 4.8, 7.6);
+        controls.target.set(0, 1.65, 0);
+        controls.update();
+        setExplodeVal(0);
+        smoothTargetRef.current.explode = 0;
+      } else if (cmd.type === 'slide_prev' || cmd.type === 'slide_next') {
+        setActiveCustomId(null);
+        setModeId((prev) => {
+          const idx = SPATIAL_MODES.findIndex((m) => m.id === prev);
+          const safeIdx = idx < 0 ? 0 : idx;
+          const nextIdx =
+            cmd.type === 'slide_next'
+              ? (safeIdx + 1) % SPATIAL_MODES.length
+              : (safeIdx - 1 + SPATIAL_MODES.length) % SPATIAL_MODES.length;
+          return SPATIAL_MODES[nextIdx].id;
+        });
+      }
+    });
+
     return () => {
+      unsubRemote();
       disposed = true;
       wakeLoopRef.current = null;
       document.removeEventListener('visibilitychange', wakeLoop);

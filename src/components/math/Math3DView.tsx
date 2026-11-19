@@ -26,6 +26,7 @@ import {
   useHeadTrackedHologram
 } from '../../hooks/useHeadTrackedHologram';
 import { HologramModeControls } from '../common/HologramModeControls';
+import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
 
 export type Math3DMode =
   | 'oxyz_vector'
@@ -268,7 +269,29 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
     if (resizeObserver) resizeObserver.observe(container);
 
+    const unsubRemote = subscribeRemoteCommand((cmd) => {
+      if (cmd.type === 'orbit') {
+        applySphericalOrbitDelta(
+          camera,
+          controls.target,
+          cmd.yawDelta,
+          cmd.pitchDelta,
+          cmd.zoomDelta,
+          controls.minDistance,
+          controls.maxDistance
+        );
+        controls.update();
+        needsRenderRef.current = true;
+      } else if (cmd.type === 'reset_view') {
+        camera.position.set(7, 6, 8);
+        controls.target.set(0, 0, 0);
+        controls.update();
+        needsRenderRef.current = true;
+      }
+    });
+
     return () => {
+      unsubRemote();
       cancelAnimationFrame(frameId);
       controls.removeEventListener('change', markDirty);
       window.removeEventListener('resize', handleResize);

@@ -52,6 +52,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useAudio } from '../../context/AudioContext';
 import { PerformanceMode, useBackgroundTheme } from '../../context/BackgroundContext';
+import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
 import {
   buildCitadelEnvironment,
   buildCosmicSkyDome,
@@ -743,7 +744,40 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
     frameId = requestAnimationFrame(tick);
 
+    const unsubRemote = subscribeRemoteCommand((cmd) => {
+      if (cmd.type === 'orbit') {
+        cameraLerpingRef.current = false;
+        applySphericalOrbitDelta(
+          camera,
+          controls.target,
+          cmd.yawDelta,
+          cmd.pitchDelta,
+          cmd.zoomDelta,
+          controls.minDistance,
+          controls.maxDistance
+        );
+        controls.update();
+      } else if (cmd.type === 'explode_set') {
+        setExplodeFactor(Math.max(0, Math.min(1, cmd.value)));
+      } else if (cmd.type === 'explode_toggle') {
+        setExplodeFactor((prev) => (prev > 0.25 ? 0 : 0.75));
+      } else if (cmd.type === 'toggle_play') {
+        setIsPaused((prev) => !prev);
+      } else if (cmd.type === 'reset_view') {
+        resetCurrentMonument();
+      } else if (cmd.type === 'slide_prev' || cmd.type === 'slide_next') {
+        const presetKeys = Object.keys(CAMERA_PRESETS) as CameraPresetId[];
+        const idx = presetKeys.indexOf(presetRef.current);
+        const nextIdx =
+          cmd.type === 'slide_next'
+            ? (idx + 1) % presetKeys.length
+            : (idx - 1 + presetKeys.length) % presetKeys.length;
+        applyCameraPreset(presetKeys[nextIdx]);
+      }
+    });
+
     return () => {
+      unsubRemote();
       disposed = true;
       cancelAnimationFrame(frameId);
       if (paceTimer !== null) window.clearTimeout(paceTimer);

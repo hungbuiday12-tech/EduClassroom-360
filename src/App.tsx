@@ -14,6 +14,9 @@ import { useNavigation } from './context/NavigationContext';
 import { useLanguage } from './context/LanguageContext';
 import { useFocusTimer } from './context/FocusTimerContext';
 import { useBackgroundTheme } from './context/BackgroundContext';
+import { RemoteControllerProvider } from './context/RemoteControllerContext';
+import { RemoteControllerModal } from './components/common/RemoteControllerModal';
+import { PhoneRemoteControllerScreen } from './components/common/PhoneRemoteControllerScreen';
 import { useDraggableWidget } from './hooks/useDraggableWidget';
 import { CURRICULUM_COUNTS } from './data/curriculumCounts';
 import { progressDailyQuest, recordGrowthStat, touchDailyActivity } from './lib/learningGrowthStore';
@@ -983,9 +986,38 @@ function MainApp() {
 }
 
 export default function App() {
+  const [remoteRoomCode, setRemoteRoomCode] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const val = new URLSearchParams(window.location.search).get('remoteRoom');
+      return val && val.trim() ? val.trim().toUpperCase() : null;
+    } catch {
+      return null;
+    }
+  });
+
+  if (remoteRoomCode) {
+    return (
+      <PhoneRemoteControllerScreen
+        roomCode={remoteRoomCode}
+        onExitController={() => {
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('remoteRoom');
+            window.history.replaceState({}, '', url.toString());
+          } catch {}
+          setRemoteRoomCode(null);
+        }}
+      />
+    );
+  }
+
   return (
     <AuthProvider>
-      <MainApp />
+      <RemoteControllerProvider>
+        <MainApp />
+        <RemoteControllerModal />
+      </RemoteControllerProvider>
     </AuthProvider>
   );
 }

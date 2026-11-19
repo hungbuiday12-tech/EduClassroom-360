@@ -39,6 +39,7 @@ import {
 } from '../../hooks/useHeadTrackedHologram';
 import { HologramModeControls } from '../common/HologramModeControls';
 import { SimToCodeModal } from './SimToCodeModal';
+import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
 
 interface Numeric3DControlProps {
   label: string;
@@ -476,7 +477,29 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
     if (resizeObserver) resizeObserver.observe(container);
 
+    const unsubRemote = subscribeRemoteCommand((cmd) => {
+      if (cmd.type === 'orbit') {
+        applySphericalOrbitDelta(
+          camera,
+          controls.target,
+          cmd.yawDelta,
+          cmd.pitchDelta,
+          cmd.zoomDelta,
+          controls.minDistance,
+          controls.maxDistance
+        );
+        controls.update();
+      } else if (cmd.type === 'reset_view') {
+        camera.position.set(0, 6, 12);
+        controls.target.set(0, 0, 0);
+        controls.update();
+      } else if (cmd.type === 'toggle_play') {
+        setIsRunning((prev) => !prev);
+      }
+    });
+
     return () => {
+      unsubRemote();
       cancelAnimationFrame(frameId);
       window.removeEventListener('resize', handleResize);
       canvasEl.removeEventListener('webglcontextlost', onContextLost);

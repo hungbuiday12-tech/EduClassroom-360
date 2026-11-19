@@ -5253,9 +5253,53 @@ function broadcastSensorRoster(room: SensorLabRoom) {
   }
 }
 
+interface RemoteControlRoom {
+  roomCode: string;
+  createdAt: number;
+  emptySince: number | null;
+  hostPageLabel: string;
+  hostSubject: string;
+  hosts: Set<WebSocket>;
+  controllers: Set<WebSocket>;
+}
+const remoteControlRooms = new Map<string, RemoteControlRoom>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of remoteControlRooms.entries()) {
+    if (
+      room.hosts.size === 0 &&
+      room.controllers.size === 0 &&
+      room.emptySince &&
+      now - room.emptySince > 10 * 60 * 1000
+    ) {
+      remoteControlRooms.delete(code);
+    }
+  }
+}, 45000);
+
+function broadcastRemoteRoster(room: RemoteControlRoom) {
+  const payload = JSON.stringify({
+    type: 'remote:roster',
+    roomCode: room.roomCode,
+    hostCount: room.hosts.size,
+    controllerCount: room.controllers.size,
+    hostPageLabel: room.hostPageLabel,
+    hostSubject: room.hostSubject
+  });
+  for (const ws of [...room.hosts, ...room.controllers]) {
+    if (ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(payload);
+      } catch {}
+    }
+  }
+}
+
 function attachSpatialCoopWebSocket(httpServer: http.Server): void {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 512 * 1024 });
   const wssSensor = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024 });
+  const wssRemote = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
 
   httpServer.on('upgrade', (request, socket, head) => {
     const reqUrl = request.url || '';
@@ -5269,6 +5313,12 @@ function attachSpatialCoopWebSocket(httpServer: http.Server): void {
     if (pathname === '/ws/sensor-lab') {
       wssSensor.handleUpgrade(request, socket, head, (ws) => {
         wssSensor.emit('connection', ws, request);
+      });
+      return;
+    }
+    if (pathname === '/ws/remote-control') {
+      wssRemote.handleUpgrade(request, socket, head, (ws) => {
+        wssRemote.emit('connection', ws, request);
       });
       return;
     }
@@ -5355,6 +5405,108 @@ function attachSpatialCoopWebSocket(httpServer: http.Server): void {
       } else if (msg.type === 'sensor:mode' && typeof msg.experimentMode === 'string') {
         room.experimentMode = msg.experimentMode.slice(0, 40);
         broadcastSensorRoster(room);
+      }
+    });
+  });
+
+  wssRemote.on('connection', (ws: WebSocket) => {
+    let joinedCode: string | null = null;
+    let role: 'host' | 'controller' = 'host';
+
+    const leaveRemoteRoom = () => {
+      if (!joinedCode) return;
+      const room = remoteControlRooms.get(joinedCode);
+      if (room) {
+        room.hosts.delete(ws);
+        room.controllers.delete(ws);
+        if (room.hosts.size === 0 && room.controllers.size === 0) {
+          room.emptySince = Date.now();
+        }
+        broadcastRemoteRoster(room);
+      }
+      joinedCode = null;
+    };
+
+    ws.on('close', leaveRemoteRoom);
+    ws.on('error', leaveRemoteRoom);
+
+    ws.on('message', (raw) => {
+      let msg: any = null;
+      try {
+        msg = JSON.parse(raw.toString());
+      } catch {
+        return;
+      }
+      if (!msg || typeof msg.type !== 'string') return;
+
+      if (msg.type === 'remote:join') {
+        const code = String(msg.roomCode || '')
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '')
+          .slice(0, 12);
+        if (!code) return;
+        if (joinedCode && joinedCode !== code) leaveRemoteRoom();
+
+        role = msg.role === 'controller' ? 'controller' : 'host';
+        let room = remoteControlRooms.get(code);
+        if (!room) {
+          room = {
+            roomCode: code,
+            createdAt: Date.now(),
+            emptySince: null,
+            hostPageLabel: String(msg.hostPageLabel || 'Synapse STEM').slice(0, 80),
+            hostSubject: String(msg.hostSubject || 'overview').slice(0, 32),
+            hosts: new Set(),
+            controllers: new Set()
+          };
+          remoteControlRooms.set(code, room);
+        }
+        room.emptySince = null;
+        if (role === 'controller') {
+          room.controllers.add(ws);
+        } else {
+          room.hosts.add(ws);
+          if (typeof msg.hostPageLabel === 'string') {
+            room.hostPageLabel = msg.hostPageLabel.slice(0, 80);
+          }
+          if (typeof msg.hostSubject === 'string') {
+            room.hostSubject = msg.hostSubject.slice(0, 32);
+          }
+        }
+        joinedCode = code;
+        broadcastRemoteRoster(room);
+        return;
+      }
+
+      if (!joinedCode) return;
+      const room = remoteControlRooms.get(joinedCode);
+      if (!room) return;
+
+      if (msg.type === 'remote:host_state') {
+        if (typeof msg.hostPageLabel === 'string') {
+          room.hostPageLabel = msg.hostPageLabel.slice(0, 80);
+        }
+        if (typeof msg.hostSubject === 'string') {
+          room.hostSubject = msg.hostSubject.slice(0, 32);
+        }
+        broadcastRemoteRoster(room);
+        return;
+      }
+
+      if (msg.type === 'remote:cmd' && msg.command && typeof msg.command === 'object') {
+        const relay = JSON.stringify({
+          type: 'remote:cmd',
+          command: msg.command,
+          t: Date.now()
+        });
+        for (const hostWs of room.hosts) {
+          if (hostWs !== ws && hostWs.readyState === WebSocket.OPEN) {
+            try {
+              hostWs.send(relay);
+            } catch {}
+          }
+        }
       }
     });
   });

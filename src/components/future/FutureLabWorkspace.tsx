@@ -19,6 +19,7 @@ import {
   Maximize2,
   Minimize2,
   Orbit,
+  QrCode,
   Rocket,
   Search,
   Smartphone,
@@ -30,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { useRemoteController } from '../../context/RemoteControllerContext';
 import {
   BACKGROUND_STYLE_OPTIONS,
   CREATURE_THEME_OPTIONS,
@@ -523,6 +525,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
   const isEn = language === 'en';
   const { location, navigate } = useNavigation();
   const { bgStyle, creatureTheme, activePalette, perfMode } = useBackgroundTheme();
+  const { openModal: openRemoteModal, controllerCount } = useRemoteController();
 
   const rawTab = location.futureTab;
   const activeView: 'hub' | FutureLabTabId =
@@ -1207,6 +1210,30 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             >
               <span className="hidden sm:inline">{isEn ? 'Next' : 'Tiếp'}</span>
               <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={openRemoteModal}
+              className={`pre-grand-btn inline-flex items-center gap-1.5 px-3 py-2 border text-xs font-bold cursor-pointer whitespace-nowrap ${
+                controllerCount > 0
+                  ? 'border-emerald-400/70 bg-emerald-500/20 text-emerald-700 dark:text-emerald-200'
+                  : 'border-sky-500/50 bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-200'
+              }`}
+              title={
+                isEn
+                  ? 'Scan QR to use Phone as 3D Controller'
+                  : 'Quét QR dùng Điện thoại điều khiển 3D từ xa'
+              }
+            >
+              <QrCode className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">{isEn ? 'QR Remote' : 'QR 3D'}</span>
+              {controllerCount > 0 && (
+                <span className="px-1 rounded-[3px] bg-emerald-500 text-slate-950 text-[10px] font-mono font-extrabold tabular-nums">
+                  {controllerCount}
+                </span>
+              )}
             </button>
 
             <button

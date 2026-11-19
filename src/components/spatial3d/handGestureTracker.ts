@@ -516,6 +516,7 @@ function isFingerExtended(
 export interface TrackerProcessOptions {
   mirror: boolean;
   minimalControlMode?: boolean;
+  minimal2DMode?: boolean;
   sensitivity?: number;
   sensitivityX?: number;
   sensitivityY?: number;
@@ -870,6 +871,7 @@ export class HandGestureTracker {
     let twoHandAngle = this.smoothTwoHandAngle;
     const anyPinch = hand1Pinching || hand2Pinching;
     const minimalControl = options.minimalControlMode ?? false;
+    const minimal2D = options.minimal2DMode ?? false;
     let isThumbUpPose = false;
 
     if (indexedHands.length === 2) {
@@ -939,6 +941,20 @@ export class HandGestureTracker {
               ? this.stableGesture
               : 'palm_5';
         }
+      } else if (minimal2D) {
+        // Simplified 2D Mode:
+        // ✊ Fist (freeze), 🤏 Pinch (grab & drag), ☝️ 1 Finger / Thumb Up (draw / plot), ✌️ 2 Fingers V (rotate 45° / cycle / secant), 🖐️ 3–5 Fingers Open (aim safely without accidental drawing)
+        if (!indexExt && !middleExt && !ringExt && !pinkyExt && !anyPinch && !isThumbUpPose) {
+          rawGesture = 'fist_0';
+        } else if (anyPinch && !ringExt && !pinkyExt) {
+          rawGesture = 'pinch';
+        } else if ((indexExt && !middleExt && !ringExt && !pinkyExt) || isThumbUpPose) {
+          rawGesture = 'point_1';
+        } else if (indexExt && middleExt && !ringExt && !pinkyExt && !anyPinch) {
+          rawGesture = 'slice_2';
+        } else {
+          rawGesture = 'palm_5';
+        }
       } else {
         if (totalExtended === 0 && !anyPinch) {
           rawGesture = 'fist_0';
@@ -970,12 +986,15 @@ export class HandGestureTracker {
     const isDirectGrabState =
       rawGesture === 'fist_0' || rawGesture === 'palm_5' || rawGesture === 'pinch' || rawGesture === 'two_hand_10';
     const isMinimalThumbSelect = minimalControl && rawGesture === 'point_1';
+    const isMinimal2DResponsive = minimal2D && (isDirectGrabState || rawGesture === 'point_1');
     const effectiveHoldMs = minimalControl
       ? isDirectGrabState
         ? Math.min(gestureHoldMs, 45)
         : isMinimalThumbSelect
         ? Math.min(gestureHoldMs, 85)
         : Math.max(gestureHoldMs, 220)
+      : isMinimal2DResponsive
+      ? Math.min(gestureHoldMs, 60)
       : isDirectGrabState
       ? Math.min(gestureHoldMs, 90)
       : Math.max(gestureHoldMs, 240);
@@ -985,6 +1004,8 @@ export class HandGestureTracker {
         : isMinimalThumbSelect
         ? 2
         : Math.max(2, stabilityFrames)
+      : isMinimal2DResponsive
+      ? 1
       : isDirectGrabState
       ? Math.min(stabilityFrames, 2)
       : stabilityFrames;

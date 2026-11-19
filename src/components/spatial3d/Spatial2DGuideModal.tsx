@@ -101,8 +101,8 @@ export const Spatial2DGuideModal: React.FC<Spatial2DGuideModalProps> = ({
       code: 'LAB 04',
       title: isEn ? 'Radial Symmetry Kaleidoscope' : 'Kính Vạn Hoa Đối Xứng Bậc n',
       desc: isEn
-        ? 'Draw with 1 or 2 hands across 4, 6, 8, or 12 radial mirror axes; raise 3 fingers (hold 0.5s) to cycle symmetry order.'
-        : 'Vẽ hoa văn đối xứng tâm qua 4, 6, 8 hoặc 12 trục gương; giơ 3 ngón tay (đợi 0.5s) để đổi số cánh đối xứng.',
+        ? 'Draw with 1 or 2 hands across 4, 6, 8, or 12 radial mirror axes; hold 2 fingers in a V-sign to cycle symmetry order.'
+        : 'Vẽ hoa văn đối xứng tâm qua 4, 6, 8 hoặc 12 trục gương; giơ 2 ngón chữ V để đổi nhanh số cánh đối xứng.',
       formula: 'n ∈ {4, 6, 8, 12}'
     },
     {

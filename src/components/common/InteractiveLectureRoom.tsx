@@ -36,8 +36,10 @@ import {
   LectureStepEvaluation,
   LectureStepSavedResult,
   LessonAssessmentRecord,
-  LessonProgressAnalysis
+  LessonProgressAnalysis,
+  PhysicsLesson
 } from '../../types';
+import { PhysicsInline2DSim } from '../physics/PhysicsInline2DSim';
 import { FormattedText, MathFormula } from './MathRenderer';
 import { MonokaiCodeBlock } from '../cs/SublimeEditor';
 import { safeFetchJson, streamTutorChat } from '../../lib/apiClient';
@@ -67,6 +69,7 @@ export interface LectureActionItem {
 interface InteractiveLectureRoomProps {
   lessonKey: string;
   subject?: 'math' | 'physics' | 'cs';
+  physicsLesson?: PhysicsLesson;
   grade?: string;
   subjectAccent: 'indigo' | 'blue' | 'emerald' | 'amber';
   kicker: string;
@@ -97,6 +100,7 @@ const STEP_TYPE_LABEL: Record<NonNullable<LectureStep['stepType']>, string> = {
 export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
   lessonKey,
   subject = 'math',
+  physicsLesson,
   grade = '',
   subjectAccent,
   kicker,
@@ -1292,6 +1296,20 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
               );
             })()}
           </section>
+        )}
+
+        {/* ============================================================== */}
+        {/* INLINE 2D PHYSICS SIMULATION (MOUNTED ON EVERY LECTURE STEP)   */}
+        {/* ============================================================== */}
+        {subject === 'physics' && physicsLesson && (
+          <PhysicsInline2DSim
+            lesson={physicsLesson}
+            stepIndex={idx}
+            totalSteps={steps.length}
+            stepTitle={step.stepTitle}
+            onOpenSim2D={onOpenSim2D}
+            onOpenSim3D={onOpenSim3D}
+          />
         )}
 
         {/* ============================================================== */}

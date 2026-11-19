@@ -319,9 +319,12 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
   const [experimentKind, setExperimentKind] = useState<ExperimentKind>('free_fall');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState<number>(0.5);
+  const [videoFps, setVideoFps] = useState<number>(30);
   const [frameStep, setFrameStep] = useState<number>(1); // 1, 2, or 3 frames per step
   const [currentFrame, setCurrentFrame] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+  const activeFps = sourceKind === 'uploaded_video' ? videoFps : DEMO_FPS;
 
   // Camera Recorder State
   const [cameraOpen, setCameraOpen] = useState<boolean>(false);
@@ -362,8 +365,8 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
   const totalFrames = useMemo(() => {
     if (sourceKind === 'demo_free_fall') return 16; // 0..0.50s
     if (sourceKind === 'demo_pendulum') return 75; // 0..2.47s
-    return Math.max(2, Math.floor(videoDuration * DEMO_FPS));
-  }, [sourceKind, videoDuration]);
+    return Math.max(2, Math.floor(videoDuration * activeFps));
+  }, [activeFps, sourceKind, videoDuration]);
 
   const toPhysicalCoords = useCallback(
     (px: number, py: number) => {
@@ -428,7 +431,7 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
       const stageCtx = stageCanvas.getContext('2d');
       if (!stageCtx) return;
 
-      const tSec = frameIdx / DEMO_FPS;
+      const tSec = frameIdx / activeFps;
       if (sourceKind === 'demo_free_fall' || sourceKind === 'demo_pendulum') {
         renderDemoFrame(sampleCtx, STAGE_W, STAGE_H, sourceKind, tSec);
       } else if (videoElRef.current && videoElRef.current.readyState >= 2) {
@@ -503,14 +506,14 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
       });
       stageCtx.restore();
     },
-    [calP1, calP2, getSampleCtx, originPx, points, sourceKind]
+    [activeFps, calP1, calP2, getSampleCtx, originPx, points, sourceKind]
   );
 
   // Sync seeked <video> or demo frame
   useEffect(() => {
     if (sourceKind === 'uploaded_video' && videoElRef.current && videoUrl) {
       const vid = videoElRef.current;
-      const targetTime = Math.min(Math.max(0, currentFrame / DEMO_FPS), Math.max(0, videoDuration - 0.01));
+      const targetTime = Math.min(Math.max(0, currentFrame / activeFps), Math.max(0, videoDuration - 0.01));
       if (Math.abs(vid.currentTime - targetTime) > 0.008) {
         const onSeeked = () => {
           vid.removeEventListener('seeked', onSeeked);
@@ -526,7 +529,7 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
       }
     }
     drawFrameAt(currentFrame);
-  }, [currentFrame, drawFrameAt, sourceKind, videoDuration, videoUrl]);
+  }, [activeFps, currentFrame, drawFrameAt, sourceKind, videoDuration, videoUrl]);
 
   // Playback timer loop
   useEffect(() => {
@@ -537,9 +540,9 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
         if (next >= totalFrames) return 0;
         return next;
       });
-    }, 1000 / DEMO_FPS);
+    }, 1000 / Math.min(60, activeFps));
     return () => window.clearInterval(id);
-  }, [isAutoTracking, isPlaying, totalFrames]);
+  }, [activeFps, isAutoTracking, isPlaying, totalFrames]);
 
   // Clean up object URL & camera on unmount
   useEffect(() => {
@@ -696,7 +699,7 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
       }
       const vid = videoElRef.current;
       if (!vid) return;
-      const targetTime = Math.min(Math.max(0, fIdx / DEMO_FPS), Math.max(0, videoDuration - 0.01));
+      const targetTime = Math.min(Math.max(0, fIdx / activeFps), Math.max(0, videoDuration - 0.01));
       if (Math.abs(vid.currentTime - targetTime) > 0.01) {
         await new Promise<void>((resolve) => {
           let done = false;
@@ -718,7 +721,7 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
       const fit = Math.min(STAGE_W / vw, STAGE_H / vh);
       sampleCtx.drawImage(vid, (STAGE_W - vw * fit) * 0.5, (STAGE_H - vh * fit) * 0.5, vw * fit, vh * fit);
     },
-    [getSampleCtx, sourceKind, videoDuration]
+    [activeFps, getSampleCtx, sourceKind, videoDuration]
   );
 
   const runAutoColorTrack = async () => {
@@ -745,7 +748,7 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
         const { xM, yM } = toPhysicalCoords(hit.x, hit.y);
         collected.push({
           frame: f,
-          t: f / DEMO_FPS,
+          t: f / activeFps,
           px: hit.x,
           py: hit.y,
           xM,
@@ -803,7 +806,7 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
 
     // Manual tracking click
     const { xM, yM } = toPhysicalCoords(px, py);
-    const tSec = currentFrame / DEMO_FPS;
+    const tSec = currentFrame / activeFps;
     setPoints((prev) => {
       const filtered = prev.filter((p) => p.frame !== currentFrame);
       return [...filtered, { frame: currentFrame, t: tSec, px, py, xM, yM }].sort((a, b) => a.frame - b.frame);
@@ -1026,16 +1029,36 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
           </button>
         </div>
 
-        <select
-          value={experimentKind}
-          onChange={(e) => setExperimentKind(e.target.value as ExperimentKind)}
-          aria-label="Loại bài toán đo lường"
-          className="px-2.5 py-1.5 rounded text-xs font-bold bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100"
-        >
-          <option value="free_fall">{isEn ? 'Gravity (g = 2c₂)' : 'Rơi tự do · Đo g (m/s²)'}</option>
-          <option value="pendulum">{isEn ? 'Oscillation Period (T)' : 'Dao động · Đo chu kỳ T (s)'}</option>
-          <option value="linear">{isEn ? 'Linear Kinematics (v, a)' : 'Chuyển động thẳng (v, a)'}</option>
-        </select>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {sourceKind === 'uploaded_video' && (
+            <select
+              value={videoFps}
+              onChange={(e) => {
+                setVideoFps(Number(e.target.value));
+                setPoints([]);
+                setCurrentFrame(0);
+              }}
+              aria-label="Tốc độ khung hình video"
+              className="px-2 py-1.5 rounded text-xs font-mono font-bold bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sky-600 dark:text-sky-400"
+              title={isEn ? 'Recorded video frame rate (FPS)' : 'Tốc độ khung hình video (FPS)'}
+            >
+              <option value={24}>24 fps</option>
+              <option value={30}>30 fps</option>
+              <option value={60}>60 fps</option>
+              <option value={120}>120 fps</option>
+            </select>
+          )}
+          <select
+            value={experimentKind}
+            onChange={(e) => setExperimentKind(e.target.value as ExperimentKind)}
+            aria-label="Loại bài toán đo lường"
+            className="px-2.5 py-1.5 rounded text-xs font-bold bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+          >
+            <option value="free_fall">{isEn ? 'Gravity (g = 2c₂)' : 'Rơi tự do · Đo g (m/s²)'}</option>
+            <option value="pendulum">{isEn ? 'Oscillation Period (T)' : 'Dao động · Đo chu kỳ T (s)'}</option>
+            <option value="linear">{isEn ? 'Linear Kinematics (v, a)' : 'Chuyển động thẳng (v, a)'}</option>
+          </select>
+        </div>
       </div>
 
       {cameraError && (
@@ -1224,7 +1247,7 @@ export const MotionVideoTracker: React.FC<MotionVideoTrackerProps> = ({ language
             />
 
             <span className="font-mono text-[11px] text-slate-600 dark:text-slate-300 tabular-nums">
-              F{currentFrame}/{totalFrames - 1} · {(currentFrame / DEMO_FPS).toFixed(2)}s
+              F{currentFrame}/{totalFrames - 1} · {(currentFrame / activeFps).toFixed(2)}s
             </span>
 
             <select

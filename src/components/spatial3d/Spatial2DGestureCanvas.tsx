@@ -997,7 +997,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
                 pc.rot = Math.round(pc.rot / step) * step;
               }
               grabbedPieceRef.current = null;
-              if (isSweepAction && nowMs - lastTangramSpinRef.current > 550) {
+              if (isSweepAction && nowMs - lastTangramSpinRef.current > 450) {
                 lastTangramSpinRef.current = nowMs;
                 let bestIdx = 0;
                 let bestD = Infinity;
@@ -1008,7 +1008,7 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
                     bestIdx = i;
                   }
                 });
-                if (bestD < 2.6) {
+                if (pieces[bestIdx] && bestD < 4.5) {
                   pieces[bestIdx].rot += Math.PI / 4;
                 }
               } else if (isRotateAction && (hasHand || pointerDownRef.current)) {
@@ -1626,10 +1626,81 @@ export const Spatial2DGestureCanvas = React.forwardRef<Spatial2DHandle, Spatial2
           className="w-full h-full cursor-crosshair touch-none block"
         />
         {mode2D === 'symmetry_kaleido' && (
-          <div className="absolute top-16 left-3 z-10 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-slate-700/80 text-[11px] font-bold text-cyan-300">
+          <div className="absolute top-16 left-3 z-10 px-3 py-1.5 rounded-md bg-slate-950/90 border border-slate-700/80 text-[11px] font-bold text-cyan-300">
             {isEn ? `Symmetry Order: ${kaleidoOrderUI}-fold` : `Bậc đối xứng: ${kaleidoOrderUI} cánh`}
           </div>
         )}
+
+        {/* Live 2D Simple Gesture Command Helper Overlay */}
+        {(() => {
+          const liveG: HandGestureId =
+            cameraActive && handFrameRef.current.detected ? handFrameRef.current.gesture : virtualGesture;
+          const badgeMap: Record<HandGestureId, { icon: string; vi: string; en: string; tone: string }> = {
+            palm_5: {
+              icon: '🖐️',
+              vi: '5 Ngón mở: Rê ngắm an toàn (không vẽ nhầm)',
+              en: 'Open Hand: Aim Cursor Safely',
+              tone: 'border-cyan-500/45 text-cyan-200'
+            },
+            point_1: {
+              icon: '☝️',
+              vi: '1 Ngón trỏ: Vẽ nét / Dựng hình Oxy',
+              en: '1 Finger: Draw / Sketch',
+              tone: 'border-emerald-500/55 text-emerald-200'
+            },
+            pinch: {
+              icon: '🤏',
+              vi: 'Chụm ngón: Gắp & Kéo điểm / Mảnh Tangram',
+              en: 'Pinch: Grab & Drag Shape/Point',
+              tone: 'border-amber-500/55 text-amber-200'
+            },
+            slice_2: {
+              icon: '✌️',
+              vi: '2 Ngón V: Xoay 45° · Đổi Bậc · Quét đường cắt',
+              en: '2 Fingers V: Rotate 45° / Cycle / Secant',
+              tone: 'border-purple-500/55 text-purple-200'
+            },
+            fist_0: {
+              icon: '✊',
+              vi: 'Nắm tay: Khóa đóng băng bảng Oxy',
+              en: 'Fist: Freeze Oxy Canvas',
+              tone: 'border-rose-500/55 text-rose-200'
+            },
+            two_hand_10: {
+              icon: '👐',
+              vi: '2 Tay: Compa / Vector u & v / Đối xứng kép',
+              en: '2 Hands: Compass / Dual Vectors',
+              tone: 'border-sky-500/55 text-sky-200'
+            },
+            morph_3: {
+              icon: '🤟',
+              vi: '3 Ngón: Đổi bậc đối xứng Kính vạn hoa',
+              en: '3 Fingers: Cycle Symmetry Order',
+              tone: 'border-indigo-500/55 text-indigo-200'
+            },
+            reassemble_4: {
+              icon: '🖖',
+              vi: '4 Ngón: Giữ chế độ ngắm',
+              en: '4 Fingers: Hover Aim',
+              tone: 'border-slate-500/45 text-slate-200'
+            },
+            none: {
+              icon: '🖐️',
+              vi: 'Giơ tay trước Camera hoặc kéo chuột trực tiếp',
+              en: 'Show hand or drag directly',
+              tone: 'border-slate-600/50 text-slate-300'
+            }
+          };
+          const b = badgeMap[frozen ? 'fist_0' : liveG] || badgeMap.none;
+          return (
+            <div
+              className={`pointer-events-none absolute top-16 right-3 z-10 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-950/90 border text-[11px] font-bold shadow-md ${b.tone}`}
+            >
+              <span>{b.icon}</span>
+              <span>{frozen ? (isEn ? 'Frozen (Fist)' : 'Đã Khóa bảng Oxy') : isEn ? b.en : b.vi}</span>
+            </div>
+          );
+        })()}
       </div>
     );
   }

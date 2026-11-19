@@ -16,11 +16,13 @@ import {
   Network,
   Pause,
   Play,
+  QrCode,
   RotateCcw,
   Shuffle
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { useRemoteController } from '../../context/RemoteControllerContext';
 import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
 
 export type CS3DSimMode = 'sort_3d' | 'bst_3d' | 'graph_3d' | 'maze_3d' | 'stack_queue_3d';
@@ -514,6 +516,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { perfMode } = useBackgroundTheme();
+  const { openModal: openRemoteModal, controllerCount } = useRemoteController();
 
   const [mode, setMode] = useState<CS3DSimMode>('sort_3d');
   const [sortSeed, setSortSeed] = useState<number[]>([7, 3, 9, 2, 6, 4, 8, 5, 1]);
@@ -1122,15 +1125,40 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack }) => {
           })}
         </div>
 
-        <button
-          type="button"
-          onClick={handleToggleFullscreen}
-          className="min-h-[38px] px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-slate-100 flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-          title={isFullscreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình'}
-        >
-          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-          <span>{isFullscreen ? (isEn ? 'Exit Fullscreen' : 'Thu nhỏ') : isEn ? 'Fullscreen' : 'Toàn màn hình'}</span>
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={openRemoteModal}
+            className={`min-h-[38px] px-2.5 py-1.5 rounded border text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+              controllerCount > 0
+                ? 'bg-emerald-950/90 border-emerald-400/70 text-emerald-300'
+                : 'bg-slate-800 hover:bg-slate-700 border-sky-500/50 text-sky-300'
+            }`}
+            title={
+              isEn
+                ? 'Scan QR to use Phone as 3D Controller'
+                : 'Quét QR dùng Điện thoại điều khiển 3D & Thuyết trình từ xa'
+            }
+          >
+            <QrCode className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden md:inline">{isEn ? 'QR Remote' : 'QR 3D'}</span>
+            {controllerCount > 0 && (
+              <span className="px-1 rounded-[3px] bg-emerald-500 text-slate-950 text-[10px] font-mono font-extrabold tabular-nums">
+                {controllerCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className="min-h-[38px] px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-slate-100 flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+            title={isFullscreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            <span>{isFullscreen ? (isEn ? 'Exit Fullscreen' : 'Thu nhỏ') : isEn ? 'Fullscreen' : 'Toàn màn hình'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Split: 3D Stage + Controls & Code Trace */}

@@ -9,6 +9,7 @@ import {
   Layers,
   MousePointerClick,
   PenTool,
+  QrCode,
   RotateCcw,
   Scan,
   ScanFace,
@@ -17,6 +18,7 @@ import {
   Video
 } from 'lucide-react';
 import { GESTURE_DEFINITIONS, REAL_GRAB_GESTURES } from './handGestureTracker';
+import { useRemoteController } from '../../context/RemoteControllerContext';
 
 interface SpatialSenseHubProps {
   isEn: boolean;
@@ -44,6 +46,7 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
   onOpenCoop
 }) => {
   const [guideTab, setGuideTab] = useState<GuideViewTab>('workflow');
+  const { openModal: openRemoteModal, controllerCount } = useRemoteController();
 
   const workflowSteps = [
     {
@@ -190,6 +193,28 @@ export const SpatialSenseHub: React.FC<SpatialSenseHubProps> = ({
                 <span>{isEn ? 'Co-op Hands (2–4)' : 'Bàn Tay Bạn Học (2–4)'}</span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={openRemoteModal}
+              className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 min-h-[38px] rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 ${
+                controllerCount > 0
+                  ? 'bg-emerald-600/25 border-emerald-400/75 text-emerald-200'
+                  : 'bg-slate-900 hover:bg-slate-800 border-sky-400/55 text-sky-200'
+              }`}
+              title={
+                isEn
+                  ? 'Scan QR to use Phone as 3D Controller'
+                  : 'Quét QR biến Điện thoại thành tay cầm xoay 3D từ xa'
+              }
+            >
+              <QrCode className="w-3.5 h-3.5 shrink-0" />
+              <span>{isEn ? 'QR Remote' : 'QR Điều khiển'}</span>
+              {controllerCount > 0 && (
+                <span className="px-1 rounded-[3px] bg-emerald-500 text-slate-950 text-[10px] font-mono font-extrabold tabular-nums">
+                  {controllerCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 

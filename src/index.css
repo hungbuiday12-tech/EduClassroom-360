@@ -1635,6 +1635,7 @@ html[data-perf="smooth"] .voice-os-orb-pulse,
 html[data-perf="smooth"] .sim-btn-tile-bar,
 html[data-perf="smooth"] .arena-frame::before,
 html[data-perf="smooth"] .arena-live-dot,
+html[data-perf="smooth"] .arena-beam-sweep,
 html[data-perf="smooth"] .pre-grand-hero::before,
 html[data-perf="smooth"] .pre-grand-conic,
 html[data-perf="smooth"] .pre-grand-corners {
@@ -3049,7 +3050,20 @@ html[data-perf="smooth"] .pre-card-shell {
 }
 
 .arena-beam-sweep {
-  display: none;
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 38%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(99, 102, 241, 0.14) 48%,
+    rgba(14, 165, 233, 0.16) 62%,
+    transparent 100%
+  );
+  animation: arena-beam-scan 5.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .arena-stagger-in {
@@ -3064,7 +3078,7 @@ html[data-perf="smooth"] .pre-card-shell {
   display: inline-block;
   width: 7px;
   height: 7px;
-  border-radius: 9999px;
+  border-radius: 2px;
   background: #10b981;
   animation: arena-live-pulse 2s ease-in-out infinite;
 }
@@ -3726,6 +3740,57 @@ textarea {
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* Architectural Roadmap & Arena Kinetic Framing */
+.rm-arch-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  transition: border-color 180ms ease, box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rm-arch-frame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #0284c7, #6366f1, #10b981);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.rm-card-interactive {
+  border-radius: 4px;
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms ease,
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rm-card-interactive:hover {
+  transform: translate3d(0, -2px, 0);
+  box-shadow: 0 12px 24px -12px rgba(2, 132, 199, 0.25);
+}
+
+.dark .rm-card-interactive:hover {
+  box-shadow: 0 14px 26px -12px rgba(56, 189, 248, 0.24);
+}
+
+.rm-square-node {
+  border-radius: 4px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-beam-sweep,
+  .roadmap-connector-flow,
+  .roadmap-beam-sweep::after,
+  .roadmap-node-aura,
+  .roadmap-shimmer-bar {
+    animation: none !important;
+  }
 }
 
 /* Comfortable touch targets for range sliders on phones & iPads */

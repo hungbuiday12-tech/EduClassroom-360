@@ -29,6 +29,7 @@ import {
   Orbit,
   Pause,
   Play,
+  QrCode,
   Radar,
   Radio,
   Rocket,
@@ -52,6 +53,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useAudio } from '../../context/AudioContext';
 import { PerformanceMode, useBackgroundTheme } from '../../context/BackgroundContext';
+import { useRemoteController } from '../../context/RemoteControllerContext';
 import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
 import {
   buildCitadelEnvironment,
@@ -242,6 +244,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const { location, navigate } = useNavigation();
   const { bgSound, setBgSound, isBgPlaying, toggleBgPlaying } = useAudio();
   const { perfMode } = useBackgroundTheme();
+  const { openModal: openRemoteModal, controllerCount } = useRemoteController();
 
   // Synced with NavigationContext so clicking 'Lớp học ảo · Synapse v2' in Header always returns to 12-Chamber home
   const studioMode = location.synapseMode || 'catalog';
@@ -1051,6 +1054,23 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                     <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                     {visitedWonders.length}/{totalChambers} {isEn ? 'Megastructures Unlocked' : 'Công trình đã thám hiểm'}
                   </span>
+                  <button
+                    type="button"
+                    onClick={openRemoteModal}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold cursor-pointer whitespace-nowrap ${
+                      controllerCount > 0
+                        ? 'bg-emerald-500/20 border-emerald-400/70 text-emerald-200'
+                        : 'bg-sky-500/15 hover:bg-sky-500/30 border-sky-400/50 text-sky-200'
+                    }`}
+                  >
+                    <QrCode className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isEn ? 'QR Phone Remote' : 'QR Điều khiển 3D'}</span>
+                    {controllerCount > 0 && (
+                      <span className="px-1 rounded-[3px] bg-emerald-500 text-slate-950 text-[10px] font-mono font-extrabold tabular-nums">
+                        {controllerCount}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
                 <h1 className="font-display text-2xl sm:text-4xl lg:text-[2.6rem] font-extrabold tracking-tight bg-gradient-to-r from-white via-sky-100 to-teal-200 bg-clip-text text-transparent leading-tight">
@@ -1546,6 +1566,29 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 language={language}
                 onWonderCommand={handleWonderVoiceCommand}
               />
+
+              <button
+                type="button"
+                onClick={openRemoteModal}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md border text-xs font-bold cursor-pointer whitespace-nowrap ${
+                  controllerCount > 0
+                    ? 'bg-emerald-500/20 border-emerald-400/70 text-emerald-200'
+                    : 'bg-white/5 border-white/15 hover:border-sky-400/60 text-sky-300'
+                }`}
+                title={
+                  isEn
+                    ? 'Scan QR to use Phone as 3D Controller'
+                    : 'Quét QR dùng Điện thoại xoay 3D & Thuyết trình từ xa'
+                }
+              >
+                <QrCode className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden lg:inline">{isEn ? 'QR Remote' : 'QR 3D'}</span>
+                {controllerCount > 0 && (
+                  <span className="px-1 rounded-[3px] bg-emerald-500 text-slate-950 text-[10px] font-mono font-extrabold tabular-nums">
+                    {controllerCount}
+                  </span>
+                )}
+              </button>
 
               <button
                 type="button"

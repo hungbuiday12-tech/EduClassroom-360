@@ -766,19 +766,19 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       label: 'Toán học',
       labelEn: 'Mathematics',
       accent: 'text-sky-600 dark:text-sky-400',
-      icon: <Compass className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+      icon: <Compass className="w-5 h-5 text-sky-600 dark:text-sky-400 icon-anim-compass" />
     },
     physics: {
       label: 'Vật lí',
       labelEn: 'Physics',
       accent: 'text-amber-600 dark:text-amber-400',
-      icon: <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+      icon: <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 icon-anim-zap" />
     },
     cs: {
       label: 'Tin học',
       labelEn: 'Computer Science',
       accent: 'text-emerald-600 dark:text-emerald-400',
-      icon: <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+      icon: <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 icon-anim-code" />
     }
   };
 
@@ -1284,7 +1284,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Arena Header (Crisp Square-Cut Architectural Frame) */}
-      <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm">
+      <div className="rm-arch-frame arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm">
+        <span aria-hidden="true" className="pointer-events-none absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t border-l border-indigo-500/60" />
+        <span aria-hidden="true" className="pointer-events-none absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t border-r border-indigo-500/60" />
         <div className="arena-beam-sweep" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div className="space-y-2">
@@ -1359,8 +1361,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       {/* Zone / Division Selector (Khối Lớp & Hệ Chuyên / Không Chuyên / Đội Tuyển HSG) */}
       <div
         style={{ animationDelay: '60ms' }}
-        className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm space-y-4"
+        className="rm-arch-frame arena-frame roadmap-beam-sweep arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm space-y-4"
       >
+        <span aria-hidden="true" className="pointer-events-none absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t border-l border-sky-500/60" />
+        <span aria-hidden="true" className="pointer-events-none absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t border-r border-sky-500/60" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-700 flex items-center justify-center shrink-0">
@@ -1470,9 +1474,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div
           style={{ animationDelay: '100ms' }}
-          className="arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm"
+          className="rm-card-interactive arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm"
         >
-          <div className="h-[2px] w-10 bg-indigo-500 mb-2" />
+          <div className="h-[2.5px] w-12 bg-indigo-500 roadmap-shimmer-bar mb-2" />
           <div className="text-xs text-slate-500 dark:text-slate-400">
             {isEn ? `Weekly Avg / Rank (${divisionMeta.shortLabelEn})` : `Điểm TB / Hạng (${divisionMeta.shortLabelVi})`}
           </div>
@@ -1504,9 +1508,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             <div
               key={subj}
               style={{ animationDelay: `${145 + kIdx * 45}ms` }}
-              className="arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm"
+              className="rm-card-interactive arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm"
             >
-              <div className={`h-[2px] w-10 ${topBarColor} mb-2`} />
+              <div className={`h-[2.5px] w-12 ${topBarColor} roadmap-shimmer-bar mb-2`} />
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>{isEn ? `${meta.labelEn} (Weekly Avg)` : `${meta.label} (TB tuần)`}</span>
                 {meta.icon}
@@ -1539,9 +1543,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             <div
               key={subj}
               style={{ animationDelay: `${220 + sIdx * 60}ms` }}
-              className="arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm flex flex-col justify-between gap-4"
+              className="rm-card-interactive arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm flex flex-col justify-between gap-4"
             >
-              <div className={`absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r ${accentStrip}`} />
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${accentStrip} roadmap-shimmer-bar`} />
 
               <div className="space-y-3 pt-1 relative z-10">
                 <div className="flex items-center justify-between">
@@ -1635,14 +1639,16 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       {/* WEEKLY LEADERBOARD (MULTI-SUBJECT + OVERALL AVERAGE) */}
       <div
         style={{ animationDelay: '300ms' }}
-        className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm space-y-4"
+        className="rm-arch-frame arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm space-y-4"
       >
+        <span aria-hidden="true" className="pointer-events-none absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t border-l border-amber-500/70" />
+        <span aria-hidden="true" className="pointer-events-none absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t border-r border-amber-500/70" />
         <div className="arena-beam-sweep" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
           <div>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
-              <div className="w-8 h-8 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 flex items-center justify-center">
-                <Trophy className="w-4 h-4 text-amber-500" />
+              <div className="w-8 h-8 rounded-sm bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-amber-500 icon-anim-trophy" />
               </div>
               <span>
                 {isEn

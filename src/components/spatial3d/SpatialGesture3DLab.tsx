@@ -39,6 +39,7 @@ import {
   PenTool,
   Play,
   Plus,
+  QrCode,
   RotateCcw,
   Scan,
   ScanFace,
@@ -67,6 +68,7 @@ import { FormattedText } from '../common/MathRenderer';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAudio } from '../../context/AudioContext';
 import { useAuth } from '../../context/AuthContext';
+import { useRemoteController } from '../../context/RemoteControllerContext';
 import {
   ACTION_2D_OPTIONS,
   ACTION_3D_OPTIONS,
@@ -642,6 +644,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const isEn = language === 'en';
   const { bgSound, isBgPlaying, setBgSound, toggleBgPlaying } = useAudio();
   const { user } = useAuth();
+  const { openModal: openRemoteModal, controllerCount } = useRemoteController();
   const onEarnXPRef = useRef(onEarnXP);
   onEarnXPRef.current = onEarnXP;
 
@@ -2319,7 +2322,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           gestureHoldMs: gs.gestureHoldMs,
           invertX: gs.invertX,
           invertY: gs.invertY,
-          minimalControlMode: cfg.spaceMode === '3d' && cfg.interactionStyle === 'real_grab'
+          minimalControlMode: cfg.spaceMode === '3d' && cfg.interactionStyle === 'real_grab',
+          minimal2DMode: cfg.spaceMode === '2d'
         });
         const inferDur = performance.now() - tInfer0;
         // Back off gracefully on slower CPUs so 3D/WebAR stage stays fluid
@@ -6469,6 +6473,29 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               <span className="hidden sm:inline">
                 {bgSound === 'minecraft_calm' && isBgPlaying ? 'Minecraft' : isEn ? 'Music' : 'Nhạc'}
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={openRemoteModal}
+              className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md border text-xs font-bold cursor-pointer whitespace-nowrap shrink-0 ${
+                controllerCount > 0
+                  ? 'bg-emerald-950/95 border-emerald-400/75 text-emerald-300'
+                  : 'bg-slate-950/95 border-sky-500/50 text-sky-300 hover:border-sky-400'
+              }`}
+              title={
+                isEn
+                  ? 'Scan QR to use Phone as 3D & Presentation Controller'
+                  : 'Quét QR biến Điện thoại thành tay cầm 3D & Thuyết trình từ xa'
+              }
+            >
+              <QrCode className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">{isEn ? 'QR Remote' : 'QR Điều khiển'}</span>
+              {controllerCount > 0 && (
+                <span className="px-1 rounded-[3px] bg-emerald-500 text-slate-950 text-[10px] font-mono font-extrabold tabular-nums">
+                  {controllerCount}
+                </span>
+              )}
             </button>
 
             <button

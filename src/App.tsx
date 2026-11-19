@@ -244,6 +244,12 @@ function MainApp() {
       location.futureTab === 'jet_engine_3d' ||
       location.futureTab === 'four_d_lectures' ||
       location.futureTab === 'robotics_ik_3d' ||
+      location.futureTab === 'quantum_holodeck_3d' ||
+      location.futureTab === 'universe_forge_3d' ||
+      location.futureTab === 'nanobot_bioswarm_4d' ||
+      location.futureTab === 'timemachine_holo_3d' ||
+      location.futureTab === 'spatial_gesture_3d' ||
+      location.futureTab === 'tech_teardown_3d' ||
       location.futureTab === 'text_to_sim' ||
       location.futureTab === 'paper_to_sim' ||
       location.futureTab === 'silicon_neural' ||
@@ -689,8 +695,9 @@ function MainApp() {
           {!isTutorOpen &&
             !(
               (currentSubject === 'synapse_v2' || currentSubject === 'future_lab') &&
-              location.synapseMode === 'stage' &&
-              (!location.futureTab || location.futureTab === 'megastructures')
+              ((location.synapseMode === 'stage' &&
+                (!location.futureTab || location.futureTab === 'megastructures')) ||
+                location.futureTab === 'spatial_gesture_3d')
             ) &&
             currentSubject !== 'spatial_3d' &&
             !(currentSubject === 'arena' && isArenaMatchActive) && (

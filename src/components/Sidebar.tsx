@@ -8,7 +8,6 @@ import {
   Atom,
   Code2,
   Orbit,
-  Hand,
   FileText,
   Trophy,
   MessageSquare,
@@ -312,7 +311,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'synapse_v2',
           labelVi: 'Synapse Pre',
           labelEn: 'Synapse Pre',
-          badge: 'AI·3D',
+          badge: 'AI·3D·AR',
           icon: (
             <span className="icon-anim-cosmos">
               <Orbit className="w-5 h-5 shrink-0" />
@@ -327,20 +326,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onExtra: () => {
             window.dispatchEvent(new Event('educlassroom:synapse-reset'));
           }
-        },
-        {
-          id: 'spatial_3d',
-          labelVi: 'Học cảm giác 3D',
-          labelEn: 'Spatial 3D Gesture',
-          icon: (
-            <span className="icon-anim-hand">
-              <Hand className="w-5 h-5 shrink-0" />
-            </span>
-          ),
-          idleClass:
-            'bg-teal-50/85 dark:bg-teal-950/35 border border-teal-300/80 dark:border-teal-500/35 text-teal-900 dark:text-teal-200 hover:bg-teal-100 dark:hover:bg-teal-900/55 hover:border-teal-400',
-          activeClass:
-            'bg-gradient-to-r from-teal-500 to-emerald-600 border border-teal-300 text-slate-950 font-semibold shadow-md shadow-teal-500/25'
         },
         {
           id: 'physics_sims',

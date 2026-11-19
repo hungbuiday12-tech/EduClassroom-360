@@ -1007,7 +1007,9 @@ export type FutureLabTabId =
   | 'quantum_holodeck_3d'
   | 'universe_forge_3d'
   | 'nanobot_bioswarm_4d'
-  | 'timemachine_holo_3d';
+  | 'timemachine_holo_3d'
+  | 'spatial_gesture_3d'
+  | 'tech_teardown_3d';
 
 export type PaperSimKind =
   | 'parabola'

@@ -951,8 +951,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <div className="space-y-1 min-w-0">
               <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-teal-300">
                 {isEn
-                  ? 'SPATIAL 2D/3D · 10-FINGERTIP AI · WEBAR DESK PRO'
-                  : 'HỌC CẢM GIÁC 3D · 10 ĐẦU NGÓN TAY · AR BÀN HỌC PRO'}
+                  ? 'SYNAPSE PRE · SPATIAL 2D/3D · 10-FINGERTIP AI · WEBAR DESK PRO'
+                  : 'SYNAPSE PRE · HỌC CẢM GIÁC 3D · 10 ĐẦU NGÓN TAY · AR BÀN HỌC PRO'}
               </div>
               <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-white">
                 {isEn
@@ -961,8 +961,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </h2>
               <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
                 {isEn
-                  ? 'Project 3D holograms onto your desk with rear/front camera switch, opacity, desk-tilt calibration, live Y-slicing & PNG snapshot, plus Point & Ask Live Co-Pilot.'
-                  : 'Chiếu mô hình trực tiếp lên mặt bàn thật với Camera Trước/Sau, chỉnh độ mờ Alpha, nghiêng bàn, mặt cắt Y trực tiếp & chụp ảnh PNG, kèm Point & Ask Mắt Thần AI.'}
+                  ? 'Integrated inside Synapse Pre: project 3D holograms onto your desk with rear/front camera switch, opacity, desk-tilt calibration, live Y-slicing & PNG snapshot, plus Point & Ask Live Co-Pilot.'
+                  : 'Tích hợp ngay trong Synapse Pre: chiếu mô hình lên mặt bàn thật với Camera Trước/Sau, chỉnh độ mờ Alpha, nghiêng bàn, mặt cắt Y & chụp PNG, kèm Point & Ask Mắt Thần AI.'}
               </p>
             </div>
           </div>
@@ -977,7 +977,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             className="group/btn cs-deck-btn shrink-0 px-5 py-3.5 rounded bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 hover:from-teal-300 hover:to-sky-300 text-slate-950 font-semibold text-sm shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
           >
             <Hand className="w-4 h-4 icon-anim-hand" />
-            <span>{isEn ? 'Open Spatial 3D Lab' : 'Vào Học cảm giác 3D'}</span>
+            <span>{isEn ? 'Open in Synapse Pre' : 'Mở trong Synapse Pre'}</span>
             <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
           </button>
         </div>

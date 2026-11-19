@@ -78,7 +78,8 @@ function getInitialLocation(): NavLocation {
       if (rawCode && /^[A-Z0-9]{4,12}$/.test(rawCode)) {
         return {
           ...DEFAULT_LOCATION,
-          subject: 'spatial_3d',
+          subject: 'synapse_v2',
+          futureTab: 'spatial_gesture_3d',
           coopRoomCode: rawCode
         };
       }
@@ -108,7 +109,13 @@ function getInitialLocation(): NavLocation {
           'rocket_launch_3d',
           'jet_engine_3d',
           'four_d_lectures',
-          'robotics_ik_3d'
+          'robotics_ik_3d',
+          'quantum_holodeck_3d',
+          'universe_forge_3d',
+          'nanobot_bioswarm_4d',
+          'timemachine_holo_3d',
+          'spatial_gesture_3d',
+          'tech_teardown_3d'
         ].includes(rawFutureTab)
       ) {
         return {
@@ -150,6 +157,12 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       if (loc.futureTab === 'jet_engine_3d') return isEn ? 'Synapse Pre · 3D Turbofan Jet Engine' : 'Synapse Pre · Động Cơ Phản Lực 3D';
       if (loc.futureTab === 'four_d_lectures') return isEn ? 'Synapse Pre · 4D Hypergeometry Lectures' : 'Synapse Pre · Bài Giảng Không Gian 4D';
       if (loc.futureTab === 'robotics_ik_3d') return isEn ? 'Synapse Pre · 6-DOF Robotics IK 3D' : 'Synapse Pre · Cánh Tay Robot 6-DOF 3D';
+      if (loc.futureTab === 'quantum_holodeck_3d') return isEn ? 'Synapse Pre · Quantum Holodeck 3D' : 'Synapse Pre · Máy Tính Lượng Tử 3D';
+      if (loc.futureTab === 'universe_forge_3d') return isEn ? 'Synapse Pre · Universe Forge 3D' : 'Synapse Pre · Lò Rèn Vũ Trụ 3D';
+      if (loc.futureTab === 'nanobot_bioswarm_4d') return isEn ? 'Synapse Pre · Nanobot Bio-Swarm 4D' : 'Synapse Pre · Đàn Robot Nano 4D';
+      if (loc.futureTab === 'timemachine_holo_3d') return isEn ? 'Synapse Pre · Hologram Time Machine' : 'Synapse Pre · Cỗ Máy Thời Gian 3D';
+      if (loc.futureTab === 'spatial_gesture_3d') return isEn ? 'Synapse Pre · Spatial 3D & WebAR Lab' : 'Synapse Pre · Học Cảm Giác 3D & AR';
+      if (loc.futureTab === 'tech_teardown_3d') return isEn ? 'Synapse Pre · 3D Teardown & Repair Workshop' : 'Synapse Pre · Xưởng Phẫu Thuật Thiết Bị 3D';
       return loc.synapseMode === 'stage'
         ? isEn
           ? 'Synapse Pre · 3D Megastructure Stage'
@@ -158,7 +171,7 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
         ? 'Synapse Pre · Futuristic Megastructures'
         : 'Synapse Pre · Đại công trình tương lai';
     case 'spatial_3d':
-      return isEn ? 'Spatial 3D Gesture Lab' : 'Học cảm giác 3D';
+      return isEn ? 'Synapse Pre · Spatial 3D Gesture Lab' : 'Synapse Pre · Học cảm giác 3D';
     case 'roadmap':
       return isEn ? 'Study Roadmap' : 'Lộ trình học';
     case 'math':
@@ -374,6 +387,10 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       } else if (subject === 'synapse_v2') {
         patch.synapseMode = 'catalog';
         patch.futureTab = 'hub';
+      } else if (subject === 'spatial_3d') {
+        patch.subject = 'synapse_v2';
+        patch.synapseMode = 'catalog';
+        patch.futureTab = 'spatial_gesture_3d';
       } else if (subject === 'future_lab') {
         patch.futureTab = prev.futureTab || 'hub';
       }

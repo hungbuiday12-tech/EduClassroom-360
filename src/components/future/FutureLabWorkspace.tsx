@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   ArrowLeft,
@@ -15,6 +15,7 @@ import {
   Crosshair,
   DoorOpen,
   Gauge,
+  Hand,
   Maximize2,
   Minimize2,
   Orbit,
@@ -24,6 +25,7 @@ import {
   Sparkles,
   Wand2,
   Waves,
+  Wrench,
   X
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -52,6 +54,13 @@ import { UniverseForge3DLab } from './UniverseForge3DLab';
 import { NanobotBioSwarm4DLab } from './NanobotBioSwarm4DLab';
 import { TimeMachineHolo3DLab } from './TimeMachineHolo3DLab';
 import { PreStudioDiagramPreview } from './PreStudioDiagramPreview';
+
+const SpatialGesture3DLab = lazy(() =>
+  import('../spatial3d/SpatialGesture3DLab').then((m) => ({ default: m.SpatialGesture3DLab }))
+);
+const TechTeardown3DLab = lazy(() =>
+  import('./TechTeardown3DLab').then((m) => ({ default: m.TechTeardown3DLab }))
+);
 
 interface FutureLabWorkspaceProps {
   onBack?: () => void;
@@ -172,9 +181,53 @@ const PRE_STUDIOS: PreStudioItem[] = [
     icon: Clock
   },
   {
+    id: 'tech_teardown_3d',
+    category: 'future_2030',
+    indexLabel: '05',
+    titleVi: 'Xưởng Phẫu Thuật & Sửa Chữa Thiết Bị 3D',
+    titleEn: '3D Hardware Teardown & Fault Repair Bench',
+    metaVi: 'Tách Lớp Linh Kiện 3D · Đồng Hồ VOM Ảo & Chẩn Đoán Hư Hỏng Thực Tế',
+    metaEn: '3D Exploded View · Virtual VOM Multimeter & Live Fault Repair',
+    descVi:
+      'Tháo tách lớp 3D các thiết bị thật (Quạt điện AC, Sạc nhanh USB-C GaN 65W, Pin Lithium BMS, Bo mạch Relay 12V), dùng que đo VOM ảo chạm chân TP1–TP4 tìm tụ phồng/cầu chì đứt/điện trở cháy rồi hàn thay linh kiện chuẩn và bật nguồn kiểm tra.',
+    descEn:
+      'Explode real-world 3D hardware (AC Fan, USB-C 65W GaN Charger, 3S Lithium BMS, 12V Relay Board), probe TP1–TP4 pins with a live VOM multimeter to diagnose blown fuses or bulged caps, solder replacements, and power-test the repaired unit.',
+    specsVi: '4 Thiết bị · 8 Ca hỏng thực tế · Que đo VOM 3D (V / Ω / A)',
+    specsEn: '4 Composite Devices · 8 Fault Cases · Interactive 3D VOM Probe',
+    keywords: 'xuong phau thuat sua chua thiet bi 3d vom dong ho do quat sac usbc bms relay linh kien',
+    accentHex: '#f59e0b',
+    secondaryHex: '#10b981',
+    accentTextClass: 'text-amber-600 dark:text-amber-300',
+    iconBgClass: 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-300',
+    btnGradientClass: 'from-amber-400 via-orange-500 to-emerald-400 text-slate-950',
+    icon: Wrench
+  },
+  {
+    id: 'spatial_gesture_3d',
+    category: 'future_2030',
+    indexLabel: '06',
+    titleVi: 'Học Cảm Giác 3D & WebAR Bàn Học Pro',
+    titleEn: 'Spatial 3D Gesture & WebAR Desk Lab',
+    metaVi: '10 Đầu Ngón Tay AI · Thị Sai Hướng Đầu · Quét Vật Thể & Phòng Co-op',
+    metaEn: '10-Fingertip AI · Head-Tracked Parallax · RealWorld Scan & Co-op',
+    descVi:
+      'Điều khiển 15+ mô hình 3D thực tế & hình học 2D/Oxyz bằng 10 đầu ngón tay qua webcam, kích hoạt Thị sai 3D theo hướng đầu (Apple Vision style), chiếu mô hình WebAR lên bàn học thật và đồng bộ phòng học Co-op nhiều người.',
+    descEn:
+      'Manipulate 15+ realistic 3D assemblies & 2D/Oxyz geometry via 10-finger webcam tracking, Head-Tracked Parallax Gaze HUD, WebAR Desk Pro projection, AI Model Creator, and real-time multi-user Co-op rooms.',
+    specsVi: 'WebAR Bàn Học Pro · 10 Ngón Tay · Thị Sai Đầu & Mắt',
+    specsEn: 'WebAR Desk Pro · 10-Finger Tracking · Head Parallax HUD',
+    keywords: 'hoc cam giac 3d spatial gesture tay webar ban hoc thi sai dau mat co-op',
+    accentHex: '#14b8a6',
+    secondaryHex: '#38bdf8',
+    accentTextClass: 'text-teal-600 dark:text-teal-300',
+    iconBgClass: 'bg-teal-500/15 border-teal-500/40 text-teal-600 dark:text-teal-300',
+    btnGradientClass: 'from-teal-400 via-cyan-400 to-sky-400 text-slate-950',
+    icon: Hand
+  },
+  {
     id: 'rocket_launch_3d',
     category: 'aerospace_physics',
-    indexLabel: '05',
+    indexLabel: '07',
     titleVi: 'Phóng Tên Lửa Đa Tầng & Quỹ Đạo 3D',
     titleEn: 'Multi-Stage Rocket Launch & Orbit 3D',
     metaVi: 'Động lực học Khối lượng Biến thiên 3D · Tách Tầng & Đưa Vệ tinh lên Quỹ đạo',
@@ -196,7 +249,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'jet_engine_3d',
     category: 'aerospace_physics',
-    indexLabel: '06',
+    indexLabel: '08',
     titleVi: 'Động Cơ Phản Lực Tua-bin 3D (Brayton)',
     titleEn: '3D Turbofan Jet Propulsion & Brayton Cycle',
     metaVi: 'Mô hình 3D Exploded View · Quạt Nạp, Máy Nén, Buồng Đốt & Mach Shock',
@@ -218,7 +271,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'four_d_lectures',
     category: 'math_4d',
-    indexLabel: '07',
+    indexLabel: '09',
     titleVi: 'Bài Giảng Không Gian 4D & Tương Đối',
     titleEn: '4D Space, Hypersphere & Spacetime Lectures',
     metaVi: 'Hình học 4D R⁴ → R³ · Tesseract, S³, Nón Ánh Sáng Minkowski & Klein',
@@ -240,7 +293,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'robotics_ik_3d',
     category: 'aerospace_physics',
-    indexLabel: '08',
+    indexLabel: '10',
     titleVi: 'Cánh Tay Robot 6-DOF & Động Học Ngược 3D',
     titleEn: '6-DOF Robot Arm & 3D Inverse Kinematics',
     metaVi: 'Động học Robot 3D · Giải IK Thời gian thực, Vùng Khả dụng & Quỹ đạo Laser',
@@ -262,7 +315,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'cannon_ballistics_3d',
     category: 'aerospace_physics',
-    indexLabel: '09',
+    indexLabel: '11',
     titleVi: 'Quỹ Đạo Đường Bay Bắn Pháo 3D',
     titleEn: '3D Artillery Ballistic Trajectory',
     metaVi: 'Động lực học 3D WebGL · Đạn đạo có Lực cản & Gió ngang',
@@ -284,7 +337,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'megastructures',
     category: 'aerospace_physics',
-    indexLabel: '10',
+    indexLabel: '12',
     titleVi: 'Đại công trình tương lai',
     titleEn: 'Futuristic Megastructures',
     metaVi: '30 Mô hình 3D WebGL · Không gian Khám phá Toàn cảnh',
@@ -306,7 +359,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'galaxy3d',
     category: 'math_4d',
-    indexLabel: '11',
+    indexLabel: '13',
     titleVi: 'Vũ Trụ Tri Thức 3D',
     titleEn: '3D Neural Galaxy Twin',
     metaVi: 'Bản đồ Tri thức 3D · Hành tinh Trọng tâm & Chòm sao',
@@ -328,7 +381,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'text_to_sim',
     category: 'ai_code_sensor',
-    indexLabel: '12',
+    indexLabel: '14',
     titleVi: 'Sinh Mô Phỏng 3D AI',
     titleEn: 'Text → 3D Simulation Studio',
     metaVi: 'Nhập Đề bài · Biên dịch Sân khấu WebGL 3D Tương tác 60fps',
@@ -350,7 +403,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'paper_to_sim',
     category: 'ai_code_sensor',
-    indexLabel: '13',
+    indexLabel: '15',
     titleVi: 'Giấy Nháp → 3D Sim Vision',
     titleEn: 'Paper → 3D Sim Vision',
     metaVi: 'Chụp Vở viết · Dựng Mô hình WebGL 3D & Chẩn đoán từng bước',
@@ -372,7 +425,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'audio_fft',
     category: 'aerospace_physics',
-    indexLabel: '14',
+    indexLabel: '16',
     titleVi: 'Sóng Âm FFT 3D Lab',
     titleEn: 'Audio FFT 3D Lab',
     metaVi: 'Phân tích Phổ WebAudio · Sóng Đứng 3D & Hiệu ứng Doppler',
@@ -394,7 +447,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'silicon_neural',
     category: 'ai_code_sensor',
-    indexLabel: '15',
+    indexLabel: '17',
     titleVi: 'Mạch Silicon & Neural 3D',
     titleEn: 'Silicon Die & 3D Neural Manifold',
     metaVi: 'Bề mặt Decision Manifold 3D · Mạch Cộng 4-Bit & SR-Latch trên Đế 3D',
@@ -416,7 +469,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'phone_sensor_lab',
     category: 'ai_code_sensor',
-    indexLabel: '16',
+    indexLabel: '18',
     titleVi: 'Cảm Biến Điện Thoại & Bản Sao 3D',
     titleEn: 'Phone Sensor 3D Digital Twin Lab',
     metaVi: 'Bản sao Số 3D Đồng bộ Gyro · WebSocket & Dao động ký Thực nghiệm',
@@ -438,7 +491,7 @@ const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'dual_hand_sandbox',
     category: 'ai_code_sensor',
-    indexLabel: '17',
+    indexLabel: '19',
     titleVi: 'Trường Hạt GPU 3D 2 Tay',
     titleEn: 'Dual-Hand 3D 28K GPU Field',
     metaVi: 'Shader 28.000 Hạt 3D · Điều khiển Song Song 2 Bàn tay',
@@ -627,7 +680,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
 
   /* ==================== VIEW 0: TRANG CHÀO MỪNG ("Bước vào phòng Lab...") ==================== */
   if (activeView === 'hub' && showWelcomeGate) {
-    const featuredNewLabs = PRE_STUDIOS.slice(0, 4);
+    const featuredNewLabs = PRE_STUDIOS.filter((s) => s.category === 'future_2030');
     return (
       <div className="synapse-pre-scope max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 pre-page-enter">
         <section
@@ -677,8 +730,8 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               </h1>
               <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 max-w-3xl leading-relaxed">
                 {isEn
-                  ? 'Explore 17 interactive 3D/4D WebGL laboratories — including Quantum Bloch Computers, Custom Relativity Universe Forge, 4D Vascular Nanobots, and Historical Hologram Time-Machines.'
-                  : 'Khám phá 17 phòng thí nghiệm 3D/4D WebGL tương tác trực tiếp — từ Máy tính Lượng tử Bloch, Lò rèn Vũ trụ Tương đối, Đàn Nanobot Mạch máu 4D đến Cỗ máy Thời gian Hologram.'}
+                  ? `Explore ${PRE_STUDIOS.length} interactive 3D/4D WebGL & WebAR laboratories — including Quantum Bloch Computers, 3D Hardware Teardown & Repair, Spatial 3D Hand/AR Desk, Custom Relativity Universe Forge, and 4D Vascular Nanobots.`
+                  : `Khám phá ${PRE_STUDIOS.length} phòng thí nghiệm 3D/4D WebGL & WebAR — từ Máy tính Lượng tử Bloch, Xưởng Phẫu Thuật Sửa Chữa Thiết Bị 3D, Học Cảm Giác 3D & AR Bàn Học đến Lò Rèn Vũ Trụ và Đàn Nanobot 4D.`}
               </p>
             </div>
 
@@ -693,7 +746,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') enterLabDirectory();
                   }}
-                  placeholder={isEn ? 'Search lab by name (e.g. Quantum, Rocket, Enigma)...' : 'Tìm nhanh tên phòng lab (vd: Lượng tử, Tên lửa, Nanobot)...'}
+                  placeholder={isEn ? 'Search lab by name (e.g. Teardown, Spatial, Quantum, Rocket)...' : 'Tìm nhanh tên phòng lab (vd: Phẫu thuật, Cảm giác 3D, Lượng tử, Tên lửa)...'}
                   className="w-full pl-10 pr-9 py-2.5 rounded-lg border border-slate-300/80 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                 />
                 {searchQuery && (
@@ -719,12 +772,12 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               </button>
             </div>
 
-            {/* 4 Brand-New 2030+ Spotlight Cards */}
+            {/* 6 Brand-New 2030+ Spotlight Cards */}
             <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/80 space-y-2.5">
               <div className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
-                {isEn ? 'New 2030+ Featured Labs (Click to Launch Directly)' : '4 Phòng Lab Tương Lai Mới Ra Mắt (Bấm để mở ngay)'}
+                {isEn ? `${featuredNewLabs.length} Flagship 2030+ & AR Labs (Click to Launch Directly)` : `${featuredNewLabs.length} Phòng Lab Tương Lai & AR Trọng Tâm (Bấm để mở ngay)`}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {featuredNewLabs.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -764,9 +817,10 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
 
   /* ==================== VIEW 1: SYNAPSE PRE HUB (SEARCH + FILTER + 1 COMPACT SQUARE FRAME PER ROW) ==================== */
   if (activeView === 'hub') {
+    const future2030Count = PRE_STUDIOS.filter((s) => s.category === 'future_2030').length;
     const categories: { id: PreCategoryId; labelVi: string; labelEn: string }[] = [
       { id: 'all', labelVi: `Tất cả (${PRE_STUDIOS.length})`, labelEn: `All (${PRE_STUDIOS.length})` },
-      { id: 'future_2030', labelVi: 'Tương lai 2030+ (4)', labelEn: 'Future 2030+ (4)' },
+      { id: 'future_2030', labelVi: `Tương lai 2030+ (${future2030Count})`, labelEn: `Future 2030+ (${future2030Count})` },
       { id: 'aerospace_physics', labelVi: 'Hàng không & Vật lí 3D', labelEn: 'Aerospace & Physics' },
       { id: 'math_4d', labelVi: 'Toán & Không gian 4D', labelEn: 'Math & 4D Space' },
       { id: 'ai_code_sensor', labelVi: 'AI, Silicon & Cảm biến', labelEn: 'AI, Silicon & Sensors' }
@@ -912,21 +966,31 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               <button
                 type="button"
                 data-ripple="true"
-                onClick={() => openModulePage('rocket_launch_3d')}
-                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-orange-500/50 bg-orange-500/15 hover:bg-orange-500/25 text-orange-700 dark:text-orange-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+                onClick={() => openModulePage('tech_teardown_3d')}
+                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-amber-500/50 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-200 text-xs font-bold cursor-pointer whitespace-nowrap"
               >
-                <Rocket className="w-3.5 h-3.5" />
-                <span>{isEn ? 'Launch 3D Rocket' : 'Phóng Tên Lửa 3D'}</span>
+                <Wrench className="w-3.5 h-3.5" />
+                <span>{isEn ? '3D Teardown Workshop' : 'Xưởng Phẫu Thuật 3D'}</span>
               </button>
 
               <button
                 type="button"
                 data-ripple="true"
-                onClick={() => onNavigateSubject('spatial_3d')}
-                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-emerald-500/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+                onClick={() => openModulePage('spatial_gesture_3d')}
+                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-teal-500/50 bg-teal-500/15 hover:bg-teal-500/25 text-teal-700 dark:text-teal-200 text-xs font-bold cursor-pointer whitespace-nowrap"
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-300" />
-                <span>{isEn ? 'Hologram Eye & Hand 3D' : 'Hologram Mắt & Cảm Giác 3D'}</span>
+                <Hand className="w-3.5 h-3.5 text-teal-500 dark:text-teal-300" />
+                <span>{isEn ? 'Spatial 3D & WebAR Desk' : 'Học Cảm Giác 3D & AR'}</span>
+              </button>
+
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => openModulePage('rocket_launch_3d')}
+                className="pre-grand-btn inline-flex items-center gap-2 px-3.5 py-2 border border-orange-500/50 bg-orange-500/15 hover:bg-orange-500/25 text-orange-700 dark:text-orange-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+              >
+                <Rocket className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Launch 3D Rocket' : 'Phóng Tên Lửa 3D'}</span>
               </button>
             </div>
           </div>
@@ -1173,23 +1237,54 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               data-ripple="true"
               onClick={() => {
                 setIsStudioFullscreen(false);
-                onNavigateSubject('spatial_3d');
+                openModulePage('spatial_gesture_3d');
               }}
               className="pre-grand-btn inline-flex items-center gap-1.5 px-3.5 py-2 border border-emerald-500/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-200 text-xs font-bold cursor-pointer whitespace-nowrap"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-300" />
-              <span>{isEn ? 'WebAR & Hand 3D' : 'WebAR & Cảm Giác 3D'}</span>
+              <Hand className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-300" />
+              <span>{isEn ? 'Spatial 3D & WebAR' : 'Học Cảm Giác 3D & AR'}</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Dedicated Module Content Canvas (All 17 3D/4D Labs) */}
+      {/* Dedicated Module Content Canvas (All 19 3D/4D/AR Labs) */}
       <div>
         {activeView === 'quantum_holodeck_3d' && <QuantumHolodeck3DLab onEarnXP={onEarnXP} />}
         {activeView === 'universe_forge_3d' && <UniverseForge3DLab onEarnXP={onEarnXP} />}
         {activeView === 'nanobot_bioswarm_4d' && <NanobotBioSwarm4DLab onEarnXP={onEarnXP} />}
         {activeView === 'timemachine_holo_3d' && <TimeMachineHolo3DLab onEarnXP={onEarnXP} />}
+        {activeView === 'tech_teardown_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[640px] rounded border border-amber-500/35 bg-[#060b16] flex items-center justify-center text-xs font-mono text-amber-300">
+                {isEn ? 'Initializing 3D Hardware Workbench...' : 'Đang khởi tạo Xưởng Phẫu Thuật 3D...'}
+              </div>
+            }
+          >
+            <TechTeardown3DLab onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
+        {activeView === 'spatial_gesture_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[640px] rounded border border-teal-500/35 bg-[#050914] flex items-center justify-center text-xs font-mono text-teal-300">
+                {isEn ? 'Loading Spatial 3D & WebAR Studio...' : 'Đang tải Học Cảm Giác 3D & WebAR...'}
+              </div>
+            }
+          >
+            <SpatialGesture3DLab
+              onBack={backToHub}
+              onNavigate={onNavigateSubject}
+              onEarnXP={onEarnXP}
+              initialCoopRoomCode={location.coopRoomCode}
+              coopInviteMeta={location.coopInviteMeta}
+              onConsumeCoopRoom={() =>
+                navigate({ coopRoomCode: null, coopInviteMeta: null }, { replace: true })
+              }
+            />
+          </Suspense>
+        )}
         {activeView === 'rocket_launch_3d' && <RocketLaunch3DLab onEarnXP={onEarnXP} />}
         {activeView === 'jet_engine_3d' && <JetPropulsion3DLab onEarnXP={onEarnXP} />}
         {activeView === 'four_d_lectures' && <FourDLecture3DLab onEarnXP={onEarnXP} />}

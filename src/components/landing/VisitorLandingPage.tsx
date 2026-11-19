@@ -136,7 +136,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   };
 
   const handleEnterSpatial3D = () => {
-    navigate({ subject: 'spatial_3d', tutorOpen: false });
+    navigate({ subject: 'synapse_v2', futureTab: 'spatial_gesture_3d', synapseMode: 'catalog', tutorOpen: false });
     onEnterAsGuest();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

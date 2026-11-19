@@ -468,6 +468,60 @@ export const PreStudioDiagramPreview: React.FC<PreStudioDiagramPreviewProps> = (
           </g>
         );
 
+      case 'spatial_gesture_3d':
+        return (
+          <g>
+            {/* WebAR Desk Grid & Hologram Projection */}
+            <polygon points="48,118 272,118 240,86 80,86" fill="#0f172a" stroke="#2dd4bf" strokeOpacity="0.55" strokeWidth="1.4" />
+            {/* Hand Tracking Skeleton Nodes */}
+            <circle cx="88" cy="66" r="14" fill="none" stroke="#2dd4bf" strokeWidth="1.6" strokeDasharray="3 2" className="holo-orbit-cw" />
+            <path d="M 88 84 L 88 66 M 88 66 L 76 48 M 88 66 L 88 44 M 88 66 L 100 48 M 88 66 L 106 60" stroke="#5eead4" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="88" cy="44" r="3" fill="#fde047" />
+            <circle cx="76" cy="48" r="2.5" fill="#2dd4bf" />
+            <circle cx="100" cy="48" r="2.5" fill="#2dd4bf" />
+            {/* Isometric Explodable Hologram Solid */}
+            <g className="holo-float">
+              <polygon points="208,32 252,52 252,90 208,110 164,90 164,52" fill={accentHex} fillOpacity="0.16" stroke={accentHex} strokeWidth="1.8" />
+              <line x1="208" y1="32" x2="208" y2="70" stroke={secondaryHex} strokeWidth="1.4" strokeDasharray="3 2" />
+              <line x1="164" y1="52" x2="208" y2="70" stroke={secondaryHex} strokeWidth="1.4" />
+              <line x1="252" y1="52" x2="208" y2="70" stroke={secondaryHex} strokeWidth="1.4" />
+              <line x1="208" y1="70" x2="208" y2="110" stroke={secondaryHex} strokeWidth="1.4" />
+            </g>
+            <line x1="112" y1="62" x2="160" y2="62" stroke="#38bdf8" strokeWidth="1.6" className="holo-dash" />
+            <text x="20" y="138" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+              10-FINGER AI · WEBAR DESK · GAZE PARALLAX
+            </text>
+          </g>
+        );
+
+      case 'tech_teardown_3d':
+        return (
+          <g>
+            {/* Exploded Hardware Layers */}
+            <rect x="42" y="42" width="44" height="68" rx="3" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.6" />
+            <rect x="104" y="46" width="54" height="60" rx="3" fill="#064e3b" fillOpacity="0.65" stroke="#10b981" strokeWidth="1.8" />
+            {/* Copper Coil / Transformer */}
+            <rect x="116" y="58" width="18" height="22" rx="2" fill="#f59e0b" fillOpacity="0.7" stroke="#fde047" strokeWidth="1.2" />
+            <rect x="140" y="64" width="10" height="18" rx="2" fill="#ef4444" fillOpacity="0.8" stroke="#fca5a5" strokeWidth="1.2" />
+            {/* Dashed Explode Axes */}
+            <line x1="86" y1="76" x2="104" y2="76" stroke="#38bdf8" strokeWidth="1.4" strokeDasharray="3 2" />
+            <line x1="158" y1="76" x2="180" y2="76" stroke="#38bdf8" strokeWidth="1.4" strokeDasharray="3 2" />
+            {/* VOM Multimeter Probe & LCD */}
+            <rect x="184" y="38" width="94" height="76" rx="4" fill="#1e293b" stroke={accentHex} strokeWidth="1.8" />
+            <rect x="194" y="46" width="74" height="24" rx="2" fill="#022c22" stroke="#34d399" strokeWidth="1.2" />
+            <text x="200" y="62" fill="#34d399" fontSize="11" fontFamily="monospace" fontWeight="bold">
+              0.00V / OL
+            </text>
+            <circle cx="231" cy="90" r="12" fill="#0f172a" stroke="#fbbf24" strokeWidth="1.6" />
+            <line x1="231" y1="90" x2="239" y2="82" stroke="#fbbf24" strokeWidth="2" />
+            <line x1="145" y1="64" x2="184" y2="54" stroke="#f43f5e" strokeWidth="1.8" className="holo-dash" />
+            <circle cx="145" cy="64" r="3.5" fill="#fbbf24" className="holo-ring-pulse" />
+            <text x="20" y="138" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+              EXPLODED VIEW 3D · VOM PROBE · FAULT REPAIR
+            </text>
+          </g>
+        );
+
       default:
         return null;
     }

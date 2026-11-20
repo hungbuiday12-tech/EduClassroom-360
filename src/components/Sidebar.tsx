@@ -23,11 +23,14 @@ import {
   Cpu,
   BookOpen,
   ChevronDown,
+  Crown,
+  FlaskConical,
   Video
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useBackgroundTheme } from '../context/BackgroundContext';
 import { useNavigation } from '../context/NavigationContext';
+import { usePremium } from '../context/PremiumContext';
 import { BrandLogo } from './common/BrandLogo';
 import { getPhysicsSimCounts } from '../data/physicsDomainsData';
 
@@ -243,16 +246,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { perfMode } = useBackgroundTheme();
+  const { hasPremiumAccess, dailyQuotaRemaining, dailyQuotaLimit } = usePremium();
   const { requestScrollToReviews, requestScrollToDirectory } = useNavigation();
   const [physicsSimTotal, setPhysicsSimTotal] = useState<number>(() => getPhysicsSimCounts().total);
 
   const [isSubjectsOpen, setIsSubjectsOpen] = useState<boolean>(
     () => currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs'
   );
+  const [isVirtualLabsOpen, setIsVirtualLabsOpen] = useState<boolean>(
+    () => currentSubject === 'physics_sims' || currentSubject === 'math_sims' || currentSubject === 'cs_sims'
+  );
 
   useEffect(() => {
     if (currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs') {
       setIsSubjectsOpen(true);
+    }
+    if (currentSubject === 'physics_sims' || currentSubject === 'math_sims' || currentSubject === 'cs_sims') {
+      setIsVirtualLabsOpen(true);
     }
   }, [currentSubject]);
 
@@ -305,61 +315,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ]
     },
     {
-      titleVi: 'Môn học & Mô phỏng 2D/3D',
+      titleVi: 'Môn học & Phòng lab ảo',
       titleEn: 'Disciplines & Labs',
-      items: [
-        {
-          id: 'physics_sims',
-          labelVi: 'Mô phỏng Lí 2D/3D',
-          labelEn: 'Physics 2D/3D Labs',
-          badge: String(physicsSimTotal),
-          icon: (
-            <span className="icon-anim-atom">
-              <Atom className="w-5 h-5 shrink-0" />
-            </span>
-          ),
-          idleClass:
-            'bg-orange-50/85 dark:bg-orange-950/35 border border-orange-300/80 dark:border-orange-500/35 text-orange-900 dark:text-orange-200 hover:bg-orange-100 dark:hover:bg-orange-900/55 hover:border-orange-400',
-          badgeIdleClass:
-            'bg-orange-100 dark:bg-orange-900/70 border border-orange-300/80 dark:border-orange-600/50 text-orange-800 dark:text-orange-200',
-          activeClass:
-            'bg-gradient-to-r from-orange-500 to-amber-500 border border-orange-300 text-slate-950 font-semibold shadow-md shadow-orange-500/25'
-        },
-        {
-          id: 'math_sims',
-          labelVi: 'Mô phỏng & Vẽ Toán',
-          labelEn: 'Math 2D/3D & Draw',
-          badge: '2D·3D',
-          icon: (
-            <span className="icon-anim-compass">
-              <Compass className="w-5 h-5 shrink-0" />
-            </span>
-          ),
-          idleClass:
-            'bg-blue-50/85 dark:bg-blue-950/35 border border-blue-300/80 dark:border-blue-500/35 text-blue-900 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/55 hover:border-blue-400',
-          badgeIdleClass:
-            'bg-blue-100 dark:bg-blue-900/70 border border-blue-300/80 dark:border-blue-600/50 text-blue-800 dark:text-blue-200',
-          activeClass:
-            'bg-gradient-to-r from-blue-600 to-indigo-600 border border-blue-400 text-white shadow-md shadow-blue-600/25'
-        },
-        {
-          id: 'cs_sims',
-          labelVi: 'Mô phỏng Code',
-          labelEn: 'Code 2D/3D Sims',
-          badge: '2D·3D',
-          icon: (
-            <span className="icon-anim-zap">
-              <Code2 className="w-5 h-5 shrink-0" />
-            </span>
-          ),
-          idleClass:
-            'bg-emerald-50/85 dark:bg-emerald-950/35 border border-emerald-300/80 dark:border-emerald-500/35 text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/55 hover:border-emerald-400',
-          badgeIdleClass:
-            'bg-emerald-100 dark:bg-emerald-900/70 border border-emerald-300/80 dark:border-emerald-600/50 text-emerald-800 dark:text-emerald-200',
-          activeClass:
-            'bg-gradient-to-r from-emerald-600 to-teal-500 border border-emerald-400 text-white shadow-md shadow-emerald-600/25'
-        }
-      ]
+      items: []
     },
     {
       titleVi: 'Kiểm tra & Cộng đồng',
@@ -527,6 +485,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           aria-label={isEn ? 'Primary sidebar navigation' : 'Thanh điều hướng bên trái'}
           className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-5 scrollbar-none"
         >
+          {hasPremiumAccess && !isRail && (
+            <div className="rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-cyan-500/15 px-3 py-2 flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-amber-600 dark:text-amber-300">
+                <Crown className="w-3.5 h-3.5 shrink-0" />
+                <span>SYNAPSE PREMIUM</span>
+              </span>
+              <span className="text-[10px] font-mono font-bold text-cyan-700 dark:text-cyan-300">
+                {dailyQuotaRemaining}/{dailyQuotaLimit}
+              </span>
+            </div>
+          )}
+
           {navGroups.map((group) => (
             <div key={group.titleEn} className="space-y-1.5">
               {!isRail ? (
@@ -577,6 +547,104 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </button>
                 );
               })}
+
+              {/* Grouped "Phòng lab ảo" Folder Button (Physics · Math · Code) */}
+              {group.titleEn === 'Disciplines & Labs' && (
+                <div className="space-y-1.5 pt-0.5">
+                  <button
+                    type="button"
+                    data-ripple="true"
+                    aria-expanded={isVirtualLabsOpen}
+                    onClick={() => {
+                      if (isRail) {
+                        onToggleCollapse();
+                        setIsVirtualLabsOpen(true);
+                      } else {
+                        setIsVirtualLabsOpen((v) => !v);
+                      }
+                    }}
+                    title={isEn ? 'Virtual Labs (Physics · Math · Code)' : 'Phòng lab ảo (Lí · Toán · Code)'}
+                    className={`group cs-deck-btn w-full min-h-[46px] flex items-center ${
+                      isRail
+                        ? 'justify-center px-2.5 py-3'
+                        : 'justify-between gap-2.5 px-3 py-2.5'
+                    } rounded text-[13.5px] font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                      currentSubject === 'physics_sims' ||
+                      currentSubject === 'math_sims' ||
+                      currentSubject === 'cs_sims'
+                        ? 'bg-gradient-to-r from-amber-500 to-cyan-600 border border-amber-300 text-white shadow-md'
+                        : 'bg-amber-50/85 dark:bg-slate-900/85 border border-amber-300/80 dark:border-amber-500/35 text-slate-900 dark:text-amber-100 hover:border-amber-400'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <FlaskConical className="w-5 h-5 shrink-0" />
+                      {!isRail && (
+                        <span className="truncate">{isEn ? 'Virtual Labs' : 'Phòng lab ảo'}</span>
+                      )}
+                    </span>
+                    {!isRail && (
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[11px] font-mono opacity-80">3</span>
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform duration-150 ${
+                            isVirtualLabsOpen ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </span>
+                    )}
+                  </button>
+
+                  {!isRail && isVirtualLabsOpen && (
+                    <div className="pl-3 space-y-1.5 border-l-2 border-amber-400/40 ml-3">
+                      {[
+                        {
+                          id: 'physics_sims' as SubjectType,
+                          label: isEn ? 'Physics 2D/3D Labs' : 'Mô phỏng Lí 2D/3D',
+                          badge: String(physicsSimTotal),
+                          icon: <Atom className="w-4 h-4 shrink-0 text-orange-400" />,
+                        },
+                        {
+                          id: 'math_sims' as SubjectType,
+                          label: isEn ? 'Math 2D/3D & Draw' : 'Mô phỏng & Vẽ Toán',
+                          badge: '2D·3D',
+                          icon: <Compass className="w-4 h-4 shrink-0 text-blue-400" />,
+                        },
+                        {
+                          id: 'cs_sims' as SubjectType,
+                          label: isEn ? 'Code 2D/3D Sims' : 'Mô phỏng Code',
+                          badge: '2D·3D',
+                          icon: <Code2 className="w-4 h-4 shrink-0 text-emerald-400" />,
+                        },
+                      ].map((lab) => {
+                        const active = currentSubject === lab.id;
+                        return (
+                          <button
+                            key={lab.id}
+                            type="button"
+                            onClick={() => {
+                              onSelectSubject(lab.id);
+                              onCloseMobile();
+                            }}
+                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded text-xs font-semibold transition cursor-pointer ${
+                              active
+                                ? 'bg-amber-500/20 border border-amber-400/60 text-amber-900 dark:text-amber-200'
+                                : 'bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-amber-400/50'
+                            }`}
+                          >
+                            <span className="flex items-center gap-2 min-w-0">
+                              {lab.icon}
+                              <span className="truncate">{lab.label}</span>
+                            </span>
+                            <span className="text-[10px] font-mono opacity-80 shrink-0">
+                              {lab.badge}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Grouped "Môn học" Folder Button right inside Disciplines & Labs group */}
               {group.titleEn === 'Disciplines & Labs' && (

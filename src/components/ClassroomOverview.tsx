@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { LiveMeetShowcaseCard } from './meet/LiveMeetShowcaseCard';
 import { SynapsePremiumGateModal } from './premium/SynapsePremiumGateModal';
+import { SynapsePremiumHome } from './premium/SynapsePremiumHome';
 import { usePremium } from '../context/PremiumContext';
 import { AITutorMode, SubjectType } from '../types';
 import {
@@ -97,7 +98,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   onOpenVoiceOS
 }) => {
   const { user, openAuthModal } = useAuth();
-  const { hasPremiumAccess } = usePremium();
+  const { hasPremiumAccess, isAdmin, dailyQuotaRemaining, dailyQuotaLimit } = usePremium();
   const { t, language } = useLanguage();
   const {
     reviewScrollTick,
@@ -110,6 +111,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   const [growthTick, setGrowthTick] = useState(0);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showProStudioDrawer, setShowProStudioDrawer] = useState(false);
 
   useEffect(() => {
     const onGrowthUpdate = () => setGrowthTick((t) => t + 1);
@@ -373,15 +375,104 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
   return (
     <div className="space-y-10">
+      {/* SYNAPSE PREMIUM HOLOGRAPHIC PRO SHOWCASE (Trang chính Pre nâng cấp vượt bật) */}
+      {hasPremiumAccess && (
+        <section className="relative overflow-hidden rounded-3xl border border-amber-400/60 bg-slate-950/95 p-5 sm:p-7 text-white shadow-[0_0_70px_rgba(245,158,11,0.22)]">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-30"
+            style={{
+              background:
+                'radial-gradient(circle at 12% 20%, rgba(251,191,36,0.45), transparent 45%), radial-gradient(circle at 88% 80%, rgba(34,211,238,0.4), transparent 48%), linear-gradient(to right, rgba(251,191,36,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(56,189,248,0.12) 1px, transparent 1px)',
+              backgroundSize: '100% 100%, 100% 100%, 36px 36px, 36px 36px',
+            }}
+          />
+
+          <div className="relative z-10 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/70 bg-gradient-to-r from-amber-500/25 to-orange-500/25 px-3 py-1 text-xs font-extrabold text-amber-200 shadow-[0_0_18px_rgba(245,158,11,0.3)]">
+                  <Crown className="w-3.5 h-3.5 text-amber-300" />
+                  <span>SYNAPSE PREMIUM · PRO EDITION</span>
+                </span>
+                <span className="rounded-lg border border-cyan-400/50 bg-cyan-500/15 px-2.5 py-1 font-mono text-[11px] font-bold text-cyan-200">
+                  Astra AI Quota: {dailyQuotaRemaining}/{dailyQuotaLimit} lượt hôm nay
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate({ subject: 'synapse_v2', futureTab: 'hub', synapseMode: 'catalog', tutorOpen: false })
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-cyan-400 px-4 py-2 text-xs font-extrabold text-slate-950 shadow-lg hover:brightness-110 transition cursor-pointer"
+                >
+                  <Orbit className="w-4 h-4" />
+                  <span>Mở 21 Phòng Lab 3D/4D</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPremiumModal(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/60 bg-emerald-500/15 px-3.5 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25 cursor-pointer"
+                  >
+                    <span>Admin: Cấp quyền Pre</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Khung Giới Thiệu 3 Trụ Cột Độc Quyền Bản Pre */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-amber-400/35 bg-slate-900/80 p-4 space-y-1.5 backdrop-blur-md">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-amber-300">
+                  <Sparkles className="w-4 h-4" />
+                  <span>AI Syn Pro & AI Cơ Bản (2 Chế độ)</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Chuyển đổi tức thì trong Minichat Syn AI giữa 3 AI học tập cơ bản và <strong>AI Syn Pro</strong> giải siêu tốc, phân tích 3 tầng & <strong>Tạo Video 3B1B AI</strong>.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-cyan-400/35 bg-slate-900/80 p-4 space-y-1.5 backdrop-blur-md">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-cyan-300">
+                  <Cpu className="w-4 h-4" />
+                  <span>Mô Phỏng Chuẩn Astra AI · 21 Lab 3D</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Mở khóa toàn bộ Vũ Trụ Định Luật Vật Lí 3D, Thành Phố Thuật Toán 3D, Quantum Holodeck, Hộp cát GPU 28K & 30 Đại công trình 3D.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-400/35 bg-slate-900/80 p-4 space-y-1.5 backdrop-blur-md">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-300">
+                  <Mic className="w-4 h-4" />
+                  <span>Voice OS · QR Điều Khiển 3D · Syn Reel</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Độc quyền điều khiển giọng nói Voice OS, quét QR dùng điện thoại xoay mô hình 3D từ xa và xuất video bài giảng 3Blue1Brown.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* FRAMELESS BLENDED HERO STAGE: Typography floats directly over the animated scene */}
       <section className="relative bg-transparent border-0 shadow-none px-2 sm:px-6 pt-4 pb-8 sm:pt-8 sm:pb-12">
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
           <div className="text-xs sm:text-sm font-semibold tracking-wider text-accent-gradient hero-blend-shadow">
-            {t(
-              'overview.badge',
-              'Học viện Mô phỏng Trực quan · Toán · Vật lí · Tin học (Lớp 9 – 12)',
-              'Interactive STEM Academy · Math · Physics · Computer Science (Grades 9–12)'
-            )}
+            {hasPremiumAccess
+              ? isEn
+                ? '★ SYNAPSE PREMIUM EDITION · Interactive STEM Academy · Astra AI & 3B1B Video'
+                : '★ PHIÊN BẢN SYNAPSE PREMIUM · Học viện STEM Trực quan · AI Pro & Video 3B1B'
+              : t(
+                  'overview.badge',
+                  'Học viện Mô phỏng Trực quan · Toán · Vật lí · Tin học (Lớp 9 – 12)',
+                  'Interactive STEM Academy · Math · Physics · Computer Science (Grades 9–12)'
+                )}
           </div>
 
           <CursorDodgeText
@@ -578,13 +669,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
           {/* Frameless Inline Academic Metrics & Learner Mastery Strip */}
           <div className="mt-4 pt-5 border-t border-slate-300/50 dark:border-white/12 grid grid-cols-1 md:grid-cols-12 gap-5 items-center text-left">
-            <div className="md:col-span-7 grid grid-cols-3 gap-4 text-center md:text-left">
+            <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center md:text-left">
               <div className="group/stat px-2 py-1">
                 <div className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tabular-nums hero-blend-shadow">
                   {totalLessons}
                 </div>
                 <div className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5 hero-blend-shadow">
                   {isEn ? 'Interactive Lessons' : 'Bài giảng nhiều phần'}
+                </div>
+              </div>
+              <div className="group/stat px-2 py-1">
+                <div className="font-display text-2xl sm:text-3xl font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums hero-blend-shadow">
+                  128+
+                </div>
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5 hero-blend-shadow">
+                  {isEn ? 'Virtual 2D/3D Labs' : 'Phòng Lab 2D/3D'}
                 </div>
               </div>
               <div className="group/stat px-2 py-1">
@@ -1053,72 +1152,37 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             </div>
             <ArrowRight className="w-4 h-4 text-cyan-300 shrink-0" />
           </button>
-        </div>
-      </section>
-
-      {/* GATEWAY: HỌC CẢM GIÁC 3D · WEBCAM HAND-GESTURE & WEBAR BÀN HỌC PRO */}
-      <section
-        data-ripple="true"
-        onClick={() => onNavigate('spatial_3d')}
-        className="group sci-frame relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-950 via-[#08222a] to-slate-900 text-white p-6 sm:p-7 border border-teal-400/45 hover:border-cyan-300/90 hover:-translate-y-0.5 shadow-[0_20px_55px_-16px_rgba(20,184,166,0.3)] cursor-pointer transition-all"
-      >
-        <div className="absolute inset-0 sci-blueprint-bg opacity-30 pointer-events-none" />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-teal-300/12 to-transparent -translate-x-[160%] group-hover-sheen"
-        />
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 220 140"
-          className="hidden md:block absolute right-14 top-1/2 -translate-y-1/2 w-52 h-32 opacity-22 group-hover:opacity-45 pointer-events-none transition-opacity"
-        >
-          <path d="M18 110 L58 48 L96 86 L140 30 L188 74" fill="none" stroke="#2dd4bf" strokeWidth="1.8" className="animate-electric-flow" />
-          <circle cx="58" cy="48" r="4.5" fill="#2dd4bf" className="math-focus-pulse" />
-          <circle cx="96" cy="86" r="4.5" fill="#38bdf8" />
-          <circle cx="140" cy="30" r="4.5" fill="#fbbf24" className="math-focus-pulse" />
-          <circle cx="188" cy="74" r="4.5" fill="#2dd4bf" />
-        </svg>
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="flex items-start sm:items-center gap-4 min-w-0">
-            <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-teal-500/30 to-cyan-500/35 border border-teal-300/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Hand className="w-7 h-7 text-teal-300 icon-anim-hand" />
-            </div>
-            <div className="space-y-1 min-w-0">
-              <div className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-teal-300">
-                {isEn
-                  ? 'SYNAPSE PRE · SPATIAL 2D/3D · 10-FINGERTIP AI · WEBAR DESK PRO'
-                  : 'SYNAPSE PRE · HỌC CẢM GIÁC 3D · 10 ĐẦU NGÓN TAY · AR BÀN HỌC PRO'}
-              </div>
-              <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-white">
-                {isEn
-                  ? 'WebAR Desk Hologram Pro, 2D Geometry Studio & 15 Realistic 3D Models via 10 Fingers'
-                  : 'WebAR Chiếu Bàn Học Pro (Cam Sau/Cắt Lớp/Chụp PNG) & 15 Mô Hình 3D 10 Ngón Tay'}
-              </h2>
-              <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
-                {isEn
-                  ? 'Integrated inside Synapse Pre: project 3D holograms onto your desk with rear/front camera switch, opacity, desk-tilt calibration, live Y-slicing & PNG snapshot, plus Point & Ask Live Co-Pilot.'
-                  : 'Tích hợp ngay trong Synapse Pre: chiếu mô hình lên mặt bàn thật với Camera Trước/Sau, chỉnh độ mờ Alpha, nghiêng bàn, mặt cắt Y & chụp PNG, kèm Point & Ask Mắt Thần AI.'}
-              </p>
-            </div>
-          </div>
 
           <button
             type="button"
-            data-ripple="true"
-            onClick={(e) => {
-              e.stopPropagation();
-              onNavigate('spatial_3d');
+            onClick={() => {
+              if (hasPremiumAccess && onOpenVoiceOS) {
+                onOpenVoiceOS();
+              } else {
+                setShowPremiumModal(true);
+              }
             }}
-            className="group/btn cs-deck-btn shrink-0 px-5 py-3.5 rounded bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 hover:from-teal-300 hover:to-sky-300 text-slate-950 font-semibold text-sm shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+            className="md:col-span-2 text-left p-3.5 rounded border border-amber-400/50 bg-amber-950/30 hover:bg-amber-900/40 hover:border-amber-300 transition cursor-pointer flex items-center justify-between gap-3"
           >
-            <Hand className="w-4 h-4 icon-anim-hand" />
-            <span>{isEn ? 'Open in Synapse Pre' : 'Mở trong Synapse Pre'}</span>
-            <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-xs font-extrabold text-amber-300">
+                <Mic className="w-4 h-4 shrink-0" />
+                <span>
+                  {isEn
+                    ? 'PRO · Synapse Voice OS — Hands-Free Voice Command System'
+                    : 'PRO · Synapse Voice OS — Điều Khiển Toàn Hệ Thống Bằng Giọng Nói'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-1">
+                {isEn
+                  ? 'Control lectures, switch 3D labs, launch AI Pro & adjust simulation parameters hands-free with natural Vietnamese/English voice commands (Alt+Space).'
+                  : 'Ra lệnh bằng giọng nói tiếng Việt/Anh tự nhiên để mở bài giảng, chuyển phòng thí nghiệm 3D, kích hoạt AI Pro & điều khiển mô phỏng hoàn toàn rảnh tay (Alt+Space).'}
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-amber-300 shrink-0" />
           </button>
         </div>
       </section>
-
-      {/* GATEWAY: HỌC CẢM GIÁC 3D · WEBCAM HAND-GESTURE & OXYZ LAB (already above) */}
 
       {/* GROWTH SUITE BENTO STRIP: Streak, Daily Quests, Sổ Lỗi Sai SM-2, PDF Studio & Community Showcase */}
       <section className="space-y-3">
@@ -1724,21 +1788,23 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   : 'Hỗ trợ Mắt Thần nhìn trực tiếp bài/màn hình + Voice Ngắt lời tức thì & Syn Reel xuất video .webm 3Blue1Brown. Mở nhanh: Ctrl(trái)+D/F/G.'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                navigate({
-                  subject: 'overview',
-                  tutorOpen: true,
-                  tutorSubject: 'math',
-                  tutorTab: 'motion_reel'
-                })
-              }
-              className="cs-deck-btn px-3.5 py-2 rounded bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-400 hover:to-sky-500 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Open Syn Reel Mini-Chat' : 'Mở Syn Reel · Tạo Video 3B1B'}</span>
-            </button>
+            {hasPremiumAccess && (
+              <button
+                type="button"
+                onClick={() =>
+                  navigate({
+                    subject: 'overview',
+                    tutorOpen: true,
+                    tutorSubject: 'math',
+                    tutorTab: 'motion_reel'
+                  })
+                }
+                className="cs-deck-btn px-3.5 py-2 rounded bg-gradient-to-r from-amber-500 via-orange-500 to-sky-600 hover:brightness-110 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Open Syn Reel Mini-Chat' : 'Mở Syn Reel · Tạo Video 3B1B'}</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

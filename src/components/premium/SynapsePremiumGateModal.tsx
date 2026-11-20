@@ -113,7 +113,7 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
-              <span>Cộng đồng học tập, Phòng học trực tuyến Meet & chia sẻ 3D.</span>
+              <span>Cộng đồng học tập & Phòng học Meet gọi Video + Chia sẻ màn hình (chưa có mô hình 3D chung).</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
@@ -136,19 +136,25 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
             <li className="flex items-start gap-2">
               <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
               <span>
-                <strong>AI Siêu Tốc & Phân tích rõ ràng</strong>: Trả lời nhanh hơn, bố cục 3 tầng khoa học.
+                <strong>AI Siêu Tốc & Video 3B1B AI</strong>: Trả lời nhanh hơn, bố cục 3 tầng rõ ràng & dựng Video 3B1B độc quyền.
               </span>
             </li>
             <li className="flex items-start gap-2">
               <Film className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-400" />
               <span>
-                <strong>Tạo Video 3B1B AI & Phân tích chuyên sâu</strong> (độc quyền Premium).
+                <strong>Voice OS & QR Điều Khiển 3D</strong>: Ra lệnh giọng nói toàn hệ thống (Alt+Space) & dùng điện thoại xoay 3D từ xa.
               </span>
             </li>
             <li className="flex items-start gap-2">
               <Crown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />
               <span>
-                <strong>Giao diện Trang Chính Premium vượt bật</strong> + Mô phỏng chất lượng chuẩn Astra AI (15 lượt/ngày) & trọn bộ 21 Lab 3D/4D tương lai.
+                <strong>Meet Chiếu Mô Hình 3D Tương Tác Nhiều Người</strong>: Cùng xoay, tách lớp, soi chi tiết & up file .glb/.obj thời gian thực.
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
+              <span>
+                <strong>Giao diện Obsidian Pro + 21 Phòng Lab 3D/4D</strong> chuẩn Astra AI (15 lượt/ngày).
               </span>
             </li>
           </ul>

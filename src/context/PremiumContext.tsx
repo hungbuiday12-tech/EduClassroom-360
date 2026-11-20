@@ -101,6 +101,20 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return state.approvedEmails.includes(normalizedEmail);
   }, [user, state.approvedEmails, normalizedEmail]);
 
+  // Transform entire website shell into Grand Obsidian & Gold-Cyan Premium theme when active
+  useEffect(() => {
+    const root = document.documentElement;
+    if (hasPremiumAccess) {
+      root.dataset.synapsePremium = 'true';
+      root.classList.add('dark');
+    } else {
+      delete root.dataset.synapsePremium;
+    }
+    return () => {
+      delete root.dataset.synapsePremium;
+    };
+  }, [hasPremiumAccess]);
+
   const myRequest = useMemo(() => {
     if (!normalizedEmail) return null;
     return state.requests.find((r) => r.email.toLowerCase() === normalizedEmail) || null;

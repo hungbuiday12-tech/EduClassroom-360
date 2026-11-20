@@ -6,7 +6,7 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MobileBottomNav } from './components/common/MobileBottomNav';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { PremiumProvider } from './context/PremiumContext';
+import { PremiumProvider, usePremium } from './context/PremiumContext';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 import { WaterRippleLayer } from './components/common/WaterRippleLayer';
 import { FloatingFocusTimer } from './components/common/FloatingFocusTimer';
@@ -226,6 +226,8 @@ function MainApp() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+  const { hasPremiumAccess } = usePremium();
+  const [synDockMode, setSynDockMode] = useState<'basic' | 'pro'>('pro');
   const [isVoiceOSOpen, setIsVoiceOSOpen] = useState(false);
   const { completedSessions } = useFocusTimer();
   const prevPomodoroRef = useRef<number>(completedSessions);
@@ -486,7 +488,7 @@ function MainApp() {
               onOpenMobileMenu={() => setMobileMenuOpen(true)}
               onOpenInstallApp={() => setIsInstallModalOpen(true)}
               onOpenPortfolio={() => setIsPortfolioOpen(true)}
-              onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
+              onOpenVoiceOS={hasPremiumAccess ? () => setIsVoiceOSOpen(true) : undefined}
             />
 
             {/* Main Viewport Container */}
@@ -509,7 +511,7 @@ function MainApp() {
                         }
                         onOpenSettings={() => setIsSettingsOpen(true)}
                         onOpenInstallApp={() => setIsInstallModalOpen(true)}
-                        onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
+                        onOpenVoiceOS={hasPremiumAccess ? () => setIsVoiceOSOpen(true) : undefined}
                       />
                     )}
 
@@ -783,71 +785,138 @@ function MainApp() {
                       </button>
                     </div>
                   </div>
-                  <div className="p-2 space-y-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSynDockOpen(false);
-                        handleOpenTutor({ subject: 'math' });
-                      }}
-                      className="cs-deck-btn w-full px-3 py-2 rounded bg-blue-600 hover:bg-blue-500 border border-blue-400/35 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Compass className="w-3.5 h-3.5 shrink-0" />
-                        <span>Syn Math</span>
-                      </span>
-                      <kbd className="px-1.5 py-0.5 rounded bg-blue-950/70 border border-blue-300/30 font-mono text-[9px] text-blue-100">
-                        Ctrl+D
-                      </kbd>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSynDockOpen(false);
-                        handleOpenTutor({ subject: 'physics' });
-                      }}
-                      className="cs-deck-btn w-full px-3 py-2 rounded bg-amber-500 hover:bg-amber-400 border border-amber-300/45 text-slate-950 text-xs font-extrabold flex items-center justify-between gap-2 transition-all cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Zap className="w-3.5 h-3.5 shrink-0" />
-                        <span>Syn Physics</span>
-                      </span>
-                      <kbd className="px-1.5 py-0.5 rounded bg-amber-950/20 border border-amber-950/30 font-mono text-[9px] text-slate-950">
-                        Ctrl+F
-                      </kbd>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSynDockOpen(false);
-                        handleOpenTutor({ subject: 'cs' });
-                      }}
-                      className="cs-deck-btn w-full px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/35 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Code2 className="w-3.5 h-3.5 shrink-0" />
-                        <span>Syn Code</span>
-                      </span>
-                      <kbd className="px-1.5 py-0.5 rounded bg-emerald-950/70 border border-emerald-300/30 font-mono text-[9px] text-emerald-100">
-                        Ctrl+G
-                      </kbd>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSynDockOpen(false);
-                        handleOpenTutor({ subject: 'math', tutorTab: 'motion_reel' });
-                      }}
-                      className="cs-deck-btn w-full px-3 py-2 rounded bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 border border-sky-400/45 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Film className="w-3.5 h-3.5 shrink-0" />
-                        <span>{isEn ? 'Syn Reel (3B1B Video)' : 'Syn Reel (Video 3B1B)'}</span>
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-slate-950/60 border border-sky-300/30 font-mono text-[9px] text-sky-200">
-                        REEL
-                      </span>
-                    </button>
+                  <div className="p-2 space-y-2">
+                    {/* 2-Mode Switcher in Premium: AI Học Tập Cơ Bản vs AI Syn Pro */}
+                    {hasPremiumAccess && (
+                      <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-800 bg-slate-900/90 p-1">
+                        <button
+                          type="button"
+                          onClick={() => setSynDockMode('basic')}
+                          className={`rounded-md px-2 py-1 text-[10px] font-bold transition cursor-pointer ${
+                            synDockMode === 'basic'
+                              ? 'bg-slate-700 text-white'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          AI Cơ Bản
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSynDockMode('pro')}
+                          className={`rounded-md px-2 py-1 text-[10px] font-extrabold transition cursor-pointer ${
+                            synDockMode === 'pro'
+                              ? 'bg-gradient-to-r from-amber-400 to-cyan-400 text-slate-950'
+                              : 'text-amber-300/80 hover:text-amber-200'
+                          }`}
+                        >
+                          AI Syn Pro ★
+                        </button>
+                      </div>
+                    )}
+
+                    {(!hasPremiumAccess || synDockMode === 'basic') ? (
+                      <div className="space-y-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSynDockOpen(false);
+                            handleOpenTutor({ subject: 'math' });
+                          }}
+                          className="cs-deck-btn w-full px-3 py-2 rounded bg-blue-600 hover:bg-blue-500 border border-blue-400/35 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Compass className="w-3.5 h-3.5 shrink-0" />
+                            <span>Syn Math</span>
+                          </span>
+                          <kbd className="px-1.5 py-0.5 rounded bg-blue-950/70 border border-blue-300/30 font-mono text-[9px] text-blue-100">
+                            Ctrl+D
+                          </kbd>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSynDockOpen(false);
+                            handleOpenTutor({ subject: 'physics' });
+                          }}
+                          className="cs-deck-btn w-full px-3 py-2 rounded bg-amber-500 hover:bg-amber-400 border border-amber-300/45 text-slate-950 text-xs font-extrabold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Zap className="w-3.5 h-3.5 shrink-0" />
+                            <span>Syn Physics</span>
+                          </span>
+                          <kbd className="px-1.5 py-0.5 rounded bg-amber-950/20 border border-amber-950/30 font-mono text-[9px] text-slate-950">
+                            Ctrl+F
+                          </kbd>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSynDockOpen(false);
+                            handleOpenTutor({ subject: 'cs' });
+                          }}
+                          className="cs-deck-btn w-full px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/35 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Code2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>Syn Code</span>
+                          </span>
+                          <kbd className="px-1.5 py-0.5 rounded bg-emerald-950/70 border border-emerald-300/30 font-mono text-[9px] text-emerald-100">
+                            Ctrl+G
+                          </kbd>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSynDockOpen(false);
+                            handleOpenTutor({ subject: 'math', mode: 'full_solution' });
+                          }}
+                          className="cs-deck-btn w-full px-3 py-2 rounded bg-gradient-to-r from-amber-500/25 via-cyan-500/25 to-blue-600/30 hover:brightness-125 border border-cyan-400/60 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Zap className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                            <span>Syn Pro · Giải Siêu Tốc</span>
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-amber-400/20 border border-amber-300/40 font-mono text-[9px] text-amber-200">
+                            FAST
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSynDockOpen(false);
+                            handleOpenTutor({ subject: 'math', tutorTab: 'motion_reel' });
+                          }}
+                          className="cs-deck-btn w-full px-3 py-2 rounded bg-gradient-to-r from-amber-500 via-orange-500 to-sky-600 hover:brightness-110 border border-amber-300/60 text-white text-xs font-extrabold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Film className="w-3.5 h-3.5 shrink-0" />
+                            <span>Syn Reel · Video 3B1B AI</span>
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-slate-950/60 border border-amber-300/40 font-mono text-[9px] text-amber-200">
+                            3B1B
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSynDockOpen(false);
+                            handleOpenTutor({ subject: 'physics', mode: 'diagnostic_roadmap' });
+                          }}
+                          className="cs-deck-btn w-full px-3 py-2 rounded bg-slate-900 hover:bg-slate-800 border border-emerald-400/50 text-emerald-200 text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Phân Tích & Sơ Đồ Pro</span>
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 font-mono text-[9px] text-emerald-300">
+                            PRO
+                          </span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -861,7 +930,11 @@ function MainApp() {
                   setIsSynDockOpen((prev) => !prev);
                 }}
                 aria-expanded={isSynDockOpen}
-                className={`sci-frame syn-dock-halo flex items-center gap-2 px-3 py-2 rounded-md bg-slate-950/95 hover:bg-slate-900 border border-cyan-500/45 text-white text-xs font-bold shadow-[0_16px_40px_-10px_rgba(6,182,212,0.42)] backdrop-blur-md transition-colors touch-none ${
+                className={`sci-frame syn-dock-halo flex items-center gap-2 px-3 py-2 rounded-md bg-slate-950/95 hover:bg-slate-900 border ${
+                  hasPremiumAccess
+                    ? 'border-amber-400/75 text-amber-200 shadow-[0_16px_44px_-10px_rgba(245,158,11,0.5)]'
+                    : 'border-cyan-500/45 text-white shadow-[0_16px_40px_-10px_rgba(6,182,212,0.42)]'
+                } text-xs font-bold backdrop-blur-md transition-colors touch-none ${
                   synWidget.isDragging ? 'cursor-grabbing' : 'cursor-grab'
                 }`}
                 title={

@@ -22,6 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import { MeetShared3DStage } from './MeetShared3DStage';
+import { usePremium } from '../../context/PremiumContext';
 import {
   MeetChatMessage,
   MeetFloatingReaction,
@@ -173,6 +174,7 @@ const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean }> = ({
 };
 
 export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUserName }) => {
+  const { hasPremiumAccess } = usePremium();
   // Lobby state
   const [displayName, setDisplayName] = useState<string>(() => {
     const saved = localStorage.getItem('synapse_meet_name');
@@ -1278,12 +1280,33 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                     : 'border-slate-800'
                 }`}
               >
-                <MeetShared3DStage
-                  isEn={false}
-                  graphicsQuality={graphicsQuality}
-                  sharedState={shared3D}
-                  onPatchState={handleShared3DPatch}
-                />
+                {hasPremiumAccess ? (
+                  <MeetShared3DStage
+                    isEn={false}
+                    graphicsQuality={graphicsQuality}
+                    sharedState={shared3D}
+                    onPatchState={handleShared3DPatch}
+                  />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center bg-slate-950/95 p-6 text-center space-y-3">
+                    <div className="rounded-xl border border-amber-400/50 bg-amber-500/15 px-3 py-1 text-xs font-extrabold text-amber-300">
+                      TÍNH NĂNG ĐỘC QUYỀN SYNAPSE PRE (120K / 3 THÁNG)
+                    </div>
+                    <h3 className="text-base sm:text-lg font-extrabold text-white">
+                      Chiếu Mô Hình 3D Tương Tác Nhiều Người
+                    </h3>
+                    <p className="max-w-md text-xs text-slate-300 leading-relaxed">
+                      Bản Miễn Phí (Free) hỗ trợ gọi Video/Thoại và <strong>Chia sẻ màn hình</strong>. Nâng cấp lên <strong>Synapse Pre</strong> để cùng xoay, tách lớp, soi chi tiết mô hình 3D đồng bộ nhiều người và tải file .glb/.obj!
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setStageMode('grid')}
+                      className="rounded-xl bg-sky-500 hover:bg-sky-400 px-4 py-2 text-xs font-bold text-slate-950 cursor-pointer"
+                    >
+                      Quay lại Lưới Video & Chia sẻ màn hình
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Compact Filmstrip of Participants */}

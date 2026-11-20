@@ -36,6 +36,7 @@ import {
 import { useNavigation, getLocationLabel } from '../context/NavigationContext';
 import { useAudio } from '../context/AudioContext';
 import { useRemoteController } from '../context/RemoteControllerContext';
+import { usePremium } from '../context/PremiumContext';
 import { BrandLogo } from './common/BrandLogo';
 import { getStreakState, GROWTH_UPDATED_EVENT } from '../lib/learningGrowthStore';
 
@@ -80,6 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { location, canGoBack, previousLocation, goBack, goClassroom } = useNavigation();
   const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
   const { openModal: openRemoteModal, controllerCount, roomCode: remoteRoomCode } = useRemoteController();
+  const { hasPremiumAccess } = usePremium();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isBgMenuOpen, setIsBgMenuOpen] = useState(false);
@@ -341,8 +343,8 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* Voice OS Command Button (iPad Landscape lg/xl+ inline, inside Tools drawer on < md) */}
-          {onOpenVoiceOS && (
+          {/* Voice OS Command Button (Premium Only) */}
+          {hasPremiumAccess && onOpenVoiceOS && (
             <button
               type="button"
               onClick={onOpenVoiceOS}
@@ -469,24 +471,26 @@ export const Header: React.FC<HeaderProps> = ({
 
                   {/* Voice OS + Install App */}
                   <div className="space-y-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsCompactToolsOpen(false);
-                        openRemoteModal();
-                      }}
-                      className="w-full min-h-[40px] flex items-center justify-between px-3 py-2 rounded border border-indigo-400/55 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200 font-bold cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <QrCode className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
-                        <span>{isEn ? 'QR 3D & Slide Remote' : 'Điều khiển 3D & Slide qua QR'}</span>
-                      </span>
-                      <span className="text-[10px] font-mono tabular-nums opacity-85">
-                        {controllerCount > 0 ? `${controllerCount} ON` : remoteRoomCode}
-                      </span>
-                    </button>
+                    {hasPremiumAccess && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCompactToolsOpen(false);
+                          openRemoteModal();
+                        }}
+                        className="w-full min-h-[40px] flex items-center justify-between px-3 py-2 rounded border border-indigo-400/55 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200 font-bold cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <QrCode className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
+                          <span>{isEn ? 'QR 3D & Slide Remote' : 'Điều khiển 3D & Slide qua QR'}</span>
+                        </span>
+                        <span className="text-[10px] font-mono tabular-nums opacity-85">
+                          {controllerCount > 0 ? `${controllerCount} ON` : remoteRoomCode}
+                        </span>
+                      </button>
+                    )}
 
-                    {onOpenVoiceOS && (
+                    {hasPremiumAccess && onOpenVoiceOS && (
                       <button
                         type="button"
                         onClick={() => {
@@ -551,31 +555,33 @@ export const Header: React.FC<HeaderProps> = ({
               )}
           </div>
 
-          {/* QR 3D & Presentation Phone Controller (All Screen Sizes & Pages) */}
-          <button
-            type="button"
-            onClick={openRemoteModal}
-            data-testid="header-qr-remote-btn"
-            className={`relative min-w-[38px] min-h-[38px] flex items-center justify-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 text-xs font-bold ${
-              controllerCount > 0
-                ? 'border-emerald-500/70 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
-                : 'border-sky-400/55 bg-sky-50/90 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300'
-            }`}
-            title={
-              isEn
-                ? 'Scan QR to use Phone as 3D & Presentation Controller'
-                : 'Quét QR biến Điện thoại thành tay cầm 3D & Thuyết trình từ xa'
-            }
-            aria-label={isEn ? 'QR 3D Remote Controller' : 'Điều khiển 3D từ xa qua QR'}
-          >
-            <QrCode className="w-4 h-4 shrink-0" />
-            <span className="hidden xl:inline">{isEn ? 'QR Remote' : 'QR Điều khiển'}</span>
-            {controllerCount > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-[3px] bg-emerald-600 text-white text-[10px] font-mono font-extrabold tabular-nums">
-                {controllerCount}
-              </span>
-            )}
-          </button>
+          {/* QR 3D & Presentation Phone Controller (Premium Only) */}
+          {hasPremiumAccess && (
+            <button
+              type="button"
+              onClick={openRemoteModal}
+              data-testid="header-qr-remote-btn"
+              className={`relative min-w-[38px] min-h-[38px] flex items-center justify-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 text-xs font-bold ${
+                controllerCount > 0
+                  ? 'border-emerald-500/70 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                  : 'border-sky-400/55 bg-sky-50/90 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300'
+              }`}
+              title={
+                isEn
+                  ? 'Scan QR to use Phone as 3D & Presentation Controller'
+                  : 'Quét QR biến Điện thoại thành tay cầm 3D & Thuyết trình từ xa'
+              }
+              aria-label={isEn ? 'QR 3D Remote Controller' : 'Điều khiển 3D từ xa qua QR'}
+            >
+              <QrCode className="w-4 h-4 shrink-0" />
+              <span className="hidden xl:inline">{isEn ? 'QR Remote' : 'QR Điều khiển'}</span>
+              {controllerCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-[3px] bg-emerald-600 text-white text-[10px] font-mono font-extrabold tabular-nums">
+                  {controllerCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Light / Dark Toggle */}
           <button

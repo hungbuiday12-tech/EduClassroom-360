@@ -798,25 +798,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
       <SynapsePremiumGateModal
         isOpen={true}
         inline={true}
-        onEnterPremium={() => setShowLabsCatalog(false)}
       />
-    );
-  }
-
-  /* Upgraded Synapse Premium Home Dashboard (Default view when entering Synapse Pre) */
-  if (activeView === 'hub' && !showLabsCatalog) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
-        <SynapsePremiumHome
-          onOpenLab={openModulePage}
-          onOpenAllLabs={() => {
-            setShowLabsCatalog(true);
-            setShowWelcomeGate(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onNavigateSubject={onNavigateSubject}
-        />
-      </div>
     );
   }
 

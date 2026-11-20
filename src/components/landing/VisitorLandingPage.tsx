@@ -8,6 +8,7 @@ import { BrandLogo } from '../common/BrandLogo';
 import { CursorDodgeText } from '../common/CursorDodgeText';
 import { AppearanceStudioBar } from '../common/AppearanceStudioBar';
 import { GraphicsTierTriggerButton } from '../common/GraphicsTierTriggerButton';
+import { LiveMeetShowcaseCard } from '../meet/LiveMeetShowcaseCard';
 import {
   Sparkles,
   Compass,
@@ -810,6 +811,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   <strong className="font-semibold text-slate-900 dark:text-white">WebAR Desk Pro 10-finger labs</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">5 Physics domains</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Sublime 4 Code-to-Animation Trace</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Live Meet &amp; Shared 3D Classroom (WebRTC · Screen Share · .glb/.obj Upload)</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Live Vision + Barge-In Syn AI &amp; Syn Reel 3B1B Video</strong>, and{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">{totalExams} official exams</strong>.
                 </>
@@ -818,6 +820,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   Hệ sinh thái học tập toàn diện cho học sinh THCS, THPT &amp; Đội tuyển Chuyên: tích hợp{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (30 Đại công trình 3D · Cảm biến Điện thoại QR · Hộp cát Hạt GPU 28K)</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">AR Bàn Học Pro 10 ngón tay</strong>,{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Phòng Học Trực Tuyến Live Meet &amp; 3D (WebRTC · Chia sẻ màn hình · Mô hình 3D dùng chung &amp; Up .glb/.obj)</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">IDE Sublime 4 Truy vết Code 1-1 &amp; Replay Tư Duy</strong>,{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Syn AI Mắt Thần (Ngắt lời Voice &amp; Video 3B1B Syn Reel)</strong> cùng{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">{totalLessons} bài giảng &amp; {totalExams} đề thi</strong>.
@@ -2219,6 +2222,17 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </div>
             </div>
           </div>
+
+          {/* FRAME 2B: PHÒNG HỌC TRỰC TUYẾN LIVE MEET & 3D */}
+          <LiveMeetShowcaseCard
+            id="visitor-live-meet-overview"
+            isEn={isEn}
+            onOpenMeet={() => {
+              navigate({ subject: 'live_meet', tutorOpen: false });
+              onEnterAsGuest();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
 
           {/* FRAME 3: DIỄN ĐÀN HỌC TẬP (COLLABORATIVE KNOWLEDGE NETWORK) */}
           <div

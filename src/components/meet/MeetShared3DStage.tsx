@@ -9,6 +9,7 @@ import { MEET_3D_MODELS, Meet3DModelId, MeetGraphicsQuality, MeetShared3DState }
 import { fetchCustomSpatialModels } from '../spatial3d/customModelStore';
 import { buildCustomSpatialModel } from '../spatial3d/customModelBuilder';
 import { CustomSpatialModel } from '../spatial3d/customModelTypes';
+import { resolveApiUrl } from '../../lib/apiClient';
 
 interface MeetShared3DStageProps {
   isEn: boolean;
@@ -838,7 +839,7 @@ export const MeetShared3DStage: React.FC<MeetShared3DStageProps> = ({
       }
       const dataBase64 = btoa(binary);
 
-      const res = await fetch('/api/meet/models', {
+      const res = await fetch(resolveApiUrl('/api/meet/models'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: file.name, ext, dataBase64 })

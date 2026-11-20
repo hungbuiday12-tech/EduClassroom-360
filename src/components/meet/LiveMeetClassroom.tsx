@@ -31,6 +31,7 @@ import {
   MeetShared3DState,
   MeetStageMode,
 } from './meetTypes';
+import { resolveApiUrl, resolveWsUrl } from '../../lib/apiClient';
 
 const DEFAULT_SHARED_3D_STATE: MeetShared3DState = {
   modelId: 'turbofan',
@@ -53,11 +54,6 @@ const RTC_CONFIG: RTCConfiguration = {
 };
 
 const QUICK_REACTIONS = ['👍', '👏', '🔥', '💡', '❓', '❤️'];
-
-function getWsUrl(path: string): string {
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${proto}//${window.location.host}${path}`;
-}
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -257,7 +253,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
   const fetchRooms = useCallback(async () => {
     setLoadingRooms(true);
     try {
-      const res = await fetch('/api/meet/rooms');
+      const res = await fetch(resolveApiUrl('/api/meet/rooms'));
       const ct = res.headers.get('content-type') || '';
       if (res.ok && ct.includes('application/json')) {
         const data = await res.json();
@@ -482,7 +478,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
   }, []);
 
   const connectToRoom = useCallback(
-    (code: string, titleHint?: string) => {
+    (code: string, titleHint?: string, forceRemote = false) => {
       const cleanCode = code.trim().toUpperCase();
       if (!cleanCode) return;
       const cleanName = displayName.trim() || 'Học viên STEM';
@@ -491,7 +487,9 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
       setIsJoining(true);
       setLobbyError(null);
 
-      const ws = new WebSocket(getWsUrl('/ws/meet'));
+      let joined = false;
+      const wsUrl = resolveWsUrl('/ws/meet', forceRemote);
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -518,6 +516,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
         switch (msg.type) {
           case 'room:joined': {
+            joined = true;
             setIsJoining(false);
             setRoomCode(msg.roomCode);
             setRoomTitle(msg.title || 'Phòng học trực tuyến');
@@ -654,8 +653,18 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
       };
 
       ws.onerror = () => {
+        if (!joined && !forceRemote) {
+          const remoteUrl = resolveWsUrl('/ws/meet', true);
+          if (remoteUrl !== wsUrl) {
+            try {
+              ws.close();
+            } catch {}
+            connectToRoom(cleanCode, titleHint, true);
+            return;
+          }
+        }
         setIsJoining(false);
-        setLobbyError('Không thể kết nối máy chủ phòng học trực tuyến.');
+        setLobbyError('Không thể kết nối máy chủ phòng học trực tuyến. Vui lòng thử lại sau vài giây.');
       };
 
       ws.onclose = () => {
@@ -676,7 +685,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
       return out;
     };
     try {
-      const res = await fetch('/api/meet/rooms', {
+      const res = await fetch(resolveApiUrl('/api/meet/rooms'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -77,15 +77,42 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [state]);
 
-  // Sync requests & approvals across browser tabs in real time
+  // Sync requests & approvals across browser tabs AND across devices via server API
   useEffect(() => {
+    let active = true;
+    const fetchServerState = async () => {
+      try {
+        const res = await fetch('/api/premium/state');
+        if (!res.ok) return;
+        const data = (await res.json()) as Partial<PremiumStorageState>;
+        if (!active) return;
+        if (Array.isArray(data.approvedEmails) && Array.isArray(data.requests)) {
+          setState({
+            approvedEmails: data.approvedEmails,
+            requests: data.requests,
+          });
+        }
+      } catch {
+        // fallback to localStorage silently
+      }
+    };
+
+    void fetchServerState();
+    const interval = window.setInterval(fetchServerState, 4000);
+    const onFocus = () => void fetchServerState();
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) {
         setState(loadPremiumState());
       }
     };
+    window.addEventListener('focus', onFocus);
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   // Load daily quota for current user
@@ -110,7 +137,11 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const hasPremiumAccess = useMemo(() => {
     if (!user) return false;
     if (user.role === 'admin') return true;
-    return state.approvedEmails.includes(normalizedEmail);
+    const normalizedName = (user.displayName || '').trim().toLowerCase();
+    return (
+      state.approvedEmails.includes(normalizedEmail) ||
+      (normalizedName.length > 0 && state.approvedEmails.includes(normalizedName))
+    );
   }, [user, state.approvedEmails, normalizedEmail]);
 
   // Mark document for Synapse Premium styling without desyncing App's Light/Dark state
@@ -163,6 +194,21 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
           : [nextReq, ...prev.requests],
       };
     });
+    void fetch('/api/premium/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: normalizedEmail,
+        displayName: user.displayName || user.email,
+        uid: user.uid,
+        plan: '120.000đ / 3 tháng',
+      }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.state) setState(data.state);
+      })
+      .catch(() => {});
     return {
       ok: true,
       message: 'Đã gửi yêu cầu đăng ký gói 120.000đ / 3 tháng! Vui lòng chờ Admin phê duyệt để mở khóa Synapse Pre.',
@@ -177,9 +223,21 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ? prev.approvedEmails
         : [...prev.approvedEmails, clean],
       requests: prev.requests.map((r) =>
-        r.email.toLowerCase() === clean ? { ...r, status: 'approved' } : r
+        r.email.toLowerCase() === clean || r.displayName.toLowerCase() === clean
+          ? { ...r, status: 'approved' }
+          : r
       ),
     }));
+    void fetch('/api/premium/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: clean }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.state) setState(data.state);
+      })
+      .catch(() => {});
   };
 
   const revokeUserPremium = (email: string) => {
@@ -188,9 +246,21 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setState((prev) => ({
       approvedEmails: prev.approvedEmails.filter((e) => e !== clean),
       requests: prev.requests.map((r) =>
-        r.email.toLowerCase() === clean ? { ...r, status: 'rejected' } : r
+        r.email.toLowerCase() === clean || r.displayName.toLowerCase() === clean
+          ? { ...r, status: 'rejected' }
+          : r
       ),
     }));
+    void fetch('/api/premium/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: clean }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.state) setState(data.state);
+      })
+      .catch(() => {});
   };
 
   const consumeDailyQuota = (amount = 1): boolean => {

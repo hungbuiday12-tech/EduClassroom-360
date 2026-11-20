@@ -223,6 +223,120 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // =====================================================================
+// PERSISTENT SYNAPSE PREMIUM REQUESTS & APPROVALS (.premium_db.json)
+// =====================================================================
+interface ServerPremiumRequest {
+  email: string;
+  displayName: string;
+  uid: string;
+  plan: string;
+  requestedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+interface ServerPremiumState {
+  approvedEmails: string[];
+  requests: ServerPremiumRequest[];
+}
+
+const PREMIUM_DB_PATH = path.resolve(process.cwd(), '.premium_db.json');
+
+function readPremiumDb(): ServerPremiumState {
+  try {
+    if (fs.existsSync(PREMIUM_DB_PATH)) {
+      const raw = fs.readFileSync(PREMIUM_DB_PATH, 'utf-8');
+      const parsed = JSON.parse(raw) as Partial<ServerPremiumState>;
+      return {
+        approvedEmails: Array.isArray(parsed.approvedEmails) ? parsed.approvedEmails : [],
+        requests: Array.isArray(parsed.requests) ? parsed.requests : []
+      };
+    }
+  } catch {
+    // ignore read errors
+  }
+  return { approvedEmails: [], requests: [] };
+}
+
+function writePremiumDb(next: ServerPremiumState) {
+  try {
+    fs.writeFileSync(PREMIUM_DB_PATH, JSON.stringify(next, null, 2), 'utf-8');
+  } catch {
+    // ignore write errors
+  }
+}
+
+let premiumStore: ServerPremiumState = readPremiumDb();
+
+app.get('/api/premium/state', (_req: Request, res: Response) => {
+  res.json(premiumStore);
+});
+
+app.post('/api/premium/request', (req: Request, res: Response) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const displayName = String(req.body?.displayName || email).trim();
+  const uid = String(req.body?.uid || '').trim();
+  const plan = String(req.body?.plan || '120.000đ / 3 tháng').trim();
+  if (!email) {
+    res.status(400).json({ ok: false, error: 'Missing email' });
+    return;
+  }
+  const nextReq: ServerPremiumRequest = {
+    email,
+    displayName,
+    uid,
+    plan,
+    requestedAt: new Date().toISOString(),
+    status: premiumStore.approvedEmails.includes(email) ? 'approved' : 'pending'
+  };
+  const exists = premiumStore.requests.some((r) => r.email.toLowerCase() === email);
+  premiumStore = {
+    ...premiumStore,
+    requests: exists
+      ? premiumStore.requests.map((r) => (r.email.toLowerCase() === email ? nextReq : r))
+      : [nextReq, ...premiumStore.requests]
+  };
+  writePremiumDb(premiumStore);
+  res.json({ ok: true, state: premiumStore });
+});
+
+app.post('/api/premium/approve', (req: Request, res: Response) => {
+  const clean = String(req.body?.email || '').trim().toLowerCase();
+  if (!clean) {
+    res.status(400).json({ ok: false, error: 'Missing email' });
+    return;
+  }
+  const already = premiumStore.approvedEmails.includes(clean);
+  premiumStore = {
+    approvedEmails: already ? premiumStore.approvedEmails : [...premiumStore.approvedEmails, clean],
+    requests: premiumStore.requests.map((r) =>
+      r.email.toLowerCase() === clean || r.displayName.toLowerCase() === clean
+        ? { ...r, status: 'approved' }
+        : r
+    )
+  };
+  writePremiumDb(premiumStore);
+  res.json({ ok: true, state: premiumStore });
+});
+
+app.post('/api/premium/revoke', (req: Request, res: Response) => {
+  const clean = String(req.body?.email || '').trim().toLowerCase();
+  if (!clean) {
+    res.status(400).json({ ok: false, error: 'Missing email' });
+    return;
+  }
+  premiumStore = {
+    approvedEmails: premiumStore.approvedEmails.filter((e) => e !== clean),
+    requests: premiumStore.requests.map((r) =>
+      r.email.toLowerCase() === clean || r.displayName.toLowerCase() === clean
+        ? { ...r, status: 'rejected' }
+        : r
+    )
+  };
+  writePremiumDb(premiumStore);
+  res.json({ ok: true, state: premiumStore });
+});
+
+// =====================================================================
 // PERSISTENT COMMUNITY REVIEWS & RATINGS STORE (.reviews_db.json)
 // =====================================================================
 type ReviewCategory = 'simulations' | 'lectures_ai' | 'coding_exams' | 'interface' | 'general';

@@ -247,10 +247,10 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
 
             <form onSubmit={handleAdminGrant} className="flex flex-wrap gap-2">
               <input
-                type="email"
+                type="text"
                 value={adminGrantEmail}
                 onChange={(e) => setAdminGrantEmail(e.target.value)}
-                placeholder="Nhập email học sinh để cấp quyền Synapse Pre..."
+                placeholder="Nhập email hoặc tên tài khoản để cấp quyền Synapse Pre..."
                 className="flex-1 min-w-[220px] rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none"
               />
               <button

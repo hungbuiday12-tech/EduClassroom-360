@@ -258,7 +258,8 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
     setLoadingRooms(true);
     try {
       const res = await fetch('/api/meet/rooms');
-      if (res.ok) {
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
         const data = await res.json();
         setPublicRooms(Array.isArray(data.rooms) ? data.rooms : []);
       }
@@ -667,23 +668,34 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
   const handleCreateRoom = async () => {
     setLobbyError(null);
     setIsJoining(true);
+    const title = roomTitleInput.trim() || 'Phòng học STEM 3D';
+    const generateLocalCode = () => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let out = '';
+      for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
+      return out;
+    };
     try {
       const res = await fetch('/api/meet/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: roomTitleInput.trim() || 'Phòng học STEM 3D',
+          title,
           hostName: displayName.trim() || 'Học viên STEM',
         }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.roomCode) {
-        throw new Error(data.error || 'Tạo phòng thất bại');
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
+        const data = await res.json();
+        if (data?.roomCode) {
+          connectToRoom(data.roomCode, data.title || title);
+          return;
+        }
       }
-      connectToRoom(data.roomCode, data.title);
-    } catch (err: any) {
-      setIsJoining(false);
-      setLobbyError(err?.message || 'Không thể tạo phòng mới.');
+      // Fallback: /ws/meet auto-creates the room on join
+      connectToRoom(generateLocalCode(), title);
+    } catch {
+      connectToRoom(generateLocalCode(), title);
     }
   };
 

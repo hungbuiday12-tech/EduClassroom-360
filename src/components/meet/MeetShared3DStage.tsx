@@ -843,14 +843,20 @@ export const MeetShared3DStage: React.FC<MeetShared3DStageProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: file.name, ext, dataBase64 })
       });
-      const data = await res.json();
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || 'Tải lên thất bại');
+      const ct = res.headers.get('content-type') || '';
+      let modelUrl = '';
+      if (res.ok && ct.includes('application/json')) {
+        const data = await res.json();
+        modelUrl = data?.url || '';
+      }
+      if (!modelUrl) {
+        // Fallback to local object URL so user can still inspect the 3D model immediately
+        modelUrl = URL.createObjectURL(file);
       }
       onPatchState({
         modelId: 'uploaded',
         customModelName: file.name,
-        uploadedFileUrl: data.url,
+        uploadedFileUrl: modelUrl,
         uploadedFileExt: ext,
         explode: 0,
         rotX: 0.2,

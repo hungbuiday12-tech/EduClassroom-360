@@ -23,7 +23,8 @@ import {
   UserCheck,
   Mic,
   SlidersHorizontal,
-  QrCode
+  QrCode,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -37,6 +38,7 @@ import { useNavigation, getLocationLabel } from '../context/NavigationContext';
 import { useAudio } from '../context/AudioContext';
 import { useRemoteController } from '../context/RemoteControllerContext';
 import { usePremium } from '../context/PremiumContext';
+import { SynapsePremiumGateModal } from './premium/SynapsePremiumGateModal';
 import { BrandLogo } from './common/BrandLogo';
 import { getStreakState, GROWTH_UPDATED_EVENT } from '../lib/learningGrowthStore';
 
@@ -81,7 +83,8 @@ export const Header: React.FC<HeaderProps> = ({
   const { location, canGoBack, previousLocation, goBack, goClassroom } = useNavigation();
   const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
   const { openModal: openRemoteModal, controllerCount, roomCode: remoteRoomCode } = useRemoteController();
-  const { hasPremiumAccess } = usePremium();
+  const { hasPremiumAccess, isAdmin, pendingRequestsCount } = usePremium();
+  const [isAdminPreModalOpen, setIsAdminPreModalOpen] = useState(false);
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isBgMenuOpen, setIsBgMenuOpen] = useState(false);
@@ -555,6 +558,34 @@ export const Header: React.FC<HeaderProps> = ({
               )}
           </div>
 
+          {/* Admin Pending Premium Requests Notification Button */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsAdminPreModalOpen(true)}
+              className={`relative min-w-[38px] min-h-[38px] flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 text-xs font-bold ${
+                pendingRequestsCount > 0
+                  ? 'border-amber-500/80 bg-amber-500/15 text-amber-700 dark:text-amber-300 shadow-sm'
+                  : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20'
+              }`}
+              title={
+                pendingRequestsCount > 0
+                  ? `Có ${pendingRequestsCount} yêu cầu đăng ký Synapse Pre đang chờ duyệt`
+                  : 'Quản lý cấp quyền Synapse Pre (Admin)'
+              }
+            >
+              <Bell className={`w-4 h-4 shrink-0 ${pendingRequestsCount > 0 ? 'animate-bounce text-amber-500' : ''}`} />
+              <span className="hidden lg:inline">
+                {pendingRequestsCount > 0 ? `Duyệt Pre (${pendingRequestsCount})` : 'Cấp quyền Pre'}
+              </span>
+              {pendingRequestsCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-mono font-extrabold tabular-nums">
+                  {pendingRequestsCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* QR 3D & Presentation Phone Controller (Premium Only) */}
           {hasPremiumAccess && (
             <button
@@ -719,6 +750,12 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
+      {isAdmin && (
+        <SynapsePremiumGateModal
+          isOpen={isAdminPreModalOpen}
+          onClose={() => setIsAdminPreModalOpen(false)}
+        />
+      )}
     </header>
   );
 };

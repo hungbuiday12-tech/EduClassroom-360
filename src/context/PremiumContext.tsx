@@ -25,6 +25,7 @@ interface PremiumContextType {
   isAdmin: boolean;
   approvedEmails: string[];
   requests: PremiumRequest[];
+  pendingRequestsCount: number;
   myRequest: PremiumRequest | null;
   submitPremiumRequest: () => { ok: boolean; message: string };
   approveUserPremium: (email: string) => void;
@@ -76,6 +77,17 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [state]);
 
+  // Sync requests & approvals across browser tabs in real time
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        setState(loadPremiumState());
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // Load daily quota for current user
   useEffect(() => {
     const key = `${QUOTA_KEY_PREFIX}${normalizedEmail || 'guest'}`;
@@ -101,12 +113,11 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return state.approvedEmails.includes(normalizedEmail);
   }, [user, state.approvedEmails, normalizedEmail]);
 
-  // Transform entire website shell into Grand Obsidian & Gold-Cyan Premium theme when active
+  // Mark document for Synapse Premium styling without desyncing App's Light/Dark state
   useEffect(() => {
     const root = document.documentElement;
     if (hasPremiumAccess) {
       root.dataset.synapsePremium = 'true';
-      root.classList.add('dark');
     } else {
       delete root.dataset.synapsePremium;
     }
@@ -114,6 +125,11 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
       delete root.dataset.synapsePremium;
     };
   }, [hasPremiumAccess]);
+
+  const pendingRequestsCount = useMemo(
+    () => state.requests.filter((r) => r.status === 'pending').length,
+    [state.requests]
+  );
 
   const myRequest = useMemo(() => {
     if (!normalizedEmail) return null;
@@ -199,6 +215,7 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isAdmin,
         approvedEmails: state.approvedEmails,
         requests: state.requests,
+        pendingRequestsCount,
         myRequest,
         submitPremiumRequest,
         approveUserPremium,

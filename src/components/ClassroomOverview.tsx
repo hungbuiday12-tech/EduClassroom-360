@@ -98,7 +98,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   onOpenVoiceOS
 }) => {
   const { user, openAuthModal } = useAuth();
-  const { hasPremiumAccess, isAdmin, dailyQuotaRemaining, dailyQuotaLimit } = usePremium();
+  const { hasPremiumAccess, isAdmin, pendingRequestsCount, dailyQuotaRemaining, dailyQuotaLimit } = usePremium();
   const { t, language } = useLanguage();
   const {
     reviewScrollTick,
@@ -419,6 +419,11 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                     className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/60 bg-emerald-500/15 px-3.5 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25 cursor-pointer"
                   >
                     <span>Admin: Cấp quyền Pre</span>
+                    {pendingRequestsCount > 0 && (
+                      <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-600 text-white text-[10px] font-mono font-extrabold animate-pulse">
+                        {pendingRequestsCount} chờ duyệt
+                      </span>
+                    )}
                   </button>
                 )}
               </div>

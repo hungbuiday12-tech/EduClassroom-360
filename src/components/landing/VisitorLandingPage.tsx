@@ -742,30 +742,6 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             )}
 
             <button
-              type="button"
-              onClick={openRemoteModal}
-              data-testid="landing-qr-remote-btn"
-              className={`group cs-deck-btn flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 text-xs font-bold rounded-md border shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                controllerCount > 0
-                  ? 'border-emerald-500/70 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                  : 'border-indigo-400/60 bg-indigo-500/10 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-600 hover:text-white'
-              }`}
-              title={
-                isEn
-                  ? 'Scan QR to control Synapse 3D & Slides from Phone'
-                  : 'Quét QR biến Điện thoại thành tay cầm 3D & Thuyết trình từ xa'
-              }
-            >
-              <QrCode className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden lg:inline">{isEn ? 'QR Remote' : 'QR Điều khiển'}</span>
-              {controllerCount > 0 && (
-                <span className="px-1 rounded bg-emerald-600 text-white text-[10px] font-mono tabular-nums">
-                  {controllerCount}
-                </span>
-              )}
-            </button>
-
-            <button
               onClick={onEnterAsGuest}
               className="group cs-deck-btn px-3 lg:px-4 py-1.5 text-xs font-bold rounded-md bg-blue-700 text-white dark:bg-sky-500 dark:text-slate-950 hover:bg-blue-800 dark:hover:bg-sky-400 border border-transparent transition-all flex items-center gap-1.5 shadow-md whitespace-nowrap cursor-pointer shrink-0"
             >

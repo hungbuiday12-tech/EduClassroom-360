@@ -390,16 +390,76 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             className="font-display text-3xl sm:text-5xl lg:text-[3.15rem] font-semibold tracking-tight text-slate-900 dark:text-white leading-[1.16] text-balance max-w-3xl mx-auto hero-blend-shadow"
           />
 
-          <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-200 leading-relaxed max-w-3xl mx-auto hero-blend-shadow">
-            {(() => {
-              const phyCounts = getPhysicsSimCounts();
-              return t(
-                'overview.heroDesc',
-                `Hệ sinh thái STEM toàn diện cho Toán (2D & Oxyz 3D), Vật lí (${phyCounts.domainCount} lĩnh vực · ${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D + 36 dụng cụ), Tin học (5 lộ trình VNOI & C++ · IDE Sublime 4 · Truy vết Code 1-1 & Replay Tư Duy), Synapse Pre (30 Đại công trình 3D · Hộp cát Hạt GPU 28K 2 tay · Cảm biến Điện thoại QR Oscilloscope), AR Bàn Học Pro 10 ngón tay, Phòng Học Trực Tuyến Live Meet & 3D (Gọi Video WebRTC · Chia sẻ màn hình · Mô hình 3D dùng chung đồng bộ & Up file .glb/.obj), Syn AI Mắt Thần + Ngắt lời Voice & Syn Reel Video 3B1B, Đề thi chấm ảnh AI & App đa thiết bị.`,
-                `Complete STEM ecosystem: Math (2D & Oxyz 3D), Physics (${phyCounts.domainCount} domains · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D labs + 36 tools), CS (5 VNOI/C++ roadmaps · Sublime 4 · Live Code-to-Animation Trace & Thought Replay), Synapse Pre (30 Megastructures · Dual-Hand 28K GPU Particle Sandbox · QR Phone Sensor Oscilloscope), WebAR Desk Pro 10-finger lab, Live Meet & Shared 3D Classroom (WebRTC Video/Screen Share · Mouse-controlled Shared 3D & .glb/.obj Upload), Live Vision + Barge-In Syn AI & Syn Reel 3B1B Motion Video, AI-graded Exams & Cross-Device App.`
-              );
-            })()}
+          <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-200 leading-relaxed max-w-2xl mx-auto hero-blend-shadow">
+            {t(
+              'overview.heroDesc',
+              'Nền tảng học Toán · Vật lí · Tin học trực quan bằng mô phỏng 2D/3D, Phòng học trực tuyến Live Meet 3D và Không gian sáng tạo Synapse Pre.',
+              'Interactive STEM platform for Math, Physics & Computer Science with 2D/3D simulations, Live Meet 3D Classroom, and Synapse Pre 3D/4D Labs.'
+            )}
           </p>
+
+          {/* 3-Pillar Clean Architecture Bar (Free THPT · Live Meet 3D · Synapse Pre) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-4xl mx-auto pt-2 text-left">
+            <button
+              type="button"
+              onClick={() => onNavigate('math')}
+              className="group rounded-xl border border-emerald-500/35 bg-white/80 dark:bg-slate-900/80 hover:border-emerald-400 p-3.5 transition-all hover:-translate-y-0.5 cursor-pointer"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-300">
+                  {isEn ? '1. Core STEM' : '1. Học THPT Cốt lõi'}
+                </span>
+                <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-300">
+                  FREE
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
+                {isEn
+                  ? 'Math, Physics, CS lessons, 2D/3D labs & practice exercises.'
+                  : 'Toán · Vật lí · Tin học, mô phỏng chuẩn SGK & bài tập.'}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate('live_meet')}
+              className="group rounded-xl border border-sky-500/35 bg-white/80 dark:bg-slate-900/80 hover:border-sky-400 p-3.5 transition-all hover:-translate-y-0.5 cursor-pointer"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-extrabold text-sky-700 dark:text-sky-300">
+                  {isEn ? '2. Live Meet 3D' : '2. Phòng Học Trực Tuyến 3D'}
+                </span>
+                <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-bold text-sky-600 dark:text-sky-300">
+                  FREE + PRO
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
+                {isEn
+                  ? 'WebRTC video, screen share & mouse-controlled shared 3D.'
+                  : 'Gọi Video, chia sẻ màn hình & xoay mô hình 3D chung.'}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate('synapse_v2')}
+              className="group rounded-xl border border-violet-500/35 bg-white/80 dark:bg-slate-900/80 hover:border-violet-400 p-3.5 transition-all hover:-translate-y-0.5 cursor-pointer"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-extrabold text-violet-700 dark:text-violet-300">
+                  {isEn ? '3. Synapse Pre' : '3. Synapse Pre 3D/4D'}
+                </span>
+                <span className="rounded bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-bold text-violet-600 dark:text-violet-300">
+                  PRE
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
+                {isEn
+                  ? 'What-If Physics, AlgoCity 3D, Quantum Holodeck & WebAR.'
+                  : 'Vũ trụ What-If, AlgoCity 3D, Lượng tử & WebAR.'}
+              </p>
+            </button>
+          </div>
 
           {/* Primary Action Buttons */}
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center gap-2.5 sm:gap-3.5 pt-1">

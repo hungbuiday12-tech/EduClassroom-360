@@ -4,18 +4,23 @@ import {
   ArrowLeft,
   ArrowRight,
   Atom,
+  BookOpen,
   Bot,
   Box,
   Building2,
   Camera,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Clock,
+  Compass,
   Cpu,
   Crosshair,
   DoorOpen,
   Gauge,
   Hand,
+  Info,
   Maximize2,
   Minimize2,
   Orbit,
@@ -55,6 +60,8 @@ import { QuantumHolodeck3DLab } from './QuantumHolodeck3DLab';
 import { UniverseForge3DLab } from './UniverseForge3DLab';
 import { NanobotBioSwarm4DLab } from './NanobotBioSwarm4DLab';
 import { TimeMachineHolo3DLab } from './TimeMachineHolo3DLab';
+import { WhatIfPhysics3DLab } from './WhatIfPhysics3DLab';
+import { AlgoCity3DLab } from './AlgoCity3DLab';
 import { PreStudioDiagramPreview } from './PreStudioDiagramPreview';
 
 const SpatialGesture3DLab = lazy(() =>
@@ -94,6 +101,50 @@ interface PreStudioItem {
 }
 
 const PRE_STUDIOS: PreStudioItem[] = [
+  {
+    id: 'what_if_physics_3d',
+    category: 'future_2030',
+    indexLabel: 'NEW 01',
+    titleVi: 'Vũ Trụ "Nếu Định Luật Vật Lí Thay Đổi" 3D',
+    titleEn: 'What-If Physics Sandbox 3D',
+    metaVi: 'Phá vỡ Hằng số Tự nhiên · Lực 1/rⁿ, Tốc độ Ánh sáng c & Planck h',
+    metaEn: 'Break Natural Constants · 1/rⁿ Gravity, Speed of Light c & Planck h',
+    descVi:
+      'Tự tay bẻ cong định luật tự nhiên trong không gian 3D: đổi hấp dẫn từ 1/r² thành 1/r³ để xem hành tinh xoắn ốc rơi vào sao, hạ tốc độ ánh sáng c hoặc tăng hằng số Planck h để thấy bất định lượng tử ở cấp vĩ mô.',
+    descEn:
+      'Bend natural laws in real-time 3D: change gravity from 1/r² to 1/r³ to watch orbits collapse, slow down the speed of light c, or boost Planck constant h to witness macroscopic quantum uncertainty.',
+    specsVi: '4 Kịch bản Vũ trụ · Quỹ đạo 3D Thời gian thực · Phân tích Hệ quả Vật lí',
+    specsEn: '4 Universe Presets · Real-Time 3D Orbits · Physical Consequence Engine',
+    keywords: 'what if vat li dinh luat tu nhien hang so G c h planck hap dan quy dao 3d',
+    accentHex: '#f59e0b',
+    secondaryHex: '#ec4899',
+    accentTextClass: 'text-amber-600 dark:text-amber-300',
+    iconBgClass: 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-300',
+    btnGradientClass: 'from-amber-500 via-orange-500 to-pink-500 text-white',
+    icon: Orbit
+  },
+  {
+    id: 'algo_city_3d',
+    category: 'ai_code_sensor',
+    indexLabel: 'NEW 02',
+    titleVi: 'Thành Phố Thuật Toán 3D — AlgoCity',
+    titleEn: '3D Algorithm Architecture City',
+    metaVi: 'Dijkstra 3D · Quy Hoạch Động DP 2D · Cây Phân Đoạn & Mô phỏng TLE',
+    metaEn: '3D Dijkstra · 2D Dynamic Programming · Segment Tree & TLE Bottleneck',
+    descVi:
+      'Biến thuật toán thành thành phố 3D sống động: dòng năng lượng lan tỏa theo Dijkstra, các tòa tháp DP 2D xây từng bước, tháp nút Segment Tree và chế độ quá tải TLE (Time Limit Exceeded) gây kẹt nút cổ chai trực quan.',
+    descEn:
+      'Experience algorithms as a living 3D metropolis: Dijkstra energy waves, rising 2D DP towers, Segment Tree range queries, and a live TLE bottleneck overflow simulator.',
+    specsVi: '3 Thuật toán 3D · Chạy từng bước · Mô phỏng TLE / Nút cổ chai',
+    specsEn: '3 3D Algorithms · Step-by-Step Playback · Live TLE Bottleneck Mode',
+    keywords: 'thuat toan algorithm dijkstra quy hoach dong dp segment tree cay phan doan tle 3d tin hoc',
+    accentHex: '#10b981',
+    secondaryHex: '#06b6d4',
+    accentTextClass: 'text-emerald-600 dark:text-emerald-300',
+    iconBgClass: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-300',
+    btnGradientClass: 'from-emerald-500 via-teal-500 to-cyan-500 text-white',
+    icon: Cpu
+  },
   {
     id: 'quantum_holodeck_3d',
     category: 'future_2030',
@@ -647,16 +698,51 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const [tierFilter, setTierFilter] = useState<'all' | 'free' | 'pre'>('all');
+  const [showExperimental, setShowExperimental] = useState(false);
+
+  const FREE_STUDIO_IDS = useMemo(
+    () =>
+      new Set<FutureLabTabId>([
+        'what_if_physics_3d',
+        'algo_city_3d',
+        'text_to_sim',
+        'paper_to_sim',
+        'phone_sensor_lab',
+        'galaxy3d',
+        'cannon_ballistics_3d'
+      ]),
+    []
+  );
+
+  const EXPERIMENTAL_STUDIO_IDS = useMemo(
+    () =>
+      new Set<FutureLabTabId>([
+        'dual_hand_sandbox',
+        'audio_fft',
+        'nanobot_bioswarm_4d',
+        'timemachine_holo_3d',
+        'cannon_ballistics_3d'
+      ]),
+    []
+  );
+
   const filteredStudios = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return PRE_STUDIOS.filter((s) => {
+      if (!q && !showExperimental && EXPERIMENTAL_STUDIO_IDS.has(s.id)) return false;
+      const isFree = FREE_STUDIO_IDS.has(s.id);
+      if (tierFilter === 'free' && !isFree) return false;
+      if (tierFilter === 'pre' && isFree) return false;
       const catOk = selectedCategory === 'all' || s.category === selectedCategory;
       if (!catOk) return false;
       if (!q) return true;
       const haystack = `${s.titleVi} ${s.titleEn} ${s.metaVi} ${s.metaEn} ${s.descVi} ${s.descEn} ${s.specsVi} ${s.keywords}`.toLowerCase();
       return haystack.includes(q);
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, tierFilter, showExperimental, FREE_STUDIO_IDS, EXPERIMENTAL_STUDIO_IDS]);
+
+  const [showStudioIntro, setShowStudioIntro] = useState(true);
 
   const currentStudioIndex = PRE_STUDIOS.findIndex((s) => s.id === activeView);
   const currentStudio = currentStudioIndex >= 0 ? PRE_STUDIOS[currentStudioIndex] : null;
@@ -666,6 +752,73 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
     currentStudioIndex >= 0 && currentStudioIndex < PRE_STUDIOS.length - 1
       ? PRE_STUDIOS[currentStudioIndex + 1]
       : PRE_STUDIOS[0];
+
+  const studioGuideSteps = useMemo(() => {
+    if (!currentStudio) return [];
+    const customGuides: Partial<Record<FutureLabTabId, { vi: string[]; en: string[] }>> = {
+      what_if_physics_3d: {
+        vi: [
+          'Chọn 1 trong 4 kịch bản vũ trụ có sẵn hoặc kéo thanh trượt hằng số G, lực 1/rⁿ, tốc độ ánh sáng c và hằng số Planck h.',
+          'Kéo chuột trên khung 3D để xoay góc nhìn và cuộn chuột để phóng to/thu nhỏ quỹ đạo hành tinh.',
+          'Quan sát bảng thông số Telemetry và khung Phân tích hệ quả vật lí tự động cập nhật theo thời gian thực.'
+        ],
+        en: [
+          'Pick one of 4 universe presets or drag sliders for G, inverse-power law 1/rⁿ, speed of light c, and Planck constant h.',
+          'Drag on the 3D viewport to orbit the camera and scroll to zoom into planetary trajectories.',
+          'Monitor live Telemetry gauges and the automatic Physical Consequence Analysis panel.'
+        ]
+      },
+      algo_city_3d: {
+        vi: [
+          'Chọn kiến trúc thuật toán muốn khám phá: Dijkstra 3D, Quy Hoạch Động DP 2D hoặc Cây Phân Đoạn (Segment Tree 3D).',
+          'Dùng thanh điều khiển Chạy / Tạm dừng / Đi từng bước / Đặt lại để quan sát từng pha xử lí của thuật toán.',
+          'Bật chế độ Quá tải TLE (Bottleneck Overflow) để xem hiện tượng nghẽn nút cổ chai ngay trên thành phố 3D.'
+        ],
+        en: [
+          'Select an algorithm architecture: 3D Dijkstra, 2D Dynamic Programming, or 3D Segment Tree.',
+          'Use Play, Pause, Step, and Reset controls to inspect each execution phase step by step.',
+          'Toggle TLE Bottleneck Overflow mode to witness real-time congestion and slowdown on the 3D city.'
+        ]
+      },
+      quantum_holodeck_3d: {
+        vi: [
+          'Chọn các cổng lượng tử (H, X, Y, Z, S, T, CNOT) để thêm vào mạch và xem vector trạng thái xoay trên quả cầu Bloch 3D.',
+          'Thử kích hoạt trạng thái vướng víu Bell hoặc thuật toán Grover để quan sát biên độ xác suất.',
+          'Nhấn Đo (Measure) để quan sát sự sụp đổ hàm sóng và biểu đồ tần suất 1.000 lần đo.'
+        ],
+        en: [
+          'Apply quantum gates (H, X, Y, Z, S, T, CNOT) and watch the live state vector rotate on the 3D Bloch sphere.',
+          'Trigger Bell entanglement or Grover search to inspect quantum amplitudes.',
+          'Click Measure to observe wave-function collapse and the 1,000-shot histogram.'
+        ]
+      },
+      universe_forge_3d: {
+        vi: [
+          'Điều chỉnh khối lượng sao, vận tốc tương đối tính v/c và hằng số vũ trụ trên bảng điều khiển.',
+          'Xoay khung 3D để quan sát độ cong lưới không-thời gian, co độ dài Lorentz và dịch chuyển Doppler.',
+          'So sánh các kịch bản hố đen, sao neutron và hệ hành tinh chuẩn.'
+        ],
+        en: [
+          'Adjust stellar mass, relativistic velocity v/c, and cosmological parameters in the control panel.',
+          'Orbit the 3D scene to inspect spacetime curvature, Lorentz contraction, and Doppler shifts.',
+          'Compare presets across black holes, neutron stars, and standard planetary systems.'
+        ]
+      }
+    };
+    const found = customGuides[currentStudio.id];
+    if (found) return isEn ? found.en : found.vi;
+    return isEn
+      ? [
+          'Explore the interactive 3D/4D viewport: drag to rotate, scroll to zoom, and click elements to inspect.',
+          'Adjust parameters, presets, or simulation controls in the workbench panel to test hypotheses.',
+          'Use Fullscreen or QR 3D Remote in the top bar for immersive classroom presentation.'
+        ]
+      : [
+          'Tương tác trực tiếp với khung mô phỏng 3D/4D: kéo chuột để xoay góc nhìn, cuộn để thu phóng và chạm vào đối tượng để nghiên cứu.',
+          'Điều chỉnh các thông số, kịch bản mẫu hoặc thanh điều khiển trong bảng công cụ để kiểm chứng giả thuyết.',
+          'Dùng nút Toàn màn hình hoặc QR 3D ở thanh trên cùng khi cần trình chiếu trực quan trên lớp.'
+        ];
+  }, [currentStudio, isEn]);
 
   /* Fullscreen 3D Megastructure stage leaves full canvas unobstructed */
   if (isMegastructureStage) {
@@ -953,47 +1106,52 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               </div>
             </div>
 
-            {/* BOTTOM: Quick Shortcut Buttons */}
-            <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-2 sm:gap-2.5 pt-1 border-t border-slate-200/70 dark:border-slate-800/70 scrollbar-none pb-0.5 sm:pb-0">
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={() => openModulePage('quantum_holodeck_3d')}
-                className="pre-grand-btn min-h-[38px] inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 via-sky-500 to-purple-500 text-white text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 shadow-md"
-              >
-                <Atom className="w-3.5 h-3.5" />
-                <span>{isEn ? 'Quantum Holodeck' : 'Máy Tính Lượng Tử 3D'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+            {/* BOTTOM: Clean Tier Filter (FREE vs SYNAPSE PRE) + Experimental Toggle */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/70 dark:border-slate-800/70">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {([
+                  { id: 'all', vi: 'Tất cả gói', en: 'All Tiers' },
+                  { id: 'free', vi: 'Dùng Miễn Phí (FREE)', en: 'Free Access' },
+                  { id: 'pre', vi: 'Synapse Pre (Độc quyền)', en: 'Synapse Pre' }
+                ] as const).map((tier) => {
+                  const active = tierFilter === tier.id;
+                  return (
+                    <button
+                      key={tier.id}
+                      type="button"
+                      onClick={() => setTierFilter(tier.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                        active
+                          ? tier.id === 'free'
+                            ? 'bg-emerald-600 border-emerald-400 text-white'
+                            : tier.id === 'pre'
+                            ? 'bg-violet-600 border-violet-400 text-white'
+                            : 'bg-slate-900 dark:bg-white border-slate-700 dark:border-white text-white dark:text-slate-900'
+                          : 'bg-white/80 dark:bg-slate-900/80 border-slate-300/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-sky-400'
+                      }`}
+                    >
+                      {isEn ? tier.en : tier.vi}
+                    </button>
+                  );
+                })}
+              </div>
 
               <button
                 type="button"
-                data-ripple="true"
-                onClick={() => openModulePage('tech_teardown_3d')}
-                className="pre-grand-btn min-h-[38px] inline-flex items-center gap-2 px-3.5 py-2 border border-amber-500/50 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-200 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
+                onClick={() => setShowExperimental((v) => !v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
+                  showExperimental
+                    ? 'bg-amber-500/20 border-amber-400/60 text-amber-700 dark:text-amber-300'
+                    : 'bg-white/70 dark:bg-slate-900/70 border-slate-300/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
               >
-                <Wrench className="w-3.5 h-3.5" />
-                <span>{isEn ? '3D Teardown Workshop' : 'Xưởng Phẫu Thuật 3D'}</span>
-              </button>
-
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={() => openModulePage('spatial_gesture_3d')}
-                className="pre-grand-btn min-h-[38px] inline-flex items-center gap-2 px-3.5 py-2 border border-teal-500/50 bg-teal-500/15 hover:bg-teal-500/25 text-teal-700 dark:text-teal-200 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
-              >
-                <Hand className="w-3.5 h-3.5 text-teal-500 dark:text-teal-300" />
-                <span>{isEn ? 'Spatial 3D & WebAR Desk' : 'Học Cảm Giác 3D & AR'}</span>
-              </button>
-
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={() => openModulePage('rocket_launch_3d')}
-                className="pre-grand-btn min-h-[38px] inline-flex items-center gap-2 px-3.5 py-2 border border-orange-500/50 bg-orange-500/15 hover:bg-orange-500/25 text-orange-700 dark:text-orange-200 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
-              >
-                <Rocket className="w-3.5 h-3.5" />
-                <span>{isEn ? 'Launch 3D Rocket' : 'Phóng Tên Lửa 3D'}</span>
+                {showExperimental
+                  ? isEn
+                    ? 'Hide Experimental Labs (5)'
+                    : 'Ẩn 5 phòng Thử nghiệm (Labs)'
+                  : isEn
+                  ? '+ Show Experimental Labs (5)'
+                  : '+ Hiện thêm 5 phòng Thử nghiệm (Labs)'}
               </button>
             </div>
           </div>
@@ -1018,10 +1176,11 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             </button>
           </div>
         ) : (
-          /* Single-Column Stack: 1 Compact Square Card Per Row (Title -> Compact Schematic Diagram -> Detailed Description) */
-          <div className="flex flex-col items-center gap-8">
+          /* Modern 2-Column Responsive Grid */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredStudios.map((studio, index) => {
               const Icon = studio.icon;
+              const isFreeStudio = FREE_STUDIO_IDS.has(studio.id);
               return (
                 <div
                   key={studio.id}
@@ -1029,10 +1188,10 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                     {
                       '--pre-card-accent': studio.accentHex,
                       '--pre-card-secondary': studio.secondaryHex,
-                      animationDelay: `${Math.min(index, 6) * 55}ms`
+                      animationDelay: `${Math.min(index, 6) * 45}ms`
                     } as React.CSSProperties
                   }
-                  className="pre-grand-frame pre-card-reveal group w-full max-w-[540px] lg:max-w-[580px] mx-auto shadow-sm"
+                  className="pre-grand-frame pre-card-reveal group w-full shadow-sm"
                 >
                   {/* Clean Hairline Gradient Border */}
                   <div aria-hidden="true" className="pre-grand-conic" />
@@ -1051,7 +1210,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                         openModulePage(studio.id);
                       }
                     }}
-                    className={`relative z-10 w-full min-h-[430px] rounded-[0.82rem] ${glassSurfaceClass} border border-slate-200/80 dark:border-white/10 p-5 sm:p-6 flex flex-col justify-between gap-4 text-slate-900 dark:text-white cursor-pointer overflow-hidden`}
+                    className={`relative z-10 w-full h-full min-h-[390px] rounded-[0.82rem] ${glassSurfaceClass} border border-slate-200/80 dark:border-white/10 p-5 flex flex-col justify-between gap-4 text-slate-900 dark:text-white cursor-pointer overflow-hidden`}
                   >
                     <div
                       aria-hidden="true"
@@ -1065,6 +1224,15 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                     <header className="relative z-10 flex items-start justify-between gap-3 shrink-0">
                       <div className="space-y-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold tracking-wide ${
+                              isFreeStudio
+                                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40'
+                                : 'bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/40'
+                            }`}
+                          >
+                            {isFreeStudio ? 'FREE' : 'SYNAPSE PRE'}
+                          </span>
                           <span className={`font-extrabold ${studio.accentTextClass}`}>
                             {studio.indexLabel}
                           </span>
@@ -1275,8 +1443,124 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
         </div>
       </div>
 
-      {/* Dedicated Module Content Canvas (All 19 3D/4D/AR Labs) */}
+      {/* Unified Room Intro, Features & Quick Guide Panel (Top of Every Synapse Pre Room) */}
+      {currentStudio && !isStudioFullscreen && (
+        <section
+          className={`rounded-2xl border ${glassSurfaceClass} overflow-hidden transition-all`}
+          style={{
+            borderColor: `${currentStudio.accentHex}44`
+          }}
+        >
+          <div className="px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/60">
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border"
+                style={{
+                  backgroundColor: `${currentStudio.accentHex}1a`,
+                  borderColor: `${currentStudio.accentHex}55`,
+                  color: currentStudio.accentHex
+                }}
+              >
+                <Info className="w-4 h-4" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                  {isEn
+                    ? 'Room Overview · Key Features · Quick Guide'
+                    : 'Giới thiệu phòng Lab · Tính năng nổi bật · Hướng dẫn sử dụng'}
+                </h2>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowStudioIntro((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
+            >
+              {showStudioIntro ? (
+                <>
+                  <span>{isEn ? 'Collapse' : 'Thu gọn'}</span>
+                  <ChevronUp className="w-3.5 h-3.5" />
+                </>
+              ) : (
+                <>
+                  <span>{isEn ? 'Expand Guide' : 'Mở hướng dẫn'}</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </>
+              )}
+            </button>
+          </div>
+
+          {showStudioIntro && (
+            <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* Column 1: Giới thiệu */}
+              <div className="lg:col-span-5 space-y-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <BookOpen className="w-3.5 h-3.5" style={{ color: currentStudio.accentHex }} />
+                  <span>{isEn ? 'Introduction' : 'Giới thiệu'}</span>
+                </div>
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                  {isEn ? currentStudio.descEn : currentStudio.descVi}
+                </p>
+              </div>
+
+              {/* Column 2: Tính năng nổi bật */}
+              <div className="lg:col-span-3 space-y-2 lg:border-l lg:border-slate-200/80 dark:lg:border-slate-800/80 lg:pl-4">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <Sparkles className="w-3.5 h-3.5" style={{ color: currentStudio.accentHex }} />
+                  <span>{isEn ? 'Key Features' : 'Tính năng nổi bật'}</span>
+                </div>
+                <ul className="space-y-1.5">
+                  {(isEn ? currentStudio.specsEn : currentStudio.specsVi)
+                    .split('·')
+                    .map((item) => item.trim())
+                    .filter(Boolean)
+                    .map((feat, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-200"
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
+                          style={{ backgroundColor: currentStudio.accentHex }}
+                        />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+
+              {/* Column 3: Hướng dẫn thao tác nhanh */}
+              <div className="lg:col-span-4 space-y-2 lg:border-l lg:border-slate-200/80 dark:lg:border-slate-800/80 lg:pl-4">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <Compass className="w-3.5 h-3.5" style={{ color: currentStudio.accentHex }} />
+                  <span>{isEn ? 'Quick Guide' : 'Hướng dẫn thao tác'}</span>
+                </div>
+                <ol className="space-y-1.5">
+                  {studioGuideSteps.map((step, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-200"
+                    >
+                      <span
+                        className="w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 text-white"
+                        style={{ backgroundColor: currentStudio.accentHex }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <span className="leading-snug">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Dedicated Module Content Canvas (All 21 3D/4D/AR Labs) */}
       <div>
+        {activeView === 'what_if_physics_3d' && <WhatIfPhysics3DLab onEarnXP={onEarnXP} />}
+        {activeView === 'algo_city_3d' && <AlgoCity3DLab onEarnXP={onEarnXP} />}
         {activeView === 'quantum_holodeck_3d' && <QuantumHolodeck3DLab onEarnXP={onEarnXP} />}
         {activeView === 'universe_forge_3d' && <UniverseForge3DLab onEarnXP={onEarnXP} />}
         {activeView === 'nanobot_bioswarm_4d' && <NanobotBioSwarm4DLab onEarnXP={onEarnXP} />}

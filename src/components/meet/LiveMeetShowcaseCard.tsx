@@ -30,8 +30,8 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
 
   const tierLabel = isUltra
     ? isEn
-      ? 'High Graphics (Pro)'
-      : 'Đồ họa Cao (Pro)'
+      ? 'Pro Graphics (Ultra)'
+      : 'Đồ họa Pro (Cao)'
     : isBalanced
     ? isEn
       ? 'Medium Graphics'
@@ -45,27 +45,81 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
       id={id}
       className={`relative overflow-hidden rounded-2xl border p-5 sm:p-7 transition-all duration-300 ${
         isUltra
-          ? 'border-sky-400/50 bg-slate-950/95 shadow-[0_0_40px_rgba(14,165,233,0.16)]'
+          ? 'border-sky-400/60 bg-slate-950/95 shadow-[0_0_55px_rgba(14,165,233,0.22)]'
           : isBalanced
-          ? 'border-sky-500/35 bg-slate-950/95 shadow-xl'
+          ? 'border-sky-500/40 bg-slate-950/95 shadow-[0_0_28px_rgba(14,165,233,0.12)]'
           : 'border-slate-700 bg-slate-950'
       }`}
     >
-      {/* Adaptive Background Animation based on performanceMode */}
+      {/* Scoped keyframes for Pro & Balanced dynamic motion */}
+      <style>{`
+        @keyframes meetFloatY {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-7px) rotate(3deg); }
+        }
+        @keyframes meetOrbitCW {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes meetOrbitCCW {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+        @keyframes meetScanline {
+          0% { transform: translateY(-100%); opacity: 0; }
+          20% { opacity: 0.7; }
+          80% { opacity: 0.7; }
+          100% { transform: translateY(420%); opacity: 0; }
+        }
+        @keyframes meetShimmer {
+          0% { transform: translateX(-140%) skewX(-18deg); }
+          100% { transform: translateX(260%) skewX(-18deg); }
+        }
+        @keyframes meetEqBar {
+          0%, 100% { transform: scaleY(0.35); }
+          50% { transform: scaleY(1); }
+        }
+        @keyframes meetDriftOrb {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          50% { transform: translate(22px, -16px) scale(1.12); }
+        }
+      `}</style>
+
+      {/* Adaptive Background Animation based on perfMode */}
       {!isSmooth && (
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {/* Drifting Aurora Orbs */}
           <div
-            className={`absolute -left-20 -top-20 h-64 w-64 rounded-full bg-sky-500/15 blur-3xl ${
-              isUltra ? 'animate-pulse' : ''
-            }`}
+            className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-sky-500/20 blur-3xl"
+            style={{
+              animation: isUltra ? 'meetDriftOrb 7s ease-in-out infinite' : 'meetDriftOrb 12s ease-in-out infinite',
+            }}
           />
           <div
-            className={`absolute -right-20 -bottom-20 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl ${
-              isUltra ? 'animate-pulse' : ''
-            }`}
+            className="absolute -right-24 -bottom-24 h-80 w-80 rounded-full bg-emerald-500/18 blur-3xl"
+            style={{
+              animation: isUltra
+                ? 'meetDriftOrb 8.5s ease-in-out infinite reverse'
+                : 'meetDriftOrb 14s ease-in-out infinite reverse',
+            }}
           />
           {isUltra && (
-            <div className="absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/10 blur-3xl animate-pulse" />
+            <>
+              <div
+                className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/15 blur-3xl"
+                style={{ animation: 'meetDriftOrb 6s ease-in-out infinite' }}
+              />
+              {/* Subtle animated holographic grid in Pro mode */}
+              <div
+                className="absolute inset-0 opacity-[0.12]"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, rgba(56,189,248,0.45) 1px, transparent 1px), linear-gradient(to bottom, rgba(56,189,248,0.45) 1px, transparent 1px)',
+                  backgroundSize: '36px 36px',
+                  maskImage: 'radial-gradient(circle at 68% 50%, black 25%, transparent 80%)',
+                }}
+              />
+            </>
           )}
         </div>
       )}
@@ -78,8 +132,16 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
               <Video className="h-3.5 w-3.5" />
               {isEn ? 'LIVE MEET & SHARED 3D' : 'PHÒNG HỌC TRỰC TUYẾN 3D'}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-slate-300">
-              <Sparkles className="h-3 w-3 text-amber-400" />
+            <span
+              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-semibold ${
+                isUltra
+                  ? 'border-amber-400/50 bg-amber-500/15 text-amber-300'
+                  : isBalanced
+                  ? 'border-sky-400/40 bg-sky-500/10 text-sky-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }`}
+            >
+              <Sparkles className={`h-3 w-3 text-amber-400 ${isUltra ? 'animate-spin [animation-duration:6s]' : ''}`} />
               {tierLabel}
             </span>
           </div>
@@ -99,7 +161,11 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             <div
               className={`flex items-start gap-2.5 rounded-xl border border-slate-800 bg-slate-900/80 p-3 ${
-                !isSmooth ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-sky-500/40' : ''
+                isUltra
+                  ? 'transition-all duration-300 hover:-translate-y-1 hover:border-sky-400/60 hover:shadow-[0_6px_24px_rgba(14,165,233,0.18)]'
+                  : isBalanced
+                  ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-sky-500/40'
+                  : ''
               }`}
             >
               <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" />
@@ -115,7 +181,11 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
 
             <div
               className={`flex items-start gap-2.5 rounded-xl border border-slate-800 bg-slate-900/80 p-3 ${
-                !isSmooth ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40' : ''
+                isUltra
+                  ? 'transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/60 hover:shadow-[0_6px_24px_rgba(16,185,129,0.18)]'
+                  : isBalanced
+                  ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40'
+                  : ''
               }`}
             >
               <Box className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
@@ -131,7 +201,11 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
 
             <div
               className={`flex items-start gap-2.5 rounded-xl border border-slate-800 bg-slate-900/80 p-3 ${
-                !isSmooth ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-violet-500/40' : ''
+                isUltra
+                  ? 'transition-all duration-300 hover:-translate-y-1 hover:border-violet-400/60 hover:shadow-[0_6px_24px_rgba(139,92,246,0.18)]'
+                  : isBalanced
+                  ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-violet-500/40'
+                  : ''
               }`}
             >
               <Upload className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
@@ -147,7 +221,11 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
 
             <div
               className={`flex items-start gap-2.5 rounded-xl border border-slate-800 bg-slate-900/80 p-3 ${
-                !isSmooth ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-amber-500/40' : ''
+                isUltra
+                  ? 'transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-[0_6px_24px_rgba(245,158,11,0.18)]'
+                  : isBalanced
+                  ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-amber-500/40'
+                  : ''
               }`}
             >
               <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
@@ -166,13 +244,22 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
             <button
               type="button"
               onClick={onOpenMeet}
-              className={`inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-400 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg cursor-pointer whitespace-nowrap ${
-                !isSmooth ? 'transition-all duration-200 hover:scale-[1.02] hover:shadow-sky-500/30' : 'hover:bg-sky-400'
+              className={`relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-400 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg cursor-pointer whitespace-nowrap ${
+                !isSmooth ? 'transition-all duration-200 hover:scale-[1.03] hover:shadow-sky-500/40' : 'hover:bg-sky-400'
               }`}
             >
-              <Video className="h-4 w-4" />
-              <span>{isEn ? 'Open Live Meet & 3D Classroom' : 'Vào Phòng Học Trực Tuyến 3D'}</span>
-              <ArrowRight className="h-4 w-4" />
+              {isUltra && (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-white/40 blur-sm"
+                  style={{ animation: 'meetShimmer 2.8s ease-in-out infinite' }}
+                />
+              )}
+              <Video className="relative z-10 h-4 w-4" />
+              <span className="relative z-10">
+                {isEn ? 'Open Live Meet & 3D Classroom' : 'Vào Phòng Học Trực Tuyến 3D'}
+              </span>
+              <ArrowRight className="relative z-10 h-4 w-4" />
             </button>
           </div>
         </div>
@@ -181,13 +268,22 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
         <div className="lg:col-span-5">
           <div
             className={`relative rounded-2xl border bg-slate-900/90 p-4 ${
-              isUltra ? 'border-sky-400/40 shadow-inner' : 'border-slate-800'
+              isUltra
+                ? 'border-sky-400/50 shadow-[0_0_32px_rgba(56,189,248,0.18)]'
+                : isBalanced
+                ? 'border-sky-500/35 shadow-lg'
+                : 'border-slate-800'
             }`}
           >
             {/* Mini Top Bar */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 text-[11px]">
               <div className="flex items-center gap-2 font-semibold text-white">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="relative flex h-2.5 w-2.5">
+                  {!isSmooth && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  )}
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                </span>
                 <span>Nhóm Toán - Lí - Tin 3D</span>
               </div>
               <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-[10px] text-sky-300">
@@ -197,41 +293,106 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
 
             {/* Mini 3D + Video Preview */}
             <div className="mt-3 grid grid-cols-3 gap-2">
-              <div className="col-span-2 relative flex h-36 flex-col items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-[#060b16]">
-                <div
-                  className={`flex h-16 w-16 items-center justify-center rounded-2xl border border-sky-400/50 bg-sky-500/15 text-sky-300 ${
-                    isUltra
-                      ? 'animate-spin [animation-duration:10s]'
-                      : isBalanced
-                      ? 'animate-pulse'
-                      : ''
-                  }`}
-                >
-                  <Box className="h-8 w-8" />
+              <div className="col-span-2 relative flex h-40 flex-col items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-[#050a18]">
+                {/* Pro Laser Scanline */}
+                {isUltra && (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-transparent via-cyan-400/25 to-transparent"
+                    style={{ animation: 'meetScanline 3.2s linear infinite' }}
+                  />
+                )}
+
+                {/* Multi-Ring Holographic 3D Core */}
+                <div className="relative flex h-24 w-24 items-center justify-center">
+                  {/* Outer Orbit Ring (Pro & Balanced) */}
+                  {!isSmooth && (
+                    <div
+                      className={`absolute inset-0 rounded-full border border-dashed ${
+                        isUltra ? 'border-cyan-400/60' : 'border-sky-500/40'
+                      }`}
+                      style={{
+                        animation: isUltra ? 'meetOrbitCW 8s linear infinite' : 'meetOrbitCW 14s linear infinite',
+                      }}
+                    >
+                      <span className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-cyan-300 shadow-[0_0_8px_#22d3ee]" />
+                    </div>
+                  )}
+
+                  {/* Inner Counter-Rotating Ring (Pro only) */}
+                  {isUltra && (
+                    <div
+                      className="absolute inset-2.5 rounded-full border border-emerald-400/50"
+                      style={{ animation: 'meetOrbitCCW 5.5s linear infinite' }}
+                    >
+                      <span className="absolute -bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-emerald-300 shadow-[0_0_8px_#34d399]" />
+                    </div>
+                  )}
+
+                  {/* Levitating 3D Model Cube */}
+                  <div
+                    className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-xl border border-sky-400/60 bg-sky-500/20 text-sky-200 ${
+                      isUltra ? 'shadow-[0_0_20px_rgba(56,189,248,0.45)]' : ''
+                    }`}
+                    style={
+                      !isSmooth
+                        ? {
+                            animation: isUltra
+                              ? 'meetFloatY 2.6s ease-in-out infinite'
+                              : 'meetFloatY 4s ease-in-out infinite',
+                          }
+                        : undefined
+                    }
+                  >
+                    <Box className="h-6 w-6" />
+                  </div>
                 </div>
-                <span className="mt-2 text-[10px] font-semibold text-cyan-300">
+
+                <span className="relative z-10 mt-1 text-[10px] font-semibold text-cyan-300">
                   {isEn ? 'Shared 3D Stage (Synced)' : 'Sân khấu 3D đồng bộ'}
                 </span>
+
                 {isUltra && (
-                  <span className="absolute right-2 top-2 rounded bg-amber-400/90 px-1.5 py-0.5 text-[9px] font-bold text-slate-950 animate-bounce">
-                    💡
-                  </span>
+                  <>
+                    <span className="absolute right-2 top-2 rounded bg-amber-400/90 px-1.5 py-0.5 text-[9px] font-bold text-slate-950 animate-bounce">
+                      💡
+                    </span>
+                    <span className="absolute left-2 bottom-2 rounded border border-cyan-500/40 bg-cyan-500/15 px-1.5 py-0.5 font-mono text-[8px] text-cyan-300">
+                      HOLO 3D
+                    </span>
+                  </>
                 )}
               </div>
 
               <div className="flex flex-col gap-2">
-                <div className="flex h-[68px] flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-950/90">
+                {/* Participant 1 with Live Audio Equalizer */}
+                <div className="relative flex h-[76px] flex-col items-center justify-center rounded-xl border border-sky-500/40 bg-slate-950/90">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-slate-950">
                     AN
                   </div>
-                  <span className="mt-1 text-[9px] text-slate-400">Minh An</span>
+                  <span className="mt-1 text-[9px] text-slate-300">Minh An</span>
+                  {!isSmooth && (
+                    <div className="mt-1 flex h-2.5 items-end gap-0.5">
+                      {[0, 0.15, 0.3, 0.1].map((delay, idx) => (
+                        <span
+                          key={idx}
+                          className="w-0.5 h-full rounded-full bg-sky-400 origin-bottom"
+                          style={{
+                            animation: `meetEqBar ${isUltra ? '0.65s' : '1.1s'} ease-in-out ${delay}s infinite`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="flex h-[68px] flex-col items-center justify-center rounded-xl border border-amber-400/50 bg-slate-950/90">
+
+                {/* Participant 2 with Hand Raise */}
+                <div className="flex h-[76px] flex-col items-center justify-center rounded-xl border border-amber-400/50 bg-slate-950/90">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-slate-950">
                     KH
                   </div>
                   <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] text-amber-300">
-                    <Hand className="h-2.5 w-2.5" /> Gia Khánh
+                    <Hand className={`h-2.5 w-2.5 ${isUltra ? 'animate-bounce' : ''}`} /> Gia Khánh
                   </span>
                 </div>
               </div>

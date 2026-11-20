@@ -5300,6 +5300,7 @@ function attachSpatialCoopWebSocket(httpServer: http.Server): void {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 512 * 1024 });
   const wssSensor = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024 });
   const wssRemote = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
+  const wssMeet = new WebSocketServer({ noServer: true, maxPayload: 512 * 1024 });
 
   httpServer.on('upgrade', (request, socket, head) => {
     const reqUrl = request.url || '';
@@ -5319,6 +5320,12 @@ function attachSpatialCoopWebSocket(httpServer: http.Server): void {
     if (pathname === '/ws/remote-control') {
       wssRemote.handleUpgrade(request, socket, head, (ws) => {
         wssRemote.emit('connection', ws, request);
+      });
+      return;
+    }
+    if (pathname === '/ws/meet') {
+      wssMeet.handleUpgrade(request, socket, head, (ws) => {
+        wssMeet.emit('connection', ws, request);
       });
       return;
     }
@@ -5783,7 +5790,386 @@ function attachSpatialCoopWebSocket(httpServer: http.Server): void {
       }
     });
   });
+
+  // ==========================================
+  // LIVE MEET CLASSROOM WEBSOCKET (/ws/meet)
+  // ==========================================
+  const MEET_AVATAR_COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+
+  const broadcastMeet = (room: MeetRoomState, payload: Record<string, unknown>, excludePeerId?: string) => {
+    const raw = JSON.stringify(payload);
+    for (const [peerId, peer] of room.peers.entries()) {
+      if (excludePeerId && peerId === excludePeerId) continue;
+      if (peer.ws.readyState === WebSocket.OPEN) {
+        peer.ws.send(raw);
+      }
+    }
+  };
+
+  const serializeMeetPeer = (p: MeetPeerRecord) => ({
+    peerId: p.peerId,
+    name: p.name,
+    colorHex: p.avatarColor,
+    micOn: p.micOn,
+    camOn: p.camOn,
+    screenSharing: p.screenSharing,
+    handRaised: p.handRaised,
+    joinedAt: new Date(p.joinedAt).toISOString(),
+  });
+
+  wssMeet.on('connection', (ws: WebSocket) => {
+    let currentRoomCode: string | null = null;
+    let currentPeerId: string | null = null;
+
+    const cleanupPeer = () => {
+      if (!currentRoomCode || !currentPeerId) return;
+      const room = meetRooms.get(currentRoomCode);
+      if (room) {
+        room.peers.delete(currentPeerId);
+        broadcastMeet(room, { type: 'peer:left', peerId: currentPeerId });
+        if (room.peers.size === 0) {
+          room.emptySince = Date.now();
+        }
+      }
+      currentRoomCode = null;
+      currentPeerId = null;
+    };
+
+    ws.on('close', cleanupPeer);
+    ws.on('error', cleanupPeer);
+
+    ws.on('message', (rawBuf) => {
+      let msg: any;
+      try {
+        msg = JSON.parse(rawBuf.toString());
+      } catch {
+        return;
+      }
+
+      if (msg.type === 'join') {
+        cleanupPeer();
+        const code = String(msg.roomCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+        if (!code) {
+          ws.send(JSON.stringify({ type: 'error', message: 'Mã phòng không hợp lệ.' }));
+          return;
+        }
+        let room = meetRooms.get(code);
+        if (!room) {
+          room = createMeetRoomState(code, String(msg.title || 'Phòng học trực tuyến').slice(0, 60));
+          meetRooms.set(code, room);
+        }
+        room.emptySince = null;
+
+        const peerId = `mp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+        const color = MEET_AVATAR_COLORS[room.peers.size % MEET_AVATAR_COLORS.length];
+        const peer: MeetPeerRecord = {
+          peerId,
+          ws,
+          name: String(msg.name || 'Học viên STEM').trim().slice(0, 32) || 'Học viên STEM',
+          micOn: Boolean(msg.micOn),
+          camOn: Boolean(msg.camOn),
+          screenSharing: false,
+          handRaised: false,
+          avatarColor: color,
+          joinedAt: Date.now(),
+        };
+        room.peers.set(peerId, peer);
+        currentRoomCode = code;
+        currentPeerId = peerId;
+
+        ws.send(
+          JSON.stringify({
+            type: 'room:joined',
+            roomCode: room.roomCode,
+            title: room.title,
+            selfPeerId: peerId,
+            stageMode: room.stageMode,
+            shared3D: room.shared3D,
+            peers: Array.from(room.peers.values()).map(serializeMeetPeer),
+            messages: room.messages,
+          })
+        );
+
+        broadcastMeet(room, { type: 'peer:joined', peer: serializeMeetPeer(peer) }, peerId);
+        return;
+      }
+
+      if (!currentRoomCode || !currentPeerId) return;
+      const room = meetRooms.get(currentRoomCode);
+      if (!room) return;
+      const sender = room.peers.get(currentPeerId);
+      if (!sender) return;
+
+      if (msg.type === 'leave') {
+        cleanupPeer();
+        return;
+      }
+
+      if (msg.type === 'peer:status') {
+        if (typeof msg.micOn === 'boolean') sender.micOn = msg.micOn;
+        if (typeof msg.camOn === 'boolean') sender.camOn = msg.camOn;
+        if (typeof msg.screenSharing === 'boolean') sender.screenSharing = msg.screenSharing;
+        if (typeof msg.handRaised === 'boolean') sender.handRaised = msg.handRaised;
+        broadcastMeet(room, { type: 'peer:updated', peer: serializeMeetPeer(sender) });
+        return;
+      }
+
+      if (msg.type === 'stage:mode') {
+        if (msg.stageMode === 'grid' || msg.stageMode === '3d') {
+          room.stageMode = msg.stageMode;
+          broadcastMeet(room, { type: 'stage:mode', stageMode: room.stageMode }, currentPeerId);
+        }
+        return;
+      }
+
+      if (msg.type === 'shared3d:patch' && msg.patch && typeof msg.patch === 'object') {
+        const p = msg.patch;
+        if (typeof p.modelId === 'string') room.shared3D.modelId = p.modelId.slice(0, 120);
+        if (typeof p.rotX === 'number' && Number.isFinite(p.rotX)) room.shared3D.rotX = p.rotX;
+        if (typeof p.rotY === 'number' && Number.isFinite(p.rotY)) room.shared3D.rotY = p.rotY;
+        if (typeof p.zoom === 'number' && Number.isFinite(p.zoom)) {
+          room.shared3D.zoom = Math.max(0.45, Math.min(2.6, p.zoom));
+        }
+        if (typeof p.explode === 'number' && Number.isFinite(p.explode)) {
+          room.shared3D.explode = Math.max(0, Math.min(1, p.explode));
+        }
+        if (typeof p.autoSpin === 'boolean') room.shared3D.autoSpin = p.autoSpin;
+        if (typeof p.wireframe === 'boolean') room.shared3D.wireframe = p.wireframe;
+        if (typeof p.customModelName === 'string') room.shared3D.customModelName = p.customModelName.slice(0, 80);
+        if (typeof p.uploadedFileUrl === 'string') room.shared3D.uploadedFileUrl = p.uploadedFileUrl.slice(0, 300);
+        if (p.uploadedFileExt === 'glb' || p.uploadedFileExt === 'gltf' || p.uploadedFileExt === 'obj') {
+          room.shared3D.uploadedFileExt = p.uploadedFileExt;
+        }
+        if (typeof p.selectedPartName === 'string') room.shared3D.selectedPartName = p.selectedPartName.slice(0, 80);
+        room.shared3D.updatedBy = sender.name;
+        room.shared3D.updatedAt = Date.now();
+        broadcastMeet(room, { type: 'shared3d:state', shared3D: room.shared3D }, currentPeerId);
+        return;
+      }
+
+      if (msg.type === 'chat:send') {
+        const text = String(msg.text || '').trim().slice(0, 500);
+        if (!text) return;
+        const chatMsg = {
+          id: `mc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+          peerId: sender.peerId,
+          senderName: sender.name,
+          colorHex: sender.avatarColor,
+          text,
+          createdAt: new Date().toISOString(),
+        };
+        room.messages.push(chatMsg);
+        if (room.messages.length > 120) {
+          room.messages.splice(0, room.messages.length - 120);
+        }
+        broadcastMeet(room, { type: 'chat:message', message: chatMsg });
+        return;
+      }
+
+      if (msg.type === 'reaction:send') {
+        const emoji = String(msg.emoji || '').trim().slice(0, 8);
+        if (!emoji) return;
+        broadcastMeet(room, {
+          type: 'reaction:event',
+          emoji,
+          senderId: sender.peerId,
+          senderName: sender.name,
+        });
+        return;
+      }
+
+      if (msg.type === 'rtc:offer' || msg.type === 'rtc:answer' || msg.type === 'rtc:ice') {
+        const targetId = String(msg.targetPeerId || '');
+        const target = room.peers.get(targetId);
+        if (target && target.ws.readyState === WebSocket.OPEN) {
+          target.ws.send(
+            JSON.stringify({
+              type: msg.type,
+              fromPeerId: sender.peerId,
+              sdp: msg.sdp,
+              candidate: msg.candidate,
+            })
+          );
+        }
+      }
+    });
+  });
 }
+
+// ==========================================
+// LIVE MEET CLASSROOM STATE & REST API
+// ==========================================
+interface MeetPeerRecord {
+  peerId: string;
+  ws: WebSocket;
+  name: string;
+  micOn: boolean;
+  camOn: boolean;
+  screenSharing: boolean;
+  handRaised: boolean;
+  avatarColor: string;
+  joinedAt: number;
+}
+
+interface MeetRoomState {
+  roomCode: string;
+  title: string;
+  stageMode: 'grid' | '3d';
+  shared3D: {
+    modelId: string;
+    rotX: number;
+    rotY: number;
+    zoom: number;
+    explode: number;
+    autoSpin: boolean;
+    wireframe?: boolean;
+    customModelName?: string;
+    uploadedFileUrl?: string;
+    uploadedFileExt?: 'glb' | 'gltf' | 'obj';
+    selectedPartName?: string;
+    updatedBy?: string;
+    updatedAt?: number;
+  };
+  peers: Map<string, MeetPeerRecord>;
+  messages: Array<{
+    id: string;
+    peerId: string;
+    senderName: string;
+    colorHex: string;
+    text: string;
+    createdAt: string;
+  }>;
+  createdAt: number;
+  emptySince: number | null;
+}
+
+const meetRooms = new Map<string, MeetRoomState>();
+
+function createMeetRoomState(roomCode: string, title: string): MeetRoomState {
+  return {
+    roomCode,
+    title,
+    stageMode: '3d',
+    shared3D: {
+      modelId: 'turbofan',
+      rotX: 0.28,
+      rotY: 0.65,
+      zoom: 1,
+      explode: 0,
+      autoSpin: true,
+    },
+    peers: new Map(),
+    messages: [],
+    createdAt: Date.now(),
+    emptySince: Date.now(),
+  };
+}
+
+function generateMeetRoomCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (let attempt = 0; attempt < 20; attempt++) {
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    if (!meetRooms.has(code)) return code;
+  }
+  return `M${Date.now().toString(36).toUpperCase().slice(-5)}`;
+}
+
+// Cleanup empty Meet rooms after 15 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of meetRooms.entries()) {
+    if (room.peers.size === 0 && room.emptySince && now - room.emptySince > 15 * 60 * 1000) {
+      meetRooms.delete(code);
+    }
+  }
+}, 60 * 1000);
+
+app.get('/api/meet/rooms', (_req: Request, res: Response) => {
+  const rooms = Array.from(meetRooms.values())
+    .filter((r) => r.peers.size > 0)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 30)
+    .map((r) => ({
+      roomId: r.roomCode,
+      title: r.title,
+      hostName: Array.from(r.peers.values())[0]?.name || 'Host',
+      memberCount: r.peers.size,
+      maxMembers: 16,
+      isPublic: true,
+      stageMode: r.stageMode,
+      modelId: r.shared3D.modelId,
+      createdAt: new Date(r.createdAt).toISOString(),
+    }));
+  res.json({ rooms });
+});
+
+app.post('/api/meet/rooms', (req: Request, res: Response) => {
+  const title = String(req.body?.title || 'Phòng học STEM 3D').trim().slice(0, 60) || 'Phòng học STEM 3D';
+  const roomCode = generateMeetRoomCode();
+  const room = createMeetRoomState(roomCode, title);
+  meetRooms.set(roomCode, room);
+  res.status(201).json({
+    roomCode: room.roomCode,
+    title: room.title,
+    stageMode: room.stageMode,
+  });
+});
+
+// Temporary in-memory store for uploaded 3D models shared in Meet rooms (max 15 models, 12MB each)
+const meetUploadedModels = new Map<string, { buffer: Buffer; mime: string; name: string; createdAt: number }>();
+
+app.post('/api/meet/models', (req: Request, res: Response) => {
+  try {
+    const { name, ext, dataBase64 } = req.body || {};
+    if (typeof dataBase64 !== 'string' || !dataBase64) {
+      return res.status(400).json({ error: 'Thiếu dữ liệu mô hình 3D.' });
+    }
+    const cleanExt = ext === 'obj' ? 'obj' : ext === 'gltf' ? 'gltf' : 'glb';
+    const buffer = Buffer.from(dataBase64, 'base64');
+    if (buffer.byteLength > 12 * 1024 * 1024) {
+      return res.status(413).json({ error: 'File mô hình 3D vượt quá giới hạn 12MB.' });
+    }
+    // Keep cache bounded
+    if (meetUploadedModels.size >= 15) {
+      const oldestKey = meetUploadedModels.keys().next().value;
+      if (oldestKey) meetUploadedModels.delete(oldestKey);
+    }
+    const id = `m3d_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}.${cleanExt}`;
+    const mime =
+      cleanExt === 'glb'
+        ? 'model/gltf-binary'
+        : cleanExt === 'gltf'
+        ? 'model/gltf+json'
+        : 'text/plain; charset=utf-8';
+    meetUploadedModels.set(id, {
+      buffer,
+      mime,
+      name: String(name || 'Mô hình 3D').slice(0, 80),
+      createdAt: Date.now(),
+    });
+    return res.status(201).json({
+      id,
+      url: `/api/meet/models/${id}`,
+      ext: cleanExt,
+      name: String(name || 'Mô hình 3D').slice(0, 80),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Không thể lưu mô hình 3D.' });
+  }
+});
+
+app.get('/api/meet/models/:id', (req: Request, res: Response) => {
+  const item = meetUploadedModels.get(req.params.id);
+  if (!item) {
+    return res.status(404).json({ error: 'Mô hình 3D không tồn tại hoặc đã hết hạn.' });
+  }
+  res.setHeader('Content-Type', item.mime);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  return res.status(200).send(item.buffer);
+});
 
 app.get('/api/docs/thuyet-minh-synapse', (_req: Request, res: Response) => {
   const candidates = [

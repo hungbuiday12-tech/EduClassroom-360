@@ -57,6 +57,9 @@ const ArenaHub = lazy(() =>
 const StudyForum = lazy(() =>
   import('./components/forum/StudyForum').then((m) => ({ default: m.StudyForum }))
 );
+const LiveMeetClassroom = lazy(() =>
+  import('./components/meet/LiveMeetClassroom').then((m) => ({ default: m.LiveMeetClassroom }))
+);
 const SpatialGesture3DLab = lazy(() =>
   import('./components/spatial3d/SpatialGesture3DLab').then((m) => ({ default: m.SpatialGesture3DLab }))
 );
@@ -557,6 +560,10 @@ function MainApp() {
                         onOpenTutor={handleOpenTutor}
                         onMatchActiveChange={handleArenaMatchActiveChange}
                       />
+                    )}
+
+                    {currentSubject === 'live_meet' && (
+                      <LiveMeetClassroom currentUserName={user?.displayName || user?.username} />
                     )}
 
                     {currentSubject === 'forum' && (

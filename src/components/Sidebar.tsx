@@ -22,7 +22,8 @@ import {
   Layers,
   Cpu,
   BookOpen,
-  ChevronDown
+  ChevronDown,
+  Video
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useBackgroundTheme } from '../context/BackgroundContext';
@@ -411,6 +412,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
             'bg-yellow-50/85 dark:bg-yellow-950/30 border border-yellow-300/80 dark:border-yellow-500/35 text-yellow-900 dark:text-yellow-200 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 hover:border-yellow-400',
           activeClass:
             'bg-gradient-to-r from-yellow-400 to-amber-500 border border-yellow-300 text-slate-950 font-semibold shadow-md shadow-yellow-500/25'
+        },
+        {
+          id: 'live_meet',
+          labelVi: 'Phòng Học Trực Tuyến',
+          labelEn: 'Live Meet & 3D',
+          badge: 'LIVE',
+          icon: (
+            <span className="icon-anim-wave">
+              <Video className="w-5 h-5 shrink-0" />
+            </span>
+          ),
+          idleClass:
+            'bg-sky-50/85 dark:bg-sky-950/30 border border-sky-300/80 dark:border-sky-500/35 text-sky-900 dark:text-sky-200 hover:bg-sky-100 dark:hover:bg-sky-900/50 hover:border-sky-400',
+          activeClass:
+            'bg-gradient-to-r from-sky-500 to-cyan-500 border border-sky-300 text-slate-950 font-semibold shadow-md shadow-sky-500/25',
+          badgeIdleClass:
+            'bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-400/30'
         },
         {
           id: 'forum',

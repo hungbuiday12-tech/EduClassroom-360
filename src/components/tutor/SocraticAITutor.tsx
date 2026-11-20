@@ -692,9 +692,28 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           : {})
       }));
 
+      const isSynAIPro = (() => {
+        try {
+          return localStorage.getItem('synapse_ai_tier') === 'pro';
+        } catch {
+          return false;
+        }
+      })();
+
+      const enhancedMessages = isSynAIPro
+        ? apiMessages.map((m, idx) =>
+            idx === apiMessages.length - 1
+              ? {
+                  ...m,
+                  text: `[CHẾ ĐỘ SYN AI PRO · TURBO · SUY LUẬN SÂU & KIỂM CHỨNG ĐA BƯỚC] ${m.text}`
+                }
+              : m
+          )
+        : apiMessages;
+
       const streamRes = await streamTutorChat(
         {
-          messages: apiMessages,
+          messages: enhancedMessages,
           context: {
             ...context,
             subject: activeSubject,

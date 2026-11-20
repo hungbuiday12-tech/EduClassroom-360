@@ -45,10 +45,10 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
       id={id}
       className={`relative overflow-hidden rounded-2xl border p-5 sm:p-7 transition-all duration-300 ${
         isUltra
-          ? 'border-sky-400/60 bg-slate-950/95 shadow-[0_0_55px_rgba(14,165,233,0.22)]'
+          ? 'border-sky-300 dark:border-sky-500/50 bg-white dark:bg-slate-900 shadow-sm dark:shadow-[0_0_45px_rgba(14,165,233,0.16)]'
           : isBalanced
-          ? 'border-sky-500/40 bg-slate-950/95 shadow-[0_0_28px_rgba(14,165,233,0.12)]'
-          : 'border-slate-700 bg-slate-950'
+          ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm'
+          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
       }`}
     >
       {/* Scoped keyframes for Pro & Balanced dynamic motion */}
@@ -146,94 +146,62 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
             </span>
           </div>
 
-          <h2 className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
             {isEn
               ? 'Study Together Live with Screen Share & Shared 3D Models'
               : 'Học nhóm trực tuyến chuẩn Google Meet · Chia sẻ màn hình & Mô hình 3D chung'}
           </h2>
 
-          <p className="text-sm leading-relaxed text-slate-300">
+          <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
             {isEn
               ? 'Create a 6-character room in one click, turn on WebRTC video/audio, share your screen, and collaboratively rotate, zoom, explode, or upload .glb/.gltf/.obj 3D models in real time.'
               : 'Tạo phòng học bằng mã 6 ký tự chỉ với 1 chạm: gọi video/thoại WebRTC, chia sẻ màn hình bài giảng/code, cùng xoay, tách lớp, soi chi tiết bằng chuột hoặc tải lên file 3D (.glb/.gltf/.obj) và dùng ngay thư viện Học tương tác 3D.'}
           </p>
 
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            <div
-              className={`flex items-start gap-2.5 rounded-xl border border-slate-800 bg-slate-900/80 p-3 ${
-                isUltra
-                  ? 'transition-all duration-300 hover:-translate-y-1 hover:border-sky-400/60 hover:shadow-[0_6px_24px_rgba(14,165,233,0.18)]'
-                  : isBalanced
-                  ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-sky-500/40'
-                  : ''
-              }`}
-            >
-              <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" />
+            <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3">
+              <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
               <div>
-                <div className="text-xs font-bold text-white">
+                <div className="text-xs font-bold text-slate-900 dark:text-white">
                   {isEn ? 'WebRTC Video & Screen Share' : 'Gọi Video & Chia sẻ màn hình'}
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
                   {isEn ? 'Pin presentations or view in responsive grid.' : 'Tự động ghim màn hình trình chiếu hoặc xem dạng lưới.'}
                 </div>
               </div>
             </div>
 
-            <div
-              className={`flex items-start gap-2.5 rounded-xl border border-slate-800 bg-slate-900/80 p-3 ${
-                isUltra
-                  ? 'transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/60 hover:shadow-[0_6px_24px_rgba(16,185,129,0.18)]'
-                  : isBalanced
-                  ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40'
-                  : ''
-              }`}
-            >
-              <Box className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+            <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3">
+              <Box className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
               <div>
-                <div className="text-xs font-bold text-white">
+                <div className="text-xs font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Mouse-Controlled Shared 3D' : 'Nghiên cứu mô hình 3D bằng chuột'}
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
                   {isEn ? 'Rotate, pan, zoom, wireframe, explode & click-to-inspect.' : 'Xoay, pan, zoom, khung dây, tách lớp & click soi chi tiết.'}
                 </div>
               </div>
             </div>
 
-            <div
-              className={`flex items-start gap-2.5 rounded-xl border border-slate-800 bg-slate-900/80 p-3 ${
-                isUltra
-                  ? 'transition-all duration-300 hover:-translate-y-1 hover:border-violet-400/60 hover:shadow-[0_6px_24px_rgba(139,92,246,0.18)]'
-                  : isBalanced
-                  ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-violet-500/40'
-                  : ''
-              }`}
-            >
-              <Upload className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
+            <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3">
+              <Upload className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
               <div>
-                <div className="text-xs font-bold text-white">
+                <div className="text-xs font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Upload .glb/.obj & 3D Library' : 'Up file .glb/.obj & Kho 3D tương tác'}
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
                   {isEn ? 'Upload your own 3D files or pick saved models.' : 'Tải mô hình 3D của bạn lên hoặc chọn từ Học tương tác.'}
                 </div>
               </div>
             </div>
 
-            <div
-              className={`flex items-start gap-2.5 rounded-xl border border-slate-800 bg-slate-900/80 p-3 ${
-                isUltra
-                  ? 'transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-[0_6px_24px_rgba(245,158,11,0.18)]'
-                  : isBalanced
-                  ? 'transition-transform duration-200 hover:-translate-y-0.5 hover:border-amber-500/40'
-                  : ''
-              }`}
-            >
-              <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3">
+              <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
               <div>
-                <div className="text-xs font-bold text-white">
+                <div className="text-xs font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Live Chat, Hand Raise & Reactions' : 'Chat trực tiếp, Giơ tay & Cảm xúc'}
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
                   {isEn ? 'Real-time classroom discussion with zero lag.' : 'Trao đổi nhóm, giơ tay phát biểu và thả cảm xúc tức thì.'}
                 </div>
               </div>

@@ -485,7 +485,6 @@ function MainApp() {
               onOpenMobileMenu={() => setMobileMenuOpen(true)}
               onOpenInstallApp={() => setIsInstallModalOpen(true)}
               onOpenPortfolio={() => setIsPortfolioOpen(true)}
-              onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
             />
 
             {/* Main Viewport Container */}
@@ -508,7 +507,6 @@ function MainApp() {
                         }
                         onOpenSettings={() => setIsSettingsOpen(true)}
                         onOpenInstallApp={() => setIsInstallModalOpen(true)}
-                        onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
                       />
                     )}
 
@@ -575,6 +573,14 @@ function MainApp() {
                         onBack={goBack}
                         onNavigateSubject={selectSubject}
                         onEarnXP={handleEarnXP}
+                        onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
+                        onOpenSynAIPro={() => {
+                          try {
+                            localStorage.setItem('synapse_ai_tier', 'pro');
+                            window.dispatchEvent(new CustomEvent('synapse-ai-tier-change', { detail: 'pro' }));
+                          } catch {}
+                          handleOpenTutor({ subject: 'physics' });
+                        }}
                       />
                     )}
 

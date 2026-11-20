@@ -9,6 +9,7 @@ import {
   Box,
   Building2,
   Camera,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -17,11 +18,13 @@ import {
   Compass,
   Cpu,
   Crosshair,
+  Crown,
   DoorOpen,
   Gauge,
   Hand,
   Info,
   Maximize2,
+  Mic,
   Minimize2,
   Orbit,
   QrCode,
@@ -29,6 +32,7 @@ import {
   Search,
   Smartphone,
   Sparkles,
+  Video,
   Wand2,
   Waves,
   Wrench,
@@ -75,6 +79,8 @@ interface FutureLabWorkspaceProps {
   onBack?: () => void;
   onNavigateSubject: (subject: SubjectType) => void;
   onEarnXP?: (xp: number) => void;
+  onOpenVoiceOS?: () => void;
+  onOpenSynAIPro?: () => void;
 }
 
 type PreCategoryId = 'all' | 'future_2030' | 'aerospace_physics' | 'math_4d' | 'ai_code_sensor';
@@ -570,7 +576,9 @@ const WELCOME_SESSION_KEY = 'synapse_pre_welcome_entered_v1';
 export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
   onBack,
   onNavigateSubject,
-  onEarnXP
+  onEarnXP,
+  onOpenVoiceOS,
+  onOpenSynAIPro
 }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -834,137 +842,232 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
     );
   }
 
-  /* ==================== VIEW 0: TRANG CHÀO MỪNG ("Bước vào phòng Lab...") ==================== */
+  /* ==================== VIEW 0: TRANG CHÀO MỪNG MARKETING SYNAPSE PRE (120K / 3 THÁNG) ==================== */
   if (activeView === 'hub' && showWelcomeGate) {
-    const featuredNewLabs = PRE_STUDIOS.filter((s) => s.category === 'future_2030');
     return (
-      <div className="synapse-pre-scope max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 pre-page-enter">
-        <section
-          className={`pre-grand-hero sci-frame rounded-2xl border ${glassSurfaceClass} p-6 sm:p-9 text-slate-900 dark:text-white space-y-6`}
-        >
+      <div className="synapse-pre-scope max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pre-page-enter space-y-6">
+        {/* Top Navigation Row */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 text-xs font-bold text-slate-800 dark:text-slate-100 hover:border-sky-400 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Back' : 'Quay lại'}</span>
+              </button>
+            )}
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/15 border border-violet-400/40 text-violet-700 dark:text-violet-300 text-xs font-extrabold tracking-wide">
+              <Crown className="w-3.5 h-3.5" />
+              SYNAPSE PRE · EXCLUSIVE
+            </span>
+          </div>
+          <span className="text-xs font-bold text-amber-600 dark:text-amber-300">
+            {isEn ? '120,000 VND / 3 Months · All-Access' : '120.000đ / 3 tháng · Mở khóa toàn bộ'}
+          </span>
+        </div>
+
+        {/* Hero Marketing + Pricing Split */}
+        <section className={`rounded-2xl border ${glassSurfaceClass} p-6 sm:p-8 shadow-xl relative overflow-hidden`}>
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 opacity-25 dark:opacity-40"
+            className="pointer-events-none absolute inset-0 opacity-20 dark:opacity-35"
             style={{
-              background: `radial-gradient(circle at 18% 20%, ${activePalette.primaryLight}4d 0%, transparent 52%), radial-gradient(circle at 86% 80%, ${activePalette.secondary}44 0%, transparent 52%)`
+              background:
+                'radial-gradient(circle at 12% 18%, rgba(139,92,246,0.45) 0%, transparent 48%), radial-gradient(circle at 88% 82%, rgba(14,165,233,0.4) 0%, transparent 50%)'
             }}
           />
 
-          <div className="relative z-10 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex flex-wrap items-center gap-2">
-                {onBack && (
-                  <button
-                    type="button"
-                    data-ripple="true"
-                    onClick={onBack}
-                    className="pre-grand-btn inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300/80 dark:border-slate-700 bg-white/85 dark:bg-slate-900/85 text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>{isEn ? 'Back' : 'Quay lại'}</span>
-                  </button>
-                )}
-                <span style={{ color: activePalette.primaryLight }} className="font-mono font-bold uppercase tracking-wider">
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left: Value Proposition */}
+            <div className="lg:col-span-7 space-y-5">
+              <div className="space-y-3">
+                <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
                   {isEn
-                    ? `Synapse Pre · ${PRE_STUDIOS.length} Future 3D/4D Labs`
-                    : `Synapse Pre · ${PRE_STUDIOS.length} Phòng Lab 3D/4D Tương Lai`}
-                </span>
+                    ? 'Synapse Pre — Next-Gen 3D/4D Lab, Voice OS & Live Meet 3D Pro'
+                    : 'Synapse Pre — Không Gian Khoa Học 3D/4D, Voice OS & Học Nhóm 3D Pro'}
+                </h1>
+                <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {isEn
+                    ? 'All cutting-edge interactive features in one clean workspace: Voice OS hands-free control, Live Meet with synchronized 3D models, What-If Physics, AlgoCity 3D, Quantum Holodeck, WebAR Desk & QR 3D Remote.'
+                    : 'Gom trọn mọi công nghệ học tập tiên tiến nhất vào một không gian duy nhất: Điều khiển giọng nói Voice OS, Phòng học trực tuyến 3D đồng bộ, Vũ trụ What-If, Thành phố Thuật toán 3D, Lượng tử, WebAR & QR Remote.'}
+                </p>
               </div>
 
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                {isEn
-                  ? `${bgStyleMeta?.shortEn || bgStyle} · ${creatureMeta?.shortEn || creatureTheme}`
-                  : `Nền động: ${bgStyleMeta?.shortVi || bgStyle} · ${creatureMeta?.shortVi || creatureTheme}`}
+              {/* 4 Core Exclusive Pillars */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/75 dark:bg-slate-900/75 p-3.5 flex items-start gap-2.5">
+                  <Mic className="w-4 h-4 text-sky-500 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-xs font-extrabold text-slate-900 dark:text-white">Voice OS</div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                      {isEn ? 'Hands-free voice control across labs & simulations.' : 'Điều khiển mở bài, xoay mô phỏng bằng giọng nói.'}
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/75 dark:bg-slate-900/75 p-3.5 flex items-start gap-2.5">
+                  <Video className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-xs font-extrabold text-slate-900 dark:text-white">Live Meet 3D Pro</div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                      {isEn ? 'Shared 3D models, .glb/.obj upload & live explode.' : 'Mô hình 3D dùng chung, up .glb/.obj & tách lớp.'}
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/75 dark:bg-slate-900/75 p-3.5 flex items-start gap-2.5">
+                  <Orbit className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-xs font-extrabold text-slate-900 dark:text-white">
+                      {isEn ? 'What-If Physics & AlgoCity 3D' : 'Vũ Trụ What-If & AlgoCity 3D'}
+                    </div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                      {isEn ? 'Break physics laws & visualize algorithms in 3D.' : 'Bẻ cong định luật vật lí & thành phố thuật toán 3D.'}
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/75 dark:bg-slate-900/75 p-3.5 flex items-start gap-2.5">
+                  <Hand className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-xs font-extrabold text-slate-900 dark:text-white">
+                      {isEn ? 'WebAR 10-Finger & QR 3D' : 'WebAR 10 Ngón & QR 3D Remote'}
+                    </div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                      {isEn ? 'Touch 3D space with hands or phone gyroscope.' : 'Tương tác không gian AR & điều khiển bằng điện thoại.'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Primary CTAs */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={enterLabDirectory}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-500 text-white text-sm font-extrabold shadow-lg hover:brightness-110 transition cursor-pointer"
+                >
+                  <DoorOpen className="w-4 h-4" />
+                  <span>{isEn ? 'Enter Synapse Pre Workspace' : 'Bước vào Không Gian Synapse Pre'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                {onOpenVoiceOS && (
+                  <button
+                    type="button"
+                    onClick={onOpenVoiceOS}
+                    className="inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-sky-500/50 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-200 text-xs font-bold cursor-pointer"
+                  >
+                    <Mic className="w-4 h-4" />
+                    <span>{isEn ? 'Launch Voice OS' : 'Mở Voice OS'}</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => onNavigateSubject('live_meet')}
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-200 text-xs font-bold cursor-pointer"
+                >
+                  <Video className="w-4 h-4" />
+                  <span>{isEn ? 'Live Meet 3D Pro' : 'Phòng Meet 3D Pro'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right: Pricing Card (120k / 3 tháng) — Light/Dark Adaptive */}
+            <div className="lg:col-span-5">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 shadow-sm space-y-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {isEn ? 'SYNAPSE PRE PASS' : 'GÓI SYNAPSE PRE'}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-md bg-sky-600 text-white text-[10px] font-bold">
+                    {isEn ? 'BEST VALUE' : 'TIẾT KIỆM NHẤT'}
+                  </span>
+                </div>
+
+                <div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">120.000đ</span>
+                    <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                      / {isEn ? '3 months' : '3 tháng'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-sky-600 dark:text-sky-400 font-semibold">
+                    {isEn
+                      ? 'Only 40,000 VND / month · Full access to every Pro lab'
+                      : 'Chỉ 40.000đ / tháng · Mở khóa toàn bộ tính năng cao cấp'}
+                  </p>
+                </div>
+
+                <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-200 border-t border-slate-200 dark:border-slate-800 pt-4">
+                  {(isEn
+                    ? [
+                        'Voice OS — Full hands-free voice control',
+                        'Live Meet 3D Pro — Shared 3D stage & .glb/.obj upload',
+                        'All 3D/4D Labs (What-If Physics, AlgoCity, Quantum, 4D)',
+                        'WebAR 10-Finger Desk, 3D Hardware Teardown & QR Remote',
+                        'Pro (Ultra 60FPS) Graphics & Priority Updates'
+                      ]
+                    : [
+                        'Voice OS — Điều khiển toàn bộ hệ thống bằng giọng nói',
+                        'Live Meet 3D Pro — Mô hình 3D dùng chung & Up file .glb/.obj',
+                        'Toàn bộ Lab 3D/4D (What-If, AlgoCity, Lượng tử, Vũ trụ, 4D)',
+                        'WebAR Bàn học 10 ngón, Phẫu thuật phần cứng 3D & QR Remote',
+                        'Đồ họa Pro (Ultra 60FPS) & cập nhật tính năng mới ưu tiên'
+                      ]
+                  ).map((perk, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>{perk}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  onClick={enterLabDirectory}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-pink-500 text-slate-950 font-extrabold text-sm hover:brightness-105 transition cursor-pointer"
+                >
+                  {isEn ? 'Explore Synapse Pre Now' : 'Trải Nghiệm Synapse Pre Ngay'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Clean 2-Column Comparison: Free vs Synapse Pre */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={`rounded-2xl border ${glassSurfaceClass} p-5 space-y-2.5`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                {isEn ? 'Free Plan (Core Study)' : 'Bản Miễn Phí (Học tập cốt lõi)'}
+              </h2>
+              <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold">
+                0đ · FREE
               </span>
             </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {isEn
+                ? 'Includes AI Tutor, Math/Physics/CS Lectures, basic 2D/3D simulations, Quizzes & Exams, Community Forum, and Basic Live Meet (video/audio & screen share without shared 3D).'
+                : 'Bao gồm Trợ lí AI, Bài giảng Toán · Vật lí · Tin học, Mô phỏng 2D/3D cơ bản, Các trang kiểm tra, Cộng đồng học tập và Meet cơ bản (gọi video & chia sẻ màn hình, không có mô phỏng 3D chung).'}
+            </p>
+          </div>
 
-            <div className="space-y-2.5">
-              <h1 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-accent-gradient hero-blend-shadow leading-tight">
-                {isEn
-                  ? 'Stepping into the Future STEM Lab...'
-                  : 'Bước vào phòng Lab Tương Lai...'}
-              </h1>
-              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 max-w-3xl leading-relaxed">
-                {isEn
-                  ? `Explore ${PRE_STUDIOS.length} interactive 3D/4D WebGL & WebAR laboratories — including Quantum Bloch Computers, 3D Hardware Teardown & Repair, Spatial 3D Hand/AR Desk, Custom Relativity Universe Forge, and 4D Vascular Nanobots.`
-                  : `Khám phá ${PRE_STUDIOS.length} phòng thí nghiệm 3D/4D WebGL & WebAR — từ Máy tính Lượng tử Bloch, Xưởng Phẫu Thuật Sửa Chữa Thiết Bị 3D, Học Cảm Giác 3D & AR Bàn Học đến Lò Rèn Vũ Trụ và Đàn Nanobot 4D.`}
-              </p>
+          <div className={`rounded-2xl border border-violet-500/40 ${glassSurfaceClass} p-5 space-y-2.5`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-extrabold text-violet-700 dark:text-violet-300">
+                {isEn ? 'Synapse Pre (Full Ecosystem)' : 'Synapse Pre (Trọn bộ Công nghệ Cao)'}
+              </h2>
+              <span className="px-2 py-0.5 rounded bg-violet-500/15 text-violet-700 dark:text-violet-300 text-[10px] font-extrabold">
+                120K / 3 THÁNG
+              </span>
             </div>
-
-            {/* Quick Search right from Welcome Gate */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') enterLabDirectory();
-                  }}
-                  placeholder={isEn ? 'Search lab by name (e.g. Teardown, Spatial, Quantum, Rocket)...' : 'Tìm nhanh tên phòng lab (vd: Phẫu thuật, Cảm giác 3D, Lượng tử, Tên lửa)...'}
-                  className="w-full pl-10 pr-9 py-2.5 rounded-lg border border-slate-300/80 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={enterLabDirectory}
-                className="pre-grand-btn inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-500 text-white text-sm font-extrabold shadow-lg cursor-pointer whitespace-nowrap"
-              >
-                <DoorOpen className="w-4 h-4" />
-                <span>{isEn ? 'Enter the Lab' : 'Bước vào phòng Lab'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* 6 Brand-New 2030+ Spotlight Cards */}
-            <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/80 space-y-2.5">
-              <div className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
-                {isEn ? `${featuredNewLabs.length} Flagship 2030+ & AR Labs (Click to Launch Directly)` : `${featuredNewLabs.length} Phòng Lab Tương Lai & AR Trọng Tâm (Bấm để mở ngay)`}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {featuredNewLabs.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      data-ripple="true"
-                      onClick={() => openModulePage(item.id)}
-                      className="pre-grand-btn p-3.5 rounded-xl border border-slate-200/90 dark:border-white/12 bg-white/80 dark:bg-slate-900/80 hover:border-sky-400 text-left flex flex-col justify-between gap-2 cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className={`w-8 h-8 rounded-lg border flex items-center justify-center ${item.iconBgClass}`}>
-                          <Icon className="w-4 h-4" />
-                        </span>
-                        <span className={`text-[10px] font-mono font-extrabold ${item.accentTextClass}`}>
-                          {item.indexLabel} · 2030+
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-xs font-extrabold text-slate-900 dark:text-white leading-snug">
-                          {isEn ? item.titleEn : item.titleVi}
-                        </div>
-                        <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">
-                          {isEn ? item.specsEn : item.specsVi}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {isEn
+                ? 'Everything in Free PLUS Voice OS, Live Meet 3D Pro (shared 3D models & upload), What-If Physics 3D, AlgoCity 3D, Quantum Holodeck, WebAR Desk, 3D Teardown, 4D Lectures & QR 3D Remote.'
+                : 'Toàn bộ bản Miễn phí CỘNG THÊM Voice OS, Live Meet 3D Pro (mô hình 3D chung & tải file 3D), Vũ trụ What-If, AlgoCity 3D, Lượng tử, WebAR, Phẫu thuật 3D, Bài giảng 4D & QR 3D Remote.'}
+            </p>
           </div>
         </section>
       </div>
@@ -1058,9 +1161,9 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               </p>
             </div>
 
-            {/* SEARCH BY NAME + CATEGORY FILTER BAR */}
-            <div className="flex flex-col md:flex-row md:items-center gap-2.5 pt-2 border-t border-slate-200/70 dark:border-slate-800/70">
-              <div className="relative flex-1 min-w-0">
+            {/* COMPACT SEARCH BAR ONLY (Clean, no cluttered filter rows) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-200/70 dark:border-slate-800/70">
+              <div className="relative flex-1 max-w-md">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
@@ -1068,8 +1171,8 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={
                     isEn
-                      ? 'Search studio by name, physics law or topic...'
-                      : 'Tìm phòng lab theo tên (vd: Lượng tử, Nanobot, Tên lửa, 4D)...'
+                      ? 'Search any Synapse Pre lab...'
+                      : 'Tìm nhanh phòng Lab trong Synapse Pre...'
                   }
                   className="w-full pl-9 pr-8 py-2 rounded-lg border border-slate-300/80 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                 />
@@ -1085,57 +1188,6 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                 )}
               </div>
 
-              <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 scrollbar-none pb-0.5 sm:pb-0">
-                {categories.map((cat) => {
-                  const active = selectedCategory === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className={`min-h-[36px] px-3 py-1.5 rounded-md text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                        active
-                          ? 'bg-sky-600 border-sky-400 text-white shadow-sm'
-                          : 'bg-white/80 dark:bg-slate-900/80 border-slate-300/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-sky-400'
-                      }`}
-                    >
-                      {isEn ? cat.labelEn : cat.labelVi}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* BOTTOM: Clean Tier Filter (FREE vs SYNAPSE PRE) + Experimental Toggle */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/70 dark:border-slate-800/70">
-              <div className="flex flex-wrap items-center gap-1.5">
-                {([
-                  { id: 'all', vi: 'Tất cả gói', en: 'All Tiers' },
-                  { id: 'free', vi: 'Dùng Miễn Phí (FREE)', en: 'Free Access' },
-                  { id: 'pre', vi: 'Synapse Pre (Độc quyền)', en: 'Synapse Pre' }
-                ] as const).map((tier) => {
-                  const active = tierFilter === tier.id;
-                  return (
-                    <button
-                      key={tier.id}
-                      type="button"
-                      onClick={() => setTierFilter(tier.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap ${
-                        active
-                          ? tier.id === 'free'
-                            ? 'bg-emerald-600 border-emerald-400 text-white'
-                            : tier.id === 'pre'
-                            ? 'bg-violet-600 border-violet-400 text-white'
-                            : 'bg-slate-900 dark:bg-white border-slate-700 dark:border-white text-white dark:text-slate-900'
-                          : 'bg-white/80 dark:bg-slate-900/80 border-slate-300/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-sky-400'
-                      }`}
-                    >
-                      {isEn ? tier.en : tier.vi}
-                    </button>
-                  );
-                })}
-              </div>
-
               <button
                 type="button"
                 onClick={() => setShowExperimental((v) => !v)}
@@ -1148,14 +1200,154 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                 {showExperimental
                   ? isEn
                     ? 'Hide Experimental Labs (5)'
-                    : 'Ẩn 5 phòng Thử nghiệm (Labs)'
+                    : 'Ẩn 5 phòng Thử nghiệm phụ'
                   : isEn
-                  ? '+ Show Experimental Labs (5)'
-                  : '+ Hiện thêm 5 phòng Thử nghiệm (Labs)'}
+                  ? '+ Experimental Labs (5)'
+                  : '+ Xem thêm 5 phòng Thử nghiệm phụ'}
               </button>
             </div>
           </div>
         </section>
+
+        {/* ==================== KHU VỰC 1: SYN AI PRO · VOICE OS · LIVE MEET 3D PRO ==================== */}
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {isEn ? 'ZONE 01 · EXCLUSIVE INTELLIGENCE & COLLABORATION' : 'KHU VỰC 01 · TRÍ TUỆ NHÂN TẠO PRO, VOICE OS & HỢP TÁC 3D'}
+              </span>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                {isEn ? 'Syn AI Pro · Voice OS · Live Meet 3D Pro' : 'Trung tâm Syn AI Pro · Voice OS · Live Meet 3D Pro'}
+              </h2>
+            </div>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              {isEn ? 'Exclusive to Synapse Pre (120k / 3 months)' : 'Đặc quyền chỉ có trong Synapse Pre'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Card 1: Syn AI Pro */}
+            <button
+              type="button"
+              onClick={onOpenSynAIPro}
+              className="group text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 text-slate-900 dark:text-white shadow-sm hover:border-sky-400 dark:hover:border-sky-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4"
+            >
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                    <Sparkles className="w-5 h-5" />
+                  </span>
+                  <span className="text-[11px] font-semibold text-sky-600 dark:text-sky-400">
+                    Turbo · Pro
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Syn AI Pro (Nâng cấp vượt bậc)</h3>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Faster low-latency responses, deep multi-step STEM verification, formula cross-check & Olympiad-grade reasoning.'
+                      : 'Phản hồi nhanh hơn, suy luận đa bước sâu sắc, tự kiểm chứng công thức Toán-Lí-Tin và phân tích chuyên sâu vượt trội bản Free.'}
+                  </p>
+                </div>
+              </div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 dark:text-sky-400">
+                <span>{isEn ? 'Launch Syn AI Pro' : 'Mở Syn AI Pro ngay'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </button>
+
+            {/* Card 2: Voice OS (Exclusive) */}
+            <button
+              type="button"
+              onClick={onOpenVoiceOS}
+              className="group text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 text-slate-900 dark:text-white shadow-sm hover:border-sky-400 dark:hover:border-sky-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4"
+            >
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                    <Mic className="w-5 h-5" />
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                    Synapse Pre
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Voice OS (Điều khiển Giọng nói)</h3>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Hands-free voice operating system moved exclusively to Synapse Pre: open labs, run simulations & switch topics by voice.'
+                      : 'Hệ điều hành giọng nói độc quyền tại Synapse Pre: ra lệnh mở phòng Lab, chuyển bài học và tương tác rảnh tay tức thì.'}
+                  </p>
+                </div>
+              </div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 dark:text-sky-400">
+                <span>{isEn ? 'Activate Voice OS' : 'Kích hoạt Voice OS'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </button>
+
+            {/* Card 3: Live Meet 3D Pro */}
+            <button
+              type="button"
+              onClick={() => onNavigateSubject('live_meet')}
+              className="group text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 text-slate-900 dark:text-white shadow-sm hover:border-sky-400 dark:hover:border-sky-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4"
+            >
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                    <Video className="w-5 h-5" />
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                    3D Sync Pro
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Live Meet 3D Pro</h3>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Upgrade over basic Meet: synchronized shared 3D models, mouse inspection, explode layers & custom .glb/.obj upload.'
+                      : 'Nâng cấp vượt trội Meet cơ bản: dùng chung mô hình 3D đồng bộ thời gian thực, tách lớp, soi chi tiết & tải file .glb/.obj.'}
+                  </p>
+                </div>
+              </div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 dark:text-sky-400">
+                <span>{isEn ? 'Open Live Meet 3D Pro' : 'Vào Phòng Meet 3D Pro'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </button>
+          </div>
+        </section>
+
+        {/* ==================== KHU VỰC 2, 3, 4: PHÒNG LAB 3D/4D THEO LĨNH VỰC ==================== */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+          <div>
+            <span className="text-[11px] font-mono font-extrabold uppercase tracking-wider text-sky-600 dark:text-cyan-300">
+              {isEn ? 'ZONE 02 – 04 · 3D/4D LABORATORIES BY DOMAIN' : 'KHU VỰC 02 – 04 · HỆ THỐNG PHÒNG LAB 3D/4D CHUYÊN SÂU'}
+            </span>
+            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
+              {isEn ? 'Select Domain Zone' : 'Chọn khu vực chuyên môn'}
+            </h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {categories.map((cat) => {
+              const active = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                    active
+                      ? 'bg-sky-600 border-sky-400 text-white shadow-sm'
+                      : 'bg-white/80 dark:bg-slate-900/80 border-slate-300/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-sky-400'
+                  }`}
+                >
+                  {isEn ? cat.labelEn : cat.labelVi}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Empty State if Search Returns Zero */}
         {filteredStudios.length === 0 ? (
@@ -1176,8 +1368,8 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             </button>
           </div>
         ) : (
-          /* Modern 2-Column Responsive Grid */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          /* Modern 3-Column Clean Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredStudios.map((studio, index) => {
               const Icon = studio.icon;
               const isFreeStudio = FREE_STUDIO_IDS.has(studio.id);
@@ -1199,7 +1391,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                   {/* Subtle Top Progress Accent Bar on Hover */}
                   <div aria-hidden="true" className="pre-grand-corners" />
 
-                  {/* Compact Square-Proportioned Card Surface */}
+                  {/* Compact Clean Card Surface */}
                   <div
                     role="button"
                     tabIndex={0}
@@ -1210,7 +1402,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                         openModulePage(studio.id);
                       }
                     }}
-                    className={`relative z-10 w-full h-full min-h-[390px] rounded-[0.82rem] ${glassSurfaceClass} border border-slate-200/80 dark:border-white/10 p-5 flex flex-col justify-between gap-4 text-slate-900 dark:text-white cursor-pointer overflow-hidden`}
+                    className={`relative z-10 w-full h-full min-h-[300px] rounded-[0.82rem] ${glassSurfaceClass} border border-slate-200/80 dark:border-white/10 p-4 flex flex-col justify-between gap-3 text-slate-900 dark:text-white cursor-pointer overflow-hidden`}
                   >
                     <div
                       aria-hidden="true"

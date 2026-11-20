@@ -309,26 +309,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       titleEn: 'Disciplines & Labs',
       items: [
         {
-          id: 'synapse_v2',
-          labelVi: 'Synapse Pre',
-          labelEn: 'Synapse Pre',
-          badge: 'AI·3D·AR',
-          icon: (
-            <span className="icon-anim-cosmos">
-              <Orbit className="w-5 h-5 shrink-0" />
-            </span>
-          ),
-          idleClass:
-            'bg-cyan-50/85 dark:bg-cyan-950/35 border border-cyan-300/80 dark:border-cyan-500/35 text-cyan-900 dark:text-cyan-200 hover:bg-cyan-100 dark:hover:bg-cyan-900/55 hover:border-cyan-400',
-          badgeIdleClass:
-            'bg-cyan-100 dark:bg-cyan-900/70 border border-cyan-300/80 dark:border-cyan-600/50 text-cyan-800 dark:text-cyan-200',
-          activeClass:
-            'bg-gradient-to-r from-cyan-600 to-indigo-600 border border-cyan-400 text-white shadow-md shadow-cyan-600/25',
-          onExtra: () => {
-            window.dispatchEvent(new Event('educlassroom:synapse-reset'));
-          }
-        },
-        {
           id: 'physics_sims',
           labelVi: 'Mô phỏng Lí 2D/3D',
           labelEn: 'Physics 2D/3D Labs',

@@ -6,6 +6,7 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MobileBottomNav } from './components/common/MobileBottomNav';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PremiumProvider } from './context/PremiumContext';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 import { WaterRippleLayer } from './components/common/WaterRippleLayer';
 import { FloatingFocusTimer } from './components/common/FloatingFocusTimer';
@@ -485,6 +486,7 @@ function MainApp() {
               onOpenMobileMenu={() => setMobileMenuOpen(true)}
               onOpenInstallApp={() => setIsInstallModalOpen(true)}
               onOpenPortfolio={() => setIsPortfolioOpen(true)}
+              onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
             />
 
             {/* Main Viewport Container */}
@@ -507,6 +509,7 @@ function MainApp() {
                         }
                         onOpenSettings={() => setIsSettingsOpen(true)}
                         onOpenInstallApp={() => setIsInstallModalOpen(true)}
+                        onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
                       />
                     )}
 
@@ -573,14 +576,6 @@ function MainApp() {
                         onBack={goBack}
                         onNavigateSubject={selectSubject}
                         onEarnXP={handleEarnXP}
-                        onOpenVoiceOS={() => setIsVoiceOSOpen(true)}
-                        onOpenSynAIPro={() => {
-                          try {
-                            localStorage.setItem('synapse_ai_tier', 'pro');
-                            window.dispatchEvent(new CustomEvent('synapse-ai-tier-change', { detail: 'pro' }));
-                          } catch {}
-                          handleOpenTutor({ subject: 'physics' });
-                        }}
                       />
                     )}
 
@@ -1030,10 +1025,12 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <RemoteControllerProvider>
-        <MainApp />
-        <RemoteControllerModal />
-      </RemoteControllerProvider>
+      <PremiumProvider>
+        <RemoteControllerProvider>
+          <MainApp />
+          <RemoteControllerModal />
+        </RemoteControllerProvider>
+      </PremiumProvider>
     </AuthProvider>
   );
 }

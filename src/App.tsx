@@ -694,8 +694,11 @@ function MainApp() {
             </footer>
           </div>
 
-          {/* Persistent Bottom-Left Mini Focus Timer & Ambient Audio Widget */}
-          <FloatingFocusTimer />
+          {/* Persistent Bottom-Left Mini Focus Timer, Scratchpad & Streak Dock */}
+          <FloatingFocusTimer
+            xp={activeXP}
+            onOpenPortfolio={() => setIsPortfolioOpen(true)}
+          />
 
           {/* Global 3-Subject x 3-Mode Syn AI Drawer & Compact Bottom-Right Syn AI Mini-Chat */}
           {!isTutorOpen &&

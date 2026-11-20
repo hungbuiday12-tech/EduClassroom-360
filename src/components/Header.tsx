@@ -354,21 +354,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* XP & Streak Readout -> Opens Portfolio (Desktop xl+) */}
-          <button
-            type="button"
-            onClick={onOpenPortfolio}
-            title={isEn ? 'Open STEM Portfolio & PDF Report' : 'Mở Hồ sơ Năng lực & Xuất PDF'}
-            className="hidden xl:flex items-center gap-2 px-2.5 py-1.5 bg-amber-50/85 dark:bg-amber-950/45 border border-amber-300/80 dark:border-amber-700/60 hover:border-amber-500 rounded text-xs font-mono font-bold text-amber-800 dark:text-amber-300 shrink-0 whitespace-nowrap cursor-pointer transition-colors"
-          >
-            <Flame className="w-3.5 h-3.5 text-rose-500 streak-flame-pulse shrink-0" />
-            <span className="tabular-nums">{streakDays}d</span>
-            <span className="text-amber-300 dark:text-amber-700">|</span>
-            <Award className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span className="tabular-nums">{user ? user.xp : xp} XP</span>
-            <UserCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-          </button>
-
           {/* Background Soundscape Toggle (Desktop xl+) */}
           <button
             type="button"

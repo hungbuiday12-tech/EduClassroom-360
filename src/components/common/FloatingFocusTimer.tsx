@@ -21,17 +21,25 @@ import {
   CheckCircle2,
   Flame,
   GripVertical,
-  PinOff
+  PinOff,
+  Award
 } from 'lucide-react';
 import { useFocusTimer, STUDY_FORMAT_PRESETS } from '../../context/FocusTimerContext';
 import { useAudio } from '../../context/AudioContext';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { BELL_SOUND_OPTIONS, BG_SOUND_OPTIONS, BellSoundId, BgSoundId } from '../../lib/soundEngine';
+import { getStreakState, GROWTH_UPDATED_EVENT } from '../../lib/learningGrowthStore';
 import { useDraggableWidget } from '../../hooks/useDraggableWidget';
 import { InfiniteStemCanvas } from '../future/InfiniteStemCanvas';
 import { InfiniteCanvasNode } from '../../types';
 import { FormattedText } from './MathRenderer';
+
+interface FloatingFocusTimerProps {
+  xp?: number;
+  onOpenPortfolio?: () => void;
+}
 
 type DockMode = 'focus' | 'scratchpad';
 
@@ -64,7 +72,21 @@ function formatClock(secs: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export const FloatingFocusTimer: React.FC = () => {
+export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
+  xp = 0,
+  onOpenPortfolio
+}) => {
+  const { user } = useAuth();
+  const uid = user?.uid;
+  const [streakDays, setStreakDays] = useState<number>(() => getStreakState(uid).currentStreak);
+
+  useEffect(() => {
+    const syncStreak = () => setStreakDays(getStreakState(uid).currentStreak);
+    syncStreak();
+    window.addEventListener(GROWTH_UPDATED_EVENT, syncStreak);
+    return () => window.removeEventListener(GROWTH_UPDATED_EVENT, syncStreak);
+  }, [uid]);
+
   const { location } = useNavigation();
   const isMobileSimOrExamRoute =
     ['math_sims', 'physics_sims', 'cs_sims', 'synapse_v2', 'future_lab', 'spatial_3d', 'exams', 'arena'].includes(
@@ -975,6 +997,33 @@ export const FloatingFocusTimer: React.FC = () => {
             <PenTool className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">{isEn ? 'Scratchpad' : 'Bảng nháp'}</span>
           </button>
+
+          {onOpenPortfolio && (
+            <>
+              <span className="w-px self-stretch bg-slate-700/80" aria-hidden="true" />
+              <button
+                type="button"
+                data-no-lift="true"
+                onPointerDown={handleDragStart}
+                onClick={() => {
+                  if (consumeDidDrag()) return;
+                  onOpenPortfolio();
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-mono font-bold text-amber-300 hover:bg-slate-900 hover:text-amber-200 cursor-pointer transition-colors whitespace-nowrap shrink-0"
+                title={
+                  isEn
+                    ? 'Study Streak & XP · Open STEM Portfolio'
+                    : 'Chuỗi ngày học & XP · Mở Hồ sơ Năng lực'
+                }
+              >
+                <Flame className="w-3.5 h-3.5 text-rose-400 streak-flame-pulse shrink-0" />
+                <span className="tabular-nums">{streakDays}d</span>
+                <span className="text-slate-600 hidden sm:inline">·</span>
+                <Award className="w-3.5 h-3.5 text-amber-400 hidden sm:inline shrink-0" />
+                <span className="tabular-nums hidden sm:inline">{user ? user.xp : xp} XP</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

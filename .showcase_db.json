@@ -1,0 +1,329 @@
+{
+  "items": [
+    {
+      "id": "sc_seed_orbital_armillary",
+      "category": "3d_model",
+      "subject": "physics",
+      "title": "Hệ Thiên Cầu Con Quay Hồi Chuyển 3 Trục",
+      "description": "Mô hình lắp ráp 4 vòng gimbal đồng tâm minh họa bảo toàn mô-men động lượng khi tách lớp 3D.",
+      "authorName": "Minh Khôi · 11 Lý",
+      "authorHandle": "@khoi_optics",
+      "tags": [
+        "Cơ học",
+        "Gymbal 3D",
+        "Lắp ráp"
+      ],
+      "likes": 42,
+      "payload3dModel": {
+        "id": "custom_seed_gimbal",
+        "titleVi": "Thiên Cầu Hồi Chuyển 3 Trục",
+        "titleEn": "3-Axis Gyroscope Armillary",
+        "category": "Vật lí · Cơ học",
+        "descriptionVi": "Cơ cấu vòng gimbal đồng tâm với trục quay trung tâm bằng titan và đĩa quán tính.",
+        "descriptionEn": "Concentric 3-axis gyroscope rings with flywheel core.",
+        "palette": {
+          "accent": "#38bdf8",
+          "secondary": "#f59e0b",
+          "glow": "#22d3ee"
+        },
+        "formula": "\\vec{L} = I\\vec{\\omega},\\quad \\vec{\\tau} = \\frac{d\\vec{L}}{dt}",
+        "createdAt": "2026-03-10T09:00:00.000Z",
+        "parts": [
+          {
+            "id": "flywheel",
+            "nameVi": "Đĩa đà trung tâm",
+            "nameEn": "Central Flywheel",
+            "functionVi": "Tích trữ mô-men động lượng L quanh trục quay.",
+            "shape": "cylinder",
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "size": [
+              1.1,
+              0.28,
+              1.1
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "color": "#f59e0b",
+            "explodeVec": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": "inner_ring",
+            "nameVi": "Vòng gimbal trong",
+            "nameEn": "Inner Gimbal",
+            "functionVi": "Cho phép nghiêng trục tự do theo phương X.",
+            "shape": "torus",
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "size": [
+              1.45,
+              0.12,
+              1.45
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ],
+            "color": "#38bdf8",
+            "explodeVec": [
+              0,
+              1.4,
+              0
+            ]
+          },
+          {
+            "id": "outer_ring",
+            "nameVi": "Vòng gimbal ngoài",
+            "nameEn": "Outer Gimbal",
+            "functionVi": "Khung cố định gắn trục đứng bảo toàn phương.",
+            "shape": "torus",
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "size": [
+              1.9,
+              0.14,
+              1.9
+            ],
+            "rotation": [
+              0,
+              0.4,
+              0
+            ],
+            "color": "#6366f1",
+            "explodeVec": [
+              1.6,
+              0,
+              0
+            ]
+          },
+          {
+            "id": "base_pedestal",
+            "nameVi": "Chân đế từ tính",
+            "nameEn": "Magnetic Base",
+            "functionVi": "Bệ đỡ giảm chấn giữ ổn định trục quay.",
+            "shape": "cone",
+            "position": [
+              0,
+              -1.8,
+              0
+            ],
+            "size": [
+              0.9,
+              0.7,
+              0.9
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "color": "#334155",
+            "explodeVec": [
+              0,
+              -1.5,
+              0
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-03-10T09:00:00.000Z"
+    },
+    {
+      "id": "sc_seed_oxyz_pyramid",
+      "category": "3d_model",
+      "subject": "math",
+      "title": "Khối Chóp Tứ Giác Đều & Thiết Diện Oxyz",
+      "description": "Tạo trực tiếp trong Xưởng 3D để minh họa góc giữa mặt bên và mặt đáy $S.ABCD$.",
+      "authorName": "Thảo Vy · 12 Toán",
+      "authorHandle": "@vy_geometry",
+      "tags": [
+        "Hình học Oxyz",
+        "Khối chóp",
+        "Toán 12"
+      ],
+      "likes": 37,
+      "payload3dModel": {
+        "id": "custom_seed_pyramid",
+        "titleVi": "Chóp Tứ Giác S.ABCD & Mặt Đáy",
+        "titleEn": "Regular Square Pyramid S.ABCD",
+        "category": "Toán · Oxyz",
+        "descriptionVi": "Mô hình khối chóp đều có tâm đáy O, đường cao SO và mặt đáy vuông góc.",
+        "descriptionEn": "Square pyramid with height SO and base plate.",
+        "palette": {
+          "accent": "#2563eb",
+          "secondary": "#14b8a6",
+          "glow": "#60a5fa"
+        },
+        "formula": "V = \\frac{1}{3} S_{\\text{đáy}} \\cdot h,\\quad d(O, (SBC)) = \\frac{ah}{\\sqrt{a^2 + 4h^2}}",
+        "createdAt": "2026-03-11T10:15:00.000Z",
+        "parts": [
+          {
+            "id": "apex",
+            "nameVi": "Đỉnh S & khối nón dẫn",
+            "nameEn": "Apex S",
+            "functionVi": "Đỉnh hình chóp tạo góc phẳng với 4 cạnh bên.",
+            "shape": "cone",
+            "position": [
+              0,
+              0.65,
+              0
+            ],
+            "size": [
+              1.35,
+              2.2,
+              1.35
+            ],
+            "rotation": [
+              0,
+              0.785,
+              0
+            ],
+            "color": "#3b82f6",
+            "explodeVec": [
+              0,
+              1.5,
+              0
+            ]
+          },
+          {
+            "id": "height_axis",
+            "nameVi": "Đường cao SO",
+            "nameEn": "Altitude SO",
+            "functionVi": "Đoạn vuông góc hạ từ đỉnh S xuống tâm O.",
+            "shape": "cylinder",
+            "position": [
+              0,
+              0.4,
+              0
+            ],
+            "size": [
+              0.09,
+              2.1,
+              0.09
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "color": "#f43f5e",
+            "explodeVec": [
+              -1.4,
+              0.4,
+              0
+            ]
+          },
+          {
+            "id": "base_square",
+            "nameVi": "Mặt đáy ABCD",
+            "nameEn": "Base ABCD",
+            "functionVi": "Hình vuông cạnh a nằm trên mặt phẳng (Oxy).",
+            "shape": "box",
+            "position": [
+              0,
+              -0.55,
+              0
+            ],
+            "size": [
+              2.1,
+              0.16,
+              2.1
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "color": "#14b8a6",
+            "explodeVec": [
+              0,
+              -1.4,
+              0
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-03-11T10:15:00.000Z"
+    },
+    {
+      "id": "sc_seed_2d_conic_art",
+      "category": "2d_canvas",
+      "subject": "math",
+      "title": "Quỹ Đạo Giao Điểm Parabol & Elip 2D",
+      "description": "Bản phác thảo tay 2D trong chế độ Tự do tạo minh họa tiêu điểm quang học của Elip.",
+      "authorName": "Gia Bảo · Chuyên Toán",
+      "authorHandle": "@bao_conic",
+      "tags": [
+        "Tự do tạo 2D",
+        "Elip",
+        "Parabol"
+      ],
+      "likes": 29,
+      "payload2dMeta": {
+        "modeId": "free_create",
+        "shapeCount": 7,
+        "caption": "Hệ trục Oxy + Elip + 2 tia phản xạ tiêu điểm F1, F2"
+      },
+      "createdAt": "2026-03-12T14:20:00.000Z"
+    },
+    {
+      "id": "sc_seed_cs_segtree",
+      "category": "cs_algo",
+      "subject": "cs",
+      "title": "Segment Tree Lazy Propagation Chuẩn VNOI",
+      "description": "Template C++20 cập nhật đoạn + truy vấn tổng/max chạy O(log N) không tràn số long long.",
+      "authorName": "Hoàng Nam · Tin OLP",
+      "authorHandle": "@nam_vnoi",
+      "tags": [
+        "C++20",
+        "Segment Tree",
+        "VNOI"
+      ],
+      "likes": 54,
+      "payloadCode": {
+        "language": "cpp",
+        "complexity": "O((N + Q) log N)",
+        "code": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MAXN = 200005;\nlong long st[4 * MAXN], lazy[4 * MAXN];\n\nvoid push(int id, int l, int r) {\n    if (!lazy[id]) return;\n    int mid = (l + r) >> 1;\n    st[id << 1] += lazy[id] * (mid - l + 1);\n    st[id << 1 | 1] += lazy[id] * (r - mid);\n    lazy[id << 1] += lazy[id];\n    lazy[id << 1 | 1] += lazy[id];\n    lazy[id] = 0;\n}\n\nvoid update(int id, int l, int r, int u, int v, long long val) {\n    if (v < l || r < u) return;\n    if (u <= l && r <= v) {\n        st[id] += val * (r - l + 1);\n        lazy[id] += val;\n        return;\n    }\n    push(id, l, r);\n    int mid = (l + r) >> 1;\n    update(id << 1, l, mid, u, v, val);\n    update(id << 1 | 1, mid + 1, r, u, v, val);\n    st[id] = st[id << 1] + st[id << 1 | 1];\n}\n\nlong long query(int id, int l, int r, int u, int v) {\n    if (v < l || r < u) return 0;\n    if (u <= l && r <= v) return st[id];\n    push(id, l, r);\n    int mid = (l + r) >> 1;\n    return query(id << 1, l, mid, u, v) + query(id << 1 | 1, mid + 1, r, u, v);\n}"
+      },
+      "createdAt": "2026-03-13T18:05:00.000Z"
+    },
+    {
+      "id": "sc_seed_cs_dijkstra",
+      "category": "cs_algo",
+      "subject": "cs",
+      "title": "Dijkstra Priority Queue + Truy Vết Đường Đi",
+      "description": "Mã nguồn sạch tối ưu cho bài toán đồ thị có hướng trọng số dương trong đề HSG.",
+      "authorName": "Lan Anh · 11 Tin",
+      "authorHandle": "@lananh_graph",
+      "tags": [
+        "Dijkstra",
+        "Đồ thị",
+        "Python / C++"
+      ],
+      "likes": 31,
+      "payloadCode": {
+        "language": "cpp",
+        "complexity": "O((V + E) log V)",
+        "code": "#include <bits/stdc++.h>\nusing namespace std;\nusing pii = pair<long long, int>;\nconst long long INF = 1e18;\n\nvector<long long> dijkstra(int s, int n, const vector<vector<pair<int, int>>>& adj) {\n    vector<long long> dist(n + 1, INF);\n    priority_queue<pii, vector<pii>, greater<pii>> pq;\n    dist[s] = 0;\n    pq.push({0, s});\n    while (!pq.empty()) {\n        auto [d, u] = pq.top();\n        pq.pop();\n        if (d > dist[u]) continue;\n        for (auto [v, w] : adj[u]) {\n            if (dist[u] + w < dist[v]) {\n                dist[v] = dist[u] + w;\n                pq.push({dist[v], v});\n            }\n        }\n    }\n    return dist;\n}"
+      },
+      "createdAt": "2026-03-14T11:30:00.000Z"
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff, Film } from 'lucide-react';
+import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff, Film, Crown, Play } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
+import type { SynProDomain, SynProMode } from './components/tutor/SynAIProChat';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MobileBottomNav } from './components/common/MobileBottomNav';
@@ -76,6 +77,9 @@ const CommunityShowcaseView = lazy(() =>
 const SocraticAITutor = lazy(() =>
   import('./components/tutor/SocraticAITutor').then((m) => ({ default: m.SocraticAITutor }))
 );
+const SynAIProChat = lazy(() =>
+  import('./components/tutor/SynAIProChat').then((m) => ({ default: m.SynAIProChat }))
+);
 const SynapseVoiceOS = lazy(() =>
   import('./components/future/SynapseVoiceOS').then((m) => ({ default: m.SynapseVoiceOS }))
 );
@@ -129,6 +133,44 @@ function MainApp() {
   const [tutorContext, setTutorContext] = useState<TutorContextPayload>({
     subject: 'math'
   });
+  const [activeTutorTier, setActiveTutorTier] = useState<'basic' | 'pro'>('basic');
+  const [basicTutorSession, setBasicTutorSession] = useState<{ mounted: boolean; visible: boolean }>({
+    mounted: false,
+    visible: false
+  });
+  const [proTutorSession, setProTutorSession] = useState<{
+    mounted: boolean;
+    visible: boolean;
+    mode: SynProMode;
+    domain: SynProDomain;
+  }>({
+    mounted: false,
+    visible: false,
+    mode: 'pro_turbo',
+    domain: 'all'
+  });
+
+  useEffect(() => {
+    if (!isTutorOpen) {
+      setBasicTutorSession((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+      setProTutorSession((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+    if (location.tutorTab === 'motion_reel') {
+      setActiveTutorTier('pro');
+      setBasicTutorSession((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+      setProTutorSession((prev) => ({
+        mounted: true,
+        visible: true,
+        mode: 'motion_reel',
+        domain: prev.domain
+      }));
+    } else if (activeTutorTier === 'basic' && !basicTutorSession.visible) {
+      setBasicTutorSession({ mounted: true, visible: true });
+    } else if (activeTutorTier === 'pro' && !proTutorSession.visible) {
+      setProTutorSession((prev) => ({ ...prev, mounted: true, visible: true }));
+    }
+  }, [isTutorOpen, location.tutorTab]);
 
   useEffect(() => {
     if (currentSubject !== 'arena' && isArenaMatchActive) {
@@ -160,6 +202,24 @@ function MainApp() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [isSynDockOpen]);
 
+  const handleOpenProTutor = (opts?: { mode?: SynProMode; domain?: SynProDomain }) => {
+    if (currentSubjectRef.current === 'arena' && isArenaMatchActiveRef.current) {
+      return;
+    }
+    setActiveTutorTier('pro');
+    setBasicTutorSession((prev) => ({ ...prev, visible: false }));
+    setProTutorSession((prev) => ({
+      mounted: true,
+      visible: true,
+      mode: opts?.mode ?? prev.mode,
+      domain: opts?.domain ?? prev.domain
+    }));
+    navigate({
+      tutorOpen: true,
+      tutorTab: opts?.mode === 'motion_reel' ? 'motion_reel' : 'chat'
+    });
+  };
+
   const handleOpenTutor = (ctx?: TutorContextPayload & { tutorTab?: 'chat' | 'motion_reel' }) => {
     if (currentSubjectRef.current === 'arena' && isArenaMatchActiveRef.current) {
       return;
@@ -171,6 +231,9 @@ function MainApp() {
         ? 'cs'
         : 'math';
     const targetSubj: SubjectType = ctx?.subject || fallbackSubj;
+    setActiveTutorTier('basic');
+    setProTutorSession((prev) => ({ ...prev, visible: false }));
+    setBasicTutorSession({ mounted: true, visible: true });
     setTutorContext(
       ctx || {
         subject: targetSubj
@@ -380,6 +443,9 @@ function MainApp() {
         } catch {}
       }
 
+      setActiveTutorTier('basic');
+      setProTutorSession((prev) => ({ ...prev, visible: false }));
+      setBasicTutorSession({ mounted: true, visible: true });
       setTutorContext((prev) => ({ ...prev, subject: targetSubj! }));
       navigate(
         { tutorOpen: true, tutorSubject: targetSubj },
@@ -744,20 +810,20 @@ function MainApp() {
             >
               {isSynDockOpen && (
                 <div
-                  className={`sci-frame syn-window-enter absolute w-[min(256px,calc(100vw-24px))] rounded-md bg-slate-950/95 border border-cyan-500/45 shadow-[0_24px_60px_-14px_rgba(6,182,212,0.45)] backdrop-blur-xl overflow-hidden ${
+                  className={`absolute w-[min(256px,calc(100vw-24px))] rounded-md bg-slate-950 border border-cyan-500/45 shadow-[0_24px_60px_-14px_rgba(6,182,212,0.45)] overflow-hidden ${
                     synWidget.isBottomHalf ? 'bottom-full mb-2' : 'top-full mt-2'
                   } ${synWidget.isRightHalf ? 'right-0' : 'left-0'}`}
                 >
                   <div
                     onPointerDown={synWidget.handleDragStart}
-                    className={`px-3 py-2 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between gap-2 touch-none ${
+                    className={`px-3 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 touch-none ${
                       synWidget.isDragging ? 'cursor-grabbing' : 'cursor-grab'
                     }`}
                     title={isEn ? 'Drag to reposition Syn AI' : 'Kéo để di chuyển vị trí Syn AI'}
                   >
                     <div className="flex items-center gap-1.5 text-[11px] font-mono font-extrabold tracking-wider text-cyan-300 uppercase">
                       <GripVertical className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="w-2 h-2 rounded-sm bg-cyan-400 syn-core-pulse" />
+                      <span className="w-2 h-2 rounded-sm bg-cyan-400" />
                       <Cpu className="w-3.5 h-3.5 text-cyan-400" />
                       <span>Syn AI Suite</span>
                     </div>
@@ -786,6 +852,38 @@ function MainApp() {
                     </div>
                   </div>
                   <div className="p-2 space-y-2">
+                    {/* Quick Resume when a minichat was paused (Tạm đóng) */}
+                    {((basicTutorSession.mounted && !basicTutorSession.visible) ||
+                      (proTutorSession.mounted && !proTutorSession.visible)) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSynDockOpen(false);
+                          if (activeTutorTier === 'pro' && proTutorSession.mounted) {
+                            handleOpenProTutor();
+                          } else if (basicTutorSession.mounted) {
+                            setActiveTutorTier('basic');
+                            setProTutorSession((prev) => ({ ...prev, visible: false }));
+                            setBasicTutorSession({ mounted: true, visible: true });
+                            navigate({ tutorOpen: true });
+                          } else if (proTutorSession.mounted) {
+                            handleOpenProTutor();
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/60 text-emerald-200 text-xs font-extrabold flex items-center justify-between gap-2 cursor-pointer transition-colors"
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <Play className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                          <span className="truncate">
+                            {isEn ? 'Resume paused conversation' : 'Tiếp tục cuộc trò chuyện'}
+                          </span>
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/25 font-mono text-[9px] text-emerald-200 shrink-0">
+                          {activeTutorTier === 'pro' && proTutorSession.mounted ? 'PRO' : 'AI'}
+                        </span>
+                      </button>
+                    )}
+
                     {/* 2-Mode Switcher in Premium: AI Học Tập Cơ Bản vs AI Syn Pro */}
                     {hasPremiumAccess && (
                       <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-800 bg-slate-900/90 p-1">
@@ -871,23 +969,23 @@ function MainApp() {
                           type="button"
                           onClick={() => {
                             setIsSynDockOpen(false);
-                            handleOpenTutor({ subject: 'math', mode: 'full_solution' });
+                            handleOpenProTutor({ mode: 'pro_turbo' });
                           }}
-                          className="cs-deck-btn w-full px-3 py-2 rounded bg-gradient-to-r from-amber-500/25 via-cyan-500/25 to-blue-600/30 hover:brightness-125 border border-cyan-400/60 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                          className="cs-deck-btn w-full px-3 py-2 rounded bg-gradient-to-r from-amber-500/25 via-cyan-500/25 to-blue-600/30 hover:brightness-125 border border-amber-400/60 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
                         >
                           <span className="flex items-center gap-2">
-                            <Zap className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                            <span>Syn Pro · Giải Siêu Tốc</span>
+                            <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                            <span>Syn AI Pro · Siêu Trợ Lý</span>
                           </span>
                           <span className="px-1.5 py-0.5 rounded bg-amber-400/20 border border-amber-300/40 font-mono text-[9px] text-amber-200">
-                            FAST
+                            PRO
                           </span>
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setIsSynDockOpen(false);
-                            handleOpenTutor({ subject: 'math', tutorTab: 'motion_reel' });
+                            handleOpenProTutor({ mode: 'motion_reel' });
                           }}
                           className="cs-deck-btn w-full px-3 py-2 rounded bg-gradient-to-r from-amber-500 via-orange-500 to-sky-600 hover:brightness-110 border border-amber-300/60 text-white text-xs font-extrabold flex items-center justify-between gap-2 transition-all cursor-pointer"
                         >
@@ -903,7 +1001,7 @@ function MainApp() {
                           type="button"
                           onClick={() => {
                             setIsSynDockOpen(false);
-                            handleOpenTutor({ subject: 'physics', mode: 'diagnostic_roadmap' });
+                            handleOpenProTutor({ mode: 'pro_roadmap' });
                           }}
                           className="cs-deck-btn w-full px-3 py-2 rounded bg-slate-900 hover:bg-slate-800 border border-emerald-400/50 text-emerald-200 text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
                         >
@@ -912,7 +1010,7 @@ function MainApp() {
                             <span>Phân Tích & Sơ Đồ Pro</span>
                           </span>
                           <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 font-mono text-[9px] text-emerald-300">
-                            PRO
+                            MAP
                           </span>
                         </button>
                       </div>
@@ -930,11 +1028,11 @@ function MainApp() {
                   setIsSynDockOpen((prev) => !prev);
                 }}
                 aria-expanded={isSynDockOpen}
-                className={`sci-frame syn-dock-halo flex items-center gap-2 px-3 py-2 rounded-md bg-slate-950/95 hover:bg-slate-900 border ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-md bg-slate-950 hover:bg-slate-900 border ${
                   hasPremiumAccess
                     ? 'border-amber-400/75 text-amber-200 shadow-[0_16px_44px_-10px_rgba(245,158,11,0.5)]'
                     : 'border-cyan-500/45 text-white shadow-[0_16px_40px_-10px_rgba(6,182,212,0.42)]'
-                } text-xs font-bold backdrop-blur-md transition-colors touch-none ${
+                } text-xs font-bold transition-colors touch-none ${
                   synWidget.isDragging ? 'cursor-grabbing' : 'cursor-grab'
                 }`}
                 title={
@@ -944,11 +1042,17 @@ function MainApp() {
                 }
               >
                 <GripVertical className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="w-2 h-2 rounded-sm bg-cyan-400 syn-core-pulse shrink-0" />
+                <span className="w-2 h-2 rounded-sm bg-cyan-400 shrink-0" />
                 <Cpu className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 <span className="font-mono font-extrabold tracking-wider text-cyan-200 uppercase">
                   Syn AI
                 </span>
+                {((basicTutorSession.mounted && !basicTutorSession.visible) ||
+                  (proTutorSession.mounted && !proTutorSession.visible)) && (
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/50 text-[9px] font-bold text-emerald-300">
+                    {isEn ? 'Paused' : 'Tiếp tục'}
+                  </span>
+                )}
                 <ChevronUp
                   className={`w-3.5 h-3.5 text-cyan-300 transition-transform duration-200 ${
                     isSynDockOpen ? 'rotate-180' : ''
@@ -957,11 +1061,18 @@ function MainApp() {
               </button>
             </div>
           )}
-          {isTutorOpen && (
+          {basicTutorSession.mounted && (
             <Suspense fallback={null}>
               <SocraticAITutor
-                isOpen={isTutorOpen}
-                onClose={goBack}
+                isOpen={isTutorOpen && basicTutorSession.visible && activeTutorTier === 'basic'}
+                onMinimize={() => {
+                  setBasicTutorSession((prev) => ({ ...prev, visible: false }));
+                  navigate({ tutorOpen: false }, { replace: true });
+                }}
+                onClose={() => {
+                  setBasicTutorSession({ mounted: false, visible: false });
+                  goBack();
+                }}
                 onBack={goBack}
                 context={{
                   ...tutorContext,
@@ -976,6 +1087,28 @@ function MainApp() {
                   setTutorContext((prev) => ({ ...prev, subject: subj }));
                   navigate({ tutorSubject: subj }, { replace: true });
                 }}
+                onNavigateSubject={(subj) => {
+                  selectSubject(subj);
+                }}
+              />
+            </Suspense>
+          )}
+
+          {proTutorSession.mounted && (
+            <Suspense fallback={null}>
+              <SynAIProChat
+                isOpen={isTutorOpen && proTutorSession.visible && activeTutorTier === 'pro'}
+                initialMode={proTutorSession.mode}
+                initialDomain={proTutorSession.domain}
+                onMinimize={() => {
+                  setProTutorSession((prev) => ({ ...prev, visible: false }));
+                  navigate({ tutorOpen: false }, { replace: true });
+                }}
+                onClose={() => {
+                  setProTutorSession((prev) => ({ ...prev, mounted: false, visible: false }));
+                  goBack();
+                }}
+                onBack={goBack}
                 onNavigateSubject={(subj) => {
                   selectSubject(subj);
                 }}

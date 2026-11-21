@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Send,
   X,
+  Minus,
   Maximize2,
   Minimize2,
   RotateCcw,
@@ -70,6 +71,7 @@ interface SubjectDiagConfig {
 
 interface SocraticAITutorProps {
   isOpen: boolean;
+  onMinimize?: () => void;
   onClose: () => void;
   onBack?: () => void;
   context: TutorContextPayload;
@@ -160,7 +162,7 @@ const SynCoreEmblem: React.FC<{ accentHex: string; secondaryHex: string; icon: R
       <circle cx="32" cy="4" r="2.4" fill={accentHex} className="holo-orbit-cw" />
     </svg>
     <div
-      className="syn-core-pulse w-8 h-8 rounded-md border border-white/25 bg-slate-900/90 flex items-center justify-center text-white shadow-inner"
+      className="w-8 h-8 rounded-md border border-white/25 bg-slate-900 flex items-center justify-center text-white shadow-inner"
       style={{ boxShadow: `0 0 18px -2px ${accentHex}` }}
     >
       {icon}
@@ -168,8 +170,22 @@ const SynCoreEmblem: React.FC<{ accentHex: string; secondaryHex: string; icon: R
   </div>
 );
 
+const BASIC_THREADS_STORAGE_KEY = 'synapse_basic_ai_threads_v1';
+
+function loadSavedBasicThreads(): Record<string, TutorMessage[]> {
+  try {
+    const raw = sessionStorage.getItem(BASIC_THREADS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   isOpen,
+  onMinimize,
   onClose,
   onBack,
   context,
@@ -282,11 +298,11 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     const meta = getAiPersonaMeta(subj);
     const subjName = isEn ? meta.nameEn : meta.nameVi;
     const topicPart = ctx.topicTitle ? (isEn ? ` on **${ctx.topicTitle}**` : ` ở chủ đề **${ctx.topicTitle}**`) : '';
-    const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const timestamp = 'LIVE';
 
     if (mode === 'full_solution') {
       return {
-        id: `welcome_${subj}_${mode}_${Date.now()}`,
+        id: `welcome_${subj}_${mode}`,
         role: 'tutor',
         text: isEn
           ? `Hello! I am **${subjName}** inside **Syn AI** (Mode 2: Full Summary, Method & Detailed Solution)${topicPart}.\n\nSend me your problem or photo: I will **summarize the givens, explain the best method, and provide the complete step-by-step solution & final answer**.`
@@ -297,7 +313,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
     if (mode === 'diagnostic_roadmap') {
       return {
-        id: `welcome_${subj}_${mode}_${Date.now()}`,
+        id: `welcome_${subj}_${mode}`,
         role: 'tutor',
         text: isEn
           ? `Hello! I am **${subjName}** inside **Syn AI** (Mode 3: Skill Diagnosis & Roadmap Architect).\n\nComplete the quick 5-question professional + major-track check above to generate your personalized **Study Flowchart**, or ask me any follow-up questions about your study plan below.`
@@ -307,7 +323,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     }
 
     return {
-      id: `welcome_${subj}_${mode}_${Date.now()}`,
+      id: `welcome_${subj}_${mode}`,
       role: 'tutor',
       text: isEn
         ? `Hello! I am **${subjName}** inside **Syn AI** (Mode 1: Clarify Doubts — No Final Answer)${topicPart}.\n\nI will analyze the problem with you and explain any unclear step in detail, **without spoiling the final result**.\n\n**Which exact concept, formula, or step are you unsure about?**`
@@ -316,9 +332,21 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     };
   };
 
-  const [threads, setThreads] = useState<Record<string, TutorMessage[]>>({});
+  const [threads, setThreads] = useState<Record<string, TutorMessage[]>>(loadSavedBasicThreads);
   const threadKey = `${activeSubject}_${activeMode}`;
-  const currentMessages = threads[threadKey] || [makeWelcomeMessage(activeSubject, activeMode, context)];
+  const fallbackWelcome = useMemo(
+    () => makeWelcomeMessage(activeSubject, activeMode, context),
+    [activeSubject, activeMode, context.topicTitle, isEn]
+  );
+  const currentMessages = threads[threadKey] || [fallbackWelcome];
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(BASIC_THREADS_STORAGE_KEY, JSON.stringify(threads));
+    } catch {
+      // ignore sessionStorage quota errors
+    }
+  }, [threads]);
 
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -510,8 +538,6 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     window.addEventListener('paste', onPaste);
     return () => window.removeEventListener('paste', onPaste);
   }, [isOpen]);
-
-  if (!isOpen) return null;
 
   const activeMeta = getAiPersonaMeta(activeSubject);
   const diagQuestions = diagQuestionsBySubj[activeSubject] || [];
@@ -931,17 +957,19 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         }
       }}
       className={
-        isFullscreen
-          ? `syn-window-enter fixed inset-0 z-[115] w-screen h-[100dvh] bg-slate-950 flex flex-col overflow-hidden ${
+        !isOpen
+          ? 'hidden'
+          : isFullscreen
+          ? `fixed inset-0 z-[115] w-screen h-[100dvh] bg-white dark:bg-[#050b18] flex flex-col overflow-hidden ${
               isDraggingImage ? 'ring-2 ring-inset ring-sky-400' : ''
             }`
-          : `syn-window-enter sci-frame fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] ${
+          : `fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[95] w-[calc(100vw-1.5rem)] ${
               studioTab === 'motion_reel'
                 ? 'sm:w-[680px] lg:w-[860px]'
                 : 'sm:w-[560px] md:w-[630px]'
-            } h-[min(770px,89dvh)] bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border ${
+            } h-[min(770px,89dvh)] bg-white dark:bg-[#050b18] border ${
               isDraggingImage ? 'border-sky-400 ring-2 ring-sky-400/50' : activeMeta.glowRing
-            } rounded-md shadow-[0_32px_90px_-16px_rgba(2,6,23,0.68)] flex flex-col overflow-hidden`
+            } rounded-xl shadow-[0_32px_90px_-16px_rgba(2,6,23,0.68)] flex flex-col overflow-hidden`
       }
     >
       {/* Drag-and-drop HUD overlay */}
@@ -1015,13 +1043,29 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
         <div className="relative z-10 flex items-center gap-1.5 shrink-0">
           <button
+            type="button"
             onClick={handleReset}
             className="p-2 rounded-md text-slate-300 hover:text-white bg-white/5 hover:bg-white/15 border border-white/10 transition-all cursor-pointer"
             title={isEn ? 'Reset current conversation' : 'Làm mới cuộc trò chuyện'}
           >
             <RotateCcw className="w-4 h-4" />
           </button>
+          {onMinimize && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsFullscreen(false);
+                onMinimize();
+              }}
+              className="px-2.5 py-1.5 rounded-md text-sky-200 hover:text-slate-950 bg-sky-500/20 hover:bg-sky-400 border border-sky-400/45 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+              title={isEn ? 'Pause & keep chat to resume later' : 'Tạm đóng — Giữ nguyên cuộc trò chuyện để mở lại tiếp tục'}
+            >
+              <Minus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isEn ? 'Pause' : 'Tạm đóng'}</span>
+            </button>
+          )}
           <button
+            type="button"
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="p-2 rounded-md text-slate-300 hover:text-white bg-white/5 hover:bg-white/15 border border-white/10 transition-all cursor-pointer"
             title={isFullscreen ? (isEn ? 'Exit Fullscreen' : 'Thu nhỏ') : isEn ? 'Fullscreen' : 'Mở toàn màn hình'}
@@ -1029,6 +1073,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           <button
+            type="button"
             onClick={() => {
               setIsFullscreen(false);
               onClose();
@@ -1087,13 +1132,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       </div>
 
       {/* 3 PEDAGOGICAL MODES + MOTION REEL & LIVE CO-PILOT BAR */}
-      <div
-        className={`px-3.5 sm:px-5 py-2.5 border-b shrink-0 ${
-          hasPremiumAccess
-            ? 'bg-slate-950/95 border-cyan-500/25 backdrop-blur-xl'
-            : 'bg-slate-100/95 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800'
-        }`}
-      >
+      <div className="px-3.5 sm:px-5 py-2.5 border-b shrink-0 bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <div className={`space-y-2 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           <div className={`grid grid-cols-2 ${hasPremiumAccess ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-1.5`}>
             {modeTabs.map((m) => {
@@ -1117,24 +1156,16 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                     setErrorMsg(null);
                   }}
                   className={`group sheen-btn flex items-center justify-center sm:justify-start gap-1.5 px-2.5 py-2 rounded-lg text-[11px] font-bold whitespace-nowrap border transition-all cursor-pointer ${
-                    hasPremiumAccess
-                      ? selected
-                        ? 'bg-gradient-to-r from-amber-500/25 via-cyan-500/25 to-indigo-500/25 text-white border-cyan-400/70 shadow-[0_0_20px_rgba(34,211,238,0.22)]'
-                        : 'bg-slate-900/85 text-slate-300 border-slate-800 hover:border-cyan-400/50 hover:text-white'
-                      : selected
-                      ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 border-slate-950 dark:border-white shadow-sm'
-                      : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-slate-900 dark:hover:text-white'
+                    selected
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white shadow-sm'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
                   }`}
                 >
                   <span
                     className={`px-1 py-0.5 rounded font-mono text-[10px] ${
-                      hasPremiumAccess
-                        ? selected
-                          ? 'bg-cyan-400 text-slate-950 font-extrabold'
-                          : 'bg-slate-800 text-slate-400'
-                        : selected
+                      selected
                         ? 'bg-sky-500 text-white dark:bg-slate-900 dark:text-sky-300'
-                        : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400'
+                        : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300'
                     }`}
                   >
                     {m.code}
@@ -1155,8 +1186,8 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                 }}
                 className={`group sheen-btn flex items-center justify-center sm:justify-start gap-1.5 px-2.5 py-2 rounded-lg text-[11px] font-bold whitespace-nowrap border transition-all cursor-pointer ${
                   studioTab === 'motion_reel'
-                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-cyan-500 text-slate-950 border-amber-300 shadow-[0_0_24px_rgba(245,158,11,0.35)]'
-                    : 'bg-slate-900/85 text-amber-300 border-amber-500/35 hover:border-amber-400'
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-cyan-500 text-slate-950 border-amber-400 shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/40 hover:border-amber-400'
                 }`}
               >
                 <span className="px-1 py-0.5 rounded font-mono text-[10px] bg-amber-500/20 text-current">
@@ -1170,8 +1201,8 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
           {studioTab === 'tutor' && (
             <div className="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
-              <p className={`text-[11px] leading-snug flex items-center gap-1.5 ${hasPremiumAccess ? 'text-slate-300' : 'text-slate-600 dark:text-slate-400'}`}>
-                <Sparkles className={`w-3 h-3 shrink-0 ${hasPremiumAccess ? 'text-amber-400' : 'text-sky-500'}`} />
+              <p className="text-[11px] leading-snug flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <Sparkles className="w-3 h-3 shrink-0 text-sky-500" />
                 <span className="truncate">{isEn ? activeModeMeta.descEn : activeModeMeta.descVi}</span>
               </p>
 
@@ -1204,7 +1235,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                   className={`px-2 py-1 rounded text-[10px] font-bold border flex items-center gap-1 cursor-pointer transition-colors ${
                     screenStream
                       ? 'bg-cyan-600 border-cyan-400 text-white'
-                      : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-cyan-400'
+                      : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-cyan-400'
                   }`}
                   title={isEn ? 'Share full screen with Co-Pilot' : 'Chia sẻ màn hình cho Syn AI nhìn trực tiếp'}
                 >
@@ -1235,8 +1266,8 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         </div>
       </div>
 
-      {/* MAIN NEURAL VIEWPORT */}
-      <div className="relative flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 bg-gradient-to-b from-slate-50 via-white to-slate-100/80 dark:from-slate-950 dark:via-[#060c1a] dark:to-slate-950 syn-neural-grid">
+      {/* MAIN NEURAL VIEWPORT (100% OPAQUE — NO TEXT BLEED THROUGH) */}
+      <div className="relative flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 bg-slate-50 dark:bg-[#050b18]">
         <div className={`space-y-4 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           {studioTab === 'motion_reel' ? (
             <MotionReelMiniChat
@@ -1585,7 +1616,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
               .map((msg) => (
                 <div
                   key={msg.id}
-                  className={`animate-msg-in flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
                     className={`flex items-end gap-2.5 max-w-[93%] ${
@@ -1603,17 +1634,9 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                       className={`group relative rounded-xl px-4 py-3 text-xs sm:text-[13.5px] leading-relaxed ${
                         msg.role === 'user'
                           ? `${activeMeta.userBubble}`
-                          : hasPremiumAccess
-                          ? 'bg-slate-900/90 backdrop-blur-xl border border-cyan-500/35 text-slate-100 shadow-[0_14px_38px_-12px_rgba(6,182,212,0.28)]'
-                          : 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/90 text-slate-800 dark:text-slate-100 shadow-sm'
+                          : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 shadow-sm'
                       }`}
                     >
-                      {msg.role === 'tutor' && hasPremiumAccess && (
-                        <div className="mb-2 flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300/90">
-                          <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                          <span>SYNAPSE AI PRO · NEURAL ENGINE</span>
-                        </div>
-                      )}
                       {msg.imagePreview && (
                         <img
                           src={msg.imagePreview}
@@ -1633,11 +1656,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                           <button
                             type="button"
                             onClick={() => handleCopyMessage(msg.id, msg.text)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-colors cursor-pointer ${
-                              hasPremiumAccess
-                                ? 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-200 hover:border-cyan-400/60'
-                                : 'bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-300'
-                            }`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-colors cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-sky-300"
                             title={isEn ? 'Copy response' : 'Sao chép nội dung'}
                           >
                             {copiedMsgId === msg.id ? (
@@ -1740,17 +1759,11 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
       {/* QUICK TACTICAL PROMPTS */}
       {studioTab === 'tutor' && (
-      <div
-        className={`px-3.5 sm:px-5 py-2.5 border-t shrink-0 ${
-          hasPremiumAccess
-            ? 'bg-slate-950/95 border-cyan-500/20 backdrop-blur-xl'
-            : 'bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-slate-800'
-        }`}
-      >
+      <div className="px-3.5 sm:px-5 py-2.5 border-t shrink-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <div className={`${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
-          <div className={`flex items-center justify-between gap-2 text-[11px] font-bold mb-2 ${hasPremiumAccess ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
+          <div className="flex items-center justify-between gap-2 text-[11px] font-bold mb-2 text-slate-600 dark:text-slate-300">
             <span className="flex items-center gap-1.5">
-              <Sparkles className={`w-3.5 h-3.5 ${hasPremiumAccess ? 'text-amber-400' : 'text-sky-500'}`} />
+              <Sparkles className="w-3.5 h-3.5 text-sky-500" />
               <span>{isEn ? 'Quick prompts:' : 'Gợi ý hỏi nhanh:'}</span>
             </span>
             <span className="hidden sm:inline font-mono text-[10px] text-slate-400">
@@ -1764,11 +1777,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                 data-ripple="true"
                 onClick={() => handleSend(prompt)}
                 disabled={isLoading}
-                className={`sheen-btn px-3 py-1.5 rounded-lg border text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer disabled:opacity-50 ${
-                  hasPremiumAccess
-                    ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/90 hover:border-amber-400/60 text-slate-200'
-                    : 'bg-slate-100/90 dark:bg-slate-800/90 hover:bg-indigo-50 dark:hover:bg-indigo-950/70 border-slate-200 dark:border-slate-700 hover:border-sky-400 text-slate-700 dark:text-slate-200'
-                }`}
+                className="sheen-btn px-3 py-1.5 rounded-lg border text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer disabled:opacity-50 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/70 border-slate-200 dark:border-slate-700 hover:border-sky-400 text-slate-700 dark:text-slate-200"
               >
                 {prompt}
               </button>
@@ -1780,13 +1789,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
 
       {/* MULTIMODAL COMPOSER */}
       {studioTab === 'tutor' && (
-      <div
-        className={`px-3.5 sm:px-5 py-3 border-t shrink-0 ${
-          hasPremiumAccess
-            ? 'bg-slate-950 border-cyan-500/20'
-            : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800'
-        }`}
-      >
+      <div className="px-3.5 sm:px-5 py-3 border-t shrink-0 bg-white dark:bg-[#050b18] border-slate-200 dark:border-slate-800">
         <div className={`space-y-2.5 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
           {pendingImage && (
             <div className="flex items-center justify-between px-3 py-2 rounded-md bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-500/35 text-xs">
@@ -1814,19 +1817,11 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
           )}
 
           <div
-            className={`flex items-end gap-1.5 p-1.5 rounded-xl border shadow-inner transition-all focus-within:ring-2 ${
-              hasPremiumAccess
-                ? 'bg-slate-900/95 border-cyan-500/40 shadow-[0_0_28px_rgba(6,182,212,0.16)]'
-                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700'
-            } ${activeMeta.accentRing}`}
+            className={`flex items-end gap-1.5 p-1.5 rounded-xl border shadow-inner transition-all focus-within:ring-2 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 ${activeMeta.accentRing}`}
           >
             <label
               data-ripple="true"
-              className={`p-2.5 rounded-lg border cursor-pointer shrink-0 transition-all active:scale-95 ${
-                hasPremiumAccess
-                  ? 'bg-slate-800/90 hover:bg-slate-800 text-cyan-300 border-slate-700 hover:border-cyan-400/60'
-                  : 'bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-300 border-slate-200 dark:border-slate-700'
-              }`}
+              className="p-2.5 rounded-lg border cursor-pointer shrink-0 transition-all active:scale-95 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-300 border-slate-200 dark:border-slate-700"
               title={isEn ? 'Attach problem photo (or drag/paste Ctrl+V)' : 'Gửi ảnh đề bài (hoặc kéo thả / dán Ctrl+V)'}
             >
               <ImageIcon className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
@@ -1915,7 +1910,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
     </div>
   );
 
-  if (isFullscreen) {
+  if (isFullscreen && isOpen) {
     return <ViewportPortal active={true}>{tutorWindow}</ViewportPortal>;
   }
 

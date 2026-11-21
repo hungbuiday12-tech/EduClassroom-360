@@ -256,10 +256,10 @@ export const AuthModal: React.FC = () => {
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight text-white">
                 {isEn ? 'Welcome to Synapse 360° Classroom' : 'Chào mừng bạn đến với Synapse 360°'}
               </h2>
-              <p className="text-xs text-indigo-200/80 mt-2 leading-relaxed">
+              <p className="text-xs text-indigo-200/85 mt-2 leading-relaxed">
                 {isEn
-                  ? `Specialized STEM platform with real-time interactive simulations, automated C++/Python judge, and ${CURRICULUM_COUNTS.totalExams} curated exam papers.`
-                  : `Nền tảng học tập chuyên sâu tích hợp đồ họa tương tác thời gian thực, trình chấm bài chuẩn Olympic và ngân hàng ${CURRICULUM_COUNTS.totalExams} đề thi chuẩn & chuyên quốc gia.`}
+                  ? `Specialized STEM platform with real-time 2D/3D simulations, 21 Synapse Pre labs, automated C++/Python judge, ${CURRICULUM_COUNTS.totalExams} exams, and dual-tier Syn AI.`
+                  : `Nền tảng học tập STEM chuyên sâu: mô phỏng 2D/3D 60 FPS, 21 Phòng Lab Synapse Pre, chấm code Olympic, ${CURRICULUM_COUNTS.totalExams} đề thi và hệ thống AI 2 tầng (3 AI Cơ Bản & Syn AI Pro).`}
               </p>
             </div>
 
@@ -270,12 +270,12 @@ export const AuthModal: React.FC = () => {
                 </div>
                 <div>
                   <span className="font-semibold text-white block">
-                    {isEn ? 'Calculus, 2D & Oxyz 3D Math' : 'Toán Học Không Gian & Giải Tích'}
+                    {isEn ? 'Math 2D/Oxyz 3D & Holo Atlas' : 'Toán 2D/Oxyz & Atlas Mô Hình 3D'}
                   </span>
                   <span className="text-[11px] text-slate-300">
                     {isEn
-                      ? 'Dynamic function plotting and drag-and-drop interactive geometry.'
-                      : 'Vẽ đồ thị hàm số động, hình học tương tác kéo thả.'}
+                      ? 'Analytic grapher, 10-finger 3D control & 58-part exploded inspector.'
+                      : 'Đồ thị Oxy/Oxyz 3D, điều khiển 10 ngón tay & tách lớp 58 bộ phận chi tiết.'}
                   </span>
                 </div>
               </div>
@@ -286,12 +286,12 @@ export const AuthModal: React.FC = () => {
                 </div>
                 <div>
                   <span className="font-semibold text-white block">
-                    {isEn ? '60 FPS 2D & 3D Physics Labs' : 'Phòng Lab Vật Lý 2D/3D 60 FPS'}
+                    {isEn ? '5 Physics Domains & 21 Pre Labs' : 'Vật Lí 5 Chuyên Đề & 21 Lab Pre'}
                   </span>
                   <span className="text-[11px] text-slate-300">
                     {isEn
-                      ? 'Pendulums, optics, projectiles, RLC phasors, wave interference.'
-                      : 'Con lắc, khúc xạ ánh sáng, chuyển động ném, giao thoa sóng.'}
+                      ? '2D/3D physics labs, 3D cannon ballistics, Quantum, Robotics & Voice OS.'
+                      : 'Thí nghiệm 2D/3D, bệ pháo 3D chuẩn hóa, Lượng tử, Vũ trụ & Voice OS.'}
                   </span>
                 </div>
               </div>
@@ -302,12 +302,12 @@ export const AuthModal: React.FC = () => {
                 </div>
                 <div>
                   <span className="font-semibold text-white block">
-                    {isEn ? 'C++20 / Python Online Judge' : 'Hệ Thống Chấm Test C++/Python'}
+                    {isEn ? 'Sublime 4 Judge, Syn AI Pro & Meet 3D' : 'IDE Chấm Code, Syn AI Pro & Meet 3D'}
                   </span>
                   <span className="text-[11px] text-slate-300">
                     {isEn
-                      ? 'Automated test suites, hidden cases & XP leaderboards.'
-                      : 'Online Judge tự động, bộ test ẩn và bảng xếp hạng XP.'}
+                      ? 'Line-by-line Code Trace 1-1, Pause/Resume AI chat & WebRTC Meet.'
+                      : 'Truy vết Code 1-1, Minichat AI Tạm đóng mở lại tiếp & Phòng học Meet.'}
                   </span>
                 </div>
               </div>

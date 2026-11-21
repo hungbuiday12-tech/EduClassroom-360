@@ -51,11 +51,10 @@ import {
   UploadCloud,
   Layers,
   Download,
-  QrCode
+  Crown
 } from 'lucide-react';
 import { useAudio } from '../../context/AudioContext';
 import { useNavigation } from '../../context/NavigationContext';
-import { useRemoteController } from '../../context/RemoteControllerContext';
 import { PlatformReviews } from '../common/PlatformReviews';
 import { AppDownloadGuideSection } from '../common/AppDownloadGuideSection';
 import type {
@@ -97,7 +96,6 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const { language, toggleLanguage } = useLanguage();
   const { isBgPlaying, toggleBgPlaying, bgSound } = useAudio();
   const { navigate } = useNavigation();
-  const { openModal: openRemoteModal, controllerCount } = useRemoteController();
   const isEn = language === 'en';
   const phyCounts = getPhysicsSimCounts();
   const [directorySubject, setDirectorySubject] = useState<DirectorySubjectFilter>('all');
@@ -134,7 +132,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   }, []);
 
   const handleEnterSynapseV2 = () => {
-    navigate({ subject: 'synapse_v2', futureTab: 'hub', synapseMode: 'catalog', tutorOpen: false });
+    navigate({ subject: 'synapse_v2', futureTab: 'what_if_physics_3d', synapseMode: 'catalog', tutorOpen: false });
     onEnterAsGuest();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -312,48 +310,52 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     }
   > = {
     synapse_v2: {
-      label: isEn ? 'Synapse Pre · 30 Worlds & Labs' : 'Synapse Pre · Công trình & Lab',
-      badge: isEn ? '30 3D Chambers · QR Sensor · 28K GPU Sandbox' : '30 Đại Công Trình · Cảm Biến QR · Hộp Cát 28K',
+      label: isEn ? 'Synapse Pre · 21 Labs & AI Pro' : 'Synapse Pre · 21 Lab & AI Pro',
+      badge: isEn
+        ? '21 Pre Studios (3 Sidebar Groups) · Syn AI Pro · Voice OS'
+        : '21 Phòng Lab (3 Nhóm Menu) · Syn AI Pro · Voice OS',
       headline: isEn
-        ? 'Synapse Pre: 30 Megastructures, QR Phone Sensor Lab & Dual-Hand 28K GPU Sandbox'
-        : 'Synapse Pre: 30 Đại Công Trình, Cảm Biến Điện Thoại QR & Hộp Cát Hạt 28K GPU',
+        ? 'Synapse Pre: 21 Interactive 3D/4D Studios, Dedicated Syn AI Pro & Voice OS'
+        : 'Synapse Pre: 21 Phòng Lab / Mô Phỏng / Sandboxes, Syn AI Pro Riêng & Voice OS',
       summary: isEn
-        ? 'Pair your smartphone via QR WebSocket to plot real-time accelerometer oscillations, sculpt 28,000 GPU particles with both hands, and explore 30 WebGL chambers (CERN LHC, James Webb, Dyson Black Hole, Tokamak).'
-        : 'Quét mã QR bằng điện thoại truyền cảm biến thật vào Dao động ký đôi, điều khiển 28.000 hạt lực trường GPU bằng 2 tay cùng 30 Đại công trình WebGL (LHC, James Webb, Dyson, Tokamak) & Quét Nháp AI.',
+        ? 'Organizes all 21 advanced WebGL studios right into 3 left-sidebar menus (7 Labs, 8 Simulations, 6 Sandboxes) alongside exclusive Syn AI Pro (3-layer fast solve, deep reasoning, flowchart, 3B1B Video), Voice OS (Alt+Space) & Multi-User Meet 3D.'
+        : 'Tích hợp 21 không gian 3D/4D ngay trên menu trái thành 3 nhóm (7 Phòng Lab, 8 Mô phỏng, 6 Sandboxes) cùng trợ lý Syn AI Pro riêng biệt (Giải 3 tầng, Suy luận sâu, Sơ đồ Pro, Video 3B1B), Voice OS (Alt+Space) & Meet 3D nhiều người.',
       highlights: isEn
         ? [
-            'Phone Sensor QR Lab (WebSocket Oscilloscope + CSV export)',
-            'Dual-Hand 28,000 GPU Particle Field Sandbox (Gravity/Lorentz)',
-            '30 holographic 3D chambers + Text-to-Sim & Paper-to-Sim Vision',
+            '3 Sidebar Menus: 7 Labs · 8 Simulations (30 Megastructures, Cannon, Jet) · 6 Sandboxes',
+            'Dedicated Syn AI Pro + Pause/Resume Minichat + 3B1B Video Studio',
+            'Hands-free Synapse Voice OS (Alt+Space) & Multi-User Shared Meet 3D',
           ]
         : [
-            'Cảm biến Điện thoại QR truyền dữ liệu thật lên Oscilloscope & xuất CSV',
-            'Hộp cát Hạt Lực Trường 2 Tay GPU 28.000 hạt (60 FPS)',
-            '30 phòng thí nghiệm 3D + Sinh Mô Phỏng AI & Giấy Nháp → Sim',
+            '3 Nhóm Menu Trái: 7 Phòng Lab · 8 Mô phỏng · 6 Sandboxes (28K GPU, AlgoCity)',
+            'Syn AI Pro độc quyền (3 tầng, Sơ đồ Pro, Video 3B1B) & Tạm đóng giữ hội thoại',
+            'Voice OS ra lệnh giọng nói (Alt+Space) & Live Meet chiếu 3D nhiều người',
           ],
-      accentClass: 'text-sky-600 dark:text-sky-300 border-sky-500/30 bg-sky-500/10',
+      accentClass: 'text-amber-700 dark:text-amber-300 border-amber-500/35 bg-amber-500/10',
     },
     spatial_3d: {
-      label: isEn ? 'Spatial 3D & WebAR Pro' : 'Học 3D & AR Bàn Học Pro',
-      badge: isEn ? '10-Finger AI · WebAR Desk Pro' : '10 Ngón Tay · WebAR Bàn Học Pro',
+      label: isEn ? 'Spatial 3D & Holo Atlas' : 'Học 3D & Atlas Giải Phẫu/Mô Hình',
+      badge: isEn
+        ? 'Holo Atlas 58 Parts · 10-Finger AI · Fullscreen Dock'
+        : 'Atlas 58 Bộ Phận · 10 Ngón Tay · Toàn Màn Hình Đủ Công Cụ',
       headline: isEn
-        ? 'WebAR Desk Hologram Pro, 6 2D Geometry Labs & 15 Realistic 3D Models by Hand'
-        : 'WebAR Bàn Học Pro (Cam Sau/Cắt Lớp/Chụp PNG) & 15 Mô Hình 3D 10 Ngón Tay',
+        ? 'Holo Atlas 3D Explorer, WebAR Desk Pro & 10-Finger / Mouse Inspection'
+        : 'Holo Atlas 3D (58 Bộ Phận Chi Tiết), WebAR Bàn Học & Điều Khiển 10 Ngón / Chuột',
       summary: isEn
-        ? 'Strict 10-fingertip tracking projects 3D holograms directly onto your real desk with front/rear cam switch, opacity slider, desk-tilt calibration, live Y-slicing, PNG snapshot & Point & Ask Live Co-Pilot.'
-        : 'Chiếu mô hình trực tiếp lên bàn học thật với Camera Trước/Sau, chỉnh độ mờ Alpha, nghiêng bàn, mặt cắt Y trực tiếp, chụp PNG và Point & Ask Mắt Thần điều khiển 10 đầu ngón tay.',
+        ? 'Inspect multi-part 3D assemblies in an interactive Atlas layout with part filtering, X-Ray, horizontal exploded rows, WebAR Desk Pro, 10-finger webcam control, and full toolbar retention even in Fullscreen mode.'
+        : 'Quan sát mô hình 3D chi tiết theo giao diện Atlas trực quan: lọc nhóm bộ phận, bật X-Quang, tách lớp 1 hàng ngang, chiếu WebAR lên bàn học, điều khiển 10 ngón tay hoặc chuột và giữ nguyên toàn bộ chức năng khi bật Toàn màn hình.',
       highlights: isEn
         ? [
-            'WebAR Pro: Rear/Front cam, opacity, desk tilt, Y-slice & PNG capture',
-            'Locked 10-fingertip tracking across 6 2D + 15 Kinetic 3D Models',
-            'Point & Ask Live Vision Co-Pilot + AI Free-Creation Model Upload',
+            'Atlas Inspector: Filter sub-systems, isolate parts, X-Ray & horizontal explode',
+            'Full toolbar & sidebar preserved cleanly when entering Fullscreen mode',
+            'WebAR Desk Pro (Rear/Front cam, Y-slice, PNG) + 10-Finger / Mouse controls',
           ]
         : [
-            'AR Bàn Học Pro: Đổi Cam Sau/Trước, Alpha, Nghiêng bàn, Cắt Y & Lưu PNG',
-            'Nhận diện chuẩn 10 đầu ngón tay cho 6 xưởng 2D + 15 mô hình 3D',
-            'Point & Ask Mắt Thần AI + Tự upload ảnh/ý tưởng dựng 3D tự do',
+            'Giao diện Atlas trực quan: lọc bộ phận, tách rời từng phần, X-Quang & xếp hàng',
+            'Bật Toàn màn hình vẫn giữ đầy đủ thanh điều khiển, chú thích & điều hướng',
+            'WebAR Bàn Học Pro (Cam sau/trước, Cắt lớp Y, Lưu PNG) + 10 ngón / Chuột',
           ],
-      accentClass: 'text-teal-600 dark:text-teal-300 border-teal-500/30 bg-teal-500/10',
+      accentClass: 'text-teal-700 dark:text-teal-300 border-teal-500/30 bg-teal-500/10',
     },
     math: {
       label: isEn ? 'Math 2D & 3D' : 'Toán 2D & 3D',
@@ -383,21 +385,21 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         ? `${phyCounts.domainCount} Domains · ${physicsCount} lessons (Grades 9–12)`
         : `${phyCounts.domainCount} Lĩnh vực tách riêng · ${physicsCount} bài 9–12`,
       headline: isEn
-        ? `${phyCounts.domainCount} Dedicated Physics Simulation Domains (2D & 3D) + Standard THPT/Specialized Lectures`
-        : `Mô Phỏng Vật Lí 2D/3D Tách Riêng ${phyCounts.domainCount} Chuyên Đề (Lớp 9–12) & Bài Giảng Chuẩn THPT/Chuyên`,
+        ? `${phyCounts.domainCount} Dedicated Physics Domains (2D & Standardized 3D) + THPT/Olympiad Lectures`
+        : `Mô Phỏng Vật Lí 2D/3D Tách Riêng ${phyCounts.domainCount} Chuyên Đề (Chuẩn Hóa Bệ Pháo 3D)`,
       summary: isEn
-        ? `Separate pages for Mechanics, Waves/Oscillations, Electricity/Magnetism, Optics/Quantum & Thermal/Nuclear with interactive parameter controls, drag-and-drop 36-tool lab bench, separated 2D/3D views, and clear THPT/Specialized explanations.`
-        : `Tách riêng ${phyCounts.domainCount} chuyên đề (Cơ học, Sóng & Dao động, Điện & Điện từ, Quang & Lượng tử, Nhiệt & Hạt nhân) kèm bộ 36 dụng cụ thí nghiệm kéo thả, tách biệt 2D/3D và văn phong chuẩn THPT/Chuyên.`,
+        ? `Separate pages for Mechanics, Waves/Oscillations, Electricity/Magnetism, Optics/Quantum & Thermal/Nuclear with precision 3D projectile cannon alignment, drag-and-drop 36-tool lab bench, and clear THPT/Specialized lessons.`
+        : `Tách riêng ${phyCounts.domainCount} chuyên đề (Cơ học, Sóng & Dao động, Điện & Điện từ, Quang & Lượng tử, Nhiệt & Hạt nhân) kèm bệ pháo ném xiên 3D đồng bộ chuẩn tâm nòng, bộ 36 dụng cụ đo kéo thả & bài giảng THPT/Chuyên.`,
       highlights: isEn
         ? [
             `${phyCounts.count2D} 2D Labs & ${phyCounts.count3D} 3D Models across ${phyCounts.domainCount} domains`,
             'Drag-and-drop Ammeter, Voltmeter, Oscilloscope, Ruler & 32 more tools',
-            'Adaptive difficulty labels for Grade 9–12 & Olympiad',
+            'Calibrated 3D Cannon ballistics + adaptive Grade 9–12 & Olympiad notes',
           ]
         : [
             `${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D chia thành ${phyCounts.domainCount} lĩnh vực riêng`,
             'Kéo thả 36 dụng cụ đo trực tiếp & gợi ý dụng cụ riêng cho mỗi bài',
-            'Bài giảng tinh gọn, chuẩn mực theo cấp độ THPT & Chuyên',
+            'Chuẩn hóa góc bắn bệ pháo 3D khớp nòng pháo & quỹ đạo parabol thực',
           ],
       accentClass: 'text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10',
     },
@@ -426,28 +428,28 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       accentClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
     },
     exams: {
-      label: isEn ? `${totalExams} Exams & Syn AI` : `${totalExams} Đề Thi & Syn AI`,
+      label: isEn ? `${totalExams} Exams & Dual AI` : `${totalExams} Đề Thi & AI 2 Tầng`,
       badge: isEn
-        ? `${chuyenExams} Spec · Live Co-Pilot · Syn Reel Video`
-        : `${chuyenExams} Chuyên · Mắt Thần AI · Video Syn Reel`,
+        ? `${chuyenExams} Spec · 3 Base AIs + Syn AI Pro · Pause/Resume`
+        : `${chuyenExams} Chuyên · 3 AI Cơ Bản & Syn AI Pro · Tạm Đóng`,
       headline: isEn
-        ? `${totalExams} Exam Bank + Live Vision Co-Pilot (Barge-In) & Syn Reel 3B1B Studio`
-        : `Kho ${totalExams} Đề Thi + Syn AI Mắt Thần (Ngắt Lời Voice) & Dựng Video 3B1B`,
+        ? `${totalExams} Exam Bank + Dual-Tier AI (Free Base Tutors & Exclusive Syn AI Pro)`
+        : `Kho ${totalExams} Đề Thi + Hệ Thống AI 2 Tầng (3 AI Cơ Bản & Syn AI Pro)`,
       summary: isEn
-        ? 'Grade handwritten solutions via photo (0–10), ask Syn AI (Math/Physics/Code) via Live Screen/Canvas Vision with instant Voice Barge-In, or generate 16:9 3Blue1Brown Motion Reels (.webm export).'
-        : 'Chấm ảnh bài viết tay 0–10, hỏi 3 AI bằng Mắt Thần (xem màn hình/canvas + ngắt lời giọng nói tức thì), hoặc dựng Video giải thích 3Blue1Brown (Syn Reel) xuất file .webm ngay trong Syn AI.',
+        ? 'Free users get 3 dedicated tutors (Syn Math, Syn Physics, Syn Code) with Live Vision & Pause/Resume continuity; Synapse Pre unlocks standalone Syn AI Pro with 3-Layer Fast Solve, Deep Reasoning, Pro Flowchart & 3B1B Video.'
+        : 'Bản Free có 3 AI chuyên môn (Syn Math · Syn Physics · Syn Code) kèm Mắt Thần & nút Tạm đóng giữ hội thoại; Synapse Pre mở khóa trợ lý riêng Syn AI Pro (Giải 3 tầng siêu tốc, Suy luận sâu, Sơ đồ Pro & Dựng Video 3B1B).',
       highlights: isEn
         ? [
-            'Live Voice + Screen/Canvas Vision Co-Pilot across all 3 Syn AIs',
-            'Syn Reel Mini-Chat: 5-scene 3B1B Math/Physics Video (.webm)',
-            `Complete ${totalExams} official exams + Drag-Drop / Ctrl+V / Voice upload`,
+            'Pause button keeps your active conversation ready to resume anytime',
+            'Free: 3 Subject AIs (Ctrl+D/F/G) · Pre: Standalone Syn AI Pro + 3B1B Video',
+            `Complete ${totalExams} official exams + Drag-Drop / Ctrl+V / Voice + 0–10 grading`,
           ]
         : [
-            'Mắt Thần Live Co-Pilot xem màn hình/canvas + Voice Ngắt lời ở cả 3 AI',
-            'Syn Reel Mini-Chat: dựng Video 3B1B giải Toán/Lí & xuất .webm',
-            `Đủ ${totalExams} đề Toán · Lí · Tin + Kéo thả/Ctrl+V/Giọng nói`,
+            'Nút Tạm đóng giữ nguyên nội dung chat để mở lại trò chuyện tiếp',
+            'Free: 3 AI Cơ bản (Ctrl+D/F/G) · Pre: Syn AI Pro độc quyền & Video 3B1B',
+            `Đủ ${totalExams} đề Toán · Lí · Tin + Up ảnh/Ctrl+V/Giọng nói & Chấm 0–10`,
           ],
-      accentClass: 'text-teal-600 dark:text-teal-400 border-teal-500/30 bg-teal-500/10',
+      accentClass: 'text-cyan-700 dark:text-cyan-300 border-cyan-500/30 bg-cyan-500/10',
     },
   };
 
@@ -783,23 +785,18 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               {isEn ? (
                 <>
                   Complete Grades 9–12 &amp; Olympiad STEM workspace featuring{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (30 3D worlds · QR Phone Sensor Lab · Dual-Hand 28K GPU Sandbox)</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">WebAR Desk Pro 10-finger labs</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">5 Physics domains</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Sublime 4 Code-to-Animation Trace</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Live Meet &amp; Shared 3D Classroom (WebRTC · Screen Share · .glb/.obj Upload)</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Live Vision + Barge-In Syn AI &amp; Syn Reel 3B1B Video</strong>, and{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">{totalExams} official exams</strong>.
+                  <strong className="font-semibold text-slate-900 dark:text-white">Free Base Classroom ({totalLessons} lessons · {totalExams} exams · 5 Physics domains · Sublime 4 Code Trace 1-1 · 3 Base AI Tutors with Pause/Resume · Live Meet Screen Share)</strong>{' '}
+                  and{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (21 3D/4D Labs across 3 sidebar menus · Dedicated Syn AI Pro &amp; 3B1B Video · Voice OS · Multi-User Shared 3D Meet)</strong>, plus{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Holo Atlas 58-part 3D &amp; WebAR Desk Pro</strong>.
                 </>
               ) : (
                 <>
-                  Hệ sinh thái học tập toàn diện cho học sinh THCS, THPT &amp; Đội tuyển Chuyên: tích hợp{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (30 Đại công trình 3D · Cảm biến Điện thoại QR · Hộp cát Hạt GPU 28K)</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">AR Bàn Học Pro 10 ngón tay</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Phòng Học Trực Tuyến Live Meet &amp; 3D (WebRTC · Chia sẻ màn hình · Mô hình 3D dùng chung &amp; Up .glb/.obj)</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">IDE Sublime 4 Truy vết Code 1-1 &amp; Replay Tư Duy</strong>,{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Syn AI Mắt Thần (Ngắt lời Voice &amp; Video 3B1B Syn Reel)</strong> cùng{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">{totalLessons} bài giảng &amp; {totalExams} đề thi</strong>.
+                  Hệ sinh thái học tập toàn diện cho THCS, THPT &amp; Đội tuyển Chuyên:{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Bản Miễn Phí ({totalLessons} bài giảng · {totalExams} đề thi · Toán 2D/Oxyz · 5 lĩnh vực Vật lí &amp; bệ pháo 3D chuẩn hóa · IDE Sublime 4 Truy vết 1-1 · 3 AI Cơ bản có nút Tạm đóng · Meet chia sẻ màn hình)</strong>{' '}
+                  và{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (21 Phòng Lab, Mô phỏng &amp; Sandboxes tách 3 nhóm menu trái · Syn AI Pro độc quyền &amp; Video 3B1B · Voice OS · Meet chiếu 3D nhiều người)</strong>, cùng{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Học Cảm Giác 3D Holo Atlas 58 bộ phận &amp; WebAR Pro</strong>.
                 </>
               )}
             </p>
@@ -812,16 +809,16 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 onClick={() => setActiveSpotlight('synapse_v2')}
                 className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'synapse_v2'
-                    ? 'bg-white dark:bg-slate-900/90 border-sky-500 ring-2 ring-sky-500/20'
-                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-sky-400/60'
+                    ? 'bg-white dark:bg-slate-900/90 border-amber-500 ring-2 ring-amber-500/20'
+                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400/60'
                 }`}
               >
-                <Orbit className="w-5 h-5 text-sky-600 dark:text-sky-400 mb-1.5 icon-anim-cosmos" />
+                <Crown className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1.5" />
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                  {isEn ? 'Synapse Pre · 3D' : 'Synapse Pre · AI·3D'}
+                  {isEn ? 'Synapse Pre · AI Pro' : 'Synapse Pre · AI Pro'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '30 3D Megastructures' : '30 Đại công trình 3D'}
+                  {isEn ? '21 Labs · 3 Menus · Voice OS' : '21 Lab · 3 Nhóm · Voice OS'}
                 </p>
               </button>
 
@@ -837,10 +834,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               >
                 <Hand className="w-5 h-5 text-teal-600 dark:text-teal-400 mb-1.5 icon-anim-hand" />
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                  {isEn ? 'Spatial 3D Gesture' : 'Học cảm giác 3D'}
+                  {isEn ? 'Holo Atlas & 3D Touch' : 'Học cảm giác & Atlas 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '10-Finger · 6 2D + 15 3D' : '10 ngón · 6 2D + 15 3D'}
+                  {isEn ? '58 Parts · Fullscreen Dock' : '58 Bộ phận · Fullscreen đủ nút'}
                 </p>
               </button>
 
@@ -915,10 +912,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               >
                 <Award className="w-5 h-5 text-cyan-600 dark:text-cyan-400 mb-1.5 icon-anim-award" />
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate tabular-nums">
-                  {isEn ? `${totalExams} Exams & Syn AI` : `${totalExams} Đề & Syn AI`}
+                  {isEn ? `${totalExams} Exams & Dual AI` : `${totalExams} Đề & AI 2 Tầng`}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? 'Upload / Voice / Grading' : 'Tải ảnh / Giọng nói / Chấm'}
+                  {isEn ? '3 Base AIs + Syn AI Pro' : '3 AI Cơ bản · Syn AI Pro'}
                 </p>
               </button>
             </div>
@@ -1009,28 +1006,28 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   type="button"
                   data-ripple="true"
                   onClick={() => scrollToShowcase('synapse_v2')}
-                  className="group sci-frame cs-deck-btn cta-beacon-glow w-full p-3.5 rounded-md bg-gradient-to-br from-sky-600 via-cyan-600 to-blue-700 hover:from-sky-500 hover:via-cyan-500 hover:to-blue-600 border border-sky-300/60 text-white text-left transition-all flex flex-col justify-between gap-2 cursor-pointer"
+                  className="group sci-frame cs-deck-btn cta-beacon-glow w-full p-3.5 rounded-md bg-gradient-to-br from-slate-900 via-[#0d2240] to-blue-900 hover:from-slate-800 hover:to-blue-800 border border-amber-400/55 text-white text-left transition-all flex flex-col justify-between gap-2 cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-8 h-8 rounded-[4px] bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
-                        <Orbit className="w-4 h-4 icon-anim-cosmos" />
+                      <span className="w-8 h-8 rounded-[4px] bg-amber-400/20 border border-amber-300/40 flex items-center justify-center shrink-0">
+                        <Crown className="w-4 h-4 text-amber-300" />
                       </span>
                       <div className="min-w-0">
                         <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
-                          {isEn ? 'Synapse Pre · QR Sensor & 28K GPU' : 'Synapse Pre · Cảm Biến QR & GPU 28K'}
+                          {isEn ? 'Synapse Pre · 21 Labs & Syn AI Pro' : 'Synapse Pre · 21 Lab & Syn AI Pro'}
                         </div>
-                        <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-sky-100/90">
-                          {isEn ? '30 3D Worlds · Real Phone Telemetry' : '30 Công Trình 3D · Hộp Cát Hạt 2 Tay'}
+                        <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-amber-200/95">
+                          {isEn ? '7 Labs · 8 Sims · 6 Sandboxes · Voice OS' : '7 Phòng Lab · 8 Mô phỏng · 6 Sandboxes'}
                         </div>
                       </div>
                     </div>
-                    <ChevronDown className="w-4 h-4 shrink-0 mt-0.5 text-sky-100 group-hover:translate-y-0.5 transition-transform" />
+                    <ChevronDown className="w-4 h-4 shrink-0 mt-0.5 text-amber-200 group-hover:translate-y-0.5 transition-transform" />
                   </div>
                   <p className="text-[11px] leading-relaxed text-sky-50/90">
                     {isEn
-                      ? 'Stream phone accelerometer via QR WebSocket, sculpt 28,000 GPU particles & inspect 30 3D worlds.'
-                      : 'Quét QR truyền cảm biến điện thoại thật, chơi 28.000 hạt lực trường GPU & xoay 30 đại công trình 3D.'}
+                      ? '21 3D/4D labs organized in 3 left-sidebar menus, standalone Syn AI Pro + 3B1B Video, Voice OS & Multi-User Meet 3D.'
+                      : 'Gói 120k/3 tháng mở 21 Lab 3D/4D chia sẵn 3 mục bên trái, Syn AI Pro độc quyền, Voice OS & Meet chiếu 3D chung.'}
                   </p>
                 </button>
 
@@ -1038,7 +1035,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   type="button"
                   data-ripple="true"
                   onClick={() => scrollToShowcase('spatial_3d')}
-                  className="group sci-frame cs-deck-btn w-full p-3.5 rounded-md bg-gradient-to-br from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-500 hover:to-emerald-500 border border-teal-300/60 text-white text-left transition-all flex flex-col justify-between gap-2 cursor-pointer shadow-lg shadow-teal-600/20"
+                  className="group sci-frame cs-deck-btn w-full p-3.5 rounded-md bg-gradient-to-br from-teal-700 via-emerald-700 to-cyan-800 hover:from-teal-600 hover:to-cyan-700 border border-teal-300/60 text-white text-left transition-all flex flex-col justify-between gap-2 cursor-pointer shadow-lg shadow-teal-700/20"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -1047,10 +1044,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       </span>
                       <div className="min-w-0">
                         <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
-                          {isEn ? 'WebAR Desk Pro & 10-Finger 3D' : 'AR Bàn Học Pro & Cảm Giác 3D'}
+                          {isEn ? 'Holo Atlas 3D · 10-Finger & WebAR' : 'Holo Atlas 3D · 10 Ngón & WebAR'}
                         </div>
                         <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-100/90">
-                          {isEn ? 'Rear Cam · Slice Y · PNG Snapshot' : 'Cam Sau · Cắt Lớp Y · Chụp Ảnh AR'}
+                          {isEn ? '58 Parts · X-Ray · Fullscreen Toolbar' : '58 Bộ Phận · Tách Lớp · Toàn Màn Hình Đủ Nút'}
                         </div>
                       </div>
                     </div>
@@ -1058,8 +1055,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </div>
                   <p className="text-[11px] leading-relaxed text-emerald-50/90">
                     {isEn
-                      ? 'Project 3D holograms onto your real desk, calibrate tilt & Y-slice, save PNG & ask AI with Point & Ask.'
-                      : 'Chiếu mô hình lên bàn học thật với Cam sau, độ mờ, mặt cắt Y & Point & Ask Mắt Thần AI.'}
+                      ? 'Atlas 3D model & anatomy viewer with filterable parts, X-Ray, WebAR desk projection & full controls in Fullscreen.'
+                      : 'Quan sát mô hình 3D chi tiết theo giao diện Atlas, tách lớp hàng ngang, WebAR bàn học & đủ công cụ khi bật Toàn màn hình.'}
                   </p>
                 </button>
 
@@ -1735,36 +1732,163 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
           </div>
         </section>
 
-        {/* GRAND ANIMATED OVERVIEW SHOWCASE: SYNAPSE 2.0 · HỌC TƯƠNG TÁC 3D · DIỄN ĐÀN HỌC TẬP */}
+        {/* GRAND ANIMATED OVERVIEW SHOWCASE: FREE VS SYNAPSE PRE · 21 LABS · HOLO ATLAS 3D */}
         <section
-          aria-label={isEn ? 'Virtual Classroom, Interactive 3D and Forum Overview' : 'Giới thiệu sơ lược Synapse 2.0, Học tương tác 3D và Diễn đàn học tập'}
+          aria-label={isEn ? 'Free vs Synapse Pre, 21 3D/4D Labs and Holo Atlas Overview' : 'Giới thiệu Miễn phí & Synapse Pre, 21 Phòng Lab 3D/4D và Học tương tác 3D'}
           className="mt-10 sm:mt-14 space-y-6"
         >
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-widest text-sky-700 dark:text-sky-400">
                 <Orbit className="w-4 h-4 icon-anim-cosmos" />
-                <span>{isEn ? 'INTERACTIVE FLAGSHIP OVERVIEW' : 'GIỚI THIỆU SƠ LƯỢC · KHÔNG GIAN TRẢI NGHIỆM NỔI BẬT'}</span>
+                <span>{isEn ? 'PLATFORM ARCHITECTURE · FREE VS SYNAPSE PRE' : 'GIỚI THIỆU CẬP NHẬT · BẢN MIỄN PHÍ & SYNAPSE PRE'}</span>
               </div>
-              <h3 className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">
+              <h3 className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tight text-balance">
                 {isEn
-                  ? 'Synapse 2.0 · Interactive 3D Lab · Study Forum'
-                  : 'Synapse 2.0 · Học Tương Tác 3D · Diễn Đàn Học Tập'}
+                  ? 'Free Classroom · Synapse Pre (21 Labs & AI Pro) · Holo Atlas 3D'
+                  : 'Lớp Học Free · Synapse Pre (21 Lab & Syn AI Pro) · Holo Atlas 3D'}
               </h3>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md">
               {isEn
-                ? 'Switch preview tabs inside each animated deck, then click launch to enter directly.'
-                : 'Khám phá trực tiếp cấu trúc từng khu vực bên dưới trước khi bấm bước vào trải nghiệm ngay.'}
+                ? 'Compare Free and Synapse Pre tiers clearly, switch preview domains, or enter the classroom directly.'
+                : 'Xem rõ quyền lợi từng phiên bản, khám phá 3 nhóm phòng Lab bản Pre trước khi đăng nhập hoặc vào học thử ngay.'}
             </p>
           </div>
 
-          {/* FRAME 1: SYNAPSE 2.0 (30 ĐẠI CÔNG TRÌNH 3D) */}
+          {/* FRAME 0: BẢNG GIỚI THIỆU MINH BẠCH BẢN FREE VS SYNAPSE PRE */}
+          <div
+            id="visitor-plans-comparison"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-5"
+          >
+            {/* FREE TIER INTRO CARD */}
+            <div className="sci-frame rounded-xl bg-white/95 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 p-6 space-y-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+                <div>
+                  <span className="text-xs font-mono font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    {isEn ? 'STANDARD TIER · ALWAYS OPEN' : 'PHIÊN BẢN CƠ BẢN · MỞ RỘNG'}
+                  </span>
+                  <h4 className="font-display text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">
+                    {isEn ? 'Synapse Free (All Students)' : 'Bản Miễn Phí (Free)'}
+                  </h4>
+                </div>
+                <span className="font-mono text-xs font-bold px-2.5 py-1 rounded bg-emerald-500/12 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 whitespace-nowrap tabular-nums">
+                  {isEn ? '0đ · Forever' : '0đ · Vĩnh viễn'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white">
+                    {isEn ? '3 Base AI Tutors + Pause' : '3 Trợ Lý AI Cơ Bản · Tạm Đóng'}
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Syn Math (Ctrl+D), Syn Physics (Ctrl+F) & Syn Code (Ctrl+G) with Live Vision and Pause button to resume chats anytime.'
+                      : 'Syn Math, Syn Physics & Syn Code kèm Mắt Thần và nút Tạm đóng giữ nguyên nội dung để mở lại trò chuyện tiếp.'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white">
+                    {isEn ? '231 Lessons & 450 Exams' : '231 Bài Giảng & 450 Đề Thi'}
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Math 2D/Oxyz, 5 Physics domains (calibrated 3D Cannon), Sublime 4 Code Trace 1-1 & 0–10 AI grading.'
+                      : 'Toán Oxy/Oxyz, 5 lĩnh vực Vật lí (chuẩn hóa Bệ pháo 3D), IDE Code Trace 1-1 & Chấm ảnh đề 0–10.'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white">
+                    {isEn ? 'Live Meet · Screen Share' : 'Live Meet · Chia Sẻ Màn Hình'}
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Create 6-char rooms for WebRTC video/voice, screen sharing & group discussion.'
+                      : 'Gọi Video/Thoại WebRTC, chia sẻ màn hình bài giảng, chat & giơ tay phát biểu nhóm.'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white">
+                    {isEn ? 'Holo Atlas 3D & WebAR' : 'Holo Atlas 3D & Toàn Màn Hình'}
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? '58-part Atlas 3D & hand control with full toolbar kept active in Fullscreen.'
+                      : 'Atlas mô hình 58 bộ phận chi tiết, X-Quang, WebAR & giữ đủ thanh công cụ khi Toàn màn hình.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* SYNAPSE PRE TIER INTRO CARD */}
+            <div className="sci-frame rounded-xl bg-gradient-to-br from-slate-950 via-[#0e1933] to-slate-950 text-white border border-amber-400/55 p-6 space-y-4 shadow-xl shadow-amber-950/15">
+              <div className="flex items-start justify-between gap-3 pb-3 border-b border-white/10">
+                <div>
+                  <span className="text-xs font-mono font-semibold uppercase tracking-wider text-amber-300">
+                    {isEn ? 'PRO EDITION · ADMIN APPROVED ACCESS' : 'PHIÊN BẢN CAO CẤP · CẤP QUYỀN ADMIN'}
+                  </span>
+                  <h4 className="font-display text-lg sm:text-xl font-bold text-white mt-0.5 flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-amber-300 shrink-0" />
+                    <span>{isEn ? 'Synapse Pre (Premium)' : 'Synapse Pre (Bản Quyền Pro)'}</span>
+                  </h4>
+                </div>
+                <span className="font-mono text-xs font-extrabold px-2.5 py-1 rounded bg-amber-400 text-slate-950 whitespace-nowrap tabular-nums">
+                  {isEn ? '120k VND / 3 mo' : '120.000đ / 3 tháng'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-lg bg-white/5 border border-amber-400/30 space-y-1">
+                  <div className="font-bold text-amber-300">
+                    {isEn ? 'Standalone Syn AI Pro' : 'Syn AI Pro Độc Quyền Riêng'}
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Separated from base tutors: 3-Layer Fast Solve, Deep Olympiad Reasoning, Pro Flowchart & 3B1B Video.'
+                      : 'Tách riêng hoàn toàn cho bản Pre: Giải Siêu Tốc 3 Tầng, Suy Luận Sâu, Sơ Đồ Pro & Tạo Video 3B1B.'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-cyan-400/30 space-y-1">
+                  <div className="font-bold text-cyan-300">
+                    {isEn ? '21 Labs in 3 Sidebar Menus' : '21 Phòng Lab Xếp Gọn 3 Nhóm Trái'}
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Instant sidebar access: 7 Pre Labs, 8 Simulations (Rocket, Brayton, 30 Worlds) & 6 Sandboxes.'
+                      : '7 Phòng Lab · 8 Mô phỏng (Tên lửa, Phản lực, 30 Công trình) · 6 Sandboxes (28K GPU, AlgoCity).'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-emerald-400/30 space-y-1">
+                  <div className="font-bold text-emerald-300">
+                    {isEn ? 'Multi-User Shared 3D Meet' : 'Meet Chiếu Mô Hình 3D Chung'}
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Collaboratively rotate, explode parts, inspect layers & upload .glb/.gltf/.obj in real time.'
+                      : 'Cùng xoay, tách lớp, soi từng bộ phận mô hình 3D đồng bộ nhiều người & tải lên file .glb/.obj.'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/5 border border-sky-400/30 space-y-1">
+                  <div className="font-bold text-sky-300">
+                    {isEn ? 'Voice OS & Plan Tracking' : 'Voice OS & Theo Dõi Hạn Gói'}
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    {isEn
+                      ? 'Hands-free Voice OS (Alt+Space), transparent registration/expiry dates & instant renewal requests.'
+                      : 'Ra lệnh giọng nói toàn hệ thống (Alt+Space), hiển thị rõ ngày đăng ký/hết hạn & Gia hạn gói.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FRAME 1: SYNAPSE PRE (21 PHÒNG LAB · 3 NHÓM MENU TRÁI · SYN AI PRO) */}
           <div
             id="visitor-synapse-overview"
-            style={{ ['--holo-accent' as string]: '#38bdf8', ['--holo-secondary' as string]: '#818cf8' }}
+            style={{ ['--holo-accent' as string]: '#38bdf8', ['--holo-secondary' as string]: '#f59e0b' }}
             className={`scroll-mt-24 holo-card-frame rounded-lg shadow-2xl shadow-sky-950/25 ${
-              focusedShowcase === 'synapse_v2' ? 'showcase-focus-active ring-2 ring-sky-400' : ''
+              focusedShowcase === 'synapse_v2' ? 'showcase-focus-active ring-2 ring-amber-400' : ''
             }`}
           >
             <div className="holo-conic-ring" aria-hidden="true" />
@@ -1776,7 +1900,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               />
               <div
                 aria-hidden="true"
-                className="synapse-aurora-blob-b pointer-events-none -bottom-24 right-10 w-80 h-80 rounded-full bg-indigo-500/20 blur-3xl absolute"
+                className="synapse-aurora-blob-b pointer-events-none -bottom-24 right-10 w-80 h-80 rounded-full bg-amber-500/15 blur-3xl absolute"
               />
               <span
                 aria-hidden="true"
@@ -1784,35 +1908,35 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               />
 
               <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
-                {/* Left Content & Interactive 4-Domain Preview */}
+                {/* Left Content & Interactive 4-Domain Preview matching 3 Sidebar Groups + AI Pro */}
                 <div className="lg:col-span-7 space-y-4">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-sky-500/15 border border-sky-400/40 text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-sky-300">
-                      <Orbit className="w-4 h-4 icon-anim-cosmos" />
-                      <span>{isEn ? 'SYNAPSE 2.0 · 30 WEBGL 3D WORLDS' : 'SYNAPSE 2.0 · 30 ĐẠI CÔNG TRÌNH 3D'}</span>
+                    <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-amber-500/15 border border-amber-400/40 text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-amber-300">
+                      <Crown className="w-4 h-4" />
+                      <span>{isEn ? 'SYNAPSE PRE · 21 LABS IN 3 SIDEBAR MENUS' : 'SYNAPSE PRE · 21 LAB 3D/4D TRÊN MENU TRÁI'}</span>
                     </span>
                   </div>
 
                   <h4 className="font-display text-xl sm:text-2xl lg:text-[1.75rem] font-semibold tracking-tight text-white leading-snug">
                     {isEn
-                      ? 'Explore 30 Interactive 3D Scientific Chambers with Live Formulas'
-                      : '30 Không Gian Mô Phỏng Vũ Trụ, Vật Lí, Vi Tính & Toán Học 60 FPS'}
+                      ? '21 WebGL Labs Organized into 3 Left-Sidebar Menus + Dedicated Syn AI Pro'
+                      : '21 Không Gian Lab, Mô Phỏng & Sandboxes 3D/4D + Trợ Lý Syn AI Pro Riêng'}
                   </h4>
 
                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
                     {isEn
-                      ? 'Step inside large-scale 3D structures on your browser—rotate 360°, adjust experimental variables in real time, and inspect live physical & mathematical equations.'
-                      : 'Bước trực tiếp vào từng đại công trình 3D trên trình duyệt: xoay 360°, phóng to cấu trúc hạt – quang học – mạng nơ-ron và điều chỉnh tham số công thức sống ngay trên mô hình.'}
+                      ? 'When Synapse Pre is active, all 21 interactive chambers appear neatly under 3 sidebar groups (Pre Labs, Simulations, Sandboxes) — paired with Syn AI Pro, Voice OS, and transparent subscription dates.'
+                      : 'Khi kích hoạt Synapse Pre, toàn bộ 21 không gian được xếp gọn vào 3 nút ngay thanh menu trái (Phòng Lab · Mô phỏng · Sandboxes), đi cùng Syn AI Pro riêng biệt, Voice OS (Alt+Space) & thẻ theo dõi ngày hết hạn gói.'}
                   </p>
 
                   {/* Interactive Domain Tabs */}
                   <div className="flex flex-wrap gap-2 pt-1">
                     {(
                       [
-                        { id: 'physics', vi: 'Vật lí & Lượng tử', en: 'Physics & Quantum' },
-                        { id: 'space', vi: 'Vũ trụ & Thiên văn', en: 'Cosmos & Space' },
-                        { id: 'cs', vi: 'Vi tính & AI 3D', en: 'CS & AI Core' },
-                        { id: 'math', vi: 'Toán học 3D', en: '3D Mathematics' },
+                        { id: 'physics', vi: '7 Phòng Lab', en: '7 Pre Labs' },
+                        { id: 'space', vi: '8 Mô Phỏng 3D/4D', en: '8 Simulations' },
+                        { id: 'cs', vi: '6 Sandboxes AI/GPU', en: '6 Sandboxes' },
+                        { id: 'math', vi: 'Syn AI Pro & Voice OS', en: 'Syn AI Pro & Voice' },
                       ] as const
                     ).map((tab) => {
                       const active = synapsePreviewDomain === tab.id;
@@ -1823,7 +1947,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                           onClick={() => setSynapsePreviewDomain(tab.id)}
                           className={`cs-deck-btn px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer border ${
                             active
-                              ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sm shadow-sky-400/30'
+                              ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm shadow-amber-400/30'
                               : 'bg-white/6 hover:bg-white/14 text-slate-200 border-white/15'
                           }`}
                         >
@@ -1833,35 +1957,35 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     })}
                   </div>
 
-                  {/* Highlighted Chambers for Active Domain */}
+                  {/* Highlighted Chambers for Active Group */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     {(
                       {
                         physics: [
-                          { title: isEn ? 'CERN LHC Collider' : 'Máy gia tốc CERN LHC', desc: isEn ? 'Magnetic beam bending' : 'Từ trường bẻ cong chùm hạt' },
-                          { title: isEn ? 'Double-Slit Laser' : 'Giao thoa Laser Khe kép', desc: isEn ? 'Live λ & fringe spacing' : 'Chỉnh bước sóng λ & vân sáng' },
-                          { title: isEn ? 'Tokamak Fusion & 7T MRI' : 'Lò Tokamak & MRI 7T', desc: isEn ? 'Plasma confinement ring' : 'Vòng plasma từ trường siêu dẫn' },
+                          { title: isEn ? 'Quantum Holodeck 3D' : 'Máy Tính Lượng Tử 3D', desc: isEn ? 'Bloch sphere & Bell gates' : 'Quả cầu Bloch & cổng CNOT' },
+                          { title: isEn ? 'Nanobot Bio-Swarm 4D' : 'Nanobot Y Sinh 4D', desc: isEn ? '36 vascular swarm bots' : '36 robot nano phá huyết khối' },
+                          { title: isEn ? '3D Hardware & VOM Repair' : 'Phẫu Thuật Thiết Bị & VOM', desc: isEn ? 'USB-C GaN, BMS & PCB probe' : 'Đo que VOM & hàn linh kiện' },
                         ],
                         space: [
-                          { title: isEn ? 'James Webb Telescope' : 'Kính thiên văn James Webb', desc: isEn ? '18-mirror gold array' : 'Hệ 18 gương vàng L2' },
-                          { title: isEn ? 'Dyson Black Hole' : 'Hố đen & Vòng Dyson', desc: isEn ? 'Relativistic accretion disk' : 'Đĩa bồi tụ & chân trời sự kiện' },
-                          { title: isEn ? 'Wormhole & Solar Tower' : 'Hố sâu & Tháp Mặt Trời', desc: isEn ? 'Spacetime curvature mesh' : 'Lưới cong không-thời gian' },
+                          { title: isEn ? 'Rocket & Brayton Jet 3D' : 'Phóng Tên Lửa & Phản Lực', desc: isEn ? 'Cutaway LOX & shock cones' : 'Tách tầng đẩy & tách lớp tua-bin' },
+                          { title: isEn ? '6-DOF Robot & 3D Ballistics' : 'Robot 6-DOF & Bắn Pháo 3D', desc: isEn ? 'Live IK solver & drag arcs' : 'Giải IK 6 khớp & đạn đạo gió' },
+                          { title: isEn ? '4D Space & 30 Megastructures' : 'Không Gian 4D & 30 Công Trình', desc: isEn ? 'Tesseract, LHC & Webb 3D' : 'Siêu lập phương, LHC & Webb' },
                         ],
                         cs: [
-                          { title: isEn ? 'LiDAR SLAM Core' : 'Cảm biến LiDAR SLAM', desc: isEn ? '360° point-cloud scan' : 'Quét đám mây điểm 360°' },
-                          { title: isEn ? 'Photonic Tensor Chip' : 'Chip Quang tử Tensor', desc: isEn ? 'Optical matrix waveguides' : 'Ống dẫn sóng nhân ma trận' },
-                          { title: isEn ? '3D Neural & Dijkstra' : 'Mạng Nơ-ron & Đồ thị 3D', desc: isEn ? 'Live shortest-path pulse' : 'Truyền xung tìm đường ngắn nhất' },
+                          { title: isEn ? 'What-If Physics 3D' : 'Vũ Trụ "Nếu Định Luật Đổi"', desc: isEn ? 'Break G, c & Planck h live' : 'Thử hấp dẫn 1/r³, đổi c & h' },
+                          { title: isEn ? 'AlgoCity 3D Metropolis' : 'Thành Phố Thuật Toán 3D', desc: isEn ? 'Dijkstra, 2D DP & TLE bottlenecks' : 'Tháp DP, Segment Tree & TLE' },
+                          { title: isEn ? '28K GPU & Text/Paper→Sim' : '28K Hạt GPU & Sinh Mô Phỏng', desc: isEn ? 'Dual-hand GLSL & prompt to 3D' : '2 tay điều khiển hạt & gõ đề→3D' },
                         ],
                         math: [
-                          { title: isEn ? 'Riemann & Oxyz Mesh' : 'Mặt cầu Riemann & Oxyz', desc: isEn ? 'Complex plane mapping' : 'Ánh xạ mặt phẳng phức 3D' },
-                          { title: isEn ? 'Platonic Polyhedra' : 'Khối đa diện Platon', desc: isEn ? 'Vertex-edge-face duality' : 'Đối ngẫu đỉnh - cạnh - mặt' },
-                          { title: isEn ? '3D Surface Integrals' : 'Tích phân mặt cong 3D', desc: isEn ? 'Gradient & flux vectors' : 'Vector thông lượng qua mặt cong' },
+                          { title: isEn ? '3-Layer Fast AI Pro' : 'Syn AI Pro · Giải 3 Tầng', desc: isEn ? 'Summary, strategy & proof' : 'Tóm tắt, chiến lược & đáp án chuẩn' },
+                          { title: isEn ? 'Deep Reasoning & 3B1B Reel' : 'Suy Luận Sâu & Video 3B1B', desc: isEn ? 'Olympiad checks & .webm export' : 'Bẫy điều kiện biên & dựng video' },
+                          { title: isEn ? 'Voice OS & Pause/Resume' : 'Voice OS & Tạm Đóng Chat', desc: isEn ? 'Alt+Space control & keep thread' : 'Điều khiển giọng nói & giữ chat' },
                         ],
                       }[synapsePreviewDomain]
                     ).map((item, idx) => (
                       <div
                         key={idx}
-                        className="rounded-md bg-white/6 border border-sky-300/25 px-3 py-2.5 space-y-0.5 transition-all hover:border-sky-300/60 hover:bg-white/10"
+                        className="rounded-md bg-white/6 border border-sky-300/25 px-3 py-2.5 space-y-0.5 transition-all hover:border-amber-300/60 hover:bg-white/10"
                       >
                         <div className="text-xs font-semibold text-white truncate">{item.title}</div>
                         <div className="text-[11px] text-sky-200/85 leading-snug">{item.desc}</div>
@@ -1875,14 +1999,14 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       type="button"
                       data-ripple="true"
                       onClick={handleEnterSynapseV2}
-                      className="group/btn cs-deck-btn cta-beacon-glow px-6 py-3 rounded-md bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400 hover:from-sky-300 hover:to-blue-300 text-slate-950 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                      className="group/btn cs-deck-btn cta-beacon-glow px-6 py-3 rounded-md bg-gradient-to-r from-amber-400 via-orange-400 to-cyan-400 hover:from-amber-300 hover:to-cyan-300 text-slate-950 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <Orbit className="w-4 h-4 icon-anim-cosmos" />
-                      <span>{isEn ? 'Launch Synapse 2.0 Classroom' : 'Bước vào Synapse 2.0 ngay'}</span>
+                      <Crown className="w-4 h-4" />
+                      <span>{isEn ? 'Explore Synapse Pre Workspace' : 'Xem Không Gian Synapse Pre'}</span>
                       <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </button>
                     <span className="text-xs text-slate-400">
-                      {isEn ? '30 worlds · Direct browser launch' : 'Mở ngay 30 không gian 3D · Không cần cài đặt'}
+                      {isEn ? '21 Labs across 3 Sidebar Groups · 120k/3 mo' : '7 Lab · 8 Mô phỏng · 6 Sandboxes · Mở qua Admin'}
                     </span>
                   </div>
                 </div>
@@ -1900,12 +2024,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     />
 
                     <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-sky-300/95">
-                      <span>SYNAPSE 2.0 · 360° WEBGL</span>
-                      <span className="tabular-nums px-2 py-0.5 rounded bg-sky-500/15 border border-sky-400/30 text-cyan-200">
-                        {synapsePreviewDomain === 'physics' && 'E = γ·m₀c²'}
-                        {synapsePreviewDomain === 'space' && 'Rs = 2GM/c²'}
-                        {synapsePreviewDomain === 'cs' && 'y = σ(W·x + b)'}
-                        {synapsePreviewDomain === 'math' && '∬ F·dS = ∭ ∇·F dV'}
+                      <span>SYNAPSE PRE · 21 LABS</span>
+                      <span className="tabular-nums px-2 py-0.5 rounded bg-sky-500/15 border border-sky-400/30 text-amber-200">
+                        {synapsePreviewDomain === 'physics' && '7 PRE LABS'}
+                        {synapsePreviewDomain === 'space' && '8 SIMULATIONS'}
+                        {synapsePreviewDomain === 'cs' && '6 SANDBOXES'}
+                        {synapsePreviewDomain === 'math' && 'AI PRO + VOICE'}
                       </span>
                     </div>
 
@@ -1971,12 +2095,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
                     <div className="relative z-10 flex items-center justify-between gap-2 text-[11px] text-slate-300 border-t border-white/10 pt-2.5">
                       <span>
-                        {synapsePreviewDomain === 'physics' && (isEn ? '9 Physics & Quantum Chambers' : '9 Phòng Vật lí & Lượng tử')}
-                        {synapsePreviewDomain === 'space' && (isEn ? '7 Space & Astrophysics Chambers' : '7 Trạm Vũ trụ & Thiên văn')}
-                        {synapsePreviewDomain === 'cs' && (isEn ? '8 AI, Robotics & CS Chambers' : '8 Lõi AI, LiDAR & Vi tính')}
-                        {synapsePreviewDomain === 'math' && (isEn ? '6 Pure Math & Geometry Chambers' : '6 Không gian Toán học 3D')}
+                        {synapsePreviewDomain === 'physics' && (isEn ? 'Sidebar Group 1: 7 Interactive Pre Labs' : 'Nhóm 1: 7 Phòng Lab 3D/4D Chuyên Sâu')}
+                        {synapsePreviewDomain === 'space' && (isEn ? 'Sidebar Group 2: 8 Engineering & Space Sims' : 'Nhóm 2: 8 Mô Phỏng Hàng Không & Vũ Trụ')}
+                        {synapsePreviewDomain === 'cs' && (isEn ? 'Sidebar Group 3: 6 AI & Physics Sandboxes' : 'Nhóm 3: 6 Sandboxes AI, Code & Hạt GPU')}
+                        {synapsePreviewDomain === 'math' && (isEn ? 'Standalone Syn AI Pro + Voice OS + Meet 3D' : 'Syn AI Pro riêng · Voice OS · Meet 3D')}
                       </span>
-                      <span className="font-mono text-sky-300 font-semibold tabular-nums">30 / 30</span>
+                      <span className="font-mono text-amber-300 font-semibold tabular-nums">21 / 21</span>
                     </div>
                   </div>
                 </div>
@@ -1984,7 +2108,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             </div>
           </div>
 
-          {/* FRAME 2: HỌC TƯƠNG TÁC 3D (10-FINGER GESTURE & OXYZ) */}
+          {/* FRAME 2: HỌC TƯƠNG TÁC 3D · HOLO ATLAS 58 BỘ PHẬN & TOÀN MÀN HÌNH */}
           <div
             id="visitor-spatial-overview"
             style={{ ['--holo-accent' as string]: '#14b8a6', ['--holo-secondary' as string]: '#38bdf8' }}
@@ -2013,9 +2137,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 <div className="lg:col-span-5 order-2 lg:order-1">
                   <div className="relative rounded-md border border-teal-400/35 bg-[#020f13] p-5 overflow-hidden min-h-[275px] flex flex-col justify-between shadow-inner">
                     <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-teal-300/95">
-                      <span>{spatialPreviewTab === 'models3d' ? '15 MODELS · 3D IK' : '6 LABS · 2D STUDIO'}</span>
+                      <span>{spatialPreviewTab === 'models3d' ? 'HOLO ATLAS · 58 PARTS' : '6 LABS · 2D STUDIO'}</span>
                       <span className="px-2 py-0.5 rounded bg-teal-500/15 border border-teal-400/30 text-emerald-300">
-                        10-FINGER LOCK
+                        FULLSCREEN HUD
                       </span>
                     </div>
 
@@ -2098,8 +2222,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <span>
                         {spatialPreviewTab === 'models3d'
                           ? isEn
-                            ? 'Pinch to zoom, spread to explode 3D layers'
-                            : 'Chụm ngón phóng to, xòe tay tách lớp mô hình 3D'
+                            ? 'Atlas filter, X-Ray, explode row & full HUD in Fullscreen'
+                            : 'Lọc bộ phận, X-Quang, tách hàng & đủ công cụ khi Toàn màn hình'
                           : isEn
                           ? 'Drag vertices & tangents directly on 2D canvas'
                           : 'Kéo đỉnh đa giác, tiêu điểm conic & tiếp tuyến 2D'}
@@ -2113,22 +2237,22 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 <div className="lg:col-span-7 order-1 lg:order-2 space-y-4">
                   <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-teal-500/15 border border-teal-400/40 text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-teal-300">
                     <Hand className="w-4 h-4 icon-anim-hand" />
-                    <span>{isEn ? 'INTERACTIVE 3D · 10-FINGERTIP WEBCAM & OXYZ LAB' : 'HỌC TƯƠNG TÁC 3D · CẢM BIẾN 10 ĐẦU NGÓN TAY'}</span>
+                    <span>{isEn ? 'HOLO ATLAS 3D · 10-FINGER GESTURE & WEBAR PRO' : 'HOLO ATLAS 3D · 58 BỘ PHẬN · CẢM BIẾN 10 NGÓN TAY'}</span>
                   </div>
 
                   <h4 className="font-display text-xl sm:text-2xl lg:text-[1.75rem] font-semibold tracking-tight text-white leading-snug">
                     {isEn
-                      ? 'Sculpt 2D Geometry & Manipulate 15 Realistic 3D Models by Hand or Mouse'
-                      : 'Xưởng Hình Học 2D & 15 Mô Hình 3D Thực Tế Điều Khiển Trực Quan'}
+                      ? 'Atlas 3D Model Inspector, WebAR Desk Pro & 10-Finger / Mouse Control'
+                      : 'Giao Diện Atlas 3D Trực Quan (58 Bộ Phận), WebAR Bàn Học & 10 Ngón Tay'}
                   </h4>
 
                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
                     {isEn
-                      ? 'Smooth 10-fingertip tracking with anti-jitter locking and single/dual-hand modes—plus instant mouse and touch controls if you prefer studying without a webcam.'
-                      : 'Thuật toán nhận diện cố định 10 đầu ngón tay chống rung loạn kèm nút chọn 1 hoặc 2 tay, độ nhạy tùy chỉnh — đồng thời hỗ trợ kéo chuột và chạm cảm ứng trực tiếp khi không mở camera.'}
+                      ? 'Explore 3D models & anatomical/mechanical structures with side-by-side Atlas part search, horizontal row explode, X-Ray mode, 10-finger webcam gestures or mouse drag — with every tool preserved even in Fullscreen mode.'
+                      : 'Quan sát mô hình 3D với bảng Atlas tra cứu từng bộ phận, tách lớp hàng ngang cố định, chế độ X-Quang, điều khiển 10 ngón tay hoặc kéo chuột mượt — giữ nguyên đầy đủ thanh tính năng kể cả khi bật Toàn màn hình.'}
                   </p>
 
-                  {/* Interactive Tab Toggle: 15 3D Models vs 6 2D Geometry Labs */}
+                  {/* Interactive Tab Toggle: Atlas 3D Models vs 6 2D Geometry Labs */}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <button
                       type="button"
@@ -2139,7 +2263,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                           : 'bg-white/6 hover:bg-white/14 text-slate-200 border-white/15'
                       }`}
                     >
-                      {isEn ? '15 Realistic 3D Models' : '15 Mô hình 3D Thực tế'}
+                      {isEn ? 'Holo Atlas & 15+ 3D Models' : 'Holo Atlas & 15+ Mô hình 3D'}
                     </button>
                     <button
                       type="button"
@@ -2158,9 +2282,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     {(spatialPreviewTab === 'models3d'
                       ? [
-                          { title: isEn ? 'Turbofan Jet Engine' : 'Động cơ phản lực Turbofan', desc: isEn ? 'Exploded turbine rotors' : 'Tách lớp cánh quạt & buồng đốt' },
-                          { title: isEn ? 'Hand-IK Robotic Arm' : 'Cánh tay Robot IK 6 bậc', desc: isEn ? 'Follows finger joints live' : 'Bám theo khớp tay thời gian thực' },
-                          { title: isEn ? 'Solar Orrery & Wind Tunnel' : 'Hệ Mặt Trời & Hầm Gió', desc: isEn ? 'Orbital Kepler & airflow' : 'Quỹ đạo Kepler & dòng khí động lực' },
+                          { title: isEn ? 'Atlas Part Inspector (58)' : 'Atlas Soi 58 Bộ Phận', desc: isEn ? 'Search, isolate, X-Ray & row' : 'Tìm kiếm, ẩn/hiện, X-Quang & tách hàng' },
+                          { title: isEn ? 'Fullscreen Complete HUD' : 'Toàn Màn Hình Đủ Nút', desc: isEn ? 'All controls stay reachable' : 'Giữ nguyên toàn bộ tính năng khi phóng to' },
+                          { title: isEn ? 'WebAR Desk Pro & Scan' : 'WebAR Bàn Học & Quét AI', desc: isEn ? 'Rear cam, Y-slice & PNG save' : 'Cam sau, Cắt Y, Lưu PNG & Dựng AI' },
                         ]
                       : [
                           { title: isEn ? 'Euler Triangle & Circle' : 'Đường tròn Euler & Compa', desc: isEn ? 'Live orthocenter & centroid' : 'Di chuyển đỉnh thấy trực tâm đổi' },
@@ -2187,11 +2311,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       className="group/btn cs-deck-btn px-6 py-3 rounded-md bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 hover:from-teal-300 hover:to-sky-300 text-slate-950 font-semibold text-xs sm:text-sm shadow-lg shadow-teal-500/25 flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Hand className="w-4 h-4 icon-anim-hand" />
-                      <span>{isEn ? 'Launch Interactive 3D Lab' : 'Vào Học tương tác 3D ngay'}</span>
+                      <span>{isEn ? 'Launch Holo Atlas 3D Lab' : 'Vào Học Cảm Giác & Atlas 3D ngay'}</span>
                       <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </button>
                     <span className="text-xs text-slate-400">
-                      {isEn ? 'Works with Webcam or Mouse/Touch' : 'Dùng được bằng Webcam hoặc Chuột / Cảm ứng'}
+                      {isEn ? 'Works with Webcam, Mouse/Touch & Fullscreen' : 'Dùng bằng Webcam, Chuột / Cảm ứng & Toàn màn hình'}
                     </span>
                   </div>
                 </div>
@@ -2505,50 +2629,50 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* 01: Synapse v2 */}
+            {/* 01: Synapse Pre (21 Labs in 3 Sidebar Menus) */}
             {(featureCategory === 'all' || featureCategory === 'simulation') && (
               <div
                 data-ripple="true"
                 onClick={handleEnterSynapseV2}
-                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-sky-300/85 dark:border-sky-500/35 hover:border-sky-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-amber-300/85 dark:border-amber-500/35 hover:border-amber-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
               >
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-sky-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-amber-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
                 />
                 <svg
                   aria-hidden="true"
                   viewBox="0 0 120 120"
                   className="absolute right-2 top-2 w-20 h-20 opacity-20 dark:opacity-30 pointer-events-none animate-orbit-slow"
                 >
-                  <circle cx="60" cy="60" r="42" fill="none" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="6 5" />
+                  <circle cx="60" cy="60" r="42" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="6 5" />
                   <circle cx="60" cy="60" r="24" fill="none" stroke="#38bdf8" strokeWidth="1.3" />
                 </svg>
                 <div className="relative z-10 space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="w-11 h-11 rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Orbit className="w-6 h-6 icon-anim-cosmos" />
+                    <div className="w-11 h-11 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Crown className="w-6 h-6" />
                     </div>
-                    <span className="font-mono text-[11px] font-semibold text-sky-700 dark:text-sky-300">
-                      01 · WEBGL 3D
+                    <span className="font-mono text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                      01 · SYNAPSE PRE
                     </span>
                   </div>
-                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors">
-                    {isEn ? 'Synapse Pre · 30 Worlds, QR Sensor & 28K GPU' : 'Synapse Pre · 30 Công Trình, Cảm Biến QR & GPU 28K'}
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
+                    {isEn ? 'Synapse Pre · 21 Labs (3 Sidebar Menus) & Voice OS' : 'Synapse Pre · 21 Lab (3 Nhóm Menu) & Voice OS'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Pair your phone via QR WebSocket Oscilloscope, control 28,000 dual-hand GPU force-field particles, plus 30 3D Megastructures, 3D Galaxy, Text-to-Sim, Paper-to-Sim & FFT 3D.'
-                      : 'Kết nối điện thoại qua QR WebSocket đo gia tốc trên Dao động ký đôi, điều khiển 28.000 hạt lực trường GPU bằng 2 tay cùng 30 Đại công trình 3D, Sinh Mô Phỏng AI & Quét Giấy Nháp.'}
+                      ? 'Organized cleanly into 7 Pre Labs, 8 Simulations (Rocket, Brayton, 30 Worlds, Ballistics), and 6 Sandboxes (28K GPU, AlgoCity, What-If Physics) plus Voice OS & plan expiry tracking.'
+                      : 'Tổ chức gọn trên menu trái: 7 Phòng Lab, 8 Mô phỏng (Tên lửa, Phản lực, Bắn pháo, 30 Đại công trình) & 6 Sandboxes (28K GPU, AlgoCity, Định luật đổi), kèm Voice OS & quản lí hạn gói.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                      <span>{isEn ? 'Phone Sensor QR Lab + 28K GPU Particle Sandbox' : 'Cảm biến Điện thoại QR + Hộp cát Hạt GPU 28.000 hạt'}</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>{isEn ? '21 3D/4D Labs across 3 Left-Sidebar Menus' : '21 Phòng Lab, Mô phỏng & Sandboxes ngay Menu trái'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                      <span>{isEn ? '30 3D Megastructures + Paper/Text-to-Sim AI' : '30 Đại công trình 3D + Sinh Mô Phỏng từ Chữ & Ảnh'}</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>{isEn ? 'Voice OS (Alt+Space) + QR Telemetry + Admin Plan Control' : 'Voice OS (Alt+Space) + Gia hạn gói & Admin cấp quyền'}</span>
                     </li>
                   </ul>
                 </div>
@@ -2558,15 +2682,15 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     e.stopPropagation();
                     handleEnterSynapseV2();
                   }}
-                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Launch Synapse Pre Lab' : 'Mở Synapse Pre & Lab Mới'}</span>
+                  <span>{isEn ? 'Explore Synapse Pre Labs' : 'Khám phá Synapse Pre & 21 Lab'}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             )}
 
-            {/* 02: Spatial 3D 10-Fingertip Gesture Lab */}
+            {/* 02: Spatial 3D Holo Atlas + 10-Fingertip Gesture + Fullscreen */}
             {(featureCategory === 'all' || featureCategory === 'simulation') && (
               <div
                 data-ripple="true"
@@ -2583,25 +2707,25 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <Hand className="w-6 h-6 icon-anim-hand" />
                     </div>
                     <span className="font-mono text-[11px] font-semibold text-teal-700 dark:text-teal-300">
-                      02 · 10-FINGER AI
+                      02 · HOLO ATLAS 3D
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-300 transition-colors">
-                    {isEn ? 'WebAR Desk Pro & 10-Finger 3D' : 'WebAR Bàn Học Pro & Cảm Biến 10 Ngón Tay'}
+                    {isEn ? 'Holo Atlas 3D (58 Parts) & WebAR Desk Pro' : 'Holo Atlas 3D (58 Bộ Phận) & WebAR Pro'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Project 3D holograms onto your real desk (rear/front cam switch, opacity slider, tilt, Y-slice & PNG capture), sculpt 6 2D + 15 3D models by hand, plus Point & Ask Live Co-Pilot.'
-                      : 'Chiếu mô hình lên bàn học thật với Camera Trước/Sau, chỉnh độ mờ, nghiêng mặt bàn, cắt lớp Y & lưu ảnh PNG; điều khiển 6 xưởng 2D + 15 mô hình 3D bằng 10 đầu ngón tay + Point & Ask.'}
+                      ? 'Atlas multi-part 3D viewer (filter parts, X-Ray, horizontal explode row), WebAR desk projection (rear cam, Y-slice, PNG), 10-finger / mouse controls, and full tools preserved in Fullscreen.'
+                      : 'Giao diện Atlas tra cứu 58 bộ phận chi tiết, bật X-Quang, tách hàng ngang cố định, chiếu WebAR bàn học, điều khiển 10 ngón / chuột & giữ trọn thanh tính năng khi Toàn màn hình.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                      <span>{isEn ? 'AR Desk Pro: Rear cam, Y-slice, PNG capture & reticle' : 'AR Bàn Học Pro: Đổi Cam sau, mặt cắt Y & chụp ảnh PNG'}</span>
+                      <span>{isEn ? 'Fullscreen keeps every Atlas & 3D control accessible' : 'Toàn màn hình giữ đầy đủ thanh điều khiển & danh sách bộ phận'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                      <span>{isEn ? 'Freehand 2D/3D + AI upload + mouse/touch fallback' : 'Tự do tạo hình + Upload AI + kéo chuột mượt'}</span>
+                      <span>{isEn ? 'WebAR Desk Pro + AI Object Scanner + Mouse/Touch support' : 'WebAR Bàn Học Pro + AI Tạo Mô Hình + Kéo chuột mượt'}</span>
                     </li>
                   </ul>
                 </div>
@@ -2613,7 +2737,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Open Spatial 3D & AR Pro' : 'Vào Học 3D & AR Bàn Học Pro'}</span>
+                  <span>{isEn ? 'Open Holo Atlas & AR Pro' : 'Vào Holo Atlas 3D & AR Pro'}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -2857,7 +2981,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </div>
             )}
 
-            {/* 07: 3 Independent AI Tutors + Voice Recognition */}
+            {/* 07: Dual-Tier AI (3 Base Tutors + Standalone Syn AI Pro) + Pause/Resume */}
             {(featureCategory === 'all' || featureCategory === 'curriculum_ai') && (
               <div
                 data-ripple="true"
@@ -2877,25 +3001,25 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <Mic className="w-6 h-6 icon-anim-wave" />
                     </div>
                     <span className="font-mono text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
-                      07 · SYN AI ×3
+                      07 · DUAL AI &amp; PAUSE
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
-                    {isEn ? 'Syn AI Live Co-Pilot & Syn Reel Video' : 'Syn AI Mắt Thần Co-Pilot & Syn Reel Video 3B1B'}
+                    {isEn ? '3 Base AIs + Standalone Syn AI Pro & Pause' : '3 AI Cơ Bản · Syn AI Pro Độc Quyền & Tạm Đóng'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Unified across Syn Math, Syn Physics & Syn Code (Ctrl+D/F/G): Live Screen/Canvas Vision Co-Pilot with instant Voice Barge-In, plus Syn Reel Mini-Chat creating 5-scene 3B1B Math/Physics videos.'
-                      : 'Tích hợp đồng bộ vào cả 3 động cơ Syn Math · Syn Physics · Syn Code: Mắt Thần xem trực tiếp màn hình/canvas + Ngắt lời Voice tức thì & Syn Reel dựng Video 3B1B xuất file .webm.'}
+                      ? 'Free includes Syn Math/Physics/Code (Ctrl+D/F/G) with Live Vision & Pause/Resume continuity; Synapse Pre unlocks separate Syn AI Pro with 3-Layer Fast Solve, Deep Reasoning, Pro Flowchart & 3B1B Video.'
+                      : 'Bản Free có 3 AI (Syn Math · Syn Physics · Syn Code) kèm Mắt Thần & nút Tạm đóng giữ hội thoại; Synapse Pre mở khóa Syn AI Pro riêng biệt giải 3 tầng siêu tốc, Suy luận sâu & Video 3B1B.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                      <span>{isEn ? 'Live Screen/Canvas Co-Pilot + Instant Voice Barge-In' : 'Mắt Thần xem màn hình/canvas + Ngắt lời giọng nói tức thì'}</span>
+                      <span>{isEn ? 'Pause Minichat & resume conversation seamlessly anytime' : 'Nút Tạm đóng giữ nguyên lịch sử để mở lại trò chuyện tiếp'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                      <span>{isEn ? 'Syn Reel Mini-Chat: AI 3Blue1Brown Video (.webm)' : 'Syn Reel Mini-Chat: dựng Video 3B1B Toán/Lí (.webm)'}</span>
+                      <span>{isEn ? 'Opaque zero-lag UI + Screen/Canvas Vision + 3B1B .webm' : 'Khung chat mượt không giật + Mắt Thần & Dựng Video 3B1B'}</span>
                     </li>
                   </ul>
                 </div>
@@ -2908,7 +3032,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Launch Syn AI & Syn Reel' : 'Mở Syn AI Co-Pilot & Syn Reel'}</span>
+                  <span>{isEn ? 'Open Syn AI Chat Studio' : 'Mở Syn AI & Syn AI Pro'}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -3130,13 +3254,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               : 'Synapse · Hệ thống giáo dục mô phỏng vũ trụ học thuật'}
           </span>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
-            <span>{isEn ? 'Synapse Pre (QR & 28K GPU)' : 'Synapse Pre (QR & 28K GPU)'}</span>
+            <span>{isEn ? 'Synapse Pre (21 Labs · 3 Sidebar Groups)' : 'Synapse Pre (21 Lab · 3 Nhóm Menu)'}</span>
             <span aria-hidden="true">·</span>
-            <span>{isEn ? 'WebAR Desk Pro (10-Finger)' : 'AR Bàn Học Pro'}</span>
+            <span>{isEn ? 'Holo Atlas 3D (58 Parts)' : 'Holo Atlas 3D (58 Bộ Phận)'}</span>
             <span aria-hidden="true">·</span>
-            <span>{isEn ? 'Live Co-Pilot & Syn Reel' : 'Syn AI Mắt Thần & Video 3B1B'}</span>
+            <span>{isEn ? 'Syn AI Pro & Pause/Resume' : 'Syn AI Pro & Tạm Đóng Chat'}</span>
             <span aria-hidden="true">·</span>
-            <span>{isEn ? 'Sublime 4 Trace & Replay' : 'IDE Trace 1-1 & Replay'}</span>
+            <span>{isEn ? 'Meet Free & Meet 3D Pre' : 'Live Meet & Meet 3D'}</span>
             <span aria-hidden="true">·</span>
             <span className="tabular-nums">
               {isEn ? `${totalExams} Official Exams` : `${totalExams} Đề Khảo Thí`}

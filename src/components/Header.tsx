@@ -750,12 +750,15 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
-      {isAdmin && (
-        <SynapsePremiumGateModal
-          isOpen={isAdminPreModalOpen}
-          onClose={() => setIsAdminPreModalOpen(false)}
-        />
-      )}
+      {isAdmin &&
+        isAdminPreModalOpen &&
+        createPortal(
+          <SynapsePremiumGateModal
+            isOpen={isAdminPreModalOpen}
+            onClose={() => setIsAdminPreModalOpen(false)}
+          />,
+          document.body
+        )}
     </header>
   );
 };

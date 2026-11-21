@@ -128,34 +128,34 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
         {/* Left: Feature Copy & CTA */}
         <div className="space-y-4 lg:col-span-7">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/40 bg-sky-500/15 px-2.5 py-1 text-xs font-bold text-sky-300">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/40 bg-sky-500/15 px-2.5 py-1 text-xs font-bold text-sky-700 dark:text-sky-300">
               <Video className="h-3.5 w-3.5" />
-              {isEn ? 'LIVE MEET & SHARED 3D' : 'PHÒNG HỌC TRỰC TUYẾN 3D'}
+              {isEn ? 'LIVE MEET · FREE & SYNAPSE PRE 3D' : 'PHÒNG HỌC TRỰC TUYẾN · FREE & PRE 3D'}
             </span>
             <span
               className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-semibold ${
                 isUltra
-                  ? 'border-amber-400/50 bg-amber-500/15 text-amber-300'
+                  ? 'border-amber-400/50 bg-amber-500/15 text-amber-700 dark:text-amber-300'
                   : isBalanced
-                  ? 'border-sky-400/40 bg-sky-500/10 text-sky-300'
-                  : 'border-slate-700 bg-slate-900 text-slate-300'
+                  ? 'border-sky-400/40 bg-sky-500/10 text-sky-700 dark:text-sky-300'
+                  : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300'
               }`}
             >
-              <Sparkles className={`h-3 w-3 text-amber-400 ${isUltra ? 'animate-spin [animation-duration:6s]' : ''}`} />
+              <Sparkles className={`h-3 w-3 text-amber-500 dark:text-amber-400 ${isUltra ? 'animate-spin [animation-duration:6s]' : ''}`} />
               {tierLabel}
             </span>
           </div>
 
           <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
             {isEn
-              ? 'Study Together Live with Screen Share & Shared 3D Models'
-              : 'Học nhóm trực tuyến chuẩn Google Meet · Chia sẻ màn hình & Mô hình 3D chung'}
+              ? 'Study Together Live: Free Video/Screen Share & Pre Shared 3D Stage'
+              : 'Học nhóm trực tuyến WebRTC: Free chia sẻ màn hình · Synapse Pre chiếu 3D chung'}
           </h2>
 
           <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
             {isEn
-              ? 'Create a 6-character room in one click, turn on WebRTC video/audio, share your screen, and collaboratively rotate, zoom, explode, or upload .glb/.gltf/.obj 3D models in real time.'
-              : 'Tạo phòng học bằng mã 6 ký tự chỉ với 1 chạm: gọi video/thoại WebRTC, chia sẻ màn hình bài giảng/code, cùng xoay, tách lớp, soi chi tiết bằng chuột hoặc tải lên file 3D (.glb/.gltf/.obj) và dùng ngay thư viện Học tương tác 3D.'}
+              ? 'Create a 6-character room in one click. Free accounts enjoy WebRTC video/audio calls, screen sharing, and group chat; Synapse Pre unlocks collaborative multi-user 3D rotation, layer explode & .glb/.gltf/.obj uploads.'
+              : 'Tạo phòng học bằng mã 6 ký tự chỉ với 1 chạm: bản Miễn phí (Free) hỗ trợ gọi Video/Thoại WebRTC, chia sẻ màn hình bài giảng và chat nhóm; nâng cấp Synapse Pre mở khóa sân khấu mô hình 3D tương tác đồng bộ nhiều người & tải lên file .glb/.gltf/.obj.'}
           </p>
 
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -163,34 +163,34 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
               <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
               <div>
                 <div className="text-xs font-bold text-slate-900 dark:text-white">
-                  {isEn ? 'WebRTC Video & Screen Share' : 'Gọi Video & Chia sẻ màn hình'}
+                  {isEn ? 'Free · WebRTC Video & Screen Share' : 'Bản Free · Video & Chia sẻ màn hình'}
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {isEn ? 'Pin presentations or view in responsive grid.' : 'Tự động ghim màn hình trình chiếu hoặc xem dạng lưới.'}
+                  {isEn ? 'Pin presentations or view classmates in a responsive grid.' : 'Gọi Video/Thoại P2P, chia sẻ màn hình & ghim bài trình chiếu.'}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3">
-              <Box className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-300/60 dark:border-amber-500/35 bg-amber-50/50 dark:bg-amber-950/20 p-3">
+              <Box className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <div>
                 <div className="text-xs font-bold text-slate-900 dark:text-white">
-                  {isEn ? 'Mouse-Controlled Shared 3D' : 'Nghiên cứu mô hình 3D bằng chuột'}
+                  {isEn ? 'Pre · Multi-User Shared 3D Stage' : 'Bản Pre · Chiếu Mô Hình 3D Nhiều Người'}
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {isEn ? 'Rotate, pan, zoom, wireframe, explode & click-to-inspect.' : 'Xoay, pan, zoom, khung dây, tách lớp & click soi chi tiết.'}
+                  {isEn ? 'Sync rotate, zoom, wireframe, explode & click-to-inspect.' : 'Cùng xoay, tách lớp, soi chi tiết mô hình 3D theo thời gian thực.'}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3">
-              <Upload className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-300/60 dark:border-amber-500/35 bg-amber-50/50 dark:bg-amber-950/20 p-3">
+              <Upload className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <div>
                 <div className="text-xs font-bold text-slate-900 dark:text-white">
-                  {isEn ? 'Upload .glb/.obj & 3D Library' : 'Up file .glb/.obj & Kho 3D tương tác'}
+                  {isEn ? 'Pre · Upload .glb/.obj & 3D Library' : 'Bản Pre · Up file .glb/.obj & Kho 3D'}
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {isEn ? 'Upload your own 3D files or pick saved models.' : 'Tải mô hình 3D của bạn lên hoặc chọn từ Học tương tác.'}
+                  {isEn ? 'Upload your own 3D files or pick models from Spatial 3D.' : 'Tải mô hình 3D riêng lên phòng học hoặc lấy từ Học tương tác.'}
                 </div>
               </div>
             </div>
@@ -199,10 +199,10 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
               <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
               <div>
                 <div className="text-xs font-bold text-slate-900 dark:text-white">
-                  {isEn ? 'Live Chat, Hand Raise & Reactions' : 'Chat trực tiếp, Giơ tay & Cảm xúc'}
+                  {isEn ? 'Free · Live Chat & Hand Raise' : 'Bản Free · Chat, Giơ tay & Cảm xúc'}
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {isEn ? 'Real-time classroom discussion with zero lag.' : 'Trao đổi nhóm, giơ tay phát biểu và thả cảm xúc tức thì.'}
+                  {isEn ? 'Real-time classroom discussion & reactions with zero lag.' : 'Trao đổi nhóm, giơ tay phát biểu và thả cảm xúc tức thì.'}
                 </div>
               </div>
             </div>

@@ -232,29 +232,65 @@ interface ServerPremiumRequest {
   plan: string;
   requestedAt: string;
   status: 'pending' | 'approved' | 'rejected';
+  isRenewal?: boolean;
+}
+
+interface ServerPremiumSubscription {
+  activatedAt: string;
+  expiresAt: string;
+  plan: string;
 }
 
 interface ServerPremiumState {
   approvedEmails: string[];
   requests: ServerPremiumRequest[];
+  subscriptions: Record<string, ServerPremiumSubscription>;
 }
 
 const PREMIUM_DB_PATH = path.resolve(process.cwd(), '.premium_db.json');
+
+function addMonthsIso(baseIso: string, months = 3): string {
+  const base = new Date(baseIso);
+  const valid = Number.isNaN(base.getTime()) ? new Date() : base;
+  const next = new Date(valid.getTime());
+  next.setMonth(next.getMonth() + months);
+  return next.toISOString();
+}
 
 function readPremiumDb(): ServerPremiumState {
   try {
     if (fs.existsSync(PREMIUM_DB_PATH)) {
       const raw = fs.readFileSync(PREMIUM_DB_PATH, 'utf-8');
       const parsed = JSON.parse(raw) as Partial<ServerPremiumState>;
+      const approvedEmails = Array.isArray(parsed.approvedEmails) ? parsed.approvedEmails : [];
+      const requests = Array.isArray(parsed.requests) ? parsed.requests : [];
+      const subscriptions: Record<string, ServerPremiumSubscription> =
+        parsed.subscriptions && typeof parsed.subscriptions === 'object' ? { ...parsed.subscriptions } : {};
+
+      // Backfill deterministic dates for any previously approved accounts missing subscription timestamps
+      for (const email of approvedEmails) {
+        const clean = String(email).trim().toLowerCase();
+        if (clean && !subscriptions[clean]) {
+          const matchReq = requests.find((r) => r.email.toLowerCase() === clean);
+          const activatedAt = matchReq?.requestedAt || new Date().toISOString();
+          subscriptions[clean] = {
+            activatedAt,
+            expiresAt: addMonthsIso(activatedAt, 3),
+            plan: matchReq?.plan || '120.000đ / 3 tháng',
+          };
+        }
+      }
+
       return {
-        approvedEmails: Array.isArray(parsed.approvedEmails) ? parsed.approvedEmails : [],
-        requests: Array.isArray(parsed.requests) ? parsed.requests : []
+        approvedEmails,
+        requests,
+        subscriptions,
       };
     }
   } catch {
     // ignore read errors
   }
-  return { approvedEmails: [], requests: [] };
+  return { approvedEmails: [], requests: [], subscriptions: {} };
 }
 
 function writePremiumDb(next: ServerPremiumState) {
@@ -275,25 +311,30 @@ app.post('/api/premium/request', (req: Request, res: Response) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   const displayName = String(req.body?.displayName || email).trim();
   const uid = String(req.body?.uid || '').trim();
-  const plan = String(req.body?.plan || '120.000đ / 3 tháng').trim();
+  const isRenewal = Boolean(req.body?.isRenewal);
+  const plan = String(
+    req.body?.plan || (isRenewal ? 'Gia hạn +3 tháng (120.000đ)' : '120.000đ / 3 tháng')
+  ).trim();
   if (!email) {
     res.status(400).json({ ok: false, error: 'Missing email' });
     return;
   }
+  const alreadyApproved = premiumStore.approvedEmails.includes(email);
   const nextReq: ServerPremiumRequest = {
     email,
     displayName,
     uid,
     plan,
     requestedAt: new Date().toISOString(),
-    status: premiumStore.approvedEmails.includes(email) ? 'approved' : 'pending'
+    status: isRenewal ? 'pending' : alreadyApproved ? 'approved' : 'pending',
+    isRenewal,
   };
   const exists = premiumStore.requests.some((r) => r.email.toLowerCase() === email);
   premiumStore = {
     ...premiumStore,
     requests: exists
       ? premiumStore.requests.map((r) => (r.email.toLowerCase() === email ? nextReq : r))
-      : [nextReq, ...premiumStore.requests]
+      : [nextReq, ...premiumStore.requests],
   };
   writePremiumDb(premiumStore);
   res.json({ ok: true, state: premiumStore });
@@ -301,18 +342,43 @@ app.post('/api/premium/request', (req: Request, res: Response) => {
 
 app.post('/api/premium/approve', (req: Request, res: Response) => {
   const clean = String(req.body?.email || '').trim().toLowerCase();
+  const isRenewal = Boolean(req.body?.isRenewal);
   if (!clean) {
     res.status(400).json({ ok: false, error: 'Missing email' });
     return;
   }
+  const nowIso = new Date().toISOString();
   const already = premiumStore.approvedEmails.includes(clean);
+  const existingSub = premiumStore.subscriptions[clean];
+  const pendingReq = premiumStore.requests.find(
+    (r) => r.email.toLowerCase() === clean || r.displayName.toLowerCase() === clean
+  );
+  const extending = Boolean(existingSub && (isRenewal || pendingReq?.isRenewal || already));
+  const nextActivatedAt = existingSub?.activatedAt || nowIso;
+  const baseExpiry =
+    extending && existingSub && new Date(existingSub.expiresAt).getTime() > Date.now()
+      ? existingSub.expiresAt
+      : extending
+      ? nowIso
+      : nextActivatedAt;
+
+  const nextSubscriptions: Record<string, ServerPremiumSubscription> = {
+    ...premiumStore.subscriptions,
+    [clean]: {
+      activatedAt: nextActivatedAt,
+      expiresAt: addMonthsIso(baseExpiry, 3),
+      plan: '120.000đ / 3 tháng',
+    },
+  };
+
   premiumStore = {
     approvedEmails: already ? premiumStore.approvedEmails : [...premiumStore.approvedEmails, clean],
     requests: premiumStore.requests.map((r) =>
       r.email.toLowerCase() === clean || r.displayName.toLowerCase() === clean
-        ? { ...r, status: 'approved' }
+        ? { ...r, status: 'approved', isRenewal: false }
         : r
-    )
+    ),
+    subscriptions: nextSubscriptions,
   };
   writePremiumDb(premiumStore);
   res.json({ ok: true, state: premiumStore });
@@ -324,13 +390,16 @@ app.post('/api/premium/revoke', (req: Request, res: Response) => {
     res.status(400).json({ ok: false, error: 'Missing email' });
     return;
   }
+  const nextSubs = { ...premiumStore.subscriptions };
+  delete nextSubs[clean];
   premiumStore = {
     approvedEmails: premiumStore.approvedEmails.filter((e) => e !== clean),
     requests: premiumStore.requests.map((r) =>
       r.email.toLowerCase() === clean || r.displayName.toLowerCase() === clean
         ? { ...r, status: 'rejected' }
         : r
-    )
+    ),
+    subscriptions: nextSubs,
   };
   writePremiumDb(premiumStore);
   res.json({ ok: true, state: premiumStore });

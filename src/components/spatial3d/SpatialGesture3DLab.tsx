@@ -65,6 +65,8 @@ import {
 } from 'lucide-react';
 import { SubjectType } from '../../types';
 import { FormattedText } from '../common/MathRenderer';
+import { RemoteControllerModal } from '../common/RemoteControllerModal';
+import { ViewportPortal } from '../common/ViewportPortal';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAudio } from '../../context/AudioContext';
 import { useAuth } from '../../context/AuthContext';
@@ -127,6 +129,11 @@ import { CustomSpatialModel } from './customModelTypes';
 import { buildCustomSpatialModel, updateCustomModelKinematics } from './customModelBuilder';
 import { deleteCustomSpatialModel, fetchCustomSpatialModels } from './customModelStore';
 import { resolveWsUrl, safeFetchJson } from '../../lib/apiClient';
+import {
+  HoloAtlasOverlay,
+  HoloCameraPresetId,
+  QuickObsPresetId
+} from './HoloAtlasOverlay';
 
 export type InteractionStyleId = 'real_grab' | 'classic';
 export type MouseHandToolId = 'smart_grab' | 'hold_model' | 'orbit';
@@ -440,6 +447,8 @@ interface LabRuntime {
   tetherManager: SocketTetherManager;
   keyLight: THREE.DirectionalLight;
   floorDisc: THREE.Mesh;
+  scanBeamMesh: THREE.Mesh;
+  ambientMotes: THREE.Points;
 }
 
 interface PointAskTarget {
@@ -632,6 +641,72 @@ function isSoftwareWebGL(): boolean {
   }
 }
 
+function preparePartMaterialsForOpacity(model: DynamicModelRef): void {
+  for (const part of model.explodables) {
+    part.mesh.traverse((child) => {
+      if (child instanceof THREE.Mesh || child instanceof THREE.LineSegments) {
+        if (Array.isArray(child.material)) {
+          child.material = child.material.map((m) => {
+            const c = m.clone();
+            c.userData.baseOpacity = typeof c.opacity === 'number' ? c.opacity : 1;
+            c.userData.baseTransparent = Boolean(c.transparent);
+            c.userData.baseDepthWrite = m.depthWrite !== undefined ? Boolean(m.depthWrite) : true;
+            model.disposables.materials.push(c);
+            return c;
+          });
+        } else if (child.material) {
+          const c = child.material.clone();
+          c.userData.baseOpacity = typeof c.opacity === 'number' ? c.opacity : 1;
+          c.userData.baseTransparent = Boolean(c.transparent);
+          c.userData.baseDepthWrite =
+            child.material.depthWrite !== undefined ? Boolean(child.material.depthWrite) : true;
+          child.material = c;
+          model.disposables.materials.push(c);
+        }
+      }
+    });
+  }
+}
+
+function syncPartVisibilityAndOpacity(
+  model: DynamicModelRef | null,
+  visMap: Record<number, boolean>,
+  opMap: Record<number, number>
+): void {
+  if (!model) return;
+  model.explodables.forEach((part, idx) => {
+    const isVis = visMap[idx] !== false;
+    const pct = opMap[idx] ?? 100;
+    part.mesh.visible = isVis && pct > 0;
+    const factor = THREE.MathUtils.clamp(pct / 100, 0, 1);
+    part.mesh.traverse((child) => {
+      if (child instanceof THREE.Mesh || child instanceof THREE.LineSegments) {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        for (const m of mats) {
+          if (!m) continue;
+          const baseOp = typeof m.userData.baseOpacity === 'number' ? m.userData.baseOpacity : 1;
+          const baseTrans = Boolean(m.userData.baseTransparent);
+          const baseDw =
+            m.userData.baseDepthWrite !== undefined ? Boolean(m.userData.baseDepthWrite) : true;
+          const nextOp = baseOp * factor;
+          const nextTrans = factor < 0.995 ? true : baseTrans;
+          const nextDw = factor < 0.92 ? false : baseDw;
+          if (
+            Math.abs(m.opacity - nextOp) > 0.005 ||
+            m.transparent !== nextTrans ||
+            m.depthWrite !== nextDw
+          ) {
+            m.opacity = nextOp;
+            m.transparent = nextTrans;
+            m.depthWrite = nextDw;
+            m.needsUpdate = true;
+          }
+        }
+      }
+    });
+  });
+}
+
 export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   onBack,
   onNavigate,
@@ -648,8 +723,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const onEarnXPRef = useRef(onEarnXP);
   onEarnXPRef.current = onEarnXP;
 
-  // Top-level Dual Entry View: Dedicated Spatial Hub vs Interactive Studio (3D / 2D)
-  const [entryView, setEntryView] = useState<'hub' | 'studio'>(initialCoopRoomCode ? 'studio' : 'hub');
+  // Top-level Dual Entry View: Launch directly into the Holographic 3D Atlas Studio (Portal Hub stays accessible)
+  const [entryView, setEntryView] = useState<'hub' | 'studio'>('studio');
   const [show3DGuide, setShow3DGuide] = useState<boolean>(false);
   const [autoShow3DGuide, setAutoShow3DGuide] = useState<boolean>(true);
   const [show2DGuide, setShow2DGuide] = useState<boolean>(false);
@@ -696,11 +771,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       setEntryView('studio');
       setSpaceMode('3d');
       setShow2DGuide(false);
-      if (forceGuide || autoShow3DGuide) {
+      if (forceGuide) {
         setShow3DGuide(true);
       }
     },
-    [autoShow3DGuide]
+    []
   );
 
   const handleEnter2DSpace = useCallback(
@@ -726,6 +801,23 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [scaleVal, setScaleVal] = useState<number>(1.0);
   const [heightVal, setHeightVal] = useState<number>(1.0);
   const [explodeVal, setExplodeVal] = useState<number>(0.0);
+  const [explodeStyle, setExplodeStyle] = useState<'radial' | 'row'>('radial');
+  const explodeStyleRef = useRef<'radial' | 'row'>('radial');
+  explodeStyleRef.current = explodeStyle;
+  const [activeQuickPreset, setActiveQuickPreset] = useState<QuickObsPresetId>('full');
+  const [activeCameraPreset, setActiveCameraPreset] = useState<HoloCameraPresetId>('overview');
+  const [partVisibility, setPartVisibility] = useState<Record<number, boolean>>({});
+  const [partOpacities, setPartOpacities] = useState<Record<number, number>>({});
+  const partVisibilityRef = useRef<Record<number, boolean>>({});
+  const partOpacitiesRef = useRef<Record<number, number>>({});
+  partVisibilityRef.current = partVisibility;
+  partOpacitiesRef.current = partOpacities;
+  const lastModelKeyRef = useRef<string>('');
+  const cameraGlideRef = useRef<{ active: boolean; pos: THREE.Vector3; target: THREE.Vector3 }>({
+    active: false,
+    pos: new THREE.Vector3(6.4, 4.8, 7.6),
+    target: new THREE.Vector3(0, 1.65, 0)
+  });
   const [sliceEnabled, setSliceEnabled] = useState<boolean>(false);
   const [sliceY, setSliceY] = useState<number>(2.4);
   const [simSpeed, setSimSpeed] = useState<number>(1.0);
@@ -736,6 +828,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [dockCollapsed, setDockCollapsed] = useState<boolean>(false);
   const [hudHidden, setHudHidden] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [nativeFullscreenActive, setNativeFullscreenActive] = useState<boolean>(false);
+  const [fallbackPortalFullscreen, setFallbackPortalFullscreen] = useState<boolean>(false);
   const [strokeCount, setStrokeCount] = useState<number>(0);
   const [markerCount, setMarkerCount] = useState<number>(0);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -845,6 +939,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [cameraLoading, setCameraLoading] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [activeMediaStream, setActiveMediaStream] = useState<MediaStream | null>(null);
   const [gestureSettings, setGestureSettings] = useState<GestureSettings>(() => loadGestureSettings());
   const [virtualGesture, setVirtualGesture] = useState<HandGestureId>('palm_5');
   const [showVirtualPad, setShowVirtualPad] = useState<boolean>(true);
@@ -1471,6 +1566,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         const builtCustom = buildCustomSpatialModel(customSpec, mats, nextFinish, runtime.slicePlane, lowPerf);
         runtime.rootGroup.add(builtCustom.group);
         cachePartLocalCenters(builtCustom);
+        preparePartMaterialsForOpacity(builtCustom);
         runtime.model = builtCustom;
         setModelParts(builtCustom.explodables.map((p) => p.info));
         return;
@@ -1505,6 +1601,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           disposables: { geometries: built.geometries, materials: built.materials }
         };
         cachePartLocalCenters(nextAdvModel);
+        preparePartMaterialsForOpacity(nextAdvModel);
         runtime.model = nextAdvModel;
         setModelParts(built.explodables.map((p) => p.info));
         return;
@@ -2278,6 +2375,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         disposables: { geometries, materials }
       };
       cachePartLocalCenters(nextBuiltModel);
+      preparePartMaterialsForOpacity(nextBuiltModel);
       runtime.model = nextBuiltModel;
       setModelParts(explodables.map((p) => p.info));
     },
@@ -2440,8 +2538,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const height = mount.clientHeight || window.innerHeight;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050914);
-    scene.fog = new THREE.FogExp2(0x050914, 0.022);
+    scene.background = new THREE.Color(0x020710);
+    scene.fog = new THREE.FogExp2(0x020710, 0.018);
 
     const camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 160);
     camera.position.set(6.4, 4.8, 7.6);
@@ -2454,7 +2552,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       powerPreference: 'high-performance',
       preserveDrawingBuffer: false
     });
-    renderer.setClearColor(0x050914, 1);
+    renderer.setClearColor(0x020710, 1);
     renderer.setSize(width, height);
     renderer.setPixelRatio(computeEffectiveDpr(softwareGl, initGs, false));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -2480,6 +2578,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     controls.maxDistance = 26;
     const cancelRowCamGlide = () => {
       rowCameraGlideActiveRef.current = false;
+      cameraGlideRef.current.active = false;
     };
     controls.addEventListener('start', cancelRowCamGlide);
 
@@ -2503,17 +2602,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     scene.add(rimLight);
 
     const floorGroup = new THREE.Group();
-    const gridHelper = new THREE.GridHelper(18, 24, 0x38bdf8, 0x1e293b);
+    const gridHelper = new THREE.GridHelper(18, 24, 0x0e7490, 0x0c243e);
     (gridHelper.material as THREE.Material).transparent = true;
-    (gridHelper.material as THREE.Material).opacity = 0.55;
+    (gridHelper.material as THREE.Material).opacity = 0.38;
     floorGroup.add(gridHelper);
 
     const discGeo = new THREE.CircleGeometry(8.5, 64);
     discGeo.rotateX(-Math.PI / 2);
     const discMat = new THREE.MeshStandardMaterial({
-      color: 0x070d1d,
+      color: 0x030a18,
       roughness: 0.78,
-      metalness: 0.2,
+      metalness: 0.22,
       polygonOffset: true,
       polygonOffsetFactor: 1,
       polygonOffsetUnits: 1
@@ -2522,7 +2621,76 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     floorDisc.position.y = -0.02;
     floorDisc.receiveShadow = !isLowPerfInit;
     floorGroup.add(floorDisc);
+
+    // Bio-Lab Holographic Concentric Scanner Rings & Radial Spokes
+    const holoRingGeos: THREE.RingGeometry[] = [];
+    const holoRingMats: THREE.MeshBasicMaterial[] = [];
+    for (const r of [1.45, 2.85, 4.4, 6.2]) {
+      const rGeo = new THREE.RingGeometry(r - 0.02, r + 0.02, 96);
+      rGeo.rotateX(-Math.PI / 2);
+      const rMat = new THREE.MeshBasicMaterial({
+        color: r === 4.4 ? 0x22d3ee : 0x0ea5e9,
+        transparent: true,
+        opacity: r === 4.4 ? 0.55 : 0.3,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      holoRingGeos.push(rGeo);
+      holoRingMats.push(rMat);
+      const rMesh = new THREE.Mesh(rGeo, rMat);
+      rMesh.position.y = 0.004;
+      floorGroup.add(rMesh);
+    }
+
+    const spokePts: THREE.Vector3[] = [];
+    for (let i = 0; i < 12; i++) {
+      const ang = (i * Math.PI) / 6;
+      spokePts.push(new THREE.Vector3(Math.cos(ang) * 1.45, 0.005, Math.sin(ang) * 1.45));
+      spokePts.push(new THREE.Vector3(Math.cos(ang) * 6.3, 0.005, Math.sin(ang) * 6.3));
+    }
+    const spokeGeo = new THREE.BufferGeometry().setFromPoints(spokePts);
+    const spokeMat = new THREE.LineBasicMaterial({
+      color: 0x0ea5e9,
+      transparent: true,
+      opacity: 0.16,
+      depthWrite: false
+    });
+    const spokeLines = new THREE.LineSegments(spokeGeo, spokeMat);
+    floorGroup.add(spokeLines);
     scene.add(floorGroup);
+
+    const scanBeamGeo = new THREE.CylinderGeometry(0.024, 0.024, 7.6, 12);
+    const scanBeamMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false
+    });
+    const scanBeamMesh = new THREE.Mesh(scanBeamGeo, scanBeamMat);
+    scanBeamMesh.position.set(0, 3.6, 0);
+    scene.add(scanBeamMesh);
+
+    const moteCount = isLowPerfInit ? 70 : 140;
+    const motePositions = new Float32Array(moteCount * 3);
+    for (let i = 0; i < moteCount; i++) {
+      const angle = (i * 2.39996) % (Math.PI * 2);
+      const radius = 2.6 + ((i * 7) % 10) * 0.72;
+      motePositions[i * 3] = Math.cos(angle) * radius;
+      motePositions[i * 3 + 1] = 0.35 + ((i * 13) % 24) * 0.24;
+      motePositions[i * 3 + 2] = Math.sin(angle) * radius;
+    }
+    const moteGeo = new THREE.BufferGeometry();
+    moteGeo.setAttribute('position', new THREE.BufferAttribute(motePositions, 3));
+    const moteMat = new THREE.PointsMaterial({
+      color: 0x22d3ee,
+      size: 0.055,
+      transparent: true,
+      opacity: 0.62,
+      sizeAttenuation: true,
+      depthWrite: false
+    });
+    const ambientMotes = new THREE.Points(moteGeo, moteMat);
+    scene.add(ambientMotes);
 
     const axesGroup = new THREE.Group();
     const axesHelper = new THREE.AxesHelper(4.4);
@@ -2686,7 +2854,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       localHandManager,
       tetherManager,
       keyLight,
-      floorDisc
+      floorDisc,
+      scanBeamMesh,
+      ambientMotes
     };
     runtimeRef.current = runtime;
 
@@ -3146,9 +3316,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       if (matchedIdx !== -1) {
         setHighlightedPartIdx(matchedIdx);
         setPartCardMinimized(false);
-        if (paramsRef.current.interactionStyle === 'classic' && smoothTargetRef.current.explode < 0.25) {
-          setIsolatedPartIdx(matchedIdx);
-        }
         const info = runtime.model.explodables[matchedIdx].info;
         showToast(isEn ? `Selected: ${info.nameEn}` : `Đã chọn linh kiện: ${info.nameVi}`);
       }
@@ -3460,6 +3627,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               }
               setDetachedPartCount(0);
               detachedPartsVersionRef.current += 1;
+              setExplodeStyle('radial');
+              explodeStyleRef.current = 'radial';
+              setActiveQuickPreset('full');
               setExplodeVal(0);
               setIsolatedPartIdx(null);
               setHighlightedPartIdx(null);
@@ -3470,6 +3640,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   : '✌️ 2 Ngón · Đã lắp khít toàn bộ mô hình về nguyên trạng!'
               );
             } else {
+              setExplodeStyle('row');
+              explodeStyleRef.current = 'row';
+              setActiveQuickPreset('row');
               smoothTargetRef.current.explode = 1.25;
               smoothTargetRef.current.carryX = 0;
               smoothTargetRef.current.carryY = 0;
@@ -3887,6 +4060,11 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         runtime.axesGroup.visible = cfg.showAxes;
         runtime.floorGroup.visible = arModeRef.current ? true : cfg.showAxes;
         runtime.floorDisc.visible = !arModeRef.current;
+        runtime.scanBeamMesh.visible = !arModeRef.current && cfg.showAxes;
+        runtime.ambientMotes.visible = !arModeRef.current;
+        if (!cfg.frozen && runtime.ambientMotes.visible) {
+          runtime.ambientMotes.rotation.y += dt * 0.04;
+        }
         runtime.floorGroup.rotation.x = arModeRef.current
           ? (cfg.arDeskTiltDeg * Math.PI) / 180
           : 0;
@@ -3897,12 +4075,26 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         cursorRing.rotation.y += dt * 1.8;
         cursorRing.rotation.x += dt * 1.1;
 
+        if (cameraGlideRef.current.active && !rowCameraGlideActiveRef.current) {
+          const camAlpha = 1 - Math.exp(-8.5 * dt);
+          camera.position.lerp(cameraGlideRef.current.pos, camAlpha);
+          controls.target.lerp(cameraGlideRef.current.target, camAlpha);
+          if (
+            camera.position.distanceTo(cameraGlideRef.current.pos) < 0.05 &&
+            controls.target.distanceTo(cameraGlideRef.current.target) < 0.05
+          ) {
+            camera.position.copy(cameraGlideRef.current.pos);
+            controls.target.copy(cameraGlideRef.current.target);
+            cameraGlideRef.current.active = false;
+          }
+        }
+
         const model = runtime.model;
         let isRowSeparated = false;
         let sy = smoothTargetRef.current.scale;
         if (model) {
           const expTarget = smoothTargetRef.current.explode;
-          isRowSeparated = !isIsolated && expTarget >= 0.25;
+          isRowSeparated = !isIsolated && explodeStyleRef.current === 'row' && expTarget >= 0.25;
 
           if (isRowSeparated && cfg.sliceEnabled) {
             setSliceEnabled(false);
@@ -4656,6 +4848,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       (gridHelper.material as THREE.Material).dispose();
       discGeo.dispose();
       discMat.dispose();
+      holoRingGeos.forEach((g) => g.dispose());
+      holoRingMats.forEach((m) => m.dispose());
+      spokeGeo.dispose();
+      spokeMat.dispose();
+      scanBeamGeo.dispose();
+      scanBeamMat.dispose();
+      moteGeo.dispose();
+      moteMat.dispose();
       cursorOrb.geometry.dispose();
       (cursorOrb.material as THREE.Material).dispose();
       cursorRing.geometry.dispose();
@@ -4686,7 +4886,24 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     const rt = runtimeRef.current;
     if (!rt) return;
     const softwareGl = isSoftwareWebGL();
+    const modelKey = activeCustomModel ? `custom:${activeCustomModel.id}` : `builtin:${modeId}`;
+    const isModelChanged = modelKey !== lastModelKeyRef.current;
+    lastModelKeyRef.current = modelKey;
+
     rebuildModel(rt, modeId, finish, activePalette, softwareGl, activeCustomModel);
+
+    if (isModelChanged) {
+      setPartVisibility({});
+      setPartOpacities({});
+      partVisibilityRef.current = {};
+      partOpacitiesRef.current = {};
+      setExplodeStyle('radial');
+      explodeStyleRef.current = 'radial';
+      setActiveQuickPreset(finish === 'wireframe' ? 'wireframe' : finish === 'gold' ? 'gold' : 'full');
+    } else {
+      syncPartVisibilityAndOpacity(rt.model, partVisibilityRef.current, partOpacitiesRef.current);
+    }
+
     const pending = pendingCoopModelSyncRef.current;
     if (pending) {
       pendingCoopModelSyncRef.current = null;
@@ -4718,6 +4935,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       }, 60);
     }
   }, [modeId, activeCustomModel, finish, activePalette, rebuildModel]);
+
+  useEffect(() => {
+    syncPartVisibilityAndOpacity(runtimeRef.current?.model || null, partVisibility, partOpacities);
+  }, [partVisibility, partOpacities]);
 
   useEffect(() => {
     syncPartIsolation(runtimeRef.current, isolatedPartIdx);
@@ -5190,6 +5411,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+    setActiveMediaStream(null);
     setCameraActive(false);
     setCameraLoading(false);
   }, []);
@@ -5214,19 +5436,21 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       videoEl.srcObject = streamRef.current;
     }
     videoEl.play().catch(() => {});
-  }, [cameraActive, hudHidden]);
+  }, [cameraActive, hudHidden, spaceMode]);
 
   // Sync WebAR transparent WebGL background & live webcam desk feed
   useEffect(() => {
     const rt = runtimeRef.current;
     if (rt) {
       const isAr = arMode && spaceMode === '3d';
-      rt.renderer.setClearColor(isAr ? 0x000000 : 0x050914, isAr ? 0 : 1);
+      rt.renderer.setClearColor(isAr ? 0x000000 : 0x020710, isAr ? 0 : 1);
       rt.renderer.domElement.style.background = isAr ? 'transparent' : '';
       rt.renderer.domElement.style.opacity = isAr ? String(arOpacity) : '1';
-      rt.scene.background = isAr ? null : new THREE.Color(0x050914);
-      rt.scene.fog = isAr ? null : new THREE.FogExp2(0x050914, 0.022);
+      rt.scene.background = isAr ? null : new THREE.Color(0x020710);
+      rt.scene.fog = isAr ? null : new THREE.FogExp2(0x020710, 0.018);
       rt.floorDisc.visible = !isAr;
+      rt.scanBeamMesh.visible = !isAr && showAxes;
+      rt.ambientMotes.visible = !isAr;
       if (isAr) rt.floorGroup.visible = true;
     }
     const bgVid = arBgVideoRef.current;
@@ -5238,7 +5462,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     } else if (bgVid && bgVid.srcObject) {
       bgVid.srcObject = null;
     }
-  }, [arMode, spaceMode, cameraActive, entryView, arOpacity]);
+  }, [arMode, spaceMode, cameraActive, entryView, arOpacity, showAxes]);
 
   useEffect(() => {
     if (!cameraActive || !streamRef.current) return;
@@ -5291,6 +5515,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
         if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = stream;
+        setActiveMediaStream(stream);
 
         if (!facingOverride) {
           const trackSettings = stream.getVideoTracks()[0]?.getSettings?.();
@@ -5536,6 +5761,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     setScaleVal(1.0);
     setHeightVal(1.0);
     setExplodeVal(0.0);
+    setExplodeStyle('radial');
+    explodeStyleRef.current = 'radial';
+    setActiveQuickPreset(finish === 'wireframe' ? 'wireframe' : finish === 'gold' ? 'gold' : 'full');
+    setActiveCameraPreset('overview');
+    setPartVisibility({});
+    setPartOpacities({});
+    cameraGlideRef.current.active = false;
     setSliceEnabled(false);
     setSliceY(2.4);
     setSimSpeed(1.0);
@@ -5566,7 +5798,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       }
       runtimeRef.current.isolatedHolder.rotation.set(0, 0, 0);
     }
-  }, [isEn, showToast, spaceMode]);
+  }, [finish, isEn, showToast, spaceMode]);
 
   const handleSnapshot = useCallback(() => {
     if (spaceMode === '2d') {
@@ -5647,17 +5879,211 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     }
   }, [bgSound, isBgPlaying, isEn, setBgSound, showToast, toggleBgPlaying]);
 
+  useEffect(() => {
+    const onFsChange = () => {
+      const el = stageContainerRef.current;
+      const isNative = Boolean(el && document.fullscreenElement === el);
+      setNativeFullscreenActive(isNative);
+      if (isNative) {
+        setIsFullscreen(true);
+        setFallbackPortalFullscreen(false);
+      } else if (!fallbackPortalFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, [fallbackPortalFullscreen]);
+
+  useEffect(() => {
+    if (!fallbackPortalFullscreen) return;
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setFallbackPortalFullscreen(false);
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
+  }, [fallbackPortalFullscreen]);
+
   const handleToggleFullscreen = useCallback(() => {
     const el = stageContainerRef.current;
     if (!el) return;
-    if (!document.fullscreenElement) {
-      el.requestFullscreen?.().catch(() => {});
+    if (!isFullscreen) {
       setIsFullscreen(true);
+      if (el.requestFullscreen) {
+        el.requestFullscreen()
+          .then(() => {
+            setNativeFullscreenActive(true);
+            setFallbackPortalFullscreen(false);
+          })
+          .catch(() => {
+            setNativeFullscreenActive(false);
+            setFallbackPortalFullscreen(true);
+          });
+      } else {
+        setNativeFullscreenActive(false);
+        setFallbackPortalFullscreen(true);
+      }
     } else {
-      document.exitFullscreen?.().catch(() => {});
       setIsFullscreen(false);
+      setFallbackPortalFullscreen(false);
+      setNativeFullscreenActive(false);
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    }
+  }, [isFullscreen]);
+
+  const handleApplyQuickPreset = useCallback(
+    (preset: QuickObsPresetId) => {
+      setActiveQuickPreset(preset);
+      if (preset === 'full') {
+        setExplodeStyle('radial');
+        explodeStyleRef.current = 'radial';
+        setExplodeVal(0);
+        smoothTargetRef.current.explode = 0;
+        if (finish !== 'ceramic') setFinish('ceramic');
+        setPartVisibility({});
+        setPartOpacities({});
+        setIsolatedPartIdx(null);
+      } else if (preset === 'xray') {
+        setExplodeStyle('radial');
+        explodeStyleRef.current = 'radial';
+        if (finish === 'wireframe') setFinish('ceramic');
+        setIsolatedPartIdx(null);
+        const vis: Record<number, boolean> = {};
+        const ops: Record<number, number> = {};
+        const outerCut = Math.max(1, Math.floor(modelParts.length * 0.45));
+        modelParts.forEach((_p, i) => {
+          vis[i] = true;
+          ops[i] = modelParts.length === 1 ? 45 : i < outerCut ? 34 : 100;
+        });
+        setPartVisibility(vis);
+        setPartOpacities(ops);
+      } else if (preset === 'explode') {
+        setExplodeStyle('radial');
+        explodeStyleRef.current = 'radial';
+        if (finish === 'wireframe') setFinish('ceramic');
+        setExplodeVal(0.95);
+        smoothTargetRef.current.explode = 0.95;
+        setPartVisibility({});
+        setPartOpacities({});
+        setIsolatedPartIdx(null);
+      } else if (preset === 'row') {
+        setExplodeStyle('row');
+        explodeStyleRef.current = 'row';
+        if (finish === 'wireframe') setFinish('ceramic');
+        setExplodeVal(1.15);
+        smoothTargetRef.current.explode = 1.15;
+        setPartVisibility({});
+        setPartOpacities({});
+        setIsolatedPartIdx(null);
+      } else if (preset === 'wireframe') {
+        setFinish('wireframe');
+      } else if (preset === 'gold') {
+        setFinish('gold');
+      }
+    },
+    [finish, modelParts]
+  );
+
+  const handleFocusPart = useCallback((partIdx: number) => {
+    setHighlightedPartIdx(partIdx);
+    const rt = runtimeRef.current;
+    const part = rt?.model?.explodables[partIdx];
+    if (!rt || !part) return;
+    const box = new THREE.Box3().setFromObject(part.mesh);
+    if (box.isEmpty()) return;
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const radius = Math.max(0.95, size.length() * 0.85);
+    cameraGlideRef.current.target.copy(center);
+    cameraGlideRef.current.pos.set(
+      center.x + radius * 1.85,
+      center.y + radius * 1.05,
+      center.z + radius * 2.15
+    );
+    cameraGlideRef.current.active = true;
+    setActiveCameraPreset('focus_part');
+  }, []);
+
+  const handleSelectCameraPreset = useCallback(
+    (preset: HoloCameraPresetId) => {
+      setActiveCameraPreset(preset);
+      rowCameraGlideActiveRef.current = false;
+      if (preset === 'focus_part') {
+        const targetIdx = isolatedPartIdxRef.current ?? highlightedPartIdxRef.current ?? 0;
+        if (modelPartsRef.current.length > 0) {
+          handleFocusPart(targetIdx);
+        }
+        return;
+      }
+
+      const target = new THREE.Vector3(0, 1.65, 0);
+      const pos = new THREE.Vector3(6.4, 4.8, 7.6);
+      if (preset === 'front') pos.set(0, 2.0, 9.4);
+      else if (preset === 'back') pos.set(0, 2.0, -9.4);
+      else if (preset === 'left') pos.set(-9.4, 2.0, 0);
+      else if (preset === 'right') pos.set(9.4, 2.0, 0);
+      else if (preset === 'top') pos.set(0.01, 10.6, 0.25);
+      else {
+        setIsolatedPartIdx(null);
+      }
+      cameraGlideRef.current.target.copy(target);
+      cameraGlideRef.current.pos.copy(pos);
+      cameraGlideRef.current.active = true;
+    },
+    [handleFocusPart]
+  );
+
+  const handleTogglePartVisibility = useCallback((indices: number[], visible: boolean) => {
+    setPartVisibility((prev) => {
+      const next = { ...prev };
+      for (const idx of indices) next[idx] = visible;
+      return next;
+    });
+  }, []);
+
+  const handleChangeGroupOpacity = useCallback((indices: number[], opacityPct: number) => {
+    setPartOpacities((prev) => {
+      const next = { ...prev };
+      for (const idx of indices) next[idx] = opacityPct;
+      return next;
+    });
+    if (opacityPct > 0) {
+      setPartVisibility((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const idx of indices) {
+          if (next[idx] === false) {
+            next[idx] = true;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
     }
   }, []);
+
+  const handleShowAllParts = useCallback(() => {
+    setPartVisibility({});
+    setPartOpacities({});
+    setIsolatedPartIdx(null);
+  }, []);
+
+  const handleDeleteCustomModel = useCallback(
+    (id: string) => {
+      void deleteCustomSpatialModel(id);
+      setCustomModels((prev) => prev.filter((m) => m.id !== id));
+      if (activeCustomId === id) {
+        setActiveCustomId(null);
+      }
+      showToast(isEn ? 'Deleted custom 3D model' : 'Đã xóa mô hình 3D tùy chỉnh');
+    },
+    [activeCustomId, isEn, showToast]
+  );
 
   const stopPointAskVoice = useCallback(() => {
     if (speechRecRef.current) {
@@ -5985,37 +6411,189 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   const currentGestureMeta =
     gestureCatalog.find((g) => g.id === activeGestureId) || gestureCatalog[0];
 
+  const studioModals = (
+    <>
+      {/* Flashy Animated 3D Usage Guide Frame */}
+      <Spatial3DGuideModal
+        isOpen={entryView === 'studio' && spaceMode === '3d' && show3DGuide}
+        isEn={isEn}
+        autoShowOn3D={autoShow3DGuide}
+        onToggleAutoShow={setAutoShow3DGuide}
+        onClose={() => setShow3DGuide(false)}
+        onSwitchTo2D={() => {
+          setShow3DGuide(false);
+          handleEnter2DSpace(false);
+        }}
+      />
+
+      {/* Dedicated Separate 2D Geometry Usage Guide Frame */}
+      <Spatial2DGuideModal
+        isOpen={entryView === 'studio' && spaceMode === '2d' && show2DGuide}
+        isEn={isEn}
+        autoShowOn2D={autoShow2DGuide}
+        onToggleAutoShow={setAutoShow2DGuide}
+        onClose={() => setShow2DGuide(false)}
+        onSwitchTo3D={() => {
+          setShow2DGuide(false);
+          handleEnter3DSpace(false);
+        }}
+      />
+
+      {/* AI Idea -> Complete 3D Model Creator ("Sáng tạo tự do") */}
+      <SpatialAIModelCreatorModal
+        isOpen={showAICreator}
+        isEn={isEn}
+        onClose={() => setShowAICreator(false)}
+        onCreated={(created) => {
+          setCustomModels((prev) => [created, ...prev.filter((m) => m.id !== created.id)]);
+          setActiveCustomId(created.id);
+          setEntryView('studio');
+          setSpaceMode('3d');
+          setDockTab('shapes');
+          setShapeFilter('custom');
+          setShowAICreator(false);
+          setShow3DGuide(false);
+          showToast(
+            isEn
+              ? `Created & saved AI 3D model: ${created.titleEn}`
+              : `Đã tạo & lưu vào Sáng tạo tự do: ${created.titleVi}`
+          );
+        }}
+      />
+
+      {/* Real-World Space Camera Scanner -> Complete 3D Model */}
+      <SpatialRealWorldScannerModal
+        isOpen={showRealScanner}
+        isEn={isEn}
+        onClose={() => setShowRealScanner(false)}
+        onCreated={(created) => {
+          setCustomModels((prev) => [created, ...prev.filter((m) => m.id !== created.id)]);
+          setActiveCustomId(created.id);
+          setEntryView('studio');
+          setSpaceMode('3d');
+          setDockTab('shapes');
+          setShapeFilter('custom');
+          setShowRealScanner(false);
+          setShow3DGuide(false);
+          showToast(
+            isEn
+              ? `Scanned real object → 3D: ${created.titleEn}`
+              : `Đã quét thực tế & dựng 3D: ${created.titleVi}`
+          );
+        }}
+      />
+
+      {/* Multiplayer Co-op 3D Skeleton Hands ("Bàn tay ảo của bạn học" · 2–4 Learners) */}
+      <SpatialCoopModal
+        isOpen={showCoopModal}
+        isEn={isEn}
+        onClose={() => setShowCoopModal(false)}
+        currentModelTitle={
+          activeCustomModel
+            ? isEn
+              ? activeCustomModel.titleEn
+              : activeCustomModel.titleVi
+            : isEn
+            ? activeMode.titleEn
+            : activeMode.titleVi
+        }
+        currentModelState={{
+          modeId,
+          customModel: activeCustomModel,
+          explodeVal,
+          scaleVal,
+          heightVal,
+          sliceEnabled,
+          sliceY,
+          finish,
+          paletteId,
+          rotY: runtimeRef.current?.model?.group.rotation.y || 0,
+          pitchX: runtimeRef.current?.model?.group.rotation.x || 0,
+          highlightedPartIdx,
+          isolatedPartIdx,
+          detachedOffsets: collectDetachedOffsetsMap(runtimeRef.current?.model || null)
+        }}
+        activeRoom={coopActiveRoom}
+        peers={coopPeers}
+        selfPeerId={coopSelfPeerId}
+        wsStatus={coopWsStatus}
+        wsError={coopWsError}
+        onJoinRoom={(roomId, fallbackMeta) => {
+          coopFallbackMetaRef.current = fallbackMeta || null;
+          setEntryView('studio');
+          setSpaceMode('3d');
+          setShow3DGuide(false);
+          setCoopTargetRoomId(roomId.trim().toUpperCase());
+        }}
+        onLeaveRoom={() => {
+          setCoopTargetRoomId(null);
+          showToast(isEn ? 'Left Co-op 3D Room' : 'Đã rời phòng 3D chung');
+        }}
+        onRoomCreatedAndJoin={(room) => {
+          coopFallbackMetaRef.current = {
+            roomId: room.roomId,
+            title: room.title,
+            modelId: room.modelId,
+            modelTitle: room.modelTitle,
+            hostName: room.hostName
+          };
+          setCoopActiveRoom(room);
+          setEntryView('studio');
+          setSpaceMode('3d');
+          setShow3DGuide(false);
+          setCoopTargetRoomId(room.roomId);
+        }}
+        onNavigateForum={onNavigate ? () => onNavigate('forum') : undefined}
+      />
+    </>
+  );
+
   return (
     <>
       {entryView === 'hub' && (
-        <SpatialSenseHub
-          isEn={isEn}
-          savedCustomCount={customModels.length}
-          onBack={onBack}
-          onLaunch3D={() => handleEnter3DSpace(true)}
-          onLaunch2D={() => handleEnter2DSpace(false)}
-          onLaunch2DGuide={() => handleEnter2DSpace(true)}
-          onOpenAICreator={() => setShowAICreator(true)}
-          onOpenRealScanner={handleOpenRealScanner}
-          onOpenCoop={() => {
-            setEntryView('studio');
-            setSpaceMode('3d');
-            setShow3DGuide(false);
-            setShowCoopModal(true);
-          }}
-        />
+        <>
+          <SpatialSenseHub
+            isEn={isEn}
+            savedCustomCount={customModels.length}
+            onBack={onBack}
+            onLaunch3D={() => handleEnter3DSpace(true)}
+            onLaunch2D={() => handleEnter2DSpace(false)}
+            onLaunch2DGuide={() => handleEnter2DSpace(true)}
+            onOpenAICreator={() => setShowAICreator(true)}
+            onOpenRealScanner={handleOpenRealScanner}
+            onOpenCoop={() => {
+              setEntryView('studio');
+              setSpaceMode('3d');
+              setShow3DGuide(false);
+              setShowCoopModal(true);
+            }}
+          />
+          {studioModals}
+        </>
       )}
 
-      <div
-        ref={stageContainerRef}
-        className={`relative w-full overflow-hidden rounded-xl border border-sky-500/35 bg-[#050914] text-slate-100 shadow-2xl select-none ${
-          entryView === 'hub'
-            ? 'hidden'
-            : isFullscreen
-            ? 'h-[100dvh] rounded-none border-0'
-            : 'h-[calc(100dvh-76px)] min-h-[540px] sm:min-h-[620px]'
-        }`}
-      >
+      <ViewportPortal active={fallbackPortalFullscreen}>
+        <div
+          ref={stageContainerRef}
+          className={`relative w-full overflow-hidden rounded-xl border border-cyan-500/30 bg-[#020710] text-slate-100 shadow-2xl select-none ${
+            entryView === 'hub'
+              ? 'hidden'
+              : fallbackPortalFullscreen
+              ? 'fixed inset-0 z-[200] h-[100dvh] w-screen rounded-none border-0'
+              : isFullscreen
+              ? 'h-[100dvh] w-full rounded-none border-0'
+              : 'h-[calc(100dvh-76px)] min-h-[540px] sm:min-h-[620px]'
+          }`}
+        >
+        {/* Persistent offscreen webcam capture element so 10-finger & head/eye tracking stay alive in any HUD layout */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="pointer-events-none absolute -z-10 h-px w-px opacity-0"
+        />
+
         {/* WebAR Spatial Desk Video Underlay + AR Bàn Học Pro Calibration Bar */}
         {entryView === 'studio' && spaceMode === '3d' && arMode && (
           <>
@@ -6040,14 +6618,14 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   </div>
                 </div>
               )}
-              <div className="absolute top-16 left-4 flex items-center gap-2 px-2.5 py-1 rounded border border-emerald-400/50 bg-slate-950/80 text-[10px] font-mono font-bold text-emerald-300 tracking-wider">
+              <div className="absolute top-[74px] left-1/2 -translate-x-1/2 flex items-center gap-2 px-2.5 py-1 rounded border border-emerald-400/50 bg-slate-950/85 text-[10px] font-mono font-bold text-emerald-300 tracking-wider">
                 <span className="w-3 h-3 rounded-full border border-dashed border-emerald-400 ar-reticle-spin" />
                 <span>WEBAR PRO · {(10 * scaleVal).toFixed(1)} cm GRID</span>
               </div>
             </div>
 
             {/* AR Bàn Học Pro Control Dock */}
-            <div className="absolute bottom-[68px] sm:bottom-20 left-1/2 -translate-x-1/2 z-40 max-w-[95%] flex flex-nowrap overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center scrollbar-none gap-2 px-3 py-2 rounded-md border border-emerald-400/55 bg-slate-950/92 text-slate-100 shadow-2xl text-[11px]">
+            <div className="absolute bottom-[78px] sm:bottom-[84px] left-1/2 -translate-x-1/2 z-40 max-w-[95%] flex flex-nowrap overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center scrollbar-none gap-2 px-3 py-2 rounded-md border border-emerald-400/55 bg-slate-950/92 text-slate-100 shadow-2xl text-[11px]">
               <button
                 type="button"
                 onClick={handleToggleArFacing}
@@ -6197,8 +6775,195 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           </div>
         )}
 
-        {/* Top HUD Bar (Single scrollable strip on phone/iPad so 3D canvas stays unobstructed) */}
-        {!hudHidden && (
+        {/* Bio-Lab Holographic 3D Atlas HUD (3D Mode) */}
+        {!hudHidden && entryView === 'studio' && spaceMode === '3d' && (
+          <HoloAtlasOverlay
+            isEn={isEn}
+            language={language}
+            modes={SPATIAL_MODES}
+            customModels={customModels}
+            activeModeId={modeId}
+            activeCustomId={activeCustomId}
+            activeModeMeta={activeMode}
+            activeCustomModel={activeCustomModel}
+            onSelectMode={(id) => {
+              setActiveCustomId(null);
+              setModeId(id as SpatialModeId);
+            }}
+            onSelectCustomModel={(id) => setActiveCustomId(id)}
+            onDeleteCustomModel={handleDeleteCustomModel}
+            modelParts={modelParts}
+            selectedPartIdx={highlightedPartIdx}
+            isolatedPartIdx={isolatedPartIdx}
+            onSelectPart={(idx) => {
+              setHighlightedPartIdx(idx);
+              if (isolatedPartIdx !== null) {
+                setIsolatedPartIdx(idx);
+              }
+            }}
+            onToggleIsolatePart={(idx) => {
+              setIsolatedPartIdx(idx);
+              if (idx !== null) setHighlightedPartIdx(idx);
+            }}
+            onFocusPart={handleFocusPart}
+            partVisibility={partVisibility}
+            partOpacities={partOpacities}
+            onTogglePartVisibility={handleTogglePartVisibility}
+            onChangeGroupOpacity={handleChangeGroupOpacity}
+            onShowAllParts={handleShowAllParts}
+            explodeVal={explodeVal}
+            explodeStyle={explodeStyle}
+            onChangeExplode={(val, style) => {
+              if (style) {
+                setExplodeStyle(style);
+                explodeStyleRef.current = style;
+                setActiveQuickPreset(
+                  val >= 0.25 ? (style === 'row' ? 'row' : 'explode') : 'full'
+                );
+              } else if (val < 0.05 && (activeQuickPreset === 'explode' || activeQuickPreset === 'row')) {
+                setActiveQuickPreset('full');
+              }
+              setExplodeVal(val);
+              smoothTargetRef.current.explode = val;
+            }}
+            activeQuickPreset={activeQuickPreset}
+            onApplyQuickPreset={handleApplyQuickPreset}
+            activeCameraPreset={activeCameraPreset}
+            onSelectCameraPreset={handleSelectCameraPreset}
+            autoSpin={autoSpin}
+            onToggleAutoSpin={() => setAutoSpin((v) => !v)}
+            frozen={frozen}
+            onToggleFrozen={() => setFrozen((v) => !v)}
+            cameraActive={cameraActive}
+            cameraLoading={cameraLoading}
+            cameraError={cameraError}
+            onToggleCamera={() => (cameraActive ? stopCamera() : void startCamera())}
+            handFrame={handFrame}
+            virtualGesture={virtualGesture}
+            onSelectVirtualGesture={(g) => setVirtualGesture(g)}
+            arMode={arMode}
+            onToggleArMode={() => {
+              const next = !arMode;
+              setArMode(next);
+              if (next && !cameraActive) {
+                void startCamera();
+              }
+            }}
+            pointAskActive={pointAskActive}
+            onTogglePointAsk={() => {
+              setPointAskActive((prev) => {
+                const next = !prev;
+                if (next) {
+                  showToast(
+                    isEn
+                      ? 'Point & Ask ON: Point finger/cursor at a detail & speak!'
+                      : 'Đã bật Chỉ & Hỏi AI: Hãy chỉ tay/chuột vào chi tiết và nói!'
+                  );
+                }
+                return next;
+              });
+            }}
+            hologramCockpitOn={hologramCockpitOn}
+            onToggleHologramCockpit={() => {
+              setHologramCockpitOn((prev) => {
+                const next = !prev;
+                if (next) {
+                  if (pointAskActive) setPointAskActive(false);
+                  showToast(
+                    cameraActive
+                      ? isEn
+                        ? 'Hologram Parallax & Gaze HUD ON!'
+                        : 'Đã bật Hologram Mắt & Đầu! Nghiêng đầu tạo chiều sâu 3D.'
+                      : isEn
+                      ? 'Hologram Parallax Preview ON'
+                      : 'Đã bật Buồng Lái Hologram (Di chuyển chuột hoặc bật Camera).'
+                  );
+                }
+                return next;
+              });
+            }}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={handleToggleFullscreen}
+            onHideHud={() => setHudHidden(true)}
+            onSwitchTo2D={() => handleEnter2DSpace(false)}
+            onOpenPortal={() => setEntryView('hub')}
+            onOpenAICreator={() => setShowAICreator(true)}
+            onOpenRealScanner={handleOpenRealScanner}
+            onOpenCoop={() => setShowCoopModal(true)}
+            onOpenRemoteQr={openRemoteModal}
+            controllerCount={controllerCount}
+            coopPeerCount={coopActiveRoom ? coopPeers.length : 0}
+            onBack={onBack}
+            mediaStream={activeMediaStream}
+            overlayCanvasRef={overlayCanvasRef}
+            mirrorCamera={mirrorCamera}
+            sliceEnabled={sliceEnabled}
+            sliceY={sliceY}
+            onToggleSlice={() => setSliceEnabled((v) => !v)}
+            onChangeSliceY={(y) => {
+              setSliceY(y);
+              smoothTargetRef.current.sliceY = y;
+              if (!sliceEnabled) setSliceEnabled(true);
+            }}
+            scaleVal={scaleVal}
+            onChangeScale={(s) => {
+              setScaleVal(s);
+              smoothTargetRef.current.scale = s;
+            }}
+            heightVal={heightVal}
+            onChangeHeight={(h) => {
+              setHeightVal(h);
+              smoothTargetRef.current.height = h;
+            }}
+            simSpeed={simSpeed}
+            onChangeSimSpeed={setSimSpeed}
+            showAxes={showAxes}
+            onToggleShowAxes={() => setShowAxes((v) => !v)}
+            finish={finish}
+            onChangeFinish={setFinish}
+            finishOptions={FINISH_OPTIONS}
+            paletteId={paletteId}
+            onChangePaletteId={setPaletteId}
+            palettes={ACCENT_PALETTES}
+            interactionStyle={interactionStyle}
+            onChangeInteractionStyle={setInteractionStyle}
+            creativeBrush={creativeBrush}
+            onChangeCreativeBrush={setCreativeBrush}
+            brushOptions={BRUSH_OPTIONS}
+            snapGrid={snapGrid}
+            onToggleSnapGrid={() => setSnapGrid((v) => !v)}
+            strokeCount={strokeCount}
+            markerCount={markerCount}
+            onUndoStroke={handleUndoStroke}
+            onClearCreations={handleClearCreations}
+            gestureSettings={gestureSettings}
+            onUpdateGestureSetting={updateGestureSetting}
+            onApplyGesturePreset={(patch, label) => {
+              setGestureSettings((prev) => ({ ...prev, ...patch }));
+              showToast(isEn ? `Applied preset: ${label}` : `Đã áp dụng: ${label}`);
+            }}
+            onResetGestureDefaults={() => {
+              setGestureSettings(DEFAULT_GESTURE_SETTINGS);
+              trackerRef.current?.resetSmoothing();
+              showToast(isEn ? 'Restored defaults' : 'Đã khôi phục mặc định');
+            }}
+            onResetTracker={() => {
+              trackerRef.current?.resetSmoothing();
+              showToast(isEn ? 'Reset 10-finger tracker lock' : 'Đã đặt lại khóa 10 đầu ngón');
+            }}
+            musicPlaying={isBgPlaying && bgSound !== 'off'}
+            onToggleMusic={handleToggleMusic}
+            onSnapshot={handleSnapshot}
+            onExportOBJ={handleExportOBJ}
+            onOpenGuide={() => setShow3DGuide(true)}
+            onResetView={handleResetView}
+            detachedPartCount={detachedPartCount}
+            onReassembleAll={handleReassembleAllParts}
+          />
+        )}
+
+        {/* Top HUD Bar (2D Geometry Lab Mode) */}
+        {!hudHidden && spaceMode === '2d' && (
           <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 z-20 flex flex-nowrap lg:flex-wrap items-center justify-between gap-1.5 sm:gap-2 overflow-x-auto lg:overflow-visible scrollbar-none pointer-events-auto lg:pointer-events-none">
             <div className="flex flex-nowrap lg:flex-wrap items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0 lg:shrink">
               <button
@@ -6227,11 +6992,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 <button
                   type="button"
                   onClick={() => handleEnter2DSpace(false)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                    spaceMode === '2d'
-                      ? 'bg-sky-500 text-slate-950'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 bg-sky-500 text-slate-950"
                 >
                   <Compass className="w-3.5 h-3.5" />
                   <span>{isEn ? '2D Geometry' : 'Không gian 2D'}</span>
@@ -6239,162 +7000,21 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 <button
                   type="button"
                   onClick={() => handleEnter3DSpace(false)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                    spaceMode === '3d'
-                      ? 'bg-sky-500 text-slate-950'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-extrabold transition-colors cursor-pointer whitespace-nowrap shrink-0 text-slate-300 hover:text-white"
                 >
                   <Box className="w-3.5 h-3.5" />
-                  <span>{isEn ? '3D Realistic Studio' : 'Không gian 3D'}</span>
+                  <span>{isEn ? '3D Atlas Studio' : 'Không gian 3D'}</span>
                 </button>
               </div>
 
-              {spaceMode === '2d' && (
-                <button
-                  type="button"
-                  onClick={() => setShow2DGuide(true)}
-                  className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-emerald-400/50 hover:border-emerald-300 text-xs font-bold text-emerald-200 cursor-pointer whitespace-nowrap shrink-0"
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>{isEn ? '2D Guide' : 'Hướng dẫn 2D'}</span>
-                </button>
-              )}
-
-              {spaceMode === '3d' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setShow3DGuide(true)}
-                    className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-amber-400/50 hover:border-amber-300 text-xs font-bold text-amber-200 cursor-pointer whitespace-nowrap shrink-0"
-                  >
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>{isEn ? '3D Guide' : 'Hướng dẫn 3D'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAICreator(true)}
-                    className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-purple-600/90 hover:bg-purple-500 border border-purple-300/60 text-xs font-extrabold text-white cursor-pointer whitespace-nowrap shrink-0"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>{isEn ? '+ Create AI 3D' : '+ Tạo AI 3D'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleOpenRealScanner}
-                    className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-cyan-500/90 hover:bg-cyan-400 border border-cyan-300 text-xs font-extrabold text-slate-950 cursor-pointer whitespace-nowrap shrink-0"
-                    title={isEn ? 'Scan Real Object with Camera → 3D' : 'Quét đồ vật thực tế bằng Camera → 3D'}
-                  >
-                    <Scan className="w-3.5 h-3.5" />
-                    <span>{isEn ? 'Scan Real → 3D' : 'Quét Thực Tế'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = !arMode;
-                      setArMode(next);
-                      if (next && !cameraActive) {
-                        void startCamera();
-                      }
-                    }}
-                    className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
-                      arMode
-                        ? 'bg-emerald-500 border-emerald-300 text-slate-950 shadow-md shadow-emerald-500/30'
-                        : 'bg-slate-950/95 border-emerald-400/50 hover:border-emerald-300 text-emerald-200'
-                    }`}
-                    title={isEn ? 'Toggle WebAR Hologram Over Real Desk' : 'Chiếu Hologram 3D trực tiếp lên bàn học thật (WebAR)'}
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    <span>{arMode ? (isEn ? 'AR Active' : 'Đang bật AR') : isEn ? 'AR Desk' : 'AR Bàn Học'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPointAskActive((prev) => {
-                        const next = !prev;
-                        if (next) {
-                          showToast(
-                            isEn
-                              ? 'Point & Ask ON: Point finger/cursor at a detail & speak!'
-                              : 'Đã bật Chỉ & Hỏi AI: Hãy chỉ tay/chuột vào chi tiết và nói!'
-                          );
-                        }
-                        return next;
-                      });
-                    }}
-                    className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
-                      pointAskActive
-                        ? 'bg-amber-400 hover:bg-amber-300 border-amber-200 text-slate-950 shadow-lg shadow-amber-500/25'
-                        : 'bg-slate-950/95 hover:border-amber-400 border-amber-400/55 text-amber-200'
-                    }`}
-                    title={
-                      isEn
-                        ? 'Point with finger or cursor and speak to ask AI'
-                        : 'Dùng ngón tay hoặc chuột chỉ vào chi tiết và nói để hỏi AI'
-                    }
-                  >
-                    <Crosshair className="w-3.5 h-3.5" />
-                    <span>{isEn ? 'Point & Ask' : 'Chỉ & Hỏi AI'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHologramCockpitOn((prev) => {
-                        const next = !prev;
-                        if (next) {
-                          if (pointAskActive) setPointAskActive(false);
-                          showToast(
-                            cameraActive
-                              ? isEn
-                                ? 'Hologram Parallax & Gaze HUD ON! Tilt head or blink on any part to isolate.'
-                                : 'Đã bật Hologram Mắt & Đầu! Nghiêng đầu tạo chiều sâu 3D, nhìn & chớp mắt để tách lớp.'
-                              : isEn
-                              ? 'Hologram Parallax Preview ON (Move pointer, or enable Webcam for real Head & Iris tracking).'
-                              : 'Đã bật Buồng Lái Hologram (Di chuyển chuột giả lập thị sai, hoặc bật Webcam để theo dõi Đầu & Mắt thật).'
-                          );
-                        }
-                        return next;
-                      });
-                    }}
-                    className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
-                      hologramCockpitOn
-                        ? 'bg-cyan-400 hover:bg-cyan-300 border-cyan-200 text-slate-950 shadow-lg shadow-cyan-500/25'
-                        : 'bg-slate-950/95 hover:border-cyan-400 border-cyan-400/55 text-cyan-200'
-                    }`}
-                    title={
-                      isEn
-                        ? 'Head-Tracked 3D Window Parallax & Gaze HUD (Vision mode)'
-                        : 'Hiệu ứng Thị sai Cửa sổ 3D theo Đầu & Nhìn đâu sáng đó (Gaze HUD)'
-                    }
-                  >
-                    <ScanFace className="w-3.5 h-3.5" />
-                    <span>{isEn ? 'Hologram Eye/Head' : 'Hologram Mắt/Đầu'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCoopModal(true)}
-                    className={`cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md border text-xs font-extrabold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
-                      coopActiveRoom
-                        ? 'bg-emerald-500 hover:bg-emerald-400 border-emerald-200 text-slate-950 shadow-lg shadow-emerald-500/25'
-                        : 'bg-slate-950/95 hover:border-emerald-400 border-emerald-400/55 text-emerald-200'
-                    }`}
-                    title={
-                      isEn
-                        ? 'Classmate Virtual Hands (2–4 learners in shared 3D)'
-                        : 'Bàn Tay Ảo Bạn Học: Cùng 2–4 bạn bè tương tác 1 mô hình 3D'
-                    }
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>
-                      {coopActiveRoom
-                        ? `${isEn ? 'Co-op' : 'Bạn Học'} (${coopPeers.length}/${coopActiveRoom.maxMembers})`
-                        : isEn
-                        ? 'Co-op Hands'
-                        : 'Bạn Học 3D'}
-                    </span>
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={() => setShow2DGuide(true)}
+                className="cs-deck-btn flex items-center gap-1.5 px-3 py-2 rounded-md bg-slate-950/95 border border-emerald-400/50 hover:border-emerald-300 text-xs font-bold text-emerald-200 cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>{isEn ? '2D Guide' : 'Hướng dẫn 2D'}</span>
+              </button>
 
               {/* Active Mode Subtitle + Gesture Status */}
               <div className="hidden xl:flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-950/95 border border-slate-700/80 text-xs">
@@ -6403,17 +7023,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   style={{ backgroundColor: currentGestureMeta.accent }}
                 />
                 <span className="font-bold text-white whitespace-nowrap max-w-[200px] truncate">
-                  {spaceMode === '2d'
-                    ? isEn
-                      ? active2DMode.titleEn
-                      : active2DMode.titleVi
-                    : activeCustomModel
-                    ? isEn
-                      ? activeCustomModel.titleEn
-                      : activeCustomModel.titleVi
-                    : isEn
-                    ? activeMode.titleEn
-                    : activeMode.titleVi}
+                  {isEn ? active2DMode.titleEn : active2DMode.titleVi}
                 </span>
                 <span className="text-slate-400">·</span>
                 <span className="font-semibold text-sky-300 whitespace-nowrap">
@@ -6553,58 +7163,22 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         </button>
       )}
 
-        {/* Top-Right Corner Voice Mentor, Live Telemetry & 10-Fingertip Webcam PiP */}
-        {!hudHidden && (
+        {/* Top-Right Corner Voice Mentor, Live Telemetry & 10-Fingertip Webcam PiP (2D Mode) */}
+        {!hudHidden && spaceMode === '2d' && (
           <div className="absolute top-[60px] sm:top-16 right-2 sm:right-3 z-20 flex flex-col items-end gap-1.5 sm:gap-2 max-w-[calc(100vw-16px)] sm:max-w-[360px] pointer-events-none">
             <div className="pointer-events-auto">
               <SpatialVoiceMentor
                 compactButton
-                spaceName={spaceMode === '2d' ? 'Học Cảm Giác 2D' : 'Học Cảm Giác 3D'}
-                modelTitle={
-                  spaceMode === '2d'
-                    ? isEn
-                      ? active2DMode.titleEn
-                      : active2DMode.titleVi
-                    : activeCustomModel
-                    ? isEn
-                      ? activeCustomModel.titleEn
-                      : activeCustomModel.titleVi
-                    : isEn
-                    ? activeMode.titleEn
-                    : activeMode.titleVi
-                }
-                partName={
-                  spaceMode === '3d' && isolatedPartIdx !== null && modelParts[isolatedPartIdx]
-                    ? isEn
-                      ? modelParts[isolatedPartIdx].nameEn
-                      : modelParts[isolatedPartIdx].nameVi
-                    : undefined
-                }
-                partDescription={
-                  spaceMode === '3d' && isolatedPartIdx !== null && modelParts[isolatedPartIdx]
-                    ? isEn
-                      ? modelParts[isolatedPartIdx].introEn
-                      : modelParts[isolatedPartIdx].introVi
-                    : undefined
-                }
-                formula={
-                  spaceMode === '2d'
-                    ? active2DMode.formula
-                    : activeCustomModel
-                    ? activeCustomModel.formula
-                    : activeMode.formula
-                }
+                spaceName="Học Cảm Giác 2D"
+                modelTitle={isEn ? active2DMode.titleEn : active2DMode.titleVi}
+                formula={active2DMode.formula}
                 language={language}
               />
             </div>
 
             <div className="hidden md:block pointer-events-auto spatial-hud-frame spatial-hud-zoom w-[244px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2.5 text-[11px] space-y-1">
               <div className="font-mono font-bold text-cyan-300 truncate">
-                {spaceMode === '2d'
-                  ? active2DMode.formula
-                  : activeCustomModel
-                  ? activeCustomModel.formula
-                  : activeMode.formula}
+                {active2DMode.formula}
               </div>
               <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-slate-200 font-mono text-[10px] tabular-nums">
                 <span>{liveTelemetry.metricA}</span>
@@ -6614,46 +7188,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
               <div className="text-[10px] text-slate-400 font-mono tabular-nums">{liveTelemetry.metricC}</div>
             </div>
 
-            {spaceMode === '3d' && coopActiveRoom && (
-              <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom w-[244px] rounded-lg bg-slate-950/95 border border-emerald-400/60 p-2.5 text-[11px] space-y-1.5">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="font-mono font-extrabold text-emerald-300 text-[10px]">
-                    {isEn ? 'CO-OP' : 'PHÒNG'} #{coopActiveRoom.roomId} · {coopPeers.length}/{coopActiveRoom.maxMembers}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowCoopModal(true)}
-                    className="text-[10px] font-bold text-cyan-300 hover:text-cyan-200 underline cursor-pointer"
-                  >
-                    {isEn ? 'Invite' : 'Mời bạn'}
-                  </button>
-                </div>
-                <div className="space-y-1">
-                  {coopPeers.map((peer) => (
-                    <div key={peer.peerId} className="flex items-center justify-between gap-1.5 text-[10px]">
-                      <span className="flex items-center gap-1.5 min-w-0 font-bold text-slate-100 truncate">
-                        <span
-                          className="w-2 h-2 rounded-xs shrink-0"
-                          style={{ backgroundColor: peer.colorHex }}
-                        />
-                        <span className="truncate">
-                          {peer.name}
-                          {peer.peerId === coopSelfPeerId ? (isEn ? ' (You)' : ' (Bạn)') : ''}
-                        </span>
-                      </span>
-                      <span className={peer.handActive ? 'text-emerald-300 font-mono' : 'text-slate-500 font-mono'}>
-                        {peer.handActive ? `${peer.handCount}H` : '•'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {cameraActive && (
               <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom relative w-[128px] h-[96px] sm:w-[200px] sm:h-[150px] md:w-[240px] md:h-[180px] rounded-lg overflow-hidden bg-slate-950 border-2 border-cyan-400/60 shadow-xl">
                 <video
-                  ref={videoRef}
+                  ref={(el) => {
+                    if (el && el.srcObject !== activeMediaStream) {
+                      el.srcObject = activeMediaStream;
+                      if (activeMediaStream) el.play().catch(() => {});
+                    }
+                  }}
                   autoPlay
                   playsInline
                   muted
@@ -6694,625 +7237,231 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   </span>
                   <span>{currentGestureMeta.fingers}</span>
                 </div>
-              </div>
-            )}
-
-          {/* Virtual 3D Touch Pad when in 3D without webcam */}
-          {spaceMode === '3d' && !cameraActive && showVirtualPad && (
-            <div className="pointer-events-auto spatial-hud-frame spatial-hud-zoom w-[224px] rounded-lg bg-slate-950/95 border border-slate-700/85 p-2 space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] font-bold text-slate-300">
-                <span className="flex items-center gap-1">
-                  <Hand className="w-3 h-3 text-cyan-400" />
-                  {isEn ? '3D Gesture Touch Pad' : 'Bàn Di Cử Chỉ 3D Ảo'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowVirtualPad(false)}
-                  className="text-slate-400 hover:text-white cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-              <div
-                onPointerDown={(e) => {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                  virtualPadDownRef.current = true;
-                  handlePadPointer(e);
-                }}
-                onPointerMove={(e) => {
-                  if (virtualPadDownRef.current) handlePadPointer(e);
-                }}
-                onPointerUp={() => {
-                  virtualPadDownRef.current = false;
-                }}
-                onPointerCancel={() => {
-                  virtualPadDownRef.current = false;
-                }}
-                className="relative w-full h-[108px] rounded-xl bg-slate-900 border border-cyan-500/35 cursor-crosshair overflow-hidden touch-none"
-              >
-                <div
-                  className="absolute inset-0 opacity-25 pointer-events-none"
-                  style={{
-                    backgroundImage:
-                      'linear-gradient(to right, #38bdf8 1px, transparent 1px), linear-gradient(to bottom, #38bdf8 1px, transparent 1px)',
-                    backgroundSize: '18px 18px'
-                  }}
-                />
-                <div
-                  className="absolute w-3.5 h-3.5 -ml-1.5 -mt-1.5 rounded-full border-2 border-white pointer-events-none"
-                  style={{
-                    left: `${((oxyzCursor.x + 3.2) / 6.4) * 100}%`,
-                    top: `${(1 - oxyzCursor.y / 3.8) * 100}%`,
-                    backgroundColor: currentGestureMeta.accent
-                  }}
-                />
-                <span className="absolute bottom-1 left-2 text-[9px] font-mono text-slate-400 pointer-events-none">
-                  {isEn ? 'Drag to sculpt / drive IK' : 'Kéo để vẽ / dẫn tay Robot'}
-                </span>
-              </div>
             </div>
           )}
-        </div>
+      </div>
       )}
 
-      {/* Top-Left Stack: Camera Warning + 3D Part Selection / Isolation Card */}
-      {!hudHidden && (
-        <div className="absolute top-[60px] sm:top-16 left-2 sm:left-3 z-20 flex flex-col gap-2 max-w-[calc(100vw-16px)] sm:max-w-[320px] max-h-[34dvh] md:max-h-none overflow-y-auto scrollbar-none pointer-events-none">
-          {cameraError && (
-            <div className="pointer-events-auto rounded-lg bg-amber-950/95 border border-amber-500/50 px-3 py-2 text-[11px] text-amber-200">
-              {cameraError}
-            </div>
-          )}
-
-          {/* Case 1: Isolated Part Inspection Card */}
-          {spaceMode === '3d' && isolatedPartIdx !== null && modelParts[isolatedPartIdx] && (
-            <div className="spatial-hud-frame spatial-hud-zoom spatial-step-reveal pointer-events-auto w-[min(316px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-cyan-400/60 shadow-2xl p-3 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/40 text-[10px] font-mono font-bold text-cyan-300">
-                  <Info className="w-3 h-3" />
-                  {isEn
-                    ? `Part ${isolatedPartIdx + 1}/${modelParts.length} · ${modelParts[isolatedPartIdx].badgeEn}`
-                    : `Bộ phận ${isolatedPartIdx + 1}/${modelParts.length} · ${modelParts[isolatedPartIdx].badgeVi}`}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setPartCardMinimized((v) => !v)}
-                    className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:border-cyan-400 cursor-pointer"
-                    title={partCardMinimized ? 'Mở rộng' : 'Thu gọn'}
-                  >
-                    {partCardMinimized ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsolatedPartIdx(null)}
-                    className="flex items-center gap-1 px-2 py-1 rounded bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[10px] font-bold text-slate-100 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3 h-3" />
-                    <span>{isEn ? 'Full Model' : 'Toàn mô hình'}</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="text-sm font-extrabold text-white leading-snug">
-                {isEn ? modelParts[isolatedPartIdx].nameEn : modelParts[isolatedPartIdx].nameVi}
-              </div>
-
-              {!partCardMinimized && (
-                <div className="space-y-1.5 text-[11px] leading-relaxed">
-                  <div className="spatial-soft-frame rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
-                    <div className="text-[10px] font-bold uppercase tracking-wide text-cyan-300">
-                      {isEn ? 'Introduction' : 'Giới thiệu cấu tạo'}
-                    </div>
-                    <p className="text-slate-200 mt-0.5">
-                      {isEn ? modelParts[isolatedPartIdx].introEn : modelParts[isolatedPartIdx].introVi}
-                    </p>
-                  </div>
-                  <div className="spatial-soft-frame spatial-soft-frame-emerald rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
-                    <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">
-                      {isEn ? 'Function & Role' : 'Chức năng & Vai trò'}
-                    </div>
-                    <p className="text-slate-200 mt-0.5">
-                      {isEn ? modelParts[isolatedPartIdx].functionEn : modelParts[isolatedPartIdx].functionVi}
-                    </p>
-                  </div>
-                  {modelParts[isolatedPartIdx].specFormula && (
-                    <div className="px-2.5 py-1 rounded bg-sky-950/70 border border-sky-500/35 font-mono text-[10px] font-bold text-sky-200">
-                      {modelParts[isolatedPartIdx].specFormula}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between gap-1.5 pt-0.5">
+      {/* Point & Ask AI Multimodal Panel in 3D Mode (centered floating card above viewport so left/right Atlas panels remain unobstructed) */}
+      {!hudHidden && spaceMode === '3d' && pointAskActive && (
+        <div className="absolute top-[74px] left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+          <div className="spatial-hud-frame spatial-hud-zoom spatial-step-reveal pointer-events-auto w-[min(356px,calc(100vw-24px))] max-h-[calc(100vh-215px)] overflow-y-auto rounded-lg bg-[#050d1c]/95 border border-amber-400/65 shadow-2xl p-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-400/15 border border-amber-400/45 text-[10px] font-mono font-bold text-amber-300">
+                <Crosshair className="w-3 h-3" />
+                {isEn ? 'POINT & ASK AI' : 'CHỈ TRỎ & HỎI ĐÁP AI'}
+              </span>
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => handleCyclePart(-1)}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[11px] font-bold text-slate-200 cursor-pointer"
+                  onClick={() => setPointAskHandsFree((v) => !v)}
+                  className={`px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold cursor-pointer ${
+                    pointAskHandsFree
+                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
                 >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Prev Part' : 'Bộ phận cũ'}</span>
+                  {isEn ? 'AUTO' : 'RẢNH TAY'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleCyclePart(1)}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-sky-500 hover:bg-sky-400 text-[11px] font-extrabold text-slate-950 cursor-pointer"
+                  onClick={() => setPointAskTtsEnabled((v) => !v)}
+                  className={`p-1 rounded border text-[10px] cursor-pointer ${
+                    pointAskTtsEnabled
+                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
                 >
-                  <span>{isEn ? 'Next Part' : 'Bộ phận tiếp'}</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  {pointAskTtsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPointAskActive(false)}
+                  className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <div className="text-[10px] text-slate-400">
-                {isEn
-                  ? 'Swipe L/R to switch · 1 hand up zoom in · 2 hands closer zoom out · 2 fingers exit'
-                  : 'Vuốt Trái/Phải đổi · Kéo 1 tay lên phóng to · 2 tay lại gần thu nhỏ · 2 ngón thoát'}
-              </div>
             </div>
-          )}
 
-          {/* Case 2: Fixed Horizontal Row Component Selector & Live Info Card */}
-          {spaceMode === '3d' &&
-            isolatedPartIdx === null &&
-            explodeVal >= 0.25 &&
-            modelParts.length > 0 && (() => {
-              const selIdx = highlightedPartIdx ?? 0;
-              const selPart = modelParts[selIdx] || modelParts[0];
+            {(() => {
+              const activeTarget = pointAskLockedTarget || pointAskHover;
+              if (!activeTarget) {
+                return (
+                  <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-2 text-[11px] text-slate-300 leading-snug">
+                    {isEn
+                      ? 'Hover cursor or point index finger at any 3D detail, click to lock it, then ask AI.'
+                      : 'Rê chuột hoặc đưa ngón trỏ chỉ vào chi tiết 3D cần hỏi (nhấp chuột để khóa vùng), sau đó nói hoặc nhập câu hỏi.'}
+                  </div>
+                );
+              }
               return (
-                <div className="spatial-hud-frame spatial-hud-zoom spatial-step-reveal pointer-events-auto w-[min(336px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/55 shadow-xl p-2.5 space-y-2">
-                  <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-bold text-emerald-300">
-                    <span className="truncate">
-                      {isEn
-                        ? `HORIZONTAL ROW · ${modelParts.length} PARTS`
-                        : `HÀNG NGANG CỐ ĐỊNH · ${modelParts.length} LINH KIỆN`}
+                <div className="rounded bg-cyan-950/60 border border-cyan-400/50 px-2.5 py-2 space-y-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-extrabold text-cyan-200 truncate">
+                      {isEn ? activeTarget.partInfo.nameEn : activeTarget.partInfo.nameVi}
                     </span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-cyan-300">
-                        {selIdx + 1}/{modelParts.length}
-                      </span>
+                    {pointAskLockedTarget ? (
                       <button
                         type="button"
-                        onClick={() => setPartCardMinimized((v) => !v)}
-                        className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-300 cursor-pointer"
+                        onClick={() => {
+                          pointAskLockedRef.current = null;
+                          setPointAskLockedTarget(null);
+                        }}
+                        className="px-1.5 py-0.5 rounded bg-amber-400/20 border border-amber-400/50 text-[9px] font-mono font-bold text-amber-200 cursor-pointer shrink-0"
                       >
-                        {partCardMinimized ? (isEn ? 'Details' : 'Chi tiết') : isEn ? 'Hide' : 'Thu gọn'}
+                        {isEn ? 'LOCKED · Unlock' : 'ĐÃ KHÓA · Mở'}
                       </button>
-                    </div>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-[9px] font-mono font-bold text-cyan-200 shrink-0">
+                        {activeTarget.source === 'finger'
+                          ? isEn ? 'FINGER' : 'NGÓN TRỎ'
+                          : isEn ? 'CURSOR' : 'CON TRỎ'}
+                      </span>
+                    )}
                   </div>
-
-                  <div className="text-xs sm:text-sm font-extrabold text-white leading-snug">
-                    {isEn ? selPart.nameEn : selPart.nameVi}
-                  </div>
-
-                  {!partCardMinimized && (
-                    <div className="space-y-1.5 text-[11px] leading-relaxed">
-                      <div className="spatial-soft-frame rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
-                        <div className="text-[10px] font-bold uppercase tracking-wide text-cyan-300">
-                          {isEn ? 'Structure' : 'Giới thiệu cấu tạo'}
-                        </div>
-                        <p className="text-slate-200 mt-0.5">
-                          {isEn ? selPart.introEn : selPart.introVi}
-                        </p>
-                      </div>
-                      <div className="spatial-soft-frame spatial-soft-frame-emerald rounded bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
-                        <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">
-                          {isEn ? 'Function & Role' : 'Chức năng & Vai trò'}
-                        </div>
-                        <p className="text-slate-200 mt-0.5">
-                          {isEn ? selPart.functionEn : selPart.functionVi}
-                        </p>
-                      </div>
-                      {selPart.specFormula && (
-                        <div className="px-2.5 py-1 rounded bg-sky-950/70 border border-sky-500/35 font-mono text-[10px] font-bold text-sky-200">
-                          {selPart.specFormula}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleCyclePart(-1)}
-                      className="p-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-200 cursor-pointer"
-                      title={isEn ? 'Previous part' : 'Linh kiện trước'}
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setHighlightedPartIdx(selIdx);
-                        setIsolatedPartIdx(selIdx);
-                        setPartCardMinimized(false);
-                      }}
-                      className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-extrabold cursor-pointer truncate"
-                    >
-                      <Maximize2 className="w-3 h-3 shrink-0" />
-                      <span>{isEn ? 'Inspect 360°' : 'Soi 360°'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleReassembleAllParts()}
-                      className="px-2 py-1.5 rounded-md bg-slate-900 border border-emerald-400/55 hover:bg-emerald-500/15 text-emerald-200 text-[11px] font-bold cursor-pointer whitespace-nowrap"
-                    >
-                      {isEn ? '✌️ Reassemble' : '✌️ Lắp Lại'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCyclePart(1)}
-                      className="p-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-200 cursor-pointer"
-                      title={isEn ? 'Next part' : 'Linh kiện tiếp'}
-                    >
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="text-[10px] text-slate-400 leading-snug">
-                    {isEn
-                      ? 'Move hand horizontally over a part · Raise 👍 1 Thumb to select · Positions locked'
-                      : 'Di tay ngang qua linh kiện · Giơ 👍 1 ngón cái để chọn · Vị trí khóa cố định'}
+                  <div className="flex flex-wrap gap-x-2 text-[10px] font-mono text-slate-300">
+                    <span>{activeTarget.dims[0]} × {activeTarget.dims[1]} × {activeTarget.dims[2]}</span>
+                    <span>·</span>
+                    <span className="text-emerald-300">V ≈ {activeTarget.volume} đv³</span>
                   </div>
                 </div>
               );
             })()}
 
-          {/* Case 2B: Real-Grab Active Manipulation / Detached Part Inspector Card */}
-          {spaceMode === '3d' &&
-            isolatedPartIdx === null &&
-            !pointAskActive &&
-            explodeVal < 0.25 &&
-            (activeGrabInfo ||
-              detachedPartCount > 0 ||
-              (interactionStyle === 'real_grab' &&
-                highlightedPartIdx !== null &&
-                modelParts[highlightedPartIdx])) && (
-              <div className="spatial-hud-frame spatial-hud-zoom pointer-events-auto w-[min(320px,calc(100vw-24px))] rounded-lg bg-slate-950/95 border border-emerald-400/55 shadow-2xl p-2.5 space-y-2">
-                {(() => {
-                  const targetIdx =
-                    activeGrabInfo?.partIdx !== undefined && activeGrabInfo?.partIdx !== null
-                      ? activeGrabInfo.partIdx
-                      : highlightedPartIdx;
-                  const partMeta = targetIdx !== null && targetIdx !== undefined ? modelParts[targetIdx] : null;
-                  const statusLabel =
-                    activeGrabInfo?.kind === 'hold'
-                      ? isEn
-                        ? 'HOLDING WHOLE MODEL'
-                        : 'ĐANG CẦM CẢ MÔ HÌNH'
-                      : activeGrabInfo?.kind === 'part'
-                      ? isEn
-                        ? 'PULLING / DETACHING'
-                        : 'ĐANG CẦM & THÁO RỜI'
-                      : activeGrabInfo?.kind === 'hover'
-                      ? isEn
-                        ? 'HOVERING PART'
-                        : 'CHẠM BỘ PHẬN'
-                      : detachedPartCount > 0
-                      ? isEn
-                        ? `DETACHED: ${detachedPartCount} PART(S)`
-                        : `ĐÃ THÁO RỜI: ${detachedPartCount} CHI TIẾT`
-                      : isEn
-                      ? 'SELECTED PART'
-                      : 'LINH KIỆN ĐÃ CHỌN';
-                  return (
-                    <>
-                      <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-bold">
-                        <span
-                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border whitespace-nowrap shrink-0 ${
-                            activeGrabInfo?.kind === 'part' || activeGrabInfo?.kind === 'hold'
-                              ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300'
-                              : 'bg-amber-400/15 border-amber-400/50 text-amber-300'
-                          }`}
-                        >
-                          <Hand className="w-3 h-3 shrink-0" />
-                          <span>{statusLabel}</span>
-                        </span>
-                        {activeGrabInfo && activeGrabInfo.kind === 'part' && (
-                          <span className="text-cyan-300 whitespace-nowrap shrink-0">
-                            {activeGrabInfo.distance.toFixed(2)} m
-                          </span>
-                        )}
-                      </div>
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={togglePointAskVoice}
+                disabled={pointAskLoading}
+                className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-extrabold transition-colors cursor-pointer ${
+                  pointAskMicListening
+                    ? 'bg-rose-500 hover:bg-rose-400 text-white animate-pulse'
+                    : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
+                }`}
+              >
+                {pointAskMicListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                <span>
+                  {pointAskMicListening
+                    ? isEn ? 'Listening... (Tap to stop)' : 'Đang nghe giọng nói... (Bấm dừng)'
+                    : isEn ? 'Speak Question About Highlighted Part' : 'Nói Câu Hỏi Về Chi Tiết Đang Chỉ'}
+                </span>
+              </button>
 
-                      <div className="text-xs font-extrabold text-white truncate">
-                        {activeGrabInfo?.partName ||
-                          (partMeta
-                            ? isEn
-                              ? partMeta.nameEn
-                              : partMeta.nameVi
-                            : isEn
-                            ? `${detachedPartCount} part(s) disassembled`
-                            : `${detachedPartCount} bộ phận đang tháo rời`)}
-                      </div>
+              {pointAskInterim && (
+                <div className="px-2.5 py-1 rounded bg-slate-900 border border-rose-400/40 text-[11px] text-rose-200 italic">
+                  “{pointAskInterim}”
+                </div>
+              )}
 
-                      <div className="text-[10px] text-slate-400 leading-snug">
-                        {activeGrabInfo?.kind === 'hold'
-                          ? isEn
-                            ? 'Move hand or drag to rotate the assembled model; open hand to release.'
-                            : 'Di chuyển tay/chuột để xoay cả khối mô hình; mở tay để đặt lại.'
-                          : activeGrabInfo?.kind === 'part'
-                          ? isEn
-                            ? 'Pull away to inspect, or drop near socket (<0.36m) for magnetic snap.'
-                            : 'Kéo ra ngoài để tháo rời, hoặc thả gần khớp (<0.36m) để hít khít lại.'
-                          : isEn
-                          ? '🖐️ Open Hand Aim · 👍 1 Thumb Select · ✌️ Horizontal Row / Snap · ✊ Fist Spin · 👐 2H Zoom'
-                          : '🖐️ Mở tay ngắm · 👍 1 ngón cái chọn · ✌️ Tách hàng ngang · ✊ Nắm xoay · 👐 2 tay thu phóng'}
-                      </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void submitPointAndAsk(pointAskInput);
+                }}
+                className="flex items-center gap-1.5"
+              >
+                <input
+                  type="text"
+                  value={pointAskInput}
+                  onChange={(e) => setPointAskInput(e.target.value)}
+                  placeholder={isEn ? 'Ask: How does this work? / Volume?' : 'VD: Cái này hoạt động thế nào?'}
+                  className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 focus:border-amber-400 text-xs text-white outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={pointAskLoading}
+                  className="px-2.5 py-1.5 rounded-md bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 text-xs font-extrabold cursor-pointer shrink-0"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </form>
 
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {targetIdx !== null && targetIdx !== undefined && partMeta && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleReassembleSinglePart(targetIdx)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-400/50 hover:bg-emerald-500/30 text-emerald-200 text-[10px] font-bold whitespace-nowrap shrink-0 cursor-pointer"
-                            >
-                              <Magnet className="w-3 h-3 shrink-0" />
-                              <span>{isEn ? 'Snap Part' : 'Lắp lại phần này'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setHighlightedPartIdx(targetIdx);
-                                setIsolatedPartIdx(targetIdx);
-                                setPartCardMinimized(false);
-                              }}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[10px] font-extrabold whitespace-nowrap shrink-0 cursor-pointer"
-                            >
-                              <Maximize2 className="w-3 h-3 shrink-0" />
-                              <span>{isEn ? 'Inspect 360°' : 'Xem riêng 360°'}</span>
-                            </button>
-                          </>
-                        )}
-                        {detachedPartCount > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => handleReassembleAllParts()}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-900 border border-cyan-400/50 hover:bg-cyan-500/15 text-cyan-200 text-[10px] font-bold whitespace-nowrap shrink-0 cursor-pointer"
-                          >
-                            <RotateCcw className="w-3 h-3 shrink-0" />
-                            <span>{isEn ? 'Snap All' : 'Lắp lại tất cả'}</span>
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  );
-                })()}
+              <div className="flex flex-wrap gap-1">
+                {(isEn
+                  ? ['How does this work?', 'Calculate its volume', 'Physical principle?']
+                  : ['Cái này hoạt động thế nào?', 'Tính thể tích phần này giúp tôi', 'Nguyên lý vật lý?']
+                ).map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    disabled={pointAskLoading}
+                    onClick={() => void submitPointAndAsk(q)}
+                    className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-[10px] font-semibold text-slate-200 cursor-pointer"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {pointAskLoading && (
+              <div className="rounded bg-slate-900 border border-amber-400/40 px-3 py-2 text-[11px] font-semibold text-amber-200">
+                {isEn ? 'Syn AI is analyzing the pointed 3D region...' : 'Syn AI đang khoanh vùng & phân tích chi tiết được chỉ...'}
               </div>
             )}
 
-          {/* Case 3: Point & Ask AI Multimodal Panel */}
-          {spaceMode === '3d' && pointAskActive && (
-            <div className="spatial-hud-frame spatial-hud-zoom spatial-step-reveal pointer-events-auto w-[min(356px,calc(100vw-24px))] max-h-[calc(100vh-215px)] overflow-y-auto rounded-lg bg-slate-950/95 border border-amber-400/65 shadow-2xl p-3 space-y-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-400/15 border border-amber-400/45 text-[10px] font-mono font-bold text-amber-300">
-                  <Crosshair className="w-3 h-3" />
-                  {isEn ? 'POINT & ASK AI' : 'CHỈ TRỎ & HỎI ĐÁP AI'}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setPointAskHandsFree((v) => !v)}
-                    className={`px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold cursor-pointer ${
-                      pointAskHandsFree
-                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
-                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
-                    }`}
-                    title={isEn ? 'Auto keep listening for next pointed detail' : 'Rảnh tay: tự động nghe liên tục câu tiếp theo'}
-                  >
-                    {isEn ? 'AUTO' : 'RẢNH TAY'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPointAskTtsEnabled((v) => !v)}
-                    className={`p-1 rounded border text-[10px] cursor-pointer ${
-                      pointAskTtsEnabled
-                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
-                    }`}
-                    title={isEn ? 'Toggle voice answer readout' : 'Bật/Tắt AI đọc lời giải'}
-                  >
-                    {pointAskTtsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPointAskActive(false)}
-                    className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white cursor-pointer"
-                    title={isEn ? 'Close Point & Ask' : 'Tắt Chỉ & Hỏi'}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Pointed Part Live Telemetry Badge */}
-              {(() => {
-                const activeTarget = pointAskLockedTarget || pointAskHover;
-                if (!activeTarget) {
-                  return (
-                    <div className="rounded bg-slate-900/90 border border-slate-800 px-2.5 py-2 text-[11px] text-slate-300 leading-snug">
-                      {isEn
-                        ? 'Hover cursor or point your index finger at any 3D detail, click to lock it, then speak or type your question.'
-                        : 'Rê chuột hoặc đưa ngón trỏ chỉ vào chi tiết 3D cần hỏi (bấm chuột để khóa vùng), sau đó bấm Micro nói hoặc gõ câu hỏi.'}
+            {pointAskResult && !pointAskLoading && (
+              <div className="spatial-soft-frame rounded-lg bg-slate-900/95 border border-cyan-500/45 p-2.5 space-y-2 text-[11px] leading-relaxed">
+                <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-1.5">
+                  <div>
+                    <div className="text-[10px] font-mono uppercase text-amber-300">
+                      {pointAskResult.targetPartName}
                     </div>
-                  );
-                }
-                return (
-                  <div className="rounded bg-cyan-950/60 border border-cyan-400/50 px-2.5 py-2 space-y-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-extrabold text-cyan-200 truncate">
-                        {isEn ? activeTarget.partInfo.nameEn : activeTarget.partInfo.nameVi}
-                      </span>
-                      {pointAskLockedTarget ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            pointAskLockedRef.current = null;
-                            setPointAskLockedTarget(null);
-                          }}
-                          className="px-1.5 py-0.5 rounded bg-amber-400/20 border border-amber-400/50 text-[9px] font-mono font-bold text-amber-200 cursor-pointer shrink-0"
-                        >
-                          {isEn ? 'LOCKED · Unlock' : 'ĐÃ KHÓA · Mở'}
-                        </button>
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-[9px] font-mono font-bold text-cyan-200 shrink-0">
-                          {activeTarget.source === 'finger'
-                            ? isEn
-                              ? 'FINGER'
-                              : 'NGÓN TRỎ'
-                            : isEn
-                            ? 'CURSOR'
-                            : 'CON TRỎ'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-x-2 text-[10px] font-mono text-slate-300">
-                      <span>
-                        {activeTarget.dims[0]} × {activeTarget.dims[1]} × {activeTarget.dims[2]}
-                      </span>
-                      <span>·</span>
-                      <span className="text-emerald-300">V ≈ {activeTarget.volume} đv³</span>
-                    </div>
+                    <div className="text-xs font-extrabold text-white">{pointAskResult.title}</div>
                   </div>
-                );
-              })()}
-
-              {/* Voice Microphone + Question Input */}
-              <div className="space-y-1.5">
-                <button
-                  type="button"
-                  onClick={togglePointAskVoice}
-                  disabled={pointAskLoading}
-                  className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-extrabold transition-colors cursor-pointer ${
-                    pointAskMicListening
-                      ? 'bg-rose-500 hover:bg-rose-400 text-white animate-pulse'
-                      : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
-                  }`}
-                >
-                  {pointAskMicListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  <span>
-                    {pointAskMicListening
-                      ? isEn
-                        ? 'Listening... (Tap to stop)'
-                        : 'Đang nghe giọng nói... (Bấm dừng)'
-                      : isEn
-                      ? 'Speak Question About Highlighted Part'
-                      : 'Nói Câu Hỏi Về Chi Tiết Đang Chỉ'}
-                  </span>
-                </button>
-
-                {pointAskInterim && (
-                  <div className="px-2.5 py-1 rounded bg-slate-900 border border-rose-400/40 text-[11px] text-rose-200 italic">
-                    “{pointAskInterim}”
+                  <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                </div>
+                <div className="text-slate-100">
+                  <FormattedText text={pointAskResult.answer} />
+                </div>
+                {pointAskResult.operationMechanism && (
+                  <div className="rounded bg-slate-950/90 border border-slate-800 px-2 py-1.5">
+                    <div className="text-[10px] font-bold uppercase text-emerald-300 mb-0.5">
+                      {isEn ? 'Mechanism' : 'Cơ chế hoạt động'}
+                    </div>
+                    <FormattedText text={pointAskResult.operationMechanism} className="text-slate-200" />
                   </div>
                 )}
-
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void submitPointAndAsk(pointAskInput);
-                  }}
-                  className="flex items-center gap-1.5"
-                >
-                  <input
-                    type="text"
-                    value={pointAskInput}
-                    onChange={(e) => setPointAskInput(e.target.value)}
-                    placeholder={isEn ? 'Ask: How does this work? / Volume?' : 'VD: Cái này hoạt động thế nào?'}
-                    className="flex-1 min-w-0 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 focus:border-amber-400 text-xs text-white outline-none"
-                  />
-                  <button
-                    type="submit"
-                    disabled={pointAskLoading}
-                    className="px-2.5 py-1.5 rounded-md bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 text-xs font-extrabold cursor-pointer shrink-0"
-                    title={isEn ? 'Send' : 'Gửi câu hỏi'}
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </form>
-
-                {/* Quick 1-click Point & Ask prompts */}
-                <div className="flex flex-wrap gap-1">
-                  {(isEn
-                    ? ['How does this work?', 'Calculate its volume', 'Physical principle?']
-                    : ['Cái này hoạt động thế nào?', 'Tính thể tích phần này giúp tôi', 'Nguyên lý vật lý?']
-                  ).map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      disabled={pointAskLoading}
-                      onClick={() => void submitPointAndAsk(q)}
-                      className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-[10px] font-semibold text-slate-200 cursor-pointer"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
+                {pointAskResult.volumeCalculation && (
+                  <div className="rounded bg-sky-950/50 border border-sky-500/35 px-2 py-1.5">
+                    <div className="text-[10px] font-bold uppercase text-sky-300 mb-0.5">
+                      {isEn ? 'Volume & Geometry' : 'Thể tích & Kích thước'}
+                    </div>
+                    <FormattedText text={pointAskResult.volumeCalculation} className="text-sky-100" />
+                  </div>
+                )}
+                {pointAskResult.formula && (
+                  <div className="px-2 py-1 rounded bg-slate-950 border border-cyan-500/30 font-mono text-[10px] text-cyan-200">
+                    <FormattedText text={pointAskResult.formula} />
+                  </div>
+                )}
+                {pointAskResult.suggestedFollowUps.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {pointAskResult.suggestedFollowUps.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => void submitPointAndAsk(f)}
+                        className="text-left px-2 py-1 rounded bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[10px] text-amber-200 cursor-pointer"
+                      >
+                        ↳ {f}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+            )}
+          </div>
+        </div>
+      )}
 
-              {pointAskLoading && (
-                <div className="rounded bg-slate-900 border border-amber-400/40 px-3 py-2 text-[11px] font-semibold text-amber-200">
-                  {isEn ? 'Syn AI is analyzing the pointed 3D region...' : 'Syn AI đang khoanh vùng & phân tích chi tiết được chỉ...'}
-                </div>
-              )}
-
-              {/* AI Multimodal Response Inspector */}
-              {pointAskResult && !pointAskLoading && (
-                <div className="spatial-soft-frame rounded-lg bg-slate-900/95 border border-cyan-500/45 p-2.5 space-y-2 text-[11px] leading-relaxed">
-                  <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-1.5">
-                    <div>
-                      <div className="text-[10px] font-mono uppercase text-amber-300">
-                        {pointAskResult.targetPartName}
-                      </div>
-                      <div className="text-xs font-extrabold text-white">{pointAskResult.title}</div>
-                    </div>
-                    <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                  </div>
-
-                  <div className="text-slate-100">
-                    <FormattedText text={pointAskResult.answer} />
-                  </div>
-
-                  {pointAskResult.operationMechanism && (
-                    <div className="rounded bg-slate-950/90 border border-slate-800 px-2 py-1.5">
-                      <div className="text-[10px] font-bold uppercase text-emerald-300 mb-0.5">
-                        {isEn ? 'Mechanism' : 'Cơ chế hoạt động'}
-                      </div>
-                      <FormattedText text={pointAskResult.operationMechanism} className="text-slate-200" />
-                    </div>
-                  )}
-
-                  {pointAskResult.volumeCalculation && (
-                    <div className="rounded bg-sky-950/50 border border-sky-500/35 px-2 py-1.5">
-                      <div className="text-[10px] font-bold uppercase text-sky-300 mb-0.5">
-                        {isEn ? 'Volume & Geometry' : 'Thể tích & Kích thước'}
-                      </div>
-                      <FormattedText text={pointAskResult.volumeCalculation} className="text-sky-100" />
-                    </div>
-                  )}
-
-                  {pointAskResult.formula && (
-                    <div className="px-2 py-1 rounded bg-slate-950 border border-cyan-500/30 font-mono text-[10px] text-cyan-200">
-                      <FormattedText text={pointAskResult.formula} />
-                    </div>
-                  )}
-
-                  {pointAskResult.suggestedFollowUps.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-0.5">
-                      {pointAskResult.suggestedFollowUps.map((f) => (
-                        <button
-                          key={f}
-                          type="button"
-                          onClick={() => void submitPointAndAsk(f)}
-                          className="text-left px-2 py-1 rounded bg-slate-950 hover:bg-slate-800 border border-slate-700 text-[10px] text-amber-200 cursor-pointer"
-                        >
-                          ↳ {f}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+      {/* Top-Left Stack (2D Camera Warning) */}
+      {!hudHidden && spaceMode === '2d' && cameraError && (
+        <div className="absolute top-[60px] sm:top-16 left-2 sm:left-3 z-20 flex flex-col gap-2 max-w-[calc(100vw-16px)] sm:max-w-[320px] pointer-events-none">
+          <div className="pointer-events-auto rounded-lg bg-amber-950/95 border border-amber-500/50 px-3 py-2 text-[11px] text-amber-200">
+            {cameraError}
+          </div>
         </div>
       )}
 
@@ -7467,210 +7616,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         </div>
       )}
 
-      {/* UNIFIED COLLAPSIBLE BOTTOM CONTROL DOCK */}
-      {!hudHidden && (
+      {/* UNIFIED COLLAPSIBLE BOTTOM CONTROL DOCK (2D Mode) */}
+      {!hudHidden && spaceMode === '2d' && (
         <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 z-20 w-[min(980px,96vw)] flex flex-col items-center">
-          {spaceMode === '3d' && !pointAskActive && isolatedPartIdx === null && (
-            <div className="mb-1.5 flex flex-nowrap overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center scrollbar-none gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950/95 border border-slate-700/85 shadow-xl max-w-full">
-              {interactionStyle === 'real_grab' && (
-                <div className="flex items-center gap-1 pr-1.5 border-r border-slate-800">
-                  {(
-                    [
-                      {
-                        id: 'smart_grab' as const,
-                        labelVi: 'Cầm & Tháo',
-                        labelEn: 'Grab Part',
-                        icon: Hand,
-                        titleVi: 'Kéo trực tiếp để tháo lắp từng bộ phận (nền trống xoay camera)',
-                        titleEn: 'Drag any part to detach/snap; drag empty space to orbit'
-                      },
-                      {
-                        id: 'hold_model' as const,
-                        labelVi: 'Cầm Cả Khối',
-                        labelEn: 'Hold Model',
-                        icon: Move,
-                        titleVi: 'Cầm & xoay toàn bộ mô hình như ngoài đời (hoặc giữ Shift + Kéo)',
-                        titleEn: 'Hold & rotate entire model freely (or Shift + Drag)'
-                      },
-                      {
-                        id: 'orbit' as const,
-                        labelVi: 'Xoay Camera',
-                        labelEn: 'Orbit Cam',
-                        icon: Orbit,
-                        titleVi: 'Chế độ xoay camera chuẩn quanh mô hình',
-                        titleEn: 'Standard orbit camera around model'
-                      }
-                    ] as const
-                  ).map((tool) => {
-                    const ToolIcon = tool.icon;
-                    const active = mouseHandTool === tool.id;
-                    return (
-                      <button
-                        key={tool.id}
-                        type="button"
-                        onClick={() => setMouseHandTool(tool.id)}
-                        title={isEn ? tool.titleEn : tool.titleVi}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
-                          active
-                            ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                            : 'bg-slate-900 border border-slate-700/80 text-slate-300 hover:border-emerald-400/60 hover:text-white'
-                        }`}
-                      >
-                        <ToolIcon className="w-3 h-3 shrink-0" />
-                        <span>{isEn ? tool.labelEn : tool.labelVi}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="flex items-center gap-1 pr-1.5 border-r border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => handleZoomStep(-0.15)}
-                  title={isEn ? 'Zoom Out' : 'Thu nhỏ mô hình'}
-                  className="p-1 rounded-md bg-slate-900 border border-slate-700/80 hover:border-cyan-400 text-slate-200 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <ZoomOut className="w-3.5 h-3.5" />
-                </button>
-                <span className="px-1.5 text-[11px] font-mono font-bold text-cyan-300 whitespace-nowrap shrink-0">
-                  {scaleVal.toFixed(2)}x
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleZoomStep(0.15)}
-                  title={isEn ? 'Zoom In' : 'Phóng to mô hình'}
-                  className="p-1 rounded-md bg-slate-900 border border-slate-700/80 hover:border-cyan-400 text-slate-200 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <ZoomIn className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-1 pr-1.5 border-r border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = explodeVal >= 0.35 ? 0 : 1.15;
-                    smoothTargetRef.current.explode = next;
-                    setExplodeVal(next);
-                  }}
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer ${
-                    explodeVal >= 0.35
-                      ? 'bg-amber-400 text-slate-950'
-                      : 'bg-slate-900 border border-slate-700/80 text-slate-200 hover:border-amber-400/60'
-                  }`}
-                >
-                  <Layers className="w-3 h-3 shrink-0" />
-                  <span>
-                    {explodeVal >= 0.35
-                      ? isEn
-                        ? 'Collapse'
-                        : 'Thu Gọn'
-                      : isEn
-                      ? 'Explode'
-                      : 'Tách Lớp'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleReassembleAllParts()}
-                  disabled={detachedPartCount === 0 && explodeVal < 0.05}
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
-                    detachedPartCount > 0 || explodeVal >= 0.05
-                      ? 'bg-cyan-500/20 border border-cyan-400 text-cyan-200 hover:bg-cyan-500/30'
-                      : 'bg-slate-900 border border-slate-800 text-slate-500 cursor-not-allowed'
-                  }`}
-                >
-                  <Magnet className="w-3 h-3 shrink-0" />
-                  <span>
-                    {isEn ? 'Snap Back' : 'Lắp Lại'}
-                    {detachedPartCount > 0 ? ` (${detachedPartCount})` : ''}
-                  </span>
-                </button>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1">
-                {/* 1-Click Resolution Scale & FPS Cap for Weak PCs */}
-                <div
-                  className="hidden sm:flex items-center gap-0.5 bg-slate-900/95 border border-slate-700/80 rounded-md p-0.5"
-                  title={isEn ? '3D Render Resolution (lower = faster FPS on weak PCs)' : 'Độ phân giải 3D (hạ thấp để hết lag máy yếu)'}
-                >
-                  {([0.5, 0.65, 0.85, 1.0] as const).map((sc) => (
-                    <button
-                      key={sc}
-                      type="button"
-                      onClick={() => {
-                        updateGestureSetting('renderScale', sc);
-                        if (sc <= 0.65 && gestureSettings.graphicsQuality === 'high') {
-                          updateGestureSetting('graphicsQuality', sc <= 0.5 ? 'ultra_light' : 'light');
-                        }
-                      }}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ${
-                        Math.abs((gestureSettings.renderScale || 0.85) - sc) < 0.05
-                          ? 'bg-sky-500 text-slate-950'
-                          : 'text-slate-300 hover:bg-slate-800'
-                      }`}
-                    >
-                      {sc}x
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateGestureSetting('targetFpsCap', gestureSettings.targetFpsCap === 30 ? 60 : 30)
-                    }
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer ml-0.5 ${
-                      gestureSettings.targetFpsCap === 30
-                        ? 'bg-emerald-500 text-slate-950'
-                        : 'text-cyan-300 hover:bg-slate-800'
-                    }`}
-                    title={isEn ? 'Toggle 30 FPS (Battery/Weak PC) vs 60 FPS' : 'Chuyển 30 FPS (Tiết kiệm cho máy yếu) / 60 FPS'}
-                  >
-                    {gestureSettings.targetFpsCap || 60}F
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setInteractionStyle((prev) => (prev === 'real_grab' ? 'classic' : 'real_grab'))
-                  }
-                  title={
-                    isEn
-                      ? 'Toggle Real-Life Grab vs Classic Gesture Mode'
-                      : 'Chuyển chế độ Cầm Nắm Thực Tế / Cử Chỉ Cổ Điển'
-                  }
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer border ${
-                    interactionStyle === 'real_grab'
-                      ? 'bg-emerald-500/15 border-emerald-400/60 text-emerald-300'
-                      : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <span>
-                    {interactionStyle === 'real_grab'
-                      ? isEn
-                        ? 'Real-Grab'
-                        : 'Thực tế'
-                      : isEn
-                      ? 'Classic'
-                      : 'Cổ điển'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTactileSfxEnabled((v) => !v)}
-                  title={isEn ? 'Toggle Tactile Snap SFX' : 'Bật/tắt âm thanh cầm nắm & khớp nối'}
-                  className={`p-1 rounded-md border whitespace-nowrap shrink-0 cursor-pointer ${
-                    tactileSfxEnabled
-                      ? 'bg-cyan-500/15 border-cyan-400/55 text-cyan-300'
-                      : 'bg-slate-900 border-slate-700 text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  {tactileSfxEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-          )}
 
           <button
             type="button"
@@ -7756,7 +7704,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
                 {/* Quick Creation & Undo Shortcuts */}
                 <div className="flex items-center gap-1.5">
-                  {spaceMode === '2d' && mode2D === 'free_create' && (
+                  {mode2D === 'free_create' && (
                     <button
                       type="button"
                       onClick={handleUndoStroke}
@@ -7767,7 +7715,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       <span>{isEn ? `Undo (${free2DCount})` : `Hoàn tác (${free2DCount})`}</span>
                     </button>
                   )}
-                  {spaceMode === '2d' && mode2D === 'polygon_euler' && (
+                  {mode2D === 'polygon_euler' && (
                     <button
                       type="button"
                       onClick={() => canvas2DRef.current?.addVertexOrTile()}
@@ -7777,7 +7725,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       <span>{isEn ? 'Add Vertex' : 'Thêm Đỉnh'}</span>
                     </button>
                   )}
-                  {spaceMode === '2d' && mode2D === 'symmetry_kaleido' && (
+                  {mode2D === 'symmetry_kaleido' && (
                     <button
                       type="button"
                       onClick={() => canvas2DRef.current?.cycleSymmetry()}
@@ -7787,35 +7735,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       <span>{isEn ? 'Cycle Axes' : 'Đổi Số Cánh'}</span>
                     </button>
                   )}
-                  {spaceMode === '3d' && !cameraActive && !showVirtualPad && (
-                    <button
-                      type="button"
-                      onClick={() => setShowVirtualPad(true)}
-                      className="px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[11px] font-bold text-cyan-300 cursor-pointer"
-                    >
-                      {isEn ? 'Touch Pad' : 'Bàn Di 3D'}
-                    </button>
-                  )}
-                  {spaceMode === '3d' && (
-                    <button
-                      type="button"
-                      onClick={handleUndoStroke}
-                      disabled={strokeCount === 0 && markerCount === 0}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 disabled:opacity-40 text-[11px] font-bold text-slate-200 hover:border-cyan-400 cursor-pointer"
-                      title={isEn ? 'Undo last stroke/block' : 'Hoàn tác nét/khối 3D'}
-                    >
-                      <Undo2 className="w-3.5 h-3.5" />
-                      <span>{strokeCount + markerCount > 0 ? `(${strokeCount + markerCount})` : ''}</span>
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={handleClearCreations}
-                    disabled={
-                      spaceMode === '3d'
-                        ? strokeCount === 0 && markerCount === 0
-                        : mode2D === 'free_create' && free2DCount === 0
-                    }
+                    disabled={mode2D === 'free_create' && free2DCount === 0}
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 disabled:opacity-40 text-[11px] font-bold text-rose-300 hover:border-rose-400 cursor-pointer"
                     title={isEn ? 'Clear drawings' : 'Xóa nét vẽ'}
                   >
@@ -7824,8 +7747,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               </div>
 
-              {/* TAB: SHAPES / CREATIONS (2D or 3D) */}
-              {dockTab === 'shapes' && spaceMode === '2d' && (
+              {/* TAB: SHAPES / CREATIONS (2D) */}
+              {dockTab === 'shapes' && (
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5">
                     {SPATIAL_2D_MODES.map((m) => {
@@ -7930,196 +7853,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               )}
 
-              {dockTab === 'shapes' && spaceMode === '3d' && (
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-1">
-                      {(
-                        [
-                          {
-                            id: 'all',
-                            labelVi: `Tất cả (${15 + customModels.length})`,
-                            labelEn: `All (${15 + customModels.length})`
-                          },
-                          {
-                            id: 'custom',
-                            labelVi: `Sáng tạo tự do (${customModels.length})`,
-                            labelEn: `Free Creation (${customModels.length})`
-                          },
-                          { id: 'realistic', labelVi: 'Thực tế (6)', labelEn: 'Realistic (6)' },
-                          { id: 'geometry', labelVi: 'Hình học (6)', labelEn: 'Geometry (6)' },
-                          { id: 'simulation', labelVi: 'Vật lí · Sinh (3)', labelEn: 'Science (3)' }
-                        ] as const
-                      ).map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setShapeFilter(cat.id)}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer border ${
-                            shapeFilter === cat.id
-                              ? cat.id === 'custom'
-                                ? 'bg-purple-950/80 text-purple-200 border-purple-400/60'
-                                : 'bg-slate-800 text-cyan-300 border-cyan-500/50'
-                              : 'border-transparent text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          {isEn ? cat.labelEn : cat.labelVi}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setShowAICreator(true)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-extrabold cursor-pointer ml-1"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        <span>{isEn ? '+ AI Model' : '+ Tạo Mô Hình AI'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleOpenRealScanner}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-extrabold cursor-pointer"
-                      >
-                        <Scan className="w-3 h-3" />
-                        <span>{isEn ? 'Scan Real → 3D' : 'Quét Thực Tế'}</span>
-                      </button>
-                    </div>
-                    <span className="text-[11px] text-slate-400 truncate max-w-md">
-                      {activeCustomModel
-                        ? isEn
-                          ? activeCustomModel.descEn
-                          : activeCustomModel.descVi
-                        : isEn
-                        ? activeMode.descEn
-                        : activeMode.descVi}
-                    </span>
-                  </div>
-
-                  {shapeFilter === 'custom' && customModels.length === 0 ? (
-                    <div className="spatial-soft-frame spatial-soft-frame-purple flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-md bg-purple-950/30 border border-purple-500/40">
-                      <div className="space-y-0.5 text-center sm:text-left">
-                        <div className="text-xs font-extrabold text-purple-200">
-                          {isEn
-                            ? 'Free Creation Studio is ready for your AI ideas'
-                            : 'Mục Sáng tạo tự do chưa có mô hình nào'}
-                        </div>
-                        <p className="text-[11px] text-slate-300">
-                          {isEn
-                            ? 'Upload an image, attach notes/docs, or describe any 3D mechanism — AI builds & saves it with full 10-finger controls.'
-                            : 'Mô tả ý tưởng hoặc tải lên ảnh/tài liệu để AI dựng mô hình 3D hoàn chỉnh ngay tại đây.'}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={handleOpenRealScanner}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-extrabold cursor-pointer"
-                        >
-                          <Scan className="w-3.5 h-3.5" />
-                          <span>{isEn ? 'Scan Real Object' : 'Quét Đồ Vật Thực Tế'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowAICreator(true)}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold cursor-pointer"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>{isEn ? 'Create First AI Model' : 'Tạo Mô Hình Đầu Tiên'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 max-h-[146px] overflow-y-auto pr-0.5">
-                      {(shapeFilter === 'all' || shapeFilter === 'custom') &&
-                        customModels.map((cm) => {
-                          const active = activeCustomId === cm.id;
-                          return (
-                            <div
-                              key={cm.id}
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => setActiveCustomId(cm.id)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  setActiveCustomId(cm.id);
-                                }
-                              }}
-                              className={`spatial-soft-frame spatial-soft-frame-purple group relative text-left p-2 rounded-md border transition-all cursor-pointer ${
-                                active
-                                  ? 'bg-purple-500/20 border-purple-400 text-white'
-                                  : 'bg-slate-900/90 border-purple-500/30 text-slate-300 hover:border-purple-400/70'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between gap-1 text-[9px] font-mono">
-                                <span className="text-purple-300 font-bold truncate">
-                                  AI · {cm.badge || (isEn ? 'FREE' : 'TỰ DO')}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    void deleteCustomSpatialModel(cm.id);
-                                    setCustomModels((prev) => prev.filter((item) => item.id !== cm.id));
-                                    if (activeCustomId === cm.id) {
-                                      setActiveCustomId(null);
-                                    }
-                                    showToast(
-                                      isEn ? `Removed "${cm.titleEn}"` : `Đã xóa mô hình "${cm.titleVi}"`
-                                    );
-                                  }}
-                                  className="p-0.5 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
-                                  title={isEn ? 'Delete model' : 'Xóa mô hình'}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                              <div className="text-[11px] font-bold mt-0.5 truncate">
-                                {isEn ? cm.titleEn : cm.titleVi}
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                      {filtered3DModes.map((m) => {
-                        const active = !activeCustomId && modeId === m.id;
-                        return (
-                          <button
-                            key={m.id}
-                            type="button"
-                            onClick={() => {
-                              setActiveCustomId(null);
-                              setModeId(m.id);
-                            }}
-                            className={`spatial-soft-frame text-left p-2 rounded-md border transition-all cursor-pointer ${
-                              active
-                                ? 'bg-sky-500/20 border-sky-400 text-white'
-                                : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between text-[9px] font-mono">
-                              <span
-                                className={
-                                  m.group === 'realistic'
-                                    ? 'text-amber-300'
-                                    : m.group === 'geometry'
-                                    ? 'text-sky-300'
-                                    : 'text-emerald-300'
-                                }
-                              >
-                                {m.badge}
-                              </span>
-                            </div>
-                            <div className="text-[11px] font-bold mt-0.5 truncate">
-                              {isEn ? m.titleEn : m.titleVi}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* TAB: 5 SIMPLE 2D GESTURES, 5 REAL-GRAB 3D GESTURES, OR 8 CLASSIC GESTURES */}
               {dockTab === 'gesture' && (
                 <div className="space-y-2.5">
@@ -8206,6 +7939,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                                 if (explodeVal >= 0.25 || detachedPartCount > 0 || isolatedPartIdx !== null) {
                                   handleReassembleAllParts();
                                 } else {
+                                  setExplodeStyle('row');
+                                  explodeStyleRef.current = 'row';
+                                  setActiveQuickPreset('row');
                                   smoothTargetRef.current.explode = 1.25;
                                   smoothTargetRef.current.carryX = 0;
                                   smoothTargetRef.current.carryY = 0;
@@ -8826,124 +8562,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               )}
 
-              {/* TAB: PARAMS, 3D CREATIVE BRUSH & SLICING */}
-              {dockTab === 'params' && spaceMode === '3d' && (
-                <div className="space-y-2.5 text-[11px]">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    <div className="spatial-soft-frame bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
-                      <div className="flex justify-between font-bold text-slate-200">
-                        <span>{isEn ? 'Scale (1 Hand Up / 2 Closer)' : 'Phóng to / Thu nhỏ'}</span>
-                        <span className="font-mono text-cyan-300">{scaleVal.toFixed(2)}x</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0.42}
-                        max={2.45}
-                        step={0.05}
-                        value={scaleVal}
-                        onChange={(e) => setScaleVal(Number(e.target.value))}
-                        className="w-full accent-cyan-400"
-                      />
-                    </div>
-
-                    <div className="spatial-soft-frame spatial-soft-frame-amber bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
-                      <div className="flex justify-between font-bold text-slate-200">
-                        <span>{isEn ? 'RPM / Wind / Height' : 'Tốc độ Tua / Biên độ'}</span>
-                        <span className="font-mono text-amber-300">{heightVal.toFixed(2)}x</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0.5}
-                        max={1.85}
-                        step={0.05}
-                        value={heightVal}
-                        onChange={(e) => setHeightVal(Number(e.target.value))}
-                        className="w-full accent-amber-400"
-                      />
-                    </div>
-
-                    <div className="spatial-soft-frame spatial-soft-frame-emerald bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
-                      <div className="flex justify-between font-bold text-slate-200">
-                        <span>{isEn ? 'Explode Structure (2H L/R)' : 'Tách Cấu Trúc (Kéo 2 tay)'}</span>
-                        <span className="font-mono text-emerald-300">{Math.round(explodeVal * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={1.85}
-                        step={0.05}
-                        value={explodeVal}
-                        onChange={(e) => setExplodeVal(Number(e.target.value))}
-                        className="w-full accent-emerald-400"
-                      />
-                    </div>
-
-                    <div className="spatial-soft-frame bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
-                      <div className="flex items-center justify-between font-bold text-slate-200">
-                        <button
-                          type="button"
-                          onClick={() => setSliceEnabled((v) => !v)}
-                          className={`flex items-center gap-1 cursor-pointer ${
-                            sliceEnabled ? 'text-teal-300' : 'text-slate-400'
-                          }`}
-                        >
-                          <Scissors className="w-3.5 h-3.5" />
-                          <span>{sliceEnabled ? (isEn ? 'Slice ON' : 'Mặt Cắt BẬT') : isEn ? 'Slice OFF' : 'Mặt Cắt TẮT'}</span>
-                        </button>
-                        <span className="font-mono text-teal-300">{sliceY.toFixed(2)}m</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0.15}
-                        max={4.1}
-                        step={0.05}
-                        value={sliceY}
-                        onChange={(e) => {
-                          if (!sliceEnabled) setSliceEnabled(true);
-                          setSliceY(Number(e.target.value));
-                        }}
-                        className="w-full accent-teal-400"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 3D Pinch Creative Stamp Brush Selector */}
-                  <div className="spatial-soft-frame flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
-                    <span className="font-bold text-slate-300">
-                      {isEn ? 'Pinch 3D Stamp Shape:' : 'Cọ Sáng Tạo Khi Chụm Ngón:'}
-                    </span>
-                    <div className="flex flex-wrap items-center gap-1">
-                      {BRUSH_OPTIONS.map((b) => (
-                        <button
-                          key={b.id}
-                          type="button"
-                          onClick={() => setCreativeBrush(b.id)}
-                          className={`px-2.5 py-1 rounded-md font-bold cursor-pointer ${
-                            creativeBrush === b.id
-                              ? 'bg-cyan-500 text-slate-950'
-                              : 'bg-slate-800 text-slate-300 hover:text-white'
-                          }`}
-                        >
-                          {isEn ? b.labelEn : b.labelVi}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setSnapGrid((v) => !v)}
-                        className={`ml-2 px-2.5 py-1 rounded-md border font-bold cursor-pointer ${
-                          snapGrid
-                            ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                            : 'bg-slate-800 border-slate-700 text-slate-400'
-                        }`}
-                      >
-                        {isEn ? 'Snap Grid 0.45m' : 'Bắt Lưới 0.45m'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {dockTab === 'params' && spaceMode === '2d' && mode2D === 'free_create' && (
+              {/* TAB: 2D PARAMS */}
+              {dockTab === 'params' && mode2D === 'free_create' && (
                 <div className="space-y-2 text-[11px] bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1">
@@ -9045,7 +8665,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               )}
 
-              {dockTab === 'params' && spaceMode === '2d' && mode2D !== 'free_create' && (
+              {dockTab === 'params' && mode2D !== 'free_create' && (
                 <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
                   <div className="text-slate-300">
                     {isEn ? active2DMode.descEn : active2DMode.descVi}
@@ -9082,28 +8702,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                 </div>
               )}
 
-              {/* TAB: FINISH, COLORS, AXES & EXPORT */}
+              {/* TAB: COLORS & EXPORT (2D) */}
               {dockTab === 'style' && (
                 <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs">
-                  {spaceMode === '3d' && (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {FINISH_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setFinish(opt.id)}
-                          className={`px-3 py-1.5 rounded-md border font-bold cursor-pointer ${
-                            finish === opt.id
-                              ? 'bg-sky-500 text-slate-950 border-sky-300'
-                              : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-600'
-                          }`}
-                        >
-                          {isEn ? opt.labelEn : opt.labelVi}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
                   <div className="flex items-center gap-1.5">
                     {ACCENT_PALETTES.map((pal) => (
                       <button
@@ -9121,36 +8722,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5">
-                    {spaceMode === '3d' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setShowAxes((v) => !v)}
-                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md border font-bold cursor-pointer ${
-                            showAxes
-                              ? 'bg-sky-500/20 border-sky-400 text-sky-300'
-                              : 'bg-slate-900 border-slate-800 text-slate-400'
-                          }`}
-                        >
-                          <Grid className="w-3.5 h-3.5" />
-                          <span>Oxyz</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setAutoSpin((v) => !v)}
-                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md border font-bold cursor-pointer ${
-                            autoSpin
-                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                              : 'bg-slate-900 border-slate-800 text-slate-400'
-                          }`}
-                        >
-                          <Orbit className="w-3.5 h-3.5" />
-                          <span>{isEn ? 'Spin' : 'Xoay'}</span>
-                        </button>
-                      </>
-                    )}
-
                     <button
                       type="button"
                       onClick={handleSnapshot}
@@ -9159,17 +8730,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       <Camera className="w-3.5 h-3.5 text-sky-300" />
                       <span>PNG</span>
                     </button>
-
-                    {spaceMode === '3d' && (
-                      <button
-                        type="button"
-                        onClick={handleExportOBJ}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-900 border border-slate-700 hover:border-sky-400 text-slate-100 font-bold cursor-pointer"
-                      >
-                        <FileDown className="w-3.5 h-3.5 text-amber-300" />
-                        <span>.OBJ</span>
-                      </button>
-                    )}
                   </div>
                 </div>
               )}
@@ -9177,140 +8737,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           )}
         </div>
       )}
-      </div>
-
-      {/* Flashy Animated 3D Usage Guide Frame */}
-      <Spatial3DGuideModal
-        isOpen={entryView === 'studio' && spaceMode === '3d' && show3DGuide}
-        isEn={isEn}
-        autoShowOn3D={autoShow3DGuide}
-        onToggleAutoShow={setAutoShow3DGuide}
-        onClose={() => setShow3DGuide(false)}
-        onSwitchTo2D={() => {
-          setShow3DGuide(false);
-          handleEnter2DSpace(false);
-        }}
-      />
-
-      {/* Dedicated Separate 2D Geometry Usage Guide Frame */}
-      <Spatial2DGuideModal
-        isOpen={entryView === 'studio' && spaceMode === '2d' && show2DGuide}
-        isEn={isEn}
-        autoShowOn2D={autoShow2DGuide}
-        onToggleAutoShow={setAutoShow2DGuide}
-        onClose={() => setShow2DGuide(false)}
-        onSwitchTo3D={() => {
-          setShow2DGuide(false);
-          handleEnter3DSpace(false);
-        }}
-      />
-
-      {/* AI Idea -> Complete 3D Model Creator ("Sáng tạo tự do") */}
-      <SpatialAIModelCreatorModal
-        isOpen={showAICreator}
-        isEn={isEn}
-        onClose={() => setShowAICreator(false)}
-        onCreated={(created) => {
-          setCustomModels((prev) => [created, ...prev.filter((m) => m.id !== created.id)]);
-          setActiveCustomId(created.id);
-          setEntryView('studio');
-          setSpaceMode('3d');
-          setDockTab('shapes');
-          setShapeFilter('custom');
-          setShowAICreator(false);
-          setShow3DGuide(false);
-          showToast(
-            isEn
-              ? `Created & saved AI 3D model: ${created.titleEn}`
-              : `Đã tạo & lưu vào Sáng tạo tự do: ${created.titleVi}`
-          );
-        }}
-      />
-
-      {/* Real-World Space Camera Scanner -> Complete 3D Model */}
-      <SpatialRealWorldScannerModal
-        isOpen={showRealScanner}
-        isEn={isEn}
-        onClose={() => setShowRealScanner(false)}
-        onCreated={(created) => {
-          setCustomModels((prev) => [created, ...prev.filter((m) => m.id !== created.id)]);
-          setActiveCustomId(created.id);
-          setEntryView('studio');
-          setSpaceMode('3d');
-          setDockTab('shapes');
-          setShapeFilter('custom');
-          setShowRealScanner(false);
-          setShow3DGuide(false);
-          showToast(
-            isEn
-              ? `Scanned real object → 3D: ${created.titleEn}`
-              : `Đã quét thực tế & dựng 3D: ${created.titleVi}`
-          );
-        }}
-      />
-
-      {/* Multiplayer Co-op 3D Skeleton Hands ("Bàn tay ảo của bạn học" · 2–4 Learners) */}
-      <SpatialCoopModal
-        isOpen={showCoopModal}
-        isEn={isEn}
-        onClose={() => setShowCoopModal(false)}
-        currentModelTitle={
-          activeCustomModel
-            ? isEn
-              ? activeCustomModel.titleEn
-              : activeCustomModel.titleVi
-            : isEn
-            ? activeMode.titleEn
-            : activeMode.titleVi
-        }
-        currentModelState={{
-          modeId,
-          customModel: activeCustomModel,
-          explodeVal,
-          scaleVal,
-          heightVal,
-          sliceEnabled,
-          sliceY,
-          finish,
-          paletteId,
-          rotY: runtimeRef.current?.model?.group.rotation.y || 0,
-          pitchX: runtimeRef.current?.model?.group.rotation.x || 0,
-          highlightedPartIdx,
-          isolatedPartIdx,
-          detachedOffsets: collectDetachedOffsetsMap(runtimeRef.current?.model || null)
-        }}
-        activeRoom={coopActiveRoom}
-        peers={coopPeers}
-        selfPeerId={coopSelfPeerId}
-        wsStatus={coopWsStatus}
-        wsError={coopWsError}
-        onJoinRoom={(roomId, fallbackMeta) => {
-          coopFallbackMetaRef.current = fallbackMeta || null;
-          setEntryView('studio');
-          setSpaceMode('3d');
-          setShow3DGuide(false);
-          setCoopTargetRoomId(roomId.trim().toUpperCase());
-        }}
-        onLeaveRoom={() => {
-          setCoopTargetRoomId(null);
-          showToast(isEn ? 'Left Co-op 3D Room' : 'Đã rời phòng 3D chung');
-        }}
-        onRoomCreatedAndJoin={(room) => {
-          coopFallbackMetaRef.current = {
-            roomId: room.roomId,
-            title: room.title,
-            modelId: room.modelId,
-            modelTitle: room.modelTitle,
-            hostName: room.hostName
-          };
-          setCoopActiveRoom(room);
-          setEntryView('studio');
-          setSpaceMode('3d');
-          setShow3DGuide(false);
-          setCoopTargetRoomId(room.roomId);
-        }}
-        onNavigateForum={onNavigate ? () => onNavigate('forum') : undefined}
-      />
+        {entryView === 'studio' && studioModals}
+        {nativeFullscreenActive && <RemoteControllerModal />}
+        </div>
+      </ViewportPortal>
     </>
   );
 };

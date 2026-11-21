@@ -61,7 +61,7 @@ const DEFAULT_LOCATION: NavLocation = {
   examId: null,
   synapseMode: 'catalog',
   synapseMonumentId: 'dyson',
-  futureTab: 'hub',
+  futureTab: 'what_if_physics_3d',
   sensorRoomCode: null,
   coopRoomCode: null,
   coopInviteMeta: null,
@@ -97,6 +97,8 @@ function getInitialLocation(): NavLocation {
         rawFutureTab &&
         [
           'megastructures',
+          'what_if_physics_3d',
+          'algo_city_3d',
           'galaxy3d',
           'text_to_sim',
           'paper_to_sim',
@@ -142,9 +144,10 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
     case 'overview':
       return isEn ? 'Classroom' : 'Lớp học';
     case 'synapse_v2':
-      if (!loc.futureTab || loc.futureTab === 'hub') {
-        return isEn ? 'Synapse Pre · Next-Gen 3D & 4D Hub' : 'Synapse Pre · Phòng Lab 3D & 4D';
+      if (!loc.futureTab || loc.futureTab === 'hub' || loc.futureTab === 'what_if_physics_3d') {
+        return isEn ? 'Synapse Pre · What-If Physics Sandbox 3D' : 'Synapse Pre · Vũ Trụ Định Luật Vật Lí 3D';
       }
+      if (loc.futureTab === 'algo_city_3d') return isEn ? 'Synapse Pre · 3D AlgoCity' : 'Synapse Pre · Thành Phố Thuật Toán 3D';
       if (loc.futureTab === 'galaxy3d') return isEn ? 'Synapse Pre · 3D Neural Galaxy' : 'Synapse Pre · Vũ Trụ Tri Thức 3D';
       if (loc.futureTab === 'text_to_sim') return isEn ? 'Synapse Pre · 3D AI Simulation Studio' : 'Synapse Pre · Sinh Mô Phỏng 3D AI';
       if (loc.futureTab === 'paper_to_sim') return isEn ? 'Synapse Pre · Paper to 3D Sim' : 'Synapse Pre · Giấy Nháp → Mô Hình 3D';
@@ -386,13 +389,19 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         patch.examId = null;
       } else if (subject === 'synapse_v2') {
         patch.synapseMode = 'catalog';
-        patch.futureTab = 'hub';
+        patch.futureTab =
+          prev.futureTab && prev.futureTab !== 'hub' && prev.futureTab !== 'infinite_canvas'
+            ? prev.futureTab
+            : 'what_if_physics_3d';
       } else if (subject === 'spatial_3d') {
         patch.subject = 'synapse_v2';
         patch.synapseMode = 'catalog';
         patch.futureTab = 'spatial_gesture_3d';
       } else if (subject === 'future_lab') {
-        patch.futureTab = prev.futureTab || 'hub';
+        patch.futureTab =
+          prev.futureTab && prev.futureTab !== 'hub' && prev.futureTab !== 'infinite_canvas'
+            ? prev.futureTab
+            : 'what_if_physics_3d';
       }
 
       if (isSameLocation(prev, { ...prev, ...patch })) {

@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Crown,
   FlaskConical,
+  Sparkles,
   Video
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -33,6 +34,7 @@ import { useNavigation } from '../context/NavigationContext';
 import { usePremium } from '../context/PremiumContext';
 import { BrandLogo } from './common/BrandLogo';
 import { getPhysicsSimCounts } from '../data/physicsDomainsData';
+import { PRE_SIDEBAR_GROUPS, PRE_STUDIOS, PreSidebarGroupId } from '../data/preLabsData';
 
 interface SidebarProps {
   currentSubject: SubjectType;
@@ -247,7 +249,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isEn = language === 'en';
   const { perfMode } = useBackgroundTheme();
   const { hasPremiumAccess, dailyQuotaRemaining, dailyQuotaLimit } = usePremium();
-  const { requestScrollToReviews, requestScrollToDirectory } = useNavigation();
+  const { location, navigate, requestScrollToReviews, requestScrollToDirectory } = useNavigation();
   const [physicsSimTotal, setPhysicsSimTotal] = useState<number>(() => getPhysicsSimCounts().total);
 
   const [isSubjectsOpen, setIsSubjectsOpen] = useState<boolean>(
@@ -256,6 +258,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isVirtualLabsOpen, setIsVirtualLabsOpen] = useState<boolean>(
     () => currentSubject === 'physics_sims' || currentSubject === 'math_sims' || currentSubject === 'cs_sims'
   );
+  const [openPreGroups, setOpenPreGroups] = useState<Record<PreSidebarGroupId, boolean>>({
+    labs: false,
+    simulations: false,
+    sandboxes: false,
+  });
 
   useEffect(() => {
     if (currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs') {
@@ -264,7 +271,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (currentSubject === 'physics_sims' || currentSubject === 'math_sims' || currentSubject === 'cs_sims') {
       setIsVirtualLabsOpen(true);
     }
-  }, [currentSubject]);
+    if ((currentSubject === 'synapse_v2' || currentSubject === 'future_lab') && location.futureTab) {
+      const matched = PRE_STUDIOS.find((s) => s.id === location.futureTab);
+      if (matched) {
+        setOpenPreGroups((prev) => ({ ...prev, [matched.sidebarGroup]: true }));
+      }
+    }
+  }, [currentSubject, location.futureTab]);
 
   useEffect(() => {
     const syncSimCount = () => {
@@ -750,6 +763,117 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
           ))}
+
+          {/* Synapse Pre Left Sidebar Groups (Phòng Lab, Mô phỏng, Sandboxes) — 21 Labs Directly in Left Nav when Pre is Active */}
+          {hasPremiumAccess && (
+            <div className="space-y-1.5 pt-2 border-t border-amber-400/35 dark:border-amber-500/25">
+              {!isRail && (
+                <div className="px-2.5 pb-1 flex items-center justify-between text-[11px] font-bold tracking-wide text-amber-700 dark:text-amber-300">
+                  <span>{isEn ? 'Synapse Pre · 21 Spaces' : 'Synapse Pre · 21 Không gian'}</span>
+                  <span className="font-mono text-[10px] opacity-80">3D/4D</span>
+                </div>
+              )}
+
+              {PRE_SIDEBAR_GROUPS.map((grp) => {
+                const groupLabs = PRE_STUDIOS.filter((s) => s.sidebarGroup === grp.id);
+                const isGroupActive =
+                  (currentSubject === 'synapse_v2' || currentSubject === 'future_lab') &&
+                  groupLabs.some((lab) => lab.id === location.futureTab);
+                const isOpen = openPreGroups[grp.id];
+                const GroupIcon =
+                  grp.id === 'labs'
+                    ? FlaskConical
+                    : grp.id === 'simulations'
+                    ? Orbit
+                    : Sparkles;
+
+                return (
+                  <div key={grp.id} className="space-y-1">
+                    <button
+                      type="button"
+                      data-ripple="true"
+                      aria-expanded={isOpen}
+                      onClick={() => {
+                        if (isRail) {
+                          onToggleCollapse();
+                          setOpenPreGroups((prev) => ({ ...prev, [grp.id]: true }));
+                        } else {
+                          setOpenPreGroups((prev) => ({ ...prev, [grp.id]: !prev[grp.id] }));
+                        }
+                      }}
+                      title={`${isEn ? grp.labelEn : grp.labelVi} (${groupLabs.length})`}
+                      className={`group cs-deck-btn w-full min-h-[44px] flex items-center ${
+                        isRail
+                          ? 'justify-center px-2.5 py-2.5'
+                          : 'justify-between gap-2.5 px-3 py-2'
+                      } rounded text-[13.5px] font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                        isGroupActive ? grp.activeClass : grp.idleClass
+                      }`}
+                    >
+                      <span className="flex items-center gap-2.5 min-w-0">
+                        <GroupIcon className="w-5 h-5 shrink-0" />
+                        {!isRail && (
+                          <span className="truncate">{isEn ? grp.labelEn : grp.labelVi}</span>
+                        )}
+                      </span>
+                      {!isRail && (
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[11px] font-mono opacity-80">
+                            {groupLabs.length}
+                          </span>
+                          <ChevronDown
+                            className={`w-4 h-4 transition-transform duration-150 ${
+                              isOpen ? 'rotate-180' : ''
+                            }`}
+                          />
+                        </span>
+                      )}
+                    </button>
+
+                    {!isRail && isOpen && (
+                      <div className={`pl-2.5 space-y-1 border-l-2 ${grp.borderLineClass} ml-3`}>
+                        {groupLabs.map((lab) => {
+                          const LabIcon = lab.icon;
+                          const labActive =
+                            (currentSubject === 'synapse_v2' || currentSubject === 'future_lab') &&
+                            location.futureTab === lab.id;
+                          return (
+                            <button
+                              key={lab.id}
+                              type="button"
+                              onClick={() => {
+                                navigate({
+                                  subject: 'synapse_v2',
+                                  futureTab: lab.id,
+                                  synapseMode: 'catalog',
+                                  tutorOpen: false,
+                                });
+                                onCloseMobile();
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              title={isEn ? lab.titleEn : lab.titleVi}
+                              className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded text-xs font-semibold transition cursor-pointer ${
+                                labActive
+                                  ? 'bg-gradient-to-r from-amber-500/25 to-cyan-500/20 border border-amber-400/70 text-slate-950 dark:text-amber-200 shadow-xs'
+                                  : 'bg-white/75 dark:bg-slate-900/75 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-cyan-400/60 hover:bg-white dark:hover:bg-slate-900'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2 min-w-0">
+                                <LabIcon className={`w-3.5 h-3.5 shrink-0 ${lab.accentTextClass}`} />
+                                <span className="truncate">
+                                  {isEn ? lab.shortEn : lab.shortVi}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Quick Jump Actions */}
           <div className="space-y-1.5 pt-1 border-t border-slate-200/80 dark:border-slate-800/80">

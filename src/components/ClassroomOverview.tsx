@@ -49,7 +49,10 @@ import {
   Building2,
   PenTool,
   LineChart,
-  Binary
+  Binary,
+  CalendarCheck,
+  CalendarClock,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -98,7 +101,24 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   onOpenVoiceOS
 }) => {
   const { user, openAuthModal } = useAuth();
-  const { hasPremiumAccess, isAdmin, pendingRequestsCount, dailyQuotaRemaining, dailyQuotaLimit } = usePremium();
+  const {
+    hasPremiumAccess,
+    isAdmin,
+    mySubscription,
+    pendingRequestsCount,
+    dailyQuotaRemaining,
+    dailyQuotaLimit,
+  } = usePremium();
+  const formatPreDate = (iso?: string) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString(language === 'en' ? 'en-GB' : 'vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
   const { t, language } = useLanguage();
   const {
     reviewScrollTick,
@@ -401,17 +421,6 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate({ subject: 'synapse_v2', futureTab: 'hub', synapseMode: 'catalog', tutorOpen: false })
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-cyan-400 px-4 py-2 text-xs font-extrabold text-slate-950 shadow-lg hover:brightness-110 transition cursor-pointer"
-                >
-                  <Orbit className="w-4 h-4" />
-                  <span>Mở 21 Phòng Lab 3D/4D</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
                 {isAdmin && (
                   <button
                     type="button"
@@ -988,6 +997,24 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   ? 'Pair your smartphone via QR WebSocket oscilloscope, sculpt 28,000 WebGL particles with both hands, alongside 30 3D Megastructures, 3D Galaxy, Text-to-Sim, Paper-to-Sim & FFT Acoustics.'
                   : 'Kết nối cảm biến gia tốc điện thoại qua QR WebSocket đo dao động thực, điều khiển 28.000 hạt lực trường GPU bằng 2 tay cùng 30 Đại công trình 3D, Vũ trụ Tri thức, Sinh Mô Phỏng AI & Quét Nháp.'}
               </p>
+              {hasPremiumAccess && mySubscription && (
+                <div className="pt-1 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
+                  <span className="inline-flex items-center gap-1.5 text-emerald-300 font-semibold">
+                    <CalendarCheck className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isEn ? 'Registered:' : 'Ngày đăng ký:'}</span>
+                    <strong className="text-white font-mono tabular-nums">
+                      {formatPreDate(mySubscription.activatedAt)}
+                    </strong>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-amber-300 font-semibold">
+                    <CalendarClock className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isEn ? 'Expires:' : 'Hết hạn:'}</span>
+                    <strong className="text-amber-200 font-mono tabular-nums">
+                      {formatPreDate(mySubscription.expiresAt)}
+                    </strong>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1013,21 +1040,15 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             <button
               type="button"
               data-ripple="true"
-              onClick={() => {
-                if (hasPremiumAccess) {
-                  navigate({ subject: 'synapse_v2', futureTab: 'hub', synapseMode: 'catalog', tutorOpen: false });
-                } else {
-                  setShowPremiumModal(true);
-                }
-              }}
+              onClick={() => setShowPremiumModal(true)}
               className="group/btn cs-deck-btn px-5 py-3 rounded bg-gradient-to-r from-amber-400 via-orange-400 to-cyan-400 hover:from-amber-300 hover:to-cyan-300 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
             >
-              <Crown className="w-4 h-4" />
+              {hasPremiumAccess ? <RefreshCw className="w-4 h-4" /> : <Crown className="w-4 h-4" />}
               <span>
                 {hasPremiumAccess
                   ? isEn
-                    ? 'Enter Synapse Premium'
-                    : 'Vào Synapse Premium'
+                    ? 'Renew Plan'
+                    : 'Gia hạn gói'
                   : isEn
                   ? 'Subscribe · 120k / 3 mo'
                   : 'Đăng ký · 120k / 3 tháng'}
@@ -2291,7 +2312,12 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         onClose={() => setShowPremiumModal(false)}
         onEnterPremium={() => {
           setShowPremiumModal(false);
-          navigate({ subject: 'synapse_v2', futureTab: 'hub', synapseMode: 'catalog', tutorOpen: false });
+          navigate({
+            subject: 'synapse_v2',
+            futureTab: 'what_if_physics_3d',
+            synapseMode: 'catalog',
+            tutorOpen: false,
+          });
         }}
       />
     </div>

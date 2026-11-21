@@ -233,23 +233,6 @@ export const SynapsePremiumHome: React.FC<SynapsePremiumHomeProps> = ({
             </p>
 
             <div className="flex flex-wrap items-center gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={onOpenAllLabs}
-                className="relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-cyan-400 px-5 py-2.5 text-xs sm:text-sm font-extrabold text-slate-950 shadow-lg hover:scale-[1.02] transition cursor-pointer"
-              >
-                {isUltra && (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-white/45 blur-sm"
-                    style={{ animation: 'preGoldSweep 2.6s ease-in-out infinite' }}
-                  />
-                )}
-                <Orbit className="relative z-10 h-4 w-4" />
-                <span className="relative z-10">Khám phá 21 Phòng Lab 3D/4D</span>
-                <ArrowRight className="relative z-10 h-4 w-4" />
-              </button>
-
               {isAdmin && (
                 <button
                   type="button"
@@ -406,16 +389,9 @@ export const SynapsePremiumHome: React.FC<SynapsePremiumHomeProps> = ({
               Mô Phỏng Tương Tác Chuẩn Astra AI
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Đồ họa 3D/WebGL độ phân giải cao, phản hồi vật lí & thuật toán thời gian thực.
+              Đồ họa 3D/WebGL độ phân giải cao, phản hồi vật lí & thuật toán thời gian thực. Toàn bộ 21 phòng Lab nằm gọn ở thanh menu bên trái.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onOpenAllLabs}
-            className="text-xs font-bold text-sky-600 dark:text-cyan-300 hover:underline cursor-pointer"
-          >
-            Xem toàn bộ 21 phòng Lab →
-          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

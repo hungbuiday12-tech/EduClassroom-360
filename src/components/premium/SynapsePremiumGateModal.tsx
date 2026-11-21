@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import {
+  CalendarCheck,
+  CalendarClock,
   CheckCircle2,
   Crown,
   Film,
   Lock,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   UserCheck,
@@ -21,6 +24,17 @@ interface SynapsePremiumGateModalProps {
   inline?: boolean;
 }
 
+function formatDateVi(iso?: string): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
 export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = ({
   isOpen,
   onClose,
@@ -34,7 +48,9 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
     approvedEmails,
     requests,
     myRequest,
+    mySubscription,
     submitPremiumRequest,
+    renewPremiumPlan,
     approveUserPremium,
     revokeUserPremium,
   } = usePremium();
@@ -49,11 +65,16 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
     setFeedback(res.message);
   };
 
+  const handleRenew = () => {
+    const res = renewPremiumPlan();
+    setFeedback(res.message);
+  };
+
   const handleAdminGrant = (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminGrantEmail.trim()) return;
-    approveUserPremium(adminGrantEmail.trim());
-    setFeedback(`Đã cấp quyền Synapse Pre cho tài khoản ${adminGrantEmail.trim()}`);
+    approveUserPremium(adminGrantEmail.trim(), true);
+    setFeedback(`Đã cấp / gia hạn Synapse Pre cho tài khoản ${adminGrantEmail.trim()}`);
     setAdminGrantEmail('');
   };
 
@@ -72,7 +93,7 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
             <Crown className="h-5 w-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base sm:text-lg font-extrabold text-white">
                 Synapse Premium — Nâng Cấp Không Gian STEM Đỉnh Cao
               </h2>
@@ -154,7 +175,7 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
             <li className="flex items-start gap-2">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
               <span>
-                <strong>Giao diện Obsidian Pro + 21 Phòng Lab 3D/4D</strong> chuẩn Astra AI (15 lượt/ngày).
+                <strong>21 Phòng Lab, Mô phỏng & Sandboxes 3D/4D</strong> tích hợp ngay trên thanh bên trái & chuẩn Astra AI (15 lượt/ngày).
               </span>
             </li>
           </ul>
@@ -186,23 +207,43 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
             )}
           </div>
         ) : hasPremiumAccess ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
-              <ShieldCheck className="h-4 w-4" />
-              <span>
-                Tài khoản <strong>{user.email}</strong> đã được cấp quyền Synapse Pre!
-              </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
+                <ShieldCheck className="h-4 w-4 shrink-0" />
+                <span>
+                  Tài khoản <strong>{user.email}</strong> đang kích hoạt gói Synapse Pre
+                </span>
+              </div>
+              {mySubscription && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300">
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarCheck className="h-3.5 w-3.5 text-cyan-400" />
+                    Ngày đăng ký: <strong className="text-white tabular-nums">{formatDateVi(mySubscription.activatedAt)}</strong>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarClock className="h-3.5 w-3.5 text-amber-400" />
+                    Hết hạn: <strong className="text-amber-300 tabular-nums">{formatDateVi(mySubscription.expiresAt)}</strong>
+                  </span>
+                </div>
+              )}
+              {myRequest?.status === 'pending' && myRequest?.isRenewal && (
+                <div className="text-[11px] font-semibold text-amber-300">
+                  ⏳ Yêu cầu gia hạn +3 tháng đang chờ Admin duyệt.
+                </div>
+              )}
             </div>
-            {onEnterPremium && (
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button
                 type="button"
-                onClick={onEnterPremium}
+                onClick={handleRenew}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-cyan-400 px-5 py-2.5 text-xs font-extrabold text-slate-950 shadow-lg hover:brightness-110 cursor-pointer"
               >
-                <Crown className="h-4 w-4" />
-                <span>Vào Giao Diện Synapse Premium</span>
+                <RefreshCw className="h-4 w-4" />
+                <span>Gia hạn gói (+3 tháng · 120k)</span>
               </button>
-            )}
+            </div>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -232,13 +273,13 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
           </div>
         )}
 
-        {/* Admin Control Panel for granting/revoking Synapse Pre */}
+        {/* Admin Control Panel for granting/revoking/renewing Synapse Pre */}
         {isAdmin && (
           <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/25 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-300">
                 <ShieldCheck className="h-4 w-4" />
-                <span>BẢNG QUẢN TRỊ ADMIN — CẤP QUYỀN SYNAPSE PRE (120K / 3 THÁNG)</span>
+                <span>BẢNG QUẢN TRỊ ADMIN — CẤP & GIA HẠN SYNAPSE PRE (120K / 3 THÁNG)</span>
               </div>
               <span className="text-[11px] font-mono text-emerald-400">
                 Đã cấp: {approvedEmails.length} tài khoản
@@ -250,7 +291,7 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
                 type="text"
                 value={adminGrantEmail}
                 onChange={(e) => setAdminGrantEmail(e.target.value)}
-                placeholder="Nhập email hoặc tên tài khoản để cấp quyền Synapse Pre..."
+                placeholder="Nhập email hoặc tên tài khoản để cấp / gia hạn Synapse Pre..."
                 className="flex-1 min-w-[220px] rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none"
               />
               <button
@@ -258,14 +299,15 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-slate-950 hover:bg-emerald-400 cursor-pointer"
               >
                 <UserCheck className="h-3.5 w-3.5" />
-                <span>Cấp quyền ngay</span>
+                <span>Cấp / Gia hạn ngay</span>
               </button>
             </form>
 
             {requests.length > 0 && (
-              <div className="space-y-1.5 max-h-36 overflow-y-auto">
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {requests.map((req) => {
                   const approved = approvedEmails.includes(req.email.toLowerCase());
+                  const pendingRenewal = approved && req.status === 'pending';
                   return (
                     <div
                       key={req.email}
@@ -288,13 +330,24 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
                             <UserCheck className="h-3 w-3" /> Duyệt
                           </button>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => revokeUserPremium(req.email)}
-                            className="inline-flex items-center gap-1 rounded bg-rose-500/20 border border-rose-500/50 px-2.5 py-1 text-[11px] font-bold text-rose-300 hover:bg-rose-500/30 cursor-pointer"
-                          >
-                            <UserX className="h-3 w-3" /> Thu hồi
-                          </button>
+                          <>
+                            {pendingRenewal && (
+                              <button
+                                type="button"
+                                onClick={() => approveUserPremium(req.email, true)}
+                                className="inline-flex items-center gap-1 rounded bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-300 cursor-pointer"
+                              >
+                                <RefreshCw className="h-3 w-3" /> Duyệt gia hạn +3T
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => revokeUserPremium(req.email)}
+                              className="inline-flex items-center gap-1 rounded bg-rose-500/20 border border-rose-500/50 px-2.5 py-1 text-[11px] font-bold text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                            >
+                              <UserX className="h-3 w-3" /> Thu hồi
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>

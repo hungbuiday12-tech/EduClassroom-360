@@ -200,7 +200,7 @@ function renderPlainTextWithBold(textSegment: string, keyPrefix: string): React.
         {boldParts.map((bp, i) => {
           if (bp.startsWith('**') && bp.endsWith('**')) {
             return (
-              <strong key={`${keyPrefix}-b-${i}`} className="font-semibold text-slate-900 dark:text-white">
+              <strong key={`${keyPrefix}-b-${i}`} className="font-semibold text-current">
                 {bp.slice(2, -2)}
               </strong>
             );

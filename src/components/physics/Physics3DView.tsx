@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { AnaglyphEffect } from 'three/addons/effects/AnaglyphEffect.js';
 import { StereoEffect } from 'three/addons/effects/StereoEffect.js';
 import {
@@ -366,16 +367,27 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     controls.maxDistance = 30;
     controls.minDistance = 2;
 
+    // Studio Environment Reflection for metallic materials (PBR)
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    const roomEnv = new RoomEnvironment();
+    const envRT = pmremGenerator.fromScene(roomEnv, 0.04);
+    scene.environment = envRT.texture;
+    roomEnv.dispose();
+    pmremGenerator.dispose();
+
     // Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.85);
+    scene.add(hemiLight);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.4);
+    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.5);
     keyLight.position.set(6, 10, 8);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x88bbff, 0.8);
-    fillLight.position.set(-6, -4, -6);
+    const fillLight = new THREE.DirectionalLight(0x88bbff, 0.9);
+    fillLight.position.set(-6, 4, -6);
     scene.add(fillLight);
 
     // Grid Floor
@@ -517,6 +529,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       sceneTickRef.current = null;
       rendererRef.current = null;
       gridRef.current = null;
+      envRT.dispose();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -642,62 +655,231 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const rad = (safeAngle * Math.PI) / 180;
       const v0x = safeV0 * Math.cos(rad);
       const v0y = safeV0 * Math.sin(rad);
-      const tMax = Math.max(0.1, (2 * v0y) / g);
+      const scale = 0.4;
 
-      // Cannon Base & Barrel
+      const cannonBaseX = -6;
+      const pivotY = 0.62;
+      const barrelLength = 2.0;
+
+      // Exact world coordinates of the cannon barrel muzzle tip
+      const muzzleX = cannonBaseX + barrelLength * Math.cos(rad);
+      const muzzleY = pivotY + barrelLength * Math.sin(rad);
+
+      // Solve exact time until projectile hits ground (py = 0) from muzzleY
+      const aQuad = 0.5 * g * scale;
+      const bQuad = v0y * scale;
+      const tImpact = Math.max(
+        0.1,
+        (bQuad + Math.sqrt(bQuad * bQuad + 4 * aQuad * muzzleY)) / (2 * aQuad)
+      );
+
+      // Composite Multi-Part Cannon Assembly
       const cannonGroup = new THREE.Group();
-      const baseGeo = new THREE.CylinderGeometry(0.8, 1.0, 0.4, 16);
-      const baseMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
-      cannonGroup.add(new THREE.Mesh(baseGeo, baseMat));
+      cannonGroup.position.set(cannonBaseX, 0, 0);
 
-      const barrelGeo = new THREE.CylinderGeometry(0.25, 0.3, 2.0, 16);
-      barrelGeo.translate(0, 1.0, 0);
-      const barrelMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.2 });
-      const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-      barrel.rotation.z = -rad;
-      cannonGroup.add(barrel);
-      cannonGroup.position.set(-6, 0.2, 0);
+      const baseMat = new THREE.MeshStandardMaterial({
+        color: 0x334155,
+        metalness: 0.55,
+        roughness: 0.48
+      });
+      const brassMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        metalness: 0.86,
+        roughness: 0.22
+      });
+      const steelMat = new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        metalness: 0.85,
+        roughness: 0.25
+      });
+
+      // 1. Heavy cylindrical plinth flush on ground (y = 0)
+      const basePlinth = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.92, 1.12, 0.24, 24),
+        baseMat
+      );
+      basePlinth.position.y = 0.12;
+      cannonGroup.add(basePlinth);
+
+      // 2. Brass turret ring
+      const turretRing = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.74, 0.78, 0.1, 24),
+        brassMat
+      );
+      turretRing.position.y = 0.29;
+      cannonGroup.add(turretRing);
+
+      // 3. Dual side carriage brackets + elevation trunnion axle
+      [-0.42, 0.42].forEach((zOff) => {
+        const bracket = new THREE.Mesh(
+          new THREE.BoxGeometry(1.05, 0.44, 0.12),
+          baseMat
+        );
+        bracket.position.set(-0.08, 0.48, zOff);
+        cannonGroup.add(bracket);
+      });
+      const axle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.11, 0.11, 1.02, 16),
+        brassMat
+      );
+      axle.rotation.x = Math.PI / 2;
+      axle.position.set(0, pivotY, 0);
+      cannonGroup.add(axle);
+
+      // 4. Barrel pivot rotated strictly to launch angle `safeAngle` above +X
+      // Cylinder points along +Y, so rotation.z = rad - Math.PI / 2 aligns +Y with (cos(rad), sin(rad))
+      const barrelPivot = new THREE.Group();
+      barrelPivot.position.set(0, pivotY, 0);
+      barrelPivot.rotation.z = rad - Math.PI / 2;
+
+      const barrelGeo = new THREE.CylinderGeometry(0.22, 0.31, barrelLength, 24);
+      barrelGeo.translate(0, barrelLength / 2, 0);
+      const barrelMesh = new THREE.Mesh(barrelGeo, steelMat);
+      barrelPivot.add(barrelMesh);
+
+      // Breech cap & cascabel knob at rear (y <= 0 along barrel axis)
+      const breechSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.31, 20, 16),
+        steelMat
+      );
+      barrelPivot.add(breechSphere);
+      const breechKnob = new THREE.Mesh(
+        new THREE.SphereGeometry(0.13, 14, 14),
+        brassMat
+      );
+      breechKnob.position.y = -0.36;
+      barrelPivot.add(breechKnob);
+
+      // Brass reinforcing collar rings + glowing muzzle rim
+      [0.45, 1.25].forEach((yBand, idx) => {
+        const band = new THREE.Mesh(
+          new THREE.TorusGeometry(idx === 0 ? 0.295 : 0.258, 0.036, 12, 24),
+          brassMat
+        );
+        band.rotation.x = Math.PI / 2;
+        band.position.y = yBand;
+        barrelPivot.add(band);
+      });
+
+      const muzzleCollar = new THREE.Mesh(
+        new THREE.TorusGeometry(0.235, 0.045, 12, 24),
+        new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          emissive: 0x0284c7,
+          emissiveIntensity: 0.6,
+          metalness: 0.7,
+          roughness: 0.25
+        })
+      );
+      muzzleCollar.rotation.x = Math.PI / 2;
+      muzzleCollar.position.y = barrelLength;
+      barrelPivot.add(muzzleCollar);
+
+      const boreCap = new THREE.Mesh(
+        new THREE.CircleGeometry(0.18, 20),
+        new THREE.MeshBasicMaterial({ color: 0x090d16, side: THREE.DoubleSide })
+      );
+      boreCap.rotation.x = -Math.PI / 2;
+      boreCap.position.y = barrelLength + 0.005;
+      barrelPivot.add(boreCap);
+
+      cannonGroup.add(barrelPivot);
+
+      // Angle elevation arc indicator beside cannon
+      const arcPts: THREE.Vector3[] = [new THREE.Vector3(0, pivotY, 0.02)];
+      const arcR = 1.35;
+      for (let i = 0; i <= 18; i++) {
+        const a = (i / 18) * rad;
+        arcPts.push(new THREE.Vector3(arcR * Math.cos(a), pivotY + arcR * Math.sin(a), 0.02));
+      }
+      arcPts.push(new THREE.Vector3(0, pivotY, 0.02));
+      const arcLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(arcPts),
+        new THREE.LineBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.75 })
+      );
+      cannonGroup.add(arcLine);
+
       group.add(cannonGroup);
 
-      // Projectile Cannon Ball
-      const ballGeo = new THREE.SphereGeometry(0.25, 16, 16);
-      const ballMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2, metalness: 0.7 });
-      const ball = new THREE.Mesh(ballGeo, ballMat);
+      // Projectile Cannon Ball + instant velocity arrow
+      const ball = new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 20, 20),
+        new THREE.MeshStandardMaterial({
+          color: 0xf59e0b,
+          emissive: 0xb45309,
+          emissiveIntensity: 0.35,
+          roughness: 0.22,
+          metalness: 0.65
+        })
+      );
       group.add(ball);
 
-      // Trajectory Path (Dotted curve)
+      const velArrow = new THREE.ArrowHelper(
+        new THREE.Vector3(Math.cos(rad), Math.sin(rad), 0),
+        new THREE.Vector3(muzzleX, muzzleY, 0),
+        1.4,
+        0x10b981,
+        0.26,
+        0.14
+      );
+      group.add(velArrow);
+
+      // Trajectory Path (Dotted curve starting strictly at muzzle tip)
       const pathPoints: THREE.Vector3[] = [];
-      const numPts = 60;
+      const numPts = 72;
       for (let i = 0; i <= numPts; i++) {
-        const tCur = (i / numPts) * tMax;
-        const px = -6 + v0x * tCur * 0.4;
-        const py = Math.max(0, 0.2 + (v0y * tCur - 0.5 * g * tCur * tCur) * 0.4);
+        const tCur = (i / numPts) * tImpact;
+        const px = muzzleX + v0x * tCur * scale;
+        const py = Math.max(0.02, muzzleY + (v0y * tCur - 0.5 * g * tCur * tCur) * scale);
         pathPoints.push(new THREE.Vector3(px, py, 0));
       }
       const pathGeo = new THREE.BufferGeometry().setFromPoints(pathPoints);
-      const pathMat = new THREE.LineDashedMaterial({ color: 0x38bdf8, dashSize: 0.2, gapSize: 0.1 });
+      const pathMat = new THREE.LineDashedMaterial({ color: 0x38bdf8, dashSize: 0.22, gapSize: 0.12 });
       const pathLine = new THREE.Line(pathGeo, pathMat);
       pathLine.computeLineDistances();
       group.add(pathLine);
 
-      // Target Ring on the ground
-      const targetDist = -6 + v0x * tMax * 0.4;
-      const ringGeo = new THREE.RingGeometry(0.4, 0.6, 24);
+      // Target Ring on the ground at exact impact point
+      const targetDist = muzzleX + v0x * tImpact * scale;
+      const ringGeo = new THREE.RingGeometry(0.36, 0.58, 28);
       const ringMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = Math.PI / 2;
       ring.position.set(targetDist, 0.02, 0);
       group.add(ring);
 
+      const velVec = new THREE.Vector3();
+      const cosA = Math.cos(rad);
+      const sinA = Math.sin(rad);
+
       sceneTickRef.current = () => {
-        const currentSimT = simStateRef.current.projT % (tMax + 0.8);
-        if (currentSimT <= tMax) {
-          const bx = -6 + v0x * currentSimT * 0.4;
-          const by = Math.max(0, 0.2 + (v0y * currentSimT - 0.5 * g * currentSimT * currentSimT) * 0.4);
+        const currentSimT = simStateRef.current.projT % (tImpact + 0.8);
+        if (currentSimT <= tImpact) {
+          const bx = muzzleX + v0x * currentSimT * scale;
+          const by = Math.max(0.02, muzzleY + (v0y * currentSimT - 0.5 * g * currentSimT * currentSimT) * scale);
           ball.position.set(bx, by, 0);
           ball.visible = true;
+
+          const vyCur = v0y - g * currentSimT;
+          velVec.set(v0x, vyCur, 0);
+          const speedCur = velVec.length();
+          if (speedCur > 0.01) {
+            velArrow.position.set(bx, by, 0);
+            velArrow.setDirection(velVec.normalize());
+            velArrow.setLength(Math.min(2.2, Math.max(0.7, speedCur * 0.09)), 0.26, 0.13);
+            velArrow.visible = true;
+          }
+
+          // Subtle physical barrel recoil right as shell exits muzzle
+          const recoil = currentSimT < 0.16 ? Math.sin((currentSimT / 0.16) * Math.PI) * 0.18 : 0;
+          barrelPivot.position.set(-recoil * cosA, pivotY - recoil * sinA, 0);
+          ring.scale.setScalar(1);
         } else {
           ball.visible = false;
+          velArrow.visible = false;
+          barrelPivot.position.set(0, pivotY, 0);
+          const pulse = 1 + 0.22 * Math.sin(((currentSimT - tImpact) / 0.8) * Math.PI);
+          ring.scale.setScalar(pulse);
         }
       };
       sceneTickRef.current(0);

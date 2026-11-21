@@ -8,6 +8,7 @@ interface VoiceMicButtonProps {
   disabled?: boolean;
   size?: 'sm' | 'md';
   showLabel?: boolean;
+  darkSurface?: boolean;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export const VoiceMicButton: React.FC<VoiceMicButtonProps> = ({
   disabled = false,
   size = 'md',
   showLabel = false,
+  darkSurface = false,
   className = ''
 }) => {
   const isEn = language === 'en';
@@ -62,6 +64,8 @@ export const VoiceMicButton: React.FC<VoiceMicButtonProps> = ({
         className={`inline-flex items-center justify-center gap-1.5 rounded-lg border font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed ${padCls} ${
           isListening
             ? 'bg-rose-600 text-white border-rose-500 shadow-sm ring-2 ring-rose-500/35'
+            : darkSurface
+            ? 'bg-slate-800 text-slate-200 border-slate-700 hover:border-cyan-400 hover:text-cyan-300'
             : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-sky-500 hover:text-sky-600 dark:hover:text-sky-400'
         } ${className}`}
       >

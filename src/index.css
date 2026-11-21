@@ -2302,7 +2302,6 @@ html[data-perf="smooth"] .pre-card-shell {
     linear-gradient(to right, rgba(56, 189, 248, 0.055) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(56, 189, 248, 0.055) 1px, transparent 1px);
   background-size: 28px 28px;
-  animation: syn-neural-pan 20s linear infinite;
 }
 
 .dark .syn-neural-grid {

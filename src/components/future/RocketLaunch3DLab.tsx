@@ -7,6 +7,8 @@ import {
   EyeOff,
   Flame,
   Layers,
+  Maximize2,
+  Minimize2,
   Orbit,
   RotateCcw,
   Rocket,
@@ -150,8 +152,10 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
   const { perfMode } = useBackgroundTheme();
 
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [cutaway, setCutaway] = useState(false);
   const cutawayRef = useRef(false);
@@ -164,6 +168,24 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
   const [camPreset, setCamPreset] = useState<CameraPreset>('pad');
   const camPresetRef = useRef<CameraPreset>('pad');
   camPresetRef.current = camPreset;
+
+  const toggleFullscreen = () => {
+    const el = rootRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().catch(() => setIsFullscreen((f) => !f));
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => setIsFullscreen(false));
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
 
   const [webglError, setWebglError] = useState(false);
   const [contextLost, setContextLost] = useState(false);
@@ -603,6 +625,19 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
     stage2Group.add(fairingLeft);
     stage2Group.add(fairingRight);
 
+    // Prandtl-Glauert Max-Q Supersonic Vapor Shock Cone
+    const maxQConeMat = new THREE.MeshBasicMaterial({
+      color: 0xe0f2fe,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const maxQCone = new THREE.Mesh(new THREE.ConeGeometry(2.8, 3.8, 28, 1, true), maxQConeMat);
+    maxQCone.position.y = 4.0;
+    stage2Group.add(maxQCone);
+
     // Instanced Plume & Smoke Particles
     const smokeGeo = new THREE.IcosahedronGeometry(0.42, 0);
     const smokeMat = new THREE.MeshStandardMaterial({
@@ -940,6 +975,13 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
         }
       }
 
+      // Max-Q Prandtl-Glauert vapor cone pulse around upper fairing
+      const atmNow = Math.exp(-sim.altKm / 8.5);
+      const qNow = (0.5 * 1.225 * atmNow * (sim.velKms * 1000) ** 2) / 1000;
+      const vaporAlpha = sim.running && qNow > 16 ? THREE.MathUtils.clamp((qNow - 16) / 30, 0, 0.34) : 0;
+      maxQConeMat.opacity = THREE.MathUtils.damp(maxQConeMat.opacity, vaporAlpha, 6, rawDt);
+      maxQCone.rotation.y += rawDt * 2.4;
+
       // Satellite solar wings unfold cleanly upon reaching orbit
       if (sim.satDeployed) {
         sim.satPop = THREE.MathUtils.damp(sim.satPop, 1, 3.2, rawDt);
@@ -1069,6 +1111,11 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
   }, [onEarnXP, perfMode, playRocketSfx]);
 
   const phaseMeta = PHASE_LABELS[telemetry.phase];
+  const mass0 = 420 + params.payloadMassTons;
+  const massDry = 46 + params.payloadMassTons;
+  const deltaVKms = (3.08 * Math.log(mass0 / massDry)).toFixed(2);
+  const milestoneOrder: LaunchPhase[] = ['IGNITION', 'MAX_Q', 'MECO_SEP', 'FAIRING_JETTISON', 'ORBIT'];
+  const currentMilestoneIdx = milestoneOrder.indexOf(telemetry.phase);
 
   if (webglError) {
     return (
@@ -1081,51 +1128,82 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
   }
 
   return (
-    <div className="relative w-full h-[640px] sm:h-[700px] rounded-xl overflow-hidden border border-sky-500/35 bg-[#050b18] shadow-2xl select-none">
-      {/* Isolated WebGL Mount */}
-      <div ref={mountRef} className="absolute inset-0 w-full h-full" />
-
-      {contextLost && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/90 text-amber-300 text-sm font-mono">
-          {isEn ? 'Restoring WebGL 3D Rocket Engine...' : 'Đang khôi phục GPU WebGL 3D...'}
-        </div>
-      )}
-
-      {/* Minimal Top-Left Mission Telemetry Strip (Unobstructed center) */}
-      <div className="pointer-events-none absolute top-3 left-3 z-20 max-w-md space-y-1.5">
-        <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/88 border border-sky-400/40 text-xs font-mono text-sky-200">
-          <Rocket className="w-3.5 h-3.5 text-amber-400" />
-          <span className="font-extrabold text-white">T+{telemetry.missionTime.toFixed(1)}s</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-amber-300 font-bold">{isEn ? phaseMeta.en : phaseMeta.vi}</span>
+    <div
+      ref={rootRef}
+      className={`flex flex-col lg:block lg:relative w-full rounded-xl overflow-hidden border border-sky-500/35 bg-[#050b18] shadow-2xl select-none ${
+        isFullscreen ? 'fixed inset-0 z-[140] h-[100dvh] rounded-none border-0 overflow-y-auto lg:overflow-hidden' : 'lg:h-[700px]'
+      }`}
+    >
+      {/* Top-Left Mission Telemetry Strip */}
+      <div className="relative lg:pointer-events-none lg:absolute lg:top-3 lg:left-3 z-20 p-2.5 lg:p-0 bg-slate-950/95 lg:bg-transparent border-b border-slate-800 lg:border-b-0 lg:max-w-lg space-y-1.5 shrink-0">
+        <div className="lg:pointer-events-auto flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-slate-950/90 border border-sky-400/40 text-xs font-mono text-sky-200">
+          <div className="flex flex-wrap items-center gap-2">
+            <Rocket className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="font-extrabold text-white">T+{telemetry.missionTime.toFixed(1)}s</span>
+            <span className="text-slate-500">|</span>
+            <span className="text-amber-300 font-bold">{isEn ? phaseMeta.en : phaseMeta.vi}</span>
+          </div>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="min-h-[32px] min-w-[32px] inline-flex items-center justify-center rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
+            title={isEn ? 'Fullscreen' : 'Toàn màn hình'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
-          <span className="px-2 py-1 rounded bg-slate-950/85 border border-slate-700 text-cyan-300 tabular-nums">
+          <span className="px-2 py-1 rounded bg-slate-950/88 border border-slate-700 text-cyan-300 tabular-nums">
             ALT {telemetry.altitudeKm.toFixed(1)} km
           </span>
-          <span className="px-2 py-1 rounded bg-slate-950/85 border border-slate-700 text-emerald-300 tabular-nums">
+          <span className="px-2 py-1 rounded bg-slate-950/88 border border-slate-700 text-emerald-300 tabular-nums">
             VEL {telemetry.velocityKms.toFixed(2)} km/s
           </span>
-          <span className="px-2 py-1 rounded bg-slate-950/85 border border-slate-700 text-amber-300 tabular-nums">
+          <span className="px-2 py-1 rounded bg-slate-950/88 border border-slate-700 text-amber-300 tabular-nums">
             {telemetry.gForce.toFixed(1)}G · Q {telemetry.dynPressureKpa.toFixed(1)} kPa
           </span>
-          <span className="px-2 py-1 rounded bg-slate-950/85 border border-slate-700 text-slate-200 tabular-nums">
+          <span className="px-2 py-1 rounded bg-slate-950/88 border border-slate-700 text-violet-300 tabular-nums">
+            Δv {deltaVKms} km/s
+          </span>
+          <span className="px-2 py-1 rounded bg-slate-950/88 border border-slate-700 text-slate-200 tabular-nums">
             S1 {telemetry.stage1FuelPct.toFixed(0)}% · S2 {telemetry.stage2FuelPct.toFixed(0)}%
           </span>
         </div>
 
-        <div className="px-2.5 py-1.5 rounded bg-slate-950/82 border border-slate-800 text-[11px] text-slate-200 leading-snug">
-          {isEn ? phaseMeta.descEn : phaseMeta.descVi}
+        {/* Mission Sequence Milestones */}
+        <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono">
+          {milestoneOrder.map((mId, idx) => (
+            <span
+              key={mId}
+              className={`px-1.5 py-0.5 rounded border ${
+                currentMilestoneIdx >= idx
+                  ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-200 font-bold'
+                  : 'bg-slate-950/80 border-slate-800 text-slate-500'
+              }`}
+            >
+              {mId === 'FAIRING_JETTISON' ? 'FAIR' : mId === 'MECO_SEP' ? 'MECO' : mId}
+            </span>
+          ))}
         </div>
       </div>
 
-      {/* Collapsible Bottom Control Dock (Zero Center Occlusion, No backdrop-blur) */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-[920px] flex flex-col items-center gap-1.5">
+      {/* Unobstructed 3D Mount */}
+      <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[260px] lg:absolute lg:inset-0 lg:h-full' : 'h-[290px] sm:h-[380px] lg:absolute lg:inset-0 lg:h-full'}`}>
+        <div ref={mountRef} className="w-full h-full" />
+        {contextLost && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/90 text-amber-300 text-sm font-mono">
+            {isEn ? 'Restoring WebGL 3D Rocket Engine...' : 'Đang khôi phục GPU WebGL 3D...'}
+          </div>
+        )}
+      </div>
+
+      {/* Collapsible Bottom Control Dock */}
+      <div className="relative lg:absolute lg:bottom-3 lg:left-1/2 lg:-translate-x-1/2 z-20 w-full lg:w-[95%] lg:max-w-[940px] flex flex-col items-center gap-1.5 p-2 lg:p-0 bg-slate-950 lg:bg-transparent border-t border-slate-800 lg:border-t-0 shrink-0">
         <button
           type="button"
           onClick={() => setControlsVisible((v) => !v)}
-          className="px-3 py-1 rounded-md bg-slate-950/90 border border-sky-400/40 text-[11px] font-mono font-bold text-sky-200 hover:text-white flex items-center gap-1.5 cursor-pointer"
+          className="min-h-[36px] px-3 py-1 rounded-md bg-slate-950/92 border border-sky-400/40 text-[11px] font-mono font-bold text-sky-200 hover:text-white flex items-center gap-1.5 cursor-pointer"
         >
           {controlsVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           <span>
@@ -1136,28 +1214,28 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
         </button>
 
         {controlsVisible && (
-          <div className="w-full rounded-xl bg-slate-950/92 border border-slate-700/85 p-3 sm:p-4 space-y-3 text-xs text-slate-100 shadow-2xl">
+          <div className="w-full max-h-[38dvh] lg:max-h-none overflow-y-auto rounded-xl bg-slate-950/94 border border-slate-700/85 p-3 sm:p-4 space-y-3 text-xs text-slate-100 shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => launchActionRef.current?.()}
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold flex items-center gap-1.5 cursor-pointer"
+                  className="min-h-[38px] px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Flame className="w-4 h-4" />
                   <span>
                     {telemetry.phase === 'PRE_LAUNCH'
-                      ? isEn ? 'IGNITE & LAUNCH' : 'ĐÁNH LỬA & PHÓNG TÊN LỬA'
+                      ? isEn ? 'IGNITE & LAUNCH' : 'ĐÁNH LỬA & PHÓNG'
                       : telemetry.phase === 'ORBIT'
                       ? isEn ? 'RE-LAUNCH' : 'PHÓNG LẠI'
-                      : isEn ? 'ASCENDING...' : 'ĐANG BAY LÊN QUỸ ĐẠO'}
+                      : isEn ? 'ASCENDING...' : 'ĐANG BAY LÊN'}
                   </span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => resetActionRef.current?.()}
-                  className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold flex items-center gap-1 cursor-pointer"
+                  className="min-h-[38px] px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset</span>
@@ -1166,24 +1244,49 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
                 <button
                   type="button"
                   onClick={() => setCutaway((c) => !c)}
-                  className={`px-3 py-2 rounded-lg border font-bold flex items-center gap-1.5 cursor-pointer ${
+                  className={`min-h-[38px] px-3 py-2 rounded-lg border font-bold flex items-center gap-1.5 cursor-pointer ${
                     cutaway
                       ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
                       : 'bg-slate-800 border-slate-700 text-slate-300'
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Cutaway LOX/RP-1' : 'Mặt cắt Bình Nhiên liệu'}</span>
+                  <span>{isEn ? 'Cutaway' : 'Mặt cắt Bình'}</span>
                 </button>
               </div>
 
+              {/* Mission Presets + Cameras */}
               <div className="flex flex-wrap items-center gap-1.5">
                 {(
                   [
-                    { id: 'pad', vi: 'Bệ Phóng', en: 'Pad' },
-                    { id: 'chase', vi: 'Bám Tên Lửa', en: 'Chase' },
-                    { id: 'separation', vi: 'Tách Tầng', en: 'Stage Sep' },
-                    { id: 'horizon', vi: 'Quỹ Đạo', en: 'Horizon' }
+                    { label: 'LEO Std', tw: 1.48, kick: 22, mass: 8.5 },
+                    { label: 'Sprint', tw: 1.92, kick: 16, mass: 5.0 },
+                    { label: 'Heavy', tw: 1.24, kick: 28, mass: 15.5 }
+                  ] as const
+                ).map((pr) => (
+                  <button
+                    key={pr.label}
+                    type="button"
+                    onClick={() =>
+                      setParams((prev) => ({
+                        ...prev,
+                        thrustToWeight: pr.tw,
+                        pitchKickDeg: pr.kick,
+                        payloadMassTons: pr.mass
+                      }))
+                    }
+                    className="min-h-[36px] px-2 py-1 rounded border border-amber-500/35 bg-amber-500/10 text-[10px] font-mono font-bold text-amber-200 hover:bg-amber-500/20 cursor-pointer"
+                  >
+                    {pr.label}
+                  </button>
+                ))}
+
+                {(
+                  [
+                    { id: 'pad', vi: 'Bệ', en: 'Pad' },
+                    { id: 'chase', vi: 'Bám', en: 'Chase' },
+                    { id: 'separation', vi: 'Tách', en: 'Sep' },
+                    { id: 'horizon', vi: 'Quỹ Đạo', en: 'Orbit' }
                   ] as { id: CameraPreset; vi: string; en: string }[]
                 ).map((c) => (
                   <button
@@ -1193,7 +1296,7 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
                       setCamPreset(c.id);
                       applyCamRef.current?.(c.id);
                     }}
-                    className={`px-2.5 py-1.5 rounded border text-[11px] font-bold cursor-pointer ${
+                    className={`min-h-[36px] px-2.5 py-1 rounded border text-[11px] font-bold cursor-pointer ${
                       camPreset === c.id
                         ? 'bg-sky-500/25 border-sky-400 text-sky-200'
                         : 'bg-slate-900 border-slate-700 text-slate-300'
@@ -1206,7 +1309,7 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
                 <button
                   type="button"
                   onClick={() => setMuted((m) => !m)}
-                  className="p-2 rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
+                  className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
                   title={isEn ? 'Toggle Sound' : 'Bật/Tắt Âm Thanh'}
                 >
                   {muted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
@@ -1214,7 +1317,6 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
               </div>
             </div>
 
-            {/* Physics Tuners */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-800">
               <label className="space-y-1">
                 <div className="flex justify-between text-[11px] font-mono">
@@ -1234,7 +1336,7 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
 
               <label className="space-y-1">
                 <div className="flex justify-between text-[11px] font-mono">
-                  <span className="text-slate-300">{isEn ? 'Gravity Turn' : 'Góc bẻ quỹ đạo'}</span>
+                  <span className="text-slate-300">{isEn ? 'Gravity Turn' : 'Góc bẻ'}</span>
                   <span className="text-sky-300 font-bold">{params.pitchKickDeg}°</span>
                 </div>
                 <input
@@ -1250,7 +1352,7 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
 
               <label className="space-y-1">
                 <div className="flex justify-between text-[11px] font-mono">
-                  <span className="text-slate-300">{isEn ? 'Payload Mass' : 'Tải Vệ tinh'}</span>
+                  <span className="text-slate-300">{isEn ? 'Payload' : 'Tải'}</span>
                   <span className="text-emerald-300 font-bold">{params.payloadMassTons.toFixed(1)} T</span>
                 </div>
                 <input
@@ -1268,7 +1370,7 @@ export const RocketLaunch3DLab: React.FC<RocketLaunch3DLabProps> = ({ onEarnXP }
                 <div className="flex justify-between text-[11px] font-mono">
                   <span className="text-slate-300 flex items-center gap-1">
                     <Orbit className="w-3 h-3" />
-                    {isEn ? 'Time Scale' : 'Tốc độ mô phỏng'}
+                    {isEn ? 'Speed' : 'Tốc độ'}
                   </span>
                   <span className="text-violet-300 font-bold">{params.timeScale.toFixed(1)}x</span>
                 </div>

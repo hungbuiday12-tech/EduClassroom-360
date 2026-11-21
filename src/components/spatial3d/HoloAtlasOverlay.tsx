@@ -453,31 +453,31 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
   return (
     <div className="pointer-events-none absolute inset-0 z-20 select-none text-slate-100">
       {/* TOP BAR: LEFT BRAND BADGE & RIGHT BIO-LAB HUD CLUSTER */}
-      <div className="absolute top-3 left-3 right-3 flex flex-wrap items-start justify-between gap-2">
+      <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 flex flex-wrap items-start justify-between gap-1.5 sm:gap-2">
         {/* Top-Left Holographic Title Card */}
-        <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-cyan-500/30 bg-[#050d1c]/92 px-3.5 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.6)]">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-cyan-400/45 bg-cyan-500/15 text-cyan-300">
-            <Crosshair className="h-5 w-5" />
+        <div className="pointer-events-auto flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 rounded-xl border border-cyan-500/30 bg-[#050d1c]/94 px-2.5 sm:px-3.5 py-1.5 sm:py-2 shadow-[0_8px_30px_rgba(0,0,0,0.6)] max-w-full">
+          <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg border border-cyan-400/45 bg-cyan-500/15 text-cyan-300">
+            <Crosshair className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="truncate font-display text-sm sm:text-base font-extrabold tracking-wide text-white uppercase">
+              <h2 className="truncate font-display text-xs sm:text-base font-extrabold tracking-wide text-white uppercase">
                 {isEn ? 'ATLAS 3D HAND & MODEL LAB' : 'ATLAS MÔ HÌNH 3D TƯƠNG TÁC TAY'}
               </h2>
             </div>
-            <div className="truncate font-mono text-[10px] font-semibold tracking-wider text-cyan-400 uppercase tabular-nums">
+            <div className="truncate font-mono text-[9.5px] sm:text-[10px] font-semibold tracking-wider text-cyan-400 uppercase tabular-nums">
               {isEn
-                ? `BIO-LAB HOLOGRAPHIC SPECIMEN · ${modelParts.length} PARTS · ${15 + customModels.length} MODELS`
-                : `BIO-LAB HOLOGRAPHIC SPECIMEN · ${modelParts.length} BỘ PHẬN · ${15 + customModels.length} MÔ HÌNH`}
+                ? `BIO-LAB SPECIMEN · ${modelParts.length} PARTS · ${15 + customModels.length} MODELS`
+                : `BIO-LAB SPECIMEN · ${modelParts.length} BỘ PHẬN · ${15 + customModels.length} MÔ HÌNH`}
             </div>
           </div>
 
-          <div className="flex items-center gap-1 border-l border-slate-700/80 pl-2">
+          <div className="flex items-center gap-1 border-l border-slate-700/80 pl-2 shrink-0">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                className="flex items-center gap-1 rounded-md border border-slate-700/80 bg-slate-900/90 px-2 py-1 text-[11px] font-bold text-slate-200 hover:border-cyan-400/60 hover:text-cyan-200 cursor-pointer"
+                className="min-h-[34px] flex items-center gap-1 rounded-md border border-slate-700/80 bg-slate-900/90 px-2 py-1 text-[11px] font-bold text-slate-200 hover:border-cyan-400/60 hover:text-cyan-200 cursor-pointer"
                 title={isEn ? 'Back' : 'Quay lại'}
               >
                 <ArrowLeft className="h-3 w-3" />
@@ -487,7 +487,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
             <button
               type="button"
               onClick={onSwitchTo2D}
-              className="flex items-center gap-1 rounded-md border border-slate-700/80 bg-slate-900/90 px-2 py-1 text-[11px] font-bold text-cyan-300 hover:border-cyan-400 cursor-pointer"
+              className="min-h-[34px] flex items-center gap-1 rounded-md border border-slate-700/80 bg-slate-900/90 px-2 py-1 text-[11px] font-bold text-cyan-300 hover:border-cyan-400 cursor-pointer"
               title={isEn ? 'Switch to 2D Geometry Lab' : 'Chuyển sang Không gian 2D'}
             >
               <Compass className="h-3 w-3" />
@@ -496,7 +496,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
             <button
               type="button"
               onClick={onOpenPortal}
-              className="flex items-center gap-1 rounded-md border border-slate-700/80 bg-slate-900/90 px-2 py-1 text-[11px] font-bold text-slate-300 hover:border-cyan-400 hover:text-white cursor-pointer"
+              className="min-h-[34px] flex items-center gap-1 rounded-md border border-slate-700/80 bg-slate-900/90 px-2 py-1 text-[11px] font-bold text-slate-300 hover:border-cyan-400 hover:text-white cursor-pointer"
               title={isEn ? 'Open Spatial Guide Portal' : 'Mở Trang Giới thiệu & Hướng dẫn'}
             >
               <Layers className="h-3 w-3" />
@@ -506,13 +506,13 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
         </div>
 
         {/* Top-Right Bio-Lab Waveform + Visibility Counter + Quick Tools */}
-        <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+        <div className="pointer-events-auto flex flex-wrap items-center justify-start sm:justify-end gap-1.5 max-w-full">
           {/* Live Hand / Sensor Waveform Pill (Matches ECG pill in screenshot) */}
           <button
             type="button"
             onClick={onToggleCamera}
             disabled={cameraLoading}
-            className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-mono font-bold shadow-lg transition-colors cursor-pointer ${
+            className={`min-h-[36px] flex items-center gap-2 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-mono font-bold shadow-lg transition-colors cursor-pointer ${
               cameraActive
                 ? 'border-emerald-400/60 bg-[#05141c]/95 text-emerald-300'
                 : 'border-cyan-500/30 bg-[#050d1c]/92 text-slate-100 hover:border-cyan-400/70'
@@ -529,7 +529,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
               }`}
               data-circle="true"
             />
-            <svg width="46" height="16" viewBox="0 0 46 16" className="shrink-0">
+            <svg width="40" height="14" viewBox="0 0 46 16" className="hidden sm:block shrink-0">
               <polyline
                 fill="none"
                 stroke={cameraActive ? '#34d399' : '#fb7185'}
@@ -539,7 +539,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
                 points="0,8 8,8 11,3 14,13 17,2 20,14 23,8 30,8 33,4 36,12 39,8 46,8"
               />
             </svg>
-            <span className="tabular-nums whitespace-nowrap">
+            <span className="tabular-nums whitespace-nowrap text-[11px] sm:text-xs">
               {cameraLoading
                 ? isEn
                   ? 'CAM...'
@@ -557,7 +557,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
           </button>
 
           {/* HIỂN THỊ X / Y Counter Pill */}
-          <div className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-[#050d1c]/92 px-3 py-2 font-mono text-xs font-bold text-slate-200 shadow-lg tabular-nums">
+          <div className="hidden sm:flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-[#050d1c]/92 px-3 py-2 font-mono text-xs font-bold text-slate-200 shadow-lg tabular-nums">
             <span className="text-slate-400 text-[10px] tracking-wider uppercase">
               {isEn ? 'VISIBLE' : 'HIỂN THỊ'}
             </span>
@@ -567,7 +567,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
           </div>
 
           {/* Compact Holographic Action Icons */}
-          <div className="flex items-center gap-1 rounded-xl border border-cyan-500/25 bg-[#050d1c]/92 p-1 shadow-lg">
+          <div className="flex flex-wrap items-center gap-1 rounded-xl border border-cyan-500/25 bg-[#050d1c]/94 p-1 shadow-lg max-w-full">
             <button
               type="button"
               onClick={onOpenAICreator}
@@ -724,7 +724,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
 
       {/* ALL-IN-ONE PRO TOOLS & SENSOR SETTINGS DRAWER (Accessible in Normal & Fullscreen Mode) */}
       {toolsDrawerOpen && (
-        <div className="pointer-events-auto absolute top-[66px] right-3 z-40 w-[min(392px,calc(100vw-24px))] max-h-[calc(100vh-155px)] flex flex-col rounded-2xl border border-cyan-400/45 bg-[#050d1c]/96 shadow-[0_20px_60px_rgba(0,0,0,0.85)] overflow-hidden">
+        <div className="pointer-events-auto absolute top-[116px] sm:top-[66px] right-2.5 sm:right-3 z-40 w-[min(392px,calc(100vw-20px))] max-h-[calc(100vh-175px)] flex flex-col rounded-2xl border border-cyan-400/45 bg-[#050d1c]/96 shadow-[0_20px_60px_rgba(0,0,0,0.85)] overflow-hidden">
           <div className="flex items-center justify-between gap-2 border-b border-slate-800 px-3.5 py-2.5 bg-[#040a16]">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4 text-cyan-400" />

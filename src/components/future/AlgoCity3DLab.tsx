@@ -427,7 +427,7 @@ export const AlgoCity3DLab: React.FC<AlgoCity3DLabProps> = ({ onEarnXP }) => {
           <button
             type="button"
             onClick={() => setPlaying((p) => !p)}
-            className="inline-flex items-center gap-1 rounded-lg bg-sky-500/20 border border-sky-400/40 px-3 py-1.5 text-xs font-bold text-sky-300 cursor-pointer"
+            className="min-h-[36px] inline-flex items-center gap-1 rounded-lg bg-sky-500/20 border border-sky-400/40 px-3 py-1.5 text-xs font-bold text-sky-300 cursor-pointer"
           >
             {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
             {playing ? 'Tạm dừng' : 'Chạy'}
@@ -438,7 +438,7 @@ export const AlgoCity3DLab: React.FC<AlgoCity3DLabProps> = ({ onEarnXP }) => {
               setPlaying(false);
               setStepIdx((s) => (s + 1) % steps.length);
             }}
-            className="inline-flex items-center gap-1 rounded-lg bg-slate-800 border border-slate-700 px-2.5 py-1.5 text-xs font-bold text-slate-200 cursor-pointer"
+            className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center rounded-lg bg-slate-800 border border-slate-700 px-2.5 py-1.5 text-xs font-bold text-slate-200 cursor-pointer"
             title="Bước tiếp theo"
           >
             <SkipForward className="h-3.5 w-3.5" />
@@ -446,7 +446,7 @@ export const AlgoCity3DLab: React.FC<AlgoCity3DLabProps> = ({ onEarnXP }) => {
           <button
             type="button"
             onClick={() => setStepIdx(0)}
-            className="inline-flex items-center gap-1 rounded-lg bg-slate-800 border border-slate-700 px-2.5 py-1.5 text-xs font-bold text-slate-200 cursor-pointer"
+            className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center rounded-lg bg-slate-800 border border-slate-700 px-2.5 py-1.5 text-xs font-bold text-slate-200 cursor-pointer"
             title="Chạy lại"
           >
             <RotateCcw className="h-3.5 w-3.5" />
@@ -454,15 +454,13 @@ export const AlgoCity3DLab: React.FC<AlgoCity3DLabProps> = ({ onEarnXP }) => {
         </div>
       </div>
 
-      {/* 3D City Stage */}
-      <div className="relative h-[460px] overflow-hidden rounded-2xl border border-slate-800 bg-[#050914]">
-        <div ref={mountRef} className="h-full w-full cursor-grab active:cursor-grabbing" />
-
+      {/* 3D City Stage (HUD stacked above canvas on phones, floating on sm+) */}
+      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#050914] flex flex-col sm:block">
         {/* Top-Left HUD */}
-        <div className="pointer-events-none absolute left-3 top-3 max-w-md rounded-xl border border-slate-700/80 bg-slate-950/90 px-3.5 py-2.5 text-xs">
+        <div className="relative sm:pointer-events-none sm:absolute sm:left-3 sm:top-3 z-10 w-full sm:w-auto sm:max-w-md sm:rounded-xl border-b sm:border border-slate-700/80 bg-slate-950/94 px-3.5 py-2.5 text-xs">
           <div className="flex items-center justify-between gap-3">
             <span className="inline-flex items-center gap-1.5 font-bold text-cyan-300">
-              <Cpu className="h-3.5 w-3.5" />
+              <Cpu className="h-3.5 w-3.5 shrink-0" />
               {isEn ? '3D Algorithm Architecture City' : 'Thành Phố Thuật Toán 3D'}
             </span>
             <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-[10px] text-emerald-300">
@@ -477,6 +475,8 @@ export const AlgoCity3DLab: React.FC<AlgoCity3DLabProps> = ({ onEarnXP }) => {
             <span className="text-rose-400">■ Nghẽn / TLE</span>
           </div>
         </div>
+
+        <div ref={mountRef} className="h-[300px] sm:h-[400px] lg:h-[460px] w-full cursor-grab active:cursor-grabbing touch-none" />
       </div>
     </div>
   );

@@ -426,7 +426,7 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
               key={id}
               type="button"
               onClick={() => applyPreset(id)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+              className={`min-h-[38px] rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap ${
                 preset === id
                   ? 'bg-sky-500 text-slate-950'
                   : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
@@ -441,7 +441,7 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
           <button
             type="button"
             onClick={() => setRunning((r) => !r)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/30 cursor-pointer"
+            className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/30 cursor-pointer"
           >
             {running ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             {running ? (isEn ? 'Pause' : 'Tạm dừng') : isEn ? 'Resume' : 'Chạy tiếp'}
@@ -449,7 +449,7 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
           <button
             type="button"
             onClick={() => setResetTick((t) => t + 1)}
-            className="inline-flex items-center gap-1 rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700 cursor-pointer"
+            className="min-h-[38px] inline-flex items-center gap-1 rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             {isEn ? 'Reset' : 'Đặt lại'}
@@ -459,20 +459,18 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
 
       {/* Main 3D Stage + Constant Control Panel */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* 3D Viewport */}
-        <div className="relative h-[460px] overflow-hidden rounded-2xl border border-slate-800 bg-[#040712] lg:col-span-8">
-          <div ref={mountRef} className="h-full w-full cursor-grab active:cursor-grabbing" />
-
+        {/* 3D Viewport (Stacked HUD above canvas on phones, floating on sm+) */}
+        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#040712] lg:col-span-8 flex flex-col sm:block">
           {/* Telemetry HUD */}
-          <div className="pointer-events-none absolute left-3 top-3 rounded-xl border border-slate-700/80 bg-slate-950/90 px-3 py-2 text-xs">
+          <div className="relative sm:pointer-events-none sm:absolute sm:left-3 sm:top-3 z-10 sm:rounded-xl border-b sm:border border-slate-700/80 bg-slate-950/94 px-3 py-2 text-xs">
             <div className="flex items-center gap-1.5 font-bold text-sky-300">
-              <Orbit className="h-3.5 w-3.5" />
-              What-If Physics Sandbox 3D
+              <Orbit className="h-3.5 w-3.5 shrink-0" />
+              <span>What-If Physics Sandbox 3D</span>
             </div>
             <div className="mt-1 font-mono text-[11px] text-slate-300">
               F = G·M·m / r^{params.distancePower.toFixed(2)} · G = {params.gravityMult.toFixed(2)}× · c = {params.lightSpeedMult.toFixed(2)}c
             </div>
-            <div className="mt-1 flex items-center gap-3 text-[11px]">
+            <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px]">
               <span className="text-slate-400">v = {telemetry.speed} km/s</span>
               <span className="text-slate-400">r = {telemetry.radius} AU</span>
               <span
@@ -494,6 +492,8 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
               </span>
             </div>
           </div>
+
+          <div ref={mountRef} className="h-[300px] sm:h-[400px] lg:h-[460px] w-full cursor-grab active:cursor-grabbing touch-none" />
         </div>
 
         {/* Sliders & Analysis */}

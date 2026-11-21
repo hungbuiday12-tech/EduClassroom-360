@@ -424,14 +424,12 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
   }, []);
 
   return (
-    <div className="relative w-full h-[640px] sm:h-[700px] rounded-2xl overflow-hidden border border-amber-500/40 bg-[#030612] text-white shadow-2xl">
-      <div ref={mountRef} className="w-full h-full" />
-
-      {/* Top-Left Relativistic Telemetry */}
-      <div className="pointer-events-none absolute top-3 left-3 z-20 max-w-md">
-        <div className="pointer-events-auto rounded-lg bg-[#050a18]/90 border border-amber-500/40 px-3.5 py-2.5 space-y-1 shadow-lg">
+    <div className="relative w-full lg:h-[700px] rounded-2xl overflow-hidden border border-amber-500/40 bg-[#030612] text-white shadow-2xl flex flex-col lg:block">
+      {/* Top-Left Relativistic Telemetry (Stacked on < lg, floating on lg+) */}
+      <div className="relative z-20 p-2.5 sm:p-3 lg:pointer-events-none lg:absolute lg:top-3 lg:left-3 bg-[#030612]/95 lg:bg-transparent border-b border-amber-500/20 lg:border-b-0 max-w-full lg:max-w-md shrink-0">
+        <div className="pointer-events-auto rounded-lg bg-[#050a18]/92 border border-amber-500/40 px-3.5 py-2.5 space-y-1 shadow-lg">
           <div className="flex items-center gap-2 text-xs font-extrabold text-amber-300">
-            <Orbit className="w-4 h-4" />
+            <Orbit className="w-4 h-4 shrink-0" />
             <span>{isEn ? 'Universe Forge · Custom Relativity' : 'Lò Rèn Vũ Trụ & Tương Đối Tính 3D'}</span>
           </div>
           <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] font-mono tabular-nums text-slate-200">
@@ -444,12 +442,17 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
         </div>
       </div>
 
-      {/* Collapsible Bottom Control Dock */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[min(920px,95vw)] flex flex-col items-center">
+      {/* 3D Viewport */}
+      <div className="relative w-full h-[290px] sm:h-[380px] lg:absolute lg:inset-0 lg:h-full">
+        <div ref={mountRef} className="w-full h-full touch-none" />
+      </div>
+
+      {/* Collapsible Bottom Control Dock (Stacked below canvas on < lg, floating on lg+) */}
+      <div className="relative lg:absolute lg:bottom-3 lg:left-1/2 lg:-translate-x-1/2 z-20 w-full lg:w-[min(920px,95vw)] p-2.5 lg:p-0 bg-[#030612]/95 lg:bg-transparent border-t border-amber-500/20 lg:border-t-0 flex flex-col items-center shrink-0">
         <button
           type="button"
           onClick={() => setDockCollapsed((v) => !v)}
-          className="px-3 py-1 rounded-t-md bg-[#060c1d]/95 border border-b-0 border-amber-500/40 text-[10px] font-mono font-bold text-amber-200 cursor-pointer"
+          className="min-h-[34px] px-3 py-1 rounded-md lg:rounded-b-none bg-[#060c1d]/95 border lg:border-b-0 border-amber-500/40 text-[10px] font-mono font-bold text-amber-200 cursor-pointer"
         >
           {dockCollapsed
             ? isEn ? '▴ Show Universe Constants' : '▴ Mở Hằng Số Vũ Trụ'
@@ -457,7 +460,7 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
         </button>
 
         {!dockCollapsed && (
-          <div className="w-full rounded-xl bg-[#060c1d]/95 border border-amber-500/40 p-3 space-y-2.5 shadow-2xl">
+          <div className="w-full mt-1.5 lg:mt-0 rounded-xl bg-[#060c1d]/95 border border-amber-500/40 p-3 space-y-2.5 shadow-2xl max-h-[38dvh] lg:max-h-none overflow-y-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-[11px]">
               <label className="space-y-1">
                 <div className="flex justify-between font-mono text-slate-300">

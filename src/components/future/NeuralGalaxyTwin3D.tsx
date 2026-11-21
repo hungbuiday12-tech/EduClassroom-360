@@ -5,10 +5,14 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import {
   AlertTriangle,
   ArrowRight,
+  Compass,
   Flame,
   Layers,
+  Maximize2,
+  Minimize2,
   Orbit,
   RotateCcw,
+  Search,
   Sparkles,
   Target
 } from 'lucide-react';
@@ -38,6 +42,9 @@ interface GalaxyPlanetData {
   position: THREE.Vector3;
 }
 
+const SCRATCH_CAM_GOAL = new THREE.Vector3();
+const SCRATCH_TARGET_GOAL = new THREE.Vector3();
+
 function detectSoftwareWebGL(): boolean {
   try {
     const probe = document.createElement('canvas');
@@ -61,10 +68,17 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   const resetCamRef = useRef<(() => void) | null>(null);
+  const flyToNodeRef = useRef<((nodeId: string) => void) | null>(null);
 
   const [subjectFilter, setSubjectFilter] = useState<'all' | 'math' | 'physics' | 'cs'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [refreshTick, setRefreshTick] = useState(0);
   const [selectedNodeId, setSelectedNodeId] = useState<string>(ROADMAP_NODES[0]?.id || 'rm-math-9-1');
+  const selectedNodeIdRef = useRef<string>(selectedNodeId);
+  selectedNodeIdRef.current = selectedNodeId;
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [contextLost, setContextLost] = useState(false);
 
   useEffect(() => {
     const bump = () => setRefreshTick((t) => t + 1);
@@ -140,29 +154,40 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       });
     });
 
-    const visiblePlanets =
-      subjectFilter === 'all' ? planets : planets.filter((p) => p.node.subject === subjectFilter);
+    const q = searchQuery.trim().toLowerCase();
+    const visiblePlanets = planets.filter((p) => {
+      if (subjectFilter !== 'all' && p.node.subject !== subjectFilter) return false;
+      if (q && !`${p.node.title} ${p.node.grade} ${p.node.goal}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
 
     const avgMastery =
       planets.length > 0
         ? Math.round(planets.reduce((acc, p) => acc + p.mastery, 0) / planets.length)
         : 0;
 
+    // Smart recommendation: prioritize unresolved errors, then lowest mastery
+    const recommendedPlanet = [...planets].sort((a, b) => {
+      if (a.errorCount !== b.errorCount) return b.errorCount - a.errorCount;
+      return a.mastery - b.mastery;
+    })[0];
+
     return {
       planets,
       visiblePlanets,
       avgMastery,
       unresolvedErrors: errors.length,
-      currentStreak: streak.currentStreak
+      currentStreak: streak.currentStreak,
+      recommendedPlanet
     };
-  }, [user?.uid, subjectFilter, refreshTick]);
+  }, [user?.uid, subjectFilter, searchQuery, refreshTick]);
 
   const selectedPlanet =
     galaxySnapshot.planets.find((p) => p.node.id === selectedNodeId) ||
     galaxySnapshot.visiblePlanets[0] ||
     galaxySnapshot.planets[0];
 
-  // Three.js Interactive 3D Knowledge Galaxy
+  // Three.js Interactive 3D Knowledge Galaxy (Note: selectedNodeId intentionally NOT in deps!)
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
@@ -184,6 +209,14 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      setContextLost(true);
+    };
+    const onRestored = () => setContextLost(false);
+    renderer.domElement.addEventListener('webglcontextlost', onLost);
+    renderer.domElement.addEventListener('webglcontextrestored', onRestored);
+
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x030712, 0.016);
 
@@ -201,15 +234,17 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.minDistance = 8;
+    controls.minDistance = 5;
     controls.maxDistance = 42;
     controls.target.set(0, 0, 0);
     controls.update();
 
+    let isFlying = false;
+
     resetCamRef.current = () => {
-      camera.position.copy(defaultPos);
-      controls.target.set(0, 0, 0);
-      controls.update();
+      SCRATCH_CAM_GOAL.copy(defaultPos);
+      SCRATCH_TARGET_GOAL.set(0, 0, 0);
+      isFlying = true;
     };
 
     scene.add(new THREE.HemisphereLight(0x93c5fd, 0x090d16, 0.8));
@@ -297,9 +332,9 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
     stars.instanceMatrix.needsUpdate = true;
     scene.add(stars);
 
-    // Planets & Hit Proxies
+    // Planets, Mastery Aura Rings & Hit Proxies
     const planetGeo = new THREE.SphereGeometry(0.62, 24, 24);
-    const hitGeo = new THREE.SphereGeometry(1.12, 12, 12);
+    const hitGeo = new THREE.SphereGeometry(1.18, 12, 12);
     const hitMat = new THREE.MeshBasicMaterial({ visible: false });
     const alertRingGeo = new THREE.TorusGeometry(0.95, 0.05, 10, 36);
     const alertRingMat = new THREE.MeshStandardMaterial({
@@ -307,7 +342,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       emissive: 0xe11d48,
       emissiveIntensity: 0.85
     });
-    const selRingGeo = new THREE.TorusGeometry(1.06, 0.045, 10, 40);
+    const selRingGeo = new THREE.TorusGeometry(1.12, 0.055, 12, 44);
     const selRingMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
     const selectionHalo = new THREE.Mesh(selRingGeo, selRingMat);
     selectionHalo.rotation.x = Math.PI / 2;
@@ -326,6 +361,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       basePos: THREE.Vector3;
       phase: number;
       alertRing?: THREE.Mesh;
+      masteryRing?: THREE.Mesh;
     }[] = [];
 
     const posById = new Map<string, THREE.Vector3>();
@@ -350,6 +386,20 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       planetMesh.scale.setScalar(scaleFactor);
       g.add(planetMesh);
 
+      // Rotating Mastery Progress Arc Ring
+      let masteryRing: THREE.Mesh | undefined;
+      const arcAngle = Math.max(0.35, (p.mastery / 100) * Math.PI * 2);
+      const mGeo = new THREE.TorusGeometry(0.84, 0.03, 8, 28, arcAngle);
+      const mMat = new THREE.MeshBasicMaterial({
+        color: p.mastery >= 75 ? 0x34d399 : subjHex,
+        transparent: true,
+        opacity: 0.78
+      });
+      orbitDisposables.push(mGeo, mMat);
+      masteryRing = new THREE.Mesh(mGeo, mMat);
+      masteryRing.rotation.x = Math.PI / 2;
+      g.add(masteryRing);
+
       let alertRing: THREE.Mesh | undefined;
       if (p.errorCount > 0) {
         alertRing = new THREE.Mesh(alertRingGeo, alertRingMat);
@@ -368,9 +418,20 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
         group: g,
         basePos: p.position.clone(),
         phase: idx * 0.8,
-        alertRing
+        alertRing,
+        masteryRing
       });
     });
+
+    flyToNodeRef.current = (nodeId: string) => {
+      const target = posById.get(nodeId);
+      if (!target) return;
+      SCRATCH_TARGET_GOAL.copy(target);
+      const radialDir = target.clone().setY(0).normalize();
+      if (radialDir.lengthSq() < 0.01) radialDir.set(0, 0, 1);
+      SCRATCH_CAM_GOAL.copy(target).addScaledVector(radialDir, 5.2).add(new THREE.Vector3(0, 3.6, 0));
+      isFlying = true;
+    };
 
     // Prerequisite Filament Lines
     const lineMat = new THREE.LineBasicMaterial({
@@ -390,7 +451,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       });
     });
 
-    // Pointer Raycast Picking (guard drag vs click)
+    // Pointer Raycast Picking (guard drag vs click + user drag cancels fly-to)
     const raycaster = new THREE.Raycaster();
     const ndc = new THREE.Vector2();
     let downX = 0;
@@ -399,6 +460,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
     const onPointerDown = (ev: PointerEvent) => {
       downX = ev.clientX;
       downY = ev.clientY;
+      isFlying = false;
     };
     const onPointerUp = (ev: PointerEvent) => {
       if (Math.hypot(ev.clientX - downX, ev.clientY - downY) > 6) return;
@@ -409,7 +471,10 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       const hits = raycaster.intersectObjects(pickables, false);
       if (hits.length > 0) {
         const hitId = hits[0].object.userData?.nodeId;
-        if (hitId) setSelectedNodeId(hitId);
+        if (hitId) {
+          setSelectedNodeId(hitId);
+          flyToNodeRef.current?.(hitId);
+        }
       }
     };
 
@@ -465,6 +530,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       gimbal2.rotation.x = -t * 0.55;
       stars.rotation.y = t * 0.025;
 
+      const curSelected = selectedNodeIdRef.current;
       let matchedSel: THREE.Vector3 | null = null;
       planetGroups.forEach((pg) => {
         const bob = Math.sin(t * 1.4 + pg.phase) * 0.16;
@@ -472,7 +538,10 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
         if (pg.alertRing) {
           pg.alertRing.rotation.z = t * 2.2;
         }
-        if (pg.nodeId === selectedNodeId) {
+        if (pg.masteryRing) {
+          pg.masteryRing.rotation.z = -t * 0.6 + pg.phase;
+        }
+        if (pg.nodeId === curSelected) {
           matchedSel = pg.group.position;
         }
       });
@@ -481,8 +550,20 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
         selectionHalo.visible = true;
         selectionHalo.position.copy(matchedSel);
         selectionHalo.rotation.z = t * 1.1;
+        selectionHalo.scale.setScalar(1 + Math.sin(t * 4.5) * 0.08);
       } else {
         selectionHalo.visible = false;
+      }
+
+      if (isFlying) {
+        camera.position.lerp(SCRATCH_CAM_GOAL, 0.09);
+        controls.target.lerp(SCRATCH_TARGET_GOAL, 0.11);
+        if (
+          camera.position.distanceTo(SCRATCH_CAM_GOAL) < 0.08 &&
+          controls.target.distanceTo(SCRATCH_TARGET_GOAL) < 0.08
+        ) {
+          isFlying = false;
+        }
       }
 
       controls.update();
@@ -514,6 +595,8 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       cancelAnimationFrame(rafId);
       clearTimeout(timerId);
       resizeObserver.disconnect();
+      renderer.domElement.removeEventListener('webglcontextlost', onLost);
+      renderer.domElement.removeEventListener('webglcontextrestored', onRestored);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
@@ -537,7 +620,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       envRT.dispose();
       renderer.dispose();
     };
-  }, [galaxySnapshot, selectedNodeId]);
+  }, [galaxySnapshot]);
 
   const handleWarpToLesson = (node: RoadmapNode) => {
     if (node.subject === 'math') {
@@ -570,14 +653,29 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
     });
   };
 
+  const handleSmartNextTopic = () => {
+    const rec = galaxySnapshot.recommendedPlanet;
+    if (!rec) return;
+    setSubjectFilter('all');
+    setSearchQuery('');
+    setSelectedNodeId(rec.node.id);
+    window.setTimeout(() => flyToNodeRef.current?.(rec.node.id), 40);
+  };
+
   const subjectAccentText = (s: 'math' | 'physics' | 'cs') =>
     s === 'math' ? 'text-sky-400' : s === 'physics' ? 'text-amber-400' : 'text-emerald-400';
 
   return (
-    <div className="space-y-4">
+    <div
+      className={
+        isFullscreen
+          ? 'fixed inset-0 z-[140] bg-slate-950 p-3 sm:p-4 overflow-y-auto space-y-4'
+          : 'space-y-4'
+      }
+    >
       {/* Header & KPI Ribbon */}
-      <div className="rounded-md border border-slate-700/80 bg-slate-900 text-slate-100 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="rounded-md border border-slate-700/80 bg-slate-900 text-slate-100 p-3.5 sm:p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div>
             <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-300">
               <Orbit className="w-4 h-4" />
@@ -585,12 +683,12 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
             </div>
             <p className="text-xs text-slate-400 mt-1">
               {isEn
-                ? 'Click any orbital node to inspect your mastery, unresolved mistakes, and warp straight into its lecture.'
-                : 'Xoay 360° & nhấp vào từng hành tinh kiến thức (Toán · Lí · Tin) để soi % thành thạo, vòng cảnh báo lỗi sai và dịch chuyển thẳng vào bài học.'}
+                ? 'Click any orbital node to fly camera in, inspect mastery & SM-2 weak points, and warp straight into its lecture.'
+                : 'Xoay 360° & nhấp từng hành tinh kiến thức (Toán · Lí · Tin) để camera tự bay tới soi % thành thạo, vòng cảnh báo lỗi sai và vào thẳng bài học.'}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {(
               [
                 { id: 'all', label: isEn ? 'All Sectors' : 'Toàn bộ' },
@@ -603,7 +701,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
                 key={f.id}
                 type="button"
                 onClick={() => setSubjectFilter(f.id)}
-                className={`px-3 py-1.5 rounded text-xs font-semibold border transition cursor-pointer ${
+                className={`min-h-[36px] px-3 py-1.5 rounded text-xs font-semibold border transition cursor-pointer ${
                   subjectFilter === f.id
                     ? 'bg-sky-600 border-sky-400 text-white'
                     : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
@@ -612,24 +710,56 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
                 {f.label}
               </button>
             ))}
+
+            <button
+              type="button"
+              onClick={handleSmartNextTopic}
+              className="min-h-[36px] inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold border border-amber-400/60 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 cursor-pointer"
+              title={isEn ? 'Jump to priority topic with weak mastery or errors' : 'Gợi ý chuyên đề cần ôn ưu tiên'}
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Smart Next' : 'Gợi ý Ôn'}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => resetCamRef.current?.()}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-semibold border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 cursor-pointer"
+              className="min-h-[36px] inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-semibold border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               {isEn ? 'Reset' : 'Đặt lại'}
             </button>
+
+            <button
+              type="button"
+              onClick={() => setIsFullscreen((f) => !f)}
+              className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center rounded border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 cursor-pointer"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mt-4">
+        {/* Search + KPI Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 mt-3.5">
+          <div className="sm:col-span-1 relative flex items-center">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isEn ? 'Search topic node...' : 'Tìm hành tinh bài học...'}
+              className="w-full min-h-[38px] pl-8 pr-2.5 py-1.5 rounded border border-slate-700 bg-slate-950/90 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-400"
+            />
+          </div>
+
           <div className="rounded border border-slate-800 bg-slate-950/70 px-3 py-2">
             <div className="text-[11px] uppercase tracking-wider text-slate-400 flex items-center gap-1">
               <Target className="w-3.5 h-3.5 text-sky-400" />
-              {isEn ? 'Average Mastery' : 'Độ thành thạo trung bình'}
+              {isEn ? 'Avg Mastery' : 'Thành thạo TB'}
             </div>
-            <div className="text-lg font-bold text-sky-300 mt-0.5 tabular-nums">
+            <div className="text-base sm:text-lg font-bold text-sky-300 mt-0.5 tabular-nums">
               {galaxySnapshot.avgMastery}%
             </div>
           </div>
@@ -637,9 +767,9 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
           <div className="rounded border border-slate-800 bg-slate-950/70 px-3 py-2">
             <div className="text-[11px] uppercase tracking-wider text-slate-400 flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-              {isEn ? 'Active Weak Alerts' : 'Lỗi cần ôn SM-2'}
+              {isEn ? 'SM-2 Alerts' : 'Lỗi cần ôn'}
             </div>
-            <div className="text-lg font-bold text-rose-400 mt-0.5 tabular-nums">
+            <div className="text-base sm:text-lg font-bold text-rose-400 mt-0.5 tabular-nums">
               {galaxySnapshot.unresolvedErrors}
             </div>
           </div>
@@ -647,9 +777,9 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
           <div className="rounded border border-slate-800 bg-slate-950/70 px-3 py-2">
             <div className="text-[11px] uppercase tracking-wider text-slate-400 flex items-center gap-1">
               <Flame className="w-3.5 h-3.5 text-amber-400" />
-              {isEn ? 'Study Streak' : 'Chuỗi ngày học'}
+              {isEn ? 'Study Streak' : 'Chuỗi ngày'}
             </div>
-            <div className="text-lg font-bold text-amber-300 mt-0.5 tabular-nums">
+            <div className="text-base sm:text-lg font-bold text-amber-300 mt-0.5 tabular-nums">
               {galaxySnapshot.currentStreak} {isEn ? 'days' : 'ngày'}
             </div>
           </div>
@@ -658,9 +788,14 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
 
       {/* Main Split: 3D Galaxy Canvas + Planet Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8 rounded-md border border-slate-700 bg-[#030712] overflow-hidden">
-          <div ref={mountRef} className="w-full h-[440px] sm:h-[480px]" />
-          <div className="border-t border-slate-800 bg-slate-950 px-4 py-2 flex flex-wrap items-center gap-4 text-[11px] text-slate-400">
+        <div className="lg:col-span-8 relative rounded-md border border-slate-700 bg-[#030712] overflow-hidden">
+          <div ref={mountRef} className="w-full h-[300px] sm:h-[420px] lg:h-[480px] touch-none" />
+          {contextLost && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/90 text-sky-300 text-xs font-mono">
+              Restoring 3D Galaxy Context...
+            </div>
+          )}
+          <div className="border-t border-slate-800 bg-slate-950 px-3.5 py-2 flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-slate-400">
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-sky-400 inline-block" /> Toán học
             </span>
@@ -671,7 +806,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
               <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block" /> Tin học
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block" /> Có vòng đỏ = Còn lỗi sai chưa gỡ
+              <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block" /> Vòng đỏ = Còn lỗi SM-2
             </span>
           </div>
         </div>
@@ -742,7 +877,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
               <button
                 type="button"
                 onClick={() => handleWarpToLesson(selectedPlanet.node)}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition cursor-pointer"
+                className="w-full min-h-[40px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition cursor-pointer"
               >
                 <Layers className="w-4 h-4" />
                 {isEn ? 'Warp Into Interactive Lecture' : 'Dịch Chuyển Vào Bài Giảng'}
@@ -753,7 +888,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
             <button
               type="button"
               onClick={() => selectSubject('growth_hub')}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold transition cursor-pointer"
+              className="w-full min-h-[38px] inline-flex items-center justify-center gap-2 px-4 py-2 rounded border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold transition cursor-pointer"
             >
               {isEn ? 'Open Error Notebook & SM-2' : 'Mở Sổ Lỗi & Thẻ SM-2'}
             </button>

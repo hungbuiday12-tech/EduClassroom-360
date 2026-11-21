@@ -8,13 +8,16 @@ import {
   EyeOff,
   Flame,
   Gauge,
+  Maximize2,
+  Minimize2,
   RotateCcw,
   Sparkles,
   Target,
   Trash2,
   Volume2,
   VolumeX,
-  Wind
+  Wind,
+  Zap
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
@@ -74,6 +77,11 @@ const VACUUM_POINTS = 120;
 const ACTIVE_TRAIL_MAX = 480;
 const HISTORY_TRAIL_SLOTS = 4;
 const PARTICLE_POOL_SIZE = 72;
+const WIND_STREAK_COUNT = 32;
+const CRATER_POOL_SIZE = 8;
+const SHELL_MASS_KG = 12;
+
+type BallisticScenarioId = 'ideal_vac' | 'high_drag' | 'lunar' | 'crosswind';
 
 // Pre-allocated scratch vectors for zero per-frame GC
 const SCRATCH_VEC_A = new THREE.Vector3();
@@ -263,6 +271,7 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
   mutedRef.current = muted;
 
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showVacuumArc, setShowVacuumArc] = useState(true);
   const showVacuumArcRef = useRef(true);
   showVacuumArcRef.current = showVacuumArc;
@@ -931,6 +940,40 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
     impactRing.visible = false;
     scene.add(impactRing);
 
+    // Persistent Ground Impact Crater Ring Pool (shows shot dispersion)
+    const craterGeo = new THREE.RingGeometry(0.9, 1.9, 24);
+    craterGeo.rotateX(-Math.PI / 2);
+    const craterMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b,
+      transparent: true,
+      opacity: 0.62,
+      side: THREE.DoubleSide
+    });
+    const craters: THREE.Mesh[] = [];
+    for (let i = 0; i < CRATER_POOL_SIZE; i++) {
+      const c = new THREE.Mesh(craterGeo, craterMat);
+      c.visible = false;
+      scene.add(c);
+      craters.push(c);
+    }
+    let craterCursor = 0;
+
+    // 3D Aerodynamic Wind-Stream Streaks Pool
+    const windGeo = new THREE.BoxGeometry(2.6, 0.05, 0.05);
+    const windMat = new THREE.MeshBasicMaterial({
+      color: 0x7dd3fc,
+      transparent: true,
+      opacity: 0.42
+    });
+    const windInstanced = new THREE.InstancedMesh(windGeo, windMat, WIND_STREAK_COUNT);
+    windInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(windInstanced);
+    const windStreaks = Array.from({ length: WIND_STREAK_COUNT }, (_, idx) => ({
+      x: ((idx * 17) % 140) - 70,
+      y: 3 + ((idx * 11) % 30),
+      z: 10 + ((idx * 23) % 190)
+    }));
+
     // Pre-allocated InstancedMesh particle pool (Muzzle Smoke + Impact Embers)
     const particleGeo = new THREE.IcosahedronGeometry(0.32, 0);
     const particleMat = new THREE.MeshStandardMaterial({
@@ -1138,6 +1181,9 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
         h.count = 0;
         h.geo.setDrawRange(0, 0);
       }
+      for (const c of craters) {
+        c.visible = false;
+      }
       setTelemetry((prev) => ({
         ...prev,
         status: 'ready',
@@ -1277,11 +1323,16 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
             shellMesh.visible = false;
             shellLight.intensity = 0;
 
-            // Shockwave ring
+            // Shockwave ring + Persistent ground crater marker
             impactRing.position.set(flight.x, 0.14, flight.z);
             impactRing.scale.set(1, 1, 1);
             impactRing.visible = true;
             flight.shockTimer = 1.0;
+
+            const crater = craters[craterCursor];
+            craterCursor = (craterCursor + 1) % CRATER_POOL_SIZE;
+            crater.position.set(flight.x, 0.1, flight.z);
+            crater.visible = true;
 
             spawnBurst(flight.x, 0.45, flight.z, 0, 1, 0, 34, 'impact');
 
@@ -1428,6 +1479,28 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
         if (particleInstanced.instanceColor) particleInstanced.instanceColor.needsUpdate = true;
       }
 
+      // 3D Wind-stream streaks update
+      const windVisible = windMag > 0.4;
+      windInstanced.visible = windVisible;
+      if (windVisible) {
+        const wYaw = Math.atan2(-p.windHead, p.windCross);
+        SCRATCH_QUAT.setFromAxisAngle(SCRATCH_VEC_B.set(0, 1, 0), wYaw);
+        const wLen = Math.min(2.6, 0.6 + windMag * 0.12);
+        SCRATCH_SCALE.set(wLen, 1, 1);
+        for (let i = 0; i < WIND_STREAK_COUNT; i++) {
+          const ws = windStreaks[i];
+          ws.x += p.windCross * rawDt * 2.2;
+          ws.z += p.windHead * rawDt * 2.2;
+          if (ws.x > 75) ws.x = -75;
+          if (ws.x < -75) ws.x = 75;
+          if (ws.z > 210) ws.z = 5;
+          if (ws.z < 5) ws.z = 210;
+          SCRATCH_MAT.compose(SCRATCH_VEC_C.set(ws.x, ws.y, ws.z), SCRATCH_QUAT, SCRATCH_SCALE);
+          windInstanced.setMatrixAt(i, SCRATCH_MAT);
+        }
+        windInstanced.instanceMatrix.needsUpdate = true;
+      }
+
       controls.update();
       renderer.render(scene, camera);
 
@@ -1446,7 +1519,8 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
 
     return () => {
       alive = false;
-      if (rafId) cancelAnimationFrame(rafId);
+      cancelAnimationFrame(rafId);
+      clearTimeout(rafId);
       ro.disconnect();
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
       renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored);
@@ -1457,12 +1531,68 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
       vacGeo.dispose();
       activeTrailGeo.dispose();
       historyTrails.forEach((h) => h.geo.dispose());
+      craterGeo.dispose();
+      craterMat.dispose();
+      windGeo.dispose();
+      windMat.dispose();
       particleGeo.dispose();
       particleMat.dispose();
       envRT.dispose();
       renderer.dispose();
     };
   }, [isEn, onEarnXP, perfMode, playArtillerySfx]);
+
+  const applyBallisticScenario = (id: BallisticScenarioId) => {
+    if (id === 'ideal_vac') {
+      setParams((p) => ({
+        ...p,
+        pitchDeg: 45,
+        yawDeg: 0,
+        velocity: 38,
+        dragCoeff: 0,
+        windCross: 0,
+        windHead: 0,
+        gravity: 9.81,
+        gravityPreset: 'earth'
+      }));
+    } else if (id === 'high_drag') {
+      setParams((p) => ({
+        ...p,
+        pitchDeg: 38,
+        yawDeg: 0,
+        velocity: 58,
+        dragCoeff: 1.35,
+        windCross: 0,
+        windHead: -4,
+        gravity: 9.81,
+        gravityPreset: 'earth'
+      }));
+    } else if (id === 'lunar') {
+      setParams((p) => ({
+        ...p,
+        pitchDeg: 42,
+        yawDeg: 0,
+        velocity: 22,
+        dragCoeff: 0,
+        windCross: 0,
+        windHead: 0,
+        gravity: 1.62,
+        gravityPreset: 'moon'
+      }));
+    } else {
+      setParams((p) => ({
+        ...p,
+        pitchDeg: 44,
+        yawDeg: -10,
+        velocity: 46,
+        dragCoeff: 0.65,
+        windCross: 12,
+        windHead: 0,
+        gravity: 9.81,
+        gravityPreset: 'earth'
+      }));
+    }
+  };
 
   const handleGravityPreset = (preset: GravityPreset) => {
     setParams((prev) => ({
@@ -1480,37 +1610,23 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
     ]);
   };
 
+  const liveSpeed = telemetry.status === 'flying' ? telemetry.speed : params.velocity;
+  const kineticEnergyKj = (0.5 * SHELL_MASS_KG * liveSpeed * liveSpeed) / 1000;
+
   return (
-    <div className="relative w-full min-h-[650px] h-[calc(100vh-165px)] rounded-xl overflow-hidden border border-sky-400/45 bg-[#050b18] text-white shadow-[0_28px_80px_-16px_rgba(2,132,199,0.4)] select-none">
-      {/* Live WebGL 3D Viewport */}
-      <div
-        ref={mountRef}
-        className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
-      />
-
-      {/* WebGL Error / Context Recovery Overlay */}
-      {(webglError || contextLost) && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/95 p-6 text-center">
-          <div className="max-w-md space-y-3 rounded-xl border border-sky-500/40 bg-slate-900 p-6">
-            <Target className="w-10 h-10 text-amber-400 mx-auto" />
-            <h3 className="font-display text-lg font-bold text-white">
-              {isEn ? 'WebGL Ballistic Range Unavailable' : 'Đang khôi phục Trường Bắn Pháo 3D WebGL'}
-            </h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {isEn
-                ? 'Your browser paused the 3D hardware context. Refresh or switch views to restore.'
-                : 'Trình duyệt tạm ngắt ngữ cảnh WebGL 3D. Vui lòng thử tải lại hoặc chuyển tab để tiếp tục.'}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Top-Left Compact Ballistics Telemetry HUD (Solid crisp backing, NO backdrop-blur over WebGL canvas) */}
-      <div className="relative z-10 pointer-events-none p-3 sm:p-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="pointer-events-auto bg-slate-950/88 border border-sky-400/35 rounded-lg px-3.5 py-2.5 shadow-xl max-w-md space-y-2">
+    <div
+      className={`relative w-full overflow-hidden border border-sky-400/45 bg-[#050b18] text-white shadow-[0_28px_80px_-16px_rgba(2,132,199,0.4)] select-none flex flex-col lg:block ${
+        isFullscreen
+          ? 'fixed inset-0 z-[140] h-[100dvh] rounded-none border-0 overflow-y-auto lg:overflow-hidden'
+          : 'rounded-xl lg:h-[700px]'
+      }`}
+    >
+      {/* Top-Left Compact Ballistics Telemetry HUD & Camera Bar (Stacked on mobile/iPad, floating on lg+) */}
+      <div className="relative z-20 p-2.5 sm:p-3 lg:p-4 lg:pointer-events-none flex flex-wrap items-start justify-between gap-2.5 bg-[#050b18]/95 lg:bg-transparent border-b border-sky-500/20 lg:border-b-0 shrink-0">
+        <div className="pointer-events-auto bg-slate-950/92 border border-sky-400/35 rounded-lg px-3 py-2.5 shadow-xl w-full lg:w-auto lg:max-w-lg space-y-2">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
-              <Crosshair className="w-3.5 h-3.5 text-sky-400" />
+              <Crosshair className="w-3.5 h-3.5 text-sky-400 shrink-0" />
               <span>{isEn ? '3D Artillery Ballistics' : 'Quỹ Đạo Bắn Pháo 3D'}</span>
             </div>
             <span className="text-[11px] font-mono text-emerald-300 font-bold tabular-nums">
@@ -1518,23 +1634,31 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
             </span>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-[11px] font-mono tabular-nums">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-[11px] font-mono tabular-nums">
             <div className="rounded bg-slate-900/95 border border-slate-800 px-2 py-1">
-              <span className="block text-[9px] text-slate-400 uppercase">{isEn ? 'Pred. Range' : 'Tầm xa dự kiến'}</span>
-              <span className="font-bold text-sky-300">{telemetry.predictedRange.toFixed(1)} m</span>
+              <span className="block text-[9px] text-slate-400 uppercase">{isEn ? 'Pred.' : 'Tầm xa'}</span>
+              <span className="font-bold text-sky-300">{telemetry.predictedRange.toFixed(1)}m</span>
             </div>
             <div className="rounded bg-slate-900/95 border border-slate-800 px-2 py-1">
-              <span className="block text-[9px] text-slate-400 uppercase">{isEn ? 'Vacuum Ideal' : 'Chân không'}</span>
-              <span className="font-bold text-amber-300">{telemetry.vacuumRange.toFixed(1)} m</span>
+              <span className="block text-[9px] text-slate-400 uppercase">{isEn ? 'Vac.' : 'Ch.Không'}</span>
+              <span className="font-bold text-amber-300">{telemetry.vacuumRange.toFixed(1)}m</span>
             </div>
             <div className="rounded bg-slate-900/95 border border-slate-800 px-2 py-1">
-              <span className="block text-[9px] text-slate-400 uppercase">{isEn ? 'Apex Hmax' : 'Đỉnh Hmax'}</span>
-              <span className="font-bold text-teal-300">{telemetry.predictedMaxH.toFixed(1)} m</span>
+              <span className="block text-[9px] text-slate-400 uppercase">Hmax</span>
+              <span className="font-bold text-teal-300">{telemetry.predictedMaxH.toFixed(1)}m</span>
             </div>
             <div className="rounded bg-slate-900/95 border border-slate-800 px-2 py-1">
-              <span className="block text-[9px] text-slate-400 uppercase">{isEn ? 'Live Dist.' : 'Cự ly bay'}</span>
+              <span className="block text-[9px] text-slate-400 uppercase">T_fly</span>
+              <span className="font-bold text-purple-300">{telemetry.predictedFlightTime.toFixed(2)}s</span>
+            </div>
+            <div className="rounded bg-slate-900/95 border border-slate-800 px-2 py-1">
+              <span className="block text-[9px] text-slate-400 uppercase">Ek (12kg)</span>
+              <span className="font-bold text-orange-300">{kineticEnergyKj.toFixed(1)}kJ</span>
+            </div>
+            <div className="rounded bg-slate-900/95 border border-slate-800 px-2 py-1">
+              <span className="block text-[9px] text-slate-400 uppercase">{isEn ? 'Live' : 'Đang bay'}</span>
               <span className="font-bold text-white">
-                {telemetry.status === 'ready' ? '0.0 m' : `${telemetry.range.toFixed(1)} m`}
+                {telemetry.status === 'ready' ? '0.0m' : `${telemetry.range.toFixed(1)}m`}
               </span>
             </div>
           </div>
@@ -1548,7 +1672,7 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
         </div>
 
         {/* Top-Right Camera & Audio Toolbar */}
-        <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 bg-slate-950/88 border border-slate-700/80 rounded-lg p-1.5 shadow-xl">
+        <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 bg-slate-950/92 border border-slate-700/80 rounded-lg p-1.5 shadow-xl">
           {(
             [
               { id: 'orbit', vi: 'Tự do', en: 'Orbit' },
@@ -1564,7 +1688,7 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
                 setCameraMode(cam.id);
                 applyCamModeFnRef.current?.(cam.id);
               }}
-              className={`px-2.5 py-1.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+              className={`min-h-[36px] px-2.5 py-1.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
                 cameraMode === cam.id
                   ? 'bg-sky-500 text-slate-950'
                   : 'bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -1577,20 +1701,20 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
           <button
             type="button"
             onClick={() => setShowVacuumArc((v) => !v)}
-            className={`px-2.5 py-1.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+            className={`min-h-[36px] px-2.5 py-1.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
               showVacuumArc
                 ? 'bg-amber-500/25 border border-amber-400/50 text-amber-200'
                 : 'bg-slate-900 text-slate-400 hover:text-white'
             }`}
             title={isEn ? 'Compare Ideal Vacuum Parabola' : 'So sánh Parabol chân không lý tưởng'}
           >
-            {isEn ? 'Vacuum Arc' : 'Quỹ đạo Lý tưởng'}
+            {isEn ? 'Vacuum Arc' : 'Lý tưởng'}
           </button>
 
           <button
             type="button"
             onClick={() => setMuted((m) => !m)}
-            className="p-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-200 cursor-pointer"
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-slate-900 hover:bg-slate-800 text-slate-200 cursor-pointer"
             title={isEn ? 'Toggle Sound' : 'Bật/Tắt Âm thanh pháo'}
           >
             {muted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5 text-sky-400" />}
@@ -1599,23 +1723,60 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
           <button
             type="button"
             onClick={() => resetCamFnRef.current?.()}
-            className="p-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-200 cursor-pointer"
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-slate-900 hover:bg-slate-800 text-slate-200 cursor-pointer"
             title={isEn ? 'Reset Camera' : 'Đặt lại góc nhìn'}
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
+
+          <button
+            type="button"
+            onClick={() => setIsFullscreen((f) => !f)}
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded bg-slate-900 hover:bg-slate-800 text-slate-200 cursor-pointer"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
         </div>
       </div>
 
-      {/* Bottom Collapsible Control Dock */}
-      <div className="absolute inset-x-3 bottom-3 z-20 pointer-events-none flex flex-col items-center gap-2">
-        {/* Primary Fire + Dock Toggle Row */}
-        <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-2">
+      {/* Live WebGL 3D Viewport */}
+      <div
+        className={`relative w-full ${
+          isFullscreen ? 'flex-1 min-h-[280px] lg:h-full' : 'h-[290px] sm:h-[380px] lg:absolute lg:inset-0 lg:h-full'
+        }`}
+      >
+        <div
+          ref={mountRef}
+          className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
+        />
+
+        {(webglError || contextLost) && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/95 p-6 text-center">
+            <div className="max-w-md space-y-3 rounded-xl border border-sky-500/40 bg-slate-900 p-6">
+              <Target className="w-10 h-10 text-amber-400 mx-auto" />
+              <h3 className="font-display text-lg font-bold text-white">
+                {isEn ? 'WebGL Ballistic Range Unavailable' : 'Đang khôi phục Trường Bắn Pháo 3D WebGL'}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {isEn
+                  ? 'Your browser paused the 3D hardware context. Refresh or switch views to restore.'
+                  : 'Trình duyệt tạm ngắt ngữ cảnh WebGL 3D. Vui lòng thử tải lại hoặc chuyển tab để tiếp tục.'}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Collapsible Control Dock (Stacked below canvas on mobile/iPad, floating on lg+) */}
+      <div className="relative lg:absolute lg:inset-x-3 lg:bottom-3 z-20 p-2.5 lg:p-0 bg-[#050b18]/95 lg:bg-transparent border-t border-sky-500/20 lg:border-t-0 lg:pointer-events-none flex flex-col items-center gap-2 shrink-0">
+        {/* Primary Fire + Scenario + Dock Toggle Row */}
+        <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
           <button
             type="button"
             data-ripple="true"
             onClick={() => fireFnRef.current?.()}
-            className="pre-grand-btn px-6 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-slate-950 font-extrabold text-sm shadow-[0_12px_34px_-6px_rgba(249,115,22,0.7)] flex items-center gap-2 cursor-pointer"
+            className="pre-grand-btn min-h-[40px] px-5 sm:px-6 py-2 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-[0_12px_34px_-6px_rgba(249,115,22,0.7)] flex items-center gap-2 cursor-pointer"
           >
             <Flame className="w-4 h-4 fill-slate-950" />
             <span>{isEn ? 'FIRE CANNON' : 'KHAI HỎA BẮN PHÁO'}</span>
@@ -1624,7 +1785,7 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
           <button
             type="button"
             onClick={handleRandomizeTargets}
-            className="px-3.5 py-2.5 rounded-lg bg-slate-950/92 hover:bg-slate-900 border border-emerald-400/45 text-emerald-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            className="min-h-[38px] px-3 py-2 rounded-lg bg-slate-950/92 hover:bg-slate-900 border border-emerald-400/45 text-emerald-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
           >
             <Target className="w-3.5 h-3.5 text-emerald-400" />
             <span>{isEn ? 'New Targets' : 'Đổi Mục Tiêu'}</span>
@@ -1633,7 +1794,7 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
           <button
             type="button"
             onClick={() => clearTrailsFnRef.current?.()}
-            className="px-3.5 py-2.5 rounded-lg bg-slate-950/92 hover:bg-slate-900 border border-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            className="min-h-[38px] px-3 py-2 rounded-lg bg-slate-950/92 hover:bg-slate-900 border border-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5 text-slate-400" />
             <span>{isEn ? 'Clear Trails' : 'Xóa vệt bay'}</span>
@@ -1642,15 +1803,40 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
           <button
             type="button"
             onClick={() => setControlsVisible((v) => !v)}
-            className="px-3.5 py-2.5 rounded-lg bg-slate-950/92 hover:bg-slate-900 border border-sky-400/45 text-sky-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            className="min-h-[38px] px-3 py-2 rounded-lg bg-slate-950/92 hover:bg-slate-900 border border-sky-400/45 text-sky-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
           >
             {controlsVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            <span>{controlsVisible ? (isEn ? 'Hide Controls' : 'Ẩn Bảng Điều Khiển') : (isEn ? 'Show Controls' : 'Hiện Điều Khiển')}</span>
+            <span>{controlsVisible ? (isEn ? 'Hide Controls' : 'Ẩn Điều Khiển') : (isEn ? 'Show Controls' : 'Hiện Điều Khiển')}</span>
           </button>
         </div>
 
         {controlsVisible && (
-          <div className="pointer-events-auto w-full max-w-5xl rounded-xl border border-sky-400/35 bg-slate-950/92 p-3.5 shadow-2xl space-y-3">
+          <div className="pointer-events-auto w-full max-w-5xl rounded-xl border border-sky-400/35 bg-slate-950/94 p-3 sm:p-3.5 shadow-2xl space-y-3 max-h-[38dvh] lg:max-h-none overflow-y-auto">
+            {/* Ballistic Quick Scenarios */}
+            <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-800/90 text-[11px]">
+              <span className="inline-flex items-center gap-1 text-slate-400 font-bold mr-1">
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                {isEn ? 'Scenarios:' : 'Kịch bản:'}
+              </span>
+              {(
+                [
+                  { id: 'ideal_vac', vi: '45° Chân không', en: '45° Ideal Vacuum' },
+                  { id: 'high_drag', vi: 'Lực cản lớn', en: 'High Air Drag' },
+                  { id: 'lunar', vi: 'Bắn Mặt Trăng', en: 'Lunar 1.62m/s²' },
+                  { id: 'crosswind', vi: 'Gió ngang mạnh', en: 'Heavy Crosswind' }
+                ] as const
+              ).map((sc) => (
+                <button
+                  key={sc.id}
+                  type="button"
+                  onClick={() => applyBallisticScenario(sc.id)}
+                  className="min-h-[34px] px-2.5 py-1 rounded border border-slate-700 bg-slate-900 hover:border-amber-400 text-slate-200 font-bold cursor-pointer"
+                >
+                  {isEn ? sc.en : sc.vi}
+                </button>
+              ))}
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               {/* Elevation Pitch */}
               <label className="space-y-1 block">
@@ -1747,7 +1933,7 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
                   <select
                     value={params.timeScale}
                     onChange={(e) => setParams((p) => ({ ...p, timeScale: Number(e.target.value) }))}
-                    className="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-mono text-sky-200"
+                    className="min-h-[34px] rounded bg-slate-900 border border-slate-700 px-2 py-1 text-xs font-mono text-sky-200"
                   >
                     <option value={0.35}>0.35x Slow</option>
                     <option value={0.65}>0.65x</option>
@@ -1763,7 +1949,7 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
                     key={preset}
                     type="button"
                     onClick={() => handleGravityPreset(preset)}
-                    className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                    className={`min-h-[34px] px-2.5 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
                       params.gravityPreset === preset
                         ? 'bg-sky-500 text-slate-950'
                         : 'bg-slate-900 border border-slate-700 text-slate-300 hover:text-white'

@@ -21,6 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 import { usePremium } from '../../context/PremiumContext';
 import { FutureLabTabId, SubjectType } from '../../types';
+import { PRE_STUDIOS } from '../../data/preLabsData';
 import { SynapsePremiumGateModal } from './SynapsePremiumGateModal';
 
 interface SynapsePremiumHomeProps {
@@ -229,7 +230,7 @@ export const SynapsePremiumHome: React.FC<SynapsePremiumHomeProps> = ({
               Trang Chính Synapse Premium — AI 3B1B & Mô Phỏng Chuẩn Astra AI
             </h1>
             <p className="text-xs sm:text-sm leading-relaxed text-slate-300">
-              Không gian học tập nâng cấp toàn diện: AI ra đáp án siêu tốc với bố cục 3 tầng rõ ràng, tạo Video 3B1B AI độc quyền, mô phỏng tương tác chuẩn Astra AI và trọn bộ 21 phòng thí nghiệm 3D/4D tương lai.
+              Không gian học tập nâng cấp toàn diện: AI ra đáp án siêu tốc với bố cục 3 tầng rõ ràng, tạo Video 3B1B AI độc quyền, mô phỏng tương tác chuẩn Astra AI và trọn bộ {PRE_STUDIOS.length} phòng thí nghiệm 3D/4D tương lai.
             </p>
 
             <div className="flex flex-wrap items-center gap-2.5 pt-1">

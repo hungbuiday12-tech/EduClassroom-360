@@ -769,7 +769,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="space-y-1.5 pt-2 border-t border-amber-400/35 dark:border-amber-500/25">
               {!isRail && (
                 <div className="px-2.5 pb-1 flex items-center justify-between text-[11px] font-bold tracking-wide text-amber-700 dark:text-amber-300">
-                  <span>{isEn ? 'Synapse Pre · 22 Spaces' : 'Synapse Pre · 22 Không gian'}</span>
+                  <span>
+                    {isEn
+                      ? `Synapse Pre · ${PRE_STUDIOS.length} Spaces`
+                      : `Synapse Pre · ${PRE_STUDIOS.length} Không gian`}
+                  </span>
                   <span className="font-mono text-[10px] opacity-80">3D/4D</span>
                 </div>
               )}

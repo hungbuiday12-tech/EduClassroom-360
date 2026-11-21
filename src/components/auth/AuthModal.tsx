@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth, SYNAPSE_ADMIN_EMAIL } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CURRICULUM_COUNTS } from '../../data/curriculumCounts';
+import { PRE_STUDIOS } from '../../data/preLabsData';
 import { BrandLogo } from '../common/BrandLogo';
 import {
   Lock,
@@ -258,8 +259,8 @@ export const AuthModal: React.FC = () => {
               </h2>
               <p className="text-xs text-indigo-200/85 mt-2 leading-relaxed">
                 {isEn
-                  ? `Specialized STEM platform with real-time 2D/3D simulations, 22 Synapse Pre labs, automated C++/Python judge, ${CURRICULUM_COUNTS.totalExams} exams, and dual-tier Syn AI.`
-                  : `Nền tảng học tập STEM chuyên sâu: mô phỏng 2D/3D 60 FPS, 22 Phòng Lab Synapse Pre, chấm code Olympic, ${CURRICULUM_COUNTS.totalExams} đề thi và hệ thống AI 2 tầng (3 AI Cơ Bản & Syn AI Pro).`}
+                  ? `Specialized STEM platform with real-time 2D/3D simulations, ${PRE_STUDIOS.length} Synapse Pre labs, automated C++/Python judge, ${CURRICULUM_COUNTS.totalExams} exams, and dual-tier Syn AI.`
+                  : `Nền tảng học tập STEM chuyên sâu: mô phỏng 2D/3D 60 FPS, ${PRE_STUDIOS.length} Phòng Lab Synapse Pre, chấm code Olympic, ${CURRICULUM_COUNTS.totalExams} đề thi và hệ thống AI 2 tầng (3 AI Cơ Bản & Syn AI Pro).`}
               </p>
             </div>
 
@@ -286,7 +287,9 @@ export const AuthModal: React.FC = () => {
                 </div>
                 <div>
                   <span className="font-semibold text-white block">
-                    {isEn ? '5 Physics Domains & 22 Pre Labs' : 'Vật Lí 5 Chuyên Đề & 22 Lab Pre'}
+                    {isEn
+                      ? `5 Physics Domains & ${PRE_STUDIOS.length} Pre Labs`
+                      : `Vật Lí 5 Chuyên Đề & ${PRE_STUDIOS.length} Lab Pre`}
                   </span>
                   <span className="text-[11px] text-slate-300">
                     {isEn

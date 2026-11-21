@@ -1012,7 +1012,8 @@ export type FutureLabTabId =
   | 'tech_teardown_3d'
   | 'assembly_3d'
   | 'what_if_physics_3d'
-  | 'algo_city_3d';
+  | 'algo_city_3d'
+  | 'solar_system_3d';
 
 export type PaperSimKind =
   | 'parabola'

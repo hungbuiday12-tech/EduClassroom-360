@@ -545,6 +545,30 @@ export const PreStudioDiagramPreview: React.FC<PreStudioDiagramPreviewProps> = (
           </g>
         );
 
+      case 'solar_system_3d':
+        return (
+          <g>
+            {/* Concentric Keplerian Orbits */}
+            <ellipse cx="160" cy="76" rx="46" ry="20" fill="none" stroke="#38bdf8" strokeOpacity="0.45" strokeWidth="1.2" />
+            <ellipse cx="160" cy="76" rx="82" ry="34" fill="none" stroke="#f59e0b" strokeOpacity="0.42" strokeWidth="1.2" />
+            <ellipse cx="160" cy="76" rx="122" ry="50" fill="none" stroke="#a855f7" strokeOpacity="0.36" strokeWidth="1.2" strokeDasharray="3 3" />
+            {/* Plasma Sun */}
+            <circle cx="160" cy="76" r="16" fill="#f59e0b" fillOpacity="0.28" className="holo-ring-pulse" />
+            <circle cx="160" cy="76" r="10" fill="#fbbf24" stroke="#fef08a" strokeWidth="1.4" />
+            {/* Earth & Mars */}
+            <circle cx="204" cy="72" r="4" fill="#38bdf8" stroke="#e0f2fe" strokeWidth="1" />
+            <circle cx="102" cy="52" r="3.5" fill="#fb7185" />
+            {/* Saturn + Ring */}
+            <g className="holo-float">
+              <ellipse cx="268" cy="56" rx="13" ry="4.5" fill="none" stroke="#fde047" strokeWidth="1.4" transform="rotate(-18 268 56)" />
+              <circle cx="268" cy="56" r="5.5" fill="#eab308" />
+            </g>
+            <text x="20" y="138" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+              KEPLER J2000 (1800–2100) · GLSL SUN · LIGHT-MIN TELEMETRY
+            </text>
+          </g>
+        );
+
       default:
         return null;
     }

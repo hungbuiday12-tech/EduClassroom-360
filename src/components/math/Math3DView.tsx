@@ -1039,7 +1039,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
 
         {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK (Below canvas on < lg, floating dock on lg+) */}
         <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 w-full lg:w-[96%] lg:max-w-3xl lg:pointer-events-none bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
-          <div className="pointer-events-auto bg-slate-900/95 lg:bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[34dvh] sm:max-h-[240px] lg:max-h-none overflow-y-auto transition-all duration-300">
+          <div className="pointer-events-auto bg-slate-900/96 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[34dvh] sm:max-h-[240px] lg:max-h-none overflow-y-auto transition-all duration-300">
           {/* Header Row of Dock */}
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-300">

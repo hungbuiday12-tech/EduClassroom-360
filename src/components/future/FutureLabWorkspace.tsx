@@ -52,6 +52,9 @@ const TechTeardown3DLab = lazy(() =>
 const AssemblyStudio3DLab = lazy(() =>
   import('./AssemblyStudio3DLab').then((m) => ({ default: m.AssemblyStudio3DLab }))
 );
+const SolarSystem3DLab = lazy(() =>
+  import('./SolarSystem3DLab').then((m) => ({ default: m.SolarSystem3DLab }))
+);
 
 interface FutureLabWorkspaceProps {
   onBack?: () => void;
@@ -237,6 +240,18 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
           'Once 100% assembled, launch the Live Mechanism Test Run or scrub the Exploded View slider to inspect tolerances.',
         ],
       },
+      solar_system_3d: {
+        vi: [
+          'Chọn Mặt Trời hoặc 1 trong 8 hành tinh ở khay dưới (hoặc chạm trực tiếp trên cảnh 3D) để camera tự động bay tới và khóa mục tiêu.',
+          'Kéo thanh thời gian 1800–2100 bên dưới hoặc bấm Thực / 1 ngày/s / 1 tháng/s / 1 năm/s để quan sát vị trí thiên văn thực tế.',
+          'Xem khoảng cách từ Trái Đất tính theo AU và thời gian ánh sáng (light-min), bật tắt đường quỹ đạo hoặc nhãn tên thiên thể ở thanh bên phải.',
+        ],
+        en: [
+          'Click the Sun or any of the 8 planets in the bottom dock (or directly in 3D space) to fly to and track that world.',
+          'Scrub the 1800–2100 ephemeris timeline or pick Live / 1 day/s / 1 month/s / 1 year/s speeds.',
+          'Inspect live distance from Earth in AU and light-minutes, and toggle orbital curves or world labels from the right rail.',
+        ],
+      },
     };
     const found = customGuides[currentStudio.id];
     if (found) return isEn ? found.en : found.vi;
@@ -333,7 +348,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               type="button"
               data-ripple="true"
               onClick={() => openModulePage(prevStudio.id)}
-              className="pre-grand-btn inline-flex items-center gap-1 px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer whitespace-nowrap"
+              className="pre-grand-btn min-h-[38px] inline-flex items-center gap-1 px-3 py-1.5 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer whitespace-nowrap"
               title={isEn ? prevStudio.titleEn : prevStudio.titleVi}
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -344,7 +359,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               type="button"
               data-ripple="true"
               onClick={() => openModulePage(nextStudio.id)}
-              className="pre-grand-btn inline-flex items-center gap-1 px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer whitespace-nowrap"
+              className="pre-grand-btn min-h-[38px] inline-flex items-center gap-1 px-3 py-1.5 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer whitespace-nowrap"
               title={isEn ? nextStudio.titleEn : nextStudio.titleVi}
             >
               <span className="hidden sm:inline">{isEn ? 'Next' : 'Tiếp'}</span>
@@ -355,7 +370,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               type="button"
               data-ripple="true"
               onClick={openRemoteModal}
-              className={`pre-grand-btn inline-flex items-center gap-1.5 px-3 py-2 border text-xs font-bold cursor-pointer whitespace-nowrap ${
+              className={`pre-grand-btn min-h-[38px] inline-flex items-center gap-1.5 px-3 py-1.5 border text-xs font-bold cursor-pointer whitespace-nowrap ${
                 controllerCount > 0
                   ? 'border-emerald-400/70 bg-emerald-500/20 text-emerald-700 dark:text-emerald-200'
                   : 'border-sky-500/50 bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-200'
@@ -379,7 +394,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               type="button"
               data-ripple="true"
               onClick={toggleStudioFullscreen}
-              className={`pre-grand-btn inline-flex items-center gap-1.5 px-3.5 py-2 border text-xs font-bold cursor-pointer whitespace-nowrap ${
+              className={`pre-grand-btn min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-1.5 border text-xs font-bold cursor-pointer whitespace-nowrap ${
                 isStudioFullscreen
                   ? 'border-amber-400/70 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30'
                   : 'border-sky-500/50 bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-200'
@@ -417,7 +432,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                 setIsStudioFullscreen(false);
                 openModulePage('spatial_gesture_3d');
               }}
-              className="pre-grand-btn inline-flex items-center gap-1.5 px-3.5 py-2 border border-emerald-500/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+              className="pre-grand-btn min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-1.5 border border-emerald-500/50 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-200 text-xs font-bold cursor-pointer whitespace-nowrap"
             >
               <Hand className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-300" />
               <span>{isEn ? 'Spatial 3D & WebAR' : 'Học Cảm Giác 3D & AR'}</span>
@@ -551,7 +566,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
         {activeView === 'tech_teardown_3d' && (
           <Suspense
             fallback={
-              <div className="w-full h-[640px] rounded border border-amber-500/35 bg-[#060b16] flex items-center justify-center text-xs font-mono text-amber-300">
+              <div className="w-full h-[360px] sm:h-[640px] rounded border border-amber-500/35 bg-[#060b16] flex items-center justify-center text-xs font-mono text-amber-300">
                 {isEn
                   ? 'Initializing 3D Hardware Workbench...'
                   : 'Đang khởi tạo Xưởng Phẫu Thuật 3D...'}
@@ -564,7 +579,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
         {activeView === 'assembly_3d' && (
           <Suspense
             fallback={
-              <div className="w-full h-[640px] rounded border border-orange-500/35 bg-[#060b16] flex items-center justify-center text-xs font-mono text-orange-300">
+              <div className="w-full h-[360px] sm:h-[640px] rounded border border-orange-500/35 bg-[#060b16] flex items-center justify-center text-xs font-mono text-orange-300">
                 {isEn
                   ? 'Initializing Interactive 3D Assembly Studio...'
                   : 'Đang khởi tạo Mô Phỏng Lắp Ráp 3D...'}
@@ -574,10 +589,21 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             <AssemblyStudio3DLab onEarnXP={onEarnXP} />
           </Suspense>
         )}
+        {activeView === 'solar_system_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[360px] sm:h-[640px] rounded border border-amber-500/35 bg-[#03050a] flex items-center justify-center text-xs font-mono text-amber-300">
+                {isEn ? 'Initializing Solar Ephemeris 3D...' : 'Đang khởi tạo Hệ Mặt Trời 3D...'}
+              </div>
+            }
+          >
+            <SolarSystem3DLab onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
         {activeView === 'spatial_gesture_3d' && (
           <Suspense
             fallback={
-              <div className="w-full h-[640px] rounded border border-teal-500/35 bg-[#050914] flex items-center justify-center text-xs font-mono text-teal-300">
+              <div className="w-full h-[360px] sm:h-[640px] rounded border border-teal-500/35 bg-[#050914] flex items-center justify-center text-xs font-mono text-teal-300">
                 {isEn ? 'Loading Spatial 3D & WebAR Studio...' : 'Đang tải Học Cảm Giác 3D & WebAR...'}
               </div>
             }

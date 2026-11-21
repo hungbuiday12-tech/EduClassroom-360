@@ -8,6 +8,8 @@ import {
   Flame,
   Gauge,
   Layers,
+  Maximize2,
+  Minimize2,
   RotateCcw,
   Volume2,
   VolumeX,
@@ -103,10 +105,12 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
   const { perfMode } = useBackgroundTheme();
 
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const turbineOscRef = useRef<OscillatorNode | null>(null);
   const turbineGainRef = useRef<GainNode | null>(null);
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [throttle, setThrottle] = useState(68);
   const throttleRef = useRef(68);
@@ -171,6 +175,24 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
       turbineOscRef.current.frequency.setTargetAtTime(freq, audioCtxRef.current.currentTime, 0.1);
     }
   }, [throttle, afterburner, muted]);
+
+  const toggleFullscreen = () => {
+    const el = rootRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().catch(() => setIsFullscreen((f) => !f));
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => setIsFullscreen(false));
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -362,6 +384,18 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
       blade.rotation.y = 0.42;
       fanRotor.add(blade);
     }
+    const intakeShockMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const intakeShockRing = new THREE.Mesh(new THREE.RingGeometry(1.18, 1.38, 32), intakeShockMat);
+    intakeShockRing.rotation.y = Math.PI / 2;
+    intakeShockRing.position.x = -0.58;
+    intakeGroup.add(intakeShockRing);
 
     // --- 2. 4-STAGE AXIAL COMPRESSOR ---
     const compressorGroup = new THREE.Group();
@@ -584,6 +618,10 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
         md.position.x = 1.15 + idx * (0.8 + (ab ? 0.2 : 0));
       });
 
+      const machVal = 0.35 + thr * 0.88 + (ab ? 0.85 : 0);
+      intakeShockMat.opacity = machVal >= 1.0 ? 0.35 + Math.sin(elapsed * 18) * 0.15 : 0;
+      intakeShockRing.scale.setScalar(1 + Math.sin(elapsed * 14) * 0.04);
+
       // Update thermal flow particles (cool blue -> compressed cyan -> combustor orange -> supersonic violet/gold)
       const flowSpeed = 3.2 + thr * 11.5 + (ab ? 4.5 : 0);
       for (let i = 0; i < FLOW_PARTICLES; i++) {
@@ -648,7 +686,14 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
   const egtC = Math.round(410 + throttle * 5.2 + (afterburner ? 420 : 0));
   const rpmPct = Math.round(28 + throttle * 0.72);
   const machOut = (0.35 + (throttle / 100) * 0.88 + (afterburner ? 0.85 : 0)).toFixed(2);
+  const tsfc = (15.5 + (100 - throttle) * 0.09 + (afterburner ? 18.4 : 0)).toFixed(1);
+  const thermalEffPct = Math.round(29 + (throttle / 100) * 16 - (afterburner ? 7 : 0));
   const stageInfo = BRAYTON_STAGES.find((s) => s.id === activeStage) || BRAYTON_STAGES[2];
+
+  // Dynamic Brayton Cycle P-V coordinates driven by throttle & afterburner
+  const pvPeakY = Math.max(8, 30 - (throttle / 100) * 18);
+  const pvRightX = Math.min(104, 62 + (throttle / 100) * 20 + (afterburner ? 18 : 0));
+  const pvPath = `M 86 44 C 54 42, 42 ${pvPeakY + 8}, 36 ${pvPeakY} L ${pvRightX} ${pvPeakY} C ${pvRightX + 4} 28, ${pvRightX + 10} 38, ${pvRightX} 44 Z`;
 
   if (webglError) {
     return (
@@ -659,43 +704,71 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
   }
 
   return (
-    <div className="relative w-full h-[640px] sm:h-[700px] rounded-xl overflow-hidden border border-amber-500/35 bg-[#060c1a] shadow-2xl select-none">
-      <div ref={mountRef} className="absolute inset-0 w-full h-full" />
-
-      {contextLost && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/90 text-amber-300 text-sm font-mono">
-          Restoring WebGL Jet Turbine...
-        </div>
-      )}
-
-      {/* Top-Left Live Thermodynamic Telemetry + Selected Brayton Stage Readout */}
-      <div className="pointer-events-none absolute top-3 left-3 z-20 max-w-md space-y-1.5">
-        <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/88 border border-amber-400/40 text-xs font-mono">
-          <Gauge className="w-3.5 h-3.5 text-amber-400" />
-          <span className="font-extrabold text-white">THRUST {thrustKn} kN</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-orange-300">EGT {egtC}°C</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-cyan-300">N1 {rpmPct}%</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-sky-300 font-bold">M {machOut}</span>
-        </div>
-
-        <div className="px-3 py-2 rounded-lg bg-slate-950/85 border border-slate-700/80 text-[11px] space-y-0.5">
-          <div className="flex items-center justify-between gap-2 font-mono font-bold text-amber-300">
-            <span>{isEn ? stageInfo.en : stageInfo.vi}</span>
-            <span className="text-cyan-300">{stageInfo.formula}</span>
+    <div
+      ref={rootRef}
+      className={`flex flex-col lg:block lg:relative w-full rounded-xl overflow-hidden border border-amber-500/35 bg-[#060c1a] shadow-2xl select-none ${
+        isFullscreen ? 'fixed inset-0 z-[140] h-[100dvh] rounded-none border-0 overflow-y-auto lg:overflow-hidden' : 'lg:h-[700px]'
+      }`}
+    >
+      {/* Top-Left Live Thermodynamic Telemetry + Brayton P-V Diagram */}
+      <div className="relative lg:pointer-events-none lg:absolute lg:top-3 lg:left-3 z-20 p-2.5 lg:p-0 bg-slate-950/95 lg:bg-transparent border-b border-slate-800 lg:border-b-0 lg:max-w-lg space-y-1.5 shrink-0">
+        <div className="lg:pointer-events-auto flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-slate-950/90 border border-amber-400/40 text-xs font-mono">
+          <div className="flex flex-wrap items-center gap-2">
+            <Gauge className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="font-extrabold text-white">{thrustKn} kN</span>
+            <span className="text-orange-300">{egtC}°C</span>
+            <span className="text-cyan-300">N1 {rpmPct}%</span>
+            <span className="text-sky-300 font-bold">M {machOut}</span>
           </div>
-          <p className="text-slate-200 leading-snug">{isEn ? stageInfo.descEn : stageInfo.descVi}</p>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="min-h-[32px] min-w-[32px] inline-flex items-center justify-center rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
+            title={isEn ? 'Fullscreen' : 'Toàn màn hình'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+
+        <div className="px-3 py-2 rounded-lg bg-slate-950/88 border border-slate-700/80 text-[11px] flex items-center justify-between gap-3">
+          <div className="space-y-0.5 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 font-mono font-bold text-amber-300">
+              <span>{isEn ? stageInfo.en : stageInfo.vi}</span>
+              <span className="text-cyan-300">{stageInfo.formula}</span>
+            </div>
+            <p className="text-slate-200 leading-snug">{isEn ? stageInfo.descEn : stageInfo.descVi}</p>
+            <div className="text-[10px] font-mono text-emerald-300 pt-0.5">
+              TSFC: {tsfc} g/(kN·s) · η_th: {thermalEffPct}%
+            </div>
+          </div>
+
+          {/* Interactive Brayton Cycle P-V Diagram */}
+          <svg viewBox="0 0 116 52" className="hidden sm:block w-28 h-12 shrink-0 rounded bg-slate-900/90 border border-slate-800 p-0.5">
+            <line x1="12" y1="6" x2="12" y2="46" stroke="#475569" strokeWidth="1" />
+            <line x1="12" y1="46" x2="110" y2="46" stroke="#475569" strokeWidth="1" />
+            <path d={pvPath} fill={afterburner ? 'rgba(56,189,248,0.22)' : 'rgba(245,158,11,0.22)'} stroke={afterburner ? '#38bdf8' : '#f59e0b'} strokeWidth="1.6" />
+            <text x="4" y="13" fill="#94a3b8" fontSize="6" fontFamily="monospace">P</text>
+            <text x="102" y="44" fill="#94a3b8" fontSize="6" fontFamily="monospace">V</text>
+          </svg>
         </div>
       </div>
 
+      {/* Unobstructed 3D Viewport */}
+      <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[260px] lg:absolute lg:inset-0 lg:h-full' : 'h-[290px] sm:h-[380px] lg:absolute lg:inset-0 lg:h-full'}`}>
+        <div ref={mountRef} className="w-full h-full" />
+        {contextLost && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/90 text-amber-300 text-sm font-mono">
+            Restoring WebGL Jet Turbine...
+          </div>
+        )}
+      </div>
+
       {/* Collapsible Bottom Dock */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-[940px] flex flex-col items-center gap-1.5">
+      <div className="relative lg:absolute lg:bottom-3 lg:left-1/2 lg:-translate-x-1/2 z-20 w-full lg:w-[95%] lg:max-w-[940px] flex flex-col items-center gap-1.5 p-2 lg:p-0 bg-slate-950 lg:bg-transparent border-t border-slate-800 lg:border-t-0 shrink-0">
         <button
           type="button"
           onClick={() => setControlsVisible((v) => !v)}
-          className="px-3 py-1 rounded-md bg-slate-950/90 border border-amber-400/40 text-[11px] font-mono font-bold text-amber-200 hover:text-white flex items-center gap-1.5 cursor-pointer"
+          className="min-h-[36px] px-3 py-1 rounded-md bg-slate-950/92 border border-amber-400/40 text-[11px] font-mono font-bold text-amber-200 hover:text-white flex items-center gap-1.5 cursor-pointer"
         >
           {controlsVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           <span>
@@ -706,10 +779,9 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
         </button>
 
         {controlsVisible && (
-          <div className="w-full rounded-xl bg-slate-950/92 border border-slate-700/85 p-3 sm:p-4 space-y-3 text-xs text-slate-100 shadow-2xl">
-            {/* Stage Inspector Tabs */}
+          <div className="w-full max-h-[38dvh] lg:max-h-none overflow-y-auto rounded-xl bg-slate-950/94 border border-slate-700/85 p-3 sm:p-4 space-y-2.5 text-xs text-slate-100 shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5 w-full sm:w-auto scrollbar-none pb-0.5 sm:pb-0">
                 {BRAYTON_STAGES.map((st) => (
                   <button
                     key={st.id}
@@ -719,7 +791,7 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
                       focusStageCamRef.current?.(st.id);
                       onEarnXP?.(10);
                     }}
-                    className={`px-2.5 py-1.5 rounded border text-[11px] font-bold cursor-pointer ${
+                    className={`min-h-[36px] px-2.5 py-1 rounded border text-[11px] font-bold cursor-pointer whitespace-nowrap shrink-0 ${
                       activeStage === st.id
                         ? 'bg-amber-500/25 border-amber-400 text-amber-200'
                         : 'bg-slate-900 border-slate-700 text-slate-300'
@@ -730,11 +802,32 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
                 ))}
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {/* Flight Regime Presets */}
+                {(
+                  [
+                    { label: 'Takeoff 95%', thr: 95, ab: false },
+                    { label: 'M0.85 Cruise', thr: 58, ab: false },
+                    { label: 'M2.2 Sprint', thr: 100, ab: true }
+                  ] as const
+                ).map((pr) => (
+                  <button
+                    key={pr.label}
+                    type="button"
+                    onClick={() => {
+                      setThrottle(pr.thr);
+                      setAfterburner(pr.ab);
+                    }}
+                    className="min-h-[36px] px-2 py-1 rounded border border-slate-700 bg-slate-900 hover:border-amber-400 text-[10px] font-mono text-slate-200 cursor-pointer"
+                  >
+                    {pr.label}
+                  </button>
+                ))}
+
                 <button
                   type="button"
                   onClick={() => setCutawayCowl((c) => !c)}
-                  className={`px-2.5 py-1.5 rounded border text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
+                  className={`min-h-[36px] px-2.5 py-1 rounded border text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
                     cutawayCowl ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200' : 'bg-slate-900 border-slate-700 text-slate-300'
                   }`}
                 >
@@ -745,20 +838,20 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
                 <button
                   type="button"
                   onClick={() => setAfterburner((a) => !a)}
-                  className={`px-2.5 py-1.5 rounded border text-[11px] font-extrabold flex items-center gap-1 cursor-pointer ${
+                  className={`min-h-[36px] px-2.5 py-1 rounded border text-[11px] font-extrabold flex items-center gap-1 cursor-pointer ${
                     afterburner
                       ? 'bg-sky-500 text-slate-950 border-sky-300'
                       : 'bg-slate-900 border-slate-700 text-orange-300'
                   }`}
                 >
                   <Flame className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Afterburner' : 'Đốt Sau (Mach)'}</span>
+                  <span>{isEn ? 'Afterburner' : 'Đốt Sau'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => resetCamRef.current?.()}
-                  className="p-1.5 rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
+                  className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
                   title="Reset Camera"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -767,7 +860,7 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
                 <button
                   type="button"
                   onClick={toggleJetAudio}
-                  className="p-1.5 rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
+                  className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
                   title={isEn ? 'Jet Audio' : 'Âm thanh Tua-bin'}
                 >
                   {muted ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
@@ -775,7 +868,6 @@ export const JetPropulsion3DLab: React.FC<JetPropulsion3DLabProps> = ({ onEarnXP
               </div>
             </div>
 
-            {/* Sliders */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800">
               <label className="space-y-1">
                 <div className="flex justify-between font-mono text-[11px]">

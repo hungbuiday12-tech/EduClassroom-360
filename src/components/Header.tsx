@@ -75,6 +75,16 @@ export const Header: React.FC<HeaderProps> = ({
   const { hasPremiumAccess, isAdmin, pendingRequestsCount } = usePremium();
   const [isAdminPreModalOpen, setIsAdminPreModalOpen] = useState(false);
 
+  useEffect(() => {
+    const onOpenAdminPre = () => {
+      if (isAdmin) {
+        setIsAdminPreModalOpen(true);
+      }
+    };
+    window.addEventListener('synapse:open-admin-pre-modal', onOpenAdminPre);
+    return () => window.removeEventListener('synapse:open-admin-pre-modal', onOpenAdminPre);
+  }, [isAdmin]);
+
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isBgMenuOpen, setIsBgMenuOpen] = useState(false);
   const [isCompactToolsOpen, setIsCompactToolsOpen] = useState(false);

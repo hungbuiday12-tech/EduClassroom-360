@@ -28,6 +28,7 @@ export interface KeplerianElement {
 
 export interface SolarBodyMeta {
   id: SolarBodyId;
+  indexLabel: string;
   nameEn: string;
   nameVi: string;
   typeEn: string;
@@ -39,10 +40,17 @@ export interface SolarBodyMeta {
   rotSpeed: number;
   periodDays: number;
   diameterKm: number;
+  dayLengthEn: string;
+  dayLengthVi: string;
+  orbitalPeriodEn: string;
+  orbitalPeriodVi: string;
+  gravityMs2: number;
   moonsCount: number;
   tempDisplay: string;
   factEn: string;
   factVi: string;
+  moreFactEn: string;
+  moreFactVi: string;
   elements?: KeplerianElement;
 }
 
@@ -53,6 +61,7 @@ export interface SolarBodyMeta {
 export const SOLAR_BODIES: SolarBodyMeta[] = [
   {
     id: 'sun',
+    indexLabel: '00 · STAR',
     nameEn: 'Sun',
     nameVi: 'Mặt Trời',
     typeEn: 'G2V Yellow Dwarf Star',
@@ -64,13 +73,21 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
     rotSpeed: 0.14,
     periodDays: 0,
     diameterKm: 1392700,
+    dayLengthEn: '25.4 days',
+    dayLengthVi: '25,4 ngày',
+    orbitalPeriodEn: '230M yrs (Galactic)',
+    orbitalPeriodVi: '230 triệu năm (Ngân Hà)',
+    gravityMs2: 274.0,
     moonsCount: 0,
     tempDisplay: '5,778 K (surface)',
-    factEn: 'Contains 99.86% of the Solar System mass; fuses 600M tons of H → He every second.',
-    factVi: 'Chiếm 99,86% tổng khối lượng Hệ Mặt Trời; tổng hợp 600 triệu tấn Hydro thành Heli mỗi giây.'
+    factEn: 'The only star in our Solar System, holding 99.86% of all its mass. Its light takes about 8 minutes to reach Earth.',
+    factVi: 'Ngôi sao duy nhất của Hệ Mặt Trời, nắm giữ 99,86% tổng khối lượng. Ánh sáng mất khoảng 8 phút để tới Trái Đất.',
+    moreFactEn: 'Inside its 15-million-kelvin core, nuclear fusion converts ~600 million tons of hydrogen into helium every second, driving space weather across 8 planets.',
+    moreFactVi: 'Trong lõi nóng 15 triệu Kelvin, phản ứng nhiệt hạch tổng hợp ~600 triệu tấn Hydro thành Heli mỗi giây, nuôi dưỡng toàn bộ 8 hành tinh.'
   },
   {
     id: 'mercury',
+    indexLabel: '01 · TERRESTRIAL',
     nameEn: 'Mercury',
     nameVi: 'Sao Thủy',
     typeEn: 'Terrestrial Planet',
@@ -82,10 +99,17 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
     rotSpeed: 0.12,
     periodDays: 87.97,
     diameterKm: 4879,
+    dayLengthEn: '58.6 days',
+    dayLengthVi: '58,6 ngày',
+    orbitalPeriodEn: '88.0 days',
+    orbitalPeriodVi: '88,0 ngày',
+    gravityMs2: 3.7,
     moonsCount: 0,
     tempDisplay: '-180°C to +430°C',
     factEn: 'Closest & fastest planet; its 3:2 spin-orbit resonance creates 176-Earth-day solar days.',
-    factVi: 'Hành tinh gần Mặt Trời và quay quanh Mặt Trời nhanh nhất với cộng hưởng tự quay 3:2.',
+    factVi: 'Hành tinh gần Mặt Trời và quay nhanh nhất với cộng hưởng tự quay 3:2.',
+    moreFactEn: 'Mercury has the most eccentric orbit of the eight planets (e = 0.2056) and possesses an oversized iron core making up ~85% of its radius.',
+    moreFactVi: 'Sao Thủy có quỹ đạo dẹt nhất trong 8 hành tinh (e = 0,2056) và sở hữu lõi sắt khổng lồ chiếm tới ~85% bán kính.',
     elements: {
       a: 0.38709927, aDot: 0.00000037,
       e: 0.20563593, eDot: 0.00001906,
@@ -97,6 +121,7 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
   },
   {
     id: 'venus',
+    indexLabel: '02 · TERRESTRIAL',
     nameEn: 'Venus',
     nameVi: 'Sao Kim',
     typeEn: 'Terrestrial Planet',
@@ -108,10 +133,17 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
     rotSpeed: -0.06,
     periodDays: 224.7,
     diameterKm: 12104,
+    dayLengthEn: '243 days (R)',
+    dayLengthVi: '243 ngày (Ngược)',
+    orbitalPeriodEn: '224.7 days',
+    orbitalPeriodVi: '224,7 ngày',
+    gravityMs2: 8.87,
     moonsCount: 0,
     tempDisplay: '+464°C (Runaway CO₂)',
     factEn: 'Rotates backwards (retrograde) in 243 Earth days—longer than its own 225-day year.',
     factVi: 'Tự quay ngược chiều kim đồng hồ rất chậm (243 ngày Trái Đất), dài hơn cả 1 năm của chính nó.',
+    moreFactEn: 'A thick CO₂ atmosphere creates 92 bar surface pressure—equivalent to 900 m underwater—making Venus the hottest planet despite being second from the Sun.',
+    moreFactVi: 'Khí quyển CO₂ đặc tạo áp suất bề mặt 92 bar (tương đương độ sâu 900 m dưới biển), khiến Sao Kim nóng nhất Hệ Mặt Trời.',
     elements: {
       a: 0.72333566, aDot: 0.00000390,
       e: 0.00677672, eDot: -0.00004107,
@@ -123,6 +155,7 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
   },
   {
     id: 'earth',
+    indexLabel: '03 · HOME WORLD',
     nameEn: 'Earth',
     nameVi: 'Trái Đất',
     typeEn: 'Terrestrial Ocean World',
@@ -134,10 +167,17 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
     rotSpeed: 0.75,
     periodDays: 365.256,
     diameterKm: 12742,
+    dayLengthEn: '23h 56m',
+    dayLengthVi: '23 giờ 56 phút',
+    orbitalPeriodEn: '365.26 days',
+    orbitalPeriodVi: '365,26 ngày',
+    gravityMs2: 9.81,
     moonsCount: 1,
     tempDisplay: '+15°C (mean)',
     factEn: 'Orbits at ~29.78 km/s inside the Sun’s habitable zone with liquid oceans & magnetic shield.',
     factVi: 'Chuyển động quanh Mặt Trời ở ~29,78 km/s trong vùng sống được với đại dương và từ quyển bảo vệ.',
+    moreFactEn: 'Our 23.44° axial tilt drives Earth’s four seasons while our large Moon stabilizes planetary precession across geological timescales.',
+    moreFactVi: 'Độ nghiêng trục 23,44° sinh ra bốn mùa trong năm, còn Mặt Trăng giúp ổn định góc nghiêng khí hậu suốt hàng tỷ năm.',
     elements: {
       a: 1.00000261, aDot: 0.00000562,
       e: 0.01671123, eDot: -0.00004392,
@@ -149,6 +189,7 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
   },
   {
     id: 'mars',
+    indexLabel: '04 · TERRESTRIAL',
     nameEn: 'Mars',
     nameVi: 'Sao Hỏa',
     typeEn: 'Terrestrial Desert World',
@@ -160,10 +201,17 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
     rotSpeed: 0.72,
     periodDays: 686.98,
     diameterKm: 6779,
+    dayLengthEn: '24h 37m',
+    dayLengthVi: '24 giờ 37 phút',
+    orbitalPeriodEn: '687.0 days',
+    orbitalPeriodVi: '687,0 ngày',
+    gravityMs2: 3.72,
     moonsCount: 2,
     tempDisplay: '-65°C (mean)',
     factEn: 'Home to Olympus Mons (21.9 km high) and Valles Marineris, the largest canyon in the Solar System.',
     factVi: 'Nơi có núi lửa Olympus Mons cao 21,9 km và hẻm núi Valles Marineris dài hơn 4.000 km.',
+    moreFactEn: 'Mars preserves ancient river deltas and polar water-ice caps, orbited by two tiny captured moons, Phobos and Deimos.',
+    moreFactVi: 'Sao Hỏa lưu giữ dấu tích đồng bằng sông cổ đại và băng nước hai cực, cùng hai vệ tinh nhỏ Phobos và Deimos.',
     elements: {
       a: 1.52371034, aDot: 0.00001847,
       e: 0.09339410, eDot: 0.00007882,
@@ -175,6 +223,7 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
   },
   {
     id: 'jupiter',
+    indexLabel: '05 · GAS GIANT',
     nameEn: 'Jupiter',
     nameVi: 'Sao Mộc',
     typeEn: 'Gas Giant',
@@ -186,10 +235,17 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
     rotSpeed: 1.45,
     periodDays: 4332.59,
     diameterKm: 139820,
+    dayLengthEn: '9h 55m',
+    dayLengthVi: '9 giờ 55 phút',
+    orbitalPeriodEn: '11.86 years',
+    orbitalPeriodVi: '11,86 năm',
+    gravityMs2: 24.79,
     moonsCount: 95,
     tempDisplay: '-110°C (cloud tops)',
     factEn: 'More massive than all other planets combined; completes a full rotation in under 10 hours.',
     factVi: 'Khối lượng lớn hơn tất cả hành tinh khác cộng lại; tự quay một vòng chỉ mất chưa đầy 10 giờ.',
+    moreFactEn: 'The Great Red Spot is a centuries-old anticyclonic storm wider than Earth, while Jupiter’s gravity shapes the Asteroid Belt resonances.',
+    moreFactVi: 'Vết Đỏ Lớn là siêu bão tồn tại hàng trăm năm rộng hơn cả Trái Đất, còn trường hấp dẫn Sao Mộc định hình vành đai tiểu hành tinh.',
     elements: {
       a: 5.20288700, aDot: -0.00011607,
       e: 0.04838624, eDot: -0.00013253,
@@ -201,6 +257,7 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
   },
   {
     id: 'saturn',
+    indexLabel: '06 · GAS GIANT',
     nameEn: 'Saturn',
     nameVi: 'Sao Thổ',
     typeEn: 'Ringed Gas Giant',
@@ -212,10 +269,17 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
     rotSpeed: 1.32,
     periodDays: 10759.22,
     diameterKm: 116460,
+    dayLengthEn: '10h 33m',
+    dayLengthVi: '10 giờ 33 phút',
+    orbitalPeriodEn: '29.45 years',
+    orbitalPeriodVi: '29,45 năm',
+    gravityMs2: 10.44,
     moonsCount: 146,
     tempDisplay: '-140°C (cloud tops)',
     factEn: 'Iconic icy rings span 282,000 km wide yet average barely 10–30 meters thick; mean density 0.687 g/cm³.',
     factVi: 'Hệ vành đai băng rộng 282.000 km nhưng dày trung bình chỉ ~10–30 mét; khối lượng riêng nhẹ hơn nước.',
+    moreFactEn: 'Its largest moon Titan has a dense nitrogen atmosphere and liquid methane lakes, while Enceladus vents subsurface water-ice plumes.',
+    moreFactVi: 'Vệ tinh Titan có khí quyển nitơ dày và hồ metan lỏng, còn Enceladus phun các mạch nước băng từ đại dương ngầm.',
     elements: {
       a: 9.53667594, aDot: -0.00125060,
       e: 0.05386179, eDot: -0.00050991,
@@ -227,6 +291,7 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
   },
   {
     id: 'uranus',
+    indexLabel: '07 · ICE GIANT',
     nameEn: 'Uranus',
     nameVi: 'Sao Thiên Vương',
     typeEn: 'Ice Giant',
@@ -238,10 +303,17 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
     rotSpeed: -0.9,
     periodDays: 30688.5,
     diameterKm: 50724,
+    dayLengthEn: '17h 14m (R)',
+    dayLengthVi: '17 giờ 14 phút',
+    orbitalPeriodEn: '84.0 years',
+    orbitalPeriodVi: '84,0 năm',
+    gravityMs2: 8.69,
     moonsCount: 28,
     tempDisplay: '-195°C (coldest atm)',
     factEn: 'Tilted 97.77° on its side—effectively rolling around the Sun with 42-year-long polar seasons.',
     factVi: 'Trục tự quay nghiêng 97,77° gần như nằm ngang mặt phẳng quỹ đạo, tạo ra mùa kéo dài 42 năm.',
+    moreFactEn: 'Upper-atmosphere methane absorbs red light and scatters cyan-blue wavelengths, sitting atop a superionic water-ammonia mantle.',
+    moreFactVi: 'Khí metan tầng cao hấp thụ tia đỏ và phản xạ sắc xanh ngọc, bao phủ lớp phủ băng nước-amoniac áp suất siêu cao.',
     elements: {
       a: 19.18916464, aDot: -0.00196176,
       e: 0.04725744, eDot: -0.00004397,
@@ -253,6 +325,7 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
   },
   {
     id: 'neptune',
+    indexLabel: '08 · ICE GIANT',
     nameEn: 'Neptune',
     nameVi: 'Sao Hải Vương',
     typeEn: 'Ice Giant',
@@ -264,10 +337,17 @@ export const SOLAR_BODIES: SolarBodyMeta[] = [
     rotSpeed: 0.95,
     periodDays: 60195,
     diameterKm: 49244,
+    dayLengthEn: '16h 06m',
+    dayLengthVi: '16 giờ 06 phút',
+    orbitalPeriodEn: '164.8 years',
+    orbitalPeriodVi: '164,8 năm',
+    gravityMs2: 11.15,
     moonsCount: 16,
     tempDisplay: '-200°C',
     factEn: 'First planet discovered via math prediction (1846); supersonic methane winds exceed 2,100 km/h.',
     factVi: 'Hành tinh đầu tiên tìm ra nhờ tính toán toán học (1846), sở hữu gió siêu thanh tới 2.100 km/h.',
+    moreFactEn: 'Urban Le Verrier & John Couch Adams predicted Neptune’s position solely from gravitational perturbations observed in Uranus’s orbit.',
+    moreFactVi: 'Le Verrier và Adams đã tính ra vị trí Sao Hải Vương hoàn toàn bằng nhiễu loạn hấp dẫn trên quỹ đạo Sao Thiên Vương trước khi kính thiên văn nhìn thấy nó.',
     elements: {
       a: 30.06992276, aDot: 0.00026291,
       e: 0.00859048, eDot: 0.00005105,
@@ -383,6 +463,20 @@ export function computePlanetState(body: SolarBodyMeta, date: Date): PlanetState
     distanceAU,
     velocityKms,
     heliocentricLonDeg: lon
+  };
+}
+
+/** Light-time constant: 1 AU = 8.316746397 light-minutes */
+const AU_TO_LIGHT_MIN = 8.3167464;
+
+export function computeEarthRelativeTelemetry(
+  bodyState: PlanetState,
+  earthState: PlanetState
+): { earthDistAU: number; lightMinutes: number } {
+  const earthDistAU = bodyState.auPos.distanceTo(earthState.auPos);
+  return {
+    earthDistAU,
+    lightMinutes: earthDistAU * AU_TO_LIGHT_MIN
   };
 }
 

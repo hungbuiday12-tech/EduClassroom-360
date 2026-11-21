@@ -8,6 +8,8 @@ import {
   Clock,
   Eye,
   EyeOff,
+  Maximize2,
+  Minimize2,
   Pause,
   Play,
   RotateCcw,
@@ -112,6 +114,8 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
   const { perfMode } = useBackgroundTheme();
 
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [topic, setTopic] = useState<FourDTopicId>('tesseract');
   const topicRef = useRef<FourDTopicId>('tesseract');
@@ -125,6 +129,10 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
   const wAngleRef = useRef(35);
   wAngleRef.current = wAngleDeg;
 
+  const [zwAngleDeg, setZwAngleDeg] = useState(20);
+  const zwAngleRef = useRef(20);
+  zwAngleRef.current = zwAngleDeg;
+
   const [wSlice, setWSlice] = useState(0);
   const wSliceRef = useRef(0);
   wSliceRef.current = wSlice;
@@ -133,10 +141,36 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
   const betaRef = useRef(0.45);
   betaRef.current = betaVelocity;
 
+  const [eventCt, setEventCt] = useState(1.2);
+  const eventCtRef = useRef(1.2);
+  eventCtRef.current = eventCt;
+
+  const [eventDx, setEventDx] = useState(0.75);
+  const eventDxRef = useRef(0.75);
+  eventDxRef.current = eventDx;
+
   const [webglError, setWebglError] = useState(false);
   const [contextLost, setContextLost] = useState(false);
 
   const resetCamRef = useRef<(() => void) | null>(null);
+
+  const toggleFullscreen = () => {
+    const el = rootRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().catch(() => setIsFullscreen((f) => !f));
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => setIsFullscreen(false));
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -228,16 +262,18 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
     tesseractGroup.add(tessLines);
 
     const vertSphereGeo = new THREE.SphereGeometry(0.11, 14, 14);
-    const vertSphereMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      emissive: 0x0ea5e9,
-      emissiveIntensity: 0.85,
-      roughness: 0.2,
-      metalness: 0.7
-    });
     const tessVertMeshes: THREE.Mesh[] = [];
     for (let i = 0; i < 16; i++) {
-      const m = new THREE.Mesh(vertSphereGeo, vertSphereMat);
+      const m = new THREE.Mesh(
+        vertSphereGeo,
+        new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          emissive: 0x0ea5e9,
+          emissiveIntensity: 0.85,
+          roughness: 0.2,
+          metalness: 0.7
+        })
+      );
       tesseractGroup.add(m);
       tessVertMeshes.push(m);
     }
@@ -333,6 +369,19 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
     );
     simTimePlane.rotation.x = Math.PI / 2;
     minkowskiGroup.add(simTimePlane);
+
+    const testEventSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.14, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 1.1 })
+    );
+    minkowskiGroup.add(testEventSphere);
+
+    const lightWaveRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.95, 1.04, 40),
+      new THREE.MeshBasicMaterial({ color: 0xfef08a, side: THREE.DoubleSide, transparent: true, opacity: 0.65 })
+    );
+    lightWaveRing.rotation.x = Math.PI / 2;
+    minkowskiGroup.add(lightWaveRing);
 
     // ==================== TOPIC 4: 4D KLEIN BOTTLE IMMERSION ====================
     const kleinGroup = new THREE.Group();
@@ -450,7 +499,7 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
 
       if (curTopic === 'tesseract') {
         const theta = autoSpinRef.current ? elapsed * 0.75 : THREE.MathUtils.degToRad(wAngleRef.current);
-        const phi = autoSpinRef.current ? elapsed * 0.45 : THREE.MathUtils.degToRad(wAngleRef.current * 0.65);
+        const phi = autoSpinRef.current ? elapsed * 0.45 : THREE.MathUtils.degToRad(zwAngleRef.current);
         const cosT = Math.cos(theta);
         const sinT = Math.sin(theta);
         const cosP = Math.cos(phi);
@@ -458,19 +507,28 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
 
         for (let i = 0; i < 16; i++) {
           const [vx, vy, vz, vw] = TESS_VERTS[i];
-          // XW 4D rotation
           const x1 = vx * cosT - vw * sinT;
           const w1 = vx * sinT + vw * cosT;
-          // ZW 4D rotation
           const z2 = vz * cosP - w1 * sinP;
           const w2 = vz * sinP + w1 * cosP;
-          // Stereographic perspective R4 -> R3
           const wOffset = 2.6 - (w2 - wSliceRef.current * 0.7);
           const scale = 2.4 / Math.max(0.6, wOffset);
           projectedPts[i].set(x1 * scale, vy * scale, z2 * scale);
           tessVertMeshes[i].position.copy(projectedPts[i]);
           const distScale = THREE.MathUtils.clamp(scale * 0.75, 0.5, 1.45);
           tessVertMeshes[i].scale.setScalar(distScale);
+          // Encode W coordinate in vertex hue: cyan (-w) -> magenta (0) -> amber (+w)
+          const vMat = tessVertMeshes[i].material as THREE.MeshStandardMaterial;
+          if (w2 > 0.35) {
+            vMat.color.setHex(0xfbbf24);
+            vMat.emissive.setHex(0xf59e0b);
+          } else if (w2 < -0.35) {
+            vMat.color.setHex(0x38bdf8);
+            vMat.emissive.setHex(0x0284c7);
+          } else {
+            vMat.color.setHex(0xe879f9);
+            vMat.emissive.setHex(0xc026d3);
+          }
         }
 
         const posArr = tessGeo.attributes.position.array as Float32Array;
@@ -499,6 +557,14 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
         wAttr[4] = 2.4;
         worldlineGeo.attributes.position.needsUpdate = true;
         simTimePlane.rotation.z = Math.atan(b);
+        testEventSphere.position.set(eventDxRef.current, eventCtRef.current, 0);
+        const evMat = testEventSphere.material as THREE.MeshStandardMaterial;
+        const ds2 = -(eventCtRef.current ** 2) + eventDxRef.current ** 2;
+        evMat.color.setHex(ds2 < -0.05 ? 0x34d399 : Math.abs(ds2) <= 0.05 ? 0xfacc15 : 0xf43f5e);
+        evMat.emissive.copy(evMat.color);
+        const pulseR = ((elapsed * 0.9) % 1) * 2.2 + 0.15;
+        lightWaveRing.position.y = ((elapsed * 0.9) % 1) * 2.2;
+        lightWaveRing.scale.setScalar(pulseR);
       } else if (curTopic === 'klein') {
         kleinGroup.rotation.y += dt * (autoSpinRef.current ? 0.48 : 0.08);
         const u = elapsed * 1.1;
@@ -530,7 +596,7 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
       renderer.domElement.removeEventListener('webglcontextlost', onLost);
       renderer.domElement.removeEventListener('webglcontextrestored', onRestored);
       scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
+        if ((obj as THREE.Mesh).isMesh || (obj as THREE.Line).isLine) {
           const m = obj as THREE.Mesh;
           m.geometry.dispose();
           if (Array.isArray(m.material)) m.material.forEach((mat) => mat.dispose());
@@ -543,6 +609,13 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
   }, [perfMode]);
 
   const activeLecture = FOUR_D_LECTURES.find((l) => l.id === topic) || FOUR_D_LECTURES[0];
+  const dsSquared = -(eventCt * eventCt) + eventDx * eventDx;
+  const intervalLabel =
+    dsSquared < -0.05
+      ? isEn ? 'TIMELIKE (Causal)' : 'DẠNG THỜI GIAN (Nhân quả)'
+      : Math.abs(dsSquared) <= 0.05
+      ? isEn ? 'LIGHTLIKE (Null Cone)' : 'DẠNG ÁNH SÁNG (Trên Nón)'
+      : isEn ? 'SPACELIKE (Acausal)' : 'DẠNG KHÔNG GIAN (Phi nhân quả)';
 
   if (webglError) {
     return (
@@ -553,34 +626,51 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
   }
 
   return (
-    <div className="relative w-full h-[640px] sm:h-[700px] rounded-xl overflow-hidden border border-fuchsia-500/35 bg-[#060918] shadow-2xl select-none">
-      <div ref={mountRef} className="absolute inset-0 w-full h-full" />
-
-      {contextLost && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/90 text-fuchsia-300 text-sm font-mono">
-          Restoring 4D Projection Viewport...
-        </div>
-      )}
-
+    <div
+      ref={rootRef}
+      className={`flex flex-col lg:block lg:relative w-full rounded-xl overflow-hidden border border-fuchsia-500/35 bg-[#060918] shadow-2xl select-none ${
+        isFullscreen ? 'fixed inset-0 z-[140] h-[100dvh] rounded-none border-0 overflow-y-auto lg:overflow-hidden' : 'lg:h-[700px]'
+      }`}
+    >
       {/* Top-Left 4D Lecture Card */}
-      <div className="pointer-events-none absolute top-3 left-3 z-20 max-w-md space-y-1.5">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/88 border border-fuchsia-400/40 text-xs font-mono">
-          <BookOpen className="w-3.5 h-3.5 text-fuchsia-400" />
-          <span className="font-extrabold text-white">{isEn ? activeLecture.titleEn : activeLecture.titleVi}</span>
+      <div className="relative lg:pointer-events-none lg:absolute lg:top-3 lg:left-3 z-20 p-2.5 lg:p-0 bg-slate-950/95 lg:bg-transparent border-b border-slate-800 lg:border-b-0 lg:max-w-md space-y-1.5 shrink-0">
+        <div className="lg:pointer-events-auto flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-slate-950/90 border border-fuchsia-400/40 text-xs font-mono">
+          <div className="flex items-center gap-2 min-w-0">
+            <BookOpen className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />
+            <span className="font-extrabold text-white truncate">{isEn ? activeLecture.titleEn : activeLecture.titleVi}</span>
+          </div>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="min-h-[32px] min-w-[32px] inline-flex items-center justify-center rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer shrink-0"
+            title={isEn ? 'Fullscreen' : 'Toàn màn hình'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
         </div>
 
-        <div className="px-3 py-2 rounded-lg bg-slate-950/85 border border-slate-700/80 text-[11px] space-y-1">
+        <div className="px-3 py-2 rounded-lg bg-slate-950/88 border border-slate-700/80 text-[11px] space-y-1">
           <div className="font-mono font-bold text-cyan-300">{activeLecture.formula}</div>
           <p className="text-slate-200 leading-relaxed">{isEn ? activeLecture.lessonEn : activeLecture.lessonVi}</p>
         </div>
       </div>
 
+      {/* Unobstructed 3D Viewport */}
+      <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[260px] lg:absolute lg:inset-0 lg:h-full' : 'h-[290px] sm:h-[380px] lg:absolute lg:inset-0 lg:h-full'}`}>
+        <div ref={mountRef} className="w-full h-full" />
+        {contextLost && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/90 text-fuchsia-300 text-sm font-mono">
+            Restoring 4D Projection Viewport...
+          </div>
+        )}
+      </div>
+
       {/* Collapsible Bottom Dock */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-[940px] flex flex-col items-center gap-1.5">
+      <div className="relative lg:absolute lg:bottom-3 lg:left-1/2 lg:-translate-x-1/2 z-20 w-full lg:w-[95%] lg:max-w-[940px] flex flex-col items-center gap-1.5 p-2 lg:p-0 bg-slate-950 lg:bg-transparent border-t border-slate-800 lg:border-t-0 shrink-0">
         <button
           type="button"
           onClick={() => setControlsVisible((v) => !v)}
-          className="px-3 py-1 rounded-md bg-slate-950/90 border border-fuchsia-400/40 text-[11px] font-mono font-bold text-fuchsia-200 hover:text-white flex items-center gap-1.5 cursor-pointer"
+          className="min-h-[36px] px-3 py-1 rounded-md bg-slate-950/92 border border-fuchsia-400/40 text-[11px] font-mono font-bold text-fuchsia-200 hover:text-white flex items-center gap-1.5 cursor-pointer"
         >
           {controlsVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           <span>
@@ -591,9 +681,9 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
         </button>
 
         {controlsVisible && (
-          <div className="w-full rounded-xl bg-slate-950/92 border border-slate-700/85 p-3 sm:p-4 space-y-3 text-xs text-slate-100 shadow-2xl">
+          <div className="w-full max-h-[38dvh] lg:max-h-none overflow-y-auto rounded-xl bg-slate-950/94 border border-slate-700/85 p-3 sm:p-4 space-y-3 text-xs text-slate-100 shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5 w-full sm:w-auto scrollbar-none pb-0.5 sm:pb-0">
                 {FOUR_D_LECTURES.map((lec) => (
                   <button
                     key={lec.id}
@@ -602,7 +692,7 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
                       setTopic(lec.id);
                       onEarnXP?.(15);
                     }}
-                    className={`px-2.5 py-1.5 rounded border text-[11px] font-bold flex items-center gap-1.5 cursor-pointer ${
+                    className={`min-h-[36px] px-2.5 py-1 rounded border text-[11px] font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                       topic === lec.id
                         ? 'bg-fuchsia-500/25 border-fuchsia-400 text-fuchsia-200'
                         : 'bg-slate-900 border-slate-700 text-slate-300'
@@ -618,7 +708,7 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
                 <button
                   type="button"
                   onClick={() => setAutoSpin4D((s) => !s)}
-                  className={`px-3 py-1.5 rounded border text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
+                  className={`min-h-[36px] px-3 py-1 rounded border text-[11px] font-bold flex items-center gap-1 cursor-pointer ${
                     autoSpin4D
                       ? 'bg-sky-500 text-slate-950 border-sky-300'
                       : 'bg-slate-800 border-slate-600 text-slate-200'
@@ -630,7 +720,7 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
                 <button
                   type="button"
                   onClick={() => resetCamRef.current?.()}
-                  className="p-1.5 rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
+                  className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded border border-slate-700 bg-slate-900 text-slate-200 cursor-pointer"
                   title="Reset View"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -639,10 +729,10 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
             </div>
 
             {topic === 'tesseract' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800">
                 <label className="space-y-1">
                   <div className="flex justify-between font-mono text-[11px]">
-                    <span className="text-slate-300">{isEn ? 'Manual XW Rotation Angle' : 'Góc xoay thủ công (XW)'}</span>
+                    <span className="text-slate-300">{isEn ? 'XW Plane Rotation' : 'Góc xoay XW'}</span>
                     <span className="text-fuchsia-300 font-bold">{wAngleDeg}°</span>
                   </div>
                   <input
@@ -660,7 +750,25 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
 
                 <label className="space-y-1">
                   <div className="flex justify-between font-mono text-[11px]">
-                    <span className="text-slate-300">{isEn ? '4D Hyperplane Slice (w)' : 'Mặt cắt Siêu phẳng (w)'}</span>
+                    <span className="text-slate-300">{isEn ? 'ZW Plane Rotation' : 'Góc xoay ZW'}</span>
+                    <span className="text-sky-300 font-bold">{zwAngleDeg}°</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={360}
+                    value={zwAngleDeg}
+                    onChange={(e) => {
+                      setAutoSpin4D(false);
+                      setZwAngleDeg(Number(e.target.value));
+                    }}
+                    className="w-full accent-sky-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="space-y-1">
+                  <div className="flex justify-between font-mono text-[11px]">
+                    <span className="text-slate-300">{isEn ? 'W Slice (Color Coded)' : 'Mặt cắt Siêu phẳng w'}</span>
                     <span className="text-amber-300 font-bold">{wSlice.toFixed(2)}</span>
                   </div>
                   <input
@@ -677,15 +785,15 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
             )}
 
             {topic === 'minkowski' && (
-              <div className="pt-2 border-t border-slate-800">
-                <label className="block space-y-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800">
+                <label className="space-y-1">
                   <div className="flex justify-between font-mono text-[11px]">
                     <span className="text-slate-300 flex items-center gap-1">
                       <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                      {isEn ? 'Relativistic Boost β = v/c (Lorentz Transform)' : 'Vận tốc tương đối tính β = v/c (Biến đổi Lorentz)'}
+                      β = v/c
                     </span>
                     <span className="text-emerald-300 font-bold">
-                      {betaVelocity.toFixed(2)}c (γ = {(1 / Math.sqrt(Math.max(0.05, 1 - betaVelocity * betaVelocity))).toFixed(2)})
+                      {betaVelocity.toFixed(2)}c (γ={(1 / Math.sqrt(Math.max(0.05, 1 - betaVelocity * betaVelocity))).toFixed(2)})
                     </span>
                   </div>
                   <input
@@ -696,6 +804,38 @@ export const FourDLecture3DLab: React.FC<FourDLecture3DLabProps> = ({ onEarnXP }
                     value={betaVelocity}
                     onChange={(e) => setBetaVelocity(Number(e.target.value))}
                     className="w-full accent-emerald-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="space-y-1">
+                  <div className="flex justify-between font-mono text-[11px]">
+                    <span className="text-slate-300">Event Δct</span>
+                    <span className="text-cyan-300 font-bold">{eventCt.toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-2.0}
+                    max={2.0}
+                    step={0.05}
+                    value={eventCt}
+                    onChange={(e) => setEventCt(Number(e.target.value))}
+                    className="w-full accent-cyan-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="space-y-1">
+                  <div className="flex justify-between font-mono text-[11px]">
+                    <span className="text-slate-300">Event Δx</span>
+                    <span className="text-rose-300 font-bold">{eventDx.toFixed(2)} · {intervalLabel}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-2.0}
+                    max={2.0}
+                    step={0.05}
+                    value={eventDx}
+                    onChange={(e) => setEventDx(Number(e.target.value))}
+                    className="w-full accent-rose-500 cursor-pointer"
                   />
                 </label>
               </div>

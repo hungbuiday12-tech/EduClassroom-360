@@ -629,22 +629,19 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
   const totalCounts = counts.k00 + counts.k01 + counts.k10 + counts.k11 || 1;
 
   return (
-    <div className="relative w-full h-[640px] sm:h-[700px] rounded-2xl overflow-hidden border border-cyan-500/40 bg-[#040816] text-white shadow-2xl">
-      {/* Isolated 3D WebGL Viewport */}
-      <div ref={mountRef} className="w-full h-full" />
-
-      {/* Minimal Top-Left Quantum Telemetry Readout */}
-      <div className="pointer-events-none absolute top-3 left-3 z-20 flex flex-col gap-1.5 max-w-md">
-        <div className="pointer-events-auto rounded-lg bg-[#050b1d]/90 border border-cyan-500/35 px-3.5 py-2.5 space-y-1 shadow-lg">
+    <div className="relative w-full lg:h-[700px] rounded-2xl overflow-hidden border border-cyan-500/40 bg-[#040816] text-white shadow-2xl flex flex-col lg:block">
+      {/* Top Quantum Telemetry & Measurement Header (Stacked on < lg, floating on lg+) */}
+      <div className="relative z-20 p-2.5 sm:p-3 lg:pointer-events-none lg:absolute lg:top-3 lg:left-3 lg:right-3 flex flex-col sm:flex-row sm:items-start justify-between gap-2 bg-[#040816]/95 lg:bg-transparent border-b border-cyan-500/20 lg:border-b-0 shrink-0">
+        <div className="pointer-events-auto rounded-lg bg-[#050b1d]/92 border border-cyan-500/35 px-3.5 py-2.5 space-y-1 shadow-lg max-w-full sm:max-w-md">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5 text-xs font-extrabold text-cyan-300">
-              <Atom className="w-4 h-4" />
+              <Atom className="w-4 h-4 shrink-0" />
               <span>{isEn ? 'Quantum Bloch Holodeck' : 'Máy Tính Lượng Tử & Bloch 3D'}</span>
             </div>
             <button
               type="button"
               onClick={() => setSoundOn((v) => !v)}
-              className="p-1 rounded bg-slate-900 border border-slate-700 text-slate-200 hover:border-cyan-400 cursor-pointer"
+              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded bg-slate-900 border border-slate-700 text-slate-200 hover:border-cyan-400 cursor-pointer"
               title={isEn ? 'Toggle Sound' : 'Bật/Tắt Âm thanh'}
             >
               {soundOn ? <Volume2 className="w-3.5 h-3.5 text-cyan-300" /> : <VolumeX className="w-3.5 h-3.5" />}
@@ -665,41 +662,48 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
             {qubit.entangled ? (isEn ? ' · Entangled' : ' · Vướng víu lượng tử') : ''}
           </div>
         </div>
-      </div>
 
-      {/* Top-Right Compact Histogram Bar (Measurement Collapse Readout) */}
-      <div className="pointer-events-auto absolute top-3 right-3 z-20 rounded-lg bg-[#050b1d]/90 border border-purple-500/35 px-3 py-2.5 w-52 space-y-1.5 shadow-lg">
-        <div className="flex items-center justify-between text-[11px] font-mono font-bold">
-          <span className="text-purple-200">{isEn ? 'Measurement' : 'Xác suất Đo'}</span>
-          {lastMeasure && <span className="text-amber-300">{lastMeasure}</span>}
+        {/* Measurement Collapse Histogram */}
+        <div className="pointer-events-auto rounded-lg bg-[#050b1d]/92 border border-purple-500/35 px-3 py-2 w-full sm:w-52 space-y-1 shadow-lg">
+          <div className="flex items-center justify-between text-[11px] font-mono font-bold">
+            <span className="text-purple-200">{isEn ? 'Measurement' : 'Xác suất Đo'}</span>
+            {lastMeasure && <span className="text-amber-300">{lastMeasure}</span>}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-1 gap-x-3 gap-y-1">
+            {(
+              [
+                ['|00⟩', counts.k00, 'bg-sky-400'],
+                ['|01⟩', counts.k01, 'bg-indigo-400'],
+                ['|10⟩', counts.k10, 'bg-purple-400'],
+                ['|11⟩', counts.k11, 'bg-rose-400']
+              ] as const
+            ).map(([lbl, cnt, barCls]) => {
+              const pct = Math.round((cnt / totalCounts) * 100);
+              return (
+                <div key={lbl} className="flex items-center gap-2 text-[10px] font-mono tabular-nums">
+                  <span className="w-7 text-slate-300">{lbl}</span>
+                  <div className="flex-1 h-1.5 bg-slate-800 rounded overflow-hidden">
+                    <div className={`h-full ${barCls}`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="w-8 text-right text-slate-300">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        {(
-          [
-            ['|00⟩', counts.k00, 'bg-sky-400'],
-            ['|01⟩', counts.k01, 'bg-indigo-400'],
-            ['|10⟩', counts.k10, 'bg-purple-400'],
-            ['|11⟩', counts.k11, 'bg-rose-400']
-          ] as const
-        ).map(([lbl, cnt, barCls]) => {
-          const pct = Math.round((cnt / totalCounts) * 100);
-          return (
-            <div key={lbl} className="flex items-center gap-2 text-[10px] font-mono tabular-nums">
-              <span className="w-7 text-slate-300">{lbl}</span>
-              <div className="flex-1 h-1.5 bg-slate-800 rounded overflow-hidden">
-                <div className={`h-full ${barCls}`} style={{ width: `${pct}%` }} />
-              </div>
-              <span className="w-8 text-right text-slate-300">{pct}%</span>
-            </div>
-          );
-        })}
       </div>
 
-      {/* Collapsible Bottom Control Dock (Zero Viewport Occlusion) */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[min(920px,95vw)] flex flex-col items-center">
+      {/* Isolated 3D WebGL Viewport */}
+      <div className="relative w-full h-[290px] sm:h-[380px] lg:absolute lg:inset-0 lg:h-full">
+        <div ref={mountRef} className="w-full h-full touch-none" />
+      </div>
+
+      {/* Collapsible Bottom Control Dock (Stacked below canvas on < lg, floating on lg+) */}
+      <div className="relative lg:absolute lg:bottom-3 lg:left-1/2 lg:-translate-x-1/2 z-20 w-full lg:w-[min(920px,95vw)] p-2.5 lg:p-0 bg-[#040816]/95 lg:bg-transparent border-t border-cyan-500/20 lg:border-t-0 flex flex-col items-center shrink-0">
         <button
           type="button"
           onClick={() => setDockCollapsed((v) => !v)}
-          className="px-3 py-1 rounded-t-md bg-[#070f24]/95 border border-b-0 border-cyan-500/40 text-[10px] font-mono font-bold text-cyan-200 cursor-pointer"
+          className="min-h-[34px] px-3 py-1 rounded-md lg:rounded-b-none bg-[#070f24]/95 border lg:border-b-0 border-cyan-500/40 text-[10px] font-mono font-bold text-cyan-200 cursor-pointer"
         >
           {dockCollapsed
             ? isEn ? '▴ Show Quantum Controls' : '▴ Mở Bảng Cổng Lượng Tử'
@@ -707,7 +711,7 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
         </button>
 
         {!dockCollapsed && (
-          <div className="w-full rounded-xl bg-[#070f24]/95 border border-cyan-500/40 p-3 space-y-2.5 shadow-2xl">
+          <div className="w-full mt-1.5 lg:mt-0 rounded-xl bg-[#070f24]/95 border border-cyan-500/40 p-3 space-y-2.5 shadow-2xl max-h-[38dvh] lg:max-h-none overflow-y-auto">
             {/* Row 1: Quantum Gate Buttons */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-1.5">
@@ -716,7 +720,7 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
                     key={g}
                     type="button"
                     onClick={() => applyGate(g)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-mono font-extrabold border cursor-pointer whitespace-nowrap ${
+                    className={`min-h-[36px] px-3 py-1.5 rounded-md text-xs font-mono font-extrabold border cursor-pointer whitespace-nowrap ${
                       g === 'CNOT'
                         ? 'bg-purple-600/25 border-purple-400/60 text-purple-200 hover:bg-purple-600/45'
                         : 'bg-cyan-500/15 border-cyan-400/50 text-cyan-200 hover:bg-cyan-500/35'
@@ -728,7 +732,7 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
                 <button
                   type="button"
                   onClick={() => applyGate('RESET')}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-600 text-xs font-bold text-slate-200 hover:border-sky-400 cursor-pointer"
+                  className="min-h-[36px] inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-600 text-xs font-bold text-slate-200 hover:border-sky-400 cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>|0⟩</span>

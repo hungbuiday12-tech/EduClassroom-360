@@ -4,6 +4,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {
   Calendar,
+  ChevronDown,
+  ChevronUp,
   Compass,
   Crosshair,
   Eye,
@@ -29,6 +31,7 @@ import {
   SolarBodyId,
   SolarBodyMeta,
   buildOrbitCurvePoints,
+  computeEarthRelativeTelemetry,
   computePlanetState,
   createPlanetSurfaceTexture,
   createSaturnRingTexture,
@@ -48,12 +51,52 @@ const SPEED_PRESETS: { id: SpeedPresetId; daysPerSec: number; labelEn: string; l
   { id: 'year', daysPerSec: 365.25, labelEn: '1 year/s', labelVi: '1 năm/s' }
 ];
 
+const EARTH_META = SOLAR_BODIES.find((b) => b.id === 'earth')!;
+
 const MIN_EPOCH_MS = Date.UTC(1800, 0, 1, 0, 0, 0);
 const MAX_EPOCH_MS = Date.UTC(2100, 11, 31, 23, 59, 0);
 const ASTEROID_COUNT = 950;
 const STAR_COUNT = 1800;
 
 const MONTHS_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+const SUN_VERTEX_SHADER = `
+  varying vec2 vUv;
+  varying vec3 vNormalView;
+  varying vec3 vViewPos;
+  void main() {
+    vUv = uv;
+    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+    vViewPos = -mvPos.xyz;
+    vNormalView = normalize(normalMatrix * normal);
+    gl_Position = projectionMatrix * mvPos;
+  }
+`;
+
+const SUN_FRAGMENT_SHADER = `
+  uniform float uTime;
+  uniform sampler2D uSurface;
+  varying vec2 vUv;
+  varying vec3 vNormalView;
+  varying vec3 vViewPos;
+
+  void main() {
+    vec2 uvA = vec2(fract(vUv.x + uTime * 0.012), vUv.y);
+    vec2 uvB = vec2(fract(vUv.x * 1.4 - uTime * 0.018), clamp(vUv.y + sin(uTime * 0.35 + vUv.x * 6.283) * 0.012, 0.02, 0.98));
+    vec3 texA = texture2D(uSurface, uvA).rgb;
+    vec3 texB = texture2D(uSurface, uvB).rgb;
+    vec3 plasma = mix(texA, texB, 0.42);
+
+    float ndotv = clamp(dot(normalize(vNormalView), normalize(vViewPos)), 0.0, 1.0);
+    float limb = pow(ndotv, 0.38);
+    float coronaRim = pow(1.0 - ndotv, 2.6);
+
+    float pulse = 0.94 + 0.08 * sin(uTime * 1.9 + vUv.y * 14.0);
+    vec3 coreColor = plasma * mix(0.68, 1.24, limb) * pulse;
+    vec3 rimGlow = vec3(1.0, 0.54, 0.14) * coronaRim * 0.85;
+    gl_FragColor = vec4(coreColor + rimGlow, 1.0);
+  }
+`;
 
 function formatEpochReadout(ms: number): { dateStr: string; timeStr: string } {
   const d = new Date(ms);
@@ -85,17 +128,20 @@ function detectSoftwareWebGL(): boolean {
 }
 
 export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) => {
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const isEn = language === 'en';
   const { perfMode } = useBackgroundTheme();
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const mountRef = useRef<HTMLDivElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const padNodesRef = useRef<{ oscA: OscillatorNode; oscB: OscillatorNode; gain: GainNode } | null>(null);
 
-  const [selectedId, setSelectedId] = useState<SolarBodyId | null>(null);
-  const selectedIdRef = useRef<SolarBodyId | null>(null);
+  const [selectedId, setSelectedId] = useState<SolarBodyId | null>('sun');
+  const selectedIdRef = useRef<SolarBodyId | null>('sun');
   selectedIdRef.current = selectedId;
+
+  const [readMore, setReadMore] = useState(false);
 
   const [playing, setPlaying] = useState(true);
   const playingRef = useRef(true);
@@ -127,12 +173,64 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
   const [webglError, setWebglError] = useState(false);
   const [contextLost, setContextLost] = useState(false);
 
-  // Screen-projected label DOM refs (direct transform mutation -> zero 60fps React re-renders)
   const labelRefs = useRef<Partial<Record<SolarBodyId, HTMLButtonElement | null>>>({});
-
-  // Imperative camera actions
   const flyToBodyRef = useRef<((id: SolarBodyId | null, snap?: boolean) => void) | null>(null);
   const zoomStepRef = useRef<((factor: number) => void) | null>(null);
+
+  const stopAmbientPad = useCallback(() => {
+    const nodes = padNodesRef.current;
+    if (!nodes) return;
+    try {
+      nodes.oscA.stop();
+      nodes.oscB.stop();
+      nodes.oscA.disconnect();
+      nodes.oscB.disconnect();
+      nodes.gain.disconnect();
+    } catch {}
+    padNodesRef.current = null;
+  }, []);
+
+  const startAmbientPad = useCallback(() => {
+    try {
+      const AC =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtxRef.current) audioCtxRef.current = new AC();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') void ctx.resume();
+      if (padNodesRef.current) return;
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.018, ctx.currentTime);
+      const oscA = ctx.createOscillator();
+      const oscB = ctx.createOscillator();
+      oscA.type = 'sine';
+      oscB.type = 'triangle';
+      oscA.frequency.setValueAtTime(65.41, ctx.currentTime);
+      oscB.frequency.setValueAtTime(98.0, ctx.currentTime);
+      oscA.connect(gain);
+      oscB.connect(gain);
+      gain.connect(ctx.destination);
+      oscA.start();
+      oscB.start();
+      padNodesRef.current = { oscA, oscB, gain };
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (muted) stopAmbientPad();
+    else startAmbientPad();
+  }, [muted, startAmbientPad, stopAmbientPad]);
+
+  useEffect(() => {
+    return () => {
+      stopAmbientPad();
+      try {
+        audioCtxRef.current?.close();
+      } catch {}
+    };
+  }, [stopAmbientPad]);
 
   const playCelestialChime = useCallback((freq = 440) => {
     if (mutedRef.current) return;
@@ -150,7 +248,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, now);
       osc.frequency.exponentialRampToValueAtTime(freq * 1.15, now + 0.25);
-      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.setValueAtTime(0.055, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
       osc.connect(gain).connect(ctx.destination);
       osc.start(now);
@@ -161,6 +259,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
   const handleSelectWorld = useCallback(
     (id: SolarBodyId | null) => {
       setSelectedId(id);
+      setReadMore(false);
       flyToBodyRef.current?.(id, false);
       if (id) {
         const idx = SOLAR_BODIES.findIndex((b) => b.id === id);
@@ -189,7 +288,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
-  // Selected world astronomical telemetry (recomputed cleanly as epoch moves)
   const selectedMeta = useMemo(
     () => (selectedId ? SOLAR_BODIES.find((b) => b.id === selectedId) || null : null),
     [selectedId]
@@ -197,10 +295,16 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
 
   const selectedTelemetry = useMemo(() => {
     if (!selectedMeta) return null;
-    const st = computePlanetState(selectedMeta, new Date(epochMs));
+    const simDate = new Date(epochMs);
+    const st = computePlanetState(selectedMeta, simDate);
+    const earthSt = computePlanetState(EARTH_META, simDate);
+    const rel = computeEarthRelativeTelemetry(st, earthSt);
     return {
       ...st,
-      distanceKmMillion: (st.distanceAU * 149.59787).toFixed(1)
+      distanceKmMillion: (st.distanceAU * 149.59787).toFixed(1),
+      earthDistAU: rel.earthDistAU,
+      earthDistKmMillion: (rel.earthDistAU * 149.59787).toFixed(1),
+      lightMinutes: rel.lightMinutes
     };
   }, [selectedMeta, epochMs]);
 
@@ -258,8 +362,9 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       1400
     );
     const overviewCamPos = new THREE.Vector3(0, 42, 68);
+    const sunHeroCamPos = new THREE.Vector3(0, 8.5, 22);
     const overviewTarget = new THREE.Vector3(0, 0, 0);
-    camera.position.copy(overviewCamPos);
+    camera.position.copy(selectedIdRef.current === 'sun' ? sunHeroCamPos : overviewCamPos);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = !isSoftwareGl;
@@ -270,14 +375,13 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     controls.update();
 
     let camTransitionActive = false;
-    let followActive = false;
-    const camGoalPos = overviewCamPos.clone();
+    let followActive = selectedIdRef.current === 'sun';
+    const camGoalPos = camera.position.clone();
     const camGoalTarget = overviewTarget.clone();
-    const followOffset = new THREE.Vector3();
+    const followOffset = camera.position.clone();
 
     controls.addEventListener('start', () => {
       camTransitionActive = false;
-      // Preserve tracking offset when user manually orbits around selected planet
       if (selectedIdRef.current && followActive) {
         const entry = bodyEntries.find((b) => b.meta.id === selectedIdRef.current);
         if (entry) {
@@ -286,7 +390,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       }
     });
 
-    // Deep Starfield + Subtle Ecliptic Milky Band
+    // Deep Starfield + Ecliptic Milky Band
     const starGeo = new THREE.BufferGeometry();
     const starPos = new Float32Array(STAR_COUNT * 3);
     const starCol = new Float32Array(STAR_COUNT * 3);
@@ -294,7 +398,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     for (let i = 0; i < STAR_COUNT; i++) {
       const r = 340 + Math.random() * 280;
       const theta = Math.random() * Math.PI * 2;
-      // Slight concentration toward galactic band
       const bandBias = i % 3 === 0 ? (Math.random() - 0.5) * 0.45 : Math.acos(2 * Math.random() - 1) - Math.PI / 2;
       const phi = Math.PI / 2 - bandBias;
       starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
@@ -320,7 +423,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     const stars = new THREE.Points(starGeo, starMat);
     scene.add(stars);
 
-    // Lighting: Bright Solar Point Light at (0,0,0) + Subtle Ambient Starlight Fill
     const ambientFill = new THREE.AmbientLight(0x1e293b, 0.72);
     scene.add(ambientFill);
 
@@ -328,11 +430,9 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     sunLight.position.set(0, 0, 0);
     scene.add(sunLight);
 
-    // Disposables registry
     const texturesToDispose: THREE.Texture[] = [];
     const maxAniso = renderer.capabilities.getMaxAnisotropy();
 
-    // ==================== BUILD SUN + ALL 8 PLANETS ====================
     interface BodyEntry {
       meta: SolarBodyMeta;
       root: THREE.Group;
@@ -352,6 +452,10 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     const saturnRingTex = createSaturnRingTexture();
     texturesToDispose.push(glowTex, saturnRingTex);
 
+    let solarUniforms: { uTime: { value: number }; uSurface: { value: THREE.Texture } } | null = null;
+    let sunInnerHalo: THREE.Sprite | null = null;
+    let sunOuterHalo: THREE.Sprite | null = null;
+
     const nowDate = new Date(simTimeRef.current);
 
     SOLAR_BODIES.forEach((meta) => {
@@ -362,15 +466,22 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       surfaceTex.anisotropy = maxAniso;
       texturesToDispose.push(surfaceTex);
 
-      const sphereGeo = new THREE.SphereGeometry(meta.radiusScene, isSoftwareGl ? 28 : 44, isSoftwareGl ? 20 : 32);
+      const sphereGeo = new THREE.SphereGeometry(meta.radiusScene, isSoftwareGl ? 28 : 48, isSoftwareGl ? 20 : 36);
 
       let spinMesh: THREE.Mesh;
       if (meta.id === 'sun') {
-        const sunMat = new THREE.MeshBasicMaterial({ map: surfaceTex });
+        solarUniforms = {
+          uTime: { value: 0 },
+          uSurface: { value: surfaceTex }
+        };
+        const sunMat = new THREE.ShaderMaterial({
+          uniforms: solarUniforms,
+          vertexShader: SUN_VERTEX_SHADER,
+          fragmentShader: SUN_FRAGMENT_SHADER
+        });
         spinMesh = new THREE.Mesh(sphereGeo, sunMat);
         root.add(spinMesh);
 
-        // Solar Corona Sprites
         const haloMat = new THREE.SpriteMaterial({
           map: glowTex,
           color: 0xffae38,
@@ -379,9 +490,9 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
           blending: THREE.AdditiveBlending,
           depthWrite: false
         });
-        const halo = new THREE.Sprite(haloMat);
-        halo.scale.set(meta.radiusScene * 4.2, meta.radiusScene * 4.2, 1);
-        root.add(halo);
+        sunInnerHalo = new THREE.Sprite(haloMat);
+        sunInnerHalo.scale.set(meta.radiusScene * 4.4, meta.radiusScene * 4.4, 1);
+        root.add(sunInnerHalo);
 
         const outerHaloMat = new THREE.SpriteMaterial({
           map: glowTex,
@@ -391,9 +502,9 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
           blending: THREE.AdditiveBlending,
           depthWrite: false
         });
-        const outerHalo = new THREE.Sprite(outerHaloMat);
-        outerHalo.scale.set(meta.radiusScene * 7.2, meta.radiusScene * 7.2, 1);
-        root.add(outerHalo);
+        sunOuterHalo = new THREE.Sprite(outerHaloMat);
+        sunOuterHalo.scale.set(meta.radiusScene * 7.4, meta.radiusScene * 7.4, 1);
+        root.add(sunOuterHalo);
       } else {
         const tiltGroup = new THREE.Group();
         tiltGroup.rotation.z = THREE.MathUtils.degToRad(meta.axialTiltDeg);
@@ -409,7 +520,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
         spinMesh = new THREE.Mesh(sphereGeo, planetMat);
         tiltGroup.add(spinMesh);
 
-        // Atmosphere Fresnel rim halo for Earth, Venus, Neptune
         if (meta.id === 'earth' || meta.id === 'venus' || meta.id === 'neptune') {
           const atmoColor = meta.id === 'earth' ? 0x38bdf8 : meta.id === 'venus' ? 0xfde68a : 0x60a5fa;
           const atmoMesh = new THREE.Mesh(
@@ -426,7 +536,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
           tiltGroup.add(atmoMesh);
         }
 
-        // Saturn iconic concentric Ring System (radial UV remapped)
         if (meta.id === 'saturn') {
           const innerR = meta.radiusScene * 1.32;
           const outerR = meta.radiusScene * 2.48;
@@ -455,7 +564,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
           tiltGroup.add(ringMesh);
         }
 
-        // Uranus delicate pale ring
         if (meta.id === 'uranus') {
           const uRingGeo = new THREE.RingGeometry(meta.radiusScene * 1.48, meta.radiusScene * 1.66, 48);
           const uRingMesh = new THREE.Mesh(
@@ -472,7 +580,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
           tiltGroup.add(uRingMesh);
         }
 
-        // Earth Moon & Jupiter Galilean Moons
         let moonPivot: THREE.Group | undefined;
         if (meta.id === 'earth') {
           moonPivot = new THREE.Group();
@@ -500,7 +607,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
           root.add(moonPivot);
         }
 
-        // Keplerian Orbit Ellipse Curve
         const pts = buildOrbitCurvePoints(meta, nowDate, 160);
         const orbitGeo = new THREE.BufferGeometry().setFromPoints(pts);
         const orbitLine = new THREE.Line(
@@ -517,14 +623,13 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
           meta,
           root,
           spinMesh,
-          hitMesh: spinMesh, // replaced below with generous click proxy
+          hitMesh: spinMesh,
           orbitLine,
           moonPivot,
           labelAnchorOffset: meta.radiusScene + 0.55
         });
       }
 
-      // Generous invisible raycast collider so tiny inner worlds are easy to click
       const hitRadius = Math.max(meta.radiusScene * 1.35, 1.4);
       const hitMesh = new THREE.Mesh(
         new THREE.SphereGeometry(hitRadius, 12, 12),
@@ -547,7 +652,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       }
     });
 
-    // Main Asteroid Belt (InstancedMesh between Mars 1.52 AU and Jupiter 5.20 AU)
     const beltGroup = new THREE.Group();
     const astGeo = new THREE.DodecahedronGeometry(0.11, 0);
     const astMat = new THREE.MeshStandardMaterial({
@@ -562,7 +666,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     const scl = new THREE.Vector3();
     const euler = new THREE.Euler();
     for (let i = 0; i < ASTEROID_COUNT; i++) {
-      const au = 2.2 + ((i * 37) % 100) / 100 * 1.1; // 2.2 - 3.3 AU mapped through exploration scale
+      const au = 2.2 + ((i * 37) % 100) / 100 * 1.1;
       const sceneR = 9.2 + Math.pow(au, 0.56) * 14.5;
       const theta = ((i * 137.5) % 360) * (Math.PI / 180);
       const yOff = (((i * 29) % 100) / 100 - 0.5) * 1.4;
@@ -578,7 +682,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     beltGroup.add(astMesh);
     orbitsGroup.add(beltGroup);
 
-    // Imperative Camera Fly-To & Zoom helpers
     flyToBodyRef.current = (id: SolarBodyId | null, snap = false) => {
       if (!id) {
         followActive = false;
@@ -598,11 +701,17 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       if (!entry) return;
       followActive = true;
       const r = entry.meta.radiusScene;
-      const viewDist = id === 'sun' ? r * 4.4 : id === 'saturn' ? r * 5.2 : Math.max(4.4, r * 5.0);
+      if (id === 'sun') {
+        followOffset.copy(sunHeroCamPos);
+        camGoalTarget.set(0, 0, 0);
+        camGoalPos.copy(sunHeroCamPos);
+        camTransitionActive = true;
+        return;
+      }
+      const viewDist = id === 'saturn' ? r * 5.2 : Math.max(4.4, r * 5.0);
       const dir = entry.root.position.lengthSq() > 1
         ? entry.root.position.clone().normalize()
         : new THREE.Vector3(0.4, 0, 1).normalize();
-      // Approach from an angle slightly Sun-lit & elevated above the ecliptic
       const camOffset = new THREE.Vector3(-dir.z * 0.65 + dir.x * 0.6, 0.45, dir.x * 0.65 + dir.z * 0.6)
         .normalize()
         .multiplyScalar(viewDist);
@@ -621,7 +730,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       controls.update();
     };
 
-    // Raycast Hover + Click-to-Visit
     const raycaster = new THREE.Raycaster();
     const ndc = new THREE.Vector2();
     let downX = 0;
@@ -641,9 +749,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       const hits = raycaster.intersectObjects(pickables, false);
       if (hits.length > 0) {
         const bodyId = hits[0].object.userData?.bodyId as SolarBodyId | undefined;
-        if (bodyId) {
-          handleSelectWorld(bodyId);
-        }
+        if (bodyId) handleSelectWorld(bodyId);
       }
     };
 
@@ -673,7 +779,9 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     let alive = true;
     const clock = new THREE.Clock();
     const projVec = new THREE.Vector3();
+    const deltaVec = new THREE.Vector3();
     let epochSyncAcc = 0;
+    let shaderElapsed = 0;
 
     function afterDraw(cb: () => void) {
       const gl = renderer.getContext() as WebGL2RenderingContext;
@@ -698,8 +806,20 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     const tick = () => {
       if (!alive) return;
       const dt = Math.min(0.05, clock.getDelta());
+      shaderElapsed += dt;
 
-      // Advance simulation clock according to chosen speed
+      if (solarUniforms) {
+        solarUniforms.uTime.value = shaderElapsed;
+      }
+      if (sunInnerHalo) {
+        const s = 4.1 * (4.35 + Math.sin(shaderElapsed * 2.2) * 0.18);
+        sunInnerHalo.scale.set(s, s, 1);
+      }
+      if (sunOuterHalo) {
+        const s = 4.1 * (7.3 + Math.cos(shaderElapsed * 1.5) * 0.25);
+        sunOuterHalo.scale.set(s, s, 1);
+      }
+
       if (playingRef.current) {
         const preset = SPEED_PRESETS.find((s) => s.id === speedPresetRef.current) || SPEED_PRESETS[1];
         if (preset.id === 'live') {
@@ -723,7 +843,6 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       orbitsGroup.visible = showOrbitsRef.current;
       beltGroup.rotation.y += dt * 0.015;
 
-      // Position & spin all solar bodies
       bodyEntries.forEach((entry) => {
         const state = computePlanetState(entry.meta, simDate);
         entry.root.position.copy(state.scenePos);
@@ -731,14 +850,12 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
         if (entry.moonPivot) {
           entry.moonPivot.rotation.y += dt * 1.15;
         }
-        // Highlight selected planet's orbit line
         if (entry.orbitLine) {
           const mat = entry.orbitLine.material as THREE.LineBasicMaterial;
           mat.opacity = selectedIdRef.current === entry.meta.id ? 0.88 : 0.34;
         }
       });
 
-      // Smooth Fly-To Camera & World Tracking
       if (selectedIdRef.current && followActive) {
         const entry = bodyEntries.find((b) => b.meta.id === selectedIdRef.current);
         if (entry) {
@@ -751,14 +868,11 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
             camera.position.x = THREE.MathUtils.damp(camera.position.x, camGoalPos.x, 5.0, dt);
             camera.position.y = THREE.MathUtils.damp(camera.position.y, camGoalPos.y, 5.0, dt);
             camera.position.z = THREE.MathUtils.damp(camera.position.z, camGoalPos.z, 5.0, dt);
-            if (camera.position.distanceTo(camGoalPos) < 0.08) {
-              camTransitionActive = false;
-            }
+            if (camera.position.distanceTo(camGoalPos) < 0.08) camTransitionActive = false;
           } else {
-            // Keep target locked gently on moving planet while user freely orbits offset
-            const deltaTarget = entry.root.position.clone().sub(controls.target);
-            controls.target.add(deltaTarget);
-            camera.position.add(deltaTarget);
+            deltaVec.copy(entry.root.position).sub(controls.target);
+            controls.target.add(deltaVec);
+            camera.position.add(deltaVec);
           }
         }
       } else if (camTransitionActive) {
@@ -768,15 +882,12 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
         camera.position.x = THREE.MathUtils.damp(camera.position.x, camGoalPos.x, 4.8, dt);
         camera.position.y = THREE.MathUtils.damp(camera.position.y, camGoalPos.y, 4.8, dt);
         camera.position.z = THREE.MathUtils.damp(camera.position.z, camGoalPos.z, 4.8, dt);
-        if (camera.position.distanceTo(camGoalPos) < 0.15) {
-          camTransitionActive = false;
-        }
+        if (camera.position.distanceTo(camGoalPos) < 0.15) camTransitionActive = false;
       }
 
       controls.update();
       renderer.render(scene, camera);
 
-      // Update floating HTML world labels via direct DOM transform (Zero React overhead)
       const cw = container.clientWidth || 960;
       const ch = container.clientHeight || 640;
       const labelsEnabled = showLabelsRef.current;
@@ -824,7 +935,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       renderer.domElement.removeEventListener('webglcontextlost', onLost);
       renderer.domElement.removeEventListener('webglcontextrestored', onRestored);
       scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh || (obj as THREE.Line).isLine) {
+        if ((obj as THREE.Mesh).isMesh || (obj as THREE.Line).isLine || (obj as THREE.Sprite).isSprite) {
           const m = obj as THREE.Mesh;
           m.geometry?.dispose();
           if (Array.isArray(m.material)) m.material.forEach((mat) => mat.dispose());
@@ -853,47 +964,256 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
   return (
     <div
       ref={rootRef}
-      className={`relative w-full overflow-hidden rounded-xl border border-amber-500/25 bg-[#03050a] shadow-2xl select-none ${
-        isFullscreen ? 'h-screen rounded-none border-0' : 'h-[650px] sm:h-[740px]'
+      className={`flex flex-col lg:block lg:relative w-full overflow-hidden rounded-xl border border-amber-500/25 bg-[#03050a] text-white shadow-2xl select-none ${
+        isFullscreen ? 'fixed inset-0 z-[140] h-[100dvh] rounded-none border-0 overflow-y-auto lg:overflow-hidden' : 'lg:h-[710px]'
       }`}
     >
-      {/* 3D Solar WebGL Mount */}
-      <div ref={mountRef} className="absolute inset-0 w-full h-full" />
+      {/* Top Brand Header on Mobile/iPad (Hidden on Desktop where overlay is floating) */}
+      <div className="lg:hidden flex items-center justify-between gap-2 px-3 py-2.5 bg-slate-950/95 border-b border-slate-800/80 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="w-5 h-5 rounded-full shrink-0"
+            style={{
+              background: 'radial-gradient(circle at 35% 35%, #fff6c2, #ffb020 60%, #ea580c)'
+            }}
+          />
+          <div className="min-w-0">
+            <div className="text-[11px] font-mono font-extrabold tracking-[0.22em] text-slate-100 leading-none">
+              SOLAR
+            </div>
+            <div className="text-[9px] font-mono tracking-[0.14em] text-slate-400 uppercase truncate mt-0.5">
+              {isEn ? 'EXPLORE THE SOLAR SYSTEM' : 'KHÁM PHÁ HỆ MẶT TRỜI'}
+            </div>
+          </div>
+        </div>
 
-      {contextLost && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/90 text-amber-300 text-sm font-mono">
-          {isEn ? 'Restoring Solar Observatory WebGL...' : 'Đang khôi phục Đài Quan Sát Hệ Mặt Trời...'}
+        <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center rounded border border-slate-700/80 bg-slate-900 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setLanguage('vi')}
+              className={`min-h-[36px] px-2 text-[10px] font-mono font-bold cursor-pointer ${
+                !isEn ? 'bg-amber-500 text-slate-950' : 'text-slate-300'
+              }`}
+            >
+              VI
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('en')}
+              className={`min-h-[36px] px-2 text-[10px] font-mono font-bold cursor-pointer ${
+                isEn ? 'bg-amber-500 text-slate-950' : 'text-slate-300'
+              }`}
+            >
+              EN
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setUnitMode((u) => (u === 'au' ? 'km' : 'au'))}
+            className="min-h-[36px] px-2 rounded border border-slate-700/80 bg-slate-900 text-[10px] font-mono font-bold text-slate-200 cursor-pointer"
+          >
+            {unitMode === 'au' ? 'AU' : 'M km'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMuted((m) => !m)}
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded border border-slate-700/80 bg-slate-900 text-slate-200 cursor-pointer"
+            title={isEn ? 'Sound' : 'Âm thanh'}
+          >
+            {muted ? <VolumeX className="w-3.5 h-3.5 text-slate-400" /> : <Volume2 className="w-3.5 h-3.5 text-amber-300" />}
+          </button>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded border border-slate-700/80 bg-slate-900 text-slate-200 cursor-pointer"
+            title={isEn ? 'Fullscreen' : 'Toàn màn hình'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Unobstructed 3D Solar WebGL Viewport */}
+      <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[260px] lg:absolute lg:inset-0 lg:h-full' : 'h-[300px] sm:h-[400px] lg:absolute lg:inset-0 lg:h-full'}`}>
+        <div ref={mountRef} className="w-full h-full" />
+
+        {contextLost && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/90 text-amber-300 text-sm font-mono">
+            {isEn ? 'Restoring Solar Observatory WebGL...' : 'Đang khôi phục Đài Quan Sát Hệ Mặt Trời...'}
+          </div>
+        )}
+
+        {/* Projected Floating 3D World Name Labels */}
+        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+          {SOLAR_BODIES.map((body) => {
+            const isSelected = selectedId === body.id;
+            return (
+              <button
+                key={body.id}
+                ref={(el) => {
+                  labelRefs.current[body.id] = el;
+                }}
+                type="button"
+                onClick={() => handleSelectWorld(body.id)}
+                style={{ opacity: 0 }}
+                className={`absolute top-0 left-0 px-1.5 py-0.5 rounded text-[10px] font-mono tracking-[0.16em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
+                  isSelected
+                    ? 'bg-amber-400/20 text-amber-200 border border-amber-400/60 font-extrabold'
+                    : 'text-slate-200/80 hover:text-white font-semibold'
+                }`}
+              >
+                {isEn ? body.nameEn : body.nameVi}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right-Side Vertical Camera & Layer Rail (Compact on mobile, clean floating on desktop) */}
+        <div className="absolute right-2.5 sm:right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1.5">
+          <div className="flex flex-col rounded-lg bg-slate-950/90 border border-slate-800 overflow-hidden shadow-xl">
+            <button
+              type="button"
+              onClick={() => zoomStepRef.current?.(0.75)}
+              className="p-2 sm:p-2.5 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer border-b border-slate-800"
+              title={isEn ? 'Zoom In' : 'Phóng to'}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => zoomStepRef.current?.(1.33)}
+              className="p-2 sm:p-2.5 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer"
+              title={isEn ? 'Zoom Out' : 'Thu nhỏ'}
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleSelectWorld(null)}
+            className="p-2 sm:p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 hover:border-amber-400/60 hover:text-white cursor-pointer shadow-xl"
+            title={isEn ? 'Home Overview' : 'Toàn cảnh Hệ Mặt Trời'}
+          >
+            <Home className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => flyToBodyRef.current?.(selectedId || 'sun', false)}
+            className="p-2 sm:p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 hover:border-amber-400/60 hover:text-white cursor-pointer shadow-xl"
+            title={isEn ? 'Recenter Selected World' : 'Đưa mục tiêu về tâm'}
+          >
+            <Crosshair className="w-4 h-4" />
+          </button>
+
+          <div className="flex flex-col rounded-lg bg-slate-950/90 border border-slate-800 overflow-hidden shadow-xl">
+            <button
+              type="button"
+              onClick={() => setShowOrbits((v) => !v)}
+              className={`p-2 sm:p-2.5 cursor-pointer border-b border-slate-800 ${
+                showOrbits ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 hover:text-white'
+              }`}
+              title={isEn ? 'Toggle Orbit Rings' : 'Bật/Tắt Đường Quỹ Đạo'}
+            >
+              <Orbit className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLabels((v) => !v)}
+              className={`p-2 sm:p-2.5 cursor-pointer ${
+                showLabels ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 hover:text-white'
+              }`}
+              title={isEn ? 'Toggle World Labels' : 'Bật/Tắt Tên Hành Tinh'}
+            >
+              <Tag className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Top-Right Utility Controls (VI | EN, AU/M km, Sound, Fullscreen, ?) */}
+      <div className="hidden lg:flex absolute top-4 right-4 z-20 items-center gap-1.5">
+        <div className="flex items-center rounded-lg bg-slate-950/92 border border-slate-700/80 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setLanguage('vi')}
+            className={`px-2.5 py-1.5 text-[11px] font-mono font-bold cursor-pointer ${
+              !isEn ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            VI
+          </button>
+          <button
+            type="button"
+            onClick={() => setLanguage('en')}
+            className={`px-2.5 py-1.5 text-[11px] font-mono font-bold cursor-pointer ${
+              isEn ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            EN
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setUnitMode((u) => (u === 'au' ? 'km' : 'au'))}
+          className="px-2.5 py-1.5 rounded-lg bg-slate-950/92 border border-slate-700/80 text-[11px] font-mono font-bold text-slate-200 hover:border-amber-400/60 cursor-pointer"
+          title={isEn ? 'Switch AU / Million km' : 'Đổi đơn vị AU / Triệu km'}
+        >
+          {unitMode === 'au' ? 'AU' : 'M km'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMuted((m) => !m)}
+          className="p-2 rounded-lg bg-slate-950/92 border border-slate-700/80 text-slate-200 hover:border-amber-400/60 cursor-pointer"
+          title={isEn ? 'Toggle Sound' : 'Bật/Tắt Âm thanh'}
+        >
+          {muted ? <VolumeX className="w-3.5 h-3.5 text-slate-400" /> : <Volume2 className="w-3.5 h-3.5 text-amber-300" />}
+        </button>
+
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className="p-2 rounded-lg bg-slate-950/92 border border-slate-700/80 text-slate-200 hover:border-amber-400/60 cursor-pointer"
+          title={isEn ? 'Fullscreen' : 'Toàn màn hình'}
+        >
+          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowGuide((g) => !g)}
+          className={`p-2 rounded-lg border cursor-pointer ${
+            showGuide
+              ? 'bg-amber-500/20 border-amber-400 text-amber-200'
+              : 'bg-slate-950/92 border-slate-700/80 text-slate-200 hover:border-amber-400/60'
+          }`}
+          title={isEn ? 'Astronomical Guide' : 'Hướng dẫn Thiên văn'}
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {showGuide && (
+        <div className="absolute top-16 right-4 z-30 w-72 rounded-xl bg-slate-950/95 border border-amber-400/40 p-3.5 text-xs text-slate-200 space-y-2 shadow-2xl">
+          <div className="font-bold text-amber-300 flex items-center gap-1.5">
+            <Compass className="w-4 h-4" />
+            <span>{isEn ? 'Keplerian Ephemeris (J2000)' : 'Thiên văn Kepler Thực Tế (J2000)'}</span>
+          </div>
+          <p className="text-[11px] text-slate-300 leading-relaxed">
+            {isEn
+              ? 'Planet angles and distances are computed in real time from NASA/JPL J2000 orbital elements across 1800–2100. Light-travel distance from Earth updates dynamically.'
+              : 'Tọa độ và khoảng cách các hành tinh được giải trực tiếp theo phương trình Kepler J2000 của NASA/JPL giai đoạn 1800–2100. Thời gian ánh sáng từ Trái Đất cập nhật theo thời gian thực.'}
+          </p>
         </div>
       )}
 
-      {/* Projected Floating 3D World Name Labels */}
-      <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
-        {SOLAR_BODIES.map((body) => {
-          const isSelected = selectedId === body.id;
-          return (
-            <button
-              key={body.id}
-              ref={(el) => {
-                labelRefs.current[body.id] = el;
-              }}
-              type="button"
-              onClick={() => handleSelectWorld(body.id)}
-              style={{ opacity: 0 }}
-              className={`absolute top-0 left-0 px-1.5 py-0.5 rounded text-[10px] font-mono tracking-[0.16em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
-                isSelected
-                  ? 'bg-amber-400/20 text-amber-200 border border-amber-400/60 font-extrabold'
-                  : 'text-slate-200/80 hover:text-white font-semibold'
-              }`}
-            >
-              {isEn ? body.nameEn : body.nameVi}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Top-Left Hero Overlay ("SOLAR · EXPLORE THE SOLAR SYSTEM") */}
-      <div className="pointer-events-none absolute top-4 left-4 z-20 max-w-sm space-y-2.5">
-        <div className="flex items-center gap-2.5">
+      {/* Left Telemetry & Editorial Hero Panel (Floating on lg+, Clean Card below Viewport on Mobile/iPad) */}
+      <div className="relative lg:pointer-events-none lg:absolute lg:top-4 lg:left-5 z-20 p-3 lg:p-0 bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 lg:max-w-[300px] space-y-3">
+        <div className="hidden lg:flex items-center gap-2.5">
           <span
             className="w-6 h-6 rounded-full shrink-0"
             style={{
@@ -910,211 +1230,141 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
           </div>
         </div>
 
-        <div className="space-y-1 pt-1">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-[0.2em] text-amber-400 uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
-            <span>{speedPreset === 'live' ? (isEn ? 'LIVE POSITIONS' : 'VỊ TRÍ THỰC TẾ') : isEn ? 'EPHEMERIS EPOCH' : 'MÔ PHỎNG THIÊN VĂN'}</span>
-          </div>
-
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white leading-[1.05]">
-            {isEn ? 'The Solar System' : 'Hệ Mặt Trời'}
-          </h2>
-
-          <p className="text-xs text-slate-300/90 leading-relaxed max-w-[300px]">
-            {isEn
-              ? 'All eight planets, shown where they really are on the date below. Pick a world to fly there.'
-              : 'Tất cả 8 hành tinh ở đúng tọa độ thiên văn thực tế tại thời điểm bên dưới. Chọn một thiên thể để bay tới quan sát.'}
-          </p>
-        </div>
-
-        {/* Focused World Astronomical Telemetry Card */}
-        {selectedMeta && selectedTelemetry && (
-          <div className="pointer-events-auto rounded-xl bg-slate-950/90 border border-amber-400/35 p-3 space-y-2 shadow-2xl max-w-[320px]">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-amber-300">
-                  {isEn ? selectedMeta.typeEn : selectedMeta.typeVi}
-                </div>
-                <div className="text-base font-extrabold text-white flex items-center gap-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full inline-block"
-                    style={{ backgroundColor: selectedMeta.colorHex }}
-                  />
-                  <span>{isEn ? selectedMeta.nameEn : selectedMeta.nameVi}</span>
-                </div>
+        {selectedMeta && selectedTelemetry ? (
+          <div className="lg:pointer-events-auto space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[10px] font-mono font-bold tracking-[0.22em] text-amber-400 uppercase">
+                {selectedMeta.indexLabel}
               </div>
               <button
                 type="button"
                 onClick={() => handleSelectWorld(null)}
-                className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[10px] font-bold text-slate-200 cursor-pointer"
+                className="min-h-[30px] px-2 py-0.5 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-[10px] font-mono font-semibold text-slate-300 cursor-pointer"
               >
                 {isEn ? 'Overview' : 'Toàn cảnh'}
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
-              <div className="px-2 py-1 rounded bg-slate-900/90 border border-slate-800">
-                <div className="text-[9px] text-slate-400">{isEn ? 'SUN DIST' : 'KHOẢNG CÁCH'}</div>
-                <div className="text-amber-300 font-bold tabular-nums">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white leading-[1.04]">
+              {isEn ? selectedMeta.nameEn : selectedMeta.nameVi}
+            </h2>
+
+            <p className="text-xs text-slate-300/90 leading-relaxed">
+              {isEn ? selectedMeta.factEn : selectedMeta.factVi}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setReadMore((r) => !r)}
+              className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-amber-300/90 hover:text-amber-200 cursor-pointer"
+            >
+              <span>{readMore ? (isEn ? 'Show less' : 'Thu gọn') : isEn ? 'Read more' : 'Xem thêm'}</span>
+              {readMore ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+
+            {readMore && (
+              <div className="rounded-lg bg-slate-900/90 border border-slate-800 p-2.5 text-[11px] text-slate-300 leading-relaxed space-y-1.5">
+                <p>{isEn ? selectedMeta.moreFactEn : selectedMeta.moreFactVi}</p>
+                <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-800 text-[10px] font-mono">
+                  <div>
+                    <span className="text-slate-500 block">{isEn ? 'ORBITAL PERIOD' : 'CHU KÌ QUỸ ĐẠO'}</span>
+                    <span className="text-slate-200 font-semibold">{isEn ? selectedMeta.orbitalPeriodEn : selectedMeta.orbitalPeriodVi}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">{isEn ? 'GRAVITY · MOONS' : 'TRỌNG LỰC · VỆ TINH'}</span>
+                    <span className="text-slate-200 font-semibold">{selectedMeta.gravityMs2} m/s² · {selectedMeta.moonsCount}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+              <div>
+                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
+                  {isEn ? 'DIAMETER' : 'ĐƯỜNG KÍNH'}
+                </div>
+                <div className="font-mono font-bold text-slate-100 tabular-nums mt-0.5">
+                  {selectedMeta.diameterKm.toLocaleString()} km
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
+                  {isEn ? 'DAY LENGTH' : 'ĐỘ DÀI 1 NGÀY'}
+                </div>
+                <div className="font-mono font-bold text-slate-100 tabular-nums mt-0.5">
+                  {isEn ? selectedMeta.dayLengthEn : selectedMeta.dayLengthVi}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
+                  {isEn ? 'AXIAL TILT' : 'ĐỘ NGHIÊNG TRỤC'}
+                </div>
+                <div className="font-mono font-bold text-slate-100 tabular-nums mt-0.5">
+                  {selectedMeta.axialTiltDeg}°
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
                   {selectedMeta.id === 'sun'
-                    ? '0.00 AU'
+                    ? isEn
+                      ? 'TEMPERATURE'
+                      : 'NHIỆT ĐỘ BỀ MẶT'
+                    : isEn
+                    ? 'SUN DISTANCE'
+                    : 'KHOẢNG CÁCH MT'}
+                </div>
+                <div className="font-mono font-bold text-sky-300 tabular-nums mt-0.5 truncate">
+                  {selectedMeta.id === 'sun'
+                    ? selectedMeta.tempDisplay
                     : unitMode === 'au'
                     ? `${selectedTelemetry.distanceAU.toFixed(3)} AU`
                     : `${selectedTelemetry.distanceKmMillion} M km`}
                 </div>
               </div>
-              <div className="px-2 py-1 rounded bg-slate-900/90 border border-slate-800">
-                <div className="text-[9px] text-slate-400">{isEn ? 'ORBIT SPEED' : 'VẬN TỐC QUỸ ĐẠO'}</div>
-                <div className="text-sky-300 font-bold tabular-nums">
-                  {selectedMeta.id === 'sun' ? '220 km/s (Gal)' : `${selectedTelemetry.velocityKms.toFixed(2)} km/s`}
+
+              <div className="col-span-2">
+                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
+                  {isEn ? 'FROM EARTH NOW' : 'TỪ TRÁI ĐẤT HIỆN TẠI'}
                 </div>
-              </div>
-              <div className="px-2 py-1 rounded bg-slate-900/90 border border-slate-800">
-                <div className="text-[9px] text-slate-400">{isEn ? 'TEMP' : 'NHIỆT ĐỘ'}</div>
-                <div className="text-slate-100 font-bold truncate">{selectedMeta.tempDisplay}</div>
-              </div>
-              <div className="px-2 py-1 rounded bg-slate-900/90 border border-slate-800">
-                <div className="text-[9px] text-slate-400">{isEn ? 'MOONS · TILT' : 'MẶT TRĂNG · NGHIÊNG'}</div>
-                <div className="text-emerald-300 font-bold tabular-nums">
-                  {selectedMeta.moonsCount} · {selectedMeta.axialTiltDeg}°
+                <div className="font-mono font-bold text-amber-300 tabular-nums mt-0.5">
+                  {selectedMeta.id === 'earth'
+                    ? isEn
+                      ? '0.000 AU · Local Frame'
+                      : '0.000 AU · Hệ quy chiếu Trái Đất'
+                    : unitMode === 'au'
+                    ? `${selectedTelemetry.earthDistAU.toFixed(3)} AU · ${selectedTelemetry.lightMinutes.toFixed(1)} light-min`
+                    : `${selectedTelemetry.earthDistKmMillion} M km · ${selectedTelemetry.lightMinutes.toFixed(1)} light-min`}
                 </div>
               </div>
             </div>
-
-            <p className="text-[11px] text-slate-300 leading-snug">
-              {isEn ? selectedMeta.factEn : selectedMeta.factVi}
+          </div>
+        ) : (
+          <div className="lg:pointer-events-auto space-y-2">
+            <div className="text-[10px] font-mono font-bold tracking-[0.2em] text-amber-400 uppercase">
+              {speedPreset === 'live' ? (isEn ? 'LIVE POSITIONS' : 'VỊ TRÍ THỰC TẾ') : isEn ? 'EPHEMERIS EPOCH' : 'MÔ PHỎNG THIÊN VĂN'}
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white leading-[1.05]">
+              {isEn ? 'The Solar System' : 'Hệ Mặt Trời'}
+            </h2>
+            <p className="text-xs text-slate-300/90 leading-relaxed">
+              {isEn
+                ? 'All eight planets, shown where they really are on the date below. Pick a world to fly there.'
+                : 'Tất cả 8 hành tinh ở đúng tọa độ thiên văn thực tế tại thời điểm bên dưới. Chọn một thiên thể để bay tới quan sát.'}
             </p>
           </div>
         )}
       </div>
 
-      {/* Top-Right Utility Controls */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => setUnitMode((u) => (u === 'au' ? 'km' : 'au'))}
-          className="px-2.5 py-1.5 rounded-lg bg-slate-950/88 border border-slate-700/80 text-[11px] font-mono font-bold text-slate-200 hover:border-amber-400/60 cursor-pointer"
-          title={isEn ? 'Switch AU / Million km' : 'Đổi đơn vị AU / Triệu km'}
-        >
-          {unitMode === 'au' ? 'AU' : 'M km'}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setMuted((m) => !m)}
-          className="p-2 rounded-lg bg-slate-950/88 border border-slate-700/80 text-slate-200 hover:border-amber-400/60 cursor-pointer"
-          title={isEn ? 'Toggle Sound' : 'Bật/Tắt Âm thanh'}
-        >
-          {muted ? <VolumeX className="w-3.5 h-3.5 text-slate-400" /> : <Volume2 className="w-3.5 h-3.5 text-amber-300" />}
-        </button>
-
-        <button
-          type="button"
-          onClick={toggleFullscreen}
-          className="p-2 rounded-lg bg-slate-950/88 border border-slate-700/80 text-slate-200 hover:border-amber-400/60 cursor-pointer"
-          title={isEn ? 'Fullscreen' : 'Toàn màn hình'}
-        >
-          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowGuide((g) => !g)}
-          className={`p-2 rounded-lg border cursor-pointer ${
-            showGuide
-              ? 'bg-amber-500/20 border-amber-400 text-amber-200'
-              : 'bg-slate-950/88 border-slate-700/80 text-slate-200 hover:border-amber-400/60'
-          }`}
-          title={isEn ? 'Astronomical Guide' : 'Hướng dẫn Thiên văn'}
-        >
-          <HelpCircle className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {showGuide && (
-        <div className="absolute top-16 right-4 z-30 w-72 rounded-xl bg-slate-950/94 border border-amber-400/40 p-3.5 text-xs text-slate-200 space-y-2 shadow-2xl">
-          <div className="font-bold text-amber-300 flex items-center gap-1.5">
-            <Compass className="w-4 h-4" />
-            <span>{isEn ? 'Keplerian Ephemeris (J2000)' : 'Thiên văn Kepler Thực Tế (J2000)'}</span>
-          </div>
-          <p className="text-[11px] text-slate-300 leading-relaxed">
-            {isEn
-              ? 'Planet angles and distances are computed in real time from NASA/JPL J2000 orbital elements across 1800–2100. Exploration scale compresses outer giant radii so all eight orbits remain inspectable together.'
-              : 'Vị trí 8 hành tinh được giải trực tiếp theo phương trình Kepler J2000 của NASA/JPL giai đoạn 1800–2100. Tỉ lệ khám phá nén khoảng cách vòng ngoài để bạn quan sát toàn bộ Hệ Mặt Trời.'}
-          </p>
-        </div>
-      )}
-
-      {/* Right-Side Vertical HUD Toolbar (matching screenshot) */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1.5">
-        <div className="flex flex-col rounded-xl bg-slate-950/88 border border-slate-800 overflow-hidden shadow-xl">
-          <button
-            type="button"
-            onClick={() => zoomStepRef.current?.(0.75)}
-            className="p-2.5 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer border-b border-slate-800"
-            title={isEn ? 'Zoom In' : 'Phóng to'}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => zoomStepRef.current?.(1.33)}
-            className="p-2.5 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer"
-            title={isEn ? 'Zoom Out' : 'Thu nhỏ'}
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => handleSelectWorld(null)}
-          className="p-2.5 rounded-xl bg-slate-950/88 border border-slate-800 text-slate-200 hover:border-amber-400/60 hover:text-white cursor-pointer shadow-xl"
-          title={isEn ? 'Home Overview' : 'Toàn cảnh Hệ Mặt Trời'}
-        >
-          <Home className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => flyToBodyRef.current?.(selectedId || 'sun', false)}
-          className="p-2.5 rounded-xl bg-slate-950/88 border border-slate-800 text-slate-200 hover:border-amber-400/60 hover:text-white cursor-pointer shadow-xl"
-          title={isEn ? 'Recenter Selected World' : 'Đưa mục tiêu về tâm'}
-        >
-          <Crosshair className="w-4 h-4" />
-        </button>
-
-        <div className="flex flex-col rounded-xl bg-slate-950/88 border border-slate-800 overflow-hidden shadow-xl">
-          <button
-            type="button"
-            onClick={() => setShowOrbits((v) => !v)}
-            className={`p-2.5 cursor-pointer border-b border-slate-800 ${
-              showOrbits ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 hover:text-white'
-            }`}
-            title={isEn ? 'Toggle Orbit Rings' : 'Bật/Tắt Đường Quỹ Đạo'}
-          >
-            <Orbit className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowLabels((v) => !v)}
-            className={`p-2.5 cursor-pointer ${
-              showLabels ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 hover:text-white'
-            }`}
-            title={isEn ? 'Toggle World Labels' : 'Bật/Tắt Tên Hành Tinh'}
-          >
-            <Tag className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Bottom Dock: Collapsible Toggle + Planet Strip + Epoch Timeline */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[96%] max-w-[1040px] flex flex-col items-center gap-2">
+      {/* Bottom Dock: Planet Strip + Ephemeris Timeline Bar */}
+      <div className="relative lg:absolute lg:bottom-3 lg:left-1/2 lg:-translate-x-1/2 z-20 w-full lg:w-[96%] lg:max-w-[1040px] flex flex-col items-center gap-2 p-2.5 lg:p-0 bg-slate-950 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
         {!showControls ? (
           <button
             type="button"
             onClick={() => setShowControls(true)}
-            className="px-3.5 py-1.5 rounded-lg bg-slate-950/90 border border-amber-400/40 text-xs font-mono font-bold text-amber-200 hover:text-white flex items-center gap-1.5 cursor-pointer"
+            className="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-slate-950/92 border border-amber-400/40 text-xs font-mono font-bold text-amber-200 hover:text-white flex items-center gap-1.5 cursor-pointer"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>{isEn ? 'Show Solar Timeline' : 'Mở Thanh Điều Khiển Hệ Mặt Trời'}</span>
@@ -1122,7 +1372,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
         ) : (
           <>
             {/* Center Planet Quick-Fly Strip */}
-            <div className="relative flex items-center gap-1 sm:gap-2 px-3 py-2 rounded-2xl bg-slate-950/90 border border-slate-800/90 shadow-2xl overflow-x-auto max-w-full">
+            <div className="relative flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-950/92 border border-slate-800/90 shadow-2xl overflow-x-auto w-full lg:w-auto max-w-full scrollbar-none">
               {SOLAR_BODIES.map((body) => {
                 const active = selectedId === body.id;
                 return (
@@ -1130,8 +1380,10 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
                     key={body.id}
                     type="button"
                     onClick={() => handleSelectWorld(body.id)}
-                    className={`flex flex-col items-center gap-1 px-2.5 py-1 rounded-xl transition-colors cursor-pointer shrink-0 ${
-                      active ? 'bg-amber-400/15 text-amber-200' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                    className={`min-h-[42px] flex flex-col items-center justify-center gap-1 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shrink-0 border ${
+                      active
+                        ? 'bg-amber-400/15 border-amber-400/50 text-amber-200'
+                        : 'border-transparent text-slate-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
                     <span className="relative flex items-center justify-center w-5 h-5">
@@ -1158,7 +1410,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
               <button
                 type="button"
                 onClick={() => setShowControls(false)}
-                className="ml-1 p-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                className="ml-1 min-h-[38px] min-w-[38px] flex items-center justify-center rounded-lg text-slate-400 hover:text-white cursor-pointer shrink-0"
                 title={isEn ? 'Collapse HUD' : 'Thu gọn'}
               >
                 <EyeOff className="w-3.5 h-3.5" />
@@ -1166,27 +1418,25 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
             </div>
 
             {/* Bottom Ephemeris Timeline Bar (1800 – 2100) */}
-            <div className="w-full rounded-2xl bg-slate-950/92 border border-slate-800/90 px-3 sm:px-4 py-2.5 shadow-2xl flex flex-wrap items-center justify-between gap-2.5 text-xs">
-              {/* Left: Play/Pause + Live Date & Time */}
-              <div className="flex items-center gap-2.5 shrink-0">
+            <div className="w-full rounded-xl bg-slate-950/94 border border-slate-800/90 px-3 sm:px-4 py-2 shadow-2xl flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setPlaying((p) => !p)}
-                  className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400/60 hover:bg-amber-500/35 text-amber-300 flex items-center justify-center cursor-pointer"
+                  className="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/60 hover:bg-amber-500/35 text-amber-300 flex items-center justify-center cursor-pointer"
                   title={playing ? 'Pause' : 'Play'}
                 >
                   {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                 </button>
 
-                <div className="flex items-center gap-2 font-mono">
+                <div className="flex items-center gap-1.5 font-mono">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
                   <span className="font-bold text-white tracking-wide tabular-nums">{dateStr}</span>
                   <span className="text-slate-400 tabular-nums text-[11px]">{timeStr}</span>
                 </div>
               </div>
 
-              {/* Center: 1800 – 2100 Timeline Scrubber */}
-              <div className="flex items-center gap-2 flex-1 min-w-[180px] max-w-md">
+              <div className="flex items-center gap-2 flex-1 min-w-[160px] max-w-md">
                 <span className="text-[10px] font-mono text-slate-500">1800</span>
                 <input
                   type="range"
@@ -1207,8 +1457,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
                 <span className="text-[10px] font-mono text-slate-500">2100</span>
               </div>
 
-              {/* Speed Presets + Today + Subtle Scale Note */}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <div className="flex items-center rounded-lg bg-slate-900 border border-slate-800 p-0.5 text-[11px]">
                   {SPEED_PRESETS.map((sp) => (
                     <button
@@ -1223,7 +1472,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
                         }
                         if (!playing) setPlaying(true);
                       }}
-                      className={`px-2 py-1 rounded-md font-semibold cursor-pointer ${
+                      className={`min-h-[34px] px-2 py-1 rounded-md font-semibold cursor-pointer ${
                         speedPreset === sp.id
                           ? 'bg-slate-700 text-white'
                           : 'text-slate-400 hover:text-slate-200'
@@ -1243,13 +1492,13 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
                     setSpeedPreset('live');
                     setPlaying(true);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
+                  className="min-h-[36px] px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3 text-amber-400" />
                   <span>{isEn ? 'Today' : 'Hôm nay'}</span>
                 </button>
 
-                <span className="hidden xl:inline text-[10px] text-slate-500 leading-tight max-w-[190px]">
+                <span className="hidden xl:inline text-[10px] text-slate-500 leading-tight max-w-[180px]">
                   {isEn
                     ? 'Drag to orbit · Scroll to zoom · Click a world · Distances compressed'
                     : 'Kéo để xoay · Cuộn thu phóng · Chạm hành tinh · Tỉ lệ nén'}

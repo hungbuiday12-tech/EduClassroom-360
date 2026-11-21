@@ -1901,12 +1901,9 @@ export const TechTeardown3DLab: React.FC<TechTeardown3DLabProps> = ({ onEarnXP }
   const displayValue = vomMode === 'V' ? pinReading.V : vomMode === 'R' ? pinReading.R : pinReading.A;
 
   return (
-    <div className="relative w-full h-[660px] sm:h-[720px] rounded overflow-hidden border border-amber-500/45 bg-[#060b16] text-white shadow-2xl select-none">
-      {/* Isolated 3D WebGL Workbench Viewport */}
-      <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
-
-      {/* Top-Left Device Switcher & Active Case Status */}
-      <div className="pointer-events-none absolute top-3 left-3 z-20 flex flex-col gap-2 max-w-[min(560px,calc(100vw-24px))]">
+    <div className="relative w-full lg:h-[720px] rounded overflow-hidden border border-amber-500/45 bg-[#060b16] text-white shadow-2xl select-none flex flex-col lg:block">
+      {/* Top-Left Device Switcher & Active Case Status (Stacked on < lg, floating on lg+) */}
+      <div className="relative z-20 p-2.5 sm:p-3 lg:pointer-events-none lg:absolute lg:top-3 lg:left-3 flex flex-col gap-2 max-w-full lg:max-w-[min(560px,calc(100vw-24px))] bg-[#060b16]/95 lg:bg-transparent border-b border-amber-500/20 lg:border-b-0 shrink-0">
         <div className="pointer-events-auto rounded bg-[#050b1d]/94 border border-amber-500/40 px-3 py-2.5 space-y-2 shadow-xl">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs font-extrabold text-amber-300">
@@ -1993,12 +1990,17 @@ export const TechTeardown3DLab: React.FC<TechTeardown3DLabProps> = ({ onEarnXP }
         </div>
       </div>
 
-      {/* Top-Right VOM Multimeter & Repair Drawer (Collapsible) */}
-      <div className="absolute top-3 right-3 z-20 w-[min(320px,calc(100vw-24px))] flex flex-col items-end gap-1.5">
+      {/* Isolated 3D WebGL Workbench Viewport */}
+      <div className="relative w-full h-[290px] sm:h-[380px] lg:absolute lg:inset-0 lg:h-full">
+        <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
+      </div>
+
+      {/* Top-Right VOM Multimeter & Repair Drawer (Stacked on < lg, floating on lg+) */}
+      <div className="relative lg:absolute lg:top-3 lg:right-3 z-20 w-full lg:w-[min(320px,calc(100vw-24px))] p-2.5 lg:p-0 bg-[#060b16]/95 lg:bg-transparent border-t border-cyan-500/20 lg:border-t-0 flex flex-col items-stretch lg:items-end gap-1.5 shrink-0">
         <button
           type="button"
           onClick={() => setDrawerCollapsed((v) => !v)}
-          className="px-2.5 py-1 rounded bg-[#050b1d]/94 border border-cyan-500/45 text-[10px] font-mono font-bold text-cyan-300 cursor-pointer shadow"
+          className="min-h-[34px] self-center lg:self-end px-3 py-1 rounded bg-[#050b1d]/94 border border-cyan-500/45 text-[10px] font-mono font-bold text-cyan-300 cursor-pointer shadow"
         >
           {drawerCollapsed
             ? isEn ? '▴ Open VOM & Repair' : '▴ Mở Đồng Hồ VOM & Sửa'
@@ -2174,11 +2176,11 @@ export const TechTeardown3DLab: React.FC<TechTeardown3DLabProps> = ({ onEarnXP }
       </div>
 
       {/* Collapsible Bottom Control Dock (Explode Slider + Power Test + Part Selector) */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[min(940px,95vw)] flex flex-col items-center">
+      <div className="relative lg:absolute lg:bottom-3 lg:left-1/2 lg:-translate-x-1/2 z-20 w-full lg:w-[min(940px,95vw)] p-2.5 lg:p-0 bg-[#060b16]/95 lg:bg-transparent border-t border-amber-500/20 lg:border-t-0 flex flex-col items-center shrink-0">
         <button
           type="button"
           onClick={() => setDockCollapsed((v) => !v)}
-          className="px-3 py-1 rounded-t bg-[#070f24]/95 border border-b-0 border-amber-500/40 text-[10px] font-mono font-bold text-amber-200 cursor-pointer"
+          className="min-h-[34px] px-3 py-1 rounded lg:rounded-b-none bg-[#070f24]/95 border lg:border-b-0 border-amber-500/40 text-[10px] font-mono font-bold text-amber-200 cursor-pointer"
         >
           {dockCollapsed
             ? isEn ? '▴ Show Teardown & Power Dock' : '▴ Mở Thanh Tách Lớp & Nguồn'
@@ -2186,7 +2188,7 @@ export const TechTeardown3DLab: React.FC<TechTeardown3DLabProps> = ({ onEarnXP }
         </button>
 
         {!dockCollapsed && (
-          <div className="w-full rounded bg-[#070f24]/95 border border-amber-500/40 p-2.5 sm:p-3 space-y-2 shadow-2xl">
+          <div className="w-full mt-1.5 lg:mt-0 rounded bg-[#070f24]/95 border border-amber-500/40 p-2.5 sm:p-3 space-y-2 shadow-2xl max-h-[34dvh] lg:max-h-none overflow-y-auto">
             <div className="flex flex-wrap items-center justify-between gap-2.5">
               {/* Exploded Slider */}
               <div className="flex items-center gap-2.5 flex-1 min-w-[230px]">

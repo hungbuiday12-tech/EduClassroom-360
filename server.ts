@@ -302,9 +302,85 @@ function writePremiumDb(next: ServerPremiumState) {
 }
 
 let premiumStore: ServerPremiumState = readPremiumDb();
+const premiumSseClients = new Set<Response>();
+const premiumWsClients = new Set<WebSocket>();
+
+type PremiumRealtimeEventType =
+  | 'premium:state'
+  | 'premium:request'
+  | 'premium:approved'
+  | 'premium:revoked';
+
+function broadcastPremiumState(
+  eventType: PremiumRealtimeEventType,
+  meta?: { targetEmail?: string; displayName?: string; isRenewal?: boolean }
+) {
+  const payloadObj = {
+    type: eventType,
+    state: premiumStore,
+    meta: meta || {},
+    timestamp: Date.now(),
+  };
+  const json = JSON.stringify(payloadObj);
+
+  for (const res of premiumSseClients) {
+    try {
+      res.write(`data: ${json}\n\n`);
+    } catch {
+      premiumSseClients.delete(res);
+    }
+  }
+
+  for (const ws of premiumWsClients) {
+    try {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(json);
+      }
+    } catch {
+      premiumWsClients.delete(ws);
+    }
+  }
+}
 
 app.get('/api/premium/state', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json(premiumStore);
+});
+
+app.get('/api/premium/stream', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  premiumSseClients.add(res);
+  try {
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'premium:state',
+        state: premiumStore,
+        timestamp: Date.now(),
+      })}\n\n`
+    );
+  } catch {
+    premiumSseClients.delete(res);
+    return;
+  }
+
+  const keepAlive = setInterval(() => {
+    try {
+      res.write(': ping\n\n');
+    } catch {
+      clearInterval(keepAlive);
+      premiumSseClients.delete(res);
+    }
+  }, 20000);
+
+  req.on('close', () => {
+    clearInterval(keepAlive);
+    premiumSseClients.delete(res);
+  });
 });
 
 app.post('/api/premium/request', (req: Request, res: Response) => {
@@ -337,6 +413,11 @@ app.post('/api/premium/request', (req: Request, res: Response) => {
       : [nextReq, ...premiumStore.requests],
   };
   writePremiumDb(premiumStore);
+  broadcastPremiumState('premium:request', {
+    targetEmail: email,
+    displayName,
+    isRenewal,
+  });
   res.json({ ok: true, state: premiumStore });
 });
 
@@ -381,6 +462,11 @@ app.post('/api/premium/approve', (req: Request, res: Response) => {
     subscriptions: nextSubscriptions,
   };
   writePremiumDb(premiumStore);
+  broadcastPremiumState('premium:approved', {
+    targetEmail: clean,
+    displayName: pendingReq?.displayName || clean,
+    isRenewal: extending,
+  });
   res.json({ ok: true, state: premiumStore });
 });
 
@@ -402,6 +488,9 @@ app.post('/api/premium/revoke', (req: Request, res: Response) => {
     subscriptions: nextSubs,
   };
   writePremiumDb(premiumStore);
+  broadcastPremiumState('premium:revoked', {
+    targetEmail: clean,
+  });
   res.json({ ok: true, state: premiumStore });
 });
 
@@ -5484,6 +5573,7 @@ function attachSpatialCoopWebSocket(httpServer: http.Server): void {
   const wssSensor = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024 });
   const wssRemote = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
   const wssMeet = new WebSocketServer({ noServer: true, maxPayload: 512 * 1024 });
+  const wssPremium = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
 
   httpServer.on('upgrade', (request, socket, head) => {
     const reqUrl = request.url || '';
@@ -5512,6 +5602,33 @@ function attachSpatialCoopWebSocket(httpServer: http.Server): void {
       });
       return;
     }
+    if (pathname === '/ws/premium') {
+      wssPremium.handleUpgrade(request, socket, head, (ws) => {
+        wssPremium.emit('connection', ws, request);
+      });
+      return;
+    }
+  });
+
+  wssPremium.on('connection', (ws: WebSocket) => {
+    premiumWsClients.add(ws);
+    try {
+      ws.send(
+        JSON.stringify({
+          type: 'premium:state',
+          state: premiumStore,
+          timestamp: Date.now(),
+        })
+      );
+    } catch {
+      premiumWsClients.delete(ws);
+    }
+    ws.on('close', () => {
+      premiumWsClients.delete(ws);
+    });
+    ws.on('error', () => {
+      premiumWsClients.delete(ws);
+    });
   });
 
   wssSensor.on('connection', (ws: WebSocket) => {

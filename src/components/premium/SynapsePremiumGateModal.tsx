@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePremium } from '../../context/PremiumContext';
+import { PRE_STUDIOS } from '../../data/preLabsData';
 
 interface SynapsePremiumGateModalProps {
   isOpen: boolean;
@@ -175,7 +176,7 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
             <li className="flex items-start gap-2">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
               <span>
-                <strong>22 Phòng Lab, Mô phỏng & Sandboxes 3D/4D</strong> (gồm Mô phỏng Lắp Ráp Cơ Khí 3D mới) tích hợp ngay trên thanh bên trái & chuẩn Astra AI (15 lượt/ngày).
+                <strong>{PRE_STUDIOS.length} Phòng Lab, Mô phỏng &amp; Sandboxes 3D/4D</strong> (gồm Hệ Mặt Trời Kepler 3D &amp; Lắp Ráp Cơ Khí 3D mới) tích hợp ngay trên thanh bên trái &amp; chuẩn Astra AI (15 lượt/ngày).
               </span>
             </li>
           </ul>
@@ -324,7 +325,10 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
                         {!approved ? (
                           <button
                             type="button"
-                            onClick={() => approveUserPremium(req.email)}
+                            onClick={() => {
+                              approveUserPremium(req.email);
+                              setFeedback(`Đã cấp quyền Synapse Pre ngay cho ${req.displayName} (${req.email})`);
+                            }}
                             className="inline-flex items-center gap-1 rounded bg-emerald-500 px-2.5 py-1 text-[11px] font-bold text-slate-950 hover:bg-emerald-400 cursor-pointer"
                           >
                             <UserCheck className="h-3 w-3" /> Duyệt
@@ -334,7 +338,10 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
                             {pendingRenewal && (
                               <button
                                 type="button"
-                                onClick={() => approveUserPremium(req.email, true)}
+                                onClick={() => {
+                                  approveUserPremium(req.email, true);
+                                  setFeedback(`Đã gia hạn +3 tháng ngay cho ${req.displayName} (${req.email})`);
+                                }}
                                 className="inline-flex items-center gap-1 rounded bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-300 cursor-pointer"
                               >
                                 <RefreshCw className="h-3 w-3" /> Duyệt gia hạn +3T
@@ -342,7 +349,10 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
                             )}
                             <button
                               type="button"
-                              onClick={() => revokeUserPremium(req.email)}
+                              onClick={() => {
+                                revokeUserPremium(req.email);
+                                setFeedback(`Đã thu hồi quyền Synapse Pre của ${req.email}`);
+                              }}
                               className="inline-flex items-center gap-1 rounded bg-rose-500/20 border border-rose-500/50 px-2.5 py-1 text-[11px] font-bold text-rose-300 hover:bg-rose-500/30 cursor-pointer"
                             >
                               <UserX className="h-3 w-3" /> Thu hồi

@@ -49,6 +49,9 @@ const SpatialGesture3DLab = lazy(() =>
 const TechTeardown3DLab = lazy(() =>
   import('./TechTeardown3DLab').then((m) => ({ default: m.TechTeardown3DLab }))
 );
+const AssemblyStudio3DLab = lazy(() =>
+  import('./AssemblyStudio3DLab').then((m) => ({ default: m.AssemblyStudio3DLab }))
+);
 
 interface FutureLabWorkspaceProps {
   onBack?: () => void;
@@ -220,6 +223,18 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
           'Adjust stellar mass, relativistic velocity v/c, and cosmological parameters in the control panel.',
           'Orbit the 3D scene to inspect spacetime curvature, Lorentz contraction, and Doppler shifts.',
           'Compare presets across black holes, neutron stars, and standard planetary systems.',
+        ],
+      },
+      assembly_3d: {
+        vi: [
+          'Chọn 1 trong 4 mô hình 3D (Động cơ V4, Đồng hồ Tourbillon, Drone FPV hoặc Hộp số Hành tinh) và bật chế độ Hướng dẫn hoặc Thử thách Tốc độ.',
+          'Kéo thả trực tiếp linh kiện 3D nổi vào khung hologram phát sáng, chạm vào thẻ linh kiện ở khay dưới, hoặc nhấn Tự Lắp Ráp.',
+          'Khi lắp đạt 100%, bấm Khởi Động / Chạy Thử để quan sát cơ cấu vận hành thực tế hoặc kéo thanh Tách lớp 3D để soi kết cấu.',
+        ],
+        en: [
+          'Choose any of the 4 3D models (V4 Engine, Tourbillon Watch, FPV Drone, or Planetary Gearbox) and switch between Guided and Hardcore Speedrun modes.',
+          'Drag floating 3D parts onto glowing hologram target slots, click parts in the bottom inventory tray, or run Auto Assemble.',
+          'Once 100% assembled, launch the Live Mechanism Test Run or scrub the Exploded View slider to inspect tolerances.',
         ],
       },
     };
@@ -544,6 +559,19 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             }
           >
             <TechTeardown3DLab onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
+        {activeView === 'assembly_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[640px] rounded border border-orange-500/35 bg-[#060b16] flex items-center justify-center text-xs font-mono text-orange-300">
+                {isEn
+                  ? 'Initializing Interactive 3D Assembly Studio...'
+                  : 'Đang khởi tạo Mô Phỏng Lắp Ráp 3D...'}
+              </div>
+            }
+          >
+            <AssemblyStudio3DLab onEarnXP={onEarnXP} />
           </Suspense>
         )}
         {activeView === 'spatial_gesture_3d' && (

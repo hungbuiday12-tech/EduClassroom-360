@@ -310,24 +310,24 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     }
   > = {
     synapse_v2: {
-      label: isEn ? 'Synapse Pre · 21 Labs & AI Pro' : 'Synapse Pre · 21 Lab & AI Pro',
+      label: isEn ? 'Synapse Pre · 22 Labs & AI Pro' : 'Synapse Pre · 22 Lab & AI Pro',
       badge: isEn
-        ? '21 Pre Studios (3 Sidebar Groups) · Syn AI Pro · Voice OS'
-        : '21 Phòng Lab (3 Nhóm Menu) · Syn AI Pro · Voice OS',
+        ? '22 Pre Studios (3 Sidebar Groups) · Syn AI Pro · Voice OS'
+        : '22 Phòng Lab (3 Nhóm Menu) · Syn AI Pro · Voice OS',
       headline: isEn
-        ? 'Synapse Pre: 21 Interactive 3D/4D Studios, Dedicated Syn AI Pro & Voice OS'
-        : 'Synapse Pre: 21 Phòng Lab / Mô Phỏng / Sandboxes, Syn AI Pro Riêng & Voice OS',
+        ? 'Synapse Pre: 22 Interactive 3D/4D Studios, Dedicated Syn AI Pro & Voice OS'
+        : 'Synapse Pre: 22 Phòng Lab / Mô Phỏng / Sandboxes, Syn AI Pro Riêng & Voice OS',
       summary: isEn
-        ? 'Organizes all 21 advanced WebGL studios right into 3 left-sidebar menus (7 Labs, 8 Simulations, 6 Sandboxes) alongside exclusive Syn AI Pro (3-layer fast solve, deep reasoning, flowchart, 3B1B Video), Voice OS (Alt+Space) & Multi-User Meet 3D.'
-        : 'Tích hợp 21 không gian 3D/4D ngay trên menu trái thành 3 nhóm (7 Phòng Lab, 8 Mô phỏng, 6 Sandboxes) cùng trợ lý Syn AI Pro riêng biệt (Giải 3 tầng, Suy luận sâu, Sơ đồ Pro, Video 3B1B), Voice OS (Alt+Space) & Meet 3D nhiều người.',
+        ? 'Organizes all 22 advanced WebGL studios right into 3 left-sidebar menus (7 Labs, 9 Simulations including 3D Mechanical Assembly, 6 Sandboxes) alongside exclusive Syn AI Pro, Voice OS (Alt+Space) & Multi-User Meet 3D.'
+        : 'Tích hợp 22 không gian 3D/4D ngay trên menu trái thành 3 nhóm (7 Phòng Lab, 9 Mô phỏng có Lắp Ráp Cơ Khí 3D, 6 Sandboxes) cùng trợ lý Syn AI Pro riêng biệt (Giải 3 tầng, Suy luận sâu, Sơ đồ Pro, Video 3B1B), Voice OS (Alt+Space) & Meet 3D nhiều người.',
       highlights: isEn
         ? [
-            '3 Sidebar Menus: 7 Labs · 8 Simulations (30 Megastructures, Cannon, Jet) · 6 Sandboxes',
+            '3 Sidebar Menus: 7 Labs · 9 Simulations (3D Assembly, Rocket, Jet) · 6 Sandboxes',
             'Dedicated Syn AI Pro + Pause/Resume Minichat + 3B1B Video Studio',
             'Hands-free Synapse Voice OS (Alt+Space) & Multi-User Shared Meet 3D',
           ]
         : [
-            '3 Nhóm Menu Trái: 7 Phòng Lab · 8 Mô phỏng · 6 Sandboxes (28K GPU, AlgoCity)',
+            '3 Nhóm Menu Trái: 7 Phòng Lab · 9 Mô phỏng (Lắp Ráp 3D, Tên lửa) · 6 Sandboxes',
             'Syn AI Pro độc quyền (3 tầng, Sơ đồ Pro, Video 3B1B) & Tạm đóng giữ hội thoại',
             'Voice OS ra lệnh giọng nói (Alt+Space) & Live Meet chiếu 3D nhiều người',
           ],
@@ -795,7 +795,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   Hệ sinh thái học tập toàn diện cho THCS, THPT &amp; Đội tuyển Chuyên:{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Bản Miễn Phí ({totalLessons} bài giảng · {totalExams} đề thi · Toán 2D/Oxyz · 5 lĩnh vực Vật lí &amp; bệ pháo 3D chuẩn hóa · IDE Sublime 4 Truy vết 1-1 · 3 AI Cơ bản có nút Tạm đóng · Meet chia sẻ màn hình)</strong>{' '}
                   và{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (21 Phòng Lab, Mô phỏng &amp; Sandboxes tách 3 nhóm menu trái · Syn AI Pro độc quyền &amp; Video 3B1B · Voice OS · Meet chiếu 3D nhiều người)</strong>, cùng{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (22 Phòng Lab, Mô phỏng Lắp Ráp 3D &amp; Sandboxes tách 3 nhóm menu trái · Syn AI Pro độc quyền &amp; Video 3B1B · Voice OS · Meet chiếu 3D nhiều người)</strong>, cùng{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Học Cảm Giác 3D Holo Atlas 58 bộ phận &amp; WebAR Pro</strong>.
                 </>
               )}
@@ -818,7 +818,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'Synapse Pre · AI Pro' : 'Synapse Pre · AI Pro'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '21 Labs · 3 Menus · Voice OS' : '21 Lab · 3 Nhóm · Voice OS'}
+                  {isEn ? '22 Labs · 3 Menus · Voice OS' : '22 Lab · 3 Nhóm · Voice OS'}
                 </p>
               </button>
 
@@ -1015,10 +1015,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       </span>
                       <div className="min-w-0">
                         <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
-                          {isEn ? 'Synapse Pre · 21 Labs & Syn AI Pro' : 'Synapse Pre · 21 Lab & Syn AI Pro'}
+                          {isEn ? 'Synapse Pre · 22 Labs & Syn AI Pro' : 'Synapse Pre · 22 Lab & Syn AI Pro'}
                         </div>
                         <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-amber-200/95">
-                          {isEn ? '7 Labs · 8 Sims · 6 Sandboxes · Voice OS' : '7 Phòng Lab · 8 Mô phỏng · 6 Sandboxes'}
+                          {isEn ? '7 Labs · 9 Sims · 6 Sandboxes · Voice OS' : '7 Phòng Lab · 9 Mô phỏng · 6 Sandboxes'}
                         </div>
                       </div>
                     </div>
@@ -1026,8 +1026,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </div>
                   <p className="text-[11px] leading-relaxed text-sky-50/90">
                     {isEn
-                      ? '21 3D/4D labs organized in 3 left-sidebar menus, standalone Syn AI Pro + 3B1B Video, Voice OS & Multi-User Meet 3D.'
-                      : 'Gói 120k/3 tháng mở 21 Lab 3D/4D chia sẵn 3 mục bên trái, Syn AI Pro độc quyền, Voice OS & Meet chiếu 3D chung.'}
+                      ? '22 3D/4D labs (with 3D Mechanical Assembly) organized in 3 left-sidebar menus, standalone Syn AI Pro, Voice OS & Meet 3D.'
+                      : 'Gói 120k/3 tháng mở 22 Lab 3D/4D (có Lắp Ráp Cơ Khí 3D) chia sẵn 3 mục bên trái, Syn AI Pro độc quyền, Voice OS & Meet chiếu 3D.'}
                   </p>
                 </button>
 
@@ -1745,8 +1745,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </div>
               <h3 className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tight text-balance">
                 {isEn
-                  ? 'Free Classroom · Synapse Pre (21 Labs & AI Pro) · Holo Atlas 3D'
-                  : 'Lớp Học Free · Synapse Pre (21 Lab & Syn AI Pro) · Holo Atlas 3D'}
+                  ? 'Free Classroom · Synapse Pre (22 Labs & AI Pro) · Holo Atlas 3D'
+                  : 'Lớp Học Free · Synapse Pre (22 Lab & Syn AI Pro) · Holo Atlas 3D'}
               </h3>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md">
@@ -1851,12 +1851,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-cyan-400/30 space-y-1">
                   <div className="font-bold text-cyan-300">
-                    {isEn ? '21 Labs in 3 Sidebar Menus' : '21 Phòng Lab Xếp Gọn 3 Nhóm Trái'}
+                    {isEn ? '22 Labs in 3 Sidebar Menus' : '22 Phòng Lab Xếp Gọn 3 Nhóm Trái'}
                   </div>
                   <p className="text-[11px] text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Instant sidebar access: 7 Pre Labs, 8 Simulations (Rocket, Brayton, 30 Worlds) & 6 Sandboxes.'
-                      : '7 Phòng Lab · 8 Mô phỏng (Tên lửa, Phản lực, 30 Công trình) · 6 Sandboxes (28K GPU, AlgoCity).'}
+                      ? 'Instant sidebar access: 7 Pre Labs, 9 Simulations (3D Assembly, Rocket, Brayton) & 6 Sandboxes.'
+                      : '7 Phòng Lab · 9 Mô phỏng (Lắp Ráp 3D, Tên lửa, Phản lực) · 6 Sandboxes (28K GPU, AlgoCity).'}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-emerald-400/30 space-y-1">
@@ -1913,20 +1913,20 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   <div className="flex flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-amber-500/15 border border-amber-400/40 text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-amber-300">
                       <Crown className="w-4 h-4" />
-                      <span>{isEn ? 'SYNAPSE PRE · 21 LABS IN 3 SIDEBAR MENUS' : 'SYNAPSE PRE · 21 LAB 3D/4D TRÊN MENU TRÁI'}</span>
+                      <span>{isEn ? 'SYNAPSE PRE · 22 LABS IN 3 SIDEBAR MENUS' : 'SYNAPSE PRE · 22 LAB 3D/4D TRÊN MENU TRÁI'}</span>
                     </span>
                   </div>
 
                   <h4 className="font-display text-xl sm:text-2xl lg:text-[1.75rem] font-semibold tracking-tight text-white leading-snug">
                     {isEn
-                      ? '21 WebGL Labs Organized into 3 Left-Sidebar Menus + Dedicated Syn AI Pro'
-                      : '21 Không Gian Lab, Mô Phỏng & Sandboxes 3D/4D + Trợ Lý Syn AI Pro Riêng'}
+                      ? '22 WebGL Labs Organized into 3 Left-Sidebar Menus + Dedicated Syn AI Pro'
+                      : '22 Không Gian Lab, Mô Phỏng & Sandboxes 3D/4D + Trợ Lý Syn AI Pro Riêng'}
                   </h4>
 
                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
                     {isEn
-                      ? 'When Synapse Pre is active, all 21 interactive chambers appear neatly under 3 sidebar groups (Pre Labs, Simulations, Sandboxes) — paired with Syn AI Pro, Voice OS, and transparent subscription dates.'
-                      : 'Khi kích hoạt Synapse Pre, toàn bộ 21 không gian được xếp gọn vào 3 nút ngay thanh menu trái (Phòng Lab · Mô phỏng · Sandboxes), đi cùng Syn AI Pro riêng biệt, Voice OS (Alt+Space) & thẻ theo dõi ngày hết hạn gói.'}
+                      ? 'When Synapse Pre is active, all 22 interactive chambers appear neatly under 3 sidebar groups (Pre Labs, Simulations, Sandboxes) — paired with Syn AI Pro, Voice OS, and transparent subscription dates.'
+                      : 'Khi kích hoạt Synapse Pre, toàn bộ 22 không gian được xếp gọn vào 3 nút ngay thanh menu trái (Phòng Lab · Mô phỏng · Sandboxes), đi cùng Syn AI Pro riêng biệt, Voice OS (Alt+Space) & thẻ theo dõi ngày hết hạn gói.'}
                   </p>
 
                   {/* Interactive Domain Tabs */}
@@ -1934,7 +1934,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     {(
                       [
                         { id: 'physics', vi: '7 Phòng Lab', en: '7 Pre Labs' },
-                        { id: 'space', vi: '8 Mô Phỏng 3D/4D', en: '8 Simulations' },
+                        { id: 'space', vi: '9 Mô Phỏng 3D/4D', en: '9 Simulations' },
                         { id: 'cs', vi: '6 Sandboxes AI/GPU', en: '6 Sandboxes' },
                         { id: 'math', vi: 'Syn AI Pro & Voice OS', en: 'Syn AI Pro & Voice' },
                       ] as const
@@ -1967,8 +1967,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                           { title: isEn ? '3D Hardware & VOM Repair' : 'Phẫu Thuật Thiết Bị & VOM', desc: isEn ? 'USB-C GaN, BMS & PCB probe' : 'Đo que VOM & hàn linh kiện' },
                         ],
                         space: [
+                          { title: isEn ? '3D Mechanical Assembly' : 'Lắp Ráp Cơ Khí 3D Tương Tác', desc: isEn ? 'V4 Engine, Watch & Drone snap-fit' : 'Kéo thả Động cơ, Đồng hồ & Drone' },
                           { title: isEn ? 'Rocket & Brayton Jet 3D' : 'Phóng Tên Lửa & Phản Lực', desc: isEn ? 'Cutaway LOX & shock cones' : 'Tách tầng đẩy & tách lớp tua-bin' },
-                          { title: isEn ? '6-DOF Robot & 3D Ballistics' : 'Robot 6-DOF & Bắn Pháo 3D', desc: isEn ? 'Live IK solver & drag arcs' : 'Giải IK 6 khớp & đạn đạo gió' },
                           { title: isEn ? '4D Space & 30 Megastructures' : 'Không Gian 4D & 30 Công Trình', desc: isEn ? 'Tesseract, LHC & Webb 3D' : 'Siêu lập phương, LHC & Webb' },
                         ],
                         cs: [
@@ -2006,7 +2006,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </button>
                     <span className="text-xs text-slate-400">
-                      {isEn ? '21 Labs across 3 Sidebar Groups · 120k/3 mo' : '7 Lab · 8 Mô phỏng · 6 Sandboxes · Mở qua Admin'}
+                      {isEn ? '22 Labs across 3 Sidebar Groups · 120k/3 mo' : '7 Lab · 9 Mô phỏng · 6 Sandboxes · Mở qua Admin'}
                     </span>
                   </div>
                 </div>
@@ -2024,10 +2024,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     />
 
                     <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-sky-300/95">
-                      <span>SYNAPSE PRE · 21 LABS</span>
+                      <span>SYNAPSE PRE · 22 LABS</span>
                       <span className="tabular-nums px-2 py-0.5 rounded bg-sky-500/15 border border-sky-400/30 text-amber-200">
                         {synapsePreviewDomain === 'physics' && '7 PRE LABS'}
-                        {synapsePreviewDomain === 'space' && '8 SIMULATIONS'}
+                        {synapsePreviewDomain === 'space' && '9 SIMULATIONS'}
                         {synapsePreviewDomain === 'cs' && '6 SANDBOXES'}
                         {synapsePreviewDomain === 'math' && 'AI PRO + VOICE'}
                       </span>
@@ -2100,7 +2100,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                         {synapsePreviewDomain === 'cs' && (isEn ? 'Sidebar Group 3: 6 AI & Physics Sandboxes' : 'Nhóm 3: 6 Sandboxes AI, Code & Hạt GPU')}
                         {synapsePreviewDomain === 'math' && (isEn ? 'Standalone Syn AI Pro + Voice OS + Meet 3D' : 'Syn AI Pro riêng · Voice OS · Meet 3D')}
                       </span>
-                      <span className="font-mono text-amber-300 font-semibold tabular-nums">21 / 21</span>
+                      <span className="font-mono text-amber-300 font-semibold tabular-nums">22 / 22</span>
                     </div>
                   </div>
                 </div>
@@ -2658,17 +2658,17 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
-                    {isEn ? 'Synapse Pre · 21 Labs (3 Sidebar Menus) & Voice OS' : 'Synapse Pre · 21 Lab (3 Nhóm Menu) & Voice OS'}
+                    {isEn ? 'Synapse Pre · 22 Labs (3 Sidebar Menus) & Voice OS' : 'Synapse Pre · 22 Lab (3 Nhóm Menu) & Voice OS'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Organized cleanly into 7 Pre Labs, 8 Simulations (Rocket, Brayton, 30 Worlds, Ballistics), and 6 Sandboxes (28K GPU, AlgoCity, What-If Physics) plus Voice OS & plan expiry tracking.'
-                      : 'Tổ chức gọn trên menu trái: 7 Phòng Lab, 8 Mô phỏng (Tên lửa, Phản lực, Bắn pháo, 30 Đại công trình) & 6 Sandboxes (28K GPU, AlgoCity, Định luật đổi), kèm Voice OS & quản lí hạn gói.'}
+                      ? 'Organized cleanly into 7 Pre Labs, 9 Simulations (3D Mechanical Assembly, Rocket, Brayton, 30 Worlds), and 6 Sandboxes (28K GPU, AlgoCity, What-If Physics) plus Voice OS & plan expiry tracking.'
+                      : 'Tổ chức gọn trên menu trái: 7 Phòng Lab, 9 Mô phỏng (Lắp Ráp 3D, Tên lửa, Phản lực, 30 Đại công trình) & 6 Sandboxes (28K GPU, AlgoCity, Định luật đổi), kèm Voice OS & quản lí hạn gói.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      <span>{isEn ? '21 3D/4D Labs across 3 Left-Sidebar Menus' : '21 Phòng Lab, Mô phỏng & Sandboxes ngay Menu trái'}</span>
+                      <span>{isEn ? '22 3D/4D Labs across 3 Left-Sidebar Menus' : '22 Phòng Lab, Mô phỏng & Sandboxes ngay Menu trái'}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -2684,7 +2684,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Explore Synapse Pre Labs' : 'Khám phá Synapse Pre & 21 Lab'}</span>
+                  <span>{isEn ? 'Explore Synapse Pre Labs' : 'Khám phá Synapse Pre & 22 Lab'}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -3254,7 +3254,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               : 'Synapse · Hệ thống giáo dục mô phỏng vũ trụ học thuật'}
           </span>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
-            <span>{isEn ? 'Synapse Pre (21 Labs · 3 Sidebar Groups)' : 'Synapse Pre (21 Lab · 3 Nhóm Menu)'}</span>
+            <span>{isEn ? 'Synapse Pre (22 Labs · 3 Sidebar Groups)' : 'Synapse Pre (22 Lab · 3 Nhóm Menu)'}</span>
             <span aria-hidden="true">·</span>
             <span>{isEn ? 'Holo Atlas 3D (58 Parts)' : 'Holo Atlas 3D (58 Bộ Phận)'}</span>
             <span aria-hidden="true">·</span>

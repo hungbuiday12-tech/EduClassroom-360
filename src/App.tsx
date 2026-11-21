@@ -325,6 +325,7 @@ function MainApp() {
       location.futureTab === 'timemachine_holo_3d' ||
       location.futureTab === 'spatial_gesture_3d' ||
       location.futureTab === 'tech_teardown_3d' ||
+      location.futureTab === 'assembly_3d' ||
       location.futureTab === 'text_to_sim' ||
       location.futureTab === 'paper_to_sim' ||
       location.futureTab === 'silicon_neural' ||

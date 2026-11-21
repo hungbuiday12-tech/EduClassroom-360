@@ -522,6 +522,29 @@ export const PreStudioDiagramPreview: React.FC<PreStudioDiagramPreviewProps> = (
           </g>
         );
 
+      case 'assembly_3d':
+        return (
+          <g>
+            {/* Central Assembled Core + Exploded Snap Layers */}
+            <ellipse cx="160" cy="108" rx="76" ry="14" fill="#0f172a" stroke="#38bdf8" strokeOpacity="0.45" strokeWidth="1.4" />
+            <rect x="128" y="80" width="64" height="24" rx="3" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.6" />
+            {/* Ghost Hologram Target Slot */}
+            <rect x="134" y="48" width="52" height="22" rx="3" fill="#10b981" fillOpacity="0.14" stroke="#34d399" strokeWidth="1.4" strokeDasharray="3 2" />
+            {/* Floating Snap-Fit Part */}
+            <g className="holo-float">
+              <rect x="64" y="28" width="46" height="20" rx="3" fill={accentHex} fillOpacity="0.3" stroke={accentHex} strokeWidth="1.8" />
+              <circle cx="234" cy="40" r="14" fill="#0ea5e9" fillOpacity="0.22" stroke="#38bdf8" strokeWidth="1.6" className="holo-orbit-cw" />
+            </g>
+            {/* Magnetic Alignment Trajectories */}
+            <path d="M 110 38 Q 134 38 148 54" fill="none" stroke="#34d399" strokeWidth="1.6" className="holo-dash" />
+            <path d="M 220 40 Q 196 42 184 56" fill="none" stroke="#38bdf8" strokeWidth="1.6" className="holo-dash" />
+            <circle cx="160" cy="60" r="5" fill="#fbbf24" className="holo-ring-pulse" />
+            <text x="20" y="138" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+              3D DRAG &amp; MAGNETIC SNAP · EXPLODED VIEW · LIVE RUN
+            </text>
+          </g>
+        );
+
       default:
         return null;
     }

@@ -258,8 +258,8 @@ export const AuthModal: React.FC = () => {
               </h2>
               <p className="text-xs text-indigo-200/85 mt-2 leading-relaxed">
                 {isEn
-                  ? `Specialized STEM platform with real-time 2D/3D simulations, 21 Synapse Pre labs, automated C++/Python judge, ${CURRICULUM_COUNTS.totalExams} exams, and dual-tier Syn AI.`
-                  : `Nền tảng học tập STEM chuyên sâu: mô phỏng 2D/3D 60 FPS, 21 Phòng Lab Synapse Pre, chấm code Olympic, ${CURRICULUM_COUNTS.totalExams} đề thi và hệ thống AI 2 tầng (3 AI Cơ Bản & Syn AI Pro).`}
+                  ? `Specialized STEM platform with real-time 2D/3D simulations, 22 Synapse Pre labs, automated C++/Python judge, ${CURRICULUM_COUNTS.totalExams} exams, and dual-tier Syn AI.`
+                  : `Nền tảng học tập STEM chuyên sâu: mô phỏng 2D/3D 60 FPS, 22 Phòng Lab Synapse Pre, chấm code Olympic, ${CURRICULUM_COUNTS.totalExams} đề thi và hệ thống AI 2 tầng (3 AI Cơ Bản & Syn AI Pro).`}
               </p>
             </div>
 
@@ -286,12 +286,12 @@ export const AuthModal: React.FC = () => {
                 </div>
                 <div>
                   <span className="font-semibold text-white block">
-                    {isEn ? '5 Physics Domains & 21 Pre Labs' : 'Vật Lí 5 Chuyên Đề & 21 Lab Pre'}
+                    {isEn ? '5 Physics Domains & 22 Pre Labs' : 'Vật Lí 5 Chuyên Đề & 22 Lab Pre'}
                   </span>
                   <span className="text-[11px] text-slate-300">
                     {isEn
-                      ? '2D/3D physics labs, 3D cannon ballistics, Quantum, Robotics & Voice OS.'
-                      : 'Thí nghiệm 2D/3D, bệ pháo 3D chuẩn hóa, Lượng tử, Vũ trụ & Voice OS.'}
+                      ? '2D/3D physics, 3D Mechanical Assembly, Quantum, Robotics & Voice OS.'
+                      : 'Thí nghiệm 2D/3D, Lắp Ráp Cơ Khí 3D, Lượng tử, Vũ trụ & Voice OS.'}
                   </span>
                 </div>
               </div>

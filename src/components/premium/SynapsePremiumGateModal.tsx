@@ -175,7 +175,7 @@ export const SynapsePremiumGateModal: React.FC<SynapsePremiumGateModalProps> = (
             <li className="flex items-start gap-2">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
               <span>
-                <strong>21 Phòng Lab, Mô phỏng & Sandboxes 3D/4D</strong> tích hợp ngay trên thanh bên trái & chuẩn Astra AI (15 lượt/ngày).
+                <strong>22 Phòng Lab, Mô phỏng & Sandboxes 3D/4D</strong> (gồm Mô phỏng Lắp Ráp Cơ Khí 3D mới) tích hợp ngay trên thanh bên trái & chuẩn Astra AI (15 lượt/ngày).
               </span>
             </li>
           </ul>

@@ -683,6 +683,31 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
     }
   },
   {
+    phrases: [
+      'lap rap 3d',
+      'mo phong lap rap',
+      'dong co v4',
+      'dong ho tourbillon',
+      'hop so hanh tinh',
+      'tach lop 3d'
+    ],
+    minScore: 0.45,
+    plan: {
+      replyVi: 'Đang mở Xưởng Lắp Ráp Cơ Khí 3D Tương Tác (Động cơ V4, Tourbillon, Drone & Hộp số) trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'assembly_3d'
+    }
+  },
+  {
+    phrases: ['phau thuat phan cung', 'mo may 3d', 'teardown', 'sua chua 3d'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Phòng Lab Phẫu Thuật & Sửa Chữa Phần Cứng 3D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'tech_teardown_3d'
+    }
+  },
+  {
     phrases: ['trang chu', 'lop hoc', 'tong quan', 've home'],
     minScore: 0.5,
     plan: {

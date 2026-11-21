@@ -19,8 +19,6 @@ import {
   Layers,
   Sparkles,
   Download,
-  Flame,
-  UserCheck,
   Mic,
   SlidersHorizontal,
   QrCode,
@@ -40,7 +38,6 @@ import { useRemoteController } from '../context/RemoteControllerContext';
 import { usePremium } from '../context/PremiumContext';
 import { SynapsePremiumGateModal } from './premium/SynapsePremiumGateModal';
 import { BrandLogo } from './common/BrandLogo';
-import { getStreakState, GROWTH_UPDATED_EVENT } from '../lib/learningGrowthStore';
 
 interface HeaderProps {
   currentSubject: SubjectType;
@@ -67,15 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenPortfolio,
   onOpenVoiceOS
 }) => {
-  const { user, firebaseUser, openAuthModal, logout } = useAuth();
-  const uid = user?.uid || firebaseUser?.uid;
-  const [streakDays, setStreakDays] = useState<number>(() => getStreakState(uid).currentStreak);
-  useEffect(() => {
-    const sync = () => setStreakDays(getStreakState(uid).currentStreak);
-    sync();
-    window.addEventListener(GROWTH_UPDATED_EVENT, sync);
-    return () => window.removeEventListener(GROWTH_UPDATED_EVENT, sync);
-  }, [uid]);
+  const { user, openAuthModal, logout } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
   const isEn = language === 'en';
   const { bgStyle, setBgStyle, creatureTheme, setCreatureTheme, perfMode, openGraphicsModal } =
@@ -216,8 +205,8 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Cluster: Full desktop bar on xl+, clean condensed utilities on Phone & iPad */}
         <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0">
-          {/* Quick Background / PC-Spec Theme Selector (Desktop xl+) */}
-          <div className="hidden xl:block relative shrink-0" ref={bgMenuRef}>
+          {/* Quick Background / PC-Spec Theme Selector (Wide Desktop 2xl+) */}
+          <div className="hidden 2xl:block relative shrink-0" ref={bgMenuRef}>
             <button
               type="button"
               onClick={() => {
@@ -230,7 +219,7 @@ export const Header: React.FC<HeaderProps> = ({
               title={isEn ? 'Background & PC spec preset' : 'Chọn giao diện nền theo cấu hình máy'}
             >
               <Layers className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-              <span className="hidden xl:inline max-w-[130px] truncate">
+              <span className="max-w-[110px] truncate">
                 {isEn ? activeBgOption.labelEn : activeBgOption.labelVi}
               </span>
               <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
@@ -312,11 +301,11 @@ export const Header: React.FC<HeaderProps> = ({
               )}
           </div>
 
-          {/* Graphics Tier Setup Trigger (Desktop xl+) */}
+          {/* Graphics Tier Setup Trigger (Wide Desktop 2xl+) */}
           <button
             type="button"
             onClick={openGraphicsModal}
-            className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-sky-500/60 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-sky-500/60 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
             title={
               isEn
                 ? `Graphics Mode: ${activePerf.labelEn}`
@@ -324,16 +313,16 @@ export const Header: React.FC<HeaderProps> = ({
             }
           >
             <Gauge className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-            <span className="hidden 2xl:inline">
+            <span>
               {isEn ? activePerf.shortEn : activePerf.shortVi}
             </span>
           </button>
 
-          {/* VI / EN Toggle (Desktop xl+) */}
+          {/* VI / EN Toggle (Wide Desktop 2xl+) */}
           <button
             type="button"
             onClick={toggleLanguage}
-            className="hidden xl:flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:border-sky-500/60 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            className="hidden 2xl:flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-[4px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:border-sky-500/60 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             title={language === 'vi' ? 'Switch interface to English' : 'Chuyển sang Tiếng Việt'}
           >
             <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
@@ -359,11 +348,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Background Soundscape Toggle (Desktop xl+) */}
+          {/* Background Soundscape Toggle (Wide Desktop 2xl+) */}
           <button
             type="button"
             onClick={toggleBgPlaying}
-            className={`hidden xl:flex p-2 rounded-lg border transition-colors cursor-pointer shrink-0 ${
+            className={`hidden 2xl:flex p-2 rounded-lg border transition-colors cursor-pointer shrink-0 ${
               isBgPlaying && bgSound !== 'off'
                 ? 'border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
                 : 'border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -377,8 +366,8 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Compact Utility Drawer Button for Phone & iPad (< xl) */}
-          <div className="xl:hidden relative shrink-0" ref={compactToolsRef}>
+          {/* Compact Utility Drawer Button for Phone, iPad & Standard Laptops (< 2xl) */}
+          <div className="2xl:hidden relative shrink-0" ref={compactToolsRef}>
             <button
               type="button"
               onClick={() => {
@@ -389,7 +378,7 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               className="min-h-[38px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-sky-500/60 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
               aria-label={isEn ? 'Quick tools & preferences' : 'Công cụ & Tùy chọn nhanh'}
-              title={isEn ? 'Quick tools & preferences' : 'Công cụ, XP & Tùy chọn nhanh'}
+              title={isEn ? 'Quick tools & preferences' : 'Công cụ & Tùy chọn nhanh'}
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
               <span className="hidden sm:inline">{isEn ? 'Tools' : 'Tiện ích'}</span>
@@ -410,13 +399,15 @@ export const Header: React.FC<HeaderProps> = ({
                       setIsCompactToolsOpen(false);
                       onOpenPortfolio?.();
                     }}
-                    className="w-full min-h-[42px] flex items-center justify-between gap-2 px-3 py-2 bg-amber-50/85 dark:bg-amber-950/45 border border-amber-300/80 dark:border-amber-700/60 rounded text-xs font-mono font-bold text-amber-800 dark:text-amber-300 cursor-pointer"
+                    className="w-full min-h-[40px] flex items-center justify-between gap-2 px-3 py-2 bg-sky-50/90 dark:bg-sky-950/45 border border-sky-300/80 dark:border-sky-700/60 rounded text-xs font-semibold text-sky-800 dark:text-sky-200 cursor-pointer"
                   >
                     <span className="flex items-center gap-2">
-                      <Flame className="w-4 h-4 text-rose-500 shrink-0" />
-                      <span>{streakDays}d Streak · {user ? user.xp : xp} XP</span>
+                      <Award className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span>{isEn ? 'Learner Portfolio' : 'Hồ sơ Năng lực'}</span>
                     </span>
-                    <UserCheck className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                    <span className="font-mono font-bold text-amber-700 dark:text-amber-300 tabular-nums">
+                      {user ? user.xp : xp} XP
+                    </span>
                   </button>
 
                   {/* 2x2 Quick Toggle Grid */}
@@ -625,12 +616,12 @@ export const Header: React.FC<HeaderProps> = ({
             {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
           </button>
 
-          {/* Cross-Device App Install / Download (Desktop xl+) */}
+          {/* Cross-Device App Install / Download (Wide Desktop 2xl+) */}
           {onOpenInstallApp && (
             <button
               type="button"
               onClick={onOpenInstallApp}
-              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sky-400/55 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/70 text-sky-700 dark:text-sky-300 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sky-400/55 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/70 text-sky-700 dark:text-sky-300 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
               title={isEn ? 'Install App (Laptop, Android & iPhone)' : 'Tải App cho Laptop, Android & iPhone'}
             >
               <Download className="w-3.5 h-3.5 shrink-0" />
@@ -638,11 +629,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Settings (Desktop xl+) */}
+          {/* Settings (Wide Desktop 2xl+) */}
           <button
             type="button"
             onClick={onOpenSettings}
-            className="hidden xl:flex p-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shrink-0"
+            className="hidden 2xl:flex p-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer shrink-0"
             title={isEn ? 'Settings' : 'Cài đặt'}
           >
             <Settings className="w-4 h-4 shrink-0" />
@@ -732,7 +723,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   type="button"
                   onClick={onReturnToLanding}
-                  className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
+                  className="hidden min-[1720px]:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>{t('nav.landing', 'Chào mừng', 'Welcome')}</span>

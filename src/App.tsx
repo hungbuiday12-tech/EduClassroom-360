@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff, Film, Crown, Play } from 'lucide-react';
+import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff, Film, Crown, Play, Flame, Clock } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
 import type { SynProDomain, SynProMode } from './components/tutor/SynAIProChat';
 import { Header } from './components/Header';
@@ -21,7 +21,7 @@ import { RemoteControllerModal } from './components/common/RemoteControllerModal
 import { PhoneRemoteControllerScreen } from './components/common/PhoneRemoteControllerScreen';
 import { useDraggableWidget } from './hooks/useDraggableWidget';
 import { CURRICULUM_COUNTS } from './data/curriculumCounts';
-import { progressDailyQuest, recordGrowthStat, touchDailyActivity } from './lib/learningGrowthStore';
+import { progressDailyQuest, recordGrowthStat, touchDailyActivity, getStreakState, GROWTH_UPDATED_EVENT } from './lib/learningGrowthStore';
 
 const VisitorLandingPage = lazy(() =>
   import('./components/landing/VisitorLandingPage').then((m) => ({ default: m.VisitorLandingPage }))
@@ -295,9 +295,17 @@ function MainApp() {
   const { completedSessions } = useFocusTimer();
   const prevPomodoroRef = useRef<number>(completedSessions);
 
+  const [streakDays, setStreakDays] = useState<number>(() =>
+    getStreakState(user?.uid || firebaseUser?.uid).currentStreak
+  );
+
   useEffect(() => {
     const uid = user?.uid || firebaseUser?.uid;
     touchDailyActivity(uid);
+    const syncStreak = () => setStreakDays(getStreakState(uid).currentStreak);
+    syncStreak();
+    window.addEventListener(GROWTH_UPDATED_EVENT, syncStreak);
+    return () => window.removeEventListener(GROWTH_UPDATED_EVENT, syncStreak);
   }, [user?.uid, firebaseUser?.uid]);
 
   useEffect(() => {
@@ -853,6 +861,36 @@ function MainApp() {
                     </div>
                   </div>
                   <div className="p-2 space-y-2">
+                    {/* Streak, XP & Góc học tập Summary Strip */}
+                    <div className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-400/35 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSynDockOpen(false);
+                          setIsPortfolioOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 font-mono font-bold text-amber-200 hover:text-amber-100 cursor-pointer truncate"
+                        title={isEn ? 'Open STEM Portfolio & SM-2' : 'Mở Hồ sơ Năng lực & Sổ SM-2'}
+                      >
+                        <Flame className="w-3.5 h-3.5 text-rose-400 streak-flame-pulse shrink-0" />
+                        <span className="tabular-nums">{streakDays}d</span>
+                        <span className="text-slate-500">·</span>
+                        <span className="tabular-nums text-amber-300">{activeXP} XP</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSynDockOpen(false);
+                          window.dispatchEvent(new CustomEvent('synapse:open-focus-mini'));
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/25 hover:bg-indigo-500/40 border border-indigo-400/40 text-[10px] font-bold text-indigo-200 cursor-pointer shrink-0"
+                        title={isEn ? 'Open Focus Study Corner' : 'Mở Góc học tập & Pomodoro'}
+                      >
+                        <Clock className="w-3 h-3 shrink-0" />
+                        <span>{isEn ? 'Study Corner' : 'Góc học tập'}</span>
+                      </button>
+                    </div>
+
                     {/* Quick Resume when a minichat was paused (Tạm đóng) */}
                     {((basicTutorSession.mounted && !basicTutorSession.visible) ||
                       (proTutorSession.mounted && !proTutorSession.visible)) && (
@@ -1047,6 +1085,15 @@ function MainApp() {
                 <Cpu className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 <span className="font-mono font-extrabold tracking-wider text-cyan-200 uppercase">
                   Syn AI
+                </span>
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-400/40 font-mono text-[10px] font-bold text-amber-300 tabular-nums"
+                  title={isEn ? 'Daily Study Streak & XP' : 'Chuỗi Streak & Điểm XP'}
+                >
+                  <Flame className="w-3 h-3 text-rose-400 streak-flame-pulse shrink-0" />
+                  <span>{streakDays}d</span>
+                  <span className="hidden sm:inline text-slate-500">·</span>
+                  <span className="hidden sm:inline">{activeXP} XP</span>
                 </span>
                 {((basicTutorSession.mounted && !basicTutorSession.visible) ||
                   (proTutorSession.mounted && !proTutorSession.visible)) && (

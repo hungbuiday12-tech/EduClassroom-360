@@ -21,8 +21,7 @@ import {
   CheckCircle2,
   Flame,
   GripVertical,
-  PinOff,
-  Award
+  PinOff
 } from 'lucide-react';
 import { useFocusTimer, STUDY_FORMAT_PRESETS } from '../../context/FocusTimerContext';
 import { useAudio } from '../../context/AudioContext';
@@ -182,8 +181,12 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
     } catch {}
   }, []);
 
-  // Listen for custom global events to open Bảng Nháp Mini-Chat or Fullscreen Canvas
+  // Listen for custom global events to open Focus Studio or Bảng Nháp Mini-Chat
   useEffect(() => {
+    const onOpenFocus = () => {
+      setDockMode('focus');
+      setIsWidgetOpen(true);
+    };
     const onOpenScratchpad = (ev: Event) => {
       const detail = (ev as CustomEvent<{ fullscreen?: boolean }>).detail;
       if (detail?.fullscreen) {
@@ -194,8 +197,12 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
       setIsWidgetOpen(true);
       refreshSyncedNotes();
     };
+    window.addEventListener('synapse:open-focus-mini', onOpenFocus);
     window.addEventListener('synapse:open-scratchpad-mini', onOpenScratchpad);
-    return () => window.removeEventListener('synapse:open-scratchpad-mini', onOpenScratchpad);
+    return () => {
+      window.removeEventListener('synapse:open-focus-mini', onOpenFocus);
+      window.removeEventListener('synapse:open-scratchpad-mini', onOpenScratchpad);
+    };
   }, [refreshSyncedNotes, setIsWidgetOpen]);
 
   // Persist mini strokes
@@ -494,6 +501,28 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
             {/* MODE 1: FOCUS TIMER */}
             {dockMode === 'focus' && (
               <div className="p-4 space-y-3.5 max-h-[72vh] overflow-y-auto">
+                {/* Streak & Study XP Bar inside Góc học tập */}
+                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-amber-50/90 dark:bg-amber-950/35 border border-amber-300/75 dark:border-amber-700/60">
+                  <div className="flex items-center gap-2 font-mono font-bold text-amber-800 dark:text-amber-300">
+                    <Flame className="w-4 h-4 text-rose-500 streak-flame-pulse shrink-0" />
+                    <span className="tabular-nums">{streakDays} {isEn ? 'day streak' : 'ngày Streak'}</span>
+                    <span className="text-amber-400">·</span>
+                    <span className="tabular-nums">{user ? user.xp : xp} XP</span>
+                  </div>
+                  {onOpenPortfolio && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsWidgetOpen(false);
+                        onOpenPortfolio();
+                      }}
+                      className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] cursor-pointer shrink-0"
+                    >
+                      {isEn ? 'Portfolio' : 'Hồ sơ'}
+                    </button>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                   <span>{isEn ? activePreset.labelEn : activePreset.labelVi}</span>
                   <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
@@ -997,33 +1026,6 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
             <PenTool className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">{isEn ? 'Scratchpad' : 'Bảng nháp'}</span>
           </button>
-
-          {onOpenPortfolio && (
-            <>
-              <span className="w-px self-stretch bg-slate-700/80" aria-hidden="true" />
-              <button
-                type="button"
-                data-no-lift="true"
-                onPointerDown={handleDragStart}
-                onClick={() => {
-                  if (consumeDidDrag()) return;
-                  onOpenPortfolio();
-                }}
-                className="flex items-center gap-1.5 px-2.5 py-2 text-xs font-mono font-bold text-amber-300 hover:bg-slate-900 hover:text-amber-200 cursor-pointer transition-colors whitespace-nowrap shrink-0"
-                title={
-                  isEn
-                    ? 'Study Streak & XP · Open STEM Portfolio'
-                    : 'Chuỗi ngày học & XP · Mở Hồ sơ Năng lực'
-                }
-              >
-                <Flame className="w-3.5 h-3.5 text-rose-400 streak-flame-pulse shrink-0" />
-                <span className="tabular-nums">{streakDays}d</span>
-                <span className="text-slate-600 hidden sm:inline">·</span>
-                <Award className="w-3.5 h-3.5 text-amber-400 hidden sm:inline shrink-0" />
-                <span className="tabular-nums hidden sm:inline">{user ? user.xp : xp} XP</span>
-              </button>
-            </>
-          )}
         </div>
       </div>
 

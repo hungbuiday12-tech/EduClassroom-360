@@ -119,6 +119,12 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
   const { creatureTheme, perfMode, bgStyle, activePalette } = useBackgroundTheme();
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const syncPausedStateRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    pausedRef.current = paused;
+    syncPausedStateRef.current();
+  }, [paused]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -177,6 +183,10 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       const onResizeMol = () => {
         width = canvas.width = window.innerWidth;
         height = canvas.height = window.innerHeight;
+        molBgW = 0;
+        if (pausedRef.current || document.hidden || prefersReducedMotion) {
+          drawMoleculesFrame(performance.now(), true);
+        }
       };
       const onPtrMoveMol = (e: PointerEvent) => {
         if (!interactive) return;
@@ -203,6 +213,10 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       };
       const classObs = new MutationObserver(() => {
         darkMode = resolveDarkMode();
+        molBgDark = null;
+        if (pausedRef.current || document.hidden || prefersReducedMotion) {
+          drawMoleculesFrame(performance.now(), true);
+        }
       });
       classObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
       window.addEventListener('resize', onResizeMol);
@@ -247,21 +261,9 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       let molSlowStreak = 0;
       let molExtraThrottleMs = 0;
 
-      const renderMolecules = (now: number) => {
-        if (!prefersReducedMotion) {
-          animationFrameId = requestAnimationFrame(renderMolecules);
-        }
-        if (document.hidden || pausedRef.current) {
-          lastTick = now;
-          return;
-        }
-        if (perfMode !== 'ultra' && now - lastMolScrollMs < 130 && molPaintedOnce) {
-          return;
-        }
-        const effTargetMs = Math.max(targetMs, molExtraThrottleMs);
-        if (effTargetMs > 0 && now - lastTick < effTargetMs && molPaintedOnce) return;
+      const drawMoleculesFrame = (now: number, freezeMotion: boolean) => {
         const tStart = performance.now();
-        const dt = Math.min(48, now - lastTick) / 16.667;
+        const dt = freezeMotion ? 0 : Math.min(48, Math.max(0, now - lastTick)) / 16.667;
         lastTick = now;
         molPaintedOnce = true;
         const t = now * 0.001;
@@ -416,20 +418,62 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           ctx.stroke();
         }
 
-        const molFrameCost = performance.now() - tStart;
-        if (molFrameCost > 26) {
-          molSlowStreak++;
-          if (molSlowStreak >= 4) {
-            molExtraThrottleMs = 90;
+        if (!freezeMotion) {
+          const molFrameCost = performance.now() - tStart;
+          if (molFrameCost > 26) {
+            molSlowStreak++;
+            if (molSlowStreak >= 4) {
+              molExtraThrottleMs = 90;
+            }
+          } else {
+            molSlowStreak = 0;
           }
-        } else {
-          molSlowStreak = 0;
         }
       };
 
-      animationFrameId = requestAnimationFrame(renderMolecules);
+      const renderMolecules = (now: number) => {
+        animationFrameId = 0;
+        if (document.hidden || pausedRef.current) {
+          drawMoleculesFrame(now, true);
+          return;
+        }
+        if (!prefersReducedMotion) {
+          animationFrameId = requestAnimationFrame(renderMolecules);
+        }
+        if (perfMode !== 'ultra' && now - lastMolScrollMs < 130 && molPaintedOnce) {
+          return;
+        }
+        const effTargetMs = Math.max(targetMs, molExtraThrottleMs);
+        if (effTargetMs > 0 && now - lastTick < effTargetMs && molPaintedOnce) return;
+        drawMoleculesFrame(now, false);
+      };
+
+      const syncMolLoop = () => {
+        if (!pausedRef.current && !document.hidden && !prefersReducedMotion) {
+          lastTick = performance.now();
+          if (!animationFrameId) {
+            animationFrameId = requestAnimationFrame(renderMolecules);
+          }
+        } else {
+          if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = 0;
+          }
+          drawMoleculesFrame(performance.now(), true);
+        }
+      };
+      syncPausedStateRef.current = syncMolLoop;
+      window.addEventListener('visibilitychange', syncMolLoop);
+
+      drawMoleculesFrame(performance.now(), pausedRef.current || document.hidden);
+      if (!prefersReducedMotion && !pausedRef.current && !document.hidden) {
+        animationFrameId = requestAnimationFrame(renderMolecules);
+      }
+
       return () => {
+        syncPausedStateRef.current = () => {};
         cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('visibilitychange', syncMolLoop);
         window.removeEventListener('scroll', onScrollMol);
         window.removeEventListener('resize', onResizeMol);
         window.removeEventListener('pointermove', onPtrMoveMol);
@@ -523,6 +567,10 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       const onResizeDyn = () => {
         width = canvas.width = window.innerWidth;
         height = canvas.height = window.innerHeight;
+        dynBgW = 0;
+        if (pausedRef.current || document.hidden || prefersReducedMotion) {
+          drawDynamicFrame(performance.now(), true);
+        }
       };
       const onScrollDyn = () => {
         isScrolling = true;
@@ -533,6 +581,10 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       };
       const classObs = new MutationObserver(() => {
         darkMode = resolveDarkMode();
+        dynBgDark = null;
+        if (pausedRef.current || document.hidden || prefersReducedMotion) {
+          drawDynamicFrame(performance.now(), true);
+        }
       });
       classObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
       window.addEventListener('resize', onResizeDyn);
@@ -542,18 +594,9 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       let dynSlowStreak = 0;
       let dynExtraThrottleMs = 0;
 
-      const renderDynamicPreset = (now: number) => {
-        if (!prefersReducedMotion) {
-          animationFrameId = requestAnimationFrame(renderDynamicPreset);
-        }
-        if (document.hidden || pausedRef.current || (isScrolling && paintedWhiteOnce)) {
-          lastTick = now;
-          return;
-        }
-        const effTargetMs = Math.max(targetMs, dynExtraThrottleMs);
-        if (effTargetMs > 0 && now - lastTick < effTargetMs && paintedWhiteOnce) return;
+      const drawDynamicFrame = (now: number, freezeMotion: boolean) => {
         const tStart = performance.now();
-        const dt = Math.min(48, Math.max(8, now - lastTick)) / 16.667;
+        const dt = freezeMotion ? 0 : Math.min(48, Math.max(8, now - lastTick)) / 16.667;
         lastTick = now;
         const t = now * 0.001;
         paintedWhiteOnce = true;
@@ -777,20 +820,63 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           }
         }
 
-        const dynCost = performance.now() - tStart;
-        if (dynCost > 26) {
-          dynSlowStreak++;
-          if (dynSlowStreak >= 4) {
-            dynExtraThrottleMs = 95;
+        if (!freezeMotion) {
+          const dynCost = performance.now() - tStart;
+          if (dynCost > 26) {
+            dynSlowStreak++;
+            if (dynSlowStreak >= 4) {
+              dynExtraThrottleMs = 95;
+            }
+          } else {
+            dynSlowStreak = 0;
           }
-        } else {
-          dynSlowStreak = 0;
         }
       };
 
-      animationFrameId = requestAnimationFrame(renderDynamicPreset);
+      const renderDynamicPreset = (now: number) => {
+        animationFrameId = 0;
+        if (document.hidden || pausedRef.current) {
+          drawDynamicFrame(now, true);
+          return;
+        }
+        if (!prefersReducedMotion) {
+          animationFrameId = requestAnimationFrame(renderDynamicPreset);
+        }
+        if (isScrolling && paintedWhiteOnce) {
+          lastTick = now;
+          return;
+        }
+        const effTargetMs = Math.max(targetMs, dynExtraThrottleMs);
+        if (effTargetMs > 0 && now - lastTick < effTargetMs && paintedWhiteOnce) return;
+        drawDynamicFrame(now, false);
+      };
+
+      const syncDynLoop = () => {
+        if (!pausedRef.current && !document.hidden && !prefersReducedMotion) {
+          lastTick = performance.now();
+          if (!animationFrameId) {
+            animationFrameId = requestAnimationFrame(renderDynamicPreset);
+          }
+        } else {
+          if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = 0;
+          }
+          drawDynamicFrame(performance.now(), true);
+        }
+      };
+      syncPausedStateRef.current = syncDynLoop;
+      window.addEventListener('visibilitychange', syncDynLoop);
+
+      drawDynamicFrame(performance.now(), pausedRef.current || document.hidden);
+      if (!prefersReducedMotion && !pausedRef.current && !document.hidden) {
+        animationFrameId = requestAnimationFrame(renderDynamicPreset);
+      }
+
       return () => {
+        syncPausedStateRef.current = () => {};
         cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('visibilitychange', syncDynLoop);
         window.clearTimeout(scrollTimeout);
         window.removeEventListener('resize', onResizeDyn);
         window.removeEventListener('scroll', onScrollDyn);
@@ -1006,6 +1092,10 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         ? null
         : new MutationObserver(() => {
             currentDarkMode = document.documentElement.classList.contains('dark');
+            bgCacheDark = null;
+            if (pausedRef.current || document.hidden || prefersReducedMotion) {
+              drawMainFrame(performance.now(), true);
+            }
           });
     if (classObserver) {
       classObserver.observe(document.documentElement, {
@@ -1447,6 +1537,9 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
       bgCacheW = 0; // force bg cache rebuild
+      if (pausedRef.current || document.hidden || prefersReducedMotion) {
+        drawMainFrame(performance.now(), true);
+      }
     };
     window.addEventListener('resize', handleResize);
 
@@ -2073,32 +2166,15 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
     // Preallocated scratch coordinates for constellation rendering (zero per-frame GC)
     const constellationPtsScratch: Array<{ x: number; y: number; mag: number }> = [];
 
-    const render = (nowMs: number) => {
-      if (!prefersReducedMotion) {
-        animationFrameId = requestAnimationFrame(render);
-      }
-      if (document.hidden || pausedRef.current) {
-        lastRenderMs = nowMs;
-        lastSimMs = nowMs;
-        return;
-      }
-
-      if (perfMode !== 'ultra' && nowMs - lastScrollMs < 130 && mainPaintedOnce) {
-        return;
-      }
-
-      const effectiveMinMs = Math.max(minFrameMs, adaptiveThrottleMs);
-      if (effectiveMinMs > 0 && nowMs - lastRenderMs < effectiveMinMs && mainPaintedOnce) {
-        return;
-      }
+    const drawMainFrame = (nowMs: number, freezeMotion: boolean) => {
       const frameStartMs = performance.now();
       lastRenderMs = nowMs;
       mainPaintedOnce = true;
 
       // Normalize simulation step relative to 60 FPS (16.667ms) so pacing changes never alter motion speed
-      const dtMs = Math.min(nowMs - lastSimMs, 64);
+      const dtMs = freezeMotion ? 0 : Math.min(nowMs - lastSimMs, 64);
       lastSimMs = nowMs;
-      const dtScale = Math.max(0.25, dtMs / 16.6667);
+      const dtScale = freezeMotion ? 0 : Math.max(0.25, dtMs / 16.6667);
 
       const nowSec = nowMs * 0.001;
       const darkMode = currentDarkMode;
@@ -2592,7 +2668,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
           curr.y = prev.y + Math.sin(finalAng) * c.segDist;
         }
 
-        if (particles.length < (isLowPower ? 24 : 50) && Math.random() < (isPanicking ? 0.08 : 0.02)) {
+        if (!freezeMotion && particles.length < (isLowPower ? 24 : 50) && Math.random() < (isPanicking ? 0.08 : 0.02)) {
           const tail = c.spine[c.spine.length - 1] || { x: c.x, y: c.y };
           particles.push({
             x: tail.x + (Math.random() - 0.5) * 8,
@@ -2607,7 +2683,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         }
 
         if (c.kind === 'koi') {
-          if (Math.random() < (isPanicking ? 0.04 : 0.012) && ripples.length < 18) {
+          if (!freezeMotion && Math.random() < (isPanicking ? 0.04 : 0.012) && ripples.length < 18) {
             ripples.push({
               x: c.x,
               y: c.y,
@@ -2633,23 +2709,68 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
         }
       }
 
-      const frameElapsed = performance.now() - frameStartMs;
-      if (frameElapsed > 30) {
-        slowFrameStreak++;
-        if (slowFrameStreak >= 4) {
-          adaptiveLowPower = true;
-          adaptiveThrottleMs = Math.max(minFrameMs, 85);
+      if (!freezeMotion) {
+        const frameElapsed = performance.now() - frameStartMs;
+        if (frameElapsed > 30) {
+          slowFrameStreak++;
+          if (slowFrameStreak >= 4) {
+            adaptiveLowPower = true;
+            adaptiveThrottleMs = Math.max(minFrameMs, 85);
+          }
+        } else {
+          slowFrameStreak = 0;
         }
-      } else {
-        slowFrameStreak = 0;
       }
     };
 
-    animationFrameId = requestAnimationFrame(render);
+    const render = (nowMs: number) => {
+      animationFrameId = 0;
+      if (document.hidden || pausedRef.current) {
+        drawMainFrame(nowMs, true);
+        return;
+      }
+      if (!prefersReducedMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+      if (perfMode !== 'ultra' && nowMs - lastScrollMs < 130 && mainPaintedOnce) {
+        return;
+      }
+      const effectiveMinMs = Math.max(minFrameMs, adaptiveThrottleMs);
+      if (effectiveMinMs > 0 && nowMs - lastRenderMs < effectiveMinMs && mainPaintedOnce) {
+        return;
+      }
+      drawMainFrame(nowMs, false);
+    };
+
+    const syncMainLoop = () => {
+      if (!pausedRef.current && !document.hidden && !prefersReducedMotion) {
+        const now = performance.now();
+        lastRenderMs = now;
+        lastSimMs = now;
+        if (!animationFrameId) {
+          animationFrameId = requestAnimationFrame(render);
+        }
+      } else {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = 0;
+        }
+        drawMainFrame(performance.now(), true);
+      }
+    };
+    syncPausedStateRef.current = syncMainLoop;
+    window.addEventListener('visibilitychange', syncMainLoop);
+
+    drawMainFrame(performance.now(), pausedRef.current || document.hidden);
+    if (!prefersReducedMotion && !pausedRef.current && !document.hidden) {
+      animationFrameId = requestAnimationFrame(render);
+    }
 
     return () => {
+      syncPausedStateRef.current = () => {};
       cancelAnimationFrame(animationFrameId);
       clearInterval(shootingStarTimer);
+      window.removeEventListener('visibilitychange', syncMainLoop);
       classObserver?.disconnect();
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
@@ -2660,11 +2781,21 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
     };
   }, [interactive, intensity, isDark, creatureTheme, perfMode, bgStyle, activePalette.id]);
 
+  const effectiveDarkFallback =
+    typeof isDark === 'boolean'
+      ? isDark
+      : typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+
   return (
     <canvas
       ref={canvasRef}
       className={`fixed inset-0 pointer-events-none z-0 ${className}`}
-      style={{ display: 'block', willChange: 'transform', transform: 'translateZ(0)' }}
+      style={{
+        display: 'block',
+        backgroundColor: effectiveDarkFallback ? '#040914' : '#f8fafc',
+        willChange: 'transform',
+        transform: 'translateZ(0)'
+      }}
     />
   );
 };

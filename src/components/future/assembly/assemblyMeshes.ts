@@ -1057,17 +1057,21 @@ export function buildGhostHologramClone(
     depthWrite: false,
   });
 
+  const meshes: THREE.Mesh[] = [];
   ghost.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
-      const m = child as THREE.Mesh;
-      m.castShadow = false;
-      m.receiveShadow = false;
-      m.material = holoMat;
-      // Add subtle wireframe overlay child for technical CAD hologram outline
-      const wire = new THREE.Mesh(m.geometry, wireMat);
-      m.add(wire);
+      meshes.push(child as THREE.Mesh);
     }
   });
+
+  for (const m of meshes) {
+    m.castShadow = false;
+    m.receiveShadow = false;
+    m.material = holoMat;
+    // Add subtle wireframe overlay child for technical CAD hologram outline
+    const wire = new THREE.Mesh(m.geometry, wireMat);
+    m.add(wire);
+  }
   ghost.visible = false;
   return ghost;
 }

@@ -1975,21 +1975,35 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         {/* Focus Timer synced with Bottom-Left Floating Widget */}
         <div className="group lg:col-span-5 sci-frame bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/85 dark:border-sky-500/25 hover:border-sky-400/75 rounded-xl p-6 sm:p-7 shadow-xs flex flex-col justify-between space-y-4 transition-all">
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-display text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-600 dark:text-sky-400 icon-anim-clock" />
                 {isEn ? 'Focus Timer & Study Formats' : 'Đồng hồ tập trung & Hình thức học'}
               </h3>
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={() => setIsWidgetOpen(true)}
-                className="group/mini cs-deck-btn flex items-center gap-1 px-2.5 py-1 rounded bg-sky-50 dark:bg-sky-950/60 border border-sky-300/70 dark:border-sky-700/60 text-[11px] font-semibold text-sky-800 dark:text-sky-300 hover:bg-sky-100 cursor-pointer"
-                title={isEn ? 'Open corner mini widget' : 'Mở khung bấm giờ góc trái'}
-              >
-                <PanelBottomOpen className="w-3.5 h-3.5 group-hover/mini:translate-y-0.5 transition-transform" />
-                <span>{isEn ? 'Mini Corner' : 'Góc trái'}</span>
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => onNavigate('growth_hub')}
+                  className="cs-deck-btn inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/50 border border-amber-300/80 dark:border-amber-700/60 text-[11px] font-mono font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-100 cursor-pointer tabular-nums"
+                  title={isEn ? 'View Streak & SM-2 Growth Hub' : 'Xem Chuỗi ngày học Streak & Hồ sơ tăng trưởng'}
+                >
+                  <Flame className="w-3.5 h-3.5 text-rose-500 streak-flame-pulse shrink-0" />
+                  <span>{streakSummary.streak.currentStreak}d</span>
+                  <span className="opacity-50">·</span>
+                  <span>{currentXP} XP</span>
+                </button>
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => setIsWidgetOpen(true)}
+                  className="group/mini cs-deck-btn flex items-center gap-1 px-2.5 py-1 rounded bg-sky-50 dark:bg-sky-950/60 border border-sky-300/70 dark:border-sky-700/60 text-[11px] font-semibold text-sky-800 dark:text-sky-300 hover:bg-sky-100 cursor-pointer"
+                  title={isEn ? 'Open corner mini widget' : 'Mở khung bấm giờ góc trái'}
+                >
+                  <PanelBottomOpen className="w-3.5 h-3.5 group-hover/mini:translate-y-0.5 transition-transform" />
+                  <span>{isEn ? 'Mini Corner' : 'Góc trái'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Study Format Selector Grid */}

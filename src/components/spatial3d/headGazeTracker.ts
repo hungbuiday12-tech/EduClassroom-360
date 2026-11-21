@@ -57,8 +57,9 @@ export class HeadGazeTracker {
     if (this.initPromise) return this.initPromise;
 
     this.initPromise = (async () => {
+      const wasmBase = `${import.meta.env.BASE_URL || './'}mediapipe/wasm`;
       try {
-        const vision = await FilesetResolver.forVisionTasks('/mediapipe/wasm');
+        const vision = await FilesetResolver.forVisionTasks(wasmBase);
         this.landmarker = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath: DEFAULT_FACE_MODEL_URL,
@@ -73,7 +74,7 @@ export class HeadGazeTracker {
         return true;
       } catch {
         try {
-          const vision = await FilesetResolver.forVisionTasks('/mediapipe/wasm');
+          const vision = await FilesetResolver.forVisionTasks(wasmBase);
           this.landmarker = await FaceLandmarker.createFromOptions(vision, {
             baseOptions: {
               modelAssetPath: DEFAULT_FACE_MODEL_URL,

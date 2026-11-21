@@ -1,4 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import {
+  DEFAULT_XRAY_TOP_IMAGE,
+  DEFAULT_XRAY_BOTTOM_IMAGE,
+  loadStoredXrayImages,
+  saveStoredXrayImage,
+  clearStoredXrayImage,
+  readAndOptimizeImageFile,
+  XrayLayerSlot
+} from '../utils/xrayStorage';
 
 export type BackgroundCreatureTheme =
   | 'koi'
@@ -16,6 +25,7 @@ export type PerformanceMode = 'smooth' | 'balanced' | 'ultra';
 export type BackgroundStyle =
   | 'ecosystem'
   | 'white_breeze'
+  | 'xray_reveal'
   | 'molecules'
   | 'ocean'
   | 'sky'
@@ -25,6 +35,8 @@ export type BackgroundStyle =
   | 'studio_grid'
   | 'aurora_clean'
   | 'minimal_solid';
+
+export type XrayFitMode = 'cover' | 'contain';
 
 export type FontPresetId =
   | 'modern_lexend'
@@ -335,6 +347,19 @@ export const BACKGROUND_STYLE_OPTIONS: BackgroundStyleOption[] = [
     previewGradient: 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 62%, #dbeafe 100%)'
   },
   {
+    id: 'xray_reveal',
+    labelVi: 'Soi Xuyên Thấu (X-Ray Cursor Mask)',
+    labelEn: 'X-Ray Cursor Masking (Image Reveal)',
+    shortVi: 'Soi X-Ray',
+    shortEn: 'X-Ray Mask',
+    specBadgeVi: 'Mặt nạ theo chuột · Tải ảnh riêng',
+    specBadgeEn: 'Cursor Mask · Custom Upload',
+    descVi: 'Xếp chồng 2 lớp ảnh đồng bộ (Sóc chữ S thật & bản dát bạc): di chuột để soi xuyên thấu lớp ẩn bên dưới. Hỗ trợ tải ảnh riêng bất kỳ.',
+    descEn: 'Dual-layer stacked S-squirrel emblems (real & silver-leaf): sweep your cursor to reveal the hidden layer beneath. Supports custom image uploads.',
+    recommendedPerf: 'balanced',
+    previewGradient: 'linear-gradient(135deg, #f8fafc 0%, #94a3b8 50%, #0f172a 100%)'
+  },
+  {
     id: 'molecules',
     labelVi: 'Mạng Hạt Phân Tử & Nguyên Tử',
     labelEn: 'Molecular Particle Lattice',
@@ -584,6 +609,7 @@ const VALID_PERF_MODES: PerformanceMode[] = ['smooth', 'balanced', 'ultra'];
 const VALID_BG_STYLES: BackgroundStyle[] = [
   'ecosystem',
   'white_breeze',
+  'xray_reveal',
   'molecules',
   'ocean',
   'sky',
@@ -629,6 +655,17 @@ export const SCENE_FRAME_THEMES: Record<BackgroundStyle, SceneFrameTheme> = {
     glow: 'rgba(15, 23, 42, 0.1)',
     glowStrong: 'rgba(2, 132, 199, 0.2)',
     tint: 'rgba(226, 232, 240, 0.28)'
+  },
+  xray_reveal: {
+    accentA: '#eab308',
+    accentB: '#0ea5e9',
+    accentC: '#f59e0b',
+    border: 'rgba(234, 179, 8, 0.42)',
+    borderHover: 'rgba(245, 158, 11, 0.8)',
+    ring: 'rgba(250, 204, 21, 0.25)',
+    glow: 'rgba(245, 158, 11, 0.2)',
+    glowStrong: 'rgba(234, 179, 8, 0.35)',
+    tint: 'rgba(254, 240, 138, 0.18)'
   },
   molecules: {
     accentA: '#06b6d4',
@@ -787,6 +824,21 @@ interface BackgroundContextValue {
   isGraphicsModalOpen: boolean;
   openGraphicsModal: () => void;
   closeGraphicsModal: () => void;
+  xrayTopImage: string;
+  xrayBottomImage: string;
+  xrayHasCustomTop: boolean;
+  xrayHasCustomBottom: boolean;
+  xrayShowAura: boolean;
+  setXrayShowAura: (show: boolean) => void;
+  xraySwapped: boolean;
+  setXraySwapped: (swapped: boolean) => void;
+  xrayMaskRadius: number;
+  setXrayMaskRadius: (radius: number) => void;
+  xrayFitMode: XrayFitMode;
+  setXrayFitMode: (fit: XrayFitMode) => void;
+  setXrayTopImageFile: (file: File) => Promise<void>;
+  setXrayBottomImageFile: (file: File) => Promise<void>;
+  resetXrayImage: (slot?: XrayLayerSlot) => Promise<void>;
 }
 
 const STORAGE_KEY = 'educlassroom_bg_creature';
@@ -796,6 +848,10 @@ const FONT_STORAGE_KEY = 'educlassroom_font_preset_v1';
 const PALETTE_STORAGE_KEY = 'educlassroom_color_palette_v1';
 const DODGE_ENABLED_KEY = 'educlassroom_dodge_enabled_v1';
 const DODGE_INTENSITY_KEY = 'educlassroom_dodge_intensity_v1';
+const XRAY_SHOW_AURA_KEY = 'synapse_xray_show_aura_v2';
+const XRAY_SWAPPED_KEY = 'synapse_xray_swapped_v1';
+const XRAY_MASK_RADIUS_KEY = 'synapse_xray_mask_radius_v2';
+const XRAY_FIT_MODE_KEY = 'synapse_xray_fit_mode_v1';
 
 const OPTIONAL_FONT_URLS: Partial<Record<FontPresetId, string>> = {
   geometric_outfit:
@@ -942,7 +998,22 @@ const BackgroundContext = createContext<BackgroundContextValue>({
   applyGraphicsTier: () => {},
   isGraphicsModalOpen: false,
   openGraphicsModal: () => {},
-  closeGraphicsModal: () => {}
+  closeGraphicsModal: () => {},
+  xrayTopImage: DEFAULT_XRAY_TOP_IMAGE,
+  xrayBottomImage: DEFAULT_XRAY_BOTTOM_IMAGE,
+  xrayHasCustomTop: false,
+  xrayHasCustomBottom: false,
+  xrayShowAura: false,
+  setXrayShowAura: () => {},
+  xraySwapped: false,
+  setXraySwapped: () => {},
+  xrayMaskRadius: 85,
+  setXrayMaskRadius: () => {},
+  xrayFitMode: 'cover',
+  setXrayFitMode: () => {},
+  setXrayTopImageFile: async () => {},
+  setXrayBottomImageFile: async () => {},
+  resetXrayImage: async () => {}
 });
 
 export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -1018,6 +1089,61 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch {}
     return 'gentle';
   });
+
+  const [xrayTopImage, setXrayTopImageState] = useState<string>(DEFAULT_XRAY_TOP_IMAGE);
+  const [xrayBottomImage, setXrayBottomImageState] = useState<string>(DEFAULT_XRAY_BOTTOM_IMAGE);
+  const [xrayHasCustomTop, setXrayHasCustomTop] = useState<boolean>(false);
+  const [xrayHasCustomBottom, setXrayHasCustomBottom] = useState<boolean>(false);
+
+  const [xrayShowAura, setXrayShowAuraState] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(XRAY_SHOW_AURA_KEY);
+      if (saved === 'true') return true;
+      if (saved === 'false') return false;
+    } catch {}
+    return false;
+  });
+
+  const [xraySwapped, setXraySwappedState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(XRAY_SWAPPED_KEY) === 'true';
+    } catch {}
+    return false;
+  });
+
+  const [xrayMaskRadius, setXrayMaskRadiusState] = useState<number>(() => {
+    try {
+      const n = Number(localStorage.getItem(XRAY_MASK_RADIUS_KEY));
+      if (Number.isFinite(n) && n >= 40 && n <= 220) return n;
+    } catch {}
+    return 85;
+  });
+
+  const [xrayFitMode, setXrayFitModeState] = useState<XrayFitMode>(() => {
+    try {
+      const saved = localStorage.getItem(XRAY_FIT_MODE_KEY);
+      if (saved === 'contain' || saved === 'cover') return saved;
+    } catch {}
+    return 'cover';
+  });
+
+  useEffect(() => {
+    let active = true;
+    loadStoredXrayImages().then(({ top, bottom }) => {
+      if (!active) return;
+      if (top) {
+        setXrayTopImageState(top);
+        setXrayHasCustomTop(true);
+      }
+      if (bottom) {
+        setXrayBottomImageState(bottom);
+        setXrayHasCustomBottom(true);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const activePalette =
     COLOR_PALETTE_OPTIONS.find((p) => p.id === colorPalette) || COLOR_PALETTE_OPTIONS[0];
@@ -1181,6 +1307,64 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
+  const setXrayShowAura = (show: boolean) => {
+    setXrayShowAuraState(show);
+    try {
+      localStorage.setItem(XRAY_SHOW_AURA_KEY, String(show));
+    } catch {}
+  };
+
+  const setXraySwapped = (swapped: boolean) => {
+    setXraySwappedState(swapped);
+    try {
+      localStorage.setItem(XRAY_SWAPPED_KEY, String(swapped));
+    } catch {}
+  };
+
+  const setXrayMaskRadius = (radius: number) => {
+    const clamped = Math.max(40, Math.min(220, Math.round(radius)));
+    setXrayMaskRadiusState(clamped);
+    try {
+      localStorage.setItem(XRAY_MASK_RADIUS_KEY, String(clamped));
+    } catch {}
+  };
+
+  const setXrayFitMode = (fit: XrayFitMode) => {
+    setXrayFitModeState(fit);
+    try {
+      localStorage.setItem(XRAY_FIT_MODE_KEY, fit);
+    } catch {}
+  };
+
+  const setXrayTopImageFile = async (file: File) => {
+    const dataUrl = await readAndOptimizeImageFile(file, 1600);
+    setXrayTopImageState(dataUrl);
+    setXrayHasCustomTop(true);
+    await saveStoredXrayImage('top', dataUrl);
+  };
+
+  const setXrayBottomImageFile = async (file: File) => {
+    const dataUrl = await readAndOptimizeImageFile(file, 1600);
+    setXrayBottomImageState(dataUrl);
+    setXrayHasCustomBottom(true);
+    await saveStoredXrayImage('bottom', dataUrl);
+  };
+
+  const resetXrayImage = async (slot?: XrayLayerSlot) => {
+    await clearStoredXrayImage(slot);
+    if (!slot || slot === 'top') {
+      setXrayTopImageState(DEFAULT_XRAY_TOP_IMAGE);
+      setXrayHasCustomTop(false);
+    }
+    if (!slot || slot === 'bottom') {
+      setXrayBottomImageState(DEFAULT_XRAY_BOTTOM_IMAGE);
+      setXrayHasCustomBottom(false);
+    }
+    if (!slot) {
+      setXraySwapped(false);
+    }
+  };
+
   return (
     <BackgroundContext.Provider
       value={{
@@ -1204,7 +1388,22 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         applyGraphicsTier,
         isGraphicsModalOpen,
         openGraphicsModal: () => setIsGraphicsModalOpen(true),
-        closeGraphicsModal: () => setIsGraphicsModalOpen(false)
+        closeGraphicsModal: () => setIsGraphicsModalOpen(false),
+        xrayTopImage,
+        xrayBottomImage,
+        xrayHasCustomTop,
+        xrayHasCustomBottom,
+        xrayShowAura,
+        setXrayShowAura,
+        xraySwapped,
+        setXraySwapped,
+        xrayMaskRadius,
+        setXrayMaskRadius,
+        xrayFitMode,
+        setXrayFitMode,
+        setXrayTopImageFile,
+        setXrayBottomImageFile,
+        resetXrayImage
       }}
     >
       {children}

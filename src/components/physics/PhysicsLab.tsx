@@ -92,6 +92,7 @@ interface LabFlags {
   inductionAction: number; // 0: Dao động | 1: Đưa vào | 2: Rút ra | 3: Đứng yên
   showProtractor: boolean;
   showFieldGrid: boolean;
+  showElectrons?: boolean;
 }
 
 interface DataLogEntry {
@@ -389,7 +390,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     flipMagnet: false,
     inductionAction: 0,
     showProtractor: true,
-    showFieldGrid: true
+    showFieldGrid: true,
+    showElectrons: false
   });
 
   const [stopwatchRunning, setStopwatchRunning] = useState<boolean>(false);
@@ -1589,6 +1591,16 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                               >
                                 Vôn kế R1
                               </button>
+                              <button
+                                onClick={() => setLabFlags((f) => ({ ...f, showElectrons: !f.showElectrons }))}
+                                className={`px-2 py-1 rounded-md font-semibold border ${
+                                  labFlags.showElectrons
+                                    ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                                }`}
+                              >
+                                Hiện e⁻ (− → +)
+                              </button>
                             </>
                           )}
 
@@ -2338,6 +2350,16 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                             >
                               Vôn kế R1
                             </button>
+                            <button
+                              onClick={() => setLabFlags((f) => ({ ...f, showElectrons: !f.showElectrons }))}
+                              className={`px-2 py-1 rounded-md font-semibold border ${
+                                labFlags.showElectrons
+                                  ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-transparent'
+                              }`}
+                            >
+                              Hiện e⁻ (− → +)
+                            </button>
                           </>
                         )}
                         {activeSimType === 'lens_optics' && (
@@ -2507,7 +2529,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                       <div className="flex items-center gap-2">
                         <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                          Tham Số Thí Nghiệm
+                          Tham Số Thí Nghiệm (Nhập số tự do)
                         </h3>
                       </div>
                       <button

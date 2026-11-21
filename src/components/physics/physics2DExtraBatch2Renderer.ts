@@ -660,21 +660,41 @@ export function renderBatch2Extra2DPhysicsSim(
         ctx.fillText('⊗ B', bx + (bw * (i + 0.5)) / 4, by - 12);
       }
 
-      // Charge carriers drifting & deflecting upwards/downwards
+      // Conventional current I arrow (+) -> (-) left-to-right; electrons drift right-to-left and deflect UP to (-) plate
+      ctx.strokeStyle = '#10b981';
+      ctx.fillStyle = '#10b981';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(bx + 18, by + bh * 0.5);
+      ctx.lineTo(bx + bw - 18, by + bh * 0.5);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(bx + bw - 12, by + bh * 0.5);
+      ctx.lineTo(bx + bw - 22, by + bh * 0.5 - 5);
+      ctx.lineTo(bx + bw - 22, by + bh * 0.5 + 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Chiều I →', bx + 8, by + bh * 0.5 - 8);
+
+      // Electrons (e-) drift right -> left (opposite to I) and curve UP toward (−) plate by Lorentz force
       for (let i = 0; i < 16; i++) {
-        const px = bx + ((i * 38 + t * I * 26) % bw);
-        const driftNorm = (px - bx) / bw;
-        const curve = Math.min(bh * 0.36, driftNorm * (I * B * 5.2));
-        const py = by + bh * 0.5 - curve + ((i % 3) - 1) * 14;
-        ctx.fillStyle = '#f59e0b';
+        const px = bx + bw - ((i * 38 + t * Math.abs(I) * 26) % bw);
+        const driftNorm = (bx + bw - px) / bw;
+        const curve = Math.min(bh * 0.36, driftNorm * (Math.abs(I) * Math.abs(B) * 5.2));
+        const py = by + bh * 0.5 - curve + ((i % 3) - 1) * 12;
+        ctx.fillStyle = '#facc15';
         ctx.beginPath();
-        ctx.arc(px, Math.max(by + 8, Math.min(by + bh - 8, py)), 4.5, 0, Math.PI * 2);
+        ctx.arc(px, Math.max(by + 18, Math.min(by + bh - 16, py)), 4, 0, Math.PI * 2);
         ctx.fill();
       }
 
       // Top/bottom polarity signs
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 11px monospace';
       ctx.fillStyle = '#ef4444';
-      ctx.fillText('− − − Tích tụ âm', w * 0.5, by + 16);
+      ctx.fillText('− − − Tích tụ âm (e⁻)', w * 0.5, by + 15);
       ctx.fillStyle = '#10b981';
       ctx.fillText('+ + + Tích tụ dương (U_H)', w * 0.5, by + bh - 8);
       return true;

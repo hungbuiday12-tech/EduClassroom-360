@@ -728,7 +728,8 @@ const BG_TARGETS: { phrases: string[]; style: BackgroundStyle; label: string }[]
   { phrases: ['ban ve', 'ky thuat', 'blueprint'], style: 'blueprint_tech', label: 'Bản vẽ STEM' },
   { phrases: ['luoi song', 'studio grid'], style: 'studio_grid', label: 'Lưới sóng Studio' },
   { phrases: ['tinh van', 'sao roi', 'aurora'], style: 'aurora_clean', label: 'Tinh vân sao rơi' },
-  { phrases: ['sieu muot', 'toi gian', 'minimal'], style: 'minimal_solid', label: 'Nền siêu mượt' }
+  { phrases: ['sieu muot', 'toi gian', 'minimal'], style: 'minimal_solid', label: 'Nền siêu mượt' },
+  { phrases: ['xray', 'x-ray', 'xuyen thau', 'mat na', 'chan dung'], style: 'xray_reveal', label: 'Soi Xuyên Thấu X-Ray' }
 ];
 
 /**

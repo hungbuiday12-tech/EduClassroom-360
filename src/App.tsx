@@ -529,7 +529,10 @@ function MainApp() {
             intensity="vibrant"
             isDark={isDark}
             paused={isHeavy3DActive}
-            className={isDark ? 'opacity-75' : 'opacity-100'}
+            className={isDark ? 'opacity-90' : 'opacity-100'}
+            xrayDockClassName={`bottom-[68px] left-3 lg:bottom-4 ${
+              sidebarCollapsed ? 'lg:left-[94px]' : 'lg:left-[288px]'
+            }`}
           />
 
           {/* Left Vertical Navigation Sidebar */}

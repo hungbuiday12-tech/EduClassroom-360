@@ -674,11 +674,11 @@ export function evaluateApparatusReading(
   switch (toolId) {
     case 'ammeter_dc_ac': {
       if (simId === 'ohm_circuit' || simId === 'wheatstone_bridge') {
-        const u = params.voltage ?? params.acPeakV ?? 12;
-        const r1 = params.r1 ?? params.resistor1 ?? 10;
-        const r2 = params.r2 ?? params.resistor2 ?? 10;
-        const req = Math.round(params.circuitType ?? 0) === 1 ? (r1 * r2) / Math.max(0.2, r1 + r2) : r1 + r2;
-        const i = u / Math.max(0.2, req);
+        const u = Math.abs(params.voltage ?? params.acPeakV ?? 12);
+        const r1 = Math.max(0.01, params.r1 ?? params.resistor1 ?? 10);
+        const r2 = Math.max(0.01, params.r2 ?? params.resistor2 ?? 10);
+        const req = Math.round(params.circuitType ?? 0) === 1 ? (r1 * r2) / Math.max(0.01, r1 + r2) : r1 + r2;
+        const i = u / Math.max(0.01, req);
         return { valueText: `${i.toFixed(2)} A`, subLabel: `I = U / Rtđ` };
       }
       if (simId === 'ac_rlc_circuit') {
@@ -696,13 +696,14 @@ export function evaluateApparatusReading(
     }
 
     case 'voltmeter_dc_ac': {
-      const u =
+      const u = Math.abs(
         params.voltage ??
         params.u0 ??
         params.acPeakV ??
         params.gapVoltageKv ??
         params.voltageUak ??
-        12;
+        12
+      );
       const unit = simId.includes('cyclotron') ? 'kV' : 'V';
       const ripple = simId.includes('ac') || simId.includes('generator') ? Math.cos(simTime * 3.2) : 1;
       return {
@@ -712,9 +713,9 @@ export function evaluateApparatusReading(
     }
 
     case 'multimeter_pro': {
-      const r1 = params.r1 ?? params.resistor1 ?? params.r ?? 12;
-      const r2 = params.r2 ?? params.resistor2 ?? 10;
-      const req = Math.round(params.circuitType ?? 0) === 1 ? (r1 * r2) / Math.max(0.2, r1 + r2) : r1 + r2;
+      const r1 = Math.max(0.01, params.r1 ?? params.resistor1 ?? params.r ?? 12);
+      const r2 = Math.max(0.01, params.r2 ?? params.resistor2 ?? 10);
+      const req = Math.round(params.circuitType ?? 0) === 1 ? (r1 * r2) / Math.max(0.01, r1 + r2) : r1 + r2;
       return { valueText: `${req.toFixed(1)} Ω`, subLabel: 'Đo thông mạch & Ω' };
     }
 

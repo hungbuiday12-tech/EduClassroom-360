@@ -4,6 +4,7 @@ import {
   BackgroundCreatureTheme,
   PerformanceMode
 } from '../../context/BackgroundContext';
+import { XRayRevealBackground } from './XRayRevealBackground';
 
 interface GalaxyBackgroundProps {
   interactive?: boolean;
@@ -11,6 +12,7 @@ interface GalaxyBackgroundProps {
   isDark?: boolean;
   className?: string;
   paused?: boolean;
+  xrayDockClassName?: string;
 }
 
 interface Star {
@@ -113,7 +115,8 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
   intensity = 'vibrant',
   isDark,
   className = '',
-  paused = false
+  paused = false,
+  xrayDockClassName
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { creatureTheme, perfMode, bgStyle, activePalette } = useBackgroundTheme();
@@ -127,6 +130,7 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
   }, [paused]);
 
   useEffect(() => {
+    if (bgStyle === 'xray_reveal') return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { alpha: false });
@@ -2780,6 +2784,18 @@ export const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
       bgCacheCanvas = null;
     };
   }, [interactive, intensity, isDark, creatureTheme, perfMode, bgStyle, activePalette.id]);
+
+  if (bgStyle === 'xray_reveal') {
+    return (
+      <XRayRevealBackground
+        interactive={interactive}
+        isDark={isDark}
+        paused={paused}
+        className={className}
+        dockClassName={xrayDockClassName}
+      />
+    );
+  }
 
   const effectiveDarkFallback =
     typeof isDark === 'boolean'

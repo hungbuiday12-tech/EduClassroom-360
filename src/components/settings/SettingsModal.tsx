@@ -49,6 +49,7 @@ import {
   FONT_PRESET_OPTIONS,
   COLOR_PALETTE_OPTIONS
 } from '../../context/BackgroundContext';
+import { XRayConfigPanel } from '../common/XRayConfigPanel';
 import { useAudio } from '../../context/AudioContext';
 import {
   CLICK_SOUND_OPTIONS,
@@ -877,6 +878,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   })}
                 </div>
               </div>
+
+              {bgStyle === 'xray_reveal' && (
+                <div className="p-4 sm:p-5 rounded-md bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300/70 dark:border-amber-500/35 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <span>
+                        {isEn
+                          ? 'X-Ray Cursor Masking — Custom 2-Layer Images'
+                          : 'Ảnh 2 Lớp Soi Xuyên Thấu (X-Ray Cursor Mask)'}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                      {isEn
+                        ? 'Saved automatically in browser storage'
+                        : 'Tự lưu trong trình duyệt · Có sẵn ảnh mặc định'}
+                    </span>
+                  </div>
+                  <XRayConfigPanel />
+                </div>
+              )}
 
               {(bgStyle === 'ecosystem' ||
                 bgStyle === 'ocean' ||

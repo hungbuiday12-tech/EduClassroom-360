@@ -5,8 +5,10 @@ import {
   Compass,
   Grid,
   Maximize2,
+  Minus,
   Pause,
   Play,
+  Plus,
   RotateCcw,
   Sliders,
   StepForward,
@@ -32,6 +34,135 @@ interface PhysicsInline2DSimProps {
   onOpenSim2D?: () => void;
   onOpenSim3D?: () => void;
 }
+
+interface InlineNumericParamFieldProps {
+  label: string;
+  unit: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (nextVal: number) => void;
+}
+
+const InlineNumericParamField: React.FC<InlineNumericParamFieldProps> = ({
+  label,
+  unit,
+  value,
+  min,
+  max,
+  step,
+  onChange
+}) => {
+  const [draft, setDraft] = useState<string>(String(value));
+  const [focused, setFocused] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!focused) {
+      setDraft(String(value));
+    }
+  }, [value, focused]);
+
+  const commitDraft = (raw: string) => {
+    const normalized = raw.replace(',', '.').trim();
+    const parsed = parseFloat(normalized);
+    if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+      onChange(parsed);
+      setDraft(String(parsed));
+    } else {
+      setDraft(String(value));
+    }
+  };
+
+  const handleStep = (dir: -1 | 1) => {
+    const decimals = (step.toString().split('.')[1] || '').length;
+    const next = Number((value + dir * step).toFixed(Math.max(decimals, 2)));
+    onChange(next);
+    setDraft(String(next));
+  };
+
+  const sliderVal = Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
+
+  return (
+    <div className="rounded-sm bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 px-3 py-2 space-y-1.5">
+      <div className="flex items-center justify-between gap-2 text-[11px]">
+        <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 min-w-0">
+          <Sliders className="w-3 h-3 text-sky-500 shrink-0" />
+          <span className="truncate">{label}</span>
+        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleStep(-1)}
+            className="w-8 h-8 sm:w-6 sm:h-6 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+            title={`Giảm ${step}`}
+          >
+            <Minus className="w-3 h-3" />
+          </button>
+          <input
+            type="number"
+            step="any"
+            aria-label={label}
+            value={focused ? draft : String(value)}
+            onFocus={() => {
+              setFocused(true);
+              setDraft(String(value));
+            }}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setDraft(raw);
+              const parsed = parseFloat(raw.replace(',', '.'));
+              if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+                onChange(parsed);
+              }
+            }}
+            onBlur={() => {
+              setFocused(false);
+              commitDraft(draft);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                commitDraft(draft);
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            className="w-16 min-h-[32px] sm:min-h-0 px-1.5 py-0.5 text-right font-mono text-xs font-bold bg-slate-50 dark:bg-slate-950 text-sky-600 dark:text-sky-400 border border-slate-200 dark:border-slate-700 rounded-sm focus:outline-none focus:ring-2 focus:ring-sky-500/40 tabular-nums"
+          />
+          <button
+            type="button"
+            onClick={() => handleStep(1)}
+            className="w-8 h-8 sm:w-6 sm:h-6 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+            title={`Tăng ${step}`}
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+          {unit && (
+            <span className="font-mono font-semibold text-slate-500 dark:text-slate-400 text-[10px] min-w-[20px]">
+              {unit}
+            </span>
+          )}
+        </div>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={sliderVal}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          onChange(v);
+          setDraft(String(v));
+        }}
+        className="w-full h-1.5 accent-sky-600 cursor-pointer"
+      />
+      <div className="flex justify-between text-[9.5px] text-slate-400 font-mono">
+        <span>{min} {unit}</span>
+        <span>{max} {unit} (nhập số tự do)</span>
+      </div>
+    </div>
+  );
+};
 
 export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
   lesson,
@@ -245,8 +376,8 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
     forceTelemetryRef.current = true;
   };
 
-  const quickSliders = useMemo(
-    () => Object.entries(resolved.paramBounds || {}).slice(0, 3),
+  const paramControls = useMemo(
+    () => Object.entries(resolved.paramBounds || {}),
     [resolved.paramBounds]
   );
 
@@ -280,8 +411,8 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
       controls.push(
         {
           key: 'circuitOpen',
-          label: flags.circuitOpen ? 'Mở khóa K' : 'Đóng khóa K',
-          active: flags.circuitOpen,
+          label: flags.circuitOpen ? 'Khóa K: MỞ' : 'Khóa K: ĐÓNG',
+          active: !flags.circuitOpen,
           toggle: () => setFlags((f) => ({ ...f, circuitOpen: !f.circuitOpen }))
         },
         {
@@ -289,6 +420,39 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
           label: 'Đảo cực nguồn',
           active: flags.reversePolarity,
           toggle: () => setFlags((f) => ({ ...f, reversePolarity: !f.reversePolarity }))
+        },
+        {
+          key: 'showVoltmeter',
+          label: 'Vôn kế R₁',
+          active: flags.showVoltmeter,
+          toggle: () => setFlags((f) => ({ ...f, showVoltmeter: !f.showVoltmeter }))
+        },
+        {
+          key: 'showElectrons',
+          label: 'Hiện e⁻ (− → +)',
+          active: Boolean(flags.showElectrons),
+          toggle: () => setFlags((f) => ({ ...f, showElectrons: !f.showElectrons }))
+        }
+      );
+    } else if (sim === 'joule_lenz_heat') {
+      controls.push(
+        {
+          key: 'circuitOpen',
+          label: flags.circuitOpen ? 'Khóa K: MỞ' : 'Khóa K: ĐÓNG',
+          active: !flags.circuitOpen,
+          toggle: () => setFlags((f) => ({ ...f, circuitOpen: !f.circuitOpen }))
+        },
+        {
+          key: 'reversePolarity',
+          label: 'Đảo cực nguồn',
+          active: flags.reversePolarity,
+          toggle: () => setFlags((f) => ({ ...f, reversePolarity: !f.reversePolarity }))
+        },
+        {
+          key: 'showElectrons',
+          label: 'Hiện e⁻ (− → +)',
+          active: Boolean(flags.showElectrons),
+          toggle: () => setFlags((f) => ({ ...f, showElectrons: !f.showElectrons }))
         }
       );
     } else if (sim === 'lens_optics') {
@@ -543,40 +707,89 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
         </div>
       </div>
 
-      {/* Interactive Sliders + Experiment Flags matched to this step */}
-      {(quickSliders.length > 0 || flagControls.length > 0 || telemetry.note) && (
+      {/* Interactive Free-Input Parameters + Experiment Flags matched to this step */}
+      {(paramControls.length > 0 || flagControls.length > 0 || telemetry.note) && (
         <div className="p-3 sm:p-3.5 bg-slate-50/75 dark:bg-slate-900/50 space-y-2.5">
-          {quickSliders.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {quickSliders.map(([key, bound]) => {
-                const curVal = params[key] ?? bound.min;
-                return (
-                  <div
-                    key={key}
-                    className="rounded-sm bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 px-3 py-2 space-y-1"
-                  >
-                    <div className="flex items-center justify-between gap-2 text-[11px]">
-                      <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 truncate">
-                        <Sliders className="w-3 h-3 text-sky-500 shrink-0" />
-                        <span className="truncate">{bound.label}</span>
+          {paramControls.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2.5">
+              {paramControls.map(([key, bound]) => {
+                const curVal = params[key] ?? resolved.defaultParams[key] ?? bound.min;
+
+                if (key === 'circuitType' || key === 'vizMode' || key === 'modeCharge' || key === 'convexMode' || key === 'processType' || key === 'openEnd') {
+                  const opts =
+                    key === 'circuitType'
+                      ? [
+                          { v: 0, label: 'Mắc Nối Tiếp' },
+                          { v: 1, label: 'Mắc Song Song' }
+                        ]
+                      : key === 'vizMode'
+                      ? [
+                          { v: 0, label: 'Vectơ' },
+                          { v: 1, label: 'Đồ thị d-t' },
+                          { v: 2, label: 'Đồ thị v-t' }
+                        ]
+                      : key === 'modeCharge'
+                      ? [
+                          { v: 1, label: 'Nạp tụ' },
+                          { v: 0, label: 'Xả tụ' }
+                        ]
+                      : key === 'convexMode'
+                      ? [
+                          { v: 0, label: 'Gương Lõm' },
+                          { v: 1, label: 'Gương Lồi' }
+                        ]
+                      : key === 'openEnd'
+                      ? [
+                          { v: 0, label: '2 đầu cố định' },
+                          { v: 1, label: '1 đầu tự do' }
+                        ]
+                      : [
+                          { v: 0, label: 'Đẳng nhiệt' },
+                          { v: 1, label: 'Đẳng áp' },
+                          { v: 2, label: 'Đẳng tích' }
+                        ];
+
+                  return (
+                    <div
+                      key={key}
+                      className="rounded-sm bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 px-3 py-2 flex flex-col justify-between gap-1.5"
+                    >
+                      <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                        {bound.label}
                       </span>
-                      <span className="font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums shrink-0">
-                        {curVal} {bound.unit}
-                      </span>
+                      <div className={`grid gap-1.5 ${opts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                        {opts.map((opt) => (
+                          <button
+                            key={opt.v}
+                            type="button"
+                            onClick={() => setParams((prev) => ({ ...prev, [key]: opt.v }))}
+                            className={`py-1.5 px-2 rounded-sm text-[11px] font-bold transition-colors cursor-pointer ${
+                              Math.round(curVal) === opt.v
+                                ? 'bg-sky-600 text-white'
+                                : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-sky-400'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <input
-                      type="range"
-                      min={bound.min}
-                      max={bound.max}
-                      step={bound.step}
-                      value={curVal}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        setParams((prev) => ({ ...prev, [key]: v }));
-                      }}
-                      className="w-full h-1.5 accent-sky-600 cursor-pointer"
-                    />
-                  </div>
+                  );
+                }
+
+                return (
+                  <InlineNumericParamField
+                    key={key}
+                    label={bound.label}
+                    unit={bound.unit}
+                    value={curVal}
+                    min={bound.min}
+                    max={bound.max}
+                    step={bound.step}
+                    onChange={(nextVal) =>
+                      setParams((prev) => ({ ...prev, [key]: nextVal }))
+                    }
+                  />
                 );
               })}
             </div>

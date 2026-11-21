@@ -729,126 +729,280 @@ export function renderCustomStepPhysicsSim({
     // 3. JOULE-LENZ HEATING & ELECTRIC POWER
     // ------------------------------------------------------------------------
     case 'joule_lenz_heat': {
-      const U = params.voltage ?? 12;
-      const R = Math.max(1, params.resistance ?? 6);
-      const mWater = Math.max(0.1, params.waterMass ?? 0.5);
-      const I = U / R;
+      const rawU = Number.isFinite(params.voltage) ? params.voltage : 12;
+      const effReverse = rawU < 0 ? !flags.reversePolarity : flags.reversePolarity;
+      const U = Math.abs(rawU);
+      const R = Math.max(0.05, Number.isFinite(params.resistance) ? params.resistance : 6);
+      const mWater = Math.max(0.05, Number.isFinite(params.waterMass) ? params.waterMass : 0.5);
+      const isOpen = flags.circuitOpen;
+      const I = isOpen ? 0 : U / R;
       const P = U * I;
-      const tSim = t % 30;
+      const tSim = isOpen || I <= 0.005 ? 0 : t % 30;
       const Q = P * tSim;
       const cWater = 4200;
       const dT = Math.min(75, Q / (mWater * cWater));
       const tempCur = 25 + dT;
 
+      // Quy ước I: (+) -> mạch ngoài -> (-).
+      // !effReverse: (+) ở TRÊN, (-) ở DƯỚI => I chạy THUẬN chiều kim đồng hồ (+1), e- chạy NGƯỢC (-1).
+      // effReverse: (-) ở TRÊN, (+) ở DƯỚI => I chạy NGƯỢC chiều kim đồng hồ (-1), e- chạy THUẬN (+1).
+      const conventionalDir: 1 | -1 = effReverse ? -1 : 1;
+      const electronDir: 1 | -1 = conventionalDir === 1 ? -1 : 1;
+
       pushTelemetry({
         metric1Label: 'Cường độ dòng (I = U/R)',
-        metric1Val: `${I.toFixed(2)} A`,
+        metric1Val: isOpen ? '0.00 A (Mở K)' : `${I.toFixed(2)} A`,
         metric2Label: 'Công suất tỏa nhiệt (P = I²R)',
         metric2Val: `${P.toFixed(1)} W`,
         metric3Label: 'Nhiệt lượng Q (tăng ΔT)',
         metric3Val: `${Q.toFixed(0)} J (${tempCur.toFixed(1)}°C)`,
-        note: `Dòng điện ${I.toFixed(2)} A chạy qua dây R = ${R} Ω tỏa nhiệt công suất ${P.toFixed(1)} J/s làm nóng ${mWater} kg nước.`
+        note: isOpen
+          ? 'Khóa K đang MỞ: Mạch hở nên I = 0 A, dây điện trở không tỏa nhiệt.'
+          : `Chiều I (${effReverse ? 'Ngược KĐH: (+) dưới → (−) trên' : 'Thuận KĐH: (+) trên → (−) dưới'}) · Dòng ${I.toFixed(2)} A qua R = ${R} Ω tỏa nhiệt ${P.toFixed(1)} J/s.`
       });
 
-      // Left: Circuit Loop
-      const cx0 = 42;
-      const cyTop = 44;
-      const cyBot = h - 38;
-      const beakerX = w * 0.44;
-      const beakerW = 136;
-      const beakerH = h - 88;
-      const beakerY = 48;
+      const cx0 = Math.max(44, Math.round(w * 0.12));
+      const cyTop = 42;
+      const cyBot = h - 42;
+      const beakerX = Math.max(cx0 + 120, Math.round(w * 0.42));
+      const beakerW = Math.min(136, Math.round(w * 0.28));
+      const beakerY = 44;
+      const beakerH = Math.max(120, h - 94);
+      const coilY = beakerY + beakerH * 0.58;
+      const coilLeftX = beakerX + 30;
+      const coilRightX = beakerX + beakerW - 30;
+      const swX1 = cx0 + Math.max(24, (coilLeftX - cx0) * 0.3);
+      const swX2 = swX1 + Math.min(34, (coilLeftX - cx0) * 0.24);
 
-      // Circuit wire
-      ctx.strokeStyle = '#38bdf8';
+      const wireColor = isOpen ? '#64748b' : '#38bdf8';
+
+      // Closed Circuit Loop Wires (single clean loop through heating coil)
+      ctx.strokeStyle = wireColor;
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx0, cyTop);
+      ctx.lineTo(swX1, cyTop);
+      if (!isOpen) {
+        ctx.lineTo(coilLeftX, cyTop);
+      } else {
+        ctx.moveTo(swX2, cyTop);
+        ctx.lineTo(coilLeftX, cyTop);
+      }
+      ctx.lineTo(coilLeftX, coilY);
+      ctx.moveTo(coilRightX, coilY);
+      ctx.lineTo(coilRightX, cyBot);
+      ctx.lineTo(cx0, cyBot);
+      ctx.lineTo(cx0, cyTop);
+      ctx.stroke();
+
+      // Switch K on top wire
+      ctx.strokeStyle = isOpen ? '#ef4444' : '#10b981';
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(cx0, cyTop);
-      ctx.lineTo(beakerX + 35, cyTop);
-      ctx.lineTo(beakerX + 35, beakerY + 95);
-      ctx.moveTo(beakerX + beakerW - 35, beakerY + 95);
-      ctx.lineTo(beakerX + beakerW - 35, cyTop);
-      ctx.lineTo(cx0 + 110, cyTop);
+      ctx.moveTo(swX1, cyTop);
+      ctx.lineTo(isOpen ? swX2 - 4 : swX2, isOpen ? cyTop - 16 : cyTop);
       ctx.stroke();
+      ctx.fillStyle = muted;
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(isOpen ? 'K (Mở)' : 'K (Đóng)', (swX1 + swX2) / 2, cyTop + 14);
 
-      ctx.beginPath();
-      ctx.moveTo(cx0, cyTop);
-      ctx.lineTo(cx0, cyBot);
-      ctx.lineTo(beakerX + beakerW - 35, cyBot);
-      ctx.lineTo(beakerX + beakerW - 35, cyTop);
-      ctx.stroke();
+      // Battery symbol at left vertical wire (cx0, midY)
+      const midY = (cyTop + cyBot) / 2;
+      ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
+      ctx.fillRect(cx0 - 18, midY - 22, 36, 44);
 
-      // Battery symbol at left
-      ctx.fillStyle = isDark ? '#0f172a' : '#ffffff';
-      ctx.fillRect(cx0 - 18, (cyTop + cyBot) / 2 - 22, 36, 44);
-      ctx.strokeStyle = '#f59e0b';
+      const posY = effReverse ? midY + 7 : midY - 7;
+      const negY = effReverse ? midY - 7 : midY + 7;
+
+      // Long plate (+)
+      ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(cx0 - 16, (cyTop + cyBot) / 2 - 6);
-      ctx.lineTo(cx0 + 16, (cyTop + cyBot) / 2 - 6);
+      ctx.moveTo(cx0 - 15, posY);
+      ctx.lineTo(cx0 + 15, posY);
       ctx.stroke();
-      ctx.lineWidth = 2;
+
+      // Short plate (-)
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(cx0 - 9, (cyTop + cyBot) / 2 + 6);
-      ctx.lineTo(cx0 + 9, (cyTop + cyBot) / 2 + 6);
+      ctx.moveTo(cx0 - 9, negY);
+      ctx.lineTo(cx0 + 9, negY);
       ctx.stroke();
+
+      // Explicit (+) and (-) marks
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('+', cx0 + 18, posY + 4);
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillText('−', cx0 + 18, negY + 4);
+
       ctx.fillStyle = fg;
       ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`U=${U}V`, cx0 + 22, (cyTop + cyBot) / 2 + 4);
+      ctx.fillText(`U=${Number.isInteger(U) ? U : U.toFixed(1)}V`, cx0 + 18, midY + (effReverse ? -20 : 26));
 
-      // Moving electron dots
-      const eCount = Math.min(12, Math.max(3, Math.round(I * 2)));
-      for (let i = 0; i < eCount; i++) {
-        const prog = ((t * (0.15 + I * 0.05) + i / eCount) % 1);
-        const ex = cx0 + prog * (beakerX + 35 - cx0);
-        ctx.fillStyle = '#22d3ee';
-        ctx.beginPath();
-        ctx.arc(ex, cyTop, 3.5, 0, Math.PI * 2);
-        ctx.fill();
+      // Current flow animation: ALWAYS out from (+) -> outer circuit -> coil -> into (-)
+      if (!isOpen && I > 0.005) {
+        const showElectrons = Boolean(flags.showElectrons);
+        const loopPtsCW: [number, number][] = [
+          [cx0, posY],
+          [cx0, cyTop],
+          [coilLeftX, cyTop],
+          [coilLeftX, coilY],
+          [coilRightX, coilY],
+          [coilRightX, cyBot],
+          [cx0, cyBot],
+          [cx0, negY]
+        ];
+        const loopPtsI: [number, number][] = !effReverse
+          ? loopPtsCW
+          : [
+              [cx0, posY],
+              [cx0, cyBot],
+              [coilRightX, cyBot],
+              [coilRightX, coilY],
+              [coilLeftX, coilY],
+              [coilLeftX, cyTop],
+              [cx0, cyTop],
+              [cx0, negY]
+            ];
+
+        const samplePath = (pts: [number, number][], fracRaw: number) => {
+          const frac = ((fracRaw % 1) + 1) % 1;
+          let totalLen = 0;
+          const segLens: number[] = [];
+          for (let k = 0; k < pts.length - 1; k++) {
+            const dLen = Math.hypot(pts[k + 1][0] - pts[k][0], pts[k + 1][1] - pts[k][1]);
+            segLens.push(dLen);
+            totalLen += dLen;
+          }
+          let d = frac * totalLen;
+          for (let s = 0; s < segLens.length; s++) {
+            if (d <= segLens[s] || s === segLens.length - 1) {
+              const f = segLens[s] > 0 ? d / segLens[s] : 0;
+              const dx = pts[s + 1][0] - pts[s][0];
+              const dy = pts[s + 1][1] - pts[s][1];
+              return {
+                x: pts[s][0] + dx * f,
+                y: pts[s][1] + dy * f,
+                ang: Math.atan2(dy, dx)
+              };
+            }
+            d -= segLens[s];
+          }
+          return { x: pts[0][0], y: pts[0][1], ang: 0 };
+        };
+
+        const speedNorm = Math.min(0.45, Math.max(0.06, I * 0.055));
+        const pulseCount = 10;
+        for (let i = 0; i < pulseCount; i++) {
+          const pt = samplePath(loopPtsI, t * speedNorm + i / pulseCount);
+          if (Math.abs(pt.x - cx0) < 4 && Math.abs(pt.y - midY) < 20) continue;
+          if (Math.abs(pt.y - coilY) < 4 && pt.x >= coilLeftX && pt.x <= coilRightX) continue;
+          ctx.save();
+          ctx.translate(pt.x, pt.y);
+          ctx.rotate(pt.ang);
+          ctx.fillStyle = '#10b981';
+          ctx.beginPath();
+          ctx.moveTo(6.5, 0);
+          ctx.lineTo(-5, -4);
+          ctx.lineTo(-2.5, 0);
+          ctx.lineTo(-5, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        if (showElectrons) {
+          const electronPath = [...loopPtsI].reverse();
+          const eCount = 12;
+          for (let i = 0; i < eCount; i++) {
+            const pt = samplePath(electronPath, t * speedNorm + i / eCount);
+            if (Math.abs(pt.x - cx0) < 4 && Math.abs(pt.y - midY) < 20) continue;
+            if (Math.abs(pt.y - coilY) < 4 && pt.x >= coilLeftX && pt.x <= coilRightX) continue;
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 3.1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // Conventional Current (I) labels & reference arrows
+        const topArrowX = (swX2 + coilLeftX) / 2;
+        const botArrowX = (cx0 + coilRightX) / 2;
+        if (topArrowX > swX2 + 12) {
+          drawArrow(
+            ctx,
+            topArrowX - 12 * conventionalDir,
+            cyTop - 10,
+            topArrowX + 12 * conventionalDir,
+            cyTop - 10,
+            '#10b981',
+            2.4,
+            7
+          );
+          ctx.fillStyle = '#10b981';
+          ctx.font = 'bold 10.5px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('Chiều I', topArrowX, cyTop - 16);
+        }
+        drawArrow(
+          ctx,
+          botArrowX + 14 * conventionalDir,
+          cyBot + 10,
+          botArrowX - 14 * conventionalDir,
+          cyBot + 10,
+          '#10b981',
+          2.4,
+          7
+        );
       }
 
       // Water Calorimeter Beaker
-      const heatAlpha = Math.min(0.65, 0.12 + P / 250);
+      const heatAlpha = isOpen || I <= 0.005 ? 0.05 : Math.min(0.65, 0.12 + P / 250);
       ctx.fillStyle = `rgba(249, 115, 22, ${heatAlpha * 0.45})`;
-      ctx.fillRect(beakerX + 4, beakerY + 32, beakerW - 8, beakerH - 36);
+      ctx.fillRect(beakerX + 4, beakerY + 28, beakerW - 8, beakerH - 32);
       ctx.fillStyle = isDark ? 'rgba(56,189,248,0.2)' : 'rgba(56,189,248,0.28)';
-      ctx.fillRect(beakerX + 4, beakerY + 32, beakerW - 8, beakerH - 36);
+      ctx.fillRect(beakerX + 4, beakerY + 28, beakerW - 8, beakerH - 32);
       ctx.strokeStyle = muted;
       ctx.lineWidth = 2.5;
       ctx.strokeRect(beakerX, beakerY, beakerW, beakerH);
 
       // Glowing Heating Coil inside water
-      const glow = Math.min(1, P / 150);
-      ctx.strokeStyle = glow > 0.4 ? '#f97316' : '#fb923c';
+      const glow = isOpen || I <= 0.005 ? 0 : Math.min(1, P / 150);
+      ctx.strokeStyle = isOpen || I <= 0.005 ? '#64748b' : glow > 0.4 ? '#f97316' : '#fb923c';
       ctx.lineWidth = 4;
       ctx.beginPath();
-      const coilY = beakerY + 95;
-      ctx.moveTo(beakerX + 35, coilY);
+      ctx.moveTo(coilLeftX, coilY);
       for (let z = 0; z < 6; z++) {
-        const zx = beakerX + 35 + ((z + 0.5) / 6) * (beakerW - 70);
+        const zx = coilLeftX + ((z + 0.5) / 6) * (coilRightX - coilLeftX);
         const zy = coilY + (z % 2 === 0 ? -12 : 12);
         ctx.lineTo(zx, zy);
       }
-      ctx.lineTo(beakerX + beakerW - 35, coilY);
+      ctx.lineTo(coilRightX, coilY);
       ctx.stroke();
 
       // Rising convection bubbles proportional to power
-      const bubbleCount = Math.min(14, Math.max(2, Math.round(P / 12)));
-      ctx.fillStyle = 'rgba(255,255,255,0.65)';
-      for (let b = 0; b < bubbleCount; b++) {
-        const byProg = (t * 0.6 + b * 0.23) % 1;
-        const bx = beakerX + 26 + ((b * 19) % (beakerW - 52));
-        const by = coilY - byProg * (coilY - beakerY - 36);
-        ctx.beginPath();
-        ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
-        ctx.fill();
+      if (!isOpen && P > 0.2) {
+        const bubbleCount = Math.min(14, Math.max(2, Math.round(P / 12)));
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        for (let b = 0; b < bubbleCount; b++) {
+          const byProg = (t * 0.6 + b * 0.23) % 1;
+          const bx = beakerX + 24 + ((b * 19) % Math.max(20, beakerW - 48));
+          const by = coilY - byProg * Math.max(20, coilY - beakerY - 32);
+          ctx.beginPath();
+          ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       // Thermometer on right side
-      const thermX = beakerX + beakerW + 34;
-      const thermY = beakerY + 10;
-      const thermH = beakerH - 20;
+      const thermX = beakerX + beakerW + 26;
+      const thermY = beakerY + 8;
+      const thermH = beakerH - 16;
       ctx.strokeStyle = fg;
       ctx.lineWidth = 2;
       ctx.strokeRect(thermX, thermY, 16, thermH);
@@ -859,10 +1013,22 @@ export function renderCustomStepPhysicsSim({
       ctx.fillStyle = fg;
       ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(`${tempCur.toFixed(1)}°C`, thermX + 24, thermY + thermH - mercH + 4);
+      ctx.fillText(`${tempCur.toFixed(1)}°C`, thermX + 22, thermY + thermH - mercH + 4);
       ctx.font = '11px sans-serif';
       ctx.fillStyle = muted;
-      ctx.fillText(`Q = I²Rt = ${Q.toFixed(0)} J`, thermX + 24, beakerY + 24);
+      ctx.fillText(`Q = ${Q.toFixed(0)} J`, thermX + 22, beakerY + 20);
+
+      // Legend at bottom
+      ctx.font = 'bold 10.5px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = muted;
+      ctx.fillText(
+        flags.showElectrons
+          ? 'Dòng I (mũi tên xanh): Ra (+) → Vào (−)  |  Electron e⁻ (hạt vàng): (−) → (+)'
+          : 'Chiều dòng điện quy ước I (mũi tên xanh): Ra từ cực dương (+) → Vào cực âm (−)',
+        w / 2,
+        h - 10
+      );
       break;
     }
 

@@ -22,6 +22,7 @@ export interface Physics2DFlags {
   inductionAction: number; // 0: Dao động | 1: Đưa vào | 2: Rút ra | 3: Đứng yên
   showProtractor: boolean;
   showFieldGrid: boolean;
+  showElectrons?: boolean;
 }
 
 export interface Physics2DTelemetry {
@@ -54,7 +55,8 @@ export const DEFAULT_PHYSICS_2D_FLAGS: Physics2DFlags = {
   flipMagnet: false,
   inductionAction: 0,
   showProtractor: true,
-  showFieldGrid: true
+  showFieldGrid: true,
+  showElectrons: false
 };
 
 export interface Physics2DRenderOptions {
@@ -102,54 +104,77 @@ function wavelengthToColor(nm: number): string {
 
 // 1. Ohm's Law Circuit (Lớp 9 & 11)
 function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, pushTelemetry }: DrawCtx) {
-  const U = Math.max(0, p.voltage ?? 12);
-  const R1 = Math.max(0.1, p.r1 ?? p.resistor1 ?? 10);
-  const R2 = Math.max(0.1, p.r2 ?? p.resistor2 ?? 10);
+  const rawU = Number.isFinite(p.voltage) ? p.voltage : 12;
+  const effReverse = rawU < 0 ? !flags.reversePolarity : flags.reversePolarity;
+  const U = Math.abs(rawU);
+  const R1 = Math.max(0.01, Number.isFinite(p.r1 ?? p.resistor1) ? (p.r1 ?? p.resistor1) : 10);
+  const R2 = Math.max(0.01, Number.isFinite(p.r2 ?? p.resistor2) ? (p.r2 ?? p.resistor2) : 10);
   const isParallel = Math.round(p.circuitType ?? p.circuitMode ?? 0) === 1;
   const isOpen = flags.circuitOpen;
-  const signDir = flags.reversePolarity ? -1 : 1;
+  const showElectrons = Boolean(flags.showElectrons);
 
-  const R_eq = isParallel ? (R1 * R2) / Math.max(0.1, R1 + R2) : R1 + R2;
-  const I = isOpen ? 0 : U / Math.max(0.1, R_eq);
+  // Quy ước chiều dòng điện I: RA từ cực dương (+) -> qua mạch ngoài -> VÀO cực âm (-).
+  // !effReverse: (+) bên TRÁI, (-) bên PHẢI => I ra trái từ (+) -> xuống Đèn -> phải qua R -> lên Ampe kế -> trái vào (-) [CCW = -1]
+  // effReverse: (+) bên PHẢI, (-) bên TRÁI => I ra phải từ (+) -> qua K -> xuống Ampe kế -> trái qua R -> lên Đèn -> phải vào (-) [CW = +1]
+  const conventionalDir: 1 | -1 = effReverse ? 1 : -1;
+
+  const R_eq = isParallel ? (R1 * R2) / Math.max(0.01, R1 + R2) : R1 + R2;
+  const I = isOpen ? 0 : U / Math.max(0.01, R_eq);
+  const I1 = isOpen ? 0 : isParallel ? U / R1 : I;
+  const I2 = isOpen ? 0 : isParallel ? U / R2 : I;
   const P = U * I;
   const U1 = isOpen ? 0 : isParallel ? U : I * R1;
+  const U2 = isOpen ? 0 : isParallel ? U : I * R2;
+
+  const fmtOhm = (val: number) => (Number.isInteger(val) ? `${val}` : val.toFixed(1));
+  const fmtVolt = (val: number) => (Number.isInteger(val) ? `${val}` : val.toFixed(1));
+  const dirLabel = conventionalDir === -1 ? 'Ngược KĐH: (+) trái → Đèn → R → Ampe kế → (−) phải' : 'Thuận KĐH: (+) phải → K → Ampe kế → R → Đèn → (−) trái';
 
   pushTelemetry({
     metric1Label: 'Điện trở tương đương (Rtđ)',
     metric1Val: `${R_eq.toFixed(2)} Ω`,
     metric2Label: 'Cường độ dòng (I)',
-    metric2Val: isOpen ? '0.00 A (Ngắt K)' : `${(I * signDir).toFixed(2)} A`,
+    metric2Val: isOpen ? '0.00 A (Mở K)' : `${I.toFixed(2)} A`,
     metric3Label: 'Công suất tiêu thụ (P)',
     metric3Val: `${P.toFixed(2)} W`,
     note: isOpen
-      ? 'Khóa K đang MỞ: Mạch hở nên I = 0 A, đèn tắt.'
+      ? 'Khóa K đang MỞ: Mạch hở nên I = 0 A, đèn tắt, không có dòng điện chạy qua.'
       : isParallel
-      ? `Mạch song song: I₁ = ${(U / R1).toFixed(2)} A, I₂ = ${(U / R2).toFixed(2)} A, U₁ = U₂ = ${U.toFixed(1)} V`
-      : `Mạch nối tiếp: Rtđ = R₁ + R₂. U₁ = ${(I * R1).toFixed(1)} V, U₂ = ${(I * R2).toFixed(1)} V`
+      ? `Mạch song song · Dòng I: ${dirLabel} · I₁ = ${I1.toFixed(2)} A, I₂ = ${I2.toFixed(2)} A, U₁ = U₂ = ${U.toFixed(1)} V.`
+      : `Mạch nối tiếp · Dòng I: ${dirLabel} · U₁ = ${U1.toFixed(1)} V, U₂ = ${U2.toFixed(1)} V.`
   });
 
-  const cx = w / 2;
-  const cy = h / 2;
-  const cw = Math.min(w * 0.68, 460);
-  const ch = Math.min(h * 0.56, 250);
+  // Ensure generous top/bottom/side margins so battery U label, I1/I2, Ammeter & legend NEVER clip
+  const topMargin = 42;
+  const botMargin = isParallel ? 48 : 34;
+  const availH = Math.max(96, h - topMargin - botMargin);
+  const ch = Math.min(availH, 230);
+  const top = topMargin + (availH - ch) / 2;
+  const bottom = top + ch;
+  const cy = (top + bottom) / 2;
 
+  const sideMargin = 66;
+  const cw = Math.min(Math.max(210, w - sideMargin * 2), 460);
+  const cx = w / 2;
   const left = cx - cw / 2;
   const right = cx + cw / 2;
-  const top = cy - ch / 2;
-  const bottom = cy + ch / 2;
 
-  ctx.strokeStyle = isOpen ? '#64748b' : isDark ? '#38bdf8' : '#0284c7';
+  const wireColor = isOpen ? '#64748b' : isDark ? '#38bdf8' : '#0284c7';
+  ctx.strokeStyle = wireColor;
   ctx.lineWidth = 4;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  const swX1 = cx + cw * 0.22;
+  const swX2 = cx + cw * 0.36;
+
   ctx.beginPath();
   ctx.moveTo(left, top);
-  ctx.lineTo(cx + cw * 0.22, top);
+  ctx.lineTo(swX1, top);
   if (!isOpen) {
     ctx.lineTo(right, top);
   } else {
-    ctx.moveTo(cx + cw * 0.36, top);
+    ctx.moveTo(swX2, top);
     ctx.lineTo(right, top);
   }
   ctx.lineTo(right, bottom);
@@ -157,8 +182,36 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
   ctx.closePath();
   ctx.stroke();
 
-  const swX1 = cx + cw * 0.22;
-  const swX2 = cx + cw * 0.36;
+  const jLeft = cx - Math.min(80, cw * 0.22);
+  const jRight = cx + Math.min(80, cw * 0.22);
+
+  if (isParallel) {
+    ctx.strokeStyle = wireColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(jLeft, bottom);
+    ctx.lineTo(jLeft, bottom - 34);
+    ctx.lineTo(jRight, bottom - 34);
+    ctx.lineTo(jRight, bottom);
+    ctx.stroke();
+  }
+
+  const drawArrowHead = (x: number, y: number, angle: number, color: string, size = 6.5) => {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(size, 0);
+    ctx.lineTo(-size * 0.8, -size * 0.65);
+    ctx.lineTo(-size * 0.45, 0);
+    ctx.lineTo(-size * 0.8, size * 0.65);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  };
+
+  // Switch K on top-right
   ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
   ctx.fillRect(swX1, top - 14, swX2 - swX1, 24);
   ctx.strokeStyle = isOpen ? '#ef4444' : '#10b981';
@@ -166,7 +219,7 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
   ctx.beginPath();
   ctx.moveTo(swX1, top);
   if (isOpen) {
-    ctx.lineTo(swX2 - 4, top - 20);
+    ctx.lineTo(swX2 - 4, top - 18);
   } else {
     ctx.lineTo(swX2, top);
   }
@@ -176,59 +229,197 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
   ctx.textAlign = 'center';
   ctx.fillText(isOpen ? 'K (Mở)' : 'K (Đóng)', (swX1 + swX2) / 2, top + 16);
 
-  if (!isOpen && I > 0.01) {
-    const electronCount = 20;
-    const perimeter = 2 * (cw + ch);
-    const speedPix = Math.min(260, I * 55);
-    const electronOffset = (((t * speedPix * signDir) % perimeter) + perimeter) % perimeter;
+  const batCx = cx - 22;
+  const batGapHalf = 22;
 
-    ctx.fillStyle = ov.showVectors ? '#facc15' : '#fde047';
-    for (let i = 0; i < electronCount; i++) {
-      const d = (electronOffset + (i * perimeter) / electronCount) % perimeter;
-      let ex = left;
-      let ey = top;
+  // Helper to sample position & tangent angle along an arbitrary polyline
+  const samplePolyline = (pts: [number, number][], fracRaw: number): { x: number; y: number; ang: number } => {
+    const frac = ((fracRaw % 1) + 1) % 1;
+    let total = 0;
+    const lens: number[] = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const l = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+      lens.push(l);
+      total += l;
+    }
+    let d = frac * total;
+    for (let i = 0; i < lens.length; i++) {
+      if (d <= lens[i] || i === lens.length - 1) {
+        const segFrac = lens[i] > 0 ? d / lens[i] : 0;
+        const dx = pts[i + 1][0] - pts[i][0];
+        const dy = pts[i + 1][1] - pts[i][1];
+        return {
+          x: pts[i][0] + dx * segFrac,
+          y: pts[i][1] + dy * segFrac,
+          ang: Math.atan2(dy, dx)
+        };
+      }
+      d -= lens[i];
+    }
+    return { x: pts[0][0], y: pts[0][1], ang: 0 };
+  };
 
-      if (d < cw) {
-        ex = left + d;
-        ey = top;
-      } else if (d < cw + ch) {
-        ex = right;
-        ey = top + (d - cw);
-      } else if (d < 2 * cw + ch) {
-        ex = right - (d - cw - ch);
-        ey = bottom;
-      } else {
-        ex = left;
-        ey = bottom - (d - 2 * cw - ch);
+  if (!isOpen && I > 0.005) {
+    const posTerminalX = batCx + (effReverse ? 10 : -10);
+    const negTerminalX = batCx + (effReverse ? -10 : 10);
+
+    // Outer loop path ordered in the EXACT direction of Conventional Current I: (+) -> mạch ngoài -> (-)
+    const outerPathI: [number, number][] = !effReverse
+      ? [
+          [posTerminalX, top],
+          [left, top],
+          [left, bottom],
+          [right, bottom],
+          [right, top],
+          [negTerminalX, top]
+        ]
+      : [
+          [posTerminalX, top],
+          [right, top],
+          [right, bottom],
+          [left, bottom],
+          [left, top],
+          [negTerminalX, top]
+        ];
+
+    const speedNorm = Math.min(0.45, Math.max(0.06, I * 0.065));
+
+    // 1. Animated Current Flow Pulses & Directional Chevrons strictly (+) -> (-)
+    if (!isParallel) {
+      const pulseCount = 14;
+      for (let i = 0; i < pulseCount; i++) {
+        const pt = samplePolyline(outerPathI, t * speedNorm + i / pulseCount);
+        if (Math.abs(pt.y - top) < 4 && Math.abs(pt.x - batCx) < batGapHalf) continue;
+        // Skip directly inside Lamp center or Ammeter center
+        if (Math.hypot(pt.x - left, pt.y - cy) < 15) continue;
+        if (Math.hypot(pt.x - right, pt.y - cy) < 25) continue;
+        drawArrowHead(pt.x, pt.y, pt.ang, '#10b981', 6.5);
+      }
+    } else {
+      // Main wires outside parallel junction [jLeft, jRight]
+      const preJunctionPts: [number, number][] = !effReverse
+        ? [
+            [posTerminalX, top],
+            [left, top],
+            [left, bottom],
+            [jLeft, bottom]
+          ]
+        : [
+            [posTerminalX, top],
+            [right, top],
+            [right, bottom],
+            [jRight, bottom]
+          ];
+      const postJunctionPts: [number, number][] = !effReverse
+        ? [
+            [jRight, bottom],
+            [right, bottom],
+            [right, top],
+            [negTerminalX, top]
+          ]
+        : [
+            [jLeft, bottom],
+            [left, bottom],
+            [left, top],
+            [negTerminalX, top]
+          ];
+
+      for (let i = 0; i < 6; i++) {
+        const frac = (t * speedNorm * 1.8 + i / 6) % 1;
+        const p1 = samplePolyline(preJunctionPts, frac);
+        if (Math.hypot(p1.x - left, p1.y - cy) >= 15 && Math.hypot(p1.x - right, p1.y - cy) >= 25) {
+          drawArrowHead(p1.x, p1.y, p1.ang, '#10b981', 6.5);
+        }
+        const p2 = samplePolyline(postJunctionPts, frac);
+        if (Math.hypot(p2.x - left, p2.y - cy) >= 15 && Math.hypot(p2.x - right, p2.y - cy) >= 25) {
+          drawArrowHead(p2.x, p2.y, p2.ang, '#10b981', 6.5);
+        }
       }
 
-      ctx.beginPath();
-      ctx.arc(ex, ey, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      // Branch 1 (R1) pulses: strictly from entry junction to exit junction
+      const b1Pts: [number, number][] = !effReverse
+        ? [
+            [jLeft, bottom],
+            [jRight, bottom]
+          ]
+        : [
+            [jRight, bottom],
+            [jLeft, bottom]
+          ];
+      const b1Speed = Math.min(0.8, Math.max(0.12, I1 * 0.14));
+      for (let i = 0; i < 3; i++) {
+        const pt = samplePolyline(b1Pts, t * b1Speed + i / 3);
+        if (Math.abs(pt.x - cx) < 35) continue;
+        drawArrowHead(pt.x, pt.y, pt.ang, '#10b981', 6);
+      }
+
+      // Branch 2 (R2) pulses: strictly from entry junction up -> across R2 -> down to exit junction
+      const b2Pts: [number, number][] = !effReverse
+        ? [
+            [jLeft, bottom],
+            [jLeft, bottom - 34],
+            [jRight, bottom - 34],
+            [jRight, bottom]
+          ]
+        : [
+            [jRight, bottom],
+            [jRight, bottom - 34],
+            [jLeft, bottom - 34],
+            [jLeft, bottom]
+          ];
+      const b2Speed = Math.min(0.8, Math.max(0.12, I2 * 0.14));
+      for (let i = 0; i < 4; i++) {
+        const pt = samplePolyline(b2Pts, t * b2Speed + i / 4);
+        if (Math.abs(pt.y - (bottom - 34)) < 3 && Math.abs(pt.x - cx) < 35) continue;
+        drawArrowHead(pt.x, pt.y, pt.ang, '#10b981', 6);
+      }
     }
 
-    if (ov.showVectors) {
-      ctx.fillStyle = '#10b981';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillText(signDir > 0 ? 'Chiều I →' : '← Chiều I', cx - cw * 0.28, top - 10);
+    // 2. Optional Free Electron overlay (e-): ONLY drawn when explicitly toggled ON, moving (-) -> (+)
+    if (showElectrons) {
+      const electronPath: [number, number][] = [...outerPathI].reverse();
+      const eCount = 16;
+      for (let i = 0; i < eCount; i++) {
+        const pt = samplePolyline(electronPath, t * speedNorm + i / eCount);
+        if (Math.abs(pt.y - top) < 4 && Math.abs(pt.x - batCx) < batGapHalf) continue;
+        if (Math.hypot(pt.x - left, pt.y - cy) < 15) continue;
+        if (Math.hypot(pt.x - right, pt.y - cy) < 25) continue;
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#713f12';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      }
     }
+
+    // Crisp text badge showing conventional current I direction right outside (+) pole
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    const topLeftMidX = (left + (batCx - batGapHalf)) / 2;
+    const badgeX = topLeftMidX > left + 22 ? topLeftMidX : left + 34;
+    ctx.fillText(conventionalDir === -1 ? '← Chiều I' : 'Chiều I →', badgeX, top - 11);
   }
 
-  const batW = 50;
+  // Battery symbol (clear gap on top wire)
+  const batW = 46;
   ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
-  ctx.fillRect(cx - batW / 2 - 20, top - 16, batW, 32);
+  ctx.fillRect(batCx - batW / 2, top - 17, batW, 34);
 
-  const batCx = cx - 20;
-  const posOffset = flags.reversePolarity ? 9 : -9;
-  const negOffset = flags.reversePolarity ? -9 : 9;
+  const posOffset = effReverse ? 10 : -10;
+  const negOffset = effReverse ? -10 : 10;
 
+  // Long plate (+)
   ctx.strokeStyle = '#ef4444';
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 4.5;
   ctx.beginPath();
   ctx.moveTo(batCx + posOffset, top - 15);
   ctx.lineTo(batCx + posOffset, top + 15);
   ctx.stroke();
 
+  // Short plate (-)
   ctx.strokeStyle = '#3b82f6';
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -236,14 +427,18 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
   ctx.lineTo(batCx + negOffset, top + 9);
   ctx.stroke();
 
-  ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
-  ctx.font = 'bold 12px sans-serif';
+  // Explicit (+) and (-) marks right beside plates
+  ctx.font = 'bold 12px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(
-    `${flags.reversePolarity ? '−' : '+'} Nguồn U = ${U}V ${flags.reversePolarity ? '+' : '−'}`,
-    batCx,
-    top - 24
-  );
+  ctx.fillStyle = '#ef4444';
+  ctx.fillText('+', batCx + posOffset + (posOffset < 0 ? -12 : 12), top - 10);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillText('−', batCx + negOffset + (negOffset < 0 ? -12 : 12), top - 10);
+
+  ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+  ctx.font = 'bold 11.5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Nguồn U = ${fmtVolt(U)}V`, batCx, top - 24);
 
   if (!isParallel) {
     const drawResistorBox = (rx: number, ry: number, label: string, rVal: number) => {
@@ -254,23 +449,24 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
       ctx.strokeRect(rx - 36, ry - 14, 72, 28);
 
       ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
-      ctx.font = '11px monospace';
-      ctx.fillText(`${label}: ${rVal}Ω`, rx, ry + 4);
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${label}:${fmtOhm(rVal)}Ω`, rx, ry + 4);
     };
 
-    drawResistorBox(cx - 72, bottom, 'R1', R1);
-    drawResistorBox(cx + 72, bottom, 'R2', R2);
+    drawResistorBox(cx - 64, bottom, 'R₁', R1);
+    drawResistorBox(cx + 64, bottom, 'R₂', R2);
 
     if (flags.showVoltmeter) {
-      const vx = cx - 72;
-      const vy = bottom - 48;
+      const vx = cx - 64;
+      const vy = Math.max(top + 32, bottom - 48);
       ctx.strokeStyle = '#a855f7';
       ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.moveTo(vx - 44, bottom);
-      ctx.lineTo(vx - 44, vy);
-      ctx.lineTo(vx + 44, vy);
-      ctx.lineTo(vx + 44, bottom);
+      ctx.moveTo(vx - 40, bottom);
+      ctx.lineTo(vx - 40, vy);
+      ctx.lineTo(vx + 40, vy);
+      ctx.lineTo(vx + 40, bottom);
       ctx.stroke();
 
       ctx.fillStyle = isDark ? '#1e293b' : '#f3e8ff';
@@ -279,10 +475,19 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = '#a855f7';
-      ctx.font = 'bold 11px monospace';
+      ctx.font = 'bold 10.5px monospace';
+      ctx.textAlign = 'center';
       ctx.fillText(`V:${U1.toFixed(1)}`, vx, vy + 4);
     }
   } else {
+    // Junction dots for parallel circuit
+    ctx.fillStyle = wireColor;
+    [jLeft, jRight].forEach((jx) => {
+      ctx.beginPath();
+      ctx.arc(jx, bottom, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
     const drawResistorBox = (rx: number, ry: number, label: string, rVal: number) => {
       ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
       ctx.fillRect(rx - 34, ry - 12, 68, 24);
@@ -291,44 +496,45 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
       ctx.strokeRect(rx - 34, ry - 12, 68, 24);
 
       ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
-      ctx.font = '10px monospace';
-      ctx.fillText(`${label}=${rVal}Ω`, rx, ry + 3);
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${label}=${fmtOhm(rVal)}Ω`, rx, ry + 3.5);
     };
 
-    ctx.strokeStyle = isOpen ? '#64748b' : isDark ? '#38bdf8' : '#0284c7';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(cx - 80, bottom);
-    ctx.lineTo(cx - 80, bottom - 34);
-    ctx.lineTo(cx + 80, bottom - 34);
-    ctx.lineTo(cx + 80, bottom);
-    ctx.stroke();
+    drawResistorBox(cx, bottom, 'R₁', R1);
+    drawResistorBox(cx, bottom - 34, 'R₂', R2);
 
-    drawResistorBox(cx, bottom, 'R1', R1);
-    drawResistorBox(cx, bottom - 34, 'R2', R2);
+    // Branch current labels I1 & I2
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`I₁=${I1.toFixed(2)}A`, cx, bottom + 21);
+    ctx.fillText(`I₂=${I2.toFixed(2)}A`, cx, bottom - 49);
 
     if (flags.showVoltmeter) {
-      const vy = bottom - 70;
+      const vy = Math.max(top + 32, bottom - 76);
       ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
-      ctx.moveTo(cx - 80, bottom - 34);
-      ctx.lineTo(cx - 80, vy);
-      ctx.lineTo(cx + 80, vy);
-      ctx.lineTo(cx + 80, bottom - 34);
+      ctx.moveTo(jLeft, bottom - 34);
+      ctx.lineTo(jLeft, vy);
+      ctx.lineTo(jRight, vy);
+      ctx.lineTo(jRight, bottom - 34);
       ctx.stroke();
 
       ctx.fillStyle = isDark ? '#1e293b' : '#f3e8ff';
       ctx.beginPath();
-      ctx.arc(cx, vy, 16, 0, Math.PI * 2);
+      ctx.arc(cx, vy, 15, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = '#a855f7';
-      ctx.font = 'bold 11px monospace';
-      ctx.fillText(`${U1.toFixed(1)}V`, cx, vy + 4);
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${U1.toFixed(1)}V`, cx, vy + 3.5);
     }
   }
 
+  // Ammeter on right wire
   ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
   ctx.beginPath();
   ctx.arc(right, cy, 24, 0, Math.PI * 2);
@@ -337,11 +543,15 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
   ctx.lineWidth = 3;
   ctx.stroke();
   ctx.fillStyle = '#10b981';
-  ctx.font = 'bold 11px monospace';
+  ctx.font = 'bold 10.5px monospace';
+  ctx.textAlign = 'center';
   ctx.fillText(`${I.toFixed(2)}A`, right, cy + 4);
+  ctx.font = 'bold 9.5px sans-serif';
+  ctx.fillText('Ampe kế', right, cy + 35);
 
+  // Lamp on left wire
   if (!isOpen && P > 0.05) {
-    const glowRadius = Math.min(30 + P * 1.6, 65);
+    const glowRadius = Math.min(30 + P * 1.4, 58);
     const lampGrad = ctx.createRadialGradient(left, cy, 5, left, cy, glowRadius);
     lampGrad.addColorStop(0, 'rgba(250, 204, 21, 0.9)');
     lampGrad.addColorStop(1, 'rgba(250, 204, 21, 0)');
@@ -351,16 +561,30 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
     ctx.fill();
   }
 
-  ctx.fillStyle = isOpen ? '#64748b' : '#fbbf24';
+  ctx.fillStyle = isOpen || U <= 0.01 ? '#64748b' : '#fbbf24';
   ctx.beginPath();
   ctx.arc(left, cy, 14, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = isOpen ? '#475569' : '#d97706';
+  ctx.strokeStyle = isOpen || U <= 0.01 ? '#475569' : '#d97706';
   ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.fillStyle = isOpen ? '#f8fafc' : '#78350f';
+  ctx.fillStyle = isOpen || U <= 0.01 ? '#f8fafc' : '#78350f';
   ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
   ctx.fillText('Đèn', left, cy + 4);
+
+  // Bottom Legend Bar (always stays inside canvas)
+  ctx.font = 'bold 10.5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+  const legendY = h - 8;
+  ctx.fillText(
+    showElectrons
+      ? 'Dòng điện I (mũi tên xanh): Ra (+) → Vào (−)  |  Electron e⁻ (hạt vàng): (−) → (+)'
+      : 'Chiều dòng điện quy ước I (mũi tên xanh): Ra từ cực dương (+) → Vào cực âm (−)',
+    cx,
+    legendY
+  );
 }
 
 // 2. Converging / Diverging Lens (Lớp 9 & Chuyên)

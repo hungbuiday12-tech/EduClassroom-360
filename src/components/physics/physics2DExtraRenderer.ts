@@ -744,13 +744,16 @@ export function renderExtra2DPhysicsSim(
 
     // 12. WHEATSTONE BRIDGE
     case 'wheatstone_bridge': {
-      const U = p.voltage ?? 12;
-      const r1 = p.r1 ?? 10;
-      const r2 = p.r2 ?? 20;
-      const r3 = p.r3 ?? 15;
-      const r4 = p.r4 ?? 30;
-      const uC = U * (r2 / (r1 + r2));
-      const uD = U * (r4 / (r3 + r4));
+      const rawU = Number.isFinite(p.voltage) ? p.voltage : 12;
+      const U = Math.abs(rawU);
+      const reversed = rawU < 0;
+      const r1 = Math.max(0.01, p.r1 ?? 10);
+      const r2 = Math.max(0.01, p.r2 ?? 20);
+      const r3 = Math.max(0.01, p.r3 ?? 15);
+      const r4 = Math.max(0.01, p.r4 ?? 30);
+      // Nếu nguồn thuận (+ bên A trái, - bên B phải): U_A = U, U_B = 0 => U_C = U * r2 / (r1 + r2)
+      const uC = reversed ? U * (r1 / (r1 + r2)) : U * (r2 / (r1 + r2));
+      const uD = reversed ? U * (r3 / (r3 + r4)) : U * (r4 / (r3 + r4));
       const uCD = uC - uD;
       const balanced = Math.abs(uCD) < 0.08;
 
@@ -761,16 +764,18 @@ export function renderExtra2DPhysicsSim(
         metric2Val: `${(r1 / r2).toFixed(2)} vs ${(r3 / r4).toFixed(2)}`,
         metric3Label: 'Trạng thái cầu',
         metric3Val: balanced ? 'CÂN BẰNG (I_G = 0)' : uCD > 0 ? 'Dòng C → D' : 'Dòng D → C',
-        note: 'Cầu Wheatstone cân bằng khi R₁·R₄ = R₂·R₃, kim điện kế G chỉ số 0!'
+        note: 'Dòng điện đi ra từ cực (+) qua nhánh A–C–B và A–D–B về cực (−). Cầu cân bằng khi R₁·R₄ = R₂·R₃.'
       });
 
       const cx = w * 0.5;
-      const cy = h * 0.48;
+      const cy = h * 0.42;
       const ax = cx - 120;
       const bx = cx + 120;
-      const cY = cy - 75;
-      const dY = cy + 75;
+      const cY = cy - 66;
+      const dY = cy + 66;
+      const batY = cy + 106;
 
+      // Bridge diamond + bottom power return wire
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -781,11 +786,68 @@ export function renderExtra2DPhysicsSim(
       ctx.closePath();
       ctx.moveTo(cx, cY);
       ctx.lineTo(cx, dY);
+      // Supply loop A -> bottom battery -> B
+      ctx.moveTo(ax, cy);
+      ctx.lineTo(ax, batY);
+      ctx.lineTo(bx, batY);
+      ctx.lineTo(bx, cy);
       ctx.stroke();
+
+      // Battery at bottom center
+      ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
+      ctx.fillRect(cx - 22, batY - 16, 44, 32);
+      const posX = reversed ? cx + 9 : cx - 9;
+      const negX = reversed ? cx - 9 : cx + 9;
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(posX, batY - 13);
+      ctx.lineTo(posX, batY + 13);
+      ctx.stroke();
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      ctx.moveTo(negX, batY - 8);
+      ctx.lineTo(negX, batY + 8);
+      ctx.stroke();
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('+', posX + (posX < cx ? -10 : 10), batY - 8);
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillText('−', negX + (negX < cx ? -10 : 10), batY - 8);
+      ctx.fillStyle = textPrimary;
+      ctx.fillText(`U = ${U}V`, cx, batY + 24);
+
+      // Conventional current arrows (+) -> (-)
+      if (U > 0.05) {
+        if (!reversed) {
+          drawArrow2D(ctx, ax, batY - 16, ax, cy + 28, '#10b981', 'I');
+          drawArrow2D(ctx, bx, cy + 28, bx, batY - 16, '#10b981');
+          drawArrow2D(ctx, (ax + cx) / 2 - 10, (cy + cY) / 2 + 5, (ax + cx) / 2 + 12, (cy + cY) / 2 - 7, '#10b981');
+          drawArrow2D(ctx, (cx + bx) / 2 - 12, (cY + cy) / 2 - 7, (cx + bx) / 2 + 10, (cY + cy) / 2 + 5, '#10b981');
+        } else {
+          drawArrow2D(ctx, bx, batY - 16, bx, cy + 28, '#10b981', 'I');
+          drawArrow2D(ctx, ax, cy + 28, ax, batY - 16, '#10b981');
+          drawArrow2D(ctx, (bx + cx) / 2 + 10, (cy + cY) / 2 + 5, (bx + cx) / 2 - 12, (cy + cY) / 2 - 7, '#10b981');
+          drawArrow2D(ctx, (cx + ax) / 2 + 12, (cY + cy) / 2 - 7, (cx + ax) / 2 - 10, (cY + cy) / 2 + 5, '#10b981');
+        }
+        if (!balanced) {
+          drawArrow2D(
+            ctx,
+            cx,
+            uCD > 0 ? cY + 12 : dY - 12,
+            cx,
+            uCD > 0 ? cY + 38 : dY - 38,
+            '#f59e0b',
+            'I_G'
+          );
+        }
+      }
 
       ctx.fillStyle = balanced ? '#10b981' : '#f59e0b';
       ctx.beginPath();
-      ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 18, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#0f172a';
       ctx.font = 'bold 12px sans-serif';
@@ -794,10 +856,14 @@ export function renderExtra2DPhysicsSim(
 
       ctx.fillStyle = textPrimary;
       ctx.font = 'bold 11px monospace';
-      ctx.fillText(`R₁=${r1}Ω`, (ax + cx) / 2 - 14, (cy + cY) / 2 - 8);
-      ctx.fillText(`R₂=${r2}Ω`, (cx + bx) / 2 + 14, (cy + cY) / 2 - 8);
-      ctx.fillText(`R₃=${r3}Ω`, (ax + cx) / 2 - 14, (cy + dY) / 2 + 16);
-      ctx.fillText(`R₄=${r4}Ω`, (cx + bx) / 2 + 14, (cy + dY) / 2 + 16);
+      ctx.fillText('A', ax - 12, cy + 4);
+      ctx.fillText('B', bx + 12, cy + 4);
+      ctx.fillText('C', cx, cY - 8);
+      ctx.fillText('D', cx, dY + 14);
+      ctx.fillText(`R₁=${r1}Ω`, (ax + cx) / 2 - 16, (cy + cY) / 2 - 10);
+      ctx.fillText(`R₂=${r2}Ω`, (cx + bx) / 2 + 16, (cy + cY) / 2 - 10);
+      ctx.fillText(`R₃=${r3}Ω`, (ax + cx) / 2 - 16, (cy + dY) / 2 + 16);
+      ctx.fillText(`R₄=${r4}Ω`, (cx + bx) / 2 + 16, (cy + dY) / 2 + 16);
       return true;
     }
 

@@ -18,6 +18,7 @@ import {
   PERFORMANCE_MODE_OPTIONS
 } from '../../context/BackgroundContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { XRayConfigPanel } from './XRayConfigPanel';
 
 interface AppearanceStudioBarProps {
   compact?: boolean;
@@ -229,6 +230,17 @@ export const AppearanceStudioBar: React.FC<AppearanceStudioBarProps> = ({ compac
                   );
                 })}
               </div>
+
+              {bgStyle === 'xray_reveal' && (
+                <div className="pt-2.5 border-t border-slate-200/70 dark:border-white/10 space-y-2">
+                  <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                    {isEn
+                      ? 'X-Ray Dual-Layer Portraits (System Defaults + Custom Upload):'
+                      : 'Ảnh 2 lớp Soi Xuyên Thấu (Có sẵn ảnh hệ thống & Tải ảnh riêng):'}
+                  </div>
+                  <XRayConfigPanel compact />
+                </div>
+              )}
 
               {showCreatureRow && (
                 <div className="pt-2 border-t border-slate-200/70 dark:border-white/10 space-y-2">

@@ -32,7 +32,7 @@ import { ViewportPortal } from '../common/ViewportPortal';
 import { PHYSICS_3D_SIMS, getDomainFor3DSim } from '../../data/physicsDomainsData';
 import { Physics3DMode as SharedPhysics3DMode } from '../../types';
 import { EXTRA_3D_SCENE_CONFIGS, ExtraPhysics3DModeId } from '../../data/physicsExtraSimsData';
-import { buildExtra3DScene } from './physics3DExtraScenes';
+import { buildExtra3DScene, Extra3DSceneContext } from './physics3DExtraScenes';
 import { PhysicsApparatusWorkbench } from './PhysicsApparatusWorkbench';
 import {
   applyOffAxisProjection,
@@ -658,11 +658,21 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       scene.traverse((obj: any) => {
         if (typeof obj.dispose === 'function' && obj.userData?.isTroikaLabel) {
           obj.dispose();
+          return;
         }
-        if (obj.geometry) obj.geometry.dispose();
+        if (obj.geometry && typeof obj.geometry.dispose === 'function') obj.geometry.dispose();
         if (obj.material) {
-          if (Array.isArray(obj.material)) obj.material.forEach((m: any) => m.dispose());
-          else obj.material.dispose();
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((m: any) => {
+              if (m?.map && typeof m.map.dispose === 'function') m.map.dispose();
+              if (typeof m?.dispose === 'function') m.dispose();
+            });
+          } else {
+            if (obj.material.map && typeof obj.material.map.dispose === 'function') {
+              obj.material.map.dispose();
+            }
+            if (typeof obj.material.dispose === 'function') obj.material.dispose();
+          }
         }
       });
       sceneTickRef.current = null;
@@ -694,17 +704,21 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       child.traverse((obj: any) => {
         if (typeof obj.dispose === 'function' && obj.userData?.isTroikaLabel) {
           obj.dispose();
+          return;
         }
-        if (obj.geometry) obj.geometry.dispose();
+        if (obj.geometry && typeof obj.geometry.dispose === 'function') obj.geometry.dispose();
         if (obj.material) {
           if (Array.isArray(obj.material)) {
-            obj.material.forEach((m: any) => m.dispose());
+            obj.material.forEach((m: any) => {
+              if (m?.map && typeof m.map.dispose === 'function') m.map.dispose();
+              if (typeof m?.dispose === 'function') m.dispose();
+            });
           } else {
-            obj.material.dispose();
+            if (obj.material.map && typeof obj.material.map.dispose === 'function') {
+              obj.material.map.dispose();
+            }
+            if (typeof obj.material.dispose === 'function') obj.material.dispose();
           }
-        }
-        if (obj.material && obj.material.map) {
-          obj.material.map.dispose();
         }
       });
     }
@@ -1539,10 +1553,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         ? B_prime
         : new THREE.Vector3(5.5, 2.0 + objH - (objH / safeFMag) * 5.5, 0);
 
+      const ray2Out = dPrime > 0 ? B_prime : new THREE.Vector3(5.5, 2.0 - (objH / safeD) * 5.5, 0);
       addRaySegment(B, L_top);
       addRaySegment(L_top, ray1Out);
       addRaySegment(B, O);
-      addRaySegment(O, dPrime > 0 ? B_prime : new THREE.Vector3(5.5, 2.0 - (objH / safeD) * 5.5, 0));
+      addRaySegment(O, ray2Out);
 
       if (dPrime < 0) {
         const vMat = new THREE.LineDashedMaterial({ color: 0xc084fc, dashSize: 0.15, gapSize: 0.1 });
@@ -1553,6 +1568,28 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         group.add(v1, v2);
       }
 
+      // Animated light-pulse photons along both principal rays + glowing focus halo
+      const photonGeo = new THREE.SphereGeometry(0.085, 14, 14);
+      const photonMat1 = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 1.35 });
+      const photonMat2 = new THREE.MeshStandardMaterial({ color: 0xbae6fd, emissive: 0x38bdf8, emissiveIntensity: 1.25 });
+      const ray1Photons = Array.from({ length: 4 }, () => {
+        const m = new THREE.Mesh(photonGeo, photonMat1);
+        group.add(m);
+        return m;
+      });
+      const ray2Photons = Array.from({ length: 4 }, () => {
+        const m = new THREE.Mesh(photonGeo, photonMat2);
+        group.add(m);
+        return m;
+      });
+      const focusHalo = new THREE.Mesh(
+        new THREE.TorusGeometry(0.24, 0.025, 10, 32),
+        new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 0.9, transparent: true, opacity: 0.85 })
+      );
+      focusHalo.rotation.y = Math.PI / 2;
+      focusHalo.position.set(fSigned, 2.0, 0);
+      group.add(focusHalo);
+
       group.add(
         createTroikaLabel({ text: 'Vật AB', position: [-safeD, 3.8, 0], fontSize: 0.3, color: 0x34d399 }),
         createTroikaLabel({ text: 'F', position: [-fSigned, 1.55, 0], fontSize: 0.3, color: 0xfbbf24 }),
@@ -1560,6 +1597,38 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         createTroikaLabel({ text: dPrime > 0 ? "Ảnh thật A'B'" : "Ảnh ảo A'B'", position: [clampedDPrime, 2.0 + imgH + (imgH >= 0 ? 0.55 : -0.55), 0], fontSize: 0.3, color: dPrime > 0 ? 0xf87171 : 0xc084fc }),
         createCrispLine2([[-6.4, 2.0, 0], [6.4, 2.0, 0]], { color: 0x94a3b8, linewidth: 2.2 })
       );
+
+      let optEmitCd = 0;
+      sceneTickRef.current = (effDt = 0) => {
+        const tOpt = simStateRef.current.time;
+        for (let i = 0; i < ray1Photons.length; i++) {
+          const u1 = (tOpt * 0.55 + i / ray1Photons.length) % 1;
+          if (u1 < 0.45) {
+            ray1Photons[i].position.lerpVectors(B, L_top, u1 / 0.45);
+          } else {
+            ray1Photons[i].position.lerpVectors(L_top, ray1Out, (u1 - 0.45) / 0.55);
+          }
+          const u2 = (tOpt * 0.55 + i / ray2Photons.length + 0.12) % 1;
+          if (u2 < 0.45) {
+            ray2Photons[i].position.lerpVectors(B, O, u2 / 0.45);
+          } else {
+            ray2Photons[i].position.lerpVectors(O, ray2Out, (u2 - 0.45) / 0.55);
+          }
+        }
+        focusHalo.scale.setScalar(1 + 0.16 * Math.sin(tOpt * 3.5));
+        focusHalo.rotation.x = tOpt * 1.1;
+        lensRim.rotation.z = tOpt * 0.18;
+        trailRef.current?.pushAndRender(ray1Photons[0].position.x, ray1Photons[0].position.y, ray1Photons[0].position.z, cameraRef.current ?? undefined, 0.015, 24);
+        optEmitCd += effDt;
+        if (optEmitCd > 0.18 && particlePoolRef.current) {
+          optEmitCd = 0;
+          particlePoolRef.current.spawn(0, 2.0 + objH * 0.9, 0, 0.7, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2, 0.45, 0.6, 0xfef08a);
+        }
+      };
+      sceneTickRef.current(0);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------
@@ -1621,7 +1690,9 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
 
       group.add(new THREE.ArrowHelper(f1Vec.clone().normalize(), originVec, f1Vec.length(), 0x38bdf8, 0.28, 0.14));
       group.add(new THREE.ArrowHelper(f2Vec.clone().normalize(), originVec, f2Vec.length(), 0xf59e0b, 0.28, 0.14));
-      group.add(new THREE.ArrowHelper(fSumVec.clone().normalize(), originVec, fSumVec.length(), 0xef4444, 0.34, 0.18));
+      if (fSumVec.lengthSq() > 1e-6) {
+        group.add(new THREE.ArrowHelper(fSumVec.clone().normalize(), originVec, fSumVec.length(), 0xef4444, 0.34, 0.18));
+      }
 
       const pMat = new THREE.LineDashedMaterial({ color: 0x94a3b8, dashSize: 0.15, gapSize: 0.1 });
       const pLine = new THREE.Line(
@@ -2041,16 +2112,52 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const screenTex = new THREE.CanvasTexture(texCanvas);
       screenTex.colorSpace = THREE.SRGBColorSpace;
       screenTex.anisotropy = 8;
+      const screenMat = new THREE.MeshStandardMaterial({ map: screenTex, emissiveMap: screenTex, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.35 });
       const screenMesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.2, 3.6, 5.4),
-        new THREE.MeshStandardMaterial({ map: screenTex, emissiveMap: screenTex, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.35 })
+        screenMat
       );
       screenMesh.position.set(3.8, 2.0, 0);
+
+      // Animated coherent wave-packets travelling from slits S1, S2 to interference screen
+      const targetZs = [-2.2, -1.1, 0, 1.1, 2.2];
+      const slitZList = [-slitGap / 2, slitGap / 2];
+      const wavePulseGeo = new THREE.SphereGeometry(0.068, 12, 12);
+      const wavePulseMat = new THREE.MeshStandardMaterial({ color: hexColor, emissive: hexColor, emissiveIntensity: 1.4 });
+      const wavePulses: { mesh: THREE.Mesh; start: THREE.Vector3; end: THREE.Vector3; phaseOffset: number }[] = [];
+      slitZList.forEach((zSlit, sIdx) => {
+        targetZs.forEach((tZ, zIdx) => {
+          const m = new THREE.Mesh(wavePulseGeo, wavePulseMat);
+          group.add(m);
+          wavePulses.push({
+            mesh: m,
+            start: new THREE.Vector3(-3.1, 2.0, zSlit),
+            end: new THREE.Vector3(3.75, 2.0, tZ),
+            phaseOffset: (zIdx * 0.2 + sIdx * 0.05) % 1
+          });
+        });
+      });
+
       group.add(
         screenMesh,
         createTroikaLabel({ text: `Khe kép S₁, S₂ (a=${youngSlitMm}mm)`, position: [-3.2, 4.25, 0], fontSize: 0.3, color: 0x38bdf8 }),
         createTroikaLabel({ text: `Vân giao thoa (λ=${nm}nm)`, position: [3.8, 4.25, 0], fontSize: 0.3, color: 0xfbbf24 })
       );
+
+      sceneTickRef.current = () => {
+        const tY = simStateRef.current.time;
+        for (let i = 0; i < wavePulses.length; i++) {
+          const wp = wavePulses[i];
+          const p = (tY * 0.65 + wp.phaseOffset) % 1;
+          wp.mesh.position.lerpVectors(wp.start, wp.end, p);
+          wp.mesh.position.y = 2.0 + Math.sin(p * Math.PI * 6 - tY * 4) * 0.08;
+        }
+        screenMat.emissiveIntensity = 0.5 + 0.18 * Math.sin(tY * 3.0);
+      };
+      sceneTickRef.current(0);
+      return () => {
+        sceneTickRef.current = null;
+      };
     }
 
     // -------------------------------------------------------------

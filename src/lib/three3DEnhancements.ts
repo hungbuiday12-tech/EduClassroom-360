@@ -88,9 +88,23 @@ export interface TroikaLabelOptions {
   onSync?: () => void;
 }
 
+export function normalizeTroikaText(raw: string): string {
+  return raw
+    .replace(/\u20d7/g, '')
+    .replace(/[₀₁₂₃₄₅₆₇₈₉]/g, (c) => String('₀₁₂₃₄₅₆₇₈₉'.indexOf(c)))
+    .replace(/([a-zA-Z)])²/g, '$1^2')
+    .replace(/([a-zA-Z)])³/g, '$1^3')
+    .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, (c) => String('⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(c)))
+    .replace(/⁺/g, '+')
+    .replace(/⁻/g, '-')
+    .replace(/→/g, '->')
+    .replace(/⊥/g, '_|_')
+    .replace(/∥/g, '||');
+}
+
 export function createTroikaLabel(opts: TroikaLabelOptions): TroikaText {
   const label = new TroikaText();
-  label.text = opts.text;
+  label.text = normalizeTroikaText(opts.text);
   label.fontSize = opts.fontSize ?? 0.34;
   label.color = opts.color ?? 0xf8fafc;
   label.anchorX = opts.anchorX ?? 'center';

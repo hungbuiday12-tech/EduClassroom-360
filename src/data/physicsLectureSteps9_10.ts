@@ -584,141 +584,1658 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_9_10: Record<string, LectureStep[]> = 
       }
     }
   ],
-  'phys-9-power-bill': [
+  'phys-9-b1': [
     {
-      stepTitle: '1. Động năng, Thế năng Trọng trường & Cơ năng',
+      stepTitle: '1. Dụng cụ Đo Điện & Biến áp Nguồn Thực hành',
       stepType: 'concept',
       conceptSection:
-        'Động năng là năng lượng vật có được do chuyển động ($v > 0$). Thế năng trọng trường là năng lượng tương tác giữa vật và Trái Đất khi vật ở độ cao $h$ so với mốc chọn trước.',
+        'Trong chương trình KHTN 9, các thí nghiệm điện học đều sử dụng nguồn điện áp thấp an toàn (3 V – 12 V) qua biến áp nguồn kết hợp Ampe kế, Vôn kế, biến trở và dây dẫn có phích cắm.',
       formulaSection: {
-        primaryFormula: 'W_đ = \\frac{1}{2}mv^2, \\qquad W_t = P\\cdot h = mgh',
+        primaryFormula: '\\text{ĐCNN} = \\frac{\\text{Khoảng chia hai vạch liên tiếp}}{\\text{Số khoảng chia}}',
         secondaryFormulas: [
-          'W = W_đ + W_t = \\frac{1}{2}mv^2 + mgh'
+          '\\text{Ampe kế (A): mắc nối tiếp} \\quad | \\quad \\text{Vôn kế (V): mắc song song}'
         ],
         variablesNote:
-          '• $m$ ($\text{kg}$), $v$ ($\text{m/s}$), $h$ ($\text{m}$), $g \\approx 9{,}8\\text{ m/s}^2$ (hoặc $10\\text{ m/s}^2$).\n• Đơn vị của động năng, thế năng và cơ năng đều là Jun ($\text{J}$).'
+          '• **Giới hạn đo (GHĐ)**: giá trị lớn nhất ghi trên vạch chia của đồng hồ đo.\n• **Ampe kế**: có điện trở trong rất nhỏ, luôn mắc nối tiếp với vật cần đo dòng điện.\n• **Vôn kế**: có điện trở trong rất lớn, luôn mắc song song hai đầu đoạn mạch cần đo hiệu điện thế.'
       },
       deepDiveSection:
-        'Chú ý động năng tỉ lệ với **bình phương** vận tốc: vận tốc tăng gấp đôi thì động năng tăng gấp $4$ lần! Thế năng phụ thuộc vào mốc chọn độ cao (thường chọn mặt đất $h = 0$). Nếu chỉ có trọng lực tác dụng (bỏ qua lực cản), tổng cơ năng bảo toàn không đổi.',
+        'Khi sử dụng đồng hồ đo kim hoặc đồng hồ đa năng hiện số, luôn chọn thang đo lớn hơn giá trị ước lượng trước khi giảm xuống thang đo phù hợp để tránh quá tải làm cháy cầu chì. Không bao giờ nối trực tiếp hai cực nguồn điện vào Ampe kế vì sẽ gây đoản mạch.',
       teacherExplanation:
-        'Trước khi tính động năng, luôn đổi tốc độ từ $\\text{km/h}$ sang $\\text{m/s}$ bằng cách chia $3{,}6$.',
-      keyTakeaway: 'Động năng phụ thuộc bậc hai vào vận tốc ($v^2$); thế năng phụ thuộc bậc nhất vào độ cao ($h$).',
+        'Mẹo nhớ nhanh: Ampe kế mắc nối tiếp (chữ A có hai chân nối thẳng vào dòng điện); Vôn kế mắc song song hai đầu linh kiện.',
+      keyTakeaway: 'Ampe kế mắc nối tiếp đo cường độ I; Vôn kế mắc song song đo hiệu điện thế U.',
+      miniQuiz: [
+        {
+          id: 'p9b1-s1-q1',
+          question: 'Để đo hiệu điện thế giữa hai đầu một bóng đèn đang sáng bằng vôn kế, ta phải mắc vôn kế như thế nào?',
+          options: [
+            'A. Mắc nối tiếp với bóng đèn',
+            'B. Mắc song song hai đầu bóng đèn, đúng cực (+)/(−)',
+            'C. Mắc nối tiếp với công tắc khi công tắc mở',
+            'D. Mắc thay thế vào vị trí bóng đèn'
+          ],
+          correctIndex: 1,
+          explanation: 'Vôn kế luôn được mắc song song hai đầu đoạn mạch cần đo và cực (+) nối về phía cực dương nguồn.'
+        },
+        {
+          id: 'p9b1-s1-q2',
+          question: 'Vì sao trong bộ thí nghiệm KHTN 9 phải dùng biến áp nguồn điện áp thấp (3 V – 12 V) thay cho ổ cắm điện 220 V?',
+          options: [
+            'A. Vì dòng 220 V không làm sáng bóng đèn',
+            'B. Để đảm bảo an toàn điện giật và bảo vệ linh kiện thực hành',
+            'C. Vì biến áp nguồn tự tạo ra năng lượng không cần cắm điện',
+            'D. Để tăng tốc độ chuyển động của electron lên gấp bội'
+          ],
+          correctIndex: 1,
+          explanation: 'Nguồn điện áp thấp (≤ 24 V) nằm dưới ngưỡng gây giật nguy hiểm cho học sinh và phù hợp thông số linh kiện thực hành.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b1-s1-e1',
+        question: 'Giải thích điều gì xảy ra nếu một bạn học sinh vô ý mắc trực tiếp hai chốt của Ampe kế vào hai cực của nguồn pin 6 V không qua điện trở tải.',
+        hint: 'Xét điện trở rất nhỏ của Ampe kế và định luật Ohm I = U / R.',
+        rubricChecklist: [
+          'Nêu đúng Ampe kế có điện trở trong rất nhỏ (gần bằng 0).',
+          'Khi mắc trực tiếp vào nguồn gây đoản mạch, dòng điện tăng vọt làm hỏng kim hoặc cháy cầu chì đồng hồ.'
+        ],
+        sampleAnswer: 'Do Ampe kế có điện trở trong rất nhỏ, khi mắc song song trực tiếp hai cực nguồn điện áp sẽ xảy ra hiện tượng đoản mạch (ngắn mạch). Cường độ dòng điện qua Ampe kế tăng vọt vượt xa giới hạn đo, làm cong kim hoặc cháy cầu chì/cuộn dây bên trong đồng hồ.'
+      }
+    },
+    {
+      stepTitle: '2. Bộ Dụng cụ Quang học & Sắp xếp Giá Thí nghiệm',
+      stepType: 'derivation',
+      conceptSection:
+        'Bộ thí nghiệm quang hình KHTN 9 gồm băng quang học chia vạch mm, đèn chiếu khe chữ F, bản bán trụ thủy tinh/nhựa trong, lăng kính tam giác, thấu kính hội tụ – phân kì và màn hứng ảnh.',
+      formulaSection: {
+        primaryFormula: '\\text{Trục quang học chuẩn: Đèn chiếu} \\leftrightarrow \\text{Vật AB} \\leftrightarrow \\text{Thấu kính} \\leftrightarrow \\text{Màn hứng}',
+        secondaryFormulas: [
+          'L = d + d\' \\quad (\\text{Khoảng cách vật và màn trên băng quang học})'
+        ],
+        variablesNote:
+          '• **Bản bán trụ thủy tinh**: dùng đo góc tới $i$ và góc khúc xạ $r$ trên bảng chia độ tròn để kiểm chứng định luật khúc xạ và phản xạ toàn phần.\n• **Thấu kính rìa mỏng (hội tụ)** và **thấu kính rìa dày (phân kì)**: đặt thẳng đứng, vuông góc với thanh băng quang học.'
+      },
+      deepDiveSection:
+        'Trước khi đo khoảng cách $d$ và $d\'$ trên băng quang học, phải căn chỉnh tâm của nguồn sáng, vật sáng và quang tâm $O$ của thấu kính cùng nằm trên một đường thẳng song song thanh thước (đồng trục) để ảnh tạo trên màn không bị lệch méo.',
+      teacherExplanation:
+        'Đừng quên kiểm tra dấu tiêu điểm khắc trên chân đế thấu kính để phân biệt nhanh thấu kính hội tụ (rìa mỏng) với phân kì (rìa dày).',
+      keyTakeaway: 'Nguồn sáng, vật và quang tâm thấu kính phải đặt đồng trục và vuông góc với băng quang học.',
+      miniQuiz: [
+        {
+          id: 'p9b1-s2-q1',
+          question: 'Khi dùng bản bán trụ thủy tinh đặt trên bảng chia độ tròn để khảo sát hiện tượng khúc xạ ánh sáng, tia laser cần chiếu đi qua điểm nào của mặt phẳng?',
+          options: [
+            'A. Đúng tâm O của mặt phẳng chia độ',
+            'B. Mép rìa ngoài cùng của bảng chia độ',
+            'C. Góc nhọn bất kì dưới đáy bảng',
+            'D. Phía sau lưng bảng chia độ'
+          ],
+          correctIndex: 0,
+          explanation: 'Chiếu tia tới đi qua đúng tâm O (tâm mặt cong bán trụ) giúp tia khúc xạ truyền theo bán kính ra mặt cong mà không bị bẻ gãy lần hai, đồng thời đọc trực tiếp góc trên vòng chia độ.'
+        },
+        {
+          id: 'p9b1-s2-q2',
+          question: 'Cách nhận biết trực tiếp thấu kính hội tụ bằng tay (hoặc thước kẹp) trong bộ dụng cụ thí nghiệm là:',
+          options: [
+            'A. Phần rìa dày hơn phần giữa',
+            'B. Phần rìa mỏng hơn phần giữa',
+            'C. Bề mặt đục không cho ánh sáng đi qua',
+            'D. Hai mặt hoàn toàn phẳng song song'
+          ],
+          correctIndex: 1,
+          explanation: 'Thấu kính hội tụ bằng thủy tinh hoặc nhựa trong suốt trong không khí luôn có phần rìa mỏng hơn phần giữa.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b1-s2-e1',
+        question: 'Tại sao trong thí nghiệm đo khúc xạ ánh sáng người ta lại chế tạo bản thủy tinh có dạng hình bán trụ (nửa hình trụ) mà không dùng tấm phẳng?',
+        hint: 'Xét góc tới của tia khúc xạ khi đi từ mặt cong của bán trụ ra không khí.',
+        rubricChecklist: [
+          'Tia tới đi qua tâm O của mặt phẳng, nên tia khúc xạ đi dọc theo phương bán kính.',
+          'Khi gặp mặt cong hình trụ, tia sáng vuông góc với mặt phân cách ($i\' = 0^\\circ$) nên truyền thẳng ra ngoài, giúp đo đúng góc $r$.'
+        ],
+        sampleAnswer: 'Khi tia sáng chiếu qua đúng tâm O của mặt phẳng bản bán trụ, tia khúc xạ bên trong thủy tinh truyền theo phương bán kính tới mặt cong hình trụ. Do bán kính luôn vuông góc với tiếp tuyến mặt trụ nên tia sáng ló ra mặt cong theo phương vuông góc ($i\' = 0^\\circ$) và truyền thẳng, nhờ đó đọc chính xác góc khúc xạ $r$ mà không bị khúc xạ lần hai.'
+      }
+    },
+    {
+      stepTitle: '3. An toàn Thực hành & Ghi chép Sai số Phép đo KHTN 9',
+      stepType: 'example',
+      conceptSection:
+        'Mọi phép đo thực nghiệm đều có sai số do dụng cụ hoặc thao tác đọc. Cần lặp lại phép đo ít nhất 3 lần, tính giá trị trung bình và tuân thủ nghiêm quy tắc an toàn điện – quang – nhiệt.',
+      formulaSection: {
+        primaryFormula: '\\bar{x} = \\frac{x_1 + x_2 + \\dots + x_n}{n}',
+        secondaryFormulas: [
+          '\\Delta x_i = |\\bar{x} - x_i|, \\qquad \\overline{\\Delta x} = \\frac{\\Delta x_1 + \\dots + \\Delta x_n}{n}'
+        ],
+        variablesNote:
+          '• **Sai số thị sai**: xảy ra khi mắt nhìn lệch khỏi phương vuông góc mặt thước hoặc mặt đồng hồ kim.\n• **An toàn tia laser**: không chiếu vào mắt; không đặt dụng cụ thủy tinh sát mép bàn dễ rơi vỡ.'
+      },
+      deepDiveSection:
+        'Quy trình thực hành chuẩn 4 bước: (1) Kiểm tra dụng cụ & ngắt nguồn trước khi lắp; (2) Lắp sơ đồ & kiểm tra lại đúng cực/đồng trục; (3) Đo lặp lại nhiều lần với góc nhìn thẳng góc mặt vạch chia; (4) Thu dọn, tắt nguồn và xử lý số liệu trung bình.',
+      teacherExplanation:
+        'Trong bài báo cáo thực hành, luôn ghi kèm đơn vị SI vào tiêu đề cột bảng số liệu.',
+      keyTakeaway: 'Đặt mắt vuông góc vạch chia, đo lặp ≥ 3 lần lấy trung bình và ngắt nguồn trước khi chỉnh mạch.',
+      miniQuiz: [
+        {
+          id: 'p9b1-s3-q1',
+          question: 'Ba lần đo chiều dài một đoạn mạch bằng thước có ĐCNN 0,1 cm cho kết quả: 15,2 cm; 15,3 cm; 15,1 cm. Giá trị trung bình là:',
+          options: ['A. 15,1 cm', 'B. 15,2 cm', 'C. 15,3 cm', 'D. 15,25 cm'],
+          correctIndex: 1,
+          explanation: '$\\bar{l} = (15{,}2 + 15{,}3 + 15{,}1)/3 = 15{,}2\\text{ cm}$.'
+        },
+        {
+          id: 'p9b1-s3-q2',
+          question: 'Thao tác nào sau đây vi phạm quy tắc an toàn phòng thí nghiệm KHTN 9?',
+          options: [
+            'A. Rút phích cắm biến áp nguồn sau khi kết thúc thí nghiệm',
+            'B. Ngắt công tắc trước khi thay đổi vị trí mắc vôn kế',
+            'C. Chiếu thử đèn laser vào gương phẳng hướng về phía bạn cùng bàn',
+            'D. Đặt mắt nhìn vuông góc mặt chia độ ampe kế khi đọc số chỉ'
+          ],
+          correctIndex: 2,
+          explanation: 'Tia laser phản xạ từ gương vẫn mang năng lượng cao gây tổn thương võng mạc, tuyệt đối không chiếu hướng về mắt người.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b1-s3-e1',
+        question: 'Trình bày 4 bước quy trình chuẩn bị và thu số liệu an toàn cho một bài thực hành Điện học KHTN 9.',
+        hint: 'Từ lúc chưa cấp điện đến lúc tính giá trị trung bình và tắt nguồn.',
+        rubricChecklist: [
+          'Kiểm tra dụng cụ và mắc mạch khi công tắc mở (chưa bật nguồn).',
+          'Kiểm tra cực (+)/(−), chọn thang đo phù hợp rồi mới đóng mạch đọc số liệu vuông góc vạch chia; đo lặp nhiều lần và ngắt điện khi xong.'
+        ],
+        sampleAnswer: 'Bước 1: Kiểm tra đồng hồ đo, nguồn an toàn ≤ 12 V và mở công tắc trước khi lắp mạch. Bước 2: Lắp mạch theo sơ đồ, chú ý ampe kế nối tiếp, vôn kế song song và đúng cực (+)/(−). Bước 3: Đóng mạch, đặt mắt vuông góc vạch chia để đọc số chỉ qua ≥ 3 lần đo tính trung bình. Bước 4: Ngắt nguồn điện trước khi tháo dây và thu dọn thiết bị.'
+      }
+    }
+  ],
+  'phys-9-power-bill': [
+    {
+      stepTitle: '1. Định nghĩa Cơ năng & Mối liên hệ Động năng – Thế năng',
+      stepType: 'concept',
+      conceptSection:
+        'Cơ năng của một vật trong trọng trường là tổng động năng và thế năng trọng trường của vật tại thời điểm đang xét. Khi vật vừa có độ cao so với mốc thế năng vừa đang chuyển động, nó đồng thời mang cả hai dạng năng lượng này.',
+      formulaSection: {
+        primaryFormula: 'W = W_đ + W_t = \\frac{1}{2}mv^2 + mgh',
+        secondaryFormulas: [
+          'W_t = P \\cdot h = 10mh \\quad (\\text{khi lấy } g \\approx 10\\text{ m/s}^2)',
+          '1\\text{ kJ} = 1000\\text{ J}'
+        ],
+        variablesNote:
+          '• $W_đ$: động năng ($\\text{J}$), $W_t$: thế năng trọng trường ($\\text{J}$), $W$: cơ năng ($\\text{J}$).\n• $h$ là độ cao tính theo phương thẳng đứng so với mốc thế năng đã chọn (thường chọn mặt đất $h = 0$).'
+      },
+      deepDiveSection:
+        'Lưu ý giá trị thế năng phụ thuộc vào **mốc chọn độ cao**: nếu chọn mặt đất làm mốc thì vật trên bàn cao $1\\text{ m}$ có $W_t > 0$, nhưng nếu chọn chính mặt bàn làm mốc thì $W_t = 0$. Tuy nhiên hiệu thế năng giữa hai vị trí không phụ thuộc cách chọn mốc.',
+      teacherExplanation:
+        'Luôn xác định rõ mốc thế năng ($h = 0$) và quy đổi $m$ về $\\text{kg}$, $v$ về $\\text{m/s}$, $h$ về $\\text{m}$ trước khi cộng $W_đ + W_t$.',
+      keyTakeaway: 'Cơ năng là tổng động năng và thế năng ($W = W_đ + W_t$), đo bằng Jun (J).',
       miniQuiz: [
         {
           id: 'p9pb-s1-q1',
-          question: 'Một ô tô khối lượng $1000\\text{ kg}$ chạy với tốc độ $72\\text{ km/h}$ ($= 20\\text{ m/s}$). Động năng của ô tô là:',
-          options: ['A. $20\\,000\\text{ J}$', 'B. $200\\,000\\text{ J}$', 'C. $400\\,000\\text{ J}$', 'D. $10\\,000\\text{ J}$'],
-          correctIndex: 1,
-          explanation: '$W_đ = \\frac{1}{2}\\cdot 1000 \\cdot 20^2 = 200\\,000\\text{ J} = 200\\text{ kJ}$.'
+          question: 'Một viên đá khối lượng $0{,}5\\text{ kg}$ đang bay ngang ở độ cao $4\\text{ m}$ so với mặt đất với tốc độ $6\\text{ m/s}$ ($g = 10\\text{ m/s}^2$). Cơ năng của viên đá so với mặt đất bằng:',
+          options: ['A. $9\\text{ J}$', 'B. $20\\text{ J}$', 'C. $29\\text{ J}$', 'D. $38\\text{ J}$'],
+          correctIndex: 2,
+          explanation: '$W_đ = \\frac{1}{2}\\cdot 0{,}5 \\cdot 6^2 = 9\\text{ J}$; $W_t = 0{,}5\\cdot 10\\cdot 4 = 20\\text{ J} \\implies W = 9 + 20 = 29\\text{ J}$.'
         },
         {
           id: 'p9pb-s1-q2',
-          question: 'Nếu khối lượng vật giữ nguyên nhưng tốc độ tăng lên 3 lần thì động năng của vật tăng lên:',
-          options: ['A. 3 lần', 'B. 6 lần', 'C. 9 lần', 'D. Không đổi'],
-          correctIndex: 2,
-          explanation: 'Vì $W_đ = \\frac{1}{2}mv^2$ nên $v$ tăng 3 lần thì $W_đ$ tăng $3^2 = 9$ lần.'
+          question: 'Ở vị trí cao nhất khi quả bóng được ném thẳng đứng lên trên và dừng lại tức thời trước khi rơi xuống, dạng năng lượng nào bằng 0?',
+          options: ['A. Thế năng trọng trường', 'B. Động năng', 'C. Cơ năng', 'D. Trọng lượng'],
+          correctIndex: 1,
+          explanation: 'Tại điểm cao nhất, vận tốc tức thời $v = 0$ nên động năng $W_đ = 0$; toàn bộ cơ năng là thế năng.'
         }
       ],
       miniEssay: {
         id: 'p9pb-s1-e1',
-        question: 'Thả rơi tự do một hòn đá nặng $0{,}5\\text{ kg}$ từ độ cao $20\\text{ m}$ ($g = 10\\text{ m/s}^2$, bỏ qua cản). Tính động năng và vận tốc khi chạm đất.',
-        hint: 'Áp dụng bảo toàn cơ năng: toàn bộ thế năng ban đầu chuyển thành động năng cực đại lúc chạm đất.',
+        question: 'Một máy bay mô hình nặng $2\\text{ kg}$ bay ở độ cao $15\\text{ m}$ với tốc độ $36\\text{ km/h}$ ($g = 10\\text{ m/s}^2$). Tính động năng, thế năng và cơ năng của mô hình so với mặt đất.',
+        hint: 'Đổi $36\\text{ km/h} = 10\\text{ m/s}$ trước khi áp dụng $W = \\frac{1}{2}mv^2 + mgh$.',
         rubricChecklist: [
-          'Tính cơ năng ban đầu $W = mgh = 0{,}5 \\cdot 10 \\cdot 20 = 100\\text{ J}$.',
-          'Khi chạm đất $W_đ = 100\\text{ J} \\implies v = \\sqrt{2W_đ/m} = 20\\text{ m/s}$.'
+          'Tính đúng động năng $W_đ = \\frac{1}{2}\\cdot 2\\cdot 10^2 = 100\\text{ J}$.',
+          'Tính đúng thế năng $W_t = 2\\cdot 10\\cdot 15 = 300\\text{ J}$ và tổng cơ năng $W = 400\\text{ J}$.'
         ],
-        sampleAnswer: 'Tại độ cao $20\\text{ m}$, vật đứng yên nên cơ năng ban đầu là $W = W_t = mgh = 0{,}5 \\cdot 10 \\cdot 20 = 100\\text{ J}$. Bỏ qua sức cản không khí, khi chạm đất ($h = 0$), toàn bộ thế năng chuyển hóa thành động năng $W_đ = 100\\text{ J}$. Vậy $v = \\sqrt{\\frac{2W_đ}{m}} = \\sqrt{\\frac{200}{0{,}5}} = 20\\text{ m/s}$.'
+        sampleAnswer: 'Đổi tốc độ $v = 36/3{,}6 = 10\\text{ m/s}$. Động năng của mô hình là $W_đ = \\frac{1}{2}mv^2 = 0{,}5 \\times 2 \\times 10^2 = 100\\text{ J}$. Thế năng trọng trường là $W_t = mgh = 2 \\times 10 \\times 15 = 300\\text{ J}$. Vậy cơ năng tổng cộng bằng $W = W_đ + W_t = 100 + 300 = 400\\text{ J}$.'
       }
     },
     {
-      stepTitle: '2. Công Cơ học & Công suất',
+      stepTitle: '2. Sự Chuyển hóa & Định luật Bảo toàn Cơ năng',
       stepType: 'derivation',
       conceptSection:
-        'Lực chỉ thực hiện công cơ học khi tác dụng lên vật làm vật dịch chuyển theo phương không vuông góc với phương lực. Công suất đo tốc độ sinh công trong một đơn vị thời gian.',
+        'Trong quá trình vật chuyển động chỉ dưới tác dụng của trọng lực (bỏ qua ma sát và lực cản không khí), động năng và thế năng liên tục chuyển hóa qua lại cho nhau nhưng tổng cơ năng của vật luôn được bảo toàn.',
       formulaSection: {
-        primaryFormula: 'A = F\\cdot s\\cos\\alpha, \\qquad \\mathscr{P} = \\frac{A}{t} = F\\cdot v',
+        primaryFormula: 'W = W_đ + W_t = \\text{hằng số} \\iff \\frac{1}{2}mv_1^2 + mgh_1 = \\frac{1}{2}mv_2^2 + mgh_2',
         secondaryFormulas: [
-          '1\\text{ W} = 1\\text{ J/s}, \\quad 1\\text{ kW} = 1000\\text{ W}'
+          'v_{\\text{chạm đất}} = \\sqrt{2gh_0} \\quad (\\text{thả rơi không vận tốc đầu})',
+          'h_{\\max} = \\frac{v_0^2}{2g} \\quad (\\text{ném thẳng đứng lên từ mặt đất})'
         ],
         variablesNote:
-          '• Nếu $\\alpha = 90^\\circ$ (lực vuông góc phương dịch chuyển, ví dụ trọng lực khi xe chạy đường ngang) thì công $A = 0$.\n• Khi kéo vật chuyển động đều tốc độ $v$, công suất tức thời là $\\mathscr{P} = Fv$.'
+          '• Khi vật đi **xuống**: $h$ giảm ($W_t$ giảm) $\\implies v$ tăng ($W_đ$ tăng): **thế năng chuyển hóa thành động năng**.\n• Khi vật đi **lên**: $h$ tăng ($W_t$ tăng) $\\implies v$ giảm ($W_đ$ giảm): **động năng chuyển hóa thành thế năng**.'
       },
       deepDiveSection:
-        'Người vác bao gạo $50\\text{ kg}$ đi bộ đều trên đường nằm ngang dài $100\\text{ m}$: lực nâng của vai hướng thẳng đứng lên trên, vuông góc với phương chuyển động ngang nên theo định nghĩa vật lí, lực nâng này **không sinh công** ($A = 0$).',
+        'Quan sát thí nghiệm con lắc đơn hoặc thả bóng rơi tự do trên bảng mô phỏng: độ cao cột $W_đ$ giảm bao nhiêu thì cột $W_t$ tăng bấy nhiêu sao cho mực tổng $W = W_đ + W_t$ giữ nguyên không đổi qua mọi vị trí.',
       teacherExplanation:
-        'Đừng nhầm công $A$ (J) với công suất $\\mathscr{P}$ (W): hai máy làm cùng một công, máy nào làm xong nhanh hơn thì có công suất lớn hơn.',
-      keyTakeaway: 'Lực vuông góc với độ dịch chuyển thì không sinh công; công suất lớn nghĩa là sinh công nhanh.',
+        'Mẹo giải nhanh: Nếu bài hỏi tốc độ ở một độ cao hoặc độ cao cực đại và bỏ qua lực cản, dùng bảo toàn cơ năng hai đầu cực kỳ nhanh gọn mà không cần tính thời gian.',
+      keyTakeaway: 'Khi không có lực cản/ma sát, thế năng giảm bao nhiêu thì động năng tăng đúng bấy nhiêu.',
       miniQuiz: [
         {
           id: 'p9pb-s2-q1',
-          question: 'Cần cẩu nâng đều kiện hàng trọng lượng $4000\\text{ N}$ lên cao $6\\text{ m}$ trong $12\\text{ s}$. Công suất của cần cẩu là:',
-          options: ['A. $24\\,000\\text{ W}$', 'B. $2000\\text{ W}$', 'C. $500\\text{ W}$', 'D. $48\\,000\\text{ W}$'],
+          question: 'Thả rơi tự do một quả bóng nặng $1\\text{ kg}$ từ độ cao $h_0 = 20\\text{ m}$ ($g = 10\\text{ m/s}^2$, bỏ qua cản). Khi vật rơi xuống độ cao $h = 5\\text{ m}$, động năng của vật bằng:',
+          options: ['A. $50\\text{ J}$', 'B. $150\\text{ J}$', 'C. $200\\text{ J}$', 'D. $100\\text{ J}$'],
           correctIndex: 1,
-          explanation: 'Công $A = P\\cdot h = 4000\\cdot 6 = 24\\,000\\text{ J}$. Công suất $\\mathscr{P} = \\frac{24\\,000}{12} = 2000\\text{ W}$.'
+          explanation: 'Cơ năng $W = 1\\cdot 10\\cdot 20 = 200\\text{ J}$. Tại $h = 5\\text{ m}$, $W_t = 1\\cdot 10\\cdot 5 = 50\\text{ J} \\implies W_đ = 200 - 50 = 150\\text{ J}$.'
         },
         {
           id: 'p9pb-s2-q2',
-          question: 'Trong chuyển động tròn đều, lực hướng tâm luôn hướng vào tâm quỹ đạo vuông góc với vận tốc tiếp tuyến nên công của lực hướng tâm bằng:',
-          options: ['A. $mv^2$', 'B. $2\\pi R F$', 'C. $0$', 'D. $-mv^2/2$'],
-          correctIndex: 2,
-          explanation: 'Vì $\\vec{F}_{ht} \\perp \\vec{v}$ tại mọi điểm nên $\\cos 90^\\circ = 0 \\implies A = 0$.'
+          question: 'Khi thả một vật rơi không vận tốc đầu từ độ cao $45\\text{ m}$ (bỏ qua lực cản không khí, $g = 10\\text{ m/s}^2$), tốc độ ngay trước khi chạm đất bằng:',
+          options: ['A. $30\\text{ m/s}$', 'B. $20\\text{ m/s}$', 'C. $15\\text{ m/s}$', 'D. $45\\text{ m/s}$'],
+          correctIndex: 0,
+          explanation: '$v = \\sqrt{2gh_0} = \\sqrt{2\\cdot 10\\cdot 45} = \\sqrt{900} = 30\\text{ m/s}$.'
         }
       ],
       miniEssay: {
         id: 'p9pb-s2-e1',
-        question: 'Một đầu máy xe lửa kéo đoàn tàu với lực kéo không đổi $40\\,000\\text{ N}$ chạy đều với vận tốc $54\\text{ km/h}$. Tính công suất đầu máy và công thực hiện trong 5 phút.',
-        hint: 'Đổi $54\\text{ km/h} = 15\\text{ m/s}$, rồi dùng $\\mathscr{P} = Fv$ và $A = \\mathscr{P}t$.',
+        question: 'Ném thẳng đứng một quả bóng nặng $0{,}4\\text{ kg}$ từ độ cao $2\\text{ m}$ lên trên với tốc độ $10\\text{ m/s}$ ($g = 10\\text{ m/s}^2$, bỏ qua cản không khí). Tính độ cao cực đại quả bóng đạt được so với mặt đất.',
+        hint: 'Lập phương trình bảo toàn cơ năng giữa vị trí ném và điểm cao nhất ($v = 0$).',
         rubricChecklist: [
-          'Đổi đúng $v = 15\\text{ m/s}$ và $t = 300\\text{ s}$.',
-          'Tính $\\mathscr{P} = 40\\,000 \\cdot 15 = 600\\text{ kW}$, công $A = 600\\,000 \\cdot 300 = 180\\text{ MJ}$.'
+          'Tính cơ năng ban đầu $W = \\frac{1}{2}\\cdot 0{,}4\\cdot 10^2 + 0{,}4\\cdot 10\\cdot 2 = 28\\text{ J}$.',
+          'Cho $mgh_{\\max} = 28\\text{ J} \\implies h_{\\max} = 7\\text{ m}$.'
         ],
-        sampleAnswer: 'Đổi $v = 54/3{,}6 = 15\\text{ m/s}$, $t = 5 \\times 60 = 300\\text{ s}$. Công suất đầu máy là $\\mathscr{P} = Fv = 40\\,000 \\times 15 = 600\\,000\\text{ W} = 600\\text{ kW}$. Công thực hiện trong 5 phút là $A = \\mathscr{P}\\cdot t = 600\\,000 \\times 300 = 180\\,000\\,000\\text{ J} = 180\\text{ MJ}$.'
+        sampleAnswer: 'Cơ năng ban đầu lúc ném: $W = \\frac{1}{2}mv_0^2 + mgh_0 = 0{,}5 \\times 0{,}4 \\times 10^2 + 0{,}4 \\times 10 \\times 2 = 20 + 8 = 28\\text{ J}$. Tại độ cao cực đại $h_{\\max}$, $v = 0$ nên $W = mgh_{\\max} = 28\\text{ J} \\Rightarrow h_{\\max} = \\frac{28}{0{,}4 \\times 10} = 7\\text{ m}$.'
       }
     },
     {
-      stepTitle: '3. Máy cơ đơn giản, Định luật về Công & Hiệu suất',
+      stepTitle: '3. Cơ năng khi có Ma sát – Hao phí & Thực hành Con lắc',
       stepType: 'example',
       conceptSection:
-        'Các máy cơ đơn giản (mặt phẳng nghiêng, ròng rọc động, đòn bẩy) giúp giảm lực kéo cần thiết nhưng KHÔNG máy cơ nào cho ta lợi về công.',
+        'Trong thực tế luôn có lực cản không khí và ma sát tại trục treo hoặc mặt tiếp xúc. Do đó cơ năng của vật giảm dần theo thời gian, phần cơ năng bị hao hụt đã chuyển hóa thành nhiệt năng và năng lượng âm thanh.',
       formulaSection: {
-        primaryFormula: 'A_{\\text{ích}} = P\\cdot h, \\qquad A_{\\text{tp}} = F\\cdot s',
+        primaryFormula: '\\Delta W_{\\text{hao phí}} = W_{\\text{trước}} - W_{\\text{sau}} = A_{\\text{cản/ms}} > 0',
         secondaryFormulas: [
-          'H = \\frac{A_{\\text{ích}}}{A_{\\text{tp}}} \\cdot 100\\% = \\frac{Ph}{Fs}\\cdot 100\\%',
-          'A_{\\text{tp}} = A_{\\text{ích}} + A_{\\text{ms}}'
+          'Q_{\\text{tỏa nhiệt}} = W_{\\text{đầu}} - W_{\\text{cuối}} = F_{ms} \\cdot s',
+          'H = \\frac{W_{\\text{sau}}}{W_{\\text{trước}}} \\cdot 100\\% < 100\\%'
         ],
         variablesNote:
-          '• Nếu được lợi $k$ lần về lực ($F = P/k$ khi bỏ qua ma sát) thì phải thiệt $k$ lần về đường đi ($s = k\\cdot h$).\n• Trong thực tế có ma sát nên $A_{\\text{tp}} > A_{\\text{ích}}$ và $H < 100\\%$.'
+          '• Năng lượng toàn phần vẫn được bảo toàn, chỉ có **cơ năng** bị giảm do chuyển thành nội năng (nhiệt năng).\n• Con lắc đơn trong không khí dao động với biên độ nhỏ dần và cuối cùng dừng hẳn ở vị trí cân bằng.'
       },
       deepDiveSection:
-        'Với mặt phẳng nghiêng dài $l$, cao $h$: lực kéo vật lên đều có ma sát là $F = \\frac{Ph}{l} + F_{ms}$. Khi đó phần công vô ích chính là công thắng ma sát $A_{ms} = F_{ms}\\cdot l$.',
+        'Mở mô phỏng 2D bên trên và tăng dần hệ số ma sát $\\mu$: bạn sẽ thấy cột năng lượng hao phí màu xám tăng lên đúng bằng phần cơ năng có ích giảm đi, giải thích vì sao tàu lượn siêu tốc luôn có đỉnh dốc sau thấp hơn đỉnh xuất phát.',
       teacherExplanation:
-        'Luôn phân biệt rõ: $A_{\\text{ích}} = Ph$ tính theo độ cao nâng thẳng đứng; $A_{\\text{tp}} = Fl$ tính theo lực kéo thực tế nhân quãng đường kéo.',
-      keyTakeaway: 'Máy cơ đơn giản có thể lợi lực nhưng luôn thiệt đường đi; công có ích luôn nhỏ hơn công toàn phần.',
+        'Phân biệt câu hỏi trắc nghiệm: "Năng lượng có bị mất đi không?" → KHÔNG (chỉ chuyển sang nhiệt năng); "Cơ năng có bảo toàn khi có ma sát không?" → KHÔNG (cơ năng giảm dần).',
+      keyTakeaway: 'Có ma sát thì cơ năng giảm dần (chuyển thành nhiệt năng), nhưng tổng năng lượng vẫn bảo toàn.',
       miniQuiz: [
         {
           id: 'p9pb-s3-q1',
-          question: 'Dùng mặt phẳng nghiêng dài $4\\text{ m}$ đưa vật nặng $600\\text{ N}$ lên cao $1{,}2\\text{ m}$ bằng lực kéo $225\\text{ N}$. Hiệu suất của mặt phẳng nghiêng bằng:',
-          options: ['A. $75\\%$', 'B. $80\\%$', 'C. $85\\%$', 'D. $90\\%$'],
+          question: 'Thả một hòn bi lăn từ đỉnh dốc $A$ qua đáy $B$ rồi leo lên dốc bên kia tới độ cao cực đại $C$ thấp hơn $A$. Nguyên nhân là do:',
+          options: [
+            'A. Năng lượng bị tự hủy mất trên đường đi',
+            'B. Một phần cơ năng đã chuyển hóa thành nhiệt năng do ma sát',
+            'C. Trọng lực kéo vật ở hai bên dốc khác nhau',
+            'D. Khối lượng hòn bi tăng lên khi xuống dốc'
+          ],
           correctIndex: 1,
-          explanation: '$A_{\\text{ích}} = 600\\cdot 1{,}2 = 720\\text{ J}$; $A_{\\text{tp}} = 225\\cdot 4 = 900\\text{ J}$. Vậy $H = \\frac{720}{900} = 80\\%$.'
+          explanation: 'Do có lực ma sát lăn và lực cản không khí nên cơ năng giảm dần, phần hụt chuyển thành nhiệt năng làm đỉnh $C$ thấp hơn $A$.'
         },
         {
           id: 'p9pb-s3-q2',
-          question: 'Dùng một ròng rọc động lý tưởng (bỏ qua ma sát và khối lượng ròng rọc) để kéo vật lên cao $2\\text{ m}$, đầu dây tự do phải kéo đi đoạn dài:',
-          options: ['A. $1\\text{ m}$', 'B. $2\\text{ m}$', 'C. $4\\text{ m}$', 'D. $6\\text{ m}$'],
-          correctIndex: 2,
-          explanation: 'Ròng rọc động cho lợi 2 lần về lực nên thiệt 2 lần về đường đi: $s = 2h = 4\\text{ m}$.'
+          question: 'Một quả bóng nặng $0{,}2\\text{ kg}$ rơi từ độ cao $10\\text{ m}$ ($g = 10\\text{ m/s}^2$), do lực cản không khí nên khi chạm đất tốc độ chỉ đạt $12\\text{ m/s}$. Phần cơ năng chuyển hóa thành nhiệt là:',
+          options: ['A. $5{,}6\\text{ J}$', 'B. $14{,}4\\text{ J}$', 'C. $20\\text{ J}$', 'D. $4{,}0\\text{ J}$'],
+          correctIndex: 0,
+          explanation: '$W_1 = 0{,}2\\cdot 10\\cdot 10 = 20\\text{ J}$; $W_2 = \\frac{1}{2}\\cdot 0{,}2\\cdot 12^2 = 14{,}4\\text{ J} \\implies \\Delta W = 20 - 14{,}4 = 5{,}6\\text{ J}$.'
         }
       ],
       miniEssay: {
         id: 'p9pb-s3-e1',
-        question: 'Kéo thùng hàng $50\\text{ kg}$ lên sàn ô tô cao $1{,}5\\text{ m}$ bằng tấm ván dài $5\\text{ m}$, lực kéo là $200\\text{ N}$ ($g = 10\\text{ m/s}^2$). Tính hiệu suất và lực ma sát trên ván.',
-        hint: 'Tính $A_{\\text{ích}} = mgh$, $A_{\\text{tp}} = Fl$, rồi $A_{ms} = A_{\\text{tp}} - A_{\\text{ích}} = F_{ms}l$.',
+        question: 'Trong công viên giải trí, tàu lượn siêu tốc nặng $800\\text{ kg}$ xuất phát gần như đứng yên từ đỉnh dốc cao $30\\text{ m}$. Khi xuống tới điểm thấp cao $5\\text{ m}$, tốc độ tàu đạt $20\\text{ m/s}$ ($g = 10\\text{ m/s}^2$). Tính phần cơ năng đã hao phí thành nhiệt do ma sát.',
+        hint: 'Tính $W_{\\text{đỉnh}} = mgh_1$ và $W_{\\text{đáy}} = \\frac{1}{2}mv^2 + mgh_2$ rồi lấy hiệu.',
         rubricChecklist: [
-          'Tính $A_{\\text{ích}} = 750\\text{ J}$, $A_{\\text{tp}} = 1000\\text{ J} \\implies H = 75\\%$.',
-          'Tính $A_{ms} = 250\\text{ J} \\implies F_{ms} = 250/5 = 50\\text{ N}$.'
+          'Tính $W_1 = 800\\cdot 10\\cdot 30 = 240\\text{ kJ}$.',
+          'Tính $W_2 = 0{,}5\\cdot 800\\cdot 20^2 + 800\\cdot 10\\cdot 5 = 200\\text{ kJ} \\implies Q_{\\text{hp}} = 40\\text{ kJ}$.'
         ],
-        sampleAnswer: 'Công có ích $A_{\\text{ích}} = P\\cdot h = 500\\cdot 1{,}5 = 750\\text{ J}$. Công toàn phần $A_{\\text{tp}} = F\\cdot l = 200\\cdot 5 = 1000\\text{ J}$. Hiệu suất $H = \\frac{750}{1000} = 75\\%$. Công thắng ma sát $A_{ms} = 1000 - 750 = 250\\text{ J} \\Rightarrow F_{ms} = \\frac{250}{5} = 50\\text{ N}$.'
+        sampleAnswer: 'Cơ năng ở đỉnh dốc: $W_1 = mgh_1 = 800 \\times 10 \\times 30 = 240\\,000\\text{ J} = 240\\text{ kJ}$. Cơ năng tại vị trí sau: $W_2 = \\frac{1}{2}\\times 800 \\times 20^2 + 800 \\times 10 \\times 5 = 160\\,000 + 40\\,000 = 200\\text{ kJ}$. Vậy phần cơ năng đã chuyển hóa thành nhiệt năng do ma sát là $\\Delta W = 240 - 200 = 40\\text{ kJ}$.'
+      }
+    }
+  ],
+  'phys-9-b4': [
+    {
+      stepTitle: '1. Công Cơ học & Điều kiện Sinh công',
+      stepType: 'concept',
+      conceptSection:
+        'Trong Vật lí, chỉ có công cơ học khi có lực tác dụng lên vật và làm cho vật dịch chuyển một quãng đường theo phương không vuông góc với phương của lực.',
+      formulaSection: {
+        primaryFormula: 'A = F \\cdot s \\quad (\\text{khi lực cùng hướng dịch chuyển})',
+        secondaryFormulas: [
+          'A = F \\cdot s \\cdot \\cos\\alpha \\quad (\\text{tổng quát khi lực hợp góc } \\alpha)',
+          '1\\text{ J} = 1\\text{ N}\\cdot\\text{m}, \\quad 1\\text{ kJ} = 1000\\text{ J}'
+        ],
+        variablesNote:
+          '• $F$: độ lớn lực tác dụng ($\\text{N}$), $s$: quãng đường dịch chuyển ($\\text{m}$).\n• Nếu lực vuông góc với phương dịch chuyển ($\\alpha = 90^\\circ$) hoặc vật đứng yên ($s = 0$) thì công cơ học bằng $0$.'
+      },
+      deepDiveSection:
+        'Người kéo gàu nước từ giếng lên thực hiện công vì lực kéo cùng hướng chuyển động lên trên. Trái lại, một bạn đeo ba-lô đi bộ đều trên sân trường phẳng ngang: lực nâng của vai hướng thẳng đứng còn chuyển động theo phương ngang ($\\alpha = 90^\\circ$) nên lực nâng vai không sinh công cơ học.',
+      teacherExplanation:
+        'Kéo thanh trượt Góc kéo $\\alpha$ trên mô phỏng 2D để kiểm chứng giá trị $\\cos\\alpha$: khi $\\alpha$ tăng dần từ $0^\\circ$ tới $75^\\circ$, phần lực kéo hiệu dụng $F_x = F\\cos\\alpha$ và công $A$ giảm rõ rệt.',
+      keyTakeaway: 'Công cơ học $A = Fs\\cos\\alpha$; lực vuông góc hướng dịch chuyển thì không sinh công.',
+      miniQuiz: [
+        {
+          id: 'p9b4-s1-q1',
+          question: 'Trường hợp nào sau đây có công cơ học của trọng lực khác 0?',
+          options: [
+            'A. Hòn đá nằm yên trên mặt bàn',
+            'B. Ô tô chuyển động thẳng đều trên đường nằm ngang',
+            'C. Quả dừa rơi từ trên cây xuống đất',
+            'D. Vệ tinh chuyển động tròn đều quanh Trái Đất'
+          ],
+          correctIndex: 2,
+          explanation: 'Khi quả dừa rơi thẳng đứng xuống đất, trọng lực có phương và chiều trùng với chiều dịch chuyển nên thực hiện công dương.'
+        },
+        {
+          id: 'p9b4-s1-q2',
+          question: 'Một công nhân đẩy xe hàng với lực $150\\text{ N}$ dọc theo hướng chuyển động được quãng đường $20\\text{ m}$. Công người đó thực hiện là:',
+          options: ['A. $7{,}5\\text{ J}$', 'B. $300\\text{ J}$', 'C. $3000\\text{ J}$', 'D. $170\\text{ J}$'],
+          correctIndex: 2,
+          explanation: '$A = F\\cdot s = 150 \\cdot 20 = 3000\\text{ J} = 3\\text{ kJ}$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b4-s1-e1',
+        question: 'Một người kéo thùng gỗ bằng lực $F = 100\\text{ N}$ theo phương nghiêng góc $\\alpha = 60^\\circ$ so với mặt sàn nằm ngang đi được đoạn $s = 12\\text{ m}$. Tính công của lực kéo và giải thích tại sao nhỏ hơn $1200\\text{ J}$.',
+        hint: 'Dùng thành phần lực theo phương dịch chuyển $F_x = F\\cos 60^\\circ$.',
+        rubricChecklist: [
+          'Tính đúng $A = 100 \\cdot 12 \\cdot \\cos 60^\\circ = 600\\text{ J}$.',
+          'Giải thích chỉ thành phần $F\\cos\\alpha$ cùng phương dịch chuyển mới sinh công, thành phần $F\\sin\\alpha$ vuông góc không sinh công.'
+        ],
+        sampleAnswer: 'Thành phần lực kéo theo phương ngang là $F_x = F\\cos 60^\\circ = 100 \\times 0{,}5 = 50\\text{ N}$. Công của lực kéo là $A = F_x \\cdot s = 50 \\times 12 = 600\\text{ J}$. Giá trị này nhỏ hơn $1200\\text{ J}$ vì thành phần $F\\sin 60^\\circ$ vuông góc với sàn không trực tiếp làm vật tiến lên phía trước.'
+      }
+    },
+    {
+      stepTitle: '2. Công suất — Tốc độ Thực hiện Công',
+      stepType: 'derivation',
+      conceptSection:
+        'Để biết thiết bị hoặc người nào làm việc khỏe hơn (thực hiện công nhanh hơn), người ta dùng đại lượng công suất — được xác định bằng công thực hiện được trong một giây.',
+      formulaSection: {
+        primaryFormula: '\\mathscr{P} = \\frac{A}{t} = F \\cdot v',
+        secondaryFormulas: [
+          '1\\text{ W} = 1\\text{ J/s}, \\quad 1\\text{ kW} = 1000\\text{ W}, \\quad 1\\text{ MW} = 10^6\\text{ W}',
+          '1\\text{ HP (mã lực)} \\approx 746\\text{ W}'
+        ],
+        variablesNote:
+          '• $\\mathscr{P}$: công suất (Oát, $\\text{W}$), $A$: công thực hiện ($\\text{J}$), $t$: thời gian thực hiện công ($\\text{s}$).\n• Khi lực kéo $F$ dọc hướng chuyển động có tốc độ $v$: $\\mathscr{P} = F \\cdot v$.'
+      },
+      deepDiveSection:
+        'Trên các động cơ xe máy, ô tô hay máy bơm nước đều ghi công suất (kW hoặc W). Một máy bơm $750\\text{ W}$ trong $1$ giây có thể sinh công cơ học tối đa $750\\text{ J}$. Nếu hai máy nâng cùng một bao xi măng lên tầng 3 (cùng công $A$), máy nào nâng mất ít thời gian $t$ hơn thì có công suất lớn hơn.',
+      teacherExplanation:
+        'Luôn phân biệt rõ: Công $A$ (Jun) hỏi "làm được bao nhiêu việc"; Công suất $\\mathscr{P}$ (Oát) hỏi "làm nhanh tới mức nào".',
+      keyTakeaway: 'Công suất $\\mathscr{P} = A/t = Fv$ đặc trưng cho tốc độ sinh công nhanh hay chậm.',
+      miniQuiz: [
+        {
+          id: 'p9b4-s2-q1',
+          question: 'Một con ngựa kéo xe đi đều với lực kéo $400\\text{ N}$ ở tốc độ $5\\text{ m/s}$. Công suất của con ngựa là:',
+          options: ['A. $80\\text{ W}$', 'B. $2000\\text{ W}$', 'C. $405\\text{ W}$', 'D. $4000\\text{ W}$'],
+          correctIndex: 1,
+          explanation: '$\\mathscr{P} = F\\cdot v = 400 \\cdot 5 = 2000\\text{ W} = 2\\text{ kW}$.'
+        },
+        {
+          id: 'p9b4-s2-q2',
+          question: 'Cần cẩu A nâng vật nặng $600\\text{ kg}$ lên cao $5\\text{ m}$ trong $15\\text{ s}$; cần cẩu B nâng vật $400\\text{ kg}$ lên cao $6\\text{ m}$ trong $8\\text{ s}$ ($g = 10\\text{ m/s}^2$). So sánh công suất hai cần cẩu:',
+          options: ['A. $\\mathscr{P}_A > \\mathscr{P}_B$', 'B. $\\mathscr{P}_A < \\mathscr{P}_B$', 'C. $\\mathscr{P}_A = \\mathscr{P}_B$', 'D. Không so sánh được'],
+          correctIndex: 1,
+          explanation: '$\\mathscr{P}_A = (6000\\cdot 5)/15 = 2000\\text{ W}$; $\\mathscr{P}_B = (4000\\cdot 6)/8 = 3000\\text{ W} \\implies \\mathscr{P}_A < \\mathscr{P}_B$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b4-s2-e1',
+        question: 'Một máy bơm nước có công suất có ích $800\\text{ W}$ hoạt động liên tục trong $10\\text{ phút}$. Tính tổng lượng công cơ học máy thực hiện và khối lượng nước tối đa máy bơm được lên bồn cao $16\\text{ m}$ ($g = 10\\text{ m/s}^2$).',
+        hint: 'Đổi $t = 600\\text{ s}$, tính $A = \\mathscr{P}\\cdot t$ rồi cho $A = 10mh$.',
+        rubricChecklist: [
+          'Tính $A = 800 \\cdot 600 = 480\\,000\\text{ J} = 480\\text{ kJ}$.',
+          'Tính $m = 480\\,000 / (10 \\cdot 16) = 3000\\text{ kg}$ (3 mét khối nước).'
+        ],
+        sampleAnswer: 'Đổi $t = 10\\text{ phút} = 600\\text{ s}$. Công máy bơm thực hiện được là $A = \\mathscr{P}\\cdot t = 800 \\times 600 = 480\\,000\\text{ J}$. Ta có $A = P\\cdot h = 10mh \\Rightarrow m = \\frac{480\\,000}{10 \\times 16} = 3000\\text{ kg}$ ($3\\text{ m}^3$ nước).'
+      }
+    },
+    {
+      stepTitle: '3. Hiệu suất Máy cơ Đơn giản & Công Thắng Ma sát',
+      stepType: 'example',
+      conceptSection:
+        'Các máy cơ đơn giản (mặt phẳng nghiêng, ròng rọc, đòn bẩy) giúp giảm lực kéo cần thiết nhưng luôn có ma sát làm phát sinh công vô ích, khiến công toàn phần bỏ ra luôn lớn hơn công có ích.',
+      formulaSection: {
+        primaryFormula: 'H = \\frac{A_{\\text{ích}}}{A_{\\text{tp}}} \\cdot 100\\% = \\frac{\\mathscr{P}_{\\text{ích}}}{\\mathscr{P}_{\\text{tp}}} \\cdot 100\\%',
+        secondaryFormulas: [
+          'A_{\\text{tp}} = A_{\\text{ích}} + A_{\\text{vô ích}}',
+          '\\text{Mặt phẳng nghiêng: } A_{\\text{ích}} = P\\cdot h,\\; A_{\\text{tp}} = F\\cdot l,\\; A_{ms} = F_{ms}\\cdot l'
+        ],
+        variablesNote:
+          '• $A_{\\text{ích}}$: công thực sự dùng để nâng/dịch chuyển vật theo mục tiêu (vd: $P\\cdot h$).\n• $A_{\\text{vô ích}}$: công thắng ma sát và nâng các bộ phận phụ (dây, ròng rọc).'
+      },
+      deepDiveSection:
+        'Định luật bảo toàn công khẳng định: không một máy cơ đơn giản nào cho ta lợi về công — được lợi bao nhiêu lần về lực thì lại thiệt bấy nhiêu lần về đường đi. Hiệu suất $H$ càng cao chứng tỏ ma sát càng nhỏ (bôi trơn dầu mỡ, dùng ổ bi).',
+      teacherExplanation:
+        'Trên mô phỏng 2D, thử giảm hệ số ma sát $\\mu$ về $0$ để thấy hiệu suất $H$ tiến tới $100\\%$, còn khi $\\mu$ lớn thì công ma sát chiếm tỉ lệ lớn.',
+      keyTakeaway: 'Công có ích luôn nhỏ hơn công toàn phần ($H < 100\\%$) do hao phí thắng ma sát.',
+      miniQuiz: [
+        {
+          id: 'p9b4-s3-q1',
+          question: 'Dùng ròng rọc động đưa vật nặng $450\\text{ N}$ lên cao $3\\text{ m}$, người ta phải kéo đầu dây đi $6\\text{ m}$ với lực $250\\text{ N}$. Hiệu suất của ròng rọc là:',
+          options: ['A. $85\\%$', 'B. $90\\%$', 'C. $75\\%$', 'D. $95\\%$'],
+          correctIndex: 1,
+          explanation: '$A_{\\text{ích}} = 450\\cdot 3 = 1350\\text{ J}$; $A_{\\text{tp}} = 250\\cdot 6 = 1500\\text{ J} \\implies H = \\frac{1350}{1500} = 90\\%$.'
+        },
+        {
+          id: 'p9b4-s3-q2',
+          question: 'Để tăng hiệu suất của mặt phẳng nghiêng khi kéo vật nặng lên xe tải, biện pháp nào đúng?',
+          options: [
+            'A. Rải cát lên bề mặt ván trượt',
+            'B. Làm nhẵn bề mặt ván hoặc kê con lăn dưới đáy thùng hàng',
+            'C. Kéo vật thật giật cục theo hình zích-zắc',
+            'D. Tăng khối lượng của tấm ván lên gấp đôi'
+          ],
+          correctIndex: 1,
+          explanation: 'Làm nhẵn mặt ván hoặc dùng con lăn giúp giảm lực ma sát trượt, giảm công hao phí $A_{ms}$ và tăng hiệu suất $H$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b4-s3-e1',
+        question: 'Kéo đều một khối hàng nặng $80\\text{ kg}$ lên sàn cao $1{,}5\\text{ m}$ bằng mặt phẳng nghiêng dài $5\\text{ m}$ có hiệu suất $80\\%$ ($g = 10\\text{ m/s}^2$). Tính lực kéo cần tác dụng dọc mặt phẳng nghiêng và lực ma sát giữa hàng với ván.',
+        hint: 'Tính $A_{\\text{ích}} = Ph$, sau đó suy ra $A_{\\text{tp}} = A_{\\text{ích}}/0{,}8$, cuối cùng tìm $F$ và $F_{ms}$.',
+        rubricChecklist: [
+          'Tính đúng $A_{\\text{ích}} = 800\\cdot 1{,}5 = 1200\\text{ J}$ và $A_{\\text{tp}} = 1200/0{,}8 = 1500\\text{ J}$.',
+          'Tính được $F = 1500/5 = 300\\text{ N}$ và $F_{ms} = (1500 - 1200)/5 = 60\\text{ N}$.'
+        ],
+        sampleAnswer: 'Trọng lượng hàng $P = 10m = 800\\text{ N}$. Công có ích là $A_{\\text{ích}} = P\\cdot h = 800 \\times 1{,}5 = 1200\\text{ J}$. Do hiệu suất $80\\%$, công toàn phần là $A_{\\text{tp}} = \\frac{1200}{0{,}8} = 1500\\text{ J}$. Lực kéo cần tác dụng là $F = \\frac{A_{\\text{tp}}}{l} = \\frac{1500}{5} = 300\\text{ N}$. Công thắng ma sát là $A_{ms} = 1500 - 1200 = 300\\text{ J} \\Rightarrow F_{ms} = \\frac{300}{5} = 60\\text{ N}$.'
+      }
+    }
+  ],
+  'phys-9-b5': [
+    {
+      stepTitle: '1. Hiện tượng & Định luật Khúc xạ Ánh sáng',
+      stepType: 'concept',
+      conceptSection:
+        'Khúc xạ ánh sáng là hiện tượng tia sáng truyền xiên góc qua mặt phân cách giữa hai môi trường trong suốt khác nhau bị gãy khúc ngay tại mặt phân cách.',
+      formulaSection: {
+        primaryFormula: 'n_1 \\sin i = n_2 \\sin r \\quad\\Longleftrightarrow\\quad \\frac{\\sin i}{\\sin r} = \\frac{n_2}{n_1}',
+        secondaryFormulas: [
+          'i = 0^\\circ \\implies r = 0^\\circ \\; (\\text{chiếu vuông góc thì truyền thẳng})'
+        ],
+        variablesNote:
+          '• $i$: góc tới (góc giữa tia tới và pháp tuyến tại điểm tới $I$).\n• $r$: góc khúc xạ (góc giữa tia khúc xạ và pháp tuyến).\n• Tia khúc xạ nằm trong mặt phẳng tới và ở bên kia pháp tuyến so với tia tới.'
+      },
+      deepDiveSection:
+        'Nếu ánh sáng đi từ môi trường chiết suất nhỏ sang lớn hơn ($n_1 < n_2$, ví dụ không khí sang nước/thủy tinh) thì tia khúc xạ bị bẻ **gần pháp tuyến** hơn ($r < i$). Ngược lại khi đi từ nước ra không khí ($n_1 > n_2$), tia khúc xạ lệch **xa pháp tuyến** hơn ($r > i$).',
+      teacherExplanation:
+        'Luôn dựng đường pháp tuyến vuông góc mặt phân cách trước khi đọc số đo góc $i$ và góc $r$; tuyệt đối không lấy nhầm góc hợp với mặt nước.',
+      keyTakeaway: 'Khi đi vào môi trường chiết quang hơn ($n_2 > n_1$), tia khúc xạ gãy lại gần pháp tuyến ($r < i$).',
+      miniQuiz: [
+        {
+          id: 'p9b5-s1-q1',
+          question: 'Chiếu tia sáng từ không khí ($n_1 = 1$) vào thủy tinh ($n_2 = 1{,}5$) sao cho góc hợp bởi tia tới và mặt thủy tinh bằng $30^\\circ$. Góc tới $i$ bằng bao nhiêu?',
+          options: ['A. $30^\\circ$', 'B. $60^\\circ$', 'C. $45^\\circ$', 'D. $15^\\circ$'],
+          correctIndex: 1,
+          explanation: 'Góc tới là góc giữa tia tới và pháp tuyến: $i = 90^\\circ - 30^\\circ = 60^\\circ$.'
+        },
+        {
+          id: 'p9b5-s1-q2',
+          question: 'Theo định luật khúc xạ ánh sáng, đại lượng nào không đổi khi thay đổi góc tới $i$ đối với cùng một cặp hai môi trường trong suốt?',
+          options: ['A. Hiệu $(i - r)$', 'B. Tỉ số $i / r$', 'C. Tỉ số $\\sin i / \\sin r$', 'D. Tổng $(i + r)$'],
+          correctIndex: 2,
+          explanation: 'Theo định luật Snell – Descartes, $\\frac{\\sin i}{\\sin r} = \\frac{n_2}{n_1} = \\text{hằng số}$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b5-s1-e1',
+        question: 'Chiếu một tia sáng từ không khí ($n_1 = 1$) vào bề mặt khối nhựa trong suốt với góc tới $i = 60^\\circ$, góc khúc xạ đo được là $r = 30^\\circ$. Tính chiết suất của nhựa và góc lệch $D = |i - r|$ của tia sáng.',
+        hint: 'Thay $i = 60^\\circ, r = 30^\\circ$ vào công thức $n_2 = \\sin i / \\sin r$.',
+        rubricChecklist: [
+          'Tính đúng $n_2 = \\sin 60^\\circ / \\sin 30^\\circ = \\sqrt{3} \\approx 1{,}732$.',
+          'Tính góc lệch $D = 60^\\circ - 30^\\circ = 30^\\circ$.'
+        ],
+        sampleAnswer: 'Áp dụng định luật khúc xạ: $1 \\cdot \\sin 60^\\circ = n_2 \\cdot \\sin 30^\\circ \\Rightarrow n_2 = \\frac{\\sqrt{3}/2}{1/2} = \\sqrt{3} \\approx 1{,}73$. Góc lệch hướng truyền của tia sáng là $D = i - r = 60^\\circ - 30^\\circ = 30^\\circ$.'
+      }
+    },
+    {
+      stepTitle: '2. Chiết suất Tuyệt đối & So sánh Tốc độ Ánh sáng',
+      stepType: 'derivation',
+      conceptSection:
+        'Nguyên nhân sâu xa của hiện tượng khúc xạ là ánh sáng truyền với tốc độ chậm đi khi đi vào các môi trường vật chất như nước, thủy tinh hay kim cương so với chân không.',
+      formulaSection: {
+        primaryFormula: 'n = \\frac{c}{v} \\ge 1',
+        secondaryFormulas: [
+          'n_{21} = \\frac{n_2}{n_1} = \\frac{v_1}{v_2} \\quad (\\text{chiết suất tỉ đối})',
+          'c \\approx 3 \\cdot 10^8\\text{ m/s}'
+        ],
+        variablesNote:
+          '• Không khí: $n \\approx 1{,}0003 \\approx 1$; Nước: $n \\approx 1{,}33$; Thủy tinh: $n \\approx 1{,}5$; Kim cương: $n \\approx 2{,}42$.\n• Chiết suất $n$ càng lớn thì tốc độ truyền ánh sáng $v = c/n$ trong môi trường đó càng nhỏ.'
+      },
+      deepDiveSection:
+        'Kim cương có chiết suất rất lớn ($n = 2{,}42$) làm tia sáng đi qua bị bẻ gãy góc mạnh và phản xạ nhiều lần bên trong viên đá cắt gọt, tạo nên vẻ lấp lánh đặc trưng mà thủy tinh thường ($n = 1{,}5$) khó sánh bằng.',
+      teacherExplanation:
+        'Thay đổi thanh trượt $n_2$ trên mô phỏng từ $1{,}33$ (nước) lên $1{,}5$ (thủy tinh) rồi $2{,}4$ (kim cương) để thấy tia khúc xạ ép sát dần vào đường pháp tuyến.',
+      keyTakeaway: 'Chiết suất tuyệt đối $n = c/v$ đo mức độ làm chậm ánh sáng của môi trường.',
+      miniQuiz: [
+        {
+          id: 'p9b5-s2-q1',
+          question: 'Tốc độ truyền ánh sáng trong thủy tinh có chiết suất $n = 1{,}5$ bằng bao nhiêu ($c = 3\\cdot 10^8\\text{ m/s}$)?',
+          options: ['A. $4{,}5\\cdot 10^8\\text{ m/s}$', 'B. $2{,}0\\cdot 10^8\\text{ m/s}$', 'C. $1{,}5\\cdot 10^8\\text{ m/s}$', 'D. $2{,}25\\cdot 10^8\\text{ m/s}$'],
+          correctIndex: 1,
+          explanation: '$v = c/n = 3\\cdot 10^8 / 1{,}5 = 2{,}0\\cdot 10^8\\text{ m/s}$.'
+        },
+        {
+          id: 'p9b5-s2-q2',
+          question: 'Trong các chất trong suốt: không khí ($n=1$), nước ($n=1{,}33$), thủy tinh ($n=1{,}5$) và kim cương ($n=2{,}4$), ánh sáng truyền chậm nhất trong chất nào?',
+          options: ['A. Không khí', 'B. Nước', 'C. Thủy tinh', 'D. Kim cương'],
+          correctIndex: 3,
+          explanation: 'Vì $v = c/n$, môi trường nào có chiết suất $n$ lớn nhất thì tốc độ ánh sáng trong đó nhỏ nhất.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b5-s2-e1',
+        question: 'Ánh sáng truyền trong một loại dầu thực vật trong suốt có tốc độ đo được là $v = 2{,}04\\cdot 10^8\\text{ m/s}$. Tính chiết suất của dầu và góc khúc xạ khi chiếu tia sáng từ không khí vào dầu với góc tới $i = 45^\\circ$.',
+        hint: 'Tính $n_2 = c/v$, sau đó tính $\\sin r = \\sin 45^\\circ / n_2$.',
+        rubricChecklist: [
+          'Tính đúng chiết suất $n_2 = 3 / 2{,}04 \\approx 1{,}47$.',
+          'Tính $\\sin r = 0{,}7071 / 1{,}47 \\approx 0{,}481 \\implies r \\approx 28{,}8^\\circ$.'
+        ],
+        sampleAnswer: 'Chiết suất của dầu thực vật là $n_2 = \\frac{c}{v} = \\frac{3\\cdot 10^8}{2{,}04\\cdot 10^8} \\approx 1{,}47$. Khi chiếu từ không khí ($n_1 = 1$) dưới góc tới $45^\\circ$: $\\sin r = \\frac{\\sin 45^\\circ}{1{,}47} \\approx 0{,}481 \\Rightarrow r \\approx 28{,}8^\\circ$.'
+      }
+    },
+    {
+      stepTitle: '3. Tính Thuận nghịch & Hiện tượng Đáy bể Trông Nông hơn',
+      stepType: 'example',
+      conceptSection:
+        'Ánh sáng truyền đi theo đường nào thì cũng truyền ngược lại đúng theo đường đó (tính thuận nghịch). Nhờ khúc xạ khi ánh sáng đi từ nước ra không khí, ta thấy chiếc đũa cắm xiên vào cốc nước như bị gãy và đáy bể trông nông hơn.',
+      formulaSection: {
+        primaryFormula: 'h_{\\text{ảnh}} \\approx \\frac{h_{\\text{thực}}}{n} \\quad (\\text{khi nhìn gần thẳng đứng xuống mặt nước})',
+        secondaryFormulas: [
+          'n_{\\text{nước}} \\sin i = 1 \\cdot \\sin r \\implies r > i'
+        ],
+        variablesNote:
+          '• Khi nhìn từ trên xuống nước ($n \\approx 4/3$): độ sâu biểu kiến chỉ bằng khoảng $3/4$ độ sâu thật.\n• Khi thợ lặn ở dưới nước nhìn chim bay trên trời: thấy chim có vẻ ở cao hơn độ cao thật.'
+      },
+      deepDiveSection:
+        'Tia sáng từ hòn sỏi dưới đáy bể truyền ra không khí bị khúc xạ lệch xa pháp tuyến ($r > i$). Mắt người định vị vật theo đường kéo dài thẳng của tia ló nên nhìn thấy ảnh ảo của hòn sỏi nằm gần mặt nước hơn vị trí thật.',
+      teacherExplanation:
+        'Khi xiên cá trong nước bằng giáo từ trên bờ, người có kinh nghiệm luôn ngắm thấp hơn vị trí ảnh nhìn thấy.',
+      keyTakeaway: 'Tia sáng đi từ nước ra không khí lệch xa pháp tuyến ($r > i$), làm đáy bể trông nông bằng $3/4$ thực tế.',
+      miniQuiz: [
+        {
+          id: 'p9b5-s3-q1',
+          question: 'Khi nhúng nghiêng một chiếc đũa thẳng vào cốc nước trong, ta thấy phần đũa trong nước có vẻ như bị bẻ gãy lên trên ở mặt nước là do hiện tượng:',
+          options: ['A. Phản xạ toàn phần', 'B. Khúc xạ ánh sáng', 'C. Tán sắc ánh sáng', 'D. Nhiễu xạ ánh sáng'],
+          correctIndex: 1,
+          explanation: 'Các tia sáng từ phần đũa dưới nước truyền ra không khí bị khúc xạ lệch xa pháp tuyến, tạo ảnh ảo nằm cao hơn vật thật.'
+        },
+        {
+          id: 'p9b5-s3-q2',
+          question: 'Một hồ bơi có độ sâu thực $2{,}0\\text{ m}$ ($n = 4/3$). Khi đứng trên thành hồ nhìn thẳng đứng xuống đáy hồ, mắt cảm thấy đáy hồ sâu khoảng:',
+          options: ['A. $2{,}67\\text{ m}$', 'B. $1{,}50\\text{ m}$', 'C. $2{,}00\\text{ m}$', 'D. $1{,}00\\text{ m}$'],
+          correctIndex: 1,
+          explanation: '$h_{\\text{ảnh}} \\approx \\frac{h}{n} = \\frac{2{,}0}{4/3} = 1{,}5\\text{ m}$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b5-s3-e1',
+        question: 'Giải thích vì sao một con cá dưới nước nhìn thấy con bói cá đậu trên cành cây cao có vẻ cao hơn so với vị trí thực của chim.',
+        hint: 'Vẽ đường truyền tia sáng từ con chim đi từ không khí ($n=1$) vào nước ($n=4/3$) tới mắt cá.',
+        rubricChecklist: [
+          'Tia sáng từ chim đi từ không khí vào nước bị gãy lại gần pháp tuyến ($r < i$).',
+          'Mắt cá nhìn ngược theo đường kéo dài của tia khúc xạ thấy ảnh ảo nằm cao hơn con chim thật.'
+        ],
+        sampleAnswer: 'Tia sáng từ con chim truyền từ không khí ($n_1 = 1$) vào nước ($n_2 = 4/3$) bị khúc xạ gãy gần pháp tuyến hơn ($r < i$). Mắt cá nằm trong nước nhận tia khúc xạ và suy ra vị trí chim theo đường kéo dài thẳng ngược lên trên tia khúc xạ, nên ảnh ảo của chim nằm ở độ cao lớn hơn độ cao thật.'
+      }
+    }
+  ],
+  'phys-9-b6': [
+    {
+      stepTitle: '1. Điều kiện Xảy ra Hiện tượng Phản xạ Toàn phần',
+      stepType: 'concept',
+      conceptSection:
+        'Phản xạ toàn phần là hiện tượng toàn bộ chùm tia sáng tới bị phản xạ trở lại môi trường ban đầu ở mặt phân cách giữa hai môi trường trong suốt, không còn tia khúc xạ truyền sang môi trường thứ hai.',
+      formulaSection: {
+        primaryFormula: '\\text{(1) } n_1 > n_2 \\qquad\\text{và}\\qquad \\text{(2) } i \\ge i_{th}',
+        secondaryFormulas: [
+          '\\sin i_{th} = \\frac{n_2}{n_1}'
+        ],
+        variablesNote:
+          '• $n_1$: chiết suất môi trường chứa tia tới; $n_2$: chiết suất môi trường bên kia mặt phân cách.\n• $i_{th}$: góc tới hạn phản xạ toàn phần. Nếu $n_1 < n_2$ (ví dụ không khí vào thủy tinh) thì KHÔNG BAO GIỜ có phản xạ toàn phần.'
+      },
+      deepDiveSection:
+        'Khi tia sáng đi từ nước ($n_1 = 1{,}33$) ra không khí ($n_2 = 1$), $\\sin i_{th} = 1/1{,}33 \\implies i_{th} \\approx 48{,}6^\\circ$. Với thủy tinh ($n_1 = 1{,}5$) ra không khí, $i_{th} \\approx 41{,}8^\\circ$. Khi góc tới vượt giá trị này, bề mặt thủy tinh – không khí phản chiếu sáng rực như một tấm gương hoàn hảo.',
+      teacherExplanation:
+        'Luôn kiểm tra ĐỦ CẢ HAI điều kiện: ánh sáng phải đi từ chất chiết quang hơn sang kém hơn ($n_1 > n_2$) VÀ góc tới đạt $i \\ge i_{th}$.',
+      keyTakeaway: 'Phản xạ toàn phần chỉ xảy ra khi $n_1 > n_2$ và góc tới $i \\ge \\arcsin(n_2/n_1)$.',
+      miniQuiz: [
+        {
+          id: 'p9b6-s1-q1',
+          question: 'Trường hợp nào sau đây có thể xảy ra hiện tượng phản xạ toàn phần?',
+          options: [
+            'A. Ánh sáng truyền từ không khí vào nước',
+            'B. Ánh sáng truyền từ không khí vào thủy tinh',
+            'C. Ánh sáng truyền từ thủy tinh ($n=1{,}5$) ra không khí ($n=1$)',
+            'D. Ánh sáng truyền từ nước ($n=1{,}33$) vào kim cương ($n=2{,}4$)'
+          ],
+          correctIndex: 2,
+          explanation: 'Điều kiện cần là ánh sáng đi từ môi trường chiết suất lớn sang môi trường chiết suất nhỏ hơn ($n_1 > n_2$).'
+        },
+        {
+          id: 'p9b6-s1-q2',
+          question: 'Góc tới hạn phản xạ toàn phần khi ánh sáng truyền từ kim cương ($n_1 = 2{,}4$) ra không khí ($n_2 = 1$) xấp xỉ:',
+          options: ['A. $24{,}6^\\circ$', 'B. $41{,}8^\\circ$', 'C. $48{,}6^\\circ$', 'D. $60{,}0^\\circ$'],
+          correctIndex: 0,
+          explanation: '$\\sin i_{th} = 1 / 2{,}4 \\approx 0{,}4167 \\implies i_{th} \\approx 24{,}6^\\circ$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b6-s1-e1',
+        question: 'Chứng minh bằng công thức vì sao khi ánh sáng truyền từ không khí ($n_1 = 1$) vào nước ($n_2 = 1{,}33$) thì dù tăng góc tới $i$ lớn tới gần $90^\\circ$ cũng không xảy ra phản xạ toàn phần.',
+        hint: 'Xét giá trị cực đại của $\\sin r = (n_1/n_2)\\sin i$ khi $\\sin i \\to 1$.',
+        rubricChecklist: [
+          'Viết đúng $\\sin r = \\frac{1}{1{,}33}\\sin i < 0{,}752 < 1$ với mọi góc tới $i < 90^\\circ$.',
+          'Kết luận góc khúc xạ $r$ luôn tồn tại ($r < 48{,}8^\\circ$), tia sáng luôn truyền vào nước nên không phản xạ toàn phần.'
+        ],
+        sampleAnswer: 'Theo định luật khúc xạ: $\\sin r = \\frac{n_1}{n_2}\\sin i = \\frac{1}{1{,}33}\\sin i \\le 0{,}752$. Vì $\\sin r$ luôn nhỏ hơn $1$ với mọi góc tới $i < 90^\\circ$, góc khúc xạ $r$ luôn tồn tại (luôn nhỏ hơn $48{,}8^\\circ$) nên luôn có tia khúc xạ đi vào nước, không thể xảy ra phản xạ toàn phần.'
+      }
+    },
+    {
+      stepTitle: '2. Truyền Tín hiệu Ánh sáng trong Sợi Cáp quang',
+      stepType: 'derivation',
+      conceptSection:
+        'Cáp quang là dây dẫn ánh sáng làm bằng thủy tinh hoặc nhựa siêu tinh khiết gồm hai lớp đồng tâm: lõi trong có chiết suất lớn $n_1$ và lớp vỏ bọc ngoài có chiết suất nhỏ hơn $n_2 < n_1$.',
+      formulaSection: {
+        primaryFormula: 'n_{\\text{lõi}} > n_{\\text{vỏ}}, \\qquad \\sin i_{\\text{mặt bên}} \\ge \\frac{n_{\\text{vỏ}}}{n_{\\text{lõi}}}',
+        secondaryFormulas: [
+          '\\text{Số lần phản xạ hoàn toàn không làm hao hụt năng lượng tia qua vỏ}'
+        ],
+        variablesNote:
+          '• Tia sáng được phóng vào đầu sợi cáp dưới góc mở thích hợp sẽ đập vào thành lõi dưới góc tới rất lớn ($> i_{th}$), phản xạ toàn phần hàng triệu lần liên tiếp kể cả khi sợi cáp uốn cong.\n• Ứng dụng: Internet băng thông rộng, nội soi y tế dạ dày – phổi.'
+      },
+      deepDiveSection:
+        'Vì phản xạ toàn phần bảo toàn gần như $100\\%$ cường độ tia sáng (không giống gương tráng bạc bị hấp thụ khoảng $5\\% - 10\\%$ mỗi lần phản xạ), tín hiệu laser trong cáp quang có thể truyền đi hàng chục kilômét xuyên đại dương trước khi cần trạm khuếch đại.',
+      teacherExplanation:
+        'Trên mô phỏng 2D, thử chỉnh góc phóng $\\theta$ lớn hơn giới hạn hoặc giảm chênh lệch $n_1 - n_2$: tia sáng sẽ xuyên thủng lớp vỏ thoát ra ngoài (suy hao tín hiệu).',
+      keyTakeaway: 'Cáp quang truyền tín hiệu nhờ phản xạ toàn phần liên tiếp trong lõi chiết suất $n_1 > n_2$.',
+      miniQuiz: [
+        {
+          id: 'p9b6-s2-q1',
+          question: 'Cấu tạo lõi và vỏ của một sợi cáp quang chuẩn phải thỏa mãn điều kiện nào về chiết suất?',
+          options: [
+            'A. Chiết suất lõi bằng chiết suất vỏ ($n_1 = n_2$)',
+            'B. Chiết suất lõi lớn hơn chiết suất vỏ ($n_1 > n_2$)',
+            'C. Chiết suất lõi nhỏ hơn chiết suất vỏ ($n_1 < n_2$)',
+            'D. Lõi là kim loại dẫn điện, vỏ bằng nhựa đen'
+          ],
+          correctIndex: 1,
+          explanation: 'Để ánh sáng phản xạ toàn phần liên tục bên trong lõi mà không lọt ra vỏ thì bắt buộc $n_{\\text{lõi}} > n_{\\text{vỏ}}$.'
+        },
+        {
+          id: 'p9b6-s2-q2',
+          question: 'Ưu điểm nổi bật của mạng truyền dẫn cáp quang so với dây cáp đồng truyền thống là:',
+          options: [
+            'A. Tốc độ truyền bằng tốc độ ánh sáng trong lõi và không bị nhiễu điện từ',
+            'B. Truyền được dòng điện xoay chiều 220 V tới gia đình',
+            'C. Giá thành lõi thủy tinh đắt nhưng dẫn điện tốt hơn đồng',
+            'D. Không cần nguồn phát laser mà tự phát sáng'
+          ],
+          correctIndex: 0,
+          explanation: 'Cáp quang truyền xung ánh sáng tốc độ cao ($v = c/n \\approx 2\\cdot 10^8\\text{ m/s}$), dung lượng cực lớn và miễn nhiễm nhiễu điện từ.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b6-s2-e1',
+        question: 'Tại sao khi lắp đặt dây mạng cáp quang trong nhà, kỹ thuật viên khuyến cáo không được bẻ gập dây cáp quá gắt thành góc nhọn?',
+        hint: 'Xét góc tới $i$ của tia sáng lên thành lõi ở đoạn uốn cong.',
+        rubricChecklist: [
+          'Nếu bẻ gập quá mức, bán kính cong nhỏ làm tia sáng đập vào mặt phân cách lõi–vỏ dưới góc tới $i$ giảm xuống dưới $i_{th}$.',
+          'Khi $i < i_{th}$, ánh sáng bị khúc xạ thoát ra vỏ gây mất tín hiệu (hoặc nứt gãy lõi thủy tinh).'
+        ],
+        sampleAnswer: 'Nếu bẻ gập sợi cáp quang thành góc quá nhọn, góc tới $i$ của tia sáng đập vào thành giữa lõi và vỏ ở chỗ uốn bị giảm xuống nhỏ hơn góc tới hạn $i_{th}$. Lúc đó phản xạ toàn phần bị phá vỡ, tia sáng bị khúc xạ lọt ra ngoài vỏ làm suy hao hoặc mất hoàn toàn tín hiệu mạng.'
+      }
+    },
+    {
+      stepTitle: '3. So sánh Khúc xạ Yếu (i < i_th) vs Phản xạ Toàn phần',
+      stepType: 'example',
+      conceptSection:
+        'Trước khi góc tới chạm ngưỡng $i_{th}$, luôn tồn tại đồng thời cả tia khúc xạ lẫn một tia phản xạ mờ (phản xạ một phần). Khi $i$ tăng tiến tới $i_{th}$, tia khúc xạ là là sát mặt phân cách ($r \\to 90^\\circ$) rồi tắt hẳn.',
+      formulaSection: {
+        primaryFormula: 'i < i_{th} \\implies \\text{Có tia khúc xạ + phản xạ yếu}',
+        secondaryFormulas: [
+          'i \\ge i_{th} \\implies \\text{Không còn tia khúc xạ; } I_{\\text{phản xạ}} = 100\\% I_{\\text{tới}}'
+        ],
+        variablesNote:
+          '• **Lăng kính phản xạ toàn phần**: lăng kính thủy tinh vuông cân ($i_{th} \\approx 41{,}8^\\circ < 45^\\circ$) làm tia sáng đập mặt huyền dưới góc $45^\\circ$ phản xạ quay góc $90^\\circ$ hoặc $180^\\circ$ trong ống nhòm và kính tiềm vọng.'
+      },
+      deepDiveSection:
+        'Ảo ảnh vũng nước trên mặt đường nhựa vào trưa hè nắng gắt cũng là kết quả của khúc xạ liên tiếp và phản xạ toàn phần: lớp không khí sát mặt đường rất nóng có chiết suất nhỏ hơn lớp không khí mát phía trên, uốn cong tia sáng từ bầu trời đi lên mắt khiến ta ngỡ có vũng nước phản chiếu.',
+      teacherExplanation:
+        'Nhớ mốc $45^\\circ$: thủy tinh thường ($n = 1{,}5$) có $i_{th} = 41{,}8^\\circ < 45^\\circ$ nên tia chiếu vuông góc cạnh góc vuông của lăng kính vuông cân luôn bị phản xạ toàn phần ở mặt huyền.',
+      keyTakeaway: 'Khi $i$ tăng tiến tới $i_{th}$, tia khúc xạ tiến sát mặt phân cách rồi biến mất, nhường toàn bộ năng lượng cho tia phản xạ.',
+      miniQuiz: [
+        {
+          id: 'p9b6-s3-q1',
+          question: 'Khi ánh sáng đi từ nước ($n_1 = 4/3$, $i_{th} \\approx 48{,}6^\\circ$) ra không khí ($n_2 = 1$) dưới góc tới $i = 30^\\circ$, hiện tượng nào xảy ra?',
+          options: [
+            'A. Chỉ có tia phản xạ toàn phần',
+            'B. Có cả tia khúc xạ lệch xa pháp tuyến và tia phản xạ một phần',
+            'C. Tia sáng truyền thẳng không đổi hướng',
+            'D. Tia sáng bị hấp thụ hoàn toàn tại mặt nước'
+          ],
+          correctIndex: 1,
+          explanation: 'Vì $i = 30^\\circ < i_{th} = 48{,}6^\\circ$, chưa đủ điều kiện phản xạ toàn phần nên vẫn có tia khúc xạ ló ra không khí kèm tia phản xạ yếu.'
+        },
+        {
+          id: 'p9b6-s3-q2',
+          question: 'Trong ống nhòm lăng kính dùng thủy tinh $n = 1{,}5$, lăng kính tam giác vuông cân phản xạ tia sáng lệch $90^\\circ$ hoặc $180^\\circ$ mà không cần tráng bạc là nhờ:',
+          options: [
+            'A. Tán sắc ánh sáng',
+            'B. Phản xạ toàn phần vì góc tới $45^\\circ > i_{th} \\approx 41{,}8^\\circ$',
+            'C. Giao thoa sóng ánh sáng',
+            'D. Hấp thụ tia tử ngoại'
+          ],
+          correctIndex: 1,
+          explanation: 'Do góc tới lên mặt huyền là $45^\\circ > 41{,}8^\\circ$ nên $100\\%$ ánh sáng phản xạ toàn phần.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b6-s3-e1',
+        question: 'Một thợ lặn ở dưới đáy hồ nước trong ($n = 4/3$) nhìn thẳng đứng lên mặt nước thấy bầu trời tròn sáng bán kính $R$, còn phía ngoài vòng tròn đó lại phản chiếu hình ảnh đáy hồ. Giải thích ngắn gọn hiện tượng "cửa sổ Snell" này.',
+        hint: 'Xét những tia sáng từ đáy hồ truyền tới mắt thợ lặn qua mặt nước với góc tới $i < i_{th}$ vs $i \\ge i_{th}$.',
+        rubricChecklist: [
+          'Tia sáng từ bầu trời khúc xạ vào nước chỉ nằm trong hình nón có góc nửa đỉnh $i_{th} \\approx 48{,}6^\\circ$.',
+          'Các tia từ đáy hồ đập vào mặt nước ngoài góc $48{,}6^\\circ$ bị phản xạ toàn phần ngược lại mắt thợ lặn trông như mặt gương.'
+        ],
+        sampleAnswer: 'Do tính thuận nghịch và giới hạn góc khúc xạ từ không khí vào nước ($r_{\\max} = i_{th} \\approx 48{,}6^\\circ$), ánh sáng bầu trời lọt tới mắt thợ lặn chỉ gom trong hình tròn góc $48{,}6^\\circ$ ngay trên đầu. Mọi tia sáng xiên hơn góc đó từ đáy hồ đi lên mặt nước đều bị phản xạ toàn phần quay xuống mắt, khiến vùng ngoài vòng tròn sáng hắt lại hình ảnh đáy hồ như tấm gương.'
+      }
+    }
+  ],
+  'phys-9-b9': [
+    {
+      stepTitle: '1. Phương pháp 1: Đo Tiêu cự bằng Chùm tia Song song (Vật ở rất xa)',
+      stepType: 'concept',
+      conceptSection:
+        'Chùm tia sáng từ một vật ở rất xa thấu kính (như Mặt Trời hoặc cửa sổ xa cuối phòng thí nghiệm) có thể coi là chùm tia song song với trục chính, sau khi qua thấu kính hội tụ sẽ tụ lại tại tiêu điểm ảnh chính $F\'$.',
+      formulaSection: {
+        primaryFormula: 'd \\gg f \\implies d\' \\approx f',
+        secondaryFormulas: [
+          '\\frac{1}{f} = \\frac{1}{d} + \\frac{1}{d\'} \\xrightarrow{d \\to \\infty} d\' = f'
+        ],
+        variablesNote:
+          '• Khoảng cách từ quang tâm $O$ của thấu kính hội tụ tới vị trí màn cho chấm sáng rõ nét/ảnh nhỏ rõ nét chính là tiêu cự $f$.\n• Phương pháp này thao tác rất nhanh để ước lượng tiêu cự trước khi đo chính xác.'
+      },
+      deepDiveSection:
+        'Trong mô phỏng 2D, đặt khoảng cách vật $d = 45\\text{ cm}$ (với $f = 15\\text{ cm}$): ta thấy ảnh thật hiện rất gần tiêu điểm $F\'$. Khi vật lùi càng xa, ảnh càng tiến sát đúng vị trí tiêu cự $f$. Lưu ý an toàn không nhìn trực tiếp Mặt Trời qua thấu kính!',
+      teacherExplanation:
+        'Phương pháp vật ở rất xa dễ làm nhưng nếu vật trong phòng chưa đủ xa ($d \\sim 3\\text{ m}$ với $f = 15\\text{ cm}$), giá trị $d\'$ sẽ hơi lớn hơn $f$ một chút (~$15{,}8\\text{ cm}$).',
+      keyTakeaway: 'Chùm tia song song trục chính qua thấu kính hội tụ hội tụ tại tiêu điểm ảnh $F\'$ cách thấu kính đúng $f$.',
+      miniQuiz: [
+        {
+          id: 'p9b9-s1-q1',
+          question: 'Khi hứng ánh sáng Mặt Trời qua một thấu kính hội tụ lên tờ giấy trắng, ta dịch chuyển thấu kính tới khi vệt sáng trên giấy nhỏ và chói nhất, đo được khoảng cách từ thấu kính tới giấy là $12\\text{ cm}$. Tiêu cự thấu kính là:',
+          options: ['A. $6\\text{ cm}$', 'B. $12\\text{ cm}$', 'C. $24\\text{ cm}$', 'D. $48\\text{ cm}$'],
+          correctIndex: 1,
+          explanation: 'Ánh sáng Mặt Trời coi như chùm tia song song nên hội tụ ngay tại tiêu điểm $F\'$, suy ra $f = 12\\text{ cm}$.'
+        },
+        {
+          id: 'p9b9-s1-q2',
+          question: 'Vì sao khi đo tiêu cự bằng nguồn sáng ở cuối phòng học dài $4\\text{ m}$, giá trị $d\'$ đo trên băng quang học hơi lớn hơn tiêu cự thật $f$ một chút?',
+          options: [
+            'A. Vì thấu kính bị mòn',
+            'B. Vì $d$ chưa thực sự vô cùng ($1/d > 0$) nên $1/d\' = 1/f - 1/d < 1/f \\implies d\' > f$',
+            'C. Vì ảnh thu được là ảnh ảo',
+            'D. Vì ánh sáng truyền chậm hơn trong thủy tinh'
+          ],
+          correctIndex: 1,
+          explanation: 'Vì $d$ hữu hạn nên $d\' = \\frac{df}{d-f} > f$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b9-s1-e1',
+        question: 'Một học sinh đặt đèn chiếu sáng ở cuối phòng cách thấu kính hội tụ $d = 300\\text{ cm}$ và thu được ảnh rõ nét trên màn ở cách thấu kính $d\' = 15{,}8\\text{ cm}$. Kiểm tra xem nếu coi $f \\approx d\'$ thì sai số tương đối là bao nhiêu phần trăm so với tiêu cự đúng $f = 15\\text{ cm}$?',
+        hint: 'Tính $|d\' - f|/f \\times 100\\%$.',
+        rubricChecklist: [
+          'Tính sai lệch $15{,}8 - 15 = 0{,}8\\text{ cm}$.',
+          'Tính sai số tương đối $(0{,}8 / 15)\\cdot 100\\% \\approx 5{,}3\\%$.'
+        ],
+        sampleAnswer: 'Do vật đặt ở khoảng hữu hạn $d = 300\\text{ cm}$, ảnh nằm tại $d\' = \\frac{300\\times 15}{300 - 15} \\approx 15{,}79\\text{ cm} \\approx 15{,}8\\text{ cm}$. Nếu lấy gần đúng $f \\approx 15{,}8\\text{ cm}$ thì sai số tương đối so với $f = 15\\text{ cm}$ là $\\frac{15{,}8 - 15}{15}\\times 100\\% \\approx 5{,}3\\%$.'
+      }
+    },
+    {
+      stepTitle: '2. Phương pháp 2 (Chuẩn KHTN 9): Ảnh thật Cao bằng Vật (L = 4f)',
+      stepType: 'derivation',
+      conceptSection:
+        'Trong bài thực hành KHTN 9 (CT GDPT 2018), phương pháp chính xác nhất trên băng quang học là bố trí thấu kính nằm chính giữa vật sáng chữ F và màn hứng ảnh sao cho ảnh thật hiện rõ nét và có chiều cao đúng bằng vật.',
+      formulaSection: {
+        primaryFormula: 'd = d\' = 2f \\implies L = d + d\' = 4f \\implies f = \\frac{L}{4}',
+        secondaryFormulas: [
+          'k = -\\frac{d\'}{d} = -1 \\iff A\'B\' = AB \\; (\\text{ngược chiều})'
+        ],
+        variablesNote:
+          '• $d$: khoảng cách từ khe chữ F tới thấu kính ($d = 2f$).\n• $d\'$: khoảng cách từ thấu kính tới màn ảnh ($d\' = 2f$).\n• $L = d + d\' = 4f$: khoảng cách trực tiếp từ vật sáng tới màn ảnh khi ảnh cao bằng vật.'
+      },
+      deepDiveSection:
+        'Ưu điểm lớn của phương pháp $L = 4f$: không bị sai số hệ thống do $d$ không ở vô cùng! Khi $d = d\' = 2f$, ảnh $A\'B\'$ có chiều cao bằng đúng chiều cao khe chữ F ban đầu ($h\' = h$) và ngược chiều. Thậm chí chỉ cần đo tổng khoảng cách $L$ giữa vật và màn bằng thước băng quang học là tính ngay được $f = L/4$.',
+      teacherExplanation:
+        'Trên mô phỏng 2D (đang đặt sẵn $f = 15\\text{ cm}, d = 30\\text{ cm}$), kiểm tra thấy mũi tên ảnh thật nằm đúng $d\' = 30\\text{ cm}$ và có chiều dài bằng đúng vật $AB$!',
+      keyTakeaway: 'Khi ảnh thật ngược chiều cao đúng bằng vật thì $d = d\' = 2f$, suy ra $f = (d + d\')/4 = L/4$.',
+      miniQuiz: [
+        {
+          id: 'p9b9-s2-q1',
+          question: 'Khi đặt vật sáng hình chữ F cao $3\\text{ cm}$ trước thấu kính hội tụ, người ta dịch chuyển thấu kính cách vật $d = 28\\text{ cm}$ và màn cách thấu kính $d\' = 28\\text{ cm}$ thì thu được ảnh rõ nét cao đúng $3\\text{ cm}$. Tiêu cự thấu kính là:',
+          options: ['A. $7\\text{ cm}$', 'B. $14\\text{ cm}$', 'C. $28\\text{ cm}$', 'D. $56\\text{ cm}$'],
+          correctIndex: 1,
+          explanation: 'Vì $d = d\' = 28\\text{ cm}$ và $A\'B\' = AB$ nên $2f = 28\\text{ cm} \\implies f = 14\\text{ cm}$.'
+        },
+        {
+          id: 'p9b9-s2-q2',
+          question: 'Một thấu kính hội tụ có tiêu cự $f = 20\\text{ cm}$. Để thu được ảnh thật cao bằng vật, phải đặt vật và màn cách nhau một khoảng $L$ bằng:',
+          options: ['A. $40\\text{ cm}$', 'B. $60\\text{ cm}$', 'C. $80\\text{ cm}$', 'D. $20\\text{ cm}$'],
+          correctIndex: 2,
+          explanation: '$L = 4f = 4 \\cdot 20 = 80\\text{ cm}$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b9-s2-e1',
+        question: 'Trình bày 4 bước thực hành đo tiêu cự thấu kính hội tụ trên băng quang học bằng phương pháp ảnh thật cao bằng vật ($d = d\'$).',
+        hint: 'Nêu rõ cách đặt vật chữ F, thấu kính ở giữa và tiêu chí nhận biết vị trí đo.',
+        rubricChecklist: [
+          'Đo chiều cao khe sáng chữ F trước khi bật đèn; lắp vật – thấu kính – màn đồng trục.',
+          'Dịch chuyển đồng thời vật và màn cách đều thấu kính ($d = d\'$) tới khi ảnh ngược chiều trên màn rõ nét và cao đúng bằng chữ F gốc, rồi đọc $d, d\'$ tính $f = (d+d\')/4$.'
+        ],
+        sampleAnswer: 'Bước 1: Đo chiều cao chữ F của đèn chiếu, sắp xếp đèn – thấu kính hội tụ – màn chắn đồng trục trên băng quang học. Bước 2: Dịch chuyển đèn và màn ra hai phía cách đều thấu kính ($d = d\'$). Bước 3: Điều chỉnh đều hai bên tới khi ảnh trên màn hiện rõ nét nhất và có chiều cao đúng bằng khe chữ F ban đầu. Bước 4: Đọc khoảng cách $L = d + d\'$, tính $f = L/4$ và lặp lại 3 lần lấy trung bình.'
+      }
+    },
+    {
+      stepTitle: '3. Xử lý Số liệu Thực hành & Tính Sai số f = L/4',
+      stepType: 'example',
+      conceptSection:
+        'Trong phòng thí nghiệm, mắt người đánh giá độ nét của ảnh trên màn có thể sai lệch vài milimét mỗi lần đo. Vì vậy ta phải thực hiện ít nhất 3 lần chỉnh lại rồi lấy giá trị trung bình và sai số tuyệt đối.',
+      formulaSection: {
+        primaryFormula: '\\bar{f} = \\frac{\\bar{L}}{4} = \\frac{f_1 + f_2 + f_3}{3}',
+        secondaryFormulas: [
+          '\\Delta f = \\frac{|\\bar{f} - f_1| + |\\bar{f} - f_2| + |\\bar{f} - f_3|}{3}'
+        ],
+        variablesNote:
+          '• Kết quả đo chuẩn ghi dưới dạng: $f = (\\bar{f} \\pm \\Delta f)\\text{ cm}$.\n• Nếu tăng khoảng cách $L$ lớn hơn một chút mà muốn giữ ảnh bằng vật thì không thể tìm được vị trí đối xứng nào khác vì $L_{\\min} = 4f$!'
+      },
+      deepDiveSection:
+        'Một điều thú vị của phương trình thấu kính: để hứng được ảnh thật của vật trên màn cố định cách vật một khoảng $L$, điều kiện bắt buộc là $L \\ge 4f$. Nếu đặt màn quá gần vật ($L < 4f$) thì dù dịch chuyển thấu kính đi đâu cũng KHÔNG BAO GIỜ thu được ảnh rõ nét trên màn.',
+      teacherExplanation:
+        'Khi làm bài thực hành trên lớp mà mãi không thấy ảnh rõ nét trên màn, hãy thử lùi màn ra xa hơn nữa ($L \\ge 4f$).',
+      keyTakeaway: 'Lặp lại 3 lần đo $L$, tính $\\bar{f} = \\bar{L}/4$ và ghi kết quả kèm sai số; muốn có ảnh thật trên màn phải đảm bảo $L \\ge 4f$.',
+      miniQuiz: [
+        {
+          id: 'p9b9-s3-q1',
+          question: 'Kết quả 3 lần đo khoảng cách $L$ khi ảnh thật cao bằng vật là $60{,}0\\text{ cm}$; $59{,}6\\text{ cm}$; $60{,}4\\text{ cm}$. Giá trị trung bình tiêu cự $\\bar{f}$ là:',
+          options: ['A. $15{,}0\\text{ cm}$', 'B. $30{,}0\\text{ cm}$', 'C. $14{,}9\\text{ cm}$', 'D. $15{,}2\\text{ cm}$'],
+          correctIndex: 0,
+          explanation: '$\\bar{L} = (60{,}0 + 59{,}6 + 60{,}4)/3 = 60{,}0\\text{ cm} \\implies \\bar{f} = 60{,}0 / 4 = 15{,}0\\text{ cm}$.'
+        },
+        {
+          id: 'p9b9-s3-q2',
+          question: 'Đặt vật sáng và màn cố định cách nhau $L = 50\\text{ cm}$. Với thấu kính hội tụ tiêu cự $f = 15\\text{ cm}$ đặt giữa vật và màn, có thể thu được ảnh thật trên màn không?',
+          options: [
+            'A. Có 2 vị trí cho ảnh rõ nét',
+            'B. Có 1 vị trí duy nhất',
+            'C. Không có vị trí nào vì $L = 50\\text{ cm} < 4f = 60\\text{ cm}$',
+            'D. Thu được ảnh ảo trên màn'
+          ],
+          correctIndex: 2,
+          explanation: 'Điều kiện để có ảnh thật trên màn là $L \\ge 4f = 60\\text{ cm}$. Vì $50 < 60$ nên không thể hứng được ảnh rõ nét.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b9-s3-e1',
+        question: 'Bảng số liệu thực hành đo tiêu cự bằng phương pháp $L = 4f$ cho 3 lần đo $L$: $40{,}4\\text{ cm}$; $39{,}6\\text{ cm}$; $40{,}0\\text{ cm}$. Hãy tính từng giá trị $f_1, f_2, f_3$, giá trị trung bình $\\bar{f}$ và sai số ngẫu nhiên trung bình $\\overline{\\Delta f}$.',
+        hint: 'Tính $f_i = L_i / 4$ cho từng lần rồi lấy trung bình cộng độ lệch $|\\bar{f} - f_i|$.',
+        rubricChecklist: [
+          'Tính $f_1 = 10{,}1\\text{ cm}$, $f_2 = 9{,}9\\text{ cm}$, $f_3 = 10{,}0\\text{ cm} \\implies \\bar{f} = 10{,}0\\text{ cm}$.',
+          'Tính sai số $\\overline{\\Delta f} = (0{,}1 + 0{,}1 + 0)/3 \\approx 0{,}07\\text{ cm}$.'
+        ],
+        sampleAnswer: 'Tính cho từng lần đo: $f_1 = 40{,}4/4 = 10{,}1\\text{ cm}$; $f_2 = 39{,}6/4 = 9{,}9\\text{ cm}$; $f_3 = 40{,}0/4 = 10{,}0\\text{ cm}$. Giá trị trung bình $\\bar{f} = (10{,}1 + 9{,}9 + 10{,}0)/3 = 10{,}0\\text{ cm}$. Sai số trung bình $\\overline{\\Delta f} = (|10{,}0 - 10{,}1| + |10{,}0 - 9{,}9| + 0)/3 = 0{,}2/3 \\approx 0{,}07\\text{ cm}$. Kết quả: $f = (10{,}00 \\pm 0{,}07)\\text{ cm}$.'
+      }
+    }
+  ],
+  'phys-9-b10': [
+    {
+      stepTitle: '1. Kính lúp & Nguyên lý Đặt vật trong Tiêu cự (d < f)',
+      stepType: 'concept',
+      conceptSection:
+        'Kính lúp là một thấu kính hội tụ có tiêu cự ngắn (vài cm đến dưới 25 cm), dùng để quan sát các chi tiết nhỏ bằng mắt thường thông qua việc tạo ra một ảnh ảo lớn hơn vật.',
+      formulaSection: {
+        primaryFormula: '0 < d < f \\implies \\text{Ảnh ảo, cùng chiều, lớn hơn vật}',
+        secondaryFormulas: [
+          '\\frac{1}{f} = \\frac{1}{d} + \\frac{1}{d\'} \\quad (d\' < 0)'
+        ],
+        variablesNote:
+          '• Vật phải nằm trong khoảng tiêu cự $OF$ của kính lúp ($d < f$).\n• Mắt đặt sát phía sau kính để ngắm nhìn ảnh ảo thuận chiều $A\'B\'$.'
+      },
+      deepDiveSection:
+        'Nếu ta kéo kính lúp ra quá xa mẫu vật khiến $d > f$, ảnh lập tức biến thành ảnh thật ngược chiều và mờ nhòe khi ghé sát mắt! Vì vậy thao tác chuẩn khi dùng kính lúp là đặt sát mẫu vật rồi từ từ nhấc kính lên trong phạm vi nhỏ hơn tiêu cự $f$ tới khi thấy chữ to và rõ nét nhất.',
+      teacherExplanation:
+        'Kéo thanh $d$ trên mô phỏng vào nhỏ hơn $f$ ($d = 10\\text{ cm}, f = 18\\text{ cm}$) để quan sát hai đường kéo dài tia ló giao nhau tạo mũi tên ảnh ảo nét đứt phóng đại.',
+      keyTakeaway: 'Khi dùng kính lúp phải đặt vật trong khoảng tiêu cự ($d < f$) để nhìn thấy ảnh ảo cùng chiều lớn hơn vật.',
+      miniQuiz: [
+        {
+          id: 'p9b10-s1-q1',
+          question: 'Một thợ sửa đồng hồ dùng kính lúp có tiêu cự $f = 8\\text{ cm}$ soi bánh răng đồng hồ. Phải đặt bánh răng cách kính một khoảng bao nhiêu?',
+          options: ['A. $d = 16\\text{ cm}$', 'B. $8\\text{ cm} < d < 16\\text{ cm}$', 'C. $0 < d < 8\\text{ cm}$', 'D. $d > 16\\text{ cm}$'],
+          correctIndex: 2,
+          explanation: 'Muốn kính lúp cho ảnh ảo cùng chiều lớn hơn vật thì vật phải nằm trong khoảng tiêu cự $0 < d < f = 8\\text{ cm}$.'
+        },
+        {
+          id: 'p9b10-s1-q2',
+          question: 'Khi dùng kính lúp soi một trang sách ở vị trí đúng ($d < f$), ảnh mà mắt quan sát thấy có tính chất gì?',
+          options: [
+            'A. Ảnh thật, ngược chiều, lớn hơn vật',
+            'B. Ảnh ảo, cùng chiều, lớn hơn vật',
+            'C. Ảnh ảo, cùng chiều, nhỏ hơn vật',
+            'D. Ảnh thật, cùng chiều, lớn hơn vật'
+          ],
+          correctIndex: 1,
+          explanation: 'Vật đặt trong tiêu cự thấu kính hội tụ luôn cho ảnh ảo, cùng chiều, lớn hơn vật.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b10-s1-e1',
+        question: 'Bạn An cầm kính lúp tiêu cự $f = 10\\text{ cm}$ đặt cách tờ báo $15\\text{ cm}$ và đưa mắt sát kính để đọc chữ nhưng thấy chữ bị mờ và lộn ngược. Giải thích lỗi sai của bạn An.',
+        hint: 'So sánh $d = 15\\text{ cm}$ với tiêu cự $f = 10\\text{ cm}$.',
+        rubricChecklist: [
+          'Chỉ ra $d = 15\\text{ cm} > f = 10\\text{ cm}$ nên thấu kính tạo ảnh thật, ngược chiều.',
+          'Khuyên bạn đưa kính lại gần trang báo sao cho $d < 10\\text{ cm}$ để tạo ảnh ảo cùng chiều rõ nét.'
+        ],
+        sampleAnswer: 'Do bạn An đặt kính cách chữ $d = 15\\text{ cm}$ lớn hơn tiêu cự $f = 10\\text{ cm}$ nên thấu kính hội tụ cho ảnh thật ngược chiều nằm trước mắt (khoảng cách ảnh nhỏ hơn điểm cực cận của mắt nên bị mờ). Bạn cần hạ kính lại gần trang báo sao cho $d < 10\\text{ cm}$ để mắt ngắm được ảnh ảo thuận chiều phóng đại rõ nét.'
+      }
+    },
+    {
+      stepTitle: '2. Số Bội giác G = 25/f & Ứng dụng Hệ Quang học',
+      stepType: 'derivation',
+      conceptSection:
+        'Trên vành mỗi kính lúp thường ghi một con số như $2\\times$, $5\\times$, $10\\times$ — gọi là số bội giác $G$, cho biết độ phóng đại góc trông ảnh khi mắt ngắm chừng ở cực cận hoặc vô cực.',
+      formulaSection: {
+        primaryFormula: 'G = \\frac{25}{f\\text{ (cm)}}',
+        secondaryFormulas: [
+          'f\\text{ (cm)} = \\frac{25}{G}',
+          '\\text{Hệ 2 thấu kính (Kính hiển vi/Thiên văn): } G_{\\infty} = \\frac{\\delta \\cdot Đ}{f_1 f_2},\\; G_{tv} = \\frac{f_1}{f_2}'
+        ],
+        variablesNote:
+          '• $25\\text{ cm}$ là khoảng cực cận quy ước chuẩn của mắt bình thường.\n• Kính lúp có số bội giác $G$ càng lớn thì tiêu cự $f$ càng ngắn (mặt kính càng cong vồng hơn).'
+      },
+      deepDiveSection:
+        'Khi cần quan sát tế bào hay thiên thể xa hàng triệu năm ánh sáng mà một kính lúp đơn không đủ độ phóng đại, khoa học ghép 2 thấu kính đồng trục (Vật kính + Thị kính) thành Kính hiển vi hoặc Kính thiên văn như trong mô phỏng 2 thấu kính bên trên.',
+      teacherExplanation:
+        'Lưu ý đơn vị trong công thức $G = 25 / f$: tiêu cự $f$ bắt buộc tính bằng **centimét (cm)**.',
+      keyTakeaway: 'Kính lúp có số bội giác $G$ càng lớn thì tiêu cự $f = 25/G$ (cm) càng ngắn.',
+      miniQuiz: [
+        {
+          id: 'p9b10-s2-q1',
+          question: 'Trên vành một kính lúp có ghi $2{,}5\\times$. Tiêu cự của kính lúp này bằng:',
+          options: ['A. $10\\text{ cm}$', 'B. $62{,}5\\text{ cm}$', 'C. $5\\text{ cm}$', 'D. $2{,}5\\text{ cm}$'],
+          correctIndex: 0,
+          explanation: '$f = \\frac{25}{G} = \\frac{25}{2{,}5} = 10\\text{ cm}$.'
+        },
+        {
+          id: 'p9b10-s2-q2',
+          question: 'So sánh hai kính lúp ghi $3\\times$ và $5\\times$, phát biểu nào đúng?',
+          options: [
+            'A. Kính $5\\times$ có tiêu cự dài hơn kính $3\\times$',
+            'B. Kính $5\\times$ có tiêu cự $5\\text{ cm}$, ngắn hơn tiêu cự của kính $3\\times$ ($8{,}33\\text{ cm}$)',
+            'C. Hai kính có cùng tiêu cự $25\\text{ cm}$',
+            'D. Kính $3\\times$ phóng đại lớn hơn kính $5\\times$'
+          ],
+          correctIndex: 1,
+          explanation: '$f_{5\\times} = 25/5 = 5\\text{ cm} < f_{3\\times} = 25/3 \\approx 8{,}33\\text{ cm}$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b10-s2-e1',
+        question: 'Một học sinh có hai kính lúp với tiêu cự lần lượt $f_1 = 5\\text{ cm}$ và $f_2 = 12{,}5\\text{ cm}$. Hãy xác định số bội giác $G$ ghi trên mỗi kính và cho biết dùng kính nào giúp nhìn chi tiết mạch điện tử to hơn.',
+        hint: 'Tính $G = 25/f$ cho từng kính.',
+        rubricChecklist: [
+          'Tính đúng $G_1 = 25/5 = 5\\times$ và $G_2 = 25/12{,}5 = 2\\times$.',
+          'Kết luận kính 1 ($5\\times$) phóng đại lớn hơn.'
+        ],
+        sampleAnswer: 'Kính 1 có số bội giác $G_1 = \\frac{25}{5} = 5\\times$. Kính 2 có số bội giác $G_2 = \\frac{25}{12{,}5} = 2\\times$. Do đó kính 1 ($f_1 = 5\\text{ cm}$) cho số bội giác lớn hơn, giúp phóng đại chi tiết mạch điện tử rõ hơn.'
+      }
+    },
+    {
+      stepTitle: '3. Phương pháp Tam giác Đồng dạng Giải Bài tập Thấu kính',
+      stepType: 'example',
+      conceptSection:
+        'Ở bậc THCS KHTN 9, học sinh dựng hình bằng 2 trong 3 tia đặc biệt rồi xét hai cặp tam giác vuông đồng dạng để tính chính xác vị trí và độ cao ảnh mà không cần học thuộc máy móc.',
+      formulaSection: {
+        primaryFormula: '\\triangle OAB \\sim \\triangle OA\'B\' \\implies \\frac{A\'B\'}{AB} = \\frac{OA\'}{OA} = \\frac{d\'_{\\text{lớn}}}{d}',
+        secondaryFormulas: [
+          '\\text{Ảnh thật (TKHT): } \\triangle F\'OI \\sim \\triangle F\'A\'B\' \\implies \\frac{A\'B\'}{AB} = \\frac{d\' - f}{f}',
+          '\\text{Ảnh ảo (TKHT): } \\frac{A\'B\'}{AB} = \\frac{d\'_{\\text{ảo}} + f}{f}'
+        ],
+        variablesNote:
+          '• Trong mọi hình vẽ chuẩn: $OI = AB$ (do đoạn $BI$ song song với trục chính).\n• Giải hệ 2 tỉ lệ đồng dạng dễ dàng tìm ra cả khoảng cách ảnh $OA\'$ lẫn chiều cao $A\'B\'$.'
+      },
+      deepDiveSection:
+        'Ví dụ mẫu tổng hợp: Đặt vật cao $h = 2\\text{ cm}$ cách thấu kính hội tụ $f = 12\\text{ cm}$ một đoạn $d = 18\\text{ cm}$.\n• Cặp 1: $\\frac{h\'}{h} = \\frac{d\'}{18}$.\n• Cặp 2: $\\frac{h\'}{h} = \\frac{d\' - 12}{12}$.\nCho hai vế bằng nhau: $\\frac{d\'}{18} = \\frac{d\' - 12}{12} \\implies 12d\' = 18d\' - 216 \\implies d\' = 36\\text{ cm}$ và $h\' = 2\\cdot \\frac{36}{18} = 4\\text{ cm}$!',
+      teacherExplanation:
+        'Mẹo kiểm tra lại kết quả tam giác đồng dạng: thay $d, d\', f$ vào $\\frac{1}{f} = \\frac{1}{d} \\pm \\frac{1}{d\'}$ (dấu $+$ nếu ảnh thật, dấu $-$ nếu ảnh ảo) xem hai vế có khớp nhau không.',
+      keyTakeaway: 'Kết hợp 2 cặp tam giác đồng dạng ở đỉnh $O$ và tiêu điểm $F\'$ giải quyết trọn vẹn mọi bài toán thấu kính THCS.',
+      miniQuiz: [
+        {
+          id: 'p9b10-s3-q1',
+          question: 'Đặt vật sáng $AB$ cao $3\\text{ cm}$ cách thấu kính hội tụ $f = 10\\text{ cm}$ một khoảng $d = 15\\text{ cm}$. Chiều cao ảnh thật $A\'B\'$ bằng:',
+          options: ['A. $1{,}5\\text{ cm}$', 'B. $3\\text{ cm}$', 'C. $6\\text{ cm}$', 'D. $9\\text{ cm}$'],
+          correctIndex: 2,
+          explanation: 'Từ $\\frac{d\'}{15} = \\frac{d\' - 10}{10} \\implies d\' = 30\\text{ cm} \\implies A\'B\' = 3\\cdot \\frac{30}{15} = 6\\text{ cm}$.'
+        },
+        {
+          id: 'p9b10-s3-q2',
+          question: 'Với thấu kính phân kì tiêu cự $15\\text{ cm}$, vật cao $4\\text{ cm}$ đặt cách kính $30\\text{ cm}$ cho ảnh ảo cách kính và cao bằng bao nhiêu?',
+          options: [
+            'A. $d\' = 10\\text{ cm}$, $h\' = 1{,}33\\text{ cm}$',
+            'B. $d\' = 30\\text{ cm}$, $h\' = 4\\text{ cm}$',
+            'C. $d\' = 15\\text{ cm}$, $h\' = 2\\text{ cm}$',
+            'D. $d\' = 20\\text{ cm}$, $h\' = 2{,}67\\text{ cm}$'
+          ],
+          correctIndex: 0,
+          explanation: '$\\frac{d\'}{30} = \\frac{15 - d\'}{15} \\implies d\' = 10\\text{ cm} \\implies h\' = 4\\cdot \\frac{10}{30} \\approx 1{,}33\\text{ cm}$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b10-s3-e1',
+        question: 'Đặt vật sáng $AB$ cao $4\\text{ cm}$ vuông góc trục chính của kính lúp có tiêu cự $f = 15\\text{ cm}$, cách kính $d = 10\\text{ cm}$. Dùng hai cặp tam giác đồng dạng tính khoảng cách ảnh ảo $OA\'$ và chiều cao ảnh $A\'B\'$.',
+        hint: 'Lập $\\frac{A\'B\'}{AB} = \\frac{d\'}{10}$ và $\\frac{A\'B\'}{AB} = \\frac{d\' + 15}{15}$.',
+        rubricChecklist: [
+          'Lập đúng tỉ lệ đồng dạng ảnh ảo $\\frac{d\'}{10} = \\frac{d\' + 15}{15}$ giải ra $d\' = 30\\text{ cm}$.',
+          'Tính đúng $A\'B\' = 4 \\cdot (30/10) = 12\\text{ cm}$.'
+        ],
+        sampleAnswer: 'Từ $\\triangle OAB \\sim \\triangle OA\'B\'$ có $\\frac{A\'B\'}{AB} = \\frac{OA\'}{OA} = \\frac{d\'}{10}$. Từ $\\triangle F\'OI \\sim \\triangle F\'A\'B\'$ (ảnh ảo cùng phía với vật) có $\\frac{A\'B\'}{AB} = \\frac{d\' + 15}{15}$. Suy ra $\\frac{d\'}{10} = \\frac{d\' + 15}{15} \\Rightarrow 15d\' = 10d\' + 150 \\Rightarrow d\' = 30\\text{ cm}$. Chiều cao ảnh $A\'B\' = 4 \\times \\frac{30}{10} = 12\\text{ cm}$.'
+      }
+    }
+  ],
+  'phys-9-b11': [
+    {
+      stepTitle: '1. Đường đặc trưng I – U & Định luật Ohm',
+      stepType: 'concept',
+      conceptSection:
+        'Thực nghiệm đo cường độ dòng điện $I$ chạy qua một đoạn dây dẫn kim loại ở nhiệt độ không đổi khi tăng dần hiệu điện thế $U$ cho thấy: đồ thị $(I - U)$ là một đường thẳng đi qua gốc tọa độ.',
+      formulaSection: {
+        primaryFormula: 'I = \\frac{U}{R}',
+        secondaryFormulas: [
+          'R = \\frac{U}{I} \\quad (\\text{Đơn vị Ôm: } 1\\,\\Omega = 1\\text{ V/A})',
+          'U = I \\cdot R, \\qquad 1\\text{ k}\\Omega = 1000\\,\\Omega'
+        ],
+        variablesNote:
+          '• **Định luật Ohm**: Cường độ dòng điện $I$ chạy qua một đoạn dây dẫn tỉ lệ thuận với hiệu điện thế $U$ đặt vào hai đầu đoạn dây và tỉ lệ nghịch với điện trở $R$ của nó.\n• Giá trị $R = U/I$ đặc trưng cho mức độ cản trở dòng điện của vật dẫn (KHÔNG phụ thuộc vào $U$ và $I$).'
+      },
+      deepDiveSection:
+        'Cẩn thận câu bẫy kinh điển: "Nếu tăng hiệu điện thế $U$ lên 2 lần thì điện trở $R$ thay đổi thế nào?". Trả lời đúng: Điện trở $R$ KHÔNG ĐỔI (vì $U$ tăng 2 lần thì $I$ cũng tăng 2 lần nên tỉ số $U/I$ giữ nguyên)!',
+      teacherExplanation:
+        'Trên mạch mô phỏng 2D, chỉnh $U$ tăng gấp đôi từ $6\\text{ V}$ lên $12\\text{ V}$ để kiểm tra ngay cường độ dòng điện $I$ tăng gấp đôi.',
+      keyTakeaway: 'Định luật Ohm $I = U/R$; điện trở $R$ là đặc trưng riêng của dây dẫn, không phụ thuộc $U$ và $I$.',
+      miniQuiz: [
+        {
+          id: 'p9b11-s1-q1',
+          question: 'Đặt hiệu điện thế $U = 9\\text{ V}$ vào hai đầu một điện trở $R = 15\\,\\Omega$. Cường độ dòng điện qua điện trở bằng:',
+          options: ['A. $0{,}6\\text{ A}$', 'B. $1{,}67\\text{ A}$', 'C. $135\\text{ A}$', 'D. $0{,}3\\text{ A}$'],
+          correctIndex: 0,
+          explanation: '$I = U/R = 9/15 = 0{,}6\\text{ A}$.'
+        },
+        {
+          id: 'p9b11-s1-q2',
+          question: 'Khi hiệu điện thế đặt vào hai đầu một đoạn dây dẫn bằng đồng tăng lên 3 lần (nhiệt độ coi như không đổi) thì điện trở của đoạn dây này sẽ:',
+          options: ['A. Tăng 3 lần', 'B. Giảm 3 lần', 'C. Không thay đổi', 'D. Tăng 9 lần'],
+          correctIndex: 2,
+          explanation: 'Điện trở của một dây dẫn ở nhiệt độ xác định là hằng số, chỉ phụ thuộc chiều dài, tiết diện và vật liệu, không phụ thuộc $U$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b11-s1-e1',
+        question: 'Đặt hiệu điện thế $U_1 = 6\\text{ V}$ vào hai đầu một bóng đèn dây tóc (coi điện trở không đổi) thì dòng điện qua đèn là $0{,}4\\text{ A}$. Muốn dòng điện qua đèn là $0{,}6\\text{ A}$ thì phải đặt hiệu điện thế bằng bao nhiêu?',
+        hint: 'Tính $R = U_1 / I_1$ rồi tính $U_2 = I_2 \\cdot R$, hoặc dùng tỉ lệ $U_2/U_1 = I_2/I_1$.',
+        rubricChecklist: [
+          'Tính đúng điện trở $R = 6 / 0{,}4 = 15\\,\\Omega$.',
+          'Tính được $U_2 = 0{,}6 \\cdot 15 = 9\\text{ V}$.'
+        ],
+        sampleAnswer: 'Điện trở của bóng đèn là $R = \\frac{U_1}{I_1} = \\frac{6}{0{,}4} = 15\\,\\Omega$. Để cường độ dòng điện đạt $I_2 = 0{,}6\\text{ A}$, hiệu điện thế cần đặt vào hai đầu đèn là $U_2 = I_2 \\cdot R = 0{,}6 \\times 15 = 9\\text{ V}$.'
+      }
+    },
+    {
+      stepTitle: '2. Công thức Điện trở Dây dẫn R = ρl/S & Biến trở',
+      stepType: 'derivation',
+      conceptSection:
+        'Mức độ cản trở dòng điện của một dây dẫn hình trụ đồng chất tỉ lệ thuận với chiều dài dây $l$, tỉ lệ nghịch với tiết diện ngang $S$ và phụ thuộc vào bản chất vật liệu (điện trở suất $\\rho$).',
+      formulaSection: {
+        primaryFormula: 'R = \\rho \\frac{l}{S}',
+        secondaryFormulas: [
+          'S = \\pi r^2 = \\frac{\\pi d^2}{4}, \\qquad 1\\text{ mm}^2 = 10^{-6}\\text{ m}^2',
+          '\\rho_{\\text{bạc}} = 1{,}6\\cdot 10^{-8},\\; \\rho_{\\text{đồng}} = 1{,}7\\cdot 10^{-8},\\; \\rho_{\\text{nhôm}} = 2{,}8\\cdot 10^{-8}\\,(\\Omega\\cdot\\text{m})'
+        ],
+        variablesNote:
+          '• $\\rho$: điện trở suất ($\\Omega\\cdot\\text{m}$) — trị số càng nhỏ vật liệu dẫn điện càng tốt (Bạc > Đồng > Vàng > Nhôm).\n• **Biến trở**: thiết bị thay đổi chiều dài phần dây có dòng điện đi qua để điều chỉnh điện trở và cường độ dòng điện trong mạch.'
+      },
+      deepDiveSection:
+        'Nhờ công thức $R = \\rho l/S$: dây tải điện cao thế cần có điện trở nhỏ nên dùng đồng hoặc nhôm tiết diện lớn; ngược lại dây đốt ấm siêu tốc hoặc bếp điện cần tỏa nhiều nhiệt nên dùng hợp kim Nicrôm ($\\rho \\approx 1{,}1\\cdot 10^{-6}\\,\\Omega\\cdot\\text{m}$ — gấp hơn 60 lần đồng) quấn dài và mảnh.',
+      teacherExplanation:
+        'Lỗi đổi đơn vị hay gặp nhất: $1\\text{ mm}^2 = 10^{-6}\\text{ m}^2$ (không phải $10^{-3}$!).',
+      keyTakeaway: 'Điện trở dây dẫn $R = \\rho l/S$; dây càng dài, mảnh và $\\rho$ lớn thì điện trở càng lớn.',
+      miniQuiz: [
+        {
+          id: 'p9b11-s2-q1',
+          question: 'Hai dây đồng có cùng tiết diện. Dây thứ nhất dài $20\\text{ m}$ có điện trở $4\\,\\Omega$. Dây thứ hai dài $50\\text{ m}$ có điện trở bằng:',
+          options: ['A. $1{,}6\\,\\Omega$', 'B. $10\\,\\Omega$', 'C. $8\\,\\Omega$', 'D. $20\\,\\Omega$'],
+          correctIndex: 1,
+          explanation: 'Cùng vật liệu và tiết diện nên $R_2 / R_1 = l_2 / l_1 = 50/20 = 2{,}5 \\implies R_2 = 4\\cdot 2{,}5 = 10\\,\\Omega$.'
+        },
+        {
+          id: 'p9b11-s2-q2',
+          question: 'Trên một biến trở con chạy có ghi $20\\,\\Omega - 2\\text{ A}$. Ý nghĩa của thông số này là:',
+          options: [
+            'A. Điện trở lớn nhất của biến trở là $20\\,\\Omega$ và dòng chịu đựng tối đa là $2\\text{ A}$',
+            'B. Biến trở chỉ dùng đúng ở mức $20\\,\\Omega$ và $2\\text{ A}$',
+            'C. Hiệu điện thế tối đa là $10\\text{ V}$',
+            'D. Biến trở có chiều dài dây $20\\text{ m}$'
+          ],
+          correctIndex: 0,
+          explanation: 'Số ghi trên biến trở cho biết giá trị điện trở cực đại ($20\\,\\Omega$) và cường độ dòng điện cho phép lớn nhất ($2\\text{ A}$) để dây không bị nóng đứt.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b11-s2-e1',
+        question: 'Tính chiều dài dây Nicrôm có tiết diện $S = 0{,}2\\text{ mm}^2$ và điện trở suất $\\rho = 1{,}1\\cdot 10^{-6}\\,\\Omega\\cdot\\text{m}$ cần dùng để quấn một biến trở có điện trở tối đa $R = 44\\,\\Omega$.',
+        hint: 'Đổi $S = 0{,}2\\cdot 10^{-6}\\text{ m}^2$ và rút $l = R\\cdot S / \\rho$.',
+        rubricChecklist: [
+          'Đổi đúng $S = 0{,}2 \\cdot 10^{-6}\\text{ m}^2$.',
+          'Tính được $l = \\frac{44 \\cdot 0{,}2\\cdot 10^{-6}}{1{,}1\\cdot 10^{-6}} = 8\\text{ m}$.'
+        ],
+        sampleAnswer: 'Đổi tiết diện $S = 0{,}2\\text{ mm}^2 = 0{,}2\\cdot 10^{-6}\\text{ m}^2$. Từ $R = \\rho\\frac{l}{S} \\Rightarrow l = \\frac{R\\cdot S}{\\rho} = \\frac{44 \\times 0{,}2\\cdot 10^{-6}}{1{,}1\\cdot 10^{-6}} = 8\\text{ m}$.'
+      }
+    },
+    {
+      stepTitle: '3. Ảnh hưởng Điện trở lên Dòng điện & Thực hành Đo Điện trở',
+      stepType: 'example',
+      conceptSection:
+        'Trong thí nghiệm xác định trị số một điện trở chưa biết bằng phương pháp Vôn kế – Ampe kế, ta điều chỉnh biến trở qua 3 mức điện áp khác nhau, đo $(U_i, I_i)$ rồi tính $R_i = U_i/I_i$ và lấy trung bình.',
+      formulaSection: {
+        primaryFormula: 'R_i = \\frac{U_i}{I_i}, \\qquad \\bar{R} = \\frac{R_1 + R_2 + R_3}{3}',
+        secondaryFormulas: [
+          'P = I^2 R = \\frac{U^2}{R} \\quad (\\text{Cùng } U,\\, R \\text{ nhỏ thì dòng và nhiệt tỏa lớn})'
+        ],
+        variablesNote:
+          '• Khi đặt cùng một hiệu điện thế $U$ lên dây đốt: dây có $R$ nhỏ hơn sẽ cho dòng điện $I = U/R$ lớn hơn và tỏa nhiệt nhanh hơn ($P = U^2/R$).\n• Dây đồng cấp nguồn phải có $R_{\\text{dây}} \\ll R_{\\text{thiết bị}}$ để tránh sụt áp và cháy nổ.'
+      },
+      deepDiveSection:
+        'Trên mô phỏng 2D bên trên: khi giảm điện trở dây đốt $R$ xuống $4\\,\\Omega$ với cùng nguồn $12\\text{ V}$, cường độ dòng điện tăng vọt lên $3\\text{ A}$ và công suất tỏa nhiệt đạt $36\\text{ W}$, làm nước tăng nhiệt nhanh chóng.',
+      teacherExplanation:
+        'Lưu ý: Khi vẽ đồ thị $I$ theo $U$ từ bảng số liệu thực hành, vẽ một đường thẳng đi qua gốc tọa độ gần đều các điểm đo thực nghiệm nhất thay vì nối gấp khúc từng điểm.',
+      keyTakeaway: 'Đo lặp $(U, I)$ nhiều lần tính $\\bar{R} = \\overline{U/I}$; với cùng $U$, $R$ nhỏ tạo dòng lớn và tỏa nhiệt mạnh.',
+      miniQuiz: [
+        {
+          id: 'p9b11-s3-q1',
+          question: 'Hai dây dẫn có cùng hiệu điện thế $U$ đặt vào hai đầu. Dây 1 có $R_1 = 6\\,\\Omega$, dây 2 có $R_2 = 18\\,\\Omega$. Tỉ số cường độ dòng điện $I_1 / I_2$ bằng:',
+          options: ['A. $1/3$', 'B. $3$', 'C. $9$', 'D. $1$'],
+          correctIndex: 1,
+          explanation: 'Vì cùng $U$ nên $I$ tỉ lệ nghịch với $R$: $I_1/I_2 = R_2/R_1 = 18/6 = 3$.'
+        },
+        {
+          id: 'p9b11-s3-q2',
+          question: 'Khi đo điện trở bằng Vôn kế và Ampe kế thu được 3 cặp $(U, I)$ lần lượt là $(3\\text{ V}; 0{,}25\\text{ A})$, $(6\\text{ V}; 0{,}50\\text{ A})$, $(9\\text{ V}; 0{,}75\\text{ A})$. Giá trị điện trở bằng:',
+          options: ['A. $12\\,\\Omega$', 'B. $6\\,\\Omega$', 'C. $15\\,\\Omega$', 'D. $24\\,\\Omega$'],
+          correctIndex: 0,
+          explanation: '$R = 3/0{,}25 = 6/0{,}5 = 9/0{,}75 = 12\\,\\Omega$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b11-s3-e1',
+        question: 'Tại sao dây dẫn điện trong nhà dùng dây đồng tiết diện lớn, còn dây may-so bên trong máy sấy tóc lại làm bằng hợp kim Nicrôm mảnh quấn xoắn?',
+        hint: 'So sánh mục đích của dây nối nguồn (truyền tải ít tỏa nhiệt) với dây đốt nóng (tỏa nhiệt cao).',
+        rubricChecklist: [
+          'Dây nguồn đồng tiết diện lớn có $\\rho$ nhỏ, $S$ lớn nên $R$ rất nhỏ $\\implies$ ít tỏa nhiệt $I^2R$, an toàn không chảy vỏ nhựa.',
+          'Dây máy sấy Nicrôm có $\\rho$ lớn và mảnh nên $R$ lớn, khi dòng đi qua sinh nhiệt mạnh theo $Q = I^2Rt$.'
+        ],
+        sampleAnswer: 'Dây dẫn trong nhà cần truyền tải điện ít hao phí và không bị nóng chảy vỏ cách điện nên dùng đồng có điện trở suất nhỏ và tiết diện đủ lớn để điện trở $R$ rất nhỏ. Trái lại, dây may-so máy sấy tóc dùng để phát nhiệt nên làm bằng hợp kim Nicrôm có $\\rho$ lớn, tiết diện mảnh và dài để tạo điện trở $R$ lớn, giúp chuyển hóa tối đa điện năng thành nhiệt năng làm nóng luồng gió.'
+      }
+    }
+  ],
+  'phys-9-b13': [
+    {
+      stepTitle: '1. Năng lượng Điện A = UIt & Định luật Jun – Len-xơ',
+      stepType: 'concept',
+      conceptSection:
+        'Dòng điện chạy qua mạch có mang năng lượng điện (điện năng) và chuyển hóa thành cơ năng (quạt, máy bơm), quang năng (đèn LED) hoặc nhiệt năng (bàn là, ấm đun nước).',
+      formulaSection: {
+        primaryFormula: 'W = A = U \\cdot I \\cdot t',
+        secondaryFormulas: [
+          'Q_{\\text{tỏa nhiệt}} = I^2 \\cdot R \\cdot t = \\frac{U^2}{R}t \\quad (\\text{Định luật Jun – Len-xơ})',
+          '1\\text{ cal} \\approx 4{,}18\\text{ J}'
+        ],
+        variablesNote:
+          '• $U$ (V), $I$ (A), $t$ (giây s), $R$ ($\\Omega$).\n• Năng lượng điện $W$ và nhiệt lượng $Q$ đều đo theo đơn vị Jun ($\\text{J}$).'
+      },
+      deepDiveSection:
+        'Đối với vật dẫn thuần nhiệt (bếp điện, dây đốt ấm siêu tốc, bàn là), toàn bộ điện năng tiêu thụ biến thành nhiệt lượng $Q = I^2Rt$. Nhờ dùng nhiệt lượng kế đo độ tăng nhiệt độ của nước $\\Delta T$ trong mô phỏng 2D, ta nghiệm chứng được $Q$ tỉ lệ với $I^2$, $R$ và $t$.',
+      teacherExplanation:
+        'Cẩn thận đơn vị thời gian $t$: tính ra Jun ($\\text{J}$) thì phải đổi thời gian ra **giây (s)**.',
+      keyTakeaway: 'Năng lượng điện tiêu thụ $W = UIt$; trên điện trở thuần toàn bộ biến thành nhiệt $Q = I^2Rt$.',
+      miniQuiz: [
+        {
+          id: 'p9b13-s1-q1',
+          question: 'Cho dòng điện $2\\text{ A}$ chạy qua điện trở $R = 10\\,\\Omega$ trong thời gian $1\\text{ phút}$. Nhiệt lượng tỏa ra trên điện trở là:',
+          options: ['A. $40\\text{ J}$', 'B. $2400\\text{ J}$', 'C. $1200\\text{ J}$', 'D. $400\\text{ J}$'],
+          correctIndex: 1,
+          explanation: 'Đổi $t = 60\\text{ s}$. $Q = I^2 R t = 2^2 \\cdot 10 \\cdot 60 = 2400\\text{ J}$.'
+        },
+        {
+          id: 'p9b13-s1-q2',
+          question: 'Nếu tăng cường độ dòng điện qua một dây đốt nóng lên 2 lần và giữ nguyên thời gian đun, nhiệt lượng tỏa ra trên dây sẽ:',
+          options: ['A. Tăng 2 lần', 'B. Tăng 4 lần', 'C. Giảm 2 lần', 'D. Không đổi'],
+          correctIndex: 1,
+          explanation: 'Vì $Q = I^2 R t$ tỉ lệ với bình phương cường độ dòng điện $I^2$ nên $I$ tăng 2 lần làm $Q$ tăng $2^2 = 4$ lần.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b13-s1-e1',
+        question: 'Một dây đốt nóng có điện trở $R = 20\\,\\Omega$ nhúng trong bình chứa $0{,}5\\text{ kg}$ nước ($c = 4200\\text{ J/kg.K}$). Cho dòng điện $2{,}5\\text{ A}$ chạy qua trong $2\\text{ phút}$, hiệu suất truyền nhiệt cho nước đạt $84\\%$. Tính độ tăng nhiệt độ $\\Delta t$ của nước.',
+        hint: 'Tính $Q_{\\text{tỏa}} = I^2Rt$, rồi $Q_{\\text{nước}} = 0{,}84 Q_{\\text{tỏa}} = mc\\Delta t$.',
+        rubricChecklist: [
+          'Tính đúng $Q_{\\text{tỏa}} = 2{,}5^2 \\cdot 20 \\cdot 120 = 15\\,000\\text{ J}$.',
+          'Tính $Q_{\\text{nước}} = 12\\,600\\text{ J} \\implies \\Delta t = 12\\,600 / (0{,}5 \\cdot 4200) = 6^\\circ\\text{C}$.'
+        ],
+        sampleAnswer: 'Đổi $t = 2\\text{ phút} = 120\\text{ s}$. Nhiệt lượng dây đốt tỏa ra là $Q_{\\text{tỏa}} = I^2 R t = 2{,}5^2 \\times 20 \\times 120 = 15\\,000\\text{ J}$. Nhiệt lượng nước thu vào là $Q_{\\text{ích}} = 0{,}84 \\times 15\\,000 = 12\\,600\\text{ J}$. Độ tăng nhiệt độ của nước là $\\Delta t = \\frac{Q_{\\text{ích}}}{mc} = \\frac{12\\,600}{0{,}5 \\times 4200} = 6^\\circ\\text{C}$.'
+      }
+    },
+    {
+      stepTitle: '2. Công suất Điện P = UI & Số ghi Định mức trên Thiết bị',
+      stepType: 'derivation',
+      conceptSection:
+        'Công suất điện của một đoạn mạch đo năng lượng điện đoạn mạch tiêu thụ trong một giây, bằng tích hiệu điện thế giữa hai đầu đoạn mạch và cường độ dòng điện chạy qua nó.',
+      formulaSection: {
+        primaryFormula: '\\mathscr{P} = U \\cdot I = \\frac{W}{t}',
+        secondaryFormulas: [
+          '\\mathscr{P} = I^2 R = \\frac{U^2}{R} \\quad (\\text{với đoạn mạch điện trở thuần})',
+          'R_{\\text{đm}} = \\frac{U_{\\text{đm}}^2}{\\mathscr{P}_{\\text{đm}}}, \\qquad I_{\\text{đm}} = \\frac{\\mathscr{P}_{\\text{đm}}}{U_{\\text{đm}}}'
+        ],
+        variablesNote:
+          '• Số ghi định mức trên bóng đèn hoặc bàn là (ví dụ $220\\text{ V} - 1000\\text{ W}$): chỉ khi mắc đúng vào hiệu điện thế $220\\text{ V}$, thiết bị mới hoạt động bình thường đúng công suất $1000\\text{ W}$.'
+      },
+      deepDiveSection:
+        'Nếu mắc bóng đèn $220\\text{ V} - 100\\text{ W}$ vào nơi điện yếu chỉ còn $110\\text{ V}$ (giảm một nửa), vì $\\mathscr{P} = U^2/R$ nên công suất sáng của đèn chỉ còn $1/4$ mức bình thường ($25\\text{ W}$). Ngược lại nếu cắm thiết bị $110\\text{ V}$ vào ổ lưới $220\\text{ V}$ thì công suất vọt lên 4 lần gây cháy nổ ngay lập tức!',
+      teacherExplanation:
+        'Trên mô phỏng 2D, click preset "Tăng áp gấp đôi (24V)" để thấy ngay từ $12\\text{ V}$ lên $24\\text{ V}$ thì công suất $P$ nhảy từ $24\\text{ W}$ lên $96\\text{ W}$ (gấp 4 lần).',
+      keyTakeaway: 'Công suất điện $\\mathscr{P} = UI$; thiết bị hoạt động đúng công suất định mức khi mắc đúng $U_{\\text{đm}}$.',
+      miniQuiz: [
+        {
+          id: 'p9b13-s2-q1',
+          question: 'Trên nhãn một ấm siêu tốc có ghi $220\\text{ V} - 1760\\text{ W}$. Cường độ dòng điện định mức và điện trở của ấm khi hoạt động bình thường là:',
+          options: ['A. $8\\text{ A}$ và $27{,}5\\,\\Omega$', 'B. $0{,}125\\text{ A}$ và $27{,}5\\,\\Omega$', 'C. $8\\text{ A}$ và $55\\,\\Omega$', 'D. $4\\text{ A}$ và $55\\,\\Omega$'],
+          correctIndex: 0,
+          explanation: '$I_{\\text{đm}} = 1760 / 220 = 8\\text{ A}$; $R = 220 / 8 = 27{,}5\\,\\Omega$.'
+        },
+        {
+          id: 'p9b13-s2-q2',
+          question: 'Mắc một bóng đèn ghi $12\\text{ V} - 12\\text{ W}$ vào nguồn điện có hiệu điện thế chỉ $6\\text{ V}$ (coi điện trở đèn không đổi). Công suất thực tế của đèn lúc này là:',
+          options: ['A. $12\\text{ W}$', 'B. $6\\text{ W}$', 'C. $3\\text{ W}$', 'D. $24\\text{ W}$'],
+          correctIndex: 2,
+          explanation: '$R = U_{\\text{đm}}^2/\\mathscr{P}_{\\text{đm}} = 144/12 = 12\\,\\Omega$. Khi $U = 6\\text{ V}$: $\\mathscr{P} = 6^2/12 = 3\\text{ W}$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b13-s2-e1',
+        question: 'Có hai bóng đèn dây tóc Đ1 ($220\\text{ V} - 60\\text{ W}$) và Đ2 ($220\\text{ V} - 100\\text{ W}$) mắc song song vào lưới điện $220\\text{ V}$. Đèn nào sáng hơn và đèn nào có điện trở dây tóc nhỏ hơn?',
+        hint: 'Trong mạch song song $U_1 = U_2 = 220\\text{ V}$ nên hai đèn dùng đúng $U_{\\text{đm}}$; kiểm tra $R = U_{\\text{đm}}^2 / \\mathscr{P}_{\\text{đm}}$.',
+        rubricChecklist: [
+          'Khi mắc song song vào $220\\text{ V}$, cả hai sáng bình thường: Đ2 ($100\\text{ W}$) tiêu thụ công suất lớn hơn nên sáng hơn.',
+          'Vì $R = U^2/\\mathscr{P}$, đèn Đ2 công suất lớn hơn nên có điện trở dây tóc nhỏ hơn Đ1.'
+        ],
+        sampleAnswer: 'Do mắc song song vào lưới điện $220\\text{ V}$, cả hai đèn đều nhận đúng hiệu điện thế định mức nên Đ2 ($100\\text{ W}$) sáng hơn Đ1 ($60\\text{ W}$). Tính điện trở: $R_1 = 220^2/60 \\approx 806{,}7\\,\\Omega$, $R_2 = 220^2/100 = 484\\,\\Omega$. Vậy đèn có công suất định mức lớn hơn (Đ2) có điện trở nhỏ hơn để cho dòng điện lớn hơn đi qua.'
+      }
+    },
+    {
+      stepTitle: '3. Chỉ số Công tơ Điện (kWh) & Hóa đơn Tiền điện Thực tế',
+      stepType: 'example',
+      conceptSection:
+        'Trong sinh hoạt hàng ngày, năng lượng điện tiêu thụ của hộ gia đình được đo bằng công tơ điện (đồng hồ đo điện) theo đơn vị kilôoát giờ (kWh), thường gọi dân dã là "số điện".',
+      formulaSection: {
+        primaryFormula: '1\\text{ kWh} = 1000\\text{ W} \\cdot 3600\\text{ s} = 3{,}6 \\cdot 10^6\\text{ J}',
+        secondaryFormulas: [
+          'W\\text{ (kWh)} = \\mathscr{P}\\text{ (kW)} \\cdot t\\text{ (giờ)}',
+          '\\text{Tiền điện} = W\\text{ (kWh)} \\times \\text{Đơn giá}'
+        ],
+        variablesNote:
+          '• Để tính ra **kWh**: đổi công suất về **kW** (chia 1000) và thời gian về **giờ (h)**.\n• Khi dùng đồng thời nhiều thiết bị điện công suất lớn (bình nóng lạnh, bếp từ, điều hòa) trên cùng một ổ cắm, tổng dòng $I_{\\text{tổng}} = \\sum P_i / 220$ rất lớn dễ gây quá tải cháy dây, cần aptomat (cầu dao tự động) bảo vệ.'
+      },
+      deepDiveSection:
+        'So sánh tiết kiệm năng lượng: thay một bóng đèn sợi đốt $60\\text{ W}$ bằng bóng đèn LED $9\\text{ W}$ có cùng độ sáng, nếu thắp $5\\text{ giờ/ngày}$ trong 1 tháng ($30\\text{ ngày}$) thì giảm lượng điện tiêu thụ từ $9\\text{ kWh}$ xuống còn $1{,}35\\text{ kWh}$ (tiết kiệm tới $85\\%$!).',
+      teacherExplanation:
+        'Đừng nhầm $1\\text{ kW}$ (đơn vị công suất) với $1\\text{ kWh}$ (đơn vị năng lượng/số điện)!',
+      keyTakeaway: '1 số điện = 1 kWh = $3{,}6\\cdot 10^6\\text{ J}$; tính kWh bằng cách lấy $\\mathscr{P}(\\text{kW}) \\times t(\\text{h})$.',
+      miniQuiz: [
+        {
+          id: 'p9b13-s3-q1',
+          question: 'Công tơ điện trong gia đình dùng để đo trực tiếp đại lượng nào?',
+          options: [
+            'A. Cường độ dòng điện cực đại',
+            'B. Công suất tức thời của thiết bị',
+            'C. Tổng năng lượng điện (điện năng) tiêu thụ',
+            'D. Hiệu điện thế lưới điện'
+          ],
+          correctIndex: 2,
+          explanation: 'Mỗi số tăng thêm trên công tơ tương ứng $1\\text{ kWh}$ điện năng gia đình đã tiêu thụ.'
+        },
+        {
+          id: 'p9b13-s3-q2',
+          question: 'Một máy điều hòa công suất $1200\\text{ W}$ chạy trung bình $5\\text{ giờ}$ mỗi ngày. Điện năng máy tiêu thụ trong 30 ngày là:',
+          options: ['A. $18\\text{ kWh}$', 'B. $180\\text{ kWh}$', 'C. $180\\,000\\text{ kWh}$', 'D. $6\\text{ kWh}$'],
+          correctIndex: 1,
+          explanation: '$W = 1{,}2\\text{ kW} \\times 5\\text{ h} \\times 30 = 180\\text{ kWh}$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b13-s3-e1',
+        question: 'Một phòng học lắp 8 bóng đèn LED $18\\text{ W}$ và 4 quạt trần $75\\text{ W}$ hoạt động trung bình $6\\text{ giờ/ngày}$, tháng học $26\\text{ ngày}$. Tính tổng điện năng tiêu thụ trong tháng (ra kWh) và dòng điện tổng chạy qua aptomat nhánh ($220\\text{ V}$) khi bật tất cả.',
+        hint: 'Tính tổng công suất $P_{\\text{tổng}}$ ra W và kW trước.',
+        rubricChecklist: [
+          'Tính $P_{\\text{tổng}} = 8\\cdot 18 + 4\\cdot 75 = 444\\text{ W} = 0{,}444\\text{ kW}$.',
+          'Tính $W = 0{,}444\\cdot 6\\cdot 26 = 69{,}264\\text{ kWh}$ và dòng $I = 444 / 220 \\approx 2{,}02\\text{ A}$.'
+        ],
+        sampleAnswer: 'Tổng công suất thiết bị trong phòng: $P_{\\text{tổng}} = 8 \\times 18 + 4 \\times 75 = 144 + 300 = 444\\text{ W} = 0{,}444\\text{ kW}$. Tổng điện năng tiêu thụ trong tháng: $W = 0{,}444 \\times 6 \\times 26 = 69{,}264\\text{ kWh}$. Cường độ dòng điện qua aptomat nhánh khi bật toàn bộ ở $220\\text{ V}$ là $I = \\frac{P_{\\text{tổng}}}{U} = \\frac{444}{220} \\approx 2{,}02\\text{ A}$.'
+      }
+    }
+  ],
+  'phys-9-b15': [
+    {
+      stepTitle: '1. Bốn Tác dụng của Dòng điện Xoay chiều & An toàn Điện',
+      stepType: 'concept',
+      conceptSection:
+        'Tương tự dòng một chiều, dòng điện xoay chiều (AC) cũng gây ra tác dụng nhiệt, tác dụng phát sáng, tác dụng từ và tác dụng sinh lí — nhưng lực từ do dòng xoay chiều sinh ra đổi chiều liên tục theo tần số lưới điện.',
+      formulaSection: {
+        primaryFormula: 'Q = I_{\\text{hd}}^2 \\cdot R \\cdot t \\quad (\\text{Tác dụng nhiệt ổn định})',
+        secondaryFormulas: [
+          'f = 50\\text{ Hz} \\implies \\text{Lực từ đổi chiều } 100\\text{ lần/giây}'
+        ],
+        variablesNote:
+          '• **Tác dụng nhiệt**: làm nóng dây đốt bếp điện, bàn là, ấm siêu tốc.\n• **Tác dụng phát sáng**: bóng đèn LED, huỳnh quang, bút thử điện.\n• **Tác dụng từ**: chuông điện xoay chiều, động cơ quạt – máy giặt; nếu đưa kim nam châm nhỏ lại gần ống dây AC $50\\text{ Hz}$ thì kim rung tại chỗ chứ không hút hẳn một cực cố định.\n• **Tác dụng sinh lí**: gây co giật mạnh, nguy hiểm tính mạng ở lưới $220\\text{ V}$.'
+      },
+      deepDiveSection:
+        'Ampe kế hoặc Vôn kế đo dòng xoay chiều thường ghi kí hiệu **AC** (hoặc dấu `~`) đo **giá trị hiệu dụng**: một dòng xoay chiều có cường độ hiệu dụng $I = 2\\text{ A}$ sẽ tỏa ra đúng lượng nhiệt bằng dòng một chiều $2\\text{ A}$ khi đi qua cùng một điện trở trong cùng thời gian.',
+      teacherExplanation:
+        'Chú ý thí nghiệm kinh điển: Bóng đèn huỳnh quang hoặc đèn bút thử điện xoay chiều sáng ở cả hai cực điện, chứng tỏ dòng điện đổi chiều liên tục.',
+      keyTakeaway: 'Dòng xoay chiều có tác dụng nhiệt, phát sáng, từ (đổi chiều 2f lần/s) và tác dụng sinh lí mạnh.',
+      miniQuiz: [
+        {
+          id: 'p9b15-s1-q1',
+          question: 'Một ampe kế xoay chiều mắc vào mạch bếp điện chỉ giá trị $5\\text{ A}$. Số chỉ này cho biết:',
+          options: [
+            'A. Cường độ dòng điện hiệu dụng bằng $5\\text{ A}$',
+            'B. Dòng điện chỉ chạy theo một chiều cố định $5\\text{ A}$',
+            'C. Tần số dòng điện là $5\\text{ Hz}$',
+            'D. Điện trở bếp bằng $5\\,\\Omega$'
+          ],
+          correctIndex: 0,
+          explanation: 'Các đồng hồ đo điện xoay chiều được hiệu chuẩn để đọc trực tiếp giá trị hiệu dụng dựa trên tác dụng nhiệt.'
+        },
+        {
+          id: 'p9b15-s1-q2',
+          question: 'Khi đặt một đinh sắt non nằm gần ống dây có dòng điện xoay chiều $50\\text{ Hz}$ chạy qua, hiện tượng nào xảy ra?',
+          options: [
+            'A. Không có lực từ tác dụng lên đinh sắt',
+            'B. Đinh sắt bị hút và rung nhẹ theo tần số dòng điện',
+            'C. Đinh sắt biến thành nam châm vĩnh cửu vĩnh viễn',
+            'D. Ống dây biến dòng xoay chiều thành một chiều'
+          ],
+          correctIndex: 1,
+          explanation: 'Dòng xoay chiều gây tác dụng từ đổi cực liên tục nên vẫn hút sắt non (sắt bị từ hóa đảo chiều theo) và làm đinh rung nhẹ.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b15-s1-e1',
+        question: 'Tại sao cùng giá trị $220\\text{ V}$, việc chạm tay vào lưới điện xoay chiều trong nhà lại cực kỳ nguy hiểm và người ta phải lắp thiết bị chống giật (ELCB/RCBO)?',
+        hint: 'Liên hệ tác dụng sinh lí của dòng xoay chiều trên hệ thần kinh và tim mạch.',
+        rubricChecklist: [
+          'Dòng xoay chiều $50\\text{ Hz}$ gây tác dụng sinh lí mạnh, làm co cứng cơ khiến nạn nhân không tự giật tay ra được và gây rung thất ngừng tim.',
+          'RCBO/ELCB phát hiện dòng rò nhỏ qua người (~30 mA) và ngắt mạch tức thì trong vài chục mili-giây.'
+        ],
+        sampleAnswer: 'Dòng điện xoay chiều $220\\text{ V} - 50\\text{ Hz}$ gây tác dụng sinh lí rất mạnh lên hệ thần kinh và cơ bắp: dòng điện từ $20-50\\text{ mA}$ đi qua cơ thể làm cơ bắp co cứng (không thả tay khỏi dây điện được) và có thể gây rối loạn nhịp tim dẫn đến tử vong. Thiết bị chống giật ELCB/RCBO phát hiện dòng rò siêu nhỏ (~$30\\text{ mA}$) để ngắt điện ngay lập tức bảo vệ tính mạng.'
+      }
+    },
+    {
+      stepTitle: '2. Máy Biến áp — Tăng/Hạ Điện áp Xoay chiều',
+      stepType: 'derivation',
+      conceptSection:
+        'Máy biến áp là thiết bị biến đổi điện áp xoay chiều (tăng áp hoặc hạ áp) nhờ hiện tượng cảm ứng điện từ mà không làm thay đổi tần số dòng điện.',
+      formulaSection: {
+        primaryFormula: '\\frac{U_1}{U_2} = \\frac{N_1}{N_2}',
+        secondaryFormulas: [
+          'N_2 > N_1 \\implies U_2 > U_1 \\; (\\text{Máy tăng áp})',
+          'N_2 < N_1 \\implies U_2 < U_1 \\; (\\text{Máy hạ áp})'
+        ],
+        variablesNote:
+          '• Cấu tạo gồm 2 cuộn dây dẫn cách điện có số vòng $N_1$ (sơ cấp), $N_2$ (thứ cấp) quấn quanh một lõi thép kĩ thuật điện ghép lá mỏng.\n• Máy biến áp KHÔNG hoạt động với dòng điện một chiều không đổi (pin/ắc quy).'
+      },
+      deepDiveSection:
+        'Vì lõi thép được ghép từ nhiều lá thép silic mỏng phủ sơn cách điện thay vì đúc đặc một khối, dòng điện cảm ứng xoáy (dòng Foucault) sinh ra bên trong lõi bị triệt tiêu đáng kể giúp máy biến áp ít nóng và đạt hiệu suất truyền năng lượng trên $95\\% - 99\\%$.',
+      teacherExplanation:
+        'Nhớ công thức tỉ lệ thuận cực gọn: Điện áp hai đầu cuộn dây tỉ lệ thuận với số vòng dây ($U \\propto N$).',
+      keyTakeaway: 'Tỉ số điện áp sơ/thứ cấp bằng tỉ số số vòng dây: $U_1/U_2 = N_1/N_2$; chỉ hoạt động với dòng xoay chiều.',
+      miniQuiz: [
+        {
+          id: 'p9b15-s2-q1',
+          question: 'Cuộn sơ cấp của một máy biến áp có $4400$ vòng nối vào mạng điện $220\\text{ V}$. Muốn lấy ra điện áp $12\\text{ V}$ ở cuộn thứ cấp thì phải quấn bao nhiêu vòng?',
+          options: ['A. $120$ vòng', 'B. $240$ vòng', 'C. $480$ vòng', 'D. $220$ vòng'],
+          correctIndex: 1,
+          explanation: '$N_2 = N_1 \\cdot \\frac{U_2}{U_1} = 4400 \\cdot \\frac{12}{220} = 240$ vòng.'
+        },
+        {
+          id: 'p9b15-s2-q2',
+          question: 'Khi nối cuộn sơ cấp của máy biến áp với hai cực của một bình ắc quy $12\\text{ V}$ không đổi, điện áp thu được ở hai đầu cuộn thứ cấp sẽ bằng:',
+          options: ['A. $24\\text{ V}$', 'B. $12\\text{ V}$', 'C. $0\\text{ V}$', 'D. $6\\text{ V}$'],
+          correctIndex: 2,
+          explanation: 'Dòng một chiều không đổi tạo từ trường không đổi nên từ thông qua cuộn thứ cấp không biến thiên, không xuất hiện điện áp cảm ứng ($U_2 = 0$).'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b15-s2-e1',
+        question: 'Một bộ sạc điện dùng máy biến áp hạ áp từ $220\\text{ V}$ xuống $11\\text{ V}$, biết cuộn thứ cấp có $100$ vòng. Tính số vòng cuộn sơ cấp và nếu hiệu điện thế lưới sụt xuống còn $198\\text{ V}$ thì điện áp đầu ra thay đổi thành bao nhiêu?',
+        hint: 'Tỉ số vòng dây $N_1 / N_2 = 220 / 11 = 20$ giữ cố định.',
+        rubricChecklist: [
+          'Tính $N_1 = 100 \\cdot (220/11) = 2000$ vòng.',
+          'Khi $U_1\' = 198\\text{ V}$, $U_2\' = 198 / 20 = 9{,}9\\text{ V}$.'
+        ],
+        sampleAnswer: 'Số vòng cuộn sơ cấp là $N_1 = N_2 \\frac{U_1}{U_2} = 100 \\times \\frac{220}{11} = 2000$ vòng (tỉ số biến áp $20 : 1$). Khi điện áp lưới sụt xuống $198\\text{ V}$, điện áp thứ cấp lúc này là $U_2\' = \\frac{198}{20} = 9{,}9\\text{ V}$.'
+      }
+    },
+    {
+      stepTitle: '3. Truyền tải Điện năng đi xa & Giảm Hao phí ΔP = P²R/U²',
+      stepType: 'example',
+      conceptSection:
+        'Nhà máy thủy điện/nhiệt điện thường đặt cách khu dân cư hàng trăm đến hàng nghìn km. Trên đường dây dài luôn phát sinh công suất hao phí tỏa nhiệt $\\Delta P = I^2 R$; muốn giảm mạnh hao phí phải tăng điện áp truyền tải $U$.',
+      formulaSection: {
+        primaryFormula: '\\Delta P = I^2 R = \\frac{P^2 R}{U^2}',
+        secondaryFormulas: [
+          'U \\text{ tăng } k \\text{ lần} \\implies \\Delta P \\text{ giảm } k^2 \\text{ lần}',
+          'R = \\rho\\frac{l}{S} \\quad (\\text{Giảm } R \\text{ bằng tăng tiết diện tốn kém đồng/nhôm rất nhiều})'
+        ],
+        variablesNote:
+          '• $P$: công suất điện cần truyền tải ($\\text{W}$); $U$: hiệu điện thế nơi phát ($\\text{V}$); $R$: tổng điện trở đường dây ($\\Omega$).\n• Mạng truyền tải quốc gia Việt Nam nâng áp lên $220\\text{ kV}$ và $500\\text{ kV}$ ở trạm đầu nguồn rồi hạ dần ở khu vực tiêu thụ.'
+      },
+      deepDiveSection:
+        'Bấm preset "Tăng áp 5 lần (Siêu tiết kiệm)" trong mô phỏng Máy Biến Áp 2D để thấy trực quan: khi $N_2/N_1 = 5$, điện áp truyền tăng $5$ lần còn kim đồng hồ công suất hao phí trên đường dây lập tức tụt xuống chỉ còn $1/25$ ($4\\%$) so với ban đầu!',
+      teacherExplanation:
+        'Đây là câu hỏi Vật lí thực tế hay gặp nhất trong đề thi vào 10: tại sao không giảm $R$ bằng cách làm dây thật to mà lại tăng $U$? Vì tăng đường kính dây làm đường dây quá nặng, dễ đứt và cực tốn kim loại, trong khi tăng $U$ bằng máy biến áp giảm hao phí theo bình phương $U^2$.',
+      keyTakeaway: 'Tăng điện áp truyền tải $U$ lên $k$ lần là giải pháp kinh tế nhất vì làm hao phí $\\Delta P$ giảm $k^2$ lần.',
+      miniQuiz: [
+        {
+          id: 'p9b15-s3-q1',
+          question: 'Khi truyền tải cùng một công suất điện $P$ đi xa trên cùng đường dây điện trở $R$, muốn giảm công suất hao phí đi $16$ lần thì phải:',
+          options: [
+            'A. Tăng hiệu điện thế truyền tải lên $16$ lần',
+            'B. Tăng hiệu điện thế truyền tải lên $4$ lần',
+            'C. Giảm hiệu điện thế truyền tải xuống $4$ lần',
+            'D. Tăng điện trở dây dẫn lên $4$ lần'
+          ],
+          correctIndex: 1,
+          explanation: 'Vì $\\Delta P \\propto 1/U^2$, muốn $\\Delta P$ giảm $16$ lần thì cần tăng $U$ lên $\\sqrt{16} = 4$ lần.'
+        },
+        {
+          id: 'p9b15-s3-q2',
+          question: 'Ở đầu đường dây tải điện tại nhà máy thủy điện Sơn La đặt loại máy biến áp nào, và ở trạm biến áp khu phố đặt loại nào?',
+          options: [
+            'A. Đầu nguồn: Hạ áp; Khu phố: Tăng áp',
+            'B. Đầu nguồn: Tăng áp; Khu phố: Hạ áp',
+            'C. Cả hai đều dùng máy tăng áp',
+            'D. Cả hai đều dùng máy hạ áp'
+          ],
+          correctIndex: 1,
+          explanation: 'Đầu nguồn tăng áp lên cao thế (220 kV / 500 kV) để giảm hao phí; gần nơi tiêu thụ hạ áp xuống còn 220 V phục vụ dân dụng.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b15-s3-e1',
+        question: 'Truyền đi công suất $P = 200\\text{ kW}$ trên đường dây có điện trở $R = 10\\,\\Omega$. Tính công suất hao phí và phần trăm năng lượng mất mát nếu truyền ở $U_1 = 5\\text{ kV}$ và khi dùng máy tăng áp nâng lên $U_2 = 25\\text{ kV}$.',
+        hint: 'Đổi $P = 2\\cdot 10^5\\text{ W}$, $U_1 = 5000\\text{ V}$ rồi tính $\\Delta P_1 = P^2 R/U_1^2$; khi tăng $U$ gấp 5 lần thì $\\Delta P_2 = \\Delta P_1 / 25$.',
+        rubricChecklist: [
+          'Ở $5\\text{ kV}$: $\\Delta P_1 = \\frac{(2\\cdot 10^5)^2 \\cdot 10}{5000^2} = 16\\,000\\text{ W} = 16\\text{ kW}$ (mất $8\\%$).',
+          'Ở $25\\text{ kV}$: $\\Delta P_2 = 16 / 25 = 0{,}64\\text{ kW} = 640\\text{ W}$ (chỉ còn mất $0{,}32\\%$).'
+        ],
+        sampleAnswer: 'Đổi $P = 200\\,000\\text{ W}$, $U_1 = 5000\\text{ V}$. Khi truyền ở $5\\text{ kV}$, hao phí tỏa nhiệt là $\\Delta P_1 = \\frac{200\\,000^2 \\times 10}{5000^2} = 16\\,000\\text{ W} = 16\\text{ kW}$ (chiếm $16/200 = 8\\%$ công suất phát). Khi tăng áp gấp 5 lần lên $U_2 = 25\\text{ kV}$, hao phí giảm $5^2 = 25$ lần còn $\\Delta P_2 = \\frac{16}{25} = 0{,}64\\text{ kW} = 640\\text{ W}$ (chỉ còn $0{,}32\\%$).'
+      }
+    }
+  ],
+  'phys-9-b16': [
+    {
+      stepTitle: '1. Vòng Năng lượng trên Trái Đất từ Bức xạ Mặt Trời',
+      stepType: 'concept',
+      conceptSection:
+        'Hầu hết các dạng năng lượng tự nhiên trên Trái Đất — từ gió, mưa, dòng chảy sông ngòi đến sinh khối và than đá, dầu mỏ — đều bắt nguồn trực tiếp hoặc gián tiếp từ năng lượng bức xạ của Mặt Trời.',
+      formulaSection: {
+        primaryFormula: '\\text{Bức xạ Mặt Trời} \\to \\text{Nhiệt khí quyển + Bay hơi nước + Quang hợp}',
+        secondaryFormulas: [
+          '\\text{Năng lượng gió (đối lưu không khí)} \\xleftarrow{\\Delta T} \\text{Năng lượng Mặt Trời}',
+          '\\text{Thủy năng (mưa, hồ chứa)} \\xleftarrow{\\text{Bay hơi - Ngưng tụ}} \\text{Năng lượng Mặt Trời}'
+        ],
+        variablesNote:
+          '• Không khí vùng xích đạo nóng nở ra, nhẹ đi và bốc lên cao, không khí lạnh ở cực và biển tràn vào tạo thành **gió** (động năng không khí).\n• Nước biển bay hơi ngưng tụ thành mây rồi rơi xuống núi cao tích trữ **thế năng trọng trường** tạo nên **thủy năng**.'
+      },
+      deepDiveSection:
+        'Quan sát mô phỏng chuyển động nhiệt phân tử khí ở trên: khi tăng nhiệt độ $T$, tốc độ chuyển động hỗn loạn và áp suất khí tăng mạnh — mô hình hóa trực quan động lực làm giãn nở cột khí nóng xích đạo vận hành chu trình gió mậu dịch và gió mùa.',
+      teacherExplanation:
+        'Trong chu trình carbon – năng lượng, thực vật hấp thụ ánh sáng Mặt Trời tổng hợp chất hữu cơ (sinh khối). Sau hàng triệu năm bị vùi lấp dưới áp suất và nhiệt độ cao trong lòng đất, chúng hóa thành nhiên liệu hóa thạch (than đá, dầu mỏ, khí đốt).',
+      keyTakeaway: 'Mặt Trời là nguồn gốc vận hành vòng tuần hoàn nước (thủy năng), đối lưu gió và tích lũy sinh khối/nhiên liệu hóa thạch.',
+      miniQuiz: [
+        {
+          id: 'p9b16-s1-q1',
+          question: 'Nguồn năng lượng khởi phát cho vòng tuần hoàn nước trên Trái Đất (làm nước biển bay hơi lên cao tạo mưa nuôi thủy điện) là:',
+          options: [
+            'A. Năng lượng gió',
+            'B. Năng lượng bức xạ Mặt Trời',
+            'C. Năng lượng địa nhiệt lòng đất',
+            'D. Năng lượng thủy triều'
+          ],
+          correctIndex: 1,
+          explanation: 'Nhiệt bức xạ từ Mặt Trời làm nước đại dương bay hơi lên cao (tích thế năng), ngưng tụ thành mây mưa đổ xuống sông hồ.'
+        },
+        {
+          id: 'p9b16-s1-q2',
+          question: 'Cơ chế vật lí trực tiếp tạo ra gió trong khí quyển là:',
+          options: [
+            'A. Mặt Trăng hút bầu khí quyển',
+            'B. Sự đốt nóng không đều bề mặt Trái Đất của Mặt Trời gây chênh lệch nhiệt độ và áp suất (đối lưu)',
+            'C. Tiếng sấm sét đẩy không khí di chuyển',
+            'D. Cây cối quang hợp thổi khí oxi ra không trung'
+          ],
+          correctIndex: 1,
+          explanation: 'Bề mặt đất và biển nóng lên không đều tạo vùng áp suất thấp (khí nóng bốc lên) và áp suất cao (khí lạnh tràn vào) tạo thành gió.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b16-s1-e1',
+        question: 'Sắp xếp chuỗi chuyển hóa năng lượng chính từ Mặt Trời tới lúc bóng đèn trong nhà sáng lên nhờ nhà máy thủy điện.',
+        hint: 'Bức xạ Mặt Trời → Bay hơi/Thế năng → Động năng nước → Điện năng → Quang năng.',
+        rubricChecklist: [
+          'Nêu đủ các mắt xích: Quang năng/Nhiệt năng Mặt Trời → Thế năng hơi nước/nước hồ đập.',
+          'Thế năng cột nước → Động năng tua-bin → Điện năng máy phát → Quang năng + nhiệt năng bóng đèn.'
+        ],
+        sampleAnswer: 'Chuỗi chuyển hóa gồm: (1) Năng lượng bức xạ Mặt Trời làm bay hơi nước đại dương đưa lên cao thành thế năng mây mưa; (2) Nước mưa tích trong hồ đập trên núi cao có thế năng trọng trường; (3) Nước xả xuống làm quay tua-bin (chuyển thế năng thành động năng); (4) Máy phát biến động năng quay thành điện năng; (5) Bóng đèn chuyển điện năng thành quang năng (và một phần nhiệt năng).'
+      }
+    },
+    {
+      stepTitle: '2. Năng lượng Hóa thạch vs Năng lượng Tái tạo',
+      stepType: 'derivation',
+      conceptSection:
+        'Nguồn năng lượng trên Trái Đất chia thành hai nhóm lớn: năng lượng không tái tạo (nhiên liệu hóa thạch như than đá, dầu mỏ, khí tự nhiên) và năng lượng tái tạo (Mặt Trời, gió, thủy điện, sinh khối, địa nhiệt).',
+      formulaSection: {
+        primaryFormula: 'P_{\\text{gió}} = \\frac{1}{2}\\rho A v^3 \\quad (\\text{Tỉ lệ lập phương với tốc độ gió})',
+        secondaryFormulas: [
+          'P_{\\text{thủy điện}} = H \\cdot \\rho g Q_{\\text{lưu lượng}} \\cdot h_{\\text{cột nước}}'
+        ],
+        variablesNote:
+          '• **Nhiên liệu hóa thạch**: cung cấp năng lượng ổn định không phụ thuộc thời tiết, công suất tập trung cao nhưng trữ lượng hữu hạn và phát thải $\\text{CO}_2$ gây biến đổi khí hậu.\n• **Năng lượng tái tạo**: tự bổ sung liên tục, phát thải ròng cực thấp nhưng cần công nghệ lưu trữ pin/tích năng khi không có nắng gió.'
+      },
+      deepDiveSection:
+        'Từ công thức công suất tua-bin gió $P_{\\text{gió}} = \\frac{1}{2}\\rho A v^3$: nếu tốc độ gió $v$ tăng gấp đôi thì công suất điện thu được tăng tới $2^3 = 8$ lần! Đó là lý do các trụ điện gió hiện đại được xây rất cao và đặt ngoài khơi xa nơi tốc độ gió lớn và ổn định.',
+      teacherExplanation:
+        'Không có nguồn năng lượng nào hoàn hảo 100%: ngay cả thủy điện lớn cũng cần tính toán diện tích ngập lòng hồ và bảo vệ hệ sinh thái dòng sông.',
+      keyTakeaway: 'Năng lượng tái tạo vô tận và sạch hơn nhiên liệu hóa thạch nhưng phụ thuộc thời tiết và đòi hỏi lưu trữ.',
+      miniQuiz: [
+        {
+          id: 'p9b16-s2-q1',
+          question: 'Nguồn năng lượng nào sau đây thuộc nhóm Năng lượng Không tái tạo?',
+          options: ['A. Năng lượng gió', 'B. Dầu mỏ và than đá', 'C. Thủy năng', 'D. Năng lượng Mặt Trời'],
+          correctIndex: 1,
+          explanation: 'Than đá, dầu mỏ, khí tự nhiên hình thành qua hàng trăm triệu năm và cạn kiệt dần khi khai thác nên là năng lượng không tái tạo.'
+        },
+        {
+          id: 'p9b16-s2-q2',
+          question: 'Công suất thu được của một tua-bin gió phụ thuộc theo lũy thừa bậc mấy của tốc độ gió $v$?',
+          options: ['A. Bậc nhất ($v$)', 'B. Bậc hai ($v^2$)', 'C. Bậc ba ($v^3$)', 'D. Không phụ thuộc $v$'],
+          correctIndex: 2,
+          explanation: 'Vì lưu lượng khối khí qua cánh quạt tỉ lệ với $v$ và động năng mỗi kg khí tỉ lệ với $v^2$ nên công suất $P \\propto v^3$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b16-s2-e1',
+        question: 'Tại sao hệ thống điện quốc gia vẫn cần kết hợp trạm pin tích năng hoặc thủy điện tích năng khi tăng mạnh tỉ trọng điện Mặt Trời và điện gió?',
+        hint: 'Xét sự lệch pha giữa giờ nắng/gió cực đại và giờ cao điểm dùng điện buổi tối.',
+        rubricChecklist: [
+          'Điện Mặt Trời chỉ phát vào ban ngày và giảm mạnh khi trời nhiều mây; điện gió dao động theo thời tiết.',
+          'Nhu cầu điện sinh hoạt đạt đỉnh vào buổi tối khi hết nắng, nên cần hệ thống lưu trữ tích điện dư ban ngày để phát lại vào giờ cao điểm.'
+        ],
+        sampleAnswer: 'Điện Mặt Trời đạt đỉnh vào buổi trưa nắng nhưng bằng 0 vào ban đêm, còn điện gió biến động thất thường theo thời tiết. Trong khi đó nhu cầu tiêu thụ điện dân dụng cao nhất vào buổi tối. Do vậy lưới điện cần hệ thống pin lưu trữ hoặc thủy điện tích năng để hấp thụ lượng điện dư lúc nắng to/gió mạnh và bù công suất cho lưới vào ban đêm.'
+      }
+    },
+    {
+      stepTitle: '3. Hiệu suất Chuyển hóa & Thực hành Đánh giá Tiết kiệm Năng lượng',
+      stepType: 'example',
+      conceptSection:
+        'Trong mọi nhà máy điện hay thiết bị dân dụng, phần năng lượng hữu ích thu được luôn nhỏ hơn năng lượng toàn phần đầu vào do thất thoát nhiệt và ma sát cơ khí.',
+      formulaSection: {
+        primaryFormula: 'H = \\frac{W_{\\text{có ích}}}{W_{\\text{toàn phần}}} \\cdot 100\\% = \\frac{\\mathscr{P}_{\\text{điện}}}{\\mathscr{P}_{\\text{nguồn}}} \\cdot 100\\%',
+        secondaryFormulas: [
+          '\\text{Hiệu suất pin Mặt Trời thương mại: } 18\\% \\dots 24\\%',
+          '\\text{Hiệu suất nhà máy thủy điện hiện đại: } 85\\% \\dots 92\\%'
+        ],
+        variablesNote:
+          '• Năng lượng tiết kiệm tốt nhất là nâng cao hiệu suất sử dụng (đèn LED, động cơ Inverter, cách nhiệt tốt) kết hợp giảm lãng phí không cần thiết.'
+      },
+      deepDiveSection:
+        'Một nhà máy nhiệt điện than thường chỉ đạt hiệu suất $35\\% - 40\\%$ (hơn $60\\%$ nhiệt đốt than thoát ra tháp làm mát và khí thải), trong khi thủy điện chuyển trực tiếp thế năng cơ học sang điện năng có thể đạt hiệu suất tới $90\\%$.',
+      teacherExplanation:
+        'Khi tính bài toán thủy điện hoặc pin Mặt Trời, luôn kiểm tra đơn vị thời gian giây (để tính công suất W) hay giờ (để tính kWh).',
+      keyTakeaway: 'Nâng cao hiệu suất $H$ và sử dụng năng lượng sạch là giải pháp kép bảo vệ môi trường bền vững.',
+      miniQuiz: [
+        {
+          id: 'p9b16-s3-q1',
+          question: 'Một hồ thủy điện xả $50\\text{ m}^3$ nước mỗi giây từ độ cao $40\\text{ m}$ xuống tua-bin ($\\rho = 1000\\text{ kg/m}^3, g = 10\\text{ m/s}^2$) với hiệu suất $80\\%$. Công suất điện phát ra bằng:',
+          options: ['A. $16\\text{ MW}$', 'B. $20\\text{ MW}$', 'C. $160\\text{ kW}$', 'D. $25\\text{ MW}$'],
+          correctIndex: 0,
+          explanation: 'Mỗi giây khối lượng nước là $50\\,000\\text{ kg}$ sinh công cơ toàn phần $50\\,000 \\cdot 10 \\cdot 40 = 20\\text{ MW} \\implies P_{\\text{điện}} = 0{,}8\\cdot 20 = 16\\text{ MW}$.'
+        },
+        {
+          id: 'p9b16-s3-q2',
+          question: 'Giàn pin Mặt Trời diện tích $20\\text{ m}^2$ nhận cường độ bức xạ nắng $800\\text{ W/m}^2$ với hiệu suất chuyển hóa $20\\%$. Công suất điện cung cấp là:',
+          options: ['A. $3{,}2\\text{ kW}$', 'B. $16\\text{ kW}$', 'C. $1{,}6\\text{ kW}$', 'D. $4{,}0\\text{ kW}$'],
+          correctIndex: 0,
+          explanation: 'Công suất nắng toàn phần $P_{\\text{tp}} = 20\\cdot 800 = 16\\,000\\text{ W} = 16\\text{ kW} \\implies P_{\\text{điện}} = 0{,}2 \\cdot 16 = 3{,}2\\text{ kW}$.'
+        }
+      ],
+      miniEssay: {
+        id: 'p9b16-s3-e1',
+        question: 'Một mái nhà lắp hệ thống pin Mặt Trời công suất trung bình hiệu dụng $3\\text{ kW}$, phát nắng tốt $5\\text{ giờ/ngày}$ trong $30\\text{ ngày}$. Tính sản lượng điện sạch tạo ra trong tháng (kWh) và lượng khí $\\text{CO}_2$ giảm phát thải được (biết mỗi $1\\text{ kWh}$ điện than thải khoảng $0{,}8\\text{ kg}\\,\\text{CO}_2$).',
+        hint: 'Tính $W = \\mathscr{P}\\cdot t$ ra kWh rồi nhân hệ số $0{,}8\\text{ kg/kWh}$.',
+        rubricChecklist: [
+          'Tính sản lượng điện sạch $W = 3 \\cdot 5 \\cdot 30 = 450\\text{ kWh}$.',
+          'Tính lượng $\\text{CO}_2$ cắt giảm $m = 450 \\cdot 0{,}8 = 360\\text{ kg}\\,\\text{CO}_2$.'
+        ],
+        sampleAnswer: 'Sản lượng điện Mặt Trời mái nhà tạo ra trong 30 ngày là $W = 3 \\times 5 \\times 30 = 450\\text{ kWh}$. Lượng khí $\\text{CO}_2$ giảm phát thải tương ứng là $m_{\\text{CO}_2} = 450 \\times 0{,}8 = 360\\text{ kg}$ mỗi tháng.'
       }
     }
   ],

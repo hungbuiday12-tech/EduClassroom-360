@@ -4,6 +4,77 @@ import { SIM_PRESETS } from './physicsSimPresets';
 const SRC_9 = 'GDPT 2018 (Thông tư 32/2018) · KHTN 9 (KNTT / CTST / Cánh Diều)';
 
 export const PHYSICS_GDPT_9_LESSONS: PhysicsLesson[] = [
+  // ================= MỞ ĐẦU KHTN 9 (BÀI 1) =================
+  {
+    id: 'phys-9-b1',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'Mở đầu · KHTN 9 (Dụng cụ & An toàn)',
+    sourceTag: SRC_9,
+    lessonNumber: 1,
+    title: 'Bài 1: Nhận biết Dụng cụ Quang – Điện & An toàn Thực hành',
+    subtitle: 'Thiết bị đo điện (Ampe kế, Vôn kế, Biến áp nguồn), băng quang học và quy tắc an toàn phòng thí nghiệm',
+    description:
+      'Mở đầu môn Khoa học Tự nhiên 9 (phần Vật lí, GDPT 2018): làm quen công dụng và giới hạn đo của ampe kế, vôn kế, cuộn dây, băng quang học, thấu kính và quy tắc an toàn khi thực hành điện – quang học.',
+    theorySections: [
+      {
+        heading: '1. Dụng cụ Đo Điện & Nguồn Biến áp Thực hành',
+        content:
+          '• **Ampe kế** (kí hiệu chữ A) mắc **nối tiếp** để đo cường độ dòng điện; **Vôn kế** (kí hiệu chữ V) mắc **song song** để đo hiệu điện thế.\n• **Biến áp nguồn** cung cấp điện áp một chiều (DC) hoặc xoay chiều (AC) an toàn thấp ($3\\text{ V} \\dots 12\\text{ V}$) thay thế điện lưới $220\\text{ V}$.\n• **Cuộn dây dẫn có hai đèn LED** mắc song song ngược chiều dùng để kiểm tra chiều dòng điện cảm ứng và nhận biết dòng xoay chiều.'
+      },
+      {
+        heading: '2. Bộ Dụng cụ Quang học & Quy tắc An toàn',
+        content:
+          '• **Băng quang học**, nguồn sáng khe chữ F, bản bán trụ thủy tinh, lăng kính, thấu kính hội tụ/phân kì và màn hứng ảnh dùng cho toàn bộ Chương II (Ánh sáng).\n• **An toàn thực hành**: Ngắt công tắc trước khi lắp/sửa mạch điện, kiểm tra đúng cực $(+), (-)$, không chiếu tia laser trực tiếp vào mắt và đọc vạch chia vuông góc mặt đồng hồ để tránh sai số thị sai.'
+      }
+    ],
+    keyFormulas: [
+      '\\text{Ampe kế: mắc nối tiếp} \\quad | \\quad \\text{Vôn kế: mắc song song}',
+      '\\text{Độ chia nhỏ nhất (ĐCNN)} = \\frac{\\text{Khoảng chia hai vạch liên tiếp}}{\\text{Số khoảng}}',
+      'U_{\\text{an toàn thực hành}} \\le 24\\text{ V}'
+    ],
+    ...SIM_PRESETS.ohm_dc,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Khi lắp mạch điện thực hành đo điện trở bằng phương pháp Vôn kế – Ampe kế, cách mắc nào đúng quy tắc an toàn và kĩ thuật?',
+        options: [
+          'A. Ampe kế mắc nối tiếp với điện trở, Vôn kế mắc song song hai đầu điện trở',
+          'B. Ampe kế mắc song song hai đầu nguồn điện, Vôn kế mắc nối tiếp',
+          'C. Cả Ampe kế và Vôn kế đều mắc song song hai đầu nguồn',
+          'D. Đóng công tắc trước rồi mới nối dây để kiểm tra tia lửa điện'
+        ],
+        correctIndex: 0,
+        explanation: 'Ampe kế có điện trở rất nhỏ nên bắt buộc mắc nối tiếp với đoạn mạch cần đo; Vôn kế có điện trở rất lớn nên mắc song song hai đầu đoạn mạch và luôn ngắt nguồn khi lắp mạch.'
+      },
+      {
+        source: SRC_9,
+        question: 'Thiết bị nào sau đây dùng để xác định sự xuất hiện và chiều của dòng điện cảm ứng trong thí nghiệm KHTN 9?',
+        options: [
+          'A. Cuộn dây gắn hai đèn LED mắc song song ngược cực',
+          'B. Thước kẹp Vernier',
+          'C. Bản bán trụ bằng nhựa trong',
+          'D. Lăng kính tam giác đều'
+        ],
+        correctIndex: 0,
+        explanation: 'Hai đèn LED mắc song song ngược chiều giúp nhận biết ngay dòng điện cảm ứng xuất hiện và phân biệt chiều dòng điện (chỉ LED thuận chiều mới sáng, hoặc cả hai nhấp nháy luân phiên với dòng xoay chiều).'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Nêu 3 quy tắc an toàn bắt buộc khi sử dụng bộ thí nghiệm Quang học (có đèn laser) và bộ thí nghiệm Điện học trong phòng thực hành KHTN 9.',
+        hints: ['Nhắc tới nguồn điện an toàn, ngắt mạch khi lắp và an toàn tia laser với mắt.'],
+        solutionSteps: [
+          '1. An toàn điện: Chỉ dùng biến áp nguồn điện áp thấp (≤ 12 V – 24 V), luôn ngắt công tắc trước khi tháo lắp dây dẫn và không dùng tay ướt chạm vào mạch.',
+          '2. Bảo vệ đồng hồ đo: Chọn thang đo có giới hạn đo lớn hơn giá trị dự kiến, mắc đúng cực (+)/(-) của ampe kế nối tiếp và vôn kế song song.',
+          '3. An toàn quang học: Tuyệt đối không chiếu tia laser trực tiếp hoặc phản xạ từ gương/thủy tinh vào mắt người; nhẹ tay với các chi tiết thủy tinh.'
+        ],
+        finalAnswer: 'Ngắt điện trước khi lắp mạch, chọn đúng thang đo & cực đồng hồ, và không chiếu tia laser vào mắt.'
+      }
+    ]
+  },
+
   // ================= CHƯƠNG I. NĂNG LƯỢNG CƠ HỌC (BÀI 2 - BÀI 4) =================
   {
     id: 'phys-9-mech-heat',
@@ -165,10 +236,10 @@ export const PHYSICS_GDPT_9_LESSONS: PhysicsLesson[] = [
     ],
     simulationType: 'work_power_joule',
     sim3dType: 'atwood_pulley_3d',
-    defaultParams: { force: 40, angleDeg: 0, mu: 0.15 },
+    defaultParams: { force: 80, angle: 0, mu: 0.15 },
     paramBounds: {
-      force: { min: 10, max: 120, step: 5, unit: 'N', label: 'Lực kéo F' },
-      angleDeg: { min: 0, max: 45, step: 5, unit: '°', label: 'Góc kéo α' },
+      force: { min: 20, max: 200, step: 10, unit: 'N', label: 'Lực kéo F' },
+      angle: { min: 0, max: 75, step: 5, unit: '°', label: 'Góc kéo α' },
       mu: { min: 0, max: 0.5, step: 0.05, unit: '', label: 'Ma sát μ' }
     },
     practiceExercises: [
@@ -297,11 +368,11 @@ export const PHYSICS_GDPT_9_LESSONS: PhysicsLesson[] = [
     ],
     simulationType: 'fiber_optic_tir',
     sim3dType: 'fiber_optic_3d',
-    defaultParams: { nCore: 1.52, nClad: 1.38, incidenceDeg: 22 },
+    defaultParams: { nCore: 1.52, nClad: 1.36, launchAngleDeg: 22 },
     paramBounds: {
-      nCore: { min: 1.4, max: 1.75, step: 0.02, unit: '', label: 'Chiết suất lõi n₁' },
-      nClad: { min: 1.2, max: 1.48, step: 0.02, unit: '', label: 'Chiết suất vỏ n₂' },
-      incidenceDeg: { min: 5, max: 50, step: 1, unit: '°', label: 'Góc phóng tia θ' }
+      nCore: { min: 1.4, max: 1.8, step: 0.02, unit: '', label: 'Chiết suất lõi n₁' },
+      nClad: { min: 1.0, max: 1.48, step: 0.02, unit: '', label: 'Chiết suất vỏ n₂' },
+      launchAngleDeg: { min: 5, max: 58, step: 1, unit: '°', label: 'Góc phóng tia θ' }
     },
     practiceExercises: [
       {
@@ -740,11 +811,11 @@ export const PHYSICS_GDPT_9_LESSONS: PhysicsLesson[] = [
     ],
     simulationType: 'joule_lenz_heat',
     sim3dType: 'transformer_3d',
-    defaultParams: { currentI: 2.0, resistanceR: 25, timeSec: 120 },
+    defaultParams: { voltage: 12, resistance: 6, waterMass: 0.5 },
     paramBounds: {
-      currentI: { min: 0.5, max: 6.0, step: 0.25, unit: 'A', label: 'Dòng điện I' },
-      resistanceR: { min: 5, max: 80, step: 5, unit: 'Ω', label: 'Điện trở R' },
-      timeSec: { min: 30, max: 300, step: 15, unit: 's', label: 'Thời gian t' }
+      voltage: { min: 3, max: 36, step: 3, unit: 'V', label: 'Hiệu điện thế U' },
+      resistance: { min: 2, max: 30, step: 2, unit: 'Ω', label: 'Điện trở dây đốt R' },
+      waterMass: { min: 0.2, max: 2.0, step: 0.2, unit: 'kg', label: 'Khối lượng nước m' }
     },
     practiceExercises: [
       {
@@ -807,11 +878,11 @@ export const PHYSICS_GDPT_9_LESSONS: PhysicsLesson[] = [
     ],
     simulationType: 'magnetic_induction',
     sim3dType: 'ac_generator_3d',
-    defaultParams: { turns: 20, B: 1.4, velocity: 4.5 },
+    defaultParams: { magnetSpeed: 4.5, turns: 20, bField: 1.4 },
     paramBounds: {
-      turns: { min: 5, max: 40, step: 1, unit: 'vòng', label: 'Số vòng dây N' },
-      B: { min: 0.4, max: 3.0, step: 0.1, unit: 'T', label: 'Cảm ứng từ B' },
-      velocity: { min: 1.0, max: 10.0, step: 0.5, unit: 'm/s', label: 'Tốc độ di chuyển' }
+      magnetSpeed: { min: 1, max: 10, step: 0.5, unit: 'm/s', label: 'Tốc độ nam châm' },
+      turns: { min: 4, max: 24, step: 2, unit: 'vòng', label: 'Số vòng dây N' },
+      bField: { min: 0.5, max: 3, step: 0.1, unit: 'T', label: 'Cảm ứng từ B' }
     },
     practiceExercises: [
       {

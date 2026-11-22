@@ -409,7 +409,9 @@ export type PhysicsSimType =
   | 'fiber_optic_tir'
   | 'carnot_cycle_pv'
   | 'thermal_conduction_bar'
-  | 'binding_energy_curve';
+  | 'binding_energy_curve'
+  | 'work_power_joule'
+  | 'joule_lenz_heat';
 
 export type Physics3DMode =
   | 'pendulum_spring'

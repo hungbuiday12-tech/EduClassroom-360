@@ -1,5 +1,6 @@
 import { PhysicsSimType } from '../../types';
 import { renderExtra2DPhysicsSim } from './physics2DExtraRenderer';
+import { renderCustomStepPhysicsSim } from './physicsStepCustomRenderers';
 
 export interface Physics2DOverlayState {
   showRulerGrid: boolean;
@@ -2953,6 +2954,21 @@ export function renderPhysics2DSimulation(opts: Physics2DRenderOptions): void {
       break;
     case 'photoelectric_effect':
       drawPhotoelectricEffect(opts);
+      break;
+    case 'work_power_joule':
+    case 'joule_lenz_heat':
+      renderCustomStepPhysicsSim({
+        ctx,
+        w,
+        h,
+        t,
+        isDark,
+        simId: simType,
+        params,
+        flags: opts.flags,
+        overlays,
+        pushTelemetry
+      });
       break;
     default: {
       const handledExtra = renderExtra2DPhysicsSim(

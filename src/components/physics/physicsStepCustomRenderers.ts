@@ -626,7 +626,7 @@ export function renderCustomStepPhysicsSim({
     // ------------------------------------------------------------------------
     case 'work_power_joule': {
       const F = params.force ?? 80;
-      const deg = params.angle ?? 0;
+      const deg = params.angle ?? params.angleDeg ?? 0;
       const rad = (deg * Math.PI) / 180;
       const m = Math.max(1, params.mass ?? 10);
       const mu = Math.max(0, params.mu ?? 0.15);
@@ -753,10 +753,21 @@ export function renderCustomStepPhysicsSim({
     // 3. JOULE-LENZ HEATING & ELECTRIC POWER
     // ------------------------------------------------------------------------
     case 'joule_lenz_heat': {
-      const rawU = Number.isFinite(params.voltage) ? params.voltage : 12;
+      const R = Math.max(
+        0.05,
+        Number.isFinite(params.resistance)
+          ? params.resistance
+          : Number.isFinite(params.resistanceR)
+            ? params.resistanceR
+            : 6
+      );
+      const rawU = Number.isFinite(params.voltage)
+        ? params.voltage
+        : Number.isFinite(params.currentI)
+          ? params.currentI * R
+          : 12;
       const effReverse = rawU < 0 ? !flags.reversePolarity : flags.reversePolarity;
       const U = Math.abs(rawU);
-      const R = Math.max(0.05, Number.isFinite(params.resistance) ? params.resistance : 6);
       const mWater = Math.max(0.05, Number.isFinite(params.waterMass) ? params.waterMass : 0.5);
       const isOpen = flags.circuitOpen;
       const I = isOpen ? 0 : U / R;

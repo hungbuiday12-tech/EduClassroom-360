@@ -512,6 +512,46 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
       { label: 'Phóng xạ nhanh (T=1.5s)', description: 'Phân rã nhanh qua nhiều chu kì', params: { n0: 240, halfLife: 1.5 } },
       { label: 'Mẫu đồng vị bền (T=8s)', description: 'Số hạt giảm chậm theo thời gian', params: { n0: 200, halfLife: 8.0 } }
     ]
+  },
+  work_power_joule: {
+    id: 'work_power_joule',
+    domainId: 'mechanics',
+    grades: ['Lớp 9', 'Lớp 10'],
+    title: 'Công Cơ Học, Công Suất & Hiệu Suất',
+    subtitle: 'Phân tích lực kéo chếch góc α, công ma sát hao phí và công suất tức thời P = Fx·v',
+    formula: 'A = F·s·cosα · P = A/t = F·v · H = A_ích / A_tp',
+    linkedLessonId: 'phys-9-b4',
+    defaultParams: { force: 80, angle: 0, mass: 10, mu: 0.15 },
+    paramBounds: {
+      force: { min: 20, max: 200, step: 10, unit: 'N', label: 'Lực kéo F' },
+      angle: { min: 0, max: 75, step: 5, unit: '°', label: 'Góc kéo α' },
+      mu: { min: 0, max: 0.5, step: 0.05, unit: '', label: 'Hệ số ma sát μ' }
+    },
+    presets: [
+      { label: 'Kéo ngang (α = 0°)', description: 'Toàn bộ lực sinh công tối đa cos0° = 1', params: { force: 80, angle: 0, mass: 10, mu: 0.15 } },
+      { label: 'Kéo chếch 35°', description: 'Phân tích Fx = Fcosα, Fy = Fsinα giảm áp lực N', params: { force: 90, angle: 35, mass: 10, mu: 0.2 } },
+      { label: 'Không ma sát (μ = 0)', description: 'Hiệu suất đạt 100% — toàn bộ công chuyển thành Wđ', params: { force: 70, angle: 15, mass: 10, mu: 0 } }
+    ]
+  },
+  joule_lenz_heat: {
+    id: 'joule_lenz_heat',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Công Suất Điện & Định Luật Jun – Len-xơ',
+    subtitle: 'Mạch điện đun nước nhiệt lượng kế khảo sát P = UI = I²R và Q = I²Rt',
+    formula: 'P = U·I = I²R · Q = I²·R·t = m·c·ΔT',
+    linkedLessonId: 'phys-9-b13',
+    defaultParams: { voltage: 12, resistance: 6, waterMass: 0.5 },
+    paramBounds: {
+      voltage: { min: 3, max: 36, step: 3, unit: 'V', label: 'Hiệu điện thế U' },
+      resistance: { min: 2, max: 30, step: 2, unit: 'Ω', label: 'Điện trở dây đốt R' },
+      waterMass: { min: 0.2, max: 2.0, step: 0.2, unit: 'kg', label: 'Khối lượng nước m' }
+    },
+    presets: [
+      { label: 'Đun chuẩn (12V · 6Ω)', description: 'I = 2A, P = 24W làm nước ấm dần', params: { voltage: 12, resistance: 6, waterMass: 0.5 } },
+      { label: 'Tăng áp gấp đôi (24V)', description: 'U tăng 2 → P = U²/R tăng 4 lần!', params: { voltage: 24, resistance: 6, waterMass: 0.5 } },
+      { label: 'Dây đốt R nhỏ (2Ω)', description: 'Cùng U nhưng R giảm → dòng lớn tỏa nhiệt cực nhanh', params: { voltage: 12, resistance: 2, waterMass: 0.4 } }
+    ]
   }
 };
 

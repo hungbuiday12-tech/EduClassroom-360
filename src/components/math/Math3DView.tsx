@@ -470,11 +470,12 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       scene.traverse((obj: any) => {
         if (typeof obj.dispose === 'function' && obj.userData?.isTroikaLabel) {
           obj.dispose();
+          return;
         }
-        if (obj.geometry) obj.geometry.dispose();
+        if (obj.geometry && typeof obj.geometry.dispose === 'function') obj.geometry.dispose();
         if (obj.material) {
-          if (Array.isArray(obj.material)) obj.material.forEach((m: any) => m.dispose());
-          else obj.material.dispose();
+          if (Array.isArray(obj.material)) obj.material.forEach((m: any) => typeof m?.dispose === 'function' && m.dispose());
+          else if (typeof obj.material.dispose === 'function') obj.material.dispose();
         }
       });
       envTarget.dispose();
@@ -501,12 +502,13 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       child.traverse((obj: any) => {
         if (typeof obj.dispose === 'function' && obj.userData?.isTroikaLabel) {
           obj.dispose();
+          return;
         }
-        if (obj.geometry) obj.geometry.dispose();
+        if (obj.geometry && typeof obj.geometry.dispose === 'function') obj.geometry.dispose();
         if (obj.material) {
           if (Array.isArray(obj.material)) {
-            obj.material.forEach((m: any) => m.dispose());
-          } else {
+            obj.material.forEach((m: any) => typeof m?.dispose === 'function' && m.dispose());
+          } else if (typeof obj.material.dispose === 'function') {
             obj.material.dispose();
           }
         }
@@ -625,12 +627,16 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       // Vector u (Amber)
       const uVec = new THREE.Vector3(ux, uz, uy); // Mapping math z to three.js y
       const uLen = uVec.length();
-      group.add(create3DArrow(uVec, new THREE.Vector3(0, 0, 0), uLen, 0xf59e0b, 0.062));
+      if (uLen > 1e-4) {
+        group.add(create3DArrow(uVec, new THREE.Vector3(0, 0, 0), uLen, 0xf59e0b, 0.062));
+      }
 
       // Vector v (Cyan)
       const vVec = new THREE.Vector3(vx, vz, vy);
       const vLen = vVec.length();
-      group.add(create3DArrow(vVec, new THREE.Vector3(0, 0, 0), vLen, 0x06b6d4, 0.062));
+      if (vLen > 1e-4) {
+        group.add(create3DArrow(vVec, new THREE.Vector3(0, 0, 0), vLen, 0x06b6d4, 0.062));
+      }
 
       // Cross Product w = u x v (Purple)
       const wVec = new THREE.Vector3().crossVectors(uVec, vVec);
@@ -1250,7 +1256,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       group.add(create3DArrow(normalVec, new THREE.Vector3(0, 0.8, 0), 2.2, 0xf43f5e, 0.058));
 
       // Line (d) with direction u = (lineDirX, lineDirZ, lineDirY) rendered as glowing cylinder ray
-      const uVec = new THREE.Vector3(lineDirX, lineDirZ, lineDirY).normalize();
+      const rawU = new THREE.Vector3(lineDirX, lineDirZ, lineDirY);
+      const uVec = rawU.lengthSq() > 1e-6 ? rawU.normalize() : new THREE.Vector3(1, 0, 0);
       const basePt = new THREE.Vector3(-0.6, 1.4, -0.5);
       const pStart = basePt.clone().addScaledVector(uVec, -4.5);
       const pEnd = basePt.clone().addScaledVector(uVec, 4.5);

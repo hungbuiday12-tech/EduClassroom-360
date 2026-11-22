@@ -31,7 +31,26 @@ interface StepOverrideRule {
 }
 
 const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
-  // ---------------- LỚP 9 KHTN (GDPT 2018: BÀI 2 - BÀI 17) ----------------
+  // ---------------- LỚP 9 KHTN (GDPT 2018: BÀI 1 - BÀI 17) ----------------
+  'phys-9-b1:0': {
+    simId: 'ohm_circuit',
+    regimeLabel: 'Dụng cụ đo Điện · Ampe kế, Vôn kế & Biến áp Nguồn',
+    observationGoal:
+      'Quan sát cách đọc số chỉ cường độ dòng điện I (A) trên ampe kế và hiệu điện thế U (V) trên vôn kế trong mạch an toàn.'
+  },
+  'phys-9-b1:1': {
+    simId: 'lens_optics',
+    regimeLabel: 'Dụng cụ Quang học · Băng quang học, Đèn chiếu & Thấu kính',
+    observationGoal:
+      'Kiểm tra trục chính quang học, vật sáng, thấu kính và màn hứng ảnh đặt đồng trục trên giá thí nghiệm.'
+  },
+  'phys-9-b1:2': {
+    simId: 'measurement_error_lab',
+    regimeLabel: 'An toàn Thực hành & Ghi chép Sai số Phép đo KHTN 9',
+    observationGoal:
+      'Thực hành lấy nhiều lần đo độc lập để tính giá trị trung bình và hạn chế sai số chủ quan khi đọc thước/đồng hồ.'
+  },
+
   'phys-9-mech-heat:0': {
     simId: 'free_fall_energy',
     regimeLabel: 'Khảo sát Động năng W_đ = ½mv² theo Khối lượng & Vận tốc',
@@ -58,7 +77,7 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
   },
 
   'phys-9-power-bill:0': {
-    simId: 'pendulum_shm',
+    simId: 'simple_pendulum',
     regimeLabel: 'Định nghĩa Cơ năng W = W_đ + W_t qua Con lắc Đơn',
     observationGoal:
       'Ở vị trí biên thế năng đạt cực đại, qua vị trí cân bằng động năng đạt cực đại.'
@@ -80,13 +99,22 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
     simId: 'work_power_joule',
     regimeLabel: 'Công Cơ học A = F·s·cosα & Điều kiện Sinh công',
     observationGoal:
-      'Kéo lực F dọc hướng dịch chuyển vs chếch góc α để thấy rõ công chỉ tính theo thành phần lực song song đường đi.'
+      'Kéo lực F dọc hướng dịch chuyển vs chếch góc α để thấy rõ công chỉ tính theo thành phần lực song song đường đi.',
+    paramOverrides: { force: 80, angle: 0, mu: 0.1 }
   },
   'phys-9-b4:1': {
     simId: 'work_power_joule',
-    regimeLabel: 'Công suất P = A/t = F·v & Hiệu suất Máy cơ',
+    regimeLabel: 'Công suất P = A/t = F·v & Tốc độ Sinh công',
     observationGoal:
-      'Thay đổi lực kéo F và ma sát μ để kiểm chứng công có ích, công toàn phần và hiệu suất H%.'
+      'Tăng lực kéo F để quan sát tốc độ sinh công P tăng theo tích F_x · v.',
+    paramOverrides: { force: 120, angle: 25, mu: 0.15 }
+  },
+  'phys-9-b4:2': {
+    simId: 'work_power_joule',
+    regimeLabel: 'Hiệu suất Máy cơ Đơn giản & Công thắng Ma sát',
+    observationGoal:
+      'Thay đổi hệ số ma sát μ để kiểm chứng công có ích, công toàn phần và hiệu suất H%.',
+    paramOverrides: { force: 90, angle: 30, mu: 0.25 }
   },
 
   'phys-9-b5:0': {
@@ -97,48 +125,81 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
   },
   'phys-9-b5:1': {
     simId: 'light_refraction',
-    regimeLabel: 'Chiết suất Tuyệt đối & So sánh Tốc độ Ánh sáng',
+    regimeLabel: 'Chiết suất Tuyệt đối n = c/v & So sánh Môi trường',
     observationGoal:
-      'So sánh góc khúc xạ r khi ánh sáng đi từ không khí vào nước (1,33), thủy tinh (1,5) và kim cương (2,4).'
+      'So sánh góc khúc xạ r khi ánh sáng đi từ không khí vào nước (1,33), thủy tinh (1,5) và kim cương (2,4).',
+    paramOverrides: { angleI: 50, n1: 1.0, n2: 1.33 }
+  },
+  'phys-9-b5:2': {
+    simId: 'light_refraction',
+    regimeLabel: 'Tính Thuận nghịch & Ảnh ảo trong Bể nước',
+    observationGoal:
+      'Cho ánh sáng đi từ nước (n₁ = 1,33) ra không khí (n₂ = 1,0) để thấy tia khúc xạ lệch xa pháp tuyến (r > i).',
+    paramOverrides: { angleI: 30, n1: 1.33, n2: 1.0 }
   },
 
   'phys-9-b6:0': {
     simId: 'fiber_optic_tir',
     regimeLabel: 'Điều kiện Phản xạ Toàn phần n₁ > n₂ & i ≥ i_th',
     observationGoal:
-      'Tăng góc tới tới khi vượt góc tới hạn sin(i_th) = n₂/n₁: tia khúc xạ biến mất hoàn toàn!'
+      'Tăng góc tới tới khi vượt góc tới hạn sin(i_th) = n₂/n₁: tia khúc xạ biến mất hoàn toàn!',
+    paramOverrides: { nCore: 1.52, nClad: 1.36, launchAngleDeg: 22 }
   },
   'phys-9-b6:1': {
     simId: 'fiber_optic_tir',
     regimeLabel: 'Truyền Tín hiệu Ánh sáng trong Sợi Cáp quang',
     observationGoal:
-      'Quan sát tia sáng phản xạ toàn phần liên tiếp dọc lõi cáp quang nhờ n_lõi > n_vỏ.'
+      'Quan sát tia sáng phản xạ toàn phần liên tiếp dọc lõi cáp quang nhờ n_lõi > n_vỏ.',
+    paramOverrides: { nCore: 1.6, nClad: 1.36, launchAngleDeg: 18 }
+  },
+  'phys-9-b6:2': {
+    simId: 'light_refraction',
+    regimeLabel: 'Kiểm chứng Rò rỉ Tia khúc xạ khi i < i_th',
+    observationGoal:
+      'So sánh trạng thái chưa đạt góc tới hạn (có tia khúc xạ yếu) với trạng thái phản xạ toàn phần hoàn toàn.',
+    paramOverrides: { angleI: 55, n1: 1.5, n2: 1.0 }
   },
 
   'phys-9-b9:0': {
     simId: 'lens_optics',
-    regimeLabel: 'Thực hành Đo Tiêu cự TKHT · Phương pháp L = 4f',
+    regimeLabel: 'Thực hành Đo Tiêu cự TKHT · Chùm tia Song song Hội tụ',
     observationGoal:
-      'Đặt vật tại d = 2f (30 cm với f = 15 cm) để thu ảnh thật ngược chiều cao đúng bằng vật tại d\' = 2f.'
+      'Đặt vật xa thấu kính (d > 2f) để kiểm chứng tia song song trục chính luôn đi qua tiêu điểm ảnh F\'.',
+    paramOverrides: { f: 15, d: 45, objH: 10 }
   },
   'phys-9-b9:1': {
     simId: 'lens_optics',
-    regimeLabel: 'Kiểm chứng Chùm tia Song song Hội tụ tại F\'',
+    regimeLabel: 'Phương pháp Đối xứng L = 4f (d = d\' = 2f)',
     observationGoal:
-      'Quan sát tia song song trục chính luôn đi qua tiêu điểm ảnh F\' sau thấu kính hội tụ.'
+      'Đặt vật tại d = 2f (30 cm với f = 15 cm) để thu ảnh thật ngược chiều cao đúng bằng vật tại d\' = 2f.',
+    paramOverrides: { f: 15, d: 30, objH: 10 }
+  },
+  'phys-9-b9:2': {
+    simId: 'measurement_error_lab',
+    regimeLabel: 'Xử lý Số liệu Thực hành & Sai số f = L/4',
+    observationGoal:
+      'Quan sát các lần đo lặp lại khoảng cách L = d + d\' quanh giá trị thực để tính tiêu cự trung bình.'
   },
 
   'phys-9-b10:0': {
     simId: 'lens_optics',
     regimeLabel: 'Nguyên lý Kính lúp · Đặt vật d < f cho Ảnh ảo Phóng đại',
     observationGoal:
-      'Kéo vật vào trong tiêu cự (d < f) để quan sát ảnh ảo cùng chiều lớn hơn vật qua kính lúp.'
+      'Kéo vật vào trong tiêu cự (d < f) để quan sát ảnh ảo cùng chiều lớn hơn vật qua kính lúp.',
+    paramOverrides: { f: 18, d: 10, objH: 8 }
   },
   'phys-9-b10:1': {
-    simId: 'telescope_optics',
-    regimeLabel: 'Kính lúp & Hệ quang học Tạo ảnh Phóng đại G = 25/f',
+    simId: 'telescope_microscope',
+    regimeLabel: 'Kính lúp & Hệ quang học Phóng đại G = 25/f',
     observationGoal:
       'Điều chỉnh tiêu cự vật kính và thị kính để khảo sát số bội giác góc và đường truyền tia sáng.'
+  },
+  'phys-9-b10:2': {
+    simId: 'lens_optics',
+    regimeLabel: 'Phương pháp Tam giác Đồng dạng Giải Bài tập Thấu kính',
+    observationGoal:
+      'Thay đổi d và f để đối chiếu tỉ lệ A\'B\'/AB = |d\'|/d giữa ảnh thật và ảnh ảo.',
+    paramOverrides: { f: 15, d: 22, objH: 9 }
   },
 
   'phys-9-b11:0': {
@@ -149,23 +210,32 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
   },
   'phys-9-b11:1': {
     simId: 'ohm_circuit',
-    regimeLabel: 'Điện trở Dây dẫn R = ρl/S & Biến trở',
+    regimeLabel: 'Điện trở Dây dẫn R = ρl/S & Vai trò Biến trở',
     observationGoal:
-      'Thay đổi R₁ để mô phỏng việc điều chỉnh chiều dài dây dẫn hay biến trở trong mạch.'
+      'Thay đổi R₁ để mô phỏng việc điều chỉnh chiều dài dây dẫn hay biến trở trong mạch.',
+    paramOverrides: { voltage: 12, r1: 12, r2: 8, circuitType: 0 }
+  },
+  'phys-9-b11:2': {
+    simId: 'joule_lenz_heat',
+    regimeLabel: 'Ảnh hưởng Điện trở R lên Cường độ Dòng & Nhiệt tỏa',
+    observationGoal:
+      'So sánh khi thay dây đốt điện trở R nhỏ (dòng I lớn) và R lớn ở cùng hiệu điện thế U.',
+    paramOverrides: { voltage: 12, resistance: 4, waterMass: 0.5 }
   },
 
   'phys-9-elec:0': {
     simId: 'ohm_circuit',
     regimeLabel: 'Mạch điện Nối tiếp · R_tđ = R₁ + R₂ & U = U₁ + U₂',
     observationGoal:
-      'Ở chế độ nối tiếp (circuitType = 0), cường độ dòng điện qua mọi điện trở đều bằng nhau.'
+      'Ở chế độ nối tiếp (circuitType = 0), cường độ dòng điện qua mọi điện trở đều bằng nhau.',
+    paramOverrides: { voltage: 12, r1: 10, r2: 15, circuitType: 0 }
   },
   'phys-9-elec:1': {
     simId: 'ohm_circuit',
     regimeLabel: 'Mạch điện Song song · 1/R_tđ = 1/R₁ + 1/R₂',
     observationGoal:
       'Chuyển sang mạch song song (circuitType = 1) để thấy điện trở tương đương giảm và dòng mạch chính tăng.',
-    paramOverrides: { circuitType: 1 }
+    paramOverrides: { voltage: 12, r1: 10, r2: 15, circuitType: 1 }
   },
   'phys-9-elec:2': {
     simId: 'joule_lenz_heat',
@@ -176,15 +246,23 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
 
   'phys-9-b13:0': {
     simId: 'joule_lenz_heat',
-    regimeLabel: 'Năng lượng Dòng điện W = UIt & Công suất Điện P = UI',
+    regimeLabel: 'Năng lượng Điện A = UIt & Định luật Jun – Len-xơ',
     observationGoal:
-      'Điều chỉnh dòng I, điện trở R và thời gian t để theo dõi năng lượng điện và công suất tiêu thụ.'
+      'Điều chỉnh hiệu điện thế U, điện trở dây đốt R để theo dõi nhiệt lượng tỏa ra Q = I²Rt và nhiệt độ nước tăng dần.',
+    paramOverrides: { voltage: 12, resistance: 6, waterMass: 0.5 }
   },
   'phys-9-b13:1': {
-    simId: 'transformer_2d',
-    regimeLabel: 'Chỉ số Công tơ Điện (kWh) & An toàn Lưới điện',
+    simId: 'joule_lenz_heat',
+    regimeLabel: 'Công suất Điện P = U·I = U²/R & Thiết bị Định mức',
     observationGoal:
-      'Theo dõi công suất tiêu thụ thiết bị P = U·I và truyền tải điện áp an toàn.'
+      'Tăng gấp đôi U (từ 12V lên 24V) để thấy công suất P tăng gấp 4 lần trên cùng điện trở tải.',
+    paramOverrides: { voltage: 24, resistance: 6, waterMass: 0.5 }
+  },
+  'phys-9-b13:2': {
+    simId: 'transformer_2d',
+    regimeLabel: 'Chỉ số Công tơ Điện (kWh) & An toàn Lưới điện 220V',
+    observationGoal:
+      'Theo dõi điện áp truyền tải, công suất tiêu thụ và tính tiền điện theo số kWh thực tế.'
   },
 
   'phys-9-optics:0': {
@@ -250,33 +328,43 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
     simId: 'magnetic_induction',
     regimeLabel: 'Hiện tượng Cảm ứng Điện từ khi Từ thông Biến thiên',
     observationGoal:
-      'Chỉ khi nam châm chuyển động tương đối làm số đường sức xuyên qua cuộn dây biến thiên thì kim điện kế mới lệch.'
+      'Chỉ khi nam châm chuyển động tương đối làm số đường sức xuyên qua cuộn dây biến thiên thì kim điện kế mới lệch.',
+    paramOverrides: { magnetSpeed: 4.5, turns: 20, bField: 1.4 }
   },
   'phys-9-induction-ac:1': {
     simId: 'magnetic_induction',
     regimeLabel: 'Tạo Dòng điện Xoay chiều & Quy tắc Đảo chiều Dòng cảm ứng',
     observationGoal:
       'Đảo cực nam châm hoặc đổi tốc độ dao động để quan sát chiều dòng điện cảm ứng đổi dấu tuần hoàn.',
+    paramOverrides: { magnetSpeed: 6, turns: 20, bField: 1.8 },
     flagOverrides: { flipMagnet: true }
   },
   'phys-9-induction-ac:2': {
     simId: 'magnetic_induction',
     regimeLabel: 'Nguyên lý Máy phát Điện Xoay chiều (Stato & Rôto)',
     observationGoal:
-      'Thay đổi số vòng dây N và cảm ứng từ B để thấy biên độ suất điện động xoay chiều tăng tỉ lệ.'
+      'Thay đổi số vòng dây N và cảm ứng từ B để thấy biên độ suất điện động xoay chiều tăng tỉ lệ.',
+    paramOverrides: { magnetSpeed: 8, turns: 24, bField: 2.2 }
   },
 
   'phys-9-b15:0': {
     simId: 'joule_lenz_heat',
     regimeLabel: 'Tác dụng Nhiệt, Phát sáng & Từ của Dòng Xoay chiều',
     observationGoal:
-      'Quan sát tác dụng tỏa nhiệt và từ trường của dòng điện xoay chiều trong các thiết bị gia dụng.'
+      'Quan sát tác dụng tỏa nhiệt và chuyển hóa điện năng trong các thiết bị gia dụng dùng dòng xoay chiều.'
   },
   'phys-9-b15:1': {
     simId: 'transformer_2d',
     regimeLabel: 'Máy Biến áp & Giảm Hao phí Truyền tải ΔP = P²R / U²',
     observationGoal:
       'Tăng tỉ số vòng N₂/N₁ để nâng điện áp truyền tải, giảm mạnh hao phí tỏa nhiệt trên đường dây.'
+  },
+  'phys-9-b15:2': {
+    simId: 'transformer_2d',
+    regimeLabel: 'Tối ưu Lưới điện Cao thế 500 kV & Hạ áp Dân dụng 220V',
+    observationGoal:
+      'So sánh phần trăm công suất hao phí khi tăng N₂/N₁ gấp 5 lần so với lưới hạ áp trực tiếp.',
+    paramOverrides: { u1: 220, n1: 400, n2: 2000, rLine: 25 }
   },
 
   'phys-9-b16:0': {
@@ -290,6 +378,13 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
     regimeLabel: 'Thủy năng & Hiệu suất Năng lượng Tái tạo',
     observationGoal:
       'Khảo sát thế năng cột nước chuyển hóa thành động năng quay tuabin và phần năng lượng hao phí.'
+  },
+  'phys-9-b16:2': {
+    simId: 'work_power_joule',
+    regimeLabel: 'So sánh Hiệu suất & Công suất Phát Điện Năng lượng Xanh',
+    observationGoal:
+      'Điều chỉnh lực dẫn động và ma sát để theo dõi phần năng lượng có ích so với năng lượng đầu vào.',
+    paramOverrides: { force: 110, angle: 15, mu: 0.1 }
   },
 
   // ---------------- LỚP 10 ----------------

@@ -2222,14 +2222,16 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
             return;
           }
           b.visible = true;
+          const isHot = i === f.sqHighlightIdx;
           const tx = isStack ? 0 : (i - (f.sqItems!.length - 1) / 2) * 1.32;
-          const ty = isStack ? 0.35 + i * 0.55 : 0.45;
+          const hoverY = isHot ? Math.sin(tNow * 3.8) * 0.08 : 0;
+          const ty = (isStack ? 0.35 + i * 0.55 : 0.45) + hoverY;
           b.position.x = THREE.MathUtils.damp(b.position.x, tx, 12, dt);
           b.position.y = THREE.MathUtils.damp(b.position.y, ty, 12, dt);
-          const isHot = i === f.sqHighlightIdx;
+          b.scale.setScalar(isHot ? 1.07 + Math.sin(tNow * 4.5) * 0.04 : 1.0);
           mat.color.setHex(isHot ? 0xfbbf24 : isStack ? 0x10b981 : 0x38bdf8);
           mat.emissive.setHex(isHot ? 0xd97706 : 0x0f172a);
-          mat.emissiveIntensity = isHot ? 0.75 : 0.18;
+          mat.emissiveIntensity = isHot ? 0.8 + Math.sin(tNow * 4.5) * 0.15 : 0.18;
           if (isHot && stepChanged) {
             for (let s = 0; s < 5; s++) {
               csParticlePool.spawn(b.position.x, b.position.y + 0.25, 0, (Math.random() - 0.5) * 1.4, 0.9 + Math.random(), (Math.random() - 0.5) * 1.4, 0.65, 0.85, 0xfbbf24);
@@ -2244,13 +2246,14 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           const edge = segEdgeMeshes[i];
           const eMat = segEdgeMats[i];
           if (!box) return;
-          box.position.set(nd.x, nd.y, nd.z);
+          const hoverSeg = nd.status === 'cover' || nd.status === 'split' ? Math.sin(tNow * 3.4 + i * 0.6) * 0.05 : 0;
+          box.position.set(nd.x, nd.y + hoverSeg, nd.z);
           let lblCol = 0xe2e8f0;
           if (nd.status === 'cover') {
             mat.color.setHex(0x10b981);
             mat.emissive.setHex(0x059669);
-            mat.emissiveIntensity = 0.95;
-            box.scale.setScalar(1.12);
+            mat.emissiveIntensity = 0.95 + Math.sin(tNow * 4 + i) * 0.18;
+            box.scale.setScalar(1.12 + Math.sin(tNow * 3.5 + i) * 0.04);
             lblCol = 0x6ee7b7;
             if (stepChanged) {
               csParticlePool.spawn(nd.x, nd.y + 0.15, nd.z, (Math.random() - 0.5) * 1.0, 0.9, (Math.random() - 0.5) * 1.0, 0.6, 0.85, 0x10b981);
@@ -2258,8 +2261,8 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           } else if (nd.status === 'split') {
             mat.color.setHex(0xfbbf24);
             mat.emissive.setHex(0xd97706);
-            mat.emissiveIntensity = 0.75;
-            box.scale.setScalar(1.06);
+            mat.emissiveIntensity = 0.78 + Math.sin(tNow * 3.5 + i) * 0.15;
+            box.scale.setScalar(1.06 + Math.sin(tNow * 3 + i) * 0.03);
             lblCol = 0xfef08a;
           } else if (nd.status === 'skip') {
             mat.color.setHex(0xf43f5e);
@@ -2358,11 +2361,11 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
             if (traceSet.has(kStr)) {
               mat.color.setHex(0x10b981);
               mat.emissive.setHex(0x059669);
-              mat.emissiveIntensity = 0.85;
+              mat.emissiveIntensity = 0.85 + Math.sin(tNow * 3 + i + w) * 0.15;
             } else if (isCur) {
               mat.color.setHex(0xfbbf24);
               mat.emissive.setHex(0xd97706);
-              mat.emissiveIntensity = 0.95;
+              mat.emissiveIntensity = 0.95 + Math.sin(tNow * 5) * 0.2;
               focusFound = true;
               setTroikaLabel(dpFocusLbl, `dp[${i}][${w}]=${val}`, cell.position.x, cell.scale.y + 0.45, cell.position.z, 0xfef08a, true);
               if (stepChanged) {
@@ -2371,7 +2374,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
             } else if (depSet.has(kStr)) {
               mat.color.setHex(0x22d3ee);
               mat.emissive.setHex(0x0891b2);
-              mat.emissiveIntensity = 0.65;
+              mat.emissiveIntensity = 0.65 + Math.sin(tNow * 3.5 + w) * 0.12;
             } else if (val > 0) {
               mat.color.setHex(0x38bdf8);
               mat.emissive.setHex(0x0369a1);

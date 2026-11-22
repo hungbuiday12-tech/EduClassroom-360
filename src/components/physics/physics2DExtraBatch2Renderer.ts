@@ -1104,7 +1104,7 @@ export function renderBatch2Extra2DPhysicsSim(
     case 'fiber_optic_tir': {
       const n1 = p.nCore ?? 1.52;
       const n2 = Math.min(n1 - 0.02, p.nClad ?? 1.36);
-      const launchDeg = p.launchAngleDeg ?? 22;
+      const launchDeg = p.launchAngleDeg ?? p.incidenceDeg ?? 22;
       const iCrit = (Math.asin(n2 / n1) * 180) / Math.PI;
       const iWall = 90 - launchDeg;
       const isTir = iWall >= iCrit;

@@ -1533,6 +1533,68 @@ export const LESSON_HIDDEN_TEST_CASES: Record<
     { input: 'ababcababa\naba', expectedOutput: '3', difficulty: 'Trung bình' },
     { input: 'ababab\nabab', expectedOutput: '2', difficulty: 'Nâng cao' },
     { input: 'mississippi\nissi', expectedOutput: '2', difficulty: 'Thử thách' }
+  ],
+  CS_P13: [
+    { input: '4\n4 3 2 1', expectedOutput: '6', difficulty: 'Cơ bản' },
+    { input: '5\n1 2 3 4 5', expectedOutput: '0', difficulty: 'Cơ bản' },
+    { input: '5\n5 1 4 2 3', expectedOutput: '6', difficulty: 'Trung bình' },
+    { input: '6\n3 6 1 5 2 4', expectedOutput: '8', difficulty: 'Nâng cao' },
+    { input: '1\n1', expectedOutput: '0', difficulty: 'Thử thách' }
+  ],
+  CS_P14: [
+    { input: '4 3\n10 20 30 40\n2 1 4\n1 1 2 5\n2 1 3', expectedOutput: '100\n70', difficulty: 'Cơ bản' },
+    { input: '3 4\n0 0 0\n1 1 3 5\n2 2 3\n1 2 2 -3\n2 1 3', expectedOutput: '10\n12', difficulty: 'Trung bình' },
+    { input: '5 4\n2 4 6 8 10\n1 1 5 2\n2 3 5\n1 2 4 -4\n2 1 5', expectedOutput: '30\n28', difficulty: 'Nâng cao' },
+    { input: '1 2\n7\n1 1 1 1000000000\n2 1 1', expectedOutput: '1000000007', difficulty: 'Thử thách' }
+  ],
+  CS_P15: [
+    { input: '5 3\napple\napp\napricot\nbanana\nbat\nap\nba\ncat', expectedOutput: '3\n2\n0', difficulty: 'Cơ bản' },
+    { input: '3 3\na\naa\naaa\na\naa\naaaa', expectedOutput: '3\n2\n0', difficulty: 'Trung bình' },
+    { input: '4 2\nsynapse\nsyntax\nsystem\nsync\nsyn\nsys', expectedOutput: '3\n1', difficulty: 'Nâng cao' },
+    { input: '2 2\nhello\nhello\nhel\nhello', expectedOutput: '2\n2', difficulty: 'Thử thách' }
+  ],
+  CS_P16: [
+    { input: 'cbbd', expectedOutput: '2', difficulty: 'Cơ bản' },
+    { input: 'racecar', expectedOutput: '7', difficulty: 'Cơ bản' },
+    { input: 'abcdef', expectedOutput: '1', difficulty: 'Trung bình' },
+    { input: 'aaabbaaa', expectedOutput: '8', difficulty: 'Nâng cao' },
+    { input: 'abacdfgdcaba', expectedOutput: '3', difficulty: 'Thử thách' }
+  ],
+  CS_P17: [
+    { input: '4 3\n1 2\n2 3\n3 4', expectedOutput: '3', difficulty: 'Cơ bản' },
+    { input: '4 4\n1 2\n2 3\n3 4\n4 1', expectedOutput: '0', difficulty: 'Cơ bản' },
+    { input: '6 6\n1 2\n2 3\n3 1\n4 5\n5 6\n6 4', expectedOutput: '0', difficulty: 'Trung bình' },
+    { input: '6 7\n1 2\n2 3\n3 1\n3 4\n4 5\n5 6\n6 4', expectedOutput: '1', difficulty: 'Thử thách' }
+  ],
+  CS_P18: [
+    { input: '2 1\n1 2 100', expectedOutput: '100', difficulty: 'Cơ bản' },
+    { input: '3 2\n1 2 15\n2 3 8', expectedOutput: '8', difficulty: 'Cơ bản' },
+    { input: '4 4\n1 2 5\n1 3 7\n2 4 6\n3 4 4', expectedOutput: '9', difficulty: 'Trung bình' },
+    { input: '5 6\n1 2 10\n1 3 8\n2 4 5\n2 3 5\n3 5 10\n4 5 7', expectedOutput: '15', difficulty: 'Thử thách' }
+  ],
+  CS_P19: [
+    { input: '3 3\n10 20 30\n1 2\n2 3\n2 1 3\n1 2 5\n2 1 3', expectedOutput: '30\n30', difficulty: 'Cơ bản' },
+    { input: '3 3\n10 50 30\n1 2\n2 3\n2 1 3\n1 2 5\n2 1 3', expectedOutput: '50\n30', difficulty: 'Trung bình' },
+    { input: '5 4\n4 8 2 7 9\n1 2\n1 3\n2 4\n2 5\n2 4 5\n2 3 5\n1 5 1\n2 4 5', expectedOutput: '9\n9\n8', difficulty: 'Nâng cao' },
+    { input: '1 3\n42\n2 1 1\n1 1 99\n2 1 1', expectedOutput: '42\n99', difficulty: 'Thử thách' }
+  ],
+  CS_P20: [
+    { input: '2\n0 7\n11 0', expectedOutput: '18', difficulty: 'Cơ bản' },
+    { input: '3\n0 1 100\n100 0 2\n3 100 0', expectedOutput: '6', difficulty: 'Cơ bản' },
+    { input: '3\n0 5 9\n5 0 4\n9 4 0', expectedOutput: '18', difficulty: 'Trung bình' },
+    { input: '4\n0 1 10 10\n10 0 2 10\n10 10 0 3\n4 10 10 0', expectedOutput: '10', difficulty: 'Thử thách' }
+  ],
+  CS_P21: [
+    { input: '1 5\n10', expectedOutput: '5', difficulty: 'Cơ bản' },
+    { input: '3 100\n1 2 3', expectedOutput: '104', difficulty: 'Cơ bản' },
+    { input: '4 2\n1 2 3 4', expectedOutput: '6', difficulty: 'Trung bình' },
+    { input: '4 5\n1 3 10 12', expectedOutput: '18', difficulty: 'Thử thách' }
+  ],
+  CS_P22: [
+    { input: '1 1\n.', expectedOutput: '0', difficulty: 'Cơ bản' },
+    { input: '2 3\n...\n.#.', expectedOutput: '3', difficulty: 'Cơ bản' },
+    { input: '4 4\n.#..\n.#.#\n...#\n##..', expectedOutput: '6', difficulty: 'Trung bình' },
+    { input: '3 3\n.#.\n#..\n...', expectedOutput: '-1', difficulty: 'Thử thách' }
   ]
 };
 

@@ -1,3 +1,5 @@
+import type { CS3DSimMode } from '../CS3DVisualizer';
+
 export type AlgoCategory =
   | 'all'
   | 'coord'
@@ -96,7 +98,42 @@ export const LESSON_TO_ALGO_MAP: Record<string, AlgoId> = {
   'cs-9': 'tree_segtree',
   'cs-10': 'number_sieve',
   'cs-11': 'array_sort_stack',
-  'cs-12': 'string_kmp'
+  'cs-12': 'string_kmp',
+  'cs-13': 'tree_segtree',
+  'cs-14': 'tree_segtree',
+  'cs-15': 'string_kmp',
+  'cs-16': 'string_palindrome',
+  'cs-17': 'graph_algo',
+  'cs-18': 'graph_algo',
+  'cs-19': 'tree_segtree',
+  'cs-20': 'dp_knapsack',
+  'cs-21': 'coord_hull',
+  'cs-22': 'matrix_grid'
+};
+
+export const LESSON_TO_CS3D_MAP: Record<string, CS3DSimMode> = {
+  'cs-1': 'sort_3d',
+  'cs-2': 'bst_3d',
+  'cs-3': 'trie_3d',
+  'cs-4': 'maze_3d',
+  'cs-5': 'bst_3d',
+  'cs-6': 'sort_3d',
+  'cs-7': 'dp_table_3d',
+  'cs-8': 'graph_3d',
+  'cs-9': 'segtree_3d',
+  'cs-10': 'bst_3d',
+  'cs-11': 'stack_queue_3d',
+  'cs-12': 'trie_3d',
+  'cs-13': 'segtree_3d',
+  'cs-14': 'segtree_3d',
+  'cs-15': 'trie_3d',
+  'cs-16': 'trie_3d',
+  'cs-17': 'graph_3d',
+  'cs-18': 'flow_network_3d',
+  'cs-19': 'segtree_3d',
+  'cs-20': 'dp_table_3d',
+  'cs-21': 'dp_table_3d',
+  'cs-22': 'spatial_octree_3d'
 };
 
 export const ALGO_CATALOG: AlgoCatalogItem[] = [

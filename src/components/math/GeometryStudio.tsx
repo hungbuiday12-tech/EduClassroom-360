@@ -297,7 +297,7 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const rect = canvas.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
     canvas.width = Math.floor(rect.width * dpr);
@@ -308,8 +308,16 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
     const height = rect.height;
     const isDark = document.documentElement.classList.contains('dark');
 
-    // Canvas Background
-    ctx.fillStyle = isDark ? '#080c18' : '#ffffff';
+    // Canvas Background with subtle studio radial vignette
+    const bgGrad = ctx.createRadialGradient(width * 0.5, height * 0.45, 30, width * 0.5, height * 0.5, Math.max(width, height) * 0.78);
+    if (isDark) {
+      bgGrad.addColorStop(0, '#0e1628');
+      bgGrad.addColorStop(1, '#060913');
+    } else {
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(1, '#f8fafc');
+    }
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, width, height);
 
     // Grid lines & coordinate markings
@@ -358,17 +366,22 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
       freePolygons.forEach((poly) => {
         const pts = poly.pointIds.map((id) => pointMap.get(id)).filter(Boolean) as GeoPoint[];
         if (pts.length >= 3) {
+          ctx.save();
           ctx.beginPath();
           ctx.moveTo(pts[0].x, pts[0].y);
           for (let i = 1; i < pts.length; i++) {
             ctx.lineTo(pts[i].x, pts[i].y);
           }
           ctx.closePath();
-          ctx.fillStyle = poly.color || 'rgba(99, 102, 241, 0.08)';
+          ctx.shadowColor = poly.color || '#6366f1';
+          ctx.shadowBlur = isDark ? 12 : 6;
+          ctx.fillStyle = poly.color || 'rgba(99, 102, 241, 0.14)';
           ctx.fill();
           ctx.strokeStyle = poly.color || '#6366f1';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 2.2;
+          ctx.lineJoin = 'round';
           ctx.stroke();
+          ctx.restore();
         }
       });
 
@@ -378,13 +391,17 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
         const radPt = pointMap.get(c.radiusPtId);
         if (center && radPt) {
           const radius = dist(center, radPt);
+          ctx.save();
           ctx.beginPath();
           ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(6, 182, 212, 0.06)';
+          ctx.shadowColor = c.color || '#06b6d4';
+          ctx.shadowBlur = isDark ? 10 : 4;
+          ctx.fillStyle = 'rgba(6, 182, 212, 0.08)';
           ctx.fill();
           ctx.strokeStyle = c.color || '#06b6d4';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 2.2;
           ctx.stroke();
+          ctx.restore();
 
           // Radius dashed line
           ctx.save();
@@ -636,12 +653,19 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
         ctx.restore();
       }
 
-      // Draw Points
+      // Draw Points with luminous halo
       freePoints.forEach((p) => {
         const isSelected = p.id === selectedPointId;
         const isPending = p.id === pendingPointId || polygonPendingIds.includes(p.id);
+        const ptColor = isSelected ? '#ef4444' : isPending ? '#10b981' : '#3b82f6';
 
-        ctx.fillStyle = isSelected ? '#ef4444' : isPending ? '#10b981' : '#3b82f6';
+        ctx.save();
+        ctx.fillStyle = isSelected ? 'rgba(239, 68, 68, 0.25)' : isPending ? 'rgba(16, 185, 129, 0.25)' : 'rgba(59, 130, 246, 0.22)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, isSelected ? 12 : 9.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = ptColor;
         ctx.beginPath();
         ctx.arc(p.x, p.y, isSelected ? 7 : 5.5, 0, Math.PI * 2);
         ctx.fill();
@@ -651,7 +675,8 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
 
         ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
         ctx.font = 'bold 13px "JetBrains Mono", monospace';
-        ctx.fillText(p.label, p.x + 8, p.y - 8);
+        ctx.fillText(p.label, p.x + 10, p.y - 9);
+        ctx.restore();
       });
     }
 

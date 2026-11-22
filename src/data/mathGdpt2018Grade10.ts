@@ -589,7 +589,8 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3 * e^(-0.5 * x * x)', params: { a: 3, b: 1, c: 0, d: 0 }, color: '#6366f1', name: 'Phân phối sai số đo đạc' }
   },
   {
     id: 'math-10-b13',
@@ -632,7 +633,8 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3 * e^(-0.5 * x * x)', params: { a: 3, b: 1, c: 0, d: 0 }, color: '#4f46e5', name: 'Xu thế trung tâm phân phối chuẩn' }
   },
   {
     id: 'math-10-b14',
@@ -675,7 +677,8 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3 * e^(-0.25 * x * x)', params: { a: 3, b: 1, c: 0, d: 0 }, color: '#0ea5e9', name: 'Độ phân tán & độ lệch chuẩn σ' }
   },
 
   // ==================== CHƯƠNG VI. HÀM SỐ, ĐỒ THỊ VÀ ỨNG DỤNG ====================
@@ -1072,7 +1075,8 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3 * e^(-0.35 * x * x)', params: { a: 3, b: 1, c: 0, d: 0 }, color: '#8b5cf6', name: 'Phân phối đếm tổ hợp' }
   },
   {
     id: 'math-10-7',
@@ -1113,7 +1117,8 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3.2 * e^(-0.4 * x * x)', params: { a: 3.2, b: 1, c: 0, d: 0 }, color: '#8b5cf6', name: 'Phân phối tổ hợp C(n, k)' }
   },
   {
     id: 'math-10-b25',
@@ -1154,7 +1159,8 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3.2 * e^(-0.45 * x * x)', params: { a: 3.2, b: 1, c: 0, d: 0 }, color: '#a855f7', name: 'Hệ số Nhị thức Newton C(n, k)' }
   },
 
   // ==================== CHƯƠNG IX. TÍNH XÁC SUẤT THEO ĐỊNH NGHĨA CỔ ĐIỂN ====================
@@ -1195,7 +1201,8 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '2.8 * e^(-0.5 * x * x)', params: { a: 2.8, b: 1, c: 0, d: 0 }, color: '#6366f1', name: 'Phân phối xác suất cổ điển' }
   },
   {
     id: 'math-10-b27',
@@ -1234,6 +1241,7 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3.0 * e^(-0.5 * x * x)', params: { a: 3, b: 1, c: 0, d: 0 }, color: '#4f46e5', name: 'Mật độ xác suất nhị thức' }
   }
 ];

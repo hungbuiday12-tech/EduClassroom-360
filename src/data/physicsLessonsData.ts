@@ -3,6 +3,7 @@ import { PHYSICS_GDPT_10_LESSONS } from './physicsGdpt2018Grade10';
 import { PHYSICS_GDPT_11_LESSONS } from './physicsGdpt2018Grade11';
 import { PHYSICS_GDPT_12_LESSONS } from './physicsGdpt2018Grade12';
 import { PHYSICS_GDPT_ELECTIVES } from './physicsGdpt2018Electives';
+import { PHYSICS_EXTRA_10_LESSONS } from './physicsExtra10Lessons';
 
 export const PHYSICS_LESSONS: PhysicsLesson[] = [
   // ============================================================================
@@ -151,7 +152,7 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       '1\\text{ kWh} = 3{,}6 \\cdot 10^6\\text{ J}'
     ],
     simulationType: 'ohm_circuit',
-    sim3dType: 'lorentz_helix',
+    sim3dType: 'cathode_ray_tube_3d',
     defaultParams: { voltage: 12, r1: 10, r2: 15, circuitType: 0 },
     paramBounds: {
       voltage: { min: 3, max: 24, step: 1, unit: 'V', label: 'Hiệu điện thế U' },
@@ -370,7 +371,9 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       vizMode: { min: 0, max: 2, step: 1, unit: '(0:Vectơ/Tam giác | 1:d-t | 2:v-t)', label: 'Chế độ 2D' },
       angleDeg: { min: 0, max: 150, step: 5, unit: '°', label: 'Góc nghiêng α' },
       f1: { min: 10, max: 50, step: 2, unit: 'N', label: 'Độ lớn F₁' },
-      f2: { min: 10, max: 50, step: 2, unit: 'N', label: 'Độ lớn F₂' }
+      f2: { min: 10, max: 50, step: 2, unit: 'N', label: 'Độ lớn F₂' },
+      v0: { min: 0, max: 15, step: 0.5, unit: 'm/s', label: 'Vận tốc v₀' },
+      accel: { min: -5, max: 6, step: 0.5, unit: 'm/s²', label: 'Gia tốc a' }
     },
     practiceExercises: [
       {
@@ -471,13 +474,13 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'n_1 \\sin i = n_2 \\sin r \\quad (n_{\\text{đỏ}} < n_{\\text{tím}})',
       'H = \\frac{W_{\\text{ích}}}{W_{\\text{tp}}} \\cdot 100\\%'
     ],
-    simulationType: 'light_refraction',
-    sim3dType: 'optics_3d',
-    defaultParams: { n1: 1.0, n2: 1.52, angleIncidence: 40 },
+    simulationType: 'prism_dispersion',
+    sim3dType: 'prism_dispersion_3d',
+    defaultParams: { apexAngle: 60, incidenceDeg: 42, glassDisp: 1.52 },
     paramBounds: {
-      n1: { min: 1.0, max: 1.8, step: 0.05, unit: '', label: 'Chiết suất n₁' },
-      n2: { min: 1.0, max: 2.4, step: 0.05, unit: '', label: 'Chiết suất lăng kính n₂' },
-      angleIncidence: { min: 0, max: 85, step: 1, unit: '°', label: 'Góc tới i' }
+      apexAngle: { min: 30, max: 75, step: 5, unit: '°', label: 'Góc chiết quang A' },
+      incidenceDeg: { min: 15, max: 80, step: 1, unit: '°', label: 'Góc tới i' },
+      glassDisp: { min: 1.33, max: 1.85, step: 0.02, unit: '', label: 'Chiết suất nền n' }
     },
     practiceExercises: [
       {
@@ -550,13 +553,13 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       '\\sum \\vec{F}_{\\text{thực}} + \\vec{F}_{qt} = m\\vec{a}_{\\text{td}}',
       '\\tan\\alpha = \\frac{a_0}{g}, \\quad g\' = \\sqrt{g^2 + a_0^2}'
     ],
-    simulationType: 'kinematics_graphs',
-    sim3dType: 'kinematics_3d',
-    defaultParams: { vizMode: 2, v0: 0, accel: 3.0, angleDeg: 30, f1: 30, f2: 20 },
+    simulationType: 'inclined_plane',
+    sim3dType: 'inclined_plane_3d',
+    defaultParams: { angle: 30, mu: 0.2, mass: 3 },
     paramBounds: {
-      vizMode: { min: 0, max: 2, step: 1, unit: '(0:Vectơ lực | 2:v-t)', label: 'Chế độ phân tích' },
-      accel: { min: 0.5, max: 6.0, step: 0.5, unit: 'm/s²', label: 'Gia tốc HQC a₀' },
-      angleDeg: { min: 15, max: 60, step: 5, unit: '°', label: 'Góc nêm α' }
+      angle: { min: 5, max: 65, step: 1, unit: '°', label: 'Góc nêm α' },
+      mu: { min: 0, max: 0.8, step: 0.05, unit: '', label: 'Hệ số ma sát μ' },
+      mass: { min: 1, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng vật m' }
     },
     practiceExercises: [
       {
@@ -650,13 +653,13 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'v_1\' = \\frac{(m_1 - m_2)v_1 + 2m_2 v_2}{m_1 + m_2}',
       '\\Delta W_{\\text{nhiệt}} = \\frac{1}{2}\\frac{m_1 m_2}{m_1 + m_2}(v_1 - v_2)^2 \\quad (\\text{va chạm mềm})'
     ],
-    simulationType: 'projectile_motion',
-    sim3dType: 'projectile_3d',
-    defaultParams: { v0: 20, angle: 45, g: 10, h0: 0 },
+    simulationType: 'atwood_pulley',
+    sim3dType: 'atwood_pulley_3d',
+    defaultParams: { m1: 2, m2: 3.5, g: 9.8 },
     paramBounds: {
-      v0: { min: 10, max: 40, step: 1, unit: 'm/s', label: 'Vận tốc va chạm / ném' },
-      angle: { min: 10, max: 80, step: 5, unit: '°', label: 'Góc va chạm / ném' },
-      g: { min: 5, max: 12, step: 0.5, unit: 'm/s²', label: 'Gia tốc g' }
+      m1: { min: 0.5, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng m₁' },
+      m2: { min: 0.5, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng m₂' },
+      g: { min: 1.6, max: 15, step: 0.2, unit: 'm/s²', label: 'Gia tốc rơi tự do g' }
     },
     practiceExercises: [
       {
@@ -745,14 +748,15 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'R_1 = \\frac{R_{12}R_{31}}{R_{12}+R_{23}+R_{31}}',
       'R_Y = \\frac{R_\\Delta}{3} \\quad (\\text{mạch đều})'
     ],
-    simulationType: 'ohm_circuit',
-    sim3dType: 'lorentz_helix',
-    defaultParams: { voltage: 24, r1: 12, r2: 12, circuitType: 1 },
+    simulationType: 'wheatstone_bridge',
+    sim3dType: 'helmholtz_coils_3d',
+    defaultParams: { voltage: 24, r1: 12, r2: 12, r3: 8, r4: 8 },
     paramBounds: {
       voltage: { min: 6, max: 36, step: 2, unit: 'V', label: 'Hiệu điện thế U_AB' },
-      r1: { min: 4, max: 40, step: 2, unit: 'Ω', label: 'Nhánh R₁' },
-      r2: { min: 4, max: 40, step: 2, unit: 'Ω', label: 'Nhánh R₂' },
-      circuitType: { min: 0, max: 1, step: 1, unit: '(0:NT / 1:SS)', label: 'Cấu hình' }
+      r1: { min: 2, max: 40, step: 2, unit: 'Ω', label: 'Nhánh R₁' },
+      r2: { min: 2, max: 40, step: 2, unit: 'Ω', label: 'Nhánh R₂' },
+      r3: { min: 2, max: 40, step: 2, unit: 'Ω', label: 'Nhánh R₃' },
+      r4: { min: 2, max: 40, step: 2, unit: 'Ω', label: 'Nhánh R₄' }
     },
     practiceExercises: [
       {
@@ -842,13 +846,13 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'L_{\\min} = 4f \\quad (\\text{khi } d = d\' = 2f)',
       'f = \\frac{L^2 - a^2}{4L} \\quad (\\text{Công thức Bessel})'
     ],
-    simulationType: 'lens_optics',
-    sim3dType: 'optics_3d',
-    defaultParams: { f: 14, d: 28, objH: 10 },
+    simulationType: 'telescope_microscope',
+    sim3dType: 'double_lens_microscope_3d',
+    defaultParams: { f1Cm: 14, f2Cm: 10, objDistCm: 22 },
     paramBounds: {
-      f: { min: -25, max: 30, step: 1, unit: 'cm', label: 'Tiêu cự thấu kính f' },
-      d: { min: 5, max: 65, step: 1, unit: 'cm', label: 'Khoảng cách vật d' },
-      objH: { min: 4, max: 16, step: 1, unit: 'cm', label: 'Chiều cao vật AB' }
+      f1Cm: { min: 5, max: 30, step: 1, unit: 'cm', label: 'Tiêu cự Vật kính f₁' },
+      f2Cm: { min: 4, max: 25, step: 1, unit: 'cm', label: 'Tiêu cự Thị kính f₂' },
+      objDistCm: { min: 8, max: 60, step: 1, unit: 'cm', label: 'Khoảng cách vật d₁' }
     },
     practiceExercises: [
       {
@@ -947,7 +951,7 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'H_{\\text{Carnot}} = 1 - \\frac{T_2}{T_1}'
     ],
     simulationType: 'simple_pendulum',
-    sim3dType: 'pendulum_spring',
+    sim3dType: 'simple_pendulum_3d',
     defaultParams: { length: 2.0, gravity: 9.8, theta0: 15 },
     paramBounds: {
       length: { min: 0.5, max: 4.0, step: 0.1, unit: 'm', label: 'Chiều dài dây l₁' },
@@ -1165,13 +1169,13 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'H = \\frac{A_i}{A_{tp}} \\cdot 100\\%',
       'W = \\frac{1}{2}mv^2 + mgh'
     ],
-    simulationType: 'free_fall_energy',
-    sim3dType: 'projectile_3d',
-    defaultParams: { height: 25, mass: 3, gravity: 9.8 },
+    simulationType: 'atwood_pulley',
+    sim3dType: 'atwood_pulley_3d',
+    defaultParams: { m1: 2.5, m2: 4.0, g: 9.8 },
     paramBounds: {
-      height: { min: 5, max: 45, step: 1, unit: 'm', label: 'Độ cao h' },
-      mass: { min: 0.5, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng m' },
-      gravity: { min: 1.6, max: 15, step: 0.2, unit: 'm/s²', label: 'Gia tốc g' }
+      m1: { min: 0.5, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng m₁' },
+      m2: { min: 0.5, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng m₂' },
+      g: { min: 1.6, max: 15, step: 0.2, unit: 'm/s²', label: 'Gia tốc trọng trường g' }
     },
     practiceExercises: [
       {
@@ -1207,4 +1211,5 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       }
     ]
   },
+  ...PHYSICS_EXTRA_10_LESSONS,
 ];

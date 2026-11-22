@@ -2,6 +2,7 @@ import { ExamPaper } from '../types';
 import { EXTRA_EXAM_PAPERS } from './extraExamsData';
 import { EXTRA_EXAM_PAPERS_BATCH_2 } from './extraExamsBatch2Data';
 import { EXTRA_EXAM_PAPERS_BATCH_3 } from './extraExamsBatch3Data';
+import { EXTRA_EXAM_PAPERS_BATCH_4 } from './extraExamsBatch4Data';
 import { expandExamPaperToFullQuestions } from './examFullCompleter';
 
 const RAW_EXAM_PAPERS: ExamPaper[] = [
@@ -3767,7 +3768,8 @@ const RAW_EXAM_PAPERS: ExamPaper[] = [
   },
   ...EXTRA_EXAM_PAPERS,
   ...EXTRA_EXAM_PAPERS_BATCH_2,
-  ...EXTRA_EXAM_PAPERS_BATCH_3
+  ...EXTRA_EXAM_PAPERS_BATCH_3,
+  ...EXTRA_EXAM_PAPERS_BATCH_4
 ];
 
 const EXAM_CODE_PREFIX: Record<string, string> = {

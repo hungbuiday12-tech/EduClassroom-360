@@ -63,10 +63,16 @@ export function buildBatch2Extra3DScene(
       group.add(beam);
 
       const pivots: THREE.Group[] = [];
-      const bGeo = new THREE.SphereGeometry(0.42, 24, 20);
-      const bMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.15 });
+      const bGeo = new THREE.SphereGeometry(0.42, 28, 24);
+      const bMat = new THREE.MeshPhysicalMaterial({
+        color: 0xe2e8f0,
+        metalness: 0.96,
+        roughness: 0.08,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.05
+      });
       const sGeo = new THREE.CylinderGeometry(0.025, 0.025, 3.2, 8);
-      const sMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
+      const sMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.7, roughness: 0.3 });
 
       for (let i = 0; i < 5; i++) {
         const p = new THREE.Group();
@@ -357,8 +363,17 @@ export function buildBatch2Extra3DScene(
     // 11. FIBER OPTIC 3D
     case 'fiber_optic_3d': {
       const tube = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.15, 1.15, 8.0, 28, 1, true),
-        new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.24, side: THREE.DoubleSide })
+        new THREE.CylinderGeometry(1.15, 1.15, 8.0, 36, 1, true),
+        new THREE.MeshPhysicalMaterial({
+          color: 0x7dd3fc,
+          transparent: true,
+          opacity: 0.26,
+          roughness: 0.06,
+          clearcoat: 1.0,
+          ior: 1.52,
+          depthWrite: false,
+          side: THREE.DoubleSide
+        })
       );
       tube.rotation.z = Math.PI / 2;
       tube.position.set(0, 2.2, 0);
@@ -410,8 +425,15 @@ export function buildBatch2Extra3DScene(
     // 13. DOUBLE LENS MICROSCOPE 3D
     case 'double_lens_microscope_3d': {
       const l1 = new THREE.Mesh(
-        new THREE.SphereGeometry(1.1, 24, 18),
-        new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 })
+        new THREE.SphereGeometry(1.1, 32, 24),
+        new THREE.MeshPhysicalMaterial({
+          color: 0x7dd3fc,
+          transparent: true,
+          opacity: 0.45,
+          roughness: 0.06,
+          clearcoat: 1.0,
+          ior: 1.54
+        })
       );
       l1.scale.set(0.2, 1, 1);
       l1.position.set(-1.4, 2.2, 0);
@@ -542,16 +564,23 @@ export function buildBatch2Extra3DScene(
     // 16. TOKAMAK FUSION 3D
     case 'tokamak_fusion_3d': {
       const torus = new THREE.Mesh(
-        new THREE.TorusGeometry(2.8, 0.95, 20, 48),
-        new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.25, roughness: 0.2 })
+        new THREE.TorusGeometry(2.8, 0.95, 24, 56),
+        new THREE.MeshPhysicalMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.24,
+          roughness: 0.08,
+          clearcoat: 1.0,
+          depthWrite: false
+        })
       );
       torus.rotation.x = Math.PI / 2;
       torus.position.set(0, 2.2, 0);
       group.add(torus);
 
       const plasma = new THREE.Mesh(
-        new THREE.TorusGeometry(2.8, 0.42, 16, 48),
-        new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.75, transparent: true, opacity: 0.75 })
+        new THREE.TorusGeometry(2.8, 0.42, 20, 56),
+        new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.9, transparent: true, opacity: 0.82 })
       );
       plasma.rotation.x = Math.PI / 2;
       plasma.position.set(0, 2.2, 0);

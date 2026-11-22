@@ -341,7 +341,9 @@ export interface MathLecture {
     | 'conic_sections_3d'
     | 'line_plane_oxyz'
     | 'integral_disks_3d'
-    | 'circle_theorems_3d';
+    | 'circle_theorems_3d'
+    | 'tangent_surface_3d'
+    | 'probability_bell_3d';
   defaultGraphConfig?: Partial<FunctionPlotConfig>;
 }
 

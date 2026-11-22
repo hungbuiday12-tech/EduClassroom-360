@@ -225,15 +225,17 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
       .toLowerCase()
       .replace(/\^/g, '**')
       .replace(/ln\(/g, 'Math.log(')
+      .replace(/exp\(/g, 'Math.exp(')
+      .replace(/pow\(/g, 'Math.pow(')
       .replace(/sin/g, 'Math.sin')
       .replace(/cos/g, 'Math.cos')
       .replace(/tan/g, 'Math.tan')
       .replace(/sqrt/g, 'Math.sqrt')
       .replace(/abs/g, 'Math.abs')
-      .replace(/pi/g, 'Math.PI')
+      .replace(/\bpi\b/g, 'Math.PI')
       .replace(/\be\b/g, 'Math.E');
 
-    if (!/^[0-9x\s\+\-\*\/\(\)\.\,MathsincotaqrblgpePI]+$/.test(sanitized)) {
+    if (!/^[0-9x\s\+\-\*\/\(\)\.\,MathsincotaqrblgpePIEw]+$/.test(sanitized)) {
       throw new Error('Invalid formula');
     }
 
@@ -248,8 +250,8 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Handle high DPI (capped at 1.5x for smooth FPS)
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    // Handle high DPI (capped at 2x for crisp lines)
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const rect = canvas.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
     canvas.width = Math.floor(rect.width * dpr);
@@ -258,9 +260,18 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
 
     const width = rect.width;
     const height = rect.height;
+    const isDarkTheme = document.documentElement.classList.contains('dark');
 
-    // Clear background
-    ctx.fillStyle = document.documentElement.classList.contains('dark') ? '#090d16' : '#ffffff';
+    // Clear background with subtle studio radial lighting
+    const bgGrad = ctx.createRadialGradient(width * 0.5, height * 0.45, 20, width * 0.5, height * 0.5, Math.max(width, height) * 0.78);
+    if (isDarkTheme) {
+      bgGrad.addColorStop(0, '#0f172a');
+      bgGrad.addColorStop(1, '#060913');
+    } else {
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(1, '#f8fafc');
+    }
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, width, height);
 
     // Math coords to canvas pixels
@@ -406,7 +417,10 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
             const py1 = toPxY(y1);
             const pyAxis = toPxY(0);
 
-            ctx.fillStyle = trapArea >= 0 ? 'rgba(16, 185, 129, 0.22)' : 'rgba(244, 63, 94, 0.22)';
+            const posGrad = ctx.createLinearGradient(0, Math.min(py0, py1), 0, pyAxis);
+            posGrad.addColorStop(0, trapArea >= 0 ? 'rgba(16, 185, 129, 0.36)' : 'rgba(244, 63, 94, 0.36)');
+            posGrad.addColorStop(1, trapArea >= 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)');
+            ctx.fillStyle = posGrad;
             ctx.beginPath();
             ctx.moveTo(px0, pyAxis);
             ctx.lineTo(px0, py0);
@@ -500,8 +514,13 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
         }
       }
 
+      ctx.save();
       ctx.strokeStyle = fn.color;
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2.8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = fn.color;
+      ctx.shadowBlur = isDark ? 10 : 5;
       ctx.beginPath();
 
       const samplePixelStep = 1;
@@ -534,6 +553,7 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
         lastY = py;
       }
       ctx.stroke();
+      ctx.restore();
 
       // Tangent line if active
       if (fn.showTangent && fn.tangentX0 !== undefined) {
@@ -544,7 +564,9 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
         if (y0 !== null && slope !== null && isFinite(y0) && isFinite(slope)) {
           ctx.save();
           ctx.strokeStyle = '#f59e0b'; // Amber
-          ctx.lineWidth = 1.8;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = '#f59e0b';
+          ctx.shadowBlur = 6;
           ctx.setLineDash([6, 3]);
 
           const span = 8;
@@ -559,16 +581,22 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
           ctx.stroke();
           ctx.restore();
 
-          // Tangent touch point
+          // Tangent touch point with glow halo
           const ptX = toPxX(x0);
           const ptY = toPxY(y0);
+          ctx.save();
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.25)';
+          ctx.beginPath();
+          ctx.arc(ptX, ptY, 10, 0, Math.PI * 2);
+          ctx.fill();
           ctx.fillStyle = '#f59e0b';
           ctx.beginPath();
-          ctx.arc(ptX, ptY, 5, 0, Math.PI * 2);
+          ctx.arc(ptX, ptY, 5.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 2;
           ctx.stroke();
+          ctx.restore();
 
           // Coordinate label
           ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';

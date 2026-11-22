@@ -1,5 +1,6 @@
 import { CSLesson } from '../types';
 import { EXTRA_VNOI_LESSONS, VNOI_LESSON_ENRICHMENT } from './csVnoiModules';
+import { CS_EXTRA_10_LESSONS } from './csExtra10Lessons';
 
 const BASE_CS_LESSONS: CSLesson[] = [
   // ==========================================
@@ -1916,6 +1917,7 @@ export const CS_LESSONS: CSLesson[] = [
     const enrich = VNOI_LESSON_ENRICHMENT[lesson.id];
     return enrich ? { ...lesson, ...enrich } : lesson;
   }),
-  ...EXTRA_VNOI_LESSONS
+  ...EXTRA_VNOI_LESSONS,
+  ...CS_EXTRA_10_LESSONS
 ].sort((a, b) => a.lessonNumber - b.lessonNumber);
 

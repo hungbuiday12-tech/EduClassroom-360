@@ -8,6 +8,7 @@ import { MATH_GDPT_10_LESSONS } from './mathGdpt2018Grade10';
 import { MATH_GDPT_11_LESSONS } from './mathGdpt2018Grade11';
 import { MATH_GDPT_12_LESSONS } from './mathGdpt2018Grade12';
 import { MATH_GDPT_ELECTIVES } from './mathGdpt2018Electives';
+import { MATH_EXTRA_10_LESSONS } from './mathExtra10Lessons';
 export { PHYSICS_LESSONS } from './physicsLessonsData';
 export { CS_LESSONS } from './csLessonsData';
 
@@ -69,7 +70,9 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       params: { a: 2, b: -3, c: 0, d: 0 },
       color: '#4f46e5',
       name: 'y = 2x - 3'
-    }
+    },
+    sim2dMode: 'grapher',
+    sim3dMode: 'line_plane_oxyz'
   },
   {
     id: 'math-9-2',
@@ -122,7 +125,9 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       params: { a: 1, b: 0, c: 0, d: 0 },
       color: '#0ea5e9',
       name: 'y = x²'
-    }
+    },
+    sim2dMode: 'grapher',
+    sim3dMode: 'conic_sections_3d'
   },
   {
     id: 'math-9-3',
@@ -167,7 +172,9 @@ const BASE_MATH_LECTURES: MathLecture[] = [
         correctIndex: 0,
         explanation: 'Áp dụng hệ thức lượng: $AH^2 = BH \\cdot CH = 4 \\cdot 9 = 36 \\implies AH = 6\\text{ cm}$.'
       }
-    ]
+    ],
+    sim2dMode: 'geometry',
+    sim3dMode: 'circle_theorems_3d'
   },
   // ==========================================
   // BỔ SUNG CHUYÊN SÂU LỚP 9 (GDPT 2018 & THI VÀO 10)
@@ -227,7 +234,15 @@ const BASE_MATH_LECTURES: MathLecture[] = [
         correctIndex: 0,
         explanation: 'Áp dụng BĐT AM-GM cho 2 số dương $\\sqrt{x}$ và $\\frac{4}{\\sqrt{x}}$: $Q \\ge 2\\sqrt{\\sqrt{x} \\cdot \\frac{4}{\\sqrt{x}}} = 2 \\cdot 2 = 4$. Dấu "=" xảy ra khi $\\sqrt{x} = \\frac{4}{\\sqrt{x}} \\iff x = 4$.'
       }
-    ]
+    ],
+    sim2dMode: 'grapher',
+    sim3dMode: 'oxyz_vector',
+    defaultGraphConfig: {
+      type: 'sqrt',
+      params: { a: 1, b: 1, c: 0, d: 0 },
+      color: '#4f46e5',
+      name: 'y = √x'
+    }
   },
   {
     id: 'math-9-5',
@@ -289,7 +304,9 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       params: { a: -2, b: 5, c: 0, d: 0 },
       color: '#10b981',
       name: 'y = -2x + 5'
-    }
+    },
+    sim2dMode: 'grapher',
+    sim3dMode: 'line_plane_oxyz'
   },
   {
     id: 'math-9-6',
@@ -341,7 +358,9 @@ const BASE_MATH_LECTURES: MathLecture[] = [
         correctIndex: 0,
         explanation: 'Ta có $MB = MA + AB = 4 + 5 = 9\\text{ cm}$. Xét $\\triangle MTA \\sim \\triangle MBT \\implies MT^2 = MA \\cdot MB = 4 \\cdot 9 = 36 \\implies MT = 6\\text{ cm}$.'
       }
-    ]
+    ],
+    sim2dMode: 'geometry',
+    sim3dMode: 'circle_theorems_3d'
   },
   {
     id: 'math-9-7',
@@ -385,7 +404,16 @@ const BASE_MATH_LECTURES: MathLecture[] = [
         correctIndex: 0,
         explanation: 'Không gian mẫu $\\Omega = \\{1, 2, 3, 4, 5, 6\\}$ có $n(\\Omega) = 6$. Các số nguyên tố từ 1 đến 6 là $\\{2, 3, 5\\}$ (lưu ý số 1 không phải số nguyên tố). Vậy $P = \\frac{3}{6} = \\frac{1}{2}$.'
       }
-    ]
+    ],
+    sim2dMode: 'grapher',
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: {
+      type: 'custom',
+      customExpr: '2.5 * e^(-0.5 * x * x)',
+      params: { a: 2.5, b: 1, c: 0, d: 0 },
+      color: '#8b5cf6',
+      name: 'Phân phối tần số & xác suất'
+    }
   },
   // ==========================================
   // BỔ SUNG CHUYÊN SÂU LỚP 9 (GDPT 2018)
@@ -437,7 +465,9 @@ const BASE_MATH_LECTURES: MathLecture[] = [
         correctIndex: 0,
         explanation: 'Đường kính $d = 6\\text{ cm} \\implies$ bán kính $R = 3\\text{ cm}$. Vậy $S = 4\\pi R^2 = 4\\pi \\cdot 3^2 = 36\\pi\\text{ cm}^2$.'
       }
-    ]
+    ],
+    sim2dMode: 'geometry',
+    sim3dMode: 'revolution_solid'
   },
   {
     id: 'math-9-9',
@@ -677,12 +707,13 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'integral_disks_3d',
+    sim3dMode: 'oxyz_vector',
     defaultGraphConfig: {
-      type: 'rational',
-      params: { a: 1, b: 0, c: 1, d: 0 },
+      type: 'custom',
+      customExpr: 'x + 4/x',
+      params: { a: 1, b: 4, c: 0, d: 0 },
       color: '#10b981',
-      name: 'Minh họa hàm số bậc 1 / phân thức'
+      name: 'y = x + 4/x (Cực trị Cô-si)'
     }
   },
   {
@@ -816,6 +847,7 @@ export const MATH_LECTURES: MathLecture[] = [
     ...lec,
     stageLabel: lec.stageLabel ?? 'Chuyên đề Chuyên sâu & Bồi dưỡng HSG',
   })),
+  ...MATH_EXTRA_10_LESSONS,
 ];
 
 export const PHYSICS_EXPERIMENTS: PhysicsExperiment[] = [

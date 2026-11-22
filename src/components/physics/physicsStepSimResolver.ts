@@ -743,6 +743,148 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
     regimeLabel: 'Sóng Xung kích Hình nón Mach khi Vượt Tốc độ Âm thanh (v > c)',
     observationGoal:
       'Khi số Mach M = v/c > 1, các mặt cầu sóng chồng chất dọc theo nón xung kích tạo tiếng nổ siêu thanh.'
+  },
+  // GDPT 2018 Step Accuracy Overrides
+  'phys-10-b1:0': {
+    simId: 'kinematics_graphs',
+    regimeLabel: 'Đối tượng & Phương pháp Thực nghiệm Vật lí',
+    observationGoal: 'Quan sát trực quan cách đo đạc các đại lượng vật lí theo chuẩn đơn vị SI.'
+  },
+  'phys-10-b1:1': {
+    simId: 'measurement_error_lab',
+    regimeLabel: 'Phương pháp Thực nghiệm & Sai số Đo lường',
+    observationGoal: 'Thực hành lặp phép đo để giảm sai số ngẫu nhiên và phân biệt sai số hệ thống.'
+  },
+  'phys-10-b1:2': {
+    simId: 'free_fall_energy',
+    regimeLabel: 'Ứng dụng Vật lí trong Đời sống & Công nghệ',
+    observationGoal: 'Liên hệ chuyển hóa năng lượng và các định luật cơ học với thiết bị kỹ thuật hiện đại.'
+  },
+  'phys-10-b6:0': {
+    simId: 'kinematics_graphs',
+    regimeLabel: 'Đo tốc độ tức thời & trung bình bằng Cổng quang điện',
+    observationGoal: 'Quan sát xe trượt qua cổng quang điện và đồ thị v(t) theo thời gian thực.'
+  },
+  'phys-10-b8:1': {
+    simId: 'kinematics_graphs',
+    regimeLabel: 'Phân biệt Chuyển động Nhanh dần (a·v > 0) & Chậm dần (a·v < 0)',
+    observationGoal: 'Kéo gia tốc âm/dương để xem vectơ a cùng chiều hay ngược chiều vectơ vận tốc v.',
+    paramOverrides: { vizMode: 2, v0: 10, accel: -3 }
+  },
+  'phys-10-b11:0': {
+    simId: 'free_fall_energy',
+    regimeLabel: 'Thí nghiệm Đo gia tốc Rơi tự do g với Cổng quang điện',
+    observationGoal: 'Điều chỉnh độ cao h và kiểm chứng quan hệ s = ½gt².'
+  },
+  'phys-10-b11:1': {
+    simId: 'free_fall_energy',
+    regimeLabel: 'Xử lí số liệu đồ thị s theo t² để xác định g',
+    observationGoal: 'Theo dõi tốc độ chạm đất v = √(2gh) và cơ năng bảo toàn trong suốt quá trình rơi.'
+  },
+  'phys-10-b18:0': {
+    simId: 'inclined_plane',
+    regimeLabel: 'Lực Ma sát Nghỉ, Ma sát Trượt & Mặt phẳng nghiêng',
+    observationGoal: 'Thay đổi hệ số ma sát μ và góc nghiêng α để thấy khi nào vật bắt đầu trượt.'
+  },
+  'phys-10-b18:1': {
+    simId: 'inclined_plane',
+    regimeLabel: 'Ma sát Lăn & Lực Ma sát có lợi / có hại',
+    observationGoal: 'So sánh gia tốc trượt a = g(sinα - μcosα) khi giảm hệ số ma sát μ.'
+  },
+  'phys-10-b20:0': {
+    simId: 'inclined_plane',
+    regimeLabel: 'Bài toán Mặt phẳng nghiêng · Phân tích lực P, N, Fms',
+    observationGoal: 'Chiếu các lực lên Ox và Oy để tính phản lực N = mg·cosα và gia tốc.'
+  },
+  'phys-10-b20:1': {
+    simId: 'atwood_pulley',
+    regimeLabel: 'Bài toán Hệ Vật Nối Dây qua Ròng rọc',
+    observationGoal: 'Điều chỉnh m₁, m₂ để quan sát lực căng dây T và gia tốc hệ a = (m₂-m₁)g/(m₁+m₂).'
+  },
+  'phys-10-b20:2': {
+    simId: 'circular_motion',
+    regimeLabel: 'Bài toán Chuyển động Tròn & Lực Hướng tâm',
+    observationGoal: 'Quan sát hợp lực hướng tâm Fht = mv²/R giữ vật trên quỹ đạo cong.'
+  },
+  'phys-11-b3:0': {
+    simId: 'spring_pendulum',
+    regimeLabel: 'Vận tốc & Gia tốc trong Dao động Điều hòa',
+    observationGoal: 'So sánh pha: v sớm pha π/2 so với x; a ngược pha (sớm pha π) so với x.'
+  },
+  'phys-11-b3:1': {
+    simId: 'lissajous_shm',
+    regimeLabel: 'Hệ thức Độc lập Thời gian & Quỹ đạo Pha (x, v)',
+    observationGoal: 'Xem hình Elip trong không gian pha khi v = ±ω√(A² - x²).'
+  },
+  'phys-11-b25:0': {
+    simId: 'joule_lenz_heat',
+    regimeLabel: 'Năng lượng Điện tiêu thụ A = U·I·t & Công suất Điện P = U·I',
+    observationGoal: 'Thay đổi điện áp U và điện trở R để quan sát công suất tỏa nhiệt và điện năng.'
+  },
+  'phys-11-b25:1': {
+    simId: 'joule_lenz_heat',
+    regimeLabel: 'Định luật Jun – Len-xơ Q = I²Rt & Hiệu suất Nguồn điện',
+    observationGoal: 'Đối chiếu nhiệt lượng tỏa ra trên mạch ngoài và công suất toàn phần của nguồn.'
+  },
+  'phys-11-b26:0': {
+    simId: 'ohm_circuit',
+    regimeLabel: 'Sơ đồ Mạch điện Thực hành Đo Suất điện động E & Điện trở trong r',
+    observationGoal: 'Thay đổi tải R để dựng đồ thị U = E - I·r theo cường độ dòng điện I.'
+  },
+  'phys-cd-11-2:0': {
+    simId: 'em_wave_3axis',
+    regimeLabel: 'Phổ Sóng Vô tuyến & Sóng Điện từ Truyền trong Không gian',
+    observationGoal: 'Quan sát hai thành phần E ⊥ B cùng pha lan truyền với tốc độ c.'
+  },
+  'phys-cd-11-2:1': {
+    simId: 'em_wave_3axis',
+    regimeLabel: 'Điều chế Biên độ (AM) & Điều chế Tần số (FM)',
+    observationGoal: 'Theo dõi sóng mang cao tần mang tín hiệu âm tần đi xa qua tầng điện li.'
+  },
+  'phys-cd-11-3:0': {
+    simId: 'wheatstone_bridge',
+    regimeLabel: 'Cảm biến Nhiệt trở / Quang trở & Mạch Phân áp Cầu',
+    observationGoal: 'Điều chỉnh R₃, R₄ như cảm biến để thấy điện áp lệch cầu thay đổi tuyến tính.'
+  },
+  'phys-cd-11-3:1': {
+    simId: 'diode_rectifier',
+    regimeLabel: 'Diode Chỉnh lưu & Khuếch đại Thuật toán Op-Amp',
+    observationGoal: 'Quan sát đặc tính dẫn dòng một chiều của diode và lọc tụ làm phẳng điện áp.'
+  },
+  'phys-12-b7:0': {
+    simId: 'phase_change_heating',
+    regimeLabel: 'Đọc Đồ thị Nhiệt độ – Thời gian T(t) trong Các Quá trình Nhiệt',
+    observationGoal: 'Phân biệt đoạn dốc (Q = mcΔT) và đoạn nằm ngang đẳng nhiệt (Q = λm, Q = Lm).'
+  },
+  'phys-12-b7:1': {
+    simId: 'calorimetry_mixing',
+    regimeLabel: 'Phương trình Cân bằng Nhiệt ΣQ_tỏa = ΣQ_thu',
+    observationGoal: 'Trộn hai khối nước nóng – lạnh để xác định nhiệt độ cân bằng và nhiệt dung riêng.'
+  },
+  'phys-12-b21:0': {
+    simId: 'nuclear_fission',
+    regimeLabel: 'Cấu tạo Hạt nhân Nguyên tử (Z Proton, N Neutron)',
+    observationGoal: 'Quan sát hạt nhân nặng gồm các nucleon tương tác hạt nhân tầm ngắn.'
+  },
+  'phys-12-b21:1': {
+    simId: 'binding_energy_curve',
+    regimeLabel: 'Độ hụt khối Δm & Đường cong Năng lượng Liên kết Riêng',
+    observationGoal: 'So sánh vùng hạt nhân bền vững nhất (A ≈ 50–80, Fe-56) với vùng phân/nhiệt hạch.'
+  },
+  'phys-cd-12-2:0': {
+    simId: 'photoelectric_effect',
+    regimeLabel: 'Nguyên lý Tạo Tia X (Ống Rơnghen) & Chụp Cắt lớp CT',
+    observationGoal: 'Tăng U_AK để tăng động năng chùm electron tạo tia X bước sóng ngắn đâm xuyên.'
+  },
+  'phys-cd-12-2:1': {
+    simId: 'sound_intensity',
+    regimeLabel: 'Siêu âm Y học & Hiệu ứng Doppler Chẩn đoán Tuần hoàn',
+    observationGoal: 'Quan sát sóng âm tần số cao phản xạ qua mô cơ thể và cường độ theo khoảng cách.'
+  },
+  'phys-cd-12-2:2': {
+    simId: 'cyclotron_accelerator',
+    regimeLabel: 'Chụp Cộng hưởng Từ MRI trong Từ trường B Mạnh',
+    observationGoal: 'Theo dõi tương tác spin proton với từ trường đều B và sóng vô tuyến RF.'
   }
 };
 
@@ -759,6 +901,8 @@ function resolveByStepContent(
   stepText: string,
   fallbackSim: PhysicsSimType
 ): { simId: AnyStepSimId; reason: string } {
+  const rawLower = `${stepTitle} ${stepText}`.toLowerCase();
+  const titleRawLower = stepTitle.toLowerCase();
   const titleNorm = normalizeVi(stepTitle);
   const fullNorm = normalizeVi(`${stepTitle} ${stepText}`);
 
@@ -772,16 +916,27 @@ function resolveByStepContent(
   if (has('sai so', true) || has('phep do truc tiep', true) || has('phep do gian tiep', true)) {
     return { simId: 'measurement_error_lab', reason: 'Phòng thí nghiệm kiểm tra sai số hệ thống & ngẫu nhiên' };
   }
+  if (has('cong quang dien') || (has('do toc do') && has('dong ho'))) {
+    return { simId: 'kinematics_graphs', reason: 'Đo tốc độ tức thời & thời gian bằng cổng quang điện' };
+  }
   if (has('quang duong', true) && (has('do dich chuyen', true) || has('cong van toc', true))) {
     return { simId: 'distance_displacement_rel', reason: 'So sánh quãng đường s và độ dịch chuyển d' };
   }
   if (has('tong hop', true) && (has('luc', true) || has('vecto', true))) {
     return { simId: 'vector_addition_2d', reason: 'Quy tắc hình bình hành tổng hợp vectơ' };
   }
-  if (has('cong co hoc', true) || has('cong suat', true) && !has('dien', true) && !has('rlc', true)) {
+  if (
+    has('cong co hoc', true) ||
+    (has('cong suat', true) &&
+      !has('dien', true) &&
+      !has('rlc', true) &&
+      !has('nhiet', true) &&
+      !has('toa nhiet', true) &&
+      !titleRawLower.includes('điện'))
+  ) {
     return { simId: 'work_power_joule', reason: 'Mô phỏng Công cơ học A = F·s·cosα & Công suất' };
   }
-  if (has('hieu suat', true) && (has('nang luong', true) || has('co', true))) {
+  if (has('hieu suat', true) && (has('nang luong', true) || has('co', true)) && !has('dien', true)) {
     return { simId: 'work_power_joule', reason: 'Hiệu suất chuyển hóa cơ năng & lực ma sát' };
   }
   if (has('hooke', true) || (has('bien dang', true) && has('lo xo', true))) {
@@ -798,6 +953,16 @@ function resolveByStepContent(
   }
   if (has('mat phang nghieng', true) || has('ma sat truot', true)) {
     return { simId: 'inclined_plane', reason: 'Chuyển động trên mặt phẳng nghiêng có ma sát' };
+  }
+  if (
+    has('nhanh dan', true) ||
+    has('cham dan', true) ||
+    has('gia toc', true) ||
+    has('bien doi deu', true) ||
+    has('do thi (v', true) ||
+    has('do thi do dich', true)
+  ) {
+    return { simId: 'kinematics_graphs', reason: 'Động học đồ thị chuyển động v–t & x–t' };
   }
   if (has('va cham', true) || has('dong luong', true) || has('xung luong', true) || has('dem khi', true)) {
     return { simId: 'momentum_collision', reason: 'Bảo toàn động lượng & va chạm đàn hồi / mềm' };
@@ -817,15 +982,12 @@ function resolveByStepContent(
       reason: 'Trường hấp dẫn & quỹ đạo vệ tinh Kepler'
     };
   }
-  if (has('gia toc', true) || has('bien doi deu', true) || has('do thi (v', true) || has('do thi do dich', true)) {
-    return { simId: 'kinematics_graphs', reason: 'Động học đồ thị chuyển động v–t & x–t' };
-  }
-  if (has('roi tu do', true) || has('co nang', true) && !has('con lac', true)) {
+  if (has('roi tu do', true) || (has('co nang', true) && !has('con lac', true))) {
     return { simId: 'free_fall_energy', reason: 'Chuyển hóa Động năng – Thế năng & Cơ năng' };
   }
 
   // 2. Oscillations & Waves
-  if (has('tat dan', true) || has('cuong buc', true) || has('cong huong', true) && !has('dien', true) && !has('ong', true)) {
+  if (has('tat dan', true) || has('cuong buc', true) || (has('cong huong', true) && !has('dien', true) && !has('ong', true))) {
     return { simId: 'damped_resonance', reason: 'Dao động tắt dần, cưỡng bức & đỉnh cộng hưởng' };
   }
   if (has('con lac don', true)) {
@@ -840,27 +1002,27 @@ function resolveByStepContent(
   if (has('young', true) || has('y-ang', true) || has('giao thoa anh sang', true)) {
     return { simId: 'young_interference', reason: 'Giao thoa ánh sáng hai khe Young' };
   }
-  if (has('song dung', true) || has('nut', true) || has('bung', true) || has('ong cong huong', true)) {
+  if (has('song dung', true) || has('nut song', true) || has('bung song', true) || has('ong cong huong', true)) {
     return { simId: 'standing_wave', reason: 'Sóng dừng trên dây & cộng hưởng ống âm' };
   }
   if (has('giao thoa', true)) {
     return { simId: 'wave_interference', reason: 'Giao thoa hai nguồn sóng kết hợp' };
   }
-  if (has('cuong do am', true) || has('sinh li cua am', true) || has('sieu am', true)) {
+  if (has('cuong do am', true) || has('sinh li cua am', true) || has('sieu am', true) || has('tan so am', true)) {
     return { simId: 'sound_intensity', reason: 'Cường độ âm & truyền sóng âm trong không gian' };
   }
-  if (has('doppler', true) || has('mach', true)) {
-    return { simId: has('mach', true) ? 'mach_shockwave' : 'doppler_effect', reason: 'Hiệu ứng Doppler & sóng xung kích' };
+  if (has('doppler', true) || (!rawLower.includes('mạch') && (has('so mach') || has('hieu ung mach') || has('non mach')))) {
+    return { simId: has('so mach') || has('non mach') ? 'mach_shockwave' : 'doppler_effect', reason: 'Hiệu ứng Doppler & sóng xung kích' };
   }
-  if (has('song dien tu', true) || has('maxwell', true) || has('bien dieu', true) || has('am)', true) || has('fm)', true)) {
+  if (has('song dien tu', true) || has('song vo tuyen', true) || has('maxwell', true) || has('bien dieu', true) || has('am)', true) || has('fm)', true)) {
     return { simId: 'em_wave_3axis', reason: 'Mô hình 3 trục Sóng điện từ E ⊥ B ⊥ v' };
   }
-  if (has('song', true)) {
+  if (titleRawLower.includes('sóng') || has('buoc song', true) || has('song co', true) || has('song am', true) || has('song ngang', true) || has('song doc', true)) {
     return { simId: 'standing_wave', reason: 'Truyền sóng cơ & bước sóng λ' };
   }
 
   // 3. Thermal & Gases (Grade 12)
-  if (has('nong chay', true) || has('hoa hoi', true) || has('chuyen the', true) || has('nhiet do - thoi gian', true)) {
+  if (has('nong chay', true) || has('hoa hoi', true) || has('chuyen the', true) || has('nhiet do - thoi gian', true) || has('nhiet do – thoi gian', true)) {
     return { simId: 'phase_change_heating', reason: 'Đồ thị chuyển thể T(t) & ẩn nhiệt nóng chảy/hóa hơi' };
   }
   if (has('can bang nhiet', true) || has('nhiet dung rieng', true) || has('nhiet luong ke', true)) {
@@ -886,13 +1048,13 @@ function resolveByStepContent(
   if (has('mach cau', true) || has('kirchhoff', true) || has('cam bien', true) || has('phan ap', true)) {
     return { simId: 'wheatstone_bridge', reason: 'Mạch cầu điện trở & phân áp' };
   }
-  if (has('jun', true) || has('cong suat nguon', true) || has('cong suat tieu thu', true) && has('mach', true)) {
+  if (has('jun', true) || has('cong suat nguon', true) || has('cong suat dien', true) || (has('cong suat tieu thu', true) && has('mach', true))) {
     return { simId: 'joule_lenz_heat', reason: 'Công suất tỏa nhiệt điện trở Q = I²Rt' };
   }
   if (has('rlc', true) || has('tong tro', true) || has('cong huong dien', true)) {
     return { simId: 'ac_rlc_circuit', reason: 'Mạch RLC xoay chiều & giản đồ pha' };
   }
-  if (has('chinh luu', true) || has('op-amp', true) || has('logic', true)) {
+  if (has('chinh luu', true) || has('op-amp', true) || has('diode', true)) {
     return { simId: 'diode_rectifier', reason: 'Chỉnh lưu & linh kiện bán dẫn' };
   }
   if (has('may bien ap', true) || has('truyen tai dien', true)) {
@@ -907,7 +1069,7 @@ function resolveByStepContent(
   if (has('tu thong', true) || has('faraday', true) || has('lenz', true) || has('cam ung dien tu', true) || has('xoay chieu', true) || has('thanh kim loai', true) || has('foucault', true)) {
     return { simId: 'magnetic_induction', reason: 'Cảm ứng điện từ Faraday & quy tắc Lenz' };
   }
-  if (has('ohm', true) || has('cuong do dong dien', true) || has('suat dien dong', true) || has('u theo i', true)) {
+  if (has('ohm', true) || has('cuong do dong dien', true) || has('suat dien dong', true) || has('u theo i', true) || has('so do mach', true)) {
     return { simId: 'ohm_circuit', reason: 'Định luật Ohm & sơ đồ mạch điện' };
   }
 
@@ -927,7 +1089,7 @@ function resolveByStepContent(
   if (has('bohr', true) || has('quang pho', true) || has('hydro', true) || has('vung nang luong', true)) {
     return { simId: 'bohr_energy_levels', reason: 'Mẫu nguyên tử Bohr & chuyển mức năng lượng' };
   }
-  if (has('quang dien', true) || has('luong tu anh sang', true) || has('tia x', true)) {
+  if ((has('quang dien', true) && !has('cong quang dien')) || has('luong tu anh sang', true) || has('tia x', true)) {
     return { simId: 'photoelectric_effect', reason: 'Hiệu ứng quang điện & photon' };
   }
   if (has('do hut khoi', true) || has('lien ket rieng', true)) {

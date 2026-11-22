@@ -149,7 +149,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       'v_{\\max} = \\omega A, \\qquad a_{\\max} = \\omega^2 A, \\qquad a = -\\omega^2 x',
       'A^2 = x^2 + \\frac{v^2}{\\omega^2}'
     ],
-    ...SIM_PRESETS.spring,
+    ...SIM_PRESETS.lissajous,
     practiceExercises: [
       {
         source: SRC_11,
@@ -323,7 +323,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['f_{\\text{cưỡng bức}} = f_{\\text{ngoại lực}}', '\\text{Cộng hưởng} \\iff f = f_0 \\; (T = T_0)'],
-    ...SIM_PRESETS.pendulum,
+    ...SIM_PRESETS.damped_resonance,
     practiceExercises: [
       {
         source: SRC_11,
@@ -496,7 +496,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['I = \\frac{E}{S\\cdot t} = \\frac{\\mathcal{P}}{S} = \\frac{\\mathcal{P}}{4\\pi r^2} \\;(\\text{nguồn cầu})'],
-    ...SIM_PRESETS.wave_interference,
+    ...SIM_PRESETS.wave_longitudinal,
     practiceExercises: [
       {
         source: SRC_11,
@@ -550,7 +550,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['T = \\frac{\\text{Số ô} \\times \\text{TIME/DIV}}{\\text{Số chu kì}}', 'f = \\frac{1}{T}'],
-    ...SIM_PRESETS.doppler,
+    ...SIM_PRESETS.sound_intensity,
     practiceExercises: [
       {
         source: SRC_11,
@@ -604,7 +604,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['\\lambda = \\frac{c}{f} \\quad (c = 3 \\cdot 10^8\\text{ m/s})', '0{,}38\\,\\mu\\text{m} \\le \\lambda_{\\text{khả kiến}} \\le 0{,}76\\,\\mu\\text{m}'],
-    ...SIM_PRESETS.young_light,
+    ...SIM_PRESETS.em_wave,
     practiceExercises: [
       {
         source: SRC_11,
@@ -667,7 +667,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       'd_2 - d_1 = k\\lambda \\;(\\text{Cực đại}), \\qquad d_2 - d_1 = \\left(k + \\frac{1}{2}\\right)\\lambda \\;(\\text{Cực tiểu})',
       'i = \\frac{\\lambda D}{a}, \\qquad x_s = k i, \\qquad x_t = \\left(k + \\frac{1}{2}\\right)i'
     ],
-    ...SIM_PRESETS.young_light,
+    ...SIM_PRESETS.wave_interference,
     practiceExercises: [
       {
         source: SRC_11,
@@ -832,7 +832,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['\\lambda = 2(l_2 - l_1)', 'v = \\lambda f = 2(l_2 - l_1)f'],
-    ...SIM_PRESETS.standing_wave,
+    ...SIM_PRESETS.standing_sound,
     practiceExercises: [
       {
         source: SRC_11,
@@ -894,7 +894,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['F = k\\frac{|q_1 q_2|}{\\varepsilon r^2}', 'k = 9 \\cdot 10^9\\text{ N}\\cdot\\text{m}^2/\\text{C}^2'],
-    ...SIM_PRESETS.electric_field,
+    ...SIM_PRESETS.coulomb,
     practiceExercises: [
       {
         source: SRC_11,
@@ -1179,7 +1179,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       'Q = C \\cdot U, \\qquad W = \\frac{1}{2} C U^2 = \\frac{1}{2} Q U = \\frac{Q^2}{2C}',
       'C_{\\text{ss}} = C_1 + C_2, \\qquad \\frac{1}{C_{\\text{nt}}} = \\frac{1}{C_1} + \\frac{1}{C_2}'
     ],
-    ...SIM_PRESETS.electric_field,
+    ...SIM_PRESETS.capacitor,
     practiceExercises: [
       {
         source: SRC_11,

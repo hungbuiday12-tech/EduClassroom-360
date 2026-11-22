@@ -100,7 +100,7 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'circle_theorems_3d',
     defaultGraphConfig: { type: 'trig_cos', params: { a: 1, b: 2, c: 0, d: 0 }, color: '#0284c7', name: 'y = cos(2x)' }
   },
   {
@@ -144,7 +144,7 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'circle_theorems_3d',
     defaultGraphConfig: { type: 'trig_sin', params: { a: 3, b: 1, c: 0, d: -2 }, color: '#ec4899', name: 'y = 3sin(x) - 2' }
   },
   {
@@ -197,7 +197,7 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'circle_theorems_3d',
     defaultGraphConfig: { type: 'trig_cos', params: { a: 1, b: 1, c: 0, d: 0 }, color: '#2563eb', name: 'y = cos(x)' }
   },
 
@@ -358,7 +358,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '4*e^(-0.5*x*x)', params: { a: 4, b: 0, c: 1, d: 0 }, color: '#8b5cf6', name: 'Phân bố mẫu ghép nhóm' }
   },
   {
     id: 'math-11-b9',
@@ -404,7 +405,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '4*e^(-0.5*(x-1)^2)', params: { a: 4, b: 1, c: 1, d: 0 }, color: '#6366f1', name: 'Trung vị & Mốt ghép nhóm' }
   },
 
   // ==================== CHƯƠNG IV. QUAN HỆ SONG SONG TRONG KHÔNG GIAN ====================
@@ -888,7 +890,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'exponential', params: { a: 1, b: 0.693, c: 0, d: 0 }, color: '#ec4899', name: 'y = 2^x' }
   },
   // CHƯƠNG VII: QUAN HỆ VUÔNG GÓC TRONG KHÔNG GIAN
   {
@@ -1163,7 +1166,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3.5*e^(-0.5*x*x)', params: { a: 3.5, b: 0, c: 1, d: 0 }, color: '#6366f1', name: 'Phân phối xác suất biến cố' }
   },
   {
     id: 'math-11-b29',
@@ -1202,7 +1206,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3.5*e^(-0.4*x*x)', params: { a: 3.5, b: 0, c: 1, d: 0 }, color: '#4f46e5', name: 'Xác suất hợp P(A ∪ B)' }
   },
   {
     id: 'math-11-b30',
@@ -1241,7 +1246,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '4*e^(-0.6*x*x)', params: { a: 4, b: 0, c: 1, d: 0 }, color: '#0ea5e9', name: 'Xác suất độc lập P(A ∩ B)' }
   },
   // CHƯƠNG IX: ĐẠO HÀM
   {
@@ -1281,7 +1287,7 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'integral_disks_3d',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: { type: 'cubic', params: { a: 1, b: 0, c: -3, d: 1 }, showTangent: true, tangentX0: 2, color: '#f59e0b', name: 'Tiếp tuyến y = x³ - 3x + 1' }
   },
   {
@@ -1321,7 +1327,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'integral_disks_3d'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'cubic', params: { a: 1, b: -3, c: 0, d: 2 }, showTangent: true, tangentX0: 1, color: '#0284c7', name: 'Đạo hàm y = x³ - 3x² + 2' }
   },
   {
     id: 'math-11-b33',
@@ -1360,7 +1367,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'integral_disks_3d'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'cubic', params: { a: 1, b: 0, c: -2, d: 0 }, showTangent: true, tangentX0: 1, color: '#8b5cf6', name: 'Đạo hàm cấp hai & Gia tốc' }
   }
 ];
 

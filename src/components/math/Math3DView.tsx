@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { AnaglyphEffect } from 'three/addons/effects/AnaglyphEffect.js';
 import { StereoEffect } from 'three/addons/effects/StereoEffect.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {
   RotateCcw,
   Maximize2,
@@ -36,7 +37,9 @@ export type Math3DMode =
   | 'conic_sections_3d'
   | 'line_plane_oxyz'
   | 'integral_disks_3d'
-  | 'circle_theorems_3d';
+  | 'circle_theorems_3d'
+  | 'tangent_surface_3d'
+  | 'probability_bell_3d';
 
 interface Math3DViewProps {
   initialMode?: Math3DMode;
@@ -100,6 +103,15 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   const [extDist3D, setExtDist3D] = useState(4.2);
   const [secOffset3D, setSecOffset3D] = useState(1.1);
 
+  // Tangent Surface 3D mode (Đạo hàm & Mặt phẳng tiếp diện)
+  const [surfaceType, setSurfaceType] = useState<'paraboloid' | 'saddle' | 'wave'>('paraboloid');
+  const [tanX0, setTanX0] = useState(1.0);
+  const [tanY0, setTanY0] = useState(0.8);
+
+  // Probability Bell 3D mode (Phân phối chuẩn & Biểu đồ cột 3D)
+  const [bellMu, setBellMu] = useState(0);
+  const [bellSigma, setBellSigma] = useState(1.1);
+
   // WebGL context safety
   const [contextLost, setContextLost] = useState(false);
 
@@ -108,6 +120,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
   const needsRenderRef = useRef<boolean>(true);
+  const isSoftwareGlRef = useRef<boolean>(false);
 
   // Escape key to exit fullscreen
   useEffect(() => {
@@ -135,11 +148,13 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       return /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(gpu);
     })();
 
+    isSoftwareGlRef.current = isSoftwareGl;
+
     // Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    scene.background = new THREE.Color(0x0a0f1d);
-    scene.fog = new THREE.FogExp2(0x0a0f1d, 0.025);
+    scene.background = new THREE.Color(0x090e1c);
+    scene.fog = new THREE.FogExp2(0x090e1c, 0.022);
 
     // Camera
     const camera = new THREE.PerspectiveCamera(
@@ -156,11 +171,23 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       powerPreference: 'high-performance',
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.15;
+    if (!isSoftwareGl) {
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
     rendererRef.current = renderer;
+
+    // Procedural Studio IBL reflections for realistic glass & metallic highlights
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    const roomEnv = new RoomEnvironment();
+    const envTarget = pmremGenerator.fromScene(roomEnv, 0.04);
+    scene.environment = envTarget.texture;
+    roomEnv.dispose();
+    pmremGenerator.dispose();
 
     container.appendChild(renderer.domElement);
 
@@ -176,19 +203,25 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     };
     controls.addEventListener('change', markDirty);
 
-    // Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
+    // Studio Lighting (Hemisphere + Warm Key + Cool Rim)
+    const hemiLight = new THREE.HemisphereLight(0x93c5fd, 0x0f172a, 0.72);
+    scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.4);
-    keyLight.position.set(6, 10, 8);
+    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.55);
+    keyLight.position.set(6, 11, 8);
+    if (!isSoftwareGl) {
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(1024, 1024);
+      keyLight.shadow.camera.near = 1;
+      keyLight.shadow.camera.far = 30;
+    }
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x88bbff, 0.8);
-    fillLight.position.set(-6, -4, -6);
+    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.85);
+    fillLight.position.set(-7, -3, -6);
     scene.add(fillLight);
 
-    // Grid Floor
+    // Reflective dark slate base + crisp grid
     const grid = new THREE.GridHelper(16, 16, 0x3b82f6, 0x1e293b);
     grid.position.y = -0.01;
     scene.add(grid);
@@ -306,6 +339,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
           else obj.material.dispose();
         }
       });
+      envTarget.dispose();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -431,34 +465,43 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     // MODE 2: Mặt Cầu & Mặt Phẳng Thiết Diện 3D
     // -------------------------------------------------------------
     else if (mode === 'sphere_plane') {
-      // Sphere
-      const sphereGeo = new THREE.SphereGeometry(sphereRadius, 32, 24);
-      const sphereMat = new THREE.MeshStandardMaterial({
-        color: 0x3b82f6,
+      const isSw = isSoftwareGlRef.current;
+      // Optical Glass Sphere
+      const sphereGeo = new THREE.SphereGeometry(sphereRadius, 48, 36);
+      const sphereMat = new THREE.MeshPhysicalMaterial({
+        color: 0x38bdf8,
+        roughness: 0.08,
+        metalness: 0.05,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.08,
         transparent: true,
-        opacity: 0.3,
-        roughness: 0.1,
-        metalness: 0.2,
+        opacity: isSw ? 0.34 : 0.78,
+        transmission: isSw ? 0 : 0.68,
+        ior: 1.45,
+        thickness: 0.7,
+        depthWrite: false
       });
       const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
       group.add(sphereMesh);
 
       // Sphere wireframe cage
       const wireGeo = new THREE.WireframeGeometry(sphereGeo);
-      const wireMat = new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.25 });
+      const wireMat = new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.18 });
       group.add(new THREE.LineSegments(wireGeo, wireMat));
 
       // Center Point I
-      const centerGeo = new THREE.SphereGeometry(0.12, 16, 16);
-      const centerMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.2 });
+      const centerGeo = new THREE.SphereGeometry(0.14, 20, 20);
+      const centerMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.45, roughness: 0.2 });
       group.add(new THREE.Mesh(centerGeo, centerMat));
 
       // Cutting Plane
       const planeGeo = new THREE.PlaneGeometry(sphereRadius * 2.8, sphereRadius * 2.8);
-      const planeMat = new THREE.MeshStandardMaterial({
+      const planeMat = new THREE.MeshPhysicalMaterial({
         color: 0x10b981,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.36,
+        roughness: 0.15,
+        clearcoat: 0.8,
         side: THREE.DoubleSide,
       });
       const planeMesh = new THREE.Mesh(planeGeo, planeMat);
@@ -469,17 +512,17 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       // If plane intersects sphere (d < R)
       if (planeDistance < sphereRadius) {
         const cutCircleRadius = Math.sqrt(sphereRadius * sphereRadius - planeDistance * planeDistance);
-        const ringGeo = new THREE.RingGeometry(cutCircleRadius - 0.05, cutCircleRadius + 0.05, 48);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide });
-        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.rotation.x = Math.PI / 2;
-        ringMesh.position.y = planeDistance + 0.01;
-        group.add(ringMesh);
+        const torusGeo = new THREE.TorusGeometry(cutCircleRadius, 0.045, 16, 64);
+        const torusMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.55, roughness: 0.2 });
+        const torusMesh = new THREE.Mesh(torusGeo, torusMat);
+        torusMesh.rotation.x = Math.PI / 2;
+        torusMesh.position.y = planeDistance + 0.01;
+        group.add(torusMesh);
 
         // Distance drop line IH
-        const dropLineGeo = new THREE.CylinderGeometry(0.03, 0.03, planeDistance, 8);
+        const dropLineGeo = new THREE.CylinderGeometry(0.035, 0.035, Math.max(0.02, planeDistance), 12);
         dropLineGeo.translate(0, planeDistance / 2, 0);
-        const dropLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const dropLineMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, emissive: 0x94a3b8, emissiveIntensity: 0.3 });
         group.add(new THREE.Mesh(dropLineGeo, dropLineMat));
       }
     }
@@ -685,17 +728,30 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       }
 
       const drawCurveSegs = (pts: THREE.Vector3[], colorHex: number) => {
-        if (pts.length < 2) return;
-        const filtered: THREE.Vector3[] = [];
-        for (let i = 0; i < pts.length - 1; i++) {
-          if (pts[i].distanceTo(pts[i + 1]) < 1.2) {
-            filtered.push(pts[i], pts[i + 1]);
+        if (pts.length < 4) return;
+        const segments: THREE.Vector3[][] = [];
+        let cur: THREE.Vector3[] = [pts[0]];
+        for (let i = 1; i < pts.length; i++) {
+          if (pts[i].distanceTo(pts[i - 1]) < 1.1) {
+            cur.push(pts[i]);
+          } else {
+            if (cur.length >= 4) segments.push(cur);
+            cur = [pts[i]];
           }
         }
-        if (filtered.length >= 2) {
-          const geo = new THREE.BufferGeometry().setFromPoints(filtered);
-          group.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: colorHex })));
-        }
+        if (cur.length >= 4) segments.push(cur);
+        const tubeMat = new THREE.MeshStandardMaterial({
+          color: colorHex,
+          emissive: colorHex,
+          emissiveIntensity: 0.48,
+          roughness: 0.25,
+          metalness: 0.35
+        });
+        segments.forEach((seg) => {
+          const curve = new THREE.CatmullRomCurve3(seg);
+          const tubeGeo = new THREE.TubeGeometry(curve, Math.min(96, seg.length * 2), 0.042, 10, false);
+          group.add(new THREE.Mesh(tubeGeo, tubeMat));
+        });
       };
       drawCurveSegs(ptsUpper, 0xfacc15);
       drawCurveSegs(ptsLower, 0xf97316);
@@ -904,6 +960,181 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([center, TPos]), new THREE.LineBasicMaterial({ color: 0x34d399 })));
       });
     }
+
+    // -------------------------------------------------------------
+    // MODE 9: Bề Mặt Đạo Hàm & Mặt Phẳng Tiếp Diện 3D
+    // -------------------------------------------------------------
+    else if (mode === 'tangent_surface_3d') {
+      const evalZ = (x: number, y: number) => {
+        if (surfaceType === 'paraboloid') return 0.22 * (x * x + y * y) + 0.4;
+        if (surfaceType === 'saddle') return 0.24 * (x * x - y * y) + 1.8;
+        return 0.85 * Math.cos(0.9 * x) * Math.sin(0.9 * y) + 1.6;
+      };
+      const evalGrad = (x: number, y: number): [number, number] => {
+        const h = 0.002;
+        const fx = (evalZ(x + h, y) - evalZ(x - h, y)) / (2 * h);
+        const fy = (evalZ(x, y + h) - evalZ(x, y - h)) / (2 * h);
+        return [fx, fy];
+      };
+
+      const size = 5.4;
+      const segs = 44;
+      const surfGeo = new THREE.PlaneGeometry(size, size, segs, segs);
+      surfGeo.rotateX(-Math.PI / 2);
+      const posAttr = surfGeo.attributes.position as THREE.BufferAttribute;
+      const colors: number[] = [];
+      const colLow = new THREE.Color(0x0ea5e9);
+      const colMid = new THREE.Color(0x6366f1);
+      const colHigh = new THREE.Color(0xf43f5e);
+
+      for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i);
+        const zThree = posAttr.getZ(i);
+        const yVal = evalZ(x, zThree);
+        posAttr.setY(i, yVal);
+        const tNorm = Math.max(0, Math.min(1, (yVal - 0.3) / 3.0));
+        const c = tNorm < 0.5 ? colLow.clone().lerp(colMid, tNorm * 2) : colMid.clone().lerp(colHigh, (tNorm - 0.5) * 2);
+        colors.push(c.r, c.g, c.b);
+      }
+      surfGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      surfGeo.computeVertexNormals();
+
+      const surfMat = new THREE.MeshPhysicalMaterial({
+        vertexColors: true,
+        roughness: 0.25,
+        metalness: 0.15,
+        clearcoat: 0.7,
+        transparent: true,
+        opacity: 0.88,
+        side: THREE.DoubleSide
+      });
+      group.add(new THREE.Mesh(surfGeo, surfMat));
+
+      const wire = new THREE.LineSegments(
+        new THREE.WireframeGeometry(surfGeo),
+        new THREE.LineBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.14 })
+      );
+      group.add(wire);
+
+      // Point M0(tanX0, tanY0) on surface
+      const z0 = evalZ(tanX0, tanY0);
+      const [fx0, fy0] = evalGrad(tanX0, tanY0);
+      const m0 = new THREE.Vector3(tanX0, z0, tanY0);
+
+      const mSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.14, 20, 20),
+        new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.65 })
+      );
+      mSphere.position.copy(m0);
+      group.add(mSphere);
+
+      // Tangent plane spanned by T_x = (1, fx0, 0) and T_y = (0, fy0, 1)
+      const tPlaneSize = 2.6;
+      const tGeo = new THREE.PlaneGeometry(tPlaneSize, tPlaneSize);
+      const tPos = tGeo.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < tPos.count; i++) {
+        const dx = tPos.getX(i);
+        const dy = tPos.getY(i);
+        tPos.setXYZ(i, tanX0 + dx, z0 + fx0 * dx + fy0 * dy, tanY0 + dy);
+      }
+      tGeo.computeVertexNormals();
+      const tMat = new THREE.MeshPhysicalMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.52,
+        roughness: 0.15,
+        clearcoat: 0.85,
+        side: THREE.DoubleSide
+      });
+      group.add(new THREE.Mesh(tGeo, tMat));
+
+      // Normal vector n = (-fx0, 1, -fy0) and directional tangent vectors
+      const nVec = new THREE.Vector3(-fx0, 1, -fy0).normalize();
+      const txVec = new THREE.Vector3(1, fx0, 0).normalize();
+      const tyVec = new THREE.Vector3(0, fy0, 1).normalize();
+      group.add(create3DArrow(nVec, m0, 1.8, 0xf43f5e, 0.048));
+      group.add(create3DArrow(txVec, m0, 1.4, 0x10b981, 0.04));
+      group.add(create3DArrow(tyVec, m0, 1.4, 0x38bdf8, 0.04));
+    }
+
+    // -------------------------------------------------------------
+    // MODE 10: Chuông Phân Phối & Xác Suất Gauss 3D
+    // -------------------------------------------------------------
+    else if (mode === 'probability_bell_3d') {
+      const s = Math.max(0.5, bellSigma);
+      const evalBell = (x: number, y: number) => {
+        const d2 = ((x - bellMu) * (x - bellMu) + y * y) / (2 * s * s);
+        return 3.4 * Math.exp(-d2);
+      };
+
+      // Smooth 3D Gaussian Bell Surface
+      const surfGeo = new THREE.PlaneGeometry(7.2, 7.2, 48, 48);
+      surfGeo.rotateX(-Math.PI / 2);
+      const posAttr = surfGeo.attributes.position as THREE.BufferAttribute;
+      const colors: number[] = [];
+      const cTail = new THREE.Color(0x1e293b);
+      const cMid = new THREE.Color(0x6366f1);
+      const cPeak = new THREE.Color(0xfacc15);
+
+      for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i);
+        const z = posAttr.getZ(i);
+        const hVal = evalBell(x, z);
+        posAttr.setY(i, hVal);
+        const tN = Math.min(1, hVal / 3.4);
+        const col = tN < 0.45 ? cTail.clone().lerp(cMid, tN / 0.45) : cMid.clone().lerp(cPeak, (tN - 0.45) / 0.55);
+        colors.push(col.r, col.g, col.b);
+      }
+      surfGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      surfGeo.computeVertexNormals();
+
+      group.add(
+        new THREE.Mesh(
+          surfGeo,
+          new THREE.MeshPhysicalMaterial({
+            vertexColors: true,
+            roughness: 0.22,
+            metalness: 0.1,
+            clearcoat: 0.65,
+            transparent: true,
+            opacity: 0.62,
+            side: THREE.DoubleSide
+          })
+        )
+      );
+
+      // 3D Discrete Probability Histogram Columns along grid
+      for (let xi = -3; xi <= 3; xi++) {
+        for (let zi = -2; zi <= 2; zi++) {
+          const xPos = xi * 0.9;
+          const zPos = zi * 0.9;
+          const colH = Math.max(0.08, evalBell(xPos, zPos));
+          const barGeo = new THREE.BoxGeometry(0.42, colH, 0.42);
+          const barMat = new THREE.MeshStandardMaterial({
+            color: new THREE.Color().setHSL(0.62 - (colH / 3.4) * 0.45, 0.85, 0.55),
+            roughness: 0.25,
+            metalness: 0.35
+          });
+          const bar = new THREE.Mesh(barGeo, barMat);
+          bar.position.set(xPos, colH / 2, zPos);
+          group.add(bar);
+        }
+      }
+
+      // 1σ and 2σ confidence rings around (bellMu, 0)
+      [s, 2 * s].forEach((rad, idx) => {
+        const ringGeo = new THREE.TorusGeometry(rad, 0.035, 12, 64);
+        const ringMat = new THREE.MeshStandardMaterial({
+          color: idx === 0 ? 0x10b981 : 0x38bdf8,
+          emissive: idx === 0 ? 0x059669 : 0x0284c7,
+          emissiveIntensity: 0.5
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.set(bellMu, 0.05, 0);
+        group.add(ring);
+      });
+    }
     needsRenderRef.current = true;
   }, [
     mode,
@@ -928,7 +1159,12 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     diskFuncType,
     circleR3D,
     extDist3D,
-    secOffset3D
+    secOffset3D,
+    surfaceType,
+    tanX0,
+    tanY0,
+    bellMu,
+    bellSigma
   ]);
 
   // Derived math calculations for display
@@ -976,6 +1212,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
               {mode === 'line_plane_oxyz' && 'Đường Thẳng & Mặt Phẳng Oxyz · Góc & Giao Điểm'}
               {mode === 'integral_disks_3d' && 'Tích Phân Đĩa Trụ Riemann · Thể Tích Tròn Xoay'}
               {mode === 'circle_theorems_3d' && 'Đường Tròn, Tiếp Tuyến & Nón Tiếp Xúc 3D'}
+              {mode === 'tangent_surface_3d' && 'Bề Mặt Đạo Hàm, Vector Pháp Tuyến & Tiếp Diện 3D'}
+              {mode === 'probability_bell_3d' && 'Chuông Phân Phối Chuẩn & Xác Suất Gauss 3D'}
             </span>
           </div>
 
@@ -984,6 +1222,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
             <div className="sim-seg-box flex items-center gap-1 p-1 bg-slate-800/90 lg:bg-slate-900/95 border border-slate-700/80 rounded-[4px] shadow-lg overflow-x-auto max-w-full scrollbar-none">
               {[
                 { id: 'oxyz_vector' as Math3DMode, label: 'Vector Oxyz' },
+                { id: 'tangent_surface_3d' as Math3DMode, label: 'Đạo Hàm 3D' },
+                { id: 'probability_bell_3d' as Math3DMode, label: 'Xác Suất 3D' },
                 { id: 'circle_theorems_3d' as Math3DMode, label: 'Đường Tròn 3D' },
                 { id: 'sphere_plane' as Math3DMode, label: 'Mặt Cầu' },
                 { id: 'pyramid_section' as Math3DMode, label: 'Thiết Diện Chóp' },
@@ -1548,6 +1788,72 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                   </div>
                 );
               })()}
+
+              {/* Controls for Tangent Surface 3D */}
+              {mode === 'tangent_surface_3d' && (
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-slate-400">Hàm f(x, y):</span>
+                    {[
+                      { id: 'paraboloid' as const, label: 'Paraboloid 0.22(x²+y²)' },
+                      { id: 'saddle' as const, label: 'Yên ngựa 0.24(x²-y²)' },
+                      { id: 'wave' as const, label: 'Sóng cos(x)sin(y)' }
+                    ].map((fn) => (
+                      <button
+                        key={fn.id}
+                        onClick={() => setSurfaceType(fn.id)}
+                        className={`px-2.5 py-1 rounded-lg font-medium ${
+                          surfaceType === fn.id ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-800 text-slate-300'
+                        }`}
+                      >
+                        {fn.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-300">Hoành độ x₀:</span>
+                        <span className="font-mono font-bold text-amber-400">{tanX0.toFixed(1)}</span>
+                      </div>
+                      <input type="range" min="-2.0" max="2.0" step="0.1" value={tanX0} onChange={(e) => setTanX0(Number(e.target.value))} className="w-full accent-amber-500 h-1.5" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-300">Tung độ y₀:</span>
+                        <span className="font-mono font-bold text-cyan-400">{tanY0.toFixed(1)}</span>
+                      </div>
+                      <input type="range" min="-2.0" max="2.0" step="0.1" value={tanY0} onChange={(e) => setTanY0(Number(e.target.value))} className="w-full accent-cyan-500 h-1.5" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Controls for Probability Bell 3D */}
+              {mode === 'probability_bell_3d' && (
+                <div className="space-y-2.5 text-xs">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-300">Kỳ vọng μ (Trung tâm):</span>
+                        <span className="font-mono font-bold text-amber-400">{bellMu.toFixed(1)}</span>
+                      </div>
+                      <input type="range" min="-1.5" max="1.5" step="0.1" value={bellMu} onChange={(e) => setBellMu(Number(e.target.value))} className="w-full accent-amber-500 h-1.5" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-300">Độ lệch chuẩn σ:</span>
+                        <span className="font-mono font-bold text-emerald-400">{bellSigma.toFixed(2)}</span>
+                      </div>
+                      <input type="range" min="0.6" max="2.2" step="0.05" value={bellSigma} onChange={(e) => setBellSigma(Number(e.target.value))} className="w-full accent-emerald-500 h-1.5" />
+                    </div>
+                  </div>
+                  <div className="p-2 bg-slate-950/60 rounded-xl font-mono text-[11px] flex flex-wrap items-center justify-between gap-2 text-slate-300">
+                    <span className="text-emerald-300">Quy tắc 68–95–99.7: Vòng xanh lá = 1σ | Vòng xanh dương = 2σ</span>
+                    <span className="text-amber-300">Phương sai σ² = {(bellSigma * bellSigma).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

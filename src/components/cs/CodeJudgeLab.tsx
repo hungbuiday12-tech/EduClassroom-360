@@ -32,7 +32,8 @@ import { buildCSLectureSteps } from '../../data/lectureStepsBuilder';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { AlgorithmVisualizer } from './AlgorithmVisualizer';
-import { AlgoId, LESSON_TO_ALGO_MAP } from './visualizer/types';
+import { CS3DVisualizer } from './CS3DVisualizer';
+import { AlgoId, LESSON_TO_ALGO_MAP, LESSON_TO_CS3D_MAP } from './visualizer/types';
 import {
   progressDailyQuest,
   recordGrowthStat,
@@ -220,6 +221,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [lessonCodeMap, setLessonCodeMap] = useState<Record<string, { cpp: string; python: string }>>({});
   const [lessonPracticeMap, setLessonPracticeMap] = useState<Record<string, LessonPracticeRunState>>({});
+  const [vizDimMode, setVizDimMode] = useState<'2d' | '3d'>('2d');
 
   // Helper to convert CSLesson practice problem to CodingProblem
   const toCodingProblem = (p: CSLesson['practiceProblem']): CodingProblem => ({
@@ -2319,14 +2321,54 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               );
             })()}
 
-          {/* LESSON TAB 4: ALGORITHM VISUALIZER */}
+          {/* LESSON TAB 4: ALGORITHM VISUALIZER (2D + 3D SWITCHER) */}
           {lessonTab === 'visualizer' && (
-            <AlgorithmVisualizer
-              initialAlgoId={LESSON_TO_ALGO_MAP[currentLesson.id] || 'coord_hull'}
-              embeddedLessonTitle={currentLesson.title}
-              onBack={() => navigate({ csLessonTab: 'lecture' })}
-              onScoreEarned={onScoreEarned}
-            />
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-900/95 border border-slate-700/80">
+                <div className="text-xs font-semibold text-slate-300">
+                  {t('', 'Chế độ mô phỏng cho bài học:', 'Simulation engine for lesson:')}{' '}
+                  <span className="text-sky-400 font-bold">{currentLesson.title}</span>
+                </div>
+                <div className="inline-flex items-center p-1 rounded-md bg-slate-950 border border-slate-800 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setVizDimMode('2d')}
+                    className={`px-3 py-1.5 rounded text-xs font-bold transition-colors ${
+                      vizDimMode === '2d'
+                        ? 'bg-sky-600 text-white shadow'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    {t('', 'Mô phỏng 2D (Từng bước)', '2D Step-by-Step')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVizDimMode('3d')}
+                    className={`px-3 py-1.5 rounded text-xs font-bold transition-colors ${
+                      vizDimMode === '3d'
+                        ? 'bg-indigo-600 text-white shadow'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    {t('', 'Mô phỏng 3D WebGL (Không gian)', '3D WebGL Spatial')}
+                  </button>
+                </div>
+              </div>
+
+              {vizDimMode === '2d' ? (
+                <AlgorithmVisualizer
+                  initialAlgoId={LESSON_TO_ALGO_MAP[currentLesson.id] || 'coord_hull'}
+                  embeddedLessonTitle={currentLesson.title}
+                  onBack={() => navigate({ csLessonTab: 'lecture' })}
+                  onScoreEarned={onScoreEarned}
+                />
+              ) : (
+                <CS3DVisualizer
+                  initialMode={LESSON_TO_CS3D_MAP[currentLesson.id] || 'sort_3d'}
+                  onBack={() => setVizDimMode('2d')}
+                />
+              )}
+            </div>
           )}
         </div>
       )}

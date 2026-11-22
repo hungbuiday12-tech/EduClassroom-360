@@ -101,7 +101,7 @@ export const PHYSICS_GDPT_ELECTIVES: PhysicsLesson[] = [
       'T_{\\text{tự quay}} \\approx 24\\text{ h}, \\quad T_{\\text{quỹ đạo TĐ}} \\approx 365{,}25\\text{ ngày}',
       '\\theta_{\\text{nghiêng trục}} \\approx 23{,}5^\\circ'
     ],
-    ...SIM_PRESETS.circular,
+    ...SIM_PRESETS.kepler,
     practiceExercises: [
       {
         source: SRC_CD,
@@ -231,7 +231,7 @@ export const PHYSICS_GDPT_ELECTIVES: PhysicsLesson[] = [
       '\\Phi = -\\frac{GM}{r}, \\quad v_1 = \\sqrt{\\frac{GM}{R}} \\approx 7{,}9\\text{ km/s}',
       'v_2 = \\sqrt{\\frac{2GM}{R}} = \\sqrt{2}\\,v_1 \\approx 11{,}2\\text{ km/s}'
     ],
-    ...SIM_PRESETS.circular,
+    ...SIM_PRESETS.kepler,
     practiceExercises: [
       {
         source: SRC_CD,
@@ -289,7 +289,7 @@ export const PHYSICS_GDPT_ELECTIVES: PhysicsLesson[] = [
       'B_{\\text{AM}} = 2 f_{\\text{max}}, \\quad \\text{FM: } f(t) = f_c + \\Delta f\\cdot m(t)',
       'L_{\\text{dB}} = 10\\lg\\left(\\frac{P_{\\text{vào}}}{P_{\\text{ra}}}\\right)'
     ],
-    ...SIM_PRESETS.wave_interference,
+    ...SIM_PRESETS.em_wave,
     practiceExercises: [
       {
         source: SRC_CD,
@@ -352,7 +352,7 @@ export const PHYSICS_GDPT_ELECTIVES: PhysicsLesson[] = [
       'U_{\\text{ra}} = U_{\\text{cc}}\\frac{R_2}{R_1 + R_2}',
       'A_{u\\text{ (đảo)}} = -\\frac{R_{\\text{ht}}}{R_1}, \\qquad A_{u\\text{ (không đảo)}} = 1 + \\frac{R_{\\text{ht}}}{R_1}'
     ],
-    ...SIM_PRESETS.ohm_dc,
+    ...SIM_PRESETS.diode,
     practiceExercises: [
       {
         source: SRC_CD,
@@ -478,7 +478,7 @@ export const PHYSICS_GDPT_ELECTIVES: PhysicsLesson[] = [
       '\\lambda_{\\min} = \\frac{h c}{e U_{\\text{AK}}}',
       'I = I_0 e^{-\\mu x} \\quad (\\text{Suy giảm tia X qua mô})'
     ],
-    ...SIM_PRESETS.photoelectric,
+    ...SIM_PRESETS.compton,
     practiceExercises: [
       {
         source: SRC_CD,

@@ -59,6 +59,10 @@ const get3DModeLabel = (mode?: Math3DMode): string => {
       return 'Khối Chóp & Thiết Diện 3D';
     case 'revolution_solid':
       return 'Khối Tròn Xoay 3D';
+    case 'tangent_surface_3d':
+      return 'Bề Mặt Đạo Hàm & Tiếp Diện 3D';
+    case 'probability_bell_3d':
+      return 'Chuông Phân Phối & Xác Suất 3D';
     default:
       return 'Hệ Trục Oxyz 3D';
   }

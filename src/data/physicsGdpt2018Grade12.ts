@@ -101,7 +101,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'Q > 0 \\text{ (nhận nhiệt)}, \\quad Q < 0 \\text{ (tỏa nhiệt)}',
       'A > 0 \\text{ (nhận công)}, \\quad A < 0 \\text{ (sinh công)}'
     ],
-    ...SIM_PRESETS.thermal_gas,
+    ...SIM_PRESETS.pv_thermo,
     practiceExercises: [
       {
         source: SRC_12,
@@ -222,7 +222,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'c = \\frac{\\mathcal{P}\\cdot \\Delta t}{m\\cdot \\Delta T}',
       '\\sum Q_{\\text{tỏa}} = \\sum Q_{\\text{thu}}'
     ],
-    ...SIM_PRESETS.thermal_gas,
+    ...SIM_PRESETS.calorimetry,
     practiceExercises: [
       {
         source: SRC_12,
@@ -897,7 +897,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'B = \\frac{F}{I L \\sin\\theta} \\quad (\\text{đơn vị: Tesla, T})',
       'f_{\\text{Lorentz}} = |q| v B \\sin\\alpha'
     ],
-    ...SIM_PRESETS.mag_induction,
+    ...SIM_PRESETS.hall_lorentz,
     practiceExercises: [
       {
         source: SRC_12,
@@ -955,7 +955,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'e_c = -\\frac{\\Delta\\Phi}{\\Delta t} = -N\\frac{\\Delta(BS\\cos\\alpha)}{\\Delta t}',
       'I_c = \\frac{|e_c|}{R}'
     ],
-    ...SIM_PRESETS.mag_induction,
+    ...SIM_PRESETS.mag_faraday,
     practiceExercises: [
       {
         source: SRC_12,
@@ -1072,7 +1072,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       '\\frac{U_1}{U_2} = \\frac{N_1}{N_2}',
       '\\Delta P_{\\text{dây}} = \\frac{P^2 R}{U^2}'
     ],
-    ...SIM_PRESETS.mag_induction,
+    ...SIM_PRESETS.transformer,
     practiceExercises: [
       {
         source: SRC_12,
@@ -1134,7 +1134,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       '\\vec{E} \\perp \\vec{B} \\perp \\vec{v}, \\quad \\vec{E} \\text{ và } \\vec{B} \\text{ cùng pha}',
       '\\lambda = \\frac{c}{f} = c \\cdot T \\quad (c = 3\\cdot 10^8\\text{ m/s})'
     ],
-    ...SIM_PRESETS.young_light,
+    ...SIM_PRESETS.em_wave,
     practiceExercises: [
       {
         source: SRC_12,
@@ -1257,7 +1257,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'R \\approx 1{,}2\\cdot 10^{-15}\\cdot A^{1/3}\\text{ (m)}',
       '1\\text{ u} \\cdot c^2 \\approx 931{,}5\\text{ MeV}'
     ],
-    ...SIM_PRESETS.nuclear,
+    ...SIM_PRESETS.rutherford,
     practiceExercises: [
       {
         source: SRC_12,
@@ -1315,7 +1315,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'E_{\\text{lk}} = \\Delta m\\cdot c^2, \\quad E_{\\text{lkr}} = \\frac{E_{\\text{lk}}}{A}',
       '\\Delta E = (m_{\\text{trước}} - m_{\\text{sau}})c^2 = \\sum E_{\\text{lk sau}} - \\sum E_{\\text{lk trước}}'
     ],
-    ...SIM_PRESETS.nuclear,
+    ...SIM_PRESETS.binding_energy,
     practiceExercises: [
       {
         source: SRC_12,
@@ -1436,7 +1436,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'k = 1: \\text{Phản ứng phân hạch có điều khiển ổn định}',
       'Q_{\\text{nhiệt}} = N_{\\text{phân hạch}} \\cdot \\Delta E_{\\text{1 phân hạch}}'
     ],
-    ...SIM_PRESETS.nuclear,
+    ...SIM_PRESETS.nuclear_fission,
     practiceExercises: [
       {
         source: SRC_12,

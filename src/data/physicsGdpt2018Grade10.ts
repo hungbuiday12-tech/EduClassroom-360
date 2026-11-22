@@ -928,7 +928,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       '\\vec{F}_{\\text{hợp lực}} = m\\vec{a}',
       'a = \\frac{F}{m}, \\qquad 1\\text{ N} = 1\\text{ kg}\\cdot\\text{m/s}^2'
     ],
-    ...SIM_PRESETS.free_fall,
+    ...SIM_PRESETS.inclined,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1046,7 +1046,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['\\vec{P} = m\\vec{g}, \\qquad P = mg', '\\vec{P} + \\vec{T} = m\\vec{a}'],
-    ...SIM_PRESETS.pendulum,
+    ...SIM_PRESETS.atwood,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1105,7 +1105,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['F_{\\text{mst}} = \\mu_t N', 'N_{\\text{mặt phẳng ngang}} = mg', 'N_{\\text{dốc nghiêng }\\alpha} = mg\\cos\\alpha'],
-    ...SIM_PRESETS.kinematics,
+    ...SIM_PRESETS.inclined,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1226,7 +1226,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       'N_{\\text{kéo xiên}} = mg - F\\sin\\alpha',
       'a_{\\text{trượt dốc}} = g(\\sin\\alpha - \\mu\\cos\\alpha)'
     ],
-    ...SIM_PRESETS.kinematics,
+    ...SIM_PRESETS.inclined,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1288,7 +1288,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       'M = F \\cdot d \\quad (\\text{N}\\cdot\\text{m})',
       '\\sum M_{\\text{thuận}} = \\sum M_{\\text{ngược}}, \\qquad \\sum \\vec{F} = \\vec{0}'
     ],
-    ...SIM_PRESETS.vectors,
+    ...SIM_PRESETS.torque,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1467,7 +1467,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['\\mathcal{P} = \\frac{A}{t} = F \\cdot v \\cdot \\cos\\alpha', '1\\text{ kWh} = 3{,}6 \\cdot 10^6\\text{ J}'],
-    ...SIM_PRESETS.kinematics,
+    ...SIM_PRESETS.free_fall,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1697,7 +1697,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       '\\vec{p} = m\\vec{v} \\quad (\\text{kg}\\cdot\\text{m/s})',
       '\\vec{F}\\Delta t = \\Delta\\vec{p} = m\\vec{v}_2 - m\\vec{v}_1'
     ],
-    ...SIM_PRESETS.vectors,
+    ...SIM_PRESETS.momentum,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1754,7 +1754,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       'm_1\\vec{v}_1 + m_2\\vec{v}_2 = m_1\\vec{v}_1\' + m_2\\vec{v}_2\'',
       'V_{\\text{mềm}} = \\frac{m_1 v_1 + m_2 v_2}{m_1 + m_2}'
     ],
-    ...SIM_PRESETS.kinematics,
+    ...SIM_PRESETS.newton_cradle,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1815,7 +1815,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
     keyFormulas: [
       'v = \\frac{d_{\\text{tấm chắn}}}{\\Delta t}, \\qquad p_{\\text{trước}} = m_1 v_1 + m_2 v_2 \\approx p_{\\text{sau}}'
     ],
-    ...SIM_PRESETS.kinematics,
+    ...SIM_PRESETS.momentum,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1947,7 +1947,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       'a_{ht} = \\frac{v^2}{R} = \\omega^2 R',
       'F_{ht} = \\frac{mv^2}{R} = m\\omega^2 R'
     ],
-    ...SIM_PRESETS.circular,
+    ...SIM_PRESETS.centrifuge,
     practiceExercises: [
       {
         source: SRC_10,
@@ -2065,7 +2065,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       '\\rho = \\frac{m}{V}, \\qquad p = \\frac{F}{S}',
       'p = p_0 + \\rho g h, \\qquad \\Delta p = \\rho g \\Delta h'
     ],
-    ...SIM_PRESETS.thermal_gas,
+    ...SIM_PRESETS.archimedes,
     practiceExercises: [
       {
         source: SRC_10,

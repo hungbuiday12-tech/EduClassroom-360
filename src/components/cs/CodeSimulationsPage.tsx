@@ -69,8 +69,8 @@ export const CodeSimulationsPage: React.FC<CodeSimulationsPageProps> = ({ onBack
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-3xl">
               {isEn
-                ? 'Interactive 2D trace canvases (16 algorithms: Oxy, Strings, DP, Binary Search, Graphs) paired with real-time 3D WebGL data structure & pathfinding visualizations.'
-                : 'Không gian chuyên biệt gồm 16 mô phỏng thuật toán 2D (Tọa độ Oxy, Xâu, Mảng, DP, Chặt nhị phân, Đồ thị, Cây) kết hợp sân khấu WebGL 3D tương tác trực tiếp từng dòng code.'}
+                ? 'Interactive 2D trace canvases (16 algorithms: Oxy, Strings, DP, Binary Search, Graphs) paired with 10 real-time 3D WebGL data structure & pathfinding visualizations.'
+                : 'Không gian chuyên biệt gồm 16 mô phỏng thuật toán 2D (Tọa độ Oxy, Xâu, Mảng, DP, Chặt nhị phân, Đồ thị, Cây) kết hợp 10 sân khấu WebGL 3D tương tác trực tiếp từng dòng code.'}
             </p>
           </div>
 
@@ -98,7 +98,7 @@ export const CodeSimulationsPage: React.FC<CodeSimulationsPageProps> = ({ onBack
               }`}
             >
               <Box className="w-4 h-4 shrink-0" />
-              <span>{isEn ? '3D Data & Code Hologram (5)' : 'Mô phỏng Code 3D (5)'}</span>
+              <span>{isEn ? '3D Data & Code Hologram (10)' : 'Mô phỏng Code 3D (10)'}</span>
             </button>
           </div>
         </div>

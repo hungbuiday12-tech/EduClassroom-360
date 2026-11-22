@@ -1376,7 +1376,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
+    sim3dMode: 'oxyz_vector',
     defaultGraphConfig: {
       type: 'custom',
       customExpr: 'x + 4/x',
@@ -1744,7 +1744,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d'
   },
   {
     id: 'math-pro-6',
@@ -1833,7 +1833,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: {
       type: 'cubic',
       params: { a: 1, b: 0, c: -3, d: 0 },

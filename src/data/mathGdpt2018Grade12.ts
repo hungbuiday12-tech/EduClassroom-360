@@ -43,8 +43,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
-    defaultGraphConfig: { type: 'cubic', params: { a: 1, b: -3, c: 0, d: 2 }, color: '#2563eb', name: 'y = x³ - 3x² + 2' }
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'cubic', params: { a: 1, b: -3, c: 0, d: 2 }, showTangent: true, tangentX0: 1, color: '#2563eb', name: 'y = x³ - 3x² + 2' }
   },
   {
     id: 'math-4',
@@ -86,8 +86,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
-    defaultGraphConfig: { type: 'cubic', params: { a: 1, b: 0, c: -3, d: 2 }, color: '#0ea5e9', name: 'Cực trị & GTLN-GTNN' }
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'cubic', params: { a: 1, b: 0, c: -3, d: 2 }, showTangent: true, tangentX0: 1, color: '#0ea5e9', name: 'Cực trị & GTLN-GTNN' }
   },
   {
     id: 'math-2',
@@ -130,7 +130,7 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: { type: 'rational', params: { a: 2, b: 1, c: 1, d: -1 }, color: '#0284c7', name: 'Đồ thị & Tiệm cận' }
   },
   {
@@ -173,8 +173,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
-    defaultGraphConfig: { type: 'cubic', params: { a: 1, b: -3, c: 0, d: 2 }, color: '#4f46e5', name: 'Khảo sát đồ thị hàm số' }
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'cubic', params: { a: 1, b: -3, c: 0, d: 2 }, showTangent: true, tangentX0: 0, color: '#4f46e5', name: 'Khảo sát đồ thị hàm số' }
   },
   {
     id: 'math-12-b5',
@@ -216,7 +216,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'cubic', params: { a: -1, b: 3, c: 36, d: 0 }, showTangent: true, tangentX0: 2, color: '#10b981', name: 'Tối ưu hóa thực tiễn bằng đạo hàm' }
   },
   // CHƯƠNG II: VECTƠ VÀ HỆ TRỤC TỌA ĐỘ TRONG KHÔNG GIAN
   {
@@ -386,7 +387,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '4*e^(-0.5*x*x)', params: { a: 4, b: 0, c: 1, d: 0 }, color: '#8b5cf6', name: 'Độ phân tán & Khoảng tứ phân vị' }
   },
   {
     id: 'math-12-b10',
@@ -428,7 +430,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '4*e^(-0.35*(x-0.5)^2)', params: { a: 4, b: 0.5, c: 1, d: 0 }, color: '#6366f1', name: 'Phương sai & Độ lệch chuẩn' }
   },
   // CHƯƠNG IV: NGUYÊN HÀM VÀ TÍCH PHÂN
   {
@@ -472,7 +475,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'integral_disks_3d'
+    sim3dMode: 'integral_disks_3d',
+    defaultGraphConfig: { type: 'quadratic', params: { a: 1, b: 0, c: 0, d: 0 }, showIntegral: true, integralRange: [-2, 2], color: '#10b981', name: 'Nguyên hàm F(x) & Hình thang cong' }
   },
   {
     id: 'math-5',
@@ -558,7 +562,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'integral_disks_3d'
+    sim3dMode: 'integral_disks_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '4 - x^2', params: { a: -1, b: 0, c: 4, d: 0 }, showIntegral: true, integralRange: [-2, 2], color: '#059669', name: 'Diện tích y = 4 - x² & Trục Ox' }
   },
   // CHƯƠNG V: PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN
   {
@@ -772,7 +777,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3.5*e^(-0.5*x*x)', params: { a: 3.5, b: 0, c: 1, d: 0 }, color: '#6366f1', name: 'Xác suất có điều kiện P(A|B)' }
   },
   {
     id: 'math-12-b19',
@@ -814,7 +820,8 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '4*e^(-0.45*x*x)', params: { a: 4, b: 0, c: 1, d: 0 }, color: '#4f46e5', name: 'Công thức Bayes & Xác suất toàn phần' }
   }
 ];
 

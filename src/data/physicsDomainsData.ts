@@ -139,7 +139,9 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
       vizMode: { min: 0, max: 2, step: 1, unit: '', label: 'Chế độ hiển thị' },
       v0: { min: 0, max: 15, step: 0.5, unit: 'm/s', label: 'Vận tốc ban đầu v₀' },
       accel: { min: -5, max: 6, step: 0.5, unit: 'm/s²', label: 'Gia tốc a' },
-      angleDeg: { min: 10, max: 150, step: 5, unit: '°', label: 'Góc hợp vectơ α' }
+      angleDeg: { min: 10, max: 150, step: 5, unit: '°', label: 'Góc hợp vectơ α' },
+      f1: { min: 10, max: 60, step: 5, unit: 'N', label: 'Lực thành phần F₁' },
+      f2: { min: 10, max: 60, step: 5, unit: 'N', label: 'Lực thành phần F₂' }
     },
     presets: [
       { label: 'Nhanh dần đều', description: 'v₀ = 2 m/s, a = 3 m/s² (đồ thị d-t)', params: { vizMode: 1, v0: 2, accel: 3, angleDeg: 35, f1: 30, f2: 20 } },
@@ -280,7 +282,8 @@ export const PHYSICS_2D_SIMS: Record<PhysicsSimType, Physics2DSimSpec> = {
       harmonicN: { min: 1, max: 7, step: 1, unit: 'bó', label: 'Số bó sóng k' },
       amplitude: { min: 2, max: 9, step: 0.5, unit: 'cm', label: 'Biên độ bụng' },
       waveSpeed: { min: 8, max: 48, step: 2, unit: 'm/s', label: 'Tốc độ truyền v' },
-      length: { min: 1.0, max: 4.0, step: 0.2, unit: 'm', label: 'Chiều dài dây l' }
+      length: { min: 1.0, max: 4.0, step: 0.2, unit: 'm', label: 'Chiều dài dây l' },
+      openEnd: { min: 0, max: 1, step: 1, unit: '', label: 'Đầu phản xạ (0:Cố định / 1:Tự do)' }
     },
     presets: [
       { label: 'Họa âm bậc 1 (1 bó)', description: 'k = 1 bó sóng cơ bản', params: { length: 2.4, waveSpeed: 20, amplitude: 7, harmonicN: 1, openEnd: 0 } },

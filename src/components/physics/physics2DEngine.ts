@@ -160,10 +160,15 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
   const right = cx + cw / 2;
 
   const wireColor = isOpen ? '#64748b' : isDark ? '#38bdf8' : '#0284c7';
+  ctx.save();
   ctx.strokeStyle = wireColor;
   ctx.lineWidth = 4;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  if (!isOpen) {
+    ctx.shadowColor = wireColor;
+    ctx.shadowBlur = isDark ? 10 : 4;
+  }
 
   const swX1 = cx + cw * 0.22;
   const swX2 = cx + cw * 0.36;
@@ -181,6 +186,7 @@ function drawOhmCircuit({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
   ctx.lineTo(left, bottom);
   ctx.closePath();
   ctx.stroke();
+  ctx.restore();
 
   const jLeft = cx - Math.min(80, cw * 0.22);
   const jRight = cx + Math.min(80, cw * 0.22);
@@ -2847,13 +2853,21 @@ function drawPhotoelectricEffect({ ctx, w, h, t, isDark, params: p, overlays: ov
 export function renderPhysics2DSimulation(opts: Physics2DRenderOptions): void {
   const { simType, ctx, w, h, t, isDark, params, overlays, pushTelemetry } = opts;
 
-  // Clear Canvas Background
-  ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
+  // Clear Canvas Background with subtle studio radial vignette
+  const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.45, 24, w * 0.5, h * 0.5, Math.max(w, h) * 0.78);
+  if (isDark) {
+    bgGrad.addColorStop(0, '#10182b');
+    bgGrad.addColorStop(1, '#080d19');
+  } else {
+    bgGrad.addColorStop(0, '#ffffff');
+    bgGrad.addColorStop(1, '#f1f5f9');
+  }
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, w, h);
 
   // Draw Grid / Ruler Overlay
   if (overlays.showRulerGrid) {
-    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.06)';
+    ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(15, 23, 42, 0.06)';
     ctx.lineWidth = 1;
     const gridSize = 30;
     ctx.beginPath();
@@ -2862,6 +2876,18 @@ export function renderPhysics2DSimulation(opts: Physics2DRenderOptions): void {
       ctx.lineTo(x, h);
     }
     for (let y = 0; y < h; y += gridSize) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.09)' : 'rgba(2, 132, 199, 0.08)';
+    ctx.beginPath();
+    for (let x = 0; x < w; x += gridSize * 4) {
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+    }
+    for (let y = 0; y < h; y += gridSize * 4) {
       ctx.moveTo(0, y);
       ctx.lineTo(w, y);
     }
@@ -2946,13 +2972,17 @@ export function renderPhysics2DSimulation(opts: Physics2DRenderOptions): void {
   }
 
   // Subtle Time Stamp badge in top-right of canvas
-  ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.85)';
-  ctx.fillRect(w - 94, 8, 84, 22);
-  ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.35)' : 'rgba(2, 132, 199, 0.25)';
+  ctx.save();
+  ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.78)' : 'rgba(255, 255, 255, 0.9)';
+  ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.4)' : 'rgba(2, 132, 199, 0.3)';
   ctx.lineWidth = 1;
-  ctx.strokeRect(w - 94, 8, 84, 22);
+  ctx.beginPath();
+  ctx.roundRect(w - 94, 8, 84, 22, 6);
+  ctx.fill();
+  ctx.stroke();
   ctx.fillStyle = isDark ? '#38bdf8' : '#0284c7';
   ctx.font = 'bold 11px monospace';
   ctx.textAlign = 'center';
   ctx.fillText(`t = ${t.toFixed(2)}s`, w - 52, 23);
+  ctx.restore();
 }

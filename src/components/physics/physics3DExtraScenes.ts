@@ -143,20 +143,20 @@ export function buildExtra3DScene(
       tiltGroup.add(flywheel);
 
       const rim = new THREE.Mesh(
-        new THREE.TorusGeometry(1.05, 0.18, 16, 36),
-        new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.55, roughness: 0.25 })
+        new THREE.TorusGeometry(1.05, 0.18, 20, 48),
+        new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, metalness: 0.88, roughness: 0.16, clearcoat: 0.85, clearcoatRoughness: 0.12 })
       );
       rim.rotation.y = Math.PI / 2;
       const hub = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.28, 0.28, 0.35, 20),
-        new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.5, roughness: 0.25 })
+        new THREE.CylinderGeometry(0.28, 0.28, 0.35, 24),
+        new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, metalness: 0.72, roughness: 0.18, clearcoat: 0.75 })
       );
       hub.rotation.z = Math.PI / 2;
       flywheel.add(rim, hub);
       for (let i = 0; i < 4; i++) {
         const spoke = new THREE.Mesh(
           new THREE.BoxGeometry(0.1, 1.9, 0.1),
-          new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6 })
+          new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.85, roughness: 0.2 })
         );
         spoke.rotation.x = (i * Math.PI) / 4;
         flywheel.add(spoke);
@@ -330,13 +330,18 @@ export function buildExtra3DScene(
     // 7. RESONANCE TUBES 3D
     case 'resonance_tubes_3d': {
       const tube = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.1, 1.1, 8.4, 28, 1, true),
-        new THREE.MeshStandardMaterial({
-          color: 0x38bdf8,
+        new THREE.CylinderGeometry(1.1, 1.1, 8.4, 36, 1, true),
+        new THREE.MeshPhysicalMaterial({
+          color: 0x7dd3fc,
           transparent: true,
-          opacity: 0.2,
+          opacity: 0.24,
           side: THREE.DoubleSide,
-          roughness: 0.2
+          roughness: 0.08,
+          metalness: 0.05,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.06,
+          ior: 1.5,
+          depthWrite: false
         })
       );
       tube.rotation.z = Math.PI / 2;
@@ -561,12 +566,16 @@ export function buildExtra3DScene(
     case 'prism_dispersion_3d': {
       const prism = new THREE.Mesh(
         new THREE.CylinderGeometry(1.6, 1.6, 2.6, 3),
-        new THREE.MeshStandardMaterial({
-          color: 0xa78bfa,
+        new THREE.MeshPhysicalMaterial({
+          color: 0xc4b5fd,
           transparent: true,
-          opacity: 0.35,
-          roughness: 0.1,
-          metalness: 0.15
+          opacity: 0.42,
+          roughness: 0.06,
+          metalness: 0.05,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.04,
+          ior: 1.65,
+          reflectivity: 0.95
         })
       );
       prism.position.set(0, 2.1, 0);
@@ -605,11 +614,13 @@ export function buildExtra3DScene(
     // 13. CURVED MIRROR 3D
     case 'curved_mirror_3d': {
       const dish = new THREE.Mesh(
-        new THREE.SphereGeometry(3.2, 32, 24, 0, Math.PI * 2, 0, 0.65),
-        new THREE.MeshStandardMaterial({
-          color: 0x38bdf8,
-          metalness: 0.85,
-          roughness: 0.12,
+        new THREE.SphereGeometry(3.2, 40, 28, 0, Math.PI * 2, 0, 0.65),
+        new THREE.MeshPhysicalMaterial({
+          color: 0x7dd3fc,
+          metalness: 0.96,
+          roughness: 0.06,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.05,
           side: THREE.DoubleSide
         })
       );
@@ -751,18 +762,27 @@ export function buildExtra3DScene(
     // 16. CARNOT PISTON 3D
     case 'carnot_piston_3d': {
       const cyl = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.5, 1.5, 4.4, 28, 1, true),
-        new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.2, side: THREE.DoubleSide })
+        new THREE.CylinderGeometry(1.5, 1.5, 4.4, 36, 1, true),
+        new THREE.MeshPhysicalMaterial({
+          color: 0x7dd3fc,
+          transparent: true,
+          opacity: 0.24,
+          roughness: 0.08,
+          clearcoat: 1.0,
+          ior: 1.5,
+          depthWrite: false,
+          side: THREE.DoubleSide
+        })
       );
       cyl.position.set(0, 2.3, 0);
       const base = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.55, 1.55, 0.3, 28),
-        new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0x9f1239, emissiveIntensity: 0.4 })
+        new THREE.CylinderGeometry(1.55, 1.55, 0.3, 36),
+        new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0x9f1239, emissiveIntensity: 0.45, roughness: 0.35 })
       );
       base.position.set(0, 0.15, 0);
       const piston = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.42, 1.42, 0.38, 28),
-        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.75, roughness: 0.2 })
+        new THREE.CylinderGeometry(1.42, 1.42, 0.38, 36),
+        new THREE.MeshPhysicalMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.16, clearcoat: 0.7 })
       );
       const rod = new THREE.Mesh(
         new THREE.CylinderGeometry(0.14, 0.14, 2.4, 14),

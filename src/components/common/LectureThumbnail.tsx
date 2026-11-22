@@ -83,8 +83,21 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
       );
     }
 
+    // 3D Tangent Surface / Derivative
+    if (sim3dMode === 'tangent_surface_3d') {
+      return (
+        <svg viewBox="0 0 56 56" className="w-full h-full">
+          <path d="M8 38C16 14 28 16 48 24" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" />
+          <path d="M10 44C18 22 30 24 48 32" fill="none" stroke="#38bdf8" strokeWidth="1.4" opacity="0.7" />
+          <polygon points="18,14 40,20 35,33 13,27" fill="#f59e0b" fillOpacity="0.28" stroke="#f59e0b" strokeWidth="1.5" />
+          <line x1="27" y1="24" x2="32" y2="11" stroke="#ec4899" strokeWidth="1.9" strokeLinecap="round" />
+          <circle cx="27" cy="24" r="2.6" fill="#ec4899" className="math-focus-pulse" />
+        </svg>
+      );
+    }
+
     // Probability / Statistics histogram & bell curve
-    if (lowCat.includes('xác suất') || lowId.includes('math-12') || lowId.includes('math-9-7')) {
+    if (sim3dMode === 'probability_bell_3d' || lowCat.includes('xác suất') || lowId.includes('math-12') || lowId.includes('math-9-7')) {
       return (
         <svg viewBox="0 0 56 56" className="w-full h-full">
           <rect x="10" y="32" width="7" height="12" rx="1.5" fill="#818cf8" opacity="0.7" className="math-bar-breathe" />

@@ -353,10 +353,14 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     });
     rendererRef.current = renderer;
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, quality3D === 'high' ? 1.75 : 1.15));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, quality3D === 'high' ? 2 : 1.35));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.22;
+    if (!isSoftwareGl) {
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
 
     container.appendChild(renderer.domElement);
 
@@ -376,17 +380,21 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     pmremGenerator.dispose();
 
     // Lighting Rig
-    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.85);
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x0f172a, 0.85);
     scene.add(hemiLight);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.42);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.5);
-    keyLight.position.set(6, 10, 8);
+    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.6);
+    keyLight.position.set(6, 11, 8);
+    if (!isSoftwareGl) {
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(1024, 1024);
+    }
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x88bbff, 0.9);
+    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.95);
     fillLight.position.set(-6, 4, -6);
     scene.add(fillLight);
 
@@ -919,21 +927,27 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const particle = new THREE.Mesh(partGeo, partMat);
       group.add(particle);
 
-      // Trajectory Helix Path
+      // Trajectory Helix Path rendered as smooth glowing PBR tube
       const helixPoints: THREE.Vector3[] = [];
       const R_cyclotron = Math.min(4.5, Math.max(0.2, Math.abs(particleSpeed) / Math.max(0.2, Math.abs(magneticB))));
-      const vz = 1.2; // Axial drift
-      const steps = 300;
-      for (let i = 0; i < steps; i++) {
-        const phi = (i / 30) * Math.PI * 2;
+      const steps = 160;
+      for (let i = 0; i <= steps; i++) {
+        const phi = (i / 18) * Math.PI * 2;
         const px = Math.cos(phi) * R_cyclotron;
         const py = 3 + Math.sin(phi) * R_cyclotron;
         const pz = -3 + (i / steps) * 6;
         helixPoints.push(new THREE.Vector3(px, py, pz));
       }
-      const helixGeo = new THREE.BufferGeometry().setFromPoints(helixPoints);
-      const helixMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 2 });
-      group.add(new THREE.Line(helixGeo, helixMat));
+      const helixCurve = new THREE.CatmullRomCurve3(helixPoints);
+      const helixTubeGeo = new THREE.TubeGeometry(helixCurve, 180, 0.045, 10, false);
+      const helixTubeMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        emissive: 0xd97706,
+        emissiveIntensity: 0.45,
+        roughness: 0.25,
+        metalness: 0.35
+      });
+      group.add(new THREE.Mesh(helixTubeGeo, helixTubeMat));
 
       sceneTickRef.current = () => {
         const tCur = simStateRef.current.time * 2.5;
@@ -955,15 +969,16 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     else if (mode === 'wave_ripple') {
       const planeW = 12;
       const planeH = 12;
-      const segments = 60;
+      const segments = 68;
       const planeGeo = new THREE.PlaneGeometry(planeW, planeH, segments, segments);
       planeGeo.rotateX(-Math.PI / 2);
 
-      const planeMat = new THREE.MeshStandardMaterial({
+      const planeMat = new THREE.MeshPhysicalMaterial({
         color: 0x0284c7,
-        roughness: 0.1,
-        metalness: 0.4,
-        wireframe: false,
+        roughness: 0.08,
+        metalness: 0.12,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.06,
         side: THREE.DoubleSide,
       });
       const rippleMesh = new THREE.Mesh(planeGeo, planeMat);
@@ -1025,35 +1040,44 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     // SCENE 5: MẪU NGUYÊN TỬ BOHR 3D (BOHR ATOM)
     // -------------------------------------------------------------
     else if (mode === 'bohr_atom') {
-      // Nucleus (Protons + Neutrons cluster)
+      // Nucleus (Fibonacci sphere packed Protons + Neutrons cluster)
       const nucleusGroup = new THREE.Group();
       const nucColors = [0xef4444, 0x3b82f6]; // Red proton, Blue neutron
-      for (let i = 0; i < 14; i++) {
-        const sphereGeo = new THREE.SphereGeometry(0.18, 12, 12);
-        const sphereMat = new THREE.MeshStandardMaterial({
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+      const nucleonCount = 16;
+      for (let i = 0; i < nucleonCount; i++) {
+        const yOff = 1 - (i / (nucleonCount - 1)) * 2;
+        const rSlice = Math.sqrt(Math.max(0, 1 - yOff * yOff));
+        const theta = goldenAngle * i;
+        const packR = i === 0 ? 0 : 0.28;
+        const sphereGeo = new THREE.SphereGeometry(0.18, 16, 16);
+        const sphereMat = new THREE.MeshPhysicalMaterial({
           color: nucColors[i % 2],
-          roughness: 0.3,
-          metalness: 0.5,
+          roughness: 0.22,
+          metalness: 0.35,
+          clearcoat: 0.7
         });
         const nucSphere = new THREE.Mesh(sphereGeo, sphereMat);
         nucSphere.position.set(
-          (Math.random() - 0.5) * 0.6,
-          2.5 + (Math.random() - 0.5) * 0.6,
-          (Math.random() - 0.5) * 0.6
+          Math.cos(theta) * rSlice * packR,
+          2.5 + yOff * packR,
+          Math.sin(theta) * rSlice * packR
         );
         nucleusGroup.add(nucSphere);
       }
       group.add(nucleusGroup);
 
-      // Quantized energy level rings (K, L, M, N: n=1, 2, 3, 4)
+      // Quantized energy level rings (K, L, M, N: n=1, 2, 3, 4) rendered as 3D Torus rings
       const orbitRadii = [1.2, 2.2, 3.4, 4.8];
       orbitRadii.forEach((r, idx) => {
-        const ringGeo = new THREE.RingGeometry(r - 0.02, r + 0.02, 64);
-        const ringMat = new THREE.MeshBasicMaterial({
-          color: idx + 1 === quantumN ? 0xf59e0b : 0x475569,
-          side: THREE.DoubleSide,
+        const isActive = idx + 1 === quantumN;
+        const ringGeo = new THREE.TorusGeometry(r, isActive ? 0.032 : 0.016, 12, 72);
+        const ringMat = new THREE.MeshStandardMaterial({
+          color: isActive ? 0xf59e0b : 0x475569,
+          emissive: isActive ? 0xd97706 : 0x000000,
+          emissiveIntensity: isActive ? 0.65 : 0,
           transparent: true,
-          opacity: idx + 1 === quantumN ? 0.9 : 0.3,
+          opacity: isActive ? 0.95 : 0.38,
         });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
         ringMesh.rotation.x = Math.PI / 2;
@@ -1061,14 +1085,19 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         group.add(ringMesh);
       });
 
-      // Electron particle
-      const electronGeo = new THREE.SphereGeometry(0.14, 16, 16);
+      // Electron particle with subtle halo
+      const electronGeo = new THREE.SphereGeometry(0.16, 20, 20);
       const electronMat = new THREE.MeshStandardMaterial({
-        color: 0x06b6d4,
+        color: 0x22d3ee,
         emissive: 0x06b6d4,
-        emissiveIntensity: 0.8,
+        emissiveIntensity: 0.95,
       });
       const electron = new THREE.Mesh(electronGeo, electronMat);
+      const haloMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.28, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.25 })
+      );
+      electron.add(haloMesh);
       group.add(electron);
 
       const safeN = Math.max(1, Math.min(4, quantumN));
@@ -1079,6 +1108,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         const ex = Math.cos(angle) * currentOrbitR;
         const ez = Math.sin(angle) * currentOrbitR;
         electron.position.set(ex, 2.5, ez);
+        nucleusGroup.rotation.y = simStateRef.current.time * 0.4;
       };
       sceneTickRef.current(0);
 
@@ -1094,38 +1124,53 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const safeFMag = Math.max(0.25, Math.abs(focalLength3D));
       const fSigned = isDiverging3D ? -safeFMag : safeFMag;
       const safeD = Math.max(0.25, Math.abs(objectDist3D));
+      const isSw = isSoftwareGlRef.current;
 
       // Optical axis along X
-      const axisGeo = new THREE.CylinderGeometry(0.025, 0.025, 13, 8);
+      const axisGeo = new THREE.CylinderGeometry(0.025, 0.025, 13, 10);
       axisGeo.rotateZ(Math.PI / 2);
-      const axisMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
+      const axisMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.4 });
       const axis = new THREE.Mesh(axisGeo, axisMat);
       axis.position.y = 2.0;
       group.add(axis);
 
-      // 3D Lens at X = 0, Y = 2.0 (Biconvex or Diverging marker)
+      // Optical Glass 3D Lens at X = 0, Y = 2.0 with metallic rim collar
       const lensGeo = isDiverging3D
-        ? new THREE.CylinderGeometry(2.1, 2.1, 0.25, 24)
-        : new THREE.SphereGeometry(2.2, 32, 24);
+        ? new THREE.CylinderGeometry(2.1, 2.1, 0.24, 32)
+        : new THREE.SphereGeometry(2.2, 40, 28);
       if (isDiverging3D) {
         lensGeo.rotateZ(Math.PI / 2);
       } else {
         lensGeo.scale(0.18, 1.0, 1.0);
       }
-      const lensMat = new THREE.MeshStandardMaterial({
+      const lensMat = new THREE.MeshPhysicalMaterial({
         color: isDiverging3D ? 0xc084fc : 0x38bdf8,
+        roughness: 0.06,
+        metalness: 0.05,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.05,
         transparent: true,
-        opacity: 0.45,
-        roughness: 0.08,
-        metalness: 0.25,
+        opacity: isSw ? 0.42 : 0.85,
+        transmission: isSw ? 0 : 0.75,
+        ior: 1.52,
+        thickness: 0.45,
+        depthWrite: false,
       });
       const lensMesh = new THREE.Mesh(lensGeo, lensMat);
       lensMesh.position.set(0, 2.0, 0);
       group.add(lensMesh);
 
+      const lensRim = new THREE.Mesh(
+        new THREE.TorusGeometry(2.15, 0.045, 14, 48),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.2 })
+      );
+      lensRim.rotation.y = Math.PI / 2;
+      lensRim.position.set(0, 2.0, 0);
+      group.add(lensRim);
+
       // Focal markers F and F'
-      const fGeo = new THREE.SphereGeometry(0.11, 16, 16);
-      const fMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.4 });
+      const fGeo = new THREE.SphereGeometry(0.12, 18, 18);
+      const fMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.55 });
       const fLeft = new THREE.Mesh(fGeo, fMat);
       fLeft.position.set(-fSigned, 2.0, 0);
       const fRight = new THREE.Mesh(fGeo, fMat);
@@ -1163,28 +1208,32 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       );
       group.add(imgArrow);
 
-      // Principal light rays
+      // Principal light rays rendered as crisp glowing beams
       const B = new THREE.Vector3(-safeD, 2.0 + objH, 0);
       const L_top = new THREE.Vector3(0, 2.0 + objH, 0);
       const B_prime = new THREE.Vector3(clampedDPrime, 2.0 + imgH, 0);
       const O = new THREE.Vector3(0, 2.0, 0);
 
-      const rayMat = new THREE.LineBasicMaterial({ color: 0xfacc15 });
+      const beamMat = new THREE.MeshStandardMaterial({
+        color: 0xfacc15,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 0.7
+      });
+      const addRaySegment = (p1: THREE.Vector3, p2: THREE.Vector3) => {
+        if (p1.distanceTo(p2) < 0.02) return;
+        const c = new THREE.LineCurve3(p1, p2);
+        group.add(new THREE.Mesh(new THREE.TubeGeometry(c, 4, 0.026, 8, false), beamMat));
+      };
       const ray1Out = isDiverging3D
         ? new THREE.Vector3(5.5, 2.0 + objH + (objH / safeFMag) * 5.5, 0)
         : dPrime > 0
         ? B_prime
         : new THREE.Vector3(5.5, 2.0 + objH - (objH / safeFMag) * 5.5, 0);
 
-      const ray1Geo = new THREE.BufferGeometry().setFromPoints([B, L_top, ray1Out]);
-      group.add(new THREE.Line(ray1Geo, rayMat));
-
-      const ray2Geo = new THREE.BufferGeometry().setFromPoints([
-        B,
-        O,
-        dPrime > 0 ? B_prime : new THREE.Vector3(5.5, 2.0 - (objH / safeD) * 5.5, 0),
-      ]);
-      group.add(new THREE.Line(ray2Geo, rayMat));
+      addRaySegment(B, L_top);
+      addRaySegment(L_top, ray1Out);
+      addRaySegment(B, O);
+      addRaySegment(O, dPrime > 0 ? B_prime : new THREE.Vector3(5.5, 2.0 - (objH / safeD) * 5.5, 0));
 
       if (dPrime < 0) {
         const vMat = new THREE.LineDashedMaterial({ color: 0xc084fc, dashSize: 0.15, gapSize: 0.1 });

@@ -45,7 +45,8 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'line_plane_oxyz'
+    sim3dMode: 'line_plane_oxyz',
+    defaultGraphConfig: { type: 'linear', params: { a: -2, b: 3, c: 0, d: 0 }, color: '#3b82f6', name: 'Giao tuyến hệ phương trình' }
   },
   {
     id: 'math-cd-10-2',
@@ -88,7 +89,8 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'pyramid_section'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3 * e^(-0.4 * x * x)', params: { a: 3, b: 1, c: 0, d: 0 }, color: '#8b5cf6', name: 'Hệ số Nhị thức Newton (Tam giác Pascal)' }
   },
   {
     id: 'math-10-6',
@@ -303,7 +305,8 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'probability_bell_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: '3.2 * e^(-0.5 * x * x)', params: { a: 3.2, b: 1, c: 0, d: 0 }, color: '#6366f1', name: 'Phân phối xác suất biến ngẫu nhiên' }
   },
   {
     id: 'math-cd-12-2',
@@ -346,7 +349,8 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'linear', params: { a: -0.75, b: 4, c: 0, d: 0 }, color: '#10b981', name: 'Đường đồng mức F(x, y) = max' }
   },
   {
     id: 'math-cd-12-3',
@@ -390,7 +394,8 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'exponential', params: { a: 1, b: 0.15, c: 0, d: 0 }, color: '#f59e0b', name: 'Tăng trưởng lãi kép (1 + r)^t' }
   },
   // ==========================================================
   // CÁC CHUYÊN ĐỀ NÂNG CAO & BỒI DƯỠNG HSG (BẢO TỒN TỪ CT 2006 / ÔN THI)
@@ -433,7 +438,8 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: 'x^4 - 2*x^2', params: { a: 1, b: -2, c: 0, d: 0 }, color: '#4f46e5', name: 'y = x⁴ - 2x² (3 cực trị)' }
   },
   {
     id: 'math-9',
@@ -513,7 +519,8 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'custom', customExpr: 'abs(x^3 - 3*x + 1)', params: { a: 1, b: -3, c: 1, d: 0 }, color: '#ec4899', name: 'y = |x³ - 3x + 1| (5 cực trị)' }
   },
   {
     id: 'math-12-3',
@@ -586,13 +593,14 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
     essayProblems: [
       {
         source: 'Chuyên đề NC · BPT Mũ VDC',
-        question: 'Có bao nhiêu số nguyên $x$ thỏa mãn $(2^x - 8)\\sqrt{5 - x} \\le 0$?',
-        hints: ['ĐK $x \\le 5$; nếu $x=5$ thỏa mãn ngay, nếu $x < 5$ thì cần $2^x - 8 \\le 0$.'],
-        solutionSteps: ['Bước 1: ĐK $x \\le 5$. Với $x < 5$, $\\sqrt{5-x} > 0 \\implies 2^x \\le 8 \\iff x \\le 3$.', 'Bước 2: Kết hợp $x = 5$, các nghiệm nguyên là $\\dots, 2, 3, 5$ (không đếm xuể nếu không chặn dưới; thường đề cho $(2^x - 8)\\log_2(10-x) \\le 0$ hoặc có $\\sqrt{x+2}$).'],
-        finalAnswer: '$x \\in (-\\infty; 3] \\cup \\{5\\}$.'
+        question: 'Có bao nhiêu số nguyên $x \\ge -2$ thỏa mãn $(2^x - 8)\\sqrt{5 - x} \\le 0$?',
+        hints: ['ĐK $-2 \\le x \\le 5$; nếu $x=5$ thỏa mãn ngay, nếu $x < 5$ thì cần $2^x - 8 \\le 0$.'],
+        solutionSteps: ['Bước 1: ĐK xác định $x \\le 5$, kết hợp giả thiết cho $-2 \\le x \\le 5$.', 'Bước 2: Với $x = 5$, bất phương trình thành $0 \\le 0$ (thỏa mãn). Với $-2 \\le x < 5$, $\\sqrt{5-x} > 0 \\implies 2^x \\le 8 \\iff x \\le 3$. Vậy nghiệm nguyên là $x \\in \\{-2; -1; 0; 1; 2; 3; 5\\}$.'],
+        finalAnswer: 'Có $7$ số nguyên: $x \\in \\{-2; -1; 0; 1; 2; 3; 5\\}$.'
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'exponential', params: { a: 1, b: 0.693, c: 0, d: -8 }, color: '#ef4444', name: 'y = 2^x - 8' }
   }
 ];

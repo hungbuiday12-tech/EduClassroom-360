@@ -30,9 +30,13 @@ function drawArrow2D(
   const dx = x2 - x1;
   const dy = y2 - y1;
   if (Math.hypot(dx, dy) < 4) return;
+  ctx.save();
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.lineWidth = 2.4;
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 5;
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
@@ -40,15 +44,17 @@ function drawArrow2D(
   const angle = Math.atan2(dy, dx);
   ctx.beginPath();
   ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - 9 * Math.cos(angle - 0.35), y2 - 9 * Math.sin(angle - 0.35));
-  ctx.lineTo(x2 - 9 * Math.cos(angle + 0.35), y2 - 9 * Math.sin(angle + 0.35));
+  ctx.lineTo(x2 - 9.5 * Math.cos(angle - 0.35), y2 - 9.5 * Math.sin(angle - 0.35));
+  ctx.lineTo(x2 - 9.5 * Math.cos(angle + 0.35), y2 - 9.5 * Math.sin(angle + 0.35));
   ctx.closePath();
   ctx.fill();
   if (label) {
+    ctx.shadowBlur = 0;
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(label, x2 + 5, y2 - 4);
+    ctx.fillText(label, x2 + 6, y2 - 4);
   }
+  ctx.restore();
 }
 
 export function renderExtra2DPhysicsSim(

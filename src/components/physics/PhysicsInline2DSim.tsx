@@ -301,7 +301,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
         simTimeRef.current += rawDt * simSpeedRef.current;
       }
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = cachedW || canvas.clientWidth;
       const h = cachedH || canvas.clientHeight;
       if (w < 40 || h < 40) return;

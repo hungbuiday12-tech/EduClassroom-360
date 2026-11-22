@@ -85,7 +85,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Máy Atwood & Lực Căng Dây Ròng Rọc',
     subtitle: 'Khảo sát gia tốc hai vật treo vắt qua ròng rọc cố định và lực căng T',
     formula: 'a = (m₂ - m₁)g / (m₁ + m₂) · T = 2m₁m₂g / (m₁ + m₂)',
-    linkedLessonId: 'phys-10-accel',
+    linkedLessonId: 'phys-10-b17',
     defaultParams: { m1: 2.0, m2: 3.5, g: 9.8 },
     paramBounds: {
       m1: { min: 0.5, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng m₁' },
@@ -105,7 +105,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Mặt Phẳng Nghiêng & Lực Ma Sát Trượt',
     subtitle: 'Phân tích trọng lực P thành Pₓ, Pᵧ và kiểm tra điều kiện trượt Fₘₛ = μN',
     formula: 'a = g(sinα - μ·cosα)',
-    linkedLessonId: 'phys-10-accel',
+    linkedLessonId: 'phys-10-b18',
     defaultParams: { angle: 30, mu: 0.2, mass: 3.0 },
     paramBounds: {
       angle: { min: 5, max: 65, step: 1, unit: '°', label: 'Góc nghiêng α' },
@@ -125,7 +125,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Va Chạm Đàn Hồi & Va Chạm Mềm 1D',
     subtitle: 'Kiểm chứng định luật bảo toàn động lượng và cơ năng trước/sau va chạm',
     formula: 'm₁v₁ + m₂v₂ = m₁v₁\' + m₂v₂\'',
-    linkedLessonId: 'phys-10-proj',
+    linkedLessonId: 'phys-10-momentum',
     defaultParams: { m1: 3.0, m2: 2.0, v1: 5.0, restitution: 1.0 },
     paramBounds: {
       m1: { min: 1, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng xe 1 (m₁)' },
@@ -146,7 +146,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Cân Bằng Momen Lực & Đòn Bẩy Quay',
     subtitle: 'Khảo sát mômen M = F·d của hai vật đặt trên thanh ngang có trục quay cố định',
     formula: 'M₁ = M₂ ⇔ m₁g·d₁ = m₂g·d₂',
-    linkedLessonId: 'phys-9-math-vec',
+    linkedLessonId: 'phys-10-torque-fluid',
     defaultParams: { mLeft: 4.0, dLeft: 2.0, mRight: 2.0, dRight: 4.0 },
     paramBounds: {
       mLeft: { min: 1, max: 10, step: 0.5, unit: 'kg', label: 'Khối lượng bên trái m₁' },
@@ -167,7 +167,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Quỹ Đạo Hành Tinh Elip & Định Luật Kepler',
     subtitle: 'Vận tốc góc tăng mạnh tại cận nhật và giảm tại viễn nhật (bảo toàn diện tích)',
     formula: 'T² / a³ = 4π² / (GM) · r₁v₁ = r₂v₂',
-    linkedLessonId: 'phys-10-circular',
+    linkedLessonId: 'phys-cd-10-2',
     defaultParams: { semiMajor: 1.5, eccentricity: 0.45, starMass: 1.0 },
     paramBounds: {
       semiMajor: { min: 1.0, max: 2.5, step: 0.1, unit: 'AU', label: 'Bán trục lớn a' },
@@ -191,7 +191,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Dao Động Tắt Dần & Cộng Hưởng Cơ Học',
     subtitle: 'Vẽ đường cong cộng hưởng A(f) khi thay đổi tần số ngoại lực f và lực cản b',
     formula: 'f_ngoại = f₀ = (1/2π)√(k/m) ⇒ A_max',
-    linkedLessonId: 'phys-11-shm',
+    linkedLessonId: 'phys-11-resonance',
     defaultParams: { f0: 2.5, fDrive: 2.4, damping: 0.25 },
     paramBounds: {
       f0: { min: 1.0, max: 5.0, step: 0.1, unit: 'Hz', label: 'Tần số riêng f₀' },
@@ -275,7 +275,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Con Lắc Tĩnh Điện & Định Luật Coulomb',
     subtitle: 'Hai quả cầu nhỏ tích điện q₁, q₂ đẩy nhau hay hút nhau cân bằng dưới trọng lực P',
     formula: 'F = k|q₁q₂| / r² · tanα = F / (mg)',
-    linkedLessonId: 'phys-9-elec',
+    linkedLessonId: 'phys-11-efield',
     defaultParams: { q1uC: 4.0, q2uC: 4.0, massG: 15 },
     paramBounds: {
       q1uC: { min: -8, max: 8, step: 0.5, unit: 'μC', label: 'Điện tích q₁' },
@@ -295,7 +295,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Quá Trình Nạp & Xả Tụ Điện Trong Mạch RC',
     subtitle: 'Đồ thị hàm mũ điện áp u_C(t) và dòng điện i(t) theo hằng số thời gian τ = RC',
     formula: 'u_C(t) = E(1 - e^(-t/τ)) · τ = R·C',
-    linkedLessonId: 'phys-9-elec',
+    linkedLessonId: 'phys-11-capacitor',
     defaultParams: { emfV: 12, rKOhm: 20, capUF: 100, modeCharge: 1 },
     paramBounds: {
       emfV: { min: 3, max: 24, step: 1, unit: 'V', label: 'Suất điện động nguồn E' },
@@ -316,7 +316,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Mạch Cầu Điện Trở Wheatstone & Cân Bằng Cầu',
     subtitle: 'Điều chỉnh các nhánh điện trở để dòng qua điện kế G bằng 0 (R₁R₄ = R₂R₃)',
     formula: 'I_G = 0 ⇔ R₁ / R₂ = R₃ / R₄',
-    linkedLessonId: 'phys-9-elec',
+    linkedLessonId: 'phys-pro-3',
     defaultParams: { voltage: 12, r1: 10, r2: 20, r3: 15, r4: 30 },
     paramBounds: {
       voltage: { min: 4, max: 24, step: 2, unit: 'V', label: 'Hiệu điện thế nguồn U' },
@@ -359,7 +359,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Mạch Dao Động Điện Từ Tự Do LC',
     subtitle: 'Quan sát sự chuyển hóa nhịp nhàng giữa năng lượng điện trường tụ C và từ trường cuộn L',
     formula: 'ω = 1/√(LC) · W = ½CU₀² = ½LI₀²',
-    linkedLessonId: 'phys-12-ac-gen',
+    linkedLessonId: 'phys-ext-6',
     defaultParams: { lMh: 40, cUf: 25, u0: 10 },
     paramBounds: {
       lMh: { min: 10, max: 120, step: 5, unit: 'mH', label: 'Độ tự cảm cuộn dây L' },
@@ -423,7 +423,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Phân Cực Ánh Sáng & Định Luật Malus',
     subtitle: 'Cường độ sáng truyền qua 2 kính phân cực thay đổi theo cos²θ',
     formula: 'I = I₀ · cos²(θ)',
-    linkedLessonId: 'phys-12-optics-q',
+    linkedLessonId: 'phys-ext-10',
     defaultParams: { i0: 100, angleDeg: 45 },
     paramBounds: {
       i0: { min: 20, max: 200, step: 10, unit: 'W/m²', label: 'Cường độ sau kính 1 (I₀)' },
@@ -465,7 +465,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Đồ Thị p–V & Các Đẳng Quá Trình Nhiệt Động',
     subtitle: 'So sánh đường đẳng nhiệt, đẳng áp, đẳng tích và công khối khí sinh ra A = ∫p·dV',
     formula: 'pV / T = const · ΔU = A + Q',
-    linkedLessonId: 'phys-12-b12',
+    linkedLessonId: 'phys-12-thermal',
     defaultParams: { processType: 0, pStart: 2.0, vStart: 4.0, ratio: 2.0 },
     paramBounds: {
       processType: { min: 0, max: 2, step: 1, unit: '', label: 'Quá trình (0: Đẳng nhiệt, 1: Đẳng áp, 2: Đẳng tích)' },
@@ -507,7 +507,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Ống Venturi & Định Luật Bernoulli Chất Lưu',
     subtitle: 'Chỗ ống thắt hẹp vận tốc dòng chảy tăng vọt khiến áp suất tĩnh giảm mạnh',
     formula: 'A₁v₁ = A₂v₂ · p₁ + ½ρv₁² = p₂ + ½ρv₂²',
-    linkedLessonId: 'phys-10-accel',
+    linkedLessonId: 'phys-ext-3',
     defaultParams: { v1: 2.0, d1Cm: 10, d2Cm: 5 },
     paramBounds: {
       v1: { min: 0.5, max: 5.0, step: 0.5, unit: 'm/s', label: 'Vận tốc vào ống rộng v₁' },
@@ -527,7 +527,7 @@ export const EXTRA_PHYSICS_2D_SIMS: Record<ExtraPhysicsSim2DId, Physics2DSimSpec
     title: 'Phản Ứng Phân Hạch Dây Chuyền U-235',
     subtitle: 'Nơtron chậm kích thích hạt nhân U-235 vỡ đôi giải phóng ~200 MeV và 2–3 nơtron mới',
     formula: '¹n + ²³⁵U → X + Y + k·¹n + 200 MeV',
-    linkedLessonId: 'phys-12-b23',
+    linkedLessonId: 'phys-12-b24',
     defaultParams: { enrichment: 65, controlRod: 45 },
     paramBounds: {
       enrichment: { min: 20, max: 100, step: 5, unit: '%', label: 'Mật độ nhiên liệu U-235' },
@@ -551,7 +551,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Mặt Phẳng Nghiêng & Vectơ Trọng Lực 3D',
     subtitle: 'Khối trượt 3D trên máng nghiêng kèm vectơ Trọng lực P, Phản lực N và Ma sát',
     formula: 'a = g(sinα - μ·cosα)',
-    linkedLessonId: 'phys-10-accel',
+    linkedLessonId: 'phys-10-b18',
     presets: [
       { label: 'Góc nghiêng 30° chuẩn', description: 'Trượt đều tốc độ mượt', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Dốc đứng 45°', description: 'Gia tốc trượt lớn', settings: { speed: 1.4, amplitude: 1.4, frequency: 1 } }
@@ -564,7 +564,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Va Chạm Hai Quả Cầu Đàn Hồi 3D',
     subtitle: 'Hai khối cầu kim loại va chạm đàn hồi trên ray tuyến tính theo tỉ số khối lượng',
     formula: 'm₁v₁ + m₂v₂ = const',
-    linkedLessonId: 'phys-10-proj',
+    linkedLessonId: 'phys-10-momentum',
     presets: [
       { label: 'Khối lượng tương đương', description: 'Trao đổi gần trọn vẹn vận tốc', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Cầu lớn húc cầu nhỏ', description: 'Quả nhỏ bật văng tốc độ cao', settings: { speed: 1.3, amplitude: 1.6, frequency: 1 } }
@@ -577,7 +577,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Con Quay Hồi Chuyển & Tuế Sai 3D',
     subtitle: 'Bánh đà quay nhanh bảo toàn mômen động lượng L gây chuyển động tuế sai quanh trục đứng',
     formula: 'Ω_tuế_sai = mgl / (I·ω)',
-    linkedLessonId: 'phys-10-circular',
+    linkedLessonId: 'phys-10-torque-fluid',
     presets: [
       { label: 'Quay ổn định', description: 'Tuế sai chậm, bánh đà quay nhanh', settings: { speed: 1, amplitude: 1, frequency: 1.4 } },
       { label: 'Tuế sai mạnh', description: 'Nghiêng trục lớn hơn', settings: { speed: 1.3, amplitude: 1.5, frequency: 0.8 } }
@@ -590,7 +590,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Hệ Hành Tinh Quỹ Đạo Elip Kepler 3D',
     subtitle: 'Hành tinh quay quanh Mặt Trời trên quỹ đạo elip 3D kèm vệt sáng không gian',
     formula: 'T² / a³ = const · L = r × p = const',
-    linkedLessonId: 'phys-10-circular',
+    linkedLessonId: 'phys-cd-10-2',
     presets: [
       { label: 'Elip rõ rệt', description: 'Thấy rõ cận nhật nhanh & viễn nhật chậm', settings: { speed: 1, amplitude: 1.4, frequency: 1 } },
       { label: 'Quay tốc độ cao', description: 'Tăng tốc quỹ đạo 1.8x', settings: { speed: 1.8, amplitude: 1.2, frequency: 1 } }
@@ -618,7 +618,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Hai Con Lắc Ghép Nối Truyền Năng Lượng 3D',
     subtitle: 'Con lắc 1 truyền toàn bộ năng lượng qua lò xo nối sang con lắc 2 và ngược lại',
     formula: 'ω₁,₂ = √(g/L) , √(g/L + 2k/m)',
-    linkedLessonId: 'phys-11-shm',
+    linkedLessonId: 'phys-11-resonance',
     presets: [
       { label: 'Trao đổi phách nhịp nhàng', description: 'Năng lượng luân phiên 2 bên', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Liên kết lò xo cứng', description: 'Truyền năng lượng nhanh hơn', settings: { speed: 1.2, amplitude: 1.2, frequency: 1.6 } }
@@ -659,7 +659,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Lưỡng Cực Điện (+q / −q) & Đường Sức 3D',
     subtitle: 'Hệ hai điện tích trái dấu cùng độ lớn tạo chùm đường sức uốn cong từ +q sang −q',
     formula: 'E_tổng = E₊ + E₋ · p = q·d',
-    linkedLessonId: 'phys-9-elec',
+    linkedLessonId: 'phys-11-b17',
     presets: [
       { label: 'Lưỡng cực cân bằng', description: 'Đường sức đối xứng 3 chiều', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Khoảng cách xa', description: 'Kéo giãn mômen lưỡng cực p', settings: { speed: 1.2, amplitude: 1.5, frequency: 1 } }
@@ -726,7 +726,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Sóng Ngang Điện Từ & Kính Phân Cực 3D',
     subtitle: 'Vectơ điện trường E dao động vuông góc phương truyền bị lọc khi qua bản kính thứ hai',
     formula: 'E = E₀·cosθ · I = I₀·cos²θ',
-    linkedLessonId: 'phys-12-optics-q',
+    linkedLessonId: 'phys-11-b11',
     presets: [
       { label: 'Góc lọc 30°', description: 'Sóng ló còn 75% cường độ', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Lệch gần 90° (Tắt sáng)', description: 'Biên độ sóng sau kính giảm sát 0', settings: { speed: 1, amplitude: 0.25, frequency: 1 } }
@@ -754,7 +754,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Động Cơ Nhiệt Piston Chu Trình Carnot 3D',
     subtitle: 'Piston lên xuống trong xilanh trong suốt kết hợp chuyển động hạt khí theo chu kì nén – nổ',
     formula: 'H_max = 1 - T₂ / T₁',
-    linkedLessonId: 'phys-12-b12',
+    linkedLessonId: 'phys-ext-8',
     presets: [
       { label: 'Chu kì nhiệt chuẩn', description: 'Tần số nén xả cân bằng', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Công suất lớn', description: 'Tăng tốc độ chu trình và biên độ piston', settings: { speed: 1.8, amplitude: 1.3, frequency: 1.5 } }
@@ -767,7 +767,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Phản Ứng Phân Hạch Uranium 3D',
     subtitle: 'Nơtron bay vào hạt nhân U-235 làm hạt nhân vỡ thành 2 mảnh nhẹ hơn kèm sóng năng lượng',
     formula: 'ΔE = (m_trước - m_sau)c² ≈ 200 MeV',
-    linkedLessonId: 'phys-12-b23',
+    linkedLessonId: 'phys-12-b24',
     presets: [
       { label: 'Phân hạch dây chuyền', description: 'Nơtron kích hoạt liên hoàn 3D', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Slow motion quan sát vỡ hạt', description: 'Làm chậm để thấy khoảnh khắc tách hạt nhân', settings: { speed: 0.5, amplitude: 1.2, frequency: 1 } }
@@ -780,7 +780,7 @@ export const EXTRA_PHYSICS_3D_SIMS: Record<ExtraPhysics3DModeId, Physics3DSimSpe
     title: 'Thí Nghiệm Tán Xạ Hạt Alpha Rutherford 3D',
     subtitle: 'Chùm hạt Alpha (+2e) xuyên qua lá vàng: đa số đi thẳng, số ít bật lệch góc lớn gần hạt nhân',
     formula: 'F_đẩy = k·(2e·Ze) / r²',
-    linkedLessonId: 'phys-12-b23',
+    linkedLessonId: 'phys-12-b21',
     presets: [
       { label: 'Chùm Alpha chuẩn', description: 'Thấy rõ hạt đi sát tâm lệch góc lớn', settings: { speed: 1, amplitude: 1, frequency: 1 } },
       { label: 'Năng lượng hạt Alpha cao', description: 'Chùm hạt tiến gần tâm hạt nhân hơn', settings: { speed: 1.6, amplitude: 1.4, frequency: 1.5 } }

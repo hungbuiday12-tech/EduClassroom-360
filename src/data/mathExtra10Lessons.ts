@@ -582,7 +582,7 @@ export const MATH_EXTRA_10_LESSONS: MathLecture[] = [
     id: 'math-ext-8',
     track: 'chuyen',
     gradeGroup: 'Lớp 12',
-    tier: 'Vận dụng cao',
+    tier: 'Chuyên / HSG',
     lessonNumber: 120,
     stageLabel: 'Giải tích 12 · Tích phân Hàm ẩn & Đối xứng',
     sourceTag: 'Đề Tham khảo Bộ GD & Chuyên · Tích phân Nâng cao',

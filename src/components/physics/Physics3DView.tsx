@@ -25,6 +25,7 @@ import {
   Sparkles,
   Cpu,
   FileCode2,
+  Scissors,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { ViewportPortal } from '../common/ViewportPortal';
@@ -41,6 +42,29 @@ import {
 import { HologramModeControls } from '../common/HologramModeControls';
 import { SimToCodeModal } from './SimToCodeModal';
 import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
+import {
+  createCrispLine2,
+  createPostProcessingPipeline,
+  createTroikaLabel,
+  GPUParticlePool,
+  OptimizedTrail,
+  PostProcessPipeline,
+  syncLine2Resolution,
+  updateBillboardLabels,
+} from '../../lib/three3DEnhancements';
+
+const CUTAWAY_PHYSICS_MODES = new Set<string>([
+  'thermal_gas_3d',
+  'photoelectric_3d',
+  'resonance_tubes_3d',
+  'blackbody_cavity_3d',
+  'carnot_piston_3d',
+  'cathode_ray_tube_3d',
+  'electroscope_3d',
+  'fiber_optic_3d',
+  'diffusion_gases_3d',
+  'tokamak_fusion_3d',
+]);
 
 interface Numeric3DControlProps {
   label: string;
@@ -162,6 +186,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isControlsExpanded, setIsControlsExpanded] = useState(true);
   const [showGrid3D, setShowGrid3D] = useState(true);
+  const [showCutaway3D, setShowCutaway3D] = useState(false);
   const [quality3D, setQuality3D] = useState<'light' | 'high'>('light');
   const [hologramMode, setHologramMode] = useState<HologramDisplayMode>('normal');
   const hologramModeRef = useRef<HologramDisplayMode>('normal');
@@ -252,10 +277,19 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   // Refs for animation (unified single WebGL rAF loop — zero setInterval drift)
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const gridRef = useRef<THREE.GridHelper | null>(null);
   const isSoftwareGlRef = useRef<boolean>(false);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
   const sceneTickRef = useRef<((effDt: number) => void) | null>(null);
+  const pipelineRef = useRef<PostProcessPipeline | null>(null);
+  const particlePoolRef = useRef<GPUParticlePool | null>(null);
+  const trailRef = useRef<OptimizedTrail | null>(null);
+  const cutawayPlaneRef = useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.15));
+  const modeRef = useRef<Physics3DMode>(mode);
+  modeRef.current = mode;
+  const quality3DRef = useRef<'light' | 'high'>(quality3D);
+  quality3DRef.current = quality3D;
   const isRunningRef = useRef<boolean>(isRunning);
   const simSpeedRef = useRef<number>(simSpeed);
   const stepTriggerRef = useRef<number>(0);
@@ -330,12 +364,15 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     })();
 
     isSoftwareGlRef.current = isSoftwareGl;
+    if (!isSoftwareGl) {
+      setQuality3D('high');
+    }
 
     // Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     scene.background = new THREE.Color(0x0a0f1d);
-    scene.fog = new THREE.FogExp2(0x0a0f1d, 0.025);
+    scene.fog = new THREE.FogExp2(0x0a0f1d, 0.022);
 
     // Camera
     const camera = new THREE.PerspectiveCamera(
@@ -345,6 +382,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       100
     );
     camera.position.set(0, 6, 12);
+    cameraRef.current = camera;
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -353,10 +391,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     });
     rendererRef.current = renderer;
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, quality3D === 'high' ? 2 : 1.35));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.22;
+    renderer.toneMappingExposure = 1.2;
+    renderer.localClippingEnabled = true;
     if (!isSoftwareGl) {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -379,36 +418,81 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     roomEnv.dispose();
     pmremGenerator.dispose();
 
-    // Lighting Rig
-    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x0f172a, 0.85);
+    // Lighting Rig (Warm Key + Cool Hemisphere Fill + Rim)
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x0f172a, 0.88);
     scene.add(hemiLight);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.42);
-    scene.add(ambientLight);
-
-    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.6);
+    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.75);
     keyLight.position.set(6, 11, 8);
     if (!isSoftwareGl) {
       keyLight.castShadow = true;
       keyLight.shadow.mapSize.set(1024, 1024);
+      keyLight.shadow.camera.left = -9;
+      keyLight.shadow.camera.right = 9;
+      keyLight.shadow.camera.top = 9;
+      keyLight.shadow.camera.bottom = -9;
+      keyLight.shadow.camera.near = 1;
+      keyLight.shadow.camera.far = 32;
+      keyLight.shadow.bias = -0.0005;
+      keyLight.shadow.normalBias = 0.02;
     }
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.95);
+    const fillLight = new THREE.DirectionalLight(0x60a5fa, 1.0);
     fillLight.position.set(-6, 4, -6);
     scene.add(fillLight);
 
-    // Grid Floor
+    // Studio Workbench Plinth + Glowing Ring + Grid Floor
+    const stageDisc = new THREE.Mesh(
+      new THREE.CylinderGeometry(10.2, 10.6, 0.08, 64),
+      new THREE.MeshStandardMaterial({ color: 0x060b17, roughness: 0.72, metalness: 0.25 })
+    );
+    stageDisc.position.y = -0.052;
+    stageDisc.receiveShadow = !isSoftwareGl;
+    scene.add(stageDisc);
+
+    const stageRing = new THREE.Mesh(
+      new THREE.TorusGeometry(10.2, 0.03, 12, 72),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.45, metalness: 0.6, roughness: 0.25 })
+    );
+    stageRing.rotation.x = Math.PI / 2;
+    stageRing.position.y = -0.01;
+    scene.add(stageRing);
+
     const grid = new THREE.GridHelper(20, 20, 0x3b82f6, 0x1e293b);
-    grid.position.y = -0.01;
+    grid.position.y = -0.006;
     grid.visible = showGrid3D;
     gridRef.current = grid;
     scene.add(grid);
 
-    // Dynamic models group
+    // Dynamic models group + GPU particle pool + LOD trail
     const dynamicGroup = new THREE.Group();
     scene.add(dynamicGroup);
     dynamicGroupRef.current = dynamicGroup;
+
+    const particlePool = new GPUParticlePool(96, 0.06, 0x38bdf8, 0x0ea5e9);
+    scene.add(particlePool.mesh);
+    particlePoolRef.current = particlePool;
+
+    const trail = new OptimizedTrail(64, 0x38bdf8, 0.85);
+    scene.add(trail.line);
+    trailRef.current = trail;
+
+    // Post-processing pipeline (pmndrs/postprocessing Bloom + SMAA, bypassed on software GL)
+    let pipeline: PostProcessPipeline | null = null;
+    if (!isSoftwareGl) {
+      try {
+        pipeline = createPostProcessingPipeline(renderer, scene, camera, {
+          bloomIntensity: 0.48,
+          luminanceThreshold: 0.78,
+          enableSmaa: true,
+        });
+        pipeline.setSize(container.clientWidth, Math.max(container.clientHeight, 300));
+      } catch {
+        pipeline = null;
+      }
+    }
+    pipelineRef.current = pipeline;
 
     // Anaglyph & Stereo VR Effects
     const anaglyphEffect = new AnaglyphEffect(renderer);
@@ -419,13 +503,36 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
 
     // Unified single Animation Loop (time integration + scene kinematics + WebGL render)
     let frameId = 0;
+    let alive = true;
     let lastTime = performance.now();
     let lastTickStep = -1;
 
+    function afterDraw(cb: () => void) {
+      const gl = renderer.getContext() as WebGL2RenderingContext;
+      const sync = gl.fenceSync ? gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0) : null;
+      if (!sync) {
+        frameId = window.setTimeout(cb, 80);
+        return;
+      }
+      gl.flush();
+      const poll = () => {
+        if (!alive) return;
+        const s = gl.getSyncParameter(sync, gl.SYNC_STATUS);
+        if (s === gl.UNSIGNALED) frameId = window.setTimeout(poll, 5);
+        else {
+          gl.deleteSync(sync);
+          frameId = window.setTimeout(cb, 80);
+        }
+      };
+      frameId = window.setTimeout(poll, 5);
+    }
+
     const animate = () => {
-      frameId = requestAnimationFrame(animate);
+      if (!alive) return;
       if (document.hidden) {
         lastTime = performance.now();
+        if (isSoftwareGl) frameId = window.setTimeout(animate, 120);
+        else frameId = requestAnimationFrame(animate);
         return;
       }
       const now = performance.now();
@@ -442,9 +549,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
           simStateRef.current.electronAngle += effDt * 3.0;
         }
         sceneTickRef.current?.(effDt);
+        particlePool.update(effDt, modeRef.current === 'projectile_3d' ? -3.92 : 0);
       }
 
       controls.update();
+      updateBillboardLabels(dynamicGroup, camera);
 
       const curHolo = hologramModeRef.current;
       if (curHolo === 'head_cam' || curHolo === 'head_mouse') {
@@ -455,7 +564,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       if ((lastHoloMode === 'anaglyph' || lastHoloMode === 'vr_stereo') && curHolo !== lastHoloMode) {
         const w = container.clientWidth;
         const h = container.clientHeight;
-        if (w > 0 && h > 0) renderer.setSize(w, h);
+        if (w > 0 && h > 0) {
+          renderer.setSize(w, h);
+          pipeline?.setSize(w, h);
+        }
       }
       lastHoloMode = curHolo;
 
@@ -463,11 +575,17 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         anaglyphEffect.render(scene, camera);
       } else if (curHolo === 'vr_stereo') {
         stereoEffect.render(scene, camera);
+      } else if (pipeline && !isSoftwareGl && quality3DRef.current === 'high') {
+        pipeline.render(dt);
       } else {
         renderer.render(scene, camera);
       }
+
+      if (isSoftwareGl) afterDraw(animate);
+      else frameId = requestAnimationFrame(animate);
     };
-    animate();
+    if (isSoftwareGl) afterDraw(animate);
+    else frameId = requestAnimationFrame(animate);
 
     // WebGL context loss/restore safety
     const canvasEl = renderer.domElement;
@@ -490,8 +608,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
+      pipeline?.setSize(width, height);
       anaglyphEffect.setSize(width, height);
       stereoEffect.setSize(width, height);
+      syncLine2Resolution(dynamicGroup, width, height);
     };
     window.addEventListener('resize', handleResize);
     const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
@@ -519,15 +639,26 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     });
 
     return () => {
+      alive = false;
       unsubRemote();
       cancelAnimationFrame(frameId);
+      clearTimeout(frameId);
       window.removeEventListener('resize', handleResize);
       canvasEl.removeEventListener('webglcontextlost', onContextLost);
       canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
       resizeObserver?.disconnect();
       controls.dispose();
+      pipeline?.dispose();
+      pipelineRef.current = null;
+      particlePool.dispose();
+      particlePoolRef.current = null;
+      trail.dispose();
+      trailRef.current = null;
       anaglyphEffect.dispose();
       scene.traverse((obj: any) => {
+        if (typeof obj.dispose === 'function' && obj.userData?.isTroikaLabel) {
+          obj.dispose();
+        }
         if (obj.geometry) obj.geometry.dispose();
         if (obj.material) {
           if (Array.isArray(obj.material)) obj.material.forEach((m: any) => m.dispose());
@@ -536,6 +667,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       });
       sceneTickRef.current = null;
       rendererRef.current = null;
+      cameraRef.current = null;
       gridRef.current = null;
       envRT.dispose();
       renderer.dispose();
@@ -551,11 +683,18 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     if (!group) return;
     sceneTickRef.current = null;
 
-    // Clear previous geometries and materials recursively to prevent GPU leaks
+    // Clear previous geometries, Troika workers, trails, and expired sparks to prevent GPU leaks
+    trailRef.current?.clear();
+    particlePoolRef.current?.update(3.0, 0);
+    const clipPlanes = showCutaway3D ? [cutawayPlaneRef.current] : [];
+
     while (group.children.length > 0) {
       const child = group.children[0];
       group.remove(child);
       child.traverse((obj: any) => {
+        if (typeof obj.dispose === 'function' && obj.userData?.isTroikaLabel) {
+          obj.dispose();
+        }
         if (obj.geometry) obj.geometry.dispose();
         if (obj.material) {
           if (Array.isArray(obj.material)) {
@@ -578,25 +717,50 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const safeMass = Math.max(0.05, mass);
       const safeK = Math.max(0.5, springK);
       const omega = Math.sqrt(safeK / safeMass);
+      const isSw = isSoftwareGlRef.current;
 
-      // Support Beam
-      const beamGeo = new THREE.BoxGeometry(7, 0.2, 0.5);
-      const beamMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.2 });
-      const beam = new THREE.Mesh(beamGeo, beamMat);
-      beam.position.set(0, 5, 0);
+      // Grounded Lab Gantry Frame (base pads + vertical pillars + support beam + clamp collars)
+      const frameMat = new THREE.MeshPhysicalMaterial({ color: 0x475569, metalness: 0.82, roughness: 0.22, clearcoat: 0.6 });
+      const clampMat = new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, metalness: 0.78, roughness: 0.2, clearcoat: 0.8 });
+      [-3.4, 3.4].forEach((px) => {
+        const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.16, 20), frameMat);
+        pad.position.set(px, 0.08, 0);
+        pad.castShadow = !isSw;
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 5.0, 16), frameMat);
+        pillar.position.set(px, 2.58, 0);
+        pillar.castShadow = !isSw;
+        group.add(pad, pillar);
+      });
+
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.24, 0.52), frameMat);
+      beam.position.set(0, 5.05, 0);
+      beam.castShadow = !isSw;
       group.add(beam);
 
-      // Spring mount position: (-2, 5, 0)
-      // Pendulum mount position: (2, 5, 0)
+      [-2, 2].forEach((cx) => {
+        const collar = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.34, 0.6), clampMat);
+        collar.position.set(cx, 5.05, 0);
+        group.add(collar);
+      });
 
-      // Spring Bob
+      // Spring Bob (clearcoat physical metallic blue sphere)
       const springBobGeo = new THREE.SphereGeometry(0.5, 32, 32);
-      const springBobMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.6, roughness: 0.2 });
+      const springBobMat = new THREE.MeshPhysicalMaterial({ color: 0x3b82f6, metalness: 0.65, roughness: 0.14, clearcoat: 1.0, clearcoatRoughness: 0.06 });
       const springBob = new THREE.Mesh(springBobGeo, springBobMat);
       springBob.position.set(-2, 2.5, 0);
+      springBob.castShadow = !isSw;
       group.add(springBob);
 
-      // Spring Coil (Helix anchored at Y=5 with unit height = 1, scaled smoothly via GPU matrix!)
+      // Equilibrium target ring under spring bob
+      const eqRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.55, 0.025, 10, 40),
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.5 })
+      );
+      eqRing.rotation.x = Math.PI / 2;
+      eqRing.position.set(-2, 2.5, 0);
+      group.add(eqRing);
+
+      // Spring Coil
       const numTurns = 12;
       const springRadius = 0.25;
       const springCurvePoints: THREE.Vector3[] = [];
@@ -606,31 +770,40 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         const angle = tVal * numTurns * Math.PI * 2;
         const x = Math.cos(angle) * springRadius;
         const z = Math.sin(angle) * springRadius;
-        const y = -tVal; // normalized 0 -> -1
+        const y = -tVal;
         springCurvePoints.push(new THREE.Vector3(x, y, z));
       }
       const springCurve = new THREE.CatmullRomCurve3(springCurvePoints);
-      const springTubeGeo = new THREE.TubeGeometry(springCurve, 96, 0.04, 8, false);
-      const springTubeMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.1 });
+      const springTubeGeo = new THREE.TubeGeometry(springCurve, 96, 0.042, 10, false);
+      const springTubeMat = new THREE.MeshPhysicalMaterial({ color: 0xcbd5e1, metalness: 0.92, roughness: 0.12, clearcoat: 0.8 });
       const springMesh = new THREE.Mesh(springTubeGeo, springTubeMat);
       springMesh.position.set(-2, 5, 0);
       springMesh.scale.y = 2.5;
+      springMesh.castShadow = !isSw;
       group.add(springMesh);
 
-      // Pendulum String & Bob
+      // Pendulum Rod & Bob (cylindrical steel rod instead of 1px line)
       const pendLen = 3.5;
-      const pendBobGeo = new THREE.SphereGeometry(0.45, 24, 24);
-      const pendBobMat = new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.7, roughness: 0.2 });
+      const pendBobGeo = new THREE.SphereGeometry(0.45, 28, 24);
+      const pendBobMat = new THREE.MeshPhysicalMaterial({ color: 0x10b981, metalness: 0.68, roughness: 0.14, clearcoat: 1.0, clearcoatRoughness: 0.06 });
       const pendBob = new THREE.Mesh(pendBobGeo, pendBobMat);
+      pendBob.castShadow = !isSw;
       group.add(pendBob);
 
-      const pendLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(2, 5, 0), new THREE.Vector3(2, 1.5, 0)]);
-      const pendLineMat = new THREE.LineBasicMaterial({ color: 0xffffff });
-      const pendLine = new THREE.Line(pendLineGeo, pendLineMat);
-      group.add(pendLine);
-      const pendPosAttr = pendLineGeo.attributes.position as THREE.BufferAttribute;
+      const pendRodGeo = new THREE.CylinderGeometry(0.032, 0.032, pendLen, 10);
+      pendRodGeo.translate(0, -pendLen / 2, 0);
+      const pendRod = new THREE.Mesh(
+        pendRodGeo,
+        new THREE.MeshPhysicalMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.18 })
+      );
+      pendRod.position.set(2, 5, 0);
+      pendRod.castShadow = !isSw;
+      group.add(
+        pendRod,
+        createTroikaLabel({ text: `Con lắc lò xo (k=${safeK} N/m)`, position: [-2, 5.7, 0], fontSize: 0.3, color: 0x38bdf8 }),
+        createTroikaLabel({ text: `Con lắc đơn (g=${g} m/s²)`, position: [2, 5.7, 0], fontSize: 0.3, color: 0x34d399 })
+      );
 
-      // Tick update for spring and pendulum (zero geometry allocations, synced to rAF!)
       sceneTickRef.current = () => {
         const tNow = simStateRef.current.time;
         const springY = 2.5 + Math.sin(omega * tNow) * 1.2;
@@ -642,9 +815,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         const pendX = 2 + Math.sin(theta) * pendLen;
         const pendY = 5 - Math.cos(theta) * pendLen;
         pendBob.position.set(pendX, pendY, 0);
-
-        pendPosAttr.setXYZ(1, pendX, pendY, 0);
-        pendPosAttr.needsUpdate = true;
+        pendRod.rotation.z = theta;
       };
       sceneTickRef.current(0);
 
@@ -832,7 +1003,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       );
       group.add(velArrow);
 
-      // Trajectory Path (Dotted curve starting strictly at muzzle tip)
+      // Trajectory Path (Glowing Parabolic Tube starting strictly at muzzle tip)
       const pathPoints: THREE.Vector3[] = [];
       const numPts = 72;
       for (let i = 0; i <= numPts; i++) {
@@ -841,32 +1012,78 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         const py = Math.max(0.02, muzzleY + (v0y * tCur - 0.5 * g * tCur * tCur) * scale);
         pathPoints.push(new THREE.Vector3(px, py, 0));
       }
-      const pathGeo = new THREE.BufferGeometry().setFromPoints(pathPoints);
-      const pathMat = new THREE.LineDashedMaterial({ color: 0x38bdf8, dashSize: 0.22, gapSize: 0.12 });
-      const pathLine = new THREE.Line(pathGeo, pathMat);
-      pathLine.computeLineDistances();
-      group.add(pathLine);
+      const pathCurve = new THREE.CatmullRomCurve3(pathPoints);
+      const pathTube = new THREE.Mesh(
+        new THREE.TubeGeometry(pathCurve, 80, 0.036, 10, false),
+        new THREE.MeshPhysicalMaterial({
+          color: 0x38bdf8,
+          emissive: 0x0284c7,
+          emissiveIntensity: 0.65,
+          transparent: true,
+          opacity: 0.72,
+          roughness: 0.2,
+          clearcoat: 0.8
+        })
+      );
+      group.add(pathTube);
 
-      // Target Ring on the ground at exact impact point
+      // Target Bullseye Rings on the ground at exact impact point
       const targetDist = muzzleX + v0x * tImpact * scale;
-      const ringGeo = new THREE.RingGeometry(0.36, 0.58, 28);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide });
+      const ringGeo = new THREE.RingGeometry(0.36, 0.62, 32);
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 0.6, side: THREE.DoubleSide });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = Math.PI / 2;
       ring.position.set(targetDist, 0.02, 0);
-      group.add(ring);
+      const innerBull = new THREE.Mesh(
+        new THREE.CircleGeometry(0.22, 24),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 0.8, side: THREE.DoubleSide })
+      );
+      innerBull.rotation.x = Math.PI / 2;
+      innerBull.position.set(targetDist, 0.024, 0);
+      group.add(ring, innerBull);
 
       const velVec = new THREE.Vector3();
       const cosA = Math.cos(rad);
       const sinA = Math.sin(rad);
+      group.add(
+        createTroikaLabel({ text: `v₀ = ${safeV0} m/s · α = ${safeAngle}°`, position: [cannonBaseX, 2.35, 0], fontSize: 0.3, color: 0xfbbf24 }),
+        createTroikaLabel({ text: 'Điểm rơi L', position: [targetDist, 0.72, 0], fontSize: 0.28, color: 0xf87171 })
+      );
+
+      let prevInFlight = false;
+      let firedBurst = false;
 
       sceneTickRef.current = () => {
         const currentSimT = simStateRef.current.projT % (tImpact + 0.8);
         if (currentSimT <= tImpact) {
+          if (!prevInFlight) {
+            trailRef.current?.clear();
+            firedBurst = false;
+          }
+          prevInFlight = true;
           const bx = muzzleX + v0x * currentSimT * scale;
           const by = Math.max(0.02, muzzleY + (v0y * currentSimT - 0.5 * g * currentSimT * currentSimT) * scale);
           ball.position.set(bx, by, 0);
           ball.visible = true;
+          trailRef.current?.pushAndRender(bx, by, 0, cameraRef.current ?? undefined, 0.02, 32);
+
+          if (!firedBurst && currentSimT > 0 && particlePoolRef.current) {
+            firedBurst = true;
+            for (let k = 0; k < 14; k++) {
+              const sp = 1.4 + Math.random() * 2.0;
+              particlePoolRef.current.spawn(
+                muzzleX,
+                muzzleY,
+                0,
+                cosA * sp + (Math.random() - 0.5) * 0.9,
+                sinA * sp + (Math.random() - 0.5) * 0.9,
+                (Math.random() - 0.5) * 1.1,
+                0.55,
+                0.85,
+                k % 2 === 0 ? 0xfbbf24 : 0xf97316
+              );
+            }
+          }
 
           const vyCur = v0y - g * currentSimT;
           velVec.set(v0x, vyCur, 0);
@@ -883,6 +1100,23 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
           barrelPivot.position.set(-recoil * cosA, pivotY - recoil * sinA, 0);
           ring.scale.setScalar(1);
         } else {
+          if (prevInFlight && particlePoolRef.current) {
+            prevInFlight = false;
+            for (let k = 0; k < 16; k++) {
+              const a = (k / 16) * Math.PI * 2;
+              particlePoolRef.current.spawn(
+                targetDist,
+                0.08,
+                0,
+                Math.cos(a) * 1.6,
+                1.2 + Math.random() * 1.8,
+                Math.sin(a) * 1.6,
+                0.65,
+                0.95,
+                k % 2 === 0 ? 0xef4444 : 0xfbbf24
+              );
+            }
+          }
           ball.visible = false;
           velArrow.visible = false;
           barrelPivot.position.set(0, pivotY, 0);
@@ -917,14 +1151,30 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         }
       }
 
-      // Charged Particle (Proton / Electron)
-      const partGeo = new THREE.SphereGeometry(0.2, 16, 16);
-      const partMat = new THREE.MeshStandardMaterial({
+      // Cylindrical containment coil rings around Lorentz field region
+      for (let cz = -3; cz <= 3; cz += 2) {
+        const fieldRing = new THREE.Mesh(
+          new THREE.TorusGeometry(3.8, 0.04, 10, 48),
+          new THREE.MeshStandardMaterial({ color: 0x1d4ed8, emissive: 0x1e40af, emissiveIntensity: 0.35, transparent: true, opacity: 0.45 })
+        );
+        fieldRing.position.set(0, 3, cz);
+        group.add(fieldRing);
+      }
+
+      // Charged Particle (Proton / Electron) with energy aura
+      const partGeo = new THREE.SphereGeometry(0.22, 20, 20);
+      const partMat = new THREE.MeshPhysicalMaterial({
         color: 0xef4444,
         emissive: 0xef4444,
-        emissiveIntensity: 0.5,
+        emissiveIntensity: 0.7,
+        clearcoat: 0.9
       });
       const particle = new THREE.Mesh(partGeo, partMat);
+      const partHalo = new THREE.Mesh(
+        new THREE.SphereGeometry(0.36, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xfca5a5, transparent: true, opacity: 0.24 })
+      );
+      particle.add(partHalo);
       group.add(particle);
 
       // Trajectory Helix Path rendered as smooth glowing PBR tube
@@ -939,22 +1189,31 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         helixPoints.push(new THREE.Vector3(px, py, pz));
       }
       const helixCurve = new THREE.CatmullRomCurve3(helixPoints);
-      const helixTubeGeo = new THREE.TubeGeometry(helixCurve, 180, 0.045, 10, false);
-      const helixTubeMat = new THREE.MeshStandardMaterial({
+      const helixTubeGeo = new THREE.TubeGeometry(helixCurve, 180, 0.048, 12, false);
+      const helixTubeMat = new THREE.MeshPhysicalMaterial({
         color: 0xf59e0b,
         emissive: 0xd97706,
-        emissiveIntensity: 0.45,
-        roughness: 0.25,
-        metalness: 0.35
+        emissiveIntensity: 0.55,
+        roughness: 0.18,
+        metalness: 0.4,
+        clearcoat: 0.85
       });
-      group.add(new THREE.Mesh(helixTubeGeo, helixTubeMat));
+      group.add(
+        new THREE.Mesh(helixTubeGeo, helixTubeMat),
+        createTroikaLabel({ text: `B⃗ = ${magneticB.toFixed(1)} T · R = mv/qB`, position: [0, 5.8, 0], fontSize: 0.32, color: 0x60a5fa }),
+        createTroikaLabel({ text: 'Hạt điện tích q', position: [0, 0.7, 0], fontSize: 0.28, color: 0xfca5a5 })
+      );
 
+      let prevZ = -3;
       sceneTickRef.current = () => {
         const tCur = simStateRef.current.time * 2.5;
         const px = Math.cos(tCur) * R_cyclotron;
         const py = 3 + Math.sin(tCur) * R_cyclotron;
         const pz = -3 + ((tCur * 0.8) % 6);
+        if (pz < prevZ) trailRef.current?.clear();
+        prevZ = pz;
         particle.position.set(px, py, pz);
+        trailRef.current?.pushAndRender(px, py, pz, cameraRef.current ?? undefined, 0.02, 30);
       };
       sceneTickRef.current(0);
 
@@ -973,12 +1232,29 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const planeGeo = new THREE.PlaneGeometry(planeW, planeH, segments, segments);
       planeGeo.rotateX(-Math.PI / 2);
 
+      // Ripple tank frame perimeter rails
+      const tankMat = new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.72, roughness: 0.25, clearcoat: 0.6 });
+      const railH = new THREE.Mesh(new THREE.BoxGeometry(planeW + 0.4, 0.45, 0.22), tankMat);
+      const railN = railH.clone();
+      railN.position.set(0, 1.0, -planeH / 2 - 0.1);
+      railH.position.set(0, 1.0, planeH / 2 + 0.1);
+      const railW = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.45, planeH + 0.4), tankMat);
+      const railE = railW.clone();
+      railW.position.set(-planeW / 2 - 0.1, 1.0, 0);
+      railE.position.set(planeW / 2 + 0.1, 1.0, 0);
+      group.add(railN, railH, railW, railE);
+
+      const posAttr = planeGeo.attributes.position as THREE.BufferAttribute;
+      const vertCount = posAttr.count;
+      const waveCols = new Float32Array(vertCount * 3);
+      planeGeo.setAttribute('color', new THREE.BufferAttribute(waveCols, 3));
+
       const planeMat = new THREE.MeshPhysicalMaterial({
-        color: 0x0284c7,
-        roughness: 0.08,
-        metalness: 0.12,
+        vertexColors: true,
+        roughness: 0.06,
+        metalness: 0.15,
         clearcoat: 1.0,
-        clearcoatRoughness: 0.06,
+        clearcoatRoughness: 0.05,
         side: THREE.DoubleSide,
       });
       const rippleMesh = new THREE.Mesh(planeGeo, planeMat);
@@ -986,20 +1262,22 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       group.add(rippleMesh);
 
       // Two coherent point sources S1 and S2
-      const s1Pos = new THREE.Vector3(-sourceDistance / 2, 1.2, 0);
-      const s2Pos = new THREE.Vector3(sourceDistance / 2, 1.2, 0);
+      const s1Pos = new THREE.Vector3(-sourceDistance / 2, 1.25, 0);
+      const s2Pos = new THREE.Vector3(sourceDistance / 2, 1.25, 0);
 
-      const sGeo = new THREE.SphereGeometry(0.2, 16, 16);
-      const sMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.6 });
+      const sGeo = new THREE.SphereGeometry(0.22, 18, 18);
+      const sMat = new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.7, clearcoat: 0.9 });
       const s1Mesh = new THREE.Mesh(sGeo, sMat);
       s1Mesh.position.copy(s1Pos);
       const s2Mesh = new THREE.Mesh(sGeo, sMat);
       s2Mesh.position.copy(s2Pos);
-      group.add(s1Mesh);
-      group.add(s2Mesh);
+      group.add(
+        s1Mesh,
+        s2Mesh,
+        createTroikaLabel({ text: 'S₁', position: [s1Pos.x, 1.9, 0], fontSize: 0.32, color: 0xfbbf24 }),
+        createTroikaLabel({ text: 'S₂', position: [s2Pos.x, 1.9, 0], fontSize: 0.32, color: 0xfbbf24 })
+      );
 
-      const posAttr = planeGeo.attributes.position as THREE.BufferAttribute;
-      const vertCount = posAttr.count;
       const d1Arr = new Float32Array(vertCount);
       const d2Arr = new Float32Array(vertCount);
       const invSqrtD1 = new Float32Array(vertCount);
@@ -1014,6 +1292,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         invSqrtD1[i] = 0.25 / Math.max(1, Math.sqrt(d1));
         invSqrtD2[i] = 0.25 / Math.max(1, Math.sqrt(d2));
       }
+      const colAttr = planeGeo.attributes.color as THREE.BufferAttribute;
 
       sceneTickRef.current = () => {
         const tNow = simStateRef.current.time;
@@ -1025,8 +1304,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
             invSqrtD1[i] * Math.sin(k * d1Arr[i] - phaseShift) +
             invSqrtD2[i] * Math.sin(k * d2Arr[i] - phaseShift);
           posAttr.setY(i, yVal);
+          const norm = Math.max(0, Math.min(1, 0.5 + yVal * 1.4));
+          colAttr.setXYZ(i, 0.03 + norm * 0.22, 0.28 + norm * 0.62, 0.55 + norm * 0.45);
         }
         posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
         planeGeo.computeVertexNormals();
       };
       sceneTickRef.current(0);
@@ -1065,6 +1347,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         );
         nucleusGroup.add(nucSphere);
       }
+      const nucGlow = new THREE.Mesh(
+        new THREE.SphereGeometry(0.68, 24, 24),
+        new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.16, depthWrite: false })
+      );
+      nucGlow.position.y = 2.5;
+      group.add(nucGlow);
       group.add(nucleusGroup);
 
       // Quantized energy level rings (K, L, M, N: n=1, 2, 3, 4) rendered as 3D Torus rings
@@ -1102,6 +1390,17 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
 
       const safeN = Math.max(1, Math.min(4, quantumN));
       const currentOrbitR = orbitRadii[safeN - 1];
+      const shellNames = ['K', 'L', 'M', 'N'];
+      group.add(
+        createTroikaLabel({ text: `Mức lượng tử n=${safeN} (${shellNames[safeN - 1]})`, position: [0, 4.35, 0], fontSize: 0.34, color: 0xfbbf24 }),
+        createTroikaLabel({ text: 'e⁻', position: [currentOrbitR, 3.05, 0], fontSize: 0.28, color: 0x38bdf8 })
+      );
+      if (particlePoolRef.current) {
+        for (let k = 0; k < 14; k++) {
+          const a = (k / 14) * Math.PI * 2;
+          particlePoolRef.current.spawn(Math.cos(a) * currentOrbitR, 2.5, Math.sin(a) * currentOrbitR, Math.cos(a) * 0.9, (Math.random() - 0.5) * 1.1, Math.sin(a) * 0.9, 0.65, 0.9, 0x38bdf8);
+        }
+      }
 
       sceneTickRef.current = () => {
         const angle = simStateRef.current.electronAngle * (2.0 / Math.sqrt(safeN));
@@ -1109,6 +1408,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         const ez = Math.sin(angle) * currentOrbitR;
         electron.position.set(ex, 2.5, ez);
         nucleusGroup.rotation.y = simStateRef.current.time * 0.4;
+        trailRef.current?.pushAndRender(ex, 2.5, ez, cameraRef.current ?? undefined, 0.02, 30);
       };
       sceneTickRef.current(0);
 
@@ -1126,18 +1426,27 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const safeD = Math.max(0.25, Math.abs(objectDist3D));
       const isSw = isSoftwareGlRef.current;
 
+      // Optical Bench Rail + Pedestal Stand under lens
+      const benchMat = new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.78, roughness: 0.28, clearcoat: 0.5 });
+      const benchRail = new THREE.Mesh(new THREE.BoxGeometry(12.5, 0.18, 0.9), benchMat);
+      benchRail.position.set(0, 0.09, 0);
+      benchRail.receiveShadow = !isSw;
+      const lensStand = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.24, 0.2, 16), benchMat);
+      lensStand.position.set(0, 0.1, 0);
+      group.add(benchRail, lensStand);
+
       // Optical axis along X
-      const axisGeo = new THREE.CylinderGeometry(0.025, 0.025, 13, 10);
+      const axisGeo = new THREE.CylinderGeometry(0.025, 0.025, 13, 12);
       axisGeo.rotateZ(Math.PI / 2);
-      const axisMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.4 });
+      const axisMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.5 });
       const axis = new THREE.Mesh(axisGeo, axisMat);
       axis.position.y = 2.0;
       group.add(axis);
 
       // Optical Glass 3D Lens at X = 0, Y = 2.0 with metallic rim collar
       const lensGeo = isDiverging3D
-        ? new THREE.CylinderGeometry(2.1, 2.1, 0.24, 32)
-        : new THREE.SphereGeometry(2.2, 40, 28);
+        ? new THREE.CylinderGeometry(2.1, 2.1, 0.24, 36)
+        : new THREE.SphereGeometry(2.2, 44, 30);
       if (isDiverging3D) {
         lensGeo.rotateZ(Math.PI / 2);
       } else {
@@ -1145,15 +1454,15 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       }
       const lensMat = new THREE.MeshPhysicalMaterial({
         color: isDiverging3D ? 0xc084fc : 0x38bdf8,
-        roughness: 0.06,
+        roughness: 0.05,
         metalness: 0.05,
         clearcoat: 1.0,
-        clearcoatRoughness: 0.05,
+        clearcoatRoughness: 0.04,
         transparent: true,
-        opacity: isSw ? 0.42 : 0.85,
-        transmission: isSw ? 0 : 0.75,
-        ior: 1.52,
-        thickness: 0.45,
+        opacity: isSw ? 0.42 : 0.86,
+        transmission: isSw ? 0 : 0.78,
+        ior: 1.54,
+        thickness: 0.5,
         depthWrite: false,
       });
       const lensMesh = new THREE.Mesh(lensGeo, lensMat);
@@ -1161,16 +1470,16 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       group.add(lensMesh);
 
       const lensRim = new THREE.Mesh(
-        new THREE.TorusGeometry(2.15, 0.045, 14, 48),
-        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.2 })
+        new THREE.TorusGeometry(2.15, 0.05, 14, 56),
+        new THREE.MeshPhysicalMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.16, clearcoat: 0.8 })
       );
       lensRim.rotation.y = Math.PI / 2;
       lensRim.position.set(0, 2.0, 0);
       group.add(lensRim);
 
       // Focal markers F and F'
-      const fGeo = new THREE.SphereGeometry(0.12, 18, 18);
-      const fMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.55 });
+      const fGeo = new THREE.SphereGeometry(0.13, 18, 18);
+      const fMat = new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.6, clearcoat: 0.8 });
       const fLeft = new THREE.Mesh(fGeo, fMat);
       fLeft.position.set(-fSigned, 2.0, 0);
       const fRight = new THREE.Mesh(fGeo, fMat);
@@ -1217,12 +1526,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const beamMat = new THREE.MeshStandardMaterial({
         color: 0xfacc15,
         emissive: 0xf59e0b,
-        emissiveIntensity: 0.7
+        emissiveIntensity: 0.75
       });
       const addRaySegment = (p1: THREE.Vector3, p2: THREE.Vector3) => {
         if (p1.distanceTo(p2) < 0.02) return;
         const c = new THREE.LineCurve3(p1, p2);
-        group.add(new THREE.Mesh(new THREE.TubeGeometry(c, 4, 0.026, 8, false), beamMat));
+        group.add(new THREE.Mesh(new THREE.TubeGeometry(c, 4, 0.028, 8, false), beamMat));
       };
       const ray1Out = isDiverging3D
         ? new THREE.Vector3(5.5, 2.0 + objH + (objH / safeFMag) * 5.5, 0)
@@ -1243,28 +1552,64 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         v2.computeLineDistances();
         group.add(v1, v2);
       }
+
+      group.add(
+        createTroikaLabel({ text: 'Vật AB', position: [-safeD, 3.8, 0], fontSize: 0.3, color: 0x34d399 }),
+        createTroikaLabel({ text: 'F', position: [-fSigned, 1.55, 0], fontSize: 0.3, color: 0xfbbf24 }),
+        createTroikaLabel({ text: "F'", position: [fSigned, 1.55, 0], fontSize: 0.3, color: 0xfbbf24 }),
+        createTroikaLabel({ text: dPrime > 0 ? "Ảnh thật A'B'" : "Ảnh ảo A'B'", position: [clampedDPrime, 2.0 + imgH + (imgH >= 0 ? 0.55 : -0.55), 0], fontSize: 0.3, color: dPrime > 0 ? 0xf87171 : 0xc084fc }),
+        createCrispLine2([[-6.4, 2.0, 0], [6.4, 2.0, 0]], { color: 0x94a3b8, linewidth: 2.2 })
+      );
     }
 
     // -------------------------------------------------------------
     // SCENE 7: ĐỘNG HỌC & VECTƠ HỢP LỰC 3D
     // -------------------------------------------------------------
     else if (mode === 'kinematics_3d') {
-      // Road Track
+      const isSw = isSoftwareGlRef.current;
+      // Road Track with centerline sleepers
       const trackGeo = new THREE.BoxGeometry(12, 0.25, 2.2);
-      const trackMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+      const trackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.65, metalness: 0.2 });
       const track = new THREE.Mesh(trackGeo, trackMat);
-      track.position.set(0, 0.12, 0);
+      track.position.set(0, 0.125, 0);
+      track.receiveShadow = !isSw;
       group.add(track);
 
-      // Moving Vehicle Block
-      const carGeo = new THREE.BoxGeometry(1.1, 0.55, 0.75);
-      const carMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.4, roughness: 0.25 });
-      const car = new THREE.Mesh(carGeo, carMat);
-      car.position.set(-4.8, 0.55, 0);
-      group.add(car);
+      const stripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xd97706, emissiveIntensity: 0.2 });
+      for (let sx = -5; sx <= 5; sx += 1.25) {
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.02, 0.14), stripeMat);
+        stripe.position.set(sx, 0.255, 0);
+        group.add(stripe);
+      }
+
+      // Composite Multi-Part Lab Cart (Chassis + Cabin + 4 Wheels)
+      const carGroup = new THREE.Group();
+      carGroup.position.set(-4.8, 0.25, 0);
+      const chassis = new THREE.Mesh(
+        new THREE.BoxGeometry(1.25, 0.34, 0.82),
+        new THREE.MeshPhysicalMaterial({ color: 0x3b82f6, metalness: 0.55, roughness: 0.18, clearcoat: 1.0 })
+      );
+      chassis.position.y = 0.3;
+      chassis.castShadow = !isSw;
+      const cabin = new THREE.Mesh(
+        new THREE.BoxGeometry(0.65, 0.26, 0.68),
+        new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, metalness: 0.25, roughness: 0.12, clearcoat: 1.0, transparent: true, opacity: 0.85 })
+      );
+      cabin.position.set(-0.08, 0.58, 0);
+      const wheelGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.12, 18);
+      wheelGeo.rotateX(Math.PI / 2);
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
+      const wheelPositions: [number, number][] = [[-0.4, 0.42], [0.4, 0.42], [-0.4, -0.42], [0.4, -0.42]];
+      wheelPositions.forEach(([wx, wz]) => {
+        const wMesh = new THREE.Mesh(wheelGeo, wheelMat);
+        wMesh.position.set(wx, 0.16, wz);
+        carGroup.add(wMesh);
+      });
+      carGroup.add(chassis, cabin);
+      group.add(carGroup);
 
       // Velocity Vector Arrow attached to car (green)
-      const vArrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(-4.8, 1.05, 0), 1.4, 0x10b981, 0.3, 0.16);
+      const vArrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(-4.8, 1.15, 0), 1.4, 0x10b981, 0.3, 0.16);
       group.add(vArrow);
 
       // Force / Vector Addition Visualizer elevated at Y = 2.6
@@ -1278,7 +1623,6 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       group.add(new THREE.ArrowHelper(f2Vec.clone().normalize(), originVec, f2Vec.length(), 0xf59e0b, 0.28, 0.14));
       group.add(new THREE.ArrowHelper(fSumVec.clone().normalize(), originVec, fSumVec.length(), 0xef4444, 0.34, 0.18));
 
-      // Parallelogram dashed outline
       const pMat = new THREE.LineDashedMaterial({ color: 0x94a3b8, dashSize: 0.15, gapSize: 0.1 });
       const pLine = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([
@@ -1288,16 +1632,23 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         ]),
         pMat
       );
-      pLine.computeLineDistances();
-      group.add(pLine);
+      group.add(
+        createCrispLine2(
+          [originVec.clone().add(f1Vec), originVec.clone().add(fSumVec), originVec.clone().add(f2Vec)],
+          { color: 0x94a3b8, linewidth: 2.2, dashed: true }
+        ),
+        createTroikaLabel({ text: 'F⃗₁', position: [originVec.x + f1Vec.x * 0.6, originVec.y - 0.38, 0], fontSize: 0.3, color: 0x38bdf8 }),
+        createTroikaLabel({ text: 'F⃗₂', position: [originVec.x + f2Vec.x * 0.55 - 0.38, originVec.y + f2Vec.y * 0.65, 0], fontSize: 0.3, color: 0xfbbf24 }),
+        createTroikaLabel({ text: 'F⃗ hợp lực', position: [originVec.x + fSumVec.x + 0.65, originVec.y + fSumVec.y, 0], fontSize: 0.32, color: 0xf87171 })
+      );
 
       sceneTickRef.current = () => {
         const cycleT = simStateRef.current.time % 3.6;
         const rawX = -4.8 + kinV0 * cycleT * 0.45 + 0.5 * kinAccel * cycleT * cycleT * 0.45;
         const clampedX = Math.max(-5.2, Math.min(5.0, rawX));
         const curV = kinV0 + kinAccel * cycleT;
-        car.position.x = clampedX;
-        vArrow.position.set(clampedX, 1.05, 0);
+        carGroup.position.x = clampedX;
+        vArrow.position.set(clampedX, 1.15, 0);
         vArrow.setLength(Math.max(0.5, Math.min(3.0, Math.abs(curV) * 0.32)), 0.28, 0.15);
       };
       sceneTickRef.current(0);
@@ -1316,8 +1667,24 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const safeVol = Math.max(0.3, Math.min(2.2, gasVolumeFactor));
       const boxH = 4.5 * safeVol;
 
-      // Wireframe Cylinder Chamber
+      // Translucent Glass Chamber + Heater Base Plate + Piston Rod
       const chamberGeo = new THREE.BoxGeometry(boxW, boxH, boxD);
+      const chamberGlass = new THREE.Mesh(
+        chamberGeo,
+        new THREE.MeshPhysicalMaterial({
+          color: 0x7dd3fc,
+          transparent: true,
+          opacity: 0.14,
+          roughness: 0.08,
+          clearcoat: 1.0,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          clippingPlanes: clipPlanes,
+        })
+      );
+      chamberGlass.position.y = boxH / 2 + 0.1;
+      group.add(chamberGlass);
+
       const chamberEdges = new THREE.EdgesGeometry(chamberGeo);
       const chamberLine = new THREE.LineSegments(
         chamberEdges,
@@ -1326,18 +1693,42 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       chamberLine.position.y = boxH / 2 + 0.1;
       group.add(chamberLine);
 
-      // Movable Top Piston
+      const heaterBase = new THREE.Mesh(
+        new THREE.BoxGeometry(boxW + 0.3, 0.2, boxD + 0.3),
+        new THREE.MeshStandardMaterial({
+          color: 0x1e293b,
+          emissive: gasTempK > 450 ? 0xef4444 : gasTempK > 330 ? 0xd97706 : 0x0284c7,
+          emissiveIntensity: 0.35,
+          metalness: 0.5,
+          roughness: 0.4
+        })
+      );
+      heaterBase.position.y = 0.06;
+      group.add(heaterBase);
+
+      // Movable Top Piston + Chrome Shaft
       const pistonGeo = new THREE.BoxGeometry(boxW - 0.1, 0.22, boxD - 0.1);
-      const pistonMat = new THREE.MeshStandardMaterial({
+      const pistonMat = new THREE.MeshPhysicalMaterial({
         color: 0xf59e0b,
-        metalness: 0.65,
-        roughness: 0.25,
+        metalness: 0.72,
+        roughness: 0.18,
+        clearcoat: 0.85,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.9,
+        clippingPlanes: clipPlanes,
       });
       const piston = new THREE.Mesh(pistonGeo, pistonMat);
       piston.position.y = boxH + 0.1;
-      group.add(piston);
+      const pistonStem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.14, 0.14, 1.4, 14),
+        new THREE.MeshPhysicalMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.15, clearcoat: 0.8 })
+      );
+      pistonStem.position.y = 0.78;
+      piston.add(pistonStem);
+      group.add(
+        piston,
+        createTroikaLabel({ text: `pV = nRT (${gasTempK}K)`, position: [0, boxH + 1.85, 0], fontSize: 0.32, color: 0xfbbf24 })
+      );
 
       // 24 Gas Particles bouncing inside
       const numParticles = 24;
@@ -1348,7 +1739,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const partMat = new THREE.MeshStandardMaterial({
         color: pColor,
         emissive: pColor,
-        emissiveIntensity: 0.35,
+        emissiveIntensity: 0.45,
       });
 
       const particles: { mesh: THREE.Mesh; vel: THREE.Vector3 }[] = [];
@@ -1393,11 +1784,20 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     else if (mode === 'circular_motion_3d') {
       const r = Math.max(1.0, Math.min(4.2, circRadius3D));
       const yLevel = 1.6;
+      const isSw = isSoftwareGlRef.current;
 
-      // Central pivot post + angular velocity vector omega
+      // Grounded Turntable Base + Central Pivot Post
+      const tableBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(r + 0.45, r + 0.65, 0.14, 48),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.55, metalness: 0.35 })
+      );
+      tableBase.position.y = 0.07;
+      tableBase.receiveShadow = !isSw;
+      group.add(tableBase);
+
       const pivot = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.14, 0.18, yLevel, 16),
-        new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.7 })
+        new THREE.CylinderGeometry(0.14, 0.18, yLevel, 18),
+        new THREE.MeshPhysicalMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.2, clearcoat: 0.7 })
       );
       pivot.position.y = yLevel / 2;
       group.add(pivot);
@@ -1406,31 +1806,42 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       group.add(omegaArrow);
 
       // Orbit ring
-      const ringGeo = new THREE.TorusGeometry(r, 0.035, 12, 64);
+      const ringGeo = new THREE.TorusGeometry(r, 0.038, 12, 64);
       ringGeo.rotateX(Math.PI / 2);
-      const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 }));
+      const ring = new THREE.Mesh(
+        ringGeo,
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.45, transparent: true, opacity: 0.72 })
+      );
       ring.position.y = yLevel;
       group.add(ring);
 
-      // Orbiting sphere + connecting rod
+      // Orbiting sphere + cylindrical connecting rod (rotated dynamically)
       const ball = new THREE.Mesh(
-        new THREE.SphereGeometry(0.32, 24, 24),
-        new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.4, roughness: 0.25 })
+        new THREE.SphereGeometry(0.32, 28, 24),
+        new THREE.MeshPhysicalMaterial({ color: 0x3b82f6, metalness: 0.65, roughness: 0.15, clearcoat: 1.0 })
       );
+      ball.castShadow = !isSw;
       group.add(ball);
 
-      const rodLine = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, yLevel, 0), new THREE.Vector3(r, yLevel, 0)]),
-        new THREE.LineBasicMaterial({ color: 0x94a3b8 })
+      const rodGeo = new THREE.CylinderGeometry(0.032, 0.032, r, 12);
+      rodGeo.rotateZ(-Math.PI / 2);
+      rodGeo.translate(r / 2, 0, 0);
+      const rodMesh = new THREE.Mesh(
+        rodGeo,
+        new THREE.MeshPhysicalMaterial({ color: 0xcbd5e1, metalness: 0.85, roughness: 0.18 })
       );
-      group.add(rodLine);
+      rodMesh.position.y = yLevel;
+      group.add(rodMesh);
 
-      // Tangential velocity & centripetal force arrows
       const vArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), new THREE.Vector3(r, yLevel, 0), 1.8, 0x10b981, 0.3, 0.16);
       const fArrow = new THREE.ArrowHelper(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(r, yLevel, 0), 1.5, 0xef4444, 0.3, 0.16);
-      group.add(vArrow, fArrow);
+      group.add(
+        vArrow,
+        fArrow,
+        createTroikaLabel({ text: `ω = ${circOmega3D} rad/s`, position: [0, yLevel + 2.35, 0], fontSize: 0.32, color: 0xfbbf24 }),
+        createTroikaLabel({ text: 'v⃗ (tiếp tuyến) · F⃗_ht', position: [0, yLevel + 0.6, r + 0.5], fontSize: 0.28, color: 0x34d399 })
+      );
 
-      const rodPosAttr = rodLine.geometry.attributes.position as THREE.BufferAttribute;
       const vDir = new THREE.Vector3();
       const fDir = new THREE.Vector3();
       sceneTickRef.current = () => {
@@ -1440,9 +1851,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         const bx = cosT * r;
         const bz = -sinT * r;
         ball.position.set(bx, yLevel, bz);
-
-        rodPosAttr.setXYZ(1, bx, yLevel, bz);
-        rodPosAttr.needsUpdate = true;
+        rodMesh.rotation.y = theta;
+        trailRef.current?.pushAndRender(bx, yLevel, bz, cameraRef.current ?? undefined, 0.02, 30);
 
         vDir.set(-sinT, 0, -cosT).normalize();
         fDir.set(-cosT, 0, sinT).normalize();
@@ -1465,17 +1875,28 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     // SCENE 10: MÁY PHÁT ĐIỆN XOAY CHIỀU 3D (AC GENERATOR & TỪ THÔNG)
     // -------------------------------------------------------------
     else if (mode === 'ac_generator_3d') {
-      // N Pole (Red, left) & S Pole (Blue, right)
+      const isSw = isSoftwareGlRef.current;
+      // N Pole (Red, left), S Pole (Blue, right) & Base Magnetic Yoke Plate
+      const yoke = new THREE.Mesh(
+        new THREE.BoxGeometry(8.8, 0.35, 3.4),
+        new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.72, roughness: 0.28 })
+      );
+      yoke.position.set(0, 0.18, 0);
+      yoke.receiveShadow = !isSw;
+      group.add(yoke);
+
       const nPole = new THREE.Mesh(
-        new THREE.BoxGeometry(1.4, 3.0, 3.2),
-        new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.3 })
+        new THREE.BoxGeometry(1.4, 3.2, 3.2),
+        new THREE.MeshPhysicalMaterial({ color: 0xef4444, roughness: 0.22, metalness: 0.38, clearcoat: 0.75 })
       );
-      nPole.position.set(-3.6, 2.2, 0);
+      nPole.position.set(-3.6, 2.0, 0);
+      nPole.castShadow = !isSw;
       const sPole = new THREE.Mesh(
-        new THREE.BoxGeometry(1.4, 3.0, 3.2),
-        new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3, metalness: 0.3 })
+        new THREE.BoxGeometry(1.4, 3.2, 3.2),
+        new THREE.MeshPhysicalMaterial({ color: 0x3b82f6, roughness: 0.22, metalness: 0.38, clearcoat: 0.75 })
       );
-      sPole.position.set(3.6, 2.2, 0);
+      sPole.position.set(3.6, 2.0, 0);
+      sPole.castShadow = !isSw;
       group.add(nPole, sPole);
 
       // Magnetic field arrows N -> S along +X
@@ -1495,26 +1916,48 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         new THREE.Vector3(-1.3, 1.1, 0),
         new THREE.Vector3(-1.3, -1.1, 0)
       ];
-      const coilGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(wirePts, false, 'catmullrom', 0.05), 48, 0.07, 10, false);
-      const coilMesh = new THREE.Mesh(coilGeo, new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.2 }));
+      const coilGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(wirePts, false, 'catmullrom', 0.05), 48, 0.075, 12, false);
+      const coilMesh = new THREE.Mesh(
+        coilGeo,
+        new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, metalness: 0.88, roughness: 0.16, clearcoat: 0.85, anisotropy: 0.5 })
+      );
+      coilMesh.castShadow = !isSw;
       coilGroup.add(coilMesh);
 
-      // Normal vector n attached to coil
       const normalArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), 1.6, 0x10b981, 0.28, 0.15);
       coilGroup.add(normalArrow);
       group.add(coilGroup);
 
-      // Slip ring axis
+      // Slip rings + steel axle
       const axle = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.06, 0.06, 4.6, 12),
-        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 })
+        new THREE.CylinderGeometry(0.065, 0.065, 4.8, 16),
+        new THREE.MeshPhysicalMaterial({ color: 0xcbd5e1, metalness: 0.92, roughness: 0.14 })
       );
       axle.rotation.x = Math.PI / 2;
       axle.position.set(0, 2.2, 0);
       group.add(axle);
 
-      sceneTickRef.current = () => {
+      const ringCopperMat = new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.15, clearcoat: 0.8 });
+      [1.85, 2.15].forEach((rz) => {
+        const slipRing = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.045, 12, 28), ringCopperMat);
+        slipRing.position.set(0, 2.2, rz);
+        group.add(slipRing);
+      });
+
+      group.add(
+        createTroikaLabel({ text: 'N', position: [-3.6, 3.9, 0], fontSize: 0.38, color: 0xf87171 }),
+        createTroikaLabel({ text: 'S', position: [3.6, 3.9, 0], fontSize: 0.38, color: 0x60a5fa }),
+        createTroikaLabel({ text: 'e = E₀ sin(ωt)', position: [0, 4.1, 0], fontSize: 0.32, color: 0x34d399 })
+      );
+
+      let brushCooldown = 0;
+      sceneTickRef.current = (effDt: number) => {
         coilGroup.rotation.z = simStateRef.current.time * Math.max(0.2, genOmega3D);
+        brushCooldown -= effDt;
+        if (particlePoolRef.current && brushCooldown <= 0) {
+          brushCooldown = 0.22;
+          particlePoolRef.current.spawn(0.22, 2.2, 2.0, 0.4 + Math.random() * 0.6, 0.5 + Math.random() * 0.6, (Math.random() - 0.5) * 0.5, 0.4, 0.65, 0xfbbf24);
+        }
       };
       sceneTickRef.current(0);
 
@@ -1542,56 +1985,72 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const hexColor = (cssColor.r << 16) | (cssColor.g << 8) | cssColor.b;
       const slitGap = Math.max(0.4, Math.min(2.2, youngSlitMm * 0.9));
 
+      // Optical Bench Base Rail
+      const optRail = new THREE.Mesh(
+        new THREE.BoxGeometry(8.2, 0.16, 5.6),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.65, metalness: 0.3 })
+      );
+      optRail.position.set(0.3, 0.08, 0);
+      group.add(optRail);
+
       // Barrier with two glowing slits S1 and S2 at X = -3.2
       const barrier = new THREE.Mesh(
         new THREE.BoxGeometry(0.18, 3.6, 5.2),
-        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 })
+        new THREE.MeshPhysicalMaterial({ color: 0x334155, roughness: 0.42, metalness: 0.35, clearcoat: 0.5 })
       );
       barrier.position.set(-3.2, 2.0, 0);
       group.add(barrier);
 
       [-slitGap / 2, slitGap / 2].forEach((zSlit) => {
         const slitGlow = new THREE.Mesh(
-          new THREE.BoxGeometry(0.22, 1.8, 0.14),
-          new THREE.MeshBasicMaterial({ color: hexColor })
+          new THREE.BoxGeometry(0.24, 1.8, 0.15),
+          new THREE.MeshStandardMaterial({ color: hexColor, emissive: hexColor, emissiveIntensity: 0.95 })
         );
         slitGlow.position.set(-3.2, 2.0, zSlit);
         group.add(slitGlow);
 
-        // Diverging rays to screen X = 3.8
         for (let targetZ = -2.2; targetZ <= 2.2; targetZ += 1.1) {
-          const rGeo = new THREE.BufferGeometry().setFromPoints([
+          const rayCurve = new THREE.LineCurve3(
             new THREE.Vector3(-3.1, 2.0, zSlit),
             new THREE.Vector3(3.8, 2.0, targetZ)
-          ]);
-          const rMat = new THREE.LineBasicMaterial({ color: hexColor, transparent: true, opacity: 0.45 });
-          group.add(new THREE.Line(rGeo, rMat));
+          );
+          const rayTube = new THREE.Mesh(
+            new THREE.TubeGeometry(rayCurve, 4, 0.018, 6, false),
+            new THREE.MeshBasicMaterial({ color: hexColor, transparent: true, opacity: 0.42 })
+          );
+          group.add(rayTube);
         }
       });
 
       // Procedural interference fringe texture on observation screen at X = 3.8
       const texCanvas = document.createElement('canvas');
-      texCanvas.width = 256;
+      texCanvas.width = 512;
       texCanvas.height = 128;
       const tCtx = texCanvas.getContext('2d');
       if (tCtx) {
         tCtx.fillStyle = '#050814';
-        tCtx.fillRect(0, 0, 256, 128);
-        const fringePeriodPx = (youngLambdaUm * 46) / Math.max(0.25, youngSlitMm);
-        for (let px = 0; px < 256; px++) {
-          const xRel = px - 128;
+        tCtx.fillRect(0, 0, 512, 128);
+        const fringePeriodPx = (youngLambdaUm * 92) / Math.max(0.25, youngSlitMm);
+        for (let px = 0; px < 512; px++) {
+          const xRel = px - 256;
           const intensity = Math.pow(Math.cos((Math.PI * xRel) / fringePeriodPx), 2);
           tCtx.fillStyle = `rgba(${cssColor.r}, ${cssColor.g}, ${cssColor.b}, ${Math.max(0.05, intensity)})`;
           tCtx.fillRect(px, 0, 1, 128);
         }
       }
       const screenTex = new THREE.CanvasTexture(texCanvas);
+      screenTex.colorSpace = THREE.SRGBColorSpace;
+      screenTex.anisotropy = 8;
       const screenMesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.2, 3.6, 5.4),
-        new THREE.MeshStandardMaterial({ map: screenTex, roughness: 0.4 })
+        new THREE.MeshStandardMaterial({ map: screenTex, emissiveMap: screenTex, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.35 })
       );
       screenMesh.position.set(3.8, 2.0, 0);
-      group.add(screenMesh);
+      group.add(
+        screenMesh,
+        createTroikaLabel({ text: `Khe kép S₁, S₂ (a=${youngSlitMm}mm)`, position: [-3.2, 4.25, 0], fontSize: 0.3, color: 0x38bdf8 }),
+        createTroikaLabel({ text: `Vân giao thoa (λ=${nm}nm)`, position: [3.8, 4.25, 0], fontSize: 0.3, color: 0xfbbf24 })
+      );
     }
 
     // -------------------------------------------------------------
@@ -1604,29 +2063,40 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const harmonics = Math.max(1, Math.min(7, Math.round(standingN)));
       const amp = Math.max(0.2, Math.min(1.5, standingAmp));
 
-      // Support posts at both ends
+      const isSw = isSoftwareGlRef.current;
+      // Grounded optical/wave bench baseplate + Support posts with brass clamp collars
+      const benchMat = new THREE.MeshPhysicalMaterial({ color: 0x1e293b, metalness: 0.65, roughness: 0.35, clearcoat: 0.4 });
+      const benchBase = new THREE.Mesh(new THREE.BoxGeometry(span + 1.4, 0.24, 1.4), benchMat);
+      benchBase.position.set(0, 0.12, 0);
+      benchBase.receiveShadow = !isSw;
+      group.add(benchBase);
+
+      const postMat = new THREE.MeshPhysicalMaterial({ color: 0x64748b, metalness: 0.78, roughness: 0.22, clearcoat: 0.6 });
+      const clampMat = new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, metalness: 0.82, roughness: 0.18, clearcoat: 0.8 });
       [-halfSpan, halfSpan].forEach((px) => {
-        const post = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.12, 0.16, yBase + 1.2, 16),
-          new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.65, roughness: 0.3 })
-        );
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.17, yBase + 1.2, 20), postMat);
         post.position.set(px, (yBase + 1.2) / 2, 0);
-        group.add(post);
+        post.castShadow = !isSw;
+        const clamp = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.24, 20), clampMat);
+        clamp.position.set(px, yBase, 0);
+        group.add(post, clamp);
       });
 
-      // Equilibrium centerline
-      const eqGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-halfSpan, yBase, 0),
-        new THREE.Vector3(halfSpan, yBase, 0),
-      ]);
-      group.add(new THREE.Line(eqGeo, new THREE.LineBasicMaterial({ color: 0x475569 })));
+      // Equilibrium centerline rod
+      const eqRod = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.018, 0.018, span, 10),
+        new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: 0.65 })
+      );
+      eqRod.rotation.z = Math.PI / 2;
+      eqRod.position.set(0, yBase, 0);
+      group.add(eqRod);
 
-      // Red node spheres
+      // Red node spheres with clearcoat
       for (let i = 0; i <= harmonics; i++) {
         const nx = -halfSpan + (i / harmonics) * span;
         const nodeOrb = new THREE.Mesh(
-          new THREE.SphereGeometry(0.14, 16, 16),
-          new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.35 })
+          new THREE.SphereGeometry(0.15, 20, 20),
+          new THREE.MeshPhysicalMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.42, clearcoat: 0.85, roughness: 0.18 })
         );
         nodeOrb.position.set(nx, yBase, 0);
         group.add(nodeOrb);
@@ -1635,8 +2105,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       // Segmented vibrating beads + connecting polyline
       const segs = 64;
       const beads: THREE.Mesh[] = [];
-      const beadGeo = new THREE.SphereGeometry(0.085, 12, 12);
-      const beadMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.45 });
+      const beadGeo = new THREE.SphereGeometry(0.09, 14, 14);
+      const beadMat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.55, clearcoat: 0.85, roughness: 0.15 });
       const initPts: THREE.Vector3[] = [];
       for (let i = 0; i <= segs; i++) {
         const u = i / segs;
@@ -1652,7 +2122,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         new THREE.BufferGeometry().setFromPoints(initPts),
         new THREE.LineBasicMaterial({ color: 0x38bdf8 })
       );
-      group.add(stringLine);
+      group.add(
+        stringLine,
+        createTroikaLabel({ text: `Sóng dừng k = ${harmonics} bụng · ${harmonics + 1} nút`, position: [0, 4.2, 0], fontSize: 0.32, color: 0x38bdf8 })
+      );
 
       const stringPosAttr = stringLine.geometry.attributes.position as THREE.BufferAttribute;
       const sinHarmonics = new Float32Array(segs + 1);
@@ -1685,19 +2158,47 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const ratio = Math.max(0, Math.min(1.45, dopplerSpeedRatio));
       const freq = Math.max(1.0, Math.min(5.0, dopplerFreq));
 
-      // Ground observer post at +X
-      const obs = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.16, 0.2, 1.5, 16),
-        new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669, emissiveIntensity: 0.3 })
+      const isSw = isSoftwareGlRef.current;
+      // Ground track lane along X
+      const trackLane = new THREE.Mesh(
+        new THREE.BoxGeometry(10.2, 0.08, 0.9),
+        new THREE.MeshPhysicalMaterial({ color: 0x1e293b, roughness: 0.55, metalness: 0.35 })
       );
-      obs.position.set(4.5, 0.75, 0);
-      group.add(obs);
+      trackLane.position.set(0, 0.04, 0);
+      trackLane.receiveShadow = !isSw;
+      group.add(trackLane);
 
-      // Moving emitter sphere
-      const sourceOrb = new THREE.Mesh(
-        new THREE.SphereGeometry(0.28, 24, 24),
-        new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.55 })
+      // Ground observer acoustic receiver stand & dish at +X
+      const obsBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.42, 0.16, 20),
+        new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.72, roughness: 0.28 })
       );
+      obsBase.position.set(4.5, 0.08, 0);
+      const obs = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.16, 1.5, 18),
+        new THREE.MeshPhysicalMaterial({ color: 0x10b981, emissive: 0x059669, emissiveIntensity: 0.35, clearcoat: 0.7, roughness: 0.25 })
+      );
+      obs.position.set(4.5, 0.82, 0);
+      obs.castShadow = !isSw;
+      const dish = new THREE.Mesh(
+        new THREE.ConeGeometry(0.38, 0.45, 24, 1, true),
+        new THREE.MeshPhysicalMaterial({ color: 0x34d399, metalness: 0.65, roughness: 0.22, clearcoat: 0.8, side: THREE.DoubleSide })
+      );
+      dish.rotation.z = -Math.PI / 2;
+      dish.position.set(4.28, 1.6, 0);
+      group.add(obsBase, obs, dish);
+
+      // Moving emitter sphere + energy halo
+      const sourceOrb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.3, 28, 28),
+        new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.68, clearcoat: 0.95, roughness: 0.15 })
+      );
+      sourceOrb.castShadow = !isSw;
+      const sourceHalo = new THREE.Mesh(
+        new THREE.SphereGeometry(0.52, 20, 20),
+        new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.2, depthWrite: false })
+      );
+      sourceOrb.add(sourceHalo);
       sourceOrb.position.set(-4.0, yWave, 0);
       group.add(sourceOrb);
 
@@ -1717,11 +2218,23 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const cycleLen = 4.6;
       const waveV = 1.85;
       const srcV = waveV * ratio;
+      group.add(
+        createTroikaLabel({ text: `Nguồn phát (v/c = ${ratio.toFixed(2)})`, position: [0, 3.6, 0], fontSize: 0.3, color: 0xfbbf24 }),
+        createTroikaLabel({ text: "Máy thu f'", position: [4.5, 2.55, 0], fontSize: 0.3, color: 0x34d399 })
+      );
 
-      sceneTickRef.current = () => {
+      let shockCooldown = 0;
+      sceneTickRef.current = (effDt: number) => {
         const tCycle = simStateRef.current.time % cycleLen;
         const srcX = ratio < 0.01 ? 0 : -4.2 + srcV * tCycle;
-        sourceOrb.position.set(Math.min(4.8, srcX), yWave, 0);
+        const curSrcX = Math.min(4.8, srcX);
+        sourceOrb.position.set(curSrcX, yWave, 0);
+
+        shockCooldown -= effDt;
+        if (particlePoolRef.current && ratio >= 1.0 && shockCooldown <= 0) {
+          shockCooldown = 0.14;
+          particlePoolRef.current.spawn(curSrcX, yWave, 0, -1.2, (Math.random() - 0.5) * 1.4, (Math.random() - 0.5) * 1.4, 0.45, 0.75, 0x38bdf8);
+        }
 
         const intervalSec = Math.max(0.18, 1 / freq);
         const latestK = Math.floor(tCycle / intervalSec);
@@ -1760,27 +2273,53 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const photonEv = 1240 / Math.max(150, photoLambdaNm);
       const canEmit = photonEv >= photoWorkEv;
 
-      // Glass outer cylinder
+      // Quartz Vacuum Envelope Tube + Brass End Caps & Pedestals
+      const isSw = isSoftwareGlRef.current;
       const glassTube = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.5, 1.5, 7.0, 28, 1, true),
-        new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.16, roughness: 0.1, side: THREE.DoubleSide })
+        new THREE.CylinderGeometry(1.5, 1.5, 7.0, 36, 1, true),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xbae6fd,
+          transparent: true,
+          opacity: isSw ? 0.22 : 0.42,
+          roughness: 0.06,
+          clearcoat: 1.0,
+          ior: 1.48,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          clippingPlanes: clipPlanes,
+        })
       );
       glassTube.rotation.z = Math.PI / 2;
       glassTube.position.set(0, 2.1, 0);
-      group.add(glassTube);
+      group.add(
+        glassTube,
+        createTroikaLabel({ text: 'Catôt K', position: [-2.9, 3.85, 0], fontSize: 0.3, color: 0x38bdf8 }),
+        createTroikaLabel({ text: 'Anôt A', position: [2.9, 3.85, 0], fontSize: 0.3, color: 0xfbbf24 }),
+        createTroikaLabel({ text: canEmit ? `hν (${photonEv.toFixed(2)}eV) ≥ A` : `hν (${photonEv.toFixed(2)}eV) < A`, position: [0, 4.65, 0], fontSize: 0.3, color: canEmit ? 0x34d399 : 0xf87171 })
+      );
+
+      const brassStandMat = new THREE.MeshPhysicalMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.24, clearcoat: 0.6 });
+      [-3.5, 3.5].forEach((ex) => {
+        const endCollar = new THREE.Mesh(new THREE.TorusGeometry(1.52, 0.065, 14, 40), brassStandMat);
+        endCollar.rotation.y = Math.PI / 2;
+        endCollar.position.set(ex, 2.1, 0);
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.7, 0.5), brassStandMat);
+        leg.position.set(ex, 0.35, 0);
+        group.add(endCollar, leg);
+      });
 
       // Cathode (Blue left disc) & Anode (Amber right disc)
       const cathode = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.25, 1.25, 0.2, 24),
-        new THREE.MeshStandardMaterial({ color: 0x0ea5e9, metalness: 0.7, roughness: 0.25 })
+        new THREE.CylinderGeometry(1.25, 1.25, 0.22, 28),
+        new THREE.MeshPhysicalMaterial({ color: 0x0ea5e9, emissive: 0x0284c7, emissiveIntensity: 0.25, metalness: 0.78, roughness: 0.18, clearcoat: 0.85 })
       );
       cathode.rotation.z = Math.PI / 2;
       cathode.position.set(-2.9, 2.1, 0);
       group.add(cathode);
 
       const anode = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.25, 1.25, 0.2, 24),
-        new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.7, roughness: 0.25 })
+        new THREE.CylinderGeometry(1.25, 1.25, 0.22, 28),
+        new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.25, metalness: 0.78, roughness: 0.18, clearcoat: 0.85 })
       );
       anode.rotation.z = Math.PI / 2;
       anode.position.set(2.9, 2.1, 0);
@@ -1810,7 +2349,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
 
       const startVec = new THREE.Vector3();
       const endVec = new THREE.Vector3();
-      sceneTickRef.current = () => {
+      let emitSparkCooldown = 0;
+      sceneTickRef.current = (effDt: number) => {
         const tCur = simStateRef.current.time;
 
         for (let i = 0; i < photons.length; i++) {
@@ -1829,6 +2369,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
             const zOff = Math.cos(i * 1.7) * 0.65;
             electrons[i].position.set(-2.7 + prog * 5.4, yOff, zOff);
           }
+          emitSparkCooldown -= effDt;
+          if (particlePoolRef.current && emitSparkCooldown <= 0) {
+            emitSparkCooldown = 0.25;
+            particlePoolRef.current.spawn(-2.75, 2.1 + (Math.random() - 0.5) * 0.8, (Math.random() - 0.5) * 0.8, 2.0 * keScale, (Math.random() - 0.5) * 0.4, (Math.random() - 0.5) * 0.4, 0.5, 0.7, 0x38bdf8);
+          }
         }
       };
       sceneTickRef.current(0);
@@ -1839,14 +2384,24 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     }
 
     // -------------------------------------------------------------
-    // SCENES 15..32: +18 EXTRA 3D PHYSICS SIMULATIONS
+    // SCENES 15..48: +34 EXTRA 3D PHYSICS SIMULATIONS
     // -------------------------------------------------------------
+    const extraCtx: Extra3DSceneContext = {
+      particlePool: particlePoolRef.current,
+      trail: trailRef.current,
+      cutawayPlanes: clipPlanes,
+      camera: cameraRef.current,
+    };
     const extraTick = buildExtra3DScene(
       mode,
       group,
       () => extraParamsRef.current,
-      () => simStateRef.current.time
+      () => simStateRef.current.time,
+      extraCtx
     );
+    if (mountRef.current) {
+      syncLine2Resolution(group, mountRef.current.clientWidth || 760, mountRef.current.clientHeight || 420);
+    }
     if (extraTick) {
       sceneTickRef.current = extraTick;
       extraTick(0);
@@ -1854,8 +2409,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         sceneTickRef.current = null;
       };
     }
+    if (mountRef.current) {
+      syncLine2Resolution(group, mountRef.current.clientWidth || 760, mountRef.current.clientHeight || 420);
+    }
   }, [
     mode,
+    showCutaway3D,
     mass,
     springK,
     gravityPreset,
@@ -2125,6 +2684,20 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
             >
               <Grid className="w-4 h-4" />
             </button>
+
+            {CUTAWAY_PHYSICS_MODES.has(mode) && (
+              <button
+                onClick={() => setShowCutaway3D((v) => !v)}
+                className={`p-2 rounded-md border transition-colors shadow-lg cursor-pointer shrink-0 ${
+                  showCutaway3D
+                    ? 'bg-amber-600/90 border-amber-400 text-white'
+                    : 'bg-slate-900/95 border-slate-700/80 text-slate-300 hover:text-white'
+                }`}
+                title={showCutaway3D ? 'Tắt mặt cắt 3D' : 'Bật mặt cắt 3D (xuyên vỏ)'}
+              >
+                <Scissors className="w-4 h-4" />
+              </button>
+            )}
 
             <button
               onClick={() => setQuality3D((q) => (q === 'light' ? 'high' : 'light'))}

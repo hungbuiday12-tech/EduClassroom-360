@@ -69,7 +69,7 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'probability_bell_3d',
     defaultGraphConfig: { type: 'quadratic', params: { a: 2, b: -3, c: 1, d: 0 }, color: '#2563eb', name: 'y = 2x² - 3x + 1' }
   },
   {
@@ -129,7 +129,7 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'probability_bell_3d',
     defaultGraphConfig: { type: 'linear', params: { a: 1, b: -1, c: 0, d: 0 }, color: '#0ea5e9', name: 'Biểu diễn tập hợp số' }
   },
 
@@ -177,7 +177,7 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'line_plane_oxyz',
     defaultGraphConfig: { type: 'linear', params: { a: 1.5, b: -3, c: 0, d: 0 }, color: '#10b981', name: 'Đường bờ 3x - 2y = 6' }
   },
   {
@@ -221,7 +221,7 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'line_plane_oxyz',
     defaultGraphConfig: { type: 'linear', params: { a: -1, b: 4, c: 0, d: 0 }, color: '#2563eb', name: 'Bờ x + y = 4' }
   },
 
@@ -723,7 +723,7 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: { type: 'sqrt', params: { a: 1, b: -1, c: 0, d: 0 }, color: '#0284c7', name: 'Đồ thị hàm căn thức' }
   },
   {
@@ -855,7 +855,7 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'conic_sections_3d',
     defaultGraphConfig: { type: 'sqrt', params: { a: 1, b: -3, c: 0, d: 0 }, color: '#0ea5e9', name: 'Phương trình chứa căn' }
   },
 
@@ -1094,7 +1094,9 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
     mnemonics: ['Xếp hết -> $P_n$; Chọn có thứ tự -> $A_n^k$; Chọn không thứ tự -> $C_n^k$.'],
     commonTraps: ['Nhầm $A_n^k$ và $C_n^k$.'],
     theory: [
-      '1. $P_n = n!$; $A_n^k = \\frac{n!}{(n-k)!}$; $C_n^k = \\frac{n!}{k!(n-k)!}$.'
+      '1. Hoán vị ($P_n$): Mỗi cách sắp xếp thứ tự tất cả $n$ phần tử khác nhau của tập hợp $A$ ($n \\ge 1$) gọi là một hoán vị của $n$ phần tử: $P_n = n! = n(n-1)\\cdots 2\\cdot 1$ (quy ước $0! = 1$).',
+      '2. Chỉnh hợp ($A_n^k$): Chọn $k$ phần tử từ $n$ phần tử ($1 \\le k \\le n$) và **có sắp xếp thứ tự** (phân biệt chức vụ, chữ số khác nhau): $A_n^k = \\frac{n!}{(n-k)!} = n(n-1)\\cdots(n-k+1)$.',
+      '3. Tổ hợp ($C_n^k$): Chọn $k$ phần tử từ $n$ phần tử ($0 \\le k \\le n$) **không xét thứ tự**: $C_n^k = \\frac{n!}{k!(n-k)!}$, với tính chất đối xứng $C_n^k = C_n^{n-k}$ và công thức Pascal $C_n^k + C_n^{k+1} = C_{n+1}^{k+1}$.'
     ],
     keyFormulas: ['P_n = n!,\\quad A_n^k = \\frac{n!}{(n-k)!},\\quad C_n^k = \\frac{n!}{k!(n-k)!}'],
     flashcards: [{ front: 'Chọn 3 bạn làm lớp trưởng, lớp phó, bí thư từ 20 bạn?', back: '$A_{20}^3 = 6840$.' }],
@@ -1136,7 +1138,9 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
     mnemonics: ['Tổng số mũ của $a$ và $b$ ở mỗi số hạng luôn bằng $n$.'],
     commonTraps: ['Quên dấu trừ khi khai triển hiệu $(a - b)^n$.'],
     theory: [
-      '1. $(a+b)^n = \\sum_{k=0}^n C_n^k a^{n-k}b^k$ (chương trình cơ bản lớp 10 xét $n=4, 5$).'
+      '1. Công thức khai triển Nhị thức Newton tổng quát: $(a+b)^n = \\sum_{k=0}^n C_n^k a^{n-k}b^k$. Ở Toán 10 GDPT 2018 tập trung thành thạo $n = 4$ và $n = 5$ với số hạng tổng quát $T_{k+1} = C_n^k a^{n-k}b^k$.',
+      '2. Quy luật Tam giác Pascal & Tính chất: Số hạng thứ $k+1$ có tổng số mũ của $a$ và $b$ luôn bằng $n$, các hệ số đối xứng qua tâm ($C_n^k = C_n^{n-k}$). Với $(a-b)^n$, dấu các số hạng đan xen $+, -, +, -$.',
+      '3. Tổng hệ số: Thay $a = b = 1$ thu được tổng các hệ số $C_n^0 + C_n^1 + \\dots + C_n^n = 2^n$; thay $a = 1, b = -1$ thu được tổng đan dấu bằng $0$.'
     ],
     keyFormulas: ['(a+b)^4 = a^4+4a^3b+6a^2b^2+4ab^3+b^4', '(a+b)^5 = a^5+5a^4b+10a^3b^2+10a^2b^3+5ab^4+b^5'],
     flashcards: [{ front: 'Hệ số $x^2$ trong $(2x-1)^4$?', back: '$C_4^2 \\cdot 4 = 24$.' }],
@@ -1179,7 +1183,11 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
     description: 'Không gian mẫu $\\Omega$, biến cố $A$, biến cố đối $\\overline{A}$ và công thức $P(A) = \\frac{n(A)}{n(\\Omega)}$.',
     mnemonics: ['$0 \\le P(A) \\le 1$; $P(\\overline{A}) = 1 - P(A)$.'],
     commonTraps: ['Áp dụng cho phép thử không đồng khả năng.'],
-    theory: ['1. Khi các kết quả đồng khả năng: $P(A) = \\frac{n(A)}{n(\\Omega)}$ và $P(\\overline{A}) = 1 - P(A)$.'],
+    theory: [
+      '1. Không gian mẫu $\\Omega$ là tập hợp tất cả các kết quả có thể xảy ra của phép thử ngẫu nhiên; mỗi biến cố $A$ là một tập con của $\\Omega$ ($A \\subset \\Omega$).',
+      '2. Định nghĩa cổ điển của xác suất: Khi các kết quả của $\\Omega$ có cùng khả năng xuất hiện (đồng khả năng), xác suất của biến cố $A$ là $P(A) = \\frac{n(A)}{n(\\Omega)}$, thỏa mãn $0 \\le P(A) \\le 1$, $P(\\varnothing) = 0$, $P(\\Omega) = 1$.',
+      '3. Biến cố đối $\\overline{A} = \\Omega \\setminus A$ (biến cố "$A$ không xảy ra") luôn có $n(\\overline{A}) = n(\\Omega) - n(A)$ và $P(\\overline{A}) = 1 - P(A)$.'
+    ],
     keyFormulas: ['P(A) = \\frac{n(A)}{n(\\Omega)}', 'P(\\overline{A}) = 1 - P(A)'],
     flashcards: [{ front: 'Gieo 1 xúc xắc, xác suất ra mặt chẵn?', back: '$3/6 = 1/2$.' }],
     sampleProblems: [
@@ -1219,7 +1227,11 @@ export const MATH_GDPT_10_LESSONS: MathLecture[] = [
     description: 'Vận dụng tổ hợp $C_n^k$, sơ đồ cây và biến cố đối để tính xác suất các bài toán chọn mẫu.',
     mnemonics: ['Từ khóa "ÍT NHẤT 1" -> dùng ngay biến cố đối $P(A) = 1 - P(\\overline{A})$.'],
     commonTraps: ['Lệch cách đếm giữa $n(\\Omega)$ và $n(A)$.'],
-    theory: ['1. Kết hợp tổ hợp và biến cố đối để xử lý nhanh bài toán chọn ngẫu nhiên.'],
+    theory: [
+      '1. Quy trình 3 bước tính xác suất cổ điển: Mô tả phép thử và tính số phần tử không gian mẫu $n(\\Omega)$ bằng quy tắc đếm / hoán vị / chỉnh hợp / tổ hợp; xác định biến cố $A$ và đếm $n(A)$; lập tỉ số $P(A) = \\frac{n(A)}{n(\\Omega)}$.',
+      '2. Phương pháp biến cố đối: Khi đề bài chứa cụm từ "ít nhất một", "không ít hơn", "tồn tại", xét biến cố đối $\\overline{A}$ (không có phần tử nào thỏa mãn) để tính $P(A) = 1 - \\frac{n(\\overline{A})}{n(\\Omega)}$ nhanh và tránh đếm trùng.',
+      '3. Sử dụng sơ đồ hình cây: Hữu ích cho phép thử nhiều bước liên tiếp với các nhánh đồng khả năng, giúp liệt kê trực quan mọi phần tử của không gian mẫu.'
+    ],
     keyFormulas: ['P(A) = 1 - \\frac{n(\\overline{A})}{n(\\Omega)}'],
     flashcards: [{ front: 'Hộp 4 đỏ, 5 xanh, lấy 2 bi. XS có ít nhất 1 đỏ?', back: '$1 - \\frac{C_5^2}{C_9^2} = \\frac{13}{18}$.' }],
     sampleProblems: [

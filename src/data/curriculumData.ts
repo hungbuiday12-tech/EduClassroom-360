@@ -236,7 +236,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: {
       type: 'sqrt',
       params: { a: 1, b: 1, c: 0, d: 0 },
@@ -707,7 +707,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: {
       type: 'custom',
       customExpr: 'x + 4/x',
@@ -794,7 +794,7 @@ const BASE_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'line_plane_oxyz',
     defaultGraphConfig: {
       type: 'linear',
       params: { a: 1, b: 10, c: 0, d: 0 },

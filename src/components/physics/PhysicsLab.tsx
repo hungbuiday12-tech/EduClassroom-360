@@ -650,7 +650,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       const t = simTimeRef.current;
       const curOverlays = overlaysRef.current;
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = cachedW || canvas.clientWidth;
       const h = cachedH || canvas.clientHeight;
       if (w <= 0 || h <= 0) {

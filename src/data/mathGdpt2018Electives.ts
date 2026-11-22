@@ -176,7 +176,7 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'circle_theorems_3d'
   },
   {
     id: 'math-cd-11-2',
@@ -219,7 +219,7 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'line_plane_oxyz'
   },
   {
     id: 'math-cd-11-3',
@@ -479,7 +479,7 @@ export const MATH_GDPT_ELECTIVES: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'circle_theorems_3d'
   },
   {
     id: 'math-11',

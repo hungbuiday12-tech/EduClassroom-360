@@ -165,7 +165,7 @@ export const PHYSICS_GDPT_ELECTIVES: PhysicsLesson[] = [
       'P_{\\text{pin MT}} = H \\cdot I_0 \\cdot S',
       'P_{\\text{gió}} = \\frac{1}{2}\\rho (\\pi R^2) v^3'
     ],
-    ...SIM_PRESETS.free_fall,
+    ...SIM_PRESETS.transformer,
     practiceExercises: [
       {
         source: SRC_CD,

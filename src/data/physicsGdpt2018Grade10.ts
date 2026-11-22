@@ -248,7 +248,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       '\\vec{d} = \\vec{d}_1 + \\vec{d}_2',
       'd_{\\text{vuông góc}} = \\sqrt{d_1^2 + d_2^2}'
     ],
-    ...SIM_PRESETS.vectors,
+    ...SIM_PRESETS.kinematics,
     practiceExercises: [
       {
         source: SRC_10,
@@ -982,7 +982,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['\\vec{F}_{AB} = -\\vec{F}_{BA}', 'F_{AB} = F_{BA}'],
-    ...SIM_PRESETS.vectors,
+    ...SIM_PRESETS.newton_cradle,
     practiceExercises: [
       {
         source: SRC_10,

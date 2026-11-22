@@ -15,7 +15,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
     track: 'khong_chuyen',
     gradeGroup: 'Lớp 12',
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
+    sim3dMode: 'tangent_surface_3d',
     essayProblems: [
       {
         source: 'VietJack · Giải tích 12 KNTT',
@@ -48,7 +48,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
     track: 'khong_chuyen',
     gradeGroup: 'Lớp 12',
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
+    sim3dMode: 'tangent_surface_3d',
     essayProblems: [
       {
         source: 'VietJack · Giải tích 12 · Hàm phân thức',
@@ -80,7 +80,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
     track: 'khong_chuyen',
     gradeGroup: 'Lớp 12',
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
+    sim3dMode: 'tangent_surface_3d',
     essayProblems: [
       {
         source: 'VietJack · Hàm trùng phương 12',
@@ -112,7 +112,7 @@ export const MATH_METADATA_AND_ESSAYS: Record<string, MathLectureSupplement> = {
     track: 'khong_chuyen',
     gradeGroup: 'Lớp 12',
     sim2dMode: 'grapher',
-    sim3dMode: 'revolution_solid',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: {
       type: 'cubic',
       params: { a: 1, b: 0, c: -3, d: 2 },
@@ -1376,7 +1376,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: {
       type: 'custom',
       customExpr: 'x + 4/x',
@@ -1473,7 +1473,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: {
       type: 'linear',
       params: { a: -0.75, b: 2.5, c: 0, d: 0 },
@@ -1561,7 +1561,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: {
       type: 'quadratic',
       params: { a: 1, b: 0, c: 1, d: 0 },
@@ -1653,7 +1653,7 @@ export const CHUYEN_MATH_LECTURES: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim3dMode: 'sphere_plane'
+    sim3dMode: 'circle_theorems_3d'
   },
   {
     id: 'math-pro-5',

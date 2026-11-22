@@ -83,6 +83,7 @@ export const PHYSICS_EXTRA_10_LESSONS: PhysicsLesson[] = [
     tier: 'Chuyên / HSG',
     stageLabel: 'Khu Chuyên Lí · Cơ học Tương đối & Hệ quay',
     sourceTag: 'Olympic Vật lí 30-4 · Hệ quy chiếu Quay & Con lắc Foucault',
+    lessonNumber: 109,
     title: 'Hệ quy chiếu Quay, Lực Li tâm – Lực Coriolis & Đường vòng Nghiêng',
     subtitle: 'Gia tốc li tâm, lực Coriolis làm lệch mặt phẳng dao động con lắc Foucault và góc nghiêng an toàn trên đường đua',
     description:
@@ -145,6 +146,7 @@ export const PHYSICS_EXTRA_10_LESSONS: PhysicsLesson[] = [
     tier: 'Nâng cao',
     stageLabel: 'Khu Chuyên Lí · Cơ học Chất lưu',
     sourceTag: 'Chuyên đề Cơ học Chất lưu · Phương trình Bernoulli & Liên tục',
+    lessonNumber: 110,
     title: 'Thủy động lực học: Phương trình Liên tục & Định luật Bernoulli',
     subtitle: 'Bảo toàn lưu lượng $S_1 v_1 = S_2 v_2$, áp suất tĩnh – áp suất động, ống đo Venturi và lực nâng cánh máy bay',
     description:
@@ -206,6 +208,7 @@ export const PHYSICS_EXTRA_10_LESSONS: PhysicsLesson[] = [
     tier: 'Chuyên / HSG',
     stageLabel: 'Khu Chuyên Lí · Quang Sóng Nâng cao',
     sourceTag: 'Bồi dưỡng HSG Vật lí · Giao thoa Màng mỏng & Nhiễu xạ Một khe',
+    lessonNumber: 111,
     title: 'Giao thoa Bản mỏng (Lớp phủ Chống chói) & Nhiễu xạ Một khe hẹp',
     subtitle: 'Bước nhảy pha $\\pi$ khi phản xạ từ môi trường chiết quang hơn, điều kiện cực đại màng mỏng và cực tiểu nhiễu xạ',
     description:
@@ -270,6 +273,7 @@ export const PHYSICS_EXTRA_10_LESSONS: PhysicsLesson[] = [
     tier: 'Chuyên / HSG',
     stageLabel: 'Khu Chuyên Lí · Vật lí Lượng tử Hiện đại',
     sourceTag: 'Chuyên đề Lượng tử · Tán xạ Compton & Sóng De Broglie',
+    lessonNumber: 112,
     title: 'Hiệu ứng Compton (Động lượng Photon) & Sóng Vật chất De Broglie',
     subtitle: 'Chứng minh photon mang động lượng $p = h/\\lambda$, công thức độ dịch Compton $\\Delta\\lambda$ và bước sóng vật chất electron',
     description:
@@ -332,6 +336,7 @@ export const PHYSICS_EXTRA_10_LESSONS: PhysicsLesson[] = [
     tier: 'Nâng cao',
     stageLabel: 'Điện Từ Học 12 · Dao động & Sóng Điện từ',
     sourceTag: 'Chuẩn Vật lí 12 · Mạch dao động LC & Sóng vô tuyến',
+    lessonNumber: 113,
     title: 'Mạch Dao động Điện từ LC, Năng lượng Điện – Từ & Sóng Điện từ',
     subtitle: 'Tần số riêng $\\omega = 1/\\sqrt{LC}$, sự chuyển hóa năng lượng giữa tụ điện và cuộn cảm và công thức bước sóng $\\lambda = cT$',
     description:
@@ -393,6 +398,7 @@ export const PHYSICS_EXTRA_10_LESSONS: PhysicsLesson[] = [
     tier: 'Chuyên / HSG',
     stageLabel: 'Khu Chuyên Lí · Từ trường & Hạt mang điện',
     sourceTag: 'HSG Vật lí · Máy gia tốc Cyclotron & Hiệu ứng Hall',
+    lessonNumber: 114,
     title: 'Máy Gia tốc Hạt Cyclotron & Hiệu ứng Hall Đo Từ trường',
     subtitle: 'Tính bất biến của tần số cộng hưởng Cyclotron $f_c = qB/(2\\pi m)$, động năng cực đại $E_{\\max}$ và điện áp Hall $U_H$',
     description:
@@ -453,6 +459,7 @@ export const PHYSICS_EXTRA_10_LESSONS: PhysicsLesson[] = [
     tier: 'Chuyên / HSG',
     stageLabel: 'Khu Chuyên Lí · Nhiệt động lực học Nâng cao',
     sourceTag: 'Chuẩn GDPT 2018 & Chuyên Lí · Chu trình Carnot & Nguyên lý II',
+    lessonNumber: 115,
     title: 'Chu trình Nhiệt Carnot, Động cơ Nhiệt & Nguyên lí II Nhiệt động lực học',
     subtitle: '4 quá trình thuận nghịch đẳng nhiệt – đoạn nhiệt, hiệu suất lí tưởng Carnot $H = 1 - T_2/T_1$ và công thức entropy',
     description:
@@ -515,6 +522,7 @@ export const PHYSICS_EXTRA_10_LESSONS: PhysicsLesson[] = [
     tier: 'Nâng cao',
     stageLabel: 'Vật lí Hạt nhân 12 · Năng lượng & Tokamak',
     sourceTag: 'Chuẩn GDPT 2018 · Phản ứng Nhiệt hạch & Độ bền vững Hạt nhân',
+    lessonNumber: 116,
     title: 'Năng lượng Liên kết Riêng, Phản ứng Nhiệt hạch & Lò phản ứng Tokamak',
     subtitle: 'Đường cong Aston, tính năng lượng tỏa thu theo $\\Delta W_{\\text{lk}}$ và điều kiện kích hoạt phản ứng nhiệt hạch D–T',
     description:
@@ -581,6 +589,7 @@ export const PHYSICS_EXTRA_10_LESSONS: PhysicsLesson[] = [
     tier: 'Nâng cao',
     stageLabel: 'Quang Học 11 · Quang sợi & Phân cực Ánh sáng',
     sourceTag: 'Chuẩn GDPT 2018 & Quang ứng dụng · Cáp quang & Malus',
+    lessonNumber: 117,
     title: 'Cáp Quang Phản xạ Toàn phần, Khẩu độ Số NA & Định luật Malus',
     subtitle: 'Điều kiện truyền dẫn không tổn hao trong sợi quang $n_1 > n_2$, góc nhận ánh sáng và cường độ qua kính phân cực',
     description:

@@ -31,61 +31,171 @@ interface StepOverrideRule {
 }
 
 const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
-  // ---------------- LỚP 9 CỐT LÕI ----------------
+  // ---------------- LỚP 9 KHTN (GDPT 2018: BÀI 2 - BÀI 17) ----------------
   'phys-9-mech-heat:0': {
-    simId: 'average_velocity_stages',
-    regimeLabel: 'Mô phỏng Chặng 1 & 2 · Kiểm chứng Bẫy 40 km/h & 60 km/h',
+    simId: 'free_fall_energy',
+    regimeLabel: 'Khảo sát Động năng W_đ = ½mv² theo Khối lượng & Vận tốc',
     observationGoal:
-      'Hai xe đi cùng quãng đường S: xe xanh đi chậm 40 km/h nửa đầu (tốn nhiều giờ hơn) rồi 60 km/h nửa sau → v_tb = 48 km/h < 50 km/h!'
+      'Quan sát động năng W_đ tăng nhanh theo bình phương vận tốc v² khi tăng độ cao h thả vật.'
   },
   'phys-9-mech-heat:1': {
-    simId: 'work_power_joule',
-    regimeLabel: 'Mô phỏng Công cơ học & Công suất kéo vật',
+    simId: 'free_fall_energy',
+    regimeLabel: 'Thế năng Trọng trường W_t = Ph = mgh',
     observationGoal:
-      'Điều chỉnh lực kéo F, góc nghiêng α và ma sát μ để thấy công có ích A = F·s·cosα, công suất P = Fx·v và hiệu suất H%.'
+      'Thay đổi khối lượng m, độ cao h và gia tốc g để thấy thế năng phụ thuộc tuyến tính vào m và h.'
   },
   'phys-9-mech-heat:2': {
-    simId: 'calorimetry_mixing',
-    regimeLabel: 'Thí nghiệm Nhiệt lượng kế · Cân bằng Nhiệt Q_tỏa = Q_thu',
+    simId: 'free_fall_energy',
+    regimeLabel: 'Chuyển hóa Động năng – Thế năng & Cơ năng',
     observationGoal:
-      'Thả/pha hai khối lượng nước nóng – lạnh khác nhiệt độ để quan sát nhiệt truyền từ nóng sang lạnh tới nhiệt độ cân bằng t.'
+      'Theo dõi hai cột năng lượng W_đ và W_t bù trừ lẫn nhau trong quá trình vật rơi tự do.'
   },
   'phys-9-mech-heat:3': {
     simId: 'free_fall_energy',
-    regimeLabel: 'Thí nghiệm Rơi tự do & Bảo toàn Cơ năng W = Wđ + Wt',
+    regimeLabel: 'Thực hành Kiểm chứng Bảo toàn Cơ năng & Lực cản',
     observationGoal:
-      'Quan sát thế năng chuyển hóa thành động năng khi rơi; bật Lực cản không khí để thấy phần cơ năng hao phí thành nhiệt.'
+      'Bật Lực cản không khí để quan sát cơ năng hao phí chuyển hóa dần thành nhiệt.'
+  },
+
+  'phys-9-power-bill:0': {
+    simId: 'pendulum_shm',
+    regimeLabel: 'Định nghĩa Cơ năng W = W_đ + W_t qua Con lắc Đơn',
+    observationGoal:
+      'Ở vị trí biên thế năng đạt cực đại, qua vị trí cân bằng động năng đạt cực đại.'
+  },
+  'phys-9-power-bill:1': {
+    simId: 'free_fall_energy',
+    regimeLabel: 'Chuyển hóa & Bảo toàn Cơ năng trong Trọng trường',
+    observationGoal:
+      'Quan sát tổng W = W_đ + W_t luôn giữ nguyên khi bỏ qua ma sát và lực cản.'
+  },
+  'phys-9-power-bill:2': {
+    simId: 'work_power_joule',
+    regimeLabel: 'Cơ năng có Ma sát & Hao phí Năng lượng',
+    observationGoal:
+      'Tăng hệ số ma sát μ để đo phần cơ năng chuyển hóa thành nhiệt năng hao phí.'
+  },
+
+  'phys-9-b4:0': {
+    simId: 'work_power_joule',
+    regimeLabel: 'Công Cơ học A = F·s·cosα & Điều kiện Sinh công',
+    observationGoal:
+      'Kéo lực F dọc hướng dịch chuyển vs chếch góc α để thấy rõ công chỉ tính theo thành phần lực song song đường đi.'
+  },
+  'phys-9-b4:1': {
+    simId: 'work_power_joule',
+    regimeLabel: 'Công suất P = A/t = F·v & Hiệu suất Máy cơ',
+    observationGoal:
+      'Thay đổi lực kéo F và ma sát μ để kiểm chứng công có ích, công toàn phần và hiệu suất H%.'
+  },
+
+  'phys-9-b5:0': {
+    simId: 'light_refraction',
+    regimeLabel: 'Hiện tượng & Định luật Khúc xạ n₁·sin(i) = n₂·sin(r)',
+    observationGoal:
+      'Điều chỉnh góc tới i và chiết suất n₂ để thấy tia khúc xạ gãy gần pháp tuyến khi n₂ > n₁.'
+  },
+  'phys-9-b5:1': {
+    simId: 'light_refraction',
+    regimeLabel: 'Chiết suất Tuyệt đối & So sánh Tốc độ Ánh sáng',
+    observationGoal:
+      'So sánh góc khúc xạ r khi ánh sáng đi từ không khí vào nước (1,33), thủy tinh (1,5) và kim cương (2,4).'
+  },
+
+  'phys-9-b6:0': {
+    simId: 'fiber_optic_tir',
+    regimeLabel: 'Điều kiện Phản xạ Toàn phần n₁ > n₂ & i ≥ i_th',
+    observationGoal:
+      'Tăng góc tới tới khi vượt góc tới hạn sin(i_th) = n₂/n₁: tia khúc xạ biến mất hoàn toàn!'
+  },
+  'phys-9-b6:1': {
+    simId: 'fiber_optic_tir',
+    regimeLabel: 'Truyền Tín hiệu Ánh sáng trong Sợi Cáp quang',
+    observationGoal:
+      'Quan sát tia sáng phản xạ toàn phần liên tiếp dọc lõi cáp quang nhờ n_lõi > n_vỏ.'
+  },
+
+  'phys-9-b9:0': {
+    simId: 'lens_optics',
+    regimeLabel: 'Thực hành Đo Tiêu cự TKHT · Phương pháp L = 4f',
+    observationGoal:
+      'Đặt vật tại d = 2f (30 cm với f = 15 cm) để thu ảnh thật ngược chiều cao đúng bằng vật tại d\' = 2f.'
+  },
+  'phys-9-b9:1': {
+    simId: 'lens_optics',
+    regimeLabel: 'Kiểm chứng Chùm tia Song song Hội tụ tại F\'',
+    observationGoal:
+      'Quan sát tia song song trục chính luôn đi qua tiêu điểm ảnh F\' sau thấu kính hội tụ.'
+  },
+
+  'phys-9-b10:0': {
+    simId: 'lens_optics',
+    regimeLabel: 'Nguyên lý Kính lúp · Đặt vật d < f cho Ảnh ảo Phóng đại',
+    observationGoal:
+      'Kéo vật vào trong tiêu cự (d < f) để quan sát ảnh ảo cùng chiều lớn hơn vật qua kính lúp.'
+  },
+  'phys-9-b10:1': {
+    simId: 'telescope_optics',
+    regimeLabel: 'Kính lúp & Hệ quang học Tạo ảnh Phóng đại G = 25/f',
+    observationGoal:
+      'Điều chỉnh tiêu cự vật kính và thị kính để khảo sát số bội giác góc và đường truyền tia sáng.'
+  },
+
+  'phys-9-b11:0': {
+    simId: 'ohm_circuit',
+    regimeLabel: 'Đường đặc trưng I – U & Định luật Ohm I = U / R',
+    observationGoal:
+      'Thay đổi hiệu điện thế U và điện trở R để kiểm nghiệm I tỉ lệ thuận với U và tỉ lệ nghịch với R.'
+  },
+  'phys-9-b11:1': {
+    simId: 'ohm_circuit',
+    regimeLabel: 'Điện trở Dây dẫn R = ρl/S & Biến trở',
+    observationGoal:
+      'Thay đổi R₁ để mô phỏng việc điều chỉnh chiều dài dây dẫn hay biến trở trong mạch.'
   },
 
   'phys-9-elec:0': {
     simId: 'ohm_circuit',
-    regimeLabel: 'Mạch điện cơ bản · Định luật Ôm I = U / R',
+    regimeLabel: 'Mạch điện Nối tiếp · R_tđ = R₁ + R₂ & U = U₁ + U₂',
     observationGoal:
-      'Thay đổi hiệu điện thế U và điện trở R để kiểm nghiệm cường độ dòng điện tỉ lệ thuận với U và tỉ lệ nghịch với R.'
+      'Ở chế độ nối tiếp (circuitType = 0), cường độ dòng điện qua mọi điện trở đều bằng nhau.'
   },
   'phys-9-elec:1': {
     simId: 'ohm_circuit',
-    regimeLabel: 'So sánh Mạch Nối tiếp vs Mạch Song song',
+    regimeLabel: 'Mạch điện Song song · 1/R_tđ = 1/R₁ + 1/R₂',
     observationGoal:
-      'Khi chuyển sang mạch song song (circuitType = 1), điện trở tương đương giảm nhỏ hơn cả R₁ và R₂ làm dòng tổng tăng mạnh.',
+      'Chuyển sang mạch song song (circuitType = 1) để thấy điện trở tương đương giảm và dòng mạch chính tăng.',
     paramOverrides: { circuitType: 1 }
   },
   'phys-9-elec:2': {
     simId: 'joule_lenz_heat',
-    regimeLabel: 'Định luật Jun – Len-xơ · Nhiệt lượng tỏa ra Q = I²Rt',
+    regimeLabel: 'Thực hành Phân tích Nhiệt tỏa ra trên Mạch điện',
     observationGoal:
-      'Quan sát dây điện trở nung nóng bình nước theo tỉ lệ bình phương cường độ dòng điện I² và nhiệt kế tăng theo thời gian.'
+      'Quan sát công suất tỏa nhiệt tỉ lệ với bình phương cường độ dòng điện I².'
+  },
+
+  'phys-9-b13:0': {
+    simId: 'joule_lenz_heat',
+    regimeLabel: 'Năng lượng Dòng điện W = UIt & Công suất Điện P = UI',
+    observationGoal:
+      'Điều chỉnh dòng I, điện trở R và thời gian t để theo dõi năng lượng điện và công suất tiêu thụ.'
+  },
+  'phys-9-b13:1': {
+    simId: 'transformer_2d',
+    regimeLabel: 'Chỉ số Công tơ Điện (kWh) & An toàn Lưới điện',
+    observationGoal:
+      'Theo dõi công suất tiêu thụ thiết bị P = U·I và truyền tải điện áp an toàn.'
   },
 
   'phys-9-optics:0': {
     simId: 'light_refraction',
     regimeLabel: 'Khúc xạ Ánh sáng qua Mặt phân cách Hai môi trường',
     observationGoal:
-      'Kéo góc tới i và chiết suất n₂ để thấy tia khúc xạ lệch lại gần pháp tuyến (n₁ < n₂) hay xa pháp tuyến và xảy ra Phản xạ Toàn phần.'
+      'Kéo góc tới i và chiết suất n₂ để thấy tia khúc xạ lệch lại gần pháp tuyến (n₁ < n₂) hay xa pháp tuyến.'
   },
   'phys-9-optics:1': {
     simId: 'lens_optics',
-    regimeLabel: 'Thấu kính Hội tụ & Ảnh thật qua Tiêu điểm',
+    regimeLabel: 'Thấu kính Hội tụ & Ba Tia sáng Đặc biệt',
     observationGoal:
       'Quan sát 3 tia đặc biệt đi qua quang tâm O, song song trục chính qua F\' và cho ảnh thật ngược chiều khi d > f.'
   },
@@ -93,7 +203,7 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
     simId: 'lens_optics',
     regimeLabel: 'Thấu kính Phân kì & Ảnh ảo cùng chiều (f < 0)',
     observationGoal:
-      'So sánh sự bẻ chùm tia ló phân kì khiến ảnh B\' luôn là ảnh ảo, cùng chiều và nhỏ hơn vật.',
+      'So sánh sự bẻ chùm tia ló phân kì khiến ảnh A\'B\' luôn là ảnh ảo, cùng chiều và nhỏ hơn vật.',
     flagOverrides: { isDiverging: true }
   },
 
@@ -125,15 +235,15 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
   },
   'phys-9-energy-refract:1': {
     simId: 'light_refraction',
-    regimeLabel: 'Định luật Khúc xạ & Góc lệch qua Lưỡng chất phẳng',
+    regimeLabel: 'Định luật Khúc xạ & Ánh sáng Đơn sắc qua Mặt phẳng',
     observationGoal:
       'Thay đổi chiết suất môi trường và góc tới i để khảo sát n₁·sin(i) = n₂·sin(r).'
   },
   'phys-9-energy-refract:2': {
-    simId: 'free_fall_energy',
-    regimeLabel: 'Kiểm chứng Bảo toàn & Chuyển hóa Năng lượng',
+    simId: 'prism_dispersion',
+    regimeLabel: 'Phổ Màu & Vật Hấp thụ – Tán xạ Ánh sáng',
     observationGoal:
-      'Theo dõi tổng cơ năng luôn bảo toàn trong môi trường lý tưởng và phần chuyển thành nhiệt khi có lực cản.'
+      'Điều chỉnh góc chiết quang và chiết suất lăng kính để quan sát độ rộng dải quang phổ.'
   },
 
   'phys-9-induction-ac:0': {
@@ -150,29 +260,36 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
     flagOverrides: { flipMagnet: true }
   },
   'phys-9-induction-ac:2': {
-    simId: 'transformer_2d',
-    regimeLabel: 'Máy Biến áp & Truyền tải Điện năng Đi xa',
+    simId: 'magnetic_induction',
+    regimeLabel: 'Nguyên lý Máy phát Điện Xoay chiều (Stato & Rôto)',
     observationGoal:
-      'Điều chỉnh tỉ số vòng dây N₁/N₂ để tăng áp truyền tải giúp giảm mạnh hao phí ΔP = P²R / U².'
+      'Thay đổi số vòng dây N và cảm ứng từ B để thấy biên độ suất điện động xoay chiều tăng tỉ lệ.'
   },
 
-  'phys-9-power-bill:0': {
+  'phys-9-b15:0': {
+    simId: 'joule_lenz_heat',
+    regimeLabel: 'Tác dụng Nhiệt, Phát sáng & Từ của Dòng Xoay chiều',
+    observationGoal:
+      'Quan sát tác dụng tỏa nhiệt và từ trường của dòng điện xoay chiều trong các thiết bị gia dụng.'
+  },
+  'phys-9-b15:1': {
+    simId: 'transformer_2d',
+    regimeLabel: 'Máy Biến áp & Giảm Hao phí Truyền tải ΔP = P²R / U²',
+    observationGoal:
+      'Tăng tỉ số vòng N₂/N₁ để nâng điện áp truyền tải, giảm mạnh hao phí tỏa nhiệt trên đường dây.'
+  },
+
+  'phys-9-b16:0': {
+    simId: 'thermal_gas',
+    regimeLabel: 'Vòng Năng lượng Mặt Trời & Đối lưu Khí quyển',
+    observationGoal:
+      'Quan sát sự chuyển động nhiệt của phân tử khí khi nhiệt độ tăng — động lực tạo gió và vòng tuần hoàn nước.'
+  },
+  'phys-9-b16:1': {
     simId: 'free_fall_energy',
-    regimeLabel: 'Động năng, Thế năng Trọng trường & Cơ năng',
+    regimeLabel: 'Thủy năng & Hiệu suất Năng lượng Tái tạo',
     observationGoal:
-      'Quan sát biểu đồ cột Wđ – Wt biến thiên bù trừ cho nhau khi vật rơi.'
-  },
-  'phys-9-power-bill:1': {
-    simId: 'work_power_joule',
-    regimeLabel: 'Công Cơ học A = F·s·cosα & Công suất P = A/t',
-    observationGoal:
-      'Thay đổi lực F và góc kéo α để thấy trực tiếp tốc độ sinh công tức thời.'
-  },
-  'phys-9-power-bill:2': {
-    simId: 'torque_lever',
-    regimeLabel: 'Máy Cơ Đơn giản, Quy tắc Đòn bẩy & Hiệu suất',
-    observationGoal:
-      'Lợi về lực bao nhiêu lần thì thiệt bấy nhiêu lần về đường đi — công không đổi!'
+      'Khảo sát thế năng cột nước chuyển hóa thành động năng quay tuabin và phần năng lượng hao phí.'
   },
 
   // ---------------- LỚP 10 ----------------
@@ -885,6 +1002,111 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
     simId: 'cyclotron_accelerator',
     regimeLabel: 'Chụp Cộng hưởng Từ MRI trong Từ trường B Mạnh',
     observationGoal: 'Theo dõi tương tác spin proton với từ trường đều B và sóng vô tuyến RF.'
+  },
+  'phys-10-b16:0': {
+    simId: 'momentum_collision',
+    regimeLabel: 'Định luật 3 Newton · Tương tác hai chiều F_AB = −F_BA',
+    observationGoal: 'Quan sát hai xe va chạm truyền xung lực bằng nhau và ngược hướng lên hai vật khác nhau.'
+  },
+  'phys-10-b16:1': {
+    simId: 'momentum_collision',
+    regimeLabel: 'Phân biệt Lực – Phản lực (2 vật) & Hai lực cân bằng (1 vật)',
+    observationGoal: 'So sánh gia tốc a = F/m khác nhau dù lực tương tác |F_AB| = |F_BA| bằng nhau ở mọi thời điểm.'
+  },
+  'phys-11-b5:0': {
+    simId: 'simple_pendulum',
+    regimeLabel: 'Động năng & Thế năng Trong Dao động Điều hòa',
+    observationGoal: 'Theo dõi sự chuyển hóa qua lại giữa W_đ và W_t trong khi cơ năng W = const được bảo toàn.'
+  },
+  'phys-12-b25:1': {
+    simId: 'nuclear_decay',
+    regimeLabel: 'Bảo toàn Động lượng khi Hạt nhân Mẹ Đứng yên Phóng xạ',
+    observationGoal: 'Quan sát hạt nhân mẹ phân rã thành hai hạt con bay ngược chiều với K₁/K₂ = A₂/A₁.'
+  },
+  'phys-cd-10-3:0': {
+    simId: 'thermal_conduction_bar',
+    regimeLabel: 'Hiệu ứng Nhà kính & Cân bằng Truyền nhiệt Khí quyển',
+    observationGoal: 'Khảo sát sự truyền và giữ nhiệt giữa hai vùng nhiệt độ T₁ (bề mặt) và T₂ (khí quyển).'
+  },
+  'phys-cd-10-3:1': {
+    simId: 'transformer_2d',
+    regimeLabel: 'Năng lượng Tái tạo & Tối ưu Lưới truyền tải Điện sạch',
+    observationGoal: 'So sánh hiệu suất truyền tải điện năng từ nguồn năng lượng tái tạo nhờ nâng cao điện áp U.'
+  },
+  'phys-ext-2:1': {
+    simId: 'centrifuge_banked_curve',
+    regimeLabel: 'Hệ quy chiếu Quay, Lực Li tâm & Tiến động Foucault',
+    observationGoal: 'Quan sát tác dụng của lực quán tính trong hệ quy chiếu quay với tốc độ góc ω.'
+  },
+  'phys-ext-4:0': {
+    simId: 'thin_film_interference',
+    regimeLabel: 'Giao thoa Bản mỏng (Màng xà phòng & Lớp phủ AR)',
+    observationGoal: 'Điều chỉnh bề dày d và chiết suất n để triệt tiêu phản xạ chống chói d = λ/(4n).'
+  },
+  'phys-ext-4:1': {
+    simId: 'single_slit_diffraction',
+    regimeLabel: 'Nhiễu xạ Ánh sáng qua Một khe hẹp',
+    observationGoal: 'Thay đổi bề rộng khe a và bước sóng λ để quan sát vân sáng trung tâm Δy_TT = 2λD/a.'
+  },
+  'phys-ext-5:0': {
+    simId: 'compton_scattering',
+    regimeLabel: 'Hiệu ứng Compton & Động lượng Photon p = h/λ',
+    observationGoal: 'Thay đổi góc tán xạ θ để kiểm chứng độ dịch bước sóng Δλ = λ_C(1 − cosθ).'
+  },
+  'phys-ext-5:1': {
+    simId: 'hydrogen_spectrum',
+    regimeLabel: 'Sóng Vật chất De Broglie λ = h/p & Lượng tử hóa Quỹ đạo Bohr',
+    observationGoal: 'Liên hệ điều kiện sóng dừng De Broglie 2πr = nλ với các mức năng lượng lượng tử hóa.'
+  },
+  'phys-ext-6:0': {
+    simId: 'lc_oscillation',
+    regimeLabel: 'Mạch Dao động Điện từ Tự do LC & Năng lượng Điện–Từ',
+    observationGoal: 'Theo dõi dao động vuông pha giữa điện tích q trên tụ C và cường độ dòng điện i qua cuộn L.'
+  },
+  'phys-ext-6:1': {
+    simId: 'em_wave_3axis',
+    regimeLabel: 'Phát Sóng Điện từ E ⊥ B ⊥ v từ Mạch LC hở',
+    observationGoal: 'Quan sát hai thành phần E và B dao động vuông góc phương và cùng pha lan truyền.'
+  },
+  'phys-ext-7:0': {
+    simId: 'cyclotron_accelerator',
+    regimeLabel: 'Máy Gia tốc Hạt Cyclotron 2 Hộp chữ D',
+    observationGoal: 'Theo dõi bán kính quỹ đạo xoắn ốc R = mv/(qB) tăng dần sau mỗi lần proton qua khe điện trường.'
+  },
+  'phys-ext-7:1': {
+    simId: 'hall_effect',
+    regimeLabel: 'Hiệu ứng Hall & Cảm biến Đo Từ trường B',
+    observationGoal: 'Quan sát hạt tải điện dạt sang hai mép bản dẫn tạo hiệu điện thế Hall U_H = IB/(ned).'
+  },
+  'phys-ext-8:0': {
+    simId: 'carnot_cycle_pv',
+    regimeLabel: 'Chu trình Nhiệt Carnot Thuận nghịch (Đẳng nhiệt – Đoạn nhiệt)',
+    observationGoal: 'Khảo sát 4 quá trình khép kín sinh công cơ học trên giản đồ p–V.'
+  },
+  'phys-ext-8:1': {
+    simId: 'carnot_cycle_pv',
+    regimeLabel: 'Hiệu suất Cực đại H_max = 1 − T₂/T₁ & Nguyên lí II Nhiệt động lực học',
+    observationGoal: 'Thay đổi nhiệt độ hai nguồn T₁, T₂ để thấy giới hạn hiệu suất động cơ nhiệt lí tưởng.'
+  },
+  'phys-ext-9:0': {
+    simId: 'binding_energy_curve',
+    regimeLabel: 'Độ hụt khối & Đường cong Năng lượng Liên kết Riêng',
+    observationGoal: 'So sánh độ bền vững hạt nhân từ ²H, ⁴He đến đỉnh ⁵⁶Fe và vùng nặng ²³⁵U.'
+  },
+  'phys-ext-9:1': {
+    simId: 'nuclear_fission',
+    regimeLabel: 'Phản ứng Nhiệt hạch D–T & Năng lượng Hạt nhân',
+    observationGoal: 'Đối chiếu cơ chế giải phóng năng lượng ΔE > 0 của phản ứng tổng hợp và phân hạch.'
+  },
+  'phys-ext-10:0': {
+    simId: 'fiber_optic_tir',
+    regimeLabel: 'Cáp Quang Phản xạ Toàn phần & Khẩu độ số NA',
+    observationGoal: 'Điều chỉnh góc phóng và chiết suất lõi/vỏ n₁ > n₂ để tia laser dẫn truyền trọn vẹn.'
+  },
+  'phys-ext-10:1': {
+    simId: 'malus_polarization',
+    regimeLabel: 'Phân cực Ánh sáng & Định luật Malus I = I₀cos²θ',
+    observationGoal: 'Xoay góc lệch trục phân cực θ từ 0° đến 90° để quan sát sự suy giảm cường độ truyền qua.'
   }
 };
 
@@ -954,6 +1176,18 @@ function resolveByStepContent(
   if (has('mat phang nghieng', true) || has('ma sat truot', true)) {
     return { simId: 'inclined_plane', reason: 'Chuyển động trên mặt phẳng nghiêng có ma sát' };
   }
+  if (has('huong tam', true) || has('duong vong', true) || has('tron deu', true) || has('radian', true)) {
+    return {
+      simId: has('duong vong', true) ? 'centrifuge_banked_curve' : 'circular_motion',
+      reason: 'Chuyển động tròn đều & lực hướng tâm'
+    };
+  }
+  if (has('lorentz', true) || has('cyclotron', true)) {
+    return { simId: 'cyclotron_accelerator', reason: 'Chuyển động hạt mang điện trong từ trường' };
+  }
+  if (has('hieu ung hall', true) || has('dien the hall', true)) {
+    return { simId: 'hall_effect', reason: 'Hiệu ứng Hall & lực từ lên hạt tải điện' };
+  }
   if (
     has('nhanh dan', true) ||
     has('cham dan', true) ||
@@ -964,17 +1198,14 @@ function resolveByStepContent(
   ) {
     return { simId: 'kinematics_graphs', reason: 'Động học đồ thị chuyển động v–t & x–t' };
   }
+  if (has('compton', true)) {
+    return { simId: 'compton_scattering', reason: 'Tán xạ Compton & động lượng photon' };
+  }
   if (has('va cham', true) || has('dong luong', true) || has('xung luong', true) || has('dem khi', true)) {
     return { simId: 'momentum_collision', reason: 'Bảo toàn động lượng & va chạm đàn hồi / mềm' };
   }
   if (has('nem', true) || has('parabol', true) || has('tam xa', true)) {
     return { simId: 'projectile_motion', reason: 'Quỹ đạo ném xiên / ném ngang Parabol' };
-  }
-  if (has('huong tam', true) || has('duong vong', true) || has('tron deu', true) || has('radian', true)) {
-    return {
-      simId: has('duong vong', true) ? 'centrifuge_banked_curve' : 'circular_motion',
-      reason: 'Chuyển động tròn đều & lực hướng tâm'
-    };
   }
   if (has('hap dan', true) || has('ve tinh', true) || has('kepler', true) || has('vu tru', true)) {
     return {
@@ -990,7 +1221,7 @@ function resolveByStepContent(
   if (has('tat dan', true) || has('cuong buc', true) || (has('cong huong', true) && !has('dien', true) && !has('ong', true))) {
     return { simId: 'damped_resonance', reason: 'Dao động tắt dần, cưỡng bức & đỉnh cộng hưởng' };
   }
-  if (has('con lac don', true)) {
+  if (has('con lac don', true) || (has('con lac', true) && has('foucault', true))) {
     return { simId: 'simple_pendulum', reason: 'Dao động con lắc đơn trong trọng trường' };
   }
   if (has('con lac lo xo', true) || has('ti so dong nang / the nang', true)) {
@@ -998,6 +1229,12 @@ function resolveByStepContent(
   }
   if (has('dao dong ki', true) || has('so o tren man hinh', true) || has('pha dao dong', true) || has('doc lap thoi gian', true) || has('do thi dao dong', true)) {
     return { simId: 'lissajous_shm', reason: 'Dao động kí & biểu đồ pha dao động điều hòa' };
+  }
+  if (has('ban mong', true) || has('mang mong', true)) {
+    return { simId: 'thin_film_interference', reason: 'Giao thoa trên bản mỏng & lớp phủ chống phản xạ' };
+  }
+  if (has('nhieu xa', true) || has('mot khe hep', true)) {
+    return { simId: 'single_slit_diffraction', reason: 'Nhiễu xạ ánh sáng qua một khe hẹp' };
   }
   if (has('young', true) || has('y-ang', true) || has('giao thoa anh sang', true)) {
     return { simId: 'young_interference', reason: 'Giao thoa ánh sáng hai khe Young' };
@@ -1014,6 +1251,9 @@ function resolveByStepContent(
   if (has('doppler', true) || (!rawLower.includes('mạch') && (has('so mach') || has('hieu ung mach') || has('non mach')))) {
     return { simId: has('so mach') || has('non mach') ? 'mach_shockwave' : 'doppler_effect', reason: 'Hiệu ứng Doppler & sóng xung kích' };
   }
+  if (has('mach lc', true) || has('mach dao dong', true)) {
+    return { simId: 'lc_oscillation', reason: 'Mạch dao động điện từ LC & chuyển hóa năng lượng' };
+  }
   if (has('song dien tu', true) || has('song vo tuyen', true) || has('maxwell', true) || has('bien dieu', true) || has('am)', true) || has('fm)', true)) {
     return { simId: 'em_wave_3axis', reason: 'Mô hình 3 trục Sóng điện từ E ⊥ B ⊥ v' };
   }
@@ -1028,7 +1268,10 @@ function resolveByStepContent(
   if (has('can bang nhiet', true) || has('nhiet dung rieng', true) || has('nhiet luong ke', true)) {
     return { simId: 'calorimetry_mixing', reason: 'Thí nghiệm nhiệt lượng kế & cân bằng nhiệt' };
   }
-  if (has('carnot', true) || has('dinh luat i', true) || has('nguyen li i', true) || has('noi nang', true)) {
+  if (has('carnot', true)) {
+    return { simId: 'carnot_cycle_pv', reason: 'Chu trình Carnot & hiệu suất động cơ nhiệt lí tưởng' };
+  }
+  if (has('dinh luat i', true) || has('nguyen li i', true) || has('noi nang', true)) {
     return { simId: 'pv_thermodynamics', reason: 'Nguyên lí I Nhiệt động lực học & công khối khí' };
   }
   if (has('boyle', true) || has('charles', true) || has('clapeyron', true) || has('khi li tuong', true) || has('dang nhiet', true) || has('dang ap', true) || has('phan tu khi', true) || has('dong hoc phan tu', true)) {
@@ -1060,13 +1303,10 @@ function resolveByStepContent(
   if (has('may bien ap', true) || has('truyen tai dien', true)) {
     return { simId: 'transformer_2d', reason: 'Máy biến áp & truyền tải điện năng' };
   }
-  if (has('lorentz', true) || has('cyclotron', true)) {
-    return { simId: 'cyclotron_accelerator', reason: 'Chuyển động hạt mang điện trong từ trường' };
-  }
   if (has('luc tu', true) || has('ban tay trai', true) || has('cam ung tu', true)) {
     return { simId: 'hall_effect', reason: 'Lực từ lên dòng điện & hiệu ứng từ' };
   }
-  if (has('tu thong', true) || has('faraday', true) || has('lenz', true) || has('cam ung dien tu', true) || has('xoay chieu', true) || has('thanh kim loai', true) || has('foucault', true)) {
+  if (has('tu thong', true) || has('faraday', true) || has('lenz', true) || has('cam ung dien tu', true) || has('xoay chieu', true) || has('thanh kim loai', true) || has('dong dien foucault', true)) {
     return { simId: 'magnetic_induction', reason: 'Cảm ứng điện từ Faraday & quy tắc Lenz' };
   }
   if (has('ohm', true) || has('cuong do dong dien', true) || has('suat dien dong', true) || has('u theo i', true) || has('so do mach', true)) {

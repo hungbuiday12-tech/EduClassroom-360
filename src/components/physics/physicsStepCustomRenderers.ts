@@ -314,21 +314,31 @@ export const CUSTOM_STEP_SIM_SPECS: Record<CustomStepSimId, CustomStepSimSpec> =
 
 function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, isDark: boolean) {
   ctx.save();
-  ctx.strokeStyle = isDark ? 'rgba(148,163,184,0.08)' : 'rgba(148,163,184,0.18)';
+  ctx.strokeStyle = isDark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.06)';
   ctx.lineWidth = 1;
   const step = 32;
+  ctx.beginPath();
   for (let x = step; x < w; x += step) {
-    ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, h);
-    ctx.stroke();
   }
   for (let y = step; y < h; y += step) {
-    ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(w, y);
-    ctx.stroke();
   }
+  ctx.stroke();
+
+  ctx.strokeStyle = isDark ? 'rgba(56,189,248,0.1)' : 'rgba(2,132,199,0.08)';
+  ctx.beginPath();
+  for (let x = step * 4; x < w; x += step * 4) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+  }
+  for (let y = step * 4; y < h; y += step * 4) {
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+  }
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -340,7 +350,7 @@ function drawArrow(
   y2: number,
   color: string,
   lineWidth = 2.5,
-  headSize = 8
+  headSize = 8.5
 ) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -351,6 +361,10 @@ function drawArrow(
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 5;
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
@@ -388,8 +402,18 @@ export function renderCustomStepPhysicsSim({
   pushTelemetry: (next: Physics2DTelemetry) => void;
 }) {
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = isDark ? '#0c101d' : '#f8fafc';
+  const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.45, 24, w * 0.5, h * 0.5, Math.max(w, h) * 0.78);
+  if (isDark) {
+    bgGrad.addColorStop(0, '#10182b');
+    bgGrad.addColorStop(1, '#080d19');
+  } else {
+    bgGrad.addColorStop(0, '#ffffff');
+    bgGrad.addColorStop(1, '#f1f5f9');
+  }
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, w, h);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   if (overlays.showRulerGrid) drawGrid(ctx, w, h, isDark);
 
   const fg = isDark ? '#e2e8f0' : '#0f172a';

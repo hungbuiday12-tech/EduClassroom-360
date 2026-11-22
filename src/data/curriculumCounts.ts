@@ -5,7 +5,7 @@ export const CURRICULUM_COUNTS = {
   chuyenExams: 525,
   standardExams: 525,
   mathLectures: 122,
-  physicsLessons: 117,
+  physicsLessons: 126,
   csLessons: 22,
   defaultMathLectureId: 'math-9-1',
   defaultPhysicsLessonId: 'phys-9-mech-heat',

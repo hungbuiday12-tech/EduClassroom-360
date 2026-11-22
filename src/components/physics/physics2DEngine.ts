@@ -2864,6 +2864,8 @@ export function renderPhysics2DSimulation(opts: Physics2DRenderOptions): void {
   }
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, w, h);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
   // Draw Grid / Ruler Overlay
   if (overlays.showRulerGrid) {

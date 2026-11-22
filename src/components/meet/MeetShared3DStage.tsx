@@ -76,56 +76,61 @@ function buildMeetModel(modelId: Meet3DModelId): {
   };
 
   const metalMat = trackMat(
-    new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.82, roughness: 0.24 })
+    new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, metalness: 0.88, roughness: 0.18, clearcoat: 0.75, anisotropy: 0.6 })
   );
   const darkMat = trackMat(
-    new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.45, roughness: 0.55 })
+    new THREE.MeshPhysicalMaterial({ color: 0x1e293b, metalness: 0.48, roughness: 0.46, clearcoat: 0.4 })
   );
   const cyanMat = trackMat(
-    new THREE.MeshStandardMaterial({
+    new THREE.MeshPhysicalMaterial({
       color: 0x38bdf8,
       emissive: 0x0284c7,
-      emissiveIntensity: 0.25,
-      metalness: 0.35,
-      roughness: 0.3
+      emissiveIntensity: 0.28,
+      metalness: 0.38,
+      roughness: 0.2,
+      clearcoat: 0.9
     })
   );
   const amberMat = trackMat(
-    new THREE.MeshStandardMaterial({
+    new THREE.MeshPhysicalMaterial({
       color: 0xf59e0b,
       emissive: 0xb45309,
-      emissiveIntensity: 0.3,
-      metalness: 0.55,
-      roughness: 0.28
+      emissiveIntensity: 0.34,
+      metalness: 0.62,
+      roughness: 0.2,
+      clearcoat: 0.85
     })
   );
   const emeraldMat = trackMat(
-    new THREE.MeshStandardMaterial({
+    new THREE.MeshPhysicalMaterial({
       color: 0x10b981,
       emissive: 0x047857,
-      emissiveIntensity: 0.25,
-      metalness: 0.3,
-      roughness: 0.35
+      emissiveIntensity: 0.28,
+      metalness: 0.35,
+      roughness: 0.22,
+      clearcoat: 0.9
     })
   );
   const violetMat = trackMat(
-    new THREE.MeshStandardMaterial({
+    new THREE.MeshPhysicalMaterial({
       color: 0xa855f7,
       emissive: 0x6b21a8,
-      emissiveIntensity: 0.28,
-      metalness: 0.35,
-      roughness: 0.32
+      emissiveIntensity: 0.32,
+      metalness: 0.38,
+      roughness: 0.22,
+      clearcoat: 0.9
     })
   );
 
   if (modelId === 'turbofan') {
-    const casingGeo = trackGeo(new THREE.CylinderGeometry(1.18, 1.05, 2.3, 32, 1, true));
+    const casingGeo = trackGeo(new THREE.CylinderGeometry(1.18, 1.05, 2.3, 36, 1, true));
     casingGeo.rotateZ(Math.PI / 2);
     const casingMat = trackMat(
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: 0x334155,
-        metalness: 0.72,
-        roughness: 0.28,
+        metalness: 0.78,
+        roughness: 0.22,
+        clearcoat: 0.8,
         side: THREE.DoubleSide
       })
     );
@@ -133,7 +138,13 @@ function buildMeetModel(modelId: Meet3DModelId): {
     casing.position.y = 1.45;
     addPart(casing, [0, 1.35, 0]);
 
-    const coreGeo = trackGeo(new THREE.CylinderGeometry(0.42, 0.55, 2.5, 24));
+    const intakeRingGeo = trackGeo(new THREE.TorusGeometry(1.06, 0.065, 16, 48));
+    intakeRingGeo.rotateY(Math.PI / 2);
+    const intakeRing = new THREE.Mesh(intakeRingGeo, metalMat);
+    intakeRing.position.set(-1.14, 1.45, 0);
+    addPart(intakeRing, [-0.95, 0.85, 0]);
+
+    const coreGeo = trackGeo(new THREE.CylinderGeometry(0.42, 0.55, 2.5, 28));
     coreGeo.rotateZ(Math.PI / 2);
     const core = new THREE.Mesh(coreGeo, amberMat);
     core.position.y = 1.45;
@@ -141,7 +152,7 @@ function buildMeetModel(modelId: Meet3DModelId): {
 
     const fanGroup = new THREE.Group();
     fanGroup.position.set(-1.05, 1.45, 0);
-    const coneGeo = trackGeo(new THREE.ConeGeometry(0.32, 0.65, 20));
+    const coneGeo = trackGeo(new THREE.ConeGeometry(0.32, 0.65, 24));
     coneGeo.rotateZ(Math.PI / 2);
     fanGroup.add(new THREE.Mesh(coneGeo, cyanMat));
     const bladeGeo = trackGeo(new THREE.BoxGeometry(0.08, 0.88, 0.22));
@@ -156,7 +167,7 @@ function buildMeetModel(modelId: Meet3DModelId): {
     spinners.push(fanGroup);
     addPart(fanGroup, [-1.45, 0, 0]);
 
-    const nozzleGeo = trackGeo(new THREE.CylinderGeometry(0.52, 0.82, 0.85, 24, 1, true));
+    const nozzleGeo = trackGeo(new THREE.CylinderGeometry(0.52, 0.82, 0.85, 28, 1, true));
     nozzleGeo.rotateZ(Math.PI / 2);
     const nozzle = new THREE.Mesh(nozzleGeo, darkMat);
     nozzle.position.set(1.45, 1.45, 0);
@@ -235,8 +246,9 @@ function buildMeetModel(modelId: Meet3DModelId): {
     addPart(new THREE.Mesh(trackGeo(new THREE.TubeGeometry(cB, 48, 0.075, 10, false)), emeraldMat), [1.2, 0, 0]);
 
     const rungs = new THREE.Group();
-    const rungGeo = trackGeo(new THREE.CylinderGeometry(0.036, 0.036, 1.36, 8));
+    const rungGeo = trackGeo(new THREE.CylinderGeometry(0.038, 0.038, 1.36, 10));
     rungGeo.rotateZ(Math.PI / 2);
+    const bpNodeGeo = trackGeo(new THREE.SphereGeometry(0.095, 14, 12));
     for (let i = 1; i <= 12; i++) {
       const t = i / 13;
       const pA = cA.getPoint(t);
@@ -246,7 +258,9 @@ function buildMeetModel(modelId: Meet3DModelId): {
       const rMesh = new THREE.Mesh(rungGeo, i % 2 === 0 ? amberMat : violetMat);
       rMesh.position.copy(mid);
       rMesh.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir);
-      rungs.add(rMesh);
+      const bondOrb = new THREE.Mesh(bpNodeGeo, i % 2 === 0 ? cyanMat : emeraldMat);
+      bondOrb.position.copy(mid);
+      rungs.add(rMesh, bondOrb);
     }
     addPart(rungs, [0, 0.7, 0.9]);
   } else if (modelId === 'oxyz_pyramid') {
@@ -264,16 +278,18 @@ function buildMeetModel(modelId: Meet3DModelId): {
     addPart(axis, [-1.2, 0.2, 0]);
   } else if (modelId === 'sphere_slice') {
     const sphereMat = trackMat(
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: 0xec4899,
         transparent: true,
-        opacity: 0.45,
-        roughness: 0.18,
-        metalness: 0.25,
+        opacity: 0.48,
+        roughness: 0.08,
+        metalness: 0.15,
+        clearcoat: 1.0,
+        ior: 1.45,
         depthWrite: false
       })
     );
-    const outer = new THREE.Mesh(trackGeo(new THREE.SphereGeometry(1.45, 32, 24)), sphereMat);
+    const outer = new THREE.Mesh(trackGeo(new THREE.SphereGeometry(1.45, 36, 28)), sphereMat);
     outer.position.y = 1.65;
     addPart(outer, [0, 0.85, 0]);
 
@@ -573,7 +589,11 @@ export const MeetShared3DStage: React.FC<MeetShared3DStageProps> = ({
     renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, maxDpr));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.18;
+    if (!isSoftwareGl) {
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
     rendererRef.current = renderer;
     mount.appendChild(renderer.domElement);
 
@@ -585,14 +605,33 @@ export const MeetShared3DStage: React.FC<MeetShared3DStageProps> = ({
     scene.add(new THREE.HemisphereLight(0xbae6fd, 0x0f172a, 0.95));
     const keyLight = new THREE.DirectionalLight(0xfff5e4, 2.2);
     keyLight.position.set(5, 8, 6);
+    if (!isSoftwareGl) {
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(1024, 1024);
+      keyLight.shadow.camera.left = -6;
+      keyLight.shadow.camera.right = 6;
+      keyLight.shadow.camera.top = 6;
+      keyLight.shadow.camera.bottom = -6;
+      keyLight.shadow.bias = -0.0005;
+      keyLight.shadow.normalBias = 0.02;
+    }
     scene.add(keyLight);
     const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.35);
     rimLight.position.set(-6, 4, -5);
     scene.add(rimLight);
 
+    const stageDisc = new THREE.Mesh(
+      new THREE.CylinderGeometry(6.0, 6.3, 0.07, 48),
+      new THREE.MeshStandardMaterial({ color: 0x070d1b, roughness: 0.7, metalness: 0.25 })
+    );
+    stageDisc.position.y = -0.045;
+    stageDisc.receiveShadow = !isSoftwareGl;
+    scene.add(stageDisc);
+
     const grid = new THREE.GridHelper(12, 18, 0x38bdf8, 0x1e293b);
     (grid.material as THREE.Material).transparent = true;
     (grid.material as THREE.Material).opacity = 0.45;
+    grid.position.y = -0.006;
     scene.add(grid);
 
     // Subtle ambient particle field visible in High graphics mode
@@ -627,6 +666,14 @@ export const MeetShared3DStage: React.FC<MeetShared3DStageProps> = ({
         : 'turbofan'
     ) as Meet3DModelId;
     const initial = buildMeetModel(initId);
+    if (!isSoftwareGl) {
+      initial.group.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh) {
+          (o as THREE.Mesh).castShadow = true;
+          (o as THREE.Mesh).receiveShadow = true;
+        }
+      });
+    }
     rootGroup.add(initial.group);
     modelRuntimeRef.current = initial;
 

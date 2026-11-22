@@ -164,7 +164,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       '\\Delta T(\\text{K}) = \\Delta t(^\\circ\\text{C})',
       'T(\\text{K}) = \\frac{5}{9}\\big(t(^\\circ\\text{F}) - 32\\big) + 273'
     ],
-    ...SIM_PRESETS.thermal_gas,
+    ...SIM_PRESETS.calorimetry,
     practiceExercises: [
       {
         source: SRC_12,
@@ -287,7 +287,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       '\\lambda = \\frac{\\mathcal{P}\\cdot \\tau_M}{m}',
       '\\lambda_{\\text{nước đá}} \\approx 3{,}34 \\cdot 10^5\\text{ J/kg}'
     ],
-    ...SIM_PRESETS.thermal_gas,
+    ...SIM_PRESETS.calorimetry,
     practiceExercises: [
       {
         source: SRC_12,
@@ -346,7 +346,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'L = \\frac{\\mathcal{P}\\cdot \\Delta t}{\\Delta m}',
       'L_{\\text{nước}} \\approx 2{,}26\\cdot 10^6\\text{ J/kg}'
     ],
-    ...SIM_PRESETS.thermal_gas,
+    ...SIM_PRESETS.calorimetry,
     practiceExercises: [
       {
         source: SRC_12,
@@ -409,7 +409,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'Q_{\\text{toàn phần}} = H^{-1} \\sum (m c \\Delta T + \\lambda m + L m)',
       '\\tan\\alpha_{\\text{đoạn nghiêng}} = \\frac{\\mathcal{P}}{mc}'
     ],
-    ...SIM_PRESETS.thermal_gas,
+    ...SIM_PRESETS.calorimetry,
     practiceExercises: [
       {
         source: SRC_12,

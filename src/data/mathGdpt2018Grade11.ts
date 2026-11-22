@@ -217,7 +217,11 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
     description: 'Cách cho dãy số (liệt kê, công thức tổng quát, truy hồi), dãy số tăng/giảm và dãy số bị chặn.',
     mnemonics: ['Tăng $\\iff u_{n+1} - u_n > 0$; Dãy dương xét $\\frac{u_{n+1}}{u_n} > 1$.'],
     commonTraps: ['Dùng $\\frac{u_{n+1}}{u_n} > 1$ khi $u_n$ chưa chắc dương.'],
-    theory: ['1. Dãy tăng nếu $u_{n+1} > u_n$; bị chặn nếu $\\exists m, M: m \\le u_n \\le M,\\, \\forall n \\ge 1$.'],
+    theory: [
+      '1. Định nghĩa dãy số: Hàm số $u: \\mathbb{N}^* \\to \\mathbb{R}$, $n \\mapsto u_n$ gọi là dãy số vô hạn ($u_1, u_2, \\dots, u_n, \\dots$). Có 3 cách cho dãy số: liệt kê số hạng, công thức số hạng tổng quát $u_n = f(n)$ và hệ thức truy hồi.',
+      '2. Tính tăng – giảm: $(u_n)$ là dãy tăng nếu $u_{n+1} > u_n$ (tức $u_{n+1} - u_n > 0$) với mọi $n \\ge 1$; là dãy giảm nếu $u_{n+1} < u_n$ với mọi $n \\ge 1$. Nếu mọi $u_n > 0$, có thể xét tỉ số $\\frac{u_{n+1}}{u_n}$ so với $1$.',
+      '3. Dãy số bị chặn: $(u_n)$ bị chặn trên nếu $\\exists M: u_n \\le M\\,\\forall n$; bị chặn dưới nếu $\\exists m: u_n \\ge m\\,\\forall n$; bị chặn nếu vừa bị chặn trên vừa bị chặn dưới ($m \\le u_n \\le M$).'
+    ],
     keyFormulas: ['u_{n+1} - u_n > 0 \\implies \\text{dãy tăng}'],
     flashcards: [{ front: 'Cho $u_n = \\frac{n}{n+1}$. Dãy tăng hay giảm?', back: '$u_{n+1}-u_n = \\frac{1}{(n+1)(n+2)} > 0 \\implies$ dãy tăng và bị chặn trên bởi $1$.' }],
     sampleProblems: [
@@ -239,7 +243,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'rational', params: { a: 2, b: 1, c: 1, d: 1 }, color: '#2563eb', name: 'u_n = (2n + 1)/(n + 1)' }
   },
   {
     id: 'math-11-3',
@@ -256,7 +261,11 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
     description: 'Định nghĩa cấp số cộng $u_{n+1} = u_n + d$, số hạng tổng quát $u_n = u_1 + (n-1)d$ và tổng $n$ số hạng đầu $S_n$.',
     mnemonics: ['$S_n = \\frac{n(u_1 + u_n)}{2} = \\frac{n[2u_1 + (n-1)d]}{2}$; ba số $a,b,c$ lập CSC $\\iff a+c=2b$.'],
     commonTraps: ['Nhầm $(n-1)d$ thành $nd$ trong công thức $u_n$.'],
-    theory: ['1. $u_n = u_1 + (n-1)d$; $S_n = \\frac{n(u_1+u_n)}{2}$.'],
+    theory: [
+      '1. Định nghĩa Cấp số cộng: Là dãy số $(u_n)$ mà kể từ số hạng thứ hai, mỗi số hạng đều bằng số hạng đứng ngay trước nó cộng với một hằng số $d$ (gọi là công sai): $u_{n+1} = u_n + d$ ($n \\ge 1$).',
+      '2. Số hạng tổng quát & Tính chất: $u_n = u_1 + (n-1)d$. Mỗi số hạng (trừ đầu và cuối) đều là trung bình cộng của hai số hạng đứng kề nó: $u_k = \\frac{u_{k-1} + u_{k+1}}{2}$.',
+      '3. Tổng $n$ số hạng đầu: $S_n = u_1 + u_2 + \\dots + u_n = \\frac{n(u_1 + u_n)}{2} = \\frac{n[2u_1 + (n-1)d]}{2}$.'
+    ],
     keyFormulas: ['u_n = u_1 + (n-1)d', 'S_n = \\frac{n(u_1 + u_n)}{2} = \\frac{n[2u_1+(n-1)d]}{2}'],
     flashcards: [{ front: 'CSC có $u_1 = 3, d = 4$. Tìm $u_{10}$?', back: '$3 + 9\\cdot 4 = 39$.' }],
     sampleProblems: [
@@ -278,7 +287,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'linear', params: { a: 3, b: -5, c: 0, d: 0 }, color: '#0ea5e9', name: 'Cấp số cộng u_n = 3n - 5' }
   },
   {
     id: 'math-11-b7',
@@ -295,7 +305,11 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
     description: 'Định nghĩa cấp số nhân $u_{n+1} = u_n \\cdot q$, số hạng tổng quát $u_n = u_1 q^{n-1}$ và tổng $S_n = u_1\\frac{1-q^n}{1-q}$.',
     mnemonics: ['Ba số $a, b, c$ lập CSN $\\iff a \\cdot c = b^2$.'],
     commonTraps: ['Dùng $S_n = u_1\\frac{1-q^n}{1-q}$ khi $q = 1$ (khi $q=1$ thì $S_n = n u_1$).'],
-    theory: ['1. $u_n = u_1 q^{n-1}$; $S_n = u_1\\frac{1-q^n}{1-q}$ ($q \\neq 1$).'],
+    theory: [
+      '1. Định nghĩa Cấp số nhân: Là dãy số $(u_n)$ mà kể từ số hạng thứ hai, mỗi số hạng đều bằng số hạng đứng ngay trước nó nhân với một hằng số $q$ (gọi là công bội): $u_{n+1} = u_n \\cdot q$ ($n \\ge 1$).',
+      '2. Số hạng tổng quát & Tính chất: $u_n = u_1 q^{n-1}$. Bình phương mỗi số hạng (trừ đầu và cuối) bằng tích hai số hạng đứng kề nó: $u_k^2 = u_{k-1} \\cdot u_{k+1}$.',
+      '3. Tổng $n$ số hạng đầu: Nếu $q \\neq 1$ thì $S_n = u_1\\frac{1-q^n}{1-q}$; nếu $q = 1$ thì $S_n = n \\cdot u_1$.'
+    ],
     keyFormulas: ['u_n = u_1 q^{n-1}', 'S_n = u_1 \\frac{1 - q^n}{1 - q}\\quad (q \\neq 1)'],
     flashcards: [{ front: 'CSN có $u_1 = 2, q = 3$. Tính $u_5$ và $S_5$?', back: '$u_5 = 2\\cdot 3^4 = 162$; $S_5 = 2\\cdot\\frac{243-1}{2} = 242$.' }],
     sampleProblems: [
@@ -317,7 +331,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'exponential', params: { a: 2, b: 0.405, c: 0, d: 0 }, color: '#8b5cf6', name: 'Cấp số nhân u_n = u₁·q^(n-1)' }
   },
 
   // ==================== CHƯƠNG III. THỐNG KÊ MẪU SỐ LIỆU GHÉP NHÓM ====================
@@ -336,7 +351,11 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
     description: 'Ghép nhóm số liệu dạng $[a_i; a_{i+1})$, giá trị đại diện $c_i = \\frac{a_i+a_{i+1}}{2}$, tần số $m_i$ và hiệu chỉnh nhóm liên tục.',
     mnemonics: ['Giá trị đại diện nhóm $[a; b)$ luôn bằng trung bình cộng $\\frac{a+b}{2}$.'],
     commonTraps: ['Nhầm nhóm rời rạc (ví dụ $[1; 5], [6; 10]$) chưa hiệu chỉnh đầu mút thành $[0{,}5; 5{,}5), [5{,}5; 10{,}5)$.'],
-    theory: ['1. Bảng tần số ghép nhóm gồm $k$ nhóm $[a_1;a_2),\\dots,[a_k;a_{k+1})$ với giá trị đại diện $c_i = \\frac{a_i+a_{i+1}}{2}$.'],
+    theory: [
+      '1. Cấu trúc bảng tần số ghép nhóm: Chia tập dữ liệu lớn thành $k$ nhóm dạng nửa khoảng $[a_1; a_2), [a_2; a_3), \\dots, [a_k; a_{k+1})$ với độ rộng nhóm $L_i = a_{i+1} - a_i$ và tần số $m_i$ (tổng cỡ mẫu $n = \\sum m_i$).',
+      '2. Giá trị đại diện của nhóm thứ $i$: $c_i = \\frac{a_i + a_{i+1}}{2}$, dùng để ước lượng các số đặc trưng (số trung bình, phương sai) khi không còn dữ liệu thô ban đầu.',
+      '3. Quy tắc hiệu chỉnh nhóm rời rạc: Nếu số liệu là số nguyên chia thành $[k_1; k_2], [k_2+1; k_3]$, ta mở rộng hai đầu mỗi đoạn thêm $0{,}5$ thành $[k_1 - 0{,}5; k_2 + 0{,}5), [k_2 + 0{,}5; k_3 + 0{,}5)$ để đảm bảo liên tiếp không bỏ sót giá trị.'
+    ],
     keyFormulas: ['c_i = \\frac{a_i + a_{i+1}}{2},\\quad n = \\sum_{i=1}^k m_i'],
     flashcards: [{ front: 'Nhóm $[10; 20)$ có giá trị đại diện là bao nhiêu?', back: '$\\frac{10+20}{2} = 15$.' }],
     sampleProblems: [
@@ -587,7 +606,11 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
     description: 'Định nghĩa phép chiếu song song theo phương $l$ lên mặt phẳng $(P)$, các tính chất bảo toàn thẳng hàng, song song, tỉ số độ dài và hình biểu diễn hình không gian.',
     mnemonics: ['Phép chiếu song song giữ nguyên TỈ SỐ ĐỘ DÀI hai đoạn thẳng nằm trên cùng đường thẳng hoặc hai đường song song.'],
     commonTraps: ['Cho rằng phép chiếu song song giữ nguyên góc vuông hoặc độ dài tuyệt đối.'],
-    theory: ['1. Phép chiếu song song biến 3 điểm thẳng hàng thành 3 điểm thẳng hàng, biến 2 đường song song thành 2 đường song song/trùng, bảo toàn tỉ số $\\frac{AB}{CD} = \\frac{A\'B\'}{C\'D\'}$ (nếu $AB \\parallel CD$).'],
+    theory: [
+      '1. Khái niệm phép chiếu song song: Cho mặt phẳng $(P)$ và đường thẳng $l$ cắt $(P)$. Với mỗi điểm $M$ trong không gian, đường thẳng qua $M$ song song (hoặc trùng) với $l$ cắt $(P)$ tại $M\'$ gọi là hình chiếu song song của $M$ lên $(P)$ theo phương $l$.',
+      '2. Các tính chất bất biến: Phép chiếu song song biến ba điểm thẳng hàng thành ba điểm thẳng hàng (bảo toàn thứ tự), biến đường thẳng thành đường thẳng (hoặc một điểm nếu song song phương chiếu), biến hai đường thẳng song song thành hai đường thẳng song song hoặc trùng nhau.',
+      '3. Tỉ số độ dài & Hình biểu diễn: Phép chiếu song song giữ nguyên tỉ số độ dài hai đoạn thẳng cùng nằm trên một đường thẳng hoặc trên hai đường thẳng song song: $\\frac{A\'B\'}{C\'D\'} = \\frac{AB}{CD}$. Hình vuông/chữ nhật được biểu diễn thành hình bình hành; đường tròn biểu diễn thành elip.'
+    ],
     keyFormulas: ['AB \\parallel CD \\implies \\frac{A\'B\'}{C\'D\'} = \\frac{AB}{CD}'],
     flashcards: [{ front: 'Hình chiếu song song của hình bình hành (không song song phương chiếu) là hình gì?', back: 'Vẫn là một hình bình hành!' }],
     sampleProblems: [
@@ -650,7 +673,8 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector'
+    sim3dMode: 'tangent_surface_3d',
+    defaultGraphConfig: { type: 'rational', params: { a: 3, b: 0, c: 1, d: 2 }, color: '#0ea5e9', name: 'Hội tụ dãy u_n = 3n/(n + 2)' }
   },
   {
     id: 'math-11-6',
@@ -689,7 +713,7 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: { type: 'rational', params: { a: 1, b: 2, c: 1, d: -2 }, color: '#0ea5e9', name: 'Khảo sát giới hạn hàm số' }
   },
   {
@@ -707,7 +731,11 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
     description: 'Điều kiện hàm số liên tục tại điểm $x_0$, liên tục trên khoảng/đoạn và Định lí giá trị trung gian chứng minh phương trình có nghiệm $f(a)\\cdot f(b) < 0$.',
     mnemonics: ['Liên tục tại $x_0 \\iff \\lim_{x\\to x_0^+} f(x) = \\lim_{x\\to x_0^-} f(x) = f(x_0)$.'],
     commonTraps: ['Quên kiểm tra hàm số có xác định tại $x_0$ không trước khi kết luận liên tục.'],
-    theory: ['1. $f$ liên tục trên $[a;b]$ và $f(a)\\cdot f(b) < 0 \\implies \\exists c \\in (a;b): f(c) = 0$.'],
+    theory: [
+      '1. Hàm số liên tục tại điểm $x_0$: Hàm số $y = f(x)$ xác định trên khoảng $K$ chứa $x_0$ liên tục tại $x_0$ khi và chỉ khi $\\lim_{x\\to x_0} f(x) = f(x_0)$ (tức giới hạn trái, giới hạn phải cùng tồn tại hữu hạn và bằng đúng $f(x_0)$).',
+      '2. Tính liên tục của hàm sơ cấp: Các hàm đa thức liên tục trên $\\mathbb{R}$; hàm phân thức hữu tỉ, lượng giác, mũ, lôgarit, căn thức liên tục trên từng khoảng xác định của chúng.',
+      '3. Định lí giá trị trung gian: Nếu $f$ liên tục trên đoạn $[a; b]$ và $f(a)\\cdot f(b) < 0$ (hai đầu mút trái dấu) thì tồn tại ít nhất một điểm $c \\in (a; b)$ sao cho $f(c) = 0$ — công cụ chuẩn để chứng minh phương trình có nghiệm.'
+    ],
     keyFormulas: ['\\lim_{x\\to x_0} f(x) = f(x_0)', 'f(a)\\cdot f(b) < 0 \\implies \\exists c\\in(a;b): f(c)=0'],
     flashcards: [{ front: 'Cách chứng minh $f(x)=0$ có ít nhất 1 nghiệm trên $(a;b)$?', back: 'Chứng minh $f$ liên tục trên $[a;b]$ và $f(a)\\cdot f(b) < 0$.' }],
     sampleProblems: [
@@ -729,7 +757,7 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: { type: 'cubic', params: { a: 1, b: 0, c: -3, d: 1 }, color: '#10b981', name: 'y = x³ - 3x + 1' }
   },
   // CHƯƠNG VI: HÀM SỐ MŨ VÀ HÀM SỐ LÔGARIT
@@ -748,7 +776,11 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
     description: 'Lũy thừa với số mũ nguyên, số mũ hữu tỉ $a^{m/n} = \\sqrt[n]{a^m}$ ($a>0$), số mũ thực và các tính chất biến đổi căn thức sang lũy thừa.',
     mnemonics: ['Số mũ hữu tỉ/vô tỉ thì cơ số $a$ PHẢI dương ($a > 0$); rút gọn $\\sqrt[n]{a^m} = a^{m/n}$.'],
     commonTraps: ['Áp dụng $a^{m/n}$ cho cơ số $a \\le 0$ (ví dụ $(-2)^{1/2}$ không xác định trên $\\mathbb{R}$).'],
-    theory: ['1. $a^\\alpha \\cdot a^\\beta = a^{\\alpha+\\beta}$; $\\frac{a^\\alpha}{a^\\beta} = a^{\\alpha-\\beta}$; $(a^\\alpha)^\\beta = a^{\\alpha\\beta}$; $\\sqrt[n]{a^m} = a^{m/n}$ ($a>0$).'],
+    theory: [
+      '1. Lũy thừa với số mũ nguyên & hữu tỉ: Với $a \\neq 0$, $a^0 = 1$, $a^{-n} = \\frac{1}{a^n}$. Với $a > 0$, $m \\in \\mathbb{Z}, n \\ge 2$: $a^{m/n} = \\sqrt[n]{a^m}$.',
+      '2. Các quy tắc tính toán ($a, b > 0; \\alpha, \\beta \\in \\mathbb{R}$): $a^\\alpha \\cdot a^\\beta = a^{\\alpha+\\beta}$, $\\frac{a^\\alpha}{a^\\beta} = a^{\\alpha-\\beta}$, $(a^\\alpha)^\\beta = a^{\\alpha\\beta}$, $(ab)^\\alpha = a^\\alpha b^\\alpha$.',
+      '3. So sánh lũy thừa cùng cơ số: Khi $a > 1$, $a^\\alpha > a^\\beta \\iff \\alpha > \\beta$ (cùng chiều); khi $0 < a < 1$, $a^\\alpha > a^\\beta \\iff \\alpha < \\beta$ (ngược chiều).'
+    ],
     keyFormulas: ['\\sqrt[n]{a^m} = a^{m/n}\\ (a>0)', '(a^\\alpha)^\\beta = a^{\\alpha\\beta}'],
     flashcards: [{ front: 'Điều kiện xác định của $(x-1)^{\\pi}$ là gì?', back: 'Số mũ không nguyên ($\\pi \\notin \\mathbb{Z}$) nên cơ số phải dương: $x - 1 > 0 \\iff x > 1$.' }],
     sampleProblems: [
@@ -770,7 +802,7 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: { type: 'exponential', params: { a: 1, b: 1, c: 0, d: 0 }, color: '#f59e0b', name: 'y = e^x' }
   },
   {
@@ -810,7 +842,7 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: { type: 'logarithmic', params: { a: 1, b: 1, c: 0, d: 0 }, color: '#0ea5e9', name: 'y = ln(x)' }
   },
   {
@@ -850,7 +882,7 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'oxyz_vector',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: { type: 'exponential', params: { a: 1, b: 0.693, c: 0, d: 0 }, color: '#ec4899', name: 'y = 2^x' }
   },
   {
@@ -987,7 +1019,11 @@ export const MATH_GDPT_11_LESSONS: MathLecture[] = [
     description: 'Phép chiếu vuông góc lên mặt phẳng và quy trình 3 bước xác định góc giữa đường thẳng $d$ và mặt phẳng $(P)$ (góc giữa $d$ và hình chiếu $d\'$).',
     mnemonics: ['3 bước tìm $(SA, (ABC))$: (1) Giao điểm $A$; (2) Chân đường cao $H$ từ $S$ xuống $(ABC)$; (3) Nối $AH \\implies \\varphi = \\widehat{SAH}$.'],
     commonTraps: ['Chọn nhầm chân đường cao không vuông góc với $(P)$ khiến tam giác $SAH$ không vuông tại $H$.'],
-    theory: ['1. Góc $(d, (P))$ nằm trong $[0^\\circ; 90^\\circ]$, bằng góc $(d, d\')$ với $d\'$ là hình chiếu vuông góc của $d$ lên $(P)$.'],
+    theory: [
+      '1. Phép chiếu vuông góc lên mặt phẳng $(P)$: Là phép chiếu song song theo phương đường thẳng vuông góc với $(P)$. Hình chiếu vuông góc của điểm $S$ là chân đường cao $H$ ($SH \\perp (P)$).',
+      '2. Góc giữa đường thẳng $d$ và mặt phẳng $(P)$: Nếu $d \\perp (P)$ thì $(d, (P)) = 90^\\circ$; nếu $d$ không vuông góc $(P)$ thì $(d, (P)) = (d, d\')$ với $d\'$ là hình chiếu vuông góc của $d$ lên $(P)$, luôn thuộc $[0^\\circ; 90^\\circ]$.',
+      '3. Công thức tính nhanh: Với đoạn $SA$ cắt $(P)$ tại $A$ và $SH \\perp (P)$, ta có $\\sin\\varphi = \\frac{SH}{SA} = \\frac{d(S, (P))}{SA}$ và $\\tan\\varphi = \\frac{SH}{AH}$.'
+    ],
     keyFormulas: ['\\sin(d, (P)) = \\frac{d(S, (P))}{SA}'],
     flashcards: [{ front: 'Nếu $d \\parallel (P)$ hoặc $d \\subset (P)$ thì góc $(d, (P))$ bằng bao nhiêu?', back: 'Bằng $0^\\circ$. Nếu $d \\perp (P)$ thì bằng $90^\\circ$.' }],
     sampleProblems: [

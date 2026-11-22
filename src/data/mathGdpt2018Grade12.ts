@@ -476,7 +476,7 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
     ],
     sim2dMode: 'grapher',
     sim3dMode: 'integral_disks_3d',
-    defaultGraphConfig: { type: 'quadratic', params: { a: 1, b: 0, c: 0, d: 0 }, showIntegral: true, integralRange: [-2, 2], color: '#10b981', name: 'Nguyên hàm F(x) & Hình thang cong' }
+    defaultGraphConfig: { type: 'quadratic', params: { a: 1, b: 0, c: 0, d: 0 }, showIntegral: true, integralA: -2, integralB: 2, color: '#10b981', name: 'Nguyên hàm F(x) & Hình thang cong' }
   },
   {
     id: 'math-5',
@@ -563,7 +563,7 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
     ],
     sim2dMode: 'grapher',
     sim3dMode: 'integral_disks_3d',
-    defaultGraphConfig: { type: 'custom', customExpr: '4 - x^2', params: { a: -1, b: 0, c: 4, d: 0 }, showIntegral: true, integralRange: [-2, 2], color: '#059669', name: 'Diện tích y = 4 - x² & Trục Ox' }
+    defaultGraphConfig: { type: 'custom', customExpr: '4 - x^2', params: { a: -1, b: 0, c: 4, d: 0 }, showIntegral: true, integralA: -2, integralB: 2, color: '#059669', name: 'Diện tích y = 4 - x² & Trục Ox' }
   },
   // CHƯƠNG V: PHƯƠNG PHÁP TỌA ĐỘ TRONG KHÔNG GIAN
   {

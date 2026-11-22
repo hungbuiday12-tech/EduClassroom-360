@@ -77,61 +77,130 @@ interface RemoteVideoTileProps {
   onPin?: () => void;
 }
 
-const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean }> = ({
+const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean; onAudioBlockedChange?: (blocked: boolean) => void }> = ({
   peer,
   stream,
   compact = false,
   pinned = false,
   isLocal = false,
   onPin,
+  onAudioBlockedChange,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastVideoIdsRef = useRef<string>('');
+  const lastAudioIdsRef = useRef<string>('');
   const [audioBlocked, setAudioBlocked] = useState(false);
 
-  const trackIdsKey = stream
+  const videoTrackIdsKey = stream
     ? stream
-        .getTracks()
-        .map((t) => `${t.kind}:${t.id}:${t.readyState}:${t.enabled}:${t.muted}`)
+        .getVideoTracks()
+        .filter((t) => t.readyState === 'live')
+        .map((t) => t.id)
+        .join(',')
+    : '';
+
+  const audioTrackIdsKey = stream
+    ? stream
+        .getAudioTracks()
+        .filter((t) => t.readyState === 'live')
+        .map((t) => t.id)
         .join(',')
     : '';
 
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
-    if (stream && stream.getVideoTracks().length > 0) {
-      const videoOnly = new MediaStream(stream.getVideoTracks());
-      el.srcObject = videoOnly;
-      el.play().catch(() => {});
+    const liveVideoTracks = stream ? stream.getVideoTracks().filter((t) => t.readyState === 'live') : [];
+    const nextIds = liveVideoTracks.map((t) => t.id).join(',');
+
+    if (liveVideoTracks.length > 0) {
+      if (lastVideoIdsRef.current !== nextIds || !el.srcObject) {
+        lastVideoIdsRef.current = nextIds;
+        el.srcObject = new MediaStream(liveVideoTracks);
+      }
+      const tryPlayVideo = () => {
+        el.play().catch(() => {});
+      };
+      tryPlayVideo();
+      el.onloadedmetadata = tryPlayVideo;
+      liveVideoTracks.forEach((t) => {
+        t.addEventListener('unmute', tryPlayVideo);
+      });
+      return () => {
+        el.onloadedmetadata = null;
+        liveVideoTracks.forEach((t) => {
+          t.removeEventListener('unmute', tryPlayVideo);
+        });
+      };
     } else {
+      lastVideoIdsRef.current = '';
       el.srcObject = null;
     }
-  }, [stream, trackIdsKey, peer.camOn, peer.screenSharing]);
+  }, [stream, videoTrackIdsKey, peer.camOn, peer.screenSharing]);
 
   useEffect(() => {
     if (isLocal) return;
     const audioEl = audioRef.current;
     if (!audioEl) return;
     const audioTracks = stream ? stream.getAudioTracks().filter((t) => t.readyState === 'live') : [];
+    const nextIds = audioTracks.map((t) => t.id).join(',');
+
     if (audioTracks.length > 0) {
-      audioEl.srcObject = new MediaStream(audioTracks);
-      audioEl
-        .play()
-        .then(() => setAudioBlocked(false))
-        .catch(() => setAudioBlocked(true));
+      if (lastAudioIdsRef.current !== nextIds || !audioEl.srcObject) {
+        lastAudioIdsRef.current = nextIds;
+        audioEl.srcObject = new MediaStream(audioTracks);
+      }
+      audioEl.muted = false;
+      audioEl.volume = 1;
+      const tryPlayAudio = () => {
+        audioEl
+          .play()
+          .then(() => {
+            setAudioBlocked(false);
+            onAudioBlockedChange?.(false);
+          })
+          .catch(() => {
+            setAudioBlocked(true);
+            onAudioBlockedChange?.(true);
+          });
+      };
+      tryPlayAudio();
+      audioTracks.forEach((t) => {
+        t.addEventListener('unmute', tryPlayAudio);
+      });
+      const onGlobalInteract = () => {
+        if (audioEl.paused && audioEl.srcObject) {
+          tryPlayAudio();
+        }
+      };
+      window.addEventListener('pointerdown', onGlobalInteract, { passive: true });
+      return () => {
+        audioTracks.forEach((t) => {
+          t.removeEventListener('unmute', tryPlayAudio);
+        });
+        window.removeEventListener('pointerdown', onGlobalInteract);
+      };
     } else {
+      lastAudioIdsRef.current = '';
       audioEl.srcObject = null;
       setAudioBlocked(false);
+      onAudioBlockedChange?.(false);
     }
-  }, [isLocal, stream, trackIdsKey, peer.micOn]);
+  }, [isLocal, stream, audioTrackIdsKey, peer.micOn, onAudioBlockedChange]);
 
   const handleUnlockAudio = (e: React.MouseEvent) => {
     e.stopPropagation();
     const audioEl = audioRef.current;
     if (audioEl) {
+      audioEl.muted = false;
+      audioEl.volume = 1;
       audioEl
         .play()
-        .then(() => setAudioBlocked(false))
+        .then(() => {
+          setAudioBlocked(false);
+          onAudioBlockedChange?.(false);
+        })
         .catch(() => {});
     }
   };
@@ -164,7 +233,15 @@ const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean }> = ({
           hasLiveVideo ? 'opacity-100' : 'opacity-0'
         }`}
       />
-      {!isLocal && <audio ref={audioRef} autoPlay playsInline className="hidden" />}
+      {!isLocal && (
+        <audio
+          ref={audioRef}
+          autoPlay
+          playsInline
+          className="sr-only pointer-events-none"
+          data-meet-remote-audio="true"
+        />
+      )}
       {!isLocal && audioBlocked && (
         <button
           type="button"
@@ -256,6 +333,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
   const [screenSharing, setScreenSharing] = useState<boolean>(false);
   const [handRaised, setHandRaised] = useState<boolean>(false);
   const [mediaNotice, setMediaNotice] = useState<string | null>(null);
+  const [anyAudioBlocked, setAnyAudioBlocked] = useState<boolean>(false);
 
   // Graphics quality ('medium' | 'high')
   const [graphicsQuality, setGraphicsQuality] = useState<MeetGraphicsQuality>(() => {
@@ -292,6 +370,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
   const makingOfferRef = useRef<Map<string, boolean>>(new Map());
   const ignoreOfferRef = useRef<Map<string, boolean>>(new Map());
   const pendingNegotiateRef = useRef<Set<string>>(new Set());
+  const iceRestartAttemptedRef = useRef<Map<string, boolean>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const selfPeerIdRef = useRef<string | null>(null);
@@ -369,6 +448,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
     makingOfferRef.current.delete(remotePeerId);
     ignoreOfferRef.current.delete(remotePeerId);
     pendingNegotiateRef.current.delete(remotePeerId);
+    iceRestartAttemptedRef.current.delete(remotePeerId);
     setRemoteStreams((prev) => {
       if (!prev[remotePeerId]) return prev;
       const next = { ...prev };
@@ -377,8 +457,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
     });
   }, []);
 
+  const renegotiatePeerRef = useRef<(remotePeerId: string) => Promise<void>>(async () => {});
+
   const ensurePeerConnection = useCallback(
-    (remotePeerId: string): RTCPeerConnection => {
+    (remotePeerId: string, createInitialTransceivers = false): RTCPeerConnection => {
       const existing = pcsRef.current.get(remotePeerId);
       if (existing && existing.connectionState !== 'closed' && existing.connectionState !== 'failed') {
         return existing;
@@ -389,21 +471,24 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
       const pc = new RTCPeerConnection(RTC_CONFIG);
 
-      // Always establish both audio & video transceivers upfront so later mic/cam activation works cleanly
-      const audioTrack = getActiveOutgoingAudioTrack();
-      const videoTrack = getActiveOutgoingVideoTrack();
-      const mediaStream = new MediaStream();
-      if (audioTrack) {
-        mediaStream.addTrack(audioTrack);
-        pc.addTrack(audioTrack, mediaStream);
-      } else {
-        pc.addTransceiver('audio', { direction: 'recvonly' });
-      }
-      if (videoTrack) {
-        mediaStream.addTrack(videoTrack);
-        pc.addTrack(videoTrack, mediaStream);
-      } else {
-        pc.addTransceiver('video', { direction: 'recvonly' });
+      // Only the initiator creates initial transceivers upfront.
+      // The answerer receives negotiated transceivers via setRemoteDescription(offer), avoiding orphaned mid:null transceivers.
+      if (createInitialTransceivers) {
+        const audioTrack = getActiveOutgoingAudioTrack();
+        const videoTrack = getActiveOutgoingVideoTrack();
+        const mediaStream = new MediaStream();
+        if (audioTrack) {
+          mediaStream.addTrack(audioTrack);
+          pc.addTransceiver(audioTrack, { direction: 'sendrecv', streams: [mediaStream] });
+        } else {
+          pc.addTransceiver('audio', { direction: 'sendrecv', streams: [mediaStream] });
+        }
+        if (videoTrack) {
+          mediaStream.addTrack(videoTrack);
+          pc.addTransceiver(videoTrack, { direction: 'sendrecv', streams: [mediaStream] });
+        } else {
+          pc.addTransceiver('video', { direction: 'sendrecv', streams: [mediaStream] });
+        }
       }
 
       pc.onicecandidate = (ev) => {
@@ -440,13 +525,23 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
           });
         };
         syncRemote();
-        track.onunmute = syncRemote;
-        track.onmute = syncRemote;
         track.onended = syncRemote;
       };
 
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+        if (pc.connectionState === 'connected') {
+          iceRestartAttemptedRef.current.set(remotePeerId, false);
+        } else if (pc.connectionState === 'failed') {
+          if (!iceRestartAttemptedRef.current.get(remotePeerId)) {
+            iceRestartAttemptedRef.current.set(remotePeerId, true);
+            try {
+              pc.restartIce?.();
+            } catch {}
+            void renegotiatePeerRef.current(remotePeerId);
+          } else {
+            closePeerConnection(remotePeerId);
+          }
+        } else if (pc.connectionState === 'closed') {
           closePeerConnection(remotePeerId);
         }
       };
@@ -459,17 +554,14 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
   const renegotiatePeer = useCallback(
     async (remotePeerId: string) => {
-      const pc = ensurePeerConnection(remotePeerId);
+      const pc = ensurePeerConnection(remotePeerId, true);
       if (makingOfferRef.current.get(remotePeerId) || pc.signalingState !== 'stable') {
         pendingNegotiateRef.current.add(remotePeerId);
         return;
       }
       try {
         makingOfferRef.current.set(remotePeerId, true);
-        const offer = await pc.createOffer({
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true,
-        });
+        const offer = await pc.createOffer();
         if (pc.signalingState !== 'stable') {
           pendingNegotiateRef.current.add(remotePeerId);
           return;
@@ -489,30 +581,42 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
     [ensurePeerConnection, sendWs]
   );
 
+  useEffect(() => {
+    renegotiatePeerRef.current = renegotiatePeer;
+  }, [renegotiatePeer]);
+
   const syncTrackToAllPeers = useCallback(
     async (kind: 'audio' | 'video', newTrack: MediaStreamTrack | null) => {
       const entries = Array.from(pcsRef.current.entries());
       for (const [remotePeerId, pc] of entries) {
-        const desiredDirection: RTCRtpTransceiverDirection = newTrack ? 'sendrecv' : 'recvonly';
-        const transceiver = pc
+        const matching = pc
           .getTransceivers()
-          .find((t) => t.sender?.track?.kind === kind || t.receiver?.track?.kind === kind);
+          .filter((t) => t.sender?.track?.kind === kind || t.receiver?.track?.kind === kind)
+          .sort((a, b) => Number(b.mid !== null) - Number(a.mid !== null));
+        const transceiver = matching[0];
         if (transceiver?.sender) {
-          const dirChanged = transceiver.direction !== desiredDirection;
           try {
             await transceiver.sender.replaceTrack(newTrack);
-            if (dirChanged) {
-              transceiver.direction = desiredDirection;
+            if (transceiver.direction !== 'sendrecv') {
+              transceiver.direction = 'sendrecv';
+            }
+            if (newTrack && transceiver.currentDirection !== 'sendrecv' && transceiver.currentDirection !== 'sendonly') {
               await renegotiatePeer(remotePeerId);
             }
           } catch {
             if (newTrack) {
-              pc.addTrack(newTrack, new MediaStream([newTrack]));
+              pc.addTransceiver(newTrack, {
+                direction: 'sendrecv',
+                streams: [new MediaStream([newTrack])],
+              });
               await renegotiatePeer(remotePeerId);
             }
           }
         } else if (newTrack) {
-          pc.addTrack(newTrack, new MediaStream([newTrack]));
+          pc.addTransceiver(newTrack, {
+            direction: 'sendrecv',
+            streams: [new MediaStream([newTrack])],
+          });
           await renegotiatePeer(remotePeerId);
         }
       }
@@ -717,7 +821,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
           case 'rtc:offer': {
             const fromPeerId: string = msg.fromPeerId;
             if (!fromPeerId || !msg.sdp) break;
-            const pc = ensurePeerConnection(fromPeerId);
+            const pc = ensurePeerConnection(fromPeerId, false);
             try {
               const polite = (selfPeerIdRef.current || '') < fromPeerId;
               const makingOffer = Boolean(makingOfferRef.current.get(fromPeerId));
@@ -725,6 +829,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
               const ignoreOffer = !polite && offerCollision;
               ignoreOfferRef.current.set(fromPeerId, ignoreOffer);
               if (ignoreOffer) break;
+
+              if (offerCollision && pc.signalingState !== 'stable') {
+                await pc.setLocalDescription({ type: 'rollback' }).catch(() => {});
+              }
 
               await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
               // Drain any queued ICE candidates for this peer
@@ -736,16 +844,17 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                 }
               }
 
-              // Ensure local active tracks are bound and transceivers allow sendrecv when active
+              // Keep negotiated transceivers sendrecv on both sides so instant mic/cam toggle works without delay
               const localAud = getActiveOutgoingAudioTrack();
               const localVid = getActiveOutgoingVideoTrack();
               for (const t of pc.getTransceivers()) {
-                if (t.receiver?.track?.kind === 'audio' && localAud) {
+                if (t.mid === null) continue;
+                const kind = t.receiver?.track?.kind || t.sender?.track?.kind;
+                t.direction = 'sendrecv';
+                if (kind === 'audio' && localAud) {
                   await t.sender.replaceTrack(localAud).catch(() => {});
-                  t.direction = 'sendrecv';
-                } else if (t.receiver?.track?.kind === 'video' && localVid) {
+                } else if (kind === 'video' && localVid) {
                   await t.sender.replaceTrack(localVid).catch(() => {});
-                  t.direction = 'sendrecv';
                 }
               }
 
@@ -758,7 +867,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
               });
               if (pendingNegotiateRef.current.has(fromPeerId)) {
                 pendingNegotiateRef.current.delete(fromPeerId);
-                renegotiatePeer(fromPeerId);
+                void renegotiatePeer(fromPeerId);
               }
             } catch {}
             break;
@@ -780,7 +889,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                 }
                 if (pendingNegotiateRef.current.has(fromPeerId)) {
                   pendingNegotiateRef.current.delete(fromPeerId);
-                  renegotiatePeer(fromPeerId);
+                  void renegotiatePeer(fromPeerId);
                 }
               } catch {}
             }
@@ -790,7 +899,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
           case 'rtc:ice': {
             const fromPeerId: string = msg.fromPeerId;
             if (!fromPeerId || !msg.candidate) break;
-            const pc = ensurePeerConnection(fromPeerId);
+            const pc = ensurePeerConnection(fromPeerId, false);
             if (!pc.remoteDescription) {
               const queue = pendingIceRef.current.get(fromPeerId) || [];
               queue.push(msg.candidate);
@@ -897,13 +1006,18 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
         existingAudio.enabled = true;
         await syncTrackToAllPeers('audio', existingAudio);
       } else {
-        const audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        });
+        let audioStream: MediaStream;
+        try {
+          audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+          });
+        } catch {
+          audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
         const track = audioStream.getAudioTracks()[0];
         if (!localStreamRef.current) {
           localStreamRef.current = new MediaStream();
@@ -941,9 +1055,14 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
     }
 
     try {
-      const camStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } },
-      });
+      let camStream: MediaStream;
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } },
+        });
+      } catch {
+        camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
       const track = camStream.getVideoTracks()[0];
       if (!localStreamRef.current) {
         localStreamRef.current = new MediaStream();
@@ -1425,6 +1544,27 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
         </div>
       </header>
 
+      {anyAudioBlocked && (
+        <div className="flex shrink-0 items-center justify-between gap-3 bg-sky-500/15 px-4 py-2 text-xs text-sky-200 border-b border-sky-500/30">
+          <span>Trình duyệt đang tạm chặn tự phát âm thanh cuộc họp. Nhấn nút bên phải để nghe giọng nói từ mọi người.</span>
+          <button
+            type="button"
+            onClick={() => {
+              document.querySelectorAll<HTMLAudioElement>('audio[data-meet-remote-audio="true"]').forEach((a) => {
+                a.muted = false;
+                a.volume = 1;
+                a.play().catch(() => {});
+              });
+              setAnyAudioBlocked(false);
+            }}
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-sky-500 px-3 py-1 text-xs font-bold text-slate-950 hover:bg-sky-400 cursor-pointer"
+          >
+            <Volume2 className="h-3.5 w-3.5" />
+            Bật loa cuộc họp
+          </button>
+        </div>
+      )}
+
       {mediaNotice && (
         <div className="flex shrink-0 items-center justify-between bg-amber-500/15 px-4 py-2 text-xs text-amber-200 border-b border-amber-500/30">
           <span>{mediaNotice}</span>
@@ -1487,6 +1627,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                       peer={peer}
                       stream={isLocal ? localDisplayStream : remoteStreams[peer.peerId]}
                       isLocal={isLocal}
+                      onAudioBlockedChange={setAnyAudioBlocked}
                       compact
                     />
                   );
@@ -1505,6 +1646,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                       : remoteStreams[pinnedPeer.peerId]
                   }
                   isLocal={pinnedPeer.peerId === selfPeerId}
+                  onAudioBlockedChange={setAnyAudioBlocked}
                   pinned
                   onPin={() => setPinnedPeerId(null)}
                 />
@@ -1519,6 +1661,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                         peer={peer}
                         stream={isLocal ? localDisplayStream : remoteStreams[peer.peerId]}
                         isLocal={isLocal}
+                        onAudioBlockedChange={setAnyAudioBlocked}
                         compact
                         onPin={() => setPinnedPeerId(peer.peerId)}
                       />
@@ -1538,6 +1681,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                     peer={peer}
                     stream={isLocal ? localDisplayStream : remoteStreams[peer.peerId]}
                     isLocal={isLocal}
+                    onAudioBlockedChange={setAnyAudioBlocked}
                     onPin={() => setPinnedPeerId(peer.peerId)}
                   />
                 );

@@ -28,6 +28,14 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 import { useRemoteController } from '../../context/RemoteControllerContext';
 import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
+import {
+  createPostProcessingPipeline,
+  PostProcessPipeline,
+  createTroikaLabel,
+  updateBillboardLabels,
+  GPUParticlePool,
+  OptimizedTrail,
+} from '../../lib/three3DEnhancements';
 
 export type CS3DSimMode =
   | 'sort_3d'
@@ -1209,6 +1217,8 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
   frameRef.current = currentFrame;
   const modeRef = useRef<CS3DSimMode>(mode);
   modeRef.current = mode;
+  const stepIdxRef = useRef<number>(safeStepIdx);
+  stepIdxRef.current = safeStepIdx;
 
   useEffect(() => {
     setStepIdx(0);
@@ -1351,11 +1361,78 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
     stageDisc.receiveShadow = !isSoftwareGl;
     scene.add(stageDisc);
 
+    const stageRim = new THREE.Mesh(
+      new THREE.TorusGeometry(8.2, 0.028, 12, 72),
+      new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669, emissiveIntensity: 0.55, roughness: 0.25 })
+    );
+    stageRim.rotation.x = Math.PI / 2;
+    stageRim.position.y = -0.01;
+    scene.add(stageRim);
+
     const grid = new THREE.GridHelper(16, 16, 0x10b981, 0x172542);
     grid.position.y = 0.004;
     scene.add(grid);
 
     const edgeCylGeo = new THREE.CylinderGeometry(0.036, 0.036, 1, 10);
+
+    // Post-processing (Bloom + SMAA) — bypassed on software WebGL or smooth mode
+    let pipeline: PostProcessPipeline | null = null;
+    if (!isSoftwareGl && perfMode !== 'smooth') {
+      try {
+        pipeline = createPostProcessingPipeline(renderer, scene, camera, {
+          bloomIntensity: 0.44,
+          luminanceThreshold: 0.78,
+          enableSmaa: true,
+        });
+        pipeline.setSize(container.clientWidth || 760, container.clientHeight || 420);
+      } catch {
+        pipeline = null;
+      }
+    }
+
+    // Bounded GPU Instanced Particle Pool & Packet Traversal Orb/Trail
+    const csParticlePool = new GPUParticlePool(84, 0.055, 0x10b981, 0x059669);
+    scene.add(csParticlePool.mesh);
+
+    const csPacketOrb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.11, 14, 12),
+      new THREE.MeshStandardMaterial({
+        color: 0xfef08a,
+        emissive: 0xfbbf24,
+        emissiveIntensity: 1.6,
+        roughness: 0.15,
+      })
+    );
+    csPacketOrb.visible = false;
+    scene.add(csPacketOrb);
+    const csPacketTrail = new OptimizedTrail(48, 0xfbbf24, 0.88);
+    scene.add(csPacketTrail.line);
+
+    // Pre-allocated Troika 3D label helper (updates text worker ONLY when text changes)
+    type TroikaLbl = ReturnType<typeof createTroikaLabel>;
+    const setTroikaLabel = (
+      lbl: TroikaLbl | undefined,
+      text: string,
+      x: number,
+      y: number,
+      z: number,
+      colorHex = 0xf8fafc,
+      visible = true
+    ) => {
+      if (!lbl) return;
+      lbl.visible = visible;
+      if (!visible) return;
+      lbl.position.set(x, y, z);
+      if (lbl.userData.lastColor !== colorHex) {
+        lbl.color = colorHex;
+        lbl.userData.lastColor = colorHex;
+      }
+      if (lbl.userData.lastText !== text) {
+        lbl.text = text;
+        lbl.userData.lastText = text;
+        lbl.sync();
+      }
+    };
 
     // ---------------------------------------------------------
     // 1. SORTING PILLARS (with metallic cap collar)
@@ -1389,6 +1466,12 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       pillarMeshes.push(mesh);
       pillarCaps.push(cap);
     }
+    const sortLabels: TroikaLbl[] = Array.from({ length: 12 }, () => {
+      const lbl = createTroikaLabel({ text: '', fontSize: 0.3, color: 0xf8fafc });
+      lbl.visible = false;
+      sortGroup.add(lbl);
+      return lbl;
+    });
 
     // ---------------------------------------------------------
     // 2. BST 3D GROUP (with glowing CylinderGeometry edges & halo)
@@ -1429,6 +1512,12 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       bstEdgeMeshes.push(edgeMesh);
       bstEdgeMats.push(eMat);
     }
+    const bstLabels: TroikaLbl[] = Array.from({ length: 18 }, () => {
+      const lbl = createTroikaLabel({ text: '', fontSize: 0.24, color: 0xe2e8f0 });
+      lbl.visible = false;
+      bstGroup.add(lbl);
+      return lbl;
+    });
 
     // ---------------------------------------------------------
     // 3. GRAPH 3D GROUP (3D Cylinder edges + glowing nodes)
@@ -1463,6 +1552,17 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       graphGroup.add(mesh);
       gEdgeMeshes.push({ u, v, mesh, mat });
     });
+    const graphLabels: TroikaLbl[] = GRAPH_NODES_3D.map(([x, y, z], idx) => {
+      const lbl = createTroikaLabel({
+        text: `${idx}:∞`,
+        position: [x, y + 0.56, z],
+        fontSize: 0.25,
+        color: 0xe0f2fe,
+      });
+      lbl.userData.lastText = `${idx}:∞`;
+      graphGroup.add(lbl);
+      return lbl;
+    });
 
     // ---------------------------------------------------------
     // 4. MAZE 3D GROUP (glass walls + levitating beacon)
@@ -1495,6 +1595,31 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       mazeTiles.push(rowM);
       mazeTileMats.push(rowMat);
     }
+    const mazeStartRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.32, 0.032, 10, 28),
+      new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x06b6d4, emissiveIntensity: 0.9 })
+    );
+    mazeStartRing.rotation.x = Math.PI / 2;
+    mazeStartRing.position.set(-3 * 0.84, 0.22, -3 * 0.84);
+    const mazeGoalRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.32, 0.036, 10, 28),
+      new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 1.0 })
+    );
+    mazeGoalRing.rotation.x = Math.PI / 2;
+    mazeGoalRing.position.set(3 * 0.84, 0.22, 3 * 0.84);
+    const mazeStartLbl = createTroikaLabel({
+      text: 'START',
+      position: [-3 * 0.84, 0.62, -3 * 0.84],
+      fontSize: 0.26,
+      color: 0x22d3ee,
+    });
+    const mazeGoalLbl = createTroikaLabel({
+      text: 'GOAL',
+      position: [3 * 0.84, 0.62, 3 * 0.84],
+      fontSize: 0.26,
+      color: 0xfbbf24,
+    });
+    mazeGroup.add(mazeStartRing, mazeGoalRing, mazeStartLbl, mazeGoalLbl);
 
     // ---------------------------------------------------------
     // 5. STACK / QUEUE 3D GROUP
@@ -1523,6 +1648,12 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       sqBoxes.push(b);
       sqMats.push(mat);
     }
+    const sqLabels: TroikaLbl[] = Array.from({ length: 10 }, () => {
+      const lbl = createTroikaLabel({ text: '', fontSize: 0.27, color: 0xf8fafc });
+      lbl.visible = false;
+      sqGroup.add(lbl);
+      return lbl;
+    });
 
     // ---------------------------------------------------------
     // 6. SEGMENT TREE 3D GROUP (15 tree blocks + cylinder links)
@@ -1553,6 +1684,12 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       segEdgeMeshes.push(em);
       segEdgeMats.push(eMat);
     }
+    const segLabels: TroikaLbl[] = Array.from({ length: 15 }, () => {
+      const lbl = createTroikaLabel({ text: '', fontSize: 0.2, color: 0xe2e8f0 });
+      lbl.visible = false;
+      segGroup.add(lbl);
+      return lbl;
+    });
 
     // ---------------------------------------------------------
     // 7. TRIE 3D GROUP (up to 24 prefix nodes + crown ring)
@@ -1594,6 +1731,12 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       trieEdgeMeshes.push(em);
       trieEdgeMats.push(eMat);
     }
+    const trieLabels: TroikaLbl[] = Array.from({ length: 24 }, () => {
+      const lbl = createTroikaLabel({ text: '', fontSize: 0.23, color: 0xf8fafc });
+      lbl.visible = false;
+      trieGroup.add(lbl);
+      return lbl;
+    });
 
     // ---------------------------------------------------------
     // 8. DP TABLE 3D ELEVATION GRID (5 x 8 = 40 clearcoat blocks)
@@ -1623,6 +1766,9 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       dpCells.push(rowM);
       dpMats.push(rowMat);
     }
+    const dpFocusLbl = createTroikaLabel({ text: '', fontSize: 0.28, color: 0xfef08a });
+    dpFocusLbl.visible = false;
+    dpGroup.add(dpFocusLbl);
 
     // ---------------------------------------------------------
     // 9. FLOW NETWORK 3D (6 nodes + dual-layer glass/flow pipes)
@@ -1675,6 +1821,32 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       flowGroup.add(outer, core);
       flowPipes.push({ u, v, cap, core, coreMat, outerMat });
     });
+    const flowNodeLabels: TroikaLbl[] = FLOW_NODES_3D.map(([x, y, z], idx) => {
+      const txt = idx === 0 ? 'S' : idx === 5 ? 'T' : `N${idx}`;
+      const lbl = createTroikaLabel({
+        text: txt,
+        position: [x, y + 0.56, z],
+        fontSize: 0.26,
+        color: idx === 0 ? 0x38bdf8 : idx === 5 ? 0xfbbf24 : 0xe2e8f0,
+      });
+      lbl.userData.lastText = txt;
+      flowGroup.add(lbl);
+      return lbl;
+    });
+    const flowEdgeLabels: TroikaLbl[] = FLOW_BASE_EDGES.map(({ u, v, cap }) => {
+      const [ax, ay, az] = FLOW_NODES_3D[u];
+      const [bx, by, bz] = FLOW_NODES_3D[v];
+      const txt = `0/${cap}`;
+      const lbl = createTroikaLabel({
+        text: txt,
+        position: [(ax + bx) * 0.5, (ay + by) * 0.5 + 0.24, (az + bz) * 0.5],
+        fontSize: 0.19,
+        color: 0xa7f3d0,
+      });
+      lbl.userData.lastText = txt;
+      flowGroup.add(lbl);
+      return lbl;
+    });
 
     // ---------------------------------------------------------
     // 10. SPATIAL OCTREE A* 3D VOXEL LATTICE (4x4x4)
@@ -1711,6 +1883,29 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
         }
       }
     }
+    const octStartHalo = new THREE.Mesh(
+      new THREE.TorusGeometry(0.42, 0.028, 10, 28),
+      new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x06b6d4, emissiveIntensity: 0.9 })
+    );
+    octStartHalo.position.set(-1.5 * 0.9, 0.65, -1.5 * 0.9);
+    const octGoalHalo = new THREE.Mesh(
+      new THREE.TorusGeometry(0.42, 0.028, 10, 28),
+      new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 1.0 })
+    );
+    octGoalHalo.position.set(1.5 * 0.9, 0.65 + 3 * 0.9, 1.5 * 0.9);
+    const octStartLbl = createTroikaLabel({
+      text: 'S(0,0,0)',
+      position: [-1.5 * 0.9, 1.15, -1.5 * 0.9],
+      fontSize: 0.22,
+      color: 0x22d3ee,
+    });
+    const octGoalLbl = createTroikaLabel({
+      text: 'G(3,3,3)',
+      position: [1.5 * 0.9, 0.65 + 3 * 0.9 + 0.52, 1.5 * 0.9],
+      fontSize: 0.22,
+      color: 0xfbbf24,
+    });
+    octGroup.add(octStartHalo, octGoalHalo, octStartLbl, octGoalLbl);
 
     resetCamRef.current = () => {
       camera.position.set(0, 4.8, 8.6);
@@ -1724,6 +1919,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      pipeline?.setSize(w, h);
     });
     ro.observe(container);
 
@@ -1751,12 +1947,31 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       rafId = window.setTimeout(poll, 5);
     }
 
+    let lastStepSig = '';
+    let lastTrailMode: CS3DSimMode | '' = '';
+
     const tick = () => {
       if (!alive) return;
+      if (typeof document !== 'undefined' && document.hidden) {
+        clock.getDelta();
+        if (isSoftwareGl) afterDraw(tick);
+        else rafId = requestAnimationFrame(tick);
+        return;
+      }
+
       const dt = Math.min(0.05, clock.getDelta());
       const tNow = clock.elapsedTime;
       const m = modeRef.current;
       const f = frameRef.current;
+      const stepSig = `${m}|${stepIdxRef.current}|${f.label}`;
+      const stepChanged = stepSig !== lastStepSig;
+      if (stepChanged) lastStepSig = stepSig;
+
+      if (m !== lastTrailMode) {
+        csPacketTrail.clear();
+        csPacketOrb.visible = false;
+        lastTrailMode = m;
+      }
 
       sortGroup.visible = m === 'sort_3d';
       bstGroup.visible = m === 'bst_3d';
@@ -1769,6 +1984,8 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       flowGroup.visible = m === 'flow_network_3d';
       octGroup.visible = m === 'spatial_octree_3d';
 
+      let packetShown = false;
+
       if (m === 'sort_3d' && f.arr) {
         const arr = f.arr;
         const sortedSet = new Set(f.sortedIdx || []);
@@ -1780,6 +1997,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           if (i >= arr.length) {
             mesh.visible = false;
             cap.visible = false;
+            setTroikaLabel(sortLabels[i], '', 0, 0, 0, 0xf8fafc, false);
             continue;
           }
           mesh.visible = true;
@@ -1788,38 +2006,70 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           const tx = (i - (arr.length - 1) / 2) * 0.78;
           mesh.scale.y = THREE.MathUtils.damp(mesh.scale.y, h, 14, dt);
           mesh.position.x = THREE.MathUtils.damp(mesh.position.x, tx, 14, dt);
+          const swapDist = Math.abs(tx - mesh.position.x);
+          const targetZ = swapDist > 0.04 ? Math.sin(Math.min(1, swapDist / 0.85) * Math.PI) * 0.52 * (i % 2 === 0 ? 1 : -1) : 0;
+          mesh.position.z = THREE.MathUtils.damp(mesh.position.z, targetZ, 14, dt);
           mesh.position.y = mesh.scale.y * 0.5;
-          cap.position.set(mesh.position.x, mesh.scale.y + 0.04, 0);
+          cap.position.set(mesh.position.x, mesh.scale.y + 0.04, mesh.position.z);
+
+          let lblColor = 0xe2e8f0;
           if (f.pivotIdx === i) {
             mat.color.setHex(0xf59e0b);
             mat.emissive.setHex(0xd97706);
             mat.emissiveIntensity = 0.72;
+            lblColor = 0xfef08a;
           } else if (i === ci || i === cj) {
             mat.color.setHex(0xf43f5e);
             mat.emissive.setHex(0xe11d48);
             mat.emissiveIntensity = 0.85;
+            lblColor = 0xfda4af;
+            if (stepChanged) {
+              for (let s = 0; s < 3; s++) {
+                csParticlePool.spawn(
+                  mesh.position.x,
+                  mesh.scale.y + 0.15,
+                  mesh.position.z,
+                  (Math.random() - 0.5) * 1.4,
+                  0.9 + Math.random() * 1.1,
+                  (Math.random() - 0.5) * 1.4,
+                  0.65,
+                  0.9,
+                  0xf43f5e
+                );
+              }
+            }
           } else if (sortedSet.has(i)) {
             mat.color.setHex(0x10b981);
             mat.emissive.setHex(0x059669);
             mat.emissiveIntensity = 0.45;
+            lblColor = 0x6ee7b7;
           } else {
             mat.color.setHex(0x38bdf8);
             mat.emissive.setHex(0x0284c7);
             mat.emissiveIntensity = 0.22;
           }
+          setTroikaLabel(sortLabels[i], String(arr[i]), mesh.position.x, mesh.scale.y + 0.34, mesh.position.z, lblColor, true);
         }
       } else if (m === 'bst_3d' && f.bstNodes) {
         const activeSet = new Set(f.bstActive || []);
         bstGroup.rotation.y = Math.sin(tNow * 0.35) * 0.12;
         bstHalo.visible = false;
-        f.bstNodes.forEach((bn, i) => {
+        for (let i = 0; i < bstNodeMeshes.length; i++) {
+          const bn = f.bstNodes[i];
           const sp = bstNodeMeshes[i];
           const mat = bstNodeMats[i];
           const edge = bstEdgeMeshes[i];
           const eMat = bstEdgeMats[i];
-          if (!sp) return;
+          if (!sp) continue;
+          if (!bn) {
+            sp.visible = false;
+            edge.visible = false;
+            setTroikaLabel(bstLabels[i], '', 0, 0, 0, 0xe2e8f0, false);
+            continue;
+          }
           sp.visible = true;
           sp.position.set(bn.x, bn.y, bn.z);
+          let lblCol = 0xe2e8f0;
           if (f.bstFound === i) {
             mat.color.setHex(0x10b981);
             mat.emissive.setHex(0x10b981);
@@ -1828,17 +2078,29 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
             bstHalo.position.set(bn.x, bn.y, bn.z);
             bstHalo.rotation.x = tNow * 1.6;
             bstHalo.rotation.y = tNow * 1.1;
+            lblCol = 0x6ee7b7;
+            if (stepChanged) {
+              for (let s = 0; s < 8; s++) {
+                csParticlePool.spawn(bn.x, bn.y, bn.z, (Math.random() - 0.5) * 2.2, (Math.random() - 0.2) * 2.0, (Math.random() - 0.5) * 2.2, 0.85, 1.0, 0x10b981);
+              }
+            }
           } else if (activeSet.has(i)) {
             mat.color.setHex(0xfbbf24);
             mat.emissive.setHex(0xf59e0b);
             mat.emissiveIntensity = 0.95;
+            lblCol = 0xfef08a;
+            if (stepChanged) {
+              csParticlePool.spawn(bn.x, bn.y + 0.1, bn.z, (Math.random() - 0.5) * 1.1, 0.8, (Math.random() - 0.5) * 1.1, 0.65, 0.85, 0xfbbf24);
+            }
           } else {
             mat.color.setHex(0x38bdf8);
             mat.emissive.setHex(0x0284c7);
             mat.emissiveIntensity = 0.28;
           }
-          if (bn.parentIdx >= 0 && f.bstNodes![bn.parentIdx]) {
-            const p = f.bstNodes![bn.parentIdx];
+          setTroikaLabel(bstLabels[i], String(bn.val), bn.x, bn.y + 0.42, bn.z, lblCol, true);
+
+          if (bn.parentIdx >= 0 && f.bstNodes[bn.parentIdx]) {
+            const p = f.bstNodes[bn.parentIdx];
             edge.visible = true;
             const hot = activeSet.has(i) && activeSet.has(bn.parentIdx);
             alignCylinderEdge(edge, p.x, p.y, p.z, bn.x, bn.y, bn.z, hot ? 1.4 : 0.85);
@@ -1848,27 +2110,40 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           } else {
             edge.visible = false;
           }
-        });
+        }
       } else if (m === 'graph_3d') {
         const vis = f.graphVisited || [];
+        const dists = f.graphDist || [];
         gNodeMeshes.forEach((sp, i) => {
           const mat = gNodeMats[i];
+          const [nx, ny, nz] = GRAPH_NODES_3D[i];
+          const d = dists[i];
+          const dStr = d === undefined || d >= 999 || !Number.isFinite(d) ? '∞' : String(d);
+          let lblCol = 0xe0f2fe;
           if (f.graphCurrent === i) {
             mat.color.setHex(0xf59e0b);
             mat.emissive.setHex(0xf59e0b);
             mat.emissiveIntensity = 1.25;
             sp.scale.setScalar(1.18 + Math.sin(tNow * 5) * 0.06);
+            lblCol = 0xfef08a;
+            if (stepChanged) {
+              for (let s = 0; s < 5; s++) {
+                csParticlePool.spawn(nx, ny + 0.15, nz, (Math.random() - 0.5) * 1.6, 0.7 + Math.random(), (Math.random() - 0.5) * 1.6, 0.75, 0.95, 0xfbbf24);
+              }
+            }
           } else if (vis[i]) {
             mat.color.setHex(0x10b981);
             mat.emissive.setHex(0x059669);
             mat.emissiveIntensity = 0.72;
             sp.scale.setScalar(1);
+            lblCol = 0x6ee7b7;
           } else {
             mat.color.setHex(0x38bdf8);
             mat.emissive.setHex(0x0284c7);
             mat.emissiveIntensity = 0.28;
             sp.scale.setScalar(0.95);
           }
+          setTroikaLabel(graphLabels[i], `${i}: ${dStr}`, nx, ny + 0.56, nz, lblCol, true);
         });
         gEdgeMeshes.forEach(({ u, v, mesh, mat }) => {
           const act = f.graphActiveEdge;
@@ -1881,10 +2156,29 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           const [bx, by, bz] = GRAPH_NODES_3D[v];
           alignCylinderEdge(mesh, ax, ay, az, bx, by, bz, isAct ? 1.7 : bothVis ? 1.3 : 0.9);
         });
+
+        if (f.graphActiveEdge) {
+          const [u, v] = f.graphActiveEdge;
+          const a = GRAPH_NODES_3D[u];
+          const b = GRAPH_NODES_3D[v];
+          if (a && b) {
+            const p = (tNow * 1.45) % 1;
+            const px = THREE.MathUtils.lerp(a[0], b[0], p);
+            const py = THREE.MathUtils.lerp(a[1], b[1], p);
+            const pz = THREE.MathUtils.lerp(a[2], b[2], p);
+            csPacketOrb.visible = true;
+            csPacketOrb.position.set(px, py, pz);
+            if (p < 0.06) csPacketTrail.clear();
+            csPacketTrail.pushAndRender(px, py, pz, camera, 0.01, 30);
+            packetShown = true;
+          }
+        }
       } else if (m === 'maze_3d') {
         const vis = f.mazeVisited || [];
         const frontSet = new Set((f.mazeFrontier || []).map(([r, c]) => `${r},${c}`));
         const pathSet = new Set((f.mazePath || []).map(([r, c]) => `${r},${c}`));
+        mazeStartRing.rotation.z = tNow * 1.2;
+        mazeGoalRing.rotation.z = -tNow * 1.5;
         for (let r = 0; r < 7; r++) {
           for (let c = 0; c < 7; c++) {
             const tile = mazeTiles[r][c];
@@ -1901,6 +2195,9 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
               mat.emissive.setHex(0x06b6d4);
               mat.emissiveIntensity = 0.85;
               tile.position.y = THREE.MathUtils.damp(tile.position.y, 0.16, 12, dt);
+              if (stepChanged) {
+                csParticlePool.spawn(tile.position.x, 0.35, tile.position.z, (Math.random() - 0.5) * 0.9, 1.1, (Math.random() - 0.5) * 0.9, 0.55, 0.8, 0x22d3ee);
+              }
             } else if (vis[r]?.[c]) {
               mat.color.setHex(0x10b981);
               mat.emissive.setHex(0x059669);
@@ -1921,6 +2218,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           const mat = sqMats[i];
           if (i >= f.sqItems!.length) {
             b.visible = false;
+            setTroikaLabel(sqLabels[i], '', 0, 0, 0, 0xf8fafc, false);
             return;
           }
           b.visible = true;
@@ -1932,6 +2230,12 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           mat.color.setHex(isHot ? 0xfbbf24 : isStack ? 0x10b981 : 0x38bdf8);
           mat.emissive.setHex(isHot ? 0xd97706 : 0x0f172a);
           mat.emissiveIntensity = isHot ? 0.75 : 0.18;
+          if (isHot && stepChanged) {
+            for (let s = 0; s < 5; s++) {
+              csParticlePool.spawn(b.position.x, b.position.y + 0.25, 0, (Math.random() - 0.5) * 1.4, 0.9 + Math.random(), (Math.random() - 0.5) * 1.4, 0.65, 0.85, 0xfbbf24);
+            }
+          }
+          setTroikaLabel(sqLabels[i], String(f.sqItems![i]), b.position.x, b.position.y, 0.52, isHot ? 0xfef08a : 0xf8fafc, true);
         });
       } else if (m === 'segtree_3d' && f.segNodes) {
         f.segNodes.forEach((nd, i) => {
@@ -1941,27 +2245,36 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           const eMat = segEdgeMats[i];
           if (!box) return;
           box.position.set(nd.x, nd.y, nd.z);
+          let lblCol = 0xe2e8f0;
           if (nd.status === 'cover') {
             mat.color.setHex(0x10b981);
             mat.emissive.setHex(0x059669);
             mat.emissiveIntensity = 0.95;
             box.scale.setScalar(1.12);
+            lblCol = 0x6ee7b7;
+            if (stepChanged) {
+              csParticlePool.spawn(nd.x, nd.y + 0.15, nd.z, (Math.random() - 0.5) * 1.0, 0.9, (Math.random() - 0.5) * 1.0, 0.6, 0.85, 0x10b981);
+            }
           } else if (nd.status === 'split') {
             mat.color.setHex(0xfbbf24);
             mat.emissive.setHex(0xd97706);
             mat.emissiveIntensity = 0.75;
             box.scale.setScalar(1.06);
+            lblCol = 0xfef08a;
           } else if (nd.status === 'skip') {
             mat.color.setHex(0xf43f5e);
             mat.emissive.setHex(0x9f1239);
             mat.emissiveIntensity = 0.5;
             box.scale.setScalar(0.92);
+            lblCol = 0xfda4af;
           } else {
             mat.color.setHex(0x38bdf8);
             mat.emissive.setHex(0x0284c7);
             mat.emissiveIntensity = 0.25;
             box.scale.setScalar(1.0);
           }
+          setTroikaLabel(segLabels[i], `[${nd.l},${nd.r}]=${nd.val}`, nd.x, nd.y + 0.36, nd.z + 0.1, lblCol, true);
+
           if (nd.parentIdx >= 0 && f.segNodes![nd.parentIdx]) {
             const p = f.segNodes![nd.parentIdx];
             edge.visible = true;
@@ -1986,6 +2299,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
             sp.visible = false;
             ring.visible = false;
             edge.visible = false;
+            setTroikaLabel(trieLabels[i], '', 0, 0, 0, 0xf8fafc, false);
             continue;
           }
           sp.visible = true;
@@ -1993,19 +2307,30 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           sp.rotation.y = tNow * 0.8 + i * 0.2;
           ring.visible = nd.isEnd;
           ring.position.set(nd.x, nd.y, nd.z);
+          let lblCol = 0xe2e8f0;
           if (f.trieFoundIdx === i) {
             mat.color.setHex(0x10b981);
             mat.emissive.setHex(0x10b981);
             mat.emissiveIntensity = 1.3;
+            lblCol = 0x6ee7b7;
+            if (stepChanged) {
+              for (let s = 0; s < 6; s++) {
+                csParticlePool.spawn(nd.x, nd.y, nd.z, (Math.random() - 0.5) * 1.8, (Math.random() - 0.2) * 1.8, (Math.random() - 0.5) * 1.8, 0.8, 0.9, 0x10b981);
+              }
+            }
           } else if (activeSet.has(i)) {
             mat.color.setHex(0xfbbf24);
             mat.emissive.setHex(0xf59e0b);
             mat.emissiveIntensity = 0.9;
+            lblCol = 0xfef08a;
           } else {
             mat.color.setHex(0x38bdf8);
             mat.emissive.setHex(0x0284c7);
             mat.emissiveIntensity = 0.25;
           }
+          const chTxt = nd.char || 'ROOT';
+          setTroikaLabel(trieLabels[i], chTxt, nd.x, nd.y + 0.4, nd.z, lblCol, true);
+
           if (nd.parentIdx >= 0 && f.trieNodes[nd.parentIdx]) {
             const p = f.trieNodes[nd.parentIdx];
             edge.visible = true;
@@ -2019,6 +2344,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       } else if (m === 'dp_table_3d' && f.dpGrid) {
         const depSet = new Set((f.dpDeps || []).map(([r, c]) => `${r},${c}`));
         const traceSet = new Set((f.dpTrace || []).map(([r, c]) => `${r},${c}`));
+        let focusFound = false;
         for (let i = 0; i < 5; i++) {
           for (let w = 0; w < 8; w++) {
             const val = f.dpGrid[i]?.[w] ?? 0;
@@ -2037,6 +2363,11 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
               mat.color.setHex(0xfbbf24);
               mat.emissive.setHex(0xd97706);
               mat.emissiveIntensity = 0.95;
+              focusFound = true;
+              setTroikaLabel(dpFocusLbl, `dp[${i}][${w}]=${val}`, cell.position.x, cell.scale.y + 0.45, cell.position.z, 0xfef08a, true);
+              if (stepChanged) {
+                csParticlePool.spawn(cell.position.x, cell.scale.y + 0.12, cell.position.z, (Math.random() - 0.5) * 1.1, 1.0, (Math.random() - 0.5) * 1.1, 0.6, 0.85, 0xfbbf24);
+              }
             } else if (depSet.has(kStr)) {
               mat.color.setHex(0x22d3ee);
               mat.emissive.setHex(0x0891b2);
@@ -2052,6 +2383,9 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
             }
           }
         }
+        if (!focusFound) {
+          setTroikaLabel(dpFocusLbl, '', 0, 0, 0, 0xfef08a, false);
+        }
       } else if (m === 'flow_network_3d' && f.flowEdges) {
         const augSet = new Set<string>();
         const ap = f.flowAugPath || [];
@@ -2065,6 +2399,9 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           const inAug = augNodeSet.has(i);
           mat.emissiveIntensity = inAug ? 1.05 : 0.4;
           sp.scale.setScalar(inAug ? 1.15 + Math.sin(tNow * 4) * 0.05 : 1);
+          const [nx, ny, nz] = FLOW_NODES_3D[i];
+          const txt = i === 0 ? 'S' : i === 5 ? `T (Σ=${f.flowTotal ?? 0})` : `N${i}`;
+          setTroikaLabel(flowNodeLabels[i], txt, nx, ny + 0.58, nz, inAug ? 0xfef08a : i === 5 ? 0xfbbf24 : 0xe2e8f0, true);
         });
         f.flowEdges.forEach((fe, idx) => {
           const pipe = flowPipes[idx];
@@ -2078,7 +2415,35 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
           pipe.coreMat.emissive.setHex(onAug ? 0xf59e0b : fe.flow > 0 ? 0x059669 : 0x0f172a);
           pipe.coreMat.emissiveIntensity = onAug ? 1.1 : fe.flow > 0 ? 0.65 : 0.1;
           pipe.outerMat.opacity = onAug ? 0.45 : 0.22;
+          setTroikaLabel(
+            flowEdgeLabels[idx],
+            `${fe.flow}/${fe.cap}`,
+            (ax + bx) * 0.5,
+            (ay + by) * 0.5 + 0.24,
+            (az + bz) * 0.5,
+            onAug ? 0xfef08a : 0xa7f3d0,
+            true
+          );
         });
+
+        if (ap.length >= 2) {
+          const segCount = ap.length - 1;
+          const cycle = (tNow * 1.15) % segCount;
+          const segIdx = Math.min(segCount - 1, Math.floor(cycle));
+          const segT = cycle - segIdx;
+          const a = FLOW_NODES_3D[ap[segIdx]];
+          const b = FLOW_NODES_3D[ap[segIdx + 1]];
+          if (a && b) {
+            const px = THREE.MathUtils.lerp(a[0], b[0], segT);
+            const py = THREE.MathUtils.lerp(a[1], b[1], segT);
+            const pz = THREE.MathUtils.lerp(a[2], b[2], segT);
+            csPacketOrb.visible = true;
+            csPacketOrb.position.set(px, py, pz);
+            if (cycle < 0.06) csPacketTrail.clear();
+            csPacketTrail.pushAndRender(px, py, pz, camera, 0.01, 30);
+            packetShown = true;
+          }
+        }
       } else if (m === 'spatial_octree_3d') {
         const visSet = new Set((f.octVisited || []).map(([x, y, z]) => `${x},${y},${z}`));
         const frontSet = new Set((f.octFrontier || []).map(([x, y, z]) => `${x},${y},${z}`));
@@ -2094,6 +2459,9 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
             mat.emissiveIntensity = 1.2;
             mat.opacity = 0.95;
             mesh.scale.setScalar(1.12);
+            if (stepChanged) {
+              csParticlePool.spawn(mesh.position.x, mesh.position.y + 0.15, mesh.position.z, (Math.random() - 0.5) * 1.2, 1.0, (Math.random() - 0.5) * 1.2, 0.65, 0.9, 0xfbbf24);
+            }
           } else if (pathSet.has(k)) {
             mat.color.setHex(0x10b981);
             mat.emissive.setHex(0x059669);
@@ -2122,8 +2490,17 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
         });
       }
 
+      if (!packetShown && csPacketOrb.visible) {
+        csPacketOrb.visible = false;
+        csPacketTrail.clear();
+      }
+
+      csParticlePool.update(dt, 0);
       controls.update();
-      renderer.render(scene, camera);
+      updateBillboardLabels(scene, camera);
+
+      if (pipeline) pipeline.render(dt);
+      else renderer.render(scene, camera);
 
       if (isSoftwareGl) afterDraw(tick);
       else rafId = requestAnimationFrame(tick);
@@ -2166,7 +2543,14 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       controls.dispose();
       renderer.domElement.removeEventListener('webglcontextlost', onLost);
       renderer.domElement.removeEventListener('webglcontextrestored', onRestored);
+      pipeline?.dispose();
+      csParticlePool.dispose();
+      csPacketTrail.dispose();
       scene.traverse((obj) => {
+        if (obj.userData?.isTroikaLabel && typeof (obj as any).dispose === 'function') {
+          (obj as any).dispose();
+          return;
+        }
         if ((obj as THREE.Mesh).isMesh || (obj as THREE.Line).isLine || (obj as THREE.LineSegments).isLineSegments) {
           const m = obj as THREE.Mesh;
           m.geometry.dispose();

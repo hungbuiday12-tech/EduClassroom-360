@@ -3,188 +3,180 @@ import { LectureStep } from '../types';
 export const PHYSICS_CUSTOM_LECTURE_STEPS: Record<string, LectureStep[]> = {
   'phys-9-mech-heat': [
     {
-      stepTitle: '1. Vận tốc trung bình & Tư duy chia chặng',
+      stepTitle: '1. Động năng của vật chuyển động W_đ = ½mv²',
       stepType: 'intuition',
       conceptSection:
-        'Vận tốc trung bình ($v_{tb}$) trên một hành trình đặc trưng cho mức độ nhanh chậm tính trên **toàn bộ quãng đường** và **toàn bộ thời gian** đi hết quãng đường đó. Điểm cốt lõi nhất là $v_{tb}$ là thương số của tổng quãng đường chia tổng thời gian, hoàn toàn **không phải** trung bình cộng đại số các vận tốc thành phần (trừ trường hợp đặc biệt thời gian đi các chặng bằng nhau).',
+        'Theo chương trình GDPT 2018 KHTN 9 (Bài 2), mọi vật đang chuyển động đều mang năng lượng gọi là **động năng** ($W_đ$). Động năng phụ thuộc vào khối lượng $m$ và đặc biệt tỉ lệ với **bình phương** tốc độ $v^2$.',
       formulaSection: {
-        primaryFormula: 'v_{tb} = \\frac{s_1 + s_2 + \\dots + s_n}{t_1 + t_2 + \\dots + t_n} = \\frac{\\sum s}{\\sum t}',
+        primaryFormula: 'W_đ = \\frac{1}{2} m v^2 \\quad (\\text{J})',
         secondaryFormulas: [
-          '\\text{Nếu } s_1 = s_2 = \\frac{S}{2} \\implies v_{tb} = \\frac{2 v_1 v_2}{v_1 + v_2}',
-          '\\text{Nếu } t_1 = t_2 = \\frac{t}{2} \\implies v_{tb} = \\frac{v_1 + v_2}{2}'
+          '1\\text{ m/s} = 3{,}6\\text{ km/h}, \\qquad 1\\text{ kJ} = 1000\\text{ J}',
+          'v' + ' \\text{ tăng } 2 \\text{ lần} \\implies W_đ \\text{ tăng } 4 \\text{ lần}'
         ],
         variablesNote:
-          '• $s_i$: quãng đường chặng thứ $i$ (đơn vị chuẩn $\\text{m}$ hoặc $\\text{km}$).\n• $t_i = \\frac{s_i}{v_i}$: thời gian thực tế đi hết chặng $i$ (đơn vị $\\text{s}$ hoặc $\\text{h}$).\n• Lưu ý đổi đồng nhất đơn vị: $1\\text{ m/s} = 3{,}6\\text{ km/h}$.'
+          '• $m$: khối lượng của vật (đổi về $\\text{kg}$, $1\\text{ tấn} = 1000\\text{ kg}$).\n• $v$: tốc độ tức thời (đổi về $\\text{m/s}$ bằng cách chia $3{,}6$ từ $\\text{km/h}$).\n• $W_đ$: động năng (đơn vị Jun, $\\text{J}$).'
       },
       deepDiveSection:
-        'Tại sao khi xe đi nửa quãng đường đầu với $40\\text{ km/h}$ và nửa sau với $60\\text{ km/h}$ thì vận tốc trung bình lại là $48\\text{ km/h}$ chứ không phải $50\\text{ km/h}$?\n\nBởi vì cùng một độ dài $S/2$, khi chạy chậm ($40\\text{ km/h}$) xe tốn **nhiều thời gian hơn** so với lúc chạy nhanh ($60\\text{ km/h}$). Thời gian chạy chậm dài hơn nên kéo vận tốc trung bình xuống thấp hơn mức trung bình cộng ($48 < 50$). Cụ thể với mọi $v_1 \\ne v_2$, hiệu số cho thấy ngay $\\frac{2v_1 v_2}{v_1 + v_2} < \\frac{v_1 + v_2}{2}$.',
+        'Tại sao khi xe ô tô chạy gấp đôi tốc độ (từ $40\\text{ km/h}$ lên $80\\text{ km/h}$) thì quãng đường phanh tối thiểu lại tăng gấp 4 lần?\n\nVì theo $W_đ = \\frac{1}{2}mv^2$, động năng tăng $2^2 = 4$ lần, nên lực hãm phanh $F_{\\text{hãm}}$ không đổi phải thực hiện công $A = F_{\\text{hãm}} \\cdot s = W_đ$ trên quãng đường $s$ dài gấp 4 lần mới triệt tiêu hết động năng!',
       teacherExplanation:
-        'Giả sử một xe đi nửa quãng đường đầu với tốc độ $40\\text{ km/h}$ và nửa quãng đường sau với $60\\text{ km/h}$. Rất nhiều học sinh vội lấy $(40 + 60)/2 = 50\\text{ km/h}$ — nhưng kết quả đó SAI vì thời gian ở hai chặng khác nhau.',
-      formulaHighlight: 'v_{tb} = \\frac{s_1 + s_2 + \\dots}{t_1 + t_2 + \\dots}',
+        'Trước khi thay số vào $W_đ = \\frac{1}{2}mv^2$, luôn kiểm tra 2 bẫy đơn vị kinh điển: khối lượng phải tính bằng kg (không phải g hay tấn) và vận tốc tính bằng m/s (không phải km/h).',
+      formulaHighlight: 'W_đ = \\frac{1}{2}mv^2',
       keyTakeaway:
-        'Luôn đặt ẩn $S$ (hoặc $t$) để tính tường minh từng thời gian $t_i = s_i/v_i$ rồi mới lấy $\\sum s / \\sum t$; tuyệt đối không cộng vội $v_1 + v_2$ chia đôi.',
+        'Động năng tỉ lệ bậc nhất với khối lượng $m$ và tỉ lệ bậc hai với tốc độ $v^2$.',
       miniQuiz: [
         {
           id: 'p9mh-s1-q1',
           question:
-            'Một người đi xe đạp trên nửa quãng đường đầu với tốc độ $12\\text{ km/h}$ và nửa quãng đường sau với tốc độ $20\\text{ km/h}$. Tốc độ trung bình trên cả quãng đường là:',
-          options: ['A. $16\\text{ km/h}$', 'B. $15\\text{ km/h}$', 'C. $14{,}5\\text{ km/h}$', 'D. $17\\text{ km/h}$'],
-          correctIndex: 1,
+            'Một ô tô khối lượng $1{,}5\\text{ tấn}$ chạy đều với tốc độ $72\\text{ km/h}$. Động năng của ô tô bằng:',
+          options: ['A. $300\\text{ kJ}$', 'B. $600\\text{ kJ}$', 'C. $30\\text{ kJ}$', 'D. $150\\text{ kJ}$'],
+          correctIndex: 0,
           explanation:
-            'Vì đi hai nửa quãng đường bằng nhau nên $v_{tb} = \\frac{2 v_1 v_2}{v_1 + v_2} = \\frac{2 \\cdot 12 \\cdot 20}{12 + 20} = \\frac{480}{32} = 15\\text{ km/h}$.'
+            'Đổi $m = 1500\\text{ kg}$, $v = 72/3{,}6 = 20\\text{ m/s}$. Suy ra $W_đ = \\frac{1}{2} \\cdot 1500 \\cdot 20^2 = 300\\,000\\text{ J} = 300\\text{ kJ}$.'
         },
         {
           id: 'p9mh-s1-q2',
           question:
-            'Trong trường hợp nào sau đây, tốc độ trung bình của vật chuyển động trên hai chặng ĐÚNG BẰNG trung bình cộng $\\frac{v_1 + v_2}{2}$?',
-          options: [
-            'A. Khi độ dài hai chặng đường bằng nhau ($s_1 = s_2$)',
-            'B. Khi thời gian đi hai chặng bằng nhau ($t_1 = t_2$)',
-            'C. Khi $v_1 > v_2$ bất kỳ',
-            'D. Luôn đúng với mọi chuyển động thẳng'
-          ],
-          correctIndex: 1,
+            'Nếu một vật giữ nguyên khối lượng nhưng tăng tốc độ gấp $3$ lần thì động năng của vật tăng lên bao nhiêu lần?',
+          options: ['A. $3$ lần', 'B. $6$ lần', 'C. $9$ lần', 'D. Không đổi'],
+          correctIndex: 2,
           explanation:
-            'Khi $t_1 = t_2 = t_0$, tổng quãng đường là $v_1 t_0 + v_2 t_0 = (v_1 + v_2)t_0$, chia cho tổng thời gian $2t_0$ sẽ ra đúng $\\frac{v_1 + v_2}{2}$.'
+            'Do $W_đ = \\frac{1}{2}mv^2$ tỉ lệ với $v^2$ nên khi $v$ tăng $3$ lần thì $W_đ$ tăng $3^2 = 9$ lần.'
         }
       ],
       miniEssay: {
         id: 'p9mh-s1-e1',
         question:
-          'Một ca nô đi trong $2\\text{ giờ}$ đầu với tốc độ $30\\text{ km/h}$ và $1\\text{ giờ}$ sau với tốc độ $45\\text{ km/h}$. Hãy tính tốc độ trung bình của ca nô trên cả hành trình và giải thích ngắn gọn vì sao không thể lấy $(30+45)/2$.',
-        hint: 'Tính $s_1 = v_1 t_1$, $s_2 = v_2 t_2$, rồi lấy tổng $s_1 + s_2$ chia cho tổng $t_1 + t_2$.',
+          'So sánh động năng của một xe máy $150\\text{ kg}$ chạy ở $36\\text{ km/h}$ và $72\\text{ km/h}$, từ đó giải thích nguyên tắc an toàn giao thông.',
+        hint: 'Đổi $36\\text{ km/h} = 10\\text{ m/s}$, $72\\text{ km/h} = 20\\text{ m/s}$ rồi tính $W_đ = \\frac{1}{2}mv^2$.',
         rubricChecklist: [
-          'Tính đúng quãng đường từng chặng: $s_1 = 60\\text{ km}$, $s_2 = 45\\text{ km}$.',
-          'Áp dụng đúng công thức $v_{tb} = \\frac{60 + 45}{2 + 1} = 35\\text{ km/h}$.',
-          'Giải thích được do thời gian hai chặng khác nhau ($2\\text{ h} \\ne 1\\text{ h}$) nên không lấy trung bình cộng.'
+          'Tính đúng $W_{đ1} = 7{,}5\\text{ kJ}$ và $W_{đ2} = 30\\text{ kJ}$.',
+          'Kết luận tốc độ tăng 2 lần làm động năng (và công hãm phanh) tăng 4 lần.'
         ],
         sampleAnswer:
-          'Quãng đường chặng 1: $s_1 = 30 \\cdot 2 = 60\\text{ km}$. Quãng đường chặng 2: $s_2 = 45 \\cdot 1 = 45\\text{ km}$.\nTổng quãng đường $S = 60 + 45 = 105\\text{ km}$, tổng thời gian $t = 2 + 1 = 3\\text{ h}$.\nTốc độ trung bình: $v_{tb} = \\frac{105}{3} = 35\\text{ km/h}$. Không lấy $(30+45)/2 = 37{,}5\\text{ km/h}$ vì thời gian đi ở mỗi tốc độ khác nhau ($2\\text{ h}$ và $1\\text{ h}$).'
+          'Ở $36\\text{ km/h} = 10\\text{ m/s}$: $W_{đ1} = 0{,}5 \\cdot 150 \\cdot 10^2 = 7500\\text{ J} = 7{,}5\\text{ kJ}$.\nỞ $72\\text{ km/h} = 20\\text{ m/s}$: $W_{đ2} = 0{,}5 \\cdot 150 \\cdot 20^2 = 30\\,000\\text{ J} = 30\\text{ kJ}$.\nKhi tốc độ tăng 2 lần, động năng tăng 4 lần làm quãng đường phanh tăng 4 lần, nên chạy quá tốc độ cực kỳ nguy hiểm.'
       }
     },
     {
-      stepTitle: '2. Công cơ học, Công suất & Bảo toàn Cơ năng',
+      stepTitle: '2. Thế năng trọng trường W_t = Ph = mgh',
       stepType: 'concept',
       conceptSection:
-        '• **Công cơ học ($A$)**: Đo phần năng lượng được truyền cho vật nhờ tác dụng của lực $\\vec{F}$ làm vật dịch chuyển theo phương không vuông góc với lực.\n• **Công suất ($\\mathcal{P}$)**: Đại lượng đặc trưng cho tốc độ thực hiện công nhanh hay chậm (công sinh ra trong $1\\text{ giây}$).\n• **Cơ năng ($W$)**: Tổng động năng ($W_đ$, năng lượng do chuyển động) và thế năng trọng trường ($W_t$, năng lượng do độ cao). Trong hệ kín không ma sát, tổng này luôn giữ nguyên.',
+        'Vật ở độ cao $h$ so với một mốc chọn (thường lấy mặt đất) có khả năng sinh công khi rơi xuống — năng lượng này gọi là **thế năng trọng trường** ($W_t$).',
       formulaSection: {
-        primaryFormula: 'W = W_đ + W_t = \\frac{1}{2}mv^2 + mgh = \\text{hằng số}',
+        primaryFormula: 'W_t = P \\cdot h = m g h',
         secondaryFormulas: [
-          'A = F \\cdot s \\quad (\\text{khi } \\vec{F} \\text{ cùng hướng dịch chuyển})',
-          'P = \\frac{A}{t} = F \\cdot v'
+          'P = 10m \\text{ (KHTN 9)} \\quad \\text{hoặc} \\quad P = mg \\; (g \\approx 9{,}8\\text{ m/s}^2)',
+          '\\Delta W_t = P(h_2 - h_1)'
         ],
         variablesNote:
-          '• $m$ (kg): khối lượng; $v$ (m/s): tốc độ; $h$ (m): độ cao so với mốc thế năng.\n• $g \\approx 9{,}8\\text{ m/s}^2$ (hoặc $10\\text{ m/s}^2$).\n• $A, W$ đo bằng Jun ($\\text{J}$); công suất $P$ đo bằng Oát ($\\text{W}$, $1\\text{ kW} = 1000\\text{ W}$).'
+          '• $P$: trọng lượng vật ($\\text{N}$); $m$: khối lượng ($\\text{kg}$).\n• $h$: độ cao so với **mốc thế năng** ($\\text{m}$).\n• Thế năng phụ thuộc vào mốc chọn độ cao: cùng một quyển sách trên bàn sẽ có $W_t > 0$ so với sàn nhà, nhưng $W_t = 0$ so với mặt bàn.'
       },
       deepDiveSection:
-        'Khi một lực tác dụng vuông góc với phương chuyển động (như trọng lực khi xe chạy trên đường nằm ngang), công của lực đó bằng $0$ vì không làm thay đổi tốc độ theo phương ngang.\n\nKhi thả rơi vật không ma sát từ độ cao $h_0$: tại đỉnh $v = 0 \\implies W = W_{t,\\max} = mgh_0$; khi rơi xuống, $h$ giảm làm $W_t$ chuyển hóa dần thành $W_đ = \\frac{1}{2}mv^2$; ngay trước khi chạm đất ($h = 0$), toàn bộ thế năng biến thành động năng cực đại $\\frac{1}{2}mv_{\\max}^2 = mgh_0 \\implies v_{\\max} = \\sqrt{2gh_0}$ (không phụ thuộc khối lượng $m$!).',
+        'Trên công trường hay đập thủy điện, người ta dùng thế năng của búa máy hay cột nước ở độ cao $h$ lớn: khi thả búa máy khối lượng $M$ từ độ cao $h$, thế năng $W_t = Ph$ chuyển hóa thành động năng đóng sâu cọc bê tông; nước hồ chứa trên cao chảy qua tuabin phát điện với công suất tỉ lệ với cột áp $h$.',
       teacherExplanation:
-        'Công cơ học, công suất và định luật bảo toàn cơ năng liên kết chặt chẽ thành một chuỗi: lực sinh công làm biến đổi động năng, và trong trọng trường lý tưởng thì độ giảm thế năng bằng đúng độ tăng động năng.',
-      formulaHighlight: 'W = W_đ + W_t = \\frac{1}{2}mv^2 + mgh = \\text{hằng số}',
+        'Luôn chỉ rõ "chọn mốc thế năng tại đâu" (mặt đất, đáy giếng hay mặt bàn) trước khi viết $h$ và tính $W_t$.',
+      formulaHighlight: 'W_t = P \\cdot h = mgh',
       keyTakeaway:
-        'Đổi chuẩn đơn vị hệ SI trước khi tính: $m$ (kg), $h$ (m), $v$ (m/s), $t$ (s), $P$ (W). Tốc độ chạm đất khi rơi tự do $v = \\sqrt{2gh}$ độc lập với khối lượng.',
+        'Thế năng trọng trường phụ thuộc vào trọng lượng $P$ và độ cao $h$ tính từ mốc thế năng đã chọn.',
       miniQuiz: [
         {
           id: 'p9mh-s2-q1',
           question:
-            'Một cần cẩu nâng thùng hàng $500\\text{ kg}$ lên cao $12\\text{ m}$ đều đặn trong $20\\text{ s}$ ($g = 10\\text{ m/s}^2$). Công suất của cần cẩu là:',
-          options: ['A. $3\\,000\\text{ W}$', 'B. $60\\,000\\text{ W}$', 'C. $300\\text{ W}$', 'D. $1\\,500\\text{ W}$'],
-          correctIndex: 0,
+            'Một thùng hàng khối lượng $40\\text{ kg}$ được cẩu lên đặt tại tầng cao $5\\text{ m}$ so với mặt sân (lấy $P = 10m$). Thế năng trọng trường của thùng hàng so với mặt sân là:',
+          options: ['A. $200\\text{ J}$', 'B. $2000\\text{ J}$', 'C. $400\\text{ J}$', 'D. $20\\,000\\text{ J}$'],
+          correctIndex: 1,
           explanation:
-            'Trọng lượng $P = 10m = 5000\\text{ N}$. Công nâng $A = P \\cdot h = 5000 \\cdot 12 = 60\\,000\\text{ J}$. Công suất $\\mathcal{P} = \\frac{A}{t} = \\frac{60\\,000}{20} = 3\\,000\\text{ W}$.'
+            'Trọng lượng $P = 10 \\cdot 40 = 400\\text{ N}$. Thế năng $W_t = P \\cdot h = 400 \\cdot 5 = 2000\\text{ J}$.'
         },
         {
           id: 'p9mh-s2-q2',
           question:
-            'Một vật $m = 2\\text{ kg}$ rơi tự do từ độ cao $h_0 = 5\\text{ m}$ ($g = 10\\text{ m/s}^2$). Khi vật ở độ cao $2\\text{ m}$, động năng của vật bằng:',
-          options: ['A. $40\\text{ J}$', 'B. $60\\text{ J}$', 'C. $100\\text{ J}$', 'D. $20\\text{ J}$'],
+            'Một chiếc đèn chùm nặng $5\\text{ kg}$ treo cách mặt sàn $3\\text{ m}$ và cách mặt bàn $2{,}2\\text{ m}$. Thế năng trọng trường của đèn chọn mốc tại mặt bàn bằng bao nhiêu ($g = 10\\text{ m/s}^2$)?',
+          options: ['A. $150\\text{ J}$', 'B. $110\\text{ J}$', 'C. $40\\text{ J}$', 'D. $0\\text{ J}$'],
           correctIndex: 1,
           explanation:
-            'Cơ năng $W = mgh_0 = 2 \\cdot 10 \\cdot 5 = 100\\text{ J}$. Tại $h = 2\\text{ m}$, $W_t = 2 \\cdot 10 \\cdot 2 = 40\\text{ J} \\implies W_đ = W - W_t = 60\\text{ J}$.'
+            'Khi chọn mốc tại mặt bàn, độ cao $h = 2{,}2\\text{ m} \\implies W_t = 5 \\cdot 10 \\cdot 2{,}2 = 110\\text{ J}$.'
         }
       ],
       miniEssay: {
         id: 'p9mh-s2-e1',
         question:
-          'Thả một quả bóng khối lượng $0{,}5\\text{ kg}$ rơi tự do từ độ cao $20\\text{ m}$ (lấy $g = 10\\text{ m/s}^2$, bỏ qua cản không khí). Tính cơ năng ban đầu và tìm độ cao nơi động năng bằng 3 lần thế năng.',
-        hint: 'Đặt $W_đ = 3 W_t$ rồi thay vào $W = W_đ + W_t = 4 W_t = mgh_0$.',
+          'Thả một quả cầu khối lượng $2\\text{ kg}$ từ độ cao $15\\text{ m}$ so với mặt đất ($g = 10\\text{ m/s}^2$). Tính thế năng ban đầu và độ giảm thế năng khi quả cầu rơi xuống đến độ cao $5\\text{ m}$.',
+        hint: 'Tính $W_{t1}$ tại $h_1 = 15\\text{ m}$ và $W_{t2}$ tại $h_2 = 5\\text{ m}$, lấy hiệu $W_{t1} - W_{t2}$.',
         rubricChecklist: [
-          'Tính đúng cơ năng ban đầu $W = mgh_0 = 0{,}5 \\cdot 10 \\cdot 20 = 100\\text{ J}$.',
-          'Thiết lập được phương trình $W_đ + W_t = 4 W_t = W$.',
-          'Suy ra $h = \\frac{h_0}{4} = 5\\text{ m}$.'
+          'Tính đúng $W_{t1} = 300\\text{ J}$ và $W_{t2} = 100\\text{ J}$.',
+          'Suy ra độ giảm thế năng $\\Delta W_t = 200\\text{ J}$ (bằng động năng vật thu được nếu bỏ qua cản).'
         ],
         sampleAnswer:
-          'Chọn mốc thế năng tại mặt đất. Cơ năng ban đầu của bóng: $W = mgh_0 = 0{,}5 \\cdot 10 \\cdot 20 = 100\\text{ J}$.\nTại vị trí $W_đ = 3W_t$, theo bảo toàn cơ năng: $W = W_đ + W_t = 4W_t = 4mgh$.\nSuy ra $4mgh = mgh_0 \\implies h = \\frac{h_0}{4} = \\frac{20}{4} = 5\\text{ m}$.'
+          'Chọn mốc thế năng tại mặt đất. Ban đầu tại $h_1 = 15\\text{ m}$: $W_{t1} = mgh_1 = 2 \\cdot 10 \\cdot 15 = 300\\text{ J}$.\nTại $h_2 = 5\\text{ m}$: $W_{t2} = 2 \\cdot 10 \\cdot 5 = 100\\text{ J}$.\nĐộ giảm thế năng là $300 - 100 = 200\\text{ J}$.'
       }
     },
     {
-      stepTitle: '3. Nhiệt lượng & Phương trình Cân bằng nhiệt',
+      stepTitle: '3. Chuyển hóa Động năng – Thế năng & Cơ năng',
       stepType: 'derivation',
       conceptSection:
-        'Nhiệt năng truyền tự phát từ vật có nhiệt độ cao sang vật có nhiệt độ thấp cho đến khi nhiệt độ hai vật bằng nhau (trạng thái **cân bằng nhiệt**). Nhiệt lượng là phần nhiệt năng vật nhận thêm hoặc mất đi trong quá trình truyền nhiệt đó.',
+        'Trong quá trình vật rơi, ném lên hay con lắc dao động, động năng và thế năng không đứng yên tách rời mà **chuyển hóa qua lại lẫn nhau**. Tổng hai dạng năng lượng này gọi là **cơ năng** $W = W_đ + W_t$.',
       formulaSection: {
-        primaryFormula: '\\sum Q_{\\text{tỏa}} = \\sum Q_{\\text{thu}} \\iff m_1 c_1 (t_1 - t) = m_2 c_2 (t - t_2)',
+        primaryFormula: 'W = W_đ + W_t = \\frac{1}{2}mv^2 + mgh = \\text{hằng số}',
         secondaryFormulas: [
-          'Q = m \\cdot c \\cdot \\Delta t',
-          'Q_{\\text{nhiên liệu}} = q \\cdot m'
+          'v_{\\text{chạm đất}} = \\sqrt{2 g h_0}',
+          'W_đ(\\text{tại } h) = m g (h_0 - h)'
         ],
         variablesNote:
-          '• $c$: nhiệt dung riêng ($\\text{J/(kg}\\cdot\\text{K)}$), cho biết nhiệt lượng cần để $1\\text{ kg}$ chất đó tăng thêm $1^\\circ\\text{C}$ (nước có $c = 4200\\text{ J/(kg}\\cdot\\text{K)}$).\n• $t_1 > t > t_2$: luôn đặt $\\Delta t > 0$ cho cả hai vế ($t_1 - t$ với vật tỏa nhiệt; $t - t_2$ với vật thu nhiệt).'
+          '• Khi vật đi xuống: $h$ giảm ($W_t$ giảm) và $v$ tăng ($W_đ$ tăng).\n• Khi ném vật lên cao: $v$ giảm ($W_đ$ giảm) chuyển dần thành $W_t$ tăng.\n• Nếu không có lực cản không khí, độ giảm thế năng bằng đúng độ tăng động năng.'
       },
       deepDiveSection:
-        'Sai lầm kinh điển khi viết phương trình cân bằng nhiệt là viết nhầm dấu $(t - t_1)$ cho vật nóng khiến phương trình ra kết quả vô lý hoặc nhiệt độ cân bằng vượt ra ngoài khoảng $[t_{\\text{thấp}}, t_{\\text{cao}}]$.\n\nNgoài ra, nếu có $H\\%$ hiệu suất truyền nhiệt (ví dụ bếp đun chỉ truyền $80\\%$ nhiệt lượng cho nước, $20\\%$ thất thoát ra môi trường), ta phải viết: $Q_{\\text{có ích}} = H \\cdot Q_{\\text{tỏa}}$, tức $m_{\\text{nước}} c_{\\text{nước}} \\Delta t = 0{,}8 \\cdot Q_{\\text{bếp}}$.',
+        'Một tính chất đẹp của bảo toàn cơ năng là tốc độ chạm đất $v = \\sqrt{2gh_0}$ hoàn toàn **không phụ thuộc khối lượng** $m$ của vật (nếu bỏ qua sức cản không khí). Tại nửa độ cao ban đầu ($h = h_0/2$), thế năng và động năng bằng đúng một nửa cơ năng: $W_đ = W_t = W/2$.',
       teacherExplanation:
-        'Khi hai vật có nhiệt độ khác nhau tiếp xúc, nhiệt năng truyền từ vật nóng sang vật lạnh cho tới khi cùng đạt nhiệt độ cân bằng $t$. Trong hệ cô lập, tổng nhiệt lượng tỏa ra bằng tổng nhiệt lượng thu vào.',
-      formulaHighlight: '\\sum Q_{\\text{tỏa}} = \\sum Q_{\\text{thu}} \\iff m_1 c_1 (t_1 - t) = m_2 c_2 (t - t_2)',
+        'Hãy quan sát đồng thời hai cột năng lượng $W_đ$ và $W_t$ trong mô phỏng: một cột tụt xuống bao nhiêu thì cột kia lập tức dâng lên đúng bấy nhiêu.',
+      formulaHighlight: 'W = \\frac{1}{2}mv^2 + mgh = \\text{hằng số}',
       workedExample: {
         problem:
-          'Thả $0{,}5\\text{ kg}$ nhôm ở $100^\\circ\\text{C}$ ($c_1 = 880\\text{ J/(kg}\\cdot\\text{K)}$) vào $2\\text{ kg}$ nước ở $20^\\circ\\text{C}$ ($c_2 = 4200\\text{ J/(kg}\\cdot\\text{K)}$). Tìm nhiệt độ cân bằng $t$.',
+          'Thả một quả bóng $m = 0{,}5\\text{ kg}$ không vận tốc đầu từ độ cao $h_0 = 20\\text{ m}$ ($g = 10\\text{ m/s}^2$, bỏ qua cản). Tìm độ cao $h$ nơi động năng bằng $3$ lần thế năng.',
         steps: [
-          'Bước 1: Nhiệt lượng nhôm tỏa ra khi hạ từ $100^\\circ\\text{C}$ xuống $t$: $Q_{\\text{tỏa}} = 0{,}5 \\cdot 880 \\cdot (100 - t) = 440(100 - t)$.',
-          'Bước 2: Nhiệt lượng nước thu vào khi tăng từ $20^\\circ\\text{C}$ lên $t$: $Q_{\\text{thu}} = 2 \\cdot 4200 \\cdot (t - 20) = 8400(t - 20)$.',
-          'Bước 3: Cho $Q_{\\text{tỏa}} = Q_{\\text{thu}} \\implies 44000 - 440t = 8400t - 168000 \\implies 8840t = 212000$.'
+          'Bước 1: Cơ năng ban đầu tại $h_0 = 20\\text{ m}$: $W = mgh_0 = 0{,}5 \\cdot 10 \\cdot 20 = 100\\text{ J}$.',
+          'Bước 2: Tại vị trí cần tìm, $W_đ = 3W_t \\implies W = W_đ + W_t = 4W_t = 4mgh$.',
+          'Bước 3: Bảo toàn cơ năng $4mgh = mgh_0 \\implies h = \\frac{h_0}{4} = \\frac{20}{4} = 5\\text{ m}$.'
         ],
-        answer: '$t \\approx 23{,}98^\\circ\\text{C} \\approx 24^\\circ\\text{C}$.'
+        answer: '$h = 5\\text{ m}$ (khi đó $W_t = 25\\text{ J}$, $W_đ = 75\\text{ J}$).'
       },
       keyTakeaway:
-        'Luôn kiểm tra điều kiện hợp lý sau khi giải: nhiệt độ cân bằng $t$ bắt buộc phải nằm giữa $t_{\\text{lạnh}}$ và $t_{\\text{nóng}}$.',
+        'Bỏ qua lực cản không khí: độ giảm thế năng luôn chuyển hóa toàn bộ thành độ tăng động năng.',
       miniQuiz: [
         {
           id: 'p9mh-s3-q1',
           question:
-            'Cần cung cấp nhiệt lượng bao nhiêu để đun nóng $2\\text{ kg}$ nước từ $25^\\circ\\text{C}$ lên $100^\\circ\\text{C}$ ($c = 4200\\text{ J/(kg}\\cdot\\text{K)}$)?',
-          options: ['A. $630\\text{ kJ}$', 'B. $840\\text{ kJ}$', 'C. $210\\text{ kJ}$', 'D. $420\\text{ kJ}$'],
-          correctIndex: 0,
+            'Một vật $m = 2\\text{ kg}$ rơi tự do từ độ cao $h_0 = 5\\text{ m}$ ($g = 10\\text{ m/s}^2$). Khi ở độ cao $2\\text{ m}$, động năng của vật là:',
+          options: ['A. $40\\text{ J}$', 'B. $60\\text{ J}$', 'C. $100\\text{ J}$', 'D. $20\\text{ J}$'],
+          correctIndex: 1,
           explanation:
-            '$\\Delta t = 100 - 25 = 75^\\circ\\text{C}$. Nhiệt lượng: $Q = 2 \\cdot 4200 \\cdot 75 = 630\\,000\\text{ J} = 630\\text{ kJ}$.'
+            '$W = 2 \\cdot 10 \\cdot 5 = 100\\text{ J}$, $W_t = 2 \\cdot 10 \\cdot 2 = 40\\text{ J} \\implies W_đ = 100 - 40 = 60\\text{ J}$.'
         },
         {
           id: 'p9mh-s3-q2',
           question:
-            'Vì sao nhiệt độ cân bằng khi thả miếng đồng $100^\\circ\\text{C}$ ($c_{\\text{đồng}} = 380$) vào lượng nước cùng khối lượng ở $20^\\circ\\text{C}$ ($c_{\\text{nước}} = 4200$) lại gần $20^\\circ\\text{C}$ hơn rất nhiều so với $100^\\circ\\text{C}$?',
+            'Ném thẳng đứng một hòn bi lên cao (bỏ qua lực cản). Trong lúc hòn bi đang bay lên, sự chuyển hóa năng lượng là:',
           options: [
-            'A. Vì đồng dẫn nhiệt kém hơn nước',
-            'B. Vì nhiệt dung riêng của nước lớn hơn đồng hơn 11 lần nên cùng nhiệt lượng nước chỉ tăng nhiệt độ rất ít',
-            'C. Vì nước bốc hơi ngay ở $20^\\circ\\text{C}$',
-            'D. Vì đồng nặng hơn nên chìm xuống đáy'
+            'A. Thế năng chuyển hóa thành động năng',
+            'B. Động năng chuyển hóa thành thế năng',
+            'C. Cơ năng tăng dần đến vô cực',
+            'D. Động năng không thay đổi'
           ],
           correctIndex: 1,
           explanation:
-            'Từ $m c_1 (100 - t) = m c_2 (t - 20)$, vì $c_2 = 4200 \\gg c_1 = 380$ nên độ tăng nhiệt $(t - 20)$ của nước nhỏ hơn nhiều lần độ giảm nhiệt $(100 - t)$ của đồng.'
+            'Khi bay lên, tốc độ giảm dần nên động năng giảm dần, còn độ cao tăng nên thế năng tăng lên.'
         }
       ],
       miniEssay: {
         id: 'p9mh-s3-e1',
         question:
-          'Trộn $1\\text{ kg}$ nước ở $80^\\circ\\text{C}$ với $3\\text{ kg}$ nước ở $20^\\circ\\text{C}$ (bỏ qua trao đổi nhiệt với bình và môi trường). Tính nhiệt độ cân bằng của hỗn hợp.',
-        hint: 'Hai chất đều là nước nên nhiệt dung riêng $c$ giống nhau và triệt tiêu ở hai vế.',
+          'Từ độ cao $45\\text{ m}$, thả rơi một vật $1\\text{ kg}$ ($g = 10\\text{ m/s}^2$, bỏ qua cản). Tính vận tốc vật khi chạm đất và khi ở độ cao $25\\text{ m}$.',
+        hint: 'Dùng $v = \\sqrt{2g(h_0 - h)}$.',
         rubricChecklist: [
-          'Viết đúng phương trình cân bằng nhiệt $m_1 c (80 - t) = m_2 c (t - 20)$.',
-          'Triệt tiêu $c$ và thế số $1(80 - t) = 3(t - 20)$.',
-          'Giải đúng $4t = 140 \\implies t = 35^\\circ\\text{C}$.'
+          'Tại mặt đất ($h = 0$): $v = \\sqrt{2 \\cdot 10 \\cdot 45} = 30\\text{ m/s}$.',
+          'Tại $h = 25\\text{ m}$: $v = \\sqrt{2 \\cdot 10 \\cdot (45 - 25)} = 20\\text{ m/s}$.'
         ],
         sampleAnswer:
-          'Áp dụng phương trình cân bằng nhiệt: $Q_{\\text{tỏa}} = Q_{\\text{thu}} \\iff m_1 c (80 - t) = m_2 c (t - 20)$.\nRút gọn $c$ ở hai vế: $1 \\cdot (80 - t) = 3 \\cdot (t - 20) \\iff 80 - t = 3t - 60 \\iff 4t = 140 \\implies t = 35^\\circ\\text{C}$.'
+          'Theo bảo toàn cơ năng $\\frac{1}{2}mv^2 = mg(h_0 - h) \\implies v = \\sqrt{2g(h_0 - h)}$.\n• Khi chạm đất ($h = 0$): $v = \\sqrt{2\\cdot 10\\cdot 45} = 30\\text{ m/s}$.\n• Tại độ cao $25\\text{ m}$: $v = \\sqrt{2\\cdot 10\\cdot(45 - 25)} = 20\\text{ m/s}$.'
       }
     },
     {

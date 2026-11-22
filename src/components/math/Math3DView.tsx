@@ -17,6 +17,9 @@ import {
   Compass,
   Sparkles,
   ArrowLeft,
+  Play,
+  Pause,
+  Scissors,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { MathFormula } from '../common/MathRenderer';
@@ -28,6 +31,16 @@ import {
 } from '../../hooks/useHeadTrackedHologram';
 import { HologramModeControls } from '../common/HologramModeControls';
 import { applySphericalOrbitDelta, subscribeRemoteCommand } from '../../lib/remoteControlBus';
+import {
+  createPostProcessingPipeline,
+  PostProcessPipeline,
+  createTroikaLabel,
+  updateBillboardLabels,
+  createCrispLine2,
+  syncLine2Resolution,
+  GPUParticlePool,
+  OptimizedTrail,
+} from '../../lib/three3DEnhancements';
 
 export type Math3DMode =
   | 'oxyz_vector'
@@ -112,12 +125,22 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   const [bellMu, setBellMu] = useState(0);
   const [bellSigma, setBellSigma] = useState(1.1);
 
+  // Animation & hardware cutaway state
+  const [isAnimating, setIsAnimating] = useState(true);
+  const [showCutaway, setShowCutaway] = useState(false);
+  const isAnimatingRef = useRef<boolean>(true);
+  isAnimatingRef.current = isAnimating;
+
   // WebGL context safety
   const [contextLost, setContextLost] = useState(false);
 
   // Three.js scene refs
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const pipelineRef = useRef<PostProcessPipeline | null>(null);
+  const particlePoolRef = useRef<GPUParticlePool | null>(null);
+  const trailRef = useRef<OptimizedTrail | null>(null);
+  const mathTickRef = useRef<((dt: number, elapsed: number, camera: THREE.Camera) => void) | null>(null);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
   const needsRenderRef = useRef<boolean>(true);
   const isSoftwareGlRef = useRef<boolean>(false);
@@ -175,6 +198,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
+    renderer.localClippingEnabled = true;
     if (!isSoftwareGl) {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -207,23 +231,45 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     const hemiLight = new THREE.HemisphereLight(0x93c5fd, 0x0f172a, 0.72);
     scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.55);
+    const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.75);
     keyLight.position.set(6, 11, 8);
     if (!isSoftwareGl) {
       keyLight.castShadow = true;
       keyLight.shadow.mapSize.set(1024, 1024);
       keyLight.shadow.camera.near = 1;
       keyLight.shadow.camera.far = 30;
+      keyLight.shadow.camera.left = -8;
+      keyLight.shadow.camera.right = 8;
+      keyLight.shadow.camera.top = 8;
+      keyLight.shadow.camera.bottom = -8;
+      keyLight.shadow.bias = -0.0005;
+      keyLight.shadow.normalBias = 0.02;
     }
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.85);
-    fillLight.position.set(-7, -3, -6);
+    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.95);
+    fillLight.position.set(-7, 4, -6);
     scene.add(fillLight);
 
-    // Reflective dark slate base + crisp grid
+    // Studio pedestal disc + glowing horizon collar + crisp grid
+    const stageDisc = new THREE.Mesh(
+      new THREE.CylinderGeometry(8.2, 8.6, 0.08, 64),
+      new THREE.MeshStandardMaterial({ color: 0x070c18, roughness: 0.68, metalness: 0.28 })
+    );
+    stageDisc.position.y = -0.055;
+    stageDisc.receiveShadow = !isSoftwareGl;
+    scene.add(stageDisc);
+
+    const stageRim = new THREE.Mesh(
+      new THREE.TorusGeometry(8.2, 0.028, 12, 72),
+      new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x1d4ed8, emissiveIntensity: 0.6, roughness: 0.25, metalness: 0.7 })
+    );
+    stageRim.rotation.x = Math.PI / 2;
+    stageRim.position.y = -0.012;
+    scene.add(stageRim);
+
     const grid = new THREE.GridHelper(16, 16, 0x3b82f6, 0x1e293b);
-    grid.position.y = -0.01;
+    grid.position.y = -0.008;
     scene.add(grid);
 
     // Group for dynamic interactive models
@@ -232,17 +278,72 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     dynamicGroupRef.current = dynamicGroup;
     needsRenderRef.current = true;
 
+    // Postprocessing pipeline (Bloom + SMAA on GPU) & bounded GPU Particle Pool / LOD Trail
+    const initW = Math.max(1, container.clientWidth);
+    const initH = Math.max(300, container.clientHeight);
+    const pipeline = !isSoftwareGl
+      ? createPostProcessingPipeline(renderer, scene, camera, {
+          bloomIntensity: 0.42,
+          luminanceThreshold: 0.78,
+          enableSmaa: true,
+        })
+      : null;
+    pipeline?.setSize(initW, initH);
+    pipelineRef.current = pipeline;
+
+    const particlePool = new GPUParticlePool(72, 0.048, 0xfacc15, 0xf59e0b);
+    scene.add(particlePool.mesh);
+    particlePoolRef.current = particlePool;
+
+    const trail = new OptimizedTrail(64, 0xfacc15, 0.88);
+    trail.line.visible = false;
+    scene.add(trail.line);
+    trailRef.current = trail;
+
     const anaglyphEffect = new AnaglyphEffect(renderer);
-    anaglyphEffect.setSize(container.clientWidth, Math.max(container.clientHeight, 300));
+    anaglyphEffect.setSize(initW, initH);
     const stereoEffect = new StereoEffect(renderer);
-    stereoEffect.setSize(container.clientWidth, Math.max(container.clientHeight, 300));
+    stereoEffect.setSize(initW, initH);
     let lastHolo: HologramDisplayMode = 'normal';
 
-    // On-demand + damping animation loop (0% GPU when idle or hidden)
+    // Animation loop with smooth damping, bounded particle updates & GPU postprocessing
     let frameId = 0;
+    let alive = true;
+    let lastNow = performance.now();
+    let mathElapsed = 0;
+
+    function afterDraw(cb: () => void) {
+      const gl = renderer.getContext() as WebGL2RenderingContext;
+      const sync = gl.fenceSync ? gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0) : null;
+      if (!sync) {
+        frameId = window.setTimeout(cb, 80);
+        return;
+      }
+      gl.flush();
+      const poll = () => {
+        if (!alive) return;
+        const state = gl.getSyncParameter(sync, gl.SYNC_STATUS);
+        if (state === gl.UNSIGNALED) {
+          frameId = window.setTimeout(poll, 5);
+        } else {
+          gl.deleteSync(sync);
+          frameId = window.setTimeout(cb, 80);
+        }
+      };
+      frameId = window.setTimeout(poll, 5);
+    }
+
     const animate = () => {
-      frameId = requestAnimationFrame(animate);
-      if (document.hidden) return;
+      if (!alive) return;
+      const now = performance.now();
+      const dt = Math.min(0.05, Math.max(0.001, (now - lastNow) / 1000));
+      lastNow = now;
+
+      if (document.hidden) {
+        frameId = requestAnimationFrame(animate);
+        return;
+      }
+
       const moved = controls.update();
       const curHolo = hologramModeRef.current;
       const holoChanged = curHolo !== lastHolo;
@@ -255,19 +356,39 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       if ((lastHolo === 'anaglyph' || lastHolo === 'vr_stereo') && holoChanged) {
         const w = container.clientWidth;
         const h = container.clientHeight;
-        if (w > 0 && h > 0) renderer.setSize(w, h);
+        if (w > 0 && h > 0) {
+          renderer.setSize(w, h);
+          pipeline?.setSize(w, h);
+        }
       }
       lastHolo = curHolo;
 
-      if (needsRenderRef.current || moved || curHolo !== 'normal' || holoChanged) {
+      let activeSim = false;
+      if (isAnimatingRef.current && mathTickRef.current) {
+        mathElapsed += dt;
+        mathTickRef.current(dt, mathElapsed, camera);
+        particlePool.update(dt, 0);
+        activeSim = true;
+      }
+
+      if (needsRenderRef.current || moved || activeSim || curHolo !== 'normal' || holoChanged) {
         needsRenderRef.current = false;
+        updateBillboardLabels(dynamicGroup, camera);
         if (curHolo === 'anaglyph') {
           anaglyphEffect.render(scene, camera);
         } else if (curHolo === 'vr_stereo') {
           stereoEffect.render(scene, camera);
+        } else if (!isSoftwareGl && pipeline) {
+          pipeline.render(dt);
         } else {
           renderer.render(scene, camera);
         }
+      }
+
+      if (isSoftwareGl && activeSim) {
+        afterDraw(animate);
+      } else {
+        frameId = requestAnimationFrame(animate);
       }
     };
     animate();
@@ -294,8 +415,10 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
+      pipeline?.setSize(width, height);
       anaglyphEffect.setSize(width, height);
       stereoEffect.setSize(width, height);
+      syncLine2Resolution(dynamicGroup, width, height);
       needsRenderRef.current = true;
     };
     window.addEventListener('resize', handleResize);
@@ -320,19 +443,34 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         controls.target.set(0, 0, 0);
         controls.update();
         needsRenderRef.current = true;
+      } else if (cmd.type === 'toggle_play') {
+        setIsAnimating((prev) => !prev);
       }
     });
 
     return () => {
+      alive = false;
       unsubRemote();
       cancelAnimationFrame(frameId);
+      clearTimeout(frameId);
       controls.removeEventListener('change', markDirty);
       window.removeEventListener('resize', handleResize);
       canvasEl.removeEventListener('webglcontextlost', onContextLost);
       canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
       resizeObserver?.disconnect();
       controls.dispose();
+      pipeline?.dispose();
+      pipelineRef.current = null;
+      particlePool.dispose();
+      particlePoolRef.current = null;
+      trail.dispose();
+      trailRef.current = null;
+      mathTickRef.current = null;
+      anaglyphEffect.dispose();
       scene.traverse((obj: any) => {
+        if (typeof obj.dispose === 'function' && obj.userData?.isTroikaLabel) {
+          obj.dispose();
+        }
         if (obj.geometry) obj.geometry.dispose();
         if (obj.material) {
           if (Array.isArray(obj.material)) obj.material.forEach((m: any) => m.dispose());
@@ -352,11 +490,18 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     const group = dynamicGroupRef.current;
     if (!group) return;
 
-    // Clear previous geometries and materials recursively to prevent GPU leaks
+    mathTickRef.current = null;
+    trailRef.current?.clear();
+    if (trailRef.current) trailRef.current.line.visible = false;
+
+    // Clear previous geometries, materials & Troika text workers recursively to prevent GPU leaks
     while (group.children.length > 0) {
       const child = group.children[0];
       group.remove(child);
       child.traverse((obj: any) => {
+        if (typeof obj.dispose === 'function' && obj.userData?.isTroikaLabel) {
+          obj.dispose();
+        }
         if (obj.geometry) obj.geometry.dispose();
         if (obj.material) {
           if (Array.isArray(obj.material)) {
@@ -367,6 +512,46 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         }
       });
     }
+
+    const isSw = isSoftwareGlRef.current;
+    const pool = particlePoolRef.current;
+    const trail = trailRef.current;
+    const addLabel = (
+      text: string,
+      x: number,
+      y: number,
+      z: number,
+      color: number | string = 0xf8fafc,
+      fontSize = 0.3
+    ) => {
+      const lbl = createTroikaLabel({
+        text,
+        position: [x, y, z],
+        color,
+        fontSize,
+        onSync: () => {
+          needsRenderRef.current = true;
+        },
+      });
+      group.add(lbl);
+      return lbl;
+    };
+
+    const addTubeBetween = (
+      pA: THREE.Vector3,
+      pB: THREE.Vector3,
+      radius: number,
+      mat: THREE.Material
+    ) => {
+      const dist = pA.distanceTo(pB);
+      if (dist < 0.005) return;
+      const geo = new THREE.CylinderGeometry(radius, radius, dist, 12);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.addVectors(pA, pB).multiplyScalar(0.5);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pB.clone().sub(pA).normalize());
+      mesh.castShadow = !isSw;
+      group.add(mesh);
+    };
 
     // Helper to create 3D Arrow Vector
     const create3DArrow = (
@@ -386,22 +571,29 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       // Shaft (Cylinder)
       const shaftGeo = new THREE.CylinderGeometry(radius, radius, shaftLength, 16);
       shaftGeo.translate(0, shaftLength / 2, 0);
-      const shaftMat = new THREE.MeshStandardMaterial({
+      const shaftMat = new THREE.MeshPhysicalMaterial({
         color,
-        roughness: 0.3,
-        metalness: 0.6,
+        roughness: 0.22,
+        metalness: 0.55,
+        clearcoat: 0.75,
+        clearcoatRoughness: 0.12
       });
       const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+      shaft.castShadow = !isSw;
 
       // Head (Cone)
-      const headGeo = new THREE.ConeGeometry(radius * 2.2, headLength, 16);
+      const headGeo = new THREE.ConeGeometry(radius * 2.25, headLength, 18);
       headGeo.translate(0, shaftLength + headLength / 2, 0);
-      const headMat = new THREE.MeshStandardMaterial({
+      const headMat = new THREE.MeshPhysicalMaterial({
         color,
-        roughness: 0.2,
-        metalness: 0.7,
+        emissive: color,
+        emissiveIntensity: 0.16,
+        roughness: 0.18,
+        metalness: 0.65,
+        clearcoat: 0.9
       });
       const head = new THREE.Mesh(headGeo, headMat);
+      head.castShadow = !isSw;
 
       arrowGroup.add(shaft);
       arrowGroup.add(head);
@@ -417,27 +609,34 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     // MODE 1: Oxyz & Vector 3D (Tọa độ & Tích có hướng)
     // -------------------------------------------------------------
     if (mode === 'oxyz_vector') {
+      // Origin hub sphere
+      const originHub = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 18, 18),
+        new THREE.MeshPhysicalMaterial({ color: 0xf8fafc, metalness: 0.85, roughness: 0.15, clearcoat: 0.8 })
+      );
+      group.add(originHub);
+
       // 3 Axes: Ox (Red), Oy (Green), Oz (Blue)
       const axisLength = 5;
-      group.add(create3DArrow(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), axisLength, 0xef4444, 0.03));
-      group.add(create3DArrow(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), axisLength, 0x10b981, 0.03));
-      group.add(create3DArrow(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), axisLength, 0x3b82f6, 0.03));
+      group.add(create3DArrow(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), axisLength, 0xef4444, 0.032));
+      group.add(create3DArrow(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), axisLength, 0x10b981, 0.032));
+      group.add(create3DArrow(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), axisLength, 0x3b82f6, 0.032));
 
       // Vector u (Amber)
       const uVec = new THREE.Vector3(ux, uz, uy); // Mapping math z to three.js y
       const uLen = uVec.length();
-      group.add(create3DArrow(uVec, new THREE.Vector3(0, 0, 0), uLen, 0xf59e0b, 0.06));
+      group.add(create3DArrow(uVec, new THREE.Vector3(0, 0, 0), uLen, 0xf59e0b, 0.062));
 
       // Vector v (Cyan)
       const vVec = new THREE.Vector3(vx, vz, vy);
       const vLen = vVec.length();
-      group.add(create3DArrow(vVec, new THREE.Vector3(0, 0, 0), vLen, 0x06b6d4, 0.06));
+      group.add(create3DArrow(vVec, new THREE.Vector3(0, 0, 0), vLen, 0x06b6d4, 0.062));
 
       // Cross Product w = u x v (Purple)
       const wVec = new THREE.Vector3().crossVectors(uVec, vVec);
       const wLen = wVec.length();
       if (wLen > 0.1) {
-        group.add(create3DArrow(wVec, new THREE.Vector3(0, 0, 0), wLen, 0xa855f7, 0.07));
+        group.add(create3DArrow(wVec, new THREE.Vector3(0, 0, 0), wLen, 0xa855f7, 0.072));
 
         // Parallelogram surface spanned by u and v
         const geom = new THREE.BufferGeometry();
@@ -451,47 +650,123 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         ]);
         geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
         geom.computeVertexNormals();
-        const planeMat = new THREE.MeshStandardMaterial({
+        const planeMat = new THREE.MeshPhysicalMaterial({
           color: 0x6366f1,
           transparent: true,
-          opacity: 0.35,
+          opacity: 0.42,
+          roughness: 0.14,
+          clearcoat: 0.85,
           side: THREE.DoubleSide,
         });
         group.add(new THREE.Mesh(geom, planeMat));
+
+        const rimMat = new THREE.MeshStandardMaterial({
+          color: 0xa5b4fc,
+          emissive: 0x6366f1,
+          emissiveIntensity: 0.45,
+          roughness: 0.25
+        });
+        addTubeBetween(p1, p2, 0.022, rimMat);
+        addTubeBetween(p3, p2, 0.022, rimMat);
       }
+
+      // Crisp Line2 projections to ground Oxy plane & Troika 3D coordinate tags
+      const dropU = createCrispLine2([[ux, uz, uy], [ux, 0, uy], [0, 0, 0]], {
+        color: 0xf59e0b,
+        linewidth: 2,
+        dashed: true,
+        transparent: true,
+        opacity: 0.72,
+      });
+      const dropV = createCrispLine2([[vx, vz, vy], [vx, 0, vy], [0, 0, 0]], {
+        color: 0x06b6d4,
+        linewidth: 2,
+        dashed: true,
+        transparent: true,
+        opacity: 0.72,
+      });
+      group.add(dropU, dropV);
+
+      addLabel('O', -0.25, 0.25, -0.25, 0xf8fafc, 0.28);
+      addLabel('X', axisLength + 0.35, 0.15, 0, 0xf87171, 0.32);
+      addLabel('Z', 0, axisLength + 0.35, 0, 0x34d399, 0.32);
+      addLabel('Y', 0, 0.15, axisLength + 0.35, 0x60a5fa, 0.32);
+      addLabel(`u(${ux}, ${uy}, ${uz})`, ux, uz + 0.42, uy, 0xfbbf24, 0.28);
+      addLabel(`v(${vx}, ${vy}, ${vz})`, vx, vz + 0.42, vy, 0x22d3ee, 0.28);
+      if (wLen > 0.1) {
+        addLabel('u × v', wVec.x, wVec.y + 0.45, wVec.z, 0xc084fc, 0.3);
+      }
+
+      const activeAxis = wLen > 0.1 ? wVec : uVec;
+      const pulseOrb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 16, 16),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xa855f7, emissiveIntensity: 1.1 })
+      );
+      group.add(pulseOrb);
+
+      let emitCd = 0;
+      mathTickRef.current = (dt, elapsed, cam) => {
+        const s = (elapsed * 0.45) % 1;
+        pulseOrb.position.set(activeAxis.x * s, activeAxis.y * s, activeAxis.z * s);
+        trail?.pushAndRender(pulseOrb.position.x, pulseOrb.position.y, pulseOrb.position.z, cam, 0.01, 28);
+        emitCd += dt;
+        if (emitCd > 0.08 && pool) {
+          emitCd = 0;
+          pool.spawn(
+            pulseOrb.position.x,
+            pulseOrb.position.y,
+            pulseOrb.position.z,
+            (Math.random() - 0.5) * 0.4,
+            0.25 + Math.random() * 0.25,
+            (Math.random() - 0.5) * 0.4,
+            0.65,
+            0.7,
+            wLen > 0.1 ? 0xc084fc : 0xfbbf24
+          );
+        }
+      };
     }
 
     // -------------------------------------------------------------
     // MODE 2: Mặt Cầu & Mặt Phẳng Thiết Diện 3D
     // -------------------------------------------------------------
     else if (mode === 'sphere_plane') {
-      const isSw = isSoftwareGlRef.current;
+      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.15)] : [];
       // Optical Glass Sphere
       const sphereGeo = new THREE.SphereGeometry(sphereRadius, 48, 36);
       const sphereMat = new THREE.MeshPhysicalMaterial({
         color: 0x38bdf8,
-        roughness: 0.08,
+        roughness: 0.06,
         metalness: 0.05,
         clearcoat: 1.0,
-        clearcoatRoughness: 0.08,
+        clearcoatRoughness: 0.06,
         transparent: true,
         opacity: isSw ? 0.34 : 0.78,
-        transmission: isSw ? 0 : 0.68,
-        ior: 1.45,
-        thickness: 0.7,
-        depthWrite: false
+        transmission: isSw ? 0 : 0.72,
+        ior: 1.48,
+        thickness: 0.75,
+        depthWrite: false,
+        clippingPlanes: cutClip,
+        side: showCutaway ? THREE.DoubleSide : THREE.FrontSide,
       });
       const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
       group.add(sphereMesh);
 
-      // Sphere wireframe cage
+      // Sphere wireframe cage + glowing equatorial torus
       const wireGeo = new THREE.WireframeGeometry(sphereGeo);
-      const wireMat = new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.18 });
+      const wireMat = new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.16 });
       group.add(new THREE.LineSegments(wireGeo, wireMat));
 
+      const eqTorus = new THREE.Mesh(
+        new THREE.TorusGeometry(sphereRadius, 0.022, 12, 64),
+        new THREE.MeshStandardMaterial({ color: 0x7dd3fc, emissive: 0x0284c7, emissiveIntensity: 0.4, transparent: true, opacity: 0.65 })
+      );
+      eqTorus.rotation.x = Math.PI / 2;
+      group.add(eqTorus);
+
       // Center Point I
-      const centerGeo = new THREE.SphereGeometry(0.14, 20, 20);
-      const centerMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.45, roughness: 0.2 });
+      const centerGeo = new THREE.SphereGeometry(0.15, 20, 20);
+      const centerMat = new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.55, roughness: 0.18, clearcoat: 0.8 });
       group.add(new THREE.Mesh(centerGeo, centerMat));
 
       // Cutting Plane
@@ -500,30 +775,69 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         color: 0x10b981,
         transparent: true,
         opacity: 0.36,
-        roughness: 0.15,
-        clearcoat: 0.8,
+        roughness: 0.12,
+        clearcoat: 0.85,
         side: THREE.DoubleSide,
       });
       const planeMesh = new THREE.Mesh(planeGeo, planeMat);
       planeMesh.rotation.x = Math.PI / 2;
       planeMesh.position.y = planeDistance;
+      planeMesh.receiveShadow = !isSw;
       group.add(planeMesh);
+
+      addLabel('I(0,0,0)', -0.35, -0.35, 0.35, 0xfda4af, 0.28);
+      addLabel(`R = ${sphereRadius.toFixed(1)}`, sphereRadius * 0.72, 0.35, sphereRadius * 0.6, 0x7dd3fc, 0.26);
 
       // If plane intersects sphere (d < R)
       if (planeDistance < sphereRadius) {
         const cutCircleRadius = Math.sqrt(sphereRadius * sphereRadius - planeDistance * planeDistance);
-        const torusGeo = new THREE.TorusGeometry(cutCircleRadius, 0.045, 16, 64);
-        const torusMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.55, roughness: 0.2 });
+        const torusGeo = new THREE.TorusGeometry(cutCircleRadius, 0.048, 16, 64);
+        const torusMat = new THREE.MeshPhysicalMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.65, roughness: 0.16, clearcoat: 0.9 });
         const torusMesh = new THREE.Mesh(torusGeo, torusMat);
         torusMesh.rotation.x = Math.PI / 2;
         torusMesh.position.y = planeDistance + 0.01;
         group.add(torusMesh);
 
-        // Distance drop line IH
-        const dropLineGeo = new THREE.CylinderGeometry(0.035, 0.035, Math.max(0.02, planeDistance), 12);
+        // Distance drop line IH (Crisp Line2 + cylinder)
+        const dropLineGeo = new THREE.CylinderGeometry(0.036, 0.036, Math.max(0.02, planeDistance), 14);
         dropLineGeo.translate(0, planeDistance / 2, 0);
-        const dropLineMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, emissive: 0x94a3b8, emissiveIntensity: 0.3 });
+        const dropLineMat = new THREE.MeshPhysicalMaterial({ color: 0xf8fafc, emissive: 0x94a3b8, emissiveIntensity: 0.35, clearcoat: 0.5 });
         group.add(new THREE.Mesh(dropLineGeo, dropLineMat));
+
+        const footDot = new THREE.Mesh(
+          new THREE.SphereGeometry(0.1, 16, 16),
+          new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.6 })
+        );
+        footDot.position.y = planeDistance;
+        group.add(footDot);
+
+        const radiusLine = createCrispLine2(
+          [[0, planeDistance + 0.02, 0], [cutCircleRadius, planeDistance + 0.02, 0]],
+          { color: 0xfef08a, linewidth: 2.8 }
+        );
+        group.add(radiusLine);
+
+        addLabel(`H (d=${planeDistance.toFixed(1)})`, 0.45, planeDistance + 0.28, 0, 0xfef08a, 0.26);
+        addLabel(`r = ${cutCircleRadius.toFixed(2)}`, cutCircleRadius * 0.55, planeDistance + 0.28, 0.25, 0x34d399, 0.28);
+
+        const tracerOrb = new THREE.Mesh(
+          new THREE.SphereGeometry(0.11, 14, 14),
+          new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 1.0 })
+        );
+        group.add(tracerOrb);
+
+        mathTickRef.current = (_dt, elapsed, cam) => {
+          const ang = elapsed * 1.4;
+          const tx = Math.cos(ang) * cutCircleRadius;
+          const tz = Math.sin(ang) * cutCircleRadius;
+          tracerOrb.position.set(tx, planeDistance + 0.02, tz);
+          eqTorus.rotation.z = elapsed * 0.22;
+          trail?.pushAndRender(tx, planeDistance + 0.02, tz, cam, 0.015, 30);
+        };
+      } else {
+        mathTickRef.current = (_dt, elapsed) => {
+          eqTorus.rotation.z = elapsed * 0.25;
+        };
       }
     }
 
@@ -541,33 +855,42 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       const C = new THREE.Vector3(baseW / 2, 0, baseD / 2);
       const D = new THREE.Vector3(-baseW / 2, 0, baseD / 2);
 
-      // Draw pyramid edges with lines
-      const edgePoints = [
-        A, B, B, C, C, D, D, A, // base
-        S, A, S, B, S, C, S, D, // lateral edges
-      ];
-      const edgeGeo = new THREE.BufferGeometry().setFromPoints(edgePoints);
-      const edgeMat = new THREE.LineBasicMaterial({ color: 0x94a3b8, linewidth: 2 });
-      group.add(new THREE.LineSegments(edgeGeo, edgeMat));
+      // Draw crisp cylindrical pyramid edges & glowing vertex spheres
+      const strutMat = new THREE.MeshPhysicalMaterial({
+        color: 0x94a3b8,
+        metalness: 0.78,
+        roughness: 0.22,
+        clearcoat: 0.7
+      });
+      [[A, B], [B, C], [C, D], [D, A], [S, A], [S, B], [S, C], [S, D]].forEach(([p1, p2]) => {
+        addTubeBetween(p1, p2, 0.03, strutMat);
+      });
+      const vMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.5 });
+      const vGeo = new THREE.SphereGeometry(0.075, 14, 14);
+      [S, A, B, C, D].forEach((pt) => {
+        const vm = new THREE.Mesh(vGeo, vMat);
+        vm.position.copy(pt);
+        group.add(vm);
+      });
 
-      // Semi-transparent faces
+      // Crystal semi-transparent pyramid faces
       const facesGeo = new THREE.BufferGeometry();
       const faceVertices = new Float32Array([
-        // SAB
         S.x, S.y, S.z, A.x, A.y, A.z, B.x, B.y, B.z,
-        // SBC
         S.x, S.y, S.z, B.x, B.y, B.z, C.x, C.y, C.z,
-        // SCD
         S.x, S.y, S.z, C.x, C.y, C.z, D.x, D.y, D.z,
-        // SDA
         S.x, S.y, S.z, D.x, D.y, D.z, A.x, A.y, A.z,
       ]);
       facesGeo.setAttribute('position', new THREE.BufferAttribute(faceVertices, 3));
       facesGeo.computeVertexNormals();
-      const facesMat = new THREE.MeshStandardMaterial({
+      const facesMat = new THREE.MeshPhysicalMaterial({
         color: 0x3b82f6,
         transparent: true,
-        opacity: 0.15,
+        opacity: 0.2,
+        roughness: 0.1,
+        metalness: 0.08,
+        clearcoat: 1.0,
+        depthWrite: false,
         side: THREE.DoubleSide,
       });
       group.add(new THREE.Mesh(facesGeo, facesMat));
@@ -579,7 +902,6 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       const C_prime = C.clone().lerp(S, 1 - k);
       const D_prime = D.clone().lerp(S, 1 - k);
 
-      // Section polygon
       const secGeo = new THREE.BufferGeometry();
       const secVerts = new Float32Array([
         A_prime.x, A_prime.y, A_prime.z, B_prime.x, B_prime.y, B_prime.z, C_prime.x, C_prime.y, C_prime.z,
@@ -587,107 +909,225 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       ]);
       secGeo.setAttribute('position', new THREE.BufferAttribute(secVerts, 3));
       secGeo.computeVertexNormals();
-      const secMat = new THREE.MeshStandardMaterial({
+      const secMat = new THREE.MeshPhysicalMaterial({
         color: 0xf59e0b,
+        emissive: 0xb45309,
+        emissiveIntensity: 0.25,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.72,
         side: THREE.DoubleSide,
-        roughness: 0.2,
+        roughness: 0.14,
+        clearcoat: 0.9
       });
-      group.add(new THREE.Mesh(secGeo, secMat));
+      const secMesh = new THREE.Mesh(secGeo, secMat);
+      secMesh.castShadow = !isSw;
+      group.add(secMesh);
 
-      // Outline of section
-      const secEdgePoints = [A_prime, B_prime, B_prime, C_prime, C_prime, D_prime, D_prime, A_prime];
-      const secEdgeGeo = new THREE.BufferGeometry().setFromPoints(secEdgePoints);
-      const secEdgeMat = new THREE.LineBasicMaterial({ color: 0xfff, linewidth: 2 });
-      group.add(new THREE.LineSegments(secEdgeGeo, secEdgeMat));
+      const secRimMat = new THREE.MeshStandardMaterial({
+        color: 0xfef08a,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 0.65,
+        roughness: 0.2
+      });
+      [[A_prime, B_prime], [B_prime, C_prime], [C_prime, D_prime], [D_prime, A_prime]].forEach(([p1, p2]) => {
+        addTubeBetween(p1, p2, 0.036, secRimMat);
+      });
+
+      // Height SO Line2 + Troika vertex labels
+      const altLine = createCrispLine2([S, new THREE.Vector3(0, 0, 0)], {
+        color: 0x38bdf8,
+        linewidth: 2.2,
+        dashed: true,
+        transparent: true,
+        opacity: 0.78,
+      });
+      group.add(altLine);
+
+      addLabel('S', S.x, S.y + 0.34, S.z, 0xf8fafc, 0.32);
+      addLabel('A', A.x - 0.25, 0.2, A.z - 0.25, 0x93c5fd, 0.28);
+      addLabel('B', B.x + 0.25, 0.2, B.z - 0.25, 0x93c5fd, 0.28);
+      addLabel('C', C.x + 0.25, 0.2, C.z + 0.25, 0x93c5fd, 0.28);
+      addLabel('D', D.x - 0.25, 0.2, D.z + 0.25, 0x93c5fd, 0.28);
+      addLabel(`Thiết diện k=${k.toFixed(2)}`, C_prime.x + 0.7, C_prime.y + 0.2, C_prime.z, 0xfef08a, 0.26);
+
+      const secCorners = [A_prime, B_prime, C_prime, D_prime];
+      const secTracer = new THREE.Mesh(
+        new THREE.SphereGeometry(0.095, 14, 14),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 1.0 })
+      );
+      group.add(secTracer);
+      mathTickRef.current = (_dt, elapsed, cam) => {
+        const p = (elapsed * 0.9) % 4;
+        const idx = Math.floor(p);
+        const frac = p - idx;
+        secTracer.position.lerpVectors(secCorners[idx], secCorners[(idx + 1) % 4], frac);
+        secMat.emissiveIntensity = 0.22 + 0.14 * Math.sin(elapsed * 2.5);
+        trail?.pushAndRender(secTracer.position.x, secTracer.position.y, secTracer.position.z, cam, 0.015, 28);
+      };
     }
 
     // -------------------------------------------------------------
     // MODE 4: Khối Tròn Xoay & Tích Phân Thể Tích 3D
     // -------------------------------------------------------------
     else if (mode === 'revolution_solid') {
+      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.08)] : [];
       const points: THREE.Vector2[] = [];
+      const profilePts: THREE.Vector3[] = [];
       const N = 40;
       for (let i = 0; i <= N; i++) {
-        const x = (i / N) * 4; // Length along axis
+        const x = (i / N) * 4;
         let y = 1;
         if (revCurveType === 'parabola') {
-          y = 0.5 + 0.15 * x * x; // Parabolic profile
+          y = 0.5 + 0.15 * x * x;
         } else if (revCurveType === 'sine') {
-          y = 1.2 + 0.5 * Math.sin(x * 1.5); // Wavy vase profile
+          y = 1.2 + 0.5 * Math.sin(x * 1.5);
         } else {
-          y = 0.4 + 0.4 * x; // Cone profile
+          y = 0.4 + 0.4 * x;
         }
         points.push(new THREE.Vector2(y, x));
+        profilePts.push(new THREE.Vector3(x - 2, 2.0 + y, 0.04));
       }
 
       const latheGeo = new THREE.LatheGeometry(points, revSegments);
       latheGeo.center();
-      const latheMat = new THREE.MeshStandardMaterial({
+      const latheMat = new THREE.MeshPhysicalMaterial({
         color: 0x10b981,
         transparent: true,
-        opacity: 0.65,
-        roughness: 0.2,
-        metalness: 0.4,
+        opacity: 0.72,
+        roughness: 0.14,
+        metalness: 0.35,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.08,
         side: THREE.DoubleSide,
+        clippingPlanes: cutClip,
       });
       const latheMesh = new THREE.Mesh(latheGeo, latheMat);
-      latheMesh.rotation.z = Math.PI / 2; // Lie along horizontal axis
+      latheMesh.rotation.z = Math.PI / 2;
+      latheMesh.position.y = 2.0;
+      latheMesh.castShadow = !isSw;
       group.add(latheMesh);
 
-      // Central Axis line
-      const axisGeo = new THREE.CylinderGeometry(0.04, 0.04, 6, 8);
+      const latheWire = new THREE.LineSegments(
+        new THREE.WireframeGeometry(latheGeo),
+        new THREE.LineBasicMaterial({ color: 0x6ee7b7, transparent: true, opacity: 0.22 })
+      );
+      latheWire.rotation.z = Math.PI / 2;
+      latheWire.position.y = 2.0;
+      group.add(latheWire);
+
+      // Crisp Line2 generating curve highlight
+      const genCurveLine = createCrispLine2(profilePts, { color: 0xfacc15, linewidth: 3.2 });
+      group.add(genCurveLine);
+
+      // Central Axis shaft + bearing collars
+      const axisGeo = new THREE.CylinderGeometry(0.045, 0.045, 6.2, 14);
       axisGeo.rotateZ(Math.PI / 2);
-      const axisMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
-      group.add(new THREE.Mesh(axisGeo, axisMat));
+      const axisMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.35, metalness: 0.65, roughness: 0.25 });
+      const axisMesh = new THREE.Mesh(axisGeo, axisMat);
+      axisMesh.position.y = 2.0;
+      group.add(axisMesh);
+
+      [-2.8, 2.8].forEach((bx) => {
+        const bearing = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.14, 0.14, 0.16, 18),
+          new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.18, clearcoat: 0.8 })
+        );
+        bearing.rotation.z = Math.PI / 2;
+        bearing.position.set(bx, 2.0, 0);
+        group.add(bearing);
+      });
+
+      addLabel('Trục Ox', 3.4, 2.0, 0, 0xf87171, 0.28);
+      addLabel('y = f(x)', 0, 3.65, 0, 0xfef08a, 0.28);
+      addLabel('V = π ∫ [f(x)]² dx', 0, 0.35, 1.8, 0x34d399, 0.3);
+
+      let emitCd = 0;
+      mathTickRef.current = (dt, elapsed) => {
+        latheMesh.rotation.x = elapsed * 0.42;
+        latheWire.rotation.x = elapsed * 0.42;
+        emitCd += dt;
+        if (emitCd > 0.09 && pool) {
+          emitCd = 0;
+          const idx = Math.floor(Math.random() * profilePts.length);
+          const pt = profilePts[idx];
+          const r = pt.y - 2.0;
+          const a = Math.random() * Math.PI * 2;
+          pool.spawn(
+            pt.x,
+            2.0 + Math.cos(a) * r,
+            Math.sin(a) * r,
+            0,
+            -Math.sin(a) * 0.4,
+            Math.cos(a) * 0.4,
+            0.75,
+            0.65,
+            0x34d399
+          );
+        }
+      };
     }
 
     // -------------------------------------------------------------
     // MODE 5: Ba Đường Conic Từ Thiết Diện Mặt Nón Đôi (Lớp 10)
     // -------------------------------------------------------------
     else if (mode === 'conic_sections_3d') {
+      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.2)] : [];
       const coneH = 3.2;
       const coneR = 2.4;
-      const coneMat = new THREE.MeshStandardMaterial({
+      const coneMat = new THREE.MeshPhysicalMaterial({
         color: 0x3b82f6,
         transparent: true,
         opacity: 0.28,
-        roughness: 0.25,
-        metalness: 0.3,
-        side: THREE.DoubleSide
+        roughness: 0.1,
+        metalness: 0.15,
+        clearcoat: 1.0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        clippingPlanes: cutClip,
       });
 
-      // Upper cone (apex at origin, opening upwards)
       const upperGeo = new THREE.ConeGeometry(coneR, coneH, 48, 1, true);
       upperGeo.rotateX(Math.PI);
       upperGeo.translate(0, coneH / 2, 0);
       group.add(new THREE.Mesh(upperGeo, coneMat));
 
-      // Lower cone (apex at origin, opening downwards)
       const lowerGeo = new THREE.ConeGeometry(coneR, coneH, 48, 1, true);
       lowerGeo.translate(0, -coneH / 2, 0);
       group.add(new THREE.Mesh(lowerGeo, coneMat));
 
-      // Wireframe ribs
+      // Glowing rim rings on cone mouths + apex orb
+      const coneRimMat = new THREE.MeshStandardMaterial({ color: 0x60a5fa, emissive: 0x2563eb, emissiveIntensity: 0.45, metalness: 0.6, roughness: 0.2 });
+      [coneH, -coneH].forEach((ry) => {
+        const cRim = new THREE.Mesh(new THREE.TorusGeometry(coneR, 0.032, 12, 64), coneRimMat);
+        cRim.rotation.x = Math.PI / 2;
+        cRim.position.y = ry;
+        group.add(cRim);
+      });
+      const apexOrb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 16, 16),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, emissive: 0x38bdf8, emissiveIntensity: 0.6 })
+      );
+      group.add(apexOrb);
+
       const wireUpper = new THREE.LineSegments(
         new THREE.WireframeGeometry(upperGeo),
-        new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.22 })
+        new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.18 })
       );
       const wireLower = new THREE.LineSegments(
         new THREE.WireframeGeometry(lowerGeo),
-        new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.22 })
+        new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.18 })
       );
-      group.add(wireUpper);
-      group.add(wireLower);
+      group.add(wireUpper, wireLower);
 
       // Tilted cutting plane
       const tiltRad = (conicTiltDeg * Math.PI) / 180;
       const planeGeo = new THREE.PlaneGeometry(7.2, 7.2);
-      const planeMat = new THREE.MeshStandardMaterial({
+      const planeMat = new THREE.MeshPhysicalMaterial({
         color: 0x10b981,
         transparent: true,
-        opacity: 0.32,
+        opacity: 0.34,
+        roughness: 0.14,
+        clearcoat: 0.85,
         side: THREE.DoubleSide
       });
       const cutPlane = new THREE.Mesh(planeGeo, planeMat);
@@ -695,8 +1135,6 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       cutPlane.position.set(0, conicOffsetY, 0);
       group.add(cutPlane);
 
-      // Compute intersection curve numerically: cone slope k = coneR / coneH = 0.75 (half-angle ~ 36.87 deg)
-      // Cone eq: x^2 + z^2 = (k * y)^2; Plane eq: y = conicOffsetY + Math.tan(tiltRad) * z (Wait: rotation.x = PI/2 - tiltRad tilts normal to (0, cos(tilt), sin(tilt)), so y*cos + z*sin = offset*cos -> y = conicOffsetY - z * Math.tan(tiltRad))
       const slopeK = coneR / coneH;
       const tanTilt = Math.tan(tiltRad);
       const segs = 120;
@@ -707,7 +1145,6 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         const theta = (i / segs) * Math.PI * 2;
         const cosT = Math.cos(theta);
         const sinT = Math.sin(theta);
-        // If r = k*|y|, for upper branch y > 0: r = k*y, z = r*sinT = k*y*sinT => y = conicOffsetY / (1 + k*sinT*tanTilt)
         const denomUp = 1 + slopeK * sinT * tanTilt;
         if (Math.abs(denomUp) > 0.08) {
           const yUp = conicOffsetY / denomUp;
@@ -716,7 +1153,6 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
             ptsUpper.push(new THREE.Vector3(rUp * cosT, yUp, rUp * sinT));
           }
         }
-        // Lower branch y < 0: r = -k*y, z = r*sinT = -k*y*sinT => y = conicOffsetY / (1 - k*sinT*tanTilt)
         const denomLo = 1 - slopeK * sinT * tanTilt;
         if (Math.abs(denomLo) > 0.08) {
           const yLo = conicOffsetY / denomLo;
@@ -740,21 +1176,48 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
           }
         }
         if (cur.length >= 4) segments.push(cur);
-        const tubeMat = new THREE.MeshStandardMaterial({
+        const tubeMat = new THREE.MeshPhysicalMaterial({
           color: colorHex,
           emissive: colorHex,
-          emissiveIntensity: 0.48,
-          roughness: 0.25,
-          metalness: 0.35
+          emissiveIntensity: 0.65,
+          roughness: 0.18,
+          metalness: 0.45,
+          clearcoat: 0.9
         });
         segments.forEach((seg) => {
           const curve = new THREE.CatmullRomCurve3(seg);
-          const tubeGeo = new THREE.TubeGeometry(curve, Math.min(96, seg.length * 2), 0.042, 10, false);
+          const tubeGeo = new THREE.TubeGeometry(curve, Math.min(96, seg.length * 2), 0.048, 12, false);
           group.add(new THREE.Mesh(tubeGeo, tubeMat));
         });
       };
       drawCurveSegs(ptsUpper, 0xfacc15);
       drawCurveSegs(ptsLower, 0xf97316);
+
+      const conicName =
+        conicTiltDeg === 0
+          ? 'Đường Tròn'
+          : conicTiltDeg < 52
+          ? 'Đường Elip'
+          : conicTiltDeg <= 55
+          ? 'Đường Parabol'
+          : 'Hypebol 2 nhánh';
+      addLabel('Đỉnh O', -0.45, 0.25, 0.3, 0xf8fafc, 0.26);
+      addLabel(`${conicName} (α=${conicTiltDeg}°)`, 2.2, conicOffsetY + 0.45, 0, 0xfef08a, 0.28);
+
+      const trackPts = ptsUpper.length >= 4 ? ptsUpper : ptsLower;
+      if (trackPts.length >= 4) {
+        const conicTracer = new THREE.Mesh(
+          new THREE.SphereGeometry(0.11, 16, 16),
+          new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 1.0 })
+        );
+        group.add(conicTracer);
+        mathTickRef.current = (_dt, elapsed, cam) => {
+          const idx = Math.floor(((elapsed * 0.35) % 1) * trackPts.length);
+          const p = trackPts[idx];
+          conicTracer.position.copy(p);
+          trail?.pushAndRender(p.x, p.y, p.z, cam, 0.015, 28);
+        };
+      }
     }
 
     // -------------------------------------------------------------
@@ -762,53 +1225,103 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     // -------------------------------------------------------------
     else if (mode === 'line_plane_oxyz') {
       const axisLen = 4.5;
-      group.add(create3DArrow(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), axisLen, 0xef4444, 0.025));
-      group.add(create3DArrow(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), axisLen, 0x10b981, 0.025));
-      group.add(create3DArrow(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), axisLen, 0x3b82f6, 0.025));
+      group.add(create3DArrow(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), axisLen, 0xef4444, 0.028));
+      group.add(create3DArrow(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), axisLen, 0x10b981, 0.028));
+      group.add(create3DArrow(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), axisLen, 0x3b82f6, 0.028));
 
       const tiltRad = (planeTiltDeg * Math.PI) / 180;
       const planeGeo = new THREE.PlaneGeometry(7.5, 7.5);
-      const planeMat = new THREE.MeshStandardMaterial({
+      const planeMat = new THREE.MeshPhysicalMaterial({
         color: 0x10b981,
         transparent: true,
-        opacity: 0.35,
+        opacity: 0.36,
+        roughness: 0.14,
+        clearcoat: 0.85,
         side: THREE.DoubleSide
       });
       const planeMesh = new THREE.Mesh(planeGeo, planeMat);
       planeMesh.rotation.x = Math.PI / 2 - tiltRad;
       planeMesh.position.y = 0.8;
+      planeMesh.receiveShadow = !isSw;
       group.add(planeMesh);
 
       // Normal vector n of plane (P)
       const normalVec = new THREE.Vector3(0, Math.cos(tiltRad), Math.sin(tiltRad)).normalize();
-      group.add(create3DArrow(normalVec, new THREE.Vector3(0, 0.8, 0), 2.2, 0xf43f5e, 0.055));
+      group.add(create3DArrow(normalVec, new THREE.Vector3(0, 0.8, 0), 2.2, 0xf43f5e, 0.058));
 
-      // Line (d) with direction u = (lineDirX, lineDirZ, lineDirY)
+      // Line (d) with direction u = (lineDirX, lineDirZ, lineDirY) rendered as glowing cylinder ray
       const uVec = new THREE.Vector3(lineDirX, lineDirZ, lineDirY).normalize();
       const basePt = new THREE.Vector3(-0.6, 1.4, -0.5);
       const pStart = basePt.clone().addScaledVector(uVec, -4.5);
       const pEnd = basePt.clone().addScaledVector(uVec, 4.5);
-      const lineGeo = new THREE.BufferGeometry().setFromPoints([pStart, pEnd]);
-      group.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xfacc15 })));
+      addTubeBetween(
+        pStart,
+        pEnd,
+        0.028,
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfacc15, emissiveIntensity: 0.75, roughness: 0.2 })
+      );
 
       // Direction vector arrow u from basePt
-      group.add(create3DArrow(uVec, basePt, 2.0, 0xf59e0b, 0.06));
+      group.add(create3DArrow(uVec, basePt, 2.0, 0xf59e0b, 0.062));
 
-      // Intersection point with plane: dot(pt - (0, 0.8, 0), n) = 0
+      // Intersection point with plane + glowing target halo
       const denom = uVec.dot(normalVec);
+      let hitPtWorld: THREE.Vector3 | null = null;
       if (Math.abs(denom) > 0.02) {
         const planeOrigin = new THREE.Vector3(0, 0.8, 0);
         const tHit = planeOrigin.clone().sub(basePt).dot(normalVec) / denom;
         const hitPt = basePt.clone().addScaledVector(uVec, tHit);
         if (hitPt.length() < 8) {
+          hitPtWorld = hitPt;
           const hitMesh = new THREE.Mesh(
-            new THREE.SphereGeometry(0.14, 18, 18),
-            new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.4 })
+            new THREE.SphereGeometry(0.15, 20, 20),
+            new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.6, clearcoat: 0.9 })
           );
           hitMesh.position.copy(hitPt);
           group.add(hitMesh);
+
+          const haloRing = new THREE.Mesh(
+            new THREE.TorusGeometry(0.28, 0.025, 12, 32),
+            new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.8 })
+          );
+          haloRing.position.copy(hitPt);
+          haloRing.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normalVec);
+          group.add(haloRing);
+          addLabel('Giao điểm I', hitPt.x, hitPt.y + 0.36, hitPt.z, 0x38bdf8, 0.28);
         }
       }
+
+      addLabel('(P)', 3.1, 0.95, 2.8, 0x34d399, 0.3);
+      addLabel('n⃗', normalVec.x * 2.25, 0.8 + normalVec.y * 2.25 + 0.28, normalVec.z * 2.25, 0xfda4af, 0.3);
+      addLabel('u⃗', basePt.x + uVec.x * 2.1, basePt.y + uVec.y * 2.1 + 0.28, basePt.z + uVec.z * 2.1, 0xfbbf24, 0.3);
+      addLabel('(d)', pEnd.x, pEnd.y + 0.32, pEnd.z, 0xfef08a, 0.28);
+
+      const lineRider = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 14, 14),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 1.0 })
+      );
+      group.add(lineRider);
+      let prevS = 0;
+      mathTickRef.current = (_dt, elapsed, cam) => {
+        const s = (elapsed * 0.32) % 1;
+        if (s < prevS) trail?.clear();
+        prevS = s;
+        lineRider.position.lerpVectors(pStart, pEnd, s);
+        trail?.pushAndRender(lineRider.position.x, lineRider.position.y, lineRider.position.z, cam, 0.015, 28);
+        if (hitPtWorld && pool && lineRider.position.distanceTo(hitPtWorld) < 0.25 && Math.random() < 0.45) {
+          pool.spawn(
+            hitPtWorld.x,
+            hitPtWorld.y,
+            hitPtWorld.z,
+            (Math.random() - 0.5) * 1.1,
+            0.5 + Math.random() * 0.5,
+            (Math.random() - 0.5) * 1.1,
+            0.65,
+            0.8,
+            0x38bdf8
+          );
+        }
+      };
     }
 
     // -------------------------------------------------------------
@@ -823,46 +1336,68 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         return 0.4 + 0.14 * x * x;
       };
 
-      // Draw Riemann cylindrical disks along X axis
+      const disks: THREE.Mesh[] = [];
+      const envProfile: THREE.Vector3[] = [];
       for (let i = 0; i < diskCount; i++) {
         const xMid = (i + 0.5) * dx;
         const r = evalR(xMid);
-        const diskGeo = new THREE.CylinderGeometry(r, r, dx * 0.94, 32);
+        const diskGeo = new THREE.CylinderGeometry(r, r, dx * 0.94, 36);
         diskGeo.rotateZ(Math.PI / 2);
-        const hueColor = new THREE.Color().setHSL(0.42 + (i / Math.max(1, diskCount)) * 0.16, 0.78, 0.48);
-        const diskMat = new THREE.MeshStandardMaterial({
+        const hueColor = new THREE.Color().setHSL(0.42 + (i / Math.max(1, diskCount)) * 0.16, 0.8, 0.5);
+        const diskMat = new THREE.MeshPhysicalMaterial({
           color: hueColor,
           transparent: true,
-          opacity: 0.68,
-          roughness: 0.25,
-          metalness: 0.2
+          opacity: 0.74,
+          roughness: 0.16,
+          metalness: 0.25,
+          clearcoat: 0.9
         });
         const mesh = new THREE.Mesh(diskGeo, diskMat);
         mesh.position.set(xMid - lengthX / 2, 1.8, 0);
+        mesh.castShadow = !isSw;
         group.add(mesh);
+        disks.push(mesh);
       }
 
-      // Smooth outer profile envelope
       const envPts: THREE.Vector2[] = [];
       for (let i = 0; i <= 40; i++) {
         const x = (i / 40) * lengthX;
-        envPts.push(new THREE.Vector2(evalR(x), x - lengthX / 2));
+        const rx = evalR(x);
+        envPts.push(new THREE.Vector2(rx, x - lengthX / 2));
+        envProfile.push(new THREE.Vector3(x - lengthX / 2, 1.8 + rx, 0));
       }
-      const envGeo = new THREE.LatheGeometry(envPts, 32);
+      const envGeo = new THREE.LatheGeometry(envPts, 36);
       envGeo.rotateZ(-Math.PI / 2);
       const envWire = new THREE.LineSegments(
         new THREE.WireframeGeometry(envGeo),
-        new THREE.LineBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.25 })
+        new THREE.LineBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.24 })
       );
       envWire.position.y = 1.8;
       group.add(envWire);
 
-      // Central axis Ox
-      const axGeo = new THREE.CylinderGeometry(0.035, 0.035, 5.4, 8);
+      group.add(createCrispLine2(envProfile, { color: 0xfacc15, linewidth: 2.8 }));
+
+      const axGeo = new THREE.CylinderGeometry(0.04, 0.04, 5.4, 12);
       axGeo.rotateZ(Math.PI / 2);
-      const axMesh = new THREE.Mesh(axGeo, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      const axMesh = new THREE.Mesh(
+        axGeo,
+        new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.35, metalness: 0.65 })
+      );
       axMesh.position.y = 1.8;
       group.add(axMesh);
+
+      addLabel(`n = ${diskCount} lát đĩa`, 0, 3.8, 0, 0x34d399, 0.28);
+      addLabel(`Δx = ${dx.toFixed(2)}`, 0, 0.35, 1.4, 0xfef08a, 0.26);
+
+      mathTickRef.current = (_dt, elapsed) => {
+        const sweepIdx = (elapsed * 3.2) % disks.length;
+        disks.forEach((d, idx) => {
+          const dist = Math.abs(idx - sweepIdx);
+          const pulse = dist < 1.2 ? 1.0 + (1.2 - dist) * 0.05 : 1.0;
+          d.scale.set(1, pulse, pulse);
+        });
+        envWire.rotation.x = elapsed * 0.22;
+      };
     }
 
     // -------------------------------------------------------------
@@ -873,26 +1408,34 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       const om = Math.max(R + 0.35, extDist3D);
       const center = new THREE.Vector3(0, 2.2, 0);
 
-      // Sphere (O; R)
-      const spGeo = new THREE.SphereGeometry(R, 36, 28);
-      const spMat = new THREE.MeshStandardMaterial({
+      // Crystal Glass Sphere (O; R) with optional cutaway
+      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.15)] : [];
+      const spGeo = new THREE.SphereGeometry(R, 40, 32);
+      const spMat = new THREE.MeshPhysicalMaterial({
         color: 0x0ea5e9,
         transparent: true,
-        opacity: 0.28,
-        roughness: 0.2,
-        metalness: 0.15
+        opacity: isSw ? 0.32 : 0.72,
+        transmission: isSw ? 0 : 0.65,
+        ior: 1.45,
+        thickness: 0.55,
+        roughness: 0.08,
+        clearcoat: 1.0,
+        depthWrite: false,
+        clippingPlanes: cutClip,
+        side: showCutaway ? THREE.DoubleSide : THREE.FrontSide,
       });
       const spMesh = new THREE.Mesh(spGeo, spMat);
       spMesh.position.copy(center);
       group.add(spMesh);
 
-      // Equator Great Circle
-      const eqPts: THREE.Vector3[] = [];
-      for (let i = 0; i <= 64; i++) {
-        const th = (i / 64) * Math.PI * 2;
-        eqPts.push(new THREE.Vector3(center.x + R * Math.cos(th), center.y, center.z + R * Math.sin(th)));
-      }
-      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(eqPts), new THREE.LineBasicMaterial({ color: 0x38bdf8 })));
+      // Equator Great Circle (Torus tube)
+      const eqTorus = new THREE.Mesh(
+        new THREE.TorusGeometry(R, 0.026, 12, 64),
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.55, roughness: 0.2 })
+      );
+      eqTorus.rotation.x = Math.PI / 2;
+      eqTorus.position.copy(center);
+      group.add(eqTorus);
 
       // Small circle section plane at y = center.y + secOffset3D
       const dSec = Math.max(-R + 0.05, Math.min(R - 0.05, secOffset3D));
@@ -901,7 +1444,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       secGeo.rotateX(-Math.PI / 2);
       const secMesh = new THREE.Mesh(
         secGeo,
-        new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.42, side: THREE.DoubleSide })
+        new THREE.MeshPhysicalMaterial({ color: 0x10b981, transparent: true, opacity: 0.45, clearcoat: 0.75, side: THREE.DoubleSide })
       );
       secMesh.position.set(center.x, center.y + dSec, center.z);
       group.add(secMesh);
@@ -909,56 +1452,77 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       // External Point M on +X axis
       const MPos = new THREE.Vector3(om, center.y, 0);
       const mSphere = new THREE.Mesh(
-        new THREE.SphereGeometry(0.16, 18, 18),
-        new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.4 })
+        new THREE.SphereGeometry(0.17, 20, 20),
+        new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.55, clearcoat: 0.85 })
       );
       mSphere.position.copy(MPos);
       group.add(mSphere);
 
-      // Center O marker and OM axis
-      const oSphere = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 16), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      // Center O marker and OM tube axis
+      const oSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 16, 16),
+        new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 0.5 })
+      );
       oSphere.position.copy(center);
       group.add(oSphere);
-      group.add(
-        new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([center, MPos]),
-          new THREE.LineBasicMaterial({ color: 0xfacc15 })
-        )
-      );
+      addTubeBetween(center, MPos, 0.022, new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xd97706, emissiveIntensity: 0.4 }));
 
       // Polar circle of tangency: xH = R^2 / OM, rPolar = R * sqrt(1 - (R/OM)^2)
       const xH = (R * R) / om;
       const rPolar = Math.sqrt(Math.max(0.01, R * R - xH * xH));
-      const polarPts: THREE.Vector3[] = [];
-      for (let i = 0; i <= 64; i++) {
-        const th = (i / 64) * Math.PI * 2;
-        polarPts.push(new THREE.Vector3(xH, center.y + rPolar * Math.cos(th), rPolar * Math.sin(th)));
-      }
-      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(polarPts), new THREE.LineBasicMaterial({ color: 0xf43f5e })));
+      const polarRing = new THREE.Mesh(
+        new THREE.TorusGeometry(rPolar, 0.03, 12, 64),
+        new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.65, roughness: 0.2 })
+      );
+      polarRing.rotation.y = Math.PI / 2;
+      polarRing.position.set(xH, center.y, 0);
+      group.add(polarRing);
 
       // Enveloping tangent cone surface from M to polar tangent circle
       const coneHeight = om - xH;
-      const coneGeo = new THREE.ConeGeometry(rPolar, coneHeight, 36, 1, true);
+      const coneGeo = new THREE.ConeGeometry(rPolar, coneHeight, 40, 1, true);
       coneGeo.rotateZ(-Math.PI / 2);
-      const coneMat = new THREE.MeshStandardMaterial({
+      const coneMat = new THREE.MeshPhysicalMaterial({
         color: 0xa855f7,
         transparent: true,
-        opacity: 0.2,
+        opacity: 0.22,
+        roughness: 0.12,
+        clearcoat: 0.85,
+        depthWrite: false,
         side: THREE.DoubleSide
       });
       const coneMesh = new THREE.Mesh(coneGeo, coneMat);
       coneMesh.position.set(xH + coneHeight / 2, center.y, 0);
       group.add(coneMesh);
 
-      // 4 Principal tangent rays & radius perpendiculars OT ⊥ MT
+      const tanRayMat = new THREE.MeshStandardMaterial({ color: 0xc084fc, emissive: 0x9333ea, emissiveIntensity: 0.4 });
+      const perpRayMat = new THREE.MeshStandardMaterial({ color: 0x34d399, emissive: 0x059669, emissiveIntensity: 0.4 });
       [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].forEach((ang) => {
         const TPos = new THREE.Vector3(xH, center.y + rPolar * Math.cos(ang), rPolar * Math.sin(ang));
-        const tDot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 12), new THREE.MeshBasicMaterial({ color: 0xf43f5e }));
+        const tDot = new THREE.Mesh(new THREE.SphereGeometry(0.1, 14, 14), new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.5 }));
         tDot.position.copy(TPos);
         group.add(tDot);
-        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([MPos, TPos]), new THREE.LineBasicMaterial({ color: 0xc084fc })));
-        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([center, TPos]), new THREE.LineBasicMaterial({ color: 0x34d399 })));
+        addTubeBetween(MPos, TPos, 0.02, tanRayMat);
+        addTubeBetween(center, TPos, 0.02, perpRayMat);
       });
+
+      addLabel('O', center.x - 0.25, center.y + 0.28, 0, 0xfda4af, 0.28);
+      addLabel('M', MPos.x + 0.28, MPos.y + 0.28, 0, 0xfbbf24, 0.3);
+      addLabel('T₁', xH, center.y + rPolar + 0.28, 0, 0xf472b6, 0.26);
+      addLabel(`r = ${rSec.toFixed(2)}`, center.x, center.y + dSec + 0.25, rSec * 0.65, 0x34d399, 0.26);
+
+      const tanOrb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 14, 14),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 1.0 })
+      );
+      group.add(tanOrb);
+      mathTickRef.current = (_dt, elapsed, cam) => {
+        const ang = elapsed * 1.45;
+        const ty = center.y + rPolar * Math.cos(ang);
+        const tz = rPolar * Math.sin(ang);
+        tanOrb.position.set(xH, ty, tz);
+        trail?.pushAndRender(xH, ty, tz, cam, 0.015, 28);
+      };
     }
 
     // -------------------------------------------------------------
@@ -978,7 +1542,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       };
 
       const size = 5.4;
-      const segs = 44;
+      const segs = 48;
       const surfGeo = new THREE.PlaneGeometry(size, size, segs, segs);
       surfGeo.rotateX(-Math.PI / 2);
       const posAttr = surfGeo.attributes.position as THREE.BufferAttribute;
@@ -1001,14 +1565,16 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
 
       const surfMat = new THREE.MeshPhysicalMaterial({
         vertexColors: true,
-        roughness: 0.25,
-        metalness: 0.15,
-        clearcoat: 0.7,
+        roughness: 0.18,
+        metalness: 0.18,
+        clearcoat: 0.85,
         transparent: true,
-        opacity: 0.88,
+        opacity: 0.9,
         side: THREE.DoubleSide
       });
-      group.add(new THREE.Mesh(surfGeo, surfMat));
+      const surfMesh = new THREE.Mesh(surfGeo, surfMat);
+      surfMesh.castShadow = !isSw;
+      group.add(surfMesh);
 
       const wire = new THREE.LineSegments(
         new THREE.WireframeGeometry(surfGeo),
@@ -1022,8 +1588,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       const m0 = new THREE.Vector3(tanX0, z0, tanY0);
 
       const mSphere = new THREE.Mesh(
-        new THREE.SphereGeometry(0.14, 20, 20),
-        new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.65 })
+        new THREE.SphereGeometry(0.15, 20, 20),
+        new THREE.MeshPhysicalMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.7, clearcoat: 0.85 })
       );
       mSphere.position.copy(m0);
       group.add(mSphere);
@@ -1041,20 +1607,52 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       const tMat = new THREE.MeshPhysicalMaterial({
         color: 0xf59e0b,
         transparent: true,
-        opacity: 0.52,
-        roughness: 0.15,
-        clearcoat: 0.85,
+        opacity: 0.54,
+        roughness: 0.12,
+        clearcoat: 0.9,
         side: THREE.DoubleSide
       });
       group.add(new THREE.Mesh(tGeo, tMat));
 
-      // Normal vector n = (-fx0, 1, -fy0) and directional tangent vectors
       const nVec = new THREE.Vector3(-fx0, 1, -fy0).normalize();
       const txVec = new THREE.Vector3(1, fx0, 0).normalize();
       const tyVec = new THREE.Vector3(0, fy0, 1).normalize();
       group.add(create3DArrow(nVec, m0, 1.8, 0xf43f5e, 0.048));
       group.add(create3DArrow(txVec, m0, 1.4, 0x10b981, 0.04));
       group.add(create3DArrow(tyVec, m0, 1.4, 0x38bdf8, 0.04));
+
+      const haloPulse = new THREE.Mesh(
+        new THREE.TorusGeometry(0.32, 0.025, 10, 32),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 0.9 })
+      );
+      haloPulse.position.copy(m0);
+      haloPulse.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), nVec);
+      group.add(haloPulse);
+
+      addLabel(`M₀(${tanX0.toFixed(1)}, ${tanY0.toFixed(1)})`, m0.x, m0.y + 0.35, m0.z, 0xfef08a, 0.26);
+      addLabel('n⃗ (Pháp tuyến)', m0.x + nVec.x * 1.9, m0.y + nVec.y * 1.9 + 0.22, m0.z + nVec.z * 1.9, 0xfda4af, 0.26);
+      addLabel('Tₓ', m0.x + txVec.x * 1.5, m0.y + txVec.y * 1.5 + 0.2, m0.z + txVec.z * 1.5, 0x34d399, 0.24);
+      addLabel('Tᵧ', m0.x + tyVec.x * 1.5, m0.y + tyVec.y * 1.5 + 0.2, m0.z + tyVec.z * 1.5, 0x38bdf8, 0.24);
+
+      let emitCd = 0;
+      mathTickRef.current = (dt, elapsed) => {
+        haloPulse.scale.setScalar(0.9 + 0.25 * Math.sin(elapsed * 3.2));
+        emitCd += dt;
+        if (emitCd > 0.14 && pool) {
+          emitCd = 0;
+          pool.spawn(
+            m0.x,
+            m0.y,
+            m0.z,
+            nVec.x * 1.15,
+            nVec.y * 1.15,
+            nVec.z * 1.15,
+            0.85,
+            0.72,
+            0xf43f5e
+          );
+        }
+      };
     }
 
     // -------------------------------------------------------------
@@ -1067,7 +1665,6 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         return 3.4 * Math.exp(-d2);
       };
 
-      // Smooth 3D Gaussian Bell Surface
       const surfGeo = new THREE.PlaneGeometry(7.2, 7.2, 48, 48);
       surfGeo.rotateX(-Math.PI / 2);
       const posAttr = surfGeo.attributes.position as THREE.BufferAttribute;
@@ -1093,51 +1690,92 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
           surfGeo,
           new THREE.MeshPhysicalMaterial({
             vertexColors: true,
-            roughness: 0.22,
-            metalness: 0.1,
-            clearcoat: 0.65,
+            roughness: 0.18,
+            metalness: 0.12,
+            clearcoat: 0.78,
             transparent: true,
-            opacity: 0.62,
+            opacity: 0.64,
             side: THREE.DoubleSide
           })
         )
       );
 
-      // 3D Discrete Probability Histogram Columns along grid
+      const bars: { mesh: THREE.Mesh; baseH: number; phase: number }[] = [];
       for (let xi = -3; xi <= 3; xi++) {
         for (let zi = -2; zi <= 2; zi++) {
           const xPos = xi * 0.9;
           const zPos = zi * 0.9;
           const colH = Math.max(0.08, evalBell(xPos, zPos));
           const barGeo = new THREE.BoxGeometry(0.42, colH, 0.42);
-          const barMat = new THREE.MeshStandardMaterial({
+          const barMat = new THREE.MeshPhysicalMaterial({
             color: new THREE.Color().setHSL(0.62 - (colH / 3.4) * 0.45, 0.85, 0.55),
-            roughness: 0.25,
-            metalness: 0.35
+            roughness: 0.18,
+            metalness: 0.42,
+            clearcoat: 0.85
           });
           const bar = new THREE.Mesh(barGeo, barMat);
           bar.position.set(xPos, colH / 2, zPos);
+          bar.castShadow = !isSw;
           group.add(bar);
+          bars.push({ mesh: bar, baseH: colH, phase: xi * 0.5 + zi * 0.7 });
         }
       }
 
-      // 1σ and 2σ confidence rings around (bellMu, 0)
+      const stdRings: THREE.Mesh[] = [];
       [s, 2 * s].forEach((rad, idx) => {
-        const ringGeo = new THREE.TorusGeometry(rad, 0.035, 12, 64);
+        const ringGeo = new THREE.TorusGeometry(rad, 0.038, 12, 64);
         const ringMat = new THREE.MeshStandardMaterial({
           color: idx === 0 ? 0x10b981 : 0x38bdf8,
           emissive: idx === 0 ? 0x059669 : 0x0284c7,
-          emissiveIntensity: 0.5
+          emissiveIntensity: 0.6
         });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = Math.PI / 2;
         ring.position.set(bellMu, 0.05, 0);
         group.add(ring);
+        stdRings.push(ring);
       });
+
+      addLabel(`μ = ${bellMu.toFixed(1)}`, bellMu, 3.75, 0, 0xfef08a, 0.3);
+      addLabel(`1σ (68.2%)`, bellMu + s, 0.35, 0.4, 0x34d399, 0.25);
+      addLabel(`2σ (95.4%)`, bellMu + 2 * s, 0.35, 0.4, 0x38bdf8, 0.25);
+
+      let emitCd = 0;
+      mathTickRef.current = (dt, elapsed) => {
+        bars.forEach((b) => {
+          const sy = 1 + 0.045 * Math.sin(elapsed * 2.4 + b.phase);
+          b.mesh.scale.y = sy;
+          b.mesh.position.y = (b.baseH * sy) / 2;
+        });
+        stdRings.forEach((r, idx) => {
+          r.rotation.z = elapsed * (idx === 0 ? 0.4 : -0.25);
+        });
+        emitCd += dt;
+        if (emitCd > 0.16 && pool) {
+          emitCd = 0;
+          pool.spawn(
+            bellMu + (Math.random() - 0.5) * 0.4,
+            3.45,
+            (Math.random() - 0.5) * 0.4,
+            (Math.random() - 0.5) * 0.25,
+            0.35 + Math.random() * 0.25,
+            (Math.random() - 0.5) * 0.25,
+            0.85,
+            0.7,
+            0xfacc15
+          );
+        }
+      };
+    }
+
+    const cont = mountRef.current;
+    if (cont) {
+      syncLine2Resolution(group, cont.clientWidth || 800, cont.clientHeight || 500);
     }
     needsRenderRef.current = true;
   }, [
     mode,
+    showCutaway,
     ux,
     uy,
     uz,
@@ -1245,6 +1883,29 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                 </button>
               ))}
             </div>
+
+            <button
+              onClick={() => setIsAnimating((p) => !p)}
+              className="sim-btn-math p-2 rounded-[3px] bg-slate-800/90 lg:bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white shadow-lg cursor-pointer shrink-0"
+              title={isAnimating ? 'Tạm dừng chuyển động' : 'Chạy chuyển động 3D'}
+            >
+              {isAnimating ? <Pause className="w-4 h-4 text-amber-400" /> : <Play className="w-4 h-4 text-emerald-400" />}
+            </button>
+
+            {(mode === 'sphere_plane' || mode === 'revolution_solid' || mode === 'conic_sections_3d' || mode === 'circle_theorems_3d') && (
+              <button
+                onClick={() => setShowCutaway((c) => !c)}
+                className={`sim-btn-math flex items-center gap-1 px-2 py-2 rounded-[3px] border text-[11px] font-bold shadow-lg cursor-pointer shrink-0 ${
+                  showCutaway
+                    ? 'bg-emerald-600/90 border-emerald-400 text-white'
+                    : 'bg-slate-800/90 lg:bg-slate-900/95 border-slate-700/80 text-slate-300 hover:text-white'
+                }`}
+                title="Mặt cắt hình học 3D (Clipping Plane)"
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mặt cắt</span>
+              </button>
+            )}
 
             <HologramModeControls
               mode={hologramMode}

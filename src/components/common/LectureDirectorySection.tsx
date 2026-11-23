@@ -4,6 +4,7 @@ import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
 import { CS_LESSONS } from '../../data/csLessonsData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
 import { useLanguage } from '../../context/LanguageContext';
+import { FormattedText } from './MathRenderer';
 import {
   BookOpen,
   Compass,
@@ -250,7 +251,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
                   </span>
                   <div className="min-w-0 space-y-1">
                     <div className={`text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white leading-snug transition-colors line-clamp-2 ${meta.titleHover}`}>
-                      {item.title}
+                      <FormattedText text={item.title} />
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
                       <span className="truncate">{item.metaLine}</span>

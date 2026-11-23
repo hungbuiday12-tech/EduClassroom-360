@@ -1405,7 +1405,7 @@ export const ARENA_DIVISION_MCQ_BANK: Record<
         question: 'Trong thuật toán Disjoint Set Union (DSU), khi kết hợp Path Compression và Union by Rank/Size, độ phức tạp trung bình mỗi phép toán gần như:',
         options: ['$\\mathcal{O}(\\alpha(N)) \\approx \\mathcal{O}(1)$', '$\\mathcal{O}(N)$', '$\\mathcal{O}(\\log^2 N)$', '$\\mathcal{O}(\\sqrt{N})$'],
         correctIndex: 0,
-        explanation: '$\alpha(N)$ là hàm Ackermann nghịch đảo, nhỏ hơn 5 với mọi giá trị $N$ thực tế.',
+        explanation: '$\\alpha(N)$ là hàm Ackermann nghịch đảo, nhỏ hơn 5 với mọi giá trị $N$ thực tế.',
         points: 20
       }
     ]

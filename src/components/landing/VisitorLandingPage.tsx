@@ -324,12 +324,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         ? [
             '3 Sidebar Menus: 7 Labs · 9 Simulations (3D Assembly, Rocket, Jet) · 6 Sandboxes',
             'Dedicated Syn AI Pro + Pause/Resume Minichat + 3B1B Video Studio',
-            'Hands-free Synapse Voice OS (Alt+Space) & Multi-User Shared Meet 3D',
+            'Hands-free Synapse Voice OS (Alt+Space) & Multi-User Shared Syn Meet 3D',
           ]
         : [
             '3 Nhóm Menu Trái: 7 Phòng Lab · 9 Mô phỏng (Lắp Ráp 3D, Tên lửa) · 6 Sandboxes',
             'Syn AI Pro độc quyền (3 tầng, Sơ đồ Pro, Video 3B1B) & Tạm đóng giữ hội thoại',
-            'Voice OS ra lệnh giọng nói (Alt+Space) & Live Meet chiếu 3D nhiều người',
+            'Voice OS ra lệnh giọng nói (Alt+Space) & Syn Meet chiếu 3D nhiều người',
           ],
       accentClass: 'text-amber-700 dark:text-amber-300 border-amber-500/35 bg-amber-500/10',
     },
@@ -785,17 +785,17 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               {isEn ? (
                 <>
                   Complete Grades 9–12 &amp; Olympiad STEM workspace featuring{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Free Base Classroom ({totalLessons} lessons · {totalExams} exams · 5 Physics domains · Sublime 4 Code Trace 1-1 · 3 Base AI Tutors with Pause/Resume · Live Meet Screen Share)</strong>{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Free Base Classroom ({totalLessons} lessons · {totalExams} exams · 5 Physics domains · Sublime 4 Code Trace 1-1 · 3 Base AI Tutors with Pause/Resume · Syn Meet Screen Share)</strong>{' '}
                   and{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (21 3D/4D Labs across 3 sidebar menus · Dedicated Syn AI Pro &amp; 3B1B Video · Voice OS · Multi-User Shared 3D Meet)</strong>, plus{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (21 3D/4D Labs across 3 sidebar menus · Dedicated Syn AI Pro &amp; 3B1B Video · Voice OS · Multi-User Shared Syn Meet 3D)</strong>, plus{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Holo Atlas 58-part 3D &amp; WebAR Desk Pro</strong>.
                 </>
               ) : (
                 <>
                   Hệ sinh thái học tập toàn diện cho THCS, THPT &amp; Đội tuyển Chuyên:{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Bản Miễn Phí ({totalLessons} bài giảng · {totalExams} đề thi · Toán 2D/Oxyz · 5 lĩnh vực Vật lí &amp; bệ pháo 3D chuẩn hóa · IDE Sublime 4 Truy vết 1-1 · 3 AI Cơ bản có nút Tạm đóng · Meet chia sẻ màn hình)</strong>{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Bản Miễn Phí ({totalLessons} bài giảng · {totalExams} đề thi · Toán 2D/Oxyz · 5 lĩnh vực Vật lí &amp; bệ pháo 3D chuẩn hóa · IDE Sublime 4 Truy vết 1-1 · 3 AI Cơ bản có nút Tạm đóng · Syn Meet chia sẻ màn hình)</strong>{' '}
                   và{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (22 Phòng Lab, Mô phỏng Lắp Ráp 3D &amp; Sandboxes tách 3 nhóm menu trái · Syn AI Pro độc quyền &amp; Video 3B1B · Voice OS · Meet chiếu 3D nhiều người)</strong>, cùng{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (22 Phòng Lab, Mô phỏng Lắp Ráp 3D &amp; Sandboxes tách 3 nhóm menu trái · Syn AI Pro độc quyền &amp; Video 3B1B · Voice OS · Syn Meet chiếu 3D nhiều người)</strong>, cùng{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Học Cảm Giác 3D Holo Atlas 58 bộ phận &amp; WebAR Pro</strong>.
                 </>
               )}
@@ -1800,7 +1800,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 </div>
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
                   <div className="font-bold text-slate-900 dark:text-white">
-                    {isEn ? 'Live Meet · Screen Share' : 'Live Meet · Chia Sẻ Màn Hình'}
+                    {isEn ? 'Syn Meet · Screen Share' : 'Syn Meet · Chia Sẻ Màn Hình'}
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
@@ -3260,7 +3260,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             <span aria-hidden="true">·</span>
             <span>{isEn ? 'Syn AI Pro & Pause/Resume' : 'Syn AI Pro & Tạm Đóng Chat'}</span>
             <span aria-hidden="true">·</span>
-            <span>{isEn ? 'Meet Free & Meet 3D Pre' : 'Live Meet & Meet 3D'}</span>
+            <span>{isEn ? 'Syn Meet Free & 3D Pre' : 'Syn Meet & Meet 3D'}</span>
             <span aria-hidden="true">·</span>
             <span className="tabular-nums">
               {isEn ? `${totalExams} Official Exams` : `${totalExams} Đề Khảo Thí`}

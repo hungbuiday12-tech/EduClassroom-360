@@ -349,12 +349,12 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_PRO: Record<string, LectureStep[]> = {
           '\\text{Trường hợp 3 điện trở bằng nhau: } R_\\Delta = 3 R_Y'
         ],
         variablesNote:
-          '• Mẹo nhớ công thức **$\Delta \\to Y$**: điện trở nhánh sao gắn vào đỉnh $1$ bằng **tích 2 cạnh tam giác kề đỉnh $1$ chia cho tổng 3 cạnh tam giác**.\n• Sau khi chuyển một nửa tam giác của mạch cầu sang sao $Y$, phần mạch còn lại lập tức biến thành nối tiếp – song song cơ bản!'
+          '• Mẹo nhớ công thức **$\\Delta \\to Y$**: điện trở nhánh sao gắn vào đỉnh $1$ bằng **tích 2 cạnh tam giác kề đỉnh $1$ chia cho tổng 3 cạnh tam giác**.\n• Sau khi chuyển một nửa tam giác của mạch cầu sang sao $Y$, phần mạch còn lại lập tức biến thành nối tiếp – song song cơ bản!'
       },
       deepDiveSection:
         'Nếu 3 điện trở tam giác bằng nhau $R$, biến đổi sang hình sao chỉ còn $R/3$ ở mỗi nhánh! Ngược lại khi chuyển từ Sao sang Tam giác, tổng hợp 3 điện trở bằng nhau biến thành $3R$.',
       teacherExplanation:
-        'Biến đổi $\Delta \\to Y$ ở ngay một tam giác bất kỳ của mạch cầu không cân bằng sẽ giải ra $R_{AB}$ mà không cần giải hệ phương trình 3 ẩn.',
+        'Biến đổi $\\Delta \\to Y$ ở ngay một tam giác bất kỳ của mạch cầu không cân bằng sẽ giải ra $R_{AB}$ mà không cần giải hệ phương trình 3 ẩn.',
       keyTakeaway: 'Nhánh hình sao bằng tích 2 cạnh tam giác kề nút đó chia tổng 3 cạnh tam giác.',
       miniQuiz: [
         {
@@ -374,7 +374,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_PRO: Record<string, LectureStep[]> = {
       ],
       miniEssay: {
         id: 'ppro3-s2-e1',
-        question: 'Dùng phép biến đổi $\Delta \\to Y$ tính điện trở tương đương $R_{AB}$ của mạch cầu không cân bằng có: $R_1 = 2\\,\\Omega$ (A–C), $R_2 = 4\\,\\Omega$ (C–B), $R_3 = 4\\,\\Omega$ (A–D), $R_4 = 2\\,\\Omega$ (D–B) và điện trở cầu $R_5 = 4\\,\\Omega$ (C–D).',
+        question: 'Dùng phép biến đổi $\\Delta \\to Y$ tính điện trở tương đương $R_{AB}$ của mạch cầu không cân bằng có: $R_1 = 2\\,\\Omega$ (A–C), $R_2 = 4\\,\\Omega$ (C–B), $R_3 = 4\\,\\Omega$ (A–D), $R_4 = 2\\,\\Omega$ (D–B) và điện trở cầu $R_5 = 4\\,\\Omega$ (C–D).',
         hint: 'Biến đổi tam giác ACD ($R_1 = 2, R_3 = 4, R_5 = 4$) sang sao gắn với A, C, D ($R_A, R_C, R_D$).',
         rubricChecklist: [
           'Tính $R_A = \\frac{2\\cdot 4}{10} = 0{,}8\\,\\Omega$; $R_C = \\frac{2\\cdot 4}{10} = 0{,}8\\,\\Omega$; $R_D = \\frac{4\\cdot 4}{10} = 1{,}6\\,\\Omega$.',
@@ -411,7 +411,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_PRO: Record<string, LectureStep[]> = {
         },
         {
           id: 'ppro3-s3-q2',
-          question: 'Mắc song song 2 nguồn điện cùng chiều từ B sang A: nguồn 1 ($\mathscr{E}_1 = 6\\text{ V}, r_1 = 1\\,\\Omega$) và nguồn 2 ($\mathscr{E}_2 = 3\\text{ V}, r_2 = 2\\,\\Omega$) (mạch ngoài hở). Hiệu điện thế $U_{AB}$ bằng:',
+          question: 'Mắc song song 2 nguồn điện cùng chiều từ B sang A: nguồn 1 ($\\mathscr{E}_1 = 6\\text{ V}, r_1 = 1\\,\\Omega$) và nguồn 2 ($\\mathscr{E}_2 = 3\\text{ V}, r_2 = 2\\,\\Omega$) (mạch ngoài hở). Hiệu điện thế $U_{AB}$ bằng:',
           options: ['A. $4{,}5\\text{ V}$', 'B. $5\\text{ V}$', 'C. $4\\text{ V}$', 'D. $3\\text{ V}$'],
           correctIndex: 1,
           explanation: 'Theo Millman: $U_{AB} = \\frac{6/1 + 3/2}{1/1 + 1/2} = \\frac{7{,}5}{1{,}5} = 5\\text{ V}$.'
@@ -662,7 +662,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_PRO: Record<string, LectureStep[]> = {
       stepTitle: '3. Chu trình Nhiệt động lực học & Hiệu suất Động cơ Carnot',
       stepType: 'example',
       conceptSection:
-        'Một chu trình nhiệt động lực học là quá trình khép kín đưa khối khí trở về trạng thái $(p, V, T)$ ban đầu sau nhiều biến đổi ($\Delta U_{\\text{chu trình}} = 0$). Diện tích hình phẳng bao bởi chu trình trên đồ thị $(p - V)$ chính bằng **công toàn chu trình**.',
+        'Một chu trình nhiệt động lực học là quá trình khép kín đưa khối khí trở về trạng thái $(p, V, T)$ ban đầu sau nhiều biến đổi ($\\Delta U_{\\text{chu trình}} = 0$). Diện tích hình phẳng bao bởi chu trình trên đồ thị $(p - V)$ chính bằng **công toàn chu trình**.',
       formulaSection: {
         primaryFormula: 'A_{\\text{chu trình}} = \\text{Diện tích vòng } (p-V) = Q_{\\text{nhận}} - |Q_{\\text{tỏa}}|',
         secondaryFormulas: [

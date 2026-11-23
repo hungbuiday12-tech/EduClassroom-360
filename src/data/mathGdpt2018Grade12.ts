@@ -686,7 +686,7 @@ export const MATH_GDPT_12_LESSONS: MathLecture[] = [
       {
         source: 'Toán 12 KNTT · Góc hai mặt phẳng Oxyz',
         question: 'Tính góc giữa $(P): x + y - 2 = 0$ và $(Q): y + z + 1 = 0$.',
-        hints: ['$\cos\varphi = \frac{|\vec{n}_P\cdot\vec{n}_Q|}{|\vec{n}_P||\vec{n}_Q|}$.'],
+        hints: ['$\\cos\\varphi = \\frac{|\\vec{n}_P\\cdot\\vec{n}_Q|}{|\\vec{n}_P||\\vec{n}_Q|}$.'],
         solutionSteps: ['Bước 1: $\\vec{n}_P = (1;1;0), \\vec{n}_Q = (0;1;1) \\implies \\cos\\varphi = \\frac{1}{\\sqrt{2}\\cdot\\sqrt{2}} = \\frac{1}{2} \\implies \\varphi = 60^\\circ$.'],
         finalAnswer: '$60^\\circ$.'
       }

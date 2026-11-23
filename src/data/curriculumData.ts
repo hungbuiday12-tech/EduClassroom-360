@@ -9,6 +9,7 @@ import { MATH_GDPT_11_LESSONS } from './mathGdpt2018Grade11';
 import { MATH_GDPT_12_LESSONS } from './mathGdpt2018Grade12';
 import { MATH_GDPT_ELECTIVES } from './mathGdpt2018Electives';
 import { MATH_EXTRA_10_LESSONS } from './mathExtra10Lessons';
+import { MATH_GDPT_2006_LESSONS } from './mathGdpt2006Lessons';
 export { PHYSICS_LESSONS } from './physicsLessonsData';
 export { CS_LESSONS } from './csLessonsData';
 
@@ -848,6 +849,7 @@ export const MATH_LECTURES: MathLecture[] = [
     stageLabel: lec.stageLabel ?? 'Chuyên đề Chuyên sâu & Bồi dưỡng HSG',
   })),
   ...MATH_EXTRA_10_LESSONS,
+  ...MATH_GDPT_2006_LESSONS,
 ];
 
 export const PHYSICS_EXPERIMENTS: PhysicsExperiment[] = [

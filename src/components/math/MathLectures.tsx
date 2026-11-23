@@ -114,6 +114,8 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
     { id: 'Đại số & Xác suất', label: t('cat.prob', 'Thống kê, Tổ hợp & Xác suất', 'Statistics & Probability') }
   ];
 
+  const isStandardTrack = selectedTrack === 'khong_chuyen' || selectedTrack === 'gdpt_2006';
+
   const gradeCounts = useMemo(() => {
     const counts: Record<string, number> = {
       'Lớp 9': 0,
@@ -121,8 +123,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
       'Lớp 11': 0,
       'Lớp 12': 0
     };
+    const targetTrack = selectedTrack === 'gdpt_2006' ? 'gdpt_2006' : 'khong_chuyen';
     MATH_LECTURES.forEach((lec) => {
-      if ((lec.track || 'khong_chuyen') !== 'khong_chuyen') return;
+      if ((lec.track || 'khong_chuyen') !== targetTrack) return;
       const g =
         lec.gradeGroup ||
         (lec.grade.includes('Lớp 9')
@@ -137,7 +140,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
       if (g && g in counts) counts[g] += 1;
     });
     return counts;
-  }, []);
+  }, [selectedTrack]);
 
   const availableChapters = useMemo(() => {
     const seen = new Set<string>();
@@ -145,7 +148,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
     MATH_LECTURES.forEach((lec) => {
       const lecTrack = lec.track || 'khong_chuyen';
       if (lecTrack !== selectedTrack) return;
-      if (selectedTrack === 'khong_chuyen') {
+      if (isStandardTrack) {
         const matchesGrade =
           selectedGrade === 'all' ||
           lec.gradeGroup === selectedGrade ||
@@ -163,7 +166,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
       }
     });
     return list;
-  }, [selectedTrack, selectedGrade, selectedCategory, selectedTier]);
+  }, [selectedTrack, isStandardTrack, selectedGrade, selectedCategory, selectedTier]);
 
   // Filtered and chronologically sorted lectures
   const filteredLectures = useMemo(() => {
@@ -180,7 +183,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
       const lecTrack = lec.track || 'khong_chuyen';
       if (lecTrack !== selectedTrack) return false;
 
-      if (selectedTrack === 'khong_chuyen') {
+      if (isStandardTrack) {
         const matchesGrade =
           selectedGrade === 'all' ||
           lec.gradeGroup === selectedGrade ||
@@ -205,7 +208,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
         lec.keyFormulas.some((f) => f.toLowerCase().includes(q))
       );
     }).sort((a, b) => {
-      if (selectedTrack === 'khong_chuyen') {
+      if (isStandardTrack) {
         const ga = getGradeRank(a);
         const gb = getGradeRank(b);
         if (ga !== gb) return ga - gb;
@@ -214,7 +217,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
       const nb = b.lessonNumber ?? 999;
       return na - nb;
     });
-  }, [selectedTrack, selectedGrade, selectedCategory, selectedTier, selectedChapter, searchQuery]);
+  }, [selectedTrack, isStandardTrack, selectedGrade, selectedCategory, selectedTier, selectedChapter, searchQuery]);
 
   // Ensure activeLecture always matches current track/filter
   const activeLecture: MathLecture = useMemo(() => {
@@ -305,7 +308,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
   };
 
   const khongChuyenCount = MATH_LECTURES.filter((l) => (l.track || 'khong_chuyen') === 'khong_chuyen').length;
+  const gdpt2006Count = MATH_LECTURES.filter((l) => l.track === 'gdpt_2006').length;
   const chuyenCount = MATH_LECTURES.filter((l) => l.track === 'chuyen').length;
+  const standardTrackTotal = selectedTrack === 'gdpt_2006' ? gdpt2006Count : khongChuyenCount;
   const essayList = activeLecture.essayProblems || [];
 
   return (
@@ -343,7 +348,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       Toán Học 9–12 &amp; Bồi Dưỡng Chuyên
                     </span>
                     <span aria-hidden="true">·</span>
-                    <span className="tabular-nums">{khongChuyenCount} bài GDPT Không chuyên</span>
+                    <span className="tabular-nums">{khongChuyenCount} bài GDPT 2018</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="tabular-nums text-emerald-700 dark:text-emerald-400 font-semibold">{gdpt2006Count} bài GDPT 2006</span>
                     <span aria-hidden="true">·</span>
                     <span className="tabular-nums">{chuyenCount} chuyên đề Chuyên Toán</span>
                   </div>
@@ -377,8 +384,8 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                 )}
               </div>
 
-              {/* 2 Separate Animated Framed Track Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 3 Separate Animated Framed Track Cards (GDPT 2018 · GDPT 2006 · Chuyên Toán) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Khung 1: Khu Không Chuyên (GDPT 9-12) */}
                 <div
                   style={
@@ -448,7 +455,76 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                   </button>
                 </div>
 
-                {/* Khung 2: Khu Chuyên Toán & Chuyên đề GDPT 2018 */}
+                {/* Khung 2: Khu GDPT 2006 (Không chuyên 9-12) */}
+                <div
+                  style={
+                    {
+                      '--math-accent': '#059669',
+                      '--math-secondary': '#14b8a6'
+                    } as React.CSSProperties
+                  }
+                  className={`math-zone-frame group ${
+                    selectedTrack === 'gdpt_2006'
+                      ? 'math-zone-active shadow-[0_14px_34px_-12px_rgba(5,150,105,0.42)]'
+                      : 'shadow-xs'
+                  }`}
+                >
+                  <div aria-hidden="true" className="math-geo-ring" />
+                  <button
+                    type="button"
+                    data-ripple="true"
+                    onClick={() => {
+                      setSelectedTrack('gdpt_2006');
+                      setSelectedChapter('all');
+                    }}
+                    className={`relative z-10 w-full h-full text-left rounded-[0.5rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
+                      selectedTrack === 'gdpt_2006'
+                        ? 'bg-gradient-to-br from-emerald-700 via-teal-600 to-emerald-600 text-white'
+                        : 'bg-slate-50/95 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span aria-hidden="true" className="math-grid-sheen" />
+                    <div className="relative z-10 flex items-start gap-3.5 min-w-0">
+                      <div
+                        className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                          selectedTrack === 'gdpt_2006'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
+                        }`}
+                      >
+                        <BookOpen className="w-6 h-6" />
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="text-sm sm:text-base font-extrabold leading-snug">
+                          Khu GDPT 2006 (Không chuyên)
+                        </div>
+                        <div
+                          className={`text-xs leading-relaxed ${
+                            selectedTrack === 'gdpt_2006'
+                              ? 'text-emerald-100'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          Lớp 9–12 chuẩn SGK 2006 + Số phức · {gdpt2006Count} bài kèm 2D &amp; 3D
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative z-10 shrink-0 flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                      {selectedTrack === 'gdpt_2006' ? (
+                        <span className="inline-flex items-center gap-1 text-white">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Đang mở</span>
+                        </span>
+                      ) : (
+                        <span className="text-emerald-700 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+                          Chọn khu →
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                </div>
+
+                {/* Khung 3: Khu Chuyên Toán & Chuyên đề GDPT 2018 */}
                 <div
                   style={
                     {
@@ -520,13 +596,13 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
 
               {/* Filter Strip + Search Box */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
-                {selectedTrack === 'khong_chuyen' ? (
+                {isStandardTrack ? (
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
                     <span className="text-xs font-semibold text-slate-500 shrink-0 mr-1">
                       {t('grade.label', 'Khối lớp:', 'Grade:')}
                     </span>
                     {[
-                      { id: 'all', label: t('grade.all', `Tất cả (${khongChuyenCount})`, `All (${khongChuyenCount})`) },
+                      { id: 'all', label: t('grade.all', `Tất cả (${standardTrackTotal})`, `All (${standardTrackTotal})`) },
                       { id: 'Lớp 9', label: `${t('grade.9', 'Lớp 9', 'Grade 9')} (${gradeCounts['Lớp 9']})` },
                       { id: 'Lớp 10', label: `${t('grade.10', 'Lớp 10', 'Grade 10')} (${gradeCounts['Lớp 10']})` },
                       { id: 'Lớp 11', label: `${t('grade.11', 'Lớp 11', 'Grade 11')} (${gradeCounts['Lớp 11']})` },
@@ -540,7 +616,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                         }}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap transition-all ${
                           selectedGrade === g.id
-                            ? 'bg-blue-700 text-white shadow-xs'
+                            ? selectedTrack === 'gdpt_2006'
+                              ? 'bg-emerald-700 text-white shadow-xs'
+                              : 'bg-blue-700 text-white shadow-xs'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
@@ -584,8 +662,8 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                 </div>
               </div>
 
-              {/* Category Filter Chips (only when in Không Chuyên track) */}
-              {selectedTrack === 'khong_chuyen' && (
+              {/* Category Filter Chips (only when in Standard GDPT 2018 or GDPT 2006 tracks) */}
+              {isStandardTrack && (
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
                   {categories.map((cat) => (
                     <button
@@ -606,11 +684,15 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                 </div>
               )}
 
-              {/* Chapter GDPT 2018 Filter Strip */}
+              {/* Chapter Filter Strip */}
               {availableChapters.length > 0 && (
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-2 border-t border-slate-100/80 dark:border-slate-800/70">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 mr-1">
-                    Chương GDPT 2018:
+                    {selectedTrack === 'gdpt_2006'
+                      ? 'Chương GDPT 2006:'
+                      : selectedTrack === 'chuyen'
+                      ? 'Chuyên đề Chuyên:'
+                      : 'Chương GDPT 2018:'}
                   </span>
                   <button
                     type="button"
@@ -619,6 +701,8 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       selectedChapter === 'all'
                         ? selectedTrack === 'chuyen'
                           ? 'bg-amber-600 text-white shadow-xs'
+                          : selectedTrack === 'gdpt_2006'
+                          ? 'bg-emerald-700 text-white shadow-xs'
                           : 'bg-blue-700 text-white shadow-xs'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
@@ -634,6 +718,8 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                         selectedChapter === chap
                           ? selectedTrack === 'chuyen'
                             ? 'bg-amber-600 text-white shadow-xs'
+                            : selectedTrack === 'gdpt_2006'
+                            ? 'bg-emerald-700 text-white shadow-xs'
                             : 'bg-blue-700 text-white shadow-xs'
                           : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                       }`}
@@ -654,13 +740,14 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredLectures.map((lec) => {
                   const isChuyen = lec.track === 'chuyen';
+                  const isGdpt2006 = lec.track === 'gdpt_2006';
                   return (
                     <div
                       key={lec.id}
                       style={
                         {
-                          '--math-accent': isChuyen ? '#f59e0b' : '#0284c7',
-                          '--math-secondary': isChuyen ? '#f97316' : '#2563eb'
+                          '--math-accent': isChuyen ? '#f59e0b' : isGdpt2006 ? '#059669' : '#0284c7',
+                          '--math-secondary': isChuyen ? '#f97316' : isGdpt2006 ? '#14b8a6' : '#2563eb'
                         } as React.CSSProperties
                       }
                       className="math-card-frame group shadow-xs hover:shadow-[0_18px_40px_-14px_rgba(2,132,199,0.34)]"
@@ -686,10 +773,16 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                                   className={`font-bold ${
                                     isChuyen
                                       ? 'text-amber-600 dark:text-amber-400'
+                                      : isGdpt2006
+                                      ? 'text-emerald-700 dark:text-emerald-400'
                                       : 'text-blue-700 dark:text-sky-400'
                                   }`}
                                 >
-                                  {isChuyen && lec.tier ? `Chuyên · ${lec.tier}` : lec.gradeGroup || lec.grade}
+                                  {isChuyen && lec.tier
+                                    ? `Chuyên · ${lec.tier}`
+                                    : isGdpt2006
+                                    ? `${lec.gradeGroup || lec.grade} · GDPT 2006`
+                                    : lec.gradeGroup || lec.grade}
                                 </span>
                                 <span aria-hidden="true">·</span>
                                 <span>{lec.category || 'Toán học'}</span>
@@ -708,7 +801,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                               )}
 
                               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug group-hover:text-blue-700 dark:group-hover:text-sky-400 transition-colors">
-                                {lec.title}
+                                <FormattedText text={lec.title} />
                               </h3>
                             </div>
                           </div>
@@ -905,6 +998,8 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                 kicker={`${
                   activeLecture.track === 'chuyen'
                     ? `Chuyên Toán · ${activeLecture.tier || 'Nâng cao'}`
+                    : activeLecture.track === 'gdpt_2006'
+                    ? `${activeLecture.gradeGroup || activeLecture.grade} · GDPT 2006`
                     : activeLecture.gradeGroup || activeLecture.grade
                 } · ${activeLecture.category || 'Toán học'} · ${activeLecture.difficulty || 'Thông hiểu'}${
                   activeLecture.readTimeMinutes ? ` · ${activeLecture.readTimeMinutes} phút` : ''

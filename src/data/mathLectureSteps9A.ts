@@ -361,7 +361,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_9A: Record<string, LectureStep[]> = {
       },
       deepDiveSection:
         'Trong các bài toán thực tế đo chiều cao tháp, góc nâng của máy bay hay độ nghiêng mái nhà, bước quan trọng nhất là vẽ đúng tam giác vuông chứa góc quan sát, xác định rõ cạnh kề hay cạnh đối đã biết rồi mới chọn $\\sin$, $\\cos$ hoặc $\\tan$.',
-      teacherExplanation: 'Hai góc phụ nhau thì chéo nhau ($\sin$ góc này bằng $\\cos$ góc kia).',
+      teacherExplanation: 'Hai góc phụ nhau thì chéo nhau ($\\sin$ góc này bằng $\\cos$ góc kia).',
       keyTakeaway: 'Dùng $\\sin^2\\alpha + \\cos^2\\alpha = 1$ để quy đổi nhanh giữa $\\sin$ và $\\cos$ của cùng một góc nhọn.',
       miniQuiz: [
         {

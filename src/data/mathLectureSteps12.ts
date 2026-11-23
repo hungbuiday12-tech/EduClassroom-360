@@ -206,7 +206,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
       stepTitle: '2. Góc trong $Oxyz$ (Đường–Đường, Đường–Mặt, Mặt–Mặt)',
       stepType: 'derivation',
       conceptSection:
-        'Trong tọa độ $Oxyz$, mọi góc hình học đều quy về tích vô hướng giữa hai vectơ đặc trưng ($\vec{u}$ cho đường thẳng, $\\vec{n}$ cho mặt phẳng). Bí quyết không bao giờ nhầm $\\sin$ và $\\cos$ là kiểm tra xem hai đối tượng có **CÙNG LOẠI** hay **KHÁC LOẠI**.',
+        'Trong tọa độ $Oxyz$, mọi góc hình học đều quy về tích vô hướng giữa hai vectơ đặc trưng ($\\vec{u}$ cho đường thẳng, $\\vec{n}$ cho mặt phẳng). Bí quyết không bao giờ nhầm $\\sin$ và $\\cos$ là kiểm tra xem hai đối tượng có **CÙNG LOẠI** hay **KHÁC LOẠI**.',
       formulaSection: {
         primaryFormula: '\\cos(d_1, d_2) = \\frac{|\\vec{u}_1 \\cdot \\vec{u}_2|}{|\\vec{u}_1||\\vec{u}_2|}, \\qquad \\sin(d, (P)) = \\frac{|\\vec{u}_d \\cdot \\vec{n}_P|}{|\\vec{u}_d||\\vec{n}_P|}',
         secondaryFormulas: [

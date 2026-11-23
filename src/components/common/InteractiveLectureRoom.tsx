@@ -1964,7 +1964,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
               Tổng kết &amp; Phân tích kết quả bài giảng
             </div>
             <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">
-              {title}
+              <FormattedText text={title} />
             </h3>
           </div>
 
@@ -2050,7 +2050,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
                 >
                   <div className="min-w-0 space-y-1">
                     <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {st.stepTitle}
+                      <FormattedText text={st.stepTitle} />
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
                       <span>TN: {correctCount}/{mcqs.length}</span>
@@ -2156,7 +2156,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
                       </span>
                       <div className="space-y-1">
                         <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                          {rec.title}
+                          <FormattedText text={rec.title} />
                         </div>
                         <div className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                           <FormattedText text={rec.action} />
@@ -2204,7 +2204,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
             )}
           </div>
           <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-snug">
-            {title}
+            <FormattedText text={title} />
           </h2>
           {subtitle && (
             <div className="text-xs text-slate-600 dark:text-slate-400">

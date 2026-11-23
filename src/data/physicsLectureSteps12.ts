@@ -183,7 +183,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
       miniEssay: {
         id: 'p12mg-s1-e1',
         question: 'Thanh đồng MN dài $20\\text{ cm}$, khối lượng $10\\text{ g}$ được treo nằm ngang bằng hai sợi dây mảnh thẳng đứng trong từ trường đều $\\vec{B}$ thẳng đứng hướng lên ($B = 0{,}1\\text{ T}$, $g = 10\\text{ m/s}^2$). Cho dòng điện $I = 5\\text{ A}$ chạy từ M đến N. Tính lực căng mỗi dây treo.',
-        hint: 'Vì $\\vec{B}$ thẳng đứng và dây nằm ngang nên lực từ $\\vec{F}$ có phương nằm ngang ($\vec{F} \\perp \\vec{P}$). Hợp lực treo $2T = \\sqrt{P^2 + F^2}$.',
+        hint: 'Vì $\\vec{B}$ thẳng đứng và dây nằm ngang nên lực từ $\\vec{F}$ có phương nằm ngang ($\\vec{F} \\perp \\vec{P}$). Hợp lực treo $2T = \\sqrt{P^2 + F^2}$.',
         rubricChecklist: [
           'Tính $P = mg = 0{,}01\\cdot 10 = 0{,}1\\text{ N}$ và lực từ nằm ngang $F = 0{,}1\\cdot 5\\cdot 0{,}2 = 0{,}1\\text{ N}$.',
           'Tính lực căng tổng $T_{\\text{tổng}} = \\sqrt{0{,}1^2 + 0{,}1^2} = 0{,}1\\sqrt{2}\\text{ N} \\implies$ mỗi dây chịu $0{,}05\\sqrt{2} \\approx 0{,}0707\\text{ N}$.'
@@ -305,14 +305,14 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
       miniQuiz: [
         {
           id: 'p12oq-s1-q1',
-          question: 'Kim loại làm catôt có công thoát electron là $A = 3{,}31\\text{ eV}$ ($\approx 5{,}3\\cdot 10^{-19}\\text{ J}$). Giới hạn quang điện $\\lambda_0$ xấp xỉ:',
+          question: 'Kim loại làm catôt có công thoát electron là $A = 3{,}31\\text{ eV}$ ($\\approx 5{,}3\\cdot 10^{-19}\\text{ J}$). Giới hạn quang điện $\\lambda_0$ xấp xỉ:',
           options: ['A. $0{,}25\\,\\mu\\text{m}$', 'B. $0{,}375\\,\\mu\\text{m}$', 'C. $0{,}55\\,\\mu\\text{m}$', 'D. $0{,}66\\,\\mu\\text{m}$'],
           correctIndex: 1,
           explanation: '$\\lambda_0 = \\frac{1{,}9875\\cdot 10^{-25}}{5{,}3\\cdot 10^{-19}} \\approx 0{,}375\\,\\mu\\text{m}$.'
         },
         {
           id: 'p12oq-s1-q2',
-          question: 'Chiếu chùm sáng đỏ ($\lambda > \\lambda_0$) vào tấm kẽm mang điện âm. Nếu tăng công suất nguồn sáng đỏ lên gấp 100 lần thì:',
+          question: 'Chiếu chùm sáng đỏ ($\\lambda > \\lambda_0$) vào tấm kẽm mang điện âm. Nếu tăng công suất nguồn sáng đỏ lên gấp 100 lần thì:',
           options: [
             'A. Electron bắn ra rất nhanh',
             'B. Xảy ra quang điện nếu chiếu đủ lâu',
@@ -348,7 +348,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
           '• **Quang điện trở** và **Pin quang điện (Pin Mặt Trời)** hoạt động dựa trên **hiện tượng quang điện trong**.\n• Hiện tượng **quang – phát quang**: vật hấp thụ ánh sáng bước sóng ngắn hơn và phát ra ánh sáng bước sóng dài hơn ($\\lambda_{\\text{phát}} > \\lambda_{\\text{kích thích}}$ theo định luật Stokes).'
       },
       deepDiveSection:
-        'Tại sao trong phòng tối, bột huỳnh quang màu lục lại phát sáng mạnh khi chiếu tia cực tím ($\lambda_{\\text{tím}}$ ngắn), nhưng hoàn toàn không phát sáng khi chiếu ánh sáng đỏ ($\lambda_{\\text{đỏ}}$ dài)? Vì năng lượng phôtôn kích thích phải lớn hơn hoặc bằng năng lượng phôtôn phát ra ($hf_{\\text{kt}} > hf_{\\text{phát}} \\iff \\lambda_{\\text{kt}} < \\lambda_{\\text{phát}}$).',
+        'Tại sao trong phòng tối, bột huỳnh quang màu lục lại phát sáng mạnh khi chiếu tia cực tím ($\\lambda_{\\text{tím}}$ ngắn), nhưng hoàn toàn không phát sáng khi chiếu ánh sáng đỏ ($\\lambda_{\\text{đỏ}}$ dài)? Vì năng lượng phôtôn kích thích phải lớn hơn hoặc bằng năng lượng phôtôn phát ra ($hf_{\\text{kt}} > hf_{\\text{phát}} \\iff \\lambda_{\\text{kt}} < \\lambda_{\\text{phát}}$).',
       teacherExplanation:
         'Ghi nhớ: Quang điện trở & Pin Mặt Trời $\\to$ quang điện **trong**; tế bào quang điện chân không $\\to$ quang điện **ngoài**.',
       keyTakeaway: 'Pin Mặt Trời dùng quang điện trong; ánh sáng phát quang luôn có bước sóng DÀI hơn ánh sáng kích thích.',
@@ -492,7 +492,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
       deepDiveSection:
         'Cẩn thận chiều trừ trong công thức năng lượng phản ứng $\\Delta E$: theo khối lượng nghỉ thì lấy **TRƯỚC trừ SAU** ($m_{\\text{trước}} - m_{\\text{sau}}$), nhưng theo độ hụt khối hoặc năng lượng liên kết hay động năng thì lấy **SAU trừ TRƯỚC** ($W_{\\text{lk sau}} - W_{\\text{lk trước}}$)!',
       teacherExplanation:
-        'Hạt nhân tự phân rã phóng xạ luôn là phản ứng tỏa năng lượng ($\Delta E > 0$); tính theo 1 mol phản ứng nhớ nhân thêm $N_A = 6{,}02\\cdot 10^{23}$.',
+        'Hạt nhân tự phân rã phóng xạ luôn là phản ứng tỏa năng lượng ($\\Delta E > 0$); tính theo 1 mol phản ứng nhớ nhân thêm $N_A = 6{,}02\\cdot 10^{23}$.',
       keyTakeaway: 'Tỏa năng lượng khi khối lượng sau nhỏ hơn khối lượng trước ($\\Delta E = (m_{\\text{trước}} - m_{\\text{sau}})c^2 > 0$).',
       miniQuiz: [
         {
@@ -581,7 +581,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
           'u_L \\text{ sớm pha } \\frac{\\pi}{2} \\text{ so với } i, \\qquad u_C \\text{ trễ pha } \\frac{\\pi}{2} \\text{ so với } i'
         ],
         variablesNote:
-          '• $Z_L$ ($\Omega$): cảm kháng (tỉ lệ thuận tần số $\\omega$); $Z_C$ ($\Omega$): dung kháng (tỉ lệ nghịch $\\omega$).\n• **Chú ý lệch pha giữa các điện áp**: $u_L$ và $u_C$ luôn **ngược pha** nhau ($\\Delta\\varphi = \\pi$), tức $u_L/U_{0L} + u_C/U_{0C} = 0$ tại mọi thời điểm!'
+          '• $Z_L$ ($\\Omega$): cảm kháng (tỉ lệ thuận tần số $\\omega$); $Z_C$ ($\\Omega$): dung kháng (tỉ lệ nghịch $\\omega$).\n• **Chú ý lệch pha giữa các điện áp**: $u_L$ và $u_C$ luôn **ngược pha** nhau ($\\Delta\\varphi = \\pi$), tức $u_L/U_{0L} + u_C/U_{0C} = 0$ tại mọi thời điểm!'
       },
       deepDiveSection:
         'Vì $u_R$ vuông pha với $u_L$ và $u_C$, **giá trị tức thời** cộng đại số $u = u_R + u_L + u_C$ tại từng thời điểm, nhưng **giá trị hiệu dụng** KHÔNG được cộng thẳng $U_R + U_L + U_C$ mà phải tổng hợp bằng giản đồ vectơ Fresnel!',
@@ -603,7 +603,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
         },
         {
           id: 'p12ac-s1-q2',
-          question: 'Đoạn mạch chỉ có tụ điện $C = \\frac{10^{-4}}{\\pi}\\text{ F}$ nối vào nguồn xoay chiều tần số $50\\text{ Hz}$ ($\omega = 100\\pi$). Dung kháng $Z_C$ bằng:',
+          question: 'Đoạn mạch chỉ có tụ điện $C = \\frac{10^{-4}}{\\pi}\\text{ F}$ nối vào nguồn xoay chiều tần số $50\\text{ Hz}$ ($\\omega = 100\\pi$). Dung kháng $Z_C$ bằng:',
           options: ['A. $10\\,\\Omega$', 'B. $50\\,\\Omega$', 'C. $100\\,\\Omega$', 'D. $200\\,\\Omega$'],
           correctIndex: 2,
           explanation: '$Z_C = \\frac{1}{100\\pi \\cdot \\frac{10^{-4}}{\\pi}} = 100\\,\\Omega$.'
@@ -832,7 +832,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
         },
         {
           id: 'p12ag-s3-q2',
-          question: 'Điện áp hiệu dụng tại trạm phát là $10\\text{ kV}$, truyền đi công suất $1\\text{ MW}$ ($\cos\\varphi = 1$) trên dây có điện trở tổng $R = 5\\,\\Omega$. Công suất hao phí trên đường dây là:',
+          question: 'Điện áp hiệu dụng tại trạm phát là $10\\text{ kV}$, truyền đi công suất $1\\text{ MW}$ ($\\cos\\varphi = 1$) trên dây có điện trở tổng $R = 5\\,\\Omega$. Công suất hao phí trên đường dây là:',
           options: ['A. $50\\text{ kW}$', 'B. $5\\text{ kW}$', 'C. $100\\text{ kW}$', 'D. $25\\text{ kW}$'],
           correctIndex: 0,
           explanation: '$I = \\frac{10^6}{10^4} = 100\\text{ A} \\implies \\Delta P = I^2 R = 100^2\\cdot 5 = 50\\,000\\text{ W} = 50\\text{ kW}$.'
@@ -867,7 +867,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
       deepDiveSection:
         'Cách xác định nhanh một tọa độ $x$ trên màn là vân sáng hay vân tối: lập tỉ số $k = x/i$.\n• Nếu $k$ là số nguyên ($0, \\pm 1, \\pm 2\\dots$): vân sáng bậc $|k|$.\n• Nếu $k$ là số bán nguyên ($\\pm 0{,}5; \\pm 1{,}5\\dots$): vân tối thứ $|k| + 0{,}5$ (ví dụ $k = 2{,}5 \\to$ vân tối thứ 3).',
       teacherExplanation:
-        'Đừng đổi các đại lượng $\\lambda, a, D$ về mét mất thời gian: giữ nguyên $\\lambda$ ($\mu\\text{m}$), $a$ (mm), $D$ (m) thì công thức cho ngay $i$ tính bằng **mm**!',
+        'Đừng đổi các đại lượng $\\lambda, a, D$ về mét mất thời gian: giữ nguyên $\\lambda$ ($\\mu\\text{m}$), $a$ (mm), $D$ (m) thì công thức cho ngay $i$ tính bằng **mm**!',
       keyTakeaway: '$i = \\frac{\\lambda D}{a}$ (đơn vị chuẩn mẹo: $\\mu\\text{m} \\cdot \\text{m} / \\text{mm} = \\text{mm}$).',
       miniQuiz: [
         {
@@ -1014,7 +1014,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
           '• Kim loại kiềm (Cs, K, Na) có công thoát nhỏ nên $\\lambda_0$ nằm trong vùng ánh sáng nhìn thấy.\n• Nếu chiếu ánh sáng có $\\lambda > \\lambda_0$ vào bản kẽm mang **điện âm** (hoặc mang điện dương) thì tấm kẽm giữ nguyên điện tích ban đầu.'
       },
       deepDiveSection:
-        'Khi chiếu tia tử ngoại ($\lambda < \\lambda_0$) vào một tấm kẽm **trung hòa điện** cô lập: electron liên tục bật ra làm tấm kẽm mất bớt electron và tích điện **dương** dần lên; đến khi điện thế dương đủ lớn hút giữ các electron bật ra có $W_{đ0\\max}$ quay trở lại thì điện thế tấm kẽm đạt giá trị ổn định $V_{\\max}$.',
+        'Khi chiếu tia tử ngoại ($\\lambda < \\lambda_0$) vào một tấm kẽm **trung hòa điện** cô lập: electron liên tục bật ra làm tấm kẽm mất bớt electron và tích điện **dương** dần lên; đến khi điện thế dương đủ lớn hút giữ các electron bật ra có $W_{đ0\\max}$ quay trở lại thì điện thế tấm kẽm đạt giá trị ổn định $V_{\\max}$.',
       teacherExplanation:
         'Nhớ kiểm tra 2 bước: (1) Tia chiếu có qua tấm thủy tinh chặn tử ngoại không? (2) $\\lambda \\le \\lambda_0$ không?',
       keyTakeaway: 'Kim loại cô lập bị chiếu ánh sáng gây quang điện sẽ dần tích điện dương tới điện thế ổn định $V_{\\max}$.',
@@ -1028,7 +1028,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
         },
         {
           id: 'p12ph-s1-q2',
-          question: 'Một tấm kẽm đang trung hòa điện được đặt cô lập và chiếu bằng chùm tia tử ngoại ($\lambda < \\lambda_0$). Sau một thời gian, tấm kẽm sẽ:',
+          question: 'Một tấm kẽm đang trung hòa điện được đặt cô lập và chiếu bằng chùm tia tử ngoại ($\\lambda < \\lambda_0$). Sau một thời gian, tấm kẽm sẽ:',
           options: ['A. Vẫn trung hòa điện', 'B. Tích điện âm', 'C. Tích điện dương tới một điện thế cực đại ổn định', 'D. Nóng chảy ngay lập tức'],
           correctIndex: 2,
           explanation: 'Electron thoát ra khiến tấm kẽm mang điện dương tăng dần cho tới khi lực hút tĩnh điện giữ lại được cả electron nhanh nhất.'
@@ -1037,12 +1037,12 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
       miniEssay: {
         id: 'p12ph-s1-e1',
         question: 'Trong thí nghiệm Hertz, khi đặt thêm một tấm thủy tinh thường chắn giữa đèn hồ quang và tấm kẽm tích điện âm thì kim điện nghiệm không cụp xuống nữa. Giải thích hiện tượng này.',
-        hint: 'Thủy tinh thường hấp thụ rất mạnh tia tử ngoại ($\lambda < 0{,}38\\,\\mu\\text{m}$) và kẽm có $\\lambda_0 = 0{,}35\\,\\mu\\text{m}$.',
+        hint: 'Thủy tinh thường hấp thụ rất mạnh tia tử ngoại ($\\lambda < 0{,}38\\,\\mu\\text{m}$) và kẽm có $\\lambda_0 = 0{,}35\\,\\mu\\text{m}$.',
         rubricChecklist: [
           'Đèn hồ quang phát cả ánh sáng thấy và tia tử ngoại; chỉ tia tử ngoại mới thỏa $\\lambda \\le \\lambda_0(\\text{kẽm}) = 0{,}35\\,\\mu\\text{m}$.',
-          'Thủy tinh thường hấp thụ hầu hết tia tử ngoại, chỉ cho ánh sáng nhìn thấy ($\lambda > 0{,}38\\,\\mu\\text{m} > \\lambda_0$) đi qua nên không gây được quang điện.'
+          'Thủy tinh thường hấp thụ hầu hết tia tử ngoại, chỉ cho ánh sáng nhìn thấy ($\\lambda > 0{,}38\\,\\mu\\text{m} > \\lambda_0$) đi qua nên không gây được quang điện.'
         ],
-        sampleAnswer: 'Giới hạn quang điện của kẽm là $\\lambda_0 \\approx 0{,}35\\,\\mu\\text{m}$ nằm trong vùng tử ngoại. Ánh sáng hồ quang có cả tia tử ngoại lẫn ánh sáng nhìn thấy. Khi chắn bằng tấm thủy tinh thường, thủy tinh hấp thụ gần như toàn bộ tia tử ngoại và chỉ cho ánh sáng nhìn thấy ($\lambda \\ge 0{,}38\\,\\mu\\text{m} > \\lambda_0$) truyền tới tấm kẽm, nên hiện tượng quang điện không xảy ra và kim điện nghiệm giữ nguyên độ lệch.'
+        sampleAnswer: 'Giới hạn quang điện của kẽm là $\\lambda_0 \\approx 0{,}35\\,\\mu\\text{m}$ nằm trong vùng tử ngoại. Ánh sáng hồ quang có cả tia tử ngoại lẫn ánh sáng nhìn thấy. Khi chắn bằng tấm thủy tinh thường, thủy tinh hấp thụ gần như toàn bộ tia tử ngoại và chỉ cho ánh sáng nhìn thấy ($\\lambda \\ge 0{,}38\\,\\mu\\text{m} > \\lambda_0$) truyền tới tấm kẽm, nên hiện tượng quang điện không xảy ra và kim điện nghiệm giữ nguyên độ lệch.'
       }
     },
     {
@@ -1074,7 +1074,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
         },
         {
           id: 'p12ph-s2-q2',
-          question: 'Khi tăng cường độ chùm sáng kích thích ($\lambda < \\lambda_0$) lên 3 lần nhưng giữ nguyên bước sóng $\\lambda$, hiệu điện thế hãm $U_h$ sẽ:',
+          question: 'Khi tăng cường độ chùm sáng kích thích ($\\lambda < \\lambda_0$) lên 3 lần nhưng giữ nguyên bước sóng $\\lambda$, hiệu điện thế hãm $U_h$ sẽ:',
           options: ['A. Tăng 3 lần', 'B. Tăng $\\sqrt{3}$ lần', 'C. Giảm 3 lần', 'D. Không đổi'],
           correctIndex: 3,
           explanation: '$U_h$ chỉ phụ thuộc vào bước sóng $\\lambda$ và công thoát $A$, không phụ thuộc cường độ chùm sáng.'
@@ -1107,7 +1107,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_12: Record<string, LectureStep[]> = {
       deepDiveSection:
         'Đồ thị đặc trưng Vôn – Ampe của tế bào quang điện: khi $U_{AK} \\le -U_h$ thì $I = 0$; khi $U_{AK}$ tăng từ $-U_h$ tới giá trị dương đủ lớn thì $I$ tăng dần và đi ngang thành đường bão hòa $I_{bh}$. Tăng cường độ chùm sáng chỉ đẩy đường bão hòa $I_{bh}$ **lên cao**, còn điểm cắt $-U_h$ trên trục hoành vẫn **giữ nguyên**!',
       teacherExplanation:
-        'Phân biệt hai đồ thị: đổi cường độ sáng $\\to$ đổi $I_{bh}$ (giữ nguyên $U_h$); đổi màu ánh sáng ($\lambda$) $\\to$ đổi điểm cắt $-U_h$.',
+        'Phân biệt hai đồ thị: đổi cường độ sáng $\\to$ đổi $I_{bh}$ (giữ nguyên $U_h$); đổi màu ánh sáng ($\\lambda$) $\\to$ đổi điểm cắt $-U_h$.',
       keyTakeaway: 'Dòng quang điện bão hòa $I_{bh}$ tỉ lệ thuận với số phôtôn chiếu tới mỗi giây (cường độ sáng).',
       miniQuiz: [
         {

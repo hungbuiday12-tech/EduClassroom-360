@@ -847,6 +847,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   } | null>(null);
   const [modelParts, setModelParts] = useState<ExplodablePartInfo[]>([]);
   const [highlightedPartIdx, setHighlightedPartIdx] = useState<number | null>(null);
+  const [partSelectSeq, setPartSelectSeq] = useState<number>(0);
   const [isolatedPartIdx, setIsolatedPartIdx] = useState<number | null>(null);
   const [partCardMinimized, setPartCardMinimized] = useState<boolean>(false);
   const highlightedPartIdxRef = useRef<number | null>(null);
@@ -3228,6 +3229,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           } else {
             // Simple click selects/highlights part cleanly without pulling or hijacking viewport
             setHighlightedPartIdx(grabbedIdx);
+            setPartSelectSeq((s) => s + 1);
             setActiveGrabInfo(null);
             const info = runtime.model.explodables[grabbedIdx]?.info;
             if (info) {
@@ -3267,6 +3269,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             : highlightedPartIdxRef.current ?? 0;
         const nextIdx = (baseIdx + dir + total) % total;
         setHighlightedPartIdx(nextIdx);
+        setPartSelectSeq((s) => s + 1);
         if (isolatedPartIdxRef.current !== null) {
           setIsolatedPartIdx(nextIdx);
         }
@@ -3296,6 +3299,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           setPointAskLockedTarget(picked);
           setPointAskHover(picked);
           setHighlightedPartIdx(picked.partIdx);
+          setPartSelectSeq((s) => s + 1);
           const partMesh = runtime.model.explodables[picked.partIdx]?.mesh;
           if (partMesh) {
             runtime.highlightHelper.setFromObject(partMesh);
@@ -3333,6 +3337,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
       if (matchedIdx !== -1) {
         setHighlightedPartIdx(matchedIdx);
+        setPartSelectSeq((s) => s + 1);
         setPartCardMinimized(false);
         const info = runtime.model.explodables[matchedIdx].info;
         showToast(isEn ? `Selected: ${info.nameEn}` : `Đã chọn linh kiện: ${info.nameVi}`);
@@ -3352,6 +3357,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         const matchedIdx = findPartIndexFromObject(runtime.model, hit.object);
         if (matchedIdx !== -1) {
           setHighlightedPartIdx(matchedIdx);
+          setPartSelectSeq((s) => s + 1);
           setIsolatedPartIdx(matchedIdx);
           setPartCardMinimized(false);
           const info = runtime.model.explodables[matchedIdx].info;
@@ -5931,24 +5937,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   }, [fallbackPortalFullscreen]);
 
   const handleToggleFullscreen = useCallback(() => {
-    const el = stageContainerRef.current;
-    if (!el) return;
     if (!isFullscreen) {
-      setIsFullscreen(true);
-      if (el.requestFullscreen) {
-        el.requestFullscreen()
-          .then(() => {
-            setNativeFullscreenActive(true);
-            setFallbackPortalFullscreen(false);
-          })
-          .catch(() => {
-            setNativeFullscreenActive(false);
-            setFallbackPortalFullscreen(true);
-          });
-      } else {
-        setNativeFullscreenActive(false);
-        setFallbackPortalFullscreen(true);
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
       }
+      setNativeFullscreenActive(false);
+      setFallbackPortalFullscreen(true);
+      setIsFullscreen(true);
     } else {
       setIsFullscreen(false);
       setFallbackPortalFullscreen(false);
@@ -6014,6 +6009,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
   const handleFocusPart = useCallback((partIdx: number) => {
     setHighlightedPartIdx(partIdx);
+    setPartSelectSeq((s) => s + 1);
     const rt = runtimeRef.current;
     const part = rt?.model?.explodables[partIdx];
     if (!rt || !part) return;
@@ -6817,16 +6813,21 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             onDeleteCustomModel={handleDeleteCustomModel}
             modelParts={modelParts}
             selectedPartIdx={highlightedPartIdx}
+            partSelectSeq={partSelectSeq}
             isolatedPartIdx={isolatedPartIdx}
             onSelectPart={(idx) => {
               setHighlightedPartIdx(idx);
+              setPartSelectSeq((s) => s + 1);
               if (isolatedPartIdx !== null) {
                 setIsolatedPartIdx(idx);
               }
             }}
             onToggleIsolatePart={(idx) => {
               setIsolatedPartIdx(idx);
-              if (idx !== null) setHighlightedPartIdx(idx);
+              if (idx !== null) {
+                setHighlightedPartIdx(idx);
+                setPartSelectSeq((s) => s + 1);
+              }
             }}
             onFocusPart={handleFocusPart}
             partVisibility={partVisibility}
@@ -7617,6 +7618,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                       type="button"
                       onClick={() => {
                         setHighlightedPartIdx(hologramGazeHud.partIdx);
+                        setPartSelectSeq((s) => s + 1);
                         setIsolatedPartIdx(hologramGazeHud.partIdx);
                         setPartCardMinimized(false);
                       }}
@@ -8761,7 +8763,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         </div>
       )}
         {entryView === 'studio' && studioModals}
-        {nativeFullscreenActive && <RemoteControllerModal />}
+        {(nativeFullscreenActive || fallbackPortalFullscreen) && <RemoteControllerModal />}
         </div>
       </ViewportPortal>
     </>

@@ -129,7 +129,7 @@ export const CS_CUSTOM_LECTURE_STEPS: Record<string, LectureStep[]> = {
           '• `double` có độ chính xác $\\approx 15$ chữ số thập phân; `float` chỉ $\\approx 6\\text{–}7$ chữ số (không nên dùng `float`).\n• Chia làm tròn lên hai số nguyên dương: dùng công thức nguyên `(a + b - 1) / b` thay vì `ceil(1.0 * a / b)` để tránh sai số dấu phẩy động.'
       },
       deepDiveSection:
-        'Sai lầm phổ biến: viết `ceil(a / b)` với `a, b` kiểu `long long` cỡ $10^{17}$ sẽ làm mất các chữ số hàng đơn vị vì `double` chỉ giữ chính xác 53 bit phần định trị ($\approx 9 \\cdot 10^{15}$). Luôn dùng `(a + b - 1) / b` cho số nguyên dương.',
+        'Sai lầm phổ biến: viết `ceil(a / b)` với `a, b` kiểu `long long` cỡ $10^{17}$ sẽ làm mất các chữ số hàng đơn vị vì `double` chỉ giữ chính xác 53 bit phần định trị ($\\approx 9 \\cdot 10^{15}$). Luôn dùng `(a + b - 1) / b` cho số nguyên dương.',
       teacherExplanation:
         'Ưu tiên tính toán hoàn toàn bằng số nguyên (`(a + b - 1) / b` cho làm tròn lên); nếu bắt buộc dùng số thực, chọn `double` và so sánh theo $|a - b| < 10^{-9}$.',
       workedExample: {
@@ -568,7 +568,7 @@ export const CS_CUSTOM_LECTURE_STEPS: Record<string, LectureStep[]> = {
             'D. $O(1)$'
           ],
           correctIndex: 2,
-          explanation: 'Mỗi lời gọi đẻ ra 2 lời gọi nhỏ hơn, tạo cây đệ quy hàm mũ khoảng $\\varphi^n$ nút ($\varphi \\approx 1{,}618$).'
+          explanation: 'Mỗi lời gọi đẻ ra 2 lời gọi nhỏ hơn, tạo cây đệ quy hàm mũ khoảng $\\varphi^n$ nút ($\\varphi \\approx 1{,}618$).'
         }
       ],
       miniEssay: {
@@ -649,7 +649,7 @@ export const CS_CUSTOM_LECTURE_STEPS: Record<string, LectureStep[]> = {
           '\\text{Kiểm tra ô } (r, c) \\text{ hợp lệ trong } O(1):\\; \\neg\\texttt{col}[c] \\land \\neg\\texttt{d1}[r-c+N] \\land \\neg\\texttt{d2}[r+c]'
         ],
         variablesNote:
-          '• Phép cộng $+N$ ở đường chéo chính `r - c + N` đảm bảo chỉ số luôn không âm ($\ge 0$) khi truy cập mảng C++.'
+          '• Phép cộng $+N$ ở đường chéo chính `r - c + N` đảm bảo chỉ số luôn không âm ($\\ge 0$) khi truy cập mảng C++.'
       },
       deepDiveSection:
         'Nhờ quy ước mỗi hàng chỉ chứa 1 quân hậu và kiểm tra 3 mảng bit/boolean trong $O(1)$, số cấu hình cần duyệt với bàn cờ $8 \\times 8$ giảm từ $\\binom{64}{8} \\approx 4{,}4 \\cdot 10^9$ xuống chỉ còn vài nghìn trạng thái!',
@@ -762,7 +762,7 @@ export const CS_CUSTOM_LECTURE_STEPS: Record<string, LectureStep[]> = {
           '\\text{Tìm MAX thỏa mãn: nếu } \\texttt{check(mid)} \\text{ đúng} \\implies \\texttt{ans = mid; l = mid + 1;}'
         ],
         variablesNote:
-          '• Miền $[l, r]$ khi tìm kiếm trên đáp án không phải chỉ số mảng mà là **khoảng giá trị** của đáp án (ví dụ $[\max(a_i), \sum a_i]$).\n• Nếu đáp án lên tới $10^{14}$ thì $\\log_2(10^{14}) \\approx 47$ bước — cực nhanh!'
+          '• Miền $[l, r]$ khi tìm kiếm trên đáp án không phải chỉ số mảng mà là **khoảng giá trị** của đáp án (ví dụ $[\\max(a_i), \\sum a_i]$).\n• Nếu đáp án lên tới $10^{14}$ thì $\\log_2(10^{14}) \\approx 47$ bước — cực nhanh!'
       },
       deepDiveSection:
         'Dấu hiệu nhận biết ngay bài dùng Chặt nhị phân kết quả trong đề thi: *"Tìm giá trị nhỏ nhất của tổng lớn nhất..."* hoặc *"Tìm độ dài lớn nhất sao cho cắt được ít nhất K đoạn..."*. Hàm `check(mid)` chỉ việc duyệt tham lam 1 vòng $O(N)$ để trả lời `true/false`.',
@@ -1164,7 +1164,7 @@ export const CS_CUSTOM_LECTURE_STEPS: Record<string, LectureStep[]> = {
           '\\text{Truy vết Knapsack 2D: nếu } dp[i][w] \\ne dp[i-1][w] \\implies \\text{Đã chọn vật } i'
         ],
         variablesNote:
-          '• Nếu bài toán yêu cầu **truy vết** trong Knapsack mà $N \\cdot W$ nhỏ ($\le 10^7$), nên giữ mảng 2D `dp[i][w]` (hoặc `bool take[i][w]`) để truy vết ngược dễ dàng.'
+          '• Nếu bài toán yêu cầu **truy vết** trong Knapsack mà $N \\cdot W$ nhỏ ($\\le 10^7$), nên giữ mảng 2D `dp[i][w]` (hoặc `bool take[i][w]`) để truy vết ngược dễ dàng.'
       },
       deepDiveSection:
         'Đừng quên khử tràn bộ nhớ trong LCS khi độ dài hai xâu tới $5000$: mảng `int dp[5005][5005]` tốn tới $100\\text{ MB}$; nếu chỉ cần độ dài (không cần truy vết) thì nén về 2 hàng `prev[]` và `curr[]` chỉ tốn $40\\text{ KB}$!',

@@ -19,7 +19,13 @@ export type Batch2PhysicsSim2DId =
   | 'fiber_optic_tir'
   | 'carnot_cycle_pv'
   | 'thermal_conduction_bar'
-  | 'binding_energy_curve';
+  | 'binding_energy_curve'
+  | 'electric_power_meter'
+  | 'dc_motor_2d'
+  | 'electrolysis_faraday'
+  | 'eye_optics_2d'
+  | 'em_wave_3axis'
+  | 'phase_change_heating';
 
 export type Batch2Physics3DModeId =
   | 'atwood_pulley_3d'
@@ -42,7 +48,11 @@ export type Batch2Physics3DModeId =
   | 'ohm_circuit_3d'
   | 'refraction_tank_3d'
   | 'calorimetry_beaker_3d'
-  | 'archimedes_buoyancy_3d';
+  | 'archimedes_buoyancy_3d'
+  | 'electric_power_meter_3d'
+  | 'electrolysis_3d'
+  | 'eye_optics_3d'
+  | 'em_wave_3d';
 
 export const BATCH2_PHYSICS_2D_SIMS: Record<Batch2PhysicsSim2DId, Physics2DSimSpec> = {
   // MECHANICS (+4)
@@ -401,6 +411,125 @@ export const BATCH2_PHYSICS_2D_SIMS: Record<Batch2PhysicsSim2DId, Physics2DSimSp
       { label: 'Vùng Nhiệt Hạch (²H → ⁴He)', description: 'Độ dốc cao tạo năng lượng lớn', params: { massNumberA: 4, fusionBoost: 1.2 } },
       { label: 'Vùng Phân Hạch (²³⁵U)', description: 'Tách thành 2 hạt trung bình bền hơn', params: { massNumberA: 235, fusionBoost: 1.0 } }
     ]
+  },
+  electric_power_meter: {
+    id: 'electric_power_meter',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Công Suất Điện (P = UI), Công Tơ Điện (kWh) & Hiệu Suất Nguồn',
+    subtitle: 'Đo trực tiếp dòng mạch (+) → (−), độ sáng bóng đèn theo P = UI, đĩa công tơ kWh quay tích lũy điện năng và hiệu suất nguồn H = R/(R+r)',
+    formula: 'P = U·I · A = U·I·t · 1 kWh = 3,6×10⁶ J · H = R/(R + r)',
+    linkedLessonId: 'phys-2006-9-4',
+    defaultParams: { emfV: 220, loadR: 110, internalR: 0 },
+    paramBounds: {
+      emfV: { min: 12, max: 240, step: 12, unit: 'V', label: 'Suất điện động / Điện áp U' },
+      loadR: { min: 10, max: 240, step: 10, unit: 'Ω', label: 'Điện trở tải R' },
+      internalR: { min: 0, max: 40, step: 2, unit: 'Ω', label: 'Điện trở trong nguồn r' }
+    },
+    presets: [
+      { label: 'Đèn 220V – 440W (R=110Ω)', description: 'Đĩa công tơ quay đều tích lũy kWh', params: { emfV: 220, loadR: 110, internalR: 0 } },
+      { label: 'Tăng công suất tải lớn (R=40Ω)', description: 'Công suất tăng mạnh, đĩa quay nhanh', params: { emfV: 220, loadR: 40, internalR: 0 } },
+      { label: 'Nguồn có r = R (H = 50%, P_max)', description: 'Công suất mạch ngoài đạt cực đại E²/4r', params: { emfV: 24, loadR: 10, internalR: 10 } }
+    ]
+  },
+  dc_motor_2d: {
+    id: 'dc_motor_2d',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Lực Điện Từ & Động Cơ Điện Một Chiều (Cổ Góp Bán Khuyên)',
+    subtitle: 'Khung dây ABCD mang dòng (+) → (−) chịu ngẫu lực bàn tay trái quay liên tục nhờ bộ cổ góp tự động đảo chiều mỗi 180°',
+    formula: 'F = B·I·l·sinα · M_ngẫu = N·B·I·S·sinθ',
+    linkedLessonId: 'phys-2006-9-8',
+    defaultParams: { currentI: 4.0, magneticB: 0.8, coilTurns: 40 },
+    paramBounds: {
+      currentI: { min: 0.5, max: 10.0, step: 0.5, unit: 'A', label: 'Cường độ dòng I' },
+      magneticB: { min: 0.2, max: 2.0, step: 0.1, unit: 'T', label: 'Cảm ứng từ B' },
+      coilTurns: { min: 10, max: 100, step: 10, unit: 'vòng', label: 'Số vòng khung N' }
+    },
+    presets: [
+      { label: 'Động cơ quay chuẩn', description: 'Ngẫu lực điện từ quay đều cùng cổ góp', params: { currentI: 4.0, magneticB: 0.8, coilTurns: 40 } },
+      { label: 'Tăng dòng & từ trường mạnh', description: 'Tốc độ quay và mômen xoắn tăng vọt', params: { currentI: 8.5, magneticB: 1.6, coilTurns: 80 } }
+    ]
+  },
+  electrolysis_faraday: {
+    id: 'electrolysis_faraday',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 11'],
+    title: 'Dòng Điện Trong Chất Điện Phân & Định Luật Fa-ra-đây',
+    subtitle: 'Bình điện phân CuSO₄ với dương cực tan: ion Cu²⁺ dịch chuyển về catôt (−), ion SO₄²⁻ về anôt (+) theo chiều dòng điện quy ước',
+    formula: 'm = (1 / F) · (A / n) · I · t · F = 96 500 C/mol',
+    linkedLessonId: 'phys-2006-11-10',
+    defaultParams: { currentI: 4.0, durationMin: 16, molarMass: 64 },
+    paramBounds: {
+      currentI: { min: 0.5, max: 10.0, step: 0.5, unit: 'A', label: 'Cường độ dòng I' },
+      durationMin: { min: 1, max: 60, step: 1, unit: 'phút', label: 'Thời gian điện phân t' },
+      molarMass: { min: 27, max: 108, step: 1, unit: 'g/mol', label: 'Khối lượng mol A (Cu=64, Ag=108)' }
+    },
+    presets: [
+      { label: 'Mạ Đồng (CuSO₄, A=64, n=2)', description: 'Dương cực tan Cu bám đều lên Catôt', params: { currentI: 4.0, durationMin: 16, molarMass: 64 } },
+      { label: 'Mạ Bạc (AgNO₃, A=108, n=1)', description: 'Lượng kim loại bám cao gấp nhiều lần', params: { currentI: 2.0, durationMin: 16, molarMass: 108 } }
+    ]
+  },
+  eye_optics_2d: {
+    id: 'eye_optics_2d',
+    domainId: 'optics_quantum',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Quang Học Của Mắt, Điều Tiết & Sửa Tật Cận – Viễn Thị',
+    subtitle: 'Khảo sát điểm hội tụ trước/sau võng mạc và tác dụng của kính phân kì (chữa cận) hay kính hội tụ (chữa viễn/lão)',
+    formula: 'D_kính cận = −1 / OC_V · 1/f_k = 1/d − 1/OC_C',
+    linkedLessonId: 'phys-2006-11-19',
+    defaultParams: { eyeDefect: 1, useGlass: 0, objDistCm: 60 },
+    paramBounds: {
+      eyeDefect: { min: 0, max: 2, step: 1, unit: '', label: 'Tật mắt (0:Thường / 1:Cận / 2:Viễn)' },
+      useGlass: { min: 0, max: 1, step: 1, unit: '', label: 'Đeo kính sửa tật (0:Không / 1:Đeo)' },
+      objDistCm: { min: 20, max: 200, step: 10, unit: 'cm', label: 'Khoảng cách vật nhìn d' }
+    },
+    presets: [
+      { label: 'Mắt thường nhìn rõ', description: 'Ảnh hội tụ sắc nét trên võng mạc', params: { eyeDefect: 0, useGlass: 0, objDistCm: 80 } },
+      { label: 'Mắt cận chưa đeo kính', description: 'Ảnh vật xa hội tụ TRƯỚC võng mạc', params: { eyeDefect: 1, useGlass: 0, objDistCm: 150 } },
+      { label: 'Mắt cận đeo thấu kính phân kì', description: 'Chùm tia ló phân kì đưa ảnh về đúng võng mạc', params: { eyeDefect: 1, useGlass: 1, objDistCm: 150 } },
+      { label: 'Mắt viễn đeo thấu kính hội tụ', description: 'Tăng hội tụ để đọc rõ chữ ở gần', params: { eyeDefect: 2, useGlass: 1, objDistCm: 25 } }
+    ]
+  },
+  em_wave_3axis: {
+    id: 'em_wave_3axis',
+    domainId: 'waves_osc',
+    grades: ['Lớp 11', 'Lớp 12'],
+    title: 'Sóng Điện Từ Ngang (E ⊥ B ⊥ v) & Điều Chế Sóng Vô Tuyến',
+    subtitle: 'Mô phỏng sự lan truyền đồng pha của điện trường E và từ trường B vuông góc nhau cùng điều chế biên độ AM',
+    formula: 'c = λ · f ≈ 3×10⁸ m/s · E, B dao động cùng pha, vuông góc',
+    linkedLessonId: 'phys-12-b19',
+    defaultParams: { freqScale: 120, ampE: 65, modDepth: 50 },
+    paramBounds: {
+      freqScale: { min: 30, max: 300, step: 15, unit: 'MHz', label: 'Tần số sóng f' },
+      ampE: { min: 25, max: 100, step: 5, unit: 'V/m', label: 'Biên độ điện trường E₀' },
+      modDepth: { min: 0, max: 85, step: 5, unit: '%', label: 'Độ sâu điều chế AM' }
+    },
+    presets: [
+      { label: 'Sóng FM (120 MHz)', description: 'Sóng mang ngang E ⊥ B thuần túy không điều chế biên độ', params: { freqScale: 120, ampE: 65, modDepth: 0 } },
+      { label: 'Sóng Điều chế AM (60%)', description: 'Đường bao tín hiệu âm tần điều chế biên độ sóng cao tần', params: { freqScale: 180, ampE: 65, modDepth: 60 } },
+      { label: 'Tần số cao bước sóng ngắn', description: 'λ = c/f giảm tỉ lệ nghịch khi tăng tần số f', params: { freqScale: 270, ampE: 75, modDepth: 0 } }
+    ]
+  },
+  phase_change_heating: {
+    id: 'phase_change_heating',
+    domainId: 'thermal_nuclear',
+    grades: ['Lớp 10', 'Lớp 12'],
+    title: 'Đồ Thị Chuyển Thể T(t), Nhiệt Nóng Chảy (λ) & Hóa Hơi (L)',
+    subtitle: 'Quan sát hai đoạn nằm ngang giữ nguyên nhiệt độ tại 0°C (nóng chảy) và 100°C (sôi hóa hơi) khi cấp nhiệt đều',
+    formula: 'Q = m·c·ΔT · Q_nc = λ·m (0°C) · Q_hh = L·m (100°C)',
+    linkedLessonId: 'phys-12-b1',
+    defaultParams: { power: 1200, mass: 0.5, tStart: -20 },
+    paramBounds: {
+      power: { min: 400, max: 2400, step: 200, unit: 'W', label: 'Công suất bếp P' },
+      mass: { min: 0.2, max: 1.5, step: 0.1, unit: 'kg', label: 'Khối lượng nước đá m' },
+      tStart: { min: -40, max: 0, step: 5, unit: '°C', label: 'Nhiệt độ ban đầu' }
+    },
+    presets: [
+      { label: 'Đun chuẩn từ -20°C', description: 'Quan sát rõ cả hai đoạn nằm ngang 0°C và 100°C', params: { power: 1200, mass: 0.5, tStart: -20 } },
+      { label: 'Bếp công suất cao (2200W)', description: 'Độ dốc tăng nhiệt lớn, rút ngắn thời gian chuyển thể', params: { power: 2200, mass: 0.5, tStart: -20 } },
+      { label: 'Khối lượng lớn (1.2 kg)', description: 'Cần lượng nhiệt Q = λm và Lm rất dài tại 0°C và 100°C', params: { power: 1200, mass: 1.2, tStart: -10 } }
+    ]
   }
 };
 
@@ -688,6 +817,58 @@ export const BATCH2_PHYSICS_3D_SIMS: Record<Batch2Physics3DModeId, Physics3DSimS
       { label: 'Gỗ nổi cân bằng (ρ=750)', description: 'Chìm 75% thể tích, F_A = P', settings: { speed: 1, amplitude: 1 } },
       { label: 'Kim loại chìm đáy (ρ=2000)', description: 'P > F_A, vật chìm xuống đáy bình', settings: { speed: 1, amplitude: 1.5 } }
     ]
+  },
+  electric_power_meter_3d: {
+    id: 'electric_power_meter_3d',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Công Suất Điện & Công Tơ Điện kWh 3D',
+    subtitle: 'Nguồn DC (+) → (−) cấp điện qua đồng hồ công tơ có đĩa nhôm quay tỉ lệ P = UI và bóng đèn tải sáng rực tương ứng',
+    formula: 'P = U·I · A = U·I·t · 1 kWh = 3,6×10⁶ J',
+    linkedLessonId: 'phys-2006-9-4',
+    presets: [
+      { label: 'Mạch 220V tiêu thụ chuẩn', description: 'Đĩa công tơ quay đều, dây tóc phát sáng vừa', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Tải công suất lớn', description: 'Đĩa công tơ quay nhanh, đèn rực sáng', settings: { speed: 1.5, amplitude: 1.5 } }
+    ]
+  },
+  electrolysis_3d: {
+    id: 'electrolysis_3d',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 11'],
+    title: 'Bình Điện Phân & Định Luật Fa-ra-đây 3D',
+    subtitle: 'Bình điện phân CuSO₄ với anôt (+) tan dần và catôt (−) được mạ lớp đồng sáng óng ánh cùng dòng ion di chuyển ngược chiều',
+    formula: 'm = (1 / F) · (A / n) · I · t',
+    linkedLessonId: 'phys-2006-11-10',
+    presets: [
+      { label: 'Điện phân CuSO₄ chuẩn', description: 'Ion Cu²⁺ tiến về catôt (−) bám kim loại', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Dòng điện cường độ cao', description: 'Tốc độ giải phóng kim loại tăng nhanh', settings: { speed: 1.5, amplitude: 1.6 } }
+    ]
+  },
+  eye_optics_3d: {
+    id: 'eye_optics_3d',
+    domainId: 'optics_quantum',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Mô Hình Mắt Người & Sửa Tật Cận – Viễn 3D',
+    subtitle: 'Cắt lớp nhãn cầu 3D thấy rõ thể thủy tinh, võng mạc, kính điều chỉnh và đường đi chùm tia hội tụ đúng hay lệch võng mạc',
+    formula: 'D_cận = −1/OC_V · 1/f_viễn = 1/d − 1/OC_C',
+    linkedLessonId: 'phys-2006-11-19',
+    presets: [
+      { label: 'Mắt cận chưa đeo kính', description: 'Chùm tia hội tụ trước võng mạc', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Mắt cận đã đeo kính phân kì', description: 'Tia sáng hội tụ sắc nét lên võng mạc', settings: { speed: 1, amplitude: 1.4 } }
+    ]
+  },
+  em_wave_3d: {
+    id: 'em_wave_3d',
+    domainId: 'waves_osc',
+    grades: ['Lớp 11', 'Lớp 12'],
+    title: 'Mô Hình 3 Trục Sóng Điện Từ (E ⊥ B ⊥ v) 3D',
+    subtitle: 'Hai sóng sin cường độ điện trường E (đứng) và cảm ứng từ B (ngang) dao động đồng pha trong hai mặt phẳng vuông góc nhau',
+    formula: 'E ⊥ B ⊥ v · c = λ · f = 3×10⁸ m/s',
+    linkedLessonId: 'phys-12-b19',
+    presets: [
+      { label: 'Sóng điện từ chuẩn', description: 'E và B vuông góc, dao động đồng pha', settings: { speed: 1, frequency: 1 } },
+      { label: 'Tần số cao bước sóng ngắn', description: 'Mật độ bước sóng dày đặc hơn', settings: { speed: 1.2, frequency: 1.6 } }
+    ]
   }
 };
 
@@ -930,5 +1111,58 @@ export const BATCH2_3D_SCENE_CONFIGS: Record<Batch2Physics3DModeId, Extra3DScene
       const status = v.p1 < rhoL ? `Nổi (chìm ${(subFrac * 100).toFixed(0)}%)` : v.p1 === rhoL ? 'Lơ lửng' : 'Chìm đáy';
       return `${status} · P = ${pWeight.toFixed(1)} N · F_A = ${fa.toFixed(1)} N`;
     }
+  },
+  electric_power_meter_3d: {
+    mode: 'electric_power_meter_3d',
+    shortLabel: 'Công Tơ & P = UI 3D',
+    hudTitle: 'Mạch Điện, Công Tơ kWh & Công Suất Tiêu Thụ 3D',
+    params: [
+      { key: 'p1', label: 'Hiệu điện thế U', unit: 'V', min: 12, max: 240, step: 12, defaultVal: 120, accent: 'accent-sky-500' },
+      { key: 'p2', label: 'Điện trở tải R', unit: 'Ω', min: 10, max: 120, step: 5, defaultVal: 30, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => {
+      const i = v.p1 / Math.max(1, v.p2);
+      const p = v.p1 * i;
+      return `I = U/R = ${i.toFixed(2)} A · Công suất P = UI = ${p.toFixed(0)} W · Đĩa công tơ quay tỉ lệ P`;
+    }
+  },
+  electrolysis_3d: {
+    mode: 'electrolysis_3d',
+    shortLabel: 'Bình Điện Phân 3D',
+    hudTitle: 'Bình Điện Phân CuSO₄ & Định Luật Fa-ra-đây 3D',
+    params: [
+      { key: 'p1', label: 'Cường độ dòng I', unit: 'A', min: 0.5, max: 10, step: 0.5, defaultVal: 4.0, accent: 'accent-cyan-500' },
+      { key: 'p2', label: 'Thời gian điện phân', unit: 'phút', min: 2, max: 60, step: 2, defaultVal: 16, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => {
+      const mGram = (1 / 96500) * (64 / 2) * v.p1 * (v.p2 * 60);
+      return `I = ${v.p1.toFixed(1)} A trong ${v.p2} phút ⇒ Lượng đồng bám Catôt (−): m = ${mGram.toFixed(2)} g`;
+    }
+  },
+  eye_optics_3d: {
+    mode: 'eye_optics_3d',
+    shortLabel: 'Mắt & Sửa Tật 3D',
+    hudTitle: 'Nhãn Cầu 3D, Điều Tiết & Kính Sửa Tật Mắt',
+    params: [
+      { key: 'p1', label: 'Tật (0:Thường / 1:Cận / 2:Viễn)', unit: '', min: 0, max: 2, step: 1, defaultVal: 1, accent: 'accent-emerald-500' },
+      { key: 'p2', label: 'Đeo kính sửa (0:Không / 1:Đeo)', unit: '', min: 0, max: 1, step: 1, defaultVal: 1, accent: 'accent-sky-500' }
+    ],
+    computeReadout: (v) => {
+      const mode = Math.round(v.p1);
+      const glass = v.p2 >= 0.5;
+      if (mode === 0) return 'Mắt bình thường: Chùm tia hội tụ sắc nét ngay tại võng mạc.';
+      if (mode === 1) return glass ? 'Mắt cận ĐEO KÍNH PHÂN KÌ: Tiêu điểm lùi về đúng võng mạc!' : 'Mắt cận KHÔNG KÍNH: Ảnh hội tụ TRƯỚC võng mạc (mờ).';
+      return glass ? 'Mắt viễn ĐEO KÍNH HỘI TỤ: Kéo ảnh về đúng võng mạc!' : 'Mắt viễn KHÔNG KÍNH: Ảnh hội tụ SAU võng mạc (mờ).';
+    }
+  },
+  em_wave_3d: {
+    mode: 'em_wave_3d',
+    shortLabel: 'Sóng Điện Từ 3D',
+    hudTitle: 'Sóng Điện Từ Ngang 3 Trục E ⊥ B ⊥ v 3D',
+    params: [
+      { key: 'p1', label: 'Tần số sóng f', unit: '×f₀', min: 0.5, max: 2.5, step: 0.1, defaultVal: 1.0, accent: 'accent-rose-500' },
+      { key: 'p2', label: 'Biên độ điện trường E₀', unit: '×', min: 0.4, max: 1.6, step: 0.1, defaultVal: 1.0, accent: 'accent-cyan-500' }
+    ],
+    computeReadout: (v) => `Véctơ E (đỏ, trục Y) và B (xanh lơ, trục Z) vuông góc nhau và dao động CÙNG PHA dọc phương truyền X.`
   }
 };

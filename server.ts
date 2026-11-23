@@ -639,6 +639,23 @@ app.delete('/api/reviews/:id', (req: Request, res: Response) => {
 // =====================================================================
 type ForumSubjectServer = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
 
+interface ForumPollOptionRecord {
+  id: string;
+  text: string;
+  votes: string[];
+}
+
+interface ForumPollRecord {
+  question: string;
+  options: ForumPollOptionRecord[];
+}
+
+interface ForumMessageReplyRefRecord {
+  id: string;
+  senderName: string;
+  excerpt: string;
+}
+
 interface ForumGroupRecord {
   id: string;
   name: string;
@@ -651,6 +668,7 @@ interface ForumGroupRecord {
   messageCount: number;
   lastMessagePreview?: string;
   lastMessageAt?: string;
+  pinnedMessageId?: string;
   createdAt: string;
 }
 
@@ -664,6 +682,10 @@ interface ForumMessageRecord {
   senderAvatar?: string;
   senderRole: 'student' | 'teacher' | 'admin';
   content: string;
+  replyTo?: ForumMessageReplyRefRecord;
+  reactions?: Record<string, string[]>;
+  poll?: ForumPollRecord;
+  isAiReply?: boolean;
   createdAt: string;
 }
 
@@ -1086,7 +1108,10 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
     senderEmail,
     senderAvatar,
     senderRole,
-    content
+    content,
+    replyTo,
+    poll,
+    isAiReply
   } = req.body || {};
 
   if (!senderId || !senderName) {
@@ -1106,9 +1131,35 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
     });
   }
 
-  const cleanContent = String(content || '').trim();
-  if (cleanContent.length < 1 || cleanContent.length > 2000) {
-    return res.status(400).json({ error: 'Nội dung tin nhắn cần từ 1 đến 2000 ký tự.' });
+  let sanitizedPoll: ForumPollRecord | undefined;
+  if (poll && typeof poll === 'object' && poll.question && Array.isArray(poll.options)) {
+    const qText = String(poll.question).trim().slice(0, 240);
+    const validOpts = poll.options
+      .map((opt: any, idx: number) => ({
+        id: String(opt?.id || `opt_${idx + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `opt_${idx + 1}`,
+        text: String(opt?.text || '').trim().slice(0, 140),
+        votes: [] as string[]
+      }))
+      .filter((o: ForumPollOptionRecord) => o.text.length > 0)
+      .slice(0, 6);
+    if (qText.length >= 3 && validOpts.length >= 2) {
+      sanitizedPoll = { question: qText, options: validOpts };
+    }
+  }
+
+  const rawContent = String(content || '').trim();
+  const cleanContent = rawContent || (sanitizedPoll ? `📊 Bình chọn: ${sanitizedPoll.question}` : '');
+  if (cleanContent.length < 1 || cleanContent.length > 4000) {
+    return res.status(400).json({ error: 'Nội dung tin nhắn cần từ 1 đến 4000 ký tự.' });
+  }
+
+  let sanitizedReplyTo: ForumMessageReplyRefRecord | undefined;
+  if (replyTo && typeof replyTo === 'object' && replyTo.id && replyTo.senderName) {
+    sanitizedReplyTo = {
+      id: String(replyTo.id).slice(0, 128),
+      senderName: String(replyTo.senderName).trim().slice(0, 80),
+      excerpt: String(replyTo.excerpt || '').trim().slice(0, 160)
+    };
   }
 
   const nowIso = new Date().toISOString();
@@ -1116,7 +1167,10 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
     ? String(id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 128)
     : `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-  const resolvedRole: 'student' | 'teacher' | 'admin' = isAdminSender
+  const aiMode = Boolean(isAiReply);
+  const resolvedRole: 'student' | 'teacher' | 'admin' = aiMode
+    ? 'admin'
+    : isAdminSender
     ? 'admin'
     : senderRole === 'teacher'
     ? 'teacher'
@@ -1127,19 +1181,27 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
     groupId,
     isAdminGroup: group.isMandatoryAdminGroup,
     senderId: String(senderId).slice(0, 128),
-    senderName: String(isAdminSender ? 'Synapse' : senderName).slice(0, 100),
-    senderUsername: isAdminSender
+    senderName: aiMode
+      ? 'Synapse AI'
+      : String(isAdminSender ? 'Synapse' : senderName).slice(0, 100),
+    senderUsername: aiMode
+      ? 'synapse_ai'
+      : isAdminSender
       ? 'Synapse'
       : senderUsername
       ? String(senderUsername).slice(0, 40)
       : undefined,
-    senderAvatar: isAdminSender
+    senderAvatar: aiMode || isAdminSender
       ? FORUM_ADMIN_AVATAR
       : senderAvatar
       ? String(senderAvatar).slice(0, 512)
       : undefined,
     senderRole: resolvedRole,
     content: cleanContent,
+    ...(sanitizedReplyTo ? { replyTo: sanitizedReplyTo } : {}),
+    ...(sanitizedPoll ? { poll: sanitizedPoll } : {}),
+    ...(aiMode ? { isAiReply: true } : {}),
+    reactions: {},
     createdAt: nowIso
   };
 
@@ -1157,6 +1219,127 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
   });
 
   return res.status(201).json({ success: true, message: record, group });
+});
+
+app.post('/api/forum/groups/:groupId/messages/:messageId/react', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const messageId = String(req.params.messageId || '').trim();
+  const { userId, emoji } = req.body || {};
+
+  const cleanUserId = String(userId || '').trim().slice(0, 128);
+  const cleanEmoji = String(emoji || '').trim().slice(0, 12);
+  if (!cleanUserId) {
+    return res.status(401).json({ error: 'Cần đăng nhập để thả cảm xúc.' });
+  }
+  if (!cleanEmoji) {
+    return res.status(400).json({ error: 'Thiếu biểu tượng cảm xúc.' });
+  }
+
+  const targetMsg = forumDb.messages.find((m) => m.id === messageId && m.groupId === groupId);
+  if (!targetMsg) {
+    return res.status(404).json({ error: 'Không tìm thấy tin nhắn.' });
+  }
+
+  const nextReactions: Record<string, string[]> = { ...(targetMsg.reactions || {}) };
+  const currentList = Array.isArray(nextReactions[cleanEmoji]) ? [...nextReactions[cleanEmoji]] : [];
+  const existsIdx = currentList.indexOf(cleanUserId);
+  if (existsIdx >= 0) {
+    currentList.splice(existsIdx, 1);
+  } else {
+    currentList.push(cleanUserId);
+  }
+  if (currentList.length === 0) {
+    delete nextReactions[cleanEmoji];
+  } else {
+    nextReactions[cleanEmoji] = currentList;
+  }
+
+  targetMsg.reactions = nextReactions;
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:message_updated', groupId, message: targetMsg });
+
+  return res.json({ success: true, message: targetMsg });
+});
+
+app.post('/api/forum/groups/:groupId/messages/:messageId/vote', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const messageId = String(req.params.messageId || '').trim();
+  const { userId, optionId } = req.body || {};
+
+  const cleanUserId = String(userId || '').trim().slice(0, 128);
+  const cleanOptionId = String(optionId || '').trim();
+  if (!cleanUserId) {
+    return res.status(401).json({ error: 'Cần đăng nhập để bình chọn.' });
+  }
+
+  const targetMsg = forumDb.messages.find((m) => m.id === messageId && m.groupId === groupId);
+  if (!targetMsg || !targetMsg.poll) {
+    return res.status(404).json({ error: 'Không tìm thấy cuộc bình chọn.' });
+  }
+
+  const alreadyVotedTarget = targetMsg.poll.options.some(
+    (opt) => opt.id === cleanOptionId && opt.votes.includes(cleanUserId)
+  );
+
+  targetMsg.poll = {
+    ...targetMsg.poll,
+    options: targetMsg.poll.options.map((opt) => {
+      const filteredVotes = opt.votes.filter((uid) => uid !== cleanUserId);
+      if (opt.id === cleanOptionId && !alreadyVotedTarget) {
+        filteredVotes.push(cleanUserId);
+      }
+      return { ...opt, votes: filteredVotes };
+    })
+  };
+
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:message_updated', groupId, message: targetMsg });
+
+  return res.json({ success: true, message: targetMsg });
+});
+
+app.post('/api/forum/groups/:groupId/pin', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const { userId, userEmail, messageId } = req.body || {};
+
+  const cleanUserId = String(userId || '').trim();
+  if (!cleanUserId) {
+    return res.status(401).json({ error: 'Cần đăng nhập để ghim tin nhắn.' });
+  }
+
+  const group = forumDb.groups.find((g) => g.id === groupId);
+  if (!group) {
+    return res.status(404).json({ error: 'Không tìm thấy nhóm thảo luận.' });
+  }
+
+  const isAdmin = isForumAdminIdentity(userEmail);
+  if (group.isMandatoryAdminGroup && !isAdmin) {
+    return res.status(403).json({ error: 'Chỉ Admin Synapse có quyền ghim thông báo trong nhóm bắt buộc.' });
+  }
+  if (!group.isMandatoryAdminGroup && group.creatorId !== cleanUserId && !isAdmin) {
+    return res.status(403).json({ error: 'Chỉ trưởng nhóm hoặc Admin có quyền ghim tin nhắn.' });
+  }
+
+  const cleanMsgId = String(messageId || '').trim();
+  if (!cleanMsgId || group.pinnedMessageId === cleanMsgId) {
+    group.pinnedMessageId = undefined;
+  } else {
+    const exists = forumDb.messages.some((m) => m.id === cleanMsgId && m.groupId === groupId);
+    if (!exists) {
+      return res.status(404).json({ error: 'Tin nhắn không tồn tại trong nhóm này.' });
+    }
+    group.pinnedMessageId = cleanMsgId;
+  }
+
+  saveForumDb(forumDb);
+  broadcastForumEvent({
+    type: 'forum:group_pinned',
+    groupId,
+    pinnedMessageId: group.pinnedMessageId || null,
+    group
+  });
+
+  return res.json({ success: true, group });
 });
 
 app.delete('/api/forum/groups/:groupId', (req: Request, res: Response) => {
@@ -1218,6 +1401,9 @@ app.delete('/api/forum/groups/:groupId/messages/:messageId', (req: Request, res:
   forumDb.messages.splice(msgIdx, 1);
   const group = forumDb.groups.find((g) => g.id === groupId);
   if (group) {
+    if (group.pinnedMessageId === messageId) {
+      group.pinnedMessageId = undefined;
+    }
     const remaining = forumDb.messages
       .filter((m) => m.groupId === groupId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

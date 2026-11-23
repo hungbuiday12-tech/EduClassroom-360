@@ -87,6 +87,7 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
   }, [uid]);
 
   const { location } = useNavigation();
+  const isSpatial3DRoute = location.subject === 'spatial_3d';
   const isMobileSimOrExamRoute =
     ['math_sims', 'physics_sims', 'cs_sims', 'synapse_v2', 'future_lab', 'spatial_3d', 'exams', 'arena'].includes(
       location.subject
@@ -408,11 +409,23 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
     <>
       <div
         ref={containerRef}
-        style={position ? { left: `${position.x}px`, top: `${position.y}px` } : undefined}
-        className={`fixed z-[85] ${
-          isMobileSimOrExamRoute ? 'hidden lg:block' : ''
+        style={
+          isSpatial3DRoute
+            ? undefined
+            : position
+            ? { left: `${position.x}px`, top: `${position.y}px` }
+            : undefined
+        }
+        className={`fixed z-[250] ${
+          isSpatial3DRoute
+            ? isWidgetOpen
+              ? 'top-[68px] right-3 sm:right-4'
+              : 'hidden'
+            : isMobileSimOrExamRoute
+            ? 'hidden lg:block'
+            : ''
         } ${
-          position
+          isSpatial3DRoute || position
             ? ''
             : 'bottom-[74px] left-3 sm:left-4 lg:bottom-5 lg:left-[calc(var(--sidebar-w,248px)+16px)] transition-[left] duration-200'
         }`}
@@ -421,9 +434,9 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
         {isWidgetOpen && (
           <div
             className={`sci-frame syn-window-enter absolute z-20 ${
-              isBottomHalf ? 'bottom-full mb-2.5' : 'top-full mt-2.5'
-            } ${
-              isRightHalf ? 'right-0' : 'left-0'
+              isSpatial3DRoute
+                ? 'top-0 right-0'
+                : `${isBottomHalf ? 'bottom-full mb-2.5' : 'top-full mt-2.5'} ${isRightHalf ? 'right-0' : 'left-0'}`
             } ${
               dockMode === 'scratchpad'
                 ? 'w-[min(392px,calc(100vw-24px))]'
@@ -1031,7 +1044,7 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
 
       {/* Fullscreen Modal Overlay hosting InfiniteStemCanvas */}
       {isFullscreenCanvas && (
-        <div className="fixed inset-0 z-[95] bg-slate-950/85 backdrop-blur-sm p-3 sm:p-6 flex flex-col">
+        <div className="fixed inset-0 z-[260] bg-slate-950/85 backdrop-blur-sm p-3 sm:p-6 flex flex-col">
           <div className="flex items-center justify-between px-4 py-2.5 rounded-t-md border border-b-0 border-slate-700 bg-slate-900 text-white">
             <div className="flex items-center gap-2 text-xs sm:text-sm font-bold">
               <PenTool className="w-4 h-4 text-amber-400" />

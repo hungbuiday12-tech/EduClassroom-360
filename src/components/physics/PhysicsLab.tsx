@@ -256,8 +256,10 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     setSelectedChapter('all');
   }, [selectedTrack, selectedGrade, selectedTier]);
 
+  const isStandardTrack = selectedTrack === 'khong_chuyen' || selectedTrack === 'gdpt_2006';
+
   const availableChapters = useMemo(() => {
-    if (selectedTrack === 'khong_chuyen' && selectedGrade === 'all') return [];
+    if (isStandardTrack && selectedGrade === 'all') return [];
     const set = new Set<string>();
     const gradeOrder: Record<string, number> = { 'Lớp 9': 9, 'Lớp 10': 10, 'Lớp 11': 11, 'Lớp 12': 12 };
     const sorted = [...PHYSICS_LESSONS].sort((a, b) => {
@@ -267,19 +269,19 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     });
     sorted.forEach((l) => {
       if (l.track !== selectedTrack) return;
-      if (selectedTrack === 'khong_chuyen' && l.grade !== selectedGrade) return;
+      if (isStandardTrack && l.grade !== selectedGrade) return;
       if (selectedTrack === 'chuyen' && selectedTier !== 'all' && l.tier !== selectedTier) return;
       if (l.stageLabel) set.add(l.stageLabel);
     });
     return Array.from(set);
-  }, [selectedTrack, selectedGrade, selectedTier]);
+  }, [selectedTrack, isStandardTrack, selectedGrade, selectedTier]);
 
   // Filtered lessons by track + grade/tier + chapter
   const filteredLessons = useMemo(() => {
     const gradeOrder: Record<string, number> = { 'Lớp 9': 9, 'Lớp 10': 10, 'Lớp 11': 11, 'Lớp 12': 12 };
     return PHYSICS_LESSONS.filter((l) => {
       if (l.track !== selectedTrack) return false;
-      if (selectedTrack === 'khong_chuyen') {
+      if (isStandardTrack) {
         if (selectedGrade !== 'all' && l.grade !== selectedGrade) return false;
       } else {
         if (selectedTier !== 'all' && l.tier !== selectedTier) return false;
@@ -287,14 +289,14 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       if (selectedChapter !== 'all' && l.stageLabel !== selectedChapter) return false;
       return true;
     }).sort((a, b) => {
-      if (selectedTrack === 'khong_chuyen') {
+      if (isStandardTrack) {
         const gDiff = (gradeOrder[a.grade] ?? 99) - (gradeOrder[b.grade] ?? 99);
         if (gDiff !== 0) return gDiff;
         return a.lessonNumber - b.lessonNumber;
       }
       return 0;
     });
-  }, [selectedTrack, selectedGrade, selectedTier, selectedChapter]);
+  }, [selectedTrack, isStandardTrack, selectedGrade, selectedTier, selectedChapter]);
 
   // Current selected lesson
   const selectedLessonId = location.physicsLessonId;
@@ -778,8 +780,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               </button>
             </div>
 
-            {/* 2 Separate Animated Framed Track Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 3 Separate Animated Framed Track Cards (GDPT 2018 · GDPT 2006 · Chuyên Lí) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Khung 1: Khu Không Chuyên (GDPT 9-12) */}
               <div
                 style={
@@ -846,7 +848,73 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                 </button>
               </div>
 
-              {/* Khung 2: Khu Chuyên Lí (CB -> NC -> Chuyên) */}
+              {/* Khung 2: Khu GDPT 2006 (Không chuyên 9-12) */}
+              <div
+                style={
+                  {
+                    '--phy-accent': '#059669',
+                    '--phy-secondary': '#14b8a6'
+                  } as React.CSSProperties
+                }
+                className={`physics-zone-frame group ${
+                  selectedTrack === 'gdpt_2006'
+                    ? 'physics-zone-active shadow-[0_14px_34px_-12px_rgba(5,150,105,0.42)]'
+                    : 'shadow-xs'
+                }`}
+              >
+                <div aria-hidden="true" className="physics-orbit-ring" />
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => setSelectedTrack('gdpt_2006')}
+                  className={`relative z-10 w-full h-full text-left rounded-[0.5rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
+                    selectedTrack === 'gdpt_2006'
+                      ? 'bg-gradient-to-br from-emerald-700 via-teal-600 to-emerald-600 text-white'
+                      : 'bg-slate-50/95 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span aria-hidden="true" className="physics-energy-sweep" />
+                  <div className="relative z-10 flex items-start gap-3.5 min-w-0">
+                    <div
+                      className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                        selectedTrack === 'gdpt_2006'
+                          ? 'bg-white/20 text-white'
+                          : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
+                      }`}
+                    >
+                      <BookOpen className="w-6 h-6" />
+                    </div>
+                    <div className="min-w-0 space-y-1">
+                      <div className="text-sm sm:text-base font-extrabold leading-snug">
+                        Khu GDPT 2006 (Không chuyên)
+                      </div>
+                      <div
+                        className={`text-xs leading-relaxed ${
+                          selectedTrack === 'gdpt_2006'
+                            ? 'text-emerald-100'
+                            : 'text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        Vật lí 9–12 chuẩn SGK 2006 · {PHYSICS_LESSONS.filter((l) => l.track === 'gdpt_2006').length} bài kèm 2D &amp; 3D
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative z-10 shrink-0 flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                    {selectedTrack === 'gdpt_2006' ? (
+                      <span className="inline-flex items-center gap-1 text-white">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Đang mở</span>
+                      </span>
+                    ) : (
+                      <span className="text-emerald-700 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+                        Chọn khu →
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </div>
+
+              {/* Khung 3: Khu Chuyên Lí (CB -> NC -> Chuyên) */}
               <div
                 style={
                   {
@@ -915,21 +983,23 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
             {/* Sub-Filter Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-200/70 dark:border-slate-800">
-              {selectedTrack === 'khong_chuyen' ? (
+              {isStandardTrack ? (
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-xs font-semibold text-slate-500 mr-1">Khối lớp:</span>
                   {['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((grade) => {
                     const count =
                       grade === 'all'
-                        ? PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen').length
-                        : PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen' && l.grade === grade).length;
+                        ? PHYSICS_LESSONS.filter((l) => l.track === selectedTrack).length
+                        : PHYSICS_LESSONS.filter((l) => l.track === selectedTrack && l.grade === grade).length;
                     return (
                       <button
                         key={grade}
                         onClick={() => setSelectedGrade(grade)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                           selectedGrade === grade
-                            ? 'bg-blue-600 text-white shadow-xs'
+                            ? selectedTrack === 'gdpt_2006'
+                              ? 'bg-emerald-700 text-white shadow-xs'
+                              : 'bg-blue-600 text-white shadow-xs'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
@@ -969,7 +1039,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
             {availableChapters.length > 1 && (
               <div className="flex flex-wrap items-center gap-1.5 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/70">
-                <span className="text-[11px] font-semibold text-slate-500 mr-1">Chương GDPT 2018:</span>
+                <span className="text-[11px] font-semibold text-slate-500 mr-1">
+                  {selectedTrack === 'gdpt_2006' ? 'Chương GDPT 2006:' : 'Chương GDPT 2018:'}
+                </span>
                 <button
                   type="button"
                   onClick={() => setSelectedChapter('all')}
@@ -1026,13 +1098,14 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredLessons.map((l) => {
               const isPro = l.track === 'chuyen';
+              const isGdpt2006 = l.track === 'gdpt_2006';
               return (
                 <div
                   key={l.id}
                   style={
                     {
-                      '--phy-accent': isPro ? '#f59e0b' : '#0284c7',
-                      '--phy-secondary': isPro ? '#ef4444' : '#38bdf8'
+                      '--phy-accent': isPro ? '#f59e0b' : isGdpt2006 ? '#059669' : '#0284c7',
+                      '--phy-secondary': isPro ? '#ef4444' : isGdpt2006 ? '#14b8a6' : '#38bdf8'
                     } as React.CSSProperties
                   }
                   className="physics-card-frame group shadow-sm hover:shadow-[0_18px_40px_-14px_rgba(2,132,199,0.34)]"
@@ -1053,14 +1126,26 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         />
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                            <span className={`font-bold uppercase tracking-wider ${isPro ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                              {isPro ? `Chuyên Lí · ${l.tier || 'Nâng cao'}` : `${l.grade} · Bài ${l.lessonNumber}`}
+                            <span
+                              className={`font-bold uppercase tracking-wider ${
+                                isPro
+                                  ? 'text-amber-600 dark:text-amber-400'
+                                  : isGdpt2006
+                                  ? 'text-emerald-700 dark:text-emerald-400'
+                                  : 'text-blue-600 dark:text-blue-400'
+                              }`}
+                            >
+                              {isPro
+                                ? `Chuyên Lí · ${l.tier || 'Nâng cao'}`
+                                : isGdpt2006
+                                ? `${l.grade} · 2006 · Bài ${l.lessonNumber}`
+                                : `${l.grade} · Bài ${l.lessonNumber}`}
                             </span>
                             <span className="font-mono shrink-0 tabular-nums">{l.practiceExercises.length} TN + {(l.essayExercises || []).length} TL</span>
                           </div>
 
                           <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
-                            {translate(l.title)}
+                            <FormattedText text={translate(l.title)} />
                           </h3>
                           {l.stageLabel && (
                             <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
@@ -1070,9 +1155,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         </div>
                       </div>
 
-                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                        {translate(l.description)}
-                      </p>
+                      <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                        <FormattedText text={translate(l.description)} />
+                      </div>
                     </div>
 
                     <div className="relative z-10 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
@@ -1222,6 +1307,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                 <span className="font-bold text-blue-600 dark:text-blue-400">
                   {lesson.track === 'chuyen'
                     ? `Chuyên Lí · ${lesson.tier || 'Nâng cao'} (${lesson.grade})`
+                    : lesson.track === 'gdpt_2006'
+                    ? `${lesson.grade} · GDPT 2006 · Bài ${lesson.lessonNumber}`
                     : `${lesson.grade} · Bài ${lesson.lessonNumber}`}
                 </span>
                 {lesson.stageLabel && (
@@ -1238,11 +1325,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                 )}
               </div>
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                {translate(lesson.title)}
+                <FormattedText text={translate(lesson.title)} />
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                {translate(lesson.description)}
-              </p>
+              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                <FormattedText text={translate(lesson.description)} />
+              </div>
             </div>
 
             {/* Key Formulas with KaTeX */}
@@ -1272,6 +1359,8 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               kicker={
                 lesson.track === 'chuyen'
                   ? `Bồi dưỡng Chuyên Lí · ${lesson.tier || 'Nâng cao'}`
+                  : lesson.track === 'gdpt_2006'
+                  ? `${lesson.grade} · Chương trình GDPT 2006`
                   : `${lesson.grade} · Bài giảng Vật Lí chi tiết`
               }
               title={translate(lesson.title)}
@@ -1350,7 +1439,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     )}
 
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                      {t('', 'Phòng Thí Nghiệm 2D', '2D Physics Lab')} · {translate(activeSimTitle)}
+                      {t('', 'Phòng Thí Nghiệm 2D', '2D Physics Lab')} · <FormattedText text={translate(activeSimTitle)} />
                     </span>
                   </div>
 

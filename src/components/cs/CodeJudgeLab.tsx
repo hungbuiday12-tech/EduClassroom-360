@@ -1106,7 +1106,7 @@ export const CodeJudgeLab: React.FC<CodeJudgeLabProps> = ({ onScoreEarned, onBac
               <GitBranch className="w-[18px] h-[18px] icon-anim-branch" />
             </span>
             <span className="relative z-10">
-              {t('cs.tab.visualizer', '4. Đồ Thị & Mô Phỏng Thuật Toán', '4. Algorithm Visualizer')}
+              {t('cs.tab.visualizer', 'Đồ Thị & Mô Phỏng Thuật Toán', 'Algorithm Visualizer')}
             </span>
           </button>
         </div>

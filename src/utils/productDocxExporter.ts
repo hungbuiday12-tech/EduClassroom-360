@@ -208,7 +208,7 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
           }),
           heading1('I. TỔNG QUAN SẢN PHẨM (SYNAPSE STEM · synapse-stem.is-a.dev)'),
           bodyPara(
-            'Synapse tích hợp 231 bài giảng chuyên sâu, 107 mô phỏng Vật lí 2D/3D + Phòng Lab Toán Oxyz/2D, Synapse Pre (30 Đại công trình tương lai, Phòng Lab Cảm biến Điện thoại QR Live Oscilloscope & Hộp cát Hạt Lực Trường 2 Tay GPU 28.000 hạt), Phòng Học Trực Tuyến Live Meet & 3D (Gọi Video/Thoại WebRTC, Chia sẻ màn hình, Mô hình 3D dùng chung đồng bộ bằng chuột, Up file .glb/.gltf/.obj & Đồ họa Trung bình/Cao), Trình chấm Code IDE Tin học 5 lộ trình quốc tế (Truy vết Code-to-Animation 1-1 & Replay Tư Duy WA → AC), Ngân hàng 450 Đề thi có mã đề & xuất DOCX, Đấu trường Xếp hạng, Hệ thống 3 AI Mắt Thần Live Co-Pilot (Ngắt lời Voice Barge-in & Syn Reel Video 3B1B) và WebAR Bàn Học Pro điều khiển 10 ngón tay.'
+            'Synapse tích hợp bài giảng chuyên sâu (GDPT 2018 & 2006), mô phỏng Vật lí 2D/3D + Phòng Lab Toán Oxyz/2D, Synapse Pre (30 Đại công trình tương lai, Phòng Lab Cảm biến Điện thoại QR Live Oscilloscope & Hộp cát Hạt Lực Trường 2 Tay GPU 28.000 hạt), Syn Meet & 3D (Gọi Video/Thoại WebRTC, Chia sẻ màn hình, Mô hình 3D dùng chung đồng bộ bằng chuột, Up file .glb/.gltf/.obj & Đồ họa Trung bình/Cao), Trình chấm Code IDE Tin học 5 lộ trình quốc tế (Truy vết Code-to-Animation 1-1 & Replay Tư Duy WA → AC), Ngân hàng Đề thi có mã đề & xuất DOCX, Đấu trường Xếp hạng, Hệ thống 3 AI Mắt Thần Live Co-Pilot (Ngắt lời Voice Barge-in & Syn Reel Video 3B1B) và WebAR Bàn Học Pro điều khiển 10 ngón tay.'
           ),
           heading1('II. TOÀN BỘ TÍNH NĂNG CỐT LÕI & 7 MODULE ĐỘT PHÁ MỚI'),
           heading2('1. Hệ 3 AI Mắt Thần Live Co-Pilot (Voice Barge-in) & Syn Reel Video 3B1B'),
@@ -228,7 +228,7 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
           bodyPara(
             '59 phòng thí nghiệm Vật lí 2D và 48 mô hình 3D theo 5 lĩnh vực, Toán 2D & Oxyz 3D, cùng 450 Đề thi Chuyên/Không Chuyên cho phép tải DOCX sạch đáp án và chấm ảnh viết tay AI 0–10.'
           ),
-          heading2('6. Phòng Học Trực Tuyến Live Meet & 3D (WebRTC · Chia Sẻ Màn Hình · 3D Dùng Chung)'),
+          heading2('6. Syn Meet & 3D (WebRTC · Chia Sẻ Màn Hình · 3D Dùng Chung)'),
           bulletItem('Gọi Video/Thoại & Chia sẻ màn hình (WebRTC)', 'Tạo phòng học bằng mã 6 ký tự hoặc tham gia phòng công khai; bật/tắt Micro, Camera, Chia sẻ màn hình trình chiếu bài giảng/code, Giơ tay phát biểu, Thả cảm xúc nổi và Trò chuyện trực tiếp.'),
           bulletItem('Mô hình 3D dùng chung đồng bộ bằng chuột', 'Chuyển đổi tức thì giữa Lưới Video và Sân khấu 3D chung; hỗ trợ đầy đủ thao tác chuột (xoay, di chuyển pan, zoom, click soi chi tiết kích thước & đa giác), chế độ Khung dây (Wireframe) và Tách lớp (Explode).'),
           bulletItem('Tải lên mô hình 3D & Thư viện Học tương tác', 'Cho phép tải lên trực tiếp file .glb, .gltf, .obj (tối đa 12MB) để cả phòng cùng nghiên cứu, hoặc chọn ngay 8 mô hình STEM có sẵn và các mô hình đã lưu từ Học tương tác 3D.'),
@@ -237,9 +237,9 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
           makeTable(
             ['Khía cạnh Đánh giá', 'Giá trị Nổi bật trên Synapse'],
             [
-              ['Tính mới & Sáng tạo', 'Phòng Học Trực Tuyến Live Meet tích hợp Mô hình 3D dùng chung & Up .glb/.obj, Mắt Thần Live Co-Pilot có Voice Barge-in, WebAR Bàn Học Pro, Điện thoại làm cảm biến Vật lí QR, 28K hạt GPU 2 tay, Truy vết Code 1-1 & Syn Reel Video 3B1B.'],
+              ['Tính mới & Sáng tạo', 'Syn Meet & 3D tích hợp Mô hình 3D dùng chung & Up .glb/.obj, Mắt Thần Live Co-Pilot có Voice Barge-in, WebAR Bàn Học Pro, Điện thoại làm cảm biến Vật lí QR, 28K hạt GPU 2 tay, Truy vết Code 1-1 & Syn Reel Video 3B1B.'],
               ['Tính thực tế', 'Chạy trực tiếp trên trình duyệt phổ thông & PWA đa thiết bị (PC, Android, iPhone) tại https://synapse-stem.is-a.dev, tối ưu đa mức đồ họa, không cần thiết bị VR chuyên dụng.'],
-              ['Hiệu quả giáo dục', 'Giúp học sinh vừa học nhóm trực tuyến như Google Meet vừa cùng mổ xẻ mô hình 3D trực quan, tự gỡ lỗi tư duy qua Thought Replay và rèn luyện với kho 231 bài giảng, 107 lab, 450 đề xuất DOCX.']
+              ['Hiệu quả giáo dục', 'Giúp học sinh vừa học nhóm trực tuyến như Google Meet vừa cùng mổ xẻ mô hình 3D trực quan, tự gỡ lỗi tư duy qua Thought Replay và rèn luyện với kho bài giảng 2D/3D (GDPT 2018 & 2006), kho đề xuất DOCX.']
             ]
           )
         ]

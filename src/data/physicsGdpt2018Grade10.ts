@@ -363,7 +363,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       {
         heading: '1. Phương án đo tốc độ bằng cổng quang điện',
         content:
-          '• **Đo tốc độ trung bình** giữa hai cổng quang $A$ và $B$ cách nhau khoảng $s$: chọn chế độ `A ↔ B` để đồng hồ đếm thời gian $t$ xe đi từ A đến B, suy ra $v_{tb} = \\frac{s}{t}$.\n• **Đo tốc độ tức thời** tại cổng quang $A$: gắn tấm chắn sáng bề rộng $\\Delta s$ (ví dụ $10\\text{ mm}$) lên xe, chọn chế độ đếm thời gian chắn cổng $A$ ($\Delta t$ rất nhỏ), suy ra $v \\approx \\frac{\\Delta s}{\\Delta t}$.'
+          '• **Đo tốc độ trung bình** giữa hai cổng quang $A$ và $B$ cách nhau khoảng $s$: chọn chế độ `A ↔ B` để đồng hồ đếm thời gian $t$ xe đi từ A đến B, suy ra $v_{tb} = \\frac{s}{t}$.\n• **Đo tốc độ tức thời** tại cổng quang $A$: gắn tấm chắn sáng bề rộng $\\Delta s$ (ví dụ $10\\text{ mm}$) lên xe, chọn chế độ đếm thời gian chắn cổng $A$ ($\\Delta t$ rất nhỏ), suy ra $v \\approx \\frac{\\Delta s}{\\Delta t}$.'
       },
       {
         heading: '2. Sai số và lưu ý thao tác thí nghiệm',
@@ -810,7 +810,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
         question: 'Hai lực đồng quy $F_1 = 6\\text{ N}$ và $F_2 = 8\\text{ N}$ hợp với nhau góc $90^\\circ$. Độ lớn hợp lực là:',
         options: ['A. 14 N', 'B. 2 N', 'C. 10 N', 'D. 48 N'],
         correctIndex: 2,
-        explanation: 'Do góc hợp $90^\\circ$ ($\cos 90^\\circ = 0$), $F = \\sqrt{6^2 + 8^2} = 10\\text{ N}$.'
+        explanation: 'Do góc hợp $90^\\circ$ ($\\cos 90^\\circ = 0$), $F = \\sqrt{6^2 + 8^2} = 10\\text{ N}$.'
       },
       {
         source: SRC_10,
@@ -1433,7 +1433,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       {
         source: SRC_10,
         question: 'Một vật khối lượng $4\\text{ kg}$ trượt trên sàn ngang $5\\text{ m}$ dưới tác dụng lực kéo nằm ngang $F = 20\\text{ N}$ và hệ số ma sát $\\mu = 0{,}25$ ($g = 10\\text{ m/s}^2$). Tính công của lực kéo, công của lực ma sát và tổng công ngoại lực.',
-        hints: ['Tính $F_{ms} = \\mu m g$, công ma sát mang dấu âm ($\cos 180^\\circ = -1$).'],
+        hints: ['Tính $F_{ms} = \\mu m g$, công ma sát mang dấu âm ($\\cos 180^\\circ = -1$).'],
         solutionSteps: [
           'Công lực kéo: $A_k = 20 \\cdot 5 = 100\\text{ J}$.',
           'Lực ma sát: $F_{ms} = 0{,}25 \\cdot 4 \\cdot 10 = 10\\text{ N} \\implies A_{ms} = -10 \\cdot 5 = -50\\text{ J}$.',
@@ -1999,7 +1999,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       {
         heading: '2. Lực đàn hồi của lò xo & Định luật Hooke',
         content:
-          '• Trong giới hạn đàn hồi, độ lớn lực đàn hồi của lò xo tỉ lệ thuận với độ biến dạng của nó:\n$$F_{đh} = k \\cdot |\\Delta l| = k \\cdot |l - l_0|$$\n• $k$ ($\text{N/m}$): độ cứng (hệ số đàn hồi) của lò xo; $|\\Delta l|$ ($\\text{m}$): độ giãn hoặc nén so với chiều dài tự nhiên $l_0$.'
+          '• Trong giới hạn đàn hồi, độ lớn lực đàn hồi của lò xo tỉ lệ thuận với độ biến dạng của nó:\n$$F_{đh} = k \\cdot |\\Delta l| = k \\cdot |l - l_0|$$\n• $k$ ($\\text{N/m}$): độ cứng (hệ số đàn hồi) của lò xo; $|\\Delta l|$ ($\\text{m}$): độ giãn hoặc nén so với chiều dài tự nhiên $l_0$.'
       }
     ],
     keyFormulas: ['F_{đh} = k |\\Delta l| = k |l - l_0|', 'k = \\frac{m g}{\\Delta l_0} \\quad (\\text{khi treo cân bằng})'],

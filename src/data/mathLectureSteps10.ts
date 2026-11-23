@@ -204,7 +204,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_10: Record<string, LectureStep[]> = {
           'm_a^2 = \\frac{2(b^2 + c^2) - a^2}{4} \\quad (\\text{độ dài đường trung tuyến})'
         ],
         variablesNote:
-          '• Khi biết **3 cạnh** $(a, b, c)$, dùng hệ quả Định lý Cosin $\\cos A = \\frac{b^2 + c^2 - a^2}{2bc}$ để xác định tam giác nhọn ($\\cos A > 0$), vuông ($= 0$) hay tù ($< 0$).\n• Chú ý: Trong tam giác có thể tồn tại góc tù ($\cos < 0$), nhưng $\\sin A > 0$ luôn dương vì $0^\\circ < A < 180^\\circ$.'
+          '• Khi biết **3 cạnh** $(a, b, c)$, dùng hệ quả Định lý Cosin $\\cos A = \\frac{b^2 + c^2 - a^2}{2bc}$ để xác định tam giác nhọn ($\\cos A > 0$), vuông ($= 0$) hay tù ($< 0$).\n• Chú ý: Trong tam giác có thể tồn tại góc tù ($\\cos < 0$), nhưng $\\sin A > 0$ luôn dương vì $0^\\circ < A < 180^\\circ$.'
       },
       deepDiveSection:
         'Ứng dụng thực tế cực hay gặp là bài toán đo khoảng cách giữa 2 điểm $A, B$ không tới được trực tiếp (qua sông, qua núi) hoặc tính chiều cao tháp từ hai góc nâng đo được tại hai vị trí $C, D$ cách nhau $d$ mét: giải tam giác phụ chứa đoạn $CD$ bằng Định lý Sin trước, rồi suy ra cạnh cần tìm.',
@@ -606,7 +606,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_10: Record<string, LectureStep[]> = {
           '\\text{Đoạn chắn qua } A(a;0), B(0;b): \\ \\frac{x}{a} + \\frac{y}{b} = 1 \\ (ab \\neq 0)'
         ],
         variablesNote:
-          '• **Đổi nhanh từ $\\vec{u}$ sang $\\vec{n}$**: Đổi chỗ hai tọa độ và thêm dấu trừ vào MỘT tọa độ ($\vec{u}\\cdot\\vec{n} = 0$).\n• Hai đường thẳng song song có **cùng** vectơ pháp tuyến; hai đường vuông góc đổi pháp tuyến đường này thành chỉ phương đường kia.'
+          '• **Đổi nhanh từ $\\vec{u}$ sang $\\vec{n}$**: Đổi chỗ hai tọa độ và thêm dấu trừ vào MỘT tọa độ ($\\vec{u}\\cdot\\vec{n} = 0$).\n• Hai đường thẳng song song có **cùng** vectơ pháp tuyến; hai đường vuông góc đổi pháp tuyến đường này thành chỉ phương đường kia.'
       },
       deepDiveSection:
         'Khi viết phương trình đường cao $AH$ trong $\\triangle ABC$: đi qua $A$ và vuông góc với $BC$, nên nhận ngay $\\overrightarrow{BC}$ làm vectơ pháp tuyến! Khi viết đường trung trực đoạn $AB$: đi qua trung điểm $I$ của $AB$ và nhận $\\overrightarrow{AB}$ làm vectơ pháp tuyến.',

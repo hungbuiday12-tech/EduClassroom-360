@@ -9,6 +9,7 @@ import {
 } from '../../data/physicsDomainsData';
 import { AnyStepSimId, resolveStepSimulation } from './physicsStepSimResolver';
 import { Physics3DView } from './Physics3DView';
+import { FormattedText, MathFormula } from '../common/MathRenderer';
 
 interface PhysicsInline3DSimProps {
   lesson: PhysicsLesson;
@@ -57,6 +58,10 @@ const STEP_2D_TO_3D_MAP: Partial<Record<AnyStepSimId, Physics3DMode>> = {
   coulomb_pendulum: 'electroscope_3d',
   ohm_circuit: 'ohm_circuit_3d',
   joule_lenz_heat: 'ohm_circuit_3d',
+  electric_power_meter: 'electric_power_meter_3d',
+  dc_motor_2d: 'dc_motor_3d',
+  electrolysis_faraday: 'electrolysis_3d',
+  eye_optics_2d: 'eye_optics_3d',
   magnetic_induction: 'solenoid_field_3d',
   electromagnet_crane: 'solenoid_field_3d',
   hall_effect: 'lorentz_helix',
@@ -67,7 +72,7 @@ const STEP_2D_TO_3D_MAP: Partial<Record<AnyStepSimId, Physics3DMode>> = {
   ac_rlc_circuit: 'ac_generator_3d',
   lc_oscillation: 'ac_generator_3d',
   transformer_2d: 'transformer_3d',
-  em_wave_3axis: 'polarization_3d',
+  em_wave_3axis: 'em_wave_3d',
   lens_optics: 'optics_3d',
   light_refraction: 'refraction_tank_3d',
   fiber_optic_tir: 'fiber_optic_3d',
@@ -147,7 +152,7 @@ export const PhysicsInline3DSim: React.FC<PhysicsInline3DSimProps> = ({
               MÔ PHỎNG 3D · PHẦN {stepIndex + 1}/{totalSteps}
             </span>
             <h4 className="text-xs sm:text-sm font-bold text-white truncate">
-              {spec?.title || lesson.title}
+              <FormattedText text={spec?.title || lesson.title} />
             </h4>
           </div>
 
@@ -181,12 +186,12 @@ export const PhysicsInline3DSim: React.FC<PhysicsInline3DSimProps> = ({
               <Sparkles className="w-3.5 h-3.5" />
               <span>THREE.JS WEBGL · {domainMeta?.shortName?.toUpperCase() || 'VẬT LÍ 3D'}</span>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {spec?.subtitle || lesson.description}
-            </p>
+            <div className="text-xs text-slate-300 leading-relaxed">
+              <FormattedText text={spec?.subtitle || lesson.description} />
+            </div>
             {spec?.formula && (
               <div className="inline-block px-2 py-0.5 rounded bg-slate-900 border border-slate-700/80 font-mono text-[11px] text-sky-300">
-                {spec.formula}
+                <MathFormula formula={spec.formula} />
               </div>
             )}
           </div>

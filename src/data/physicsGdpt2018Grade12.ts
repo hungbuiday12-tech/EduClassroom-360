@@ -940,7 +940,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'Làm chủ công thức tính từ thông xuyên qua khung dây (lưu ý góc $\\alpha$ với pháp tuyến!), hiện tượng cảm ứng điện từ Faraday và quy tắc Định luật Lenz.',
     theorySections: [
       {
-        heading: '1. Từ thông ($\Phi$)',
+        heading: '1. Từ thông ($\\Phi$)',
         content:
           '• Từ thông qua khung dây phẳng gồm $N$ vòng, diện tích $S$ đặt trong từ trường đều $\\vec{B}$:\n  $$\\Phi = N B S \\cos\\alpha$$\n  (đơn vị **Weber, Wb**; $\\alpha$ là góc giữa $\\vec{B}$ và **pháp tuyến $\\vec{n}$** của mặt khung; nếu đề cho góc $\\beta$ giữa $\\vec{B}$ và **mặt phẳng khung** thì $\\alpha = 90^\\circ - \\beta$).'
       },
@@ -959,7 +959,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
     practiceExercises: [
       {
         source: SRC_12,
-        question: 'Một khung dây tròn gồm $50$ vòng, diện tích mỗi vòng $40\\text{ cm}^2$ đặt vuông góc với đường sức từ đều ($\alpha = 0^\\circ$). Cảm ứng từ giảm đều từ $0{,}6\\text{ T}$ về $0{,}1\\text{ T}$ trong $0{,}05\\text{ s}$. Độ lớn suất điện động cảm ứng bằng:',
+        question: 'Một khung dây tròn gồm $50$ vòng, diện tích mỗi vòng $40\\text{ cm}^2$ đặt vuông góc với đường sức từ đều ($\\alpha = 0^\\circ$). Cảm ứng từ giảm đều từ $0{,}6\\text{ T}$ về $0{,}1\\text{ T}$ trong $0{,}05\\text{ s}$. Độ lớn suất điện động cảm ứng bằng:',
         options: ['A. $2{,}0\\text{ V}$', 'B. $0{,}2\\text{ V}$', 'C. $20\\text{ V}$', 'D. $4{,}0\\text{ V}$'],
         correctIndex: 0,
         explanation: '$|e_c| = N S \\frac{|\\Delta B|}{\\Delta t} = 50 \\cdot 40\\cdot 10^{-4} \\cdot \\frac{0{,}5}{0{,}05} = 0{,}2 \\cdot 10 = 2{,}0\\text{ V}$.'
@@ -1019,7 +1019,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       {
         source: SRC_12,
         question: 'Mạng điện xoay chiều dân dụng Việt Nam có điện áp hiệu dụng $U = 220\\text{ V}$, tần số $50\\text{ Hz}$. Điện áp cực đại $U_0$ trên hai lỗ ổ cắm là:',
-        options: ['A. $220\\text{ V}$', 'B. $220\\sqrt{2}\\text{ V}$ ($\approx 311\\text{ V}$)', 'C. $110\\sqrt{2}\\text{ V}$', 'D. $440\\text{ V}$'],
+        options: ['A. $220\\text{ V}$', 'B. $220\\sqrt{2}\\text{ V}$ ($\\approx 311\\text{ V}$)', 'C. $110\\sqrt{2}\\text{ V}$', 'D. $440\\text{ V}$'],
         correctIndex: 1,
         explanation: '$U_0 = U\\sqrt{2} = 220\\sqrt{2} \\approx 311\\text{ V}$.'
       },
@@ -1399,7 +1399,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
     essayExercises: [
       {
         source: SRC_12,
-        question: 'Độ phóng xạ của một mẫu chất ban đầu là $H_0 = 8\\cdot 10^5\\text{ Bq}$. Sau $12\\text{ giờ}$, độ phóng xạ giảm xuống còn $10^5\\text{ Bq}$. Tính chu kì bán rã $T$ (giờ) và hằng số phóng xạ $\\lambda$ ($\text{s}^{-1}$).',
+        question: 'Độ phóng xạ của một mẫu chất ban đầu là $H_0 = 8\\cdot 10^5\\text{ Bq}$. Sau $12\\text{ giờ}$, độ phóng xạ giảm xuống còn $10^5\\text{ Bq}$. Tính chu kì bán rã $T$ (giờ) và hằng số phóng xạ $\\lambda$ ($\\text{s}^{-1}$).',
         hints: ['Giải $H / H_0 = 1/8 = 2^{-t/T} \\implies t/T = 3$.'],
         solutionSteps: [
           'Bước 1: $\\frac{H}{H_0} = \\frac{10^5}{8\\cdot 10^5} = \\frac{1}{8} = 2^{-3} \\implies \\frac{t}{T} = 3 \\implies T = \\frac{12}{3} = 4\\text{ giờ} = 14\\,400\\text{ s}$.',

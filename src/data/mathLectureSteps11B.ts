@@ -165,7 +165,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_11B: Record<string, LectureStep[]> = {
           '• **Đọc nhanh đáp án $\\lim \\frac{P(n)}{Q(n)}$ trong 1 giây**:\n  - Bậc tử < Bậc mẫu $\\implies \\mathbf{0}$.\n  - Bậc tử = Bậc mẫu $\\implies$ **tỉ số hai hệ số bậc cao nhất**.\n  - Bậc tử > Bậc mẫu $\\implies \\mathbf{\\pm\\infty}$ (xét dấu hệ số cao nhất).\n• Với dãy chứa lũy thừa mũ $n$ (ví dụ $\\frac{3^n + 2^n}{5 \\cdot 3^n - 1}$), chia cả tử và mẫu cho lũy thừa có cơ số $|a|$ lớn nhất ($3^n$).'
       },
       deepDiveSection:
-        'Với dạng vô định $\\infty - \\infty$ như $\\lim(\\sqrt{n^2 + 3n} - n)$, chỉ nhân lượng liên hợp khi **hệ số triệt tiêu nhau** ($\sqrt{1} - 1 = 0$); nếu đề cho $\\lim(\\sqrt{4n^2 + n} - n)$ thì không cần nhân liên hợp vì $2n - n = n \\to +\\infty$ (chỉ cần đặt $n$ ra làm nhân tử chung)!',
+        'Với dạng vô định $\\infty - \\infty$ như $\\lim(\\sqrt{n^2 + 3n} - n)$, chỉ nhân lượng liên hợp khi **hệ số triệt tiêu nhau** ($\\sqrt{1} - 1 = 0$); nếu đề cho $\\lim(\\sqrt{4n^2 + n} - n)$ thì không cần nhân liên hợp vì $2n - n = n \\to +\\infty$ (chỉ cần đặt $n$ ra làm nhân tử chung)!',
       teacherExplanation: 'Nhẩm bậc tử và mẫu của phân thức hữu tỉ giúp chọn ngay đáp án trắc nghiệm giới hạn dãy số chỉ trong 2 giây.',
       keyTakeaway: 'Chia cho $n^k$ bậc lớn nhất hoặc cơ số lớn nhất; gặp $\\sqrt{n^2 + bn} - n$ mới nhân liên hợp.',
       miniQuiz: [

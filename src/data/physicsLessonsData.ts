@@ -5,6 +5,7 @@ import { PHYSICS_GDPT_11_LESSONS } from './physicsGdpt2018Grade11';
 import { PHYSICS_GDPT_12_LESSONS } from './physicsGdpt2018Grade12';
 import { PHYSICS_GDPT_ELECTIVES } from './physicsGdpt2018Electives';
 import { PHYSICS_EXTRA_10_LESSONS } from './physicsExtra10Lessons';
+import { PHYSICS_GDPT_2006_LESSONS } from './physicsGdpt2006Lessons';
 
 export const PHYSICS_LESSONS: PhysicsLesson[] = [
   // ============================================================================
@@ -576,4 +577,5 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
     ]
   },
   ...PHYSICS_EXTRA_10_LESSONS,
+  ...PHYSICS_GDPT_2006_LESSONS,
 ];

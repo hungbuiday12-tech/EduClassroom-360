@@ -711,7 +711,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
           JSON.stringify({
             type: 'join',
             roomCode: cleanCode,
-            title: titleHint || roomTitleInput.trim() || 'Phòng học trực tuyến',
+            title: titleHint || roomTitleInput.trim() || 'Syn Meet',
             name: cleanName,
             micOn: false,
             camOn: false,
@@ -732,7 +732,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
             joined = true;
             setIsJoining(false);
             setRoomCode(msg.roomCode);
-            setRoomTitle(msg.title || 'Phòng học trực tuyến');
+            setRoomTitle(msg.title || 'Syn Meet');
             setSelfPeerId(msg.selfPeerId);
             selfPeerIdRef.current = msg.selfPeerId;
             setPeers(Array.isArray(msg.peers) ? msg.peers : []);
@@ -1235,7 +1235,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
             <div>
               <div className="inline-flex items-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-300">
                 <Video className="h-3.5 w-3.5" />
-                Phòng Học Trực Tuyến · WebRTC & 3D Đồng Bộ
+                Syn Meet · WebRTC & 3D Đồng Bộ
               </div>
               <h1 className="mt-2 text-2xl font-bold tracking-tight text-white md:text-3xl">
                 Học nhóm trực tuyến cùng mô hình 3D chung

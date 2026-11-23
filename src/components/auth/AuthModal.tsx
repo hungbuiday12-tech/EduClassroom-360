@@ -305,12 +305,12 @@ export const AuthModal: React.FC = () => {
                 </div>
                 <div>
                   <span className="font-semibold text-white block">
-                    {isEn ? 'Sublime 4 Judge, Syn AI Pro & Meet 3D' : 'IDE Chấm Code, Syn AI Pro & Meet 3D'}
+                    {isEn ? 'Sublime 4 Judge, Syn AI Pro & Syn Meet 3D' : 'IDE Chấm Code, Syn AI Pro & Syn Meet 3D'}
                   </span>
                   <span className="text-[11px] text-slate-300">
                     {isEn
-                      ? 'Line-by-line Code Trace 1-1, Pause/Resume AI chat & WebRTC Meet.'
-                      : 'Truy vết Code 1-1, Minichat AI Tạm đóng mở lại tiếp & Phòng học Meet.'}
+                      ? 'Line-by-line Code Trace 1-1, Pause/Resume AI chat & WebRTC Syn Meet.'
+                      : 'Truy vết Code 1-1, Minichat AI Tạm đóng mở lại tiếp & Syn Meet.'}
                   </span>
                 </div>
               </div>

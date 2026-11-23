@@ -546,7 +546,7 @@ export const PHYSICS_GDPT_ELECTIVES: PhysicsLesson[] = [
     practiceExercises: [
       {
         source: SRC_CD,
-        question: 'Chiếu bức xạ $\\lambda = 248{,}4\\text{ nm}$ ($\varepsilon = 5{,}0\\text{ eV}$) vào tấm kim loại có công thoát $A = 2{,}2\\text{ eV}$. Điện áp hãm vừa đủ triệt tiêu dòng quang điện có độ lớn là:',
+        question: 'Chiếu bức xạ $\\lambda = 248{,}4\\text{ nm}$ ($\\varepsilon = 5{,}0\\text{ eV}$) vào tấm kim loại có công thoát $A = 2{,}2\\text{ eV}$. Điện áp hãm vừa đủ triệt tiêu dòng quang điện có độ lớn là:',
         options: ['A. $2{,}8\\text{ V}$', 'B. $7{,}2\\text{ V}$', 'C. $2{,}2\\text{ V}$', 'D. $5{,}0\\text{ V}$'],
         correctIndex: 0,
         explanation: '$e|U_h| = \\varepsilon - A = 5{,}0 - 2{,}2 = 2{,}8\\text{ eV} \\implies |U_h| = 2{,}8\\text{ V}$.'

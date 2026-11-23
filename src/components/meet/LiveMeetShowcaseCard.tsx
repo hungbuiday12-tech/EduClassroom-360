@@ -130,7 +130,7 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/40 bg-sky-500/15 px-2.5 py-1 text-xs font-bold text-sky-700 dark:text-sky-300">
               <Video className="h-3.5 w-3.5" />
-              {isEn ? 'LIVE MEET · FREE & SYNAPSE PRE 3D' : 'PHÒNG HỌC TRỰC TUYẾN · FREE & PRE 3D'}
+              {isEn ? 'SYN MEET · FREE & SYNAPSE PRE 3D' : 'SYN MEET · FREE & PRE 3D'}
             </span>
             <span
               className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-semibold ${
@@ -225,7 +225,7 @@ export const LiveMeetShowcaseCard: React.FC<LiveMeetShowcaseCardProps> = ({
               )}
               <Video className="relative z-10 h-4 w-4" />
               <span className="relative z-10">
-                {isEn ? 'Open Live Meet & 3D Classroom' : 'Vào Phòng Học Trực Tuyến 3D'}
+                {isEn ? 'Open Syn Meet & 3D Classroom' : 'Vào Syn Meet 3D'}
               </span>
               <ArrowRight className="relative z-10 h-4 w-4" />
             </button>

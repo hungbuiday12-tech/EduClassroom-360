@@ -2,6 +2,23 @@ export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' |
 
 export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
 
+export interface ForumPollOption {
+  id: string;
+  text: string;
+  votes: string[];
+}
+
+export interface ForumPoll {
+  question: string;
+  options: ForumPollOption[];
+}
+
+export interface ForumMessageReplyRef {
+  id: string;
+  senderName: string;
+  excerpt: string;
+}
+
 export interface ForumGroup {
   id: string;
   name: string;
@@ -14,6 +31,7 @@ export interface ForumGroup {
   messageCount: number;
   lastMessagePreview?: string;
   lastMessageAt?: string;
+  pinnedMessageId?: string;
   createdAt: string;
 }
 
@@ -27,6 +45,10 @@ export interface ForumMessage {
   senderAvatar?: string;
   senderRole: 'student' | 'teacher' | 'admin';
   content: string;
+  replyTo?: ForumMessageReplyRef;
+  reactions?: Record<string, string[]>;
+  poll?: ForumPoll;
+  isAiReply?: boolean;
   createdAt: string;
 }
 
@@ -168,7 +190,7 @@ export interface GeoCircle {
   radiusPointId: string;
 }
 
-export type CurriculumTrack = 'khong_chuyen' | 'chuyen';
+export type CurriculumTrack = 'khong_chuyen' | 'gdpt_2006' | 'chuyen';
 export type SpecializedTier = 'Cơ bản' | 'Nâng cao' | 'Chuyên / HSG';
 
 export interface LectureStepMCQ {
@@ -411,7 +433,13 @@ export type PhysicsSimType =
   | 'thermal_conduction_bar'
   | 'binding_energy_curve'
   | 'work_power_joule'
-  | 'joule_lenz_heat';
+  | 'joule_lenz_heat'
+  | 'electric_power_meter'
+  | 'dc_motor_2d'
+  | 'electrolysis_faraday'
+  | 'eye_optics_2d'
+  | 'em_wave_3axis'
+  | 'phase_change_heating';
 
 export type Physics3DMode =
   | 'pendulum_spring'
@@ -469,7 +497,11 @@ export type Physics3DMode =
   | 'ohm_circuit_3d'
   | 'refraction_tank_3d'
   | 'calorimetry_beaker_3d'
-  | 'archimedes_buoyancy_3d';
+  | 'archimedes_buoyancy_3d'
+  | 'electric_power_meter_3d'
+  | 'electrolysis_3d'
+  | 'eye_optics_3d'
+  | 'em_wave_3d';
 
 export type PhysicsDomainId =
   | 'mechanics'

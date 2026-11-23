@@ -23,6 +23,7 @@ interface SpatialVoiceMentorProps {
   formula?: string;
   language?: 'vi' | 'en';
   compactButton?: boolean;
+  popoverPlacement?: 'down' | 'up';
   onWonderCommand?: (cmd: WonderStageVoiceCommand) => void;
 }
 
@@ -34,6 +35,7 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
   formula,
   language = 'vi',
   compactButton = false,
+  popoverPlacement = 'down',
   onWonderCommand
 }) => {
   const isEn = language === 'en';
@@ -220,7 +222,11 @@ export const SpatialVoiceMentor: React.FC<SpatialVoiceMentorProps> = ({
       </button>
 
       {isOpen && (
-        <div className="sci-frame syn-top-laser absolute right-0 top-full mt-2 z-50 w-[min(355px,calc(100vw-24px))] max-h-[68dvh] overflow-y-auto bg-slate-950/96 border border-cyan-500/50 rounded-lg shadow-2xl p-3 text-slate-100 space-y-2.5">
+        <div
+          className={`sci-frame syn-top-laser absolute right-0 z-50 w-[min(308px,calc(100vw-24px))] max-h-[62dvh] overflow-y-auto bg-slate-950/96 border border-cyan-500/50 rounded-lg shadow-2xl p-3 text-slate-100 space-y-2.5 ${
+            popoverPlacement === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
+        >
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800">
             <div className="flex items-center gap-2 min-w-0">
               <Cpu className="w-4 h-4 text-cyan-400 shrink-0" />

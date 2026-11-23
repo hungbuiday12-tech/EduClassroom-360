@@ -366,8 +366,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         },
         {
           id: 'live_meet',
-          labelVi: 'Phòng Học Trực Tuyến',
-          labelEn: 'Live Meet & 3D',
+          labelVi: 'Syn Meet',
+          labelEn: 'Syn Meet · 3D',
           badge: 'LIVE',
           icon: (
             <span className="icon-anim-wave">

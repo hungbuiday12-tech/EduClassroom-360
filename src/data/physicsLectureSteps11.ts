@@ -162,7 +162,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_11: Record<string, LectureStep[]> = {
           '\\vec{F} = q\\vec{E}, \\quad k = 9\\cdot 10^9\\,\\frac{\\text{N}\\cdot\\text{m}^2}{\\text{C}^2}'
         ],
         variablesNote:
-          '• $\\varepsilon$: hằng số điện môi ($\varepsilon \\ge 1$; không khí/chân không $\\varepsilon = 1$).\n• Vectơ $\\vec{E}$ do $Q > 0$ gây ra hướng **ra xa** $Q$; do $Q < 0$ hướng **lại gần** $Q$.\n• Khi đặt điện tích thử $q < 0$ vào điện trường $\\vec{E}$, lực điện $\\vec{F}$ **ngược chiều** $\\vec{E}$.'
+          '• $\\varepsilon$: hằng số điện môi ($\\varepsilon \\ge 1$; không khí/chân không $\\varepsilon = 1$).\n• Vectơ $\\vec{E}$ do $Q > 0$ gây ra hướng **ra xa** $Q$; do $Q < 0$ hướng **lại gần** $Q$.\n• Khi đặt điện tích thử $q < 0$ vào điện trường $\\vec{E}$, lực điện $\\vec{F}$ **ngược chiều** $\\vec{E}$.'
       },
       deepDiveSection:
         'Theo nguyên lý chồng chất điện trường, cường độ điện trường tổng hợp tại điểm $M$ do nhiều điện tích gây ra là tổng vectơ $\\vec{E}_M = \\vec{E}_1 + \\vec{E}_2 + \\dots$. Để $\\vec{E}_M = \\vec{0}$, điểm $M$ phải nằm trên đường nối hai điện tích và gần điện tích có độ lớn $|Q|$ nhỏ hơn.',
@@ -258,7 +258,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_11: Record<string, LectureStep[]> = {
           '\\text{Song song: } C_b = C_1 + C_2, \\qquad \\text{Nối tiếp: } \\frac{1}{C_b} = \\frac{1}{C_1} + \\frac{1}{C_2}'
         ],
         variablesNote:
-          '• Điện dung $C$ đo bằng Fara ($\text{F}$); $1\\,\\mu\\text{F} = 10^{-6}\\text{ F}$, $1\\text{ nF} = 10^{-9}\\text{ F}$, $1\\text{ pF} = 10^{-12}\\text{ F}$.\n• Điện dung $C$ là hằng số hình học của tụ ($C = \\frac{\\varepsilon S}{4\\pi k d}$), KHÔNG phụ thuộc $Q$ hay $U$.'
+          '• Điện dung $C$ đo bằng Fara ($\\text{F}$); $1\\,\\mu\\text{F} = 10^{-6}\\text{ F}$, $1\\text{ nF} = 10^{-9}\\text{ F}$, $1\\text{ pF} = 10^{-12}\\text{ F}$.\n• Điện dung $C$ là hằng số hình học của tụ ($C = \\frac{\\varepsilon S}{4\\pi k d}$), KHÔNG phụ thuộc $Q$ hay $U$.'
       },
       deepDiveSection:
         'Khi hạt mang điện $q$ bay vuông góc vào khoảng giữa hai bản tụ phẳng, nó chuyển động như bài toán **ném ngang**: phương song song bản giữ vận tốc đều $v_0$, phương vuông góc bản có gia tốc không đổi $a = \\frac{|q|E}{m}$ uốn cong quỹ đạo thành parabol.',
@@ -351,7 +351,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_11: Record<string, LectureStep[]> = {
           '\\text{Hiệu suất nguồn: } H = \\frac{U_N}{\\mathscr{E}} = \\frac{R_N}{R_N + r}'
         ],
         variablesNote:
-          '• $\\mathscr{E}$ ($\text{V}$): suất điện động; $r$ ($\\Omega$): điện trở trong của nguồn; $R_N$: điện trở tương đương mạch ngoài.\n• Khi đo trực tiếp hai cực pin hở mạch ($I = 0$), vôn kế lý tưởng chỉ đúng $\\mathscr{E}$. Khi xảy ra **đoản mạch** ($R_N = 0$), dòng đạt cực đại $I_{\\max} = \\mathscr{E}/r$ dễ gây cháy nổ.'
+          '• $\\mathscr{E}$ ($\\text{V}$): suất điện động; $r$ ($\\Omega$): điện trở trong của nguồn; $R_N$: điện trở tương đương mạch ngoài.\n• Khi đo trực tiếp hai cực pin hở mạch ($I = 0$), vôn kế lý tưởng chỉ đúng $\\mathscr{E}$. Khi xảy ra **đoản mạch** ($R_N = 0$), dòng đạt cực đại $I_{\\max} = \\mathscr{E}/r$ dễ gây cháy nổ.'
       },
       deepDiveSection:
         'Chú ý quan hệ giữa công suất mạch ngoài và biến trở $R$: công suất tỏa nhiệt mạch ngoài $P_N = I^2 R = \\frac{\\mathscr{E}^2 R}{(R+r)^2}$ đạt **cực đại** $P_{N\\max} = \\frac{\\mathscr{E}^2}{4r}$ khi điện trở ngoài khớp với điện trở trong ($R = r$), lúc đó hiệu suất nguồn đạt $50\\%$.',
@@ -505,7 +505,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_11: Record<string, LectureStep[]> = {
         },
         {
           id: 'p11pd-s2-q2',
-          question: 'Ở vị trí biên của con lắc đơn ($\alpha = \\alpha_0$), lực căng dây bằng:',
+          question: 'Ở vị trí biên của con lắc đơn ($\\alpha = \\alpha_0$), lực căng dây bằng:',
           options: ['A. $0$', 'B. $mg\\cos\\alpha_0$', 'C. $mg\\sin\\alpha_0$', 'D. $mg(3 - 2\\cos\\alpha_0)$'],
           correctIndex: 1,
           explanation: 'Tại biên $v = 0$ nên chiếu phương hướng tâm thu được $T_{\\min} = mg\\cos\\alpha_0$.'
@@ -514,7 +514,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_11: Record<string, LectureStep[]> = {
       miniEssay: {
         id: 'p11pd-s2-e1',
         question: 'Thả con lắc đơn dài $1\\text{ m}$ từ vị trí dây nằm ngang ($\\alpha_0 = 90^\\circ$, $g = 10\\text{ m/s}^2$). Tính tốc độ ở vị trí thấp nhất và lực căng dây ở đó gấp mấy lần trọng lượng vật?',
-        hint: 'Thay $\\alpha = 0, \\alpha_0 = 90^\\circ$ ($\cos 90^\\circ = 0$) vào công thức $v$ và $T_{\\text{căng}}$.',
+        hint: 'Thay $\\alpha = 0, \\alpha_0 = 90^\\circ$ ($\\cos 90^\\circ = 0$) vào công thức $v$ và $T_{\\text{căng}}$.',
         rubricChecklist: [
           'Tính $v_{\\max} = \\sqrt{2gl} = \\sqrt{20} = 2\\sqrt{5} \\approx 4{,}47\\text{ m/s}$.',
           'Tính $T_{\\max} = mg(3\\cdot 1 - 0) = 3mg$ (gấp 3 lần trọng lượng vật).'
@@ -794,7 +794,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_11: Record<string, LectureStep[]> = {
       miniEssay: {
         id: 'p11cp-s2-e1',
         question: 'Tại sao tụ điện có điện môi bằng giấy tẩm sáp hay gốm lại có kích thước rất nhỏ nhưng điện dung lớn hơn tụ không khí có cùng diện tích bản?',
-        hint: 'Xét công thức $C = \\frac{\\varepsilon S}{4\\pi kd}$ khi đưa tấm điện môi mỏng ($\varepsilon > 1$) vào giữa hai bản.',
+        hint: 'Xét công thức $C = \\frac{\\varepsilon S}{4\\pi kd}$ khi đưa tấm điện môi mỏng ($\\varepsilon > 1$) vào giữa hai bản.',
         rubricChecklist: [
           'Lớp điện môi mỏng làm giảm $d$ xuống mức rất nhỏ đồng thời tăng hằng số điện môi $\\varepsilon$ lên nhiều lần.',
           'Ngoài ra điện môi rắn chịu được điện trường đánh thủng cao hơn không khí.'
@@ -1093,13 +1093,13 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_11: Record<string, LectureStep[]> = {
           '\\text{Số bụng } k \\text{ tỉ lệ nghịch với } \\sqrt{F} \\text{ khi } f, l \\text{ không đổi}'
         ],
         variablesNote:
-          '• $F$ ($\text{N}$): lực căng sợi dây; $\\mu = m/l$ ($\text{kg/m}$): khối lượng 1 mét dây.\n• Khi tăng lực căng dây lên 4 lần, tốc độ sóng tăng gấp đôi và số bó sóng trên dây (khi giữ nguyên $f, l$) giảm đi một nửa!'
+          '• $F$ ($\\text{N}$): lực căng sợi dây; $\\mu = m/l$ ($\\text{kg/m}$): khối lượng 1 mét dây.\n• Khi tăng lực căng dây lên 4 lần, tốc độ sóng tăng gấp đôi và số bó sóng trên dây (khi giữ nguyên $f, l$) giảm đi một nửa!'
       },
       deepDiveSection:
-        'Ứng dụng khi lên dây đàn ghi-ta: vặn chốt lên dây để **tăng lực căng $F$** khiến tốc độ sóng $v$ tăng, do chiều dài $l$ cố định nên tần số âm cơ bản $f_0 = v/(2l)$ tăng lên (tiếng đàn thanh/cao hơn). Ngược lại dây bass bọc đồng dày ($\mu$ lớn) cho âm trầm hơn.',
+        'Ứng dụng khi lên dây đàn ghi-ta: vặn chốt lên dây để **tăng lực căng $F$** khiến tốc độ sóng $v$ tăng, do chiều dài $l$ cố định nên tần số âm cơ bản $f_0 = v/(2l)$ tăng lên (tiếng đàn thanh/cao hơn). Ngược lại dây bass bọc đồng dày ($\\mu$ lớn) cho âm trầm hơn.',
       teacherExplanation:
         'Khi đề giữ nguyên tần số nguồn $f$ và chiều dài $l$ nhưng thay đổi số quả cân treo ở đầu dây: tích $k\\sqrt{F}$ là hằng số ($k_1\\sqrt{F_1} = k_2\\sqrt{F_2}$).',
-      keyTakeaway: 'Dây càng căng ($F$ lớn) hoặc càng mảnh nhẹ ($\mu$ nhỏ) thì tốc độ sóng và tần số âm càng cao.',
+      keyTakeaway: 'Dây càng căng ($F$ lớn) hoặc càng mảnh nhẹ ($\\mu$ nhỏ) thì tốc độ sóng và tần số âm càng cao.',
       miniQuiz: [
         {
           id: 'p11st-s3-q1',

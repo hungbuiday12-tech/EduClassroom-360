@@ -505,8 +505,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               const phyCounts = getPhysicsSimCounts();
               return t(
                 'overview.heroDesc',
-                `Hệ sinh thái STEM toàn diện cho Toán (2D & Oxyz 3D), Vật lí (${phyCounts.domainCount} lĩnh vực · ${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D + 36 dụng cụ), Tin học (5 lộ trình VNOI & C++ · IDE Sublime 4 · Truy vết Code 1-1 & Replay Tư Duy), Synapse Pre (30 Đại công trình 3D · Hộp cát Hạt GPU 28K 2 tay · Cảm biến Điện thoại QR Oscilloscope), AR Bàn Học Pro 10 ngón tay, Phòng Học Trực Tuyến Live Meet & 3D (Gọi Video WebRTC · Chia sẻ màn hình · Mô hình 3D dùng chung đồng bộ & Up file .glb/.obj), Syn AI Mắt Thần + Ngắt lời Voice & Syn Reel Video 3B1B, Đề thi chấm ảnh AI & App đa thiết bị.`,
-                `Complete STEM ecosystem: Math (2D & Oxyz 3D), Physics (${phyCounts.domainCount} domains · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D labs + 36 tools), CS (5 VNOI/C++ roadmaps · Sublime 4 · Live Code-to-Animation Trace & Thought Replay), Synapse Pre (30 Megastructures · Dual-Hand 28K GPU Particle Sandbox · QR Phone Sensor Oscilloscope), WebAR Desk Pro 10-finger lab, Live Meet & Shared 3D Classroom (WebRTC Video/Screen Share · Mouse-controlled Shared 3D & .glb/.obj Upload), Live Vision + Barge-In Syn AI & Syn Reel 3B1B Motion Video, AI-graded Exams & Cross-Device App.`
+                `Hệ sinh thái STEM toàn diện cho Toán (2D & Oxyz 3D), Vật lí (${phyCounts.domainCount} lĩnh vực · ${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D + 36 dụng cụ), Tin học (5 lộ trình VNOI & C++ · IDE Sublime 4 · Truy vết Code 1-1 & Replay Tư Duy), Synapse Pre (30 Đại công trình 3D · Hộp cát Hạt GPU 28K 2 tay · Cảm biến Điện thoại QR Oscilloscope), AR Bàn Học Pro 10 ngón tay, Syn Meet & 3D (Gọi Video WebRTC · Chia sẻ màn hình · Mô hình 3D dùng chung đồng bộ & Up file .glb/.obj), Syn AI Mắt Thần + Ngắt lời Voice & Syn Reel Video 3B1B, Đề thi chấm ảnh AI & App đa thiết bị.`,
+                `Complete STEM ecosystem: Math (2D & Oxyz 3D), Physics (${phyCounts.domainCount} domains · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D labs + 36 tools), CS (5 VNOI/C++ roadmaps · Sublime 4 · Live Code-to-Animation Trace & Thought Replay), Synapse Pre (30 Megastructures · Dual-Hand 28K GPU Particle Sandbox · QR Phone Sensor Oscilloscope), WebAR Desk Pro 10-finger lab, Syn Meet & Shared 3D Classroom (WebRTC Video/Screen Share · Mouse-controlled Shared 3D & .glb/.obj Upload), Live Vision + Barge-In Syn AI & Syn Reel 3B1B Motion Video, AI-graded Exams & Cross-Device App.`
               );
             })()}
           </p>
@@ -544,7 +544,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               className="group cs-deck-btn min-h-[48px] px-5 sm:px-6 py-3 rounded bg-sky-600/95 hover:bg-sky-500 border border-sky-400/70 text-white text-sm sm:text-base font-semibold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
             >
               <Sparkles className="w-4 h-4 shrink-0" />
-              <span>{isEn ? 'Live Meet & 3D Room' : 'Phòng Học Trực Tuyến 3D'}</span>
+              <span>{isEn ? 'Syn Meet & 3D' : 'Syn Meet 3D'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
             </button>
 

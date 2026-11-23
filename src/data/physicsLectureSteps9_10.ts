@@ -2388,7 +2388,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_9_10: Record<string, LectureStep[]> = 
       stepTitle: '1. Phân biệt Quãng đường ($s$) và Độ dịch chuyển ($d$)',
       stepType: 'concept',
       conceptSection:
-        'Quãng đường ($s$) là độ dài toàn bộ quỹ đạo mà vật đã đi qua (luôn $\\ge 0$, đại lượng vô hướng). Độ dịch chuyển ($\vec{d}$) là vectơ nối từ vị trí đầu tới vị trí cuối, cho biết cả độ dài lẫn hướng dịch chuyển.',
+        'Quãng đường ($s$) là độ dài toàn bộ quỹ đạo mà vật đã đi qua (luôn $\\ge 0$, đại lượng vô hướng). Độ dịch chuyển ($\\vec{d}$) là vectơ nối từ vị trí đầu tới vị trí cuối, cho biết cả độ dài lẫn hướng dịch chuyển.',
       formulaSection: {
         primaryFormula: 'd = \\Delta x = x_{\\text{cuối}} - x_{\\text{đầu}}',
         secondaryFormulas: [
@@ -2401,7 +2401,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_9_10: Record<string, LectureStep[]> = 
         'Tương ứng có hai đại lượng:\n• **Tốc độ trung bình**: $v_{tb} = \\frac{s}{t}$ (luôn không âm).\n• **Vận tốc trung bình**: $\\vec{v}_{tb} = \\frac{\\vec{d}}{t}$ (có dấu âm/dương theo chiều chọn trục tọa độ).',
       teacherExplanation:
         'Hãy phân biệt rõ chữ "tốc độ" (theo $s$) và "vận tốc" (theo $\\vec{d}$) — đây là điểm mới quan trọng nhất của GDPT 2018.',
-      keyTakeaway: 'Vận tốc gắn với độ dịch chuyển ($\vec{d}/t$); tốc độ gắn với quãng đường ($s/t$).',
+      keyTakeaway: 'Vận tốc gắn với độ dịch chuyển ($\\vec{d}/t$); tốc độ gắn với quãng đường ($s/t$).',
       miniQuiz: [
         {
           id: 'p10un-s1-q1',
@@ -2527,7 +2527,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_9_10: Record<string, LectureStep[]> = 
       stepTitle: '1. Gia tốc & Dấu của Gia tốc trong Biến đổi đều',
       stepType: 'concept',
       conceptSection:
-        'Gia tốc ($\vec{a}$) đặc trưng cho sự biến thiên nhanh hay chậm của vectơ vận tốc theo thời gian. Trong chuyển động thẳng biến đổi đều, gia tốc có độ lớn và hướng không đổi.',
+        'Gia tốc ($\\vec{a}$) đặc trưng cho sự biến thiên nhanh hay chậm của vectơ vận tốc theo thời gian. Trong chuyển động thẳng biến đổi đều, gia tốc có độ lớn và hướng không đổi.',
       formulaSection: {
         primaryFormula: '\\vec{a} = \\frac{\\Delta\\vec{v}}{\\Delta t} = \\frac{\\vec{v} - \\vec{v}_0}{t - t_0}',
         secondaryFormulas: [
@@ -2972,7 +2972,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_9_10: Record<string, LectureStep[]> = 
           'd = r\\sin\\alpha \\quad (\\text{cánh tay đòn từ trục đến giá của lực})'
         ],
         variablesNote:
-          '• $d$: **cánh tay đòn** — là khoảng cách **vuông góc** từ trục quay $O$ tới đường thẳng chứa lực (giá của lực), tính bằng mét ($\text{m}$).\n• Đơn vị của Moment lực là $\\text{N}\\cdot\\text{m}$.'
+          '• $d$: **cánh tay đòn** — là khoảng cách **vuông góc** từ trục quay $O$ tới đường thẳng chứa lực (giá của lực), tính bằng mét ($\\text{m}$).\n• Đơn vị của Moment lực là $\\text{N}\\cdot\\text{m}$.'
       },
       deepDiveSection:
         'Hai điều kiện cân bằng tổng quát của vật rắn:\n1. Tổng lực bằng 0 ($\\sum \\vec{F} = \\vec{0}$) — vật không chuyển động tịnh tiến.\n2. Tổng moment lực theo hai chiều quay đối nhau bằng nhau ($\\sum M_{\\text{cùng}} = \\sum M_{\\text{ngược}}$) — vật không quay.',
@@ -3069,7 +3069,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_9_10: Record<string, LectureStep[]> = 
           '\\text{Nổi: } \\rho_{\\text{vật}} < \\rho_{\\text{lỏng}} \\implies \\frac{V_{\\text{chìm}}}{V} = \\frac{\\rho_{\\text{vật}}}{\\rho_{\\text{lỏng}}}'
         ],
         variablesNote:
-          '• $\\rho$: khối lượng riêng chất lỏng ($\\text{kg/m}^3$; nước nguyên chất $1000\\text{ kg/m}^3$).\n• $h$: độ sâu tính từ mặt thoáng chất lỏng xuống điểm xét ($\text{m}$).\n• $V_{\\text{chìm}}$: phần thể tích chất lỏng bị vật chiếm chỗ ($\text{m}^3$), KHÔNG phải toàn bộ thể tích vật nếu vật nổi!'
+          '• $\\rho$: khối lượng riêng chất lỏng ($\\text{kg/m}^3$; nước nguyên chất $1000\\text{ kg/m}^3$).\n• $h$: độ sâu tính từ mặt thoáng chất lỏng xuống điểm xét ($\\text{m}$).\n• $V_{\\text{chìm}}$: phần thể tích chất lỏng bị vật chiếm chỗ ($\\text{m}^3$), KHÔNG phải toàn bộ thể tích vật nếu vật nổi!'
       },
       deepDiveSection:
         'Áp suất tại cùng một độ sâu trong cùng một chất lỏng đứng yên luôn bằng nhau tại mọi điểm (bình thông nhau). Đây là nguyên lý xây dựng hệ thống cấp nước tháp cao, đập thủy điện (đáy đập xây dày hơn đỉnh đập) và máy nén thủy lực.',
@@ -3109,7 +3109,7 @@ export const PHYSICS_CUSTOM_LECTURE_STEPS_9_10: Record<string, LectureStep[]> = 
       stepTitle: '1. Xung lượng của Lực & Bài toán Giảm chấn Động',
       stepType: 'concept',
       conceptSection:
-        'Xung lượng của lực ($\vec{F}\\Delta t$) đo tác dụng tích lũy của lực trong khoảng thời gian tác dụng $\\Delta t$ và có giá trị bằng đúng độ biến thiên động lượng của vật.',
+        'Xung lượng của lực ($\\vec{F}\\Delta t$) đo tác dụng tích lũy của lực trong khoảng thời gian tác dụng $\\Delta t$ và có giá trị bằng đúng độ biến thiên động lượng của vật.',
       formulaSection: {
         primaryFormula: '\\vec{F}\\Delta t = \\Delta\\vec{p} = m\\vec{v}_2 - m\\vec{v}_1',
         secondaryFormulas: [

@@ -404,7 +404,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_CORE2: Record<string, LectureStep[]> = {
           '\\text{Thứ tự ưu tiên đặt } u: \\mathbf{Nhất\\ Lô \\to Nhì\\ Đa \\to Tam\\ Lượng \\to Tứ\\ Mũ}'
         ],
         variablesNote:
-          '• **Logarit ($\ln, \\log$) luôn ưu tiên số 1 đặt làm $u$** (để đạo hàm mất $\\ln$).\n• Nếu không có $\\ln$, ưu tiên đặt **Đa thức** ($x, x^2\\dots$) làm $u$ (để đạo hàm giảm dần bậc về $0$); phần còn lại ($e^x dx, \\sin x\\,dx\\dots$) đặt làm $dv$.'
+          '• **Logarit ($\\ln, \\log$) luôn ưu tiên số 1 đặt làm $u$** (để đạo hàm mất $\\ln$).\n• Nếu không có $\\ln$, ưu tiên đặt **Đa thức** ($x, x^2\\dots$) làm $u$ (để đạo hàm giảm dần bậc về $0$); phần còn lại ($e^x dx, \\sin x\\,dx\\dots$) đặt làm $dv$.'
       },
       deepDiveSection:
         'Với bậc đa thức cao (như $\\int x^2 e^x\\,dx$), dùng **sơ đồ cột múa cột (Tabular Integration)**: cột trái đạo hàm liên tiếp $x^2 \\to 2x \\to 2 \\to 0$, cột phải nguyên hàm liên tiếp $e^x \\to e^x \\to e^x \\to e^x$, nhân chéo đan dấu $+, -, +$ cho kết quả ngay lập tức $(x^2 - 2x + 2)e^x + C$!',

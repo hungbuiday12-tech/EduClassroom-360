@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   BookOpen,
@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Clock,
   Compass,
   Crosshair,
   Download,
@@ -20,6 +21,7 @@ import {
   Grid,
   Hand,
   Layers,
+  Loader2,
   Magnet,
   Maximize2,
   Minimize2,
@@ -27,6 +29,7 @@ import {
   PanelLeft,
   PanelRight,
   Pause,
+  PenTool,
   Play,
   QrCode,
   RotateCcw,
@@ -34,6 +37,7 @@ import {
   ScanFace,
   Scissors,
   Search,
+  Send,
   SlidersHorizontal,
   Sparkles,
   Undo2,
@@ -55,6 +59,10 @@ import {
 } from './handGestureTracker';
 import type { CreativeBrushId, MaterialFinishId } from './SpatialGesture3DLab';
 import { SpatialVoiceMentor } from './SpatialVoiceMentor';
+import { useFocusTimer } from '../../context/FocusTimerContext';
+import { safeFetchJson } from '../../lib/apiClient';
+import { buildLocalVoiceMentorAnswer } from '../../lib/voiceIntentEngine';
+import { FormattedText, MathFormula } from '../common/MathRenderer';
 
 export type QuickObsPresetId =
   | 'full'
@@ -98,6 +106,7 @@ interface HoloAtlasOverlayProps {
   onDeleteCustomModel: (id: string) => void;
   modelParts: ExplodablePartInfo[];
   selectedPartIdx: number | null;
+  partSelectSeq?: number;
   isolatedPartIdx: number | null;
   onSelectPart: (idx: number) => void;
   onToggleIsolatePart: (idx: number | null) => void;
@@ -223,6 +232,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
   onDeleteCustomModel,
   modelParts,
   selectedPartIdx,
+  partSelectSeq = 0,
   isolatedPartIdx,
   onSelectPart,
   onToggleIsolatePart,
@@ -315,13 +325,72 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
   onReassembleAll
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [leftOpen, setLeftOpen] = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
+  const [leftOpen, setLeftOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
+  );
+  const [rightOpen, setRightOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : false
+  );
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showGesturesDrawer, setShowGesturesDrawer] = useState(false);
   const [toolsDrawerOpen, setToolsDrawerOpen] = useState(false);
   const [toolsTab, setToolsTab] = useState<'transform' | 'style' | 'sculpt' | 'sensor'>('transform');
+
+  const topBarRef = useRef<HTMLDivElement | null>(null);
+  const rightScrollRef = useRef<HTMLDivElement | null>(null);
+  const [drawerTopPx, setDrawerTopPx] = useState(74);
+  const [inspectorHighlight, setInspectorHighlight] = useState(false);
+
+  // Inline Ask AI state scoped to active part inspector (works cleanly in normal & fullscreen)
+  const [partAiQuestion, setPartAiQuestion] = useState('');
+  const [partAiLoading, setPartAiLoading] = useState(false);
+  const [partAiAnswer, setPartAiAnswer] = useState<{
+    question: string;
+    answer: string;
+    formula?: string;
+  } | null>(null);
+
+  const { timeLeft: focusTimeLeft, isRunning: focusRunning } = useFocusTimer();
+  const formatFocusClock = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  useEffect(() => {
+    const el = topBarRef.current;
+    if (!el) return;
+    const updateTop = () => {
+      const h = el.getBoundingClientRect().height;
+      setDrawerTopPx(Math.max(66, Math.round(h + 18)));
+    };
+    updateTop();
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(updateTop);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+    window.addEventListener('resize', updateTop);
+    return () => window.removeEventListener('resize', updateTop);
+  }, []);
+
+  useEffect(() => {
+    if (!partSelectSeq) return;
+    setRightOpen(true);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setLeftOpen(false);
+    }
+    setInspectorHighlight(true);
+    rightScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    const t = window.setTimeout(() => setInspectorHighlight(false), 700);
+    return () => window.clearTimeout(t);
+  }, [partSelectSeq]);
+
+  useEffect(() => {
+    setPartAiAnswer(null);
+    setPartAiQuestion('');
+  }, [selectedPartIdx, activeModeId, activeCustomId]);
 
   const activeTitle = activeCustomModel
     ? isEn
@@ -450,10 +519,75 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
     { id: 'overview', labelVi: 'Toàn mô hình', labelEn: 'Overview' }
   ];
 
+  const handleAskSelectedPartAi = async (customPrompt?: string) => {
+    const q = (customPrompt ?? partAiQuestion).trim();
+    if (!q || partAiLoading) return;
+    setPartAiLoading(true);
+    try {
+      const pName = inspectedPart ? (isEn ? inspectedPart.nameEn : inspectedPart.nameVi) : activeTitle;
+      const pDesc = inspectedPart
+        ? isEn
+          ? `${inspectedPart.introEn} ${inspectedPart.functionEn}`
+          : `${inspectedPart.introVi} ${inspectedPart.functionVi}`
+        : activeTitle;
+      const pFormula = inspectedPart?.specFormula || activeFormula;
+
+      const res = await safeFetchJson<{
+        success: boolean;
+        spokenAnswer: string;
+        formulaHighlight?: string;
+      }>(
+        '/api/gemini/voice-mentor-3d',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: q,
+            spaceName: 'Atlas Mô Hình 3D',
+            modelTitle: activeTitle,
+            partName: pName,
+            partDescription: pDesc,
+            formula: pFormula,
+            language
+          })
+        },
+        10000
+      );
+
+      if (res.ok && res.data?.spokenAnswer) {
+        setPartAiAnswer({
+          question: q,
+          answer: res.data.spokenAnswer,
+          formula: res.data.formulaHighlight || pFormula
+        });
+      } else {
+        const local = buildLocalVoiceMentorAnswer({
+          question: q,
+          modelTitle: activeTitle,
+          partName: pName,
+          partDescription: pDesc,
+          formula: pFormula,
+          language
+        });
+        setPartAiAnswer({
+          question: q,
+          answer: local.spokenAnswer,
+          formula: local.formulaHighlight || pFormula
+        });
+      }
+      if (!customPrompt) setPartAiQuestion('');
+    } finally {
+      setPartAiLoading(false);
+    }
+  };
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20 select-none text-slate-100">
       {/* TOP BAR: LEFT BRAND BADGE & RIGHT BIO-LAB HUD CLUSTER */}
-      <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 flex flex-wrap items-start justify-between gap-1.5 sm:gap-2">
+      <div
+        ref={topBarRef}
+        className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 flex flex-wrap items-start justify-between gap-1.5 sm:gap-2"
+      >
         {/* Top-Left Holographic Title Card */}
         <div className="pointer-events-auto flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 rounded-xl border border-cyan-500/30 bg-[#050d1c]/94 px-2.5 sm:px-3.5 py-1.5 sm:py-2 shadow-[0_8px_30px_rgba(0,0,0,0.6)] max-w-full">
           <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg border border-cyan-400/45 bg-cyan-500/15 text-cyan-300">
@@ -564,6 +698,31 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
             <span className="text-cyan-300">
               {visibleCount} / {modelParts.length}
             </span>
+          </div>
+
+          {/* Compact Embedded Focus Clock + Bảng Nháp (Works cleanly in Normal & Fullscreen without overlapping bottom-left) */}
+          <div className="flex items-center rounded-xl border border-cyan-500/30 bg-[#050d1c]/94 shadow-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('synapse:open-focus-mini'))}
+              className={`min-h-[34px] flex items-center gap-1.5 px-2.5 py-1.5 font-mono text-[11px] font-bold tabular-nums transition-colors cursor-pointer ${
+                focusRunning ? 'bg-indigo-600 text-white' : 'text-sky-300 hover:bg-slate-800'
+              }`}
+              title={isEn ? 'Focus Clock' : 'Đồng hồ tập trung'}
+            >
+              <Clock className="h-3.5 w-3.5 shrink-0" />
+              <span>{formatFocusClock(focusTimeLeft)}</span>
+            </button>
+            <span className="h-4 w-px bg-slate-700/80 shrink-0" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('synapse:open-scratchpad-mini'))}
+              className="min-h-[34px] flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800 cursor-pointer"
+              title={isEn ? 'Scratchpad & Whiteboard' : 'Bảng nháp & Ghi chú'}
+            >
+              <PenTool className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden md:inline">{isEn ? 'Notes' : 'Bảng nháp'}</span>
+            </button>
           </div>
 
           {/* Compact Holographic Action Icons */}
@@ -724,7 +883,10 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
 
       {/* ALL-IN-ONE PRO TOOLS & SENSOR SETTINGS DRAWER (Accessible in Normal & Fullscreen Mode) */}
       {toolsDrawerOpen && (
-        <div className="pointer-events-auto absolute top-[116px] sm:top-[66px] right-2.5 sm:right-3 z-40 w-[min(392px,calc(100vw-20px))] max-h-[calc(100vh-175px)] flex flex-col rounded-2xl border border-cyan-400/45 bg-[#050d1c]/96 shadow-[0_20px_60px_rgba(0,0,0,0.85)] overflow-hidden">
+        <div
+          style={{ top: `${drawerTopPx}px` }}
+          className="pointer-events-auto absolute right-2.5 sm:right-3 z-40 w-[min(392px,calc(100vw-20px))] max-h-[calc(100vh-175px)] flex flex-col rounded-2xl border border-cyan-400/45 bg-[#050d1c]/96 shadow-[0_20px_60px_rgba(0,0,0,0.85)] overflow-hidden"
+        >
           <div className="flex items-center justify-between gap-2 border-b border-slate-800 px-3.5 py-2.5 bg-[#040a16]">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4 text-cyan-400" />
@@ -1242,8 +1404,17 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
       {/* RESPONSIVE & COLLAPSE TOGGLE FOR LEFT DRAWER (Always visible on mobile, or when collapsed on desktop) */}
       <button
         type="button"
-        onClick={() => setLeftOpen((v) => !v)}
-        className={`pointer-events-auto absolute top-[72px] left-3 z-30 flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-[#050d1c]/95 px-2.5 py-1.5 text-[11px] font-bold text-cyan-300 shadow-lg cursor-pointer ${
+        onClick={() => {
+          setLeftOpen((v) => {
+            const next = !v;
+            if (next && typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setRightOpen(false);
+            }
+            return next;
+          });
+        }}
+        style={{ top: `${drawerTopPx}px` }}
+        className={`pointer-events-auto absolute left-3 z-30 flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-[#050d1c]/95 px-2.5 py-1.5 text-[11px] font-bold text-cyan-300 shadow-lg cursor-pointer ${
           leftOpen ? 'lg:hidden' : ''
         }`}
       >
@@ -1253,7 +1424,10 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
 
       {/* LEFT FLOATING CONTROL PANEL (EXACT BIO-LAB HOLOGRAPHIC STYLE FROM SCREENSHOT) */}
       {leftOpen && (
-        <aside className="pointer-events-auto absolute top-[106px] lg:top-[76px] bottom-[88px] left-3 w-[274px] sm:w-[292px] flex flex-col rounded-2xl border border-cyan-500/25 bg-[#050c19]/92 shadow-[0_16px_50px_rgba(0,0,0,0.75)] overflow-hidden">
+        <aside
+          style={{ top: `${leftOpen && typeof window !== 'undefined' && window.innerWidth < 1024 ? drawerTopPx + 36 : drawerTopPx}px` }}
+          className="pointer-events-auto absolute bottom-[88px] left-3 w-[274px] sm:w-[292px] flex flex-col rounded-2xl border border-cyan-500/25 bg-[#050c19]/92 shadow-[0_16px_50px_rgba(0,0,0,0.75)] overflow-hidden"
+        >
           <div className="flex-1 overflow-y-auto p-3.5 space-y-4 scrollbar-thin">
             {/* Search Input */}
             <div className="relative">
@@ -1665,12 +1839,17 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
         </aside>
       )}
 
-      {/* RIGHT FLOATING PART INSPECTOR & 10-FINGER HAND MONITOR (EXACT BIO-LAB STYLE) */}
+      {/* RIGHT FLOATING PART INSPECTOR & INLINE ASK AI (WORKS CLEANLY IN NORMAL & FULLSCREEN) */}
       {rightOpen && (
-        <aside className="pointer-events-auto absolute top-[106px] lg:top-[76px] bottom-[88px] right-3 w-[290px] sm:w-[320px] flex flex-col rounded-2xl border border-cyan-500/25 bg-[#050c19]/92 shadow-[0_16px_50px_rgba(0,0,0,0.75)] overflow-hidden">
+        <aside
+          style={{ top: `${drawerTopPx}px` }}
+          className={`pointer-events-auto absolute bottom-[88px] right-3 w-[294px] sm:w-[328px] flex flex-col rounded-2xl border bg-[#050c19]/94 shadow-[0_16px_50px_rgba(0,0,0,0.75)] overflow-hidden transition-colors ${
+            inspectorHighlight ? 'border-cyan-300 ring-2 ring-cyan-400/60' : 'border-cyan-500/25'
+          }`}
+        >
           {inspectedPart ? (
             <>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3.5 scrollbar-thin">
+              <div ref={rightScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3.5 scrollbar-thin">
                 {/* Category Pill + Close Button */}
                 <div className="flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-400/40 bg-rose-500/10 px-2.5 py-1 text-[11px] font-bold text-rose-200">
@@ -1845,6 +2024,92 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
                   </div>
                 )}
 
+                {/* Card 3: INLINE ASK AI ABOUT SELECTED PART (Always visible in Normal & Fullscreen) */}
+                <div className="rounded-xl border border-cyan-500/35 bg-[#061124] p-3 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5 text-[10px] font-mono font-extrabold tracking-wider text-cyan-300 uppercase">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                      <span>{isEn ? 'Ask AI About Part' : 'Hỏi AI Về Bộ Phận Này'}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={onTogglePointAsk}
+                      className={`px-2 py-0.5 rounded border text-[10px] font-bold cursor-pointer ${
+                        pointAskActive
+                          ? 'border-amber-400 bg-amber-400 text-slate-950'
+                          : 'border-amber-500/40 bg-amber-500/10 text-amber-200 hover:border-amber-400'
+                      }`}
+                    >
+                      {isEn ? 'Point & Ask' : 'Chỉ & Hỏi'}
+                    </button>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void handleAskSelectedPartAi();
+                    }}
+                    className="flex items-center gap-1.5"
+                  >
+                    <input
+                      type="text"
+                      value={partAiQuestion}
+                      onChange={(e) => setPartAiQuestion(e.target.value)}
+                      placeholder={
+                        isEn
+                          ? `Ask about ${inspectedPart.nameEn}...`
+                          : `Hỏi nhanh về ${inspectedPart.nameVi}...`
+                      }
+                      className="flex-1 min-w-0 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={partAiLoading || !partAiQuestion.trim()}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 disabled:opacity-40 cursor-pointer"
+                      title={isEn ? 'Ask AI' : 'Gửi câu hỏi'}
+                    >
+                      {partAiLoading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Send className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </form>
+
+                  <div className="flex flex-wrap gap-1">
+                    {(isEn
+                      ? ['How does it work?', 'Key formula?', 'Real application?']
+                      : ['Nguyên lý hoạt động?', 'Công thức liên quan?', 'Ứng dụng thực tế?']
+                    ).map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => void handleAskSelectedPartAi(chip)}
+                        disabled={partAiLoading}
+                        className="rounded-md border border-slate-700/80 bg-slate-900 hover:border-cyan-400/60 hover:text-cyan-200 px-2 py-1 text-[10px] font-medium text-slate-300 cursor-pointer"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+
+                  {partAiAnswer && (
+                    <div className="rounded-lg border border-cyan-500/35 bg-slate-950/90 p-2.5 space-y-1.5 text-xs">
+                      <div className="text-[10px] font-bold text-cyan-300">
+                        {isEn ? 'Q:' : 'Hỏi:'} {partAiAnswer.question}
+                      </div>
+                      <div className="text-slate-200 leading-relaxed text-[11.5px]">
+                        <FormattedText text={partAiAnswer.answer} />
+                      </div>
+                      {partAiAnswer.formula && (
+                        <div className="overflow-x-auto rounded border border-slate-800 bg-[#050d1c] p-1.5 text-cyan-300">
+                          <MathFormula formula={partAiAnswer.formula} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between gap-2 pt-0.5">
                   <button
                     type="button"
@@ -1857,6 +2122,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
 
                   <SpatialVoiceMentor
                     compactButton
+                    popoverPlacement="up"
                     spaceName="Atlas Mô Hình 3D"
                     modelTitle={activeTitle}
                     partName={isEn ? inspectedPart.nameEn : inspectedPart.nameVi}

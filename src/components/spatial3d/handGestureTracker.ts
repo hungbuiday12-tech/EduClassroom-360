@@ -1,4 +1,11 @@
 import { FilesetResolver, HandLandmarker, NormalizedLandmark } from '@mediapipe/tasks-vision';
+import type {
+  HandWorkerOutMessage,
+  WorkerDisposeMessage,
+  WorkerFrameMessage,
+  WorkerInitMessage
+} from '../../workers/handLandmarkerWorker';
+import { OneEuroFilter, OneEuroFilter3D, smoothingToOneEuroParams } from './oneEuroFilter';
 
 export type HandGestureId =
   | 'none'
@@ -530,19 +537,35 @@ export interface TrackerProcessOptions {
   pointerSource?: PointerSource;
   invertX?: boolean;
   invertY?: boolean;
+  maxInputWidth?: number;
+  maxInputHeight?: number;
 }
 
 export class HandGestureTracker {
   private landmarker: HandLandmarker | null = null;
+  private worker: Worker | null = null;
+  private workerReady = false;
+  private workerFailed = false;
+  private workerBusy = false;
+  private workerSeq = 0;
   private initPromise: Promise<void> | null = null;
+  private disposed = false;
   private engineState: 'mediapipe' | 'initializing' | 'error' = 'initializing';
   private errorMessage: string | undefined;
+  private onAsyncFrame: ((frame: HandTrackingFrame) => void) | null = null;
+  private latestOptions: TrackerProcessOptions = { mirror: true, smoothing: 0.4 };
 
   private lastVideoTime = -1;
   private lastTimestampMs = 0;
 
-  // Per-tip smoothed coordinates for 10 finger slots (1..10)
-  private smoothedTips: Map<number, { x: number; y: number; z: number }> = new Map();
+  // 1€ Filter banks for jitter-free stillness & zero-lag motion (10 finger slots + cursor + angles + span)
+  private tipFilters: Map<number, OneEuroFilter3D> = new Map();
+  private cursorXFilter = new OneEuroFilter(1.8, 0.065, 1.0);
+  private cursorYFilter = new OneEuroFilter(1.8, 0.065, 1.0);
+  private spanFilter = new OneEuroFilter(1.7, 0.055, 1.0);
+  private twoHandAngleFilter = new OneEuroFilter(1.5, 0.045, 1.0);
+  private tiltAngleFilter = new OneEuroFilter(1.5, 0.045, 1.0);
+
   private smoothCursorX = 0.5;
   private smoothCursorY = 0.5;
   private prevCursorX = 0.5;
@@ -564,21 +587,123 @@ export class HandGestureTracker {
   private missFrames = 0;
   private lastResultFrame: HandTrackingFrame | null = null;
   private skipUntilMs = 0;
+  private lastInferMs = 0;
+
+  public setOnFrameCallback(cb: ((frame: HandTrackingFrame) => void) | null): void {
+    this.onAsyncFrame = cb;
+  }
+
+  public getLastInferDurationMs(): number {
+    return this.lastInferMs;
+  }
+
+  public isWorkerActive(): boolean {
+    return this.workerReady && Boolean(this.worker);
+  }
+
+  private tryInitWorker(baseUrl: string): Promise<boolean> {
+    if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined') {
+      return Promise.resolve(false);
+    }
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      const finish = (ok: boolean, error?: string) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        if (!ok) {
+          this.workerReady = false;
+          this.workerFailed = true;
+          if (error) this.errorMessage = error;
+          try {
+            this.worker?.terminate();
+          } catch {}
+          this.worker = null;
+        }
+        resolve(ok);
+      };
+
+      const timeoutId = setTimeout(() => {
+        finish(false, 'HandLandmarker Worker init timed out');
+      }, 15000);
+
+      try {
+        const worker = new Worker(new URL('../../workers/handLandmarkerWorker.ts', import.meta.url), {
+          type: 'module'
+        });
+        this.worker = worker;
+
+        worker.onmessage = (ev: MessageEvent<HandWorkerOutMessage>) => {
+          const msg = ev.data;
+          if (!msg) return;
+          if (msg.type === 'init_result') {
+            if (msg.ok && !this.disposed) {
+              this.workerReady = true;
+              this.workerFailed = false;
+              this.engineState = 'mediapipe';
+              this.errorMessage = undefined;
+              finish(true);
+            } else {
+              finish(false, msg.error);
+            }
+            return;
+          }
+
+          if (msg.type === 'result') {
+            this.workerBusy = false;
+            this.lastInferMs = msg.inferMs;
+            if (this.disposed) return;
+            const nowMs = Math.max(this.lastTimestampMs + 1, performance.now());
+            const frame = this.computeFrameFromDetections(
+              msg.landmarks || [],
+              msg.handedness || [],
+              nowMs,
+              this.latestOptions
+            );
+            this.lastResultFrame = frame;
+            if (this.onAsyncFrame) {
+              this.onAsyncFrame(frame);
+            }
+          }
+        };
+
+        worker.onerror = () => {
+          this.workerBusy = false;
+          if (!this.workerReady) {
+            finish(false, 'HandLandmarker Worker error');
+          }
+        };
+
+        worker.postMessage({ type: 'init', baseUrl } satisfies WorkerInitMessage);
+      } catch {
+        finish(false);
+      }
+    });
+  }
 
   public async ensureInitialized(): Promise<boolean> {
-    if (this.landmarker) {
+    if (this.disposed) return false;
+    if (this.workerReady || this.landmarker) {
       this.engineState = 'mediapipe';
       return true;
     }
     if (this.initPromise) {
       await this.initPromise;
-      return Boolean(this.landmarker);
+      return Boolean(this.workerReady || this.landmarker);
     }
 
     this.engineState = 'initializing';
     this.initPromise = (async () => {
       const base = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL || './';
       const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+
+      // Prefer non-blocking Web Worker (GPU delegate + OffscreenCanvas)
+      const workerOk = await this.tryInitWorker(normalizedBase);
+      if (workerOk || this.disposed) {
+        return;
+      }
+
+      // Fallback on main thread if Worker OffscreenCanvas/WebGL is unsupported, still strictly preferring GPU delegate
       const localWasmPath = `${normalizedBase}mediapipe/wasm`;
       const localModelPath = `${normalizedBase}mediapipe/hand_landmarker.task`;
 
@@ -610,7 +735,11 @@ export class HandGestureTracker {
           const cdnWasm = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm';
           const cdnModel =
             'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
-          this.landmarker = await createLandmarker(cdnWasm, cdnModel, 'CPU');
+          try {
+            this.landmarker = await createLandmarker(cdnWasm, cdnModel, 'GPU');
+          } catch {
+            this.landmarker = await createLandmarker(cdnWasm, cdnModel, 'CPU');
+          }
           this.engineState = 'mediapipe';
           this.errorMessage = undefined;
         } catch (cdnErr) {
@@ -626,11 +755,39 @@ export class HandGestureTracker {
     })();
 
     await this.initPromise;
-    return Boolean(this.landmarker);
+    return Boolean(this.workerReady || this.landmarker);
+  }
+
+  public dispose(): void {
+    this.disposed = true;
+    this.onAsyncFrame = null;
+    if (this.worker) {
+      try {
+        this.worker.postMessage({ type: 'dispose' } satisfies WorkerDisposeMessage);
+      } catch {}
+      try {
+        this.worker.terminate();
+      } catch {}
+      this.worker = null;
+    }
+    if (this.landmarker) {
+      try {
+        this.landmarker.close();
+      } catch {}
+      this.landmarker = null;
+    }
+    this.workerReady = false;
+    this.workerBusy = false;
+    this.resetSmoothing();
   }
 
   public resetSmoothing(): void {
-    this.smoothedTips.clear();
+    this.tipFilters.clear();
+    this.cursorXFilter.reset();
+    this.cursorYFilter.reset();
+    this.spanFilter.reset();
+    this.twoHandAngleFilter.reset();
+    this.tiltAngleFilter.reset();
     this.hasCursorFix = false;
     this.prevH1X = null;
     this.prevH2X = null;
@@ -641,15 +798,74 @@ export class HandGestureTracker {
     this.lastResultFrame = null;
   }
 
+  public getLatestFrame(): HandTrackingFrame {
+    return this.lastResultFrame || this.emptyFrame();
+  }
+
+  public enqueueVideoFrame(video: HTMLVideoElement, options: TrackerProcessOptions): void {
+    this.latestOptions = options;
+    if (!this.workerReady || !this.worker || this.workerBusy || this.disposed) return;
+    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) return;
+    if (video.currentTime === this.lastVideoTime) return;
+    this.lastVideoTime = video.currentTime;
+
+    const maxW = Math.min(640, options.maxInputWidth ?? 480);
+    const maxH = Math.min(480, options.maxInputHeight ?? 360);
+    const scale = Math.min(1, maxW / video.videoWidth, maxH / video.videoHeight);
+    const targetW = Math.max(160, Math.round(video.videoWidth * scale));
+    const targetH = Math.max(120, Math.round(video.videoHeight * scale));
+
+    this.workerBusy = true;
+    const seq = ++this.workerSeq;
+    const ts = Math.max(this.lastTimestampMs + 1, performance.now());
+
+    createImageBitmap(video, {
+      resizeWidth: targetW,
+      resizeHeight: targetH,
+      resizeQuality: 'low'
+    })
+      .then((bitmap) => {
+        if (this.disposed || !this.worker || !this.workerReady) {
+          bitmap.close();
+          this.workerBusy = false;
+          return;
+        }
+        const msg: WorkerFrameMessage = {
+          type: 'frame',
+          seq,
+          timestampMs: ts,
+          bitmap
+        };
+        this.worker.postMessage(msg, [bitmap]);
+      })
+      .catch(() => {
+        this.workerBusy = false;
+      });
+  }
+
   public process(video: HTMLVideoElement, options: TrackerProcessOptions): HandTrackingFrame {
-    if (!this.landmarker) {
+    this.latestOptions = options;
+    if (this.disposed) return this.emptyFrame();
+
+    if (!this.workerReady && !this.landmarker) {
       if (!this.initPromise) {
         void this.ensureInitialized();
       }
-      return this.emptyFrame();
+      return this.lastResultFrame || this.emptyFrame();
     }
 
     if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+      return this.lastResultFrame || this.emptyFrame();
+    }
+
+    // Async Web Worker path: non-blocking so main thread renders Three.js at 60fps
+    if (this.workerReady && this.worker) {
+      this.enqueueVideoFrame(video, options);
+      return this.lastResultFrame || this.emptyFrame();
+    }
+
+    // Main-thread fallback path (GPU delegate primary)
+    if (!this.landmarker) {
       return this.lastResultFrame || this.emptyFrame();
     }
 
@@ -664,23 +880,41 @@ export class HandGestureTracker {
     }
 
     const nowMs = Math.max(this.lastTimestampMs + 1, wallNow);
-    const dtSec = this.prevProcessMs > 0 ? Math.max(0.016, Math.min(0.2, (nowMs - this.prevProcessMs) / 1000)) : 0.05;
-    this.prevProcessMs = nowMs;
-    this.lastTimestampMs = nowMs;
-
     const inferStart = performance.now();
     const result = this.landmarker.detectForVideo(video, nowMs);
     const inferElapsed = performance.now() - inferStart;
+    this.lastInferMs = inferElapsed;
     if (inferElapsed > 34) {
-      // Back off gently on slower CPUs so main-thread UI & 3D rendering stay fluid
-      this.skipUntilMs = wallNow + Math.min(140, inferElapsed * 1.4);
+      this.skipUntilMs = wallNow + Math.min(120, inferElapsed * 1.3);
     }
-    const hands = result.landmarks || [];
+
+    const handedness = (result.handedness || []).map((cats) =>
+      cats.map((c) => ({ score: c.score ?? 0.9, categoryName: c.categoryName ?? '' }))
+    );
+
+    return this.computeFrameFromDetections(result.landmarks || [], handedness, nowMs, options);
+  }
+
+  private computeFrameFromDetections(
+    hands: NormalizedLandmark[][],
+    rawHandedness: { score?: number; categoryName?: string }[][],
+    nowMs: number,
+    options: TrackerProcessOptions
+  ): HandTrackingFrame {
+    const dtSec = this.prevProcessMs > 0 ? Math.max(0.008, Math.min(0.2, (nowMs - this.prevProcessMs) / 1000)) : 0.033;
+    const tSec = nowMs / 1000;
+    this.prevProcessMs = nowMs;
+    this.lastTimestampMs = nowMs;
 
     if (hands.length === 0) {
       this.missFrames++;
       if (this.missFrames > 5) {
-        this.smoothedTips.clear();
+        this.tipFilters.clear();
+        this.cursorXFilter.reset();
+        this.cursorYFilter.reset();
+        this.spanFilter.reset();
+        this.twoHandAngleFilter.reset();
+        this.tiltAngleFilter.reset();
         this.stableGesture = 'none';
         this.candidateGesture = 'none';
         this.candidateStreak = 0;
@@ -701,7 +935,7 @@ export class HandGestureTracker {
     const pinchSens = options.pinchSensitivity ?? options.sensitivity ?? 1.05;
     const extendSens = options.fingerExtendSensitivity ?? 1.0;
     const smoothing = options.smoothing;
-    const deadzone = options.deadzone ?? 0.008;
+    const deadzone = options.deadzone ?? 0.005;
     const stabilityFrames = Math.max(1, Math.min(8, Math.round(options.stabilityFrames ?? 4)));
     const gestureHoldMs = Math.max(0, Math.min(1200, options.gestureHoldMs ?? 500));
     const handMode: HandControlMode = options.handMode ?? 'auto';
@@ -709,11 +943,16 @@ export class HandGestureTracker {
     const invertX = options.invertX ?? false;
     const invertY = options.invertY ?? false;
 
-    const tipAlpha = Math.max(0.22, Math.min(0.92, 1.0 - smoothing * 0.62));
+    const filterParams = smoothingToOneEuroParams(smoothing);
+    this.cursorXFilter.setParams(filterParams.minCutoff, filterParams.beta, filterParams.dCutoff);
+    this.cursorYFilter.setParams(filterParams.minCutoff, filterParams.beta, filterParams.dCutoff);
+    this.spanFilter.setParams(filterParams.minCutoff * 0.9, filterParams.beta * 0.9, filterParams.dCutoff);
+    this.twoHandAngleFilter.setParams(filterParams.minCutoff * 0.85, filterParams.beta * 0.75, filterParams.dCutoff);
+    this.tiltAngleFilter.setParams(filterParams.minCutoff * 0.85, filterParams.beta * 0.75, filterParams.dCutoff);
 
     let indexedHands = hands.slice(0, 2).map((lmList, rawIdx) => {
       const wristX = mirror ? 1 - lmList[0].x : lmList[0].x;
-      const handednessInfo = result.handedness?.[rawIdx]?.[0];
+      const handednessInfo = rawHandedness?.[rawIdx]?.[0];
       const score = handednessInfo?.score ?? 0.9;
       const category = handednessInfo?.categoryName ?? '';
       return { lmList, wristX, score, category };
@@ -803,11 +1042,14 @@ export class HandGestureTracker {
         const rawZ = lm.z ?? 0;
 
         const slotId = handIdx * 5 + f + 1;
-        const prev = this.smoothedTips.get(slotId);
-        const sx = prev ? prev.x + (mapped.x - prev.x) * tipAlpha : mapped.x;
-        const sy = prev ? prev.y + (mapped.y - prev.y) * tipAlpha : mapped.y;
-        const sz = prev ? prev.z + (rawZ - prev.z) * tipAlpha : rawZ;
-        this.smoothedTips.set(slotId, { x: sx, y: sy, z: sz });
+        let tipFilter = this.tipFilters.get(slotId);
+        if (!tipFilter) {
+          tipFilter = new OneEuroFilter3D(filterParams.minCutoff, filterParams.beta, filterParams.dCutoff);
+          this.tipFilters.set(slotId, tipFilter);
+        } else {
+          tipFilter.setParams(filterParams.minCutoff, filterParams.beta, filterParams.dCutoff);
+        }
+        const filteredTip = tipFilter.filter(mapped.x, mapped.y, rawZ, tSec);
 
         const ext = isFingerExtended(lms, f, extendSens);
         if (ext) totalExtended++;
@@ -816,9 +1058,9 @@ export class HandGestureTracker {
           id: slotId,
           handIndex: handIdx,
           fingerName: FINGER_NAMES[f],
-          x: sx,
-          y: sy,
-          z: sz,
+          x: filteredTip.x,
+          y: filteredTip.y,
+          z: filteredTip.z,
           extended: ext
         });
       }
@@ -848,7 +1090,7 @@ export class HandGestureTracker {
 
     if (indexedHands.length < 2) {
       for (let id = 6; id <= 10; id++) {
-        this.smoothedTips.delete(id);
+        this.tipFilters.delete(id);
       }
     }
 
@@ -884,7 +1126,6 @@ export class HandGestureTracker {
       } else if (hand1Pinching && hand2Pinching) {
         rawGesture = 'pinch';
       } else if (handMode === 'two_hands_split' && !minimalControl) {
-        // In split mode, allow single-hand sub-gestures or two_hand_10 when wide open
         rawGesture = totalExtended >= 7 ? 'two_hand_10' : hand1Pinching || hand2Pinching ? 'pinch' : 'point_1';
       } else {
         rawGesture = 'two_hand_10';
@@ -896,7 +1137,6 @@ export class HandGestureTracker {
       const ringExt = tips[3]?.extended ?? false;
       const pinkyExt = tips[4]?.extended ?? false;
 
-      // Robust solo 1-Thumb-Up 👍 detector: 4 fingers curled + thumb extended cleanly away from knuckles
       const h0Lms = indexedHands[0].lmList;
       if (h0Lms[0] && h0Lms[2] && h0Lms[3] && h0Lms[4] && h0Lms[5] && h0Lms[9] && h0Lms[10]) {
         const scaleRef = Math.max(0.08, dist2D(h0Lms[0], h0Lms[9]));
@@ -916,8 +1156,6 @@ export class HandGestureTracker {
       }
 
       if (minimalControl) {
-        // Crystal-clear minimal 3D poses:
-        // 👍 1 Thumb Up (select part), ✊ Fist (rotate when assembled), ✌️ 2 Fingers (toggle horizontal row), 🖐️ Open Hand (aim cleanly)
         if (isThumbUpPose) {
           rawGesture = 'point_1';
         } else if (!indexExt && !middleExt && !ringExt && !pinkyExt && !anyPinch) {
@@ -926,13 +1164,9 @@ export class HandGestureTracker {
           rawGesture = 'pinch';
         } else if (indexExt && middleExt && !ringExt && !pinkyExt && !anyPinch) {
           rawGesture = 'slice_2';
-        } else if (
-          totalExtended >= 4 ||
-          (indexExt && middleExt && ringExt && pinkyExt)
-        ) {
+        } else if (totalExtended >= 4 || (indexExt && middleExt && ringExt && pinkyExt)) {
           rawGesture = 'palm_5';
         } else {
-          // Transitional 1- or 3-finger pose between open hand and fist: keep current aim/hold state steady
           rawGesture =
             this.stableGesture === 'fist_0' ||
             this.stableGesture === 'pinch' ||
@@ -942,8 +1176,6 @@ export class HandGestureTracker {
               : 'palm_5';
         }
       } else if (minimal2D) {
-        // Simplified 2D Mode:
-        // ✊ Fist (freeze), 🤏 Pinch (grab & drag), ☝️ 1 Finger / Thumb Up (draw / plot), ✌️ 2 Fingers V (rotate 45° / cycle / secant), 🖐️ 3–5 Fingers Open (aim safely without accidental drawing)
         if (!indexExt && !middleExt && !ringExt && !pinkyExt && !anyPinch && !isThumbUpPose) {
           rawGesture = 'fist_0';
         } else if (anyPinch && !ringExt && !pinkyExt) {
@@ -1032,7 +1264,6 @@ export class HandGestureTracker {
         targetCursorY = (h1.y + h2.y) * 0.5;
       }
     } else if (minimalControl && palmCenterH1) {
-      // Keep aim cursor anchored on palm center so curling fingers into 👍 1-Thumb never jerks aim off-target!
       targetCursorX = palmCenterH1.x;
       targetCursorY = clamp01(palmCenterH1.y - 0.035);
     } else if (pointerSource === 'middle' && h1MiddleTip) {
@@ -1066,6 +1297,12 @@ export class HandGestureTracker {
     let twoHandSpanDelta = 0;
 
     if (!this.hasCursorFix) {
+      this.cursorXFilter.reset(targetCursorX, tSec);
+      this.cursorYFilter.reset(targetCursorY, tSec);
+      this.spanFilter.reset(twoHandSpan, tSec);
+      this.twoHandAngleFilter.reset(twoHandAngle, tSec);
+      this.tiltAngleFilter.reset(handTiltAngle, tSec);
+
       this.smoothCursorX = targetCursorX;
       this.smoothCursorY = targetCursorY;
       this.prevCursorX = targetCursorX;
@@ -1079,23 +1316,36 @@ export class HandGestureTracker {
       this.prevCursorX = this.smoothCursorX;
       this.prevCursorY = this.smoothCursorY;
       this.prevSmoothSpan = this.smoothSpan;
-      const moveDist = Math.hypot(targetCursorX - this.smoothCursorX, targetCursorY - this.smoothCursorY);
+
+      const fx = this.cursorXFilter.filter(targetCursorX, tSec);
+      const fy = this.cursorYFilter.filter(targetCursorY, tSec);
+      const moveDist = Math.hypot(fx - this.prevCursorX, fy - this.prevCursorY);
       if (moveDist > deadzone) {
-        this.smoothCursorX += (targetCursorX - this.smoothCursorX) * tipAlpha;
-        this.smoothCursorY += (targetCursorY - this.smoothCursorY) * tipAlpha;
+        this.smoothCursorX = fx;
+        this.smoothCursorY = fy;
       }
       cursorDX = this.smoothCursorX - this.prevCursorX;
       cursorDY = this.smoothCursorY - this.prevCursorY;
-      this.smoothSpan += (twoHandSpan - this.smoothSpan) * 0.4;
+
+      this.smoothSpan = this.spanFilter.filter(twoHandSpan, tSec);
       twoHandSpanDelta = this.smoothSpan - this.prevSmoothSpan;
-      this.smoothTwoHandAngle += (twoHandAngle - this.smoothTwoHandAngle) * 0.3;
-      this.smoothTiltAngle += (handTiltAngle - this.smoothTiltAngle) * 0.3;
+
+      const dTwoAngle = Math.atan2(
+        Math.sin(twoHandAngle - this.smoothTwoHandAngle),
+        Math.cos(twoHandAngle - this.smoothTwoHandAngle)
+      );
+      this.smoothTwoHandAngle = this.twoHandAngleFilter.filter(this.smoothTwoHandAngle + dTwoAngle, tSec);
+
+      const dTiltAngle = Math.atan2(
+        Math.sin(handTiltAngle - this.smoothTiltAngle),
+        Math.cos(handTiltAngle - this.smoothTiltAngle)
+      );
+      this.smoothTiltAngle = this.tiltAngleFilter.filter(this.smoothTiltAngle + dTiltAngle, tSec);
     }
 
     const hand1VelX = cursorDX / dtSec;
     const hand1VelY = cursorDY / dtSec;
 
-    // Detect 2-hand opposite horizontal pulling (left hand pulls left, right hand pulls right)
     let twoHandOppositeSpread = false;
     let twoHandMovingCloser = false;
     if (indexedHands.length === 2 && hand1Index && hand2Index) {
@@ -1104,11 +1354,9 @@ export class HandGestureTracker {
       if (this.prevH1X !== null && this.prevH2X !== null) {
         const dH1 = h1x - this.prevH1X;
         const dH2 = h2x - this.prevH2X;
-        // Left hand moving left (< -0.0025) AND right hand moving right (> +0.0025) OR strong horizontal span expand
         if ((dH1 < -0.0025 && dH2 > 0.0025) || (twoHandSpanDelta > 0.007 && Math.abs(h2x - h1x) > 0.16)) {
           twoHandOppositeSpread = true;
         }
-        // Moving from far apart closer together
         if (twoHandSpanDelta < -0.0045 || (dH1 > 0.0025 && dH2 < -0.0025)) {
           twoHandMovingCloser = true;
         }
@@ -1120,7 +1368,6 @@ export class HandGestureTracker {
       this.prevH2X = null;
     }
 
-    // Detect crisp single-hand horizontal swipe (left or right) with snappy cooldown
     let swipeEvent: 'left' | 'right' | null = null;
     if (
       indexedHands.length === 1 &&
@@ -1228,7 +1475,7 @@ export class HandGestureTracker {
   private emptyFrame(): HandTrackingFrame {
     return {
       detected: false,
-      ready: Boolean(this.landmarker),
+      ready: Boolean(this.workerReady || this.landmarker),
       engine: this.engineState,
       errorMessage: this.errorMessage,
       handCount: 0,

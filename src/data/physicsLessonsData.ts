@@ -251,7 +251,7 @@ export const PHYSICS_LESSONS: PhysicsLesson[] = [
       'R_Y = \\frac{R_\\Delta}{3} \\quad (\\text{mạch đều})'
     ],
     simulationType: 'wheatstone_bridge',
-    sim3dType: 'helmholtz_coils_3d',
+    sim3dType: 'ohm_circuit_3d',
     defaultParams: { voltage: 24, r1: 12, r2: 12, r3: 8, r4: 8 },
     paramBounds: {
       voltage: { min: 6, max: 36, step: 2, unit: 'V', label: 'Hiệu điện thế U_AB' },

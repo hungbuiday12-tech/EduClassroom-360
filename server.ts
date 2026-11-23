@@ -1487,9 +1487,8 @@ async function callGeminiWithFallback({
     if (responseMimeType) cfg.responseMimeType = responseMimeType;
     if (responseSchema) cfg.responseSchema = responseSchema;
     if (model === 'gemini-4-hydrogen') {
-      cfg.thinkingConfig = { thinkingLevel };
-    } else if (model === 'gemini-3.1-flash-lite') {
-      cfg.thinkingConfig = { thinkingLevel: ThinkingLevel.MINIMAL };
+      const safeLevel = thinkingLevel === ThinkingLevel.MINIMAL ? ThinkingLevel.LOW : thinkingLevel;
+      cfg.thinkingConfig = { thinkingLevel: safeLevel };
     }
     return cfg;
   };
@@ -1506,7 +1505,8 @@ async function callGeminiWithFallback({
       'gemini-4-hydrogen'
     );
   } catch (err1: any) {
-    if (!isTransientGeminiError(err1)) {
+    const msg = String(err1?.message || err1 || '').toLowerCase();
+    if (!isTransientGeminiError(err1) && !msg.includes('thinking level')) {
       throw err1;
     }
     console.warn('Primary gemini-4-hydrogen transient issue, falling back:', err1?.message || err1);
@@ -1716,15 +1716,14 @@ app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
     const { history, lastMessageParts } = buildGeminiChatHistoryAndLastTurn(messages);
 
     const runStreamWithModel = async (modelName: string) => {
+      const chatConfig: Record<string, any> = { systemInstruction };
+      if (modelName === 'gemini-4-hydrogen') {
+        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+      }
       const chat = ai.chats.create({
         model: modelName,
         history,
-        config: {
-          systemInstruction,
-          thinkingConfig: {
-            thinkingLevel: ThinkingLevel.MINIMAL
-          }
-        }
+        config: chatConfig
       });
 
       const streamTask = async () => {
@@ -1796,16 +1795,14 @@ app.post('/api/gemini/tutor', async (req: Request, res: Response) => {
     const { history, lastMessageParts } = buildGeminiChatHistoryAndLastTurn(messages);
 
     const runChatWithModel = async (modelName: string) => {
+      const chatConfig: Record<string, any> = { systemInstruction };
+      if (modelName === 'gemini-4-hydrogen') {
+        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+      }
       const chat = ai.chats.create({
         model: modelName,
         history,
-        config: {
-          systemInstruction,
-          thinkingConfig: {
-            thinkingLevel:
-              modelName === 'gemini-3.1-flash-lite' ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW
-          }
-        }
+        config: chatConfig
       });
       return await withTimeout(
         chat.sendMessage({
@@ -1924,8 +1921,7 @@ QUY TẮC TUYỆT ĐỐI: Mỗi phần tử trong mảng "options" PHẢI chứa
                 contents: prompt,
                 config: {
                   systemInstruction,
-                  responseMimeType: 'application/json',
-                  thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+                  responseMimeType: 'application/json'
                 }
               }),
               15000,
@@ -2083,7 +2079,7 @@ ${answerTranscript}`;
               contents: prompt,
               systemInstruction,
               responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.MINIMAL,
+              thinkingLevel: ThinkingLevel.LOW,
               timeoutMs: 16000
             })
           : await withTimeout(
@@ -2092,8 +2088,7 @@ ${answerTranscript}`;
                 contents: prompt,
                 config: {
                   systemInstruction,
-                  responseMimeType: 'application/json',
-                  thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+                  responseMimeType: 'application/json'
                 }
               }),
               15000,
@@ -2521,15 +2516,14 @@ ${evalContext}`;
     }
 
     const runChatWithModel = async (modelName: string) => {
+      const chatConfig: Record<string, any> = { systemInstruction };
+      if (modelName === 'gemini-4-hydrogen') {
+        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+      }
       const chat = ai.chats.create({
         model: modelName,
         history,
-        config: {
-          systemInstruction,
-          thinkingConfig: {
-            thinkingLevel: modelName === 'gemini-3.1-flash-lite' ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW
-          }
-        }
+        config: chatConfig
       });
       return await withTimeout(
         chat.sendMessage({
@@ -3123,7 +3117,7 @@ Hãy chấm điểm chính xác từ 0 đến 10 (có thể dùng 0.5 điểm), 
           feedback: { type: Type.STRING }
         }
       },
-      thinkingLevel: ThinkingLevel.MINIMAL,
+      thinkingLevel: ThinkingLevel.LOW,
       timeoutMs: 18000
     });
 
@@ -3240,7 +3234,7 @@ Trả về ĐÚNG 2 câu trắc nghiệm (câu 1 kiểm tra bản chất/điều
               contents: prompt,
               systemInstruction,
               responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.MINIMAL,
+              thinkingLevel: ThinkingLevel.LOW,
               timeoutMs: 16000
             })
           : await withTimeout(
@@ -3249,8 +3243,7 @@ Trả về ĐÚNG 2 câu trắc nghiệm (câu 1 kiểm tra bản chất/điều
                 contents: prompt,
                 config: {
                   systemInstruction,
-                  responseMimeType: 'application/json',
-                  thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+                  responseMimeType: 'application/json'
                 }
               }),
               15000,
@@ -3386,7 +3379,7 @@ ${transcript}`;
               contents: prompt,
               systemInstruction,
               responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.MINIMAL,
+              thinkingLevel: ThinkingLevel.LOW,
               timeoutMs: 16000
             })
           : await withTimeout(
@@ -3395,8 +3388,7 @@ ${transcript}`;
                 contents: prompt,
                 config: {
                   systemInstruction,
-                  responseMimeType: 'application/json',
-                  thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+                  responseMimeType: 'application/json'
                 }
               }),
               15000,
@@ -4392,7 +4384,7 @@ app.post('/api/gemini/voice-mentor-3d', async (req: Request, res: Response) => {
       systemInstruction,
       responseMimeType: 'application/json',
       responseSchema,
-      thinkingLevel: ThinkingLevel.MINIMAL,
+      thinkingLevel: ThinkingLevel.LOW,
       timeoutMs: 18000
     });
 
@@ -4956,7 +4948,7 @@ app.post('/api/gemini/voice-os-intent', async (req: Request, res: Response) => {
       systemInstruction,
       responseMimeType: 'application/json',
       responseSchema,
-      thinkingLevel: ThinkingLevel.MINIMAL,
+      thinkingLevel: ThinkingLevel.LOW,
       timeoutMs: 12000
     });
 

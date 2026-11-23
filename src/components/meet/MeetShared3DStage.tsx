@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { Grid3X3, Layers, MousePointerClick, Pause, Play, RotateCcw, Upload, ZoomIn, ZoomOut } from 'lucide-react';
 import { MEET_3D_MODELS, Meet3DModelId, MeetGraphicsQuality, MeetShared3DState } from './meetTypes';
@@ -391,8 +393,8 @@ export const MeetShared3DStage: React.FC<MeetShared3DStageProps> = ({
     const renderer = rendererRef.current;
     if (renderer) {
       const isSw = detectSoftwareGl();
-      const maxDpr = graphicsQuality === 'high' ? 2 : 1.25;
-      renderer.setPixelRatio(isSw ? 1 : Math.min(window.devicePixelRatio, maxDpr));
+      const maxDpr = graphicsQuality === 'high' ? 1.5 : 1.2;
+      renderer.setPixelRatio(isSw ? 1 : Math.min(window.devicePixelRatio || 1, maxDpr));
     }
     if (starfieldRef.current) {
       starfieldRef.current.visible = graphicsQuality === 'high';
@@ -508,11 +510,24 @@ export const MeetShared3DStage: React.FC<MeetShared3DStageProps> = ({
           () => setUploadError('Không thể tải file .obj đã chia sẻ.')
         );
       } else {
-        new GLTFLoader().load(
+        const gltfLoader = new GLTFLoader();
+        const dracoLoader = new DRACOLoader();
+        const base = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL || './';
+        const normBase = base.endsWith('/') ? base : `${base}/`;
+        dracoLoader.setDecoderPath(`${normBase}draco/`);
+        gltfLoader.setDRACOLoader(dracoLoader);
+        gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+        gltfLoader.load(
           sharedState.uploadedFileUrl,
-          (gltf) => mountBuilt(normalizeExternalGroup(gltf.scene)),
+          (gltf) => {
+            dracoLoader.dispose();
+            mountBuilt(normalizeExternalGroup(gltf.scene));
+          },
           undefined,
-          () => setUploadError('Không thể tải file .glb/.gltf đã chia sẻ.')
+          () => {
+            dracoLoader.dispose();
+            setUploadError('Không thể tải file .glb/.gltf đã chia sẻ.');
+          }
         );
       }
       return () => {
@@ -585,8 +600,8 @@ export const MeetShared3DStage: React.FC<MeetShared3DStageProps> = ({
       powerPreference: 'high-performance'
     });
     renderer.setSize(w, h);
-    const maxDpr = graphicsQualityRef.current === 'high' ? 2 : 1.25;
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, maxDpr));
+    const maxDpr = graphicsQualityRef.current === 'high' ? 1.5 : 1.2;
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.18;

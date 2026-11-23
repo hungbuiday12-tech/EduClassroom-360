@@ -113,7 +113,12 @@ export const DualHandGPUParticleLab: React.FC = () => {
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 480 }, height: { ideal: 360 }, facingMode: 'user' },
+        video: {
+          width: { ideal: 480, max: 640 },
+          height: { ideal: 360, max: 480 },
+          frameRate: { ideal: 60, max: 60 },
+          facingMode: 'user'
+        },
         audio: false
       });
       streamRef.current = stream;
@@ -147,6 +152,8 @@ export const DualHandGPUParticleLab: React.FC = () => {
   useEffect(() => {
     return () => {
       if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+      trackerRef.current?.dispose();
+      trackerRef.current = null;
     };
   }, []);
 
@@ -171,7 +178,7 @@ export const DualHandGPUParticleLab: React.FC = () => {
       preserveDrawingBuffer: false
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isSoftwareGl ? 1 : 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isSoftwareGl ? 1 : 1.5));
     mount.appendChild(renderer.domElement);
 
     const handleContextLost = (e: Event) => {

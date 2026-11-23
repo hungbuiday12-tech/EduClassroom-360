@@ -1412,7 +1412,7 @@ export const PHYSICS_GDPT_11_LESSONS: PhysicsLesson[] = [
       '\\mathcal{P}_{\\text{ng}} = \\mathcal{E} I, \\qquad H = \\frac{U_N}{\\mathcal{E}} = \\frac{R_N}{R_N + r}',
       'P_{N,\\max} = \\frac{\\mathcal{E}^2}{4r} \\iff R_N = r'
     ],
-    ...SIM_PRESETS.ohm_dc,
+    ...SIM_PRESETS.joule_lenz,
     practiceExercises: [
       {
         source: SRC_11,

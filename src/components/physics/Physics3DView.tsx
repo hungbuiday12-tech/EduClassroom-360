@@ -64,6 +64,10 @@ const CUTAWAY_PHYSICS_MODES = new Set<string>([
   'fiber_optic_3d',
   'diffusion_gases_3d',
   'tokamak_fusion_3d',
+  'ohm_circuit_3d',
+  'refraction_tank_3d',
+  'calorimetry_beaker_3d',
+  'archimedes_buoyancy_3d',
 ]);
 
 interface Numeric3DControlProps {
@@ -162,6 +166,9 @@ interface Physics3DViewProps {
   domainTitle?: string;
   onSelectMode?: (mode: Physics3DMode) => void;
   onBack?: () => void;
+  embedded?: boolean;
+  embeddedBadge?: string;
+  onOpenFull3D?: () => void;
 }
 
 export const Physics3DView: React.FC<Physics3DViewProps> = ({
@@ -170,6 +177,9 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   domainTitle,
   onSelectMode,
   onBack,
+  embedded = false,
+  embeddedBadge,
+  onOpenFull3D,
 }) => {
   const { t } = useLanguage();
   const mountRef = useRef<HTMLDivElement>(null);
@@ -304,8 +314,13 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   }, [showGrid3D]);
   useEffect(() => {
     if (rendererRef.current && !isSoftwareGlRef.current) {
-      const cap = quality3D === 'high' ? 1.75 : 1.15;
+      const cap = quality3D === 'high' ? 1.5 : 1.05;
       rendererRef.current.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
+      const enableShadows = quality3D === 'high';
+      if (rendererRef.current.shadowMap.enabled !== enableShadows) {
+        rendererRef.current.shadowMap.enabled = enableShadows;
+        rendererRef.current.shadowMap.needsUpdate = true;
+      }
     }
   }, [quality3D]);
   const simStateRef = useRef({
@@ -391,7 +406,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     });
     rendererRef.current = renderer;
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.75));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
@@ -2683,6 +2698,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         className={
           isFullscreen
             ? 'sim-physics-scope fixed inset-0 z-[100] h-[100dvh] w-screen bg-slate-950 p-2 sm:p-3 flex flex-col gap-2 overflow-y-auto'
+            : embedded
+            ? 'sim-physics-scope'
             : 'sim-physics-scope space-y-2'
         }
       >
@@ -2695,15 +2712,24 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
           stageClassName={isFullscreen ? 'flex-1 min-h-0 flex flex-col' : ''}
         >
           <div
-            className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col lg:block ${
+            className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col ${
               isFullscreen
-                ? 'flex-1 min-h-[420px] rounded-[4px]'
-                : 'rounded-[4px] min-h-[560px] lg:min-h-0 lg:h-[640px]'
+                ? 'lg:block flex-1 min-h-[420px] rounded-[4px]'
+                : embedded
+                ? 'rounded-[4px]'
+                : 'lg:block rounded-[4px] min-h-[560px] lg:min-h-0 lg:h-[640px]'
             }`}
           >
-        {/* TOP HEADER OVERLAY (No backdrop-blur over WebGL; stacked on < lg, floating on lg+) */}
-        <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:top-4 lg:left-4 lg:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/95 lg:bg-transparent border-b border-slate-800/80 lg:border-b-0 lg:pointer-events-none shrink-0">
-          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-slate-900/95 border border-slate-700/80 text-white shadow-lg max-w-full">
+        {/* TOP HEADER OVERLAY (Stacked in embedded mode so nothing clips or covers the 3D subject) */}
+        <div
+          className={`relative z-20 p-2.5 sm:p-3 flex flex-col justify-between gap-2 bg-slate-900/95 border-b border-slate-800/80 shrink-0 ${
+            embedded && !isFullscreen
+              ? ''
+              : 'lg:p-0 lg:absolute lg:top-4 lg:left-4 lg:right-4 sm:flex-row sm:items-center lg:bg-transparent lg:border-b-0 lg:pointer-events-none'
+          }`}
+        >
+          <div className="pointer-events-auto flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-slate-900/95 border border-slate-700/80 text-white shadow-lg max-w-full min-w-0">
             {(isFullscreen || onBack) && (
               <button
                 onClick={() => {
@@ -2719,6 +2745,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>{isFullscreen ? 'Thu nhỏ' : 'Quay lại'}</span>
               </button>
+            )}
+            {embeddedBadge && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] bg-amber-500 text-slate-950 text-[10px] font-mono font-extrabold tracking-wider uppercase shrink-0">
+                {embeddedBadge}
+              </span>
             )}
             <Zap className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="text-[11px] sm:text-xs font-bold tracking-wide truncate">
@@ -2739,11 +2770,22 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
               {mode === 'photoelectric_3d' && 'Ống Chân Không & Hiệu Ứng Quang Điện 3D'}
               {EXTRA_3D_SCENE_CONFIGS[mode as ExtraPhysics3DModeId]?.hudTitle}
             </span>
+            </div>
           </div>
 
-          <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full overflow-x-auto lg:overflow-visible scrollbar-none pb-0.5 lg:pb-0">
+          <div
+            className={`pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full ${
+              embedded && !isFullscreen
+                ? 'flex-wrap'
+                : 'overflow-x-auto lg:overflow-visible scrollbar-none pb-0.5 lg:pb-0'
+            }`}
+          >
             {/* Domain-scoped Mode Switcher Buttons */}
-            <div className="sim-seg-box flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-[4px] shadow-lg overflow-x-auto max-w-[68vw] sm:max-w-full scrollbar-none shrink-0">
+            <div
+              className={`sim-seg-box flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-[4px] shadow-lg overflow-x-auto scrollbar-none ${
+                embedded && !isFullscreen ? 'max-w-full' : 'max-w-[68vw] sm:max-w-full shrink-0'
+              }`}
+            >
               {visibleModeTabs.map((m) => (
                 <button
                   key={m.id}
@@ -2848,14 +2890,34 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-2 rounded-md bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white transition-colors shadow-lg cursor-pointer shrink-0"
+              title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình 3D'}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
+
+            {onOpenFull3D && !isFullscreen && (
+              <button
+                type="button"
+                onClick={onOpenFull3D}
+                className="hidden sm:flex items-center gap-1 px-2.5 py-2 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-extrabold transition-colors shadow-lg cursor-pointer shrink-0 whitespace-nowrap"
+                title="Mở sang Tab Phòng Thí Nghiệm 3D đầy đủ"
+              >
+                <span>Lab 3D Đầy đủ</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* 3D WebGL Canvas (Unobstructed middle stage on < lg, full height on lg+) */}
-        <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[240px] lg:h-full' : 'h-[280px] sm:h-[360px] lg:h-full'}`}>
+        {/* 3D WebGL Canvas (Unobstructed middle stage in embedded & mobile, full height in fullscreen/standalone) */}
+        <div
+          className={`relative w-full ${
+            isFullscreen
+              ? 'flex-1 min-h-[240px] lg:h-full'
+              : embedded
+              ? 'h-[310px] sm:h-[360px]'
+              : 'h-[280px] sm:h-[360px] lg:h-full'
+          }`}
+        >
           <div
             ref={mountRef}
             className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
@@ -2867,9 +2929,19 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
           )}
         </div>
 
-        {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK (No backdrop-blur over WebGL) */}
-        <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 w-full lg:w-[96%] lg:max-w-3xl lg:pointer-events-none bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
-          <div className="pointer-events-auto bg-slate-900/95 border border-slate-700/80 rounded-lg shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[34dvh] sm:max-h-[260px] lg:max-h-none overflow-y-auto">
+        {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK (No backdrop-blur over WebGL; stacked below canvas in embedded mode) */}
+        <div
+          className={`relative z-20 p-2.5 sm:p-3 w-full bg-slate-950/95 border-t border-slate-800/80 shrink-0 ${
+            embedded && !isFullscreen
+              ? ''
+              : 'lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 lg:w-[96%] lg:max-w-3xl lg:pointer-events-none lg:bg-transparent lg:border-t-0'
+          }`}
+        >
+          <div
+            className={`pointer-events-auto bg-slate-900/95 border border-slate-700/80 rounded-lg shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 overflow-y-auto ${
+              embedded && !isFullscreen ? '' : 'max-h-[34dvh] sm:max-h-[260px] lg:max-h-none'
+            }`}
+          >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-300">
               <Sliders className="w-3.5 h-3.5 text-amber-400" />

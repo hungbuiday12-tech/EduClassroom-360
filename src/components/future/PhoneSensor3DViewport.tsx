@@ -63,7 +63,7 @@ export const PhoneSensor3DViewport: React.FC<PhoneSensor3DViewportProps> = ({
 
     const hostDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
     renderer.setPixelRatio(
-      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.75)
+      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.5)
     );
     renderer.setSize(container.clientWidth || 720, container.clientHeight || 300);
     renderer.outputColorSpace = THREE.SRGBColorSpace;

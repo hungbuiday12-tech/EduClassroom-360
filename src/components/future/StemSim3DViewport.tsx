@@ -87,7 +87,7 @@ export const StemSim3DViewport: React.FC<StemSim3DViewportProps> = ({
 
     const hostDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
     renderer.setPixelRatio(
-      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.75)
+      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.5)
     );
     renderer.setSize(container.clientWidth || 700, container.clientHeight || 360);
     renderer.outputColorSpace = THREE.SRGBColorSpace;

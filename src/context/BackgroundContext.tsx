@@ -1129,7 +1129,7 @@ export const BackgroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   useEffect(() => {
     let active = true;
-    loadStoredXrayImages().then(({ top, bottom }) => {
+    loadStoredXrayImages().then(({ top, bottom }: { top: string | null; bottom: string | null }) => {
       if (!active) return;
       if (top) {
         setXrayTopImageState(top);

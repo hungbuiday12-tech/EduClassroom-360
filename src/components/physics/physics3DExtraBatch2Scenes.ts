@@ -988,6 +988,547 @@ export function buildBatch2Extra3DScene(
       };
     }
 
+    // 17. MECHANICAL ENERGY (KINETIC & POTENTIAL ENERGY) 3D
+    case 'mechanical_energy_3d': {
+      const darkMetal = new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.78, roughness: 0.28, clearcoat: 0.4 });
+      const amberBarMat = new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, roughness: 0.2, metalness: 0.25, clearcoat: 0.85, emissive: 0x78350f, emissiveIntensity: 0.3 });
+      const cyanBarMat = new THREE.MeshPhysicalMaterial({ color: 0x06b6d4, roughness: 0.2, metalness: 0.25, clearcoat: 0.85, emissive: 0x0e7490, emissiveIntensity: 0.3 });
+      const emeraldBarMat = new THREE.MeshPhysicalMaterial({ color: 0x10b981, roughness: 0.2, metalness: 0.25, clearcoat: 0.85, emissive: 0x047857, emissiveIntensity: 0.3 });
+
+      const baseDeck = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.2, 4.4), new THREE.MeshPhysicalMaterial({ color: 0x0f172a, roughness: 0.5, metalness: 0.35 }));
+      baseDeck.position.set(0, 0.1, 0);
+      group.add(baseDeck);
+
+      // Parabolic U-shaped roller track built from smooth segments
+      const trackPts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 40; i++) {
+        const x = -3.8 + (i / 40) * 7.6;
+        const y = 0.55 + 0.18 * x * x;
+        trackPts.push(new THREE.Vector3(x, y, 0));
+      }
+      const trackCurve = new THREE.CatmullRomCurve3(trackPts);
+      const trackMat = new THREE.MeshPhysicalMaterial({ color: 0x64748b, metalness: 0.82, roughness: 0.2, clearcoat: 0.7 });
+      [-0.24, 0.24].forEach((rz) => {
+        const railGeo = new THREE.TubeGeometry(trackCurve, 44, 0.055, 10, false);
+        const rail = new THREE.Mesh(railGeo, trackMat);
+        rail.position.z = rz;
+        group.add(rail);
+      });
+      // Vertical support pillars
+      [-3.5, -2.0, 0, 2.0, 3.5].forEach((px) => {
+        const py = 0.55 + 0.18 * px * px;
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, py, 10), darkMetal);
+        post.position.set(px, py * 0.5, 0);
+        group.add(post);
+      });
+
+      // Rolling sphere + velocity arrow
+      const ball = new THREE.Mesh(
+        new THREE.SphereGeometry(0.36, 28, 24),
+        new THREE.MeshPhysicalMaterial({ color: 0xf97316, metalness: 0.72, roughness: 0.16, clearcoat: 0.95 })
+      );
+      const velShaft = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 1, 10),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+      );
+      const velHead = new THREE.Mesh(
+        new THREE.ConeGeometry(0.11, 0.26, 12),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+      );
+      group.add(ball, velShaft, velHead);
+
+      // 3 live energy bar meters behind track (z = -1.45)
+      const makeMeter = (x: number, mat: THREE.Material, label: string, col: number) => {
+        const geo = new THREE.BoxGeometry(0.62, 1.0, 0.62);
+        geo.translate(0, 0.5, 0);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, 0.2, -1.45);
+        group.add(mesh, createTroikaLabel({ text: label, position: [x, 3.55, -1.45], fontSize: 0.28, color: col }));
+        return mesh;
+      };
+      const barEk = makeMeter(-1.5, cyanBarMat, 'W_đ', 0x38bdf8);
+      const barEp = makeMeter(0, amberBarMat, 'W_t', 0xfbbf24);
+      const barEm = makeMeter(1.5, emeraldBarMat, 'W_cơ', 0x34d399);
+
+      group.add(createTroikaLabel({ text: 'W = W_đ + W_t = ½mv² + mgh', position: [0, 4.55, 0], fontSize: 0.3, color: 0xe2e8f0 }));
+      trail?.clear();
+
+      const tmpV = new THREE.Vector3();
+      const tmpTan = new THREE.Vector3();
+      let dampEnergy = 1.0;
+      let lastResetClock = 0;
+
+      return (effDt) => {
+        const { p1: h0, p2: mu } = getParams();
+        const t = getElapsed();
+        if (t < lastResetClock) dampEnergy = 1.0;
+        lastResetClock = t;
+        dampEnergy = Math.max(0.12, dampEnergy * Math.exp(-mu * 0.42 * effDt));
+        const ampScale = (0.45 + (h0 / 30) * 0.55) * dampEnergy;
+        const xMax = 3.5 * Math.sqrt(ampScale);
+        const omega = 1.95;
+        const x = xMax * Math.cos(t * omega);
+        const vx = -xMax * omega * Math.sin(t * omega);
+        const y = 0.55 + 0.18 * x * x + 0.36;
+        ball.position.set(x, y, 0);
+        ball.rotation.z = -x * 2.6;
+        trail?.pushAndRender(x, y, 0, camera, 0.014, 24);
+
+        // Velocity vector along tangent
+        tmpTan.set(1, 0.36 * x, 0).normalize();
+        const speedMag = Math.abs(vx) * 0.35;
+        if (speedMag < 0.05) {
+          velShaft.visible = false;
+          velHead.visible = false;
+        } else {
+          velShaft.visible = true;
+          velHead.visible = true;
+          const dirSign = Math.sign(vx) || 1;
+          tmpV.copy(tmpTan).multiplyScalar(dirSign);
+          const len = Math.min(1.6, speedMag);
+          velShaft.position.copy(ball.position).addScaledVector(tmpV, len * 0.5);
+          velShaft.quaternion.setFromUnitVectors(upAxis, tmpV);
+          velShaft.scale.set(1, len, 1);
+          velHead.position.copy(ball.position).addScaledVector(tmpV, len + 0.12);
+          velHead.quaternion.setFromUnitVectors(upAxis, tmpV);
+        }
+
+        const totalNorm = ampScale * 2.8;
+        const epFrac = (x * x) / Math.max(0.01, xMax * xMax);
+        const epH = Math.max(0.06, totalNorm * epFrac);
+        const ekH = Math.max(0.06, totalNorm * (1 - epFrac));
+        barEk.scale.y = ekH;
+        barEp.scale.y = epH;
+        barEm.scale.y = Math.max(0.08, totalNorm);
+      };
+    }
+
+    // 18. OHM CIRCUIT & JOULE-LENZ HEATING 3D
+    case 'ohm_circuit_3d': {
+      const benchMat = new THREE.MeshPhysicalMaterial({ color: 0x0f172a, roughness: 0.45, metalness: 0.35, clearcoat: 0.3 });
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.24, 4.8), benchMat);
+      bench.position.set(0, 0.12, 0);
+      group.add(bench);
+
+      // DC Power Supply box on left
+      const psuBody = new THREE.Mesh(
+        new THREE.BoxGeometry(1.7, 1.5, 1.8),
+        new THREE.MeshPhysicalMaterial({ color: 0x1e293b, metalness: 0.65, roughness: 0.32, clearcoat: 0.5 })
+      );
+      psuBody.position.set(-3.1, 0.99, 0.2);
+      const psuLed = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.42, 0.08),
+        new THREE.MeshBasicMaterial({ color: 0x0284c7 })
+      );
+      psuLed.position.set(-3.1, 1.25, 1.11);
+      group.add(psuBody, psuLed, createTroikaLabel({ text: 'Nguồn DC (U)', position: [-3.1, 2.15, 0.2], fontSize: 0.28, color: 0x38bdf8 }));
+
+      // Ammeter dial stand (top-center)
+      const meterHousing = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 1.35, 0.8),
+        new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.3 })
+      );
+      meterHousing.position.set(0, 0.91, -1.35);
+      const dialFace = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.48, 0.48, 0.06, 28),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 })
+      );
+      dialFace.rotation.x = Math.PI / 2;
+      dialFace.position.set(0, 0.96, -0.92);
+      const needleGeo = new THREE.BoxGeometry(0.04, 0.38, 0.03);
+      needleGeo.translate(0, 0.16, 0);
+      const ammeterNeedle = new THREE.Mesh(needleGeo, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      ammeterNeedle.position.set(0, 0.78, -0.88);
+      group.add(meterHousing, dialFace, ammeterNeedle, createTroikaLabel({ text: 'Ampe kế (A)', position: [0, 1.98, -1.35], fontSize: 0.28, color: 0xe2e8f0 }));
+
+      // Rheostat coil + slider bar (front-left/center)
+      const rheoCore = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.32, 2.2, 20),
+        new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, metalness: 0.75, roughness: 0.28 })
+      );
+      rheoCore.rotation.z = Math.PI / 2;
+      rheoCore.position.set(0, 0.65, 1.45);
+      const sliderKnob = new THREE.Mesh(
+        new THREE.BoxGeometry(0.36, 0.34, 0.56),
+        new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, metalness: 0.6, roughness: 0.25, clearcoat: 0.7 })
+      );
+      sliderKnob.position.set(0, 1.05, 1.45);
+      group.add(rheoCore, sliderKnob, createTroikaLabel({ text: 'Biến trở R', position: [0, 1.55, 1.45], fontSize: 0.26, color: 0xfbbf24 }));
+
+      // Calorimeter beaker + glowing heating resistor coil on right
+      const beakerGlass = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.1, 1.1, 2.2, 32, 1, true),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xbae6fd,
+          transparent: true,
+          opacity: 0.24,
+          roughness: 0.06,
+          clearcoat: 1.0,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          clippingPlanes: clipPlanes
+        })
+      );
+      beakerGlass.position.set(2.85, 1.34, 0.2);
+      const waterBody = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.03, 1.03, 1.55, 28),
+        new THREE.MeshPhysicalMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.32, roughness: 0.1, depthWrite: false, clippingPlanes: clipPlanes })
+      );
+      waterBody.position.set(2.85, 1.02, 0.2);
+      const coilMat = new THREE.MeshStandardMaterial({ color: 0xd97706, emissive: 0xea580c, emissiveIntensity: 0.4, metalness: 0.8, roughness: 0.25 });
+      const coilMesh = new THREE.Mesh(new THREE.TorusKnotGeometry(0.38, 0.065, 64, 10, 2, 3), coilMat);
+      coilMesh.position.set(2.85, 0.88, 0.2);
+      group.add(beakerGlass, waterBody, coilMesh, createTroikaLabel({ text: 'Dây đốt R (Q = I²Rt)', position: [2.85, 2.85, 0.2], fontSize: 0.28, color: 0xfb923c }));
+
+      // Copper circuit loop busbars
+      const wirePts = [
+        new THREE.Vector3(-3.1, 0.55, 1.45),
+        new THREE.Vector3(2.85, 0.55, 1.45),
+        new THREE.Vector3(2.85, 0.88, 0.2),
+        new THREE.Vector3(2.85, 0.55, -1.35),
+        new THREE.Vector3(-3.1, 0.55, -1.35),
+        new THREE.Vector3(-3.1, 0.55, 1.45)
+      ];
+      const loopCurve = new THREE.CatmullRomCurve3(wirePts, true, 'catmullrom', 0.08);
+      const copperWire = new THREE.Mesh(
+        new THREE.TubeGeometry(loopCurve, 64, 0.055, 10, true),
+        new THREE.MeshPhysicalMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.2 })
+      );
+      group.add(copperWire);
+
+      // Electron flow beads along loop
+      const eCount = 16;
+      const eGeo = new THREE.SphereGeometry(0.11, 12, 10);
+      const eMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const electrons: THREE.Mesh[] = [];
+      for (let i = 0; i < eCount; i++) {
+        const em = new THREE.Mesh(eGeo, eMat);
+        group.add(em);
+        electrons.push(em);
+      }
+      const scratchPt = new THREE.Vector3();
+      let bubbleCooldown = 0;
+
+      return (effDt) => {
+        const { p1: uVal, p2: rVal } = getParams();
+        const curI = uVal / Math.max(0.5, rVal);
+        const power = uVal * curI;
+        const t = getElapsed();
+
+        sliderKnob.position.x = -0.85 + ((rVal - 2) / 22) * 1.7;
+        ammeterNeedle.rotation.z = 0.78 - Math.min(1.56, curI * 0.22);
+        coilMat.emissiveIntensity = Math.min(2.6, 0.15 + power * 0.025);
+
+        const speed = 0.06 + curI * 0.065;
+        for (let i = 0; i < eCount; i++) {
+          const u = ((t * speed + i / eCount) % 1 + 1) % 1;
+          loopCurve.getPointAt(u, scratchPt);
+          electrons[i].position.copy(scratchPt);
+        }
+
+        bubbleCooldown -= effDt;
+        if (pool && power > 12 && bubbleCooldown <= 0) {
+          bubbleCooldown = Math.max(0.05, 0.28 - power * 0.0025);
+          pool.spawn(
+            2.85 + (Math.random() - 0.5) * 0.75,
+            0.85,
+            0.2 + (Math.random() - 0.5) * 0.75,
+            (Math.random() - 0.5) * 0.2,
+            0.9 + Math.min(1.6, power * 0.015),
+            (Math.random() - 0.5) * 0.2,
+            0.75,
+            0.95,
+            0x7dd3fc
+          );
+        }
+      };
+    }
+
+    // 19. REFRACTION TANK 3D
+    case 'refraction_tank_3d': {
+      const tankFrame = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(6.8, 4.2, 3.6)),
+        new THREE.LineBasicMaterial({ color: 0x94a3b8 })
+      );
+      tankFrame.position.set(0, 2.2, 0);
+      const lowerWater = new THREE.Mesh(
+        new THREE.BoxGeometry(6.72, 2.05, 3.52),
+        new THREE.MeshPhysicalMaterial({
+          color: 0x0ea5e9,
+          transparent: true,
+          opacity: 0.28,
+          roughness: 0.08,
+          clearcoat: 0.9,
+          depthWrite: false,
+          clippingPlanes: clipPlanes
+        })
+      );
+      lowerWater.position.set(0, 1.15, 0);
+      const normalAxis = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.025, 0.025, 4.6, 10),
+        new THREE.MeshBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.65 })
+      );
+      normalAxis.position.set(0, 2.2, 0);
+      const hitSpot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.14, 16, 12),
+        new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
+      );
+      hitSpot.position.set(0, 2.2, 0);
+
+      // Laser pointer gimbal body
+      const laserGun = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.14, 0.16, 0.85, 16),
+        new THREE.MeshPhysicalMaterial({ color: 0x475569, metalness: 0.85, roughness: 0.2, clearcoat: 0.7 })
+      );
+
+      const incMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+      const refMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.45 });
+      const refrMat = new THREE.MeshBasicMaterial({ color: 0x4ade80 });
+      const beamGeo = new THREE.CylinderGeometry(0.045, 0.045, 1, 10);
+      const incBeam = new THREE.Mesh(beamGeo, incMat);
+      const refBeam = new THREE.Mesh(beamGeo, refMat);
+      const refrBeam = new THREE.Mesh(beamGeo, refrMat);
+
+      group.add(
+        tankFrame,
+        lowerWater,
+        normalAxis,
+        hitSpot,
+        laserGun,
+        incBeam,
+        refBeam,
+        refrBeam,
+        createTroikaLabel({ text: 'Môi trường 1 (n₁ = 1,00)', position: [-2.1, 3.9, 0], fontSize: 0.28, color: 0xe2e8f0 }),
+        createTroikaLabel({ text: 'Môi trường 2 (n₂)', position: [-2.1, 0.6, 0], fontSize: 0.28, color: 0x7dd3fc }),
+        createTroikaLabel({ text: 'Pháp tuyến NN\'', position: [0.85, 4.55, 0], fontSize: 0.26, color: 0xfbbf24 })
+      );
+
+      const pSrc = new THREE.Vector3();
+      const pHit = new THREE.Vector3(0, 2.2, 0);
+      const pRef = new THREE.Vector3();
+      const pRefr = new THREE.Vector3();
+      const tmpDir = new THREE.Vector3();
+
+      return () => {
+        const { p1: degI, p2: n2 } = getParams();
+        const radI = (degI * Math.PI) / 180;
+        const sinR = Math.sin(radI) / Math.max(1.0, n2);
+        const radR = Math.asin(Math.min(1, sinR));
+
+        pSrc.set(-Math.sin(radI) * 2.5, 2.2 + Math.cos(radI) * 2.5, 0);
+        pRef.set(Math.sin(radI) * 2.4, 2.2 + Math.cos(radI) * 2.4, 0);
+        pRefr.set(Math.sin(radR) * 2.4, 2.2 - Math.cos(radR) * 2.4, 0);
+
+        laserGun.position.copy(pSrc);
+        tmpDir.subVectors(pHit, pSrc).normalize();
+        laserGun.quaternion.setFromUnitVectors(upAxis, tmpDir);
+
+        orientSeg(incBeam, pSrc, pHit, tmpDir, upAxis);
+        orientSeg(refBeam, pHit, pRef, tmpDir, upAxis);
+        orientSeg(refrBeam, pHit, pRefr, tmpDir, upAxis);
+      };
+    }
+
+    // 20. CALORIMETRY BEAKER & PHASE TRANSITION 3D
+    case 'calorimetry_beaker_3d': {
+      const standBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.9, 2.1, 0.28, 36),
+        new THREE.MeshPhysicalMaterial({ color: 0x1e293b, metalness: 0.72, roughness: 0.3 })
+      );
+      standBase.position.set(0, 0.14, 0);
+      const burnerPlate = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.35, 1.45, 0.18, 32),
+        new THREE.MeshStandardMaterial({ color: 0x991b1b, emissive: 0xef4444, emissiveIntensity: 0.65, metalness: 0.5 })
+      );
+      burnerPlate.position.set(0, 0.37, 0);
+      const beaker = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.45, 1.45, 3.6, 36, 1, true),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xbae6fd,
+          transparent: true,
+          opacity: 0.22,
+          roughness: 0.05,
+          clearcoat: 1.0,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          clippingPlanes: clipPlanes
+        })
+      );
+      beaker.position.set(0, 2.26, 0);
+
+      // Thermometer beside beaker
+      const thermGlass = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.14, 0.14, 3.8, 16),
+        new THREE.MeshPhysicalMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.38, clearcoat: 0.9 })
+      );
+      thermGlass.position.set(2.1, 2.35, 0);
+      const bulb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.28, 18, 14),
+        new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.5 })
+      );
+      bulb.position.set(2.1, 0.55, 0);
+      const mercuryGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.0, 12);
+      mercuryGeo.translate(0, 0.5, 0);
+      const mercuryCol = new THREE.Mesh(mercuryGeo, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      mercuryCol.position.set(2.1, 0.6, 0);
+
+      group.add(
+        standBase,
+        burnerPlate,
+        beaker,
+        thermGlass,
+        bulb,
+        mercuryCol,
+        createTroikaLabel({ text: 'Nhiệt lượng kế Q = mcΔT', position: [0, 4.45, 0], fontSize: 0.3, color: 0x7dd3fc }),
+        createTroikaLabel({ text: 'Nhiệt kế (K)', position: [2.1, 4.5, 0], fontSize: 0.26, color: 0xfca5a5 })
+      );
+
+      // 27 particles showing solid lattice / liquid slip / vapor evaporation
+      const pGeo = new THREE.SphereGeometry(0.16, 14, 12);
+      const pMat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, roughness: 0.16, clearcoat: 0.85 });
+      const parts: THREE.Mesh[] = [];
+      for (let i = 0; i < 27; i++) {
+        const pt = new THREE.Mesh(pGeo, pMat);
+        group.add(pt);
+        parts.push(pt);
+      }
+      let steamCooldown = 0;
+
+      return (effDt) => {
+        const { p1: tempK, p2: powerMul } = getParams();
+        const t = getElapsed();
+        const normT = THREE.MathUtils.clamp((tempK - 260) / 160, 0, 1);
+        mercuryCol.scale.y = 0.4 + normT * 3.1;
+        burnerPlate.material.emissiveIntensity = 0.3 + powerMul * 0.45;
+
+        for (let i = 0; i < 27; i++) {
+          const ix = (i % 3) - 1;
+          const iy = Math.floor(i / 3) % 3;
+          const iz = Math.floor(i / 9) - 1;
+          if (tempK < 273) {
+            // Solid lattice vibration
+            const vib = 0.04 + normT * 0.08;
+            parts[i].position.set(
+              ix * 0.48 + Math.sin(t * 14 + i) * vib,
+              0.9 + iy * 0.48 + Math.cos(t * 13 + i * 2) * vib,
+              iz * 0.48 + Math.sin(t * 15 + i * 3) * vib
+            );
+          } else if (tempK < 373) {
+            // Liquid convection
+            parts[i].position.set(
+              Math.sin(t * (1.2 + normT * 1.5) + i * 1.1) * 0.95,
+              0.8 + ((iy * 0.55 + (Math.sin(t * 1.8 + i) + 1) * 0.55)),
+              Math.cos(t * (1.1 + normT * 1.4) + i * 1.7) * 0.95
+            );
+          } else {
+            // Vapor filling vessel
+            parts[i].position.set(
+              Math.sin(t * (2.6 + normT * 1.6) + i * 1.9) * 1.12,
+              0.75 + ((Math.sin(t * 2.2 + i * 0.9) + 1) * 1.45),
+              Math.cos(t * (2.4 + normT * 1.5) + i * 2.3) * 1.12
+            );
+          }
+        }
+
+        steamCooldown -= effDt;
+        if (pool && tempK >= 360 && steamCooldown <= 0) {
+          steamCooldown = 0.14 / Math.max(0.5, powerMul);
+          pool.spawn((Math.random() - 0.5) * 1.4, 3.6, (Math.random() - 0.5) * 1.4, 0, 1.2 + Math.random() * 0.6, 0, 0.7, 0.95, 0xe0f2fe);
+        }
+      };
+    }
+
+    // 21. ARCHIMEDES BUOYANCY 3D
+    case 'archimedes_buoyancy_3d': {
+      const tankWall = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.15, 2.15, 4.4, 36, 1, true),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xbae6fd,
+          transparent: true,
+          opacity: 0.2,
+          roughness: 0.05,
+          clearcoat: 1.0,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          clippingPlanes: clipPlanes
+        })
+      );
+      tankWall.position.set(0, 2.3, 0);
+      const tankBottom = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.2, 2.25, 0.2, 36),
+        new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 })
+      );
+      tankBottom.position.set(0, 0.1, 0);
+
+      // Liquid column whose top height expands as object displaces volume
+      const liquidGeo = new THREE.CylinderGeometry(2.08, 2.08, 1.0, 32);
+      liquidGeo.translate(0, 0.5, 0);
+      const liquidCol = new THREE.Mesh(
+        liquidGeo,
+        new THREE.MeshPhysicalMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.34, roughness: 0.08, depthWrite: false, clippingPlanes: clipPlanes })
+      );
+      liquidCol.position.set(0, 0.2, 0);
+
+      const blockMat = new THREE.MeshPhysicalMaterial({ color: 0xd97706, roughness: 0.3, metalness: 0.25, clearcoat: 0.6 });
+      const block = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.15, 1.15), blockMat);
+
+      // Force vectors F_A (emerald up) and P (rose down)
+      const vecGeo = new THREE.CylinderGeometry(0.05, 0.05, 1, 10);
+      const faShaft = new THREE.Mesh(vecGeo, new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+      const faHead = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.3, 12), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+      const pShaft = new THREE.Mesh(vecGeo, new THREE.MeshBasicMaterial({ color: 0xf43f5e }));
+      const pHead = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.3, 12), new THREE.MeshBasicMaterial({ color: 0xf43f5e }));
+      pHead.rotation.x = Math.PI;
+
+      group.add(
+        tankWall,
+        tankBottom,
+        liquidCol,
+        block,
+        faShaft,
+        faHead,
+        pShaft,
+        pHead,
+        createTroikaLabel({ text: 'F_A = ρ_lỏng · g · V_chìm', position: [0, 4.95, 0], fontSize: 0.3, color: 0x34d399 }),
+        createTroikaLabel({ text: 'Trọng lực P', position: [-2.6, 1.4, 0], fontSize: 0.28, color: 0xfb7185 })
+      );
+
+      return () => {
+        const { p1: rhoObj, p2: volL } = getParams();
+        const t = getElapsed();
+        const blockScale = 0.72 + (volL / 8) * 0.52;
+        block.scale.setScalar(blockScale);
+        const halfH = 0.575 * blockScale;
+
+        // Material tint: wood -> ice -> aluminum/iron
+        if (rhoObj < 900) blockMat.color.setHex(0xd97706);
+        else if (rhoObj <= 1050) blockMat.color.setHex(0x38bdf8);
+        else blockMat.color.setHex(0x64748b);
+
+        const subFrac = Math.min(1, rhoObj / 1000);
+        const baseWaterH = 2.45;
+        const displacedH = baseWaterH + subFrac * (volL * 0.055);
+        liquidCol.scale.y = displacedH;
+
+        const targetY =
+          rhoObj <= 1000
+            ? 0.2 + displacedH + (0.5 - subFrac) * (halfH * 2) + Math.sin(t * 2.4) * 0.05
+            : 0.2 + halfH + 0.02;
+        block.position.set(0, targetY, 0);
+
+        const pLen = THREE.MathUtils.clamp((rhoObj / 2500) * 1.45, 0.35, 1.45);
+        const faLen = THREE.MathUtils.clamp(subFrac * (volL / 8) * 1.35 + 0.25, 0.25, 1.35);
+
+        faShaft.position.set(0.95, targetY + faLen * 0.5, 0);
+        faShaft.scale.y = faLen;
+        faHead.position.set(0.95, targetY + faLen + 0.14, 0);
+
+        pShaft.position.set(-0.95, targetY - pLen * 0.5, 0);
+        pShaft.scale.y = pLen;
+        pHead.position.set(-0.95, targetY - pLen - 0.14, 0);
+      };
+    }
+
     default:
       return null;
   }

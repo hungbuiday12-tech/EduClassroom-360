@@ -293,7 +293,7 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
-    renderer.setPixelRatio(softwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(softwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(w, h);
     renderer.shadowMap.enabled = !softwareGl;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;

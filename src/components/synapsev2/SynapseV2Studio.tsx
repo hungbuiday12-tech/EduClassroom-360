@@ -119,9 +119,8 @@ function loadSynapsePerfPrefs(perfMode: PerformanceMode): {
 
 function computeSynapseDpr(isSoftwareGl: boolean, scale: SynapseResScale): number {
   const hostDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const maxDpr = scale >= 1.3 ? 2 : 1.75;
-  const effective = Math.min(hostDpr, maxDpr) * scale;
-  return Math.max(0.45, isSoftwareGl ? Math.min(effective, 1.0) : effective);
+  const effective = Math.min(hostDpr, 1.5) * Math.min(scale, 1.25);
+  return Math.min(1.5, Math.max(0.45, isSoftwareGl ? Math.min(effective, 1.0) : effective));
 }
 
 const CAMERA_PRESETS: Record<

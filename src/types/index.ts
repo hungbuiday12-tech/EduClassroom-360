@@ -463,7 +463,13 @@ export type Physics3DMode =
   | 'double_lens_microscope_3d'
   | 'diffusion_gases_3d'
   | 'brownian_motion_3d'
-  | 'tokamak_fusion_3d';
+  | 'tokamak_fusion_3d'
+  // +5 Curriculum Audit 3D Simulations
+  | 'mechanical_energy_3d'
+  | 'ohm_circuit_3d'
+  | 'refraction_tank_3d'
+  | 'calorimetry_beaker_3d'
+  | 'archimedes_buoyancy_3d';
 
 export type PhysicsDomainId =
   | 'mechanics'

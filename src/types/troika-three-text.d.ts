@@ -3,22 +3,25 @@ declare module 'troika-three-text' {
 
   export class Text extends THREE.Mesh {
     text: string;
+    font?: string;
     fontSize: number;
-    color: THREE.ColorRepresentation;
-    anchorX: number | 'left' | 'center' | 'right';
-    anchorY: number | 'top' | 'top-baseline' | 'middle' | 'bottom-baseline' | 'bottom';
-    maxWidth: number;
-    textAlign: 'left' | 'right' | 'center' | 'justify';
-    outlineWidth: number | string;
-    outlineColor: THREE.ColorRepresentation;
-    outlineOpacity: number;
-    fillOpacity: number;
-    depthOffset: number;
-    fontWeight: 'normal' | 'bold' | number;
-    letterSpacing: number;
-    lineHeight: number | 'normal';
-    clipRect: [number, number, number, number] | null;
-    orientation: string;
+    fontWeight?: number | string;
+    color: number | string;
+    anchorX: 'left' | 'center' | 'right' | number;
+    anchorY: 'top' | 'top-baseline' | 'middle' | 'bottom-baseline' | 'bottom' | number;
+    textAlign?: 'left' | 'right' | 'center' | 'justify';
+    maxWidth?: number;
+    lineHeight?: number;
+    letterSpacing?: number;
+    outlineWidth?: number | string;
+    outlineColor?: number | string;
+    outlineOpacity?: number;
+    outlineBlur?: number | string;
+    fillOpacity?: number;
+    strokeWidth?: number | string;
+    strokeColor?: number | string;
+    depthOffset?: number;
+    sdfGlyphSize?: number;
     sync(callback?: () => void): void;
     dispose(): void;
   }

@@ -160,7 +160,7 @@ export const AlgoCity3DLab: React.FC<AlgoCity3DLabProps> = ({ onEarnXP }) => {
 
     const renderer = new THREE.WebGLRenderer({ antialias: !isSw, powerPreference: 'high-performance' });
     renderer.setSize(w, h);
-    renderer.setPixelRatio(isSw ? 1 : Math.min(window.devicePixelRatio, 1.75));
+    renderer.setPixelRatio(isSw ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     mount.appendChild(renderer.domElement);
@@ -323,10 +323,9 @@ export const AlgoCity3DLab: React.FC<AlgoCity3DLabProps> = ({ onEarnXP }) => {
         const activeIdx = st.activeCells[0];
         const targetTower = towers[activeIdx];
         if (targetTower) {
-          activeHalo.position.lerp(
-            new THREE.Vector3(targetTower.mesh.position.x, targetTower.mesh.scale.y + 0.25, targetTower.mesh.position.z),
-            0.18
-          );
+          activeHalo.position.x += (targetTower.mesh.position.x - activeHalo.position.x) * 0.18;
+          activeHalo.position.y += (targetTower.mesh.scale.y + 0.25 - activeHalo.position.y) * 0.18;
+          activeHalo.position.z += (targetTower.mesh.position.z - activeHalo.position.z) * 0.18;
           activeHalo.rotation.z = t * (isUltra ? 2.4 : 1.2);
           activeHalo.scale.setScalar(1 + Math.sin(t * 5) * 0.1);
           if (activeHaloOuter) {

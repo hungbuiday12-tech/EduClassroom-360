@@ -40,6 +40,7 @@ import {
   PhysicsLesson
 } from '../../types';
 import { PhysicsInline2DSim } from '../physics/PhysicsInline2DSim';
+import { PhysicsInline3DSim } from '../physics/PhysicsInline3DSim';
 import { FormattedText, MathFormula } from './MathRenderer';
 import { MonokaiCodeBlock } from '../cs/SublimeEditor';
 import { safeFetchJson, streamTutorChat } from '../../lib/apiClient';
@@ -166,6 +167,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
   const [openDeepDiveSteps, setOpenDeepDiveSteps] = useState<Record<number, boolean>>({});
   const [csTierByStep, setCsTierByStep] = useState<Record<number, 'basic' | 'advanced'>>({});
   const [csLangByStep, setCsLangByStep] = useState<Record<number, 'cpp' | 'python'>>({});
+  const [activeFull3DStep, setActiveFull3DStep] = useState<number>(0);
 
   // Award XP tracking per session/record so students aren't double-rewarded for re-clicking
   const [awardedKeys, setAwardedKeys] = useState<Record<string, boolean>>({});
@@ -173,6 +175,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
   // Reload saved progress when lessonKey or user changes
   useEffect(() => {
     setCurrentStepIdx(0);
+    setActiveFull3DStep(0);
     setVisitedSteps([0]);
     setRevealedStepsMap({});
     setOpenAiPanelSteps({});
@@ -1299,18 +1302,30 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
         )}
 
         {/* ============================================================== */}
-        {/* INLINE 2D PHYSICS SIMULATION (MOUNTED ON EVERY LECTURE STEP)   */}
+        {/* INLINE 2D + 3D PHYSICS SIMULATIONS (MOUNTED ON EVERY LECTURE)  */}
         {/* ============================================================== */}
         {subject === 'physics' && physicsLesson && (
-          <PhysicsInline2DSim
-            lesson={physicsLesson}
-            stepIndex={idx}
-            totalSteps={steps.length}
-            stepTitle={step.stepTitle}
-            stepConcept={step.conceptSection}
-            onOpenSim2D={onOpenSim2D}
-            onOpenSim3D={onOpenSim3D}
-          />
+          <div className="space-y-4">
+            <PhysicsInline2DSim
+              lesson={physicsLesson}
+              stepIndex={idx}
+              totalSteps={steps.length}
+              stepTitle={step.stepTitle}
+              stepConcept={step.conceptSection}
+              onOpenSim2D={onOpenSim2D}
+              onOpenSim3D={onOpenSim3D}
+            />
+            <PhysicsInline3DSim
+              lesson={physicsLesson}
+              stepIndex={idx}
+              totalSteps={steps.length}
+              stepTitle={step.stepTitle}
+              stepConcept={step.conceptSection}
+              isWebGLActive={viewLayout === 'slides' || activeFull3DStep === idx}
+              onActivateWebGL={() => setActiveFull3DStep(idx)}
+              onOpenSim3D={onOpenSim3D}
+            />
+          </div>
         )}
 
         {/* ============================================================== */}

@@ -134,7 +134,7 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
-    renderer.setPixelRatio(softwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(softwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(w, h);
     mount.appendChild(renderer.domElement);
 

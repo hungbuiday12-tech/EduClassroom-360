@@ -689,7 +689,7 @@ export const AssemblyStudio3DLab: React.FC<AssemblyStudio3DLabProps> = ({ onEarn
       powerPreference: 'high-performance',
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
@@ -877,7 +877,7 @@ export const AssemblyStudio3DLab: React.FC<AssemblyStudio3DLabProps> = ({ onEarn
       built.group.position.set(...item.pos);
       built.group.rotation.y = item.rotY;
       built.group.userData.auxUid = item.uid;
-      built.group.traverse((c) => {
+      built.group.traverse((c: THREE.Object3D) => {
         c.userData.auxUid = item.uid;
       });
       auxRoot.add(built.group);
@@ -890,7 +890,7 @@ export const AssemblyStudio3DLab: React.FC<AssemblyStudio3DLabProps> = ({ onEarn
         needle: built.needle,
         spinBoost: item.calibrated,
         dispose: () => {
-          built.group.traverse((obj) => {
+          built.group.traverse((obj: THREE.Object3D) => {
             if ((obj as THREE.Mesh).isMesh) {
               const m = obj as THREE.Mesh;
               m.geometry?.dispose();
@@ -1544,7 +1544,7 @@ export const AssemblyStudio3DLab: React.FC<AssemblyStudio3DLabProps> = ({ onEarn
       if (!node) {
         const built = buildAuxiliaryPartMesh(item.kind, sectionClipArray);
         built.group.userData.auxUid = item.uid;
-        built.group.traverse((c) => {
+        built.group.traverse((c: THREE.Object3D) => {
           c.userData.auxUid = item.uid;
         });
         auxRoot.add(built.group);
@@ -1556,7 +1556,7 @@ export const AssemblyStudio3DLab: React.FC<AssemblyStudio3DLabProps> = ({ onEarn
           needle: built.needle,
           spinBoost: item.calibrated,
           dispose: () => {
-            built.group.traverse((obj) => {
+            built.group.traverse((obj: THREE.Object3D) => {
               if ((obj as THREE.Mesh).isMesh) {
                 const m = obj as THREE.Mesh;
                 m.geometry?.dispose();

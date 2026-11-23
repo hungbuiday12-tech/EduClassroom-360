@@ -30,6 +30,8 @@ const _quat = new THREE.Quaternion();
 const _pos = new THREE.Vector3();
 const _scale = new THREE.Vector3();
 const _up = new THREE.Vector3(0, 1, 0);
+const _forwardAxis = new THREE.Vector3(0, 0, 1);
+const _euler = new THREE.Euler();
 const _dir = new THREE.Vector3();
 
 export const NanobotBioSwarm4DLab: React.FC<NanobotBioSwarm4DLabProps> = ({ onEarnXP }) => {
@@ -71,7 +73,7 @@ export const NanobotBioSwarm4DLab: React.FC<NanobotBioSwarm4DLabProps> = ({ onEa
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
-    renderer.setPixelRatio(softwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(softwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(w, h);
     mount.appendChild(renderer.domElement);
 
@@ -255,9 +257,8 @@ export const NanobotBioSwarm4DLab: React.FC<NanobotBioSwarm4DLabProps> = ({ onEa
           if (rbc.x > VESSEL_LEN * 0.5) rbc.x = -VESSEL_LEN * 0.5;
 
           _pos.set(rbc.x, rbc.y, rbc.z);
-          _quat.setFromEuler(
-            new THREE.Euler(t * rbc.spinX + rbc.phase, t * 0.5, t * rbc.spinZ)
-          );
+          _euler.set(t * rbc.spinX + rbc.phase, t * 0.5, t * rbc.spinZ);
+          _quat.setFromEuler(_euler);
           _scale.set(1, 1, 1);
           _mat4.compose(_pos, _quat, _scale);
           rbcMesh.setMatrixAt(i, _mat4);
@@ -315,7 +316,7 @@ export const NanobotBioSwarm4DLab: React.FC<NanobotBioSwarm4DLabProps> = ({ onEa
           bot.pos.addScaledVector(bot.vel, dt);
 
           _dir.copy(bot.vel).normalize();
-          _quat.setFromUnitVectors(new THREE.Vector3(0, 0, 1), _dir);
+          _quat.setFromUnitVectors(_forwardAxis, _dir);
           _scale.set(1, 1, 1);
           _mat4.compose(bot.pos, _quat, _scale);
           botMesh.setMatrixAt(i, _mat4);

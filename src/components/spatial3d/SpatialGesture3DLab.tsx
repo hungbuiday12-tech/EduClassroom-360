@@ -200,11 +200,11 @@ function resolveRenderScale(gs: GestureSettings): number {
 
 function computeEffectiveDpr(softwareGl: boolean, gs: GestureSettings, reduceForVideo = false): number {
   const rs = resolveRenderScale(gs);
-  const nativeDpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
+  const nativeDpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 1.5);
   if (softwareGl) {
     return THREE.MathUtils.clamp(rs, 0.45, 1.0);
   }
-  const maxDpr = reduceForVideo ? 1.25 : 1.75;
+  const maxDpr = reduceForVideo ? 1.15 : 1.5;
   return THREE.MathUtils.clamp(nativeDpr * rs, 0.45, maxDpr);
 }
 
@@ -2392,6 +2392,28 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     let lastPush = 0;
     let lastHadHand = false;
 
+    const applyTrackedFrame = (res: HandTrackingFrame) => {
+      if (cancelled) return;
+      handFrameRef.current = res;
+      const cfg = paramsRef.current;
+
+      if (overlayCanvasRef.current && overlayCanvasRef.current.offsetParent !== null && trackerRef.current) {
+        const pal = ACCENT_PALETTES.find((p) => p.id === cfg.paletteId) || ACCENT_PALETTES[0];
+        trackerRef.current.drawOverlay(overlayCanvasRef.current, res, pal.css);
+      }
+
+      const nowMs = performance.now();
+      if ((res.detected || lastHadHand || !res.ready) && nowMs - lastPush > 150) {
+        lastPush = nowMs;
+        lastHadHand = res.detected;
+        setHandFrame(res);
+      }
+    };
+
+    if (trackerRef.current) {
+      trackerRef.current.setOnFrameCallback(applyTrackedFrame);
+    }
+
     const scanHands = (nowMs: number) => {
       if (cancelled) return;
       if (document.hidden) {
@@ -2400,11 +2422,13 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
       }
       const cfg = paramsRef.current;
       const gs = cfg.gestureSettings;
-      const baseIntervalMs = 1000 / Math.max(10, gs.trackingFps || 15);
+      const baseIntervalMs = 1000 / Math.max(12, gs.trackingFps || 20);
       const effectiveInterval = Math.max(baseIntervalMs, adaptiveGapMs);
 
       if (videoRef.current && trackerRef.current && nowMs - lastInferMs >= effectiveInterval) {
         lastInferMs = nowMs;
+        trackerRef.current.setOnFrameCallback(applyTrackedFrame);
+        const isWorker = trackerRef.current.isWorkerActive();
         const tInfer0 = performance.now();
         const res = trackerRef.current.process(videoRef.current, {
           mirror: gs.mirrorCamera,
@@ -2421,16 +2445,15 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           invertX: gs.invertX,
           invertY: gs.invertY,
           minimalControlMode: cfg.spaceMode === '3d' && cfg.interactionStyle === 'real_grab',
-          minimal2DMode: cfg.spaceMode === '2d'
+          minimal2DMode: cfg.spaceMode === '2d',
+          maxInputWidth: 480,
+          maxInputHeight: 360
         });
-        const inferDur = performance.now() - tInfer0;
-        // Back off gracefully on slower CPUs so 3D/WebAR stage stays fluid
-        adaptiveGapMs = inferDur > 20 ? Math.min(130, inferDur * 2.5) : 0;
-        handFrameRef.current = res;
+        const inferDur = isWorker ? trackerRef.current.getLastInferDurationMs() : performance.now() - tInfer0;
+        adaptiveGapMs = inferDur > 22 ? Math.min(110, inferDur * 2.0) : 0;
 
-        if (overlayCanvasRef.current && overlayCanvasRef.current.offsetParent !== null) {
-          const pal = ACCENT_PALETTES.find((p) => p.id === cfg.paletteId) || ACCENT_PALETTES[0];
-          trackerRef.current.drawOverlay(overlayCanvasRef.current, res, pal.css);
+        if (!isWorker) {
+          applyTrackedFrame(res);
         }
 
         if (hologramCockpitOnRef.current && cfg.spaceMode === '3d' && headTrackerRef.current) {
@@ -2453,12 +2476,6 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             }
           }
         }
-
-        if ((res.detected || lastHadHand || !res.ready) && nowMs - lastPush > 150) {
-          lastPush = nowMs;
-          lastHadHand = res.detected;
-          setHandFrame(res);
-        }
       }
       rafId = requestAnimationFrame(scanHands);
     };
@@ -2472,6 +2489,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     rafId = requestAnimationFrame(scanHands);
     return () => {
       cancelled = true;
+      trackerRef.current?.setOnFrameCallback(null);
       document.removeEventListener('visibilitychange', onVis);
       cancelAnimationFrame(rafId);
     };
@@ -5376,7 +5394,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     if (!rt) return;
     const softwareGl = isSoftwareWebGL();
     const reduceForVideo = arMode || cameraActive;
-    const lowPerf = isLowPerfSettings(softwareGl, gestureSettings) || arMode;
+    const lowPerf = isLowPerfSettings(softwareGl, gestureSettings) || arMode || cameraActive;
     rt.renderer.setPixelRatio(computeEffectiveDpr(softwareGl, gestureSettings, reduceForVideo));
     rt.renderer.shadowMap.enabled = !lowPerf;
     rt.keyLight.castShadow = !lowPerf;
@@ -5426,6 +5444,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
   useEffect(() => {
     return () => {
       stopCamera();
+      trackerRef.current?.dispose();
+      trackerRef.current = null;
     };
   }, [stopCamera]);
 
@@ -5472,9 +5492,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     if (!rw || !rh) return;
     track
       .applyConstraints({
-        width: { ideal: rw },
-        height: { ideal: rh },
-        frameRate: { ideal: 24, max: 30 }
+        width: { ideal: Math.min(640, rw), max: 640 },
+        height: { ideal: Math.min(480, rh), max: 480 },
+        frameRate: { ideal: 60, max: 60 }
       })
       .catch(() => {});
   }, [cameraActive, gestureSettings.cameraResolution]);
@@ -5500,9 +5520,9 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         try {
           stream = await navigator.mediaDevices.getUserMedia({
             video: {
-              width: { ideal: idealW || 480 },
-              height: { ideal: idealH || 360 },
-              frameRate: { ideal: 24, max: 30 },
+              width: { ideal: Math.min(640, idealW || 480), max: 640 },
+              height: { ideal: Math.min(480, idealH || 360), max: 480 },
+              frameRate: { ideal: 60, max: 60 },
               facingMode: { ideal: desiredFacing }
             },
             audio: false
@@ -5510,7 +5530,10 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
         } catch (constraintErr) {
           const name = constraintErr instanceof Error ? constraintErr.name : '';
           if (name === 'NotAllowedError' || name === 'PermissionDeniedError') throw constraintErr;
-          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 480, max: 640 }, height: { ideal: 360, max: 480 } },
+            audio: false
+          });
         }
 
         if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());

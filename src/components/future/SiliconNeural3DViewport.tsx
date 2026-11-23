@@ -81,7 +81,7 @@ export const SiliconNeural3DViewport: React.FC<SiliconNeural3DViewportProps> = (
 
     const hostDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
     renderer.setPixelRatio(
-      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.75)
+      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.5)
     );
     renderer.setSize(container.clientWidth || 760, container.clientHeight || 340);
     renderer.outputColorSpace = THREE.SRGBColorSpace;

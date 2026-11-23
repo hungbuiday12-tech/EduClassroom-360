@@ -130,7 +130,7 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
 
     const renderer = new THREE.WebGLRenderer({ antialias: !isSw, powerPreference: 'high-performance' });
     renderer.setSize(w, h);
-    renderer.setPixelRatio(isSw ? 1 : Math.min(window.devicePixelRatio, 1.75));
+    renderer.setPixelRatio(isSw ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;

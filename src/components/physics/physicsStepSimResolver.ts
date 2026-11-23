@@ -1073,10 +1073,45 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
     regimeLabel: 'Phương trình Cân bằng Nhiệt ΣQ_tỏa = ΣQ_thu',
     observationGoal: 'Trộn hai khối nước nóng – lạnh để xác định nhiệt độ cân bằng và nhiệt dung riêng.'
   },
+  'phys-11-shm:0': {
+    simId: 'spring_pendulum',
+    regimeLabel: 'Khái niệm Dao động Điều hòa & Biên độ – Tần số',
+    observationGoal: 'Quan sát vật dao động điều hòa quanh vị trí cân bằng với đồ thị li độ hình sin x(t) = A cos(ωt + φ).'
+  },
+  'phys-11-shm:1': {
+    simId: 'lissajous_shm',
+    regimeLabel: 'Đồ thị Pha & Hệ phương trình Dao động Điều hòa',
+    observationGoal: 'Khảo sát pha ban đầu φ, tần số góc ω và mối liên hệ vectơ quay với dao động điều hòa.'
+  },
+  'phys-11-shm:2': {
+    simId: 'spring_pendulum',
+    regimeLabel: 'So sánh Lệch pha Hai Dao động Điều hòa Cùng tần số',
+    observationGoal: 'Thay đổi độ lệch pha Δφ để nhận biết hai dao động cùng pha, ngược pha hay vuông pha.'
+  },
+  'phys-10-b22:2': {
+    simId: 'vector_addition_2d',
+    regimeLabel: 'Thực hành Tổng hợp & Phân tích Lực Cân bằng',
+    observationGoal: 'Quan sát quy tắc hình bình hành khi tổng hợp hoặc phân tích lực kéo trên hai phương.'
+  },
+  'phys-10-b24:1': {
+    simId: 'work_power_joule',
+    regimeLabel: 'Công suất Tức thời & Đơn vị Đo Công suất (W, HP, kWh)',
+    observationGoal: 'Điều chỉnh lực kéo và vận tốc để khảo sát công suất P = F·v·cosα.'
+  },
+  'phys-10-b27:1': {
+    simId: 'work_power_joule',
+    regimeLabel: 'Hiệu suất Truyền năng & Hao phí do Ma sát',
+    observationGoal: 'Thay đổi hệ số ma sát μ để đo tỉ số giữa công có ích và công toàn phần.'
+  },
+  'phys-10-b27:2': {
+    simId: 'work_power_joule',
+    regimeLabel: 'Phương pháp Nâng cao Hiệu suất Máy cơ Đơn giản',
+    observationGoal: 'Giảm hệ số ma sát và tối ưu góc kéo α để hiệu suất H% tiến gần 100%.'
+  },
   'phys-12-b21:0': {
-    simId: 'nuclear_fission',
-    regimeLabel: 'Cấu tạo Hạt nhân Nguyên tử (Z Proton, N Neutron)',
-    observationGoal: 'Quan sát hạt nhân nặng gồm các nucleon tương tác hạt nhân tầm ngắn.'
+    simId: 'bohr_energy_levels',
+    regimeLabel: 'Thí nghiệm Tán xạ Rutherford & Cấu tạo Hạt nhân (Z Proton, N Neutron)',
+    observationGoal: 'Quan sát hạt nhân mang điện dương tập trung ở tâm nguyên tử với kích thước rất nhỏ.'
   },
   'phys-12-b21:1': {
     simId: 'binding_energy_curve',
@@ -1239,8 +1274,11 @@ function resolveByStepContent(
   if (has('quang duong', true) && (has('do dich chuyen', true) || has('cong van toc', true))) {
     return { simId: 'distance_displacement_rel', reason: 'So sánh quãng đường s và độ dịch chuyển d' };
   }
-  if (has('tong hop', true) && (has('luc', true) || has('vecto', true))) {
-    return { simId: 'vector_addition_2d', reason: 'Quy tắc hình bình hành tổng hợp vectơ' };
+  if (
+    (has('tong hop', true) || has('phan tich', true) || has('can bang', true)) &&
+    (has('luc', true) || has('vecto', true))
+  ) {
+    return { simId: 'vector_addition_2d', reason: 'Quy tắc hình bình hành tổng hợp & phân tích lực' };
   }
   if (
     has('cong co hoc', true) ||
@@ -1308,12 +1346,17 @@ function resolveByStepContent(
       reason: 'Trường hấp dẫn & quỹ đạo vệ tinh Kepler'
     };
   }
-  if (has('roi tu do', true) || (has('co nang', true) && !has('con lac', true))) {
+  if (has('roi tu do', true) || (has('co nang', true) && !has('con lac', true) && !has('dao dong', true))) {
     return { simId: 'free_fall_energy', reason: 'Chuyển hóa Động năng – Thế năng & Cơ năng' };
   }
 
   // 2. Oscillations & Waves
-  if (has('tat dan', true) || has('cuong buc', true) || (has('cong huong', true) && !has('dien', true) && !has('ong', true))) {
+  if (
+    has('tat dan', true) ||
+    has('cuong buc', true) ||
+    (has('dao dong', true) && has('co nang', true)) ||
+    (has('cong huong', true) && !has('dien', true) && !has('ong', true))
+  ) {
     return { simId: 'damped_resonance', reason: 'Dao động tắt dần, cưỡng bức & đỉnh cộng hưởng' };
   }
   if (has('con lac don', true) || (has('con lac', true) && has('foucault', true))) {

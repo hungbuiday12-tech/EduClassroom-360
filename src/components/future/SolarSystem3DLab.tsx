@@ -1,1511 +1,584 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {
-  Calendar,
   ChevronDown,
   ChevronUp,
-  Compass,
-  Crosshair,
-  Eye,
-  EyeOff,
-  HelpCircle,
-  Home,
-  Maximize2,
-  Minimize2,
   Orbit,
   Pause,
   Play,
-  Plus,
-  Minus,
   RotateCcw,
-  Tag,
-  Volume2,
-  VolumeX
+  Sparkles,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { useBackgroundTheme } from '../../context/BackgroundContext';
 import {
-  SOLAR_BODIES,
-  SolarBodyId,
-  SolarBodyMeta,
-  buildOrbitCurvePoints,
-  computeEarthRelativeTelemetry,
-  computePlanetState,
-  createPlanetSurfaceTexture,
-  createSaturnRingTexture,
-  createSolarGlowTexture
+  computePlanetPosition,
+  distanceAUAndLightMin,
+  SOLAR_PLANETS,
+  yearToJulianCenturies,
 } from './solar/solarEphemeris';
 
 interface SolarSystem3DLabProps {
   onEarnXP?: (xp: number) => void;
 }
 
-type SpeedPresetId = 'live' | 'day' | 'month' | 'year';
+const _targetVec = new THREE.Vector3();
+const _camGoal = new THREE.Vector3();
 
-const SPEED_PRESETS: { id: SpeedPresetId; daysPerSec: number; labelEn: string; labelVi: string }[] = [
-  { id: 'live', daysPerSec: 1 / 86400, labelEn: 'Live', labelVi: 'Thực' },
-  { id: 'day', daysPerSec: 1, labelEn: '1 day/s', labelVi: '1 ngày/s' },
-  { id: 'month', daysPerSec: 30, labelEn: '1 month/s', labelVi: '1 tháng/s' },
-  { id: 'year', daysPerSec: 365.25, labelEn: '1 year/s', labelVi: '1 năm/s' }
-];
-
-const EARTH_META = SOLAR_BODIES.find((b) => b.id === 'earth')!;
-
-const MIN_EPOCH_MS = Date.UTC(1800, 0, 1, 0, 0, 0);
-const MAX_EPOCH_MS = Date.UTC(2100, 11, 31, 23, 59, 0);
-const ASTEROID_COUNT = 950;
-const STAR_COUNT = 1800;
-
-const MONTHS_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-
-const SUN_VERTEX_SHADER = `
-  varying vec2 vUv;
-  varying vec3 vNormalView;
-  varying vec3 vViewPos;
-  void main() {
-    vUv = uv;
-    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-    vViewPos = -mvPos.xyz;
-    vNormalView = normalize(normalMatrix * normal);
-    gl_Position = projectionMatrix * mvPos;
+function createSaturnRingTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const grad = ctx.createLinearGradient(0, 0, 256, 0);
+    grad.addColorStop(0.0, 'rgba(253, 230, 138, 0.05)');
+    grad.addColorStop(0.22, 'rgba(253, 224, 140, 0.72)');
+    grad.addColorStop(0.45, 'rgba(217, 180, 110, 0.22)');
+    grad.addColorStop(0.55, 'rgba(245, 208, 132, 0.85)');
+    grad.addColorStop(0.84, 'rgba(180, 148, 92, 0.55)');
+    grad.addColorStop(1.0, 'rgba(253, 230, 138, 0.0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 32);
   }
-`;
-
-const SUN_FRAGMENT_SHADER = `
-  uniform float uTime;
-  uniform sampler2D uSurface;
-  varying vec2 vUv;
-  varying vec3 vNormalView;
-  varying vec3 vViewPos;
-
-  void main() {
-    vec2 uvA = vec2(fract(vUv.x + uTime * 0.012), vUv.y);
-    vec2 uvB = vec2(fract(vUv.x * 1.4 - uTime * 0.018), clamp(vUv.y + sin(uTime * 0.35 + vUv.x * 6.283) * 0.012, 0.02, 0.98));
-    vec3 texA = texture2D(uSurface, uvA).rgb;
-    vec3 texB = texture2D(uSurface, uvB).rgb;
-    vec3 plasma = mix(texA, texB, 0.42);
-
-    float ndotv = clamp(dot(normalize(vNormalView), normalize(vViewPos)), 0.0, 1.0);
-    float limb = pow(ndotv, 0.38);
-    float coronaRim = pow(1.0 - ndotv, 2.6);
-
-    float pulse = 0.94 + 0.08 * sin(uTime * 1.9 + vUv.y * 14.0);
-    vec3 coreColor = plasma * mix(0.68, 1.24, limb) * pulse;
-    vec3 rimGlow = vec3(1.0, 0.54, 0.14) * coronaRim * 0.85;
-    gl_FragColor = vec4(coreColor + rimGlow, 1.0);
-  }
-`;
-
-function formatEpochReadout(ms: number): { dateStr: string; timeStr: string } {
-  const d = new Date(ms);
-  const dd = String(d.getUTCDate()).padStart(2, '0');
-  const mon = MONTHS_EN[d.getUTCMonth()];
-  const yyyy = d.getUTCFullYear();
-  const hh = String(d.getUTCHours()).padStart(2, '0');
-  const mm = String(d.getUTCMinutes()).padStart(2, '0');
-  return {
-    dateStr: `${dd} ${mon} ${yyyy}`,
-    timeStr: `${hh}:${mm}`
-  };
-}
-
-function detectSoftwareWebGL(): boolean {
-  try {
-    const probe = document.createElement('canvas');
-    const gl = probe.getContext('webgl2') || probe.getContext('webgl');
-    if (!gl) return true;
-    const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    const rendererStr = String(
-      ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || ''
-    );
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
-    return /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(rendererStr);
-  } catch {
-    return false;
-  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) => {
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
   const isEn = language === 'en';
-  const { perfMode } = useBackgroundTheme();
+  const mountRef = useRef<HTMLDivElement>(null);
 
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const mountRef = useRef<HTMLDivElement | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const padNodesRef = useRef<{ oscA: OscillatorNode; oscB: OscillatorNode; gain: GainNode } | null>(null);
+  const [epochYear, setEpochYear] = useState<number>(2026);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [timeSpeed, setTimeSpeed] = useState<number>(1.5);
+  const [selectedId, setSelectedId] = useState<string>('earth');
+  const [showOrbits, setShowOrbits] = useState<boolean>(true);
+  const [showSaturnRings, setShowSaturnRings] = useState<boolean>(true);
+  const [dockCollapsed, setDockCollapsed] = useState<boolean>(false);
 
-  const [selectedId, setSelectedId] = useState<SolarBodyId | null>('sun');
-  const selectedIdRef = useRef<SolarBodyId | null>('sun');
+  const epochYearRef = useRef<number>(epochYear);
+  const isPlayingRef = useRef<boolean>(isPlaying);
+  const timeSpeedRef = useRef<number>(timeSpeed);
+  const selectedIdRef = useRef<string>(selectedId);
+  const showOrbitsRef = useRef<boolean>(showOrbits);
+  const showSaturnRingsRef = useRef<boolean>(showSaturnRings);
+  const xpAwardedRef = useRef<boolean>(false);
+
+  epochYearRef.current = epochYear;
+  isPlayingRef.current = isPlaying;
+  timeSpeedRef.current = timeSpeed;
   selectedIdRef.current = selectedId;
-
-  const [readMore, setReadMore] = useState(false);
-
-  const [playing, setPlaying] = useState(true);
-  const playingRef = useRef(true);
-  playingRef.current = playing;
-
-  const [speedPreset, setSpeedPreset] = useState<SpeedPresetId>('day');
-  const speedPresetRef = useRef<SpeedPresetId>('day');
-  speedPresetRef.current = speedPreset;
-
-  const [epochMs, setEpochMs] = useState<number>(() => Date.now());
-  const simTimeRef = useRef<number>(epochMs);
-
-  const [showOrbits, setShowOrbits] = useState(true);
-  const showOrbitsRef = useRef(true);
   showOrbitsRef.current = showOrbits;
+  showSaturnRingsRef.current = showSaturnRings;
 
-  const [showLabels, setShowLabels] = useState(true);
-  const showLabelsRef = useRef(true);
-  showLabelsRef.current = showLabels;
-
-  const [showControls, setShowControls] = useState(true);
-  const [showGuide, setShowGuide] = useState(false);
-  const [muted, setMuted] = useState(true);
-  const mutedRef = useRef(true);
-  mutedRef.current = muted;
-
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [unitMode, setUnitMode] = useState<'au' | 'km'>('au');
-  const [webglError, setWebglError] = useState(false);
-  const [contextLost, setContextLost] = useState(false);
-
-  const labelRefs = useRef<Partial<Record<SolarBodyId, HTMLButtonElement | null>>>({});
-  const flyToBodyRef = useRef<((id: SolarBodyId | null, snap?: boolean) => void) | null>(null);
-  const zoomStepRef = useRef<((factor: number) => void) | null>(null);
-
-  const stopAmbientPad = useCallback(() => {
-    const nodes = padNodesRef.current;
-    if (!nodes) return;
-    try {
-      nodes.oscA.stop();
-      nodes.oscB.stop();
-      nodes.oscA.disconnect();
-      nodes.oscB.disconnect();
-      nodes.gain.disconnect();
-    } catch {}
-    padNodesRef.current = null;
-  }, []);
-
-  const startAmbientPad = useCallback(() => {
-    try {
-      const AC =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AC) return;
-      if (!audioCtxRef.current) audioCtxRef.current = new AC();
-      const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') void ctx.resume();
-      if (padNodesRef.current) return;
-
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.018, ctx.currentTime);
-      const oscA = ctx.createOscillator();
-      const oscB = ctx.createOscillator();
-      oscA.type = 'sine';
-      oscB.type = 'triangle';
-      oscA.frequency.setValueAtTime(65.41, ctx.currentTime);
-      oscB.frequency.setValueAtTime(98.0, ctx.currentTime);
-      oscA.connect(gain);
-      oscB.connect(gain);
-      gain.connect(ctx.destination);
-      oscA.start();
-      oscB.start();
-      padNodesRef.current = { oscA, oscB, gain };
-    } catch {}
-  }, []);
+  const cameraTweenRef = useRef<{ active: boolean }>({ active: false });
 
   useEffect(() => {
-    if (muted) stopAmbientPad();
-    else startAmbientPad();
-  }, [muted, startAmbientPad, stopAmbientPad]);
-
-  useEffect(() => {
-    return () => {
-      stopAmbientPad();
-      try {
-        audioCtxRef.current?.close();
-      } catch {}
-    };
-  }, [stopAmbientPad]);
-
-  const playCelestialChime = useCallback((freq = 440) => {
-    if (mutedRef.current) return;
-    try {
-      const AC =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AC) return;
-      if (!audioCtxRef.current) audioCtxRef.current = new AC();
-      const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') void ctx.resume();
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
-      osc.frequency.exponentialRampToValueAtTime(freq * 1.15, now + 0.25);
-      gain.gain.setValueAtTime(0.055, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.36);
-    } catch {}
-  }, []);
-
-  const handleSelectWorld = useCallback(
-    (id: SolarBodyId | null) => {
-      setSelectedId(id);
-      setReadMore(false);
-      flyToBodyRef.current?.(id, false);
-      if (id) {
-        const idx = SOLAR_BODIES.findIndex((b) => b.id === id);
-        playCelestialChime(320 + idx * 45);
-        onEarnXP?.(10);
-      }
-    },
-    [onEarnXP, playCelestialChime]
-  );
-
-  const toggleFullscreen = useCallback(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    if (!document.fullscreenElement) {
-      el.requestFullscreen?.().catch(() => setIsFullscreen((f) => !f));
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen?.().catch(() => setIsFullscreen(false));
-      setIsFullscreen(false);
+    if (!xpAwardedRef.current && onEarnXP) {
+      xpAwardedRef.current = true;
+      onEarnXP(40);
     }
-  }, []);
+  }, [onEarnXP]);
 
-  useEffect(() => {
-    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener('fullscreenchange', onFs);
-    return () => document.removeEventListener('fullscreenchange', onFs);
-  }, []);
-
-  const selectedMeta = useMemo(
-    () => (selectedId ? SOLAR_BODIES.find((b) => b.id === selectedId) || null : null),
-    [selectedId]
-  );
-
-  const selectedTelemetry = useMemo(() => {
-    if (!selectedMeta) return null;
-    const simDate = new Date(epochMs);
-    const st = computePlanetState(selectedMeta, simDate);
-    const earthSt = computePlanetState(EARTH_META, simDate);
-    const rel = computeEarthRelativeTelemetry(st, earthSt);
+  const telemetry = useMemo(() => {
+    const T = yearToJulianCenturies(epochYear);
+    const earth = computePlanetPosition(
+      SOLAR_PLANETS.find((p) => p.id === 'earth')!,
+      T
+    );
+    const activeSpec =
+      SOLAR_PLANETS.find((p) => p.id === selectedId) || SOLAR_PLANETS[2];
+    const activePos = computePlanetPosition(activeSpec, T);
+    const rel = distanceAUAndLightMin(activePos, earth);
     return {
-      ...st,
-      distanceKmMillion: (st.distanceAU * 149.59787).toFixed(1),
-      earthDistAU: rel.earthDistAU,
-      earthDistKmMillion: (rel.earthDistAU * 149.59787).toFixed(1),
-      lightMinutes: rel.lightMinutes
+      spec: activeSpec,
+      heliocentricAU: activePos.heliocentricAU,
+      earthAU: selectedId === 'earth' ? 0 : rel.au,
+      lightMin: selectedId === 'earth' ? 0 : rel.lightMin,
+      speedKmS: activePos.orbitalSpeedKmS,
     };
-  }, [selectedMeta, epochMs]);
+  }, [epochYear, selectedId]);
 
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
 
-    const isSoftwareGl = detectSoftwareWebGL();
-    let renderer: THREE.WebGLRenderer;
-    try {
-      renderer = new THREE.WebGLRenderer({
-        antialias: !isSoftwareGl && perfMode !== 'smooth',
-        powerPreference: 'high-performance'
-      });
-    } catch {
-      setWebglError(true);
-      return;
-    }
+    const isSoftwareGl = (() => {
+      try {
+        const gl = document.createElement('canvas').getContext('webgl2');
+        if (!gl) return true;
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        const param = ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
+        const gpu = String(gl.getParameter(param));
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+        return /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(gpu);
+      } catch {
+        return true;
+      }
+    })();
 
-    const hostDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-    renderer.setPixelRatio(
-      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.85)
-    );
-    renderer.setSize(container.clientWidth || 960, container.clientHeight || 640);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
-
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
-
-    const onLost = (e: Event) => {
-      e.preventDefault();
-      setContextLost(true);
-    };
-    const onRestored = () => setContextLost(false);
-    renderer.domElement.addEventListener('webglcontextlost', onLost);
-    renderer.domElement.addEventListener('webglcontextrestored', onRestored);
+    const width = Math.max(1, container.clientWidth);
+    const height = Math.max(360, container.clientHeight);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x03050a);
+    scene.background = new THREE.Color(0x03050c);
+    scene.fog = new THREE.FogExp2(0x03050c, 0.0055);
+
+    const camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 420);
+    camera.position.set(16, 14, 24);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isSoftwareGl,
+      powerPreference: 'high-performance',
+    });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.12;
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setSize(width, height);
+    container.appendChild(renderer.domElement);
 
     const pmrem = new THREE.PMREMGenerator(renderer);
-    const roomEnv = new RoomEnvironment();
-    const envRT = pmrem.fromScene(roomEnv, 0.04);
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
     scene.environment = envRT.texture;
-    scene.environmentIntensity = 0.25;
-    roomEnv.dispose();
     pmrem.dispose();
-
-    const camera = new THREE.PerspectiveCamera(
-      44,
-      (container.clientWidth || 960) / (container.clientHeight || 640),
-      0.1,
-      1400
-    );
-    const overviewCamPos = new THREE.Vector3(0, 42, 68);
-    const sunHeroCamPos = new THREE.Vector3(0, 8.5, 22);
-    const overviewTarget = new THREE.Vector3(0, 0, 0);
-    camera.position.copy(selectedIdRef.current === 'sun' ? sunHeroCamPos : overviewCamPos);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = !isSoftwareGl;
-    controls.dampingFactor = 0.065;
-    controls.minDistance = 2.0;
-    controls.maxDistance = 320;
-    controls.target.copy(overviewTarget);
-    controls.update();
-
-    let camTransitionActive = false;
-    let followActive = selectedIdRef.current === 'sun';
-    const camGoalPos = camera.position.clone();
-    const camGoalTarget = overviewTarget.clone();
-    const followOffset = camera.position.clone();
-
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 2.4;
+    controls.maxDistance = 120;
     controls.addEventListener('start', () => {
-      camTransitionActive = false;
-      if (selectedIdRef.current && followActive) {
-        const entry = bodyEntries.find((b) => b.meta.id === selectedIdRef.current);
-        if (entry) {
-          followOffset.copy(camera.position).sub(entry.root.position);
+      cameraTweenRef.current.active = false;
+    });
+
+    // Lighting rig (Solar key + deep space cool fill)
+    const sunPoint = new THREE.PointLight(0xfff1d6, 3.2, 220, 0.35);
+    scene.add(sunPoint);
+    scene.add(new THREE.HemisphereLight(0x38bdf8, 0x090d1a, 0.38));
+
+    // GLSL animated plasma Sun shader
+    const sunUniforms = { uTime: { value: 0 } };
+    const sunMat = new THREE.ShaderMaterial({
+      uniforms: sunUniforms,
+      vertexShader: `
+        varying vec3 vNormal;
+        varying vec3 vPos;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          vPos = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
-      }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying vec3 vNormal;
+        varying vec3 vPos;
+        float hash(vec3 p) {
+          p = fract(p * 0.3183099 + 0.1);
+          p *= 17.0;
+          return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+        }
+        float noise(vec3 x) {
+          vec3 i = floor(x);
+          vec3 f = fract(x);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(
+            mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
+                mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+            mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+                mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+            f.z
+          );
+        }
+        void main() {
+          float n = noise(vPos * 1.8 + vec3(uTime * 0.45, uTime * 0.3, -uTime * 0.35));
+          float n2 = noise(vPos * 3.8 - vec3(uTime * 0.7));
+          float plasma = clamp(n * 0.65 + n2 * 0.35, 0.0, 1.0);
+          vec3 col = mix(vec3(0.95, 0.32, 0.04), vec3(1.0, 0.92, 0.55), plasma);
+          float rim = 1.0 - max(0.0, dot(vNormal, vec3(0.0, 0.0, 1.0)));
+          col += vec3(1.0, 0.65, 0.2) * pow(rim, 2.2) * 0.55;
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `,
     });
+    const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(1.7, 36, 28), sunMat);
+    scene.add(sunMesh);
 
-    // Deep Starfield + Ecliptic Milky Band
-    const starGeo = new THREE.BufferGeometry();
-    const starPos = new Float32Array(STAR_COUNT * 3);
-    const starCol = new Float32Array(STAR_COUNT * 3);
-    const tmpCol = new THREE.Color();
-    for (let i = 0; i < STAR_COUNT; i++) {
-      const r = 340 + Math.random() * 280;
-      const theta = Math.random() * Math.PI * 2;
-      const bandBias = i % 3 === 0 ? (Math.random() - 0.5) * 0.45 : Math.acos(2 * Math.random() - 1) - Math.PI / 2;
-      const phi = Math.PI / 2 - bandBias;
-      starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      starPos[i * 3 + 1] = r * Math.cos(phi);
-      starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    const corona = new THREE.Mesh(
+      new THREE.SphereGeometry(2.05, 32, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.18,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      })
+    );
+    scene.add(corona);
 
-      const tint = i % 5 === 0 ? 0xbae6fd : i % 7 === 0 ? 0xfef08a : 0xe2e8f0;
-      tmpCol.setHex(tint);
-      const bright = 0.55 + Math.random() * 0.45;
-      starCol[i * 3] = tmpCol.r * bright;
-      starCol[i * 3 + 1] = tmpCol.g * bright;
-      starCol[i * 3 + 2] = tmpCol.b * bright;
+    // Starfield
+    const starCount = 1400;
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const r = 95 + Math.random() * 140;
+      const th = Math.random() * Math.PI * 2;
+      const ph = Math.acos(2 * Math.random() - 1);
+      starPos[i * 3] = r * Math.sin(ph) * Math.cos(th);
+      starPos[i * 3 + 1] = r * Math.cos(ph);
+      starPos[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
     }
+    const starGeo = new THREE.BufferGeometry();
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-    starGeo.setAttribute('color', new THREE.BufferAttribute(starCol, 3));
-    const starMat = new THREE.PointsMaterial({
-      size: 1.25,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.9,
-      sizeAttenuation: true
-    });
-    const stars = new THREE.Points(starGeo, starMat);
+    const stars = new THREE.Points(
+      starGeo,
+      new THREE.PointsMaterial({ color: 0xe2e8f0, size: 0.28, transparent: true, opacity: 0.78 })
+    );
     scene.add(stars);
 
-    const ambientFill = new THREE.AmbientLight(0x1e293b, 0.72);
-    scene.add(ambientFill);
-
-    const sunLight = new THREE.PointLight(0xfff1d6, 3.6, 520, 0.25);
-    sunLight.position.set(0, 0, 0);
-    scene.add(sunLight);
-
-    const texturesToDispose: THREE.Texture[] = [];
-    const maxAniso = renderer.capabilities.getMaxAnisotropy();
-
-    interface BodyEntry {
-      meta: SolarBodyMeta;
-      root: THREE.Group;
-      spinMesh: THREE.Mesh;
-      hitMesh: THREE.Mesh;
-      orbitLine?: THREE.Line;
-      moonPivot?: THREE.Group;
-      labelAnchorOffset: number;
-    }
-
-    const bodyEntries: BodyEntry[] = [];
-    const pickables: THREE.Mesh[] = [];
-    const orbitsGroup = new THREE.Group();
-    scene.add(orbitsGroup);
-
-    const glowTex = createSolarGlowTexture();
     const saturnRingTex = createSaturnRingTexture();
-    texturesToDispose.push(glowTex, saturnRingTex);
+    const orbitGroup = new THREE.Group();
+    scene.add(orbitGroup);
 
-    let solarUniforms: { uTime: { value: number }; uSurface: { value: THREE.Texture } } | null = null;
-    let sunInnerHalo: THREE.Sprite | null = null;
-    let sunOuterHalo: THREE.Sprite | null = null;
+    const planetNodes = new Map<
+      string,
+      {
+        holder: THREE.Group;
+        body: THREE.Mesh;
+        ring?: THREE.Mesh;
+        moonHolder?: THREE.Group;
+      }
+    >();
 
-    const nowDate = new Date(simTimeRef.current);
+    for (const spec of SOLAR_PLANETS) {
+      const holder = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: spec.colorHex,
+        emissive: spec.emissiveHex,
+        emissiveIntensity: 0.22,
+        roughness: 0.62,
+        metalness: 0.12,
+      });
+      const body = new THREE.Mesh(new THREE.SphereGeometry(spec.radiusScene, 28, 22), bodyMat);
+      body.rotation.z = THREE.MathUtils.degToRad(spec.axialTiltDeg);
+      holder.add(body);
 
-    SOLAR_BODIES.forEach((meta) => {
-      const root = new THREE.Group();
-      scene.add(root);
-
-      const surfaceTex = createPlanetSurfaceTexture(meta.id);
-      surfaceTex.anisotropy = maxAniso;
-      texturesToDispose.push(surfaceTex);
-
-      const sphereGeo = new THREE.SphereGeometry(meta.radiusScene, isSoftwareGl ? 28 : 48, isSoftwareGl ? 20 : 36);
-
-      let spinMesh: THREE.Mesh;
-      if (meta.id === 'sun') {
-        solarUniforms = {
-          uTime: { value: 0 },
-          uSurface: { value: surfaceTex }
-        };
-        const sunMat = new THREE.ShaderMaterial({
-          uniforms: solarUniforms,
-          vertexShader: SUN_VERTEX_SHADER,
-          fragmentShader: SUN_FRAGMENT_SHADER
-        });
-        spinMesh = new THREE.Mesh(sphereGeo, sunMat);
-        root.add(spinMesh);
-
-        const haloMat = new THREE.SpriteMaterial({
-          map: glowTex,
-          color: 0xffae38,
+      let ring: THREE.Mesh | undefined;
+      if (spec.hasRings) {
+        const ringGeo = new THREE.RingGeometry(spec.radiusScene * 1.35, spec.radiusScene * 2.35, 48);
+        ringGeo.rotateX(-Math.PI / 2);
+        const ringMat = new THREE.MeshStandardMaterial({
+          map: saturnRingTex,
           transparent: true,
-          opacity: 0.78,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false
+          side: THREE.DoubleSide,
+          roughness: 0.5,
+          depthWrite: false,
         });
-        sunInnerHalo = new THREE.Sprite(haloMat);
-        sunInnerHalo.scale.set(meta.radiusScene * 4.4, meta.radiusScene * 4.4, 1);
-        root.add(sunInnerHalo);
+        ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.z = THREE.MathUtils.degToRad(spec.axialTiltDeg);
+        holder.add(ring);
+      }
 
-        const outerHaloMat = new THREE.SpriteMaterial({
-          map: glowTex,
-          color: 0xf97316,
+      let moonHolder: THREE.Group | undefined;
+      if (spec.hasMoon) {
+        moonHolder = new THREE.Group();
+        const moon = new THREE.Mesh(
+          new THREE.SphereGeometry(0.12, 14, 12),
+          new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 })
+        );
+        moon.position.x = spec.radiusScene + 0.42;
+        moonHolder.add(moon);
+        holder.add(moonHolder);
+      }
+
+      scene.add(holder);
+      planetNodes.set(spec.id, { holder, body, ring, moonHolder });
+
+      // Elliptical Kepler orbit path sampled around epoch 2000
+      const pts: THREE.Vector3[] = [];
+      const periodYears = spec.orbitalPeriodDays / 365.25;
+      const segs = 128;
+      for (let s = 0; s <= segs; s++) {
+        const yr = 2000 + (s / segs) * periodYears;
+        const p = computePlanetPosition(spec, yearToJulianCenturies(yr));
+        pts.push(new THREE.Vector3(p.sceneX, p.sceneY, p.sceneZ));
+      }
+      const orbitLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({
+          color: spec.colorHex,
           transparent: true,
           opacity: 0.34,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false
-        });
-        sunOuterHalo = new THREE.Sprite(outerHaloMat);
-        sunOuterHalo.scale.set(meta.radiusScene * 7.4, meta.radiusScene * 7.4, 1);
-        root.add(sunOuterHalo);
-      } else {
-        const tiltGroup = new THREE.Group();
-        tiltGroup.rotation.z = THREE.MathUtils.degToRad(meta.axialTiltDeg);
-        root.add(tiltGroup);
-
-        const planetMat = new THREE.MeshStandardMaterial({
-          map: surfaceTex,
-          roughness: meta.id === 'earth' ? 0.45 : meta.id === 'jupiter' || meta.id === 'saturn' ? 0.68 : 0.82,
-          metalness: meta.id === 'earth' ? 0.14 : 0.04,
-          emissive: new THREE.Color(meta.colorHex),
-          emissiveIntensity: 0.08
-        });
-        spinMesh = new THREE.Mesh(sphereGeo, planetMat);
-        tiltGroup.add(spinMesh);
-
-        if (meta.id === 'earth' || meta.id === 'venus' || meta.id === 'neptune') {
-          const atmoColor = meta.id === 'earth' ? 0x38bdf8 : meta.id === 'venus' ? 0xfde68a : 0x60a5fa;
-          const atmoMesh = new THREE.Mesh(
-            new THREE.SphereGeometry(meta.radiusScene * 1.06, 24, 18),
-            new THREE.MeshBasicMaterial({
-              color: atmoColor,
-              transparent: true,
-              opacity: 0.14,
-              side: THREE.BackSide,
-              blending: THREE.AdditiveBlending,
-              depthWrite: false
-            })
-          );
-          tiltGroup.add(atmoMesh);
-        }
-
-        if (meta.id === 'saturn') {
-          const innerR = meta.radiusScene * 1.32;
-          const outerR = meta.radiusScene * 2.48;
-          const ringGeo = new THREE.RingGeometry(innerR, outerR, 72, 2);
-          const posAttr = ringGeo.attributes.position;
-          const uvAttr = ringGeo.attributes.uv;
-          const v3 = new THREE.Vector3();
-          for (let i = 0; i < posAttr.count; i++) {
-            v3.fromBufferAttribute(posAttr, i);
-            const r = v3.length();
-            const u = THREE.MathUtils.clamp((r - innerR) / (outerR - innerR), 0, 1);
-            uvAttr.setXY(i, u, 0.5);
-          }
-          const ringMesh = new THREE.Mesh(
-            ringGeo,
-            new THREE.MeshStandardMaterial({
-              map: saturnRingTex,
-              transparent: true,
-              side: THREE.DoubleSide,
-              roughness: 0.65,
-              metalness: 0.05,
-              depthWrite: false
-            })
-          );
-          ringMesh.rotation.x = Math.PI / 2;
-          tiltGroup.add(ringMesh);
-        }
-
-        if (meta.id === 'uranus') {
-          const uRingGeo = new THREE.RingGeometry(meta.radiusScene * 1.48, meta.radiusScene * 1.66, 48);
-          const uRingMesh = new THREE.Mesh(
-            uRingGeo,
-            new THREE.MeshBasicMaterial({
-              color: 0xbae6fd,
-              transparent: true,
-              opacity: 0.3,
-              side: THREE.DoubleSide,
-              depthWrite: false
-            })
-          );
-          uRingMesh.rotation.x = Math.PI / 2;
-          tiltGroup.add(uRingMesh);
-        }
-
-        let moonPivot: THREE.Group | undefined;
-        if (meta.id === 'earth') {
-          moonPivot = new THREE.Group();
-          const moon = new THREE.Mesh(
-            new THREE.SphereGeometry(0.18, 16, 16),
-            new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.9 })
-          );
-          moon.position.set(1.55, 0.12, 0);
-          moonPivot.add(moon);
-          root.add(moonPivot);
-        } else if (meta.id === 'jupiter') {
-          moonPivot = new THREE.Group();
-          [
-            { r: 2.55, sz: 0.11, col: 0xfef08a, ang: 0.3 },
-            { r: 3.1, sz: 0.1, col: 0xe2e8f0, ang: 1.9 },
-            { r: 3.7, sz: 0.14, col: 0xcbd5e1, ang: 3.8 }
-          ].forEach((m) => {
-            const jMoon = new THREE.Mesh(
-              new THREE.SphereGeometry(m.sz, 12, 12),
-              new THREE.MeshStandardMaterial({ color: m.col, roughness: 0.8 })
-            );
-            jMoon.position.set(Math.cos(m.ang) * m.r, 0, Math.sin(m.ang) * m.r);
-            moonPivot!.add(jMoon);
-          });
-          root.add(moonPivot);
-        }
-
-        const pts = buildOrbitCurvePoints(meta, nowDate, 160);
-        const orbitGeo = new THREE.BufferGeometry().setFromPoints(pts);
-        const orbitLine = new THREE.Line(
-          orbitGeo,
-          new THREE.LineBasicMaterial({
-            color: new THREE.Color(meta.orbitColorHex),
-            transparent: true,
-            opacity: 0.34
-          })
-        );
-        orbitsGroup.add(orbitLine);
-
-        bodyEntries.push({
-          meta,
-          root,
-          spinMesh,
-          hitMesh: spinMesh,
-          orbitLine,
-          moonPivot,
-          labelAnchorOffset: meta.radiusScene + 0.55
-        });
-      }
-
-      const hitRadius = Math.max(meta.radiusScene * 1.35, 1.4);
-      const hitMesh = new THREE.Mesh(
-        new THREE.SphereGeometry(hitRadius, 12, 12),
-        new THREE.MeshBasicMaterial({ visible: false })
+        })
       );
-      hitMesh.userData = { bodyId: meta.id };
-      root.add(hitMesh);
-      pickables.push(hitMesh);
-
-      if (meta.id === 'sun') {
-        bodyEntries.push({
-          meta,
-          root,
-          spinMesh,
-          hitMesh,
-          labelAnchorOffset: meta.radiusScene + 0.7
-        });
-      } else {
-        bodyEntries[bodyEntries.length - 1].hitMesh = hitMesh;
-      }
-    });
-
-    const beltGroup = new THREE.Group();
-    const astGeo = new THREE.DodecahedronGeometry(0.11, 0);
-    const astMat = new THREE.MeshStandardMaterial({
-      color: 0x94a3b8,
-      roughness: 0.9,
-      metalness: 0.15
-    });
-    const astMesh = new THREE.InstancedMesh(astGeo, astMat, ASTEROID_COUNT);
-    const m4 = new THREE.Matrix4();
-    const pos = new THREE.Vector3();
-    const quat = new THREE.Quaternion();
-    const scl = new THREE.Vector3();
-    const euler = new THREE.Euler();
-    for (let i = 0; i < ASTEROID_COUNT; i++) {
-      const au = 2.2 + ((i * 37) % 100) / 100 * 1.1;
-      const sceneR = 9.2 + Math.pow(au, 0.56) * 14.5;
-      const theta = ((i * 137.5) % 360) * (Math.PI / 180);
-      const yOff = (((i * 29) % 100) / 100 - 0.5) * 1.4;
-      pos.set(Math.cos(theta) * sceneR, yOff, Math.sin(theta) * sceneR);
-      euler.set(i * 0.4, i * 0.7, i * 0.2);
-      quat.setFromEuler(euler);
-      const s = 0.5 + ((i * 13) % 10) * 0.11;
-      scl.set(s, s * 0.78, s * 0.9);
-      m4.compose(pos, quat, scl);
-      astMesh.setMatrixAt(i, m4);
+      orbitGroup.add(orbitLine);
     }
-    astMesh.instanceMatrix.needsUpdate = true;
-    beltGroup.add(astMesh);
-    orbitsGroup.add(beltGroup);
 
-    flyToBodyRef.current = (id: SolarBodyId | null, snap = false) => {
-      if (!id) {
-        followActive = false;
-        camGoalTarget.copy(overviewTarget);
-        camGoalPos.copy(overviewCamPos);
-        camTransitionActive = true;
-        if (snap) {
-          controls.target.copy(camGoalTarget);
-          camera.position.copy(camGoalPos);
-          controls.update();
-          camTransitionActive = false;
-        }
-        return;
-      }
+    if (!isSoftwareGl) {
+      renderer.compile(scene, camera);
+    }
 
-      const entry = bodyEntries.find((b) => b.meta.id === id);
-      if (!entry) return;
-      followActive = true;
-      const r = entry.meta.radiusScene;
-      if (id === 'sun') {
-        followOffset.copy(sunHeroCamPos);
-        camGoalTarget.set(0, 0, 0);
-        camGoalPos.copy(sunHeroCamPos);
-        camTransitionActive = true;
-        return;
-      }
-      const viewDist = id === 'saturn' ? r * 5.2 : Math.max(4.4, r * 5.0);
-      const dir = entry.root.position.lengthSq() > 1
-        ? entry.root.position.clone().normalize()
-        : new THREE.Vector3(0.4, 0, 1).normalize();
-      const camOffset = new THREE.Vector3(-dir.z * 0.65 + dir.x * 0.6, 0.45, dir.x * 0.65 + dir.z * 0.6)
-        .normalize()
-        .multiplyScalar(viewDist);
-      followOffset.copy(camOffset);
-      camGoalTarget.copy(entry.root.position);
-      camGoalPos.copy(entry.root.position).add(camOffset);
-      camTransitionActive = true;
-    };
-
-    zoomStepRef.current = (factor: number) => {
-      const offset = camera.position.clone().sub(controls.target);
-      const nextLen = THREE.MathUtils.clamp(offset.length() * factor, controls.minDistance, controls.maxDistance);
-      offset.setLength(nextLen);
-      camera.position.copy(controls.target).add(offset);
-      if (followActive) followOffset.copy(offset);
-      controls.update();
-    };
-
-    const raycaster = new THREE.Raycaster();
-    const ndc = new THREE.Vector2();
-    let downX = 0;
-    let downY = 0;
-
-    const onPointerDown = (e: PointerEvent) => {
-      downX = e.clientX;
-      downY = e.clientY;
-    };
-
-    const onPointerUp = (e: PointerEvent) => {
-      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
-      const rect = renderer.domElement.getBoundingClientRect();
-      ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(ndc, camera);
-      const hits = raycaster.intersectObjects(pickables, false);
-      if (hits.length > 0) {
-        const bodyId = hits[0].object.userData?.bodyId as SolarBodyId | undefined;
-        if (bodyId) handleSelectWorld(bodyId);
-      }
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(ndc, camera);
-      const hits = raycaster.intersectObjects(pickables, false);
-      renderer.domElement.style.cursor = hits.length > 0 ? 'pointer' : 'grab';
-    };
-
-    renderer.domElement.addEventListener('pointerdown', onPointerDown);
-    renderer.domElement.addEventListener('pointerup', onPointerUp);
-    renderer.domElement.addEventListener('pointermove', onPointerMove);
-
-    const ro = new ResizeObserver(() => {
-      const w = container.clientWidth || 960;
-      const h = container.clientHeight || 640;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    });
-    ro.observe(container);
-
-    let rafId = 0;
-    let alive = true;
     const clock = new THREE.Clock();
-    const projVec = new THREE.Vector3();
-    const deltaVec = new THREE.Vector3();
-    let epochSyncAcc = 0;
-    let shaderElapsed = 0;
+    let frameId = 0;
+    let disposed = false;
 
     function afterDraw(cb: () => void) {
       const gl = renderer.getContext() as WebGL2RenderingContext;
-      const sync = gl.fenceSync ? gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0) : null;
-      if (!sync) {
-        rafId = window.setTimeout(cb, 80);
-        return;
-      }
+      const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
       gl.flush();
       const poll = () => {
-        if (!alive) return;
-        const st = gl.getSyncParameter(sync, gl.SYNC_STATUS);
-        if (st === gl.UNSIGNALED) rafId = window.setTimeout(poll, 5);
-        else {
-          gl.deleteSync(sync);
-          rafId = window.setTimeout(cb, 80);
+        if (disposed) return;
+        const state = sync && gl.getSyncParameter(sync, gl.SYNC_STATUS);
+        if (state === gl.UNSIGNALED) {
+          frameId = window.setTimeout(poll, 5);
+        } else {
+          if (sync) gl.deleteSync(sync);
+          frameId = window.setTimeout(cb, 80);
         }
       };
-      rafId = window.setTimeout(poll, 5);
+      frameId = window.setTimeout(poll, 5);
     }
 
     const tick = () => {
-      if (!alive) return;
-      const dt = Math.min(0.05, clock.getDelta());
-      shaderElapsed += dt;
+      if (disposed) return;
+      const dt = Math.min(clock.getDelta(), 0.05);
+      sunUniforms.uTime.value += dt;
 
-      if (solarUniforms) {
-        solarUniforms.uTime.value = shaderElapsed;
-      }
-      if (sunInnerHalo) {
-        const s = 4.1 * (4.35 + Math.sin(shaderElapsed * 2.2) * 0.18);
-        sunInnerHalo.scale.set(s, s, 1);
-      }
-      if (sunOuterHalo) {
-        const s = 4.1 * (7.3 + Math.cos(shaderElapsed * 1.5) * 0.25);
-        sunOuterHalo.scale.set(s, s, 1);
+      if (isPlayingRef.current) {
+        let nextY = epochYearRef.current + dt * timeSpeedRef.current;
+        if (nextY > 2100) nextY = 1800;
+        if (nextY < 1800) nextY = 2100;
+        epochYearRef.current = nextY;
+        setEpochYear(Number(nextY.toFixed(2)));
       }
 
-      if (playingRef.current) {
-        const preset = SPEED_PRESETS.find((s) => s.id === speedPresetRef.current) || SPEED_PRESETS[1];
-        if (preset.id === 'live') {
-          simTimeRef.current = Date.now();
-        } else {
-          simTimeRef.current = Math.min(
-            MAX_EPOCH_MS,
-            Math.max(MIN_EPOCH_MS, simTimeRef.current + preset.daysPerSec * 86400000 * dt)
-          );
-          if (simTimeRef.current >= MAX_EPOCH_MS) simTimeRef.current = MIN_EPOCH_MS;
-        }
+      orbitGroup.visible = showOrbitsRef.current;
+      const T = yearToJulianCenturies(epochYearRef.current);
+
+      for (const spec of SOLAR_PLANETS) {
+        const node = planetNodes.get(spec.id);
+        if (!node) continue;
+        const pos = computePlanetPosition(spec, T);
+        node.holder.position.set(pos.sceneX, pos.sceneY, pos.sceneZ);
+        node.body.rotation.y += dt * 0.8;
+        if (node.ring) node.ring.visible = showSaturnRingsRef.current;
+        if (node.moonHolder) node.moonHolder.rotation.y += dt * 2.2;
       }
 
-      epochSyncAcc += dt;
-      if (epochSyncAcc >= 0.1) {
-        epochSyncAcc = 0;
-        setEpochMs(simTimeRef.current);
-      }
-
-      const simDate = new Date(simTimeRef.current);
-      orbitsGroup.visible = showOrbitsRef.current;
-      beltGroup.rotation.y += dt * 0.015;
-
-      bodyEntries.forEach((entry) => {
-        const state = computePlanetState(entry.meta, simDate);
-        entry.root.position.copy(state.scenePos);
-        entry.spinMesh.rotation.y += dt * entry.meta.rotSpeed;
-        if (entry.moonPivot) {
-          entry.moonPivot.rotation.y += dt * 1.15;
-        }
-        if (entry.orbitLine) {
-          const mat = entry.orbitLine.material as THREE.LineBasicMaterial;
-          mat.opacity = selectedIdRef.current === entry.meta.id ? 0.88 : 0.34;
-        }
-      });
-
-      if (selectedIdRef.current && followActive) {
-        const entry = bodyEntries.find((b) => b.meta.id === selectedIdRef.current);
-        if (entry) {
-          if (camTransitionActive) {
-            camGoalTarget.copy(entry.root.position);
-            camGoalPos.copy(entry.root.position).add(followOffset);
-            controls.target.x = THREE.MathUtils.damp(controls.target.x, camGoalTarget.x, 5.5, dt);
-            controls.target.y = THREE.MathUtils.damp(controls.target.y, camGoalTarget.y, 5.5, dt);
-            controls.target.z = THREE.MathUtils.damp(controls.target.z, camGoalTarget.z, 5.5, dt);
-            camera.position.x = THREE.MathUtils.damp(camera.position.x, camGoalPos.x, 5.0, dt);
-            camera.position.y = THREE.MathUtils.damp(camera.position.y, camGoalPos.y, 5.0, dt);
-            camera.position.z = THREE.MathUtils.damp(camera.position.z, camGoalPos.z, 5.0, dt);
-            if (camera.position.distanceTo(camGoalPos) < 0.08) camTransitionActive = false;
-          } else {
-            deltaVec.copy(entry.root.position).sub(controls.target);
-            controls.target.add(deltaVec);
-            camera.position.add(deltaVec);
+      if (cameraTweenRef.current.active) {
+        const activeNode = planetNodes.get(selectedIdRef.current);
+        if (activeNode) {
+          _targetVec.copy(activeNode.holder.position);
+          controls.target.lerp(_targetVec, 1 - Math.exp(-6 * dt));
+          const pSpec = SOLAR_PLANETS.find((p) => p.id === selectedIdRef.current);
+          const dist = (pSpec?.radiusScene ?? 0.5) * 4.5 + 3.2;
+          _camGoal.set(_targetVec.x + dist, _targetVec.y + dist * 0.55, _targetVec.z + dist);
+          camera.position.lerp(_camGoal, 1 - Math.exp(-5 * dt));
+          if (camera.position.distanceTo(_camGoal) < 0.08) {
+            cameraTweenRef.current.active = false;
           }
         }
-      } else if (camTransitionActive) {
-        controls.target.x = THREE.MathUtils.damp(controls.target.x, camGoalTarget.x, 5.0, dt);
-        controls.target.y = THREE.MathUtils.damp(controls.target.y, camGoalTarget.y, 5.0, dt);
-        controls.target.z = THREE.MathUtils.damp(controls.target.z, camGoalTarget.z, 5.0, dt);
-        camera.position.x = THREE.MathUtils.damp(camera.position.x, camGoalPos.x, 4.8, dt);
-        camera.position.y = THREE.MathUtils.damp(camera.position.y, camGoalPos.y, 4.8, dt);
-        camera.position.z = THREE.MathUtils.damp(camera.position.z, camGoalPos.z, 4.8, dt);
-        if (camera.position.distanceTo(camGoalPos) < 0.15) camTransitionActive = false;
       }
 
       controls.update();
       renderer.render(scene, camera);
-
-      const cw = container.clientWidth || 960;
-      const ch = container.clientHeight || 640;
-      const labelsEnabled = showLabelsRef.current;
-
-      bodyEntries.forEach((entry) => {
-        const el = labelRefs.current[entry.meta.id];
-        if (!el) return;
-        if (!labelsEnabled) {
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
-          return;
-        }
-        projVec.copy(entry.root.position);
-        projVec.y += entry.labelAnchorOffset;
-        projVec.project(camera);
-        const visible = projVec.z > -1 && projVec.z < 1;
-        if (!visible) {
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
-          return;
-        }
-        const sx = (projVec.x * 0.5 + 0.5) * cw;
-        const sy = (-projVec.y * 0.5 + 0.5) * ch;
-        el.style.opacity = selectedIdRef.current === entry.meta.id ? '1' : '0.86';
-        el.style.pointerEvents = 'auto';
-        el.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0) translate(-50%, -100%)`;
-      });
-
       if (isSoftwareGl) afterDraw(tick);
-      else rafId = requestAnimationFrame(tick);
+      else frameId = requestAnimationFrame(tick);
     };
 
-    if (isSoftwareGl) afterDraw(tick);
-    else rafId = requestAnimationFrame(tick);
+    tick();
+
+    const onResize = () => {
+      if (!mountRef.current) return;
+      const w = Math.max(1, mountRef.current.clientWidth);
+      const h = Math.max(360, mountRef.current.clientHeight);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener('resize', onResize);
 
     return () => {
-      alive = false;
-      cancelAnimationFrame(rafId);
-      clearTimeout(rafId);
-      ro.disconnect();
+      disposed = true;
+      cancelAnimationFrame(frameId);
+      clearTimeout(frameId);
+      window.removeEventListener('resize', onResize);
       controls.dispose();
-      renderer.domElement.removeEventListener('pointerdown', onPointerDown);
-      renderer.domElement.removeEventListener('pointerup', onPointerUp);
-      renderer.domElement.removeEventListener('pointermove', onPointerMove);
-      renderer.domElement.removeEventListener('webglcontextlost', onLost);
-      renderer.domElement.removeEventListener('webglcontextrestored', onRestored);
+      saturnRingTex.dispose();
+      envRT.dispose();
       scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh || (obj as THREE.Line).isLine || (obj as THREE.Sprite).isSprite) {
+        if ((obj as THREE.Mesh).isMesh || (obj as THREE.Line).isLine || (obj as THREE.Points).isPoints) {
           const m = obj as THREE.Mesh;
           m.geometry?.dispose();
-          if (Array.isArray(m.material)) m.material.forEach((mat) => mat.dispose());
+          if (Array.isArray(m.material)) m.material.forEach((mm) => mm.dispose());
           else m.material?.dispose();
         }
       });
-      texturesToDispose.forEach((t) => t.dispose());
-      starGeo.dispose();
-      starMat.dispose();
-      envRT.dispose();
       renderer.dispose();
+      if (renderer.domElement.parentNode === container) {
+        container.removeChild(renderer.domElement);
+      }
     };
-  }, [handleSelectWorld, perfMode]);
-
-  const { dateStr, timeStr } = formatEpochReadout(epochMs);
-  const progressPct = ((epochMs - MIN_EPOCH_MS) / (MAX_EPOCH_MS - MIN_EPOCH_MS)) * 100;
-
-  if (webglError) {
-    return (
-      <div className="p-8 rounded-xl border border-rose-500/40 bg-slate-950 text-center text-rose-300 text-sm">
-        {isEn ? 'WebGL 3D context could not be initialized.' : 'Không thể khởi tạo ngữ cảnh WebGL 3D.'}
-      </div>
-    );
-  }
+  }, []);
 
   return (
-    <div
-      ref={rootRef}
-      className={`flex flex-col lg:block lg:relative w-full overflow-hidden rounded-xl border border-amber-500/25 bg-[#03050a] text-white shadow-2xl select-none ${
-        isFullscreen ? 'fixed inset-0 z-[140] h-[100dvh] rounded-none border-0 overflow-y-auto lg:overflow-hidden' : 'lg:h-[710px]'
-      }`}
-    >
-      {/* Top Brand Header on Mobile/iPad (Hidden on Desktop where overlay is floating) */}
-      <div className="lg:hidden flex items-center justify-between gap-2 px-3 py-2.5 bg-slate-950/95 border-b border-slate-800/80 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span
-            className="w-5 h-5 rounded-full shrink-0"
-            style={{
-              background: 'radial-gradient(circle at 35% 35%, #fff6c2, #ffb020 60%, #ea580c)'
-            }}
-          />
-          <div className="min-w-0">
-            <div className="text-[11px] font-mono font-extrabold tracking-[0.22em] text-slate-100 leading-none">
-              SOLAR
+    <div className="relative w-full h-[520px] sm:h-[660px] rounded-xl overflow-hidden border border-slate-800 bg-[#03050c] text-slate-100 select-none">
+      {/* Isolated WebGL mount */}
+      <div ref={mountRef} className="w-full h-full" />
+
+      {/* Minimal Top-Left Ephemeris Header & Telemetry */}
+      <div className="pointer-events-none absolute top-3 left-3 z-10 flex flex-col gap-1.5 max-w-[340px]">
+        <div className="pointer-events-auto rounded-lg bg-slate-950/85 border border-slate-700/70 px-3 py-2">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+            <Orbit className="w-4 h-4 shrink-0" />
+            <span>
+              {isEn ? 'Kepler J2000 Solar Ephemeris' : 'Hệ Mặt Trời Kepler J2000'} ·{' '}
+              <span className="font-mono tabular-nums text-white">{epochYear.toFixed(1)}</span>
+            </span>
+          </div>
+          <div className="mt-1.5 grid grid-cols-3 gap-2 text-[11px] font-mono tabular-nums text-slate-300">
+            <div>
+              <div className="text-[10px] text-slate-400">{isEn ? 'Sun Dist' : 'Cách Mặt Trời'}</div>
+              <div className="font-bold text-sky-300">{telemetry.heliocentricAU.toFixed(3)} AU</div>
             </div>
-            <div className="text-[9px] font-mono tracking-[0.14em] text-slate-400 uppercase truncate mt-0.5">
-              {isEn ? 'EXPLORE THE SOLAR SYSTEM' : 'KHÁM PHÁ HỆ MẶT TRỜI'}
+            <div>
+              <div className="text-[10px] text-slate-400">{isEn ? 'Light Time' : 'Ánh sáng'}</div>
+              <div className="font-bold text-amber-300">{telemetry.lightMin.toFixed(1)} min</div>
             </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0">
-          <div className="flex items-center rounded border border-slate-700/80 bg-slate-900 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setLanguage('vi')}
-              className={`min-h-[36px] px-2 text-[10px] font-mono font-bold cursor-pointer ${
-                !isEn ? 'bg-amber-500 text-slate-950' : 'text-slate-300'
-              }`}
-            >
-              VI
-            </button>
-            <button
-              type="button"
-              onClick={() => setLanguage('en')}
-              className={`min-h-[36px] px-2 text-[10px] font-mono font-bold cursor-pointer ${
-                isEn ? 'bg-amber-500 text-slate-950' : 'text-slate-300'
-              }`}
-            >
-              EN
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={() => setUnitMode((u) => (u === 'au' ? 'km' : 'au'))}
-            className="min-h-[36px] px-2 rounded border border-slate-700/80 bg-slate-900 text-[10px] font-mono font-bold text-slate-200 cursor-pointer"
-          >
-            {unitMode === 'au' ? 'AU' : 'M km'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMuted((m) => !m)}
-            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded border border-slate-700/80 bg-slate-900 text-slate-200 cursor-pointer"
-            title={isEn ? 'Sound' : 'Âm thanh'}
-          >
-            {muted ? <VolumeX className="w-3.5 h-3.5 text-slate-400" /> : <Volume2 className="w-3.5 h-3.5 text-amber-300" />}
-          </button>
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded border border-slate-700/80 bg-slate-900 text-slate-200 cursor-pointer"
-            title={isEn ? 'Fullscreen' : 'Toàn màn hình'}
-          >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Unobstructed 3D Solar WebGL Viewport */}
-      <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[260px] lg:absolute lg:inset-0 lg:h-full' : 'h-[300px] sm:h-[400px] lg:absolute lg:inset-0 lg:h-full'}`}>
-        <div ref={mountRef} className="w-full h-full" />
-
-        {contextLost && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/90 text-amber-300 text-sm font-mono">
-            {isEn ? 'Restoring Solar Observatory WebGL...' : 'Đang khôi phục Đài Quan Sát Hệ Mặt Trời...'}
-          </div>
-        )}
-
-        {/* Projected Floating 3D World Name Labels */}
-        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
-          {SOLAR_BODIES.map((body) => {
-            const isSelected = selectedId === body.id;
-            return (
-              <button
-                key={body.id}
-                ref={(el) => {
-                  labelRefs.current[body.id] = el;
-                }}
-                type="button"
-                onClick={() => handleSelectWorld(body.id)}
-                style={{ opacity: 0 }}
-                className={`absolute top-0 left-0 px-1.5 py-0.5 rounded text-[10px] font-mono tracking-[0.16em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
-                  isSelected
-                    ? 'bg-amber-400/20 text-amber-200 border border-amber-400/60 font-extrabold'
-                    : 'text-slate-200/80 hover:text-white font-semibold'
-                }`}
-              >
-                {isEn ? body.nameEn : body.nameVi}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Right-Side Vertical Camera & Layer Rail (Compact on mobile, clean floating on desktop) */}
-        <div className="absolute right-2.5 sm:right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1.5">
-          <div className="flex flex-col rounded-lg bg-slate-950/90 border border-slate-800 overflow-hidden shadow-xl">
-            <button
-              type="button"
-              onClick={() => zoomStepRef.current?.(0.75)}
-              className="p-2 sm:p-2.5 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer border-b border-slate-800"
-              title={isEn ? 'Zoom In' : 'Phóng to'}
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => zoomStepRef.current?.(1.33)}
-              className="p-2 sm:p-2.5 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer"
-              title={isEn ? 'Zoom Out' : 'Thu nhỏ'}
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => handleSelectWorld(null)}
-            className="p-2 sm:p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 hover:border-amber-400/60 hover:text-white cursor-pointer shadow-xl"
-            title={isEn ? 'Home Overview' : 'Toàn cảnh Hệ Mặt Trời'}
-          >
-            <Home className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => flyToBodyRef.current?.(selectedId || 'sun', false)}
-            className="p-2 sm:p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 text-slate-200 hover:border-amber-400/60 hover:text-white cursor-pointer shadow-xl"
-            title={isEn ? 'Recenter Selected World' : 'Đưa mục tiêu về tâm'}
-          >
-            <Crosshair className="w-4 h-4" />
-          </button>
-
-          <div className="flex flex-col rounded-lg bg-slate-950/90 border border-slate-800 overflow-hidden shadow-xl">
-            <button
-              type="button"
-              onClick={() => setShowOrbits((v) => !v)}
-              className={`p-2 sm:p-2.5 cursor-pointer border-b border-slate-800 ${
-                showOrbits ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 hover:text-white'
-              }`}
-              title={isEn ? 'Toggle Orbit Rings' : 'Bật/Tắt Đường Quỹ Đạo'}
-            >
-              <Orbit className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowLabels((v) => !v)}
-              className={`p-2 sm:p-2.5 cursor-pointer ${
-                showLabels ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 hover:text-white'
-              }`}
-              title={isEn ? 'Toggle World Labels' : 'Bật/Tắt Tên Hành Tinh'}
-            >
-              <Tag className="w-4 h-4" />
-            </button>
+            <div>
+              <div className="text-[10px] text-slate-400">{isEn ? 'Velocity' : 'Vận tốc'}</div>
+              <div className="font-bold text-emerald-300">{telemetry.speedKmS.toFixed(1)} km/s</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Desktop Top-Right Utility Controls (VI | EN, AU/M km, Sound, Fullscreen, ?) */}
-      <div className="hidden lg:flex absolute top-4 right-4 z-20 items-center gap-1.5">
-        <div className="flex items-center rounded-lg bg-slate-950/92 border border-slate-700/80 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setLanguage('vi')}
-            className={`px-2.5 py-1.5 text-[11px] font-mono font-bold cursor-pointer ${
-              !isEn ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            VI
-          </button>
-          <button
-            type="button"
-            onClick={() => setLanguage('en')}
-            className={`px-2.5 py-1.5 text-[11px] font-mono font-bold cursor-pointer ${
-              isEn ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            EN
-          </button>
-        </div>
-
+      {/* Collapsible Bottom Dock */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 w-[min(940px,95%)] flex flex-col items-center">
         <button
           type="button"
-          onClick={() => setUnitMode((u) => (u === 'au' ? 'km' : 'au'))}
-          className="px-2.5 py-1.5 rounded-lg bg-slate-950/92 border border-slate-700/80 text-[11px] font-mono font-bold text-slate-200 hover:border-amber-400/60 cursor-pointer"
-          title={isEn ? 'Switch AU / Million km' : 'Đổi đơn vị AU / Triệu km'}
+          onClick={() => setDockCollapsed((v) => !v)}
+          className="mb-1 px-3 py-1 rounded-t-lg bg-slate-900/95 border border-b-0 border-slate-700 text-[11px] font-semibold text-slate-200 flex items-center gap-1 cursor-pointer hover:text-amber-300"
         >
-          {unitMode === 'au' ? 'AU' : 'M km'}
+          {dockCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          <span>{dockCollapsed ? (isEn ? 'Show Controls' : 'Mở điều khiển') : isEn ? 'Hide Controls' : 'Thu gọn'}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setMuted((m) => !m)}
-          className="p-2 rounded-lg bg-slate-950/92 border border-slate-700/80 text-slate-200 hover:border-amber-400/60 cursor-pointer"
-          title={isEn ? 'Toggle Sound' : 'Bật/Tắt Âm thanh'}
-        >
-          {muted ? <VolumeX className="w-3.5 h-3.5 text-slate-400" /> : <Volume2 className="w-3.5 h-3.5 text-amber-300" />}
-        </button>
-
-        <button
-          type="button"
-          onClick={toggleFullscreen}
-          className="p-2 rounded-lg bg-slate-950/92 border border-slate-700/80 text-slate-200 hover:border-amber-400/60 cursor-pointer"
-          title={isEn ? 'Fullscreen' : 'Toàn màn hình'}
-        >
-          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowGuide((g) => !g)}
-          className={`p-2 rounded-lg border cursor-pointer ${
-            showGuide
-              ? 'bg-amber-500/20 border-amber-400 text-amber-200'
-              : 'bg-slate-950/92 border-slate-700/80 text-slate-200 hover:border-amber-400/60'
-          }`}
-          title={isEn ? 'Astronomical Guide' : 'Hướng dẫn Thiên văn'}
-        >
-          <HelpCircle className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {showGuide && (
-        <div className="absolute top-16 right-4 z-30 w-72 rounded-xl bg-slate-950/95 border border-amber-400/40 p-3.5 text-xs text-slate-200 space-y-2 shadow-2xl">
-          <div className="font-bold text-amber-300 flex items-center gap-1.5">
-            <Compass className="w-4 h-4" />
-            <span>{isEn ? 'Keplerian Ephemeris (J2000)' : 'Thiên văn Kepler Thực Tế (J2000)'}</span>
-          </div>
-          <p className="text-[11px] text-slate-300 leading-relaxed">
-            {isEn
-              ? 'Planet angles and distances are computed in real time from NASA/JPL J2000 orbital elements across 1800–2100. Light-travel distance from Earth updates dynamically.'
-              : 'Tọa độ và khoảng cách các hành tinh được giải trực tiếp theo phương trình Kepler J2000 của NASA/JPL giai đoạn 1800–2100. Thời gian ánh sáng từ Trái Đất cập nhật theo thời gian thực.'}
-          </p>
-        </div>
-      )}
-
-      {/* Left Telemetry & Editorial Hero Panel (Floating on lg+, Clean Card below Viewport on Mobile/iPad) */}
-      <div className="relative lg:pointer-events-none lg:absolute lg:top-4 lg:left-5 z-20 p-3 lg:p-0 bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 lg:max-w-[300px] space-y-3">
-        <div className="hidden lg:flex items-center gap-2.5">
-          <span
-            className="w-6 h-6 rounded-full shrink-0"
-            style={{
-              background: 'radial-gradient(circle at 35% 35%, #fff6c2, #ffb020 60%, #ea580c)'
-            }}
-          />
-          <div>
-            <div className="text-xs font-mono font-extrabold tracking-[0.26em] text-slate-100">
-              SOLAR
-            </div>
-            <div className="text-[9px] font-mono tracking-[0.2em] text-slate-400 uppercase">
-              {isEn ? 'EXPLORE THE SOLAR SYSTEM' : 'KHÁM PHÁ HỆ MẶT TRỜI'}
-            </div>
-          </div>
-        </div>
-
-        {selectedMeta && selectedTelemetry ? (
-          <div className="lg:pointer-events-auto space-y-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-[10px] font-mono font-bold tracking-[0.22em] text-amber-400 uppercase">
-                {selectedMeta.indexLabel}
-              </div>
-              <button
-                type="button"
-                onClick={() => handleSelectWorld(null)}
-                className="min-h-[30px] px-2 py-0.5 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-[10px] font-mono font-semibold text-slate-300 cursor-pointer"
-              >
-                {isEn ? 'Overview' : 'Toàn cảnh'}
-              </button>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white leading-[1.04]">
-              {isEn ? selectedMeta.nameEn : selectedMeta.nameVi}
-            </h2>
-
-            <p className="text-xs text-slate-300/90 leading-relaxed">
-              {isEn ? selectedMeta.factEn : selectedMeta.factVi}
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setReadMore((r) => !r)}
-              className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-amber-300/90 hover:text-amber-200 cursor-pointer"
-            >
-              <span>{readMore ? (isEn ? 'Show less' : 'Thu gọn') : isEn ? 'Read more' : 'Xem thêm'}</span>
-              {readMore ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </button>
-
-            {readMore && (
-              <div className="rounded-lg bg-slate-900/90 border border-slate-800 p-2.5 text-[11px] text-slate-300 leading-relaxed space-y-1.5">
-                <p>{isEn ? selectedMeta.moreFactEn : selectedMeta.moreFactVi}</p>
-                <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-800 text-[10px] font-mono">
-                  <div>
-                    <span className="text-slate-500 block">{isEn ? 'ORBITAL PERIOD' : 'CHU KÌ QUỸ ĐẠO'}</span>
-                    <span className="text-slate-200 font-semibold">{isEn ? selectedMeta.orbitalPeriodEn : selectedMeta.orbitalPeriodVi}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block">{isEn ? 'GRAVITY · MOONS' : 'TRỌNG LỰC · VỆ TINH'}</span>
-                    <span className="text-slate-200 font-semibold">{selectedMeta.gravityMs2} m/s² · {selectedMeta.moonsCount}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
-              <div>
-                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
-                  {isEn ? 'DIAMETER' : 'ĐƯỜNG KÍNH'}
-                </div>
-                <div className="font-mono font-bold text-slate-100 tabular-nums mt-0.5">
-                  {selectedMeta.diameterKm.toLocaleString()} km
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
-                  {isEn ? 'DAY LENGTH' : 'ĐỘ DÀI 1 NGÀY'}
-                </div>
-                <div className="font-mono font-bold text-slate-100 tabular-nums mt-0.5">
-                  {isEn ? selectedMeta.dayLengthEn : selectedMeta.dayLengthVi}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
-                  {isEn ? 'AXIAL TILT' : 'ĐỘ NGHIÊNG TRỤC'}
-                </div>
-                <div className="font-mono font-bold text-slate-100 tabular-nums mt-0.5">
-                  {selectedMeta.axialTiltDeg}°
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
-                  {selectedMeta.id === 'sun'
-                    ? isEn
-                      ? 'TEMPERATURE'
-                      : 'NHIỆT ĐỘ BỀ MẶT'
-                    : isEn
-                    ? 'SUN DISTANCE'
-                    : 'KHOẢNG CÁCH MT'}
-                </div>
-                <div className="font-mono font-bold text-sky-300 tabular-nums mt-0.5 truncate">
-                  {selectedMeta.id === 'sun'
-                    ? selectedMeta.tempDisplay
-                    : unitMode === 'au'
-                    ? `${selectedTelemetry.distanceAU.toFixed(3)} AU`
-                    : `${selectedTelemetry.distanceKmMillion} M km`}
-                </div>
-              </div>
-
-              <div className="col-span-2">
-                <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-slate-500">
-                  {isEn ? 'FROM EARTH NOW' : 'TỪ TRÁI ĐẤT HIỆN TẠI'}
-                </div>
-                <div className="font-mono font-bold text-amber-300 tabular-nums mt-0.5">
-                  {selectedMeta.id === 'earth'
-                    ? isEn
-                      ? '0.000 AU · Local Frame'
-                      : '0.000 AU · Hệ quy chiếu Trái Đất'
-                    : unitMode === 'au'
-                    ? `${selectedTelemetry.earthDistAU.toFixed(3)} AU · ${selectedTelemetry.lightMinutes.toFixed(1)} light-min`
-                    : `${selectedTelemetry.earthDistKmMillion} M km · ${selectedTelemetry.lightMinutes.toFixed(1)} light-min`}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="lg:pointer-events-auto space-y-2">
-            <div className="text-[10px] font-mono font-bold tracking-[0.2em] text-amber-400 uppercase">
-              {speedPreset === 'live' ? (isEn ? 'LIVE POSITIONS' : 'VỊ TRÍ THỰC TẾ') : isEn ? 'EPHEMERIS EPOCH' : 'MÔ PHỎNG THIÊN VĂN'}
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white leading-[1.05]">
-              {isEn ? 'The Solar System' : 'Hệ Mặt Trời'}
-            </h2>
-            <p className="text-xs text-slate-300/90 leading-relaxed">
-              {isEn
-                ? 'All eight planets, shown where they really are on the date below. Pick a world to fly there.'
-                : 'Tất cả 8 hành tinh ở đúng tọa độ thiên văn thực tế tại thời điểm bên dưới. Chọn một thiên thể để bay tới quan sát.'}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Dock: Planet Strip + Ephemeris Timeline Bar */}
-      <div className="relative lg:absolute lg:bottom-3 lg:left-1/2 lg:-translate-x-1/2 z-20 w-full lg:w-[96%] lg:max-w-[1040px] flex flex-col items-center gap-2 p-2.5 lg:p-0 bg-slate-950 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
-        {!showControls ? (
-          <button
-            type="button"
-            onClick={() => setShowControls(true)}
-            className="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-slate-950/92 border border-amber-400/40 text-xs font-mono font-bold text-amber-200 hover:text-white flex items-center gap-1.5 cursor-pointer"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Show Solar Timeline' : 'Mở Thanh Điều Khiển Hệ Mặt Trời'}</span>
-          </button>
-        ) : (
-          <>
-            {/* Center Planet Quick-Fly Strip */}
-            <div className="relative flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-950/92 border border-slate-800/90 shadow-2xl overflow-x-auto w-full lg:w-auto max-w-full scrollbar-none">
-              {SOLAR_BODIES.map((body) => {
-                const active = selectedId === body.id;
+        {!dockCollapsed && (
+          <div className="w-full rounded-xl bg-slate-950/90 border border-slate-700/80 p-3 space-y-2.5">
+            {/* Planet Fly-To Row */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+              {SOLAR_PLANETS.map((planet) => {
+                const active = selectedId === planet.id;
                 return (
                   <button
-                    key={body.id}
+                    key={planet.id}
                     type="button"
-                    onClick={() => handleSelectWorld(body.id)}
-                    className={`min-h-[42px] flex flex-col items-center justify-center gap-1 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shrink-0 border ${
+                    onClick={() => {
+                      setSelectedId(planet.id);
+                      cameraTweenRef.current.active = true;
+                    }}
+                    className={`shrink-0 px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap ${
                       active
-                        ? 'bg-amber-400/15 border-amber-400/50 text-amber-200'
-                        : 'border-transparent text-slate-300 hover:bg-white/5 hover:text-white'
+                        ? 'bg-amber-500 text-slate-950 border-amber-400'
+                        : 'bg-slate-900 border-slate-700 text-slate-200 hover:border-sky-400'
                     }`}
                   >
-                    <span className="relative flex items-center justify-center w-5 h-5">
-                      {body.id === 'saturn' && (
-                        <span className="absolute w-6 h-1.5 rounded-full border border-amber-200/75 -rotate-12" />
-                      )}
-                      <span
-                        className={`rounded-full ${body.id === 'sun' ? 'w-4 h-4' : body.id === 'jupiter' ? 'w-3.5 h-3.5' : 'w-2.5 h-2.5'}`}
-                        style={{
-                          background:
-                            body.id === 'sun'
-                              ? 'radial-gradient(circle at 35% 35%, #fff6c2, #ffb020 65%, #ea580c)'
-                              : `radial-gradient(circle at 30% 30%, #ffffff55, ${body.colorHex} 65%, #020617)`
-                        }}
-                      />
-                    </span>
-                    <span className="text-[10px] font-medium whitespace-nowrap">
-                      {isEn ? body.nameEn : body.nameVi}
-                    </span>
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: `#${planet.colorHex.toString(16).padStart(6, '0')}` }}
+                    />
+                    <span>{isEn ? planet.nameEn : planet.nameVi.split(' (')[0]}</span>
                   </button>
                 );
               })}
-
-              <button
-                type="button"
-                onClick={() => setShowControls(false)}
-                className="ml-1 min-h-[38px] min-w-[38px] flex items-center justify-center rounded-lg text-slate-400 hover:text-white cursor-pointer shrink-0"
-                title={isEn ? 'Collapse HUD' : 'Thu gọn'}
-              >
-                <EyeOff className="w-3.5 h-3.5" />
-              </button>
             </div>
 
-            {/* Bottom Ephemeris Timeline Bar (1800 – 2100) */}
-            <div className="w-full rounded-xl bg-slate-950/94 border border-slate-800/90 px-3 sm:px-4 py-2 shadow-2xl flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2 shrink-0">
+            {/* Playback + Epoch Slider + Toggles */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setPlaying((p) => !p)}
-                  className="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/60 hover:bg-amber-500/35 text-amber-300 flex items-center justify-center cursor-pointer"
-                  title={playing ? 'Pause' : 'Play'}
+                  onClick={() => setIsPlaying((v) => !v)}
+                  className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
                 >
-                  {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                  <span>{isPlaying ? (isEn ? 'Pause' : 'Tạm dừng') : isEn ? 'Play' : 'Chạy'}</span>
                 </button>
-
-                <div className="flex items-center gap-1.5 font-mono">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="font-bold text-white tracking-wide tabular-nums">{dateStr}</span>
-                  <span className="text-slate-400 tabular-nums text-[11px]">{timeStr}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 flex-1 min-w-[160px] max-w-md">
-                <span className="text-[10px] font-mono text-slate-500">1800</span>
-                <input
-                  type="range"
-                  min={MIN_EPOCH_MS}
-                  max={MAX_EPOCH_MS}
-                  step={86400000}
-                  value={epochMs}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    simTimeRef.current = v;
-                    setEpochMs(v);
-                  }}
-                  style={{
-                    background: `linear-gradient(to right, #f59e0b ${progressPct}%, #1e293b ${progressPct}%)`
-                  }}
-                  className="w-full h-1.5 rounded-lg accent-amber-400 cursor-pointer"
-                />
-                <span className="text-[10px] font-mono text-slate-500">2100</span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5">
-                <div className="flex items-center rounded-lg bg-slate-900 border border-slate-800 p-0.5 text-[11px]">
-                  {SPEED_PRESETS.map((sp) => (
-                    <button
-                      key={sp.id}
-                      type="button"
-                      onClick={() => {
-                        setSpeedPreset(sp.id);
-                        if (sp.id === 'live') {
-                          const now = Date.now();
-                          simTimeRef.current = now;
-                          setEpochMs(now);
-                        }
-                        if (!playing) setPlaying(true);
-                      }}
-                      className={`min-h-[34px] px-2 py-1 rounded-md font-semibold cursor-pointer ${
-                        speedPreset === sp.id
-                          ? 'bg-slate-700 text-white'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      {isEn ? sp.labelEn : sp.labelVi}
-                    </button>
-                  ))}
-                </div>
 
                 <button
                   type="button"
                   onClick={() => {
-                    const now = Date.now();
-                    simTimeRef.current = now;
-                    setEpochMs(now);
-                    setSpeedPreset('live');
-                    setPlaying(true);
+                    setEpochYear(2026);
+                    epochYearRef.current = 2026;
+                    cameraTweenRef.current.active = true;
                   }}
-                  className="min-h-[36px] px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
                 >
-                  <RotateCcw className="w-3 h-3 text-amber-400" />
-                  <span>{isEn ? 'Today' : 'Hôm nay'}</span>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>2026</span>
                 </button>
+              </div>
 
-                <span className="hidden xl:inline text-[10px] text-slate-500 leading-tight max-w-[180px]">
-                  {isEn
-                    ? 'Drag to orbit · Scroll to zoom · Click a world · Distances compressed'
-                    : 'Kéo để xoay · Cuộn thu phóng · Chạm hành tinh · Tỉ lệ nén'}
-                </span>
+              <div className="flex-1 min-w-[190px] flex items-center gap-2">
+                <span className="text-[11px] font-mono tabular-nums text-slate-400">1800</span>
+                <input
+                  type="range"
+                  min={1800}
+                  max={2100}
+                  step={0.25}
+                  value={epochYear}
+                  onChange={(e) => {
+                    const y = Number(e.target.value);
+                    setEpochYear(y);
+                    epochYearRef.current = y;
+                  }}
+                  className="w-full accent-amber-400 cursor-pointer"
+                />
+                <span className="text-[11px] font-mono tabular-nums text-slate-400">2100</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {[0.5, 1.5, 6].map((spd) => (
+                  <button
+                    key={spd}
+                    type="button"
+                    onClick={() => setTimeSpeed(spd)}
+                    className={`px-2 py-1 rounded text-[11px] font-mono font-bold cursor-pointer ${
+                      timeSpeed === spd
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    {spd}y/s
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setShowOrbits((v) => !v)}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer whitespace-nowrap ${
+                    showOrbits ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {isEn ? 'Orbits' : 'Quỹ đạo'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSaturnRings((v) => !v)}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                    showSaturnRings ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>{isEn ? 'Rings' : 'Vành đai'}</span>
+                </button>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

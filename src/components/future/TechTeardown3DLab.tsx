@@ -1122,8 +1122,8 @@ export const TechTeardown3DLab: React.FC<TechTeardown3DLabProps> = ({ onEarnXP }
       softwareGl
         ? 1
         : perfMode === 'smooth'
-        ? Math.min(window.devicePixelRatio || 1, 1.25)
-        : Math.min(window.devicePixelRatio || 1, 1.75)
+        ? Math.min(window.devicePixelRatio || 1, 1.2)
+        : Math.min(window.devicePixelRatio || 1, 1.5)
     );
     renderer.setSize(width, height);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;

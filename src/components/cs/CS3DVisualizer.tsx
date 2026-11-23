@@ -1287,7 +1287,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
 
     const hostDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
     renderer.setPixelRatio(
-      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.2) : Math.min(hostDpr, 2)
+      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.2) : Math.min(hostDpr, 1.5)
     );
     renderer.setSize(container.clientWidth || 760, container.clientHeight || 420);
     renderer.outputColorSpace = THREE.SRGBColorSpace;

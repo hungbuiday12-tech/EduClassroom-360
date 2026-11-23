@@ -257,7 +257,7 @@ export const AudioFFT3DLab: React.FC<AudioFFT3DLabProps> = ({ language = 'vi' })
       antialias: !isSoftwareGl,
       powerPreference: isSoftwareGl ? 'low-power' : 'high-performance'
     });
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(width, height);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;

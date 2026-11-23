@@ -1,1111 +1,749 @@
 import { PhysicsLesson } from '../types';
 import { SIM_PRESETS } from './physicsSimPresets';
 
-const SRC_9 = 'GDPT 2018 (Thông tư 32/2018) · KHTN 9 (KNTT / CTST / Cánh Diều)';
+const SRC_9 = 'GDPT 2018 (Thông tư 32/2018) · KHTN 9 — Vật lí (KNTT · CTST · Cánh Diều)';
 
 export const PHYSICS_GDPT_9_LESSONS: PhysicsLesson[] = [
-  // ================= MỞ ĐẦU KHTN 9 (BÀI 1) =================
   {
     id: 'phys-9-b1',
     track: 'khong_chuyen',
     grade: 'Lớp 9',
-    stageLabel: 'Mở đầu · KHTN 9 (Dụng cụ & An toàn)',
+    stageLabel: 'KHTN 9 · Mở đầu',
     sourceTag: SRC_9,
     lessonNumber: 1,
-    title: 'Bài 1: Nhận biết Dụng cụ Quang – Điện & An toàn Thực hành',
-    subtitle: 'Thiết bị đo điện (Ampe kế, Vôn kế, Biến áp nguồn), băng quang học và quy tắc an toàn phòng thí nghiệm',
+    title: 'Bài 1: Nhận biết dụng cụ đo điện, quang & An toàn thực hành KHTN 9',
+    subtitle: 'Ampe kế, Vôn kế, biến áp nguồn, bộ thí nghiệm quang học và quy tắc xử lý sai số phép đo',
     description:
-      'Mở đầu môn Khoa học Tự nhiên 9 (phần Vật lí, GDPT 2018): làm quen công dụng và giới hạn đo của ampe kế, vôn kế, cuộn dây, băng quang học, thấu kính và quy tắc an toàn khi thực hành điện – quang học.',
+      'Làm quen bộ dụng cụ đo điện, giá quang học trong phòng thí nghiệm KHTN 9 và phương pháp ghi số liệu, tính sai số thực nghiệm.',
     theorySections: [
       {
-        heading: '1. Dụng cụ Đo Điện & Nguồn Biến áp Thực hành',
+        heading: '1. Dụng cụ đo điện & Biến áp nguồn',
         content:
-          '• **Ampe kế** (kí hiệu chữ A) mắc **nối tiếp** để đo cường độ dòng điện; **Vôn kế** (kí hiệu chữ V) mắc **song song** để đo hiệu điện thế.\n• **Biến áp nguồn** cung cấp điện áp một chiều (DC) hoặc xoay chiều (AC) an toàn thấp ($3\\text{ V} \\dots 12\\text{ V}$) thay thế điện lưới $220\\text{ V}$.\n• **Cuộn dây dẫn có hai đèn LED** mắc song song ngược chiều dùng để kiểm tra chiều dòng điện cảm ứng và nhận biết dòng xoay chiều.'
+          '• Ampe kế mắc nối tiếp đo cường độ dòng điện I (A); Vôn kế mắc song song đo hiệu điện thế U (V).\n• Chọn đúng thang đo lớn hơn giá trị ước lượng và ngắt nguồn trước khi đấu dây.'
       },
       {
-        heading: '2. Bộ Dụng cụ Quang học & Quy tắc An toàn',
+        heading: '2. Bộ dụng cụ Quang học & Sai số phép đo',
         content:
-          '• **Băng quang học**, nguồn sáng khe chữ F, bản bán trụ thủy tinh, lăng kính, thấu kính hội tụ/phân kì và màn hứng ảnh dùng cho toàn bộ Chương II (Ánh sáng).\n• **An toàn thực hành**: Ngắt công tắc trước khi lắp/sửa mạch điện, kiểm tra đúng cực $(+), (-)$, không chiếu tia laser trực tiếp vào mắt và đọc vạch chia vuông góc mặt đồng hồ để tránh sai số thị sai.'
+          '• Băng quang học gồm đèn chiếu, vật sáng, thấu kính và màn hứng đặt đồng trục.\n• Đo lặp lại nhiều lần, tính giá trị trung bình $\\bar{x} = \\frac{x_1 + \\dots + x_n}{n}$ để giảm sai số ngẫu nhiên.'
       }
     ],
-    keyFormulas: [
-      '\\text{Ampe kế: mắc nối tiếp} \\quad | \\quad \\text{Vôn kế: mắc song song}',
-      '\\text{Độ chia nhỏ nhất (ĐCNN)} = \\frac{\\text{Khoảng chia hai vạch liên tiếp}}{\\text{Số khoảng}}',
-      'U_{\\text{an toàn thực hành}} \\le 24\\text{ V}'
-    ],
+    keyFormulas: ['\\bar{x} = \\frac{x_1 + x_2 + \\dots + x_n}{n}', '\\Delta x = |x_i - \\bar{x}|'],
     ...SIM_PRESETS.ohm_dc,
     practiceExercises: [
       {
         source: SRC_9,
-        question: 'Khi lắp mạch điện thực hành đo điện trở bằng phương pháp Vôn kế – Ampe kế, cách mắc nào đúng quy tắc an toàn và kĩ thuật?',
-        options: [
-          'A. Ampe kế mắc nối tiếp với điện trở, Vôn kế mắc song song hai đầu điện trở',
-          'B. Ampe kế mắc song song hai đầu nguồn điện, Vôn kế mắc nối tiếp',
-          'C. Cả Ampe kế và Vôn kế đều mắc song song hai đầu nguồn',
-          'D. Đóng công tắc trước rồi mới nối dây để kiểm tra tia lửa điện'
-        ],
-        correctIndex: 0,
-        explanation: 'Ampe kế có điện trở rất nhỏ nên bắt buộc mắc nối tiếp với đoạn mạch cần đo; Vôn kế có điện trở rất lớn nên mắc song song hai đầu đoạn mạch và luôn ngắt nguồn khi lắp mạch.'
-      },
-      {
-        source: SRC_9,
-        question: 'Thiết bị nào sau đây dùng để xác định sự xuất hiện và chiều của dòng điện cảm ứng trong thí nghiệm KHTN 9?',
-        options: [
-          'A. Cuộn dây gắn hai đèn LED mắc song song ngược cực',
-          'B. Thước kẹp Vernier',
-          'C. Bản bán trụ bằng nhựa trong',
-          'D. Lăng kính tam giác đều'
-        ],
-        correctIndex: 0,
-        explanation: 'Hai đèn LED mắc song song ngược chiều giúp nhận biết ngay dòng điện cảm ứng xuất hiện và phân biệt chiều dòng điện (chỉ LED thuận chiều mới sáng, hoặc cả hai nhấp nháy luân phiên với dòng xoay chiều).'
+        question: 'Để đo hiệu điện thế hai đầu bóng đèn, vôn kế phải được mắc như thế nào?',
+        options: ['A. Nối tiếp với đèn', 'B. Song song với hai đầu đèn', 'C. Nối tắt hai cực nguồn', 'D. Không cần đúng cực'],
+        correctIndex: 1,
+        explanation: 'Vôn kế có điện trở rất lớn, luôn mắc song song với đoạn mạch cần đo hiệu điện thế.'
       }
     ],
     essayExercises: [
       {
         source: SRC_9,
-        question: 'Nêu 3 quy tắc an toàn bắt buộc khi sử dụng bộ thí nghiệm Quang học (có đèn laser) và bộ thí nghiệm Điện học trong phòng thực hành KHTN 9.',
-        hints: ['Nhắc tới nguồn điện an toàn, ngắt mạch khi lắp và an toàn tia laser với mắt.'],
-        solutionSteps: [
-          '1. An toàn điện: Chỉ dùng biến áp nguồn điện áp thấp (≤ 12 V – 24 V), luôn ngắt công tắc trước khi tháo lắp dây dẫn và không dùng tay ướt chạm vào mạch.',
-          '2. Bảo vệ đồng hồ đo: Chọn thang đo có giới hạn đo lớn hơn giá trị dự kiến, mắc đúng cực (+)/(-) của ampe kế nối tiếp và vôn kế song song.',
-          '3. An toàn quang học: Tuyệt đối không chiếu tia laser trực tiếp hoặc phản xạ từ gương/thủy tinh vào mắt người; nhẹ tay với các chi tiết thủy tinh.'
-        ],
-        finalAnswer: 'Ngắt điện trước khi lắp mạch, chọn đúng thang đo & cực đồng hồ, và không chiếu tia laser vào mắt.'
+        question: 'Nêu 2 lưu ý quan trọng khi sử dụng biến áp nguồn và băng quang học KHTN 9.',
+        hints: ['Kiểm tra thang điện áp DC/AC và trục đồng tâm thấu kính.'],
+        solutionSteps: ['1. Chỉnh núm biến áp nguồn về mức 0 V trước khi bật công tắc.', '2. Căn tâm đèn, vật sáng và thấu kính nằm trên cùng trục chính.'],
+        finalAnswer: 'Đặt nguồn mức thấp nhất khi lắp mạch và căn đồng trục quang học.'
       }
     ]
   },
-
-  // ================= CHƯƠNG I. NĂNG LƯỢNG CƠ HỌC (BÀI 2 - BÀI 4) =================
   {
     id: 'phys-9-mech-heat',
     track: 'khong_chuyen',
     grade: 'Lớp 9',
-    stageLabel: 'Chương I · Năng lượng cơ học',
+    stageLabel: 'KHTN 9 · Năng lượng & Cơ học',
     sourceTag: SRC_9,
     lessonNumber: 2,
-    title: 'Bài 2: Động năng. Thế năng',
-    subtitle: 'Năng lượng do chuyển động (Động năng W_đ) và năng lượng do độ cao trọng trường (Thế năng W_t)',
+    title: 'Bài 2: Động năng và Thế năng trọng trường',
+    subtitle: 'Phân tích công thức động năng W_đ = 1/2 mv², thế năng W_t = Ph và sự phụ thuộc vận tốc, độ cao',
     description:
-      'Chuẩn GDPT 2018 KHTN 9 (Mở đầu phần Vật lí): thiết lập biểu thức động năng $W_đ = \\frac{1}{2}mv^2$, thế năng trọng trường $W_t = Ph = 10mh$ và phân tích các yếu tố ảnh hưởng qua thí nghiệm rơi tự do.',
+      'Khám phá hai dạng năng lượng cơ học cơ bản của vật chuyển động và vật ở độ cao h trong trường trọng lực Trái Đất.',
     theorySections: [
       {
-        heading: '1. Động năng của vật chuyển động',
+        heading: '1. Động năng',
         content:
-          '• **Khái niệm**: Mọi vật đang chuyển động đều có năng lượng gọi là **động năng** ($W_đ$).\n• **Biểu thức**: $W_đ = \\frac{1}{2}mv^2$, trong đó $m$ là khối lượng ($\\text{kg}$), $v$ là tốc độ ($\\text{m/s}$), $W_đ$ là động năng ($\\text{J}$).\n• Vật có khối lượng càng lớn và chuyển động càng nhanh thì động năng càng lớn (động năng tỉ lệ với **bình phương** tốc độ: tốc độ tăng gấp đôi thì động năng tăng 4 lần).'
+          '• Vật có khối lượng $m$ đang chuyển động với tốc độ $v$ sở hữu động năng $W_{\\text{đ}} = \\frac{1}{2}mv^2$ (J).\n• Động năng tỉ lệ thuận với khối lượng và bình phương tốc độ.'
       },
       {
         heading: '2. Thế năng trọng trường',
         content:
-          '• **Khái niệm**: Vật ở độ cao $h$ so với một mốc chọn (thường là mặt đất) có năng lượng gọi là **thế năng trọng trường** ($W_t$).\n• **Biểu thức**: $W_t = P \\cdot h = 10mh$ (hoặc $mgh$ với $g \\approx 9{,}8\\text{ m/s}^2$).\n• Thế năng phụ thuộc vào khối lượng vật và độ cao so với mốc thế năng đã chọn.'
-      },
-      {
-        heading: '3. Ghi nhớ đơn vị SI & Tình huống thực tế',
-        content:
-          '• Luôn quy đổi chuẩn SI: $1\\text{ tấn} = 1000\\text{ kg}$, $1\\text{ km/h} = \\frac{1}{3{,}6}\\text{ m/s}$, $1\\text{ kJ} = 1000\\text{ J}$.\n• Xe chạy tốc độ lớn gây nguy hiểm giao thông gấp bội vì động năng tăng theo $v^2$ (khoảng cách phanh tăng 4 lần khi tốc độ tăng 2 lần).'
+          '• Vật có trọng lượng $P = 10m$ ở độ cao $h$ so với mốc thế năng có thế năng $W_t = Ph = mgh$ (J).'
       }
     ],
-    keyFormulas: [
-      'W_đ = \\frac{1}{2}mv^2 \\quad (\\text{J})',
-      'W_t = P \\cdot h = mgh \\quad (\\text{với } P \\approx 10m\\text{ hoặc } mg)',
-      '1\\text{ m/s} = 3{,}6\\text{ km/h}, \\quad 1\\text{ kJ} = 1000\\text{ J}'
-    ],
+    keyFormulas: ['W_{\\text{đ}} = \\frac{1}{2}mv^2', 'W_t = P \\cdot h = mgh'],
     ...SIM_PRESETS.free_fall,
     practiceExercises: [
       {
         source: SRC_9,
-        question: 'Một ô tô khối lượng $1{,}5\\text{ tấn}$ chạy với tốc độ $72\\text{ km/h}$ trên đường phẳng ngang có động năng bằng:',
-        options: ['A. 300 kJ', 'B. 600 kJ', 'C. 300 J', 'D. 3888 kJ'],
-        correctIndex: 0,
-        explanation: 'Đổi $m = 1500\\text{ kg}$, $v = 72 / 3{,}6 = 20\\text{ m/s}$. Động năng $W_đ = \\frac{1}{2} \\cdot 1500 \\cdot 20^2 = 300\\,000\\text{ J} = 300\\text{ kJ}$.'
-      },
-      {
-        source: SRC_9,
-        question: 'Một thùng hàng khối lượng $40\\text{ kg}$ được đặt ở độ cao $5\\text{ m}$ so với mặt sân (lấy $P = 10m$). Thế năng trọng trường của thùng hàng so với mặt sân là:',
-        options: ['A. 200 J', 'B. 2 000 J', 'C. 400 J', 'D. 20 000 J'],
+        question: 'Nếu tốc độ của một ô tô tăng gấp đôi thì động năng của ô tô thay đổi thế nào?',
+        options: ['A. Tăng 2 lần', 'B. Tăng 4 lần', 'C. Giảm 2 lần', 'D. Không đổi'],
         correctIndex: 1,
-        explanation: 'Trọng lượng $P = 10 \\cdot 40 = 400\\text{ N}$. Thế năng $W_t = P \\cdot h = 400 \\cdot 5 = 2000\\text{ J}$.'
+        explanation: 'Vì W_đ = 1/2 mv² tỉ lệ với v², khi v tăng 2 lần thì W_đ tăng 2² = 4 lần.'
       }
     ],
     essayExercises: [
       {
         source: SRC_9,
-        question: 'So sánh động năng của một xe máy khối lượng $150\\text{ kg}$ chạy ở tốc độ $36\\text{ km/h}$ và khi tăng tốc lên $72\\text{ km/h}$. Giải thích vì sao chạy quá tốc độ làm nguy cơ tai nạn tăng mạnh.',
-        hints: ['Đổi tốc độ sang m/s rồi tính $W_{đ1}, W_{đ2}$ bằng $\\frac{1}{2}mv^2$.'],
-        solutionSteps: [
-          'Bước 1: $v_1 = 36\\text{ km/h} = 10\\text{ m/s} \\implies W_{đ1} = 0{,}5 \\cdot 150 \\cdot 10^2 = 7500\\text{ J}$.',
-          'Bước 2: $v_2 = 72\\text{ km/h} = 20\\text{ m/s} \\implies W_{đ2} = 0{,}5 \\cdot 150 \\cdot 20^2 = 30\\,000\\text{ J}$.',
-          'Bước 3: Khi tốc độ tăng 2 lần, động năng tăng $2^2 = 4$ lần khiến lực hãm phải sinh công lớn gấp 4 lần mới dừng được xe.'
-        ],
-        finalAnswer: '$W_{đ1} = 7{,}5\\text{ kJ}$; $W_{đ2} = 30\\text{ kJ}$ (tăng 4 lần).'
+        question: 'Tính động năng và thế năng của vật khối lượng 2 kg thả ở độ cao 5 m khi tốc độ đạt 6 m/s (lấy g = 10 m/s²).',
+        hints: ['Áp dụng trực tiếp W_đ = 1/2 mv² và W_t = mgh.'],
+        solutionSteps: ['W_đ = 0,5 · 2 · 6² = 36 J.', 'W_t = 2 · 10 · 5 = 100 J.'],
+        finalAnswer: 'W_đ = 36 J; W_t = 100 J.'
       }
     ]
   },
-
   {
     id: 'phys-9-power-bill',
     track: 'khong_chuyen',
     grade: 'Lớp 9',
-    stageLabel: 'Chương I · Năng lượng cơ học',
+    stageLabel: 'KHTN 9 · Năng lượng & Cơ học',
     sourceTag: SRC_9,
     lessonNumber: 3,
-    title: 'Bài 3: Cơ năng & Bảo toàn Cơ năng',
-    subtitle: 'Tổng động năng và thế năng, sự chuyển hóa qua lại và định luật bảo toàn cơ năng trong trọng trường',
+    title: 'Bài 3: Cơ năng và Định luật Bảo toàn Cơ năng',
+    subtitle: 'Chuyển hóa qua lại giữa động năng và thế năng, bảo toàn cơ năng khi bỏ qua lực cản',
     description:
-      'Hiểu bản chất cơ năng $W = W_đ + W_t$, phân tích sự chuyển hóa liên tục giữa động năng và thế năng khi vật rơi, ném lên hay con lắc dao động, và nhận biết hao phí cơ năng khi có ma sát.',
+      'Tìm hiểu khái niệm cơ năng toàn phần W = W_đ + W_t và phân tích dao động con lắc, vật rơi khi có hoặc không có ma sát.',
     theorySections: [
       {
-        heading: '1. Định nghĩa Cơ năng',
+        heading: '1. Cơ năng và chuyển hóa năng lượng',
         content:
-          '• **Cơ năng** của một vật là tổng động năng và thế năng của vật đó: $W = W_đ + W_t = \\frac{1}{2}mv^2 + P\\cdot h$ (đơn vị Jun, $\\text{J}$).'
+          '• Tổng động năng và thế năng gọi là cơ năng: $W = W_{\\text{đ}} + W_t$.\n• Trong quá trình chuyển động, động năng và thế năng có thể chuyển hóa qua lại lẫn nhau.'
       },
       {
-        heading: '2. Sự chuyển hóa & Bảo toàn Cơ năng',
+        heading: '2. Bảo toàn & hao phí cơ năng',
         content:
-          '• Khi con lắc dao động hoặc vật rơi: ở vị trí cao nhất vật có thế năng cực đại và động năng bằng $0$; khi đi xuống độ cao giảm dần thì thế năng chuyển hóa thành động năng; qua vị trí thấp nhất động năng cực đại.\n• Nếu bỏ qua mọi lực cản và ma sát, tổng cơ năng được **bảo toàn**: $W_đ + W_t = \\text{hằng số}$.\n• Khi có ma sát/lực cản: cơ năng giảm dần do một phần cơ năng chuyển hóa thành nhiệt năng và âm thanh.'
+          '• Khi không có ma sát hay lực cản không khí, cơ năng được bảo toàn.\n• Khi có ma sát, một phần cơ năng chuyển hóa thành nhiệt năng làm nóng vật và môi trường.'
       }
     ],
-    keyFormulas: [
-      'W = W_đ + W_t = \\frac{1}{2}mv^2 + mgh',
-      'W_{\\text{trước}} = W_{\\text{sau}} \\quad (\\text{khi không có lực cản/ma sát})',
-      'v_{\\text{chạm đất}} = \\sqrt{2gh_0}'
-    ],
+    keyFormulas: ['W = W_{\\text{đ}} + W_t = \\frac{1}{2}mv^2 + mgh', 'W_{\\text{trước}} = W_{\\text{sau}} \\text{ (không ma sát)}'],
     ...SIM_PRESETS.pendulum,
     practiceExercises: [
       {
         source: SRC_9,
-        question: 'Một quả cầu khối lượng $m = 2\\text{ kg}$ được thả rơi không vận tốc đầu từ độ cao $h_0 = 5\\text{ m}$ ($g = 10\\text{ m/s}^2$, bỏ qua cản không khí). Khi ở độ cao $2\\text{ m}$, động năng của quả cầu bằng:',
-        options: ['A. 40 J', 'B. 60 J', 'C. 100 J', 'D. 20 J'],
+        question: 'Khi quả cầu con lắc đi từ vị trí cao nhất xuống vị trí thấp nhất (bỏ qua lực cản), đại lượng nào tăng lên?',
+        options: ['A. Thế năng trọng trường', 'B. Động năng', 'C. Cơ năng toàn phần', 'D. Khối lượng'],
         correctIndex: 1,
-        explanation: 'Cơ năng ban đầu $W = 2 \\cdot 10 \\cdot 5 = 100\\text{ J}$. Tại $h = 2\\text{ m}$, thế năng $W_t = 2 \\cdot 10 \\cdot 2 = 40\\text{ J} \\implies W_đ = 100 - 40 = 60\\text{ J}$.'
-      },
-      {
-        source: SRC_9,
-        question: 'Trong quá trình con lắc đơn chuyển động từ vị trí biên cao nhất xuống vị trí cân bằng thấp nhất, sự chuyển hóa năng lượng diễn ra như thế nào?',
-        options: [
-          'A. Động năng chuyển hóa thành thế năng',
-          'B. Thế năng chuyển hóa thành động năng',
-          'C. Cơ năng tăng lên liên tục',
-          'D. Nhiệt năng chuyển hóa thành thế năng'
-        ],
-        correctIndex: 1,
-        explanation: 'Khi con lắc đi xuống, độ cao giảm nên thế năng giảm, đồng thời tốc độ tăng nên động năng tăng: thế năng chuyển hóa thành động năng.'
+        explanation: 'Độ cao giảm nên thế năng chuyển hóa dần thành động năng khiến tốc độ và động năng tăng.'
       }
     ],
     essayExercises: [
       {
         source: SRC_9,
-        question: 'Ném thẳng đứng lên cao một hòn bi khối lượng $200\\text{ g}$ từ mặt đất với tốc độ ban đầu $v_0 = 10\\text{ m/s}$ (lấy $g = 10\\text{ m/s}^2$, bỏ qua lực cản không khí). Tính cơ năng ban đầu và độ cao cực đại bi đạt được.',
-        hints: ['Đổi $200\\text{ g} = 0{,}2\\text{ kg}$. Tại điểm cao nhất $v = 0$ nên toàn bộ cơ năng thành thế năng.'],
-        solutionSteps: [
-          'Bước 1: Cơ năng ban đầu tại mặt đất ($h = 0$): $W = W_{đ0} = \\frac{1}{2} \\cdot 0{,}2 \\cdot 10^2 = 10\\text{ J}$.',
-          'Bước 2: Tại độ cao cực đại $h_{\\max}$, $v = 0 \\implies W = mgh_{\\max} = 10\\text{ J}$.',
-          'Bước 3: $h_{\\max} = \\frac{10}{0{,}2 \\cdot 10} = 5\\text{ m}$.'
-        ],
-        finalAnswer: '$W = 10\\text{ J}$, độ cao cực đại $h_{\\max} = 5\\text{ m}$.'
+        question: 'Thả rơi tự do vật 1 kg từ độ cao 20 m (g = 10 m/s²). Tính tốc độ vật ngay khi chạm đất.',
+        hints: ['Bảo toàn cơ năng: mgh = 1/2 mv².'],
+        solutionSteps: ['v = √(2gh) = √(2 · 10 · 20) = 20 m/s.'],
+        finalAnswer: 'v = 20 m/s.'
       }
     ]
   },
-
   {
     id: 'phys-9-b4',
     track: 'khong_chuyen',
     grade: 'Lớp 9',
-    stageLabel: 'Chương I · Năng lượng cơ học',
+    stageLabel: 'KHTN 9 · Năng lượng & Cơ học',
     sourceTag: SRC_9,
     lessonNumber: 4,
-    title: 'Bài 4: Công và Công suất',
-    subtitle: 'Công cơ học A = F·s, tốc độ sinh công P = A/t và hiệu suất máy cơ đơn giản',
+    title: 'Bài 4: Công cơ học và Công suất',
+    subtitle: 'Điều kiện sinh công A = F·s, tốc độ sinh công P = A/t = F·v và hiệu suất máy cơ',
     description:
-      'Phân biệt điều kiện có công cơ học, tính công $A = F\\cdot s$ khi lực làm vật dịch chuyển theo hướng lực, tính công suất $P = A/t = F\\cdot v$ và đánh giá hiệu suất thiết bị cơ học.',
+      'Phân tích bản chất vật lí của công cơ học, công suất định mức thiết bị và cách tính hiệu suất khi có ma sát.',
     theorySections: [
       {
         heading: '1. Công cơ học',
         content:
-          '• Có **công cơ học** khi lực tác dụng vào vật làm vật dịch chuyển.\n• Khi lực không đổi $F$ kéo vật dịch chuyển quãng đường $s$ theo đúng hướng lực: $A = F \\cdot s$ (đơn vị Jun, $1\\text{ J} = 1\\text{ N}\\cdot\\text{m}$).'
+          '• Lực $F$ không đổi làm vật dịch chuyển quãng đường $s$ theo hướng lực thực hiện công $A = F\\cdot s$ (1 J = 1 N·m).'
       },
       {
-        heading: '2. Công suất — Tốc độ thực hiện công',
+        heading: '2. Công suất',
         content:
-          '• **Công suất** đo bằng công thực hiện được trong một đơn vị thời gian: $P = \\frac{A}{t}$ (đơn vị Oát, $1\\text{ W} = 1\\text{ J/s}$, $1\\text{ kW} = 1000\\text{ W}$).\n• Khi chuyển động thẳng đều với tốc độ $v$: $P = F \\cdot v$.'
+          '• Công suất đặc trưng cho tốc độ thực hiện công: $P = \\frac{A}{t}$ (1 W = 1 J/s). Khi chuyển động thẳng đều theo phương lực: $P = F\\cdot v$.'
       }
     ],
-    keyFormulas: [
-      'A = F \\cdot s',
-      'P = \\frac{A}{t} = F \\cdot v',
-      'H = \\frac{A_{\\text{ích}}}{A_{\\text{tp}}} \\cdot 100\\%'
-    ],
-    simulationType: 'work_power_joule',
-    sim3dType: 'atwood_pulley_3d',
-    defaultParams: { force: 80, angle: 0, mu: 0.15 },
-    paramBounds: {
-      force: { min: 20, max: 200, step: 10, unit: 'N', label: 'Lực kéo F' },
-      angle: { min: 0, max: 75, step: 5, unit: '°', label: 'Góc kéo α' },
-      mu: { min: 0, max: 0.5, step: 0.05, unit: '', label: 'Ma sát μ' }
-    },
+    keyFormulas: ['A = F \\cdot s', 'P = \\frac{A}{t} = F \\cdot v', 'H = \\frac{A_{\\text{ích}}}{A_{\\text{tp}}} \\cdot 100\\%'],
+    ...SIM_PRESETS.work_power,
     practiceExercises: [
       {
         source: SRC_9,
-        question: 'Một cần cẩu nâng thùng hàng khối lượng $500\\text{ kg}$ lên cao $12\\text{ m}$ trong $20\\text{ s}$ ($g = 10\\text{ m/s}^2$). Công suất tối thiểu của cần cẩu là:',
-        options: ['A. 3 000 W', 'B. 60 000 W', 'C. 300 W', 'D. 1 500 W'],
-        correctIndex: 0,
-        explanation: 'Công nâng $A = P\\cdot h = 5000 \\cdot 12 = 60\\,000\\text{ J}$. Công suất $P = \\frac{60\\,000}{20} = 3000\\text{ W}$.'
-      },
-      {
-        source: SRC_9,
-        question: 'Một đầu máy kéo toa tàu chuyển động đều với tốc độ $54\\text{ km/h}$ bằng lực kéo $20\\,000\\text{ N}$. Công suất của đầu máy là:',
-        options: ['A. 300 kW', 'B. 1 080 kW', 'C. 30 kW', 'D. 150 kW'],
-        correctIndex: 0,
-        explanation: 'Đổi $v = 54/3{,}6 = 15\\text{ m/s}$. Công suất $P = F \\cdot v = 20\\,000 \\cdot 15 = 300\\,000\\text{ W} = 300\\text{ kW}$.'
+        question: 'Đơn vị chuẩn SI của công suất là gì?',
+        options: ['A. Jun (J)', 'B. Oát (W)', 'C. Niutơn (N)', 'D. Ôm (Ω)'],
+        correctIndex: 1,
+        explanation: 'Công suất đo bằng Oát (W), với 1 W = 1 J/s.'
       }
     ],
     essayExercises: [
       {
         source: SRC_9,
-        question: 'Dùng mặt phẳng nghiêng dài $4\\text{ m}$ kéo đều một thùng hàng nặng $600\\text{ N}$ lên cao $1{,}2\\text{ m}$ bằng lực kéo $F = 240\\text{ N}$. Tính công có ích, công toàn phần và hiệu suất của mặt phẳng nghiêng.',
-        hints: ['$A_i = P \\cdot h$, $A_{tp} = F \\cdot l$, hiệu suất $H = (A_i / A_{tp}) \\cdot 100\\%$.'],
-        solutionSteps: [
-          'Bước 1: Công có ích: $A_i = P \\cdot h = 600 \\cdot 1{,}2 = 720\\text{ J}$.',
-          'Bước 2: Công toàn phần: $A_{tp} = F \\cdot l = 240 \\cdot 4 = 960\\text{ J}$.',
-          'Bước 3: Hiệu suất mặt phẳng nghiêng: $H = \\frac{720}{960} \\cdot 100\\% = 75\\%$.'
-        ],
-        finalAnswer: '$A_i = 720\\text{ J}$, $A_{tp} = 960\\text{ J}$, hiệu suất $H = 75\\%$.'
+        question: 'Một cần cẩu nâng vật nặng 8000 N lên cao 12 m trong 16 s. Tính công và công suất trung bình của cần cẩu.',
+        hints: ['A = P_trọng_lượng · h, sau đó P_suất = A / t.'],
+        solutionSteps: ['A = 8000 · 12 = 96 000 J.', 'P = 96 000 / 16 = 6000 W = 6 kW.'],
+        finalAnswer: 'A = 96 kJ; P = 6 kW.'
       }
     ]
   },
-
-  // ================= CHƯƠNG II. ÁNH SÁNG (BÀI 5 - BÀI 10) =================
   {
     id: 'phys-9-b5',
     track: 'khong_chuyen',
     grade: 'Lớp 9',
-    stageLabel: 'Chương II · Ánh sáng',
+    stageLabel: 'KHTN 9 · Quang học',
     sourceTag: SRC_9,
     lessonNumber: 5,
-    title: 'Bài 5: Khúc xạ ánh sáng',
-    subtitle: 'Hiện tượng gãy khúc tia sáng tại mặt phân cách, định luật khúc xạ và chiết suất môi trường',
+    title: 'Bài 5: Khúc xạ ánh sáng và Định luật Khúc xạ',
+    subtitle: 'Sự gãy tia sáng qua mặt phân cách hai môi trường trong suốt, chiết suất n và công thức Snell',
     description:
-      'Khảo sát đường đi của tia sáng truyền xiên góc qua hai môi trường trong suốt, phát biểu định luật khúc xạ $\\frac{\\sin i}{\\sin r} = \\frac{n_2}{n_1}$ và giải thích hiện tượng bể nước trông nông hơn thực tế.',
+      'Khảo sát hiện tượng tia sáng đổi hướng khi truyền xiên góc qua mặt phân cách và vận dụng định luật khúc xạ.',
     theorySections: [
       {
-        heading: '1. Hiện tượng khúc xạ ánh sáng',
+        heading: '1. Hiện tượng & Định luật khúc xạ ánh sáng',
         content:
-          '• **Khúc xạ ánh sáng** là hiện tượng tia sáng bị gãy khúc (lệch khỏi phương truyền thẳng) tại mặt phân cách khi truyền xiên góc từ môi trường trong suốt này sang môi trường trong suốt khác.\n• Nếu chiếu vuông góc với mặt phân cách ($i = 0^\\circ$) thì tia sáng truyền thẳng ($r = 0^\\circ$).'
+          '• Tia khúc xạ nằm trong mặt phẳng tới và ở bên kia pháp tuyến so với tia tới.\n• Với hai môi trường trong suốt nhất định: $\\frac{\\sin i}{\\sin r} = \\text{hằng số} = n_{21}$ hay $n_1 \\sin i = n_2 \\sin r$.'
       },
       {
-        heading: '2. Định luật khúc xạ ánh sáng & Chiết suất',
+        heading: '2. Chiết suất tuyệt đối',
         content:
-          '• Tia khúc xạ nằm trong mặt phẳng tới và ở bên kia pháp tuyến so với tia tới.\n• Tỉ số $\\frac{\\sin i}{\\sin r}$ luôn không đổi đối với hai môi trường xác định: $n_1 \\sin i = n_2 \\sin r \\iff \\frac{\\sin i}{\\sin r} = \\frac{n_2}{n_1}$.\n• **Chiết suất tuyệt đối**: $n = \\frac{c}{v}$ ($c = 3\\cdot 10^8\\text{ m/s}$ là tốc độ ánh sáng trong chân không). Không khí $n \\approx 1$, nước $n \\approx 1{,}333$, thủy tinh $n \\approx 1{,}5$.'
+          '• Chiết suất tuyệt đối của môi trường $n = \\frac{c}{v} \\ge 1$, cho biết tốc độ ánh sáng trong môi trường giảm đi $n$ lần so với chân không.'
       }
     ],
-    keyFormulas: [
-      'n_1 \\sin i = n_2 \\sin r \\iff \\frac{\\sin i}{\\sin r} = \\frac{n_2}{n_1}',
-      'n = \\frac{c}{v} \\ge 1'
-    ],
-    simulationType: 'light_refraction',
-    sim3dType: 'optics_3d',
-    defaultParams: { angleI: 45, n1: 1.0, n2: 1.5 },
-    paramBounds: {
-      angleI: { min: 0, max: 85, step: 1, unit: '°', label: 'Góc tới i' },
-      n1: { min: 1.0, max: 2.0, step: 0.05, unit: '', label: 'Chiết suất n₁' },
-      n2: { min: 1.0, max: 2.4, step: 0.05, unit: '', label: 'Chiết suất n₂' }
-    },
+    keyFormulas: ['n_1 \\sin i = n_2 \\sin r', 'n = \\frac{c}{v}'],
+    ...SIM_PRESETS.refraction,
     practiceExercises: [
       {
         source: SRC_9,
-        question: 'Khi ánh sáng truyền từ không khí ($n_1 = 1$) vào nước ($n_2 = 4/3$) dưới góc tới $i = 45^\\circ$, so sánh góc khúc xạ $r$ và góc tới $i$:',
-        options: ['A. r < i', 'B. r > i', 'C. r = i', 'D. r = 90°'],
-        correctIndex: 0,
-        explanation: '$\\sin r = \\frac{3}{4}\\sin 45^\\circ < \\sin 45^\\circ \\implies r < i$ (tia khúc xạ lệch gần pháp tuyến hơn).'
-      },
-      {
-        source: SRC_9,
-        question: 'Chiếu tia sáng từ không khí vào thủy tinh có chiết suất $n = 1{,}5$ với góc tới $i = 60^\\circ$. Giá trị $\\sin r$ bằng:',
-        options: ['A. √3 / 3', 'B. √3 / 2', 'C. 0,5', 'D. 0,75'],
-        correctIndex: 0,
-        explanation: 'Áp dụng $1\\cdot\\sin 60^\\circ = 1{,}5 \\sin r \\implies \\sin r = \\frac{\\sqrt{3}/2}{3/2} = \\frac{\\sqrt{3}}{3} \\approx 0{,}577$.'
+        question: 'Khi tia sáng truyền từ không khí vào nước (xuyên xiên góc), góc khúc xạ r so với góc tới i như thế nào?',
+        options: ['A. r > i', 'B. r < i', 'C. r = i', 'D. r = 90°'],
+        correctIndex: 1,
+        explanation: 'Nước chiết quang hơn không khí (n₂ > n₁) nên sin r < sin i ⇒ r < i.'
       }
     ],
     essayExercises: [
       {
         source: SRC_9,
-        question: 'Tia sáng truyền từ không khí ($n_1 = 1$) vào chất lỏng trong suốt với góc tới $i = 45^\\circ$, góc khúc xạ đo được là $r = 30^\\circ$. Tính chiết suất $n_2$ của chất lỏng và tốc độ ánh sáng trong chất lỏng này.',
-        hints: ['Dùng $n_2 = \\frac{\\sin i}{\\sin r}$ và $v = \\frac{c}{n_2}$ với $c = 3\\cdot 10^8\\text{ m/s}$.'],
-        solutionSteps: [
-          'Bước 1: $n_2 = \\frac{\\sin 45^\\circ}{\\sin 30^\\circ} = \\frac{\\sqrt{2}/2}{1/2} = \\sqrt{2} \\approx 1{,}414$.',
-          'Bước 2: Tốc độ ánh sáng trong chất lỏng: $v = \\frac{3\\cdot 10^8}{\\sqrt{2}} \\approx 2{,}12\\cdot 10^8\\text{ m/s}$.'
-        ],
-        finalAnswer: '$n_2 = \\sqrt{2} \\approx 1{,}414$; $v \\approx 2{,}12\\cdot 10^8\\text{ m/s}$.'
+        question: 'Tia sáng từ không khí (n₁ = 1) chiếu tới mặt nước (n₂ = 4/3) dưới góc tới i = 60°. Tính góc khúc xạ r.',
+        hints: ['Dùng 1 · sin 60° = (4/3) · sin r.'],
+        solutionSteps: ['sin r = (3 · √3 / 2) / 4 ≈ 0,6495 ⇒ r ≈ 40,5°.'],
+        finalAnswer: 'r ≈ 40,5°.'
       }
     ]
   },
-
   {
     id: 'phys-9-b6',
     track: 'khong_chuyen',
     grade: 'Lớp 9',
-    stageLabel: 'Chương II · Ánh sáng',
+    stageLabel: 'KHTN 9 · Quang học',
     sourceTag: SRC_9,
     lessonNumber: 6,
-    title: 'Bài 6: Phản xạ toàn phần',
-    subtitle: 'Góc tới hạn i_th, hai điều kiện phản xạ toàn phần và ứng dụng cáp quang – y học nội soi',
+    title: 'Bài 6: Hiện tượng Phản xạ Toàn phần & Cáp quang',
+    subtitle: 'Điều kiện xảy ra phản xạ toàn phần n₁ > n₂, i ≥ i_th và ứng dụng truyền tín hiệu cáp quang',
     description:
-      'Khám phá hiện tượng toàn bộ tia tới bị phản xạ trở lại môi trường ban đầu khi truyền từ môi trường chiết quang sang chiết quang kém, công thức góc tới hạn $\\sin i_{th} = n_2 / n_1$ và nguyên lý sợi cáp quang.',
+      'Khám phá góc tới hạn phản xạ toàn phần và cơ chế giữ ánh sáng truyền đi hàng nghìn km bên trong sợi quang học.',
     theorySections: [
       {
-        heading: '1. Định nghĩa & Điều kiện Phản xạ toàn phần',
+        heading: '1. Hai điều kiện xảy ra phản xạ toàn phần',
         content:
-          '• **Phản xạ toàn phần** là hiện tượng phản xạ toàn bộ tia sáng tới xảy ra ở mặt phân cách giữa hai môi trường trong suốt (không còn tia khúc xạ).\n• **Hai điều kiện bắt buộc**:\n  1. Ánh sáng truyền từ môi trường chiết suất lớn sang môi trường chiết suất nhỏ hơn ($n_1 > n_2$).\n  2. Góc tới lớn hơn hoặc bằng góc tới hạn ($i \\ge i_{th}$), với $\\sin i_{th} = \\frac{n_2}{n_1}$.'
+          '• Điều kiện 1: Ánh sáng truyền từ môi trường chiết suất lớn sang môi trường chiết suất nhỏ hơn ($n_1 > n_2$).\n• Điều kiện 2: Góc tới lớn hơn hoặc bằng góc tới hạn ($i \\ge i_{\\text{th}}$), với $\\sin i_{\\text{th}} = \\frac{n_2}{n_1}$.'
       },
       {
-        heading: '2. Ứng dụng Cáp quang & Hiện tượng tự nhiên',
+        heading: '2. Ứng dụng cáp quang & nội soi',
         content:
-          '• **Sợi cáp quang**: Gồm lõi thủy tinh chiết suất cao ($n_1$) bọc bởi vỏ chiết suất thấp hơn ($n_2 < n_1$). Tia sáng liên tiếp phản xạ toàn phần trong lõi nên truyền đi hàng chục km trong mạng Internet tốc độ cao và ống nội soi y học.\n• **Ảo ảnh sa mạc / mặt đường nhựa nóng**: Lớp không khí sát mặt đường nóng hơn có chiết suất nhỏ hơn lớp không khí bên trên gây phản xạ toàn phần ánh sáng bầu trời.'
+          '• Lõi sợi quang có chiết suất lớn hơn lớp vỏ bọc nên tia sáng bị phản xạ toàn phần liên tiếp dọc theo sợi.'
       }
     ],
-    keyFormulas: [
-      'n_1 > n_2 \\quad \\text{và} \\quad i \\ge i_{th}',
-      '\\sin i_{th} = \\frac{n_2}{n_1}'
-    ],
-    simulationType: 'fiber_optic_tir',
-    sim3dType: 'fiber_optic_3d',
-    defaultParams: { nCore: 1.52, nClad: 1.36, launchAngleDeg: 22 },
-    paramBounds: {
-      nCore: { min: 1.4, max: 1.8, step: 0.02, unit: '', label: 'Chiết suất lõi n₁' },
-      nClad: { min: 1.0, max: 1.48, step: 0.02, unit: '', label: 'Chiết suất vỏ n₂' },
-      launchAngleDeg: { min: 5, max: 58, step: 1, unit: '°', label: 'Góc phóng tia θ' }
-    },
+    keyFormulas: ['\\sin i_{\\text{th}} = \\frac{n_2}{n_1} \\quad (n_1 > n_2)'],
+    ...SIM_PRESETS.fiber_optic,
     practiceExercises: [
       {
         source: SRC_9,
-        question: 'Tính góc tới hạn phản xạ toàn phần khi ánh sáng truyền từ thủy tinh ($n_1 = 1{,}5$) ra không khí ($n_2 = 1$):',
-        options: ['A. ≈ 41,8°', 'B. 30°', 'C. 48,6°', 'D. 60°'],
-        correctIndex: 0,
-        explanation: '$\\sin i_{th} = \\frac{1}{1{,}5} = \\frac{2}{3} \\implies i_{th} = \\arcsin(2/3) \\approx 41{,}8^\\circ$.'
-      },
-      {
-        source: SRC_9,
-        question: 'Cáp quang truyền tín hiệu ánh sáng đi xa mà hầu như không bị lọt ra ngoài vỏ dựa trên hiện tượng nào?',
-        options: ['A. Tán sắc ánh sáng', 'B. Phản xạ toàn phần liên tiếp', 'C. Giao thoa ánh sáng', 'D. Nhiễu xạ ánh sáng'],
-        correctIndex: 1,
-        explanation: 'Lõi cáp quang có $n_1 > n_2$ của lớp vỏ và tia sáng tới mặt phân cách dưới góc lớn hơn $i_{th}$ nên phản xạ toàn phần liên tiếp.'
-      }
-    ],
-    essayExercises: [
-      {
-        source: SRC_9,
-        question: 'Một sợi quang học có lõi bằng thủy tinh chiết suất $n_1 = 1{,}5$ và vỏ bọc chiết suất $n_2 = 1{,}3$. Tìm góc tới hạn $i_{th}$ tại mặt phân cách giữa lõi và vỏ.',
-        hints: ['Áp dụng $\\sin i_{th} = n_2 / n_1$.'],
-        solutionSteps: [
-          'Bước 1: Do $n_1 = 1{,}5 > n_2 = 1{,}3$ nên điều kiện 1 thỏa mãn.',
-          'Bước 2: $\\sin i_{th} = \\frac{1{,}3}{1{,}5} \\approx 0{,}8667 \\implies i_{th} \\approx 60{,}1^\\circ$.'
-        ],
-        finalAnswer: '$i_{th} \\approx 60{,}1^\\circ$.'
-      }
-    ]
-  },
-
-  {
-    id: 'phys-9-energy-refract',
-    track: 'khong_chuyen',
-    grade: 'Lớp 9',
-    stageLabel: 'Chương II · Ánh sáng',
-    sourceTag: SRC_9,
-    lessonNumber: 7,
-    title: 'Bài 7: Lăng kính & Tán sắc Ánh sáng',
-    subtitle: 'Đường truyền tia sáng qua lăng kính, sự tán sắc ánh sáng trắng và màu sắc vật',
-    description:
-      'Giải thích vì sao tia sáng luôn bị lệch về phía đáy lăng kính, hiện tượng ánh sáng trắng tách thành dải cầu vồng Đỏ → Tím ($n_{\\text{đỏ}} < n_{\\text{tím}}$) và cơ chế tạo màu sắc của các vật.',
-    theorySections: [
-      {
-        heading: '1. Đường truyền tia sáng qua Lăng kính & Tán sắc',
-        content:
-          '• Lăng kính là khối chất trong suốt hình lăng trụ tam giác. Mọi tia sáng đơn sắc đi qua lăng kính đều bị khúc xạ 2 lần và **lệch về phía đáy** lăng kính.\n• Khi chiếu chùm ánh sáng trắng hẹp qua lăng kính, ta thu được dải màu liên tục **Đỏ, Cam, Vàng, Lục, Lam, Chàm, Tím** — gọi là **sự tán sắc ánh sáng**.\n• Nguyên nhân: Chiết suất thủy tinh phụ thuộc màu sắc ($n_{\\text{đỏ}} < \\dots < n_{\\text{tím}}$), nên tia đỏ lệch ít nhất và tia tím lệch nhiều nhất.'
-      },
-      {
-        heading: '2. Ánh sáng đơn sắc & Màu sắc các vật',
-        content:
-          '• **Ánh sáng đơn sắc** là ánh sáng có một màu nhất định và không bị tách màu thêm khi qua lăng kính.\n• Một vật dưới ánh sáng trắng có màu nào là do bề mặt vật phản xạ mạnh ánh sáng màu đó và hấp thụ các màu còn lại (vật màu đen hấp thụ hầu hết mọi màu).'
-      }
-    ],
-    keyFormulas: [
-      'n_1 \\sin i = n_2 \\sin r \\quad (n_{\\text{đỏ}} < n_{\\text{tím}})',
-      'D_{\\text{đỏ}} < D_{\\text{vàng}} < D_{\\text{lục}} < D_{\\text{tím}}'
-    ],
-    ...SIM_PRESETS.prism,
-    practiceExercises: [
-      {
-        source: SRC_9,
-        question: 'Khi chiếu chùm ánh sáng trắng hẹp đi qua lăng kính thủy tinh, tia sáng bị lệch về phía đáy ít nhất là tia màu:',
-        options: ['A. Đỏ', 'B. Vàng', 'C. Lục', 'D. Tím'],
-        correctIndex: 0,
-        explanation: 'Trong thủy tinh $n_{\\text{đỏ}}$ nhỏ nhất nên tia đỏ bị khúc xạ lệch ít nhất, tia tím lệch nhiều nhất.'
-      },
-      {
-        source: SRC_9,
-        question: 'Chiếu ánh sáng đơn sắc màu lục vào một tấm bìa màu đỏ trong phòng tối, mắt nhìn tấm bìa sẽ thấy màu gì?',
-        options: ['A. Màu đỏ', 'B. Màu lục', 'C. Màu đen', 'D. Màu vàng'],
+        question: 'Hiện tượng phản xạ toàn phần KHÔNG thể xảy ra khi ánh sáng truyền từ:',
+        options: ['A. Nước ra không khí', 'B. Thủy tinh ra nước', 'C. Không khí vào thủy tinh', 'D. Kim cương ra không khí'],
         correctIndex: 2,
-        explanation: 'Vật màu đỏ chỉ phản xạ tốt ánh sáng đỏ và hấp thụ các màu khác, nên khi chỉ có ánh sáng lục chiếu vào nó hấp thụ hết và trông gần như màu đen.'
+        explanation: 'Từ không khí vào thủy tinh có n₁ < n₂ nên không bao giờ thỏa mãn điều kiện cần n₁ > n₂.'
       }
     ],
     essayExercises: [
       {
         source: SRC_9,
-        question: 'Giải thích vì sao sau cơn mưa trời hửng nắng, khi quay lưng về phía Mặt Trời ta thường quan sát thấy cầu vồng 7 sắc trên bầu trời.',
-        hints: ['Các giọt nước mưa li ti đóng vai trò như những lăng kính/giọt cầu tán sắc.'],
-        solutionSteps: [
-          'Bước 1: Ánh sáng trắng từ Mặt Trời chiếu vào vô số giọt nước mưa lơ lửng trong không khí.',
-          'Bước 2: Tia sáng bị khúc xạ khi đi vào giọt nước, phản xạ bên trong giọt nước rồi khúc xạ ló ra ngoài.',
-          'Bước 3: Vì chiết suất của nước với từng màu khác nhau ($n_{\\text{đỏ}} < n_{\\text{tím}}$), ánh sáng trắng bị tán sắc thành các dải màu từ đỏ đến tím đi tới mắt người quan sát.'
-        ],
-        finalAnswer: 'Do hiện tượng khúc xạ, phản xạ bên trong và tán sắc ánh sáng trắng qua hàng triệu giọt nước mưa.'
+        question: 'Tính góc tới hạn phản xạ toàn phần tại mặt phân cách giữa thủy tinh chiết suất n₁ = 1,5 và không khí (n₂ = 1).',
+        hints: ['sin i_th = 1 / 1,5.'],
+        solutionSteps: ['sin i_th = 2/3 ⇒ i_th ≈ 41,8°.'],
+        finalAnswer: 'i_th ≈ 41,8°.'
       }
     ]
   },
-
   {
     id: 'phys-9-optics',
     track: 'khong_chuyen',
     grade: 'Lớp 9',
-    stageLabel: 'Chương II · Ánh sáng',
+    stageLabel: 'KHTN 9 · Quang học',
     sourceTag: SRC_9,
-    lessonNumber: 8,
-    title: 'Bài 8: Thấu kính',
-    subtitle: 'Phân biệt thấu kính rìa mỏng (hội tụ) – rìa dày (phân kì), 3 tia đặc biệt & cách dựng ảnh',
+    lessonNumber: 7,
+    title: 'Bài 7: Thấu kính Hội tụ, Thấu kính Phân kì & Kính lúp',
+    subtitle: 'Tiêu điểm, trục chính, đường truyền 3 tia sáng đặc biệt và cách dựng ảnh thật/ảnh ảo',
     description:
-      'Làm chủ cấu tạo và tác dụng quang học của thấu kính hội tụ và phân kì, xác định quang tâm $O$, trục chính, tiêu điểm $F$, tiêu cự $f$ và dựng ảnh vật sáng $AB$ chuẩn xác bằng các tia sáng đặc biệt.',
+      'Tổng hợp toàn bộ kiến thức vẽ ảnh qua thấu kính hội tụ, thấu kính phân kì và ứng dụng kính lúp quan sát vật nhỏ.',
     theorySections: [
       {
-        heading: '1. Thấu kính rìa mỏng (Hội tụ) & rìa dày (Phân kì)',
+        heading: '1. Ba tia sáng đặc biệt qua thấu kính',
         content:
-          '• **Thấu kính rìa mỏng (hội tụ)**: Chiếu chùm tia tới song song trục chính cho chùm tia ló hội tụ tại tiêu điểm ảnh chính $F\'$.\n• **Thấu kính rìa dày (phân kì)**: Chiếu chùm tia tới song song trục chính cho chùm tia ló loe rộng ra, có đường kéo dài cắt nhau tại tiêu điểm $F\'$.'
+          '• Tia qua quang tâm O truyền thẳng.\n• Tia tới song song trục chính cho tia ló (hoặc đường kéo dài) đi qua tiêu điểm F\'.\n• Tia tới qua F cho tia ló song song trục chính.'
       },
       {
-        heading: '2. Các tia sáng đặc biệt dựng ảnh qua thấu kính',
+        heading: '2. Tính chất ảnh',
         content:
-          '• **Tia qua quang tâm $O$**: truyền thẳng không đổi hướng.\n• **Tia song song trục chính**: tia ló (hoặc đường kéo dài) đi qua tiêu điểm ảnh $F\'$.\n• **Tia đi qua (hoặc hướng tới) tiêu điểm vật $F$**: cho tia ló song song trục chính.\n• **Đặc điểm ảnh**: Thấu kính hội tụ cho ảnh thật ngược chiều khi $d > f$, ảnh ảo cùng chiều lớn hơn vật khi $d < f$. Thấu kính phân kì luôn cho ảnh ảo, cùng chiều, nhỏ hơn vật.'
+          '• Thấu kính hội tụ: $d > f$ cho ảnh thật ngược chiều; $d < f$ cho ảnh ảo cùng chiều lớn hơn vật (kính lúp).\n• Thấu kính phân kì luôn cho ảnh ảo cùng chiều nhỏ hơn vật.'
       }
     ],
-    keyFormulas: [
-      '\\frac{1}{f} = \\frac{1}{d} + \\frac{1}{d\'}',
-      'k = -\\frac{d\'}{d} = \\frac{\\overline{A\'B\'}}{\\overline{AB}}'
-    ],
-    simulationType: 'lens_optics',
-    sim3dType: 'optics_3d',
-    defaultParams: { f: 15, d: 35, objH: 10 },
-    paramBounds: {
-      f: { min: -25, max: 30, step: 1, unit: 'cm', label: 'Tiêu cự f (>0 HT, <0 PK)' },
-      d: { min: 5, max: 60, step: 1, unit: 'cm', label: 'Khoảng cách vật (d)' },
-      objH: { min: 4, max: 16, step: 1, unit: 'cm', label: 'Chiều cao vật AB' }
-    },
+    keyFormulas: ['\\frac{1}{f} = \\frac{1}{d} + \\frac{1}{d\'}', 'G = \\frac{25}{f\\text{ (cm)}}'],
+    ...SIM_PRESETS.lens_single,
     practiceExercises: [
       {
         source: SRC_9,
-        question: 'Đặt vật sáng $AB$ trước thấu kính hội tụ tiêu cự $f = 12\\text{ cm}$ ở vị trí $d = 24\\text{ cm}$. Ảnh $A\'B\'$ có đặc điểm nào?',
-        options: [
-          'A. Ảnh thật, ngược chiều, bằng vật',
-          'B. Ảnh thật, ngược chiều, lớn hơn vật',
-          'C. Ảnh ảo, cùng chiều, lớn hơn vật',
-          'D. Ảnh ảo, cùng chiều, nhỏ hơn vật'
-        ],
-        correctIndex: 0,
-        explanation: 'Vì $d = 2f = 24\\text{ cm}$, ảnh thật thu được cũng ở $d\' = 2f = 24\\text{ cm}$, ngược chiều và cao đúng bằng vật.'
-      },
-      {
-        source: SRC_9,
-        question: 'Tính chất ảnh của vật thật qua thấu kính phân kì luôn là:',
-        options: [
-          'A. Ảnh ảo, cùng chiều, nhỏ hơn vật',
-          'B. Ảnh thật, ngược chiều, nhỏ hơn vật',
-          'C. Ảnh ảo, cùng chiều, lớn hơn vật',
-          'D. Ảnh thật, cùng chiều, bằng vật'
-        ],
-        correctIndex: 0,
-        explanation: 'Mọi vật thật đặt trước thấu kính phân kì đều luôn cho ảnh ảo cùng chiều và nhỏ hơn vật nằm trong khoảng $OF$.'
-      }
-    ],
-    essayExercises: [
-      {
-        source: SRC_9,
-        question: 'Đặt vật sáng $AB$ cao $2\\text{ cm}$ vuông góc với trục chính của thấu kính hội tụ có tiêu cự $f = 15\\text{ cm}$, cách thấu kính $d = 10\\text{ cm}$. Xác định tính chất, vị trí và chiều cao ảnh $A\'B\'$.',
-        hints: ['Vì $d < f$, ảnh là ảnh ảo ($d\' < 0$). Dùng $\\frac{1}{f} = \\frac{1}{d} + \\frac{1}{d\'}$ hoặc tam giác đồng dạng.'],
-        solutionSteps: [
-          'Bước 1: $\\frac{1}{d\'} = \\frac{1}{15} - \\frac{1}{10} = -\\frac{1}{30} \\implies d\' = -30\\text{ cm}$.',
-          'Bước 2: Ảnh ảo, cùng chiều, cách thấu kính $30\\text{ cm}$.',
-          'Bước 3: Chiều cao ảnh: $A\'B\' = AB \\cdot \\frac{|d\'|}{d} = 2 \\cdot \\frac{30}{10} = 6\\text{ cm}$.'
-        ],
-        finalAnswer: 'Ảnh ảo, cùng chiều, cách thấu kính $30\\text{ cm}$, cao $6\\text{ cm}$.'
-      }
-    ]
-  },
-
-  {
-    id: 'phys-9-b9',
-    track: 'khong_chuyen',
-    grade: 'Lớp 9',
-    stageLabel: 'Chương II · Ánh sáng',
-    sourceTag: SRC_9,
-    lessonNumber: 9,
-    title: 'Bài 9: Thực hành đo tiêu cự của Thấu kính Hội tụ',
-    subtitle: 'Hai phương án thí nghiệm KHTN 9: dùng chùm sáng song song và phương pháp d = d\' = 2f (L = 4f)',
-    description:
-      'Tìm hiểu quy trình lắp đặt giá quang học thực hành đo tiêu cự $f$ thấu kính hội tụ bằng phương pháp vật rất xa và phương pháp đối xứng tạo ảnh thật ngược chiều cao bằng vật.',
-    theorySections: [
-      {
-        heading: '1. Phương pháp 1: Hứng ảnh của vật rất xa (Mặt Trời)',
-        content:
-          '• Chùm tia từ vật ở rất xa ($d \\gg f$) coi như song song với trục chính thấu kính hội tụ.\n• Di chuyển màn hứng ảnh tới khi thu được chấm sáng rõ nét nhất trên màn → khoảng cách từ thấu kính tới màn chính bằng tiêu cự $f$.'
-      },
-      {
-        heading: '2. Phương pháp 2: Dùng ảnh thật cao bằng vật (L = 4f)',
-        content:
-          '• Đặt vật sáng chữ F và màn hứng ảnh đối xứng qua thấu kính sao cho $d = d\'$.\n• Điều chỉnh tới khi ảnh hiện rõ nét và cao đúng bằng vật ($A\'B\' = AB$): lúc này $d = d\' = 2f$, suy ra khoảng cách vật – màn là $L = d + d\' = 4f \\implies f = \\frac{L}{4}$.'
-      }
-    ],
-    keyFormulas: [
-      'd = d\' = 2f \\implies L = d + d\' = 4f \\implies f = \\frac{L}{4}'
-    ],
-    simulationType: 'lens_optics',
-    sim3dType: 'optics_3d',
-    defaultParams: { f: 15, d: 30, objH: 10 },
-    paramBounds: {
-      f: { min: 8, max: 25, step: 1, unit: 'cm', label: 'Tiêu cự f' },
-      d: { min: 10, max: 60, step: 1, unit: 'cm', label: 'Khoảng cách vật d' },
-      objH: { min: 4, max: 14, step: 1, unit: 'cm', label: 'Chiều cao khe chữ F' }
-    },
-    practiceExercises: [
-      {
-        source: SRC_9,
-        question: 'Trong bài thực hành đo tiêu cự thấu kính hội tụ, khi điều chỉnh sao cho vật $AB$ và ảnh thật $A\'B\'$ trên màn có kích thước bằng nhau thì khoảng cách từ vật tới màn đo được là $L = 60\\text{ cm}$. Tiêu cự $f$ của thấu kính là:',
-        options: ['A. 15 cm', 'B. 30 cm', 'C. 20 cm', 'D. 12 cm'],
-        correctIndex: 0,
-        explanation: 'Khi ảnh thật cao bằng vật thì $d = d\' = 2f \\implies L = 4f = 60\\text{ cm} \\implies f = 15\\text{ cm}$.'
-      }
-    ],
-    essayExercises: [
-      {
-        source: SRC_9,
-        question: 'Một học sinh thực hiện 3 lần đo khoảng cách $L$ khi ảnh thật cao bằng vật trên màn cho kết quả: $48{,}0\\text{ cm}$; $48{,}4\\text{ cm}$; $47{,}6\\text{ cm}$. Tính giá trị trung bình của tiêu cự $f$.',
-        hints: ['Tính $\\bar{L}$ rồi chia cho 4 theo công thức $f = L/4$.'],
-        solutionSteps: [
-          'Bước 1: $\\bar{L} = \\frac{48{,}0 + 48{,}4 + 47{,}6}{3} = 48{,}0\\text{ cm}$.',
-          'Bước 2: Tiêu cự trung bình: $\\bar{f} = \\frac{\\bar{L}}{4} = \\frac{48{,}0}{4} = 12{,}0\\text{ cm}$.'
-        ],
-        finalAnswer: '$\\bar{f} = 12{,}0\\text{ cm}$.'
-      }
-    ]
-  },
-
-  {
-    id: 'phys-9-b10',
-    track: 'khong_chuyen',
-    grade: 'Lớp 9',
-    stageLabel: 'Chương II · Ánh sáng',
-    sourceTag: SRC_9,
-    lessonNumber: 10,
-    title: 'Bài 10: Kính lúp. Bài tập Thấu kính',
-    subtitle: 'Cấu tạo kính lúp, số bội giác G = 25/f và phương pháp tam giác đồng dạng giải bài tập thấu kính',
-    description:
-      'Sử dụng kính lúp đúng cách bằng cách đặt vật trong khoảng tiêu cự ($d < f$), đọc ý nghĩa số bội giác $G = 25/f$ và rèn kỹ năng tính vị trí – độ lớn ảnh qua tam giác đồng dạng.',
-    theorySections: [
-      {
-        heading: '1. Kính lúp và Số bội giác G',
-        content:
-          '• **Kính lúp** là một thấu kính hội tụ có tiêu cự ngắn (thường từ vài cm đến dưới $25\\text{ cm}$), dùng để quan sát các vật nhỏ.\n• Khi sử dụng, phải đặt vật nằm trong khoảng tiêu cự ($d < f$) để mắt nhìn thấy **ảnh ảo, cùng chiều và lớn hơn vật**.\n• Công thức liên hệ giữa số bội giác ghi trên vành kính ($2\\times, 5\\times, 10\\times$) và tiêu cự: $G = \\frac{25}{f\\text{ (cm)}}$.'
-      },
-      {
-        heading: '2. Hai cặp tam giác đồng dạng giải mọi bài toán thấu kính',
-        content:
-          '• Cặp 1: $\\triangle OAB \\sim \\triangle OA\'B\' \\implies \\frac{A\'B\'}{AB} = \\frac{OA\'}{OA} = \\frac{d\'}{d}$.\n• Cặp 2: $\\triangle F\'OI \\sim \\triangle F\'A\'B\'$ (ảnh thật: $\\frac{A\'B\'}{OI} = \\frac{d\' - f}{f}$; ảnh ảo TKHT: $\\frac{A\'B\'}{OI} = \\frac{|d\'| + f}{f}$).'
-      }
-    ],
-    keyFormulas: [
-      'G = \\frac{25\\text{ cm}}{f\\text{ (cm)}}',
-      '\\frac{A\'B\'}{AB} = \\frac{|d\'|}{d}'
-    ],
-    ...SIM_PRESETS.telescope,
-    practiceExercises: [
-      {
-        source: SRC_9,
-        question: 'Trên vành một kính lúp có ghi $5\\times$. Tiêu cự của kính lúp này bằng:',
-        options: ['A. 5 cm', 'B. 25 cm', 'C. 125 cm', 'D. 10 cm'],
-        correctIndex: 0,
-        explanation: 'Từ $G = \\frac{25}{f} \\implies f = \\frac{25}{5} = 5\\text{ cm}$.'
-      },
-      {
-        source: SRC_9,
-        question: 'Để quan sát rõ một chi tiết mạch điện tử nhỏ bằng kính lúp tiêu cự $f = 10\\text{ cm}$, phải đặt chi tiết đó cách kính một khoảng $d$:',
-        options: ['A. d < 10 cm', 'B. d = 20 cm', 'C. d > 20 cm', 'D. 10 cm < d < 20 cm'],
-        correctIndex: 0,
-        explanation: 'Kính lúp dùng để tạo ảnh ảo cùng chiều lớn hơn vật nên vật phải đặt trong khoảng tiêu cự ($0 < d < f = 10\\text{ cm}$).'
-      }
-    ],
-    essayExercises: [
-      {
-        source: SRC_9,
-        question: 'Một kính lúp có ghi $2{,}5\\times$. Dùng kính lúp này soi một mẫu chữ cao $2\\text{ mm}$ đặt cách kính $6\\text{ cm}$. Tính tiêu cự kính, khoảng cách ảnh tới kính và chiều cao ảnh nhìn thấy.',
-        hints: ['Tìm $f = 25 / G$ trước, sau đó dùng công thức thấu kính cho ảnh ảo.'],
-        solutionSteps: [
-          'Bước 1: Tiêu cự của kính lúp: $f = \\frac{25}{2{,}5} = 10\\text{ cm}$.',
-          'Bước 2: Áp dụng $\\frac{1}{10} = \\frac{1}{6} + \\frac{1}{d\'} \\implies \\frac{1}{d\'} = -\\frac{1}{15} \\implies d\' = -15\\text{ cm}$ (ảnh ảo cách kính $15\\text{ cm}$).',
-          'Bước 3: Chiều cao ảnh: $A\'B\' = AB \\cdot \\frac{|d\'|}{d} = 2 \\cdot \\frac{15}{6} = 5\\text{ mm}$.'
-        ],
-        finalAnswer: '$f = 10\\text{ cm}$, ảnh ảo cách kính $15\\text{ cm}$, cao $5\\text{ mm}$.'
-      }
-    ]
-  },
-
-  // ================= CHƯƠNG III. ĐIỆN (BÀI 11 - BÀI 13) =================
-  {
-    id: 'phys-9-b11',
-    track: 'khong_chuyen',
-    grade: 'Lớp 9',
-    stageLabel: 'Chương III · Điện',
-    sourceTag: SRC_9,
-    lessonNumber: 11,
-    title: 'Bài 11: Điện trở. Định luật Ohm',
-    subtitle: 'Đường đặc trưng I – U, Định luật Ohm I = U / R và công thức điện trở dây dẫn R = ρl/S',
-    description:
-      'Khảo sát đồ thị sự phụ thuộc của cường độ dòng điện vào hiệu điện thế, phát biểu Định luật Ohm $I = U/R$ và công thức tính điện trở dây dẫn kim loại theo chiều dài, tiết diện và vật liệu.',
-    theorySections: [
-      {
-        heading: '1. Điện trở & Định luật Ohm',
-        content:
-          '• Thương số $R = \\frac{U}{I}$ không đổi với một dây dẫn kim loại ở nhiệt độ xác định, gọi là **điện trở** (đơn vị Ôm, $\\Omega$).\n• **Định luật Ohm**: Cường độ dòng điện chạy qua một đoạn dây dẫn tỉ lệ thuận với hiệu điện thế giữa hai đầu đoạn dây và tỉ lệ nghịch với điện trở của nó: $I = \\frac{U}{R}$.'
-      },
-      {
-        heading: '2. Công thức tính điện trở dây dẫn',
-        content:
-          '• Điện trở của một đoạn dây dẫn tỉ lệ thuận với chiều dài $l$, tỉ lệ nghịch với tiết diện $S$ và phụ thuộc vào bản chất vật liệu (điện trở suất $\\rho$, đơn vị $\\Omega\\cdot\\text{m}$):\n  $$R = \\rho \\frac{l}{S}$$'
-      }
-    ],
-    keyFormulas: [
-      'I = \\frac{U}{R}',
-      'R = \\rho \\frac{l}{S} \\quad (1\\text{ mm}^2 = 10^{-6}\\text{ m}^2)'
-    ],
-    ...SIM_PRESETS.ohm_dc,
-    practiceExercises: [
-      {
-        source: SRC_9,
-        question: 'Đặt hiệu điện thế $U = 12\\text{ V}$ vào hai đầu một điện trở $R = 24\\,\\Omega$. Cường độ dòng điện chạy qua điện trở là:',
-        options: ['A. 0,5 A', 'B. 2 A', 'C. 288 A', 'D. 1,5 A'],
-        correctIndex: 0,
-        explanation: 'Áp dụng Định luật Ohm: $I = \\frac{U}{R} = \\frac{12}{24} = 0{,}5\\text{ A}$.'
-      },
-      {
-        source: SRC_9,
-        question: 'Nếu cắt đôi chiều dài một dây dẫn đồng chất tiết diện đều (giữ nguyên nhiệt độ), điện trở của mỗi nửa dây dẫn mới sẽ:',
-        options: ['A. Giảm một nửa', 'B. Tăng gấp đôi', 'C. Không đổi', 'D. Giảm 4 lần'],
-        correctIndex: 0,
-        explanation: 'Từ $R = \\rho \\frac{l}{S}$, điện trở tỉ lệ thuận với chiều dài $l$ nên giảm chiều dài một nửa thì $R$ giảm một nửa.'
-      }
-    ],
-    essayExercises: [
-      {
-        source: SRC_9,
-        question: 'Một cuộn dây đồng dài $l = 100\\text{ m}$ có tiết diện $S = 0{,}5\\text{ mm}^2$, biết điện trở suất của đồng là $\\rho = 1{,}7\\cdot 10^{-8}\\,\\Omega\\cdot\\text{m}$. Tính điện trở của cuộn dây và cường độ dòng điện qua nó khi mắc vào nguồn $U = 6{,}8\\text{ V}$.',
-        hints: ['Đổi $S = 0{,}5\\text{ mm}^2 = 0{,}5\\cdot 10^{-6}\\text{ m}^2$.'],
-        solutionSteps: [
-          'Bước 1: $R = 1{,}7\\cdot 10^{-8} \\cdot \\frac{100}{0{,}5\\cdot 10^{-6}} = 3{,}4\\,\\Omega$.',
-          'Bước 2: $I = \\frac{U}{R} = \\frac{6{,}8}{3{,}4} = 2\\text{ A}$.'
-        ],
-        finalAnswer: '$R = 3{,}4\\,\\Omega$; $I = 2\\text{ A}$.'
-      }
-    ]
-  },
-
-  {
-    id: 'phys-9-elec',
-    track: 'khong_chuyen',
-    grade: 'Lớp 9',
-    stageLabel: 'Chương III · Điện',
-    sourceTag: SRC_9,
-    lessonNumber: 12,
-    title: 'Bài 12: Đoạn mạch Nối tiếp, Song song',
-    subtitle: 'Quy tắc cường độ dòng điện, hiệu điện thế và điện trở tương đương mạch nối tiếp – song song',
-    description:
-      'Vận dụng chuẩn GDPT 2018 về đặc điểm mạch điện mắc nối tiếp ($R_{tđ} = R_1 + R_2$) và mắc song song ($1/R_{tđ} = 1/R_1 + 1/R_2$) để phân tích mạch điện thực tế trong gia đình.',
-    theorySections: [
-      {
-        heading: '1. Đoạn mạch mắc nối tiếp',
-        content:
-          '• Cường độ dòng điện có giá trị như nhau tại mọi điểm: $I = I_1 = I_2$.\n• Hiệu điện thế hai đầu đoạn mạch bằng tổng các hiệu điện thế thành phần: $U = U_1 + U_2$.\n• Điện trở tương đương: $R_{tđ} = R_1 + R_2$.'
-      },
-      {
-        heading: '2. Đoạn mạch mắc song song',
-        content:
-          '• Hiệu điện thế hai đầu các nhánh bằng nhau: $U = U_1 = U_2$.\n• Cường độ dòng điện mạch chính bằng tổng dòng điện các nhánh rẽ: $I = I_1 + I_2$.\n• Điện trở tương đương: $\\frac{1}{R_{tđ}} = \\frac{1}{R_1} + \\frac{1}{R_2} \\implies R_{tđ} = \\frac{R_1 R_2}{R_1 + R_2}$ (nhỏ hơn từng điện trở thành phần).'
-      }
-    ],
-    keyFormulas: [
-      '\\text{Nối tiếp: } I = I_1 = I_2,\\; U = U_1 + U_2,\\; R_{tđ} = R_1 + R_2',
-      '\\text{Song song: } U = U_1 = U_2,\\; I = I_1 + I_2,\\; \\frac{1}{R_{tđ}} = \\frac{1}{R_1} + \\frac{1}{R_2}'
-    ],
-    simulationType: 'ohm_circuit',
-    sim3dType: 'cathode_ray_tube_3d',
-    defaultParams: { voltage: 12, r1: 10, r2: 15, circuitType: 0 },
-    paramBounds: {
-      voltage: { min: 3, max: 24, step: 1, unit: 'V', label: 'Hiệu điện thế U' },
-      r1: { min: 5, max: 50, step: 1, unit: 'Ω', label: 'Điện trở R₁' },
-      r2: { min: 5, max: 50, step: 1, unit: 'Ω', label: 'Điện trở R₂' },
-      circuitType: { min: 0, max: 1, step: 1, unit: '(0:NT / 1:SS)', label: 'Kiểu mạch' }
-    },
-    practiceExercises: [
-      {
-        source: SRC_9,
-        question: 'Hai điện trở $R_1 = 6\\,\\Omega$ và $R_2 = 12\\,\\Omega$ mắc song song vào hiệu điện thế $U = 12\\text{ V}$. Cường độ dòng điện mạch chính là:',
-        options: ['A. 3 A', 'B. 2 A', 'C. 1 A', 'D. 0,67 A'],
-        correctIndex: 0,
-        explanation: '$R_{tđ} = \\frac{6\\cdot 12}{6 + 12} = 4\\,\\Omega$. Dòng điện mạch chính $I = \\frac{12}{4} = 3\\text{ A}$.'
-      },
-      {
-        source: SRC_9,
-        question: 'Mắc nối tiếp $R_1 = 10\\,\\Omega$ và $R_2 = 20\\,\\Omega$ vào nguồn $15\\text{ V}$. Hiệu điện thế hai đầu điện trở $R_2$ bằng:',
-        options: ['A. 10 V', 'B. 5 V', 'C. 15 V', 'D. 7,5 V'],
-        correctIndex: 0,
-        explanation: '$R_{tđ} = 30\\,\\Omega \\implies I = 15/30 = 0{,}5\\text{ A} \\implies U_2 = I R_2 = 0{,}5 \\cdot 20 = 10\\text{ V}$.'
-      }
-    ],
-    essayExercises: [
-      {
-        source: SRC_9,
-        question: 'Cho mạch gồm $R_1 = 15\\,\\Omega$ và $R_2 = 30\\,\\Omega$ mắc song song vào nguồn $U = 18\\text{ V}$. Tính điện trở tương đương của đoạn mạch, dòng điện qua mỗi nhánh và dòng điện mạch chính.',
-        hints: ['Trong mạch song song, hiệu điện thế đặt lên $R_1$ và $R_2$ đều bằng $18\\text{ V}$.'],
-        solutionSteps: [
-          'Bước 1: $R_{tđ} = \\frac{15 \\cdot 30}{15 + 30} = 10\\,\\Omega$.',
-          'Bước 2: $I_1 = \\frac{18}{15} = 1{,}2\\text{ A}$; $I_2 = \\frac{18}{30} = 0{,}6\\text{ A}$.',
-          'Bước 3: Dòng điện mạch chính: $I = I_1 + I_2 = 1{,}8\\text{ A}$ (kiểm tra lại $U/R_{tđ} = 18/10 = 1{,}8\\text{ A}$).'
-        ],
-        finalAnswer: '$R_{tđ} = 10\\,\\Omega$; $I_1 = 1{,}2\\text{ A}$; $I_2 = 0{,}6\\text{ A}$; $I = 1{,}8\\text{ A}$.'
-      }
-    ]
-  },
-
-  {
-    id: 'phys-9-b13',
-    track: 'khong_chuyen',
-    grade: 'Lớp 9',
-    stageLabel: 'Chương III · Điện',
-    sourceTag: SRC_9,
-    lessonNumber: 13,
-    title: 'Bài 13: Năng lượng của Dòng điện & Công suất điện',
-    subtitle: 'Công thức W = UIt, công suất điện P = UI, chỉ số công tơ kWh và bài toán tiết kiệm điện',
-    description:
-      'Tính năng lượng điện mà đoạn mạch tiêu thụ $W = UIt$, công suất định mức của các thiết bị gia dụng ($P = UI$), đọc chỉ số công tơ điện ($1\\text{ kWh} = 3{,}6\\cdot 10^6\\text{ J}$) và tính hóa đơn tiền điện.',
-    theorySections: [
-      {
-        heading: '1. Năng lượng của dòng điện & Công tơ điện',
-        content:
-          '• Năng lượng điện mà một đoạn mạch tiêu thụ tỉ lệ với hiệu điện thế $U$, cường độ dòng điện $I$ và thời gian $t$: $W = U \\cdot I \\cdot t = P \\cdot t$.\n• Đơn vị đo điện năng trong sinh hoạt là **kilooat giờ** ($1\\text{ kWh} = 1\\text{ số điện} = 1000\\text{ W} \\cdot 3600\\text{ s} = 3{,}6\\cdot 10^6\\text{ J}$).'
-      },
-      {
-        heading: '2. Công suất điện',
-        content:
-          '• Công suất điện của đoạn mạch bằng tích hiệu điện thế và cường độ dòng điện: $P = U \\cdot I$ (suy ra thêm $P = I^2 R = \\frac{U^2}{R}$ với điện trở thuần).\n• Số ghi trên thiết bị (vd: $220\\text{ V} - 1000\\text{ W}$) cho biết hiệu điện thế định mức và công suất định mức để thiết bị hoạt động bình thường.'
-      }
-    ],
-    keyFormulas: [
-      'W = U \\cdot I \\cdot t = P \\cdot t',
-      'P = U \\cdot I = I^2 R = \\frac{U^2}{R}',
-      '1\\text{ kWh} = 3{,}6 \\cdot 10^6\\text{ J}'
-    ],
-    simulationType: 'joule_lenz_heat',
-    sim3dType: 'transformer_3d',
-    defaultParams: { voltage: 12, resistance: 6, waterMass: 0.5 },
-    paramBounds: {
-      voltage: { min: 3, max: 36, step: 3, unit: 'V', label: 'Hiệu điện thế U' },
-      resistance: { min: 2, max: 30, step: 2, unit: 'Ω', label: 'Điện trở dây đốt R' },
-      waterMass: { min: 0.2, max: 2.0, step: 0.2, unit: 'kg', label: 'Khối lượng nước m' }
-    },
-    practiceExercises: [
-      {
-        source: SRC_9,
-        question: 'Một bóng đèn ghi $220\\text{ V} - 100\\text{ W}$ được dùng ở hiệu điện thế đúng $220\\text{ V}$. Cường độ dòng điện chạy qua đèn là:',
-        options: ['A. ≈ 0,45 A', 'B. 2,2 A', 'C. 0,1 A', 'D. 4,5 A'],
-        correctIndex: 0,
-        explanation: 'Từ $P = U\\cdot I \\implies I = \\frac{100}{220} \\approx 0{,}45\\text{ A}$.'
-      },
-      {
-        source: SRC_9,
-        question: 'Một ấm siêu tốc công suất $1{,}5\\text{ kW}$ đun nước trong $20\\text{ phút}$. Điện năng ấm tiêu thụ là:',
-        options: ['A. 0,5 kWh', 'B. 30 kWh', 'C. 1,5 kWh', 'D. 3 kWh'],
-        correctIndex: 0,
-        explanation: 'Đổi $t = 20/60 = 1/3\\text{ h}$. Điện năng $W = P \\cdot t = 1{,}5 \\cdot \\frac{1}{3} = 0{,}5\\text{ kWh}$.'
-      }
-    ],
-    essayExercises: [
-      {
-        source: SRC_9,
-        question: 'Một gia đình sử dụng 1 tủ lạnh công suất $150\\text{ W}$ chạy trung bình $10\\text{ giờ/ngày}$ và 1 điều hòa $1000\\text{ W}$ chạy $4\\text{ giờ/ngày}$. Tính tổng điện năng tiêu thụ trong 30 ngày và tiền điện phải trả (biết đơn giá $2500\\text{ đồng/kWh}$).',
-        hints: ['Tính $W = P \\cdot t$ theo đơn vị kWh cho từng thiết bị rồi cộng lại.'],
-        solutionSteps: [
-          'Bước 1: Điện năng tủ lạnh 1 ngày: $0{,}15 \\cdot 10 = 1{,}5\\text{ kWh}$. Điều hòa 1 ngày: $1{,}0 \\cdot 4 = 4{,}0\\text{ kWh}$.',
-          'Bước 2: Tổng điện năng 30 ngày: $W = (1{,}5 + 4{,}0) \\cdot 30 = 165\\text{ kWh}$.',
-          'Bước 3: Tiền điện phải trả: $165 \\cdot 2500 = 412\\,500\\text{ đồng}$.'
-        ],
-        finalAnswer: '$165\\text{ kWh}$, tiền điện $412\\,500\\text{ đồng}$.'
-      }
-    ]
-  },
-
-  // ================= CHƯƠNG IV. ĐIỆN TỪ (BÀI 14 - BÀI 15) =================
-  {
-    id: 'phys-9-induction-ac',
-    track: 'khong_chuyen',
-    grade: 'Lớp 9',
-    stageLabel: 'Chương IV · Điện từ',
-    sourceTag: SRC_9,
-    lessonNumber: 14,
-    title: 'Bài 14: Cảm ứng điện từ. Nguyên tắc tạo ra Dòng điện Xoay chiều',
-    subtitle: 'Điều kiện xuất hiện dòng điện cảm ứng và nguyên lý hoạt động của máy phát điện xoay chiều',
-    description:
-      'Khảo sát thí nghiệm đưa nam châm qua cuộn dây dẫn kín: xác định điều kiện biến thiên số đường sức từ để xuất hiện dòng điện cảm ứng và nguyên tắc đảo chiều tạo dòng điện xoay chiều.',
-    theorySections: [
-      {
-        heading: '1. Hiện tượng Cảm ứng điện từ',
-        content:
-          '• Khi số đường sức từ xuyên qua tiết diện của một cuộn dây dẫn kín **biến thiên** (tăng hoặc giảm), trong cuộn dây xuất hiện **dòng điện cảm ứng**.\n• Dòng điện cảm ứng chỉ tồn tại trong thời gian từ trường qua cuộn dây còn đang thay đổi; nếu nam châm đứng yên so với cuộn dây thì dòng cảm ứng bằng $0$.'
-      },
-      {
-        heading: '2. Dòng điện xoay chiều & Máy phát điện',
-        content:
-          '• Khi số đường sức từ xuyên qua cuộn dây kín **luân phiên tăng rồi giảm** (như quay nam châm trước cuộn dây hoặc quay cuộn dây trong từ trường), chiều dòng điện cảm ứng đổi dấu tuần hoàn — gọi là **dòng điện xoay chiều (AC)**.\n• Mọi máy phát điện xoay chiều đều gồm hai bộ phận chính: phần tạo từ trường (nam châm) và cuộn dây dẫn; phần quay gọi là **rôto**, phần đứng yên là **stato**.'
-      }
-    ],
-    keyFormulas: [
-      '\\Phi \\text{ biến thiên} \\implies \\text{Có dòng điện cảm ứng } i_{\\text{cu}}',
-      'f_{\\text{VN}} = 50\\text{ Hz} \\; (\\text{đổi chiều } 100\\text{ lần/giây})'
-    ],
-    simulationType: 'magnetic_induction',
-    sim3dType: 'ac_generator_3d',
-    defaultParams: { magnetSpeed: 4.5, turns: 20, bField: 1.4 },
-    paramBounds: {
-      magnetSpeed: { min: 1, max: 10, step: 0.5, unit: 'm/s', label: 'Tốc độ nam châm' },
-      turns: { min: 4, max: 24, step: 2, unit: 'vòng', label: 'Số vòng dây N' },
-      bField: { min: 0.5, max: 3, step: 0.1, unit: 'T', label: 'Cảm ứng từ B' }
-    },
-    practiceExercises: [
-      {
-        source: SRC_9,
-        question: 'Điều kiện để xuất hiện dòng điện cảm ứng trong một cuộn dây dẫn kín là:',
-        options: [
-          'A. Cuộn dây nằm yên bên cạnh nam châm đứng yên',
-          'B. Số đường sức từ xuyên qua tiết diện cuộn dây biến thiên theo thời gian',
-          'C. Cuộn dây nối với hai cực của pin một chiều',
-          'D. Đặt cuộn dây trong chân không không có từ trường'
-        ],
+        question: 'Kính lúp có tiêu cự f = 5 cm thì số bội giác ghi trên vành kính là:',
+        options: ['A. 2x', 'B. 5x', 'C. 10x', 'D. 25x'],
         correctIndex: 1,
-        explanation: 'Dòng điện cảm ứng chỉ xuất hiện khi số đường sức từ xuyên qua tiết diện cuộn dây kín tăng hoặc giảm (biến thiên).'
-      },
-      {
-        source: SRC_9,
-        question: 'Dòng điện xoay chiều trong lưới điện dân dụng Việt Nam có tần số $50\\text{ Hz}$. Trong $1\\text{ giây}$, dòng điện đổi chiều bao nhiêu lần?',
-        options: ['A. 100 lần', 'B. 50 lần', 'C. 25 lần', 'D. 200 lần'],
-        correctIndex: 0,
-        explanation: 'Mỗi chu kì dòng điện xoay chiều đổi chiều 2 lần, nên với $50$ chu kì/giây sẽ đổi chiều $100$ lần/giây.'
+        explanation: 'G = 25 / f = 25 / 5 = 5x.'
       }
     ],
     essayExercises: [
       {
         source: SRC_9,
-        question: 'Giải thích vì sao đinamô xe đạp chỉ thắp sáng đèn khi bánh xe quay, và khi đạp xe càng nhanh thì đèn càng sáng hơn.',
-        hints: ['Liên hệ tốc độ biến thiên số đường sức từ xuyên qua cuộn dây trong đinamô.'],
-        solutionSteps: [
-          'Bước 1: Khi bánh xe quay, núm đinamô làm nam châm quay liên tục trước cuộn dây cố định, khiến số đường sức từ xuyên qua cuộn dây luân phiên tăng giảm → sinh ra dòng điện xoay chiều thắp sáng đèn.',
-          'Bước 2: Khi đạp xe càng nhanh, tốc độ biến thiên từ thông càng lớn nên cường độ dòng điện cảm ứng càng mạnh, làm đèn sáng hơn.'
-        ],
-        finalAnswer: 'Do cảm ứng điện từ: tốc độ quay tăng làm số đường sức từ biến thiên nhanh hơn nên dòng cảm ứng mạnh hơn.'
+        question: 'Đặt vật sáng AB cao 2 cm vuông góc trục chính cách thấu kính hội tụ (f = 10 cm) một khoảng d = 15 cm. Tìm vị trí và chiều cao ảnh.',
+        hints: ['Dùng 1/f = 1/d + 1/d\' và k = -d\'/d.'],
+        solutionSteps: ['1/d\' = 1/10 - 1/15 = 1/30 ⇒ d\' = 30 cm (ảnh thật).', 'A\'B\' = AB · (d\'/d) = 2 · (30/15) = 4 cm.'],
+        finalAnswer: 'Ảnh thật cách thấu kính 30 cm, cao 4 cm.'
       }
     ]
   },
-
-  {
-    id: 'phys-9-b15',
-    track: 'khong_chuyen',
-    grade: 'Lớp 9',
-    stageLabel: 'Chương IV · Điện từ',
-    sourceTag: SRC_9,
-    lessonNumber: 15,
-    title: 'Bài 15: Tác dụng của Dòng điện Xoay chiều & Truyền tải điện',
-    subtitle: 'Tác dụng nhiệt, phát sáng, từ, sinh lí; máy biến áp và giảm hao phí khi truyền tải điện năng đi xa',
-    description:
-      'Phân biệt các tác dụng của dòng điện xoay chiều trong đời sống, hiểu vai trò của máy biến áp $\\frac{U_1}{U_2} = \\frac{N_1}{N_2}$ và cách nâng cao hiệu điện thế để giảm công suất hao phí trên đường dây tải điện.',
-    theorySections: [
-      {
-        heading: '1. Bốn tác dụng đặc trưng của dòng điện xoay chiều',
-        content:
-          '• **Tác dụng nhiệt**: làm nóng dây tóc, bàn là, bếp hồng ngoại, ấm đun.\n• **Tác dụng phát sáng**: thắp sáng đèn LED, đèn huỳnh quang, bóng đèn thử điện.\n• **Tác dụng từ**: làm quay động cơ quạt điện, máy bơm, nam châm điện nâng hạ; đảo cực liên tục theo tần số nguồn.\n• **Tác dụng sinh lí**: dòng điện xoay chiều đi qua cơ thể gây co giật cơ, nguy hiểm tính mạng nên cần tuân thủ nghiêm ngặt an toàn điện $220\\text{ V}$.'
-      },
-      {
-        heading: '2. Máy biến áp & Truyền tải điện năng đi xa',
-        content:
-          '• Máy biến áp dùng dòng xoay chiều để tăng hoặc giảm hiệu điện thế theo tỉ số vòng dây: $\\frac{U_1}{U_2} = \\frac{N_1}{N_2}$.\n• Hao phí tỏa nhiệt trên đường dây: $\\Delta P = \\frac{P^2 R}{U^2}$. Tăng hiệu điện thế $U$ lên $n$ lần sẽ giảm hao phí đường dây xuống **$n^2$ lần**.'
-      }
-    ],
-    keyFormulas: [
-      '\\frac{U_1}{U_2} = \\frac{N_1}{N_2}',
-      '\\Delta P_{\\text{hao phí}} = \\frac{P^2 R}{U^2}'
-    ],
-    ...SIM_PRESETS.transformer,
-    practiceExercises: [
-      {
-        source: SRC_9,
-        question: 'Khi tăng hiệu điện thế truyền tải ở nhà máy điện lên $10$ lần (giữ nguyên công suất phát và điện trở dây), công suất hao phí trên đường dây tải điện sẽ:',
-        options: ['A. Giảm 100 lần', 'B. Giảm 10 lần', 'C. Tăng 100 lần', 'D. Không đổi'],
-        correctIndex: 0,
-        explanation: 'Vì $\\Delta P = \\frac{P^2 R}{U^2}$ tỉ lệ nghịch với $U^2$, tăng $U$ lên $10$ lần thì hao phí giảm $10^2 = 100$ lần.'
-      },
-      {
-        source: SRC_9,
-        question: 'Một máy biến áp có cuộn sơ cấp $500$ vòng nối với lưới điện $220\\text{ V}$. Muốn thu được $11\\text{ V}$ ở cuộn thứ cấp thì số vòng cuộn thứ cấp là:',
-        options: ['A. 25 vòng', 'B. 50 vòng', 'C. 10 000 vòng', 'D. 100 vòng'],
-        correctIndex: 0,
-        explanation: '$N_2 = N_1 \\cdot \\frac{U_2}{U_1} = 500 \\cdot \\frac{11}{220} = 25$ vòng.'
-      }
-    ],
-    essayExercises: [
-      {
-        source: SRC_9,
-        question: 'Một trạm phát điện truyền đi công suất $P = 100\\text{ kW}$ trên đường dây có điện trở tổng cộng $R = 8\\,\\Omega$. Tính công suất hao phí khi truyền ở $U_1 = 2\\text{ kV}$ và khi tăng áp lên $U_2 = 20\\text{ kV}$.',
-        hints: ['Đổi $P = 10^5\\text{ W}$, $U_1 = 2000\\text{ V}$, $U_2 = 20\\,000\\text{ V}$ rồi thay vào $\\Delta P = P^2 R / U^2$.'],
-        solutionSteps: [
-          'Bước 1: Ở $U_1 = 2000\\text{ V}$: $\\Delta P_1 = \\frac{(10^5)^2 \\cdot 8}{2000^2} = 20\\,000\\text{ W} = 20\\text{ kW}$.',
-          'Bước 2: Tăng áp gấp 10 lần lên $U_2 = 20\\text{ kV}$: $\\Delta P_2 = \\frac{20\\text{ kW}}{10^2} = 0{,}2\\text{ kW} = 200\\text{ W}$.'
-        ],
-        finalAnswer: 'Hao phí giảm từ $20\\text{ kW}$ xuống còn $200\\text{ W}$.'
-      }
-    ]
-  },
-
-  // ================= CHƯƠNG XIV & CẦU NỐI LÊN LỚP 10 =================
-  {
-    id: 'phys-9-b16',
-    track: 'khong_chuyen',
-    grade: 'Lớp 9',
-    stageLabel: 'Chương XIV · Năng lượng trên Trái Đất',
-    sourceTag: SRC_9,
-    lessonNumber: 16,
-    title: 'Bài 16: Vòng Năng lượng trên Trái Đất & Năng lượng Tái tạo',
-    subtitle: 'Chu trình chuyển hóa năng lượng Mặt Trời, nhiên liệu hóa thạch và năng lượng xanh (gió, mặt trời, thủy điện)',
-    description:
-      'Hoàn thiện chương trình KHTN 9 GDPT 2018 (Mục Khai thác tài nguyên & Năng lượng): theo dõi vòng tuần hoàn năng lượng từ Mặt Trời tạo ra gió, mưa, sinh khối và đánh giá hiệu quả sử dụng năng lượng tái tạo.',
-    theorySections: [
-      {
-        heading: '1. Vòng năng lượng trên Trái Đất',
-        content:
-          '• **Mặt Trời** là nguồn cung cấp năng lượng chủ yếu cho mọi vòng tuần hoàn tự nhiên trên Trái Đất:\n  – Bức xạ Mặt Trời làm bốc hơi nước tạo mưa, sông ngòi (**Thủy năng**) và chênh lệch áp suất khí quyển tạo gió (**Năng lượng gió**).\n  – Thực vật quang hợp tích lũy năng lượng thành **Sinh khối** và qua hàng triệu năm thành **Nhiên liệu hóa thạch** (than đá, dầu mỏ, khí tự nhiên).'
-      },
-      {
-        heading: '2. Năng lượng Hóa thạch vs Năng lượng Tái tạo',
-        content:
-          '• **Nhiên liệu hóa thạch**: Mật độ năng lượng cao, dễ khai thác hiện tại nhưng **không tái tạo** (sẽ cạn kiệt) và phát thải khí nhà kính $\\text{CO}_2$.\n• **Năng lượng tái tạo** (Mặt Trời, gió, thủy điện, địa nhiệt): Nguồn vô tận, ít phát thải carbon nhưng phụ thuộc thời tiết và đòi hỏi chi phí lưu trữ năng lượng (pin, tích năng).'
-      }
-    ],
-    keyFormulas: [
-      'H_{\\text{chuyển hóa}} = \\frac{W_{\\text{có ích}}}{W_{\\text{toàn phần}}} \\cdot 100\\% < 100\\%',
-      'P_{\\text{gió}} = \\frac{1}{2}\\rho A v^3 \\propto v^3'
-    ],
-    ...SIM_PRESETS.thermal_gas,
-    practiceExercises: [
-      {
-        source: SRC_9,
-        question: 'Nguồn năng lượng gốc tạo nên chuyển động tuần hoàn của nước (thủy điện) và chuyển động đối lưu của không khí (năng lượng gió) trên Trái Đất là:',
-        options: ['A. Năng lượng Mặt Trời', 'B. Năng lượng hạt nhân lòng đất', 'C. Thủy triều Mặt Trăng', 'D. Lực ma sát khí quyển'],
-        correctIndex: 0,
-        explanation: 'Bức xạ Mặt Trời làm nóng không đều bề mặt Trái Đất và làm bay hơi nước đại dương, trực tiếp vận hành cả vòng tuần hoàn nước lẫn gió.'
-      },
-      {
-        source: SRC_9,
-        question: 'Một tấm pin Mặt Trời nhận công suất bức xạ $1000\\text{ W}$ và tạo ra công suất điện $200\\text{ W}$. Hiệu suất chuyển hóa năng lượng của tấm pin là:',
-        options: ['A. 20%', 'B. 25%', 'C. 80%', 'D. 5%'],
-        correctIndex: 0,
-        explanation: 'Hiệu suất $H = \\frac{200}{1000}\\cdot 100\\% = 20\\%$.'
-      }
-    ],
-    essayExercises: [
-      {
-        source: SRC_9,
-        question: 'Nêu 2 ưu điểm và 2 thách thức kỹ thuật khi thay thế nhà máy nhiệt điện than bằng điện gió và điện Mặt Trời.',
-        hints: ['Xét yếu tố phát thải khí nhà kính, tính vô tận, tính ổn định theo thời tiết và lưu trữ pin.'],
-        solutionSteps: [
-          'Ưu điểm: Nguồn năng lượng tái tạo tự nhiên không cạn kiệt; không phát thải khí nhà kính CO₂ và bụi mịn trong quá trình phát điện.',
-          'Thách thức: Công suất phát phụ thuộc mạnh vào nắng/gió theo giờ và mùa; cần đầu tư hệ thống lưu trữ điện năng quy mô lớn và lưới điện thông minh.'
-        ],
-        finalAnswer: 'Ưu: sạch & tái tạo; Thách thức: phụ thuộc thời tiết & bài toán lưu trữ điện năng.'
-      }
-    ]
-  },
-
   {
     id: 'phys-9-math-vec',
     track: 'khong_chuyen',
     grade: 'Lớp 9',
-    stageLabel: 'Cầu nối 9 lên 10 · Công cụ Toán & Vectơ',
-    sourceTag: 'Chuẩn bị nền tảng GDPT 2018 · Lượng giác, Đồ thị & Vectơ',
-    lessonNumber: 17,
-    title: 'Bài 17 (Cầu nối lên Lý 10): Lượng giác, Hàm số y = ax + b & Vectơ',
-    subtitle: 'Tỉ số sin, cos, tan; ý nghĩa hệ số góc đồ thị chuyển động và quy tắc tổng hợp – chiếu vectơ lực',
+    stageLabel: 'KHTN 9 · Công cụ Toán học Vật lí',
+    sourceTag: SRC_9,
+    lessonNumber: 8,
+    title: 'Bài 8: Tổng hợp Lực, Đồ thị hàm bậc nhất & Lượng giác Tam giác vuông',
+    subtitle: 'Cầu nối toán học giúp chiếu vectơ lực và đọc hệ số góc đồ thị trong các bài toán KHTN 9',
     description:
-      'Cầu nối quan trọng từ KHTN 9 lên Vật lí 10: dùng thuần thục $\\sin, \\cos, \\tan$ để phân tích lực, hiểu hệ số góc đường thẳng $y = ax + b$ trên đồ thị $x-t$ và thực hiện phép cộng – chiếu vectơ lên hai trục $Ox, Oy$.',
+      'Trang bị công cụ sin/cos tam giác vuông, quy tắc hình bình hành tổng hợp lực và đọc ý nghĩa độ dốc đồ thị thực nghiệm.',
     theorySections: [
       {
-        heading: '1. Tỉ số lượng giác sin, cos, tan trong tam giác vuông',
+        heading: '1. Lượng giác & Chiếu lực',
         content:
-          '• Trong tam giác vuông góc nhọn $\\alpha$: $\\sin\\alpha = \\frac{\\text{Đối}}{\\text{Huyền}}$, $\\cos\\alpha = \\frac{\\text{Kề}}{\\text{Huyền}}$, $\\tan\\alpha = \\frac{\\text{Đối}}{\\text{Kề}}$.\n• Phân tích lực $\\vec{F}$ hợp với phương ngang $Ox$ góc $\\alpha$: $F_x = F\\cos\\alpha$ và $F_y = F\\sin\\alpha$.'
+          '• Lực kéo nghiêng góc $\\alpha$ so với phương ngang có thành phần ngang $F_x = F\\cos\\alpha$ và thành phần đứng $F_y = F\\sin\\alpha$.'
       },
       {
-        heading: '2. Hàm bậc nhất y = ax + b & Đồ thị chuyển động',
+        heading: '2. Ý nghĩa hệ số góc đồ thị',
         content:
-          '• Phương trình tọa độ chuyển động thẳng đều $x = x_0 + v \\cdot t$ là hàm bậc nhất với hệ số góc $a = v$ (vận tốc) và tung độ gốc $b = x_0$.'
-      },
-      {
-        heading: '3. Quy tắc Hình bình hành Cộng Vectơ',
-        content:
-          '• Tổng hai vectơ đồng quy $\\vec{F} = \\vec{F}_1 + \\vec{F}_2$ có độ lớn:\n  $$F = \\sqrt{F_1^2 + F_2^2 + 2F_1 F_2\\cos\\alpha}$$'
+          '• Trên đồ thị $U - I$, hệ số góc $\\tan\\varphi = U/I = R$ biểu diễn trực tiếp điện trở dây dẫn.'
       }
     ],
-    keyFormulas: [
-      'F_x = F\\cos\\alpha, \\quad F_y = F\\sin\\alpha',
-      'F = \\sqrt{F_1^2 + F_2^2 + 2F_1 F_2\\cos\\alpha}',
-      'y = ax + b \\iff x(t) = v\\cdot t + x_0'
-    ],
-    simulationType: 'kinematics_graphs',
-    sim3dType: 'kinematics_3d',
-    defaultParams: { vizMode: 0, angleDeg: 35, f1: 30, f2: 20, v0: 4, accel: 1.5 },
-    paramBounds: {
-      vizMode: { min: 0, max: 2, step: 1, unit: '(0:Vectơ | 1:d-t | 2:v-t)', label: 'Chế độ 2D' },
-      angleDeg: { min: 0, max: 150, step: 5, unit: '°', label: 'Góc nghiêng α' },
-      f1: { min: 10, max: 50, step: 2, unit: 'N', label: 'Độ lớn F₁' },
-      f2: { min: 10, max: 50, step: 2, unit: 'N', label: 'Độ lớn F₂' },
-      v0: { min: 0, max: 15, step: 0.5, unit: 'm/s', label: 'Vận tốc v₀' },
-      accel: { min: -5, max: 6, step: 0.5, unit: 'm/s²', label: 'Gia tốc a' }
-    },
+    keyFormulas: ['F_x = F\\cos\\alpha,\\; F_y = F\\sin\\alpha', 'R = \\frac{\\Delta U}{\\Delta I}'],
+    ...SIM_PRESETS.vectors,
     practiceExercises: [
       {
         source: SRC_9,
-        question: 'Một lực $F = 100\\text{ N}$ hợp với phương ngang $Ox$ góc $\\alpha = 60^\\circ$. Hình chiếu $F_x$ lên phương ngang là:',
-        options: ['A. 50 N', 'B. 86,6 N', 'C. 100 N', 'D. 57,7 N'],
+        question: 'Một lực F = 20 N hợp với phương ngang góc 60°. Thành phần lực kéo theo phương ngang là:',
+        options: ['A. 10 N', 'B. 10√3 N', 'C. 20 N', 'D. 5 N'],
         correctIndex: 0,
-        explanation: '$F_x = F\\cos 60^\\circ = 100 \\cdot 0{,}5 = 50\\text{ N}$.'
-      },
-      {
-        source: SRC_9,
-        question: 'Hai lực đồng quy vuông góc $F_1 = 6\\text{ N}$ và $F_2 = 8\\text{ N}$ có hợp lực bằng:',
-        options: ['A. 10 N', 'B. 14 N', 'C. 2 N', 'D. 48 N'],
-        correctIndex: 0,
-        explanation: 'Vì $\\alpha = 90^\\circ$, $F = \\sqrt{6^2 + 8^2} = 10\\text{ N}$.'
+        explanation: 'F_x = F · cos 60° = 20 · 0,5 = 10 N.'
       }
     ],
     essayExercises: [
       {
         source: SRC_9,
-        question: 'Cho hai lực đồng quy $F_1 = 30\\text{ N}$ và $F_2 = 30\\text{ N}$ hợp với nhau góc $\\alpha = 60^\\circ$. Tính độ lớn hợp lực $F$ và góc giữa $\\vec{F}$ với $\\vec{F}_1$.',
-        hints: ['Áp dụng $F = \\sqrt{F_1^2 + F_2^2 + 2F_1F_2\\cos 60^\\circ}$.'],
-        solutionSteps: [
-          'Bước 1: $F = \\sqrt{30^2 + 30^2 + 2\\cdot 30 \\cdot 30 \\cdot 0{,}5} = 30\\sqrt{3} \\approx 51{,}96\\text{ N}$.',
-          'Bước 2: Do $F_1 = F_2$, vectơ hợp lực nằm trên đường phân giác nên hợp với $\\vec{F}_1$ góc $30^\\circ$.'
+        question: 'Hai lực vuông góc nhau F₁ = 6 N và F₂ = 8 N cùng tác dụng lên vật. Tính độ lớn hợp lực F.',
+        hints: ['Áp dụng Pytago F = √(F₁² + F₂²).'],
+        solutionSteps: ['F = √(6² + 8²) = 10 N.'],
+        finalAnswer: 'F = 10 N.'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-b9',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'KHTN 9 · Quang học',
+    sourceTag: SRC_9,
+    lessonNumber: 9,
+    title: 'Bài 9: Đo tiêu cự Thấu kính Hội tụ (Thực hành)',
+    subtitle: 'Hai phương pháp đo tiêu cự chuẩn GDPT 2018: chùm tia song song và công thức L = 4f',
+    description:
+      'Thực hành xác định tiêu cự f của thấu kính hội tụ bằng phương pháp ảnh thật rõ nét cao bằng vật (d = d\' = 2f).',
+    theorySections: [
+      {
+        heading: '1. Nguyên tắc đo L = 4f',
+        content:
+          '• Khi đặt vật và màn cách nhau cố định $L > 4f$ sẽ có 2 vị trí cho ảnh rõ nét; tại đúng $L_{\\min} = 4f$ chỉ có 1 vị trí chính giữa cho ảnh thật cao bằng vật ($d = d\' = 2f$).'
+      }
+    ],
+    keyFormulas: ['d = d\' = 2f', 'L = d + d\' = 4f \\Rightarrow f = \\frac{L}{4}'],
+    ...SIM_PRESETS.lens_single,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Trong thí nghiệm đo tiêu cự bằng cách tạo ảnh thật cao bằng vật, khoảng cách từ vật đến màn đo được L = 48 cm. Tiêu cự thấu kính là:',
+        options: ['A. 12 cm', 'B. 24 cm', 'C. 48 cm', 'D. 96 cm'],
+        correctIndex: 0,
+        explanation: 'Vì L = 4f nên f = 48 / 4 = 12 cm.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Nếu đo 3 lần được L₁ = 40,2 cm, L₂ = 39,8 cm, L₃ = 40,0 cm thì giá trị tiêu cự trung bình bằng bao nhiêu?',
+        hints: ['Tính L trung bình rồi chia 4.'],
+        solutionSteps: ['L_tb = (40,2 + 39,8 + 40,0)/3 = 40,0 cm.', 'f_tb = 40,0 / 4 = 10,0 cm.'],
+        finalAnswer: 'f_tb = 10,0 cm.'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-b10',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'KHTN 9 · Quang học',
+    sourceTag: SRC_9,
+    lessonNumber: 10,
+    title: 'Bài 10: Hiện tượng Tán sắc Ánh sáng & Màu sắc Vật',
+    subtitle: 'Ánh sáng trắng qua lăng kính tách thành dải màu cầu vồng và cơ chế phản xạ chọn lọc',
+    description:
+      'Giải thích vì sao lăng kính tách được ánh sáng trắng thành 7 màu từ đỏ đến tím và vì sao vật có màu khác nhau dưới ánh sáng.',
+    theorySections: [
+      {
+        heading: '1. Tán sắc ánh sáng',
+        content:
+          '• Ánh sáng trắng là hỗn hợp nhiều ánh sáng đơn sắc từ đỏ đến tím.\n• Chiết suất lăng kính tăng dần từ tia đỏ đến tia tím ($n_{\\text{đỏ}} < n_{\\text{tím}}$) nên tia tím lệch về phía đáy nhiều nhất.'
+      },
+      {
+        heading: '2. Màu sắc các vật',
+        content:
+          '• Vật màu nào phản xạ mạnh ánh sáng màu đó và hấp thụ các màu còn lại; vật màu đen hấp thụ hầu hết mọi ánh sáng.'
+      }
+    ],
+    keyFormulas: ['n_{\\text{đỏ}} < n_{\\text{cam}} < \\dots < n_{\\text{tím}}'],
+    ...SIM_PRESETS.prism,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Khi chiếu chùm ánh sáng trắng hẹp qua lăng kính thủy tinh, tia nào bị lệch ít nhất về phía đáy lăng kính?',
+        options: ['A. Tia tím', 'B. Tia chàm', 'C. Tia lục', 'D. Tia đỏ'],
+        correctIndex: 3,
+        explanation: 'Chiết suất của thủy tinh đối với ánh sáng đỏ nhỏ nhất nên tia đỏ lệch ít nhất.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Vì sao khi chiếu ánh sáng đỏ thuần vào một chiếc lá cây màu lục, chiếc lá trông gần như màu đen?',
+        hints: ['Vật màu lục chỉ phản xạ tốt ánh sáng lục.'],
+        solutionSteps: ['Lá xanh lục hấp thụ mạnh ánh sáng đỏ và hầu như không phản xạ tia đỏ về mắt, nên lá trông tối đen.'],
+        finalAnswer: 'Do sắc tố diệp lục hấp thụ ánh sáng đỏ.'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-b11',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'KHTN 9 · Điện học',
+    sourceTag: SRC_9,
+    lessonNumber: 11,
+    title: 'Bài 11: Định luật Ohm & Điện trở dây dẫn',
+    subtitle: 'Mối quan hệ I = U/R, điện trở R = ρl/S, biến trở và cách đo điện trở thực tế',
+    description:
+      'Khám phá định luật cơ bản nhất của mạch điện một chiều cùng sự phụ thuộc của điện trở vào chiều dài, tiết diện và vật liệu.',
+    theorySections: [
+      {
+        heading: '1. Định luật Ohm',
+        content:
+          '• Cường độ dòng điện qua dây dẫn tỉ lệ thuận với hiệu điện thế đặt vào hai đầu dây và tỉ lệ nghịch với điện trở dây: $I = \\frac{U}{R}$.'
+      },
+      {
+        heading: '2. Công thức điện trở dây dẫn',
+        content:
+          '• $R = \\rho\\frac{\\ell}{S}$, trong đó $\\rho$ (Ω·m) là điện trở suất vật liệu, $\\ell$ (m) là chiều dài và $S$ (m²) là tiết diện.'
+      }
+    ],
+    keyFormulas: ['I = \\frac{U}{R}', 'R = \\rho \\frac{\\ell}{S}'],
+    ...SIM_PRESETS.ohm_dc,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Nếu tăng chiều dài dây dẫn đồng chất tiết diện đều lên 3 lần thì điện trở của dây sẽ:',
+        options: ['A. Giảm 3 lần', 'B. Tăng 3 lần', 'C. Tăng 9 lần', 'D. Không đổi'],
+        correctIndex: 1,
+        explanation: 'R tỉ lệ thuận với chiều dài ℓ nên ℓ tăng 3 lần thì R tăng 3 lần.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Đặt hiệu điện thế 12 V vào hai đầu điện trở 24 Ω. Tính cường độ dòng điện chạy qua điện trở.',
+        hints: ['Áp dụng I = U / R.'],
+        solutionSteps: ['I = 12 / 24 = 0,5 A.'],
+        finalAnswer: 'I = 0,5 A.'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-elec',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'KHTN 9 · Điện học',
+    sourceTag: SRC_9,
+    lessonNumber: 12,
+    title: 'Bài 12: Đoạn mạch Nối tiếp và Đoạn mạch Song song',
+    subtitle: 'Quy tắc tính điện trở tương đương, phân áp đoạn nối tiếp và chia dòng nhánh song song',
+    description:
+      'Nắm vững phương pháp phân tích mạch hỗn hợp gồm các điện trở ghép nối tiếp và song song.',
+    theorySections: [
+      {
+        heading: '1. Đoạn mạch nối tiếp',
+        content:
+          '• $I = I_1 = I_2$; $U = U_1 + U_2$; $R_{\\text{tđ}} = R_1 + R_2$.'
+      },
+      {
+        heading: '2. Đoạn mạch song song',
+        content:
+          '• $U = U_1 = U_2$; $I = I_1 + I_2$; $\\frac{1}{R_{\\text{tđ}}} = \\frac{1}{R_1} + \\frac{1}{R_2}$.'
+      }
+    ],
+    keyFormulas: ['R_{\\text{nt}} = R_1 + R_2', 'R_{\\text{//}} = \\frac{R_1 R_2}{R_1 + R_2}'],
+    ...SIM_PRESETS.ohm_dc,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Hai điện trở R₁ = 6 Ω và R₂ = 3 Ω mắc song song. Điện trở tương đương của đoạn mạch là:',
+        options: ['A. 9 Ω', 'B. 4,5 Ω', 'C. 2 Ω', 'D. 1,5 Ω'],
+        correctIndex: 2,
+        explanation: 'R_tđ = (6 · 3)/(6 + 3) = 18 / 9 = 2 Ω.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Cho R₁ = 10 Ω mắc nối tiếp R₂ = 20 Ω vào nguồn 15 V. Tính cường độ dòng điện mạch chính và hiệu điện thế trên mỗi điện trở.',
+        hints: ['Tính R_tđ = R₁ + R₂ rồi dùng I = U / R_tđ.'],
+        solutionSteps: ['R_tđ = 30 Ω ⇒ I = 15/30 = 0,5 A.', 'U₁ = 0,5 · 10 = 5 V; U₂ = 0,5 · 20 = 10 V.'],
+        finalAnswer: 'I = 0,5 A; U₁ = 5 V; U₂ = 10 V.'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-b13',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'KHTN 9 · Điện học',
+    sourceTag: SRC_9,
+    lessonNumber: 13,
+    title: 'Bài 13: Năng lượng điện, Công suất điện & Định luật Jun – Len-xơ',
+    subtitle: 'Công thức A = UIt, P = UI, đọc số kWh công tơ và tính tiền điện sinh hoạt',
+    description:
+      'Liên hệ trực tiếp công suất điện trên nhãn thiết bị với điện năng tiêu thụ hằng tháng (kWh) và nhiệt lượng tỏa ra trên dây dẫn.',
+    theorySections: [
+      {
+        heading: '1. Năng lượng điện & Công suất điện',
+        content:
+          '• Điện năng tiêu thụ: $A = UIt = P\\cdot t$. Trong sinh hoạt: $1\\text{ kWh} = 3\\,600\\,000\\text{ J}$.\n• Công suất điện: $P = UI = I^2 R = \\frac{U^2}{R}$.'
+      },
+      {
+        heading: '2. Định luật Jun – Len-xơ',
+        content:
+          '• Nhiệt lượng tỏa ra trên dây dẫn thuần trở: $Q = I^2 R t$.'
+      }
+    ],
+    keyFormulas: ['P = U I = I^2 R = \\frac{U^2}{R}', 'A = P \\cdot t', 'Q = I^2 R t'],
+    ...SIM_PRESETS.joule_lenz,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Một bóng đèn ghi 220V - 40W sáng bình thường trong 5 giờ tiêu thụ điện năng bao nhiêu?',
+        options: ['A. 0,2 kWh', 'B. 2 kWh', 'C. 200 kWh', 'D. 40 kWh'],
+        correctIndex: 0,
+        explanation: 'A = P · t = 0,04 kW · 5 h = 0,2 kWh.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Một ấm điện công suất 1500 W hoạt động đúng định mức trong 20 phút. Tính nhiệt lượng tỏa ra theo đơn vị kJ và kWh.',
+        hints: ['20 phút = 1200 s = 1/3 giờ.'],
+        solutionSteps: ['Q = 1500 · 1200 = 1 800 000 J = 1800 kJ.', 'A = 1,5 kW · (1/3) h = 0,5 kWh.'],
+        finalAnswer: '1800 kJ (hay 0,5 kWh).'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-energy-refract',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'KHTN 9 · Năng lượng & Bền vững',
+    sourceTag: SRC_9,
+    lessonNumber: 14,
+    title: 'Bài 14: Năng lượng trên Trái Đất & Năng lượng Tái tạo',
+    subtitle: 'Chu trình năng lượng từ bức xạ Mặt Trời, nhiên liệu hóa thạch và chuyển dịch năng lượng sạch',
+    description:
+      'Tìm hiểu nguồn gốc năng lượng gió, thủy điện, mặt trời, tác động môi trường của nhiên liệu hóa thạch và hiệu suất chuyển hóa.',
+    theorySections: [
+      {
+        heading: '1. Chu trình năng lượng từ Mặt Trời',
+        content:
+          '• Phần lớn các dạng năng lượng trên Trái Đất (gió, thủy điện, sinh khối, nhiên liệu hóa thạch) đều bắt nguồn từ bức xạ Mặt Trời.'
+      },
+      {
+        heading: '2. Năng lượng hóa thạch vs Năng lượng tái tạo',
+        content:
+          '• Than đá, dầu mỏ, khí đốt có trữ lượng hữu hạn và phát thải CO₂.\n• Điện mặt trời, điện gió, thủy triều, địa nhiệt là nguồn năng lượng tái tạo sạch bền vững.'
+      }
+    ],
+    keyFormulas: ['H_{\\text{chuyển hóa}} = \\frac{E_{\\text{có ích}}}{E_{\\text{toàn phần}}} \\cdot 100\\%'],
+    ...SIM_PRESETS.pv_thermo,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Nguồn năng lượng nào sau đây KHÔNG phải năng lượng tái tạo?',
+        options: ['A. Năng lượng gió', 'B. Than đá', 'C. Bức xạ Mặt Trời', 'D. Thủy triều'],
+        correctIndex: 1,
+        explanation: 'Than đá là nhiên liệu hóa thạch hình thành qua hàng triệu năm, có trữ lượng hữu hạn.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Một tấm pin mặt trời diện tích 2 m² nhận công suất bức xạ 1000 W/m², hiệu suất chuyển hóa 18%. Tính công suất điện phát ra.',
+        hints: ['P_điện = H · P_nhận.'],
+        solutionSteps: ['P_nhận = 2 · 1000 = 2000 W.', 'P_điện = 0,18 · 2000 = 360 W.'],
+        finalAnswer: 'P_điện = 360 W.'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-b15',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'KHTN 9 · Điện từ học',
+    sourceTag: SRC_9,
+    lessonNumber: 15,
+    title: 'Bài 15: Cảm ứng điện từ & Điều kiện xuất hiện dòng điện cảm ứng',
+    subtitle: 'Thí nghiệm nam châm chuyển động qua cuộn dây kín và sự biến thiên số đường sức từ',
+    description:
+      'Khảo sát thí nghiệm Faraday về hiện tượng cảm ứng điện từ — nền tảng chế tạo mọi máy phát điện hiện đại.',
+    theorySections: [
+      {
+        heading: '1. Hiện tượng cảm ứng điện từ',
+        content:
+          '• Khi số đường sức từ xuyên qua tiết diện S của cuộn dây dẫn kín biến thiên (tăng hoặc giảm), trong cuộn dây xuất hiện dòng điện cảm ứng.'
+      }
+    ],
+    keyFormulas: ['\\Delta\\Phi \\neq 0 \\implies \\text{Xuất hiện } i_{\\text{cảm ứng}}'],
+    ...SIM_PRESETS.mag_induction,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Dòng điện cảm ứng xuất hiện trong cuộn dây dẫn kín khi nào?',
+        options: [
+          'A. Nam châm đặt đứng yên trong lòng cuộn dây',
+          'B. Số đường sức từ xuyên qua tiết diện cuộn dây biến thiên',
+          'C. Cuộn dây hở mạch và nam châm đứng yên',
+          'D. Từ trường không đổi theo thời gian'
         ],
-        finalAnswer: '$F = 30\\sqrt{3}\\text{ N} \\approx 51{,}96\\text{ N}$, góc $30^\\circ$.'
+        correctIndex: 1,
+        explanation: 'Chỉ khi từ thông (số đường sức từ qua tiết diện cuộn dây kín) thay đổi thì dòng cảm ứng mới xuất hiện.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Đưa cực Bắc nam châm lại gần rồi kéo ra xa cuộn dây kín nối điện kế nhạy. Kim điện kế lệch như thế nào?',
+        hints: ['Khi đưa vào từ thông tăng, khi kéo ra từ thông giảm.'],
+        solutionSteps: ['Kim điện kế lệch về hai phía ngược chiều nhau ứng với hai giai đoạn đưa vào và kéo ra; đứng yên tại số 0 khi nam châm dừng lại.'],
+        finalAnswer: 'Kim lệch hai chiều ngược nhau khi di chuyển, về 0 khi đứng yên.'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-b16',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'KHTN 9 · Điện từ học',
+    sourceTag: SRC_9,
+    lessonNumber: 16,
+    title: 'Bài 16: Dòng điện Xoay chiều & Tác dụng của dòng xoay chiều',
+    subtitle: 'Dòng điện đổi chiều tuần hoàn 50 Hz, máy phát điện xoay chiều và 4 tác dụng nhiệt, quang, từ, sinh lí',
+    description:
+      'Phân biệt dòng điện một chiều và dòng xoay chiều 220V–50Hz, nguyên lý quay khung dây trong từ trường đều.',
+    theorySections: [
+      {
+        heading: '1. Dòng điện xoay chiều',
+        content:
+          '• Là dòng điện luân phiên đổi chiều theo thời gian; lưới điện dân dụng Việt Nam có tần số $f = 50\\text{ Hz}$ (đổi chiều 100 lần/giây).'
+      },
+      {
+        heading: '2. Bốn tác dụng cơ bản',
+        content:
+          '• Tác dụng nhiệt, phát sáng, tác dụng từ (đổi chiều liên tục) và tác dụng sinh lí.'
+      }
+    ],
+    keyFormulas: ['f = 50\\text{ Hz} \\implies T = 0,02\\text{ s}', 'i = I_0 \\sin(\\omega t)'],
+    ...SIM_PRESETS.ac_rlc,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Mạng điện dân dụng xoay chiều 50 Hz tại Việt Nam đổi chiều bao nhiêu lần trong 1 giây?',
+        options: ['A. 50 lần', 'B. 100 lần', 'C. 25 lần', 'D. 220 lần'],
+        correctIndex: 1,
+        explanation: 'Mỗi chu kì dòng xoay chiều đổi chiều 2 lần, nên f = 50 Hz đổi chiều 2 · 50 = 100 lần/giây.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Nêu cấu tạo 2 bộ phận chính của máy phát điện xoay chiều đơn giản.',
+        hints: ['Nam châm và cuộn dây (roto và stato).'],
+        solutionSteps: ['Gồm phần cảm (nam châm tạo từ trường) và phần ứng (cuộn dây dẫn tạo suất điện động cảm ứng), một phần quay (roto) và một phần đứng yên (stato).'],
+        finalAnswer: 'Nam châm (phần cảm) và cuộn dây (phần ứng).'
+      }
+    ]
+  },
+  {
+    id: 'phys-9-induction-ac',
+    track: 'khong_chuyen',
+    grade: 'Lớp 9',
+    stageLabel: 'KHTN 9 · Điện từ học',
+    sourceTag: SRC_9,
+    lessonNumber: 17,
+    title: 'Bài 17: Máy Biến áp & Truyền tải Điện năng đi xa',
+    subtitle: 'Công thức máy biến áp U₁/U₂ = N₁/N₂ và giảm công suất hao phí ΔP = P²R / U²',
+    description:
+      'Tìm hiểu cách máy biến áp nâng cao điện áp lên 220 kV–500 kV để giảm hàng trăm lần hao phí tỏa nhiệt trên đường dây.',
+    theorySections: [
+      {
+        heading: '1. Máy biến áp',
+        content:
+          '• Tỉ số hiệu điện thế hai đầu cuộn sơ cấp và thứ cấp bằng tỉ số số vòng dây: $\\frac{U_1}{U_2} = \\frac{N_1}{N_2}$.'
+      },
+      {
+        heading: '2. Truyền tải điện năng đi xa',
+        content:
+          '• Công suất hao phí tỏa nhiệt: $\\Delta P = \\frac{P^2 R}{U^2}$. Tăng $U$ lên $n$ lần giúp giảm hao phí đi $n^2$ lần.'
+      }
+    ],
+    keyFormulas: ['\\frac{U_1}{U_2} = \\frac{N_1}{N_2}', '\\Delta P = \\frac{P^2 R}{U^2}'],
+    ...SIM_PRESETS.transformer,
+    practiceExercises: [
+      {
+        source: SRC_9,
+        question: 'Nếu tăng hiệu điện thế ở nơi phát lên 10 lần trước khi truyền tải cùng công suất đi xa thì công suất hao phí trên dây giảm đi bao nhiêu lần?',
+        options: ['A. 10 lần', 'B. 20 lần', 'C. 100 lần', 'D. 1000 lần'],
+        correctIndex: 2,
+        explanation: 'ΔP tỉ lệ nghịch với U², nên tăng U lên 10 lần sẽ làm hao phí giảm 10² = 100 lần.'
+      }
+    ],
+    essayExercises: [
+      {
+        source: SRC_9,
+        question: 'Một máy biến áp lí tưởng có N₁ = 1000 vòng, N₂ = 250 vòng. Đặt điện áp xoay chiều U₁ = 220 V vào cuộn sơ cấp. Tính U₂.',
+        hints: ['Dùng U₁ / U₂ = N₁ / N₂.'],
+        solutionSteps: ['U₂ = 220 · (250 / 1000) = 55 V.'],
+        finalAnswer: 'U₂ = 55 V.'
       }
     ]
   }

@@ -1412,7 +1412,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['A = F \\cdot s \\cdot \\cos\\alpha \\quad (\\text{J})', '1\\text{ kJ} = 1000\\text{ J}'],
-    ...SIM_PRESETS.free_fall,
+    ...SIM_PRESETS.work_power,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1467,7 +1467,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['\\mathcal{P} = \\frac{A}{t} = F \\cdot v \\cdot \\cos\\alpha', '1\\text{ kWh} = 3{,}6 \\cdot 10^6\\text{ J}'],
-    ...SIM_PRESETS.free_fall,
+    ...SIM_PRESETS.work_power,
     practiceExercises: [
       {
         source: SRC_10,
@@ -1637,7 +1637,7 @@ export const PHYSICS_GDPT_10_LESSONS: PhysicsLesson[] = [
       }
     ],
     keyFormulas: ['H = \\frac{A_{\\text{có ích}}}{A_{\\text{toàn phần}}} \\cdot 100\\% = \\frac{\\mathcal{P}_{\\text{có ích}}}{\\mathcal{P}_{\\text{tp}}} \\cdot 100\\%'],
-    ...SIM_PRESETS.free_fall,
+    ...SIM_PRESETS.work_power,
     practiceExercises: [
       {
         source: SRC_10,

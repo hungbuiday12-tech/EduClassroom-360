@@ -435,7 +435,7 @@ export const CannonBallistics3DLab: React.FC<CannonBallistics3DLabProps> = ({ on
       ? 1
       : perfMode === 'smooth'
       ? Math.min(hostDpr, 1.15)
-      : Math.min(hostDpr, 1.75);
+      : Math.min(hostDpr, 1.5);
     renderer.setPixelRatio(dpr);
     renderer.setSize(container.clientWidth || 960, container.clientHeight || 620);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;

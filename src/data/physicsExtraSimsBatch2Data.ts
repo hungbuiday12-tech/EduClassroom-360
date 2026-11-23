@@ -37,7 +37,12 @@ export type Batch2Physics3DModeId =
   | 'double_lens_microscope_3d'
   | 'diffusion_gases_3d'
   | 'brownian_motion_3d'
-  | 'tokamak_fusion_3d';
+  | 'tokamak_fusion_3d'
+  | 'mechanical_energy_3d'
+  | 'ohm_circuit_3d'
+  | 'refraction_tank_3d'
+  | 'calorimetry_beaker_3d'
+  | 'archimedes_buoyancy_3d';
 
 export const BATCH2_PHYSICS_2D_SIMS: Record<Batch2PhysicsSim2DId, Physics2DSimSpec> = {
   // MECHANICS (+4)
@@ -616,6 +621,73 @@ export const BATCH2_PHYSICS_3D_SIMS: Record<Batch2Physics3DModeId, Physics3DSimS
       { label: 'Plasma ổn định', description: 'Từ trường xuyến giữ plasma không chạm thành', settings: { speed: 1, amplitude: 1 } },
       { label: 'Đốt nóng nhiệt hạch tối đa', description: 'Tốc độ tổng hợp & phát tia X cao', settings: { speed: 1.6, amplitude: 1.4 } }
     ]
+  },
+
+  // +5 CURRICULUM AUDIT 3D SIMS
+  mechanical_energy_3d: {
+    id: 'mechanical_energy_3d',
+    domainId: 'mechanics',
+    grades: ['Lớp 9', 'Lớp 10'],
+    title: 'Động Năng, Thế Năng & Bảo Toàn Cơ Năng 3D',
+    subtitle: 'Bi cầu lăn trên máng parabol kèm 3 cột năng lượng W_đ (xanh), W_t (hổ phách) và W_cơ (ngọc) biến thiên theo thời gian thực',
+    formula: 'W = W_đ + W_t = ½mv² + mgh',
+    linkedLessonId: 'phys-9-mech-heat',
+    presets: [
+      { label: 'Bảo toàn lí tưởng (μ = 0)', description: 'Cơ năng không đổi khi lăn qua lại', settings: { speed: 1, amplitude: 1.2 } },
+      { label: 'Có ma sát hao phí', description: 'Cơ năng giảm dần chuyển thành nhiệt', settings: { speed: 1.1, amplitude: 1.5 } }
+    ]
+  },
+  ohm_circuit_3d: {
+    id: 'ohm_circuit_3d',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Mạch Điện Định Luật Ohm & Nhiệt Jun – Len-xơ 3D',
+    subtitle: 'Bàn thí nghiệm nguồn DC, biến trở con trượt, Ampe/Vôn kế kim, dòng hạt tải điện và bình nhiệt lượng kế đun dây đốt',
+    formula: 'I = U / R · Q = I²·R·t',
+    linkedLessonId: 'phys-9-b11',
+    presets: [
+      { label: 'Mạch chuẩn 12V – 6Ω', description: 'Dòng I = 2 A chạy ổn định, sủi bọt nhẹ', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Công suất tỏa nhiệt cao (24V)', description: 'Dây đốt đỏ rực, bọt khí bốc mạnh', settings: { speed: 1.5, amplitude: 1.6 } }
+    ]
+  },
+  refraction_tank_3d: {
+    id: 'refraction_tank_3d',
+    domainId: 'optics_quantum',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Bể Thí Nghiệm Khúc Xạ & Phản Xạ Ánh Sáng 3D',
+    subtitle: 'Đèn laser chiếu xiên góc tới i qua mặt phân cách Không khí – Nước/Thủy tinh chiết suất n₂ kèm tia phản xạ & pháp tuyến',
+    formula: 'n₁·sin(i) = n₂·sin(r)',
+    linkedLessonId: 'phys-9-b5',
+    presets: [
+      { label: 'Khúc xạ vào nước (n=1,33)', description: 'Tia khúc xạ lệch gần pháp tuyến', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Khúc xạ vào kim cương (n=2,4)', description: 'Góc khúc xạ nhỏ gấp nhiều lần góc tới', settings: { speed: 1, amplitude: 1.5 } }
+    ]
+  },
+  calorimetry_beaker_3d: {
+    id: 'calorimetry_beaker_3d',
+    domainId: 'thermal_nuclear',
+    grades: ['Lớp 9', 'Lớp 12'],
+    title: 'Nhiệt Lượng Kế, Nhiệt Kế & Chuyển Thể 3D',
+    subtitle: 'Quan sát nhiệt kế thủy ngân tăng theo công suất đun cùng chuyển động hạt từ mạng tinh thể rắn sang lỏng và hơi',
+    formula: 'Q = m·c·ΔT · Q_chuyển thể = m·L',
+    linkedLessonId: 'phys-12-b3',
+    presets: [
+      { label: 'Pha lỏng sôi nhẹ (340 K)', description: 'Các phân tử trượt tự do và bốc hơi', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Nung nóng pha hơi (410 K)', description: 'Bứt pha hơi mạnh ở bề mặt thoáng', settings: { speed: 1.4, amplitude: 1.5 } }
+    ]
+  },
+  archimedes_buoyancy_3d: {
+    id: 'archimedes_buoyancy_3d',
+    domainId: 'mechanics',
+    grades: ['Lớp 9', 'Lớp 10'],
+    title: 'Lực Đẩy Ác-si-mét & Bình Chia Độ 3D',
+    subtitle: 'Khối vật liệu treo lực kế nhúng vào bình nước chia độ: mực chất lỏng dâng theo V_chìm kèm hai véc-tơ P và F_A',
+    formula: 'F_A = ρ_lỏng · g · V_chìm · P = ρ_vật · g · V',
+    linkedLessonId: 'phys-10-b34',
+    presets: [
+      { label: 'Gỗ nổi cân bằng (ρ=750)', description: 'Chìm 75% thể tích, F_A = P', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Kim loại chìm đáy (ρ=2000)', description: 'P > F_A, vật chìm xuống đáy bình', settings: { speed: 1, amplitude: 1.5 } }
+    ]
   }
 };
 
@@ -783,5 +855,80 @@ export const BATCH2_3D_SCENE_CONFIGS: Record<Batch2Physics3DModeId, Extra3DScene
       { key: 'p2', label: 'Nhiệt độ Plasma', unit: 'triệu K', min: 50, max: 250, step: 10, defaultVal: 150, accent: 'accent-rose-500' }
     ],
     computeReadout: (v) => `Plasma ${v.p2} triệu K xoáy chặt theo đường sức từ xuyến B = ${v.p1} T thực hiện phản ứng tổng hợp D + T → He + n.`
+  },
+  mechanical_energy_3d: {
+    mode: 'mechanical_energy_3d',
+    shortLabel: 'Động & Thế Năng 3D',
+    hudTitle: 'Bảo Toàn & Chuyển Hóa Động Năng – Thế Năng 3D',
+    params: [
+      { key: 'p1', label: 'Độ cao thả h₀', unit: 'm', min: 5, max: 30, step: 1, defaultVal: 18, accent: 'accent-amber-500' },
+      { key: 'p2', label: 'Hệ số ma sát μ', unit: '', min: 0, max: 0.3, step: 0.02, defaultVal: 0.02, accent: 'accent-rose-500' }
+    ],
+    computeReadout: (v) => {
+      const m = 2.0;
+      const g = 9.8;
+      const w0 = m * g * v.p1;
+      const vMax = Math.sqrt(2 * g * v.p1);
+      return `W₀ = mgh₀ = ${w0.toFixed(0)} J (m=2 kg) · Vận tốc đáy cực đại v_max ≈ ${vMax.toFixed(1)} m/s${v.p2 > 0 ? ` · Hao phí ma sát μ = ${v.p2}` : ' · Bảo toàn cơ năng'}`;
+    }
+  },
+  ohm_circuit_3d: {
+    mode: 'ohm_circuit_3d',
+    shortLabel: 'Mạch Ohm & Jun-Len-xơ 3D',
+    hudTitle: 'Bàn Thí Nghiệm Định Luật Ohm & Nhiệt Tỏa I²Rt 3D',
+    params: [
+      { key: 'p1', label: 'Hiệu điện thế U', unit: 'V', min: 3, max: 24, step: 1, defaultVal: 12, accent: 'accent-sky-500' },
+      { key: 'p2', label: 'Điện trở mạch R', unit: 'Ω', min: 2, max: 24, step: 1, defaultVal: 6, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => {
+      const i = v.p1 / Math.max(0.5, v.p2);
+      const p = v.p1 * i;
+      return `Cường độ I = U/R = ${i.toFixed(2)} A · Công suất tỏa nhiệt P = I²R = ${p.toFixed(1)} W`;
+    }
+  },
+  refraction_tank_3d: {
+    mode: 'refraction_tank_3d',
+    shortLabel: 'Bể Khúc Xạ 3D',
+    hudTitle: 'Bể Nước Khúc Xạ & Phản Xạ Tia Laser 3D',
+    params: [
+      { key: 'p1', label: 'Góc tới i', unit: '°', min: 10, max: 75, step: 1, defaultVal: 45, accent: 'accent-emerald-500' },
+      { key: 'p2', label: 'Chiết suất môi trường n₂', unit: '', min: 1.0, max: 2.4, step: 0.05, defaultVal: 1.33, accent: 'accent-cyan-500' }
+    ],
+    computeReadout: (v) => {
+      const sinR = Math.sin((v.p1 * Math.PI) / 180) / Math.max(1.0, v.p2);
+      const rDeg = (Math.asin(Math.min(1, sinR)) * 180) / Math.PI;
+      return `n₁ = 1,00 → n₂ = ${v.p2.toFixed(2)} · Góc tới i = ${v.p1}° ⇒ Góc khúc xạ r = ${rDeg.toFixed(1)}°`;
+    }
+  },
+  calorimetry_beaker_3d: {
+    mode: 'calorimetry_beaker_3d',
+    shortLabel: 'Nhiệt Lượng Kế 3D',
+    hudTitle: 'Nhiệt Lượng Kế, Nhiệt Kế & Chuyển Pha 3D',
+    params: [
+      { key: 'p1', label: 'Nhiệt độ khối mẫu T', unit: 'K', min: 260, max: 420, step: 5, defaultVal: 340, accent: 'accent-rose-500' },
+      { key: 'p2', label: 'Công suất gia nhiệt', unit: '×', min: 0.5, max: 2.0, step: 0.1, defaultVal: 1.0, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => {
+      const c = v.p1 - 273.15;
+      const phase = v.p1 < 273 ? 'Rắn (dao động quanh nút mạng)' : v.p1 < 373 ? 'Lỏng (trượt tự do)' : 'Hơi / Sôi mạnh';
+      return `T = ${v.p1} K (${c.toFixed(1)} °C) · Trạng thái: ${phase} · Gia nhiệt ${v.p2.toFixed(1)}×`;
+    }
+  },
+  archimedes_buoyancy_3d: {
+    mode: 'archimedes_buoyancy_3d',
+    shortLabel: 'Ác-si-mét 3D',
+    hudTitle: 'Lực Đẩy Ác-si-mét & Bình Chia Độ 3D',
+    params: [
+      { key: 'p1', label: 'Khối lượng riêng vật ρ', unit: 'kg/m³', min: 300, max: 2500, step: 50, defaultVal: 750, accent: 'accent-amber-500' },
+      { key: 'p2', label: 'Thể tích khối V', unit: 'lít', min: 1, max: 8, step: 0.5, defaultVal: 4, accent: 'accent-sky-500' }
+    ],
+    computeReadout: (v) => {
+      const rhoL = 1000;
+      const subFrac = Math.min(1, v.p1 / rhoL);
+      const pWeight = v.p1 * (v.p2 * 0.001) * 9.81;
+      const fa = rhoL * (v.p2 * 0.001 * subFrac) * 9.81;
+      const status = v.p1 < rhoL ? `Nổi (chìm ${(subFrac * 100).toFixed(0)}%)` : v.p1 === rhoL ? 'Lơ lửng' : 'Chìm đáy';
+      return `${status} · P = ${pWeight.toFixed(1)} N · F_A = ${fa.toFixed(1)} N`;
+    }
   }
 };

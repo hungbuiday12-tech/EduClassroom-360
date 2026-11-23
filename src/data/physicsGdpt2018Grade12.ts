@@ -33,7 +33,7 @@ export const PHYSICS_GDPT_12_LESSONS: PhysicsLesson[] = [
       'Q < 0: \\text{Đông đặc, Ngưng tụ (Tỏa nhiệt)}',
       'T_{\\text{chuyển thể}} = \\text{const (với chất kết tinh)}'
     ],
-    ...SIM_PRESETS.thermal_gas,
+    ...SIM_PRESETS.phase_change,
     practiceExercises: [
       {
         source: SRC_12,

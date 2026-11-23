@@ -111,7 +111,7 @@ export const RoboticsIK3DLab: React.FC<RoboticsIK3DLabProps> = ({ onEarnXP }) =>
 
     const hostDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
     renderer.setPixelRatio(
-      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.85)
+      isSoftwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.5)
     );
     renderer.setSize(container.clientWidth || 960, container.clientHeight || 620);
     renderer.outputColorSpace = THREE.SRGBColorSpace;

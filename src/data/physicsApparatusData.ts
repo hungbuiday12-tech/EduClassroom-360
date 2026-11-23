@@ -632,7 +632,12 @@ const SPECIFIC_3D_TOOLS: Partial<Record<Physics3DMode, string[]>> = {
   nuclear_fission_3d: ['geiger_counter', 'thermometer_probe', 'stopwatch_pro'],
   rutherford_scattering_3d: ['geiger_counter', 'protractor_360', 'ruler_cm'],
   tokamak_fusion_3d: ['gaussmeter_hall', 'thermometer_probe', 'geiger_counter'],
-  bohr_atom: ['laser_pointer_rgb', 'lux_photometer', 'geiger_counter']
+  bohr_atom: ['laser_pointer_rgb', 'lux_photometer', 'geiger_counter'],
+  mechanical_energy_3d: ['ruler_cm', 'stopwatch_pro', 'photogate_timer', 'analytical_balance'],
+  ohm_circuit_3d: ['ammeter_dc_ac', 'voltmeter_dc_ac', 'multimeter_pro', 'rheostat_slider', 'thermometer_probe'],
+  refraction_tank_3d: ['protractor_360', 'laser_pointer_rgb', 'glass_prism_block', 'ruler_cm'],
+  calorimetry_beaker_3d: ['calorimeter_cup', 'thermometer_probe', 'analytical_balance', 'stopwatch_pro'],
+  archimedes_buoyancy_3d: ['dynamometer_spring', 'analytical_balance', 'ruler_cm', 'pressure_manometer']
 };
 
 export function getRecommendedToolsForSim(

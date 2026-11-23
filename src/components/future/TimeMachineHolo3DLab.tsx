@@ -285,7 +285,7 @@ export const TimeMachineHolo3DLab: React.FC<TimeMachineHolo3DLabProps> = ({ onEa
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
     renderer.setPixelRatio(
-      softwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.85)
+      softwareGl ? 1 : perfMode === 'smooth' ? Math.min(hostDpr, 1.15) : Math.min(hostDpr, 1.5)
     );
     renderer.setSize(w, h);
     mount.innerHTML = '';

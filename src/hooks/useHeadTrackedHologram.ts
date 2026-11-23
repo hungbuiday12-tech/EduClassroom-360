@@ -92,7 +92,7 @@ export function useHeadTrackedHologram(mode: HologramDisplayMode) {
           return;
         }
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 160, height: 120, facingMode: 'user' },
+          video: { width: { ideal: 320, max: 480 }, height: { ideal: 240, max: 360 }, frameRate: { ideal: 60, max: 60 }, facingMode: 'user' },
           audio: false
         });
         if (cancelled) {

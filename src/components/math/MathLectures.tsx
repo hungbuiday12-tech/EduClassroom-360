@@ -332,7 +332,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
               <span>Quay lại chế độ thường (Esc)</span>
             </button>
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">
-              Đang đọc tập trung: {activeLecture.title}
+              Đang đọc tập trung: <FormattedText text={activeLecture.title} />
             </span>
           </div>
         )}

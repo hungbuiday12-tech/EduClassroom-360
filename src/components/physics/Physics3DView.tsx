@@ -26,6 +26,9 @@ import {
   Cpu,
   FileCode2,
   Scissors,
+  Camera,
+  Download,
+  Trash2,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { ViewportPortal } from '../common/ViewportPortal';
@@ -33,10 +36,13 @@ import { PHYSICS_3D_SIMS, getDomainFor3DSim } from '../../data/physicsDomainsDat
 import { Physics3DMode as SharedPhysics3DMode } from '../../types';
 import { EXTRA_3D_SCENE_CONFIGS, ExtraPhysics3DModeId } from '../../data/physicsExtraSimsData';
 import { buildExtra3DScene, Extra3DSceneContext } from './physics3DExtraScenes';
-import { PhysicsApparatusWorkbench } from './PhysicsApparatusWorkbench';
+import { PhysicsApparatusWorkbench, PlacedApparatusInstance } from './PhysicsApparatusWorkbench';
+import { APPARATUS_BY_ID, evaluateApparatusReading } from '../../data/physicsApparatusData';
+import { Apparatus3DInstance, create3DApparatusModel } from './physics3DApparatusBuilders';
 import {
   applyOffAxisProjection,
   HologramDisplayMode,
+  resetOffAxisProjection,
   useHeadTrackedHologram
 } from '../../hooks/useHeadTrackedHologram';
 import { HologramModeControls } from '../common/HologramModeControls';
@@ -281,6 +287,14 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     extraParamsRef.current = extraParams;
   }, [extraParams]);
 
+  // 3D Physical Apparatus Instances + Camera Presets + Data Logger
+  const [placed3DTools, setPlaced3DTools] = useState<PlacedApparatusInstance[]>([]);
+  const placed3DToolsRef = useRef<PlacedApparatusInstance[]>([]);
+  placed3DToolsRef.current = placed3DTools;
+  const [loggedSamples3D, setLoggedSamples3D] = useState<
+    Array<{ idx: number; timeSec: string; modeLabel: string; summary: string; instruments: string }>
+  >([]);
+
   // WebGL context safety
   const [contextLost, setContextLost] = useState(false);
 
@@ -288,9 +302,15 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const cameraLerpRef = useRef<{ pos: THREE.Vector3; target: THREE.Vector3 } | null>(null);
   const gridRef = useRef<THREE.GridHelper | null>(null);
   const isSoftwareGlRef = useRef<boolean>(false);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
+  const apparatusGroupRef = useRef<THREE.Group | null>(null);
+  const apparatusMapRef = useRef<Map<string, Apparatus3DInstance>>(new Map());
+  const apparatusTickRef = useRef<(() => void) | null>(null);
+  const active3DProbeParamsRef = useRef<Record<string, number>>({});
   const sceneTickRef = useRef<((effDt: number) => void) | null>(null);
   const pipelineRef = useRef<PostProcessPipeline | null>(null);
   const particlePoolRef = useRef<GPUParticlePool | null>(null);
@@ -424,6 +444,11 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     controls.dampingFactor = 0.05;
     controls.maxDistance = 30;
     controls.minDistance = 2;
+    controlsRef.current = controls;
+    const cancelCamLerp = () => {
+      cameraLerpRef.current = null;
+    };
+    controls.addEventListener('start', cancelCamLerp);
 
     // Studio Environment Reflection for metallic materials (PBR)
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -480,10 +505,15 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     gridRef.current = grid;
     scene.add(grid);
 
-    // Dynamic models group + GPU particle pool + LOD trail
+    // Dynamic models group + 3D physical apparatus group + GPU particle pool + LOD trail
     const dynamicGroup = new THREE.Group();
     scene.add(dynamicGroup);
     dynamicGroupRef.current = dynamicGroup;
+
+    const apparatusGroup = new THREE.Group();
+    apparatusGroup.name = 'lab_apparatus_3d_group';
+    scene.add(apparatusGroup);
+    apparatusGroupRef.current = apparatusGroup;
 
     const particlePool = new GPUParticlePool(96, 0.06, 0x38bdf8, 0x0ea5e9);
     scene.add(particlePool.mesh);
@@ -515,6 +545,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     const stereoEffect = new StereoEffect(renderer);
     stereoEffect.setSize(container.clientWidth, Math.max(container.clientHeight, 300));
     let lastHoloMode: HologramDisplayMode = 'normal';
+    const appliedHoloOffset = new THREE.Vector3();
 
     // Unified single Animation Loop (time integration + scene kinematics + WebGL render)
     let frameId = 0;
@@ -564,31 +595,63 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
           simStateRef.current.electronAngle += effDt * 3.0;
         }
         sceneTickRef.current?.(effDt);
+        apparatusTickRef.current?.();
         particlePool.update(effDt, modeRef.current === 'projectile_3d' ? -3.92 : 0);
       }
 
+      if (appliedHoloOffset.lengthSq() > 0) {
+        camera.position.sub(appliedHoloOffset);
+      }
+      if (cameraLerpRef.current) {
+        camera.position.lerp(cameraLerpRef.current.pos, 0.14);
+        controls.target.lerp(cameraLerpRef.current.target, 0.14);
+        if (
+          camera.position.distanceTo(cameraLerpRef.current.pos) < 0.05 &&
+          controls.target.distanceTo(cameraLerpRef.current.target) < 0.03
+        ) {
+          cameraLerpRef.current = null;
+        }
+      }
       controls.update();
-      updateBillboardLabels(dynamicGroup, camera);
 
       const curHolo = hologramModeRef.current;
+      const holoChanged = curHolo !== lastHoloMode;
+
       if (curHolo === 'head_cam' || curHolo === 'head_mouse') {
-        applyOffAxisProjection(camera, headOffsetRef.current, 12, 3.8);
-      } else if (lastHoloMode === 'head_cam' || lastHoloMode === 'head_mouse') {
-        camera.updateProjectionMatrix();
+        applyOffAxisProjection(
+          camera,
+          headOffsetRef.current,
+          12,
+          3.8,
+          controls.target,
+          appliedHoloOffset
+        );
+      } else if (lastHoloMode === 'head_cam' || lastHoloMode === 'head_mouse' || appliedHoloOffset.lengthSq() > 0) {
+        resetOffAxisProjection(camera, appliedHoloOffset);
       }
-      if ((lastHoloMode === 'anaglyph' || lastHoloMode === 'vr_stereo') && curHolo !== lastHoloMode) {
+
+      if ((lastHoloMode === 'anaglyph' || lastHoloMode === 'vr_stereo') && holoChanged) {
         const w = container.clientWidth;
-        const h = container.clientHeight;
+        const h = Math.max(container.clientHeight, 300);
         if (w > 0 && h > 0) {
+          renderer.setRenderTarget(null);
+          renderer.setScissorTest(false);
+          renderer.setViewport(0, 0, w, h);
           renderer.setSize(w, h);
           pipeline?.setSize(w, h);
         }
       }
       lastHoloMode = curHolo;
 
+      updateBillboardLabels(dynamicGroup, camera);
+
+      const distToTarget = Math.max(2.5, camera.position.distanceTo(controls.target));
       if (curHolo === 'anaglyph') {
+        anaglyphEffect.planeDistance = distToTarget;
+        anaglyphEffect.eyeSep = distToTarget * 0.048;
         anaglyphEffect.render(scene, camera);
       } else if (curHolo === 'vr_stereo') {
+        stereoEffect.setEyeSeparation(Math.max(0.05, distToTarget * 0.042));
         stereoEffect.render(scene, camera);
       } else if (pipeline && !isSoftwareGl && quality3DRef.current === 'high') {
         pipeline.render(dt);
@@ -645,8 +708,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         );
         controls.update();
       } else if (cmd.type === 'reset_view') {
+        appliedHoloOffset.set(0, 0, 0);
         camera.position.set(0, 6, 12);
         controls.target.set(0, 0, 0);
+        camera.updateProjectionMatrix();
         controls.update();
       } else if (cmd.type === 'toggle_play') {
         setIsRunning((prev) => !prev);
@@ -662,7 +727,13 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       canvasEl.removeEventListener('webglcontextlost', onContextLost);
       canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
       resizeObserver?.disconnect();
+      controls.removeEventListener('start', cancelCamLerp);
       controls.dispose();
+      controlsRef.current = null;
+      apparatusMapRef.current.forEach((inst) => inst.dispose());
+      apparatusMapRef.current.clear();
+      apparatusGroupRef.current = null;
+      apparatusTickRef.current = null;
       pipeline?.dispose();
       pipelineRef.current = null;
       particlePool.dispose();
@@ -701,6 +772,59 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       }
     };
   }, []);
+
+  // Sync placed physical instruments from PhysicsApparatusWorkbench directly onto the 3D WebGL stage
+  useEffect(() => {
+    const appGroup = apparatusGroupRef.current;
+    if (!appGroup) return;
+    const map = apparatusMapRef.current;
+    const activeUids = new Set(placed3DTools.map((t) => t.uid));
+
+    // Remove disposed/deleted instruments
+    for (const [uid, instance] of map.entries()) {
+      if (!activeUids.has(uid)) {
+        appGroup.remove(instance.group);
+        instance.dispose();
+        map.delete(uid);
+      }
+    }
+
+    // Add newly placed instruments & update spatial coordinates on workbench disc
+    for (const tool of placed3DTools) {
+      let instance = map.get(tool.uid);
+      if (!instance) {
+        const spec = APPARATUS_BY_ID[tool.toolId];
+        if (!spec) continue;
+        instance = create3DApparatusModel(tool.toolId, spec);
+        map.set(tool.uid, instance);
+        appGroup.add(instance.group);
+      }
+      const wx = ((tool.xPct - 50) / 100) * 14.2;
+      const wz = ((tool.yPct - 50) / 100) * 9.6;
+      instance.group.position.set(wx, 0, wz);
+      instance.group.rotation.y = (-tool.rotationDeg * Math.PI) / 180;
+    }
+
+    apparatusTickRef.current = () => {
+      const tNow = simStateRef.current.time;
+      const curMode = modeRef.current;
+      const curParams = active3DProbeParamsRef.current;
+      for (const tool of placed3DToolsRef.current) {
+        const instance = map.get(tool.uid);
+        if (!instance) continue;
+        const reading = evaluateApparatusReading(
+          tool.toolId,
+          curMode,
+          curParams,
+          tNow,
+          tool.xPct,
+          tool.yPct
+        );
+        instance.updateLive(reading, tNow, tool.massValueGrams);
+      }
+    };
+    apparatusTickRef.current();
+  }, [placed3DTools]);
 
   // Construct and animate 3D scene elements per tick (bound cleanly to rAF)
   useEffect(() => {
@@ -2691,6 +2815,86 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     p1: extraParams.p1,
     p2: extraParams.p2
   };
+  active3DProbeParamsRef.current = active3DProbeParams;
+
+  const setCameraPreset = (preset: 'overview' | 'front' | 'top' | 'bench') => {
+    if (preset === 'overview') {
+      cameraLerpRef.current = { pos: new THREE.Vector3(0, 6, 12), target: new THREE.Vector3(0, 0.8, 0) };
+    } else if (preset === 'front') {
+      cameraLerpRef.current = { pos: new THREE.Vector3(0, 2.8, 10.8), target: new THREE.Vector3(0, 1.3, 0) };
+    } else if (preset === 'top') {
+      cameraLerpRef.current = { pos: new THREE.Vector3(0, 14.5, 1.4), target: new THREE.Vector3(0, 0, 0) };
+    } else {
+      const firstTool = placed3DTools[0];
+      const tx = firstTool ? ((firstTool.xPct - 50) / 100) * 14.2 : 0;
+      const tz = firstTool ? ((firstTool.yPct - 50) / 100) * 9.6 : 0;
+      cameraLerpRef.current = { pos: new THREE.Vector3(tx + 2.4, 2.4, tz + 3.8), target: new THREE.Vector3(tx, 0.6, tz) };
+    }
+  };
+
+  const handleCapture3DScreenshot = () => {
+    const renderer = rendererRef.current;
+    const scene = sceneRef.current;
+    const camera = cameraRef.current;
+    if (!renderer || !scene || !camera) return;
+    renderer.render(scene, camera);
+    const url = renderer.domElement.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `synapse-lab3d-${mode}-${Date.now()}.png`;
+    a.click();
+  };
+
+  const handleLog3DSample = () => {
+    const tVal = simStateRef.current.time;
+    const instSummary =
+      placed3DTools.length > 0
+        ? placed3DTools
+            .slice(0, 4)
+            .map((tool) => {
+              const sp = APPARATUS_BY_ID[tool.toolId];
+              const rd = evaluateApparatusReading(tool.toolId, mode, active3DProbeParams, tVal, tool.xPct, tool.yPct);
+              return `${sp?.symbol || tool.toolId}=${rd.valueText}`;
+            })
+            .join('; ')
+        : 'Không đặt dụng cụ phụ';
+    const summary =
+      EXTRA_3D_SCENE_CONFIGS[mode as ExtraPhysics3DModeId]?.computeReadout(extraParams) ||
+      `m=${mass}kg, k=${springK}, v0=${projV0}, f=${active3DProbeParams.freq}`;
+    setLoggedSamples3D((prev) => [
+      ...prev,
+      {
+        idx: prev.length + 1,
+        timeSec: tVal.toFixed(2),
+        modeLabel: current3DSpec?.title || mode,
+        summary,
+        instruments: instSummary
+      }
+    ]);
+  };
+
+  const handleExport3DCsv = () => {
+    if (loggedSamples3D.length === 0) return;
+    const rows = [
+      ['STT', 'Thoi gian t (s)', 'Mo hinh 3D', 'Thong so vat li', 'Dung cu do 3D'].join(','),
+      ...loggedSamples3D.map((r) =>
+        [
+          r.idx,
+          r.timeSec,
+          `"${r.modeLabel.replace(/"/g, '""')}"`,
+          `"${r.summary.replace(/"/g, '""')}"`,
+          `"${r.instruments.replace(/"/g, '""')}"`
+        ].join(',')
+      )
+    ];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `synapse-lab3d-${mode}-data.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <ViewportPortal active={isFullscreen}>
@@ -2709,15 +2913,16 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
           domainId={getDomainFor3DSim(mode)}
           simParams={active3DProbeParams}
           simTime={simStateRef.current.time}
+          onPlacedToolsChange={setPlaced3DTools}
           stageClassName={isFullscreen ? 'flex-1 min-h-0 flex flex-col' : ''}
         >
           <div
             className={`relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col ${
               isFullscreen
-                ? 'lg:block flex-1 min-h-[420px] rounded-[4px]'
+                ? 'lg:block flex-1 min-h-[420px] rounded-xl'
                 : embedded
-                ? 'rounded-[4px]'
-                : 'lg:block rounded-[4px] min-h-[560px] lg:min-h-0 lg:h-[640px]'
+                ? 'rounded-xl'
+                : 'lg:block rounded-xl min-h-[560px] lg:min-h-0 lg:h-[640px]'
             }`}
           >
         {/* TOP HEADER OVERLAY (Stacked in embedded mode so nothing clips or covers the 3D subject) */}
@@ -2729,7 +2934,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
           }`}
         >
           <div className="pointer-events-auto flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-slate-900/95 border border-slate-700/80 text-white shadow-lg max-w-full min-w-0">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/95 border border-slate-700/80 text-white shadow-lg max-w-full min-w-0">
             {(isFullscreen || onBack) && (
               <button
                 onClick={() => {
@@ -2739,7 +2944,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
                     onBack();
                   }
                 }}
-                className="sim-btn-phy flex items-center gap-1 px-2.5 py-1 rounded-[3px] border border-amber-400/60 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white shrink-0 cursor-pointer"
+                className="sim-btn-phy flex items-center gap-1 px-2.5 py-1 rounded-md border border-amber-400/60 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white shrink-0 cursor-pointer"
                 title={isFullscreen ? 'Thu nhỏ (Esc)' : 'Quay lại trang trước'}
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -2747,7 +2952,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
               </button>
             )}
             {embeddedBadge && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] bg-amber-500 text-slate-950 text-[10px] font-mono font-extrabold tracking-wider uppercase shrink-0">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-400/40 text-amber-300 text-[10px] font-mono font-bold tracking-wider uppercase shrink-0">
                 {embeddedBadge}
               </span>
             )}
@@ -2782,7 +2987,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
           >
             {/* Domain-scoped Mode Switcher Buttons */}
             <div
-              className={`sim-seg-box flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-[4px] shadow-lg overflow-x-auto scrollbar-none ${
+              className={`sim-seg-box flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-lg shadow-lg overflow-x-auto scrollbar-none ${
                 embedded && !isFullscreen ? 'max-w-full' : 'max-w-[68vw] sm:max-w-full shrink-0'
               }`}
             >
@@ -2793,7 +2998,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
                     setMode(m.id);
                     onSelectMode?.(m.id);
                   }}
-                  className={`sim-btn-phy min-h-[34px] px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-[3px] border whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`sim-btn-phy min-h-[32px] px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-md border whitespace-nowrap shrink-0 cursor-pointer ${
                     mode === m.id
                       ? 'sim-btn-active bg-amber-600 border-amber-300/70 text-white shadow-sm'
                       : 'border-transparent text-slate-300 hover:text-white'
@@ -2964,13 +3169,55 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+              {/* Camera Quick Presets */}
+              <div className="hidden md:flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-md border border-slate-800">
+                {(
+                  [
+                    { id: 'overview', label: 'Tổng quan' },
+                    { id: 'front', label: 'Mặt trước' },
+                    { id: 'top', label: 'Từ trên' },
+                    { id: 'bench', label: 'Cận dụng cụ' }
+                  ] as const
+                ).map((camP) => (
+                  <button
+                    key={camP.id}
+                    type="button"
+                    onClick={() => setCameraPreset(camP.id)}
+                    className="px-2 py-0.5 rounded text-[10px] font-semibold text-slate-300 hover:bg-slate-800 hover:text-amber-300 transition-colors cursor-pointer whitespace-nowrap"
+                    title={`Góc nhìn ${camP.label}`}
+                  >
+                    {camP.label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLog3DSample}
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer whitespace-nowrap"
+                title="Ghi lại 1 dòng số liệu đo 3D tại thời điểm t"
+              >
+                <Activity className="w-3 h-3" />
+                <span>Ghi mẫu đo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCapture3DScreenshot}
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors cursor-pointer whitespace-nowrap"
+                title="Chụp ảnh mô phỏng 3D (.png)"
+              >
+                <Camera className="w-3 h-3 text-sky-400" />
+                <span className="hidden sm:inline">Chụp PNG</span>
+              </button>
+
               <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-md border border-slate-800">
                 {[0.25, 0.5, 1, 2].map((spd) => (
                   <button
                     key={spd}
                     onClick={() => setSimSpeed(spd)}
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ${
                       simSpeed === spd ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -3530,6 +3777,55 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       </div>
         </div>
       </PhysicsApparatusWorkbench>
+      {loggedSamples3D.length > 0 && (
+        <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/95 p-3 space-y-2 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+              Bảng Số Liệu Thực Nghiệm 3D ({loggedSamples3D.length} mẫu)
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleExport3DCsv}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold cursor-pointer whitespace-nowrap"
+              >
+                <Download className="w-3 h-3" />
+                <span>Xuất CSV</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoggedSamples3D([])}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/50 text-slate-600 dark:text-slate-300 text-[11px] font-semibold cursor-pointer"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Xóa bảng</span>
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto max-h-40">
+            <table className="w-full text-left border-collapse text-[11px] font-mono">
+              <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                <tr>
+                  <th className="py-1.5 px-2">#</th>
+                  <th className="py-1.5 px-2">t (s)</th>
+                  <th className="py-1.5 px-2">Thông số mô phỏng</th>
+                  <th className="py-1.5 px-2">Dụng cụ đo 3D</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200">
+                {loggedSamples3D.map((r) => (
+                  <tr key={r.idx}>
+                    <td className="py-1 px-2 tabular-nums">{r.idx}</td>
+                    <td className="py-1 px-2 tabular-nums text-sky-600 dark:text-sky-400">{r.timeSec}</td>
+                    <td className="py-1 px-2">{r.summary}</td>
+                    <td className="py-1 px-2 text-emerald-600 dark:text-emerald-400">{r.instruments}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       <SimToCodeModal
         isOpen={isCodeModalOpen}
         onClose={() => setIsCodeModalOpen(false)}

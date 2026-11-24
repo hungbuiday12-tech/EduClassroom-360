@@ -51,7 +51,7 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
 export interface UseSpeechRecognitionOptions {
   language?: 'vi' | 'en';
   continuous?: boolean;
-  onFinalTranscript?: (text: string) => void;
+  onFinalTranscript?: (text: string, confidence: number) => void;
 }
 
 export function useSpeechRecognition({
@@ -108,18 +108,26 @@ export function useSpeechRecognition({
     rec.onresult = (event: SpeechRecognitionEventLike) => {
       let finalChunk = '';
       let interimChunk = '';
+      let confSum = 0;
+      let confCount = 0;
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
-        const transcript = result[0]?.transcript || '';
+        const alt = result[0];
+        const transcript = alt?.transcript || '';
         if (result.isFinal) {
           finalChunk += transcript + ' ';
+          if (typeof alt?.confidence === 'number' && alt.confidence > 0) {
+            confSum += alt.confidence;
+            confCount += 1;
+          }
         } else {
           interimChunk += transcript;
         }
       }
       setInterimText(interimChunk.trim());
       if (finalChunk.trim()) {
-        onFinalRef.current?.(finalChunk.trim());
+        const avgConf = confCount > 0 ? confSum / confCount : 1;
+        onFinalRef.current?.(finalChunk.trim(), avgConf);
       }
     };
 

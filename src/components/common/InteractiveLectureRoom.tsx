@@ -29,7 +29,14 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
-  BookMarked
+  BookMarked,
+  Bookmark,
+  Download,
+  StickyNote,
+  Volume2,
+  VolumeX,
+  Film,
+  PlayCircle
 } from 'lucide-react';
 import {
   AITutorMode,
@@ -51,6 +58,12 @@ import { useLanguage } from '../../context/LanguageContext';
 import { VoiceMicButton } from './VoiceMicButton';
 import { useNavigation } from '../../context/NavigationContext';
 import { subscribeRemoteCommand } from '../../lib/remoteControlBus';
+import { MotionReelMiniChat, LectureReelStepSeed } from '../tutor/MotionReelMiniChat';
+import {
+  speakVietnameseLecture,
+  stopVietnameseSpeech,
+  toVietnameseSpokenMath
+} from '../../lib/vietnameseSpeech';
 import {
   computeAssessmentMetrics,
   loadLessonAssessment,
@@ -127,7 +140,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
 
   const [currentStepIdx, setCurrentStepIdx] = useState<number>(0);
   const [visitedSteps, setVisitedSteps] = useState<number[]>([0]);
-  const [viewLayout, setViewLayout] = useState<'slides' | 'full' | 'glossary' | 'analytics'>('slides');
+  const [viewLayout, setViewLayout] = useState<'slides' | 'full' | 'video3b1b' | 'glossary' | 'analytics'>('slides');
   const [glossaryQuery, setGlossaryQuery] = useState<string>('');
   const [fontScale, setFontScale] = useState<'normal' | 'large'>('normal');
   const [revealedStepsMap, setRevealedStepsMap] = useState<Record<number, number>>({});
@@ -171,6 +184,18 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
   const [csTierByStep, setCsTierByStep] = useState<Record<number, 'basic' | 'advanced'>>({});
   const [csLangByStep, setCsLangByStep] = useState<Record<number, 'cpp' | 'python'>>({});
   const [activeFull3DStep, setActiveFull3DStep] = useState<number>(0);
+  const [inlineSimViewByStep, setInlineSimViewByStep] = useState<Record<number, 'both' | '2d' | '3d'>>({});
+
+  // Modern Study Tools: Quick formula drawer, per-step bookmarks, personal notes, Vietnamese TTS narration & 3B1B Video
+  const [showFormulaDrawer, setShowFormulaDrawer] = useState<boolean>(false);
+  const [bookmarkedSteps, setBookmarkedSteps] = useState<Record<number, boolean>>({});
+  const [stepNotes, setStepNotes] = useState<Record<number, string>>({});
+  const [openNoteSteps, setOpenNoteSteps] = useState<Record<number, boolean>>({});
+  const [speakingStepIdx, setSpeakingStepIdx] = useState<number | null>(null);
+  const [speechRate, setSpeechRate] = useState<0.9 | 1.02 | 1.15>(1.02);
+  const [isAutoNarratingAll, setIsAutoNarratingAll] = useState<boolean>(false);
+  const [videoSeedTopic, setVideoSeedTopic] = useState<string | undefined>(undefined);
+  const autoNarratingRef = React.useRef<boolean>(false);
 
   // Award XP tracking per session/record so students aren't double-rewarded for re-clicking
   const [awardedKeys, setAwardedKeys] = useState<Record<string, boolean>>({});
@@ -211,8 +236,215 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
     }
   }, [lessonKey, user?.uid, title, subject, grade, steps.length]);
 
+  const studyStorageKey = `synapse_lecture_study_v1_${user?.uid || 'guest'}_${lessonKey}`;
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(studyStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          bookmarks?: Record<number, boolean>;
+          notes?: Record<number, string>;
+        };
+        setBookmarkedSteps(parsed.bookmarks || {});
+        setStepNotes(parsed.notes || {});
+      } else {
+        setBookmarkedSteps({});
+        setStepNotes({});
+      }
+    } catch {
+      setBookmarkedSteps({});
+      setStepNotes({});
+    }
+    setOpenNoteSteps({});
+    setShowFormulaDrawer(false);
+    stopVietnameseSpeech();
+    autoNarratingRef.current = false;
+    setIsAutoNarratingAll(false);
+    setSpeakingStepIdx(null);
+    setVideoSeedTopic(undefined);
+  }, [studyStorageKey]);
+
+  const persistStudyMeta = (nextBookmarks: Record<number, boolean>, nextNotes: Record<number, string>) => {
+    try {
+      localStorage.setItem(
+        studyStorageKey,
+        JSON.stringify({ bookmarks: nextBookmarks, notes: nextNotes })
+      );
+    } catch {
+      // ignore quota errors
+    }
+  };
+
+  const toggleStepBookmark = (idx: number) => {
+    setBookmarkedSteps((prev) => {
+      const next = { ...prev, [idx]: !prev[idx] };
+      persistStudyMeta(next, stepNotes);
+      return next;
+    });
+  };
+
+  const updateStepNote = (idx: number, val: string) => {
+    setStepNotes((prev) => {
+      const next = { ...prev, [idx]: val };
+      persistStudyMeta(bookmarkedSteps, next);
+      return next;
+    });
+  };
+
+  const buildStepSpeechScript = (st: LectureStep, idx: number) => {
+    const parts = [
+      `Phần ${idx + 1}: ${toVietnameseSpokenMath(st.stepTitle)}.`,
+      st.quickIntuition ? `Tư duy trực quan: ${toVietnameseSpokenMath(st.quickIntuition)}.` : '',
+      st.conceptSection || st.teacherExplanation
+        ? toVietnameseSpokenMath((st.conceptSection || st.teacherExplanation || '').slice(0, 900))
+        : '',
+      st.formulaSection?.primaryFormula
+        ? `Công thức trọng tâm: ${toVietnameseSpokenMath(st.formulaSection.primaryFormula)}.`
+        : '',
+      st.keyTakeaway ? `Ghi nhớ nhanh: ${toVietnameseSpokenMath(st.keyTakeaway)}.` : ''
+    ];
+    return parts.filter(Boolean).join(' ');
+  };
+
+  const speakStepAt = (idx: number, autoAdvance: boolean) => {
+    const st = safeSteps[idx];
+    if (!st) {
+      autoNarratingRef.current = false;
+      setIsAutoNarratingAll(false);
+      setSpeakingStepIdx(null);
+      return;
+    }
+    const script = buildStepSpeechScript(st, idx);
+    setSpeakingStepIdx(idx);
+    speakVietnameseLecture(script, {
+      lang: 'vi',
+      rate: speechRate,
+      onEnd: () => {
+        if (autoAdvance && autoNarratingRef.current && idx + 1 < safeSteps.length) {
+          const nextIdx = idx + 1;
+          setCurrentStepIdx(nextIdx);
+          setVisitedSteps((prev) => (prev.includes(nextIdx) ? prev : [...prev, nextIdx]));
+          speakStepAt(nextIdx, true);
+        } else {
+          autoNarratingRef.current = false;
+          setIsAutoNarratingAll(false);
+          setSpeakingStepIdx(null);
+        }
+      }
+    });
+  };
+
+  const toggleSpeakStep = (st: LectureStep, idx: number) => {
+    if (speakingStepIdx === idx) {
+      stopVietnameseSpeech();
+      autoNarratingRef.current = false;
+      setIsAutoNarratingAll(false);
+      setSpeakingStepIdx(null);
+      return;
+    }
+    autoNarratingRef.current = false;
+    setIsAutoNarratingAll(false);
+    const script = buildStepSpeechScript(st, idx);
+    setSpeakingStepIdx(idx);
+    speakVietnameseLecture(script, {
+      lang: 'vi',
+      rate: speechRate,
+      onEnd: () => {
+        if (!autoNarratingRef.current) {
+          setSpeakingStepIdx(null);
+        }
+      }
+    });
+  };
+
+  const toggleAutoNarrateAll = () => {
+    if (isAutoNarratingAll) {
+      stopVietnameseSpeech();
+      autoNarratingRef.current = false;
+      setIsAutoNarratingAll(false);
+      setSpeakingStepIdx(null);
+      return;
+    }
+    if (safeSteps.length === 0) return;
+    autoNarratingRef.current = true;
+    setIsAutoNarratingAll(true);
+    speakStepAt(currentStepIdx, true);
+  };
+
+  useEffect(() => {
+    return () => {
+      stopVietnameseSpeech();
+      autoNarratingRef.current = false;
+    };
+  }, []);
+
   const safeSteps = steps.length > 0 ? steps : [];
   const activeStep = safeSteps[currentStepIdx] || safeSteps[0];
+  const lectureReelSeeds: LectureReelStepSeed[] = useMemo(
+    () =>
+      safeSteps.map((st) => ({
+        title: st.stepTitle,
+        concept: st.quickIntuition || st.conceptSection || st.teacherExplanation || '',
+        formula: st.formulaSection?.primaryFormula || ''
+      })),
+    [safeSteps]
+  );
+
+  // Keyboard shortcuts (Left/Right arrow to switch slides when not editing text)
+  useEffect(() => {
+    if (viewLayout !== 'slides' || safeSteps.length <= 1) return;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        setCurrentStepIdx((prev) => Math.min(safeSteps.length - 1, prev + 1));
+      } else if (e.key === 'ArrowLeft') {
+        setCurrentStepIdx((prev) => Math.max(0, prev - 1));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [viewLayout, safeSteps.length]);
+
+  const handleExportStudyMarkdown = () => {
+    const lines: string[] = [
+      `# ${title}`,
+      subtitle ? `> ${subtitle}` : '',
+      '',
+      keyFormulas.length > 0 ? '## Công thức trọng tâm' : '',
+      ...keyFormulas.map((f) => `- $$${f}$$`),
+      '',
+      ...safeSteps.flatMap((st, i) => [
+        `## ${i + 1}. ${st.stepTitle}${bookmarkedSteps[i] ? ' [Cần ôn]' : ''}`,
+        st.quickIntuition ? `**Hiểu nhanh:** ${st.quickIntuition}` : '',
+        (st.formulaSection?.primaryFormula || st.formulaHighlight)
+          ? `**Công thức:** \`${st.formulaSection?.primaryFormula || st.formulaHighlight}\``
+          : '',
+        stepNotes[i]?.trim() ? `**Ghi chú của bạn:**\n${stepNotes[i].trim()}` : '',
+        ''
+      ]),
+      mnemonics.length > 0 ? '## Mẹo nhớ nhanh' : '',
+      ...mnemonics.map((m) => `- ${m}`),
+      commonTraps.length > 0 ? '\n## Lỗi sai thường gặp' : '',
+      ...commonTraps.map((t) => `- ${t}`)
+    ].filter((x) => x !== undefined);
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${lessonKey.replace(/[^a-zA-Z0-9_-]/g, '_')}-on-tap.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const triggerXP = (rewardKey: string, amount: number) => {
     if (awardedKeys[rewardKey]) return;
@@ -1022,13 +1254,68 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-2 text-[11px] font-semibold">
-              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 tabular-nums">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+              <button
+                type="button"
+                onClick={() => toggleSpeakStep(step, idx)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md border transition-colors cursor-pointer whitespace-nowrap ${
+                  speakingStepIdx === idx
+                    ? 'bg-sky-600 text-white border-sky-500'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-sky-400'
+                }`}
+                title="Nghe lời giảng tiếng Việt phần này"
+              >
+                {speakingStepIdx === idx ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                <span>{speakingStepIdx === idx ? 'Dừng đọc' : 'Nghe giảng'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  stopVietnameseSpeech();
+                  autoNarratingRef.current = false;
+                  setIsAutoNarratingAll(false);
+                  setSpeakingStepIdx(null);
+                  setVideoSeedTopic(step.stepTitle);
+                  setViewLayout('video3b1b');
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-indigo-300 dark:border-indigo-700 bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer whitespace-nowrap"
+                title="Xem & tạo Video minh họa phong cách 3Blue1Brown kèm thuyết minh tiếng Việt"
+              >
+                <Film className="w-3.5 h-3.5" />
+                <span>Video 3B1B</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleStepBookmark(idx)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md border transition-colors cursor-pointer whitespace-nowrap ${
+                  bookmarkedSteps[idx]
+                    ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-400 text-amber-700 dark:text-amber-300'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400'
+                }`}
+                title="Đánh dấu phần này để ôn lại"
+              >
+                <Bookmark className={`w-3.5 h-3.5 ${bookmarkedSteps[idx] ? 'fill-amber-500 text-amber-500' : ''}`} />
+                <span>{bookmarkedSteps[idx] ? 'Đã đánh dấu ôn' : 'Cần ôn'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpenNoteSteps((prev) => ({ ...prev, [idx]: !prev[idx] }))}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md border transition-colors cursor-pointer whitespace-nowrap ${
+                  openNoteSteps[idx] || stepNotes[idx]?.trim()
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-400'
+                }`}
+                title="Mở sổ ghi chú cá nhân cho phần này"
+              >
+                <StickyNote className="w-3.5 h-3.5" />
+                <span>{stepNotes[idx]?.trim() ? 'Ghi chú (đã lưu)' : 'Ghi chú'}</span>
+              </button>
+              <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 tabular-nums">
                 TN: {stepMcqCorrect}/{activeMcqs.length} ({stepMcqDone} đã làm)
               </span>
               {saved.essayEvaluation && (
                 <span
-                  className={`px-2 py-0.5 rounded-md tabular-nums ${
+                  className={`px-2 py-1 rounded-md tabular-nums ${
                     saved.essayEvaluation.score >= 7
                       ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
                       : 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
@@ -1040,18 +1327,39 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
             </div>
           </div>
           <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug">
-            {step.stepTitle}
+            <FormattedText text={step.stepTitle} />
           </h3>
         </div>
+
+        {(openNoteSteps[idx] || false) && (
+          <section className="rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
+              <span className="flex items-center gap-1.5">
+                <StickyNote className="w-3.5 h-3.5" />
+                Ghi chú cá nhân cho phần {idx + 1} (tự động lưu)
+              </span>
+              <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                Xuất kèm khi bấm &ldquo;Xuất phiếu ôn (.md)&rdquo;
+              </span>
+            </div>
+            <textarea
+              rows={2}
+              value={stepNotes[idx] || ''}
+              onChange={(e) => updateStepNote(idx, e.target.value)}
+              placeholder="Ghi lại ý hiểu riêng, công thức cần nhớ hoặc lỗi sai bạn hay mắc ở phần này..."
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500"
+            />
+          </section>
+        )}
 
         {/* ============================================================== */}
         {/* SUB-SECTION 0: HIỂU NHANH TRONG 30 GIÂY & VÍ DỤ ĐỜI THỰC       */}
         {/* ============================================================== */}
         {step.quickIntuition && (
-          <section className="rounded-xl border border-emerald-300/80 dark:border-emerald-800/70 bg-emerald-50/70 dark:bg-emerald-950/25 p-4 sm:p-5 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+          <section className="rounded-xl border border-emerald-200/90 dark:border-emerald-900/60 bg-emerald-50/45 dark:bg-emerald-950/20 p-4 sm:p-5 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
               <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Hiểu nhanh trong 30 giây (Ngôn ngữ dễ hiểu &amp; Ví dụ đời thực)</span>
+              <span>Hiểu nhanh trong 30 giây</span>
             </div>
             <div
               className={`leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-line ${
@@ -1066,15 +1374,15 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
         {/* ============================================================== */}
         {/* SUB-SECTION 1: KHÁI NIỆM & BẢN CHẤT                            */}
         {/* ============================================================== */}
-        <section className="rounded-xl border border-indigo-200/70 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/15 p-4 sm:p-5 space-y-3">
+        <section className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/50 p-4 sm:p-5 space-y-3.5">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
               <BookOpen className="w-4 h-4" />
               <span>1. Khái niệm &amp; Bản chất</span>
             </div>
             {step.conceptGlossary && step.conceptGlossary.length > 0 && (
-              <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 tabular-nums">
-                {step.conceptGlossary.length} khái niệm trọng tâm
+              <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 tabular-nums">
+                {step.conceptGlossary.length} khái niệm
               </span>
             )}
           </div>
@@ -1087,28 +1395,28 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           </div>
 
           {step.conceptGlossary && step.conceptGlossary.length > 0 && (
-            <div className="grid grid-cols-1 gap-2.5 pt-2 border-t border-indigo-200/60 dark:border-indigo-900/40">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-200/80 dark:border-slate-800">
               {step.conceptGlossary.map((cg, cgIdx) => (
                 <div
                   key={cgIdx}
-                  className="rounded-lg bg-white/90 dark:bg-slate-900/80 border border-indigo-200/70 dark:border-indigo-900/50 p-3 space-y-1.5"
+                  className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-1.5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs sm:text-[13px] font-extrabold text-indigo-900 dark:text-indigo-200">
-                      {cg.term}
+                    <span className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white">
+                      <FormattedText text={cg.term} />
                     </span>
                     {cg.symbol && (
-                      <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/70 dark:border-indigo-800 text-xs font-mono text-indigo-700 dark:text-indigo-300 overflow-x-auto max-w-full">
+                      <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800 text-xs font-mono text-indigo-700 dark:text-indigo-300 overflow-x-auto max-w-full">
                         <MathFormula formula={cg.symbol} />
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                  <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     <FormattedText text={cg.definition} />
                   </div>
                   {cg.intuition && (
-                    <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/30 rounded px-2.5 py-1.5 border border-emerald-200/60 dark:border-emerald-900/40">
-                      <span className="font-bold">Gợi ý dễ hiểu: </span>
+                    <div className="text-[11px] text-emerald-700 dark:text-emerald-300 pt-1 border-t border-slate-100 dark:border-slate-800">
+                      <span className="font-semibold">Nhớ nhanh: </span>
                       <FormattedText text={cg.intuition} />
                     </div>
                   )}
@@ -1402,36 +1710,74 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
         )}
 
         {/* ============================================================== */}
-        {/* INLINE 2D + 3D PHYSICS SIMULATIONS (MOUNTED ON EVERY LECTURE)  */}
+        {/* INLINE 2D + 3D PHYSICS SIMULATIONS (UNIFIED WORKBENCH HEADER)  */}
         {/* ============================================================== */}
-        {subject === 'physics' && physicsLesson && (
-          <div className="space-y-4">
-            <PhysicsInline2DSim
-              lesson={physicsLesson}
-              stepIndex={idx}
-              totalSteps={steps.length}
-              stepTitle={step.stepTitle}
-              stepConcept={step.conceptSection}
-              onOpenSim2D={onOpenSim2D}
-              onOpenSim3D={onOpenSim3D}
-            />
-            <PhysicsInline3DSim
-              lesson={physicsLesson}
-              stepIndex={idx}
-              totalSteps={steps.length}
-              stepTitle={step.stepTitle}
-              stepConcept={step.conceptSection}
-              isWebGLActive={viewLayout === 'slides' || activeFull3DStep === idx}
-              onActivateWebGL={() => setActiveFull3DStep(idx)}
-              onOpenSim3D={onOpenSim3D}
-            />
-          </div>
-        )}
+        {subject === 'physics' && physicsLesson && (() => {
+          const simView = inlineSimViewByStep[idx] || 'both';
+          return (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+                  <Compass className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                  <span>Phòng Thí Nghiệm Trực Quan (Phần {idx + 1})</span>
+                </div>
+                <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px]">
+                  {(
+                    [
+                      { id: 'both', label: '2D + 3D' },
+                      { id: '2d', label: 'Chỉ 2D' },
+                      { id: '3d', label: 'Chỉ 3D' }
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        setInlineSimViewByStep((prev) => ({ ...prev, [idx]: opt.id }))
+                      }
+                      className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                        simView === opt.id
+                          ? 'bg-slate-900 dark:bg-sky-600 text-white'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {(simView === 'both' || simView === '2d') && (
+                <PhysicsInline2DSim
+                  lesson={physicsLesson}
+                  stepIndex={idx}
+                  totalSteps={steps.length}
+                  stepTitle={step.stepTitle}
+                  stepConcept={step.conceptSection}
+                  onOpenSim2D={onOpenSim2D}
+                  onOpenSim3D={onOpenSim3D}
+                />
+              )}
+              {(simView === 'both' || simView === '3d') && (
+                <PhysicsInline3DSim
+                  lesson={physicsLesson}
+                  stepIndex={idx}
+                  totalSteps={steps.length}
+                  stepTitle={step.stepTitle}
+                  stepConcept={step.conceptSection}
+                  isWebGLActive={viewLayout === 'slides' || simView === '3d' || activeFull3DStep === idx}
+                  onActivateWebGL={() => setActiveFull3DStep(idx)}
+                  onOpenSim3D={onOpenSim3D}
+                />
+              )}
+            </div>
+          );
+        })()}
 
         {/* ============================================================== */}
         {/* SUB-SECTION 3: LỖI SAI HAY GẶP, VÍ DỤ & PHÂN TÍCH SÂU          */}
         {/* ============================================================== */}
-        <section className="rounded-xl border border-amber-200/70 dark:border-amber-900/40 bg-amber-50/35 dark:bg-amber-950/15 p-4 sm:p-5 space-y-4">
+        <section className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/75 p-4 sm:p-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-amber-800 dark:text-amber-300">
               <Lightbulb className="w-4 h-4 text-amber-500" />
@@ -1987,12 +2333,12 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
                   </div>
                   {saved.essayEvaluation.strengths.length > 0 && (
                     <div className="text-emerald-700 dark:text-emerald-300">
-                      <strong>Điểm tốt:</strong> {saved.essayEvaluation.strengths.join(' · ')}
+                      <strong>Điểm tốt:</strong> <FormattedText text={saved.essayEvaluation.strengths.join(' · ')} />
                     </div>
                   )}
                   {saved.essayEvaluation.mistakes.length > 0 && (
                     <div className="text-rose-700 dark:text-rose-300">
-                      <strong>Cần bổ sung:</strong> {saved.essayEvaluation.mistakes.join(' · ')}
+                      <strong>Cần bổ sung:</strong> <FormattedText text={saved.essayEvaluation.mistakes.join(' · ')} />
                     </div>
                   )}
                 </div>
@@ -2292,52 +2638,82 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
   return (
     <div className="space-y-5">
       {/* Teaching Toolbar Header */}
-      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+      <div className="bg-white dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
         <div className="space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
             <span>{kicker}</span>
+            <span aria-hidden="true">·</span>
+            <span className="font-mono tabular-nums text-slate-600 dark:text-slate-300">
+              {liveMetrics.completedSteps}/{safeSteps.length} phần
+            </span>
             {savePulseMsg && (
-              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
                 <Save className="w-3 h-3" />
                 {savePulseMsg}
               </span>
             )}
           </div>
-          <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-snug">
+          <h2 className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white leading-snug tracking-tight">
             <FormattedText text={title} />
           </h2>
           {subtitle && (
-            <div className="text-xs text-slate-600 dark:text-slate-400">
+            <div className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               <FormattedText text={subtitle} />
             </div>
           )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 p-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950">
+            <button
+              type="button"
+              onClick={toggleAutoNarrateAll}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
+                isAutoNarratingAll
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-200/70 dark:hover:bg-slate-800'
+              }`}
+              title="Phát lời giảng tiếng Việt liên tục qua tất cả các phần"
+            >
+              {isAutoNarratingAll ? <VolumeX className="w-3.5 h-3.5" /> : <PlayCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />}
+              <span>{isAutoNarratingAll ? 'Dừng giảng bài' : 'Nghe cả bài'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setSpeechRate((r) => (r === 0.9 ? 1.02 : r === 1.02 ? 1.15 : 0.9))
+              }
+              className="px-2 py-1 rounded-lg text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 cursor-pointer tabular-nums"
+              title="Đổi tốc độ giọng đọc tiếng Việt"
+            >
+              {speechRate === 1.02 ? '1.0x' : `${speechRate}x`}
+            </button>
+          </div>
+
           <button
             onClick={() => setFontScale((prev) => (prev === 'normal' ? 'large' : 'normal'))}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-mono font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
+            className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-mono font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors whitespace-nowrap cursor-pointer"
             title="Thay đổi kích thước chữ bài giảng"
           >
             {fontScale === 'normal' ? 'A+ Chữ lớn' : 'A- Chữ vừa'}
           </button>
 
-          {/* View Layout Switch: Interactive Slides vs Full Page vs Glossary vs Analytics */}
-          <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+          {/* View Layout Switch: Interactive Slides vs Full Page vs Video 3B1B vs Glossary vs Analytics */}
+          <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
             <button
               onClick={() => setViewLayout('slides')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 viewLayout === 'slides'
                   ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Giảng từng phần</span>
+              <span>Từng phần</span>
             </button>
             <button
               onClick={() => setViewLayout('full')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 viewLayout === 'full'
                   ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -2347,26 +2723,43 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
               <span>Trọn bài ({safeSteps.length})</span>
             </button>
             <button
+              onClick={() => {
+                stopVietnameseSpeech();
+                autoNarratingRef.current = false;
+                setIsAutoNarratingAll(false);
+                setSpeakingStepIdx(null);
+                setViewLayout('video3b1b');
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                viewLayout === 'video3b1b'
+                  ? 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Film className="w-3.5 h-3.5" />
+              <span>Video 3B1B</span>
+            </button>
+            <button
               onClick={() => setViewLayout('glossary')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 viewLayout === 'glossary'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <BookMarked className="w-3.5 h-3.5" />
-              <span>Khái niệm &amp; Chú thích</span>
+              <span>Từ điển</span>
             </button>
             <button
               onClick={() => setViewLayout('analytics')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 viewLayout === 'analytics'
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
-              <span>Kết quả &amp; Lộ trình</span>
+              <span>Lộ trình AI</span>
             </button>
           </div>
         </div>
@@ -2375,6 +2768,38 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
       {/* Main Teaching Stage */}
       {viewLayout === 'analytics' ? (
         renderAnalyticsAndRoadmapView()
+      ) : viewLayout === 'video3b1b' ? (
+        <div className="bg-slate-950 border border-sky-500/30 rounded-2xl p-4 sm:p-6 space-y-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+                <Film className="w-4 h-4" />
+                <span>Phòng dựng Video 3Blue1Brown &amp; Thuyết minh Tiếng Việt</span>
+              </div>
+              <p className="text-xs text-slate-300">
+                Video hoạt hình vector 2D dựng theo các bước bài giảng <strong className="text-white">{title}</strong> — hỗ trợ phát giọng đọc tiếng Việt, tùy chỉnh kịch bản AI và xuất file WebM.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setViewLayout('slides')}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 cursor-pointer whitespace-nowrap"
+            >
+              ← Quay lại slide bài giảng
+            </button>
+          </div>
+
+          <MotionReelMiniChat
+            key={`${lessonKey}::${videoSeedTopic || 'lesson'}`}
+            language={language === 'en' ? 'en' : 'vi'}
+            subject={subject}
+            initialTopic={videoSeedTopic || activeStep?.stepTitle || title}
+            lectureTitle={title}
+            lectureSteps={lectureReelSeeds}
+            autoVoiceOn={true}
+            compactLectureMode={true}
+          />
+        </div>
       ) : viewLayout === 'glossary' ? (() => {
         const q = glossaryQuery.trim().toLowerCase();
         const uniqueConcepts = Array.from(
@@ -2444,7 +2869,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm font-extrabold text-slate-900 dark:text-white">
-                          {c.term}
+                          <FormattedText text={c.term} />
                         </span>
                         {c.symbol && (
                           <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/70 dark:border-indigo-800 text-xs font-mono text-indigo-700 dark:text-indigo-300">
@@ -2510,17 +2935,64 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           </div>
         );
       })() : viewLayout === 'slides' && activeStep ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Left Syllabus Outline */}
-          <div className="lg:col-span-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <BookOpen className={`w-4 h-4 ${accentTextClass}`} />
-                Mục lục từng nội dung
-              </span>
-              <span className="text-[11px] font-mono text-slate-500 tabular-nums">
-                {liveMetrics.completedSteps}/{safeSteps.length} đã làm
-              </span>
+        <div className="space-y-5">
+          {/* TOP HORIZONTAL SYLLABUS DOCK (Unobstructed full-width lecture & sim workspace below) */}
+          <div className="bg-white dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3 min-w-0">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <BookOpen className={`w-4 h-4 ${accentTextClass}`} />
+                  <span>Mục lục từng nội dung</span>
+                </span>
+                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 tabular-nums">
+                  {liveMetrics.completedSteps}/{safeSteps.length} đã làm
+                </span>
+                <span className="hidden sm:inline-block text-[11px] text-slate-400 dark:text-slate-500">
+                  Phím tắt: ← / → chuyển phần
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {keyFormulas.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFormulaDrawer((v) => !v)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                      showFormulaDrawer
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white'
+                        : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-400'
+                    }`}
+                  >
+                    <Calculator className="w-3.5 h-3.5" />
+                    <span>Công thức tra nhanh ({keyFormulas.length})</span>
+                    {showFormulaDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleExportStudyMarkdown}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 hover:border-emerald-400 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                  title="Tải phiếu ôn tập & ghi chú cá nhân (.md)"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Xuất phiếu ôn (.md)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAnalyzeLessonProgress}
+                  disabled={isAnalyzingLesson}
+                  className="py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  {isAnalyzingLesson ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <BarChart3 className="w-3.5 h-3.5" />
+                  )}
+                  <span>Phân tích &amp; Lộ trình AI</span>
+                </button>
+              </div>
             </div>
 
             {/* Progress bar */}
@@ -2539,7 +3011,8 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
               />
             </div>
 
-            <div className="space-y-1.5">
+            {/* Horizontal Multi-Column Syllabus Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {safeSteps.map((st, idx) => {
                 const isActive = idx === currentStepIdx;
                 const saved = assessmentRecord.stepResults?.[idx];
@@ -2551,12 +3024,13 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
                 ).length;
                 const essayScore = saved?.essayEvaluation?.score;
                 const isAssessed = checkedCount > 0 || typeof essayScore === 'number';
+                const isBookmarked = Boolean(bookmarkedSteps[idx]);
 
                 return (
                   <button
                     key={idx}
                     onClick={() => handleSelectStep(idx)}
-                    className={`w-full text-left p-3 rounded-xl border transition-all flex items-start gap-2.5 ${
+                    className={`w-full text-left p-3 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer ${
                       isActive
                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
                         : 'bg-slate-50/70 dark:bg-slate-950/60 border-slate-200/70 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -2574,9 +3048,16 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
                       {isAssessed && !isActive ? <CheckCircle2 className="w-3.5 h-3.5" /> : idx + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold leading-snug">{st.stepTitle}</div>
+                      <div className="flex items-start justify-between gap-1.5">
+                        <div className="text-xs font-bold leading-snug">
+                          <FormattedText text={st.stepTitle} />
+                        </div>
+                        {isBookmarked && (
+                          <Bookmark className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0 mt-0.5" />
+                        )}
+                      </div>
                       <div
-                        className={`text-[11px] mt-0.5 tabular-nums ${
+                        className={`text-[11px] mt-1 tabular-nums ${
                           isActive
                             ? 'text-slate-300 dark:text-slate-600'
                             : 'text-slate-500 dark:text-slate-400'
@@ -2584,6 +3065,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
                       >
                         TN: {correctCount}/{mcqs.length}
                         {typeof essayScore === 'number' ? ` · TL: ${essayScore}/10` : ' · 1 TL nhỏ'}
+                        {stepNotes[idx]?.trim() ? ' · Có ghi chú' : ''}
                       </div>
                     </div>
                   </button>
@@ -2591,44 +3073,34 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
               })}
             </div>
 
-            {/* Analyze Progress Quick CTA */}
-            <button
-              type="button"
-              onClick={handleAnalyzeLessonProgress}
-              disabled={isAnalyzingLesson}
-              className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors"
-            >
-              {isAnalyzingLesson ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <BarChart3 className="w-3.5 h-3.5" />
-              )}
-              <span>Phân tích kết quả &amp; Gợi ý lộ trình</span>
-            </button>
-
-            {/* Key Formulas Quick Reference */}
-            {keyFormulas.length > 0 && (
+            {/* Collapsible Quick Formula Grid */}
+            {showFormulaDrawer && keyFormulas.length > 0 && (
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
                 <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Công thức tra nhanh cả bài
+                  Công thức tra nhanh cả bài (bấm để sao chép LaTeX)
                 </div>
-                <div className="space-y-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   {keyFormulas.map((kf, i) => (
-                    <div
+                    <button
                       key={i}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800 text-xs overflow-x-auto"
+                      type="button"
+                      onClick={() => handleCopyFormula(kf)}
+                      className="text-left px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-400 text-xs overflow-x-auto flex items-center justify-between gap-2 cursor-pointer transition-colors"
                     >
                       <MathFormula formula={kf} />
-                    </div>
+                      <span className="shrink-0 text-[10px] font-mono text-slate-400">
+                        {copiedFormula === kf ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Right Active Lecture Board */}
-          <div className="lg:col-span-8 space-y-5">
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 sm:p-7 shadow-xs">
+          {/* Full-Width Expanded Active Lecture & Simulation Stage */}
+          <div className="w-full space-y-5">
+            <div className="bg-white dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-8 shadow-xs">
               {renderStepBody(activeStep, currentStepIdx)}
 
               {/* Stepper Footer */}

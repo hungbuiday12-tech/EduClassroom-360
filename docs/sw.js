@@ -78,7 +78,7 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "index.html",
-    "revision": "0f915b96d5ccbde08b3ebf62f3062e90"
+    "revision": "a1175557e1e7c2c16ffa381097435e03"
   }, {
     "url": "draco/draco_wasm_wrapper.js",
     "revision": "7a48a3fdc5785631621f4b20cd0937dc"
@@ -92,16 +92,13 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/workbox-window.prod.es5-Bd17z0YL.js",
     "revision": null
   }, {
-    "url": "assets/virtual_pwa-register-uJ-HLlXa.js",
+    "url": "assets/virtual_pwa-register-DA4Z0Vc5.js",
     "revision": null
   }, {
     "url": "assets/vendor-react-CY3uflm1.js",
     "revision": null
   }, {
     "url": "assets/vendor-icons-BXYhyrKJ.js",
-    "revision": null
-  }, {
-    "url": "assets/useSpeechRecognition-B9pu_Kt4.js",
     "revision": null
   }, {
     "url": "assets/three3DEnhancements-Dp5ImgX4.js",
@@ -116,25 +113,22 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/roadmapData-DahBKPE9.js",
     "revision": null
   }, {
-    "url": "assets/productDocxExporter-DLiH240D.js",
+    "url": "assets/productDocxExporter-21hxlH9M.js",
     "revision": null
   }, {
-    "url": "assets/liveCoPilotBridge-lyxrq3ZP.js",
+    "url": "assets/lessonProgressStore-CNnKXPHT.js",
     "revision": null
   }, {
-    "url": "assets/lessonProgressStore-BMxXaE4r.js",
+    "url": "assets/index-UHYwV91k.js",
     "revision": null
   }, {
-    "url": "assets/index-yvNK1hKp.css",
-    "revision": null
-  }, {
-    "url": "assets/index-C0EWNd9T.js",
+    "url": "assets/index-D3JlhaT2.css",
     "revision": null
   }, {
     "url": "assets/handLandmarkerWorker-xPo-MoRQ.js",
     "revision": null
   }, {
-    "url": "assets/handGestureTracker-D6_FVD_G.js",
+    "url": "assets/handGestureTracker-CehTP_kU.js",
     "revision": null
   }, {
     "url": "assets/draco_wasm_wrapper-fZCQGLGb.js",
@@ -152,7 +146,7 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/draco_decoder-C32yEggz.wasm",
     "revision": null
   }, {
-    "url": "assets/customModelStore-BixwctKc.js",
+    "url": "assets/customModelStore-B988J9iU.js",
     "revision": null
   }, {
     "url": "assets/customModelBuilder-DiNgJj8G.js",
@@ -167,94 +161,94 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/confetti.module-Djt41fMX.js",
     "revision": null
   }, {
-    "url": "assets/codeRunner-ltjDMsC7.js",
+    "url": "assets/codeRunner-BGITz5FH.js",
     "revision": null
   }, {
-    "url": "assets/XRayConfigPanel-vhPY7seh.js",
+    "url": "assets/XRayConfigPanel-f0UfF_JE.js",
     "revision": null
   }, {
-    "url": "assets/VoiceMicButton-74AZExwu.js",
+    "url": "assets/VoiceMicButton-7RHEFIw9.js",
     "revision": null
   }, {
-    "url": "assets/VisitorLandingPage-DwXi1KDV.js",
+    "url": "assets/VisitorLandingPage-3ICwepdf.js",
     "revision": null
   }, {
     "url": "assets/ViewportPortal-CbzLL9G3.js",
     "revision": null
   }, {
-    "url": "assets/TypingParrotoSandbox-EiKnFu9T.js",
+    "url": "assets/TypingParrotoSandbox-DlCH8cKJ.js",
     "revision": null
   }, {
-    "url": "assets/TechTeardown3DLab-DuKocjGm.js",
+    "url": "assets/TechTeardown3DLab-owOIJEcE.js",
     "revision": null
   }, {
-    "url": "assets/SynapseVoiceOS-DYhophxj.js",
+    "url": "assets/SynapseVoiceOS-DyFXvsoc.js",
     "revision": null
   }, {
-    "url": "assets/SynAIProChat-C0MttjaY.js",
+    "url": "assets/SynAIProChat-BVayky-L.js",
     "revision": null
   }, {
     "url": "assets/SublimeEditor-BbBQx50n.js",
     "revision": null
   }, {
-    "url": "assets/StudyForum-D9pPK-Fa.js",
+    "url": "assets/StudyForum-D26ue0D1.js",
     "revision": null
   }, {
-    "url": "assets/SolarSystem3DLab-mN1Io3G7.js",
+    "url": "assets/SolarSystem3DLab-Dl0GDyLC.js",
     "revision": null
   }, {
-    "url": "assets/SettingsModal-DOmn7VIW.js",
+    "url": "assets/SettingsModal-BP0RDCTy.js",
     "revision": null
   }, {
-    "url": "assets/PhysicsDomainsPage-Bsm4-ie5.js",
+    "url": "assets/PhysicsDomainsPage-XO2HwMJP.js",
     "revision": null
   }, {
-    "url": "assets/PWAInstallModal-COYdS256.js",
+    "url": "assets/PWAInstallModal-DqGEcTr6.js",
     "revision": null
   }, {
-    "url": "assets/MathStudio-BRM5QdFk.js",
+    "url": "assets/MathStudio-CsPW3tz0.js",
     "revision": null
   }, {
-    "url": "assets/LiveMeetClassroom-5CoQ2w8f.js",
+    "url": "assets/LiveMeetClassroom-DM5Skgce.js",
     "revision": null
   }, {
-    "url": "assets/LectureDirectorySection-B6S7JQfM.js",
+    "url": "assets/LectureDirectorySection-C2G3wgtm.js",
     "revision": null
   }, {
-    "url": "assets/LearnerPortfolioModal-COlvG_W1.js",
+    "url": "assets/LearnerPortfolioModal-DNQlzWny.js",
     "revision": null
   }, {
-    "url": "assets/InteractiveScratchpad-VQqUsW3K.js",
+    "url": "assets/InteractiveScratchpad-DE6vU5BA.js",
     "revision": null
   }, {
-    "url": "assets/HologramModeControls-CcFEEMse.js",
+    "url": "assets/HologramModeControls-CO3JZLr2.js",
     "revision": null
   }, {
-    "url": "assets/GrowthWorkspace-C9-E7i6J.js",
+    "url": "assets/GrowthWorkspace-DtukR9F3.js",
     "revision": null
   }, {
-    "url": "assets/GraphicsTierTriggerButton-D8a26nPz.js",
+    "url": "assets/GraphicsTierTriggerButton-BKJTuvgl.js",
     "revision": null
   }, {
-    "url": "assets/GraphicsTierModal-s-jrR8if.js",
+    "url": "assets/GraphicsTierModal-DY0TyiA1.js",
     "revision": null
   }, {
-    "url": "assets/CommunityShowcaseView-B7_OrxJg.js",
+    "url": "assets/CommunityShowcaseView-BDqlHrhp.js",
     "revision": null
   }, {
-    "url": "assets/CodeSimulationsPage-BZQiz8O1.js",
+    "url": "assets/CodeSimulationsPage-DCVAGDEt.js",
     "revision": null
   }, {
-    "url": "assets/ClassroomOverview-vdcpP6XR.js",
+    "url": "assets/ClassroomOverview-DEt2Ko-o.js",
     "revision": null
   }, {
-    "url": "assets/CS3DVisualizer-CawX8GHK.js",
+    "url": "assets/CS3DVisualizer-pE66rSii.js",
     "revision": null
   }, {
-    "url": "assets/AuthModal-p7uWhHI5.js",
+    "url": "assets/AuthModal-Dx4W1SMr.js",
     "revision": null
   }, {
-    "url": "assets/AssemblyStudio3DLab-CBVT8PsC.js",
+    "url": "assets/AssemblyStudio3DLab-DejFU7Oz.js",
     "revision": null
   }, {
     "url": "apple-touch-icon.png",

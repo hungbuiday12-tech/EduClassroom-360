@@ -36,6 +36,7 @@ import {
   GPUParticlePool,
   OptimizedTrail,
 } from '../../lib/three3DEnhancements';
+import { CsStepAiTutorPanel } from './CsStepAiTutorPanel';
 
 export type CS3DSimMode =
   | 'sort_3d'
@@ -2796,6 +2797,34 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
               </div>
             )}
           </div>
+
+          <CsStepAiTutorPanel
+            isPaused={mode === 'stack_queue_3d' || !isPlaying}
+            simCategory="3d"
+            algorithmName={isEn ? activeMeta.titleEn : activeMeta.titleVi}
+            stepNumber={mode === 'stack_queue_3d' ? Math.max(1, sqItems.length) : safeStepIdx + 1}
+            totalSteps={mode === 'stack_queue_3d' ? Math.max(1, sqItems.length) : Math.max(1, steps.length)}
+            stepTitle={mode === 'stack_queue_3d' ? sqLabel : currentFrame.label}
+            stepDescription={
+              mode === 'stack_queue_3d'
+                ? `${sqKind.toUpperCase()}: [${sqItems.join(', ')}]`
+                : currentFrame.label
+            }
+            activeCodeLineText={activeMeta.code[currentFrame.codeLine] || ''}
+            variablesSummary={[
+              currentFrame.arr ? `arr=[${currentFrame.arr.join(', ')}]` : '',
+              currentFrame.graphDist
+                ? `dist=[${currentFrame.graphDist.map((d) => (d === Infinity ? '∞' : d)).join(', ')}]`
+                : '',
+              currentFrame.segTotal !== undefined ? `segSum=${currentFrame.segTotal}` : '',
+              currentFrame.flowTotal !== undefined ? `maxFlow=${currentFrame.flowTotal}` : '',
+              mode === 'stack_queue_3d' ? `${sqKind}=[${sqItems.join(', ')}]` : ''
+            ]
+              .filter(Boolean)
+              .join(' | ')}
+            codeSnippet={activeMeta.code.join('\n')}
+            isEn={isEn}
+          />
         </div>
 
         {/* Right: Parameters & Live Code Trace */}

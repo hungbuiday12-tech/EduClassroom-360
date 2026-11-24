@@ -2217,9 +2217,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     <div className={`text-[10px] font-mono font-bold ${isActiveSim ? 'text-sky-100' : 'text-blue-600 dark:text-blue-400'}`}>
                       {spec.grades.join(' · ')}
                     </div>
-                    <div className="text-xs font-extrabold leading-snug">{spec.title}</div>
+                    <div className="text-xs font-extrabold leading-snug"><FormattedText text={spec.title} /></div>
                     <div className={`text-[10px] font-mono truncate ${isActiveSim ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                      {spec.formula}
+                      <FormattedText text={spec.formula} />
                     </div>
                   </button>
                 );
@@ -2240,10 +2240,10 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               <div className="flex flex-wrap items-center justify-between gap-3 bg-white/95 dark:bg-slate-900/95 p-3 rounded-[4px] border border-slate-200/80 dark:border-slate-800/80 shadow-xs shrink-0">
                 <div className="space-y-0.5 min-w-0">
                   <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {active2DSpec.title} · <span className="font-mono text-blue-600 dark:text-blue-400">{active2DSpec.formula}</span>
+                    <FormattedText text={active2DSpec.title} /> · <span className="font-mono text-blue-600 dark:text-blue-400"><FormattedText text={active2DSpec.formula} /></span>
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    {active2DSpec.subtitle}
+                    <FormattedText text={active2DSpec.subtitle} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -2843,9 +2843,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     <div className={`text-[10px] font-mono font-bold ${isActive3D ? 'text-slate-900' : 'text-amber-600 dark:text-amber-400'}`}>
                       {spec.grades.join(' · ')}
                     </div>
-                    <div className="text-xs font-extrabold leading-snug">{spec.title}</div>
+                    <div className="text-xs font-extrabold leading-snug"><FormattedText text={spec.title} /></div>
                     <div className={`text-[10px] font-mono truncate ${isActive3D ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'}`}>
-                      {spec.formula}
+                      <FormattedText text={spec.formula} />
                     </div>
                   </button>
                 );

@@ -2077,6 +2077,20 @@ function buildTutorSystemInstruction(
   const katexRuleEn =
     'Format ALL math/physics/complexity expressions in KaTeX ($...$ inline or $$...$$ block; always write \\frac{a}{b}, never raw frac).';
 
+  const formattingRuleVi = `QUY TẮC TRÌNH BÀY BẮT BUỘC (ĐỂ HỌC SINH DỄ ĐỌC):
+- TUYỆT ĐỐI KHÔNG viết dồn toàn bộ lời giải thành một đoạn văn dài liền mạch.
+- Chia câu trả lời thành các phần rõ ràng bằng tiêu đề Markdown \`### \` (ví dụ: \`### 🎯 Ý tưởng chính\`, \`### 📐 Công thức / Thuật toán\`, \`### 🔹 Các bước thực hiện\`, \`### ✅ Kết luận & Lưu ý\`).
+- Giữa các phần và các đoạn PHẢI có một dòng trống. Mỗi đoạn văn tối đa 2–3 câu ngắn gọn.
+- Các bước tính toán hoặc luận điểm BẮT BUỘC xuống dòng theo danh sách đánh số (\`1. \`, \`2. \`, ...) hoặc gạch đầu dòng (\`- \`), mỗi bước một dòng riêng.
+- Các phương trình/biểu thức biến đổi quan trọng đặt trên dòng riêng trong khối \`$$...$$\`; mã nguồn đặt trong \`\`\`cpp hoặc \`\`\`python.`;
+
+  const formattingRuleEn = `MANDATORY PRESENTATION RULES (FOR EASY READING):
+- NEVER dump the explanation into one long unbroken paragraph.
+- Organize into short clear sections with \`### \` Markdown headings (e.g. \`### 🎯 Core Idea\`, \`### 📐 Formula / Algorithm\`, \`### 🔹 Step-by-Step Breakdown\`, \`### ✅ Final Result & Pitfalls\`).
+- Leave blank lines between sections and keep paragraphs to 2–3 short sentences max.
+- Put each reasoning step or point on its own numbered (\`1. \`, \`2. \`) or bulleted (\`- \`) line.
+- Put key equations in standalone \`$$...$$\` blocks and code in fenced \`\`\`cpp / \`\`\`python blocks.`;
+
   const contextLines = [
     context?.topicTitle ? `Chủ đề / Bài học hiện tại: ${context.topicTitle}` : '',
     context?.grade ? `Khối lớp / Trình độ: ${context.grade}` : '',
@@ -2097,43 +2111,58 @@ STRICT RULES:
       : `CHẾ ĐỘ 1: GIẢI ĐÁP THẮC MẮC & GIẢNG CHỖ CHƯA HIỂU (TUYỆT ĐỐI KHÔNG ĐƯA KẾT QUẢ CUỐI).
 NGUYÊN TẮC BẮT BUỘC:
 1. TUYỆT ĐỐI KHÔNG tiết lộ đáp án số cuối, chữ cái trắc nghiệm (A/B/C/D) hay toàn bộ code hoàn chỉnh — kể cả khi học sinh nài nỉ.
-2. Phân tích rõ đề bài đang cho giả thiết gì, hỏi gì và cần kiến thức / công thức / thuật toán cốt lõi nào.
-3. Nếu học sinh chưa nêu rõ chỗ vướng, hãy hỏi lại xem em đang chưa hiểu cụ thể ở phần nào. Khi học sinh đã chỉ ra phần chưa hiểu, hãy giảng thật kỹ, trực quan đúng bước đó (có thể lấy 1 ví dụ minh họa nhỏ tương tự).
-4. Kết thúc bằng 1 câu hỏi gợi mở để học sinh tự suy nghĩ và làm tiếp bước kế tiếp.`;
+2. Trình bày tách bạch thành 3 mục ngắn: **Phân tích đề**, **Kiến thức/Hướng đi cốt lõi**, và **Câu hỏi gợi mở tiếp theo**.
+3. Nếu học sinh chưa nêu rõ chỗ vướng, hãy hỏi lại xem em đang chưa hiểu cụ thể ở phần nào. Khi học sinh đã chỉ ra phần chưa hiểu, hãy giảng thật kỹ, trực quan đúng bước đó (kèm 1 ví dụ nhỏ tương tự).
+4. Kết thúc bằng 1 câu hỏi gợi mở trên dòng riêng để học sinh tự suy nghĩ.`;
   } else if (modeKey === 'full_solution') {
     modeRules = isEn
       ? `OPERATING MODE 2: PROBLEM SUMMARY, METHOD & COMPLETE DETAILED SOLUTION.
-STRUCTURE YOUR RESPONSE CLEARLY:
-1. **Problem Summary**: Concisely list given data, constraints, and target to find.
-2. **Method & Strategy**: Explain why this theorem/formula/algorithm works.
-3. **Step-by-Step Detailed Solution**: Show every derivation step cleanly${
-          subjKey === 'cs' ? ' plus clean C++20 / Python 3 code with comments and Big-O complexity' : ''
+STRUCTURE YOUR RESPONSE WITH THESE EXACT \`### \` HEADINGS:
+### 🎯 Problem Summary
+List given data, constraints, and target concisely using bullets.
+
+### 📐 Method & Formula
+Explain why this theorem/formula/algorithm fits.
+
+### 🔹 Step-by-Step Solution
+Show each derivation step clearly as a numbered list with blank lines${
+          subjKey === 'cs' ? ', followed by clean C++20 / Python 3 code and Big-O complexity' : ''
         }.
-4. **Final Result & Pitfalls**: State the exact final answer clearly and common mistakes to avoid.`
+
+### ✅ Final Answer & Pitfalls
+State the exact final answer clearly and 1–2 common mistakes to avoid.`
       : `CHẾ ĐỘ 2: TÓM TẮT ĐỀ, NÊU CÁCH LÀM & ĐƯA RA LỜI GIẢI CỤ THỂ.
-TRÌNH BÀY RÕ RÀNG THEO 4 PHẦN:
-1. **Tóm tắt & Phân tích đề bài**: Liệt kê giả thiết, điều kiện ràng buộc và đại lượng cần tìm.
-2. **Phương pháp & Hướng giải**: Giải thích lý do chọn công thức, định lí hay thuật toán này.
-3. **Lời giải chi tiết từng bước**: Biến đổi tường minh, giải thích từng bước${
+TRÌNH BÀY RÕ RÀNG THEO ĐÚNG 4 MỤC SAU:
+### 🎯 Tóm tắt & Phân tích đề bài
+Liệt kê giả thiết, điều kiện ràng buộc và đại lượng cần tìm bằng gạch đầu dòng ngắn gọn.
+
+### 📐 Phương pháp & Công thức áp dụng
+Giải thích ngắn gọn lý do chọn công thức, định lí hay thuật toán này.
+
+### 🔹 Lời giải chi tiết từng bước
+Trình bày từng bước đánh số rõ ràng (1, 2, 3...), mỗi bước tách dòng dễ theo dõi${
           subjKey === 'cs'
-            ? ' (kèm mã nguồn C++20 hoặc Python 3 chuẩn thi đấu, có chú thích rõ ràng và phân tích độ phức tạp Time/Space)'
+            ? ', kèm mã nguồn C++20 hoặc Python 3 có chú thích và phân tích độ phức tạp Time/Space'
             : ''
         }.
-4. **Kết luận đáp án cuối cùng & Lưu ý**: Chốt rõ kết quả cuối và các bẫy dễ mất điểm.`;
+
+### ✅ Kết luận đáp án & Lưu ý bẫy
+Chốt rõ kết quả cuối cùng và 1–2 lỗi sai dễ mất điểm cần tránh.`;
   } else {
     modeRules = isEn
       ? `OPERATING MODE 3: SKILL DIAGNOSIS, MAJOR ORIENTATION & STUDY ROADMAP ADVISOR.
-Act as a senior academic mentor for ${subjKey.toUpperCase()}. Evaluate strengths/gaps from the student's questions, recommend concrete milestones, study hours/day, specific topics, and how ${subjKey.toUpperCase()} connects to their target university major.`
+Act as a senior academic mentor for ${subjKey.toUpperCase()}. Evaluate strengths/gaps from the student's questions using clear ### headings and bullet points, recommend concrete milestones, study hours/day, specific topics, and how ${subjKey.toUpperCase()} connects to their target university major.`
       : `CHẾ ĐỘ 3: ĐÁNH GIÁ TRÌNH ĐỘ, ĐỊNH HƯỚNG CHUYÊN NGÀNH & TƯ VẤN SƠ ĐỒ HỌC TẬP.
 Đóng vai cố vấn học thuật chuyên sâu môn ${
           subjKey === 'math' ? 'Toán học' : subjKey === 'physics' ? 'Vật lí' : 'Tin học'
-        }. Phân tích điểm mạnh/yếu từ chia sẻ của học sinh, gợi ý lộ trình học từng tuần, số phút mỗi ngày, chuyên đề trọng tâm và định hướng gắn với chuyên ngành tương lai.`;
+        }. Chia thành các mục \`### \` và gạch đầu dòng rõ ràng: Đánh giá điểm mạnh/yếu, Lộ trình từng tuần, Thời lượng mỗi ngày và Định hướng chuyên ngành.`;
   }
 
   return [
     persona,
     isEn ? domainFocusEn : domainFocusVi,
     modeRules,
+    isEn ? formattingRuleEn : formattingRuleVi,
     isEn ? katexRuleEn : katexRuleVi,
     contextLines ? `\n[Ngữ cảnh bài học hiện tại]\n${contextLines}` : ''
   ]
@@ -3604,14 +3633,14 @@ Rubric checklist: ${(rubricChecklist || []).join('; ')}
 Reference answer: ${sampleAnswer}
 Student answer: ${studentAnswer}
 
-Grade fairly from 0 to 10 (integers or halves). Identify specific strengths, mistakes/missing conditions, and concise constructive feedback. Use KaTeX ($...$) for formulas.`
+Grade fairly from 0 to 10 (integers or halves). Identify specific strengths, mistakes/missing conditions, and concise bulleted feedback separated by newlines (never one long wall of text). Use KaTeX ($...$) for formulas.`
       : `Bạn là giáo viên ${subjLabel} chấm một câu tự luận ngắn (thang điểm 0 đến 10) thuộc bài "${lessonTitle}", phần "${stepTitle}".
 ĐỀ BÀI: ${question}
 TIÊU CHÍ CHẤM: ${(rubricChecklist || []).map((r: string, i: number) => `${i + 1}. ${r}`).join(' | ')}
 ĐÁP ÁN THAM KHẢO: ${sampleAnswer}
 BÀI LÀM HỌC SINH: ${studentAnswer}
 
-Hãy chấm điểm chính xác từ 0 đến 10 (có thể dùng 0.5 điểm), chỉ ra điểm làm đúng, lỗi sai hoặc ý còn thiếu (như thiếu điều kiện, sai đơn vị, nhầm dấu), và nhận xét ngắn gọn giúp học sinh sửa ngay. Công thức viết chuẩn KaTeX ($...$).`;
+Hãy chấm điểm chính xác từ 0 đến 10 (có thể dùng 0.5 điểm), chỉ ra điểm làm đúng, lỗi sai hoặc ý còn thiếu (như thiếu điều kiện, sai đơn vị, nhầm dấu), và nhận xét ngắn gọn tách thành các gạch đầu dòng xuống dòng dễ đọc (không viết gộp thành 1 đoạn dài). Công thức viết chuẩn KaTeX ($...$).`;
 
     const response = await callGeminiWithFallback({
       ai,
@@ -5424,15 +5453,18 @@ app.post('/api/gemini/voice-os-intent', async (req: Request, res: Response) => {
     }
 
     const ai = getGenAI();
-    const systemInstruction = `Bạn là Synapse Voice OS Router thông minh. Hãy linh hoạt hiểu ý định tự nhiên (dù người dùng nói tắt, hơi sai chính tả hoặc ý giống ~70–90% cũng ưu tiên thực thi đúng hành động phù hợp nhất, hoặc trả lời câu hỏi kiến thức trực tiếp bằng actionType="answer_qa" thay vì từ chối!).
-- actionType nhận: "navigate" | "navigate_math_sim" | "navigate_future" | "navigate_monument" | "set_background" | "toggle_theme" | "timer" | "open_tutor" | "answer_qa" | "none"
+    const systemInstruction = `Bạn là Synapse Voice OS Router thông minh và cẩn trọng.
+QUY TẮC BẮT BUỘC:
+1. Nếu lệnh người dùng MƠ HỒ, quá ngắn (1-2 từ vô nghĩa/nhiễu micro), sai chính tả nặng không chắc ý định, hoặc có nhiều khả năng trùng nhau (đặc biệt KHÔNG ĐƯỢC tự đoán bừa sang "navigate_monument" / Đại công trình nếu người dùng không nói rõ tên hoặc số công trình!) -> BẮT BUỘC chọn actionType="clarify", viết câu hỏi lại lịch sự ngắn gọn vào replyVi (ví dụ: "Mình chưa nghe rõ ý bạn muốn mở mục nào — bạn nói lại rõ hơn hoặc chọn 1 gợi ý bên dưới nhé?") và liệt kê 2-3 gợi ý hợp lý trong clarifyOptions ([{label, command}]).
+2. Chỉ điều hướng ("navigate", "navigate_math_sim", "navigate_future", "navigate_monument", "set_background", "toggle_theme", "timer", "open_tutor") khi ý định rõ ràng (>75% chắc chắn).
+3. Nếu người dùng hỏi kiến thức/công thức/khái niệm khoa học -> chọn actionType="answer_qa" và viết câu trả lời súc tích dễ hiểu (2-3 câu) vào replyVi.
+- actionType nhận: "navigate" | "navigate_math_sim" | "navigate_future" | "navigate_monument" | "set_background" | "toggle_theme" | "timer" | "open_tutor" | "answer_qa" | "clarify" | "none"
 - targetSubject (khi navigate): "overview" | "roadmap" | "synapse_v2" | "spatial_3d" | "math" | "math_sims" | "physics" | "physics_sims" | "cs" | "exams" | "arena" | "forum" | "growth_hub" | "showcase"
 - targetMathTab (khi navigate_math_sim): "grapher" | "geometry" | "math3d"
 - targetFutureTab (khi navigate_future): "megastructures" | "galaxy3d" | "text_to_sim" | "paper_to_sim" | "infinite_canvas" | "audio_fft" | "silicon_neural" | "phone_sensor_lab" | "dual_hand_sandbox"
 - bgStyle (khi set_background): "ecosystem" | "molecules" | "ocean" | "sky" | "constellations" | "cosmic_galaxy" | "blueprint_tech" | "studio_grid" | "aurora_clean" | "minimal_solid"
 - timerAction: "start" | "pause" | "reset"
-- tutorSubject: "math" | "physics" | "cs"
-- Nếu người dùng hỏi kiến thức/công thức/khái niệm khoa học -> chọn actionType="answer_qa" và viết câu trả lời súc tích dễ hiểu (2-3 câu) vào replyVi.`;
+- tutorSubject: "math" | "physics" | "cs"`;
 
     const responseSchema = {
       type: Type.OBJECT,
@@ -5447,7 +5479,18 @@ app.post('/api/gemini/voice-os-intent', async (req: Request, res: Response) => {
         darkMode: { type: Type.BOOLEAN },
         timerAction: { type: Type.STRING },
         tutorSubject: { type: Type.STRING },
-        tutorQuestion: { type: Type.STRING }
+        tutorQuestion: { type: Type.STRING },
+        clarifyOptions: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              label: { type: Type.STRING },
+              command: { type: Type.STRING }
+            },
+            required: ['label', 'command']
+          }
+        }
       },
       required: ['replyVi', 'actionType']
     };

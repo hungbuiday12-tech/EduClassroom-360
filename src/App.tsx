@@ -11,6 +11,7 @@ import { PremiumProvider, usePremium } from './context/PremiumContext';
 import { GalaxyBackground } from './components/galaxy/GalaxyBackground';
 import { WaterRippleLayer } from './components/common/WaterRippleLayer';
 import { FloatingFocusTimer } from './components/common/FloatingFocusTimer';
+import { QuickVoiceWidget } from './components/common/QuickVoiceWidget';
 import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { useNavigation } from './context/NavigationContext';
 import { useLanguage } from './context/LanguageContext';
@@ -1062,57 +1063,98 @@ function MainApp() {
                 </div>
               )}
 
-              <button
-                type="button"
-                data-no-lift="true"
-                onPointerDown={synWidget.handleDragStart}
-                onClick={() => {
-                  if (synWidget.consumeDidDrag()) return;
-                  setIsSynDockOpen((prev) => !prev);
-                }}
-                aria-expanded={isSynDockOpen}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md bg-slate-950 hover:bg-slate-900 border ${
-                  hasPremiumAccess
-                    ? 'border-amber-400/75 text-amber-200 shadow-[0_16px_44px_-10px_rgba(245,158,11,0.5)]'
-                    : 'border-cyan-500/45 text-white shadow-[0_16px_40px_-10px_rgba(6,182,212,0.42)]'
-                } text-xs font-bold transition-colors touch-none ${
-                  synWidget.isDragging ? 'cursor-grabbing' : 'cursor-grab'
-                }`}
-                title={
-                  isEn
-                    ? 'Click to open Syn AI · Drag to move anywhere'
-                    : 'Bấm mở Syn AI · Kéo thả để di chuyển vị trí bất kỳ'
-                }
-              >
-                <GripVertical className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="w-2 h-2 rounded-sm bg-cyan-400 shrink-0" />
-                <Cpu className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span className="font-mono font-extrabold tracking-wider text-cyan-200 uppercase">
-                  Syn AI
-                </span>
-                <span
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-400/40 font-mono text-[10px] font-bold text-amber-300 tabular-nums"
-                  title={isEn ? 'Daily Study Streak & XP' : 'Chuỗi Streak & Điểm XP'}
-                >
-                  <Flame className="w-3 h-3 text-rose-400 streak-flame-pulse shrink-0" />
-                  <span>{streakDays}d</span>
-                  <span className="hidden sm:inline text-slate-500">·</span>
-                  <span className="hidden sm:inline">{activeXP} XP</span>
-                </span>
-                {((basicTutorSession.mounted && !basicTutorSession.visible) ||
-                  (proTutorSession.mounted && !proTutorSession.visible)) && (
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/50 text-[9px] font-bold text-emerald-300">
-                    {isEn ? 'Paused' : 'Tiếp tục'}
-                  </span>
+              <div className="flex items-center gap-2">
+                {!isVoiceOSOpen && (
+                  <QuickVoiceWidget
+                    isDark={isDark}
+                    onToggleTheme={handleToggleTheme}
+                    onOpenTutor={(subj, promptText) =>
+                      handleOpenTutor({
+                        subject: subj || 'math',
+                        problemStatement: promptText
+                      })
+                    }
+                    onOpenFullVoiceOS={() => setIsVoiceOSOpen(true)}
+                  />
                 )}
-                <ChevronUp
-                  className={`w-3.5 h-3.5 text-cyan-300 transition-transform duration-200 ${
-                    isSynDockOpen ? 'rotate-180' : ''
+                <button
+                  type="button"
+                  data-no-lift="true"
+                  onPointerDown={synWidget.handleDragStart}
+                  onClick={() => {
+                    if (synWidget.consumeDidDrag()) return;
+                    setIsSynDockOpen((prev) => !prev);
+                  }}
+                  aria-expanded={isSynDockOpen}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md bg-slate-950 hover:bg-slate-900 border ${
+                    hasPremiumAccess
+                      ? 'border-amber-400/75 text-amber-200 shadow-[0_16px_44px_-10px_rgba(245,158,11,0.5)]'
+                      : 'border-cyan-500/45 text-white shadow-[0_16px_40px_-10px_rgba(6,182,212,0.42)]'
+                  } text-xs font-bold transition-colors touch-none ${
+                    synWidget.isDragging ? 'cursor-grabbing' : 'cursor-grab'
                   }`}
-                />
-              </button>
+                  title={
+                    isEn
+                      ? 'Click to open Syn AI · Drag to move anywhere'
+                      : 'Bấm mở Syn AI · Kéo thả để di chuyển vị trí bất kỳ'
+                  }
+                >
+                  <GripVertical className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="w-2 h-2 rounded-sm bg-cyan-400 shrink-0" />
+                  <Cpu className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span className="font-mono font-extrabold tracking-wider text-cyan-200 uppercase">
+                    Syn AI
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-400/40 font-mono text-[10px] font-bold text-amber-300 tabular-nums"
+                    title={isEn ? 'Daily Study Streak & XP' : 'Chuỗi Streak & Điểm XP'}
+                  >
+                    <Flame className="w-3 h-3 text-rose-400 streak-flame-pulse shrink-0" />
+                    <span>{streakDays}d</span>
+                    <span className="hidden sm:inline text-slate-500">·</span>
+                    <span className="hidden sm:inline">{activeXP} XP</span>
+                  </span>
+                  {((basicTutorSession.mounted && !basicTutorSession.visible) ||
+                    (proTutorSession.mounted && !proTutorSession.visible)) && (
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/50 text-[9px] font-bold text-emerald-300">
+                      {isEn ? 'Paused' : 'Tiếp tục'}
+                    </span>
+                  )}
+                  <ChevronUp
+                    className={`w-3.5 h-3.5 text-cyan-300 transition-transform duration-200 ${
+                      isSynDockOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           )}
+
+          {/* Standalone Quick Voice Trigger when Syn AI dock is hidden (full-stage 3D / mobile sim) */}
+          {!isTutorOpen &&
+            !isVoiceOSOpen &&
+            !(currentSubject === 'arena' && isArenaMatchActive) &&
+            (
+              ((currentSubject === 'synapse_v2' || currentSubject === 'future_lab') &&
+                ((location.synapseMode === 'stage' &&
+                  (!location.futureTab || location.futureTab === 'megastructures')) ||
+                  location.futureTab === 'spatial_gesture_3d')) ||
+              currentSubject === 'spatial_3d'
+            ) && (
+              <div className="fixed z-[85] bottom-[74px] right-3 sm:right-4 lg:bottom-5 lg:right-5">
+                <QuickVoiceWidget
+                  isDark={isDark}
+                  onToggleTheme={handleToggleTheme}
+                  onOpenTutor={(subj, promptText) =>
+                    handleOpenTutor({
+                      subject: subj || 'math',
+                      problemStatement: promptText
+                    })
+                  }
+                  onOpenFullVoiceOS={() => setIsVoiceOSOpen(true)}
+                />
+              </div>
+            )}
           {basicTutorSession.mounted && (
             <Suspense fallback={null}>
               <SocraticAITutor

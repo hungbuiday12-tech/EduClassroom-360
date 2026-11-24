@@ -24,6 +24,7 @@ import {
 } from './physics2DEngine';
 import { CustomStepSimId, renderCustomStepPhysicsSim } from './physicsStepCustomRenderers';
 import { resolveStepSimulation } from './physicsStepSimResolver';
+import { FormattedText } from '../common/MathRenderer';
 
 interface PhysicsInline2DSimProps {
   lesson: PhysicsLesson;
@@ -512,21 +513,21 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
   return (
     <section
       data-testid={`physics-inline-2d-step-${stepIndex}`}
-      className="rounded-md border border-sky-300/80 dark:border-sky-800/70 bg-white dark:bg-slate-950/90 shadow-sm overflow-hidden"
+      className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-xs overflow-hidden"
     >
       {/* Top Bar: Step-matched Title, Formula & Quick Launch */}
-      <div className="px-4 py-2.5 bg-gradient-to-r from-sky-50 via-white to-indigo-50/60 dark:from-slate-900 dark:via-slate-950 dark:to-sky-950/40 border-b border-sky-200/80 dark:border-sky-800/60 flex flex-wrap items-center justify-between gap-2">
+      <div className="px-4 py-2.5 bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2 min-w-0">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-sky-600 text-white text-[10px] font-mono font-extrabold tracking-wider uppercase shrink-0">
-            <span className="w-1.5 h-1.5 rounded-xs bg-emerald-300 animate-pulse" />
-            MÔ PHỎNG 2D · PHẦN {stepIndex + 1}/{totalSteps}
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sky-600/10 dark:bg-sky-500/20 border border-sky-500/30 text-sky-700 dark:text-sky-300 text-[10px] font-mono font-bold tracking-wider uppercase shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+            2D · PHẦN {stepIndex + 1}/{totalSteps}
           </span>
           <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-            {resolved.title}
+            <FormattedText text={resolved.title} />
           </h4>
           {resolved.formula && (
-            <span className="hidden xl:inline-block px-2 py-0.5 rounded-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[10px] text-sky-700 dark:text-sky-300 truncate max-w-[320px]">
-              {resolved.formula}
+            <span className="hidden xl:inline-block px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[10px] text-sky-700 dark:text-sky-300 truncate max-w-[300px]">
+              <FormattedText text={resolved.formula} />
             </span>
           )}
         </div>
@@ -536,7 +537,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
             <button
               type="button"
               onClick={onOpenSim2D}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors cs-deck-btn cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-sky-600 hover:bg-sky-700 text-white transition-colors cursor-pointer whitespace-nowrap"
             >
               <Maximize2 className="w-3 h-3" />
               <span>Lab 2D Đầy đủ</span>
@@ -546,20 +547,20 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
             <button
               type="button"
               onClick={onOpenSim3D}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-colors cs-deck-btn cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-white dark:text-slate-950 transition-colors cursor-pointer whitespace-nowrap"
             >
               <Box className="w-3 h-3" />
-              <span>3D</span>
+              <span>Lab 3D</span>
             </button>
           )}
         </div>
       </div>
 
       {/* Step Regime Banner + Quick Presets */}
-      <div className="px-4 py-2 bg-slate-50/90 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-800/80 flex flex-col gap-1.5">
+      <div className="px-4 py-2 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800/80 flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-          <div className="flex items-center gap-1.5 text-sky-700 dark:text-sky-300 font-bold">
-            <Activity className="w-3.5 h-3.5 shrink-0" />
+          <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-semibold">
+            <Activity className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
             <span>{resolved.regimeLabel}</span>
           </div>
           {resolved.presets.length > 0 && (
@@ -576,7 +577,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
                     forceTelemetryRef.current = true;
                   }}
                   title={preset.description}
-                  className="px-2 py-0.5 rounded-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-sky-400 hover:text-sky-700 dark:hover:text-sky-300 text-[10px] font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-sky-400 hover:text-sky-700 dark:hover:text-sky-300 text-[10px] font-semibold text-slate-600 dark:text-slate-300 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   {preset.label}
                 </button>
@@ -584,26 +585,26 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
             </div>
           )}
         </div>
-        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
           {resolved.observationGoal}
         </p>
       </div>
 
       {/* Live Unobstructed 2D Canvas Stage */}
-      <div className="relative bg-slate-50 dark:bg-[#0c101d] border-b border-slate-200/80 dark:border-slate-800">
+      <div className="relative bg-slate-50 dark:bg-[#0b101d] border-b border-slate-200/80 dark:border-slate-800">
         <canvas
           ref={canvasRef}
-          className="w-full h-[250px] sm:h-[280px] block select-none"
+          className="w-full h-[250px] sm:h-[285px] block select-none"
         />
       </div>
 
-      {/* Dedicated Transport & Visual Overlay Strip BELOW Canvas (Never covers canvas objects!) */}
-      <div className="px-3 py-2 bg-slate-50/95 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+      {/* Dedicated Transport & Visual Overlay Strip BELOW Canvas */}
+      <div className="px-3.5 py-2 bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => setIsRunning((r) => !r)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-sm text-[11px] font-bold cursor-pointer transition-colors ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors whitespace-nowrap ${
               isRunning
                 ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
                 : 'bg-emerald-600 text-white hover:bg-emerald-500'
@@ -617,7 +618,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
             type="button"
             onClick={handleStepOnce}
             title="Nhích từng bước +0.05s"
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer whitespace-nowrap"
           >
             <StepForward className="w-3 h-3" />
             <span>+0.05s</span>
@@ -627,7 +628,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
             type="button"
             onClick={handleResetStep}
             title="Đặt lại tham số chuẩn của mục này"
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer whitespace-nowrap"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Đặt lại</span>
@@ -640,10 +641,10 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
               key={sp}
               type="button"
               onClick={() => setSimSpeed(sp)}
-              className={`px-2 py-1 rounded-sm text-[10px] font-mono font-bold tabular-nums cursor-pointer ${
+              className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold tabular-nums cursor-pointer transition-colors ${
                 simSpeed === sp
                   ? 'bg-sky-600 text-white'
-                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
               }`}
             >
               {sp}x
@@ -655,9 +656,9 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
           <button
             type="button"
             onClick={() => setOverlays((o) => ({ ...o, showVectors: !o.showVectors }))}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold cursor-pointer ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold cursor-pointer transition-colors whitespace-nowrap ${
               overlays.showVectors
-                ? 'bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700'
+                ? 'bg-sky-600/15 text-sky-700 dark:text-sky-300 border border-sky-400/50'
                 : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500'
             }`}
           >
@@ -667,9 +668,9 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
           <button
             type="button"
             onClick={() => setOverlays((o) => ({ ...o, showRulerGrid: !o.showRulerGrid }))}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold cursor-pointer ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold cursor-pointer transition-colors whitespace-nowrap ${
               overlays.showRulerGrid
-                ? 'bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700'
+                ? 'bg-sky-600/15 text-sky-700 dark:text-sky-300 border border-sky-400/50'
                 : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500'
             }`}
           >
@@ -680,28 +681,31 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
       </div>
 
       {/* Live SI Telemetry Readout Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-slate-800 bg-white dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800">
-        <div className="px-3.5 py-2">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            {telemetry.metric1Label}
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/70 dark:divide-slate-800 bg-white dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="px-4 py-2.5">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+            <span>{telemetry.metric1Label}</span>
           </div>
-          <div className="text-sm font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums">
+          <div className="text-sm font-mono font-bold text-slate-900 dark:text-sky-300 tabular-nums mt-0.5">
             {telemetry.metric1Val}
           </div>
         </div>
-        <div className="px-3.5 py-2">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            {telemetry.metric2Label}
+        <div className="px-4 py-2.5">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>{telemetry.metric2Label}</span>
           </div>
-          <div className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+          <div className="text-sm font-mono font-bold text-slate-900 dark:text-emerald-300 tabular-nums mt-0.5">
             {telemetry.metric2Val}
           </div>
         </div>
-        <div className="px-3.5 py-2">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            {telemetry.metric3Label}
+        <div className="px-4 py-2.5">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span>{telemetry.metric3Label}</span>
           </div>
-          <div className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+          <div className="text-sm font-mono font-bold text-slate-900 dark:text-amber-300 tabular-nums mt-0.5">
             {telemetry.metric3Val}
           </div>
         </div>

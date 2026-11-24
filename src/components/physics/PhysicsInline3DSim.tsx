@@ -143,13 +143,13 @@ export const PhysicsInline3DSim: React.FC<PhysicsInline3DSimProps> = ({
     return (
       <section
         data-testid={`physics-inline-3d-step-${stepIndex}`}
-        className="rounded-md border border-amber-500/40 bg-slate-950 text-white shadow-lg overflow-hidden"
+        className="rounded-xl border border-slate-800 bg-slate-950 text-white shadow-sm overflow-hidden"
       >
-        <div className="px-4 py-2.5 bg-slate-900/95 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-amber-500 text-slate-950 text-[10px] font-mono font-extrabold tracking-wider uppercase shrink-0">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-400/40 text-amber-300 text-[10px] font-mono font-bold tracking-wider uppercase shrink-0">
               <Box className="w-3 h-3" />
-              MÔ PHỎNG 3D · PHẦN {stepIndex + 1}/{totalSteps}
+              3D · PHẦN {stepIndex + 1}/{totalSteps}
             </span>
             <h4 className="text-xs sm:text-sm font-bold text-white truncate">
               <FormattedText text={spec?.title || lesson.title} />
@@ -161,7 +161,7 @@ export const PhysicsInline3DSim: React.FC<PhysicsInline3DSimProps> = ({
               <button
                 type="button"
                 onClick={onActivateWebGL}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-extrabold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap"
               >
                 <Play className="w-3.5 h-3.5" />
                 <span>Chạy Mô phỏng 3D WebGL</span>
@@ -171,7 +171,7 @@ export const PhysicsInline3DSim: React.FC<PhysicsInline3DSimProps> = ({
               <button
                 type="button"
                 onClick={onOpenSim3D}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-sm bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
               >
                 <Maximize2 className="w-3 h-3" />
                 <span>Lab 3D Đầy đủ</span>
@@ -180,9 +180,9 @@ export const PhysicsInline3DSim: React.FC<PhysicsInline3DSimProps> = ({
           </div>
         </div>
 
-        <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-br from-slate-950 via-[#0a0f1d] to-slate-900">
+        <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#080d1a]">
           <div className="space-y-1.5 max-w-2xl">
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-amber-400 font-bold">
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-amber-400 font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
               <span>THREE.JS WEBGL · {domainMeta?.shortName?.toUpperCase() || 'VẬT LÍ 3D'}</span>
             </div>
@@ -190,7 +190,7 @@ export const PhysicsInline3DSim: React.FC<PhysicsInline3DSimProps> = ({
               <FormattedText text={spec?.subtitle || lesson.description} />
             </div>
             {spec?.formula && (
-              <div className="inline-block px-2 py-0.5 rounded bg-slate-900 border border-slate-700/80 font-mono text-[11px] text-sky-300">
+              <div className="inline-block px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 font-mono text-[11px] text-sky-300">
                 <MathFormula formula={spec.formula} />
               </div>
             )}
@@ -200,10 +200,10 @@ export const PhysicsInline3DSim: React.FC<PhysicsInline3DSimProps> = ({
             <button
               type="button"
               onClick={onActivateWebGL}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-lg transition-colors shrink-0 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-sm transition-colors shrink-0 cursor-pointer whitespace-nowrap"
             >
               <Play className="w-4 h-4" />
-              <span>Mở cảnh 3D trực tiếp tại đây</span>
+              <span>Mở cảnh 3D tại đây</span>
             </button>
           )}
         </div>

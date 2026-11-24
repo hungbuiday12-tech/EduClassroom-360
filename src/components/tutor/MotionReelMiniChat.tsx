@@ -46,10 +46,88 @@ export interface MotionReelScript {
   scenes: MotionReelScene[];
 }
 
+export interface LectureReelStepSeed {
+  title: string;
+  concept: string;
+  formula?: string;
+}
+
 interface MotionReelMiniChatProps {
   language: 'vi' | 'en';
   subject: 'math' | 'physics' | 'cs';
   initialTopic?: string;
+  lectureTitle?: string;
+  lectureSteps?: LectureReelStepSeed[];
+  autoVoiceOn?: boolean;
+  compactLectureMode?: boolean;
+}
+
+function inferVisualKindForTopic(
+  subject: 'math' | 'physics' | 'cs',
+  text: string,
+  stepIdx: number
+): MotionVisualKind {
+  const lower = text.toLowerCase();
+  if (subject === 'cs') {
+    if (/vector|mảng|array|tìm kiếm|nhị phân|binary|sort|sắp xếp|stack|queue|đồ thị|quy hoạch/.test(lower)) {
+      return 'binary_search';
+    }
+    return stepIdx % 2 === 0 ? 'binary_search' : 'vector_addition';
+  }
+  if (subject === 'physics') {
+    if (/sóng|giao thoa|wave|âm|ánh sáng|nhiễu xạ|quang/.test(lower)) return 'wave_superposition';
+    if (/dao động|điều hòa|con lắc|tròn|xoay chiều|tần số|pha|fresnel|từ trường|cảm ứng/.test(lower)) return 'phasor_circle';
+    if (/lực|vector|vectơ|hợp lực|vận tốc|gia tốc|động lượng/.test(lower)) return 'vector_addition';
+    if (/công|năng lượng|nhiệt|tích phân|điện tích/.test(lower)) return 'integral_area';
+    return stepIdx % 2 === 0 ? 'phasor_circle' : 'vector_addition';
+  }
+  // math
+  if (/tích phân|nguyên hàm|diện tích|thể tích/.test(lower)) return 'integral_area';
+  if (/đạo hàm|tiếp tuyến|cực trị|đồng biến|nghịch biến|giới hạn/.test(lower)) return 'derivative_tangent';
+  if (/vectơ|vector|oxyz|tọa độ|hệ thức/.test(lower)) return 'vector_addition';
+  if (/lượng giác|sin|cos|đường tròn/.test(lower)) return 'phasor_circle';
+  if (/parabol|bậc hai|hàm số|đồ thị|phương trình/.test(lower)) return 'parabola_vertex';
+  return stepIdx % 2 === 0 ? 'parabola_vertex' : 'derivative_tangent';
+}
+
+function buildLectureAutoReel(
+  lectureTitle: string,
+  subject: 'math' | 'physics' | 'cs',
+  lectureSteps: LectureReelStepSeed[]
+): MotionReelScript {
+  const accents = ['#38bdf8', '#f59e0b', '#34d399', '#a855f7', '#fb7185'];
+  const scenes: MotionReelScene[] = (lectureSteps.length > 0 ? lectureSteps.slice(0, 6) : [
+    {
+      title: lectureTitle,
+      concept: `Minh họa trực quan 3Blue1Brown cho bài học ${lectureTitle}.`,
+      formula: ''
+    }
+  ]).map((st, idx) => {
+    const cleanConcept = st.concept
+      .replace(/\$\$[\s\S]*?\$\$/g, '')
+      .replace(/\$[^$\n]+?\$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return {
+      id: `lec_scene_${idx + 1}`,
+      title: `${idx + 1}. ${st.title.slice(0, 48)}`,
+      caption: cleanConcept.slice(0, 82) || st.title,
+      narration: `${st.title}. ${cleanConcept.slice(0, 220)}`,
+      formula: (st.formula || '').replace(/^\$+|\$+$/g, '').trim(),
+      visualKind: inferVisualKindForTopic(subject, `${lectureTitle} ${st.title} ${st.concept}`, idx),
+      durationSec: 6,
+      accentHex: accents[idx % accents.length],
+      paramA: 1.0 + (idx % 3) * 0.15,
+      paramB: 1.0,
+      keyLabels: [st.title.slice(0, 20)]
+    };
+  });
+
+  return {
+    title: `Video 3B1B · ${lectureTitle}`,
+    topicSummary: `Kịch bản hoạt họa vector & thuyết minh tiếng Việt bám sát từng phần của bài "${lectureTitle}".`,
+    scenes
+  };
 }
 
 const PRESET_REELS: Record<string, { labelVi: string; labelEn: string; reel: MotionReelScript }> = {
@@ -527,22 +605,45 @@ function drawMotionSceneFrame(
 export const MotionReelMiniChat: React.FC<MotionReelMiniChatProps> = ({
   language,
   subject,
-  initialTopic = ''
+  initialTopic = '',
+  lectureTitle,
+  lectureSteps,
+  autoVoiceOn = false,
+  compactLectureMode = false
 }) => {
   const isEn = language === 'en';
   const [reelMode, setReelMode] = useState<'ai_reel' | 'video_tracker'>('ai_reel');
-  const [prompt, setPrompt] = useState(initialTopic);
-  const [reel, setReel] = useState<MotionReelScript>(PRESET_REELS.derivative.reel);
+  const [prompt, setPrompt] = useState(initialTopic || lectureTitle || '');
+  const initialLectureReel = useMemo(() => {
+    if (lectureTitle && lectureSteps && lectureSteps.length > 0) {
+      return buildLectureAutoReel(lectureTitle, subject, lectureSteps);
+    }
+    return subject === 'physics'
+      ? PRESET_REELS.shm_phasor.reel
+      : subject === 'cs'
+      ? PRESET_REELS.vector_binary.reel
+      : PRESET_REELS.derivative.reel;
+  }, [lectureSteps, lectureTitle, subject]);
+
+  const [reel, setReel] = useState<MotionReelScript>(initialLectureReel);
   const [sceneIdx, setSceneIdx] = useState(0);
   const [sceneProgress, setSceneProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [voiceOn, setVoiceOn] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(autoVoiceOn);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastSpokenIdxRef = useRef<number>(-1);
+
+  useEffect(() => {
+    setReel(initialLectureReel);
+    setSceneIdx(0);
+    setSceneProgress(0);
+    lastSpokenIdxRef.current = -1;
+    if (lectureTitle) setPrompt(lectureTitle);
+  }, [initialLectureReel, lectureTitle]);
 
   useEffect(() => {
     return subscribeRemoteCommand((cmd) => {
@@ -697,42 +798,44 @@ export const MotionReelMiniChat: React.FC<MotionReelMiniChatProps> = ({
   return (
     <div className="space-y-3">
       {/* Sub-mode switcher: AI 3B1B Reel vs Real Motion Video Tracker */}
-      <div className="grid grid-cols-2 gap-1.5 p-1 rounded-md bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800">
-        <button
-          type="button"
-          data-testid="synreel-tab-3b1b"
-          onClick={() => setReelMode('ai_reel')}
-          className={`px-3 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-            reelMode === 'ai_reel'
-              ? 'bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 shadow-xs'
-              : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <Film className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">{isEn ? '3B1B Vector Reel (AI)' : 'Video 3B1B AI'}</span>
-        </button>
-        <button
-          type="button"
-          data-testid="synreel-tab-tracker"
-          onClick={() => {
-            cancelActiveSpeech();
-            setIsPlaying(false);
-            setReelMode('video_tracker');
-          }}
-          className={`px-3 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-            reelMode === 'video_tracker'
-              ? 'bg-emerald-600 text-white shadow-xs'
-              : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <Activity className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">
-            {isEn ? 'Real Motion Video Tracker' : 'Phân tích Video Thí nghiệm'}
-          </span>
-        </button>
-      </div>
+      {!compactLectureMode && (
+        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-md bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800">
+          <button
+            type="button"
+            data-testid="synreel-tab-3b1b"
+            onClick={() => setReelMode('ai_reel')}
+            className={`px-3 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+              reelMode === 'ai_reel'
+                ? 'bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 shadow-xs'
+                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Film className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{isEn ? '3B1B Vector Reel (AI)' : 'Video 3B1B AI'}</span>
+          </button>
+          <button
+            type="button"
+            data-testid="synreel-tab-tracker"
+            onClick={() => {
+              cancelActiveSpeech();
+              setIsPlaying(false);
+              setReelMode('video_tracker');
+            }}
+            className={`px-3 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+              reelMode === 'video_tracker'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              {isEn ? 'Real Motion Video Tracker' : 'Phân tích Video Thí nghiệm'}
+            </span>
+          </button>
+        </div>
+      )}
 
-      {reelMode === 'video_tracker' ? (
+      {reelMode === 'video_tracker' && !compactLectureMode ? (
         <MotionVideoTracker language={language} />
       ) : (
         <>

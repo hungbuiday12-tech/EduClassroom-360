@@ -35,6 +35,7 @@ import { MatrixDpVisualizer } from './visualizer/renderers/MatrixDpVisualizer';
 import { GraphAlgoCanvas } from './visualizer/renderers/GraphAlgoCanvas';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { ALGO_THEME_PALETTE, AlgoThumbPreview } from './visualizer/AlgoThumbPreview';
+import { CsStepAiTutorPanel } from './CsStepAiTutorPanel';
 import {
   ArrowLeft,
   ArrowRight,
@@ -2024,6 +2025,26 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
               className="w-full accent-emerald-400 cursor-pointer"
             />
           </div>
+
+          <CsStepAiTutorPanel
+            isPaused={!isPlaying}
+            simCategory="2d"
+            algorithmName={currentMeta.titleVi}
+            stepNumber={Math.min(stepIdx + 1, Math.max(1, steps.length))}
+            totalSteps={Math.max(1, steps.length)}
+            stepTitle={currentStep.title}
+            stepDescription={currentStep.description}
+            formula={currentStep.formula}
+            activeCodeLineText={
+              currentStep.activeCodeLine !== undefined && currentStep.activeCodeLine >= 0
+                ? currentMeta.pseudocode[currentStep.activeCodeLine] || ''
+                : ''
+            }
+            variablesSummary={(currentStep.variables || [])
+              .map((v) => `${v.name}=${v.value}`)
+              .join(', ')}
+            codeSnippet={currentMeta.pseudocode.join('\n')}
+          />
         </div>
 
         {/* RIGHT ZONE: Terminal Step Explanation, Variable Watch & Pseudocode */}

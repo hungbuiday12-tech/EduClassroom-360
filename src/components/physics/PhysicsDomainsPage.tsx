@@ -24,6 +24,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { FreeformOpticsRayLab } from './FreeformOpticsRayLab';
 import { ChladniPlateLab } from './ChladniPlateLab';
+import { FormattedText } from '../common/MathRenderer';
 
 type GradeFilter = 'all' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
 type DimFilter = 'all' | '2d' | '3d';
@@ -576,7 +577,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
                           title={sim.subtitle}
                         >
                           <Play className="w-2.5 h-2.5 shrink-0" />
-                          <span>{sim.title}</span>
+                          <span><FormattedText text={sim.title} /></span>
                         </button>
                       ))}
                     </div>
@@ -602,7 +603,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
                           title={sim.subtitle}
                         >
                           <Box className="w-2.5 h-2.5 shrink-0" />
-                          <span>{sim.title}</span>
+                          <span><FormattedText text={sim.title} /></span>
                         </button>
                       ))}
                     </div>

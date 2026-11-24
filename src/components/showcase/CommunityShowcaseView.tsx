@@ -1,10 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
+  Bookmark,
   Box,
+  Check,
   Code2,
   Compass,
   Copy,
+  Download,
+  Eye,
   Heart,
   Layers,
   PenTool,
@@ -44,8 +48,20 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
   const [items, setItems] = useState<CommunityShowcaseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [catFilter, setCatFilter] = useState<'all' | ShowcaseCategory>('all');
+  const [subjectFilter, setSubjectFilter] = useState<'all' | GrowthSubject>('all');
+  const [sortBy, setSortBy] = useState<'popular' | 'newest' | 'saved'>('popular');
   const [search, setSearch] = useState('');
   const [statusBanner, setStatusBanner] = useState<string | null>(null);
+  const [inspectItem, setInspectItem] = useState<CommunityShowcaseItem | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState<Record<string, boolean>>(() => {
+    try {
+      const raw = localStorage.getItem(`synapse_showcase_saved_v1_${uid || 'guest'}`);
+      return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    } catch {
+      return {};
+    }
+  });
 
   // Publish Modal State
   const [showPublish, setShowPublish] = useState(false);
@@ -72,10 +88,49 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
     };
   }, []);
 
+  const toggleSaveBookmark = (id: string) => {
+    setSavedIds((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try {
+        localStorage.setItem(`synapse_showcase_saved_v1_${uid || 'guest'}`, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const handleCopyCode = (id: string, code: string) => {
+    navigator.clipboard?.writeText(code).catch(() => {});
+    setCopiedId(id);
+    setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1600);
+  };
+
+  const handleDownloadPayload = (item: CommunityShowcaseItem) => {
+    let content = item.description;
+    let ext = 'txt';
+    if (item.payloadCode?.code) {
+      content = item.payloadCode.code;
+      ext = item.payloadCode.language === 'python' ? 'py' : 'cpp';
+    } else if (item.payload3dModel) {
+      content = JSON.stringify(item.payload3dModel, null, 2);
+      ext = 'json';
+    }
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${item.id}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return items.filter((it) => {
+    const list = items.filter((it) => {
       if (catFilter !== 'all' && it.category !== catFilter) return false;
+      if (subjectFilter !== 'all' && it.subject !== subjectFilter) return false;
+      if (sortBy === 'saved' && !savedIds[it.id]) return false;
       if (!q) return true;
       return (
         it.title.toLowerCase().includes(q) ||
@@ -83,7 +138,11 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
         it.tags.some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [items, catFilter, search]);
+    if (sortBy === 'newest') {
+      return [...list].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    }
+    return [...list].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+  }, [items, catFilter, subjectFilter, sortBy, savedIds, search]);
 
   const handleLike = async (id: string) => {
     const res = await toggleShowcaseLike(id);
@@ -217,15 +276,38 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
             ))}
           </div>
 
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm mô hình, thuật toán..."
-              className="w-full pl-8 pr-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs"
-            />
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <select
+              value={subjectFilter}
+              onChange={(e) => setSubjectFilter(e.target.value as 'all' | GrowthSubject)}
+              className="px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-semibold cursor-pointer"
+            >
+              <option value="all">Tất cả môn</option>
+              <option value="math">Toán học</option>
+              <option value="physics">Vật lí</option>
+              <option value="cs">Tin học</option>
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'popular' | 'newest' | 'saved')}
+              className="px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-semibold cursor-pointer"
+            >
+              <option value="popular">Nổi bật nhất</option>
+              <option value="newest">Mới nhất</option>
+              <option value="saved">Đã lưu ({Object.values(savedIds).filter(Boolean).length})</option>
+            </select>
+
+            <div className="relative flex-1 sm:w-56">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Tìm mô hình, thuật toán..."
+                className="w-full pl-8 pr-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -242,7 +324,7 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="h-64 rounded-md bg-slate-200/70 dark:bg-slate-800/60 animate-pulse" />
+            <div key={n} className="h-64 rounded-md bg-slate-200/70 dark:bg-slate-800/60" />
           ))}
         </div>
       ) : (
@@ -294,7 +376,7 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
               <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
                 <div className="space-y-1.5">
                   <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white leading-snug">
-                    {item.title}
+                    <FormattedText text={item.title} />
                   </h3>
                   <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3">
                     <FormattedText text={item.description} />
@@ -318,8 +400,29 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
+                      onClick={() => toggleSaveBookmark(item.id)}
+                      className={`p-1.5 rounded border cursor-pointer ${
+                        savedIds[item.id]
+                          ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-400 text-amber-600'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-300'
+                      }`}
+                      title={savedIds[item.id] ? 'Bỏ lưu tác phẩm' : 'Lưu vào bộ sưu tập'}
+                    >
+                      <Bookmark className={`w-3.5 h-3.5 ${savedIds[item.id] ? 'fill-amber-500 text-amber-500' : ''}`} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInspectItem(item)}
+                      className="px-2 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-cyan-500 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 cursor-pointer"
+                      title="Xem chi tiết mã nguồn / cấu trúc"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Chi tiết</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => void handleLike(item.id)}
-                      className={`px-2.5 py-1.5 rounded border text-xs font-bold flex items-center gap-1 cursor-pointer ${
+                      className={`px-2 py-1.5 rounded border text-xs font-bold flex items-center gap-1 cursor-pointer ${
                         item.likedByMe
                           ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-400 text-rose-600'
                           : 'bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300'
@@ -331,7 +434,7 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
                     <button
                       type="button"
                       onClick={() => void handleRemixItem(item)}
-                      className="cs-deck-btn px-2.5 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      className="cs-deck-btn px-2.5 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>Nhân bản</span>
@@ -341,6 +444,97 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Inspector Modal */}
+      {inspectItem && (
+        <div
+          className="fixed inset-0 z-[185] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setInspectItem(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="sci-frame w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-5 space-y-4 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="space-y-1 min-w-0">
+                <div className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 uppercase font-bold">
+                  {inspectItem.authorName} · {inspectItem.category}
+                </div>
+                <h3 className="font-display text-lg font-extrabold text-slate-900 dark:text-white">
+                  <FormattedText text={inspectItem.title} />
+                </h3>
+              </div>
+              <button type="button" onClick={() => setInspectItem(null)} className="p-1 cursor-pointer text-slate-500 hover:text-slate-900 dark:hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+              <FormattedText text={inspectItem.description} />
+            </div>
+
+            {inspectItem.payloadCode?.code && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
+                  <span>Mã nguồn ({inspectItem.payloadCode.language.toUpperCase()})</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyCode(inspectItem.id, inspectItem.payloadCode!.code)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 text-white text-[11px] cursor-pointer"
+                  >
+                    {copiedId === inspectItem.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedId === inspectItem.id ? 'Đã chép mã' : 'Chép mã'}</span>
+                  </button>
+                </div>
+                <pre className="p-3 rounded bg-slate-950 border border-slate-800 text-xs font-mono text-emerald-300 overflow-x-auto max-h-72">
+                  {inspectItem.payloadCode.code}
+                </pre>
+              </div>
+            )}
+
+            {inspectItem.payload3dModel && (
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  Cấu trúc lắp ghép 3D ({inspectItem.payload3dModel.parts.length} khối hình học)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto">
+                  {inspectItem.payload3dModel.parts.map((pt: { id?: string; label?: string; shape?: string }, i: number) => (
+                    <div key={pt.id || i} className="p-2.5 rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs flex items-center justify-between">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                        {i + 1}. {pt.label || pt.shape}
+                      </span>
+                      <span className="font-mono text-[10px] text-slate-500">{pt.shape}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => handleDownloadPayload(inspectItem)}
+                className="px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Tải tệp</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = inspectItem;
+                  setInspectItem(null);
+                  void handleRemixItem(target);
+                }}
+                className="cs-deck-btn px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Nhân bản vào Xưởng</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

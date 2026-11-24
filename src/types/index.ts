@@ -1213,6 +1213,11 @@ export interface InfiniteCanvasEdge {
   label?: string;
 }
 
+export interface VoiceOSClarifyOption {
+  label: string;
+  command: string;
+}
+
 export interface VoiceOSActionPlan {
   replyVi: string;
   actionType:
@@ -1225,6 +1230,7 @@ export interface VoiceOSActionPlan {
     | 'timer'
     | 'open_tutor'
     | 'answer_qa'
+    | 'clarify'
     | 'none';
   targetSubject?: SubjectType;
   targetMathTab?: 'grapher' | 'geometry' | 'math3d';
@@ -1237,4 +1243,5 @@ export interface VoiceOSActionPlan {
   tutorQuestion?: string;
   formulaHighlight?: string;
   confidence?: number;
+  clarifyOptions?: VoiceOSClarifyOption[];
 }

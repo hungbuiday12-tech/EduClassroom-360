@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { safeFetchJson } from './apiClient';
 import { buildLocalVoiceMentorAnswer } from './voiceIntentEngine';
+import { stopVietnameseSpeech, speakVietnameseLecture } from './vietnameseSpeech';
 
 export interface LiveWorkspaceContext {
   subject: 'math' | 'physics' | 'cs' | 'spatial_3d' | 'synapse_pre' | 'general';
@@ -135,11 +136,7 @@ export async function captureWorkspaceSnapshot(displayStream?: MediaStream | nul
 }
 
 export function cancelActiveSpeech(): void {
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    try {
-      window.speechSynthesis.cancel();
-    } catch {}
-  }
+  stopVietnameseSpeech();
 }
 
 export function speakCoPilotReply(
@@ -148,26 +145,12 @@ export function speakCoPilotReply(
   onStart?: () => void,
   onEnd?: () => void
 ): void {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text.trim()) {
-    onEnd?.();
-    return;
-  }
-  cancelActiveSpeech();
-  const cleanText = text
-    .replace(/\$\$?([^$]+)\$\$?/g, '$1')
-    .replace(/[*_`#]/g, '')
-    .slice(0, 520);
-  const utter = new SpeechSynthesisUtterance(cleanText);
-  utter.lang = lang === 'en' ? 'en-US' : 'vi-VN';
-  utter.rate = 1.04;
-  utter.onstart = () => onStart?.();
-  utter.onend = () => onEnd?.();
-  utter.onerror = () => onEnd?.();
-  try {
-    window.speechSynthesis.speak(utter);
-  } catch {
-    onEnd?.();
-  }
+  speakVietnameseLecture(text.slice(0, 800), {
+    lang,
+    rate: 1.03,
+    onStart,
+    onEnd
+  });
 }
 
 export interface LiveCoPilotResponse {

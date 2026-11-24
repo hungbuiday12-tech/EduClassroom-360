@@ -14,6 +14,7 @@ import {
   Terminal
 } from 'lucide-react';
 import { safeFetchJson } from '../../lib/apiClient';
+import { CsStepAiTutorPanel } from './CsStepAiTutorPanel';
 
 export interface CodeTraceStep {
   step: number;
@@ -318,6 +319,32 @@ export const LiveCodeTraceVisualizer: React.FC<LiveCodeTraceVisualizerProps> = (
                     {currentStep.outputSoFar || traceStdout || '(no stdout yet)'}
                   </span>
                 </div>
+              </div>
+
+              <div className="md:col-span-12">
+                <CsStepAiTutorPanel
+                  isPaused={!isPlaying}
+                  simCategory="trace"
+                  algorithmName={isEn ? `Code Execution Trace (${language.toUpperCase()})` : `Truy vết thực thi (${language.toUpperCase()})`}
+                  stepNumber={activeStepIdx + 1}
+                  totalSteps={steps.length}
+                  stepTitle={`Line ${currentStep.line}: ${currentStep.note}`}
+                  stepDescription={traceSummary || currentStep.note}
+                  activeCodeLineText={codeLines[currentStep.line - 1] || ''}
+                  variablesSummary={[
+                    Object.entries(currentStep.variables || {})
+                      .map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : String(v)}`)
+                      .join(', '),
+                    currentStep.arrayPreview
+                      ? `${currentStep.arrayPreview.name}=[${currentStep.arrayPreview.values.join(', ')}]`
+                      : '',
+                    currentStep.outputSoFar ? `stdout="${currentStep.outputSoFar}"` : ''
+                  ]
+                    .filter(Boolean)
+                    .join(' | ')}
+                  codeSnippet={code}
+                  isEn={isEn}
+                />
               </div>
             </div>
           )}

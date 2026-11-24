@@ -1,6 +1,6 @@
 import { MONUMENT_CATALOG, MonumentDefinition } from '../components/synapsev2/synapseCatalog';
 import { BackgroundStyle } from '../context/BackgroundContext';
-import { VoiceOSActionPlan } from '../types';
+import { VoiceOSActionPlan, VoiceOSClarifyOption } from '../types';
 
 export function normalizeVoiceText(raw: string): string {
   return raw
@@ -38,7 +38,11 @@ function getBigrams(str: string): Set<string> {
 export function diceSimilarity(a: string, b: string): number {
   if (!a || !b) return 0;
   if (a === b) return 1;
-  if (a.includes(b) || b.includes(a)) return 0.92;
+  const minLen = Math.min(a.length, b.length);
+  const maxLen = Math.max(a.length, b.length);
+  if (minLen >= 4 && minLen / maxLen >= 0.65 && (a.includes(b) || b.includes(a))) {
+    return 0.88;
+  }
   const ba = getBigrams(a);
   const bb = getBigrams(b);
   if (ba.size === 0 || bb.size === 0) return 0;
@@ -50,25 +54,50 @@ export function diceSimilarity(a: string, b: string): number {
 }
 
 export function fuzzyPhraseScore(inputNorm: string, candidates: string[]): number {
-  const inputTokens = inputNorm.split(' ').filter(Boolean);
+  const inputTokens = inputNorm.split(' ').filter((t) => t.length >= 2);
+  if (inputTokens.length === 0) return 0;
   let best = 0;
   for (const rawCand of candidates) {
     const cand = normalizeVoiceText(rawCand);
     if (!cand) continue;
-    if (inputNorm.includes(cand)) {
-      best = Math.max(best, 0.96);
+    if (inputNorm === cand) {
+      return 1;
+    }
+    const candTokens = cand.split(' ').filter((t) => t.length >= 2);
+    if (candTokens.length === 0) continue;
+
+    if (inputNorm.includes(cand) && cand.length >= 5) {
+      const lenRatio = cand.length / Math.max(1, inputNorm.length);
+      best = Math.max(best, lenRatio >= 0.45 ? 0.94 : 0.82);
       continue;
     }
-    const candTokens = cand.split(' ').filter(Boolean);
+    if (cand.includes(inputNorm) && inputNorm.length >= 5) {
+      const lenRatio = inputNorm.length / Math.max(1, cand.length);
+      if (lenRatio >= 0.55) {
+        best = Math.max(best, 0.84);
+        continue;
+      }
+    }
+
     let tokenHits = 0;
     for (const ct of candTokens) {
-      if (inputTokens.some((it) => it === ct || it.includes(ct) || ct.includes(it) || diceSimilarity(it, ct) >= 0.72)) {
+      if (
+        inputTokens.some(
+          (it) => it === ct || (Math.min(it.length, ct.length) >= 4 && diceSimilarity(it, ct) >= 0.78)
+        )
+      ) {
         tokenHits += 1;
       }
     }
-    const recall = candTokens.length > 0 ? tokenHits / candTokens.length : 0;
+    if (tokenHits === 0) continue;
+    const recall = tokenHits / candTokens.length;
+    const precision = tokenHits / inputTokens.length;
+    const tokenScore = recall * 0.68 + precision * 0.32;
     const dice = diceSimilarity(inputNorm, cand);
-    const combined = Math.max(recall * 0.92, dice);
+    let combined = Math.max(tokenScore * 0.95, dice * 0.9);
+    if (inputTokens.length === 1 && candTokens.length >= 2) {
+      combined = Math.min(combined, 0.57);
+    }
     if (combined > best) best = combined;
   }
   return best;
@@ -732,14 +761,97 @@ const BG_TARGETS: { phrases: string[]; style: BackgroundStyle; label: string }[]
   { phrases: ['xray', 'x-ray', 'xuyen thau', 'mat na', 'chan dung'], style: 'xray_reveal', label: 'Soi Xuyên Thấu X-Ray' }
 ];
 
+const VOICE_FILLER_OR_AMBIGUOUS = new Set([
+  'alo',
+  'a lo',
+  'ha',
+  'gi',
+  'gi vay',
+  'gi do',
+  'cai gi',
+  'oi',
+  'u',
+  'o',
+  'uh',
+  'um',
+  'ok',
+  'okay',
+  'test',
+  'thu',
+  'thu mic',
+  'khong ro',
+  'chua ro',
+  'noi lai',
+  'mo',
+  'chuyen',
+  'vao',
+  'xem',
+  'cong trinh',
+  'dai cong trinh',
+  'mo phong',
+  'bai giang',
+  'linh tinh'
+]);
+
+const DEFAULT_CLARIFY_OPTIONS: VoiceOSClarifyOption[] = [
+  { label: 'Bài giảng Vật lí', command: 'Mở Bài giảng Vật lí' },
+  { label: 'Mô phỏng Toán 3D', command: 'Mở Mô phỏng Toán 3D' },
+  { label: 'Danh sách Đại công trình', command: 'Mở Synapse Pre Đại công trình' }
+];
+
+export function buildVoiceClarifyPlan(
+  rawCmd: string,
+  reason: 'low_confidence' | 'noisy' | 'ambiguous' = 'ambiguous',
+  options?: VoiceOSClarifyOption[]
+): VoiceOSActionPlan {
+  const cleanPreview = rawCmd.trim().slice(0, 60);
+  const clarifyOptions = options && options.length > 0 ? options.slice(0, 3) : DEFAULT_CLARIFY_OPTIONS;
+  if (reason === 'low_confidence') {
+    return {
+      replyVi: `Mình nghe hơi nhỏ hoặc chưa thật rõ ("${cleanPreview}"). Bạn nói lại gần mic hơn hoặc chọn nhanh mục bên dưới nhé?`,
+      actionType: 'clarify',
+      confidence: 0.3,
+      clarifyOptions
+    };
+  }
+  if (reason === 'noisy') {
+    return {
+      replyVi: `Mình chưa nhận ra lệnh rõ ràng từ "${cleanPreview}". Bạn muốn mở bài giảng, phòng mô phỏng hay hỏi kiến thức nào?`,
+      actionType: 'clarify',
+      confidence: 0.25,
+      clarifyOptions
+    };
+  }
+  return {
+    replyVi: `Mình nghe thành "${cleanPreview}" nhưng chưa chắc bạn muốn mở mục nào — bạn xác nhận giúp mình bên dưới nhé?`,
+    actionType: 'clarify',
+    confidence: 0.48,
+    clarifyOptions
+  };
+}
+
 /**
- * Permissive fuzzy command & Q&A matcher (~65-90% intent threshold):
- * Recognizes natural paraphrases, typos, single-topic requests, direct jumps to any of the 30 Wonders,
- * and falls back cleanly to Q&A or tutor instead of rejecting the user.
+ * Clarification-aware command & Q&A matcher:
+ * Prevents false-positive jumps to random Megastructures on noisy/short/ambiguous voice input.
  */
-export function matchFuzzyVoiceOSCommand(rawCmd: string): VoiceOSActionPlan | null {
+export function matchFuzzyVoiceOSCommand(rawCmd: string, sttConfidence = 1): VoiceOSActionPlan | null {
   const cmd = normalizeVoiceText(rawCmd);
   if (!cmd) return null;
+
+  const tokens = cmd.split(' ').filter(Boolean);
+
+  // 0. Reject filler / ultra-short / low-confidence STT noise before routing
+  if (
+    cmd.length < 3 ||
+    VOICE_FILLER_OR_AMBIGUOUS.has(cmd) ||
+    (tokens.length === 1 && tokens[0].length <= 3 && !/^(toan|li|ly|code|tin|3d|2d)$/.test(tokens[0]))
+  ) {
+    return buildVoiceClarifyPlan(rawCmd, 'noisy');
+  }
+
+  if (sttConfidence > 0 && sttConfidence < 0.52) {
+    return buildVoiceClarifyPlan(rawCmd, 'low_confidence');
+  }
 
   // 1. Check explicit "hỏi / giải thích / là gì / công thức" -> Q&A or Syn Tutor
   const isQuestion = /(giai thich|la gi|tai sao|vi sao|cong thuc|cach tinh|nguyen li|hoat dong nhu the nao|hoi syn|hoi thay|hoi co|dinh luat)/.test(cmd);
@@ -749,7 +861,7 @@ export function matchFuzzyVoiceOSCommand(rawCmd: string): VoiceOSActionPlan | nu
     let bestBg: { t: (typeof BG_TARGETS)[number]; score: number } | null = null;
     for (const bg of BG_TARGETS) {
       const sc = fuzzyPhraseScore(cmd, bg.phrases);
-      if (sc >= 0.45 && (!bestBg || sc > bestBg.score)) {
+      if (sc >= 0.52 && (!bestBg || sc > bestBg.score)) {
         bestBg = { t: bg, score: sc };
       }
     }
@@ -763,9 +875,9 @@ export function matchFuzzyVoiceOSCommand(rawCmd: string): VoiceOSActionPlan | nu
     }
   }
 
-  // 3. Direct jump to any of the 30 Megastructures by number or fuzzy name (when NOT asking a question)
+  // 3. Explicit numbered jump to any of the 30 Megastructures ("công trình số 2", "kỳ quan 12")
   if (!isQuestion) {
-    const numMatch = cmd.match(/(?:cong trinh|dai cong trinh|mo hinh|ky quan)\s*(?:so)?\s*(\d{1,2})\b/);
+    const numMatch = cmd.match(/(?:cong trinh|dai cong trinh|mo hinh|ky quan)\s*(?:so|#)?\s*(\d{1,2})\b/);
     if (numMatch) {
       const idx = parseInt(numMatch[1], 10);
       const m = MONUMENT_CATALOG.find((item) => item.index === idx);
@@ -778,50 +890,88 @@ export function matchFuzzyVoiceOSCommand(rawCmd: string): VoiceOSActionPlan | nu
         };
       }
     }
-
-    let bestWonder: { id: string; titleVi: string; index: number; score: number } | null = null;
-    for (const m of MONUMENT_CATALOG) {
-      const sc = fuzzyPhraseScore(cmd, [m.titleVi, m.titleEn, m.id.replace(/_/g, ' ')]);
-      if (sc >= 0.56 && (!bestWonder || sc > bestWonder.score)) {
-        bestWonder = { id: m.id, titleVi: m.titleVi, index: m.index, score: sc };
-      }
-    }
-    if (bestWonder) {
-      return {
-        replyVi: `Đang khởi chạy Đại công trình #${bestWonder.index}: ${bestWonder.titleVi}.`,
-        actionType: 'navigate_monument',
-        targetMonumentId: bestWonder.id,
-        confidence: bestWonder.score
-      };
-    }
   }
 
-  // 4. Score all route/action targets
+  // 4. Score BOTH routes and megastructures side-by-side so megastructures never steal unclear input
+  const routeMatches: { item: FuzzyRouteTarget; score: number }[] = [];
   if (!isQuestion || /(mo|vao|chuyen|xem|bat|tat)/.test(cmd)) {
-    let bestRoute: { item: FuzzyRouteTarget; score: number } | null = null;
     for (const item of FUZZY_VOICE_OS_TARGETS) {
       const sc = fuzzyPhraseScore(cmd, item.phrases);
-      const minRequired = item.minScore ?? 0.5;
-      if (sc >= minRequired && (!bestRoute || sc > bestRoute.score)) {
-        bestRoute = { item, score: sc };
+      const minRequired = Math.max(0.56, item.minScore ?? 0.56);
+      if (sc >= minRequired) {
+        routeMatches.push({ item, score: sc });
       }
     }
-    if (bestRoute) {
-      return { ...bestRoute.item.plan, confidence: bestRoute.score };
-    }
+    routeMatches.sort((a, b) => b.score - a.score);
   }
 
-  // 5. Instant Local STEM Q&A (if user asks a knowledge question directly in Voice OS)
+  const wonderMatches: { m: MonumentDefinition; score: number }[] = [];
+  if (!isQuestion) {
+    for (const m of MONUMENT_CATALOG) {
+      // Only match monument name against meaningful tokens (require >= 2 tokens or long distinctive name)
+      const sc = fuzzyPhraseScore(cmd, [m.titleVi, m.titleEn, m.id.replace(/_/g, ' ')]);
+      if (sc >= 0.55) {
+        wonderMatches.push({ m, score: sc });
+      }
+    }
+    wonderMatches.sort((a, b) => b.score - a.score);
+  }
+
+  const topRoute = routeMatches[0];
+  const topWonder = wonderMatches[0];
+  const secondWonder = wonderMatches[1];
+
+  // Require high clarity for direct Megastructure teleport (prevents random jumping!)
+  const wonderStrongEnough =
+    topWonder &&
+    topWonder.score >= 0.74 &&
+    (tokens.length >= 2 || topWonder.score >= 0.86) &&
+    (!secondWonder || topWonder.score - secondWonder.score >= 0.08 || topWonder.score >= 0.88);
+
+  if (wonderStrongEnough && (!topRoute || topWonder.score >= topRoute.score + 0.04)) {
+    return {
+      replyVi: `Đang khởi chạy Đại công trình #${topWonder.m.index}: ${topWonder.m.titleVi}.`,
+      actionType: 'navigate_monument',
+      targetMonumentId: topWonder.m.id,
+      confidence: topWonder.score
+    };
+  }
+
+  if (topRoute && topRoute.score >= 0.6) {
+    return { ...topRoute.item.plan, confidence: topRoute.score };
+  }
+
+  // If we only had weak/ambiguous wonder or route candidates, ask for clarification instead of teleporting!
+  if ((topWonder && topWonder.score >= 0.55) || (topRoute && topRoute.score >= 0.56)) {
+    const clarifyOpts: VoiceOSClarifyOption[] = [];
+    if (topRoute) {
+      clarifyOpts.push({
+        label: topRoute.item.phrases[0],
+        command: topRoute.item.phrases[0]
+      });
+    }
+    for (const wm of wonderMatches.slice(0, 2)) {
+      clarifyOpts.push({
+        label: `Công trình #${wm.m.index}: ${wm.m.titleVi}`,
+        command: `Mở Đại công trình số ${wm.m.index}`
+      });
+    }
+    return buildVoiceClarifyPlan(rawCmd, 'ambiguous', clarifyOpts);
+  }
+
+  // 5. Instant Local STEM Q&A (only when phrased as a question or >=2 meaningful tokens)
   let bestStem: (typeof GENERAL_STEM_QA)[number] | null = null;
   let bestStemScore = 0;
-  for (const item of GENERAL_STEM_QA) {
-    const sc = fuzzyPhraseScore(cmd, item.keywords);
-    if (sc > bestStemScore) {
-      bestStemScore = sc;
-      bestStem = item;
+  if (isQuestion || tokens.length >= 2) {
+    for (const item of GENERAL_STEM_QA) {
+      const sc = fuzzyPhraseScore(cmd, item.keywords);
+      if (sc > bestStemScore) {
+        bestStemScore = sc;
+        bestStem = item;
+      }
     }
   }
-  if (bestStem && bestStemScore >= 0.5) {
+  if (bestStem && bestStemScore >= 0.62) {
     return {
       replyVi: bestStem.replyVi,
       actionType: 'answer_qa',
@@ -844,6 +994,10 @@ export function matchFuzzyVoiceOSCommand(rawCmd: string): VoiceOSActionPlan | nu
       tutorQuestion: rawCmd,
       confidence: 0.78
     };
+  }
+
+  if (tokens.length === 1 && !isQuestion) {
+    return buildVoiceClarifyPlan(rawCmd, 'ambiguous');
   }
 
   return null;

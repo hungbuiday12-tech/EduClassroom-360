@@ -12,7 +12,7 @@ export const MATH_GDPT_2006_GRADE_9: MathLecture[] = [
     lessonNumber: 1,
     stageLabel: 'Toán 9 (2006) · ĐS Chương I: Căn bậc hai. Căn bậc ba',
     sourceTag: 'SGK Toán 9 Tập 1 (2006) · Bài 1–2',
-    title: 'Bài 1 (2006): Căn bậc hai số học & Hằng đẳng thức √(A²) = |A|',
+    title: 'Bài 1 (2006): Căn bậc hai số học & Hằng đẳng thức $\\sqrt{A^2} = |A|$',
     grade: 'Lớp 9 · Đại số',
     category: 'Đại số',
     difficulty: 'Cơ bản',
@@ -421,7 +421,7 @@ export const MATH_GDPT_2006_GRADE_9: MathLecture[] = [
     lessonNumber: 8,
     stageLabel: 'Toán 9 (2006) · ĐS Chương IV: Hàm số y = ax². Phương trình bậc hai',
     sourceTag: 'SGK Toán 9 Tập 2 (2006) · Bài 1–2',
-    title: 'Bài 8 (2006): Hàm số y = ax² (a ≠ 0) & Đồ thị Parabol',
+    title: 'Bài 8 (2006): Hàm số $y = ax^2$ ($a \\neq 0$) & Đồ thị Parabol',
     grade: 'Lớp 9 · Đại số',
     category: 'Đại số',
     difficulty: 'Cơ bản',
@@ -650,6 +650,7 @@ export const MATH_GDPT_2006_GRADE_9: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'pythagoras',
     sim3dMode: 'circle_theorems_3d'
   },
   {
@@ -707,6 +708,7 @@ export const MATH_GDPT_2006_GRADE_9: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'triangle_explorer',
     sim3dMode: 'circle_theorems_3d'
   },
   // ==================== CHƯƠNG II HÌNH HỌC: ĐƯỜNG TRÒN ====================
@@ -764,6 +766,7 @@ export const MATH_GDPT_2006_GRADE_9: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'circle_tangent',
     sim3dMode: 'circle_theorems_3d'
   },
   {
@@ -821,6 +824,7 @@ export const MATH_GDPT_2006_GRADE_9: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'two_circles_relative',
     sim3dMode: 'circle_theorems_3d'
   },
   // ==================== CHƯƠNG III HÌNH HỌC: GÓC VỚI ĐƯỜNG TRÒN ====================
@@ -850,8 +854,8 @@ export const MATH_GDPT_2006_GRADE_9: MathLecture[] = [
       '2. Góc tạo bởi tia tiếp tuyến và dây cung: Đỉnh là tiếp điểm, một cạnh là tia tiếp tuyến, cạnh kia chứa dây cung; số đo bằng nửa số đo cung bị chắn giữa hai cạnh.'
     ],
     keyFormulas: [
-      '\\widehat{ACB} = \\frac{1}{2}\\text{sđ}\\wideparen{AB} = \\frac{1}{2}\\widehat{AOB}',
-      '\\widehat{BAx} = \\widehat{ACB} = \\frac{1}{2}\\text{sđ}\\wideparen{AB}'
+      '\\widehat{ACB} = \\frac{1}{2}\\text{sđ}\\overset{\\frown}{AB} = \\frac{1}{2}\\widehat{AOB}',
+      '\\widehat{BAx} = \\widehat{ACB} = \\frac{1}{2}\\text{sđ}\\overset{\\frown}{AB}'
     ],
     flashcards: [
       { front: 'Tam giác $ABC$ nội tiếp $(O)$ có $\\widehat{BOC} = 110^\\circ$ ($A$ thuộc cung lớn). Số đo $\\widehat{BAC}$?', back: '$\\widehat{BAC} = \\frac{1}{2}\\widehat{BOC} = 55^\\circ$.' }
@@ -871,13 +875,14 @@ export const MATH_GDPT_2006_GRADE_9: MathLecture[] = [
         question: 'Từ điểm $M$ ngoài $(O)$, kẻ tiếp tuyến $MA$ ($A$ là tiếp điểm) và cát tuyến $MBC$ ($B$ nằm giữa $M$ và $C$). Chứng minh $MA^2 = MB \\cdot MC$.',
         hints: ['Chứng minh $\\triangle MAB \\sim \\triangle MCA$ nhờ $\\widehat{MAB} = \\widehat{MCA}$ (cùng chắn cung $AB$).'],
         solutionSteps: [
-          'Bước 1: Xét $\\triangle MAB$ và $\\triangle MCA$: có $\\widehat{M}$ chung và $\\widehat{MAB} = \\widehat{MCA}$ (góc tiếp tuyến–dây và góc nội tiếp cùng chắn $\\wideparen{AB}$).',
+          'Bước 1: Xét $\\triangle MAB$ và $\\triangle MCA$: có $\\widehat{M}$ chung và $\\widehat{MAB} = \\widehat{MCA}$ (góc tiếp tuyến–dây và góc nội tiếp cùng chắn $\\overset{\\frown}{AB}$).',
           'Bước 2: $\\triangle MAB \\sim \\triangle MCA\\ (g.g) \\Rightarrow \\frac{MA}{MC} = \\frac{MB}{MA} \\iff MA^2 = MB \\cdot MC$.'
         ],
         finalAnswer: '$MA^2 = MB \\cdot MC$.'
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'circle_chords_angles',
     sim3dMode: 'circle_theorems_3d'
   },
   {
@@ -935,6 +940,7 @@ export const MATH_GDPT_2006_GRADE_9: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'inscribed_quad',
     sim3dMode: 'circle_theorems_3d'
   },
   // ==================== CHƯƠNG IV HÌNH HỌC: HÌNH TRỤ - HÌNH NÓN - HÌNH CẦU ====================

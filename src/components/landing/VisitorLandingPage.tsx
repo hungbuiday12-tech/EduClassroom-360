@@ -909,7 +909,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'Math 2D / Oxyz 3D' : 'Toán 2D / Oxyz 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${mathCount} topics · 8 3D scenes` : `${mathCount} bài · 8 cảnh 3D`}
+                  {isEn ? `${mathCount} topics · 11 3D scenes` : `${mathCount} bài · 11 cảnh 3D`}
                 </p>
               </button>
 
@@ -928,7 +928,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'CS · 5 Roadmaps' : 'Tin Học · 5 Lộ Trình'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${csCount}+${csSpecializedStageCount} · 16 Algos` : `${csCount} VNOI + ${csSpecializedStageCount} C++`}
+                  {isEn ? `${csCount} VNOI + ${csSpecializedStageCount}` : `${csCount} VNOI + ${csSpecializedStageCount} C++`}
                 </p>
               </button>
 
@@ -1853,12 +1853,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 </div>
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
                   <div className="font-bold text-slate-900 dark:text-white">
-                    {isEn ? '231 Lessons & 450 Exams' : '231 Bài Giảng & 450 Đề Thi'}
+                    {isEn ? `${totalLessons} Lessons & ${totalExams} Exams` : `${totalLessons} Bài Giảng & ${totalExams} Đề Thi`}
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Math 2D/Oxyz, 5 Physics domains (calibrated 3D Cannon), Sublime 4 Code Trace 1-1 & 0–10 AI grading.'
-                      : 'Toán Oxy/Oxyz, 5 lĩnh vực Vật lí (chuẩn hóa Bệ pháo 3D), IDE Code Trace 1-1 & Chấm ảnh đề 0–10.'}
+                      ? `Math 2D/Oxyz (GDPT 2018 & 2006), ${phyCounts.total} Physics 2D/3D labs, Sublime 4 Code Trace 1-1 & 0–10 AI grading.`
+                      : `Toán Oxy/Oxyz & Vật lí (${phyCounts.total} Lab 2D/3D chuẩn 2018 & 2006), Code Trace 1-1 & Chấm ảnh đề 0–10.`}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
@@ -2983,7 +2983,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Open Code Judge & Trace 1-1' : 'Mở IDE, Trace 1-1 & 16 Thuật toán'}</span>
+                  <span>{isEn ? 'Open Code Judge & Trace 1-1' : `Mở IDE, Trace 1-1 & ${csCount} Bài Giảng`}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>

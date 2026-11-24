@@ -1,4 +1,5 @@
 import { ExamPaper, ExamQuestion } from '../types';
+import { safeExamSnippet } from './examSnippetHelper';
 
 const CHUYEN_SCHOOLS = [
   'THPT Chuyên Phan Bội Châu – Nghệ An',
@@ -143,7 +144,7 @@ function buildMathChuyenExams(): ExamPaper[] {
       school,
       source: `Nguồn tham khảo chuẩn đề: ${school}`,
       timeMinutes: 150,
-      featuredSnippet: q1.content.slice(0, 140) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 140),
       topics: ['# Hệ phương trình', '# Số học Đồng dư', '# Hình học Đường tròn', '# Tổ hợp Bất biến'],
       difficulty: 'Chuyên / HSG',
       questions: [q1, q2, q3, q4]
@@ -170,7 +171,7 @@ function buildMathStandardExams(): ExamPaper[] {
         number: 'Câu 1',
         points: '2.5 điểm',
         content: `Cho hàm số bậc ba $y = x^3 - ${3 * a}x^2 + ${b}$.\na) Khảo sát sự biến thiên và tìm các điểm cực trị của đồ thị hàm số.\nb) Tìm giá trị lớn nhất và giá trị nhỏ nhất của hàm số trên đoạn $[-1; ${2 * a + 1}]$.`,
-        solution: `a) Tập xác định $D = \\mathbb{R}$. Đạo hàm $y' = 3x^2 - ${6 * a}x = 3x(x - ${2 * a})$.\nCho $y' = 0 \\iff x = 0$ hoặc $x = ${2 * a}$.\nHàm số đạt cực đại tại $x = 0, y_{CĐ} = ${b}$; đạt cực tiểu tại $x = ${2 * a}, y_{CT} = ${8 * a ** 3 - 12 * a ** 3 + b} = ${b - 4 * a ** 3}$.\n\nb) Vì các điểm cực trị $0$ và ${2 * a}$ đều thuộc $[-1; ${2 * a + 1}]$, ta tính giá trị tại 4 điểm:\n- $y(-1) = ${-1 - 3 * a + b}$\n- $y(0) = ${b}$\n- $y(${2 * a}) = ${b - 4 * a ** 3}$\n- $y(${2 * a + 1}) = ${(2 * a + 1) ** 3 - 3 * a * (2 * a + 1) ** 2 + b}$\nTừ đó đối chiếu chọn $\\max$ và $\\min$ trên đoạn đã cho.`,
+        solution: `a) Tập xác định $D = \\mathbb{R}$. Đạo hàm $y' = 3x^2 - ${6 * a}x = 3x(x - ${2 * a})$.\nCho $y' = 0 \\iff x = 0$ hoặc $x = ${2 * a}$.\nHàm số đạt cực đại tại $x = 0, y_{\\text{CĐ}} = ${b}$; đạt cực tiểu tại $x = ${2 * a}, y_{\\text{CT}} = ${b - 4 * a ** 3}$.\n\nb) Vì các điểm cực trị $0$ và $${2 * a}$ đều thuộc $[-1; ${2 * a + 1}]$, ta tính giá trị tại 4 điểm:\n- $y(-1) = ${-1 - 3 * a + b}$\n- $y(0) = ${b}$\n- $y(${2 * a}) = ${b - 4 * a ** 3}$\n- $y(${2 * a + 1}) = ${(2 * a + 1) ** 3 - 3 * a * (2 * a + 1) ** 2 + b}$\nTừ đó đối chiếu chọn $\\max$ và $\\min$ trên đoạn đã cho.`,
         keyFormulasOrHints: ["y' = 0 tìm cực trị", 'So sánh giá trị tại biên và cực trị']
       },
       {
@@ -207,7 +208,7 @@ function buildMathStandardExams(): ExamPaper[] {
       school: province,
       source: `Nguồn đề chuẩn THPT: ${province}`,
       timeMinutes: 90,
-      featuredSnippet: questions[0].content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(questions[0].content, 130),
       topics: ['# Hàm số & Cực trị', '# Mũ & Logarit', '# Tích phân', '# Hình học Oxyz'],
       difficulty: i % 3 === 0 ? 'Khá' : 'Cơ bản',
       questions
@@ -273,7 +274,7 @@ function buildPhysicsChuyenExams(): ExamPaper[] {
       school,
       source: `Nguồn tham khảo chuẩn đề: ${school}`,
       timeMinutes: 150,
-      featuredSnippet: questions[0].content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(questions[0].content, 130),
       topics: ['# Cơ học & Bảo toàn', '# Dao động điều hòa', '# Điện xoay chiều RLC', '# Chuyển động ném'],
       difficulty: 'Chuyên / HSG',
       questions
@@ -339,7 +340,7 @@ function buildPhysicsStandardExams(): ExamPaper[] {
       school: province,
       source: `Nguồn đề chuẩn THPT: ${province}`,
       timeMinutes: 50,
-      featuredSnippet: questions[0].content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(questions[0].content, 130),
       topics: ['# Dao động cơ', '# Giao thoa Y-âng', '# Khí lí tưởng', '# Hạt nhân phóng xạ'],
       difficulty: i % 3 === 0 ? 'Khá' : 'Cơ bản',
       questions
@@ -401,7 +402,7 @@ function buildCSChuyenExams(): ExamPaper[] {
       school,
       source: `Nguồn tham khảo chuẩn đề: ${school}`,
       timeMinutes: 180,
-      featuredSnippet: questions[0].content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(questions[0].content, 130),
       topics: ['# Hai con trỏ', '# Tham lam', '# Dijkstra Đường đi ngắn nhất', '# Quy hoạch động'],
       difficulty: 'Chuyên / HSG',
       questions
@@ -462,7 +463,7 @@ function buildCSStandardExams(): ExamPaper[] {
       school: province,
       source: `Nguồn đề thi chuẩn phổ thông: ${province}`,
       timeMinutes: 50,
-      featuredSnippet: questions[0].content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(questions[0].content, 130),
       topics: ['# Python & C++ Cơ bản', '# Mảng 1 chiều', '# Xâu ký tự Anagram', '# Thuật toán Euclid'],
       difficulty: i % 3 === 0 ? 'Khá' : 'Cơ bản',
       questions

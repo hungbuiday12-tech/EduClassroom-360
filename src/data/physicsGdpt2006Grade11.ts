@@ -291,7 +291,7 @@ export const PHYSICS_GDPT_2006_GRADE_11: PhysicsLesson[] = [
       'A = U I t, \\quad \\mathcal{P}_{\\text{ng}} = \\mathcal{E} I, \\quad A_{\\text{ng}} = \\mathcal{E} I t',
       'H = \\frac{U_N}{\\mathcal{E}} = \\frac{R_N}{R_N + r}'
     ],
-    ...SIM_PRESETS.joule_lenz,
+    ...SIM_PRESETS.electric_power,
     practiceExercises: [
       {
         source: SRC_11,
@@ -393,7 +393,7 @@ export const PHYSICS_GDPT_2006_GRADE_11: PhysicsLesson[] = [
       '\\text{Nối tiếp: } \\mathcal{E}_b = \\sum \\mathcal{E}_i,\\ r_b = \\sum r_i',
       '\\text{Hỗn hợp } m \\text{ dãy } \\times n \\text{ nguồn}: \\mathcal{E}_b = n\\mathcal{E}, \\quad r_b = \\frac{nr}{m}'
     ],
-    ...SIM_PRESETS.wheatstone,
+    ...SIM_PRESETS.ohm_dc,
     practiceExercises: [
       {
         source: SRC_11,
@@ -495,7 +495,7 @@ export const PHYSICS_GDPT_2006_GRADE_11: PhysicsLesson[] = [
     keyFormulas: [
       'm = \\frac{1}{F}\\cdot\\frac{A}{n}\\cdot I t \\quad (F = 96\\,500\\text{ C/mol})'
     ],
-    ...SIM_PRESETS.calorimetry,
+    ...SIM_PRESETS.electrolysis,
     practiceExercises: [
       {
         source: SRC_11,
@@ -652,7 +652,7 @@ export const PHYSICS_GDPT_2006_GRADE_11: PhysicsLesson[] = [
       'F = B I l \\sin\\alpha',
       'M = I B S \\sin\\theta \\quad (\\theta = (\\vec{n}, \\vec{B}))'
     ],
-    ...SIM_PRESETS.mag_faraday,
+    ...SIM_PRESETS.dc_motor,
     practiceExercises: [
       {
         source: SRC_11,
@@ -964,7 +964,7 @@ export const PHYSICS_GDPT_2006_GRADE_11: PhysicsLesson[] = [
       '\\text{Kính cận (sát mắt): } f_k = -OC_V \\Rightarrow D_k = -\\frac{1}{OC_V}',
       '\\text{Kính viễn đọc sách ở } d: \\frac{1}{f_k} = \\frac{1}{d} - \\frac{1}{OC_C}'
     ],
-    ...SIM_PRESETS.lens_single,
+    ...SIM_PRESETS.eye_optics,
     practiceExercises: [
       {
         source: SRC_11,

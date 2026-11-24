@@ -2957,6 +2957,9 @@ export function renderPhysics2DSimulation(opts: Physics2DRenderOptions): void {
       break;
     case 'work_power_joule':
     case 'joule_lenz_heat':
+    case 'distance_displacement_rel':
+    case 'phase_change_heating':
+    case 'em_wave_3axis':
       renderCustomStepPhysicsSim({
         ctx,
         w,

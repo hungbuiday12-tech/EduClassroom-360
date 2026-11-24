@@ -1,5 +1,6 @@
 import { ExamPaper, ExamQuestion } from '../types';
 import { CHUYEN_SCHOOLS_BATCH_3, THPT_INSTITUTIONS_BATCH_3 } from './extraExamsBatch3Math';
+import { safeExamSnippet } from './examSnippetHelper';
 
 export function buildCSChuyenBatch4(): ExamPaper[] {
   const exams: ExamPaper[] = [];
@@ -139,7 +140,7 @@ export function buildCSChuyenBatch4(): ExamPaper[] {
       school,
       source: `Nguồn tổng hợp chuẩn đề: ${school}`,
       timeMinutes: 180,
-      featuredSnippet: q1.content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 130),
       topics: ['# Tham lam & Chặt nhị phân', '# LIS & Digit DP & Rerooting', '# Kruskal DSU & LCA & SCC', '# Lazy Segment Tree & Mo'],
       difficulty: 'Chuyên / HSG',
       questions: [q1, q2, q3, q4]
@@ -270,7 +271,7 @@ export function buildCSStandardBatch4(): ExamPaper[] {
       school,
       source: `Nguồn đề chuẩn THPT 2026: ${school}`,
       timeMinutes: 50,
-      featuredSnippet: q1.content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 130),
       topics: ['# Số học & UCLN', '# Tìm kiếm nhị phân & Ma trận', '# Xâu RLE & Anagram', '# SQL & Hàng đợi'],
       difficulty: i % 3 === 0 ? 'Nâng cao' : i % 2 === 0 ? 'Khá' : 'Cơ bản',
       questions: [q1, q2, q3, q4]

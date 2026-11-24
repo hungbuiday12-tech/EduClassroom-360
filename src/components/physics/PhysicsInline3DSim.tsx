@@ -62,6 +62,8 @@ const STEP_2D_TO_3D_MAP: Partial<Record<AnyStepSimId, Physics3DMode>> = {
   dc_motor_2d: 'dc_motor_3d',
   electrolysis_faraday: 'electrolysis_3d',
   eye_optics_2d: 'eye_optics_3d',
+  power_plant_generator: 'power_plant_3d',
+  fresnel_phasor_2d: 'lissajous_3d',
   magnetic_induction: 'solenoid_field_3d',
   electromagnet_crane: 'solenoid_field_3d',
   hall_effect: 'lorentz_helix',

@@ -1,4 +1,5 @@
 import { ExamPaper, ExamQuestion } from '../types';
+import { safeExamSnippet } from './examSnippetHelper';
 
 const CHUYEN_SCHOOLS_BATCH_2 = [
   'THPT Chuyên ĐHSP Hà Nội',
@@ -64,7 +65,7 @@ function buildMathChuyenBatch2(): ExamPaper[] {
         number: 'Bài 1',
         points: '2.5 điểm',
         content: `a) Giải hệ phương trình trên tập số thực:\n$$\\begin{cases} x^3 - y^3 = ${3 * k}(x - y) \\\\ x^2 + y^2 + xy = ${3 * k + m} \\end{cases}$$\nb) Cho $a, b, c > 0$ thỏa mãn $ab + bc + ca = 3$. Chứng minh rằng:\n$$\\frac{1}{a^2 + 2} + \\frac{1}{b^2 + 2} + \\frac{1}{c^2 + 2} \\le 1.$$`,
-        solution: `a) Phương trình đầu tương đương $(x - y)(x^2 + xy + y^2 - ${3 * k}) = 0$.\n- Nếu $x = y$: thế vào phương trình hai được $3x^2 = ${3 * k + m} \\implies x = y = \\pm\\sqrt{\\frac{${3 * k + m}}{3}}$.\n- Nếu $x^2 + xy + y^2 = ${3 * k}$: đối chiếu phương trình hai thấy ${3 * k} = ${3 * k + m}$ (vô nghiệm vì $m = ${m} > 0$).\nVậy hệ có đúng hai nghiệm $\\left(\\pm\\sqrt{\\frac{${3 * k + m}}{3}}, \\pm\\sqrt{\\frac{${3 * k + m}}{3}}\\right)$.\n\nb) Ta biến đổi:\n$$\\frac{1}{a^2 + 2} = \\frac{1}{2}\\left(1 - \\frac{a^2}{a^2 + 2}\\right).$$\nBất đẳng thức cần chứng minh tương đương:\n$$\\frac{a^2}{a^2 + 2} + \\frac{b^2}{b^2 + 2} + \\frac{c^2}{c^2 + 2} \\ge 1.$$\nÁp dụng Cauchy-Schwarz dạng Engel:\n$$VT \\ge \\frac{(a + b + c)^2}{a^2 + b^2 + c^2 + 6} = \\frac{(a + b + c)^2}{a^2 + b^2 + c^2 + 2(ab + bc + ca)} = 1.$$\nDấu bằng xảy ra khi $a = b = c = 1$.`,
+        solution: `a) Phương trình đầu tương đương $(x - y)(x^2 + xy + y^2 - ${3 * k}) = 0$.\n- Nếu $x = y$: thế vào phương trình hai được $3x^2 = ${3 * k + m} \\implies x = y = \\pm\\sqrt{\\frac{${3 * k + m}}{3}}$.\n- Nếu $x^2 + xy + y^2 = ${3 * k}$: đối chiếu phương trình hai thấy $${3 * k} = ${3 * k + m}$ (vô nghiệm vì $m = ${m} > 0$).\nVậy hệ có đúng hai nghiệm $\\left(\\pm\\sqrt{\\frac{${3 * k + m}}{3}}, \\pm\\sqrt{\\frac{${3 * k + m}}{3}}\\right)$.\n\nb) Ta biến đổi:\n$$\\frac{1}{a^2 + 2} = \\frac{1}{2}\\left(1 - \\frac{a^2}{a^2 + 2}\\right).$$\nBất đẳng thức cần chứng minh tương đương:\n$$\\frac{a^2}{a^2 + 2} + \\frac{b^2}{b^2 + 2} + \\frac{c^2}{c^2 + 2} \\ge 1.$$\nÁp dụng Cauchy-Schwarz dạng Engel:\n$$VT \\ge \\frac{(a + b + c)^2}{a^2 + b^2 + c^2 + 6} = \\frac{(a + b + c)^2}{a^2 + b^2 + c^2 + 2(ab + bc + ca)} = 1.$$\nDấu bằng xảy ra khi $a = b = c = 1$.`,
         keyFormulasOrHints: ['Phân tích nhân tử (x - y)', 'Cauchy-Schwarz Engel với 2(ab+bc+ca) = 6'],
         simulationLink: { type: 'math', targetId: 'grapher', label: 'Đồ thị Oxy 2D' }
       },
@@ -87,7 +88,7 @@ function buildMathChuyenBatch2(): ExamPaper[] {
         number: 'Bài 1',
         points: '2.5 điểm',
         content: `a) Giải phương trình: $(x^2 - ${c}x + 1)^2 + ${m}(x^2 - ${c}x + 1)x = ${m + 1}x^2$ (với $x \\neq 0$).\nb) Tìm tất cả cặp số thực $(x, y)$ thỏa mãn $\\sqrt{x - 1} + \\sqrt{y - 2} = \\frac{x + y + ${k - 3}}{2}$ hay kiểm tra giá trị cực trị biểu thức bậc hai tương ứng.`,
-        solution: `a) Chia hai vế cho $x^2 \\neq 0$ và đặt $t = x + \\frac{1}{x} - ${c}$:\nPhương trình trở thành $t^2 + ${m}t - ${m + 1} = 0 \\iff (t - 1)(t + ${m + 1}) = 0$.\nGiải $x + \\frac{1}{x} = ${c + 1}$ và $x + \\frac{1}{x} = ${c - m - 1}$ kiểm tra điều kiện $\\Delta \\ge 0$ để kết luận tất cả nghiệm thực.\n\nb) Áp dụng AM-GM:\n$$\\sqrt{(x - 1)\\cdot 1} \\le \\frac{x - 1 + 1}{2} = \\frac{x}{2}, \\quad \\sqrt{(y - 2)\\cdot 1} \\le \\frac{y - 2 + 1}{2} = \\frac{y - 1}{2}.$$\nCộng theo vế suy ra $VT \\le \\frac{x + y - 1}{2}$. So sánh với vế phải $\\frac{x + y + ${k - 3}}{2}$: chỉ có nghiệm khi ${k - 3} \\le -1$ (khi $k = 2$, dấu bằng xảy ra tại $x = 2, y = 3$).`,
+        solution: `a) Chia hai vế cho $x^2 \\neq 0$ và đặt $t = x + \\frac{1}{x} - ${c}$:\nPhương trình trở thành $t^2 + ${m}t - ${m + 1} = 0 \\iff (t - 1)(t + ${m + 1}) = 0$.\nGiải $x + \\frac{1}{x} = ${c + 1}$ và $x + \\frac{1}{x} = ${c - m - 1}$ kiểm tra điều kiện $\\Delta \\ge 0$ để kết luận tất cả nghiệm thực.\n\nb) Áp dụng AM-GM:\n$$\\sqrt{(x - 1)\\cdot 1} \\le \\frac{x - 1 + 1}{2} = \\frac{x}{2}, \\quad \\sqrt{(y - 2)\\cdot 1} \\le \\frac{y - 2 + 1}{2} = \\frac{y - 1}{2}.$$\nCộng theo vế suy ra $VT \\le \\frac{x + y - 1}{2}$. So sánh với vế phải $\\frac{x + y + ${k - 3}}{2}$: chỉ có nghiệm khi $${k - 3} \\le -1$ (khi $k = 2$, dấu bằng xảy ra tại $x = 2, y = 3$).`,
         keyFormulasOrHints: ['Chia x^2 đặt t = x + 1/x', 'AM-GM sqrt(u) <= (u + 1)/2']
       },
       {
@@ -198,15 +199,15 @@ function buildMathChuyenBatch2(): ExamPaper[] {
       {
         number: 'Bài 4',
         points: '2.0 điểm',
-        content: `Cho đa giác đều $${2 * k + 15}$ đỉnh. Tô màu đỏ $k_1$ đỉnh và màu xanh các đỉnh còn lại. Nếu có ít nhất ${k + 8}$ đỉnh đỏ, chứng minh luôn tồn tại ít nhất ba đỉnh màu đỏ tạo thành một tam giác cân.`,
-        solution: `Số đỉnh toàn đa giác là $N = ${2 * k + 15}$ (lẻ). Nếu số đỉnh đỏ lớn hơn một ngưỡng hoặc áp dụng Dirichlet cho các cặp khoảng cách đối xứng:\nKhi số đỉnh đỏ $> N/2$ (cụ thể ${k + 8} > ${(2 * k + 15) / 2}$), xét ánh xạ quay $\\frac{2\\pi}{N}$ hoặc chọn 1 đỉnh đỏ làm tâm, ghép các đỉnh còn lại thành $\\frac{N - 1}{2}$ cặp đối xứng qua đường kính đi qua đỉnh đó — hoặc dùng trực tiếp nguyên lý Dirichlet cho phép đối xứng qua trục: tồn tại $2$ đỉnh đỏ đối xứng nhau qua đường kính đi qua đỉnh đỏ ban đầu, lập thành tam giác cân!`,
+        content: `Cho đa giác đều $${2 * k + 15}$ đỉnh. Tô màu đỏ $k_1$ đỉnh và màu xanh các đỉnh còn lại. Nếu có ít nhất $${k + 8}$ đỉnh đỏ, chứng minh luôn tồn tại ít nhất ba đỉnh màu đỏ tạo thành một tam giác cân.`,
+        solution: `Số đỉnh toàn đa giác là $N = ${2 * k + 15}$ (lẻ). Nếu số đỉnh đỏ lớn hơn một ngưỡng hoặc áp dụng Dirichlet cho các cặp khoảng cách đối xứng:\nKhi số đỉnh đỏ $> N/2$ (cụ thể $${k + 8} > ${(2 * k + 15) / 2}$), xét ánh xạ quay $\\frac{2\\pi}{N}$ hoặc chọn 1 đỉnh đỏ làm tâm, ghép các đỉnh còn lại thành $\\frac{N - 1}{2}$ cặp đối xứng qua đường kính đi qua đỉnh đó — hoặc dùng trực tiếp nguyên lý Dirichlet cho phép đối xứng qua trục: tồn tại $2$ đỉnh đỏ đối xứng nhau qua đường kính đi qua đỉnh đỏ ban đầu, lập thành tam giác cân!`,
         keyFormulasOrHints: ['Số đỉnh N lẻ -> luôn có 1 đỉnh là tâm đối xứng', 'Dirichlet ghép cặp đối xứng']
       },
       {
         number: 'Bài 4',
         points: '2.0 điểm',
         content: `Cho $S = \\{1, 2, \\dots, ${2 * m + 12}\\}$. Chọn ngẫu nhiên (bất kỳ) ${m + 8} số phân biệt từ $S$. Chứng minh rằng luôn chọn được hai số trong đó mà số này là bội của số kia.`,
-        solution: `Mọi số nguyên dương $x \\in S$ đều viết được duy nhất dưới dạng $x = 2^t \\cdot u$ với $t \\ge 0$ và $u$ là số **lẻ**.\nTrong $S = \\{1, 2, \\dots, ${2 * m + 12}\\}$, chỉ có đúng $\\lceil \\frac{${2 * m + 12}}{2} \\rceil = ${m + 6}$ số lẻ $u$.\nVì ta chọn ${m + 8} > ${m + 6}$ số từ $S$, theo nguyên lý Dirichlet tồn tại ít nhất hai số có cùng phần lẻ $u$: $x = 2^{t_1}u$ và $y = 2^{t_2}u$ ($t_1 < t_2$), khi đó $y$ chia hết cho $x$.`,
+        solution: `Mọi số nguyên dương $x \\in S$ đều viết được duy nhất dưới dạng $x = 2^t \\cdot u$ với $t \\ge 0$ và $u$ là số **lẻ**.\nTrong $S = \\{1, 2, \\dots, ${2 * m + 12}\\}$, chỉ có đúng $\\lceil \\frac{${2 * m + 12}}{2} \\rceil = ${m + 6}$ số lẻ $u$.\nVì ta chọn $${m + 8} > ${m + 6}$ số từ $S$, theo nguyên lý Dirichlet tồn tại ít nhất hai số có cùng phần lẻ $u$: $x = 2^{t_1}u$ và $y = 2^{t_2}u$ ($t_1 < t_2$), khi đó $y$ chia hết cho $x$.`,
         keyFormulasOrHints: ['Biểu diễn x = 2^t * u (u lẻ)', 'Số lượng phần lẻ tối đa là ceil(N/2)']
       },
       {
@@ -234,7 +235,7 @@ function buildMathChuyenBatch2(): ExamPaper[] {
       school,
       source: `Nguồn tham khảo chuẩn đề: ${school}`,
       timeMinutes: 150,
-      featuredSnippet: q1.content.slice(0, 140) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 140),
       topics: ['# Đại số & BĐT', '# Số học & Vieta Jumping', '# Hình học Olympic', '# Tổ hợp Dirichlet'],
       difficulty: 'Chuyên / HSG',
       questions: [q1, q2, q3, q4]
@@ -346,7 +347,7 @@ function buildMathStandardBatch2(): ExamPaper[] {
       school: province,
       source: `Nguồn đề chuẩn THPT: ${province}`,
       timeMinutes: 90,
-      featuredSnippet: q1.content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 130),
       topics: ['# Khảo sát hàm số', '# Mũ & Lôgarit', '# Tích phân & Thể tích', '# Oxyz & Xác suất Bayes'],
       difficulty: i % 3 === 0 ? 'Nâng cao' : i % 2 === 0 ? 'Khá' : 'Cơ bản',
       questions: [q1, q2, q3, q4]
@@ -451,7 +452,7 @@ function buildPhysicsChuyenBatch2(): ExamPaper[] {
       school,
       source: `Nguồn tham khảo chuẩn đề: ${school}`,
       timeMinutes: 150,
-      featuredSnippet: q1Pool[i % q1Pool.length].content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1Pool[i % q1Pool.length].content, 130),
       topics: ['# Cơ học Nêm & Va chạm', '# Dao động Tắt dần', '# RLC & Cảm ứng từ', '# Nhiệt động & Giao thoa'],
       difficulty: 'Chuyên / HSG',
       questions: [
@@ -559,7 +560,7 @@ function buildPhysicsStandardBatch2(): ExamPaper[] {
       school: province,
       source: `Nguồn đề chuẩn THPT: ${province}`,
       timeMinutes: 50,
-      featuredSnippet: q1Pool[i % q1Pool.length].content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1Pool[i % q1Pool.length].content, 130),
       topics: ['# Dao động & Sóng cơ', '# Mạch điện & Máy biến áp', '# Vật lí Nhiệt 12', '# Hạt nhân & Quang điện'],
       difficulty: i % 3 === 0 ? 'Nâng cao' : i % 2 === 0 ? 'Khá' : 'Cơ bản',
       questions: [
@@ -663,7 +664,7 @@ function buildCSChuyenBatch2(): ExamPaper[] {
       school,
       source: `Nguồn tham khảo chuẩn đề: ${school}`,
       timeMinutes: 180,
-      featuredSnippet: q1Pool[i % q1Pool.length].content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1Pool[i % q1Pool.length].content, 130),
       topics: ['# Prefix Sum & Difference', '# Binary Search & Monotonic Stack', '# Kruskal DSU & LCA', '# LIS & Segment Tree'],
       difficulty: 'Chuyên / HSG',
       questions: [
@@ -768,7 +769,7 @@ function buildCSStandardBatch2(): ExamPaper[] {
       school: province,
       source: `Nguồn đề thi chuẩn phổ thông: ${province}`,
       timeMinutes: 50,
-      featuredSnippet: q1Pool[i % q1Pool.length].content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1Pool[i % q1Pool.length].content, 130),
       topics: ['# Số học & Rẽ nhánh', '# Tìm kiếm & Tần suất', '# Chuẩn hóa & RLE Xâu', '# Lũy thừa & Fibonacci'],
       difficulty: i % 3 === 0 ? 'Nâng cao' : i % 2 === 0 ? 'Khá' : 'Cơ bản',
       questions: [

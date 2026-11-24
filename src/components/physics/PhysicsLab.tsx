@@ -491,7 +491,11 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     setDataLogs([]);
     setIsRunning(true);
     forceTelemetrySyncRef.current = true;
-  }, [activeView, activeSimType, lesson.id]);
+    const isDivLesson =
+      activeView === 'lecture' &&
+      (lesson.id === 'phys-2006-9-13' || lesson.title.toLowerCase().includes('phân kì'));
+    setLabFlags((prev) => ({ ...prev, isDiverging: isDivLesson }));
+  }, [activeView, activeSimType, lesson.id, lesson.title]);
 
   // Escape key to exit simulation fullscreen
   useEffect(() => {
@@ -1402,6 +1406,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
           {activeTab === 'sim3d' && (
             <Physics3DView
               initialMode={lesson.sim3dType}
+              initialDiverging={lesson.id === 'phys-2006-9-13' || lesson.title.toLowerCase().includes('phân kì')}
               domainTitle={PHYSICS_DOMAINS.find((d) => d.id === getDomainFor3DSim(lesson.sim3dType))?.shortName}
               onBack={goBack}
             />

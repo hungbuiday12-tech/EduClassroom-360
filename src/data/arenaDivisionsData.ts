@@ -2343,7 +2343,7 @@ int main() {
           'Cho hàm số $y = x^3 - 3x^2 + 2$.\n1. Tìm các điểm cực đại, cực tiểu và giá trị cực trị tương ứng.\n2. Viết phương trình tiếp tuyến của đồ thị tại điểm có hoành độ $x_0 = 3$.',
         rubricChecklist: [
           'Tính đạo hàm $y\' = 3x^2 - 6x$ và giải $x = 0, x = 2$ (30 điểm)',
-          'Kết luận đúng $y_{CĐ}(0) = 2$, $y_{CT}(2) = -2$ (30 điểm)',
+          'Kết luận đúng $y_{\\text{CĐ}}(0) = 2$, $y_{\\text{CT}}(2) = -2$ (30 điểm)',
           'Tính đúng $y(3) = 2$ và hệ số góc $y\'(3) = 9$ (20 điểm)',
           'Viết đúng phương trình tiếp tuyến $y = 9x - 25$ (20 điểm)'
         ],

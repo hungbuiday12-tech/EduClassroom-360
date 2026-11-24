@@ -1595,6 +1595,67 @@ export const LESSON_HIDDEN_TEST_CASES: Record<
     { input: '2 3\n...\n.#.', expectedOutput: '3', difficulty: 'Cơ bản' },
     { input: '4 4\n.#..\n.#.#\n...#\n##..', expectedOutput: '6', difficulty: 'Trung bình' },
     { input: '3 3\n.#.\n#..\n...', expectedOutput: '-1', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-1-prob': [
+    { input: '4 3\n10 20 30 40\n2 1 4\n1 1 2 5\n2 1 3', expectedOutput: '100\n70', difficulty: 'Cơ bản' },
+    { input: '3 4\n0 0 0\n1 1 3 5\n2 2 3\n1 2 2 -3\n2 1 3', expectedOutput: '10\n12', difficulty: 'Trung bình' },
+    { input: '5 4\n2 4 6 8 10\n1 1 5 2\n2 3 5\n1 2 4 -4\n2 1 5', expectedOutput: '30\n28', difficulty: 'Nâng cao' },
+    { input: '1 2\n7\n1 1 1 1000000000\n2 1 1', expectedOutput: '1000000007', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-2-prob': [
+    { input: '4\n4 3 2 1', expectedOutput: '6', difficulty: 'Cơ bản' },
+    { input: '5\n1 2 3 4 5', expectedOutput: '0', difficulty: 'Cơ bản' },
+    { input: '5\n5 1 4 2 3', expectedOutput: '6', difficulty: 'Trung bình' },
+    { input: '6\n3 6 1 5 2 4', expectedOutput: '8', difficulty: 'Nâng cao' },
+    { input: '1\n1', expectedOutput: '0', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-3-prob': [
+    { input: '4 4\n1 2\n2 3\n3 1\n3 4', expectedOutput: '2', difficulty: 'Cơ bản' },
+    { input: '5 5\n1 2\n2 1\n3 4\n4 5\n5 3', expectedOutput: '2', difficulty: 'Trung bình' },
+    { input: '4 3\n1 2\n2 3\n3 4', expectedOutput: '4', difficulty: 'Nâng cao' },
+    { input: '6 7\n1 2\n2 3\n3 1\n3 4\n4 5\n5 6\n6 4', expectedOutput: '2', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-4-prob': [
+    { input: '5 2\n1 2\n1 3\n2 4\n2 5\n4 5\n3 4', expectedOutput: '2\n3', difficulty: 'Cơ bản' },
+    { input: '6 3\n1 2\n2 3\n3 4\n2 5\n5 6\n4 6\n1 4\n5 5', expectedOutput: '4\n3\n0', difficulty: 'Trung bình' },
+    { input: '4 2\n1 2\n1 3\n1 4\n2 3\n1 4', expectedOutput: '2\n1', difficulty: 'Nâng cao' },
+    { input: '7 3\n1 2\n1 3\n2 4\n2 5\n3 6\n3 7\n4 7\n5 6\n2 3', expectedOutput: '4\n4\n2', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-5-prob': [
+    { input: '4\n3 10 5 25', expectedOutput: '28', difficulty: 'Cơ bản' },
+    { input: '5\n8 1 2 12 7', expectedOutput: '15', difficulty: 'Trung bình' },
+    { input: '3\n14 70 53', expectedOutput: '115', difficulty: 'Nâng cao' },
+    { input: '6\n1 2 3 4 5 6', expectedOutput: '7', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-6-prob': [
+    { input: '3 3 4\n1 1\n1 2\n2 2\n3 3', expectedOutput: '3', difficulty: 'Cơ bản' },
+    { input: '4 4 5\n1 1\n1 2\n2 2\n3 1\n4 3', expectedOutput: '3', difficulty: 'Trung bình' },
+    { input: '3 2 4\n1 1\n2 1\n3 1\n3 2', expectedOutput: '2', difficulty: 'Nâng cao' },
+    { input: '4 4 4\n1 4\n2 3\n3 2\n4 1', expectedOutput: '4', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-7-prob': [
+    { input: '10', expectedOutput: '55', difficulty: 'Cơ bản' },
+    { input: '50', expectedOutput: '586268941', difficulty: 'Trung bình' },
+    { input: '1000000000', expectedOutput: '21', difficulty: 'Nâng cao' },
+    { input: '1000000000000000000', expectedOutput: '209783453', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-8-prob': [
+    { input: '2\n0 7\n11 0', expectedOutput: '18', difficulty: 'Cơ bản' },
+    { input: '3\n0 1 100\n100 0 2\n3 100 0', expectedOutput: '6', difficulty: 'Cơ bản' },
+    { input: '3\n0 5 9\n5 0 4\n9 4 0', expectedOutput: '18', difficulty: 'Trung bình' },
+    { input: '4\n0 1 10 10\n10 0 2 10\n10 10 0 3\n4 10 10 0', expectedOutput: '10', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-9-prob': [
+    { input: '5 3\n1 2 3 4 5\n1 2\n1 3\n2 4\n2 5\n2 2\n1 4 10\n2 1', expectedOutput: '11\n21', difficulty: 'Cơ bản' },
+    { input: '4 3\n10 20 30 40\n1 2\n2 3\n3 4\n2 2\n1 3 0\n2 1', expectedOutput: '90\n70', difficulty: 'Trung bình' },
+    { input: '3 3\n5 5 5\n1 2\n1 3\n2 1\n1 1 100\n2 1', expectedOutput: '15\n110', difficulty: 'Nâng cao' },
+    { input: '6 4\n2 4 6 8 10 12\n1 2\n1 3\n2 4\n3 5\n3 6\n2 3\n1 5 20\n2 3\n2 1', expectedOutput: '28\n38\n52', difficulty: 'Thử thách' }
+  ],
+  'cs-extra-10-prob': [
+    { input: '5 3\n1 1 2 1 3\n1 5\n2 4\n1 2', expectedOutput: '3\n2\n1', difficulty: 'Cơ bản' },
+    { input: '6 3\n4 4 4 4 4 4\n1 6\n2 3\n4 6', expectedOutput: '1\n1\n1', difficulty: 'Trung bình' },
+    { input: '7 3\n10 20 10 30 40 20 50\n1 7\n2 6\n3 5', expectedOutput: '5\n4\n3', difficulty: 'Nâng cao' },
+    { input: '4 2\n100 200 300 400\n1 4\n2 3', expectedOutput: '4\n2', difficulty: 'Thử thách' }
   ]
 };
 

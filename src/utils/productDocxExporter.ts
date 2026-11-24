@@ -12,6 +12,8 @@ import {
   TextRun,
   WidthType
 } from 'docx';
+import { CURRICULUM_COUNTS } from '../data/curriculumCounts';
+import { getPhysicsSimCounts } from '../data/physicsDomainsData';
 
 const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -173,6 +175,9 @@ function makeTable(headers: string[], rows: string[][]): Table {
 }
 
 async function generateFallbackDocxBlob(): Promise<Blob> {
+  const phyCounts = getPhysicsSimCounts();
+  const totalLessons = CURRICULUM_COUNTS.totalLessons;
+  const totalExams = CURRICULUM_COUNTS.totalExams;
   const doc = new Document({
     creator: 'Synapse STEM Academy',
     title: 'Thuyết Minh Sản Phẩm Synapse',
@@ -224,9 +229,11 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
           heading2('4. Tin Học 5 Lộ Trình · Code-to-Animation Trace 1-1 & Thought-Trace Replay'),
           bulletItem('5 Lộ trình Quốc tế & IDE Sublime 4', 'VNOI, C++ Institute (OpenEDG), Roadmap.sh, LearnCpp.com và GitHub Career Track kèm Code mẫu Cơ bản/Nâng cao, chấm TLE & File I/O thật.'),
           bulletItem('Live Code Trace & Replay Tư Duy', 'Truy vết giá trị biến, mảng DP và stdout khớp từng dòng lệnh Python (sys.settrace) / C++ (g++) kết hợp thanh thời gian Replay Tư Duy (lưu lịch sử gõ, chạy, nộp WA → AC).'),
-          heading2('5. Mô phỏng Vật lí 2D/3D (107 Lab), Toán học & Kho 450 Đề thi DOCX'),
+          heading2(
+            `5. Mô phỏng Vật lí 2D/3D (${phyCounts.total} Lab), Toán 2D/11 Cảnh 3D & ${totalLessons} Bài Giảng · ${totalExams} Đề Thi DOCX`
+          ),
           bodyPara(
-            '59 phòng thí nghiệm Vật lí 2D và 48 mô hình 3D theo 5 lĩnh vực, Toán 2D & Oxyz 3D, cùng 450 Đề thi Chuyên/Không Chuyên cho phép tải DOCX sạch đáp án và chấm ảnh viết tay AI 0–10.'
+            `${totalLessons} bài giảng chuyên sâu (${CURRICULUM_COUNTS.mathLectures} Toán · ${CURRICULUM_COUNTS.physicsLessons} Vật lí · ${CURRICULUM_COUNTS.csLessons} Tin học chuẩn cả GDPT 2018 & GDPT 2006), ${phyCounts.count2D} phòng thí nghiệm Vật lí 2D và ${phyCounts.count3D} mô hình 3D theo ${phyCounts.domainCount} lĩnh vực (bao gồm bộ mô phỏng GDPT 2006 mới: Công suất & Công tơ điện, Động cơ điện DC, Điện phân Fa-ra-đây, Quang học Mắt & Tật của mắt, Nhà máy điện & Truyền tải điện năng, Giản đồ Fre-nen), Toán 2D & 11 cảnh Oxyz 3D (gồm Phép biến hình & Mặt phẳng phức), cùng ${totalExams} Đề thi (${CURRICULUM_COUNTS.chuyenExams} Chuyên & ${CURRICULUM_COUNTS.standardExams} Không Chuyên) cho phép tải DOCX sạch đáp án và chấm ảnh viết tay AI 0–10.`
           ),
           heading2('6. Syn Meet & 3D (WebRTC · Chia Sẻ Màn Hình · 3D Dùng Chung)'),
           bulletItem('Gọi Video/Thoại & Chia sẻ màn hình (WebRTC)', 'Tạo phòng học bằng mã 6 ký tự hoặc tham gia phòng công khai; bật/tắt Micro, Camera, Chia sẻ màn hình trình chiếu bài giảng/code, Giơ tay phát biểu, Thả cảm xúc nổi và Trò chuyện trực tiếp.'),

@@ -1,5 +1,6 @@
 import { ExamPaper, ExamQuestion } from '../types';
 import { CHUYEN_SCHOOLS_BATCH_3, THPT_INSTITUTIONS_BATCH_3 } from './extraExamsBatch3Math';
+import { safeExamSnippet } from './examSnippetHelper';
 
 const CHUYEN_SCHOOLS_BATCH_4 = [
   ...CHUYEN_SCHOOLS_BATCH_3,
@@ -114,14 +115,14 @@ export function buildMathChuyenBatch4(): ExamPaper[] {
       {
         number: 'Bài 2',
         points: '2.5 điểm',
-        content: `a) Tìm tất cả các cặp số nguyên $(x, y)$ thỏa mãn phương trình:\n$$x^2 - ${2 * q}xy + y^2 + ${p}x - ${p}y = 0 \\quad \\text{hoặc} \\quad (x + 1)(y + 2) = x + y + ${p + q}.$$\nb) Chứng minh rằng số $A = ${p * p + 1}^{2n + 1} + ${p * p}^{n + 2}$ chia hết cho ${p * p + p + 1}$? Hãy xét bài toán tổng quát: chứng minh $n^3 - n$ luôn chia hết cho $6$ và $n^5 - n$ luôn chia hết cho $30$ với mọi $n \\in \\mathbb{Z}$.`,
+        content: `a) Tìm tất cả các cặp số nguyên $(x, y)$ thỏa mãn phương trình:\n$$x^2 - ${2 * q}xy + y^2 + ${p}x - ${p}y = 0 \\quad \\text{hoặc} \\quad (x + 1)(y + 2) = x + y + ${p + q}.$$\nb) Chứng minh rằng số $A = ${p * p + 1}^{2n + 1} + ${p * p}^{n + 2}$ chia hết cho $${p * p + p + 1}$? Hãy xét bài toán tổng quát: chứng minh $n^3 - n$ luôn chia hết cho $6$ và $n^5 - n$ luôn chia hết cho $30$ với mọi $n \\in \\mathbb{Z}$.`,
         solution: `a) Với phương trình tích $(x + 1)(y + 2) - (x + 1) - (y + 2) = ${p + q - 3} \\iff x y + 2x + y + 2 - x - y = ${p + q} \\iff (x)(y + 1) = ${p + q - 2} \\dots$ Tách nhân tử chuẩn $(x + a)(y + b) = K$, liệt kê mọi ước nguyên của $K$ để tìm toàn bộ nghiệm nguyên $(x, y)$.\n\nb) Ta có $n^5 - n = n(n^2 - 1)(n^2 + 1) = n(n - 1)(n + 1)(n^2 - 4 + 5) = (n - 2)(n - 1)n(n + 1)(n + 2) + 5n(n - 1)(n + 1)$.\n- Tích $5$ số nguyên liên tiếp chia hết cho $30$.\n- $5n(n - 1)(n + 1)$ chia hết cho $5 \\cdot 6 = 30$.\nVậy $n^5 - n$ luôn chia hết cho $30$ với mọi $n \\in \\mathbb{Z}$.`,
         keyFormulasOrHints: ['Phân tích (x + a)(y + b) = K', 'Tách n^2 + 1 = (n^2 - 4) + 5 để chứng minh chia hết cho 30']
       },
       {
         number: 'Bài 2',
         points: '2.5 điểm',
-        content: `a) Tìm số nguyên tố $p$ sao cho $p + ${2 * q},\\; p + ${2 * q + 4}$ (hoặc $p, p + 10, p + 14$) đều là các số nguyên tố.\nb) Chứng minh rằng không tồn tại số hữu tỉ $r$ nào sao cho $r^2 = ${p * p + 1}$ (với ${p * p + 1}$ không chính phương).`,
+        content: `a) Tìm số nguyên tố $p$ sao cho $p + ${2 * q},\\; p + ${2 * q + 4}$ (hoặc $p, p + 10, p + 14$) đều là các số nguyên tố.\nb) Chứng minh rằng không tồn tại số hữu tỉ $r$ nào sao cho $r^2 = ${p * p + 1}$ (với $${p * p + 1}$ không chính phương).`,
         solution: `a) Xét theo modulo $3$: với mọi số nguyên tố $p \\neq 3$, $p$ có dạng $3k + 1$ hoặc $3k + 2$.\n- Khi kiểm tra bộ $(p, p + 10, p + 14)$: nếu $p = 3k + 1 \\implies p + 14 = 3k + 15 \\equiv 0 \\pmod 3$ (hợp số vì $> 3$); nếu $p = 3k + 2 \\implies p + 10 = 3k + 12 \\equiv 0 \\pmod 3$ (hợp số). Thử $p = 3$: $(3, 13, 17)$ đều là số nguyên tố! Tương tự xét modulo $3$ cho bộ số tham số $q$.\n\nb) Giả sử tồn tại $r = \\frac{a}{b}$ tối giản ($\\gcd(a, b) = 1, b > 0$) sao cho $\\frac{a^2}{b^2} = ${p * p + 1} \\iff a^2 = ${p * p + 1} b^2$.\nVì ${p * p + 1}$ nằm giữa hai số chính phương liên tiếp $p^2$ và $(p + 1)^2$ nên tồn tại ít nhất một ước nguyên tố $q_0$ xuất hiện với số mũ lẻ trong phân tích thừa số nguyên tố của ${p * p + 1}$. Từ $a^2 = ${p * p + 1} b^2$, số mũ của $q_0$ ở vế trái chẵn còn vế phải lẻ (mâu thuẫn!).`,
         keyFormulasOrHints: ['Xét số dư modulo 3 cho bộ 3 số nguyên tố', 'Đếm số mũ p-adic chẵn lẻ của ước nguyên tố']
       },
@@ -136,7 +137,7 @@ export function buildMathChuyenBatch4(): ExamPaper[] {
         number: 'Bài 2',
         points: '2.5 điểm',
         content: `a) Chứng minh rằng với mọi số tự nhiên $n \\ge 1$, phân số $\\frac{${2 * r + 1}n + ${r}}{${3 * r + 1}n + ${r}}$ (hoặc $\\frac{21n + 4}{14n + 3}$) là phân số tối giản.\nb) Tìm chữ số tận cùng của $A = 7^{2026} + ${p}^{2025}$.`,
-        solution: `a) Đặt $d = \\gcd(21n + 4, 14n + 3)$ (tương ứng $d = \\gcd(a_1 n + b_1, a_2 n + b_2)$).\nTa có $d \\mid 2(21n + 4) - 3(14n + 3) = -1 \\implies d = 1$. Do đó phân số $\\frac{21n + 4}{14n + 3}$ luôn tối giản với mọi $n \\in \\mathbb{N}$.\n\nb) Theo chu kỳ chữ số tận cùng: $7^4 = 2401 \\equiv 1 \\pmod{10} \\implies 7^{2026} = (7^4)^{506}\\cdot 7^2 \\equiv 9 \\pmod{10}$.\nTính ${p}^{2025} \\equiv ${p}^1 = ${p} \\pmod{10}$ (theo định lý Euler $\\varphi(10) = 4$ hoặc xét chu kỳ mod $10$), từ đó lấy chữ số tận cùng của tổng $(9 + ${p}) \\bmod 10$.`,
+        solution: `a) Đặt $d = \\gcd(21n + 4, 14n + 3)$ (tương ứng $d = \\gcd(a_1 n + b_1, a_2 n + b_2)$).\nTa có $d \\mid 2(21n + 4) - 3(14n + 3) = -1 \\implies d = 1$. Do đó phân số $\\frac{21n + 4}{14n + 3}$ luôn tối giản với mọi $n \\in \\mathbb{N}$.\n\nb) Theo chu kỳ chữ số tận cùng: $7^4 = 2401 \\equiv 1 \\pmod{10} \\implies 7^{2026} = (7^4)^{506}\\cdot 7^2 \\equiv 9 \\pmod{10}$.\nTính $${p}^{2025} \\equiv ${p}^1 = ${p} \\pmod{10}$ (theo định lý Euler $\\varphi(10) = 4$ hoặc xét chu kỳ mod $10$), từ đó lấy chữ số tận cùng của tổng $(9 + ${p}) \\bmod 10$.`,
         keyFormulasOrHints: ['Khử n bằng tổ hợp tuyến tính tìm UCLN', 'Chu kỳ chữ số tận cùng theo mod 10 (chu kỳ chia hết 4)']
       }
     ];
@@ -172,7 +173,7 @@ export function buildMathChuyenBatch4(): ExamPaper[] {
       {
         number: 'Bài 4',
         points: '2.0 điểm',
-        content: `Trong mặt phẳng cho $n = ${2 * p + 7}$ điểm sao cho không có ba điểm nào thẳng hàng, được tô bằng hai màu xanh hoặc đỏ. Biết mọi tam giác có $3$ đỉnh cùng màu đều không chứa điểm nào khác màu ở bên trong? Hãy xét bài toán cổ điển: chứng minh trong ${2 * p + 5}$ người bất kỳ, luôn có hai người có **cùng số người quen** trong nhóm.`,
+        content: `Trong mặt phẳng cho $n = ${2 * p + 7}$ điểm sao cho không có ba điểm nào thẳng hàng, được tô bằng hai màu xanh hoặc đỏ. Biết mọi tam giác có $3$ đỉnh cùng màu đều không chứa điểm nào khác màu ở bên trong? Hãy xét bài toán cổ điển: chứng minh trong $${2 * p + 5}$ người bất kỳ, luôn có hai người có **cùng số người quen** trong nhóm.`,
         solution: `Áp dụng **Nguyên lý Dirichlet**:\nĐặt $N = ${2 * p + 5}$. Số người quen của mỗi người trong nhóm chỉ có thể nhận giá trị trong tập $\\{0, 1, 2, \\dots, N - 1\\}$ ($N$ giá trị).\nTuy nhiên, hai giá trị $0$ (không quen ai) và $N - 1$ (quen tất cả mọi người còn lại) **không thể cùng tồn tại đồng thời**.\nDo đó, số người quen thực tế của $N$ người chỉ rơi vào tối đa $N - 1$ giá trị (hoặc $\\{0, \\dots, N-2\\}$ hoặc $\\{1, \\dots, N-1\\}$).\nTheo nguyên lý Dirichlet, với $N$ người phân vào $N - 1$ khả năng, luôn có ít nhất $2$ người có cùng số người quen.`,
         keyFormulasOrHints: ['0 và N - 1 không thể đồng thời xuất hiện', 'Nguyên lý Dirichlet với N thỏ và N - 1 chuồng']
       },
@@ -186,7 +187,7 @@ export function buildMathChuyenBatch4(): ExamPaper[] {
       {
         number: 'Bài 4',
         points: '2.0 điểm',
-        content: `Chứng minh rằng trong mọi tập hợp gồm $n = ${p + 6}$ số nguyên bất kỳ, luôn tồn tại một tập con khác rỗng các số mà **tổng của chúng chia hết cho $n$** (${p + 6}$).`,
+        content: `Chứng minh rằng trong mọi tập hợp gồm $n = ${p + 6}$ số nguyên bất kỳ, luôn tồn tại một tập con khác rỗng các số mà **tổng của chúng chia hết cho $n$** ($${p + 6}$).`,
         solution: `Gọi $n$ số đã cho là $a_1, a_2, \\dots, a_n$. Xét $n$ tổng tiền tố:\n$$S_1 = a_1,\\quad S_2 = a_1 + a_2,\\quad \\dots,\\quad S_n = a_1 + a_2 + \\dots + a_n.$$\n- Nếu tồn tại $S_k \\equiv 0 \\pmod n$, tập con $\\{a_1, \\dots, a_k\\}$ thỏa mãn đề bài.\n- Ngược lại, $n$ tổng $S_1, \\dots, S_n$ khi chia cho $n$ chỉ nhận các số dư khác $0$ là $\\{1, 2, \\dots, n - 1\\}$ ($n - 1$ số dư).\nTheo Nguyên lý Dirichlet, tồn tại $1 \\le i < j \\le n$ sao cho $S_i \\equiv S_j \\pmod n$. Khi đó:\n$$S_j - S_i = a_{i+1} + a_{i+2} + \\dots + a_j \\equiv 0 \\pmod n.$$`,
         keyFormulasOrHints: ['Xét n tổng tiền tố S_1..S_n', 'Dirichlet trên tập số dư mod n']
       },
@@ -215,7 +216,7 @@ export function buildMathChuyenBatch4(): ExamPaper[] {
       school,
       source: `Nguồn tổng hợp chuẩn đề: ${school}`,
       timeMinutes: 150,
-      featuredSnippet: q1.content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 130),
       topics: ['# Bất đẳng thức & Hệ PT', '# Số học & Đa thức', '# Hình học Đường tròn', '# Tổ hợp Dirichlet & Bất biến'],
       difficulty: 'Chuyên / HSG',
       questions: [q1, q2, q3, q4]
@@ -272,7 +273,7 @@ export function buildMathStandardBatch4(): ExamPaper[] {
       {
         number: 'Câu 2',
         points: '2.5 điểm',
-        content: `Cho cấp số cộng $(u_n)$ có số hạng đầu $u_1 = ${a}$ và công sai $d = ${b}$.\na) Tính số hạng thứ $10$ ($u_{10}$) và tổng $10$ số hạng đầu tiên $S_{10}$.\nb) Số ${a + 19 * b}$ là số hạng thứ bao nhiêu của cấp số cộng?`,
+        content: `Cho cấp số cộng $(u_n)$ có số hạng đầu $u_1 = ${a}$ và công sai $d = ${b}$.\na) Tính số hạng thứ $10$ ($u_{10}$) và tổng $10$ số hạng đầu tiên $S_{10}$.\nb) Số $${a + 19 * b}$ là số hạng thứ bao nhiêu của cấp số cộng?`,
         solution: `a) $u_{10} = u_1 + 9d = ${a} + 9\\cdot ${b} = ${a + 9 * b}$.\nTổng $10$ số hạng đầu: $S_{10} = \\frac{10(u_1 + u_{10})}{2} = 5\\cdot (${a} + ${a + 9 * b}) = ${5 * (2 * a + 9 * b)}$.\n\nb) Đặt $u_n = ${a + 19 * b} \\iff ${a} + (n - 1)\\cdot ${b} = ${a + 19 * b} \\implies n - 1 = 19 \\implies n = 20$.`,
         keyFormulasOrHints: ['u_n = u_1 + (n - 1)d', 'S_n = n(u_1 + u_n)/2']
       },
@@ -382,7 +383,7 @@ export function buildMathStandardBatch4(): ExamPaper[] {
       school,
       source: `Nguồn đề chuẩn THPT 2026: ${school}`,
       timeMinutes: 90,
-      featuredSnippet: q1.content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 130),
       topics: ['# Tiệm cận & Cực trị', '# Ghép nhóm & Nguyên hàm', '# Oxyz & Hình chóp', '# Xác suất Bayes'],
       difficulty: i % 3 === 0 ? 'Nâng cao' : i % 2 === 0 ? 'Khá' : 'Cơ bản',
       questions: [q1, q2, q3, q4]

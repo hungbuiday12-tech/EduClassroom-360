@@ -489,7 +489,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_9B: Record<string, LectureStep[]> = {
       conceptSection:
         'Ngoài góc ở tâm và góc nội tiếp, hai dây cắt nhau bên trong hoặc hai cát tuyến cắt nhau bên ngoài đường tròn tạo ra hai công thức đo góc theo nửa tổng và nửa hiệu số đo hai cung bị chắn.',
       formulaSection: {
-        primaryFormula: '\\text{Bên trong: } \\alpha = \\frac{\\text{sđ}\\wideparen{AB} + \\text{sđ}\\wideparen{CD}}{2}, \\qquad \\text{Bên ngoài: } \\beta = \\frac{\\text{sđ}\\wideparen{AD} - \\text{sđ}\\wideparen{BC}}{2}',
+        primaryFormula: '\\text{Bên trong: } \\alpha = \\frac{\\text{sđ}\\overset{\\frown}{AB} + \\text{sđ}\\overset{\\frown}{CD}}{2}, \\qquad \\text{Bên ngoài: } \\beta = \\frac{\\text{sđ}\\overset{\\frown}{AD} - \\text{sđ}\\overset{\\frown}{BC}}{2}',
         secondaryFormulas: [
           '\\text{Hai dây cắt nhau tại } I \\text{ bên trong: } IA \\cdot IB = IC \\cdot ID',
           '\\text{Hai cát tuyến từ } M \\text{ bên ngoài: } MA \\cdot MB = MC \\cdot MD'
@@ -504,7 +504,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_9B: Record<string, LectureStep[]> = {
       miniQuiz: [
         {
           id: 'm910-s2-q1',
-          question: 'Hai dây $AC$ và $BD$ cắt nhau tại $I$ bên trong $(O)$. Biết $\\text{sđ}\\wideparen{AB} = 70^\\circ$ và $\\text{sđ}\\wideparen{CD} = 50^\\circ$. Số đo góc $\\widehat{AIB}$ là:',
+          question: 'Hai dây $AC$ và $BD$ cắt nhau tại $I$ bên trong $(O)$. Biết $\\text{sđ}\\overset{\\frown}{AB} = 70^\\circ$ và $\\text{sđ}\\overset{\\frown}{CD} = 50^\\circ$. Số đo góc $\\widehat{AIB}$ là:',
           options: ['A. $60^\\circ$', 'B. $10^\\circ$', 'C. $120^\\circ$', 'D. $20^\\circ$'],
           correctIndex: 0,
           explanation: '$\\widehat{AIB} = \\frac{70^\\circ + 50^\\circ}{2} = 60^\\circ$.'
@@ -519,15 +519,15 @@ export const MATH_CUSTOM_LECTURE_STEPS_9B: Record<string, LectureStep[]> = {
       ],
       miniEssay: {
         id: 'm910-s2-e1',
-        question: 'Cho điểm $M$ nằm ngoài đường tròn $(O)$, vẽ tiếp tuyến $MA$ và cát tuyến $MBC$ ($B$ giữa $M$ và $C$). Biết $\\text{sđ}\\wideparen{AC} = 130^\\circ$, $\\text{sđ}\\wideparen{AB} = 50^\\circ$ (hai cung nhỏ). Tính số đo góc $\\widehat{AMC}$.',
+        question: 'Cho điểm $M$ nằm ngoài đường tròn $(O)$, vẽ tiếp tuyến $MA$ và cát tuyến $MBC$ ($B$ giữa $M$ và $C$). Biết $\\text{sđ}\\overset{\\frown}{AC} = 130^\\circ$, $\\text{sđ}\\overset{\\frown}{AB} = 50^\\circ$ (hai cung nhỏ). Tính số đo góc $\\widehat{AMC}$.',
         hint: 'Góc $\\widehat{AMC}$ là góc có đỉnh bên ngoài đường tròn chắn cung lớn $AC$ và cung nhỏ $AB$.',
         rubricChecklist: [
           'Nhận diện đúng $\\widehat{AMC}$ là góc có đỉnh bên ngoài đường tròn.',
-          'Áp dụng đúng công thức nửa hiệu: $\\frac{\\text{sđ}\\wideparen{AC} - \\text{sđ}\\wideparen{AB}}{2}$.',
+          'Áp dụng đúng công thức nửa hiệu: $\\frac{\\text{sđ}\\overset{\\frown}{AC} - \\text{sđ}\\overset{\\frown}{AB}}{2}$.',
           'Tính chính xác $\\widehat{AMC} = 40^\\circ$.'
         ],
         sampleAnswer:
-          'Góc $\\widehat{AMC}$ là góc có đỉnh nằm ngoài đường tròn $(O)$ chắn hai cung $AC$ và $AB$. Do đó $\\widehat{AMC} = \\frac{\\text{sđ}\\wideparen{AC} - \\text{sđ}\\wideparen{AB}}{2} = \\frac{130^\\circ - 50^\\circ}{2} = 40^\\circ$.'
+          'Góc $\\widehat{AMC}$ là góc có đỉnh nằm ngoài đường tròn $(O)$ chắn hai cung $AC$ và $AB$. Do đó $\\widehat{AMC} = \\frac{\\text{sđ}\\overset{\\frown}{AC} - \\text{sđ}\\overset{\\frown}{AB}}{2} = \\frac{130^\\circ - 50^\\circ}{2} = 40^\\circ$.'
       }
     },
     {

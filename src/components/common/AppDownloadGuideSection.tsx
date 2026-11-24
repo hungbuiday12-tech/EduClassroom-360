@@ -86,7 +86,7 @@ export const AppDownloadGuideSection: React.FC<AppDownloadGuideSectionProps> = (
 
   const fullEcosystemBadges = isEn
     ? [
-        { icon: <Compass className="w-3.5 h-3.5 text-sky-300" />, label: 'Math 2D Graphs & 8 Oxyz 3D' },
+        { icon: <Compass className="w-3.5 h-3.5 text-sky-300" />, label: 'Math 2D Graphs & 11 Oxyz 3D' },
         { icon: <Zap className="w-3.5 h-3.5 text-amber-300" />, label: `Physics ${simCounts.domainCount} Domains · ${simCounts.count2D} 2D + ${simCounts.count3D} 3D` },
         { icon: <Code2 className="w-3.5 h-3.5 text-emerald-300" />, label: 'CS 5 Paths · Sublime 4 & Judge' },
         { icon: <Orbit className="w-3.5 h-3.5 text-cyan-300" />, label: 'Synapse Pre · 30 3D Megastructures' },
@@ -94,7 +94,7 @@ export const AppDownloadGuideSection: React.FC<AppDownloadGuideSectionProps> = (
         { icon: <Sparkles className="w-3.5 h-3.5 text-indigo-300" />, label: 'Syn AI ×3 · Exams · Arena · Forum' }
       ]
     : [
-        { icon: <Compass className="w-3.5 h-3.5 text-sky-300" />, label: 'Toán: Đồ thị 2D & 8 Oxyz 3D' },
+        { icon: <Compass className="w-3.5 h-3.5 text-sky-300" />, label: 'Toán: Đồ thị 2D & 11 Oxyz 3D' },
         { icon: <Zap className="w-3.5 h-3.5 text-amber-300" />, label: `Vật lí: ${simCounts.domainCount} Chuyên đề · ${simCounts.count2D} Lab 2D + ${simCounts.count3D} Lab 3D` },
         { icon: <Code2 className="w-3.5 h-3.5 text-emerald-300" />, label: 'Tin học: 5 Lộ trình + Sublime Text 4 Judge' },
         { icon: <Orbit className="w-3.5 h-3.5 text-cyan-300" />, label: 'Synapse Pre · 30 Đại công trình & Lab AI' },

@@ -297,6 +297,8 @@ interface NavigationContextValue {
   setMathGraphConfig: (cfg: Partial<FunctionPlotConfig> | null) => void;
   math3DMode: NonNullable<MathLecture['sim3dMode']>;
   setMath3DMode: (mode: NonNullable<MathLecture['sim3dMode']>) => void;
+  mathGeoPreset: string | null;
+  setMathGeoPreset: (preset: string | null) => void;
 }
 
 const NavigationContext = createContext<NavigationContextValue | null>(null);
@@ -309,6 +311,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [directoryFilterRequest, setDirectoryFilterRequest] = useState<'all' | 'math' | 'physics' | 'cs'>('all');
   const [mathGraphConfig, setMathGraphConfig] = useState<Partial<FunctionPlotConfig> | null>(null);
   const [math3DMode, setMath3DMode] = useState<NonNullable<MathLecture['sim3dMode']>>('oxyz_vector');
+  const [mathGeoPreset, setMathGeoPreset] = useState<string | null>(null);
 
   const locationRef = useRef<NavLocation>(location);
   const stackRef = useRef<NavLocation[]>(historyStack);
@@ -502,7 +505,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         mathGraphConfig,
         setMathGraphConfig,
         math3DMode,
-        setMath3DMode
+        setMath3DMode,
+        mathGeoPreset,
+        setMathGeoPreset
       }}
     >
       {children}

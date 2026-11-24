@@ -468,16 +468,16 @@ export const MATH_CUSTOM_LECTURE_STEPS_CORE3: Record<string, LectureStep[]> = {
           question: 'Tìm tất cả các giá trị $m$ để hàm số $y = |x^3 - 3x + m|$ có đúng 5 điểm cực trị.',
           options: ['A. $-2 < m < 2$', 'B. $-2 \\le m \\le 2$', 'C. $m < -2$ hoặc $m > 2$', 'D. $m > 2$'],
           correctIndex: 0,
-          explanation: '$f(x) = x^3 - 3x$ có $a = 2$ cực trị ($y_{CĐ}=2, y_{CT}=-2$). Cần $b = 3$ giao điểm cắt $Ox \\iff$ đường $y = -m$ cắt $f(x)$ tại 3 điểm $\\iff -2 < -m < 2 \\iff -2 < m < 2$.'
+          explanation: '$f(x) = x^3 - 3x$ có $a = 2$ cực trị ($y_{\\text{CĐ}}=2, y_{\\text{CT}}=-2$). Cần $b = 3$ giao điểm cắt $Ox \\iff$ đường $y = -m$ cắt $f(x)$ tại 3 điểm $\\iff -2 < -m < 2 \\iff -2 < m < 2$.'
         }
       ],
       miniEssay: {
         id: 'm11-s1-e1',
         question: 'Tìm số nguyên dương $m$ để hàm số $y = |x^4 - 2x^2 - m|$ có đúng 5 điểm cực trị.',
-        hint: 'Hàm $f(x) = x^4 - 2x^2$ có $a = 3$ cực trị ($y_{CĐ} = 0$, $y_{CT} = -1$). Muốn tổng $3 + b = 5$ cần $b = 2$ giao điểm bội lẻ với đường $y = m$.',
+        hint: 'Hàm $f(x) = x^4 - 2x^2$ có $a = 3$ cực trị ($y_{\\text{CĐ}} = 0$, $y_{\\text{CT}} = -1$). Muốn tổng $3 + b = 5$ cần $b = 2$ giao điểm bội lẻ với đường $y = m$.',
         rubricChecklist: [
-          'Chỉ ra $f(x) = x^4 - 2x^2$ có $a = 3$ cực trị với $f_{CĐ} = 0$, $f_{CT} = -1$.',
-          'Để $y = m$ cắt $f(x)$ tại đúng $2$ điểm (nghiệm bội lẻ): $m > 0$ (vì $m > f_{CĐ} = 0$, hoặc $m = -1$ nhưng đề yêu cầu $m$ nguyên dương $\\implies m \\in \\mathbb{N}^*$).'
+          'Chỉ ra $f(x) = x^4 - 2x^2$ có $a = 3$ cực trị với $f_{\\text{CĐ}} = 0$, $f_{\\text{CT}} = -1$.',
+          'Để $y = m$ cắt $f(x)$ tại đúng $2$ điểm (nghiệm bội lẻ): $m > 0$ (vì $m > f_{\\text{CĐ}} = 0$, hoặc $m = -1$ nhưng đề yêu cầu $m$ nguyên dương $\\implies m \\in \\mathbb{N}^*$).'
         ],
         sampleAnswer: 'Xét $f(x) = x^4 - 2x^2$ có $f\'(x) = 4x^3 - 4x = 0 \\Leftrightarrow x \\in \\{0;\\ -1;\\ 1\\}$, suy ra $a = 3$ điểm cực trị với $f(0) = 0$ (CĐ) và $f(\\pm 1) = -1$ (CT). Để $|f(x) - m|$ có $5$ điểm cực trị, đường thẳng $y = m$ phải cắt đồ thị $f(x)$ tại đúng $b = 5 - 3 = 2$ điểm đơn (không kể tiếp xúc). Nhìn bảng biến thiên: hoặc $m > 0$, hoặc $m = -1$ (khi $m = -1$, $y = -1$ tiếp xúc tại $2$ cực tiểu nên không cộng thêm cực trị — loại $m=-1$ vì ở $m=-1$ chỉ có 3 cực trị!). Do đó với $m > 0$, mọi số nguyên dương $m \\in \\{1; 2; 3; \\dots\\}$ đều cho đúng 5 cực trị.'
       }
@@ -564,12 +564,12 @@ export const MATH_CUSTOM_LECTURE_STEPS_CORE3: Record<string, LectureStep[]> = {
       miniEssay: {
         id: 'm11-s3-e1',
         question: 'Tìm tất cả các giá trị nguyên của $m \\in [-5; 5]$ để hàm số $y = |x^3 - 3x^2 + m|$ có đúng 3 điểm cực trị.',
-        hint: 'Hàm $f(x) = x^3 - 3x^2$ có $a = 2$ cực trị ($y_{CĐ}=0, y_{CT}=-4$). Muốn $2 + b = 3$ thì $y = -m$ cắt $f(x)$ tại đúng $b = 1$ điểm bội lẻ $\\iff -m \\ge 0$ hoặc $-m \\le -4$.',
+        hint: 'Hàm $f(x) = x^3 - 3x^2$ có $a = 2$ cực trị ($y_{\\text{CĐ}}=0, y_{\\text{CT}}=-4$). Muốn $2 + b = 3$ thì $y = -m$ cắt $f(x)$ tại đúng $b = 1$ điểm bội lẻ $\\iff -m \\ge 0$ hoặc $-m \\le -4$.',
         rubricChecklist: [
-          'Xác định $f(x) = x^3 - 3x^2$ có $f_{CĐ} = 0$ tại $x=0$ và $f_{CT} = -4$ tại $x=2$.',
+          'Xác định $f(x) = x^3 - 3x^2$ có $f_{\\text{CĐ}} = 0$ tại $x=0$ và $f_{\\text{CT}} = -4$ tại $x=2$.',
           'Để có đúng 1 giao điểm bội lẻ: $-m \\ge 0 \\iff m \\le 0$ hoặc $-m \\le -4 \\iff m \\ge 4$. Đếm trong $[-5; 5]$ được $m \\in \\{-5,-4,-3,-2,-1,0,4,5\\}$ (8 giá trị).'
         ],
-        sampleAnswer: 'Xét $f(x) = x^3 - 3x^2$ có $f\'(x) = 3x^2 - 6x = 0 \\Leftrightarrow x = 0$ ($f_{CĐ} = 0$) hoặc $x = 2$ ($f_{CT} = -4$). Hàm số ban đầu là $|f(x) + m|$ có số cực trị bằng $a + b = 2 + b$, trong đó $b$ là số giao điểm cắt ngang (nghiệm bội lẻ) giữa $y = f(x)$ và đường thẳng $y = -m$. Để có đúng $3$ cực trị, cần $b = 1 \\Leftrightarrow \\left[\\begin{matrix} -m \\ge 0 \\\\ -m \\le -4 \\end{matrix}\\right. \\Leftrightarrow \\left[\\begin{matrix} m \\le 0 \\\\ m \\ge 4 \\end{matrix}\\right.$. Trong đoạn $[-5; 5]$ có $8$ giá trị nguyên: $\\{-5; -4; -3; -2; -1; 0; 4; 5\\}$.'
+        sampleAnswer: 'Xét $f(x) = x^3 - 3x^2$ có $f\'(x) = 3x^2 - 6x = 0 \\Leftrightarrow x = 0$ ($f_{\\text{CĐ}} = 0$) hoặc $x = 2$ ($f_{\\text{CT}} = -4$). Hàm số ban đầu là $|f(x) + m|$ có số cực trị bằng $a + b = 2 + b$, trong đó $b$ là số giao điểm cắt ngang (nghiệm bội lẻ) giữa $y = f(x)$ và đường thẳng $y = -m$. Để có đúng $3$ cực trị, cần $b = 1 \\Leftrightarrow \\left[\\begin{matrix} -m \\ge 0 \\\\ -m \\le -4 \\end{matrix}\\right. \\Leftrightarrow \\left[\\begin{matrix} m \\le 0 \\\\ m \\ge 4 \\end{matrix}\\right.$. Trong đoạn $[-5; 5]$ có $8$ giá trị nguyên: $\\{-5; -4; -3; -2; -1; 0; 4; 5\\}$.'
       }
     }
   ],

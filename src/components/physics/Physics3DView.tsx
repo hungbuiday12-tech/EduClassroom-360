@@ -74,6 +74,9 @@ const CUTAWAY_PHYSICS_MODES = new Set<string>([
   'refraction_tank_3d',
   'calorimetry_beaker_3d',
   'archimedes_buoyancy_3d',
+  'electric_power_meter_3d',
+  'electrolysis_3d',
+  'eye_optics_3d',
 ]);
 
 interface Numeric3DControlProps {
@@ -168,6 +171,7 @@ export type Physics3DMode = SharedPhysics3DMode;
 
 interface Physics3DViewProps {
   initialMode?: Physics3DMode;
+  initialDiverging?: boolean;
   allowedModes?: Physics3DMode[];
   domainTitle?: string;
   onSelectMode?: (mode: Physics3DMode) => void;
@@ -179,6 +183,7 @@ interface Physics3DViewProps {
 
 export const Physics3DView: React.FC<Physics3DViewProps> = ({
   initialMode = 'pendulum_spring',
+  initialDiverging = false,
   allowedModes,
   domainTitle,
   onSelectMode,
@@ -234,7 +239,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   // 6. Optics 3D
   const [focalLength3D, setFocalLength3D] = useState(2.0); // m (scaled units)
   const [objectDist3D, setObjectDist3D] = useState(3.6); // d
-  const [isDiverging3D, setIsDiverging3D] = useState(false);
+  const [isDiverging3D, setIsDiverging3D] = useState(initialDiverging);
+  useEffect(() => {
+    setIsDiverging3D(Boolean(initialDiverging));
+  }, [initialDiverging, initialMode]);
 
   // 7. Kinematics & Vector 3D
   const [kinV0, setKinV0] = useState(2.5);

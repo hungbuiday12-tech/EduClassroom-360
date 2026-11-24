@@ -124,7 +124,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_CORE2: Record<string, LectureStep[]> = {
           question: 'Số nghiệm của phương trình $x^4 - 4x^2 + 1 = m$ là 4 nghiệm phân biệt khi và chỉ khi:',
           options: ['A. $-3 < m < 1$', 'B. $-3 \\le m \\le 1$', 'C. $m > -3$', 'D. $m < 1$'],
           correctIndex: 0,
-          explanation: 'Hàm $y = x^4 - 4x^2 + 1$ có $y_{CĐ} = 1$ (tại $x=0$) và $y_{CT} = -3$ (tại $x=\\pm\\sqrt{2}$), nên có 4 nghiệm $\\iff -3 < m < 1$.'
+          explanation: 'Hàm $y = x^4 - 4x^2 + 1$ có $y_{\\text{CĐ}} = 1$ (tại $x=0$) và $y_{\\text{CT}} = -3$ (tại $x=\\pm\\sqrt{2}$), nên có 4 nghiệm $\\iff -3 < m < 1$.'
         },
         {
           id: 'm3-s3-q2',

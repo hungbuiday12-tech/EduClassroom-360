@@ -1237,6 +1237,182 @@ const EXPLICIT_STEP_SIM_MAP: Record<string, StepOverrideRule> = {
     simId: 'malus_polarization',
     regimeLabel: 'Phân cực Ánh sáng & Định luật Malus I = I₀cos²θ',
     observationGoal: 'Xoay góc lệch trục phân cực θ từ 0° đến 90° để quan sát sự suy giảm cường độ truyền qua.'
+  },
+
+  // ---------------- GDPT 2006 VẬT LÍ 9–12 STEP ACCURACY ----------------
+  'phys-2006-9-4:0': {
+    simId: 'electric_power_meter',
+    regimeLabel: 'Công suất Điện P = UI & Ý nghĩa số Vôn – Oát Định mức',
+    observationGoal: 'Điều chỉnh hiệu điện thế U và công suất tải để quan sát dòng chạy qua công tơ và đèn báo quá tải.'
+  },
+  'phys-2006-9-4:1': {
+    simId: 'electric_power_meter',
+    regimeLabel: 'Điện năng A = Pt & Đọc Chỉ số Công tơ Điện (kWh)',
+    observationGoal: 'Theo dõi đĩa quay công tơ tích lũy điện năng theo kWh (1 kWh = 3,6·10⁶ J) và tiền điện tương ứng.'
+  },
+  'phys-2006-9-8:0': {
+    simId: 'hall_effect',
+    regimeLabel: 'Lực Điện từ & Quy tắc Bàn tay trái lên Dây dẫn',
+    observationGoal: 'Đảo chiều dòng điện I hoặc cảm ứng từ B để thấy chiều lực điện từ đảo ngược theo quy tắc bàn tay trái.'
+  },
+  'phys-2006-9-8:1': {
+    simId: 'dc_motor_2d',
+    regimeLabel: 'Động cơ Điện Một chiều & Vai trò Cổ góp Điện',
+    observationGoal: 'Quan sát cổ góp tự động đảo chiều dòng điện mỗi nửa vòng để ngẫu lực từ giữ rôto quay liên tục một chiều.'
+  },
+  'phys-2006-9-13:0': {
+    simId: 'lens_optics',
+    regimeLabel: 'Thấu kính Phân kì · Chùm tia Ló Phân kì Qua Tiêu điểm F',
+    observationGoal: 'Quan sát tia tới song song trục chính cho tia ló loe rộng có đường kéo dài đi qua tiêu điểm F cùng phía.',
+    paramOverrides: { f: 15, d: 30, objH: 10 },
+    flagOverrides: { isDiverging: true }
+  },
+  'phys-2006-9-13:1': {
+    simId: 'lens_optics',
+    regimeLabel: 'Ảnh tạo bởi Thấu kính Phân kì · Luôn Ảnh ảo Nhỏ hơn Vật',
+    observationGoal: 'Kéo vật ra xa hoặc lại gần thấu kính để kiểm chứng ảnh luôn ảo, cùng chiều, nhỏ hơn vật và nằm trong khoảng tiêu cự.',
+    paramOverrides: { f: 15, d: 12, objH: 10 },
+    flagOverrides: { isDiverging: true }
+  },
+  'phys-2006-9-14:0': {
+    simId: 'eye_optics_2d',
+    regimeLabel: 'Cấu tạo Quang học của Mắt & Sự Điều tiết Thể thủy tinh',
+    observationGoal: 'Thay đổi khoảng cách vật từ cực cận đến cực viễn để quan sát thể thủy tinh thay đổi tiêu cự giúp ảnh rơi đúng võng mạc.'
+  },
+  'phys-2006-9-14:1': {
+    simId: 'eye_optics_2d',
+    regimeLabel: 'Mắt Cận – Mắt Lão & Cách Đeo Kính Khắc phục',
+    observationGoal: 'Bật chế độ Mắt cận (kính phân kì) hoặc Mắt viễn/lão (kính hội tụ) để đưa ảnh về đúng điểm vàng võng mạc.'
+  },
+  'phys-2006-9-17:0': {
+    simId: 'power_plant_generator',
+    regimeLabel: 'Nhà máy Nhiệt điện & Thủy điện · Chuỗi Biến đổi Năng lượng',
+    observationGoal: 'Theo dõi dòng năng lượng từ thế năng hồ chứa / nhiệt hơi nước làm quay tuabin tạo điện áp phát ra lưới.'
+  },
+  'phys-2006-9-17:1': {
+    simId: 'power_plant_generator',
+    regimeLabel: 'Năng lượng Gió, Mặt Trời & Hiệu suất Phát điện',
+    observationGoal: 'So sánh công suất phát và hiệu suất chuyển hóa giữa các dạng năng lượng tái tạo và hóa thạch.'
+  },
+  'phys-2006-10-5:0': {
+    simId: 'distance_displacement_rel',
+    regimeLabel: 'Tính Tương đối của Quỹ đạo & Vận tốc theo Hệ quy chiếu',
+    observationGoal: 'Chuyển đổi hệ quy chiếu đứng yên vs chuyển động để thấy quỹ đạo và vận tốc cùng một vật thay đổi.'
+  },
+  'phys-2006-10-5:1': {
+    simId: 'distance_displacement_rel',
+    regimeLabel: 'Công thức Cộng Vận tốc v₁₃ = v₁₂ + v₂₃ (Xuôi / Ngược / Ngang sông)',
+    observationGoal: 'Điều chỉnh vận tốc thuyền v₁₂ và dòng nước v₂₃ để quan sát tổng hợp vectơ vận tốc v₁₃ so với bờ.'
+  },
+  'phys-2006-10-7:0': {
+    simId: 'atwood_pulley',
+    regimeLabel: 'Định luật I (Quán tính) & Định luật II Newton F = ma',
+    observationGoal: 'Thay đổi chênh lệch khối lượng (hợp lực) và tổng khối lượng để kiểm nghiệm a = F_hl / m.'
+  },
+  'phys-2006-10-7:1': {
+    simId: 'momentum_collision',
+    regimeLabel: 'Định luật III Newton · Cặp Lực Trực đối F_AB = −F_BA',
+    observationGoal: 'Quan sát hai vật va chạm chịu hai lực tương tác cùng độ lớn, ngược chiều nhưng đặt vào hai vật khác nhau.'
+  },
+  'phys-2006-10-18:0': {
+    simId: 'thermal_gas',
+    regimeLabel: 'Định luật Sác-lơ (Đẳng tích V = const) · Áp suất Tỉ lệ Thuận T(K)',
+    observationGoal: 'Giữ thể tích bình kín không đổi, tăng nhiệt độ T(K) để thấy áp suất và tốc độ va chạm phân tử tăng tuyến tính.'
+  },
+  'phys-2006-10-18:1': {
+    simId: 'thermal_gas',
+    regimeLabel: 'Phương trình Trạng thái Khí lí tưởng p₁V₁/T₁ = p₂V₂/T₂',
+    observationGoal: 'Thay đổi đồng thời cả thể tích V và nhiệt độ T để kiểm chứng tích pV/T luôn bảo toàn cho một lượng khí xác định.'
+  },
+  'phys-2006-10-19:0': {
+    simId: 'pv_thermodynamics',
+    regimeLabel: 'Nội năng & Nguyên lí I NĐLH (ΔU = A + Q · Quy ước GDPT 2006)',
+    observationGoal: 'Cấp nhiệt Q > 0 và thực hiện nén pít-tông (A > 0) hay cho khí dãn nở sinh công (A < 0) để xem biến thiên nội năng ΔU.'
+  },
+  'phys-2006-10-19:1': {
+    simId: 'carnot_cycle_pv',
+    regimeLabel: 'Nguyên lí II Nhiệt động lực học & Động cơ Nhiệt',
+    observationGoal: 'Theo dõi chu trình nhận nhiệt Q₁ từ nguồn nóng, nhả Q₂ cho nguồn lạnh và giới hạn hiệu suất H < 1.'
+  },
+  'phys-2006-11-6:0': {
+    simId: 'electric_power_meter',
+    regimeLabel: 'Điện năng Tiêu thụ A = UIt & Công suất Đoạn mạch P = UI',
+    observationGoal: 'Theo dõi điện năng tiêu thụ và công suất mạch ngoài khi điều chỉnh hiệu điện thế U và tải R.'
+  },
+  'phys-2006-11-6:1': {
+    simId: 'joule_lenz_heat',
+    regimeLabel: 'Công suất Nguồn điện P_ng = EI & Hiệu suất Nguồn H = U_N / E',
+    observationGoal: 'Đối chiếu công suất toàn phần nguồn điện với phần tỏa nhiệt và hiệu suất cấp cho mạch ngoài.'
+  },
+  'phys-2006-11-10:0': {
+    simId: 'electrolysis_faraday',
+    regimeLabel: 'Dòng điện trong Chất điện phân & Hiện tượng Dương cực tan',
+    observationGoal: 'Quan sát ion dương Cu²⁺ di chuyển về catôt (−), anion SO₄²⁻ về anôt (+) và đồng bám đều lên catôt.'
+  },
+  'phys-2006-11-10:1': {
+    simId: 'electrolysis_faraday',
+    regimeLabel: 'Định luật Fa-ra-đây về Điện phân m = (1/F)·(A/n)·It',
+    observationGoal: 'Điều chỉnh cường độ dòng điện I và thời gian t để kiểm nghiệm khối lượng kim loại giải phóng m.'
+  },
+  'phys-2006-11-13:0': {
+    simId: 'hall_effect',
+    regimeLabel: 'Lực từ Tác dụng lên Dây dẫn Mang dòng F = BIl sinα',
+    observationGoal: 'Quan sát hướng lực từ theo quy tắc bàn tay trái và sự phụ thuộc vào B, I và góc α.'
+  },
+  'phys-2006-11-13:1': {
+    simId: 'dc_motor_2d',
+    regimeLabel: 'Mômen Ngẫu lực từ Tác dụng lên Khung dây & Động cơ DC',
+    observationGoal: 'Theo dõi mômen ngẫu lực từ M = IBS sinθ làm quay khung dây đặt trong từ trường đều.'
+  },
+  'phys-2006-11-18:0': {
+    simId: 'prism_dispersion',
+    regimeLabel: 'Lăng kính Thủy tinh · Góc Khúc xạ & Góc Lệch Tia sáng',
+    observationGoal: 'Thay đổi góc chiết quang A, góc tới i₁ và chiết suất n để khảo sát đường truyền và góc lệch D qua lăng kính.'
+  },
+  'phys-2006-11-18:1': {
+    simId: 'lens_optics',
+    regimeLabel: 'Công thức Thấu kính Mỏng (1/f = 1/d + 1/d\' · k = −d\'/d)',
+    observationGoal: 'Dịch chuyển vật để kiểm nghiệm quy ước dấu đại số của d\', độ tụ D và số phóng đại k.'
+  },
+  'phys-2006-11-19:0': {
+    simId: 'eye_optics_2d',
+    regimeLabel: 'Cấu tạo Quang học của Mắt · Điểm Cực cận & Cực viễn',
+    observationGoal: 'Điều chỉnh khoảng cách vật để xem khả năng điều tiết tiêu cự thể thủy tinh đưa ảnh về đúng võng mạc.'
+  },
+  'phys-2006-11-19:1': {
+    simId: 'eye_optics_2d',
+    regimeLabel: 'Kính Cận (Phân kì f = −OC_V) & Kính Viễn / Lão (Hội tụ)',
+    observationGoal: 'Chuyển giữa Mắt cận và Mắt viễn/lão để quan sát tác dụng điều chỉnh tiêu điểm của kính đeo sửa tật.'
+  },
+  'phys-2006-12-5:0': {
+    simId: 'fresnel_phasor_2d',
+    regimeLabel: 'Giản đồ Vectơ Quay Fre-nen Tổng hợp Hai Dao động',
+    observationGoal: 'Quan sát hai vectơ quay A₁, A₂ hợp thành vectơ tổng A theo quy tắc hình bình hành và đồ thị x(t) = x₁ + x₂.'
+  },
+  'phys-2006-12-5:1': {
+    simId: 'fresnel_phasor_2d',
+    regimeLabel: 'Ảnh hưởng Độ lệch pha Δφ · Cùng pha, Ngược pha & Vuông pha',
+    observationGoal: 'Kéo góc pha Δφ từ 0 đến π để kiểm nghiệm A_max = A₁+A₂, A_vuông = √(A₁²+A₂²) và A_min = |A₁−A₂|.'
+  },
+  'phys-2006-12-16:0': {
+    simId: 'em_wave_3axis',
+    regimeLabel: 'Điện từ trường & Sóng Điện từ Ngang E ⊥ B ⊥ v (Cùng pha)',
+    observationGoal: 'Quan sát vectơ cường độ điện trường E và cảm ứng từ B dao động vuông góc phương truyền và luôn cùng pha.'
+  },
+  'phys-2006-12-16:1': {
+    simId: 'em_wave_3axis',
+    regimeLabel: 'Các Dải Sóng Vô tuyến & Sóng Ngắn Phản xạ Tầng Điện li',
+    observationGoal: 'Thay đổi tần số f và bước sóng λ = c·2π√(LC) để quan sát sự co giãn bước sóng vô tuyến.'
+  },
+  'phys-2006-12-20:0': {
+    simId: 'bohr_energy_levels',
+    regimeLabel: 'Hai Tiên đề Bo & Quang phổ Vạch Nguyên tử Hiđrô',
+    observationGoal: 'Chọn bước nhảy mức năng lượng n → m để xem bán kính r_n = n²r₀ và bước sóng phôtôn phát ra hc/λ = E_n − E_m.'
+  },
+  'phys-2006-12-20:1': {
+    simId: 'hydrogen_spectrum',
+    regimeLabel: 'Quang – Phát quang (λ_pq > λ_kt) & Chùm tia Laze',
+    observationGoal: 'Quan sát các vạch phát xạ đặc trưng khi êlectron chuyển từ mức kích thích xuống mức năng lượng thấp hơn.'
   }
 };
 
@@ -1271,8 +1447,13 @@ function resolveByStepContent(
   if (has('cong quang dien') || (has('do toc do') && has('dong ho'))) {
     return { simId: 'kinematics_graphs', reason: 'Đo tốc độ tức thời & thời gian bằng cổng quang điện' };
   }
-  if (has('quang duong', true) && (has('do dich chuyen', true) || has('cong van toc', true))) {
-    return { simId: 'distance_displacement_rel', reason: 'So sánh quãng đường s và độ dịch chuyển d' };
+  if (
+    has('tinh tuong doi', true) ||
+    has('cong van toc', true) ||
+    has('cong thuc cong van toc', true) ||
+    (has('quang duong', true) && has('do dich chuyen', true))
+  ) {
+    return { simId: 'distance_displacement_rel', reason: 'Tính tương đối chuyển động, độ dịch chuyển & cộng vận tốc' };
   }
   if (
     (has('tong hop', true) || has('phan tich', true) || has('can bang', true)) &&
@@ -1365,6 +1546,9 @@ function resolveByStepContent(
   if (has('con lac lo xo', true) || has('ti so dong nang / the nang', true)) {
     return { simId: 'spring_pendulum', reason: 'Dao động điều hòa con lắc lò xo & năng lượng' };
   }
+  if (has('fre-nen', true) || has('fresnel', true) || has('tong hop hai dao dong', true)) {
+    return { simId: 'fresnel_phasor_2d', reason: 'Giản đồ vectơ quay Fre-nen tổng hợp dao động' };
+  }
   if (has('dao dong ki', true) || has('so o tren man hinh', true) || has('pha dao dong', true) || has('doc lap thoi gian', true) || has('do thi dao dong', true)) {
     return { simId: 'lissajous_shm', reason: 'Dao động kí & biểu đồ pha dao động điều hòa' };
   }
@@ -1409,15 +1593,28 @@ function resolveByStepContent(
   if (has('carnot', true)) {
     return { simId: 'carnot_cycle_pv', reason: 'Chu trình Carnot & hiệu suất động cơ nhiệt lí tưởng' };
   }
-  if (has('dinh luat i', true) || has('nguyen li i', true) || has('noi nang', true)) {
+  if (
+    (has('dinh luat i', true) && !has('newton', true) && !has('niu-ton', true) && !has('quan tinh', true)) ||
+    has('nguyen li i', true) ||
+    has('noi nang', true)
+  ) {
     return { simId: 'pv_thermodynamics', reason: 'Nguyên lí I Nhiệt động lực học & công khối khí' };
   }
-  if (has('boyle', true) || has('charles', true) || has('clapeyron', true) || has('khi li tuong', true) || has('dang nhiet', true) || has('dang ap', true) || has('phan tu khi', true) || has('dong hoc phan tu', true)) {
+  if (has('boyle', true) || has('charles', true) || has('clapeyron', true) || has('sac-lo', true) || has('boi-lo', true) || has('khi li tuong', true) || has('dang nhiet', true) || has('dang tich', true) || has('dang ap', true) || has('phan tu khi', true) || has('dong hoc phan tu', true)) {
     return { simId: 'thermal_gas', reason: 'Mô hình khí lí tưởng pV = nRT & chuyển động phân tử' };
   }
 
   // 4. Electricity & Magnetism
-  if (has('coulomb', true) || has('tuong tac dien', true)) {
+  if (has('dien phan', true) || has('duong cuc tan', true) || (has('fa-ra-day', true) && has('chat dien phan'))) {
+    return { simId: 'electrolysis_faraday', reason: 'Dòng điện trong chất điện phân & định luật Fa-ra-đây' };
+  }
+  if (has('dong co dien', true) || has('co gop', true) || has('luc dien tu', true)) {
+    return { simId: 'dc_motor_2d', reason: 'Lực điện từ & động cơ điện một chiều' };
+  }
+  if (has('nha may', true) || has('thuy dien', true) || has('nhiet dien', true) || has('dien gio', true) || has('san xuat dien', true)) {
+    return { simId: 'power_plant_generator', reason: 'Nhà máy thủy điện – nhiệt điện – điện gió & chuyển hóa năng lượng' };
+  }
+  if (has('coulomb', true) || has('cu-long', true) || has('tuong tac dien', true)) {
     return { simId: 'coulomb_pendulum', reason: 'Tương tác tĩnh điện Coulomb' };
   }
   if (has('tu dien', true) || has('dien dung', true)) {
@@ -1429,16 +1626,19 @@ function resolveByStepContent(
   if (has('mach cau', true) || has('kirchhoff', true) || has('cam bien', true) || has('phan ap', true)) {
     return { simId: 'wheatstone_bridge', reason: 'Mạch cầu điện trở & phân áp' };
   }
-  if (has('jun', true) || has('cong suat nguon', true) || has('cong suat dien', true) || (has('cong suat tieu thu', true) && has('mach', true))) {
+  if (has('cong suat dien', true) || has('dien nang', true) || has('cong to dien', true) || has('cong cua dong dien', true)) {
+    return { simId: 'electric_power_meter', reason: 'Công suất điện P = UI & điện năng trên công tơ kWh' };
+  }
+  if (has('jun', true) || has('cong suat nguon', true) || (has('cong suat tieu thu', true) && has('mach', true))) {
     return { simId: 'joule_lenz_heat', reason: 'Công suất tỏa nhiệt điện trở Q = I²Rt' };
   }
   if (has('rlc', true) || has('tong tro', true) || has('cong huong dien', true)) {
     return { simId: 'ac_rlc_circuit', reason: 'Mạch RLC xoay chiều & giản đồ pha' };
   }
-  if (has('chinh luu', true) || has('op-amp', true) || has('diode', true)) {
+  if (has('chinh luu', true) || has('op-amp', true) || has('diode', true) || has('diot', true) || has('ban dan', true)) {
     return { simId: 'diode_rectifier', reason: 'Chỉnh lưu & linh kiện bán dẫn' };
   }
-  if (has('may bien ap', true) || has('truyen tai dien', true)) {
+  if (has('may bien ap', true) || has('may bien the', true) || has('truyen tai dien', true)) {
     return { simId: 'transformer_2d', reason: 'Máy biến áp & truyền tải điện năng' };
   }
   if (has('luc tu', true) || has('ban tay trai', true) || has('cam ung tu', true)) {
@@ -1447,7 +1647,7 @@ function resolveByStepContent(
   if (has('tu thong', true) || has('faraday', true) || has('lenz', true) || has('cam ung dien tu', true) || has('xoay chieu', true) || has('thanh kim loai', true) || has('dong dien foucault', true)) {
     return { simId: 'magnetic_induction', reason: 'Cảm ứng điện từ Faraday & quy tắc Lenz' };
   }
-  if (has('ohm', true) || has('cuong do dong dien', true) || has('suat dien dong', true) || has('u theo i', true) || has('so do mach', true)) {
+  if (has('ohm', true) || has('dinh luat om', true) || has('cuong do dong dien', true) || has('suat dien dong', true) || has('u theo i', true) || has('so do mach', true)) {
     return { simId: 'ohm_circuit', reason: 'Định luật Ohm & sơ đồ mạch điện' };
   }
 
@@ -1461,10 +1661,13 @@ function resolveByStepContent(
   if (has('guong', true)) {
     return { simId: 'spherical_mirror', reason: 'Tạo ảnh qua gương cầu' };
   }
+  if (has('tat cua mat', true) || has('mat can', true) || has('mat lao', true) || has('mat vien', true) || has('thuy tinh the', true) || has('cuc can', true) || has('cuc vien', true) || (has('mat', true) && has('kinh lup', true))) {
+    return { simId: 'eye_optics_2d', reason: 'Quang học của mắt, sự điều tiết & kính sửa tật khúc xạ' };
+  }
   if (has('thau kinh', true) || has('kinh lup', true) || has('kinh hien vi', true) || has('kinh thien van', true)) {
     return { simId: has('thien van', true) || has('hien vi', true) ? 'telescope_microscope' : 'lens_optics', reason: 'Vẽ tia sáng & tạo ảnh qua thấu kính' };
   }
-  if (has('bohr', true) || has('quang pho', true) || has('hydro', true) || has('vung nang luong', true)) {
+  if (has('bohr', true) || has('mau bo', true) || has('quang pho', true) || has('hydro', true) || has('hidro', true) || has('vung nang luong', true)) {
     return { simId: 'bohr_energy_levels', reason: 'Mẫu nguyên tử Bohr & chuyển mức năng lượng' };
   }
   if ((has('quang dien', true) && !has('cong quang dien')) || has('luong tu anh sang', true) || has('tia x', true)) {

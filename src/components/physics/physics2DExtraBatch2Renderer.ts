@@ -1334,6 +1334,764 @@ export function renderBatch2Extra2DPhysicsSim(
       return true;
     }
 
+    // 19. ELECTRIC POWER & KWH METER (P = UI, A = UIt, H = R/(R+r))
+    case 'electric_power_meter': {
+      const emf = p.emfV ?? 220;
+      const rLoad = p.loadR ?? 110;
+      const rInt = p.internalR ?? 0;
+      const curI = emf / Math.max(1, rLoad + rInt);
+      const uOut = curI * rLoad;
+      const pLoad = uOut * curI;
+      const eff = (rLoad / Math.max(1, rLoad + rInt)) * 100;
+      const energyKwh = (pLoad * t * 0.25) / 1000;
+
+      pushTelemetry({
+        metric1Label: 'Cường độ & Hiệu điện thế',
+        metric1Val: `I = ${curI.toFixed(2)} A · U = ${uOut.toFixed(1)} V`,
+        metric2Label: 'Công suất tải P = UI',
+        metric2Val: `${pLoad.toFixed(1)} W`,
+        metric3Label: 'Điện năng & Hiệu suất',
+        metric3Val: `${energyKwh.toFixed(3)} kWh · H = ${eff.toFixed(0)}%`,
+        note: `1 kWh = 3,6·10⁶ J. ${rInt > 0 ? `Khi R = r = ${rInt}Ω công suất mạch ngoài đạt cực đại E²/(4r)!` : 'Công tơ quay nhanh tỉ lệ thuận với công suất tiêu thụ P = U·I.'}`
+      });
+
+      const cx = w * 0.14;
+      const cy = h * 0.2;
+      const cw = w * 0.72;
+      const ch = h * 0.6;
+
+      // Circuit loop
+      ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(cx, cy, cw, ch);
+
+      // Moving charge dots along circuit clockwise (+ to -)
+      const perim = 2 * (cw + ch);
+      const chargeSpeed = 30 + Math.min(180, curI * 18);
+      for (let i = 0; i < 16; i++) {
+        const d = ((i / 16) * perim + t * chargeSpeed) % perim;
+        let px = cx;
+        let py = cy;
+        if (d < cw) {
+          px = cx + d;
+          py = cy;
+        } else if (d < cw + ch) {
+          px = cx + cw;
+          py = cy + (d - cw);
+        } else if (d < 2 * cw + ch) {
+          px = cx + cw - (d - cw - ch);
+          py = cy + ch;
+        } else {
+          px = cx;
+          py = cy + ch - (d - 2 * cw - ch);
+        }
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // DC / AC Source box on left branch
+      ctx.fillStyle = isDark ? '#0f172a' : '#f8fafc';
+      ctx.fillRect(cx - 28, cy + ch * 0.3, 56, ch * 0.4);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cx - 28, cy + ch * 0.3, 56, ch * 0.4);
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`E=${emf}V`, cx, cy + ch * 0.48);
+      ctx.fillStyle = mut;
+      ctx.font = '10px monospace';
+      ctx.fillText(`r=${rInt}Ω`, cx, cy + ch * 0.62);
+
+      // kWh meter box on top branch
+      const mx = cx + cw * 0.36;
+      const my = cy - 42;
+      ctx.fillStyle = isDark ? '#1e293b' : '#ffffff';
+      ctx.strokeStyle = isDark ? '#64748b' : '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(mx, my, 128, 76, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Digital kWh window
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(mx + 14, my + 10, 100, 22);
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(`${energyKwh.toFixed(3)} kWh`, mx + 64, my + 25);
+
+      // Spinning aluminum meter disc
+      const discX = mx + 64;
+      const discY = my + 52;
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(discX - 42, discY - 4, 84, 8);
+      const stripeX = discX + Math.sin(t * Math.min(18, 1.5 + pLoad * 0.015)) * 36;
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(stripeX - 4, discY - 5, 8, 10);
+      ctx.fillStyle = txt;
+      ctx.font = '10px sans-serif';
+      ctx.fillText('Công tơ kWh', mx + 64, my + 70);
+
+      // Load lamp / resistor on right branch
+      const lx = cx + cw;
+      const ly = cy + ch * 0.5;
+      const glow = Math.min(1, pLoad / 800);
+      const radGlow = 26 + glow * 44;
+      const grad = ctx.createRadialGradient(lx, ly, 4, lx, ly, radGlow);
+      grad.addColorStop(0, `rgba(253, 224, 71, ${0.4 + glow * 0.55})`);
+      grad.addColorStop(0.6, `rgba(251, 146, 60, ${0.15 + glow * 0.35})`);
+      grad.addColorStop(1, 'rgba(251, 146, 60, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(lx, ly, radGlow, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = isDark ? '#1e293b' : '#fef9c3';
+      ctx.strokeStyle = glow > 0.3 ? '#facc15' : '#94a3b8';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.arc(lx, ly, 24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Filament inside lamp
+      ctx.strokeStyle = glow > 0.2 ? '#f59e0b' : '#64748b';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(lx - 10, ly + 8);
+      ctx.lineTo(lx - 5, ly - 6);
+      ctx.lineTo(lx, ly + 4);
+      ctx.lineTo(lx + 5, ly - 6);
+      ctx.lineTo(lx + 10, ly + 8);
+      ctx.stroke();
+
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`Tải R = ${rLoad}Ω`, lx, ly + 42);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText(`P = ${pLoad.toFixed(0)} W`, lx, ly + 56);
+
+      // Efficiency meter at bottom
+      ctx.fillStyle = mut;
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`Hiệu suất nguồn H = U/E = ${eff.toFixed(1)}% · Ampe kế A = ${curI.toFixed(2)} A`, cx + cw * 0.5, cy + ch + 22);
+      return true;
+    }
+
+    // 20. DC MOTOR & ELECTROMAGNETIC COUPLE 2D
+    case 'dc_motor_2d': {
+      const curI = p.currentI ?? 4.0;
+      const B = p.magneticB ?? 0.8;
+      const turns = p.coilTurns ?? 40;
+      const omega = 0.8 + curI * B * 0.32;
+      const theta = t * omega;
+      const maxTorque = turns * B * curI * 0.015;
+      const instTorque = Math.abs(Math.cos(theta)) * maxTorque;
+      const fSingle = B * curI * 0.25;
+
+      pushTelemetry({
+        metric1Label: 'Lực điện từ F = B·I·l',
+        metric1Val: `${fSingle.toFixed(2)} N`,
+        metric2Label: 'Mômen ngẫu lực cực đại',
+        metric2Val: `${maxTorque.toFixed(2)} N·m`,
+        metric3Label: 'Mômen tức thời & Tốc độ',
+        metric3Val: `${instTorque.toFixed(2)} N·m · ${(omega * 9.55).toFixed(0)} rpm`,
+        note: 'Cổ góp bán khuyên đảo chiều dòng điện mỗi 180° giúp khung dây quay liên tục cùng một chiều!'
+      });
+
+      const cx = w * 0.5;
+      const cy = h * 0.46;
+
+      // Magnetic poles N (left) and S (right)
+      const magW = 54;
+      const magH = 126;
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.roundRect(cx - 175, cy - magH / 2, magW, magH, 8);
+      ctx.fill();
+      ctx.fillStyle = '#3b82f6';
+      ctx.beginPath();
+      ctx.roundRect(cx + 175 - magW, cy - magH / 2, magW, magH, 8);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('N', cx - 175 + magW / 2, cy + 7);
+      ctx.fillText('S', cx + 175 - magW / 2, cy + 7);
+
+      // Horizontal magnetic field B lines (N -> S)
+      ctx.strokeStyle = isDark ? 'rgba(56,189,248,0.35)' : 'rgba(2,132,199,0.28)';
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([5, 4]);
+      for (let dy = -44; dy <= 44; dy += 22) {
+        ctx.beginPath();
+        ctx.moveTo(cx - 116, cy + dy);
+        ctx.lineTo(cx + 116, cy + dy);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`B = ${B.toFixed(1)} T →`, cx, cy - 72);
+
+      // Rotating rectangular coil projection (seen along rotation axis with 3D perspective width)
+      const cosT = Math.cos(theta);
+      const sinT = Math.sin(theta);
+      const halfSpan = 82 * cosT;
+      const zTilt = 26 * sinT;
+
+      const ax = cx - halfSpan;
+      const ay = cy - 42 - zTilt * 0.35;
+      const bx = cx + halfSpan;
+      const by = cy - 42 + zTilt * 0.35;
+      const cxPt = cx + halfSpan;
+      const cyPt = cy + 48 + zTilt * 0.35;
+      const dx = cx - halfSpan;
+      const dy = cy + 48 - zTilt * 0.35;
+
+      // Coil frame
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 5;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(ax, ay + 6);
+      ctx.lineTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(cxPt, cyPt);
+      ctx.lineTo(dx, dy);
+      ctx.stroke();
+
+      // Lorentz force couple vectors F1 (left side) and F2 (right side)
+      const dirSign = cosT >= 0 ? 1 : -1;
+      const fLen = 30 + curI * B * 2.5;
+      drawVec(ctx, ax, cy, ax, cy - dirSign * fLen, '#10b981', 'F₁');
+      drawVec(ctx, bx, cy, bx, cy + dirSign * fLen, '#ec4899', 'F₂');
+
+      // Split-ring commutator + carbon brushes below coil
+      const comY = cy + 88;
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(cx, comY, 16, theta + 0.25, theta + Math.PI - 0.25);
+      ctx.stroke();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(cx, comY, 16, theta + Math.PI + 0.25, theta + 2 * Math.PI - 0.25);
+      ctx.stroke();
+
+      // Carbon brushes
+      ctx.fillStyle = isDark ? '#cbd5e1' : '#334155';
+      ctx.fillRect(cx - 26, comY - 5, 10, 10);
+      ctx.fillRect(cx + 16, comY - 5, 10, 10);
+      ctx.fillStyle = mut;
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(`Cổ góp bán khuyên · I = ${curI.toFixed(1)} A · N = ${turns} vòng`, cx, comY + 34);
+      return true;
+    }
+
+    // 21. ELECTROLYSIS & FARADAY'S LAW
+    case 'electrolysis_faraday': {
+      const curI = p.currentI ?? 4.0;
+      const durMin = p.durationMin ?? 16;
+      const A = p.molarMass ?? 64;
+      const nVal = A >= 100 ? 1 : A <= 30 ? 3 : 2; // Cu=64(2), Ag=108(1), Al=27(3)
+      const tSec = durMin * 60;
+      const mGram = (1 / 96500) * (A / nVal) * curI * tSec;
+      const prog = Math.min(1, (t % 12) / 12);
+
+      pushTelemetry({
+        metric1Label: 'Đương lượng điện hóa k = A/(Fn)',
+        metric1Val: `${((A / nVal) / 96500 * 1000).toFixed(3)} mg/C`,
+        metric2Label: 'Khối lượng bám Catôt m',
+        metric2Val: `${mGram.toFixed(2)} g`,
+        metric3Label: 'Điện lượng Q = I·t',
+        metric3Val: `${(curI * tSec).toFixed(0)} C (${durMin} ph)`,
+        note: `Ion dương (M^${nVal}+) tiến về Catôt (−) nhận electron kết tủa thành kim loại óng ánh.`
+      });
+
+      const bx = w * 0.22;
+      const bw = w * 0.56;
+      const by = h * 0.28;
+      const bh = h * 0.56;
+
+      // Electrolyte liquid
+      ctx.fillStyle = A >= 100 ? 'rgba(148, 163, 184, 0.25)' : 'rgba(14, 165, 233, 0.28)';
+      ctx.fillRect(bx, by + 26, bw, bh - 26);
+
+      // Glass vat
+      ctx.strokeStyle = isDark ? '#94a3b8' : '#334155';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx, by + bh);
+      ctx.lineTo(bx + bw, by + bh);
+      ctx.lineTo(bx + bw, by);
+      ctx.stroke();
+
+      // Anode (+) left - eroding
+      const erode = prog * 5;
+      const anodeX = bx + bw * 0.22;
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(anodeX + erode * 0.4, by - 16, Math.max(12, 22 - erode), bh - 8);
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Anôt (+)', anodeX + 10, by - 24);
+
+      // Cathode (-) right - plating thicker over time
+      const catX = bx + bw * 0.72;
+      const coat = 2 + prog * 10 * Math.min(1.5, mGram / 4 + 0.3);
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(catX, by - 16, 20, bh - 8);
+      ctx.fillStyle = A >= 100 ? '#e2e8f0' : '#f59e0b';
+      ctx.fillRect(catX - coat * 0.4, by + 26, 20 + coat * 0.8, bh - 50);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('Catôt (−)', catX + 10, by - 24);
+
+      // Battery bridge on top
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(anodeX + 10, by - 16);
+      ctx.lineTo(anodeX + 10, by - 52);
+      ctx.lineTo(catX + 10, by - 52);
+      ctx.lineTo(catX + 10, by - 16);
+      ctx.stroke();
+      ctx.fillStyle = isDark ? '#0f172a' : '#f1f5f9';
+      ctx.fillRect(w * 0.5 - 48, by - 66, 96, 26);
+      ctx.strokeRect(w * 0.5 - 48, by - 66, 96, 26);
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`Nguồn DC · ${curI}A`, w * 0.5, by - 49);
+
+      // Cations moving left -> right (Anode -> Cathode), Anions right -> left
+      for (let i = 0; i < 10; i++) {
+        const speed = 28 + curI * 10;
+        const frac = ((i * 0.1 + t * speed * 0.004) % 1);
+        const ix = anodeX + 24 + frac * (catX - anodeX - 32);
+        const iy = by + 48 + ((i * 37) % Math.max(40, bh - 80));
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(ix, iy, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 8px sans-serif';
+        ctx.fillText('+', ix, iy + 3);
+      }
+      for (let i = 0; i < 8; i++) {
+        const speed = 22 + curI * 8;
+        const frac = ((i * 0.125 + t * speed * 0.004) % 1);
+        const ax = catX - 10 - frac * (catX - anodeX - 34);
+        const ay = by + 62 + ((i * 43) % Math.max(40, bh - 95));
+        ctx.fillStyle = '#0ea5e9';
+        ctx.beginPath();
+        ctx.arc(ax, ay, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillText('−', ax, ay + 3);
+      }
+
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(`m bám Catôt = ${mGram.toFixed(2)} g (Đang tăng dần ${(prog * 100).toFixed(0)}%)`, w * 0.5, by + bh + 24);
+      return true;
+    }
+
+    // 22. HUMAN EYE OPTICS & VISION CORRECTION 2D
+    case 'eye_optics_2d': {
+      const defect = Math.round(p.eyeDefect ?? 1); // 0: Normal, 1: Myopia, 2: Hyperopia
+      const useGlass = (p.useGlass ?? 0) >= 0.5;
+      const objDist = p.objDistCm ?? 60;
+
+      const defectName = defect === 0 ? 'Mắt thường (Chính thị)' : defect === 1 ? 'Mắt Cận thị (Hội tụ trước)' : 'Mắt Viễn thị (Hội tụ sau)';
+      const statusText =
+        defect === 0
+          ? 'Ảnh hiện rõ nét trên võng mạc'
+          : useGlass
+          ? defect === 1
+            ? 'Đã đeo Kính Phân kì → Hội tụ ĐÚNG võng mạc!'
+            : 'Đã đeo Kính Hội tụ → Hội tụ ĐÚNG võng mạc!'
+          : defect === 1
+          ? 'Ảnh hội tụ TRƯỚC võng mạc (Nhìn xa mờ)'
+          : 'Ảnh hội tụ SAU võng mạc (Nhìn gần mờ)';
+
+      pushTelemetry({
+        metric1Label: 'Trạng thái mắt',
+        metric1Val: defectName,
+        metric2Label: 'Kính sửa tật',
+        metric2Val: useGlass ? (defect === 1 ? 'Phân kì (-)' : defect === 2 ? 'Hội tụ (+)' : 'Không cần') : 'Chưa đeo kính',
+        metric3Label: 'Kết quả ảnh',
+        metric3Val: statusText,
+        note: 'Mắt cận có tiêu cự thủy tinh thể quá ngắn (hội tụ trước võng mạc) → sửa bằng thấu kính phân kì!'
+      });
+
+      const eyeCx = w * 0.72;
+      const eyeCy = h * 0.5;
+      const eyeR = Math.min(w, h) * 0.24;
+      const lensX = eyeCx - eyeR * 0.78;
+      const retinaX = eyeCx + eyeR * 0.94;
+      const glassX = lensX - 58;
+
+      // Optical axis
+      ctx.strokeStyle = isDark ? 'rgba(148,163,184,0.4)' : 'rgba(71,85,105,0.35)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(30, eyeCy);
+      ctx.lineTo(w - 20, eyeCy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Eyeball shell
+      ctx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.08)' : 'rgba(224, 242, 254, 0.45)';
+      ctx.strokeStyle = isDark ? '#94a3b8' : '#334155';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(eyeCx, eyeCy, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Retina arc (glowing amber on back wall)
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(eyeCx, eyeCy, eyeR - 3, -0.55, 0.55);
+      ctx.stroke();
+
+      // Crystalline lens inside front of eye
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.42)';
+      ctx.strokeStyle = '#0ea5e9';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(lensX, eyeCy, 11, eyeR * 0.44, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Corrective eyeglass if enabled
+      if (useGlass && defect !== 0) {
+        ctx.strokeStyle = defect === 1 ? '#ec4899' : '#10b981';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        if (defect === 1) {
+          // Concave diverging lens silhouette
+          ctx.moveTo(glassX - 7, eyeCy - 46);
+          ctx.quadraticCurveTo(glassX + 2, eyeCy, glassX - 7, eyeCy + 46);
+          ctx.lineTo(glassX + 7, eyeCy + 46);
+          ctx.quadraticCurveTo(glassX - 2, eyeCy, glassX + 7, eyeCy - 46);
+          ctx.closePath();
+        } else {
+          // Convex converging lens silhouette
+          ctx.ellipse(glassX, eyeCy, 7, 46, 0, 0, Math.PI * 2);
+        }
+        ctx.stroke();
+      }
+
+      // Compute ray focus X
+      let focusX = retinaX;
+      if (!useGlass) {
+        if (defect === 1) focusX = eyeCx + eyeR * 0.28; // before retina
+        if (defect === 2) focusX = retinaX + eyeR * 0.45; // behind retina
+      }
+
+      const srcX = Math.max(40, glassX - Math.min(180, objDist * 0.9));
+      const raySpreadY = 34;
+
+      // Incoming rays (from distant/near object)
+      const inShift = useGlass && defect === 1 ? 8 : useGlass && defect === 2 ? -6 : 0;
+      [-1, 1].forEach((sgn) => {
+        const yIn = sgn * raySpreadY * 0.72;
+        const yAtGlass = eyeCy + yIn;
+        const yAtLens = eyeCy + yIn + sgn * inShift;
+
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(srcX, eyeCy + yIn * 0.45);
+        if (useGlass && defect !== 0) {
+          ctx.lineTo(glassX, yAtGlass);
+        }
+        ctx.lineTo(lensX, yAtLens);
+        ctx.lineTo(focusX, eyeCy);
+        // Continue lightly if focused before retina
+        if (focusX < retinaX) {
+          const slope = (eyeCy - yAtLens) / Math.max(10, focusX - lensX);
+          ctx.lineTo(retinaX, eyeCy + slope * (retinaX - focusX));
+        }
+        ctx.stroke();
+      });
+
+      // Focal point dot
+      ctx.fillStyle = Math.abs(focusX - retinaX) < 3 ? '#10b981' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(focusX, eyeCy, 5 + Math.sin(t * 4) * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Thủy tinh thể', lensX, eyeCy - eyeR * 0.56);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('Võng mạc', retinaX + 26, eyeCy - 18);
+      ctx.fillStyle = Math.abs(focusX - retinaX) < 3 ? '#10b981' : '#ef4444';
+      ctx.fillText(statusText, w * 0.5, h * 0.88);
+      return true;
+    }
+
+    // 23. POWER PLANT (HYDRO / THERMAL) & NATIONAL GRID
+    case 'power_plant_generator': {
+      const isHydro = (p.hydroMode ?? 1) >= 0.5;
+      const head = p.headOrSteam ?? 60;
+      const loadMw = p.loadMw ?? 120;
+      const rpm = 300 + head * 12;
+      const pGen = Math.min(260, (head / 60) * 130);
+      const uGridKv = 220;
+
+      pushTelemetry({
+        metric1Label: 'Nguồn năng lượng',
+        metric1Val: isHydro ? `Thủy điện (H = ${head} m)` : `Nhiệt điện (P_hơi = ${head} atm)`,
+        metric2Label: 'Tốc độ Tuabin & Công suất',
+        metric2Val: `${rpm.toFixed(0)} rpm · ${pGen.toFixed(0)} MW`,
+        metric3Label: 'Truyền tải cao áp',
+        metric3Val: `${uGridKv} kV · Tải ${loadMw} MW`,
+        note: 'Thế năng nước (hoặc hơi áp suất cao) quay tuabin → máy phát xoay chiều → biến áp nâng áp truyền tải.'
+      });
+
+      // Penstock / Boiler on left
+      const bx = w * 0.08;
+      const by = h * 0.25;
+      if (isHydro) {
+        // Dam reservoir
+        ctx.fillStyle = 'rgba(14, 165, 233, 0.35)';
+        ctx.fillRect(bx, by, 76, h * 0.55);
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(bx, by, 76, h * 0.55);
+        // Penstock pipe to turbine
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 14;
+        ctx.beginPath();
+        ctx.moveTo(bx + 76, by + 30);
+        ctx.lineTo(w * 0.34, h * 0.6);
+        ctx.stroke();
+        // Water pulses inside pipe
+        for (let i = 0; i < 5; i++) {
+          const prog = ((i * 0.2 + t * 0.8) % 1);
+          const wx = bx + 76 + prog * (w * 0.34 - (bx + 76));
+          const wy = by + 30 + prog * (h * 0.6 - (by + 30));
+          ctx.fillStyle = '#bae6fd';
+          ctx.beginPath();
+          ctx.arc(wx, wy, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        // Thermal furnace / boiler
+        ctx.fillStyle = isDark ? '#334155' : '#475569';
+        ctx.fillRect(bx, by + 20, 78, h * 0.48);
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.72)';
+        ctx.fillRect(bx + 12, by + h * 0.34, 54, 24 + Math.sin(t * 9) * 4);
+        // Steam jet pipe
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(bx + 78, by + 38);
+        ctx.lineTo(w * 0.34, h * 0.6);
+        ctx.stroke();
+        for (let i = 0; i < 6; i++) {
+          const prog = ((i * 0.16 + t * 1.1) % 1);
+          const sx = bx + 78 + prog * (w * 0.34 - (bx + 78));
+          const sy = by + 38 + prog * (h * 0.6 - (by + 38));
+          ctx.fillStyle = 'rgba(241, 245, 249, 0.85)';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Spinning Turbine + Generator at center-left
+      const tx = w * 0.38;
+      const ty = h * 0.6;
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.rotate(t * (1.8 + head * 0.04));
+      for (let b = 0; b < 6; b++) {
+        ctx.rotate(Math.PI / 3);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(-4, -30, 8, 28);
+      }
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(0, 0, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Generator housing connected to turbine shaft
+      const gx = w * 0.56;
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(tx + 14, ty);
+      ctx.lineTo(gx - 28, ty);
+      ctx.stroke();
+
+      ctx.fillStyle = isDark ? '#1e293b' : '#e2e8f0';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(gx - 30, ty - 28, 60, 56, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('MÁY PHÁT', gx, ty + 4);
+
+      // Step-up transformer & High voltage line to city pylon
+      const px = w * 0.78;
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(gx + 30, ty - 10);
+      ctx.lineTo(px, h * 0.34);
+      ctx.lineTo(w * 0.92, h * 0.34);
+      ctx.stroke();
+
+      // Power packet pulses along wire
+      const packX = gx + 30 + ((t * 95) % (w * 0.92 - (gx + 30)));
+      const packY = packX < px ? ty - 10 + ((packX - (gx + 30)) / (px - (gx + 30))) * (h * 0.34 - (ty - 10)) : h * 0.34;
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(packX, packY, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Transmission Tower
+      ctx.strokeStyle = isDark ? '#94a3b8' : '#475569';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(px - 16, h * 0.78);
+      ctx.lineTo(px, h * 0.32);
+      ctx.lineTo(px + 16, h * 0.78);
+      ctx.moveTo(px - 22, h * 0.42);
+      ctx.lineTo(px + 22, h * 0.42);
+      ctx.stroke();
+
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(isHydro ? 'Thủy điện' : 'Nhiệt điện', bx + 38, by - 10);
+      ctx.fillText('Tuabin', tx, ty + 46);
+      ctx.fillText('Biến áp & Lưới 220kV', px, h * 0.86);
+      return true;
+    }
+
+    // 24. FRESNEL ROTATING PHASORS (TỔNG HỢP DAO ĐỘNG ĐIỀU HÒA)
+    case 'fresnel_phasor_2d': {
+      const a1 = p.amp1 ?? 5;
+      const a2 = p.amp2 ?? 4;
+      const dPhiDeg = p.deltaPhiDeg ?? 60;
+      const freq = p.freqHz ?? 1.0;
+      const omega = 2 * Math.PI * freq;
+      const phi1 = -0.35;
+      const phi2 = phi1 + (dPhiDeg * Math.PI) / 180;
+      const aSum = Math.sqrt(a1 * a1 + a2 * a2 + 2 * a1 * a2 * Math.cos(phi2 - phi1));
+      const rx = a1 * Math.cos(phi1) + a2 * Math.cos(phi2);
+      const ry = a1 * Math.sin(phi1) + a2 * Math.sin(phi2);
+      const phiSum = Math.atan2(ry, rx);
+
+      const ang1 = omega * t + phi1;
+      const ang2 = omega * t + phi2;
+      const angSum = omega * t + phiSum;
+
+      pushTelemetry({
+        metric1Label: 'Biên độ tổng hợp A',
+        metric1Val: `${aSum.toFixed(2)} cm`,
+        metric2Label: 'Pha ban đầu φ',
+        metric2Val: `${((phiSum * 180) / Math.PI).toFixed(1)}°`,
+        metric3Label: 'Li độ tức thời x = x₁ + x₂',
+        metric3Val: `${(aSum * Math.cos(angSum)).toFixed(2)} cm`,
+        note: `A² = A₁² + A₂² + 2A₁A₂·cos(${dPhiDeg}°) ⇒ ${(aSum * aSum).toFixed(1)} cm².`
+      });
+
+      const ocx = w * 0.25;
+      const ocy = h * 0.5;
+      const scalePx = Math.min(w * 0.19, h * 0.36) / 10;
+
+      // Phasor x-axis & outer circle
+      ctx.strokeStyle = isDark ? 'rgba(148,163,184,0.35)' : 'rgba(71,85,105,0.3)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(ocx - 10 * scalePx, ocy);
+      ctx.lineTo(ocx + 10 * scalePx, ocy);
+      ctx.moveTo(ocx, ocy - 10 * scalePx);
+      ctx.lineTo(ocx, ocy + 10 * scalePx);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.28)';
+      ctx.beginPath();
+      ctx.arc(ocx, ocy, aSum * scalePx, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const p1x = ocx + a1 * scalePx * Math.cos(ang1);
+      const p1y = ocy - a1 * scalePx * Math.sin(ang1);
+      const p2x = ocx + a2 * scalePx * Math.cos(ang2);
+      const p2y = ocy - a2 * scalePx * Math.sin(ang2);
+      const psx = ocx + aSum * scalePx * Math.cos(angSum);
+      const psy = ocy - aSum * scalePx * Math.sin(angSum);
+
+      // Parallelogram dashed guide lines
+      ctx.strokeStyle = mut;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(p1x, p1y);
+      ctx.lineTo(psx, psy);
+      ctx.lineTo(p2x, p2y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      drawVec(ctx, ocx, ocy, p1x, p1y, '#38bdf8', 'A₁');
+      drawVec(ctx, ocx, ocy, p2x, p2y, '#10b981', 'A₂');
+      drawVec(ctx, ocx, ocy, psx, psy, '#f59e0b', 'A');
+
+      // Right-hand synchronized waveform x1(t), x2(t), x(t)
+      const gx = w * 0.5;
+      const gw = w * 0.44;
+      ctx.strokeStyle = mut;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(gx, ocy);
+      ctx.lineTo(gx + gw, ocy);
+      ctx.moveTo(gx, ocy - 10 * scalePx);
+      ctx.lineTo(gx, ocy + 10 * scalePx);
+      ctx.stroke();
+
+      const drawWave = (amp: number, ph0: number, col: string, lw: number) => {
+        ctx.strokeStyle = col;
+        ctx.lineWidth = lw;
+        ctx.beginPath();
+        for (let px = 0; px <= gw; px += 4) {
+          const dt = (px / gw) * 2.2;
+          const val = amp * Math.cos(omega * (t - dt) + ph0);
+          const py = ocy - val * scalePx;
+          if (px === 0) ctx.moveTo(gx + px, py);
+          else ctx.lineTo(gx + px, py);
+        }
+        ctx.stroke();
+      };
+      drawWave(a1, phi1, 'rgba(56,189,248,0.65)', 1.6);
+      drawWave(a2, phi2, 'rgba(16,185,129,0.65)', 1.6);
+      drawWave(aSum, phiSum, '#f59e0b', 2.8);
+
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Đồ thị x(t) = x₁ + x₂ · A = ${aSum.toFixed(2)} cm`, gx + 8, ocy - 10 * scalePx + 14);
+      return true;
+    }
+
     default:
       return false;
   }

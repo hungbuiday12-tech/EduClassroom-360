@@ -358,11 +358,11 @@ export const ARENA_ESSAY_BANK: Record<ArenaSubject, ArenaEssayPrompt[]> = {
       prompt: 'Cho hàm số $y = x^3 - 3x^2 + 2$.\n1. Tìm các điểm cực đại, cực tiểu và giá trị cực trị tương ứng.\n2. Viết phương trình tiếp tuyến của đồ thị tại điểm có hoành độ $x_0 = 3$.',
       rubricChecklist: [
         'Tính đúng đạo hàm $y\' = 3x^2 - 6x$ và giải $y\' = 0 \\Leftrightarrow x = 0, x = 2$ (30 điểm)',
-        'Kết luận đúng: Cực đại tại $x=0, y_{CĐ}=2$; Cực tiểu tại $x=2, y_{CT}=-2$ (30 điểm)',
+        'Kết luận đúng: Cực đại tại $x=0, y_{\\text{CĐ}}=2$; Cực tiểu tại $x=2, y_{\\text{CT}}=-2$ (30 điểm)',
         'Tính đúng $y(3) = 2$ và hệ số góc $y\'(3) = 9$ (20 điểm)',
         'Viết đúng phương trình tiếp tuyến $y = 9(x - 3) + 2 = 9x - 25$ (20 điểm)'
       ],
-      referenceSolution: '$y\' = 3x^2 - 6x = 0 \\Leftrightarrow x=0$ hoặc $x=2$. Lập bảng biến thiên (hoặc $y\'\'=6x-6$): đạt CĐ tại $x=0$ với $y_{CĐ}=2$, đạt CT tại $x=2$ với $y_{CT}=-2$. Tại $x_0=3$: $y(3)=2, y\'(3)=9 \\Rightarrow$ tiếp tuyến $y = 9(x-3)+2 = 9x - 25$.',
+      referenceSolution: '$y\' = 3x^2 - 6x = 0 \\Leftrightarrow x=0$ hoặc $x=2$. Lập bảng biến thiên (hoặc $y\'\'=6x-6$): đạt CĐ tại $x=0$ với $y_{\\text{CĐ}}=2$, đạt CT tại $x=2$ với $y_{\\text{CT}}=-2$. Tại $x_0=3$: $y(3)=2, y\'(3)=9 \\Rightarrow$ tiếp tuyến $y = 9(x-3)+2 = 9x - 25$.',
       maxScore: 100
     }
   ],

@@ -13,17 +13,20 @@ interface MathStudioProps {
 export const MathStudio: React.FC<MathStudioProps> = ({ onBack }) => {
   const { t, language } = useLanguage();
   const isEn = language === 'en';
-  const { navigate, goBack, goClassroom, setMathGraphConfig, setMath3DMode } = useNavigation();
+  const { navigate, goBack, goClassroom, setMathGraphConfig, setMath3DMode, setMathGeoPreset } = useNavigation();
 
   const handleNavigateFromLecture = (
     tab: 'grapher' | 'geometry' | 'math3d' | 'lectures',
-    opts?: { graphConfig?: Partial<FunctionPlotConfig>; mode3d?: Math3DMode }
+    opts?: { graphConfig?: Partial<FunctionPlotConfig>; mode3d?: Math3DMode; geoPreset?: string }
   ) => {
     if (opts?.graphConfig) {
       setMathGraphConfig({ ...opts.graphConfig });
     }
     if (opts?.mode3d) {
       setMath3DMode(opts.mode3d);
+    }
+    if (opts?.geoPreset) {
+      setMathGeoPreset(opts.geoPreset);
     }
     if (tab === 'lectures') {
       navigate({ subject: 'math', mathTab: 'lectures', mathViewMode: 'catalog' });

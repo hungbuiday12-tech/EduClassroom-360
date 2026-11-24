@@ -1,5 +1,6 @@
 import { ExamPaper, ExamQuestion } from '../types';
 import { CHUYEN_SCHOOLS_BATCH_3, THPT_INSTITUTIONS_BATCH_3 } from './extraExamsBatch3Math';
+import { safeExamSnippet } from './examSnippetHelper';
 
 export function buildPhysicsChuyenBatch4(): ExamPaper[] {
   const exams: ExamPaper[] = [];
@@ -145,7 +146,7 @@ export function buildPhysicsChuyenBatch4(): ExamPaper[] {
       school,
       source: `Nguồn tổng hợp chuẩn đề: ${school}`,
       timeMinutes: 150,
-      featuredSnippet: q1.content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 130),
       topics: ['# Vật rắn & Tsiolkovsky', '# Nhiệt động lực & Sóng dừng', '# Cảm ứng & RLC', '# Hạt nhân & Quang học'],
       difficulty: 'Chuyên / HSG',
       questions: [q1, q2, q3, q4]
@@ -280,7 +281,7 @@ export function buildPhysicsStandardBatch4(): ExamPaper[] {
       school,
       source: `Nguồn đề chuẩn THPT 2026: ${school}`,
       timeMinutes: 50,
-      featuredSnippet: q1.content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 130),
       topics: ['# Dao động & Sóng cơ', '# Điện xoay chiều & Từ trường', '# Nhiệt học & Khí lí tưởng', '# Hạt nhân & Giao thoa'],
       difficulty: i % 3 === 0 ? 'Nâng cao' : i % 2 === 0 ? 'Khá' : 'Cơ bản',
       questions: [q1, q2, q3, q4]

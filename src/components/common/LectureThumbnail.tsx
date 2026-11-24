@@ -148,6 +148,19 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
       );
     }
 
+    // Geometric Transform 3D / Planar Transformation
+    if (sim3dMode === 'geometric_transform_3d' || lowId.includes('11-16') || lowId.includes('11-17')) {
+      return (
+        <svg viewBox="0 0 56 56" className="w-full h-full">
+          <polygon points="10,40 24,40 16,24" fill="#14b8a6" fillOpacity="0.28" stroke="#0d9488" strokeWidth="1.7" />
+          <polygon points="30,28 46,28 38,11" fill="#f59e0b" fillOpacity="0.32" stroke="#d97706" strokeWidth="1.7" />
+          <line x1="16" y1="24" x2="38" y2="11" stroke="#ec4899" strokeWidth="1.6" className="holo-dash" />
+          <line x1="24" y1="40" x2="46" y2="28" stroke="#94a3b8" strokeWidth="1.2" strokeDasharray="2 2" />
+          <circle cx="38" cy="11" r="2.2" fill="#f59e0b" className="math-focus-pulse" />
+        </svg>
+      );
+    }
+
     // 2D Geometry / Triangles / Circles / Conics
     if (sim2dMode === 'geometry' || lowCat.includes('hình học')) {
       return (
@@ -353,6 +366,81 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
             <path d="M26 10L16 25" stroke="#a855f7" strokeWidth="2" className="animate-electric-flow" />
             <circle cx="26" cy="26" r="2.8" fill="#38bdf8" className="physics-wave-bob" />
             <circle cx="33" cy="31" r="2.8" fill="#38bdf8" className="physics-wave-bob" style={{ animationDelay: '0.45s' }} />
+          </svg>
+        );
+      case 'electric_power_meter':
+      case 'joule_lenz_heat':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <rect x="10" y="11" width="36" height="34" rx="5" fill="#0ea5e9" fillOpacity="0.14" stroke="#0284c7" strokeWidth="1.8" />
+            <circle cx="28" cy="24" r="7" fill="none" stroke="#f59e0b" strokeWidth="1.8" className="holo-orbit-cw" />
+            <path d="M18 37H38" stroke="#ef4444" strokeWidth="2.4" strokeLinecap="round" className="animate-electric-flow" />
+            <text x="20" y="27" fontSize="8" fontWeight="bold" fill="#0284c7">kWh</text>
+          </svg>
+        );
+      case 'dc_motor_2d':
+      case 'power_plant_generator':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <rect x="8" y="18" width="9" height="20" rx="2" fill="#ef4444" />
+            <rect x="39" y="18" width="9" height="20" rx="2" fill="#3b82f6" />
+            <circle cx="28" cy="28" r="10" fill="none" stroke="#f59e0b" strokeWidth="2.2" className="holo-orbit-cw" />
+            <line x1="21" y1="28" x2="35" y2="28" stroke="#10b981" strokeWidth="2.2" />
+            <circle cx="28" cy="28" r="2.5" fill="#f59e0b" className="math-focus-pulse" />
+          </svg>
+        );
+      case 'electrolysis_faraday':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <rect x="12" y="16" width="32" height="28" rx="4" fill="#06b6d4" fillOpacity="0.2" stroke="#0891b2" strokeWidth="1.8" />
+            <rect x="18" y="11" width="4" height="26" rx="1" fill="#f59e0b" />
+            <rect x="34" y="11" width="4" height="26" rx="1" fill="#64748b" />
+            <circle cx="28" cy="30" r="2.5" fill="#38bdf8" className="physics-wave-bob" />
+            <circle cx="25" cy="37" r="2" fill="#f59e0b" className="physics-wave-bob" style={{ animationDelay: '0.35s' }} />
+          </svg>
+        );
+      case 'eye_optics_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <ellipse cx="30" cy="28" rx="16" ry="11" fill="#e0f2fe" fillOpacity="0.3" stroke="#0284c7" strokeWidth="1.8" />
+            <ellipse cx="22" cy="28" rx="3.2" ry="7" fill="#38bdf8" stroke="#0284c7" strokeWidth="1.4" />
+            <path d="M8 23H22L44 28M8 33H22L44 28" fill="none" stroke="#f59e0b" strokeWidth="1.6" />
+            <circle cx="44" cy="28" r="2.4" fill="#ef4444" className="math-focus-pulse" />
+          </svg>
+        );
+      case 'fresnel_phasor_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <circle cx="28" cy="28" r="15" fill="none" stroke="#64748b" strokeWidth="1.4" strokeDasharray="3 2" />
+            <line x1="28" y1="28" x2="39" y2="19" stroke="#38bdf8" strokeWidth="2" />
+            <line x1="28" y1="28" x2="40" y2="33" stroke="#f59e0b" strokeWidth="2" />
+            <line x1="28" y1="28" x2="46" y2="24" stroke="#ec4899" strokeWidth="2.3" className="math-focus-pulse" />
+          </svg>
+        );
+      case 'phase_change_heating':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <path d="M10 42L18 32H28L36 20H46" fill="none" stroke="#ef4444" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            <rect x="18" y="34" width="10" height="4" rx="1" fill="#38bdf8" className="math-bar-breathe" />
+            <circle cx="36" cy="20" r="2.6" fill="#f59e0b" className="math-focus-pulse" />
+          </svg>
+        );
+      case 'em_wave_3axis':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <line x1="8" y1="28" x2="48" y2="28" stroke="#94a3b8" strokeWidth="1.3" />
+            <path d="M10 28Q16 12 22 28T34 28T46 28" fill="none" stroke="#ef4444" strokeWidth="2" className="physics-wave-bob" />
+            <path d="M10 28Q16 38 22 28T34 28T46 28" fill="none" stroke="#38bdf8" strokeWidth="1.8" className="holo-dash" />
+          </svg>
+        );
+      case 'distance_displacement_rel':
+      case 'work_power_joule':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <path d="M10 38Q24 14 44 26" fill="none" stroke="#10b981" strokeWidth="2" className="holo-dash" />
+            <line x1="10" y1="38" x2="44" y2="26" stroke="#f59e0b" strokeWidth="2.2" />
+            <circle cx="10" cy="38" r="3" fill="#3b82f6" />
+            <circle cx="44" cy="26" r="3" fill="#ef4444" className="math-focus-pulse" />
           </svg>
         );
       default:

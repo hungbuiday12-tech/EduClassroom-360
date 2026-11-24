@@ -398,7 +398,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_9A: Record<string, LectureStep[]> = {
       conceptSection:
         'Trong đường tròn $(O)$, các góc không đứng độc lập mà liên kết với nhau qua số đo cung bị chắn: góc ở tâm bằng đúng số đo cung bị chắn, còn góc nội tiếp và góc tạo bởi tia tiếp tuyến và dây cung bằng nửa số đo cung bị chắn.',
       formulaSection: {
-        primaryFormula: '\\widehat{ACB} = \\frac{1}{2}\\widehat{AOB} = \\frac{1}{2}\\text{sđ}\\wideparen{AB}',
+        primaryFormula: '\\widehat{ACB} = \\frac{1}{2}\\widehat{AOB} = \\frac{1}{2}\\text{sđ}\\overset{\\frown}{AB}',
         secondaryFormulas: [
           '\\text{Góc nội tiếp chắn nửa đường tròn } = 90^\\circ',
           '\\widehat{xAB} = \\widehat{ACB} \\quad (\\text{cùng chắn cung } AB)'

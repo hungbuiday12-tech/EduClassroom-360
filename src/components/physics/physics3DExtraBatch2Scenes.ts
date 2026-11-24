@@ -1529,6 +1529,542 @@ export function buildBatch2Extra3DScene(
       };
     }
 
+    // 22. ELECTRIC POWER METER & LAMP LOAD 3D
+    case 'electric_power_meter_3d': {
+      const bench = new THREE.Mesh(
+        new THREE.BoxGeometry(7.6, 0.25, 3.8),
+        new THREE.MeshPhysicalMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.35 })
+      );
+      bench.position.set(0, 0.125, 0);
+
+      // Power supply box (left)
+      const psu = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 1.3, 1.4),
+        new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.65, roughness: 0.28 })
+      );
+      psu.position.set(-2.6, 0.9, 0);
+
+      // kWh Meter cabinet + cutaway glass dome (center)
+      const meterBody = new THREE.Mesh(
+        new THREE.BoxGeometry(1.7, 2.0, 1.3),
+        new THREE.MeshPhysicalMaterial({ color: 0x0f172a, metalness: 0.5, roughness: 0.35, clippingPlanes: clipPlanes })
+      );
+      meterBody.position.set(0, 1.25, -0.2);
+
+      const meterGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 1.15, 0.3),
+        new THREE.MeshPhysicalMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.28, roughness: 0.05, clearcoat: 1, depthWrite: false, clippingPlanes: clipPlanes })
+      );
+      meterGlass.position.set(0, 1.4, 0.52);
+
+      // Rotating aluminum kWh disc + red strobe index tab
+      const discGroup = new THREE.Group();
+      discGroup.position.set(0, 1.15, 0.35);
+      const disc = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.55, 0.55, 0.08, 32),
+        new THREE.MeshPhysicalMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.15 })
+      );
+      const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(0.16, 0.1, 0.56),
+        new THREE.MeshBasicMaterial({ color: 0xef4444 })
+      );
+      stripe.position.set(0, 0, 0.26);
+      discGroup.add(disc, stripe);
+
+      // Load lamp (right)
+      const socket = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.42, 0.5, 0.55, 24),
+        new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 })
+      );
+      socket.position.set(2.5, 0.52, 0);
+
+      const filamentMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 2.0 });
+      const filament = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.045, 10, 24, Math.PI * 1.4), filamentMat);
+      filament.position.set(2.5, 1.35, 0);
+      filament.rotation.z = -0.7;
+
+      const bulbMat = new THREE.MeshPhysicalMaterial({
+        color: 0xfef9c3,
+        emissive: 0xfacc15,
+        emissiveIntensity: 0.45,
+        transparent: true,
+        opacity: 0.45,
+        roughness: 0.08,
+        clearcoat: 1,
+        depthWrite: false,
+        clippingPlanes: clipPlanes
+      });
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.68, 28, 24), bulbMat);
+      bulb.position.set(2.5, 1.45, 0);
+
+      // Copper wire path
+      const wireMat = new THREE.MeshPhysicalMaterial({ color: 0xf97316, metalness: 0.75, roughness: 0.25 });
+      const wireTop = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 5.2, 12), wireMat);
+      wireTop.rotation.z = Math.PI / 2;
+      wireTop.position.set(0, 0.55, 0.85);
+      const wireBot = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 5.2, 12), wireMat);
+      wireBot.rotation.z = Math.PI / 2;
+      wireBot.position.set(0, 0.55, -0.85);
+
+      // Charge carrier spheres
+      const chargeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const chargeGeo = new THREE.SphereGeometry(0.085, 10, 10);
+      const charges: THREE.Mesh[] = [];
+      for (let i = 0; i < 14; i++) {
+        const c = new THREE.Mesh(chargeGeo, chargeMat);
+        charges.push(c);
+        group.add(c);
+      }
+
+      group.add(
+        bench,
+        psu,
+        meterBody,
+        meterGlass,
+        discGroup,
+        socket,
+        filament,
+        bulb,
+        wireTop,
+        wireBot,
+        createTroikaLabel({ text: 'Nguồn U', position: [-2.6, 2.0, 0], fontSize: 0.26, color: 0xfbbf24 }),
+        createTroikaLabel({ text: 'Công tơ kWh (P = UI)', position: [0, 2.65, 0], fontSize: 0.28, color: 0x34d399 }),
+        createTroikaLabel({ text: 'Đèn tải R', position: [2.5, 2.55, 0], fontSize: 0.26, color: 0xfde047 })
+      );
+
+      let discAngle = 0;
+      return (effDt) => {
+        const { p1: U, p2: R } = getParams();
+        const curI = U / Math.max(1, R);
+        const power = U * curI;
+        const speedScale = THREE.MathUtils.clamp(power / 350, 0.15, 6.0);
+        discAngle += effDt * speedScale * 2.6;
+        discGroup.rotation.y = discAngle;
+
+        const glow = THREE.MathUtils.clamp(power / 650, 0.15, 3.0);
+        filamentMat.emissiveIntensity = 0.8 + glow * 2.2;
+        bulbMat.emissiveIntensity = 0.1 + glow * 0.75;
+
+        const t = getElapsed();
+        for (let i = 0; i < charges.length; i++) {
+          const frac = ((i / charges.length) + t * speedScale * 0.25) % 1;
+          if (frac < 0.5) {
+            const u = frac * 2;
+            charges[i].position.set(-2.6 + u * 5.1, 0.55, 0.85);
+          } else {
+            const u = (frac - 0.5) * 2;
+            charges[i].position.set(2.5 - u * 5.1, 0.55, -0.85);
+          }
+        }
+      };
+    }
+
+    // 23. ELECTROLYSIS & FARADAY'S LAW 3D
+    case 'electrolysis_3d': {
+      const tankGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(4.4, 2.8, 2.6),
+        new THREE.MeshPhysicalMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.22, roughness: 0.06, clearcoat: 1, depthWrite: false, clippingPlanes: clipPlanes })
+      );
+      tankGlass.position.set(0, 1.5, 0);
+
+      const electrolyte = new THREE.Mesh(
+        new THREE.BoxGeometry(4.2, 2.1, 2.4),
+        new THREE.MeshPhysicalMaterial({ color: 0x0284c7, transparent: true, opacity: 0.36, roughness: 0.1, depthWrite: false, clippingPlanes: clipPlanes })
+      );
+      electrolyte.position.set(0, 1.18, 0);
+
+      const baseTray = new THREE.Mesh(
+        new THREE.BoxGeometry(4.8, 0.22, 3.0),
+        new THREE.MeshPhysicalMaterial({ color: 0x1e293b, metalness: 0.65, roughness: 0.3 })
+      );
+      baseTray.position.set(0, 0.11, 0);
+
+      const anodeMat = new THREE.MeshPhysicalMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.25 });
+      const anode = new THREE.Mesh(new THREE.BoxGeometry(0.28, 2.3, 1.5), anodeMat);
+      anode.position.set(-1.35, 1.55, 0);
+
+      const cathodeBase = new THREE.Mesh(
+        new THREE.BoxGeometry(0.24, 2.3, 1.5),
+        new THREE.MeshPhysicalMaterial({ color: 0x64748b, metalness: 0.85, roughness: 0.25 })
+      );
+      cathodeBase.position.set(1.35, 1.55, 0);
+
+      // Deposited copper coating that grows thicker with Faraday mass m ~ I * t
+      const coatMat = new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, metalness: 0.92, roughness: 0.15, clearcoat: 0.6 });
+      const copperCoat = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.85, 1.54), coatMat);
+      copperCoat.position.set(1.35, 1.18, 0);
+
+      // DC power bridge
+      const psuBox = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 0.55, 0.9),
+        new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.3 })
+      );
+      psuBox.position.set(0, 3.35, 0);
+
+      // Animated ions Cu2+ (orange, heading to cathode +x) & SO4^2- (cyan, heading to anode -x)
+      const cuGeo = new THREE.SphereGeometry(0.095, 12, 10);
+      const cuMat = new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c, emissiveIntensity: 0.45 });
+      const so4Mat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.45 });
+      const cuIons: { mesh: THREE.Mesh; seed: number; y: number; z: number }[] = [];
+      const so4Ions: { mesh: THREE.Mesh; seed: number; y: number; z: number }[] = [];
+      for (let i = 0; i < 16; i++) {
+        const mCu = new THREE.Mesh(cuGeo, cuMat);
+        cuIons.push({ mesh: mCu, seed: i / 16, y: 0.45 + (i % 4) * 0.45, z: ((i * 0.37) % 1.4) - 0.7 });
+        group.add(mCu);
+      }
+      for (let i = 0; i < 12; i++) {
+        const mSo = new THREE.Mesh(cuGeo, so4Mat);
+        so4Ions.push({ mesh: mSo, seed: i / 12, y: 0.5 + ((i + 2) % 4) * 0.42, z: ((i * 0.43) % 1.4) - 0.7 });
+        group.add(mSo);
+      }
+
+      group.add(
+        baseTray,
+        electrolyte,
+        tankGlass,
+        anode,
+        cathodeBase,
+        copperCoat,
+        psuBox,
+        createTroikaLabel({ text: 'Anôt Cu (+)', position: [-1.45, 3.05, 0], fontSize: 0.24, color: 0xfb7185 }),
+        createTroikaLabel({ text: 'Catôt (−) Mạ Đồng', position: [1.45, 3.05, 0], fontSize: 0.24, color: 0x34d399 }),
+        createTroikaLabel({ text: 'm = (A / Fn)·I·t', position: [0, 3.95, 0], fontSize: 0.28, color: 0xfbbf24 })
+      );
+
+      return () => {
+        const { p1: curI, p2: mins } = getParams();
+        const t = getElapsed();
+        const cycle = (t * 0.14) % 1;
+        const speed = 0.2 + curI * 0.08;
+
+        for (let i = 0; i < cuIons.length; i++) {
+          const item = cuIons[i];
+          const f = (item.seed + t * speed) % 1;
+          item.mesh.position.set(-1.15 + f * 2.3, item.y + Math.sin(t * 2 + i) * 0.04, item.z);
+        }
+        for (let i = 0; i < so4Ions.length; i++) {
+          const item = so4Ions[i];
+          const f = (item.seed + t * speed * 0.8) % 1;
+          item.mesh.position.set(1.15 - f * 2.3, item.y + Math.cos(t * 2 + i) * 0.04, item.z);
+        }
+
+        const massFactor = THREE.MathUtils.clamp((curI * mins) / 180, 0.2, 2.2);
+        copperCoat.scale.x = 1 + cycle * massFactor * 0.85;
+        anode.scale.x = Math.max(0.4, 1 - cycle * 0.35);
+      };
+    }
+
+    // 24. HUMAN EYE OPTICS & VISION CORRECTION 3D
+    case 'eye_optics_3d': {
+      const stand = new THREE.Mesh(
+        new THREE.BoxGeometry(7.2, 0.22, 3.2),
+        new THREE.MeshPhysicalMaterial({ color: 0x1e293b, metalness: 0.5, roughness: 0.35 })
+      );
+      stand.position.set(0, 0.11, 0);
+
+      // Sclera eyeball dome with clipping cutaway
+      const eyeCenterX = 1.1;
+      const eyeY = 2.05;
+      const eyeR = 1.45;
+      const eyeball = new THREE.Mesh(
+        new THREE.SphereGeometry(eyeR, 36, 28),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xe0f2fe,
+          transparent: true,
+          opacity: 0.24,
+          roughness: 0.08,
+          clearcoat: 1,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          clippingPlanes: clipPlanes
+        })
+      );
+      eyeball.position.set(eyeCenterX, eyeY, 0);
+
+      // Retina curved patch on back (+X inner surface)
+      const retina = new THREE.Mesh(
+        new THREE.SphereGeometry(eyeR - 0.05, 24, 18, -0.55, 1.1, 1.0, 1.15),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.4, side: THREE.DoubleSide })
+      );
+      retina.position.set(eyeCenterX, eyeY, 0);
+
+      // Crystalline biconvex lens
+      const eyeLens = new THREE.Mesh(
+        new THREE.SphereGeometry(0.66, 24, 20),
+        new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55, roughness: 0.05, clearcoat: 1 })
+      );
+      eyeLens.scale.set(0.32, 1.0, 1.0);
+      eyeLens.position.set(eyeCenterX - eyeR * 0.78, eyeY, 0);
+
+      // Corrective spectacle lens frame in front of eye
+      const glassGroup = new THREE.Group();
+      glassGroup.position.set(eyeCenterX - eyeR - 0.85, eyeY, 0);
+      const glassLens = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.75, 0.75, 0.14, 28),
+        new THREE.MeshPhysicalMaterial({ color: 0xec4899, transparent: true, opacity: 0.42, roughness: 0.05, clearcoat: 1 })
+      );
+      glassLens.rotation.z = Math.PI / 2;
+      const glassRim = new THREE.Mesh(
+        new THREE.TorusGeometry(0.76, 0.045, 12, 32),
+        new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.2 })
+      );
+      glassRim.rotation.y = Math.PI / 2;
+      glassGroup.add(glassLens, glassRim);
+
+      // Rays (4 perimeter cones/segments updated in-place)
+      const rayGeo = new THREE.CylinderGeometry(0.025, 0.025, 1, 8);
+      const rayMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+      const offsets: [number, number][] = [
+        [0, 0.42],
+        [0, -0.42],
+        [0.42, 0],
+        [-0.42, 0]
+      ];
+      const inRays: THREE.Mesh[] = [];
+      const outRays: THREE.Mesh[] = [];
+      for (let i = 0; i < 4; i++) {
+        const rIn = new THREE.Mesh(rayGeo, rayMat);
+        const rOut = new THREE.Mesh(rayGeo, rayMat);
+        inRays.push(rIn);
+        outRays.push(rOut);
+        group.add(rIn, rOut);
+      }
+
+      const focusOrb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 14, 12),
+        new THREE.MeshBasicMaterial({ color: 0x10b981 })
+      );
+
+      const pA = new THREE.Vector3();
+      const pB = new THREE.Vector3();
+      const tmp = new THREE.Vector3();
+
+      group.add(
+        stand,
+        eyeball,
+        retina,
+        eyeLens,
+        glassGroup,
+        focusOrb,
+        createTroikaLabel({ text: 'Kính sửa tật', position: [glassGroup.position.x, eyeY + 1.15, 0], fontSize: 0.24, color: 0xf472b6 }),
+        createTroikaLabel({ text: 'Thể thủy tinh', position: [eyeLens.position.x, eyeY + 1.1, 0], fontSize: 0.24, color: 0x38bdf8 }),
+        createTroikaLabel({ text: 'Võng mạc', position: [eyeCenterX + eyeR, eyeY + 1.1, 0], fontSize: 0.24, color: 0xfbbf24 })
+      );
+
+      return () => {
+        const { p1: defectRaw, p2: glassRaw } = getParams();
+        const defect = Math.round(defectRaw); // 0: Normal, 1: Myopia, 2: Hyperopia
+        const useGlass = glassRaw >= 0.5 && defect !== 0;
+        glassGroup.visible = useGlass;
+
+        const retinaX = eyeCenterX + eyeR * 0.94;
+        let focusX = retinaX;
+        if (!useGlass) {
+          if (defect === 1) focusX = eyeCenterX + 0.25; // before retina
+          if (defect === 2) focusX = retinaX + 0.85; // behind retina
+        }
+
+        const isSharp = Math.abs(focusX - retinaX) < 0.08;
+        (focusOrb.material as THREE.MeshBasicMaterial).color.setHex(isSharp ? 0x10b981 : 0xef4444);
+        focusOrb.position.set(focusX, eyeY, 0);
+
+        const srcX = -2.9;
+        const lensX = eyeLens.position.x;
+        for (let i = 0; i < 4; i++) {
+          const [dz, dy] = offsets[i];
+          pA.set(srcX, eyeY + dy, dz);
+          pB.set(lensX, eyeY + dy, dz);
+          orientSeg(inRays[i], pA, pB, tmp, upAxis);
+
+          pA.set(lensX, eyeY + dy, dz);
+          pB.set(focusX, eyeY, 0);
+          orientSeg(outRays[i], pA, pB, tmp, upAxis);
+        }
+      };
+    }
+
+    // 25. ELECTROMAGNETIC WAVE 3-AXIS (E ⊥ B ⊥ v) 3D
+    case 'em_wave_3d': {
+      const axisLen = 7.4;
+      const xStart = -axisLen / 2;
+      const axisX = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035, 0.035, axisLen, 12),
+        new THREE.MeshBasicMaterial({ color: 0x94a3b8 })
+      );
+      axisX.rotation.z = Math.PI / 2;
+      axisX.position.set(0, 2.0, 0);
+
+      const nSamples = 36;
+      const shaftGeo = new THREE.CylinderGeometry(0.032, 0.032, 1, 8);
+      const eMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+      const bMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const eBars: THREE.Mesh[] = [];
+      const bBars: THREE.Mesh[] = [];
+      const eLinePts: number[] = new Array(nSamples * 3).fill(0);
+      const bLinePts: number[] = new Array(nSamples * 3).fill(0);
+
+      for (let i = 0; i < nSamples; i++) {
+        const eb = new THREE.Mesh(shaftGeo, eMat);
+        const bb = new THREE.Mesh(shaftGeo, bMat);
+        bb.rotation.x = Math.PI / 2;
+        eBars.push(eb);
+        bBars.push(bb);
+        group.add(eb, bb);
+      }
+
+      const eCurveGeo = new THREE.BufferGeometry();
+      eCurveGeo.setAttribute('position', new THREE.Float32BufferAttribute(eLinePts, 3));
+      const bCurveGeo = new THREE.BufferGeometry();
+      bCurveGeo.setAttribute('position', new THREE.Float32BufferAttribute(bLinePts, 3));
+      const eLine = new THREE.Line(eCurveGeo, new THREE.LineBasicMaterial({ color: 0xfb7185 }));
+      const bLine = new THREE.Line(bCurveGeo, new THREE.LineBasicMaterial({ color: 0x7dd3fc }));
+
+      group.add(
+        axisX,
+        eLine,
+        bLine,
+        createTroikaLabel({ text: 'Điện trường E (Trục đứng Y)', position: [-1.8, 3.65, 0], fontSize: 0.26, color: 0xfb7185 }),
+        createTroikaLabel({ text: 'Từ trường B (Trục ngang Z)', position: [1.5, 2.2, 1.5], fontSize: 0.26, color: 0x38bdf8 }),
+        createTroikaLabel({ text: 'Phương truyền sóng c →', position: [3.1, 1.55, 0], fontSize: 0.24, color: 0xe2e8f0 })
+      );
+
+      return () => {
+        const { p1: freqScale, p2: ampScale } = getParams();
+        const t = getElapsed();
+        const k = 1.65 * freqScale;
+        const omega = 3.2 * freqScale;
+        const ePos = eCurveGeo.attributes.position as THREE.BufferAttribute;
+        const bPos = bCurveGeo.attributes.position as THREE.BufferAttribute;
+
+        for (let i = 0; i < nSamples; i++) {
+          const x = xStart + (i / (nSamples - 1)) * axisLen;
+          const val = Math.sin(k * x - omega * t) * (1.25 * ampScale);
+          const absV = Math.max(0.03, Math.abs(val));
+
+          eBars[i].position.set(x, 2.0 + val * 0.5, 0);
+          eBars[i].scale.y = absV;
+
+          bBars[i].position.set(x, 2.0, val * 0.5);
+          bBars[i].scale.y = absV;
+
+          ePos.setXYZ(i, x, 2.0 + val, 0);
+          bPos.setXYZ(i, x, 2.0, val);
+        }
+        ePos.needsUpdate = true;
+        bPos.needsUpdate = true;
+      };
+    }
+
+    // 26. POWER PLANT (HYDRO / THERMAL) & TRANSMISSION GRID 3D
+    case 'power_plant_3d': {
+      const ground = new THREE.Mesh(
+        new THREE.BoxGeometry(8.2, 0.22, 4.0),
+        new THREE.MeshPhysicalMaterial({ color: 0x0f172a, roughness: 0.7, metalness: 0.2 })
+      );
+      ground.position.set(0, 0.11, 0);
+
+      // Dam / Boiler block (left)
+      const damMat = new THREE.MeshPhysicalMaterial({ color: 0x475569, roughness: 0.6, metalness: 0.25 });
+      const damBlock = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 2.2), damMat);
+      damBlock.position.set(-2.9, 1.35, 0);
+
+      const fluidMat = new THREE.MeshPhysicalMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.72, roughness: 0.15 });
+      const penstock = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.9, 16), fluidMat);
+      penstock.rotation.z = -1.0;
+      penstock.position.set(-1.75, 1.55, 0);
+
+      // Spinning turbine wheel
+      const turbineGroup = new THREE.Group();
+      turbineGroup.position.set(-0.7, 1.05, 0);
+      const hub = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.26, 0.26, 0.7, 20),
+        new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, metalness: 0.85, roughness: 0.2 })
+      );
+      hub.rotation.x = Math.PI / 2;
+      turbineGroup.add(hub);
+      for (let b = 0; b < 6; b++) {
+        const blade = new THREE.Mesh(
+          new THREE.BoxGeometry(0.14, 1.2, 0.34),
+          new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, metalness: 0.75, roughness: 0.2 })
+        );
+        blade.rotation.z = (b * Math.PI) / 3;
+        turbineGroup.add(blade);
+      }
+
+      // AC Generator Stator + Shaft
+      const shaft = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.09, 0.09, 1.3, 12),
+        new THREE.MeshPhysicalMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.15 })
+      );
+      shaft.rotation.z = Math.PI / 2;
+      shaft.position.set(-0.05, 1.05, 0);
+
+      const genStator = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.68, 0.68, 1.2, 24),
+        new THREE.MeshPhysicalMaterial({ color: 0xd97706, metalness: 0.7, roughness: 0.25, clippingPlanes: clipPlanes })
+      );
+      genStator.rotation.z = Math.PI / 2;
+      genStator.position.set(0.85, 1.05, 0);
+
+      // Step-up transformer & High-voltage transmission pylon
+      const txBox = new THREE.Mesh(
+        new THREE.BoxGeometry(0.95, 1.05, 0.95),
+        new THREE.MeshPhysicalMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 })
+      );
+      txBox.position.set(2.05, 0.72, 0);
+
+      const pylonMast = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.2, 2.8, 8),
+        new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.25 })
+      );
+      pylonMast.position.set(3.25, 1.6, 0);
+      const pylonArm = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.1, 1.5),
+        new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.25 })
+      );
+      pylonArm.position.set(3.25, 2.75, 0);
+
+      const packetGeo = new THREE.SphereGeometry(0.09, 10, 10);
+      const packetMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+      const packets: THREE.Mesh[] = [];
+      for (let i = 0; i < 6; i++) {
+        const pk = new THREE.Mesh(packetGeo, packetMat);
+        packets.push(pk);
+        group.add(pk);
+      }
+
+      group.add(
+        ground,
+        damBlock,
+        penstock,
+        turbineGroup,
+        shaft,
+        genStator,
+        txBox,
+        pylonMast,
+        pylonArm,
+        createTroikaLabel({ text: 'Đập Thủy Điện / Lò Hơi', position: [-2.9, 2.95, 0], fontSize: 0.24, color: 0x38bdf8 }),
+        createTroikaLabel({ text: 'Tuabin & Máy Phát AC', position: [0.2, 2.25, 0], fontSize: 0.25, color: 0xfbbf24 }),
+        createTroikaLabel({ text: 'Trạm Tăng Áp 220 kV', position: [2.7, 3.25, 0], fontSize: 0.24, color: 0x34d399 })
+      );
+
+      return (effDt) => {
+        const { p1: flow, p2: hydroFlag } = getParams();
+        const isHydro = hydroFlag >= 0.5;
+        fluidMat.color.setHex(isHydro ? 0x0ea5e9 : 0xe2e8f0);
+        damMat.color.setHex(isHydro ? 0x475569 : 0x7f1d1d);
+        turbineGroup.rotation.z -= effDt * (2.2 * flow);
+
+        const t = getElapsed();
+        for (let i = 0; i < packets.length; i++) {
+          const frac = ((i / packets.length) + t * flow * 0.45) % 1;
+          const x = 1.45 + frac * 1.85;
+          const y = 1.1 + frac * 1.65;
+          packets[i].position.set(x, y, 0);
+        }
+      };
+    }
+
     default:
       return null;
   }

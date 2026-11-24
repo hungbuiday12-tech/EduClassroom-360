@@ -12,7 +12,7 @@ export const MATH_GDPT_2006_GRADE_10: MathLecture[] = [
     lessonNumber: 1,
     stageLabel: 'Toán 10 (2006) · ĐS Chương I: Mệnh đề. Tập hợp',
     sourceTag: 'SGK Đại số 10 (2006) · Bài 1',
-    title: 'Bài 1 (2006): Mệnh đề & Mệnh đề chứa biến (∀, ∃)',
+    title: 'Bài 1 (2006): Mệnh đề & Mệnh đề chứa biến ($\\forall, \\exists$)',
     grade: 'Lớp 10 · Đại số',
     category: 'Đại số',
     difficulty: 'Cơ bản',
@@ -190,7 +190,7 @@ export const MATH_GDPT_2006_GRADE_10: MathLecture[] = [
     lessonNumber: 4,
     stageLabel: 'Toán 10 (2006) · ĐS Chương II: Hàm số bậc nhất và bậc hai',
     sourceTag: 'SGK Đại số 10 (2006) · Bài 2–3',
-    title: 'Bài 4 (2006): Hàm số bậc nhất & Hàm số bậc hai y = ax² + bx + c',
+    title: 'Bài 4 (2006): Hàm số bậc nhất & Hàm số bậc hai $y = ax^2 + bx + c$',
     grade: 'Lớp 10 · Đại số',
     category: 'Đại số',
     difficulty: 'Cơ bản',
@@ -768,6 +768,7 @@ export const MATH_GDPT_2006_GRADE_10: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'vector_parallelogram',
     sim3dMode: 'oxyz_vector'
   },
   {
@@ -824,6 +825,7 @@ export const MATH_GDPT_2006_GRADE_10: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'vector_parallelogram',
     sim3dMode: 'oxyz_vector'
   },
   // ==================== HÌNH HỌC 10 · CHƯƠNG II: TÍCH VÔ HƯỚNG & HỆ THỨC LƯỢNG ====================
@@ -882,6 +884,7 @@ export const MATH_GDPT_2006_GRADE_10: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'vector_parallelogram',
     sim3dMode: 'oxyz_vector'
   },
   {
@@ -939,6 +942,7 @@ export const MATH_GDPT_2006_GRADE_10: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'triangle_explorer',
     sim3dMode: 'circle_theorems_3d'
   },
   // ==================== HÌNH HỌC 10 · CHƯƠNG III: PHƯƠNG PHÁP TỌA ĐỘ TRONG MẶT PHẲNG ====================
@@ -1058,6 +1062,7 @@ export const MATH_GDPT_2006_GRADE_10: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'circle_tangent',
     sim3dMode: 'circle_theorems_3d'
   },
   {
@@ -1067,7 +1072,7 @@ export const MATH_GDPT_2006_GRADE_10: MathLecture[] = [
     lessonNumber: 19,
     stageLabel: 'Toán 10 (2006) · HH Chương III: Phương pháp tọa độ Oxy',
     sourceTag: 'SGK Hình học 10 (2006) · Bài 3',
-    title: 'Bài 19 (2006): Phương trình Đường Elip (E): x²/a² + y²/b² = 1',
+    title: 'Bài 19 (2006): Phương trình Đường Elip $(E): \\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1$',
     grade: 'Lớp 10 · Hình học',
     category: 'Hình học',
     difficulty: 'Thông hiểu',
@@ -1115,6 +1120,7 @@ export const MATH_GDPT_2006_GRADE_10: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'conic_ellipse',
     sim3dMode: 'conic_sections_3d'
   },
   {

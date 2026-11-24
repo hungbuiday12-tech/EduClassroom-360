@@ -39,7 +39,7 @@ import { useNavigation } from '../../context/NavigationContext';
 interface MathLecturesProps {
   onNavigateTab?: (
     tab: 'grapher' | 'geometry' | 'math3d' | 'lectures',
-    opts?: { graphConfig?: Partial<FunctionPlotConfig>; mode3d?: Math3DMode }
+    opts?: { graphConfig?: Partial<FunctionPlotConfig>; mode3d?: Math3DMode; geoPreset?: string }
   ) => void;
 }
 
@@ -63,6 +63,8 @@ const get3DModeLabel = (mode?: Math3DMode): string => {
       return 'Bề Mặt Đạo Hàm & Tiếp Diện 3D';
     case 'probability_bell_3d':
       return 'Chuông Phân Phối & Xác Suất 3D';
+    case 'geometric_transform_3d':
+      return 'Phép Biến Hình & Tọa Độ Không Gian 3D';
     default:
       return 'Hệ Trục Oxyz 3D';
   }
@@ -282,7 +284,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
   const handleOpen2DSimForLecture = (lec: MathLecture) => {
     if (!onNavigateTab) return;
     if (lec.sim2dMode === 'geometry') {
-      onNavigateTab('geometry');
+      onNavigateTab('geometry', lec.sim2dPreset ? { geoPreset: lec.sim2dPreset } : undefined);
       return;
     }
     const fallbackConfig: Partial<FunctionPlotConfig> = lec.defaultGraphConfig || {

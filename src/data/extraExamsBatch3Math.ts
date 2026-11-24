@@ -1,4 +1,5 @@
 import { ExamPaper, ExamQuestion } from '../types';
+import { safeExamSnippet } from './examSnippetHelper';
 
 export const CHUYEN_SCHOOLS_BATCH_3 = [
   'THPT Chuyên Hà Nội – Amsterdam (Đề chọn HSG)',
@@ -94,7 +95,7 @@ export function buildMathChuyenBatch3(): ExamPaper[] {
         number: 'Bài 1',
         points: '2.5 điểm',
         content: `a) Cho phương trình $x^2 - ${2 * (p + 1)}x + ${p * (p + 2)} = 0$. Không giải trực tiếp bằng công thức nghiệm, dùng hệ thức Viète tính $A = x_1^3 + x_2^3 - ${q}x_1 x_2$.\nb) Cho $a, b, c > 0$ thỏa mãn $a + b + c = 3$. Chứng minh bất đẳng thức Schur dạng:\n$$a^2 + b^2 + c^2 + abc \\ge 4.$$`,
-        solution: `a) Ta có $\\Delta' = (${p + 1})^2 - ${p * (p + 2)} = 1 > 0$, nên phương trình luôn có hai nghiệm phân biệt với $S = x_1 + x_2 = ${2 * (p + 1)}$ và $P = x_1 x_2 = ${p * (p + 2)}$.\nDo đó:\n$$x_1^3 + x_2^3 = S^3 - 3SP = ${2 * (p + 1)}^3 - 3\\cdot ${2 * (p + 1)}\\cdot ${p * (p + 2)} = ${2 * (p + 1) * (4 * (p + 1) * (p + 1) - 3 * p * (p + 2))}.$$\nTừ đó trừ đi ${q}P = ${q * p * (p + 2)}$ để thu được giá trị số chính xác $A = ${2 * (p + 1) * (4 * (p + 1) * (p + 1) - 3 * p * (p + 2)) - q * p * (p + 2)}$.\n\nb) Trong 3 số $a - 1, b - 1, c - 1$ luôn có ít nhất 2 số cùng dấu (giả sử $(a - 1)(b - 1) \\ge 0$). Ta có $ab \\ge a + b - 1 = 2 - c$, suy ra $abc \\ge 2c - c^2$. Mặt khác:\n$$a^2 + b^2 \\ge \\frac{(a + b)^2}{2} = \\frac{(3 - c)^2}{2}.$$\nCộng lại: $a^2 + b^2 + c^2 + abc \\ge \\frac{(3 - c)^2}{2} + 2c = 4 + \\frac{(c - 1)^2}{2} \\ge 4$.`,
+        solution: `a) Ta có $\\Delta' = (${p + 1})^2 - ${p * (p + 2)} = 1 > 0$, nên phương trình luôn có hai nghiệm phân biệt với $S = x_1 + x_2 = ${2 * (p + 1)}$ và $P = x_1 x_2 = ${p * (p + 2)}$.\nDo đó:\n$$x_1^3 + x_2^3 = S^3 - 3SP = ${2 * (p + 1)}^3 - 3\\cdot ${2 * (p + 1)}\\cdot ${p * (p + 2)} = ${2 * (p + 1) * (4 * (p + 1) * (p + 1) - 3 * p * (p + 2))}.$$\nTừ đó trừ đi $${q}P = ${q * p * (p + 2)}$ để thu được giá trị số chính xác $A = ${2 * (p + 1) * (4 * (p + 1) * (p + 1) - 3 * p * (p + 2)) - q * p * (p + 2)}$.\n\nb) Trong 3 số $a - 1, b - 1, c - 1$ luôn có ít nhất 2 số cùng dấu (giả sử $(a - 1)(b - 1) \\ge 0$). Ta có $ab \\ge a + b - 1 = 2 - c$, suy ra $abc \\ge 2c - c^2$. Mặt khác:\n$$a^2 + b^2 \\ge \\frac{(a + b)^2}{2} = \\frac{(3 - c)^2}{2}.$$\nCộng lại: $a^2 + b^2 + c^2 + abc \\ge \\frac{(3 - c)^2}{2} + 2c = 4 + \\frac{(c - 1)^2}{2} \\ge 4$.`,
         keyFormulasOrHints: ['x1^3 + x2^3 = (x1+x2)^3 - 3x1x2(x1+x2)', 'Nguyên lý Dirichlet chọn 2 số (a-1)(b-1) >= 0']
       },
       {
@@ -241,7 +242,7 @@ export function buildMathChuyenBatch3(): ExamPaper[] {
       school,
       source: `Nguồn tổng hợp chuẩn đề: ${school}`,
       timeMinutes: 150,
-      featuredSnippet: q1.content.slice(0, 135) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 135),
       topics: ['# Đánh giá & Schur', '# Số học & Đa thức', '# Đường tròn Euler & Simson', '# Tổ hợp Ramsey & Bất biến'],
       difficulty: 'Chuyên / HSG',
       questions: [q1, q2, q3, q4]
@@ -313,7 +314,7 @@ export function buildMathStandardBatch3(): ExamPaper[] {
         number: 'Câu 2',
         points: '2.5 điểm',
         content: `a) Cho cấp số nhân $(u_n)$ có $u_1 = ${a}$ và $u_4 = ${8 * a}$. Tìm công bội $q$ và tổng $6$ số hạng đầu $S_6$.\nb) Một chất điểm chuyển động theo phương trình $s(t) = t^3 - 3t^2 + ${b}t + 1$ ($t$ tính bằng giây, $s$ tính bằng mét). Tìm thời điểm vận tốc tức thời của chất điểm đạt giá trị nhỏ nhất.`,
-        solution: `a) Từ $u_4 = u_1 q^3 \\implies ${8 * a} = ${a} q^3 \\iff q^3 = 8 \\implies q = 2$.\nTổng $6$ số hạng đầu:\n$$S_6 = u_1 \\frac{q^6 - 1}{q - 1} = ${a} \\cdot \\frac{64 - 1}{2 - 1} = ${63 * a}.$$\n\nb) Vận tốc tức thời là đạo hàm của quãng đường theo thời gian:\n$$v(t) = s'(t) = 3t^2 - 6t + ${b} = 3(t - 1)^2 + ${b - 3}.$$\nDo đó vận tốc tức thời đạt giá trị nhỏ nhất bằng ${b - 3}\\text{ m/s}$ tại thời điểm $t = 1\\text{ giây}$.`,
+        solution: `a) Từ $u_4 = u_1 q^3 \\implies ${8 * a} = ${a} q^3 \\iff q^3 = 8 \\implies q = 2$.\nTổng $6$ số hạng đầu:\n$$S_6 = u_1 \\frac{q^6 - 1}{q - 1} = ${a} \\cdot \\frac{64 - 1}{2 - 1} = ${63 * a}.$$\n\nb) Vận tốc tức thời là đạo hàm của quãng đường theo thời gian:\n$$v(t) = s'(t) = 3t^2 - 6t + ${b} = 3(t - 1)^2 + ${b - 3}.$$\nDo đó vận tốc tức thời đạt giá trị nhỏ nhất bằng $${b - 3}\\text{ m/s}$ tại thời điểm $t = 1\\text{ giây}$.`,
         keyFormulasOrHints: ['u_n = u_1 * q^(n-1)', 'Ý nghĩa cơ học đạo hàm: v(t) = s\'(t)']
       },
       {
@@ -337,7 +338,7 @@ export function buildMathStandardBatch3(): ExamPaper[] {
       {
         number: 'Câu 3',
         points: '2.5 điểm',
-        content: `Một chiếc ô tô đang chạy với tốc độ $v_0 = ${10 + 2 * a}\\text{ m/s}$ thì người lái đạp phanh; từ thời điểm đó ô tô chuyển động chậm dần đều với vận tốc $v(t) = -4t + ${10 + 2 * a}$ (m/s), trong đó $t$ là khoảng thời gian tính bằng giây kể từ lúc bắt đầu đạp phanh.\na) Hỏi sau bao lâu kể từ lúc đạp phanh thì ô tô dừng hẳn?\nb) Tính quãng đường ô tô đi được trong ${2 + (i % 2)}$ giây đầu tiên kể từ lúc đạp phanh.`,
+        content: `Một chiếc ô tô đang chạy với tốc độ $v_0 = ${10 + 2 * a}\\text{ m/s}$ thì người lái đạp phanh; từ thời điểm đó ô tô chuyển động chậm dần đều với vận tốc $v(t) = -4t + ${10 + 2 * a}$ (m/s), trong đó $t$ là khoảng thời gian tính bằng giây kể từ lúc bắt đầu đạp phanh.\na) Hỏi sau bao lâu kể từ lúc đạp phanh thì ô tô dừng hẳn?\nb) Tính quãng đường ô tô đi được trong $${2 + (i % 2)}$ giây đầu tiên kể từ lúc đạp phanh.`,
         solution: `a) Ô tô dừng hẳn khi $v(t) = 0 \\iff -4t + ${10 + 2 * a} = 0 \\iff t = ${(10 + 2 * a) / 4}\\text{ giây}$.\n\nb) Vì thời điểm $t_0 = ${2 + (i % 2)} < ${(10 + 2 * a) / 4}$ (xe chưa dừng), quãng đường đi được là:\n$$S = \\int_0^{${2 + (i % 2)}} (-4t + ${10 + 2 * a})\\,dt = \\left[-2t^2 + ${10 + 2 * a}t\\right]_0^{${2 + (i % 2)}} = ${-2 * (2 + (i % 2)) ** 2 + (10 + 2 * a) * (2 + (i % 2))}\\text{ mét}.$$`,
         keyFormulasOrHints: ['Dừng hẳn khi v(t) = 0', 'Quãng đường S = int_{t1}^{t2} v(t) dt']
       },
@@ -408,7 +409,7 @@ export function buildMathStandardBatch3(): ExamPaper[] {
       school,
       source: `Nguồn đề chuẩn THPT 2026: ${school}`,
       timeMinutes: 90,
-      featuredSnippet: q1.content.slice(0, 130) + '...',
+      featuredSnippet: safeExamSnippet(q1.content, 130),
       topics: ['# Tiệm cận xiên & Cực trị', '# Ghép nhóm & Lôgarit', '# Tích phân & Tròn xoay', '# Oxyz & Xác suất Bayes'],
       difficulty: i % 3 === 0 ? 'Nâng cao' : i % 2 === 0 ? 'Khá' : 'Cơ bản',
       questions: [q1, q2, q3, q4]

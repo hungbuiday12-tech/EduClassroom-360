@@ -1048,12 +1048,12 @@ export const MATH_CUSTOM_LECTURE_STEPS_PRO: Record<string, LectureStep[]> = {
         question: 'Cho đường tròn $(I)$ tiếp xúc trong với $(O)$ tại $T$ và tiếp xúc với dây $AB$ của $(O)$ tại $D$. Tia $TD$ cắt $(O)$ tại $M$ ($M$ là điểm chính giữa cung $AB$). Chứng minh rằng $MA^2 = MD \\cdot MT$.',
         hint: 'Xét hai tam giác $\\triangle MAD$ và $\\triangle MTA$, chỉ ra $\\widehat{AMD}$ chung và $\\widehat{MAD} = \\widehat{MTA}$ (cùng chắn cung $MB = MA$!).',
         rubricChecklist: [
-          'Từ $M$ là điểm chính giữa cung $AB$ suy ra $\\text{sđ}\\wideparen{MA} = \\text{sđ}\\wideparen{MB}$.',
+          'Từ $M$ là điểm chính giữa cung $AB$ suy ra $\\text{sđ}\\overset{\\frown}{MA} = \\text{sđ}\\overset{\\frown}{MB}$.',
           'Chỉ ra $\\widehat{MAD} = \\widehat{MAB}$ (chắn cung $MB$) $= \\widehat{MTA}$ (chắn cung $MA$).',
           'Chứng minh $\\triangle MAD \\sim \\triangle MTA$ (g.g) $\\implies \\frac{MA}{MT} = \\frac{MD}{MA} \\implies MA^2 = MD \\cdot MT$.'
         ],
         sampleAnswer:
-          'Vì $M$ là điểm chính giữa cung $AB$ không chứa $T$ nên $\\wideparen{MA} = \\wideparen{MB}$. Xét $\\triangle MAD$ và $\\triangle MTA$ có góc $\\widehat{AMD}$ chung; lại có $\\widehat{MAD} = \\widehat{MAB}$ (góc nội tiếp chắn cung $MB$) và $\\widehat{MTA}$ (góc nội tiếp chắn cung $MA$), suy ra $\\widehat{MAD} = \\widehat{MTA}$. Do đó $\\triangle MAD \\sim \\triangle MTA$ (g.g) $\\implies \\frac{MA}{MT} = \\frac{MD}{MA} \\iff MA^2 = MD \\cdot MT$.'
+          'Vì $M$ là điểm chính giữa cung $AB$ không chứa $T$ nên $\\overset{\\frown}{MA} = \\overset{\\frown}{MB}$. Xét $\\triangle MAD$ và $\\triangle MTA$ có góc $\\widehat{AMD}$ chung; lại có $\\widehat{MAD} = \\widehat{MAB}$ (góc nội tiếp chắn cung $MB$) và $\\widehat{MTA}$ (góc nội tiếp chắn cung $MA$), suy ra $\\widehat{MAD} = \\widehat{MTA}$. Do đó $\\triangle MAD \\sim \\triangle MTA$ (g.g) $\\implies \\frac{MA}{MT} = \\frac{MD}{MA} \\iff MA^2 = MD \\cdot MT$.'
       }
     }
   ]

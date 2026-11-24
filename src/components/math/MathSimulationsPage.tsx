@@ -27,7 +27,8 @@ export const MathSimulationsPage: React.FC<MathSimulationsPageProps> = ({ onBack
     goBack,
     goClassroom,
     mathGraphConfig,
-    math3DMode
+    math3DMode,
+    mathGeoPreset
   } = useNavigation();
 
   const activeTab: 'grapher' | 'geometry' | 'math3d' =
@@ -146,7 +147,7 @@ export const MathSimulationsPage: React.FC<MathSimulationsPageProps> = ({ onBack
       {activeTab === 'grapher' && (
         <FunctionGrapher initialConfig={mathGraphConfig} onBack={goBack} />
       )}
-      {activeTab === 'geometry' && <GeometryStudio onBack={goBack} />}
+      {activeTab === 'geometry' && <GeometryStudio initialPreset={mathGeoPreset} onBack={goBack} />}
       {activeTab === 'math3d' && (
         <Math3DView initialMode={math3DMode} onBack={goBack} />
       )}

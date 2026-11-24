@@ -7,11 +7,14 @@ export interface SafeApiResponse<T = any> {
 }
 
 const BUILTIN_CLOUD_API_BASE =
-  'https://ais-pre-qrbmu7cs5wp47n6nlbl4ci-223538708453.asia-east1.run.app';
-const PREVIOUS_CLOUD_API_BASE =
-  'https://ais-pre-zoetjpf6ywpdfftq66dzuz-183305151918.asia-southeast1.run.app';
-const LEGACY_CLOUD_API_BASE =
-  'https://ais-pre-2cajz7v7fqng2hy3peejkj-489067186717.asia-southeast1.run.app';
+  'https://ais-pre-5ofg64mouj443f725obvwb-999937700297.asia-east1.run.app';
+const DEV_CLOUD_API_BASE =
+  'https://ais-dev-5ofg64mouj443f725obvwb-999937700297.asia-east1.run.app';
+const RETIRED_CLOUD_BASES = new Set([
+  'https://ais-pre-qrbmu7cs5wp47n6nlbl4ci-223538708453.asia-east1.run.app',
+  'https://ais-pre-zoetjpf6ywpdfftq66dzuz-183305151918.asia-southeast1.run.app',
+  'https://ais-pre-2cajz7v7fqng2hy3peejkj-489067186717.asia-southeast1.run.app'
+]);
 
 const DEFAULT_REMOTE_API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim().replace(/\/+$/, '') ||
@@ -134,7 +137,12 @@ function getStoredApiBase(): string | null {
 
     const val = window.localStorage.getItem(STORAGE_KEY)?.trim();
     if (val && /^https?:\/\//i.test(val)) {
-      return val.replace(/\/+$/, '');
+      const clean = val.replace(/\/+$/, '');
+      if (RETIRED_CLOUD_BASES.has(clean)) {
+        window.localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+      return clean;
     }
   } catch {}
   return null;
@@ -224,12 +232,18 @@ export function resolveWsUrl(path: string, forceRemote = false): string {
 
 async function probeHealthyBackendBase(): Promise<string | null> {
   const candidates: string[] = [];
+  if (
+    typeof window !== 'undefined' &&
+    !isPackagedOrStaticOrigin() &&
+    window.location?.origin?.startsWith('http')
+  ) {
+    candidates.push(window.location.origin);
+  }
   const stored = getStoredApiBase();
   if (stored) candidates.push(stored);
   candidates.push(DEFAULT_REMOTE_API_BASE);
   candidates.push(BUILTIN_CLOUD_API_BASE);
-  candidates.push(PREVIOUS_CLOUD_API_BASE);
-  candidates.push(LEGACY_CLOUD_API_BASE);
+  candidates.push(DEV_CLOUD_API_BASE);
   candidates.push('http://127.0.0.1:3000');
   candidates.push('http://localhost:3000');
   if (typeof window !== 'undefined' && (window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:' || /android/i.test(navigator.userAgent || ''))) {
@@ -239,11 +253,11 @@ async function probeHealthyBackendBase(): Promise<string | null> {
   const seen = new Set<string>();
   for (const base of candidates) {
     const cleanBase = base.replace(/\/+$/, '');
-    if (!cleanBase || seen.has(cleanBase)) continue;
+    if (!cleanBase || seen.has(cleanBase) || RETIRED_CLOUD_BASES.has(cleanBase)) continue;
     seen.add(cleanBase);
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 1800);
+    const timer = setTimeout(() => controller.abort(), 2500);
     try {
       const res = await fetch(`${cleanBase}/api/health`, {
         method: 'GET',
@@ -369,7 +383,7 @@ async function fetchJsonOnce<T = any>(
     const trimmed = rawText.trim();
 
     if (trimmed.startsWith('<') || trimmed.toLowerCase().startsWith('<!doctype')) {
-      const isProxyBusy = res.status === 502 || res.status === 503 || res.status === 504;
+      const isProxyBusy = res.status >= 500 || res.status === 429;
       const isAuthGate =
         res.url.includes('__cookie_check') ||
         res.url.includes('accounts.google.com') ||
@@ -464,13 +478,30 @@ export async function safeFetchJson<T = any>(
   init: RequestInit = {},
   timeoutMs = 65000
 ): Promise<SafeApiResponse<T>> {
+  const normalizedPath = url.startsWith('/') ? url : `/${url}`;
   const primaryUrl = resolveApiUrl(url);
-  const firstRes = await fetchJsonOnce<T>(primaryUrl, init, timeoutMs);
+  let targetUrl = primaryUrl;
+  let result = await fetchJsonOnce<T>(primaryUrl, init, timeoutMs);
 
-  // If same-origin served static HTML/404, or a packaged app failed network connection, probe remote/local backends
+  // If a custom/remote URL failed while running on a live full-stack origin, try same-origin first
+  if (
+    !result.ok &&
+    /^https?:\/\//i.test(primaryUrl) &&
+    !isPackagedOrStaticOrigin() &&
+    (result.isStaticFallback || result.status === 0)
+  ) {
+    const sameOriginRes = await fetchJsonOnce<T>(normalizedPath, init, timeoutMs);
+    if (sameOriginRes.ok || (!sameOriginRes.isStaticFallback && sameOriginRes.status !== 0)) {
+      sessionRemoteBase = null;
+      targetUrl = normalizedPath;
+      result = sameOriginRes;
+    }
+  }
+
+  // If same-origin served static HTML/404, or a static/packaged app could not reach its configured URL, probe backends
   const shouldProbeRemote =
-    (!firstRes.ok && firstRes.isStaticFallback && !/^https?:\/\//i.test(primaryUrl)) ||
-    (!firstRes.ok && firstRes.status === 0 && isPackagedOrStaticOrigin());
+    (!result.ok && result.isStaticFallback && !/^https?:\/\//i.test(primaryUrl)) ||
+    (!result.ok && (result.status === 0 || result.isStaticFallback) && isPackagedOrStaticOrigin());
 
   if (shouldProbeRemote) {
     const remoteUrl = resolveApiUrl(url, true);
@@ -481,28 +512,39 @@ export async function safeFetchJson<T = any>(
         return remoteRes;
       }
       if (remoteRes.status !== 0 && !remoteRes.isStaticFallback) {
-        return remoteRes;
+        targetUrl = remoteUrl;
+        result = remoteRes;
       }
     }
 
-    // Try discovering a healthy local/remote backend
-    const discoveredBase = await probeHealthyBackendBase();
-    if (discoveredBase) {
-      const normalizedPath = url.startsWith('/') ? url : `/${url}`;
-      return await fetchJsonOnce<T>(`${discoveredBase}${normalizedPath}`, init, timeoutMs);
+    if (targetUrl === primaryUrl) {
+      // Try discovering a healthy local/remote backend
+      const discoveredBase = await probeHealthyBackendBase();
+      if (discoveredBase) {
+        targetUrl = `${discoveredBase}${normalizedPath}`;
+        result = await fetchJsonOnce<T>(targetUrl, init, timeoutMs);
+      } else if (isPackagedOrStaticOrigin()) {
+        return {
+          ok: false,
+          status: result.status,
+          data: null,
+          isStaticFallback: true,
+          error: `Chưa kết nối được tới máy chủ AI trực tuyến (${BUILTIN_CLOUD_API_BASE}). Nếu bạn đang chạy bản Web tĩnh (GitHub Pages), hãy nhấn Share/Publish ứng dụng trên AI Studio để kích hoạt máy chủ backend hoặc nhập URL server.ts đang chạy trong Cài đặt.`
+        };
+      } else {
+        return {
+          ...result,
+          isStaticFallback: false,
+          error:
+            result.error && !/không tìm thấy máy chủ ai/i.test(result.error)
+              ? result.error
+              : 'Máy chủ AI đang khởi động lại hoặc tạm gián đoạn. Vui lòng thử lại sau vài giây.'
+        };
+      }
     }
-
-    return {
-      ok: false,
-      status: firstRes.status,
-      data: null,
-      isStaticFallback: true,
-      error:
-        'Chưa kết nối được tới máy chủ AI trực tuyến. Bản web tĩnh hiện tại chưa có backend đi kèm — hãy Publish/Deploy ứng dụng hoặc cấu hình VITE_API_BASE_URL tới máy chủ server.ts đang hoạt động.'
-    };
   }
 
-  return firstRes;
+  return result;
 }
 
 export async function streamTutorChat(

@@ -78,7 +78,7 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "index.html",
-    "revision": "a1175557e1e7c2c16ffa381097435e03"
+    "revision": "e493447a3bd1d2e7283af073d8f63ab8"
   }, {
     "url": "draco/draco_wasm_wrapper.js",
     "revision": "7a48a3fdc5785631621f4b20cd0937dc"
@@ -92,13 +92,13 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/workbox-window.prod.es5-Bd17z0YL.js",
     "revision": null
   }, {
-    "url": "assets/virtual_pwa-register-DA4Z0Vc5.js",
+    "url": "assets/virtual_pwa-register-BOcMhu1S.js",
     "revision": null
   }, {
-    "url": "assets/vendor-react-CY3uflm1.js",
+    "url": "assets/vendor-react-CumqsUUt.js",
     "revision": null
   }, {
-    "url": "assets/vendor-icons-BXYhyrKJ.js",
+    "url": "assets/vendor-icons-BpQVJm5D.js",
     "revision": null
   }, {
     "url": "assets/three3DEnhancements-Dp5ImgX4.js",
@@ -110,25 +110,25 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/rolldown-runtime-BWaJ3C7D.js",
     "revision": null
   }, {
-    "url": "assets/roadmapData-DahBKPE9.js",
+    "url": "assets/roadmapData-CQJaOFQj.js",
     "revision": null
   }, {
-    "url": "assets/productDocxExporter-21hxlH9M.js",
+    "url": "assets/productDocxExporter-DmB3Zocd.js",
     "revision": null
   }, {
-    "url": "assets/lessonProgressStore-CNnKXPHT.js",
+    "url": "assets/lessonProgressStore-DzSxDQLj.js",
     "revision": null
   }, {
-    "url": "assets/index-UHYwV91k.js",
+    "url": "assets/index-DhJUHS7i.js",
     "revision": null
   }, {
-    "url": "assets/index-D3JlhaT2.css",
+    "url": "assets/index-CgtryYwj.css",
     "revision": null
   }, {
     "url": "assets/handLandmarkerWorker-xPo-MoRQ.js",
     "revision": null
   }, {
-    "url": "assets/handGestureTracker-CehTP_kU.js",
+    "url": "assets/handGestureTracker-SGG23gWd.js",
     "revision": null
   }, {
     "url": "assets/draco_wasm_wrapper-fZCQGLGb.js",
@@ -146,7 +146,7 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/draco_decoder-C32yEggz.wasm",
     "revision": null
   }, {
-    "url": "assets/customModelStore-B988J9iU.js",
+    "url": "assets/customModelStore-BtR4gE0Z.js",
     "revision": null
   }, {
     "url": "assets/customModelBuilder-DiNgJj8G.js",
@@ -161,94 +161,106 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/confetti.module-Djt41fMX.js",
     "revision": null
   }, {
-    "url": "assets/codeRunner-BGITz5FH.js",
+    "url": "assets/codeRunner-lv6asEeu.js",
     "revision": null
   }, {
-    "url": "assets/XRayConfigPanel-f0UfF_JE.js",
+    "url": "assets/XRayConfigPanel-DWQZOd_l.js",
     "revision": null
   }, {
-    "url": "assets/VoiceMicButton-7RHEFIw9.js",
+    "url": "assets/VoiceMicButton-DTzcSmoO.js",
     "revision": null
   }, {
-    "url": "assets/VisitorLandingPage-3ICwepdf.js",
+    "url": "assets/VisitorLandingPage-gxKqPNXh.js",
     "revision": null
   }, {
-    "url": "assets/ViewportPortal-CbzLL9G3.js",
+    "url": "assets/ViewportPortal-C6D_R9iR.js",
     "revision": null
   }, {
-    "url": "assets/TypingParrotoSandbox-DlCH8cKJ.js",
+    "url": "assets/TypingParrotoSandbox-EB7dZXN0.js",
     "revision": null
   }, {
-    "url": "assets/TechTeardown3DLab-owOIJEcE.js",
+    "url": "assets/TechTeardown3DLab-DJrYc2oc.js",
     "revision": null
   }, {
-    "url": "assets/SynapseVoiceOS-DyFXvsoc.js",
+    "url": "assets/SynapseVoiceOS-CLWKCLWf.js",
     "revision": null
   }, {
-    "url": "assets/SynAIProChat-BVayky-L.js",
+    "url": "assets/SynAIProChat-DdywTuE3.js",
     "revision": null
   }, {
-    "url": "assets/SublimeEditor-BbBQx50n.js",
+    "url": "assets/SublimeEditor-T3k9fo3o.js",
     "revision": null
   }, {
-    "url": "assets/StudyForum-D26ue0D1.js",
+    "url": "assets/StudyForum-Cm2XH2jg.js",
     "revision": null
   }, {
-    "url": "assets/SolarSystem3DLab-Dl0GDyLC.js",
+    "url": "assets/SolarSystem3DLab-DaGcQP6A.js",
     "revision": null
   }, {
-    "url": "assets/SettingsModal-BP0RDCTy.js",
+    "url": "assets/SettingsModal-4aQL08UI.js",
     "revision": null
   }, {
-    "url": "assets/PhysicsDomainsPage-XO2HwMJP.js",
+    "url": "assets/ScrollReveal-DrGV897p.js",
     "revision": null
   }, {
-    "url": "assets/PWAInstallModal-DqGEcTr6.js",
+    "url": "assets/PhysicsDomainsPage-o3-YRhWW.js",
     "revision": null
   }, {
-    "url": "assets/MathStudio-CsPW3tz0.js",
+    "url": "assets/PWAInstallModal-Bv90lSxR.js",
     "revision": null
   }, {
-    "url": "assets/LiveMeetClassroom-DM5Skgce.js",
+    "url": "assets/MotionReelMiniChat-DkLVOVfZ.js",
     "revision": null
   }, {
-    "url": "assets/LectureDirectorySection-C2G3wgtm.js",
+    "url": "assets/MathStudio-CXICfS2u.js",
     "revision": null
   }, {
-    "url": "assets/LearnerPortfolioModal-DNQlzWny.js",
+    "url": "assets/LiveMeetClassroom-nSvfT2zE.js",
     "revision": null
   }, {
-    "url": "assets/InteractiveScratchpad-DE6vU5BA.js",
+    "url": "assets/LectureDirectorySection-CywEsTNA.js",
     "revision": null
   }, {
-    "url": "assets/HologramModeControls-CO3JZLr2.js",
+    "url": "assets/LearnerPortfolioModal-BByeHK06.js",
     "revision": null
   }, {
-    "url": "assets/GrowthWorkspace-DtukR9F3.js",
+    "url": "assets/InteractiveScratchpad-C70QCZNh.js",
     "revision": null
   }, {
-    "url": "assets/GraphicsTierTriggerButton-BKJTuvgl.js",
+    "url": "assets/HologramModeControls-CsqNtMyL.js",
     "revision": null
   }, {
-    "url": "assets/GraphicsTierModal-DY0TyiA1.js",
+    "url": "assets/GuideTourPage-BO1AeA6M.js",
     "revision": null
   }, {
-    "url": "assets/CommunityShowcaseView-BDqlHrhp.js",
+    "url": "assets/GrowthWorkspace-DryWKrEf.js",
     "revision": null
   }, {
-    "url": "assets/CodeSimulationsPage-DCVAGDEt.js",
+    "url": "assets/GraphicsTierTriggerButton-BMIY5QtW.js",
     "revision": null
   }, {
-    "url": "assets/ClassroomOverview-DEt2Ko-o.js",
+    "url": "assets/GraphicsTierModal-CglPIN0C.js",
     "revision": null
   }, {
-    "url": "assets/CS3DVisualizer-pE66rSii.js",
+    "url": "assets/CommunityShowcaseView-CiiFrNTM.js",
     "revision": null
   }, {
-    "url": "assets/AuthModal-Dx4W1SMr.js",
+    "url": "assets/CodeSimulationsPage-B7kWb028.js",
     "revision": null
   }, {
-    "url": "assets/AssemblyStudio3DLab-DejFU7Oz.js",
+    "url": "assets/ClassroomOverview-BzuxePhG.js",
+    "revision": null
+  }, {
+    "url": "assets/CS3DVisualizer-CaPqAQNx.js",
+    "revision": null
+  }, {
+    "url": "assets/AuthorsPage-KQzkgt33.js",
+    "revision": null
+  }, {
+    "url": "assets/AuthModal-C5xXTW8z.js",
+    "revision": null
+  }, {
+    "url": "assets/AssemblyStudio3DLab-D8QSbNzN.js",
     "revision": null
   }, {
     "url": "apple-touch-icon.png",

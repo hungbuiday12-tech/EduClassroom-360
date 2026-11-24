@@ -233,7 +233,7 @@ export const PHYSICS_GDPT_2006_GRADE_12: PhysicsLesson[] = [
       'A^2 = A_1^2 + A_2^2 + 2 A_1 A_2 \\cos\\Delta\\varphi',
       '\\tan\\varphi = \\frac{A_1\\sin\\varphi_1 + A_2\\sin\\varphi_2}{A_1\\cos\\varphi_1 + A_2\\cos\\varphi_2}'
     ],
-    ...SIM_PRESETS.lissajous,
+    ...SIM_PRESETS.fresnel_phasor,
     practiceExercises: [
       {
         source: SRC_12,
@@ -798,7 +798,7 @@ export const PHYSICS_GDPT_2006_GRADE_12: PhysicsLesson[] = [
       '\\lambda = c T = 2\\pi c\\sqrt{LC} \\quad (c = 3\\cdot 10^8\\text{ m/s})',
       '\\vec{E} \\perp \\vec{B} \\perp \\vec{v} \\text{ và } \\vec{E}, \\vec{B} \\text{ cùng pha}'
     ],
-    ...SIM_PRESETS.em_wave,
+    ...SIM_PRESETS.em_wave_prop,
     practiceExercises: [
       {
         source: SRC_12,
@@ -1015,7 +1015,7 @@ export const PHYSICS_GDPT_2006_GRADE_12: PhysicsLesson[] = [
       'r_n = n^2 r_0, \\quad E_n = -\\frac{13{,}6}{n^2}\\text{ (eV)}',
       'h f_{nm} = \\frac{hc}{\\lambda_{nm}} = E_n - E_m'
     ],
-    ...SIM_PRESETS.compton,
+    ...SIM_PRESETS.bohr,
     practiceExercises: [
       {
         source: SRC_12,

@@ -101,7 +101,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
         question: 'Giá trị cực đại của hàm số $y = x^3 - 3x + 2$ là:',
         options: ['A. $4$', 'B. $-1$', 'C. $0$', 'D. $1$'],
         correctIndex: 0,
-        explanation: '$y\' = 3x^2 - 3 = 0 \\iff x = \\pm 1$. Qua $x = -1$, $y\'$ đổi dấu $+ \\to -$ nên $x = -1$ là điểm cực đại, $y_{CĐ} = (-1)^3 - 3(-1) + 2 = 4$.'
+        explanation: '$y\' = 3x^2 - 3 = 0 \\iff x = \\pm 1$. Qua $x = -1$, $y\'$ đổi dấu $+ \\to -$ nên $x = -1$ là điểm cực đại, $y_{\\text{CĐ}} = (-1)^3 - 3(-1) + 2 = 4$.'
       }
     ],
     essayProblems: [
@@ -231,7 +231,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
       }
     ],
     sim2dMode: 'grapher',
-    sim3dMode: 'conic_sections_3d',
+    sim3dMode: 'tangent_surface_3d',
     defaultGraphConfig: { type: 'rational', params: { a: 3, b: -2, c: 1, d: 1 }, color: '#0284c7', name: 'y = (3x - 2)/(x + 1)' }
   },
   {
@@ -264,7 +264,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
       '\\text{Tâm đối xứng phân thức: } I\\left(-\\frac{d}{c};\\ \\frac{a}{c}\\right)'
     ],
     flashcards: [
-      { front: 'Đồ thị hàm bậc ba $y = x^3 - 3x^2 + 2$ cắt đường thẳng $y = m$ tại 3 điểm phân biệt khi nào?', back: '$y_{CT} = -2, y_{CĐ} = 2 \\Rightarrow -2 < m < 2$.' }
+      { front: 'Đồ thị hàm bậc ba $y = x^3 - 3x^2 + 2$ cắt đường thẳng $y = m$ tại 3 điểm phân biệt khi nào?', back: '$y_{\\text{CT}} = -2, y_{\\text{CĐ}} = 2 \\Rightarrow -2 < m < 2$.' }
     ],
     sampleProblems: [
       {
@@ -272,7 +272,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
         question: 'Cho hàm số $y = x^4 - 2x^2 - 1$. Phương trình $x^4 - 2x^2 - 1 = m$ có đúng 4 nghiệm phân biệt khi:',
         options: ['A. $-2 < m < -1$', 'B. $m > -1$', 'C. $m = -2$', 'D. $-2 \\le m \\le -1$'],
         correctIndex: 0,
-        explanation: 'Hàm trùng phương có $a = 1 > 0$, $y_{CĐ} = y(0) = -1$, $y_{CT} = y(\\pm 1) = -2$. Đường $y=m$ cắt tại 4 điểm $\\iff y_{CT} < m < y_{CĐ} \\iff -2 < m < -1$.'
+        explanation: 'Hàm trùng phương có $a = 1 > 0$, $y_{\\text{CĐ}} = y(0) = -1$, $y_{\\text{CT}} = y(\\pm 1) = -2$. Đường $y=m$ cắt tại 4 điểm $\\iff y_{\\text{CT}} < m < y_{\\text{CĐ}} \\iff -2 < m < -1$.'
       }
     ],
     essayProblems: [
@@ -300,7 +300,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
     lessonNumber: 6,
     stageLabel: 'Toán 12 (2006) · GT Chương II: Lũy thừa – Mũ – Lôgarit',
     sourceTag: 'SGK Giải tích 12 (2006) · Bài 1–2',
-    title: 'Bài 6 (2006): Lũy thừa & Hàm số Lũy thừa y = xᵅ (Chú ý tập xác định)',
+    title: 'Bài 6 (2006): Lũy thừa & Hàm số Lũy thừa $y = x^\\alpha$ (Chú ý tập xác định)',
     grade: 'Lớp 12 · Lượng giác & Mũ',
     category: 'Lượng giác & Mũ',
     difficulty: 'Cơ bản',
@@ -414,7 +414,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
     lessonNumber: 8,
     stageLabel: 'Toán 12 (2006) · GT Chương II: Lũy thừa – Mũ – Lôgarit',
     sourceTag: 'SGK Giải tích 12 (2006) · Bài 4',
-    title: 'Bài 8 (2006): Hàm số Mũ y = aˣ & Hàm số Lôgarit y = logₐx',
+    title: 'Bài 8 (2006): Hàm số Mũ $y = a^x$ & Hàm số Lôgarit $y = \\log_a x$',
     grade: 'Lớp 12 · Lượng giác & Mũ',
     category: 'Lượng giác & Mũ',
     difficulty: 'Thông hiểu',
@@ -819,6 +819,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'complex_plane',
     sim3dMode: 'oxyz_vector'
   },
   {
@@ -828,7 +829,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
     lessonNumber: 15,
     stageLabel: 'Toán 12 (2006) · GT Chương IV: Số phức (Đặc trưng 2006)',
     sourceTag: 'SGK Giải tích 12 (2006) · Bài 3–4',
-    title: 'Bài 15 (2006): Phép chia Số phức & Phương trình bậc hai trên ℂ',
+    title: 'Bài 15 (2006): Phép chia Số phức & Phương trình bậc hai trên $\\mathbb{C}$',
     grade: 'Lớp 12 · Giải tích',
     category: 'Giải tích',
     difficulty: 'Thông hiểu',
@@ -874,6 +875,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'complex_plane',
     sim3dMode: 'oxyz_vector'
   },
   // ==================== HÌNH HỌC 12 · CHƯƠNG I & II: KHỐI ĐA DIỆN & MẶT TRÒN XOAY ====================
@@ -890,7 +892,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
     difficulty: 'Thông hiểu',
     readTimeMinutes: 19,
     description:
-      'Khái niệm khối đa diện lồi, 5 khối đa diện đều ($\{3;3\}, \{4;3\}, \{3;4\}, \{5;3\}, \{3;5\}$), công thức thể tích khối chóp $V = \\frac{1}{3}B h$, lăng trụ $V = B h$ và tỉ số thể tích Simson.',
+      'Khái niệm khối đa diện lồi, 5 khối đa diện đều ($\\{3;3\\}, \\{4;3\\}, \\{3;4\\}, \\{5;3\\}, \\{3;5\\}$), công thức thể tích khối chóp $V = \\frac{1}{3}B h$, lăng trụ $V = B h$ và tỉ số thể tích Simson.',
     mnemonics: [
       'Thể tích chóp CÓ $\\frac{1}{3}$; thể tích lăng trụ KHÔNG CÓ $\\frac{1}{3}$.',
       'Tam giác đều cạnh $a$: $h = \\frac{a\\sqrt{3}}{2}$, $S = \\frac{a^2\\sqrt{3}}{4}$. Tứ diện đều cạnh $a$: $V = \\frac{a^3\\sqrt{2}}{12}$.'
@@ -931,6 +933,7 @@ export const MATH_GDPT_2006_GRADE_12: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'spatial_pyramid',
     sim3dMode: 'pyramid_section'
   },
   {

@@ -140,6 +140,124 @@ function stripLeadingNumber(title: string): string {
   return title.replace(/^\d+[\.\)]\s*/, '').trim();
 }
 
+function safeTruncateOutsideMath(text: string, maxLen: number): string {
+  if (!text || text.length <= maxLen) return text;
+  let inInlineMath = false;
+  let inDisplayMath = false;
+  let lastOpeningDollar = -1;
+  let lastSafeCut = -1;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '$' && text[i - 1] !== '\\') {
+      if (text[i + 1] === '$') {
+        if (!inDisplayMath && !inInlineMath) {
+          inDisplayMath = true;
+          lastOpeningDollar = i;
+        } else if (inDisplayMath) {
+          inDisplayMath = false;
+          lastOpeningDollar = -1;
+        }
+        i++;
+        continue;
+      }
+      if (!inDisplayMath) {
+        if (!inInlineMath) {
+          inInlineMath = true;
+          lastOpeningDollar = i;
+        } else {
+          inInlineMath = false;
+          lastOpeningDollar = -1;
+        }
+      }
+    }
+    const inMath = inInlineMath || inDisplayMath;
+    if (!inMath && (ch === ' ' || ch === '\n' || ch === ',' || ch === ';')) {
+      if (i <= maxLen) {
+        lastSafeCut = i;
+      }
+    }
+    if (i >= maxLen && !inMath) {
+      return text.slice(0, lastSafeCut > 12 ? lastSafeCut : i).trim();
+    }
+  }
+
+  let out = '';
+  if (lastOpeningDollar >= 0 && lastOpeningDollar <= maxLen) {
+    out = text.slice(0, lastOpeningDollar).trim().replace(/[:,\s]+$/, '');
+  } else {
+    out = text.slice(0, lastSafeCut > 12 ? lastSafeCut : maxLen).trim();
+  }
+  // Final safety guard: ensure no unbalanced $ remains
+  let count = 0;
+  let lastDollar = -1;
+  for (let i = 0; i < out.length; i++) {
+    if (out[i] === '$' && out[i - 1] !== '\\') {
+      count++;
+      lastDollar = i;
+    }
+  }
+  if (count % 2 === 1 && lastDollar >= 0) {
+    out = out.slice(0, lastDollar).trim().replace(/[:,\s]+$/, '');
+  }
+  return out;
+}
+
+function extractFirstSentenceOutsideMath(text: string, maxLen = 95): string {
+  if (!text) return '';
+  let inInlineMath = false;
+  let inDisplayMath = false;
+  let endIdx = text.length;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '$' && text[i - 1] !== '\\') {
+      if (text[i + 1] === '$') {
+        if (!inInlineMath) inDisplayMath = !inDisplayMath;
+        i++;
+        continue;
+      }
+      if (!inDisplayMath) inInlineMath = !inInlineMath;
+      continue;
+    }
+    if (!inInlineMath && !inDisplayMath) {
+      if (ch === '\n' || ch === '!' || ch === '?') {
+        endIdx = i;
+        break;
+      }
+      if (ch === '.' && i > 4) {
+        const next = text[i + 1];
+        if (!next || /\s/.test(next)) {
+          endIdx = i;
+          break;
+        }
+      }
+    }
+  }
+
+  return safeTruncateOutsideMath(text.slice(0, endIdx).trim(), maxLen);
+}
+
+function splitHeaderBeforeColonOutsideMath(text: string): string | null {
+  let inMath = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '$' && text[i - 1] !== '\\') {
+      inMath = !inMath;
+      continue;
+    }
+    if (!inMath && ch === ':') {
+      const header = text.slice(0, i).replace(/\*\*/g, '').trim();
+      let dollarCount = 0;
+      for (let j = 0; j < header.length; j++) {
+        if (header[j] === '$' && header[j - 1] !== '\\') dollarCount++;
+      }
+      return dollarCount % 2 === 0 ? header : null;
+    }
+  }
+  return null;
+}
+
 function buildVariablesNote(
   subject: 'math' | 'physics' | 'cs',
   formula: string | undefined,
@@ -277,7 +395,7 @@ function buildFormulaCheckMCQ(
       formula.includes('+') ? `$${formula.replace('+', '-')}$` : `$${formula} + 1$`,
       formula.includes('\\frac')
         ? `$${formula.replace('\\frac', '\\frac{1}{2}\\cdot\\frac')}$`
-        : `$${formula.replace('=', '\\neq')}$`,
+        : `$${formula.replace('=', '\\neq ')}$`,
       subject === 'physics'
         ? 'Hệ thức không tồn tại trong hệ đơn vị chuẩn SI'
         : subject === 'cs'
@@ -390,7 +508,7 @@ function buildConditionCheckMCQ(
   arranged.splice(correctPos, 0, trueAnswer);
   const labels = ['A.', 'B.', 'C.', 'D.'];
 
-  const shortExcerpt = conceptText.split(/[.!?\n]/)[0]?.slice(0, 95) || cleanTitle;
+  const shortExcerpt = extractFirstSentenceOutsideMath(conceptText, 95) || cleanTitle;
 
   return {
     id,
@@ -423,7 +541,7 @@ function buildSectionMiniEssay(
         'Chỉ ra được độ phức tạp / giới hạn dữ liệu phù hợp.',
         'Nhắc được ít nhất 1 lưu ý quan trọng khi cài đặt (tràn số, Fast I/O, test biên).'
       ],
-      sampleAnswer: `${conceptText.slice(0, 260)}\n\nLưu ý cài đặt: ${keyTakeaway || deepDiveText.slice(0, 200)}`
+      sampleAnswer: `${safeTruncateOutsideMath(conceptText, 260)}\n\nLưu ý cài đặt: ${keyTakeaway || safeTruncateOutsideMath(deepDiveText, 200)}`
     };
   }
 
@@ -436,7 +554,7 @@ function buildSectionMiniEssay(
       'Giải thích rõ ý nghĩa các đại lượng hoặc biến số trong công thức.',
       'Nêu đúng điều kiện áp dụng hoặc cạm bẫy cần tránh.'
     ],
-    sampleAnswer: `${conceptText.slice(0, 260)}${formula ? `\nCông thức trọng tâm: $${formula}$.` : ''}\nLưu ý quan trọng: ${keyTakeaway || deepDiveText.slice(0, 200)}`
+    sampleAnswer: `${safeTruncateOutsideMath(conceptText, 260)}${formula ? `\nCông thức trọng tâm: $${formula}$.` : ''}\nLưu ý quan trọng: ${keyTakeaway || safeTruncateOutsideMath(deepDiveText, 200)}`
   };
 }
 
@@ -650,10 +768,11 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
     .join(', ');
   const expIdx = rawSteps.length;
   const expFormula = lesson.keyFormulas[0];
+  const safeLessonName = splitHeaderBeforeColonOutsideMath(lesson.title) || lesson.title;
   const expConcept =
     lesson.track === 'chuyen'
-      ? `Thí nghiệm mô phỏng 2D & 3D giúp kiểm chứng định lượng các hệ thức và điểm giới hạn trong "${lesson.title.split(':')[0]}" bằng cách thay đổi: ${paramNames}.`
-      : `Thực hành trên mô phỏng 2D & 3D giúp em trực tiếp nhìn thấy sự thay đổi của bài "${lesson.title.split(':')[0]}" khi kéo chỉnh: ${paramNames}.`;
+      ? `Thí nghiệm mô phỏng 2D & 3D giúp kiểm chứng định lượng các hệ thức và điểm giới hạn trong "${safeLessonName}" bằng cách thay đổi: ${paramNames}.`
+      : `Thực hành trên mô phỏng 2D & 3D giúp em trực tiếp nhìn thấy sự thay đổi của bài "${safeLessonName}" khi kéo chỉnh: ${paramNames}.`;
   const expDeepDive =
     lesson.track === 'chuyen'
       ? `• Áp dụng phương pháp **biến kiểm soát**: thay đổi từng tham số một (giữ nguyên các biến còn lại) và bấm **Ghi mẫu đo** để lập bảng đối chiếu với công thức lý thuyết.\n• Bật **Vector**, **Dấu vết quỹ đạo** hoặc **Đồ thị thời gian thực** để kiểm tra dấu hiệu cực trị và giới hạn mô hình.`
@@ -837,11 +956,10 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
       ...lecture.keyFormulas.filter((f) => f !== primaryFormula && !inlineFormulas.includes(f))
     ].slice(0, 2);
 
+    const parsedHeader = hasTheoryItem ? splitHeaderBeforeColonOutsideMath(rawTheory) : null;
     const rawTitle = !hasTheoryItem
       ? `${idx + 1}. Tổng hợp Vận dụng & Ghi nhớ trọng tâm`
-      : rawTheory.includes(':')
-      ? rawTheory.split(':')[0].replace(/\*\*/g, '').trim()
-      : `Nội dung trọng tâm ${idx + 1}`;
+      : parsedHeader || `Nội dung trọng tâm ${idx + 1}`;
     const stepTitle =
       rawTitle.length > 65
         ? `${idx + 1}. Kiến thức & Công thức phần ${idx + 1}`
@@ -1282,8 +1400,9 @@ export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
     : lesson.lectureSteps && lesson.lectureSteps.length > 0
     ? lesson.lectureSteps
     : lesson.theory.map((tItem, idx) => {
-        const cleanTitle = tItem.includes(':')
-          ? tItem.split(':')[0].replace(/\*\*/g, '').replace(/^\d+\.\s*/, '').trim()
+        const csHeader = splitHeaderBeforeColonOutsideMath(tItem);
+        const cleanTitle = csHeader
+          ? csHeader.replace(/^\d+\.\s*/, '').trim()
           : `Kiến thức cốt lõi ${idx + 1}`;
         const codeEx = lesson.codeExamples[idx % Math.max(1, lesson.codeExamples.length)];
 

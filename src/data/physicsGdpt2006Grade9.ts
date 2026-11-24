@@ -140,7 +140,7 @@ export const PHYSICS_GDPT_2006_GRADE_9: PhysicsLesson[] = [
       '\\frac{1}{R_{\\text{ss}}} = \\frac{1}{R_1} + \\frac{1}{R_2} \\Rightarrow R_{\\text{ss}} = \\frac{R_1 R_2}{R_1 + R_2}',
       '\\text{Nối tiếp: } \\frac{U_1}{U_2} = \\frac{R_1}{R_2}; \\quad \\text{Song song: } \\frac{I_1}{I_2} = \\frac{R_2}{R_1}'
     ],
-    ...SIM_PRESETS.wheatstone,
+    ...SIM_PRESETS.ohm_dc,
     practiceExercises: [
       {
         source: SRC_9,
@@ -191,7 +191,7 @@ export const PHYSICS_GDPT_2006_GRADE_9: PhysicsLesson[] = [
       '\\mathcal{P} = U I = I^2 R = \\frac{U^2}{R}',
       'A = \\mathcal{P} t = U I t, \\quad 1\\text{ kWh} = 3{,}6\\cdot 10^6\\text{ J}'
     ],
-    ...SIM_PRESETS.work_power,
+    ...SIM_PRESETS.electric_power,
     practiceExercises: [
       {
         source: SRC_9,
@@ -405,7 +405,7 @@ export const PHYSICS_GDPT_2006_GRADE_9: PhysicsLesson[] = [
       '\\text{Bàn tay trái: } \\vec{B} \\text{ vào lòng tay, cổ tay} \\to \\text{ngón giữa theo } I, \\text{ ngón cái chỉ } \\vec{F}',
       '\\text{Động cơ điện: Điện năng} \\to \\text{Cơ năng (nhờ lực điện từ)}'
     ],
-    ...SIM_PRESETS.mag_faraday,
+    ...SIM_PRESETS.dc_motor,
     practiceExercises: [
       {
         source: SRC_9,
@@ -672,7 +672,7 @@ export const PHYSICS_GDPT_2006_GRADE_9: PhysicsLesson[] = [
       '\\frac{1}{d} - \\frac{1}{d\'} = \\frac{1}{f} \\quad (\\text{với } f = |OF|,\\ d\' = OA\' > 0)',
       '\\frac{h\'}{h} = \\frac{d\'}{d} < 1'
     ],
-    ...SIM_PRESETS.lens_single,
+    ...SIM_PRESETS.lens_diverging,
     practiceExercises: [
       {
         source: SRC_9,
@@ -727,7 +727,7 @@ export const PHYSICS_GDPT_2006_GRADE_9: PhysicsLesson[] = [
     keyFormulas: [
       'G = \\frac{25}{f\\text{ (cm)}}, \\quad f_{\\text{kính cận}} = -OC_V'
     ],
-    ...SIM_PRESETS.telescope,
+    ...SIM_PRESETS.eye_optics,
     practiceExercises: [
       {
         source: SRC_9,
@@ -882,10 +882,10 @@ export const PHYSICS_GDPT_2006_GRADE_9: PhysicsLesson[] = [
       }
     ],
     keyFormulas: [
-      '\\text{Thủy điện: } W_t \\text{ (nước)} \\to W_d \\text{ (tuabin)} \\to \\text{Điện năng}',
+      '\\text{Thủy điện: } W_t \\text{ (nước)} \\to W_{\\text{đ}} \\text{ (tuabin)} \\to \\text{Điện năng}',
       '\\text{Nhiệt điện: Hóa năng} \\to \\text{Nhiệt năng} \\to \\text{Cơ năng} \\to \\text{Điện năng}'
     ],
-    ...SIM_PRESETS.ac_rlc,
+    ...SIM_PRESETS.power_plant,
     practiceExercises: [
       {
         source: SRC_9,

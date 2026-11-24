@@ -53,7 +53,8 @@ export type Math3DMode =
   | 'integral_disks_3d'
   | 'circle_theorems_3d'
   | 'tangent_surface_3d'
-  | 'probability_bell_3d';
+  | 'probability_bell_3d'
+  | 'geometric_transform_3d';
 
 interface Math3DViewProps {
   initialMode?: Math3DMode;
@@ -125,6 +126,10 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   // Probability Bell 3D mode (Phân phối chuẩn & Biểu đồ cột 3D)
   const [bellMu, setBellMu] = useState(0);
   const [bellSigma, setBellSigma] = useState(1.1);
+
+  // Geometric Transform 3D mode (Tịnh tiến · Phép quay · Vị tự trong không gian Oxyz)
+  const [transType3D, setTransType3D] = useState<'translation' | 'rotation' | 'homothety'>('translation');
+  const [transParam3D, setTransParam3D] = useState(1.5);
 
   // Animation & hardware cutaway state
   const [isAnimating, setIsAnimating] = useState(true);
@@ -1797,6 +1802,155 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       };
     }
 
+    // -------------------------------------------------------------
+    // MODE 11: Geometric Transform 3D (Tịnh tiến · Quay · Vị tự Oxyz)
+    // -------------------------------------------------------------
+    else if (mode === 'geometric_transform_3d') {
+      // Base pyramid/prism vertices
+      const basePts = [
+        new THREE.Vector3(-2.1, 0, 1.3),
+        new THREE.Vector3(-0.7, 0, 1.3),
+        new THREE.Vector3(-1.4, 0, 0.1),
+        new THREE.Vector3(-1.4, 1.4, 0.85)
+      ];
+
+      const mapPoint = (pt: THREE.Vector3, factor: number) => {
+        if (transType3D === 'translation') {
+          return pt.clone().add(new THREE.Vector3(2.4 * factor, 0.85 * factor, -1.6 * factor));
+        }
+        if (transType3D === 'rotation') {
+          const ang = (transParam3D * Math.PI * factor) / 1.5;
+          const c = Math.cos(ang);
+          const s = Math.sin(ang);
+          return new THREE.Vector3(pt.x * c - pt.z * s, pt.y, pt.x * s + pt.z * c);
+        }
+        const k = 1 + (transParam3D - 1) * factor;
+        const center = new THREE.Vector3(-2.8, 0, 1.8);
+        return center.clone().add(pt.clone().sub(center).multiplyScalar(k));
+      };
+
+      const buildTetra = (verts: THREE.Vector3[], colorHex: number, wireHex: number, opacity: number) => {
+        const g = new THREE.Group();
+        const faces = [
+          [0, 1, 2],
+          [0, 1, 3],
+          [1, 2, 3],
+          [2, 0, 3]
+        ];
+        const posArr: number[] = [];
+        faces.forEach(([i, j, k]) => {
+          posArr.push(
+            verts[i].x, verts[i].y, verts[i].z,
+            verts[j].x, verts[j].y, verts[j].z,
+            verts[k].x, verts[k].y, verts[k].z
+          );
+        });
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
+        geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(
+          geo,
+          new THREE.MeshPhysicalMaterial({
+            color: colorHex,
+            roughness: 0.25,
+            metalness: 0.15,
+            transparent: true,
+            opacity,
+            side: THREE.DoubleSide
+          })
+        );
+        g.add(mesh);
+
+        const edgeMat = new THREE.MeshBasicMaterial({ color: wireHex });
+        [
+          [0, 1], [1, 2], [2, 0],
+          [0, 3], [1, 3], [2, 3]
+        ].forEach(([i, j]) => {
+          const d = verts[i].distanceTo(verts[j]);
+          if (d > 0.01) {
+            const cGeo = new THREE.CylinderGeometry(0.028, 0.028, d, 8);
+            const cMesh = new THREE.Mesh(cGeo, edgeMat);
+            cMesh.position.addVectors(verts[i], verts[j]).multiplyScalar(0.5);
+            cMesh.quaternion.setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              verts[j].clone().sub(verts[i]).normalize()
+            );
+            g.add(cMesh);
+          }
+        });
+        return g;
+      };
+
+      group.add(buildTetra(basePts, 0x14b8a6, 0x5eead4, 0.42));
+      addLabel('Tứ diện ABCD', basePts[3].x, basePts[3].y + 0.35, basePts[3].z, 0x5eead4, 0.26);
+
+      const targetPts = basePts.map((pt) => mapPoint(pt, 1));
+      group.add(buildTetra(targetPts, 0xf59e0b, 0xfde68a, 0.52));
+      addLabel("Ảnh A'B'C'D'", targetPts[3].x, targetPts[3].y + 0.35, targetPts[3].z, 0xfde68a, 0.26);
+
+      // Correspondence trajectories & vector arrow
+      basePts.forEach((p, idx) => {
+        const tp = targetPts[idx];
+        const ptsLine = [p, tp];
+        const lGeo = new THREE.BufferGeometry().setFromPoints(ptsLine);
+        const lMat = new THREE.LineDashedMaterial({ color: 0x94a3b8, dashSize: 0.16, gapSize: 0.1 });
+        const line = new THREE.Line(lGeo, lMat);
+        line.computeLineDistances();
+        group.add(line);
+      });
+
+      if (transType3D === 'translation') {
+        const vDir = targetPts[0].clone().sub(basePts[0]);
+        group.add(create3DArrow(vDir, new THREE.Vector3(0, 0.05, 0), vDir.length(), 0xec4899, 0.045));
+        addLabel('v⃗ tịnh tiến', vDir.x * 0.55, vDir.y * 0.55 + 0.35, vDir.z * 0.55, 0xf472b6, 0.25);
+      } else if (transType3D === 'rotation') {
+        const axis = create3DArrow(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -0.5, 0), 3.4, 0xec4899, 0.045);
+        group.add(axis);
+        addLabel('Trục quay Δ', 0.25, 2.7, 0, 0xf472b6, 0.25);
+      } else {
+        const centerPt = new THREE.Mesh(
+          new THREE.SphereGeometry(0.14, 16, 16),
+          new THREE.MeshBasicMaterial({ color: 0xec4899 })
+        );
+        centerPt.position.set(-2.8, 0.05, 1.8);
+        group.add(centerPt);
+        addLabel('Tâm vị tự I', -2.8, 0.45, 1.8, 0xf472b6, 0.25);
+      }
+
+      // Live animated ghost morphing between source & image
+      const ghostMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.6
+      });
+      const ghostGeo = new THREE.BufferGeometry();
+      ghostGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(36), 3));
+      const ghostMesh = new THREE.Mesh(ghostGeo, ghostMat);
+      group.add(ghostMesh);
+
+      mathTickRef.current = (_dt, elapsed) => {
+        const f = 0.5 - 0.5 * Math.cos(elapsed * 1.4);
+        const curVerts = basePts.map((pt) => mapPoint(pt, f));
+        const faces = [
+          [0, 1, 2],
+          [0, 1, 3],
+          [1, 2, 3],
+          [2, 0, 3]
+        ];
+        const arr = ghostGeo.attributes.position.array as Float32Array;
+        let ptr = 0;
+        faces.forEach(([i, j, k]) => {
+          [curVerts[i], curVerts[j], curVerts[k]].forEach((v) => {
+            arr[ptr++] = v.x;
+            arr[ptr++] = v.y;
+            arr[ptr++] = v.z;
+          });
+        });
+        ghostGeo.attributes.position.needsUpdate = true;
+      };
+    }
+
     const cont = mountRef.current;
     if (cont) {
       syncLine2Resolution(group, cont.clientWidth || 800, cont.clientHeight || 500);
@@ -1831,7 +1985,9 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     tanX0,
     tanY0,
     bellMu,
-    bellSigma
+    bellSigma,
+    transType3D,
+    transParam3D
   ]);
 
   // Derived math calculations for display
@@ -1881,6 +2037,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
               {mode === 'circle_theorems_3d' && 'Đường Tròn, Tiếp Tuyến & Nón Tiếp Xúc 3D'}
               {mode === 'tangent_surface_3d' && 'Bề Mặt Đạo Hàm, Vector Pháp Tuyến & Tiếp Diện 3D'}
               {mode === 'probability_bell_3d' && 'Chuông Phân Phối Chuẩn & Xác Suất Gauss 3D'}
+              {mode === 'geometric_transform_3d' && 'Phép Biến Hình & Tọa Độ Không Gian Oxyz 3D'}
             </span>
           </div>
 
@@ -1897,7 +2054,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                 { id: 'revolution_solid' as Math3DMode, label: 'Khối Tròn Xoay' },
                 { id: 'conic_sections_3d' as Math3DMode, label: 'Mặt Nón Conic' },
                 { id: 'line_plane_oxyz' as Math3DMode, label: 'Đường & Mặt Oxyz' },
-                { id: 'integral_disks_3d' as Math3DMode, label: 'Đĩa Tích Phân' }
+                { id: 'integral_disks_3d' as Math3DMode, label: 'Đĩa Tích Phân' },
+                { id: 'geometric_transform_3d' as Math3DMode, label: 'Biến Hình 3D' }
               ].map((m) => (
                 <button
                   key={m.id}
@@ -2541,6 +2699,52 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                   <div className="p-2 bg-slate-950/60 rounded-xl font-mono text-[11px] flex flex-wrap items-center justify-between gap-2 text-slate-300">
                     <span className="text-emerald-300">Quy tắc 68–95–99.7: Vòng xanh lá = 1σ | Vòng xanh dương = 2σ</span>
                     <span className="text-amber-300">Phương sai σ² = {(bellSigma * bellSigma).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Controls for Geometric Transform 3D */}
+              {mode === 'geometric_transform_3d' && (
+                <div className="space-y-2.5 text-xs">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {([
+                      { id: 'translation', label: 'Tịnh tiến v⃗' },
+                      { id: 'rotation', label: 'Quay trục Δ' },
+                      { id: 'homothety', label: 'Vị tự tâm I' }
+                    ] as const).map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setTransType3D(item.id)}
+                        className={`py-1.5 rounded-[3px] border text-[11px] font-bold transition-colors ${
+                          transType3D === item.id
+                            ? 'bg-teal-600 border-teal-400 text-white'
+                            : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-slate-300">
+                        {transType3D === 'translation'
+                          ? 'Hệ số độ dời λ:'
+                          : transType3D === 'rotation'
+                          ? 'Biên độ góc quay (π rad):'
+                          : 'Tỉ số vị tự k:'}
+                      </span>
+                      <span className="font-mono font-bold text-amber-400">{transParam3D.toFixed(2)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2.2"
+                      step="0.05"
+                      value={transParam3D}
+                      onChange={(e) => setTransParam3D(Number(e.target.value))}
+                      className="w-full accent-teal-400 h-1.5"
+                    />
                   </div>
                 </div>
               )}

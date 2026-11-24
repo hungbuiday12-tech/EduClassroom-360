@@ -244,7 +244,7 @@ export const PHYSICS_GDPT_2006_GRADE_10: PhysicsLesson[] = [
       '\\vec{v}_{13} = \\vec{v}_{12} + \\vec{v}_{23}',
       '\\text{Xuôi: } v = v_{\\text{thuyền}} + v_{\\text{nước}}; \\quad \\text{Ngược: } v = v_{\\text{thuyền}} - v_{\\text{nước}}'
     ],
-    ...SIM_PRESETS.vectors,
+    ...SIM_PRESETS.rel_velocity,
     practiceExercises: [
       {
         source: SRC_10,
@@ -905,7 +905,7 @@ export const PHYSICS_GDPT_2006_GRADE_10: PhysicsLesson[] = [
       'T(\\text{K}) = t(^\\circ\\text{C}) + 273',
       '\\frac{p_1 V_1}{T_1} = \\frac{p_2 V_2}{T_2}; \\quad \\text{Đẳng tích: } \\frac{p_1}{T_1} = \\frac{p_2}{T_2}'
     ],
-    ...SIM_PRESETS.pv_thermo,
+    ...SIM_PRESETS.thermal_gas,
     practiceExercises: [
       {
         source: SRC_10,
@@ -957,7 +957,7 @@ export const PHYSICS_GDPT_2006_GRADE_10: PhysicsLesson[] = [
       '\\Delta U = A + Q \\quad (Q>0:\\text{ nhận nhiệt};\\ A>0:\\text{ nhận công})',
       'H = \\frac{|A|}{Q_1} = \\frac{Q_1 - |Q_2|}{Q_1}'
     ],
-    ...SIM_PRESETS.calorimetry,
+    ...SIM_PRESETS.pv_thermo,
     practiceExercises: [
       {
         source: SRC_10,

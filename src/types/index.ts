@@ -391,6 +391,19 @@ export interface MathLecture {
   }[];
   essayProblems?: MathEssayProblem[];
   sim2dMode?: 'grapher' | 'geometry';
+  sim2dPreset?:
+    | 'pythagoras'
+    | 'triangle_explorer'
+    | 'circle_tangent'
+    | 'circle_chords_angles'
+    | 'circle_secant_power'
+    | 'two_circles_relative'
+    | 'inscribed_quad'
+    | 'vector_parallelogram'
+    | 'conic_ellipse'
+    | 'spatial_pyramid'
+    | 'geometric_transform'
+    | 'complex_plane';
   sim3dMode?:
     | 'oxyz_vector'
     | 'sphere_plane'
@@ -401,7 +414,8 @@ export interface MathLecture {
     | 'integral_disks_3d'
     | 'circle_theorems_3d'
     | 'tangent_surface_3d'
-    | 'probability_bell_3d';
+    | 'probability_bell_3d'
+    | 'geometric_transform_3d';
   defaultGraphConfig?: Partial<FunctionPlotConfig>;
 }
 
@@ -475,7 +489,10 @@ export type PhysicsSimType =
   | 'electrolysis_faraday'
   | 'eye_optics_2d'
   | 'em_wave_3axis'
-  | 'phase_change_heating';
+  | 'phase_change_heating'
+  | 'distance_displacement_rel'
+  | 'power_plant_generator'
+  | 'fresnel_phasor_2d';
 
 export type Physics3DMode =
   | 'pendulum_spring'
@@ -537,7 +554,8 @@ export type Physics3DMode =
   | 'electric_power_meter_3d'
   | 'electrolysis_3d'
   | 'eye_optics_3d'
-  | 'em_wave_3d';
+  | 'em_wave_3d'
+  | 'power_plant_3d';
 
 export type PhysicsDomainId =
   | 'mechanics'

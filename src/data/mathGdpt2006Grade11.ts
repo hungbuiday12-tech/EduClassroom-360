@@ -307,7 +307,7 @@ export const MATH_GDPT_2006_GRADE_11: MathLecture[] = [
     lessonNumber: 6,
     stageLabel: 'Toán 11 (2006) · ĐS&GT Chương II: Tổ hợp – Xác suất',
     sourceTag: 'SGK Đại số & Giải tích 11 (2006) · Bài 3',
-    title: 'Bài 6 (2006): Nhị thức Newton (a + b)ⁿ & Tam giác Pascal',
+    title: 'Bài 6 (2006): Nhị thức Newton $(a + b)^n$ & Tam giác Pascal',
     grade: 'Lớp 11 · Tổ hợp & Xác suất',
     category: 'Đại số & Xác suất',
     difficulty: 'Thông hiểu',
@@ -905,11 +905,11 @@ export const MATH_GDPT_2006_GRADE_11: MathLecture[] = [
       'Nhầm dấu tọa độ khi quay $90^\\circ$ và $-90^\\circ$ (nên kiểm tra nhanh bằng điểm $(1; 0)$ quay $90^\\circ$ thành $(0; 1)$!).'
     ],
     theory: [
-      '1. Phép dời hình: Là phép biến hình bảo toàn khoảng cách giữa hai điểm bất kì. Gồm: phép tịnh tiến $T_{\\vec{v}}$, phép đối xứng trục $Đ_d$, phép đối xứng tâm $Đ_I$, phép quay $Q_{(O, \\varphi)}$.',
-      '2. Biểu thức tọa độ: $T_{\\vec{v}=(a;b)}(M(x;y)) = (x+a; y+b)$. $Đ_I(M) = M\'$ với $x\' = 2x_I - x,\\ y\' = 2y_I - y$. Phép dời hình biến đường thẳng thành đường thẳng song song hoặc trùng (với $T_{\\vec{v}}, Đ_I$), biến đường tròn bán kính $R$ thành đường tròn cùng bán kính $R$.'
+      '1. Phép dời hình: Là phép biến hình bảo toàn khoảng cách giữa hai điểm bất kì. Gồm: phép tịnh tiến $T_{\\vec{v}}$, phép đối xứng trục $\\text{Đ}_d$, phép đối xứng tâm $\\text{Đ}_I$, phép quay $Q_{(O, \\varphi)}$.',
+      '2. Biểu thức tọa độ: $T_{\\vec{v}=(a;b)}(M(x;y)) = (x+a; y+b)$. $\\text{Đ}_I(M) = M\'$ với $x\' = 2x_I - x,\\ y\' = 2y_I - y$. Phép dời hình biến đường thẳng thành đường thẳng song song hoặc trùng (với $T_{\\vec{v}}, \\text{Đ}_I$), biến đường tròn bán kính $R$ thành đường tròn cùng bán kính $R$.'
     ],
     keyFormulas: [
-      'T_{\\vec{v}(a;b)}: \\begin{cases} x\' = x + a \\\\ y\' = y + b \\end{cases}, \\quad Đ_I: \\begin{cases} x\' = 2x_I - x \\\\ y\' = 2y_I - y \\end{cases}',
+      'T_{\\vec{v}(a;b)}: \\begin{cases} x\' = x + a \\\\ y\' = y + b \\end{cases}, \\quad \\text{Đ}_I: \\begin{cases} x\' = 2x_I - x \\\\ y\' = 2y_I - y \\end{cases}',
       'Q_{(O, 90^\\circ)}(x; y) = (-y; x)'
     ],
     flashcards: [
@@ -937,7 +937,8 @@ export const MATH_GDPT_2006_GRADE_11: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim3dMode: 'circle_theorems_3d'
+    sim2dPreset: 'geometric_transform',
+    sim3dMode: 'geometric_transform_3d'
   },
   {
     id: 'math-2006-11-17',
@@ -993,7 +994,8 @@ export const MATH_GDPT_2006_GRADE_11: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim3dMode: 'circle_theorems_3d'
+    sim2dPreset: 'geometric_transform',
+    sim3dMode: 'geometric_transform_3d'
   },
   // ==================== HÌNH HỌC 11 · CHƯƠNG II: QUAN HỆ SONG SONG TRONG KHÔNG GIAN ====================
   {
@@ -1055,6 +1057,7 @@ export const MATH_GDPT_2006_GRADE_11: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'spatial_pyramid',
     sim3dMode: 'pyramid_section'
   },
   {
@@ -1176,6 +1179,7 @@ export const MATH_GDPT_2006_GRADE_11: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'spatial_pyramid',
     sim3dMode: 'pyramid_section'
   },
   // ==================== HÌNH HỌC 11 · CHƯƠNG III: VECTƠ KHÔNG GIAN & QUAN HỆ VUÔNG GÓC ====================
@@ -1291,6 +1295,7 @@ export const MATH_GDPT_2006_GRADE_11: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
+    sim2dPreset: 'spatial_pyramid',
     sim3dMode: 'pyramid_section'
   }
 ];

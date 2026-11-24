@@ -250,6 +250,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   const mathCount = CURRICULUM_COUNTS.mathLectures;
   const physicsCount = CURRICULUM_COUNTS.physicsLessons;
   const csCount = CURRICULUM_COUNTS.csLessons;
+  const phyCounts = getPhysicsSimCounts();
 
   useEffect(() => {
     if (reviewScrollTick === 0) return;
@@ -457,7 +458,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               <div className="rounded-2xl border border-cyan-400/35 bg-slate-900/80 p-4 space-y-1.5 backdrop-blur-md">
                 <div className="flex items-center gap-2 text-xs font-extrabold text-cyan-300">
                   <Cpu className="w-4 h-4" />
-                  <span>Mô Phỏng Chuẩn Astra AI · 21 Lab 3D</span>
+                  <span>Mô Phỏng Chuẩn Astra AI · 22 Lab 3D</span>
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed">
                   Mở khóa toàn bộ Vũ Trụ Định Luật Vật Lí 3D, Thành Phố Thuật Toán 3D, Quantum Holodeck, Hộp cát GPU 28K & 30 Đại công trình 3D.
@@ -645,7 +646,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                     {isEn ? 'Physics 2D/3D' : 'Vật lí 2D & 3D'}
                   </div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                    {isEn ? '10 Domains' : '10 Lĩnh vực'}
+                    {isEn ? `${phyCounts.domainCount} Domains · ${phyCounts.total}` : `${phyCounts.domainCount} Lĩnh vực · ${phyCounts.total}`}
                   </div>
                 </div>
               </button>
@@ -663,7 +664,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                     {isEn ? 'Code 2D/3D' : 'Code 2D & 3D'}
                   </div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                    {isEn ? '16 2D + 5 3D' : '16 Thuật toán'}
+                    {isEn ? `${csCount} Lessons · 16 Algos` : `${csCount} Bài · 16 Thuật toán`}
                   </div>
                 </div>
               </button>
@@ -725,7 +726,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               </div>
               <div className="group/stat px-2 py-1">
                 <div className="font-display text-2xl sm:text-3xl font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums hero-blend-shadow">
-                  128+
+                  {phyCounts.total}+
                 </div>
                 <div className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5 hero-blend-shadow">
                   {isEn ? 'Virtual 2D/3D Labs' : 'Phòng Lab 2D/3D'}

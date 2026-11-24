@@ -75,7 +75,9 @@ type GeoPreset =
   | 'inscribed_quad'
   | 'vector_parallelogram'
   | 'conic_ellipse'
-  | 'spatial_pyramid';
+  | 'spatial_pyramid'
+  | 'geometric_transform'
+  | 'complex_plane';
 type FreeTool =
   | 'select'
   | 'point'
@@ -89,16 +91,33 @@ type FreeTool =
   | 'eraser';
 
 const POINT_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const VALID_GEO_PRESETS: GeoPreset[] = [
+  'pythagoras',
+  'triangle_explorer',
+  'circle_tangent',
+  'circle_chords_angles',
+  'circle_secant_power',
+  'two_circles_relative',
+  'inscribed_quad',
+  'vector_parallelogram',
+  'conic_ellipse',
+  'spatial_pyramid',
+  'geometric_transform',
+  'complex_plane'
+];
 
 interface GeometryStudioProps {
+  initialPreset?: string | null;
   onBack?: () => void;
 }
 
-export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
+export const GeometryStudio: React.FC<GeometryStudioProps> = ({ initialPreset, onBack }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Overall studio navigation & fullscreen state
-  const [studioMode, setStudioMode] = useState<StudioMode>('free_construction');
+  const [studioMode, setStudioMode] = useState<StudioMode>(
+    initialPreset && VALID_GEO_PRESETS.includes(initialPreset as GeoPreset) ? 'presets' : 'free_construction'
+  );
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [resizeTick, setResizeTick] = useState(0);
 
@@ -111,9 +130,24 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
   }, []);
 
   // Presets state
-  const [activePreset, setActivePreset] = useState<GeoPreset>('pythagoras');
+  const [activePreset, setActivePreset] = useState<GeoPreset>(
+    initialPreset && VALID_GEO_PRESETS.includes(initialPreset as GeoPreset)
+      ? (initialPreset as GeoPreset)
+      : 'pythagoras'
+  );
   const [spatialRotation, setSpatialRotation] = useState<number>(30);
   const [spatialHeight, setSpatialHeight] = useState<number>(180);
+  const [transformKind, setTransformKind] = useState<'translation' | 'rotation' | 'homothety'>('translation');
+  const [transformAngleDeg, setTransformAngleDeg] = useState<number>(60);
+  const [transformScaleK, setTransformScaleK] = useState<number>(1.5);
+  const [complexOp, setComplexOp] = useState<'sum' | 'diff' | 'product'>('sum');
+
+  useEffect(() => {
+    if (initialPreset && VALID_GEO_PRESETS.includes(initialPreset as GeoPreset)) {
+      setStudioMode('presets');
+      setActivePreset(initialPreset as GeoPreset);
+    }
+  }, [initialPreset]);
 
   // Free construction state
   const [activeTool, setActiveTool] = useState<FreeTool>('segment');
@@ -215,7 +249,17 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
     conic_ellipse: [
       { id: 'M', x: 410, y: 150, label: 'M' }
     ],
-    spatial_pyramid: []
+    spatial_pyramid: [],
+    geometric_transform: [
+      { id: 'A', x: 140, y: 270, label: 'A' },
+      { id: 'B', x: 230, y: 270, label: 'B' },
+      { id: 'C', x: 175, y: 185, label: 'C' },
+      { id: 'V', x: 310, y: 215, label: 'I / v⃗' }
+    ],
+    complex_plane: [
+      { id: 'Z1', x: 410, y: 175, label: 'z₁' },
+      { id: 'Z2', x: 245, y: 165, label: 'z₂' }
+    ]
   });
 
   // History for Undo
@@ -1518,6 +1562,242 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
           14,
           26
         );
+      } else if (activePreset === 'geometric_transform') {
+        const pA = activePts.find((p) => p.id === 'A') || { x: 140, y: 270, label: 'A', id: 'A' };
+        const pB = activePts.find((p) => p.id === 'B') || { x: 230, y: 270, label: 'B', id: 'B' };
+        const pC = activePts.find((p) => p.id === 'C') || { x: 175, y: 185, label: 'C', id: 'C' };
+        const pV = activePts.find((p) => p.id === 'V') || { x: 310, y: 215, label: 'I / v⃗', id: 'V' };
+
+        const mapPt = (pt: { x: number; y: number }) => {
+          if (transformKind === 'translation') {
+            const dx = pV.x - 180;
+            const dy = pV.y - 240;
+            return { x: pt.x + dx, y: pt.y + dy };
+          }
+          if (transformKind === 'rotation') {
+            const rad = (-transformAngleDeg * Math.PI) / 180;
+            const rx = pt.x - pV.x;
+            const ry = pt.y - pV.y;
+            return {
+              x: pV.x + rx * Math.cos(rad) - ry * Math.sin(rad),
+              y: pV.y + rx * Math.sin(rad) + ry * Math.cos(rad)
+            };
+          }
+          return {
+            x: pV.x + transformScaleK * (pt.x - pV.x),
+            y: pV.y + transformScaleK * (pt.y - pV.y)
+          };
+        };
+
+        const pAp = mapPt(pA);
+        const pBp = mapPt(pB);
+        const pCp = mapPt(pC);
+
+        // Original triangle ABC
+        ctx.fillStyle = 'rgba(20, 184, 166, 0.2)';
+        ctx.strokeStyle = '#0d9488';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.lineTo(pC.x, pC.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Correspondence rays or vectors
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.7)' : 'rgba(100, 116, 139, 0.7)';
+        ctx.lineWidth = 1.4;
+        [
+          [pA, pAp],
+          [pB, pBp],
+          [pC, pCp]
+        ].forEach(([src, dst]) => {
+          ctx.beginPath();
+          if (transformKind === 'homothety') {
+            ctx.moveTo(pV.x, pV.y);
+            ctx.lineTo(src.x, src.y);
+            ctx.lineTo(dst.x, dst.y);
+          } else {
+            ctx.moveTo(src.x, src.y);
+            ctx.lineTo(dst.x, dst.y);
+          }
+          ctx.stroke();
+        });
+        ctx.restore();
+
+        // Rotation arcs if rotation
+        if (transformKind === 'rotation') {
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+          ctx.lineWidth = 1.3;
+          [pA, pB, pC].forEach((pt) => {
+            const rad = dist(pV, pt);
+            const a0 = Math.atan2(pt.y - pV.y, pt.x - pV.x);
+            const dRad = (-transformAngleDeg * Math.PI) / 180;
+            ctx.beginPath();
+            ctx.arc(pV.x, pV.y, rad, a0, a0 + dRad, dRad < 0);
+            ctx.stroke();
+          });
+        }
+
+        // Translation vector arrow
+        if (transformKind === 'translation') {
+          const base = { x: 180, y: 240 };
+          ctx.strokeStyle = '#ec4899';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(base.x, base.y);
+          ctx.lineTo(pV.x, pV.y);
+          ctx.stroke();
+          const ang = Math.atan2(pV.y - base.y, pV.x - base.x);
+          ctx.fillStyle = '#ec4899';
+          ctx.beginPath();
+          ctx.moveTo(pV.x, pV.y);
+          ctx.lineTo(pV.x - 10 * Math.cos(ang - 0.4), pV.y - 10 * Math.sin(ang - 0.4));
+          ctx.lineTo(pV.x - 10 * Math.cos(ang + 0.4), pV.y - 10 * Math.sin(ang + 0.4));
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Transformed triangle A'B'C'
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.24)';
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(pAp.x, pAp.y);
+        ctx.lineTo(pBp.x, pBp.y);
+        ctx.lineTo(pCp.x, pCp.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        [
+          { pt: pAp, lbl: "A'" },
+          { pt: pBp, lbl: "B'" },
+          { pt: pCp, lbl: "C'" }
+        ].forEach(({ pt, lbl }) => {
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = isDark ? '#fde68a' : '#b45309';
+          ctx.font = 'bold 12px "JetBrains Mono", monospace';
+          ctx.fillText(lbl, pt.x + 8, pt.y - 7);
+        });
+
+        const areaOrig = Math.abs((pA.x * (pB.y - pC.y) + pB.x * (pC.y - pA.y) + pC.x * (pA.y - pB.y)) / 2) / 625;
+        const ratio = transformKind === 'homothety' ? Math.abs(transformScaleK) : 1;
+        ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        const modeTxt =
+          transformKind === 'translation'
+            ? `Tịnh tiến v⃗ = (${((pV.x - 180) / 25).toFixed(1)}; ${((240 - pV.y) / 25).toFixed(1)})`
+            : transformKind === 'rotation'
+            ? `Phép quay Q(I, ${transformAngleDeg}°) · Bảo toàn khoảng cách`
+            : `Vị tự V(I, k=${transformScaleK.toFixed(1)}) · S'/S = k² = ${(ratio * ratio).toFixed(2)}`;
+        ctx.fillText(`${modeTxt} · S=${areaOrig.toFixed(2)} ⇒ S'=${(areaOrig * ratio * ratio).toFixed(2)}`, 14, 26);
+      } else if (activePreset === 'complex_plane') {
+        const ox = Math.round(width / 2);
+        const oy = Math.round(height / 2);
+        const unit = 50; // 50px = 1 unit
+
+        // Real and Imaginary axes
+        ctx.strokeStyle = isDark ? '#64748b' : '#475569';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(20, oy);
+        ctx.lineTo(width - 20, oy);
+        ctx.moveTo(ox, 20);
+        ctx.lineTo(ox, height - 20);
+        ctx.stroke();
+
+        // Unit circle |z| = 1 and |z| = 2
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = isDark ? 'rgba(99, 102, 241, 0.35)' : 'rgba(99, 102, 241, 0.3)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(ox, oy, unit, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(ox, oy, unit * 2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText('Re (x)', width - 58, oy - 8);
+        ctx.fillText('Im (yi)', ox + 8, 28);
+        ctx.fillText('O', ox - 14, oy + 14);
+
+        const p1 = activePts.find((p) => p.id === 'Z1') || { x: ox + 100, y: oy - 75, label: 'z₁', id: 'Z1' };
+        const p2 = activePts.find((p) => p.id === 'Z2') || { x: ox - 50, y: oy - 100, label: 'z₂', id: 'Z2' };
+
+        const z1r = (p1.x - ox) / unit;
+        const z1i = (oy - p1.y) / unit;
+        const z2r = (p2.x - ox) / unit;
+        const z2i = (oy - p2.y) / unit;
+
+        let zr = z1r + z2r;
+        let zi = z1i + z2i;
+        let opSym = 'z₁ + z₂';
+        if (complexOp === 'diff') {
+          zr = z1r - z2r;
+          zi = z1i - z2i;
+          opSym = 'z₁ − z₂';
+        } else if (complexOp === 'product') {
+          zr = z1r * z2r - z1i * z2i;
+          zi = z1r * z2i + z1i * z2r;
+          opSym = 'z₁ · z₂';
+        }
+        const pRes = { x: ox + zr * unit, y: oy - zi * unit };
+
+        const drawVec = (target: { x: number; y: number }, col: string, dashed = false) => {
+          ctx.save();
+          if (dashed) ctx.setLineDash([5, 4]);
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(target.x, target.y);
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        drawVec(p1, '#3b82f6');
+        drawVec(p2, '#10b981');
+        if (complexOp === 'sum') {
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(pRes.x, pRes.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+        drawVec(pRes, '#f59e0b');
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(pRes.x, pRes.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = isDark ? '#fde68a' : '#b45309';
+        ctx.font = 'bold 12px "JetBrains Mono", monospace';
+        ctx.fillText(opSym, pRes.x + 8, pRes.y - 8);
+
+        const fmtZ = (a: number, b: number) => `${a.toFixed(1)} ${b >= 0 ? '+' : '−'} ${Math.abs(b).toFixed(1)}i`;
+        ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(
+          `z₁=${fmtZ(z1r, z1i)} (|z₁|=${Math.hypot(z1r, z1i).toFixed(2)}) · z₂=${fmtZ(z2r, z2i)} · ${opSym}=${fmtZ(zr, zi)}`,
+          14,
+          24
+        );
       }
 
       // Draw vertex handles for 2D presets
@@ -1551,6 +1831,10 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
     polygonPendingIds,
     spatialRotation,
     spatialHeight,
+    transformKind,
+    transformAngleDeg,
+    transformScaleK,
+    complexOp,
     showGrid,
     showMeasurements,
     resizeTick
@@ -2105,6 +2389,8 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
               { id: 'inscribed_quad' as GeoPreset, label: 'Tứ giác nội tiếp' },
               { id: 'vector_parallelogram' as GeoPreset, label: 'Vectơ & Tích vô hướng' },
               { id: 'conic_ellipse' as GeoPreset, label: 'Elip & Hai tiêu điểm' },
+              { id: 'geometric_transform' as GeoPreset, label: 'Phép biến hình phẳng' },
+              { id: 'complex_plane' as GeoPreset, label: 'Mặt phẳng Số phức' },
               { id: 'spatial_pyramid' as GeoPreset, label: 'Chóp tứ giác đều' }
             ].map((item) => (
               <button
@@ -2488,6 +2774,100 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ onBack }) => {
                     className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                   />
                 </div>
+              </div>
+            )}
+
+            {activePreset === 'geometric_transform' && (
+              <div className="space-y-2.5 text-xs">
+                <p className="font-semibold text-teal-600 dark:text-teal-400">
+                  Phép dời hình &amp; Vị tự trong mặt phẳng
+                </p>
+                <div className="grid grid-cols-3 gap-1">
+                  {([
+                    { id: 'translation', label: 'Tịnh tiến' },
+                    { id: 'rotation', label: 'Phép quay' },
+                    { id: 'homothety', label: 'Vị tự' }
+                  ] as const).map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setTransformKind(item.id)}
+                      className={`py-1.5 px-1 rounded text-[11px] font-bold border transition-colors ${
+                        transformKind === item.id
+                          ? 'bg-teal-600 border-teal-500 text-white'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                {transformKind === 'rotation' && (
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/70 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <div className="flex justify-between mb-1">
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">Góc quay φ:</span>
+                      <span className="font-mono font-bold text-amber-500">{transformAngleDeg}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-180"
+                      max="180"
+                      step="5"
+                      value={transformAngleDeg}
+                      onChange={(e) => setTransformAngleDeg(Number(e.target.value))}
+                      className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    />
+                  </div>
+                )}
+                {transformKind === 'homothety' && (
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/70 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <div className="flex justify-between mb-1">
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">Tỉ số vị tự k:</span>
+                      <span className="font-mono font-bold text-amber-500">{transformScaleK.toFixed(1)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-2.0"
+                      max="2.2"
+                      step="0.1"
+                      value={transformScaleK}
+                      onChange={(e) => setTransformScaleK(Number(e.target.value))}
+                      className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    />
+                  </div>
+                )}
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Kéo thả trực tiếp các đỉnh A, B, C hoặc tâm I / đầu mút vectơ v⃗ trên bảng vẽ.
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'complex_plane' && (
+              <div className="space-y-2.5 text-xs">
+                <p className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  Biểu diễn Hình học Số phức (Mặt phẳng Argand)
+                </p>
+                <div className="grid grid-cols-3 gap-1">
+                  {([
+                    { id: 'sum', label: 'z₁ + z₂' },
+                    { id: 'diff', label: 'z₁ − z₂' },
+                    { id: 'product', label: 'z₁ · z₂' }
+                  ] as const).map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setComplexOp(item.id)}
+                      className={`py-1.5 px-1 rounded text-[11px] font-bold border transition-colors ${
+                        complexOp === item.id
+                          ? 'bg-indigo-600 border-indigo-500 text-white'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Kéo điểm z₁, z₂ để quan sát quy tắc hình bình hành (z₁+z₂) và phép nhân quay-co giãn (z₁·z₂).
+                </p>
               </div>
             )}
           </div>

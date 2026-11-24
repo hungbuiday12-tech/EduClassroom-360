@@ -1917,19 +1917,40 @@ function extractCleanErrorMessage(err: any): string {
 }
 
 function isTransientGeminiError(err: any): boolean {
-  const msg = `${err?.status || ''} ${err?.code || ''} ${err?.message || ''}`.toLowerCase();
+  const msg = `${err?.status || ''} ${err?.code || ''} ${err?.message || ''} ${String(err || '')}`.toLowerCase();
   return (
     msg.includes('503') ||
+    msg.includes('502') ||
+    msg.includes('504') ||
     msg.includes('unavailable') ||
     msg.includes('high demand') ||
     msg.includes('overloaded') ||
     msg.includes('429') ||
     msg.includes('resource_exhausted') ||
+    msg.includes('rate limit') ||
     msg.includes('timeout') ||
+    msg.includes('etimedout') ||
     msg.includes('econnreset') ||
-    msg.includes('fetch failed')
+    msg.includes('socket hang up') ||
+    msg.includes('fetch failed') ||
+    msg.includes('empty response') ||
+    msg.includes('empty stream response')
   );
 }
+
+function geminiErrorStatus(err: any): number {
+  return isTransientGeminiError(err) ? 503 : 500;
+}
+
+function sleepWithJitter(baseMs: number): Promise<void> {
+  const jittered = Math.round(baseMs * (0.8 + Math.random() * 0.4));
+  return new Promise((resolve) => setTimeout(resolve, jittered));
+}
+
+const GEMINI_TEXT_RETRY_SCHEDULE: readonly { model: string; retryDelayMs: number }[] = [
+  { model: 'gemini-4-hydrogen', retryDelayMs: 250 },
+  { model: 'gemini-3.1-flash-lite', retryDelayMs: 0 }
+];
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout>;
@@ -1991,48 +2012,227 @@ async function callGeminiWithFallback({
   thinkingLevel = ThinkingLevel.LOW,
   timeoutMs = 18000
 }: GeminiCallOptions) {
+  let skipThinkingConfig = false;
+
   const buildConfig = (model: string) => {
     const cfg: Record<string, any> = {};
     if (systemInstruction) cfg.systemInstruction = systemInstruction;
     if (responseMimeType) cfg.responseMimeType = responseMimeType;
     if (responseSchema) cfg.responseSchema = responseSchema;
-    if (model === 'gemini-4-hydrogen') {
+    if (model === 'gemini-4-hydrogen' && !skipThinkingConfig) {
       const safeLevel = thinkingLevel === ThinkingLevel.MINIMAL ? ThinkingLevel.LOW : thinkingLevel;
       cfg.thinkingConfig = { thinkingLevel: safeLevel };
     }
     return cfg;
   };
 
-  // Attempt 1: Primary gemini-4-hydrogen
-  try {
-    return await withTimeout(
-      ai.models.generateContent({
-        model: 'gemini-4-hydrogen',
-        contents,
-        config: buildConfig('gemini-4-hydrogen')
-      }),
-      timeoutMs,
-      'gemini-4-hydrogen'
-    );
-  } catch (err1: any) {
-    const msg = String(err1?.message || err1 || '').toLowerCase();
-    if (!isTransientGeminiError(err1) && !msg.includes('thinking level')) {
-      throw err1;
+  let lastErr: any;
+  for (let i = 0; i < GEMINI_TEXT_RETRY_SCHEDULE.length; i++) {
+    const { model, retryDelayMs } = GEMINI_TEXT_RETRY_SCHEDULE[i];
+    try {
+      const attemptTimeout = i === 0 ? timeoutMs : Math.min(timeoutMs, 16000);
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model,
+          contents,
+          config: buildConfig(model)
+        }),
+        attemptTimeout,
+        `${model}#${i + 1}`
+      );
+      if (!(response.text || '').trim()) {
+        throw new Error(`Empty response from ${model}`);
+      }
+      return response;
+    } catch (err: any) {
+      lastErr = err;
+      const msg = String(err?.message || err || '').toLowerCase();
+      const thinkingIssue = msg.includes('thinking level') || msg.includes('thinkingconfig');
+      if (thinkingIssue) {
+        skipThinkingConfig = true;
+      }
+      const retryable =
+        isTransientGeminiError(err) ||
+        thinkingIssue ||
+        msg.includes('404') ||
+        msg.includes('not found');
+      if (!retryable || i === GEMINI_TEXT_RETRY_SCHEDULE.length - 1) {
+        throw err;
+      }
+      console.warn(
+        `Gemini attempt ${i + 1}/${GEMINI_TEXT_RETRY_SCHEDULE.length} (${model}) failed, backing off:`,
+        err?.message || err
+      );
+      if (retryDelayMs > 0) {
+        await sleepWithJitter(retryDelayMs);
+      }
     }
-    console.warn('Primary gemini-4-hydrogen transient issue, falling back:', err1?.message || err1);
   }
+  throw lastErr;
+}
 
-  // Attempt 2: Fast fallback to gemini-3.1-flash-lite
-  await new Promise((r) => setTimeout(r, 250));
-  return await withTimeout(
-    ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite',
-      contents,
-      config: buildConfig('gemini-3.1-flash-lite')
-    }),
-    Math.min(timeoutMs, 18000),
-    'gemini-3.1-flash-lite'
-  );
+async function callGeminiChatWithFallback({
+  ai,
+  history,
+  lastMessageParts,
+  systemInstruction,
+  timeoutMs = 20000,
+  label = 'chat'
+}: {
+  ai: GoogleGenAI;
+  history: any[];
+  lastMessageParts: any[];
+  systemInstruction: string;
+  timeoutMs?: number;
+  label?: string;
+}) {
+  let skipThinkingConfig = false;
+  let lastErr: any;
+
+  for (let i = 0; i < GEMINI_TEXT_RETRY_SCHEDULE.length; i++) {
+    const { model, retryDelayMs } = GEMINI_TEXT_RETRY_SCHEDULE[i];
+    try {
+      const chatConfig: Record<string, any> = { systemInstruction };
+      if (model === 'gemini-4-hydrogen' && !skipThinkingConfig) {
+        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+      }
+      const chat = ai.chats.create({
+        model,
+        history,
+        config: chatConfig
+      });
+      const response = await withTimeout(
+        chat.sendMessage({
+          message:
+            lastMessageParts.length === 1 && lastMessageParts[0].text
+              ? lastMessageParts[0].text
+              : lastMessageParts
+        }),
+        i === 0 ? timeoutMs : Math.min(timeoutMs, 18000),
+        `${label}-${model}#${i + 1}`
+      );
+      if (!(response.text || '').trim()) {
+        throw new Error(`Empty response from ${model}`);
+      }
+      return response;
+    } catch (err: any) {
+      lastErr = err;
+      const msg = String(err?.message || err || '').toLowerCase();
+      const thinkingIssue = msg.includes('thinking level') || msg.includes('thinkingconfig');
+      if (thinkingIssue) {
+        skipThinkingConfig = true;
+      }
+      const retryable =
+        isTransientGeminiError(err) ||
+        thinkingIssue ||
+        msg.includes('404') ||
+        msg.includes('not found');
+      if (!retryable || i === GEMINI_TEXT_RETRY_SCHEDULE.length - 1) {
+        throw err;
+      }
+      console.warn(
+        `Gemini chat attempt ${i + 1}/${GEMINI_TEXT_RETRY_SCHEDULE.length} (${label}/${model}) failed, backing off:`,
+        err?.message || err
+      );
+      if (retryDelayMs > 0) {
+        await sleepWithJitter(retryDelayMs);
+      }
+    }
+  }
+  throw lastErr;
+}
+
+async function streamGeminiChatWithFallback({
+  ai,
+  history,
+  lastMessageParts,
+  systemInstruction,
+  onDelta,
+  onKeepalive
+}: {
+  ai: GoogleGenAI;
+  history: any[];
+  lastMessageParts: any[];
+  systemInstruction: string;
+  onDelta: (piece: string) => void;
+  onKeepalive?: () => void;
+}): Promise<string> {
+  let skipThinkingConfig = false;
+  let lastErr: any;
+
+  for (let i = 0; i < GEMINI_TEXT_RETRY_SCHEDULE.length; i++) {
+    const { model, retryDelayMs } = GEMINI_TEXT_RETRY_SCHEDULE[i];
+    let emittedChunks = false;
+
+    try {
+      const chatConfig: Record<string, any> = { systemInstruction };
+      if (model === 'gemini-4-hydrogen' && !skipThinkingConfig) {
+        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+      }
+      const chat = ai.chats.create({
+        model,
+        history,
+        config: chatConfig
+      });
+
+      const streamTask = async () => {
+        const stream = await chat.sendMessageStream({
+          message:
+            lastMessageParts.length === 1 && lastMessageParts[0].text
+              ? lastMessageParts[0].text
+              : lastMessageParts
+        });
+
+        let fullText = '';
+        for await (const chunk of stream) {
+          const piece = chunk.text || '';
+          if (piece) {
+            emittedChunks = true;
+            fullText += piece;
+            onDelta(piece);
+          }
+        }
+        if (!fullText.trim()) {
+          throw new Error(`Empty stream response from ${model}`);
+        }
+        return fullText;
+      };
+
+      return await withTimeout(
+        streamTask(),
+        model === 'gemini-4-hydrogen' ? 20000 : 22000,
+        `stream-${model}#${i + 1}`
+      );
+    } catch (err: any) {
+      lastErr = err;
+      if (emittedChunks) {
+        throw err;
+      }
+      const msg = String(err?.message || err || '').toLowerCase();
+      const thinkingIssue = msg.includes('thinking level') || msg.includes('thinkingconfig');
+      if (thinkingIssue) {
+        skipThinkingConfig = true;
+      }
+      const retryable =
+        isTransientGeminiError(err) ||
+        thinkingIssue ||
+        msg.includes('404') ||
+        msg.includes('not found');
+      if (!retryable || i === GEMINI_TEXT_RETRY_SCHEDULE.length - 1) {
+        throw err;
+      }
+      console.warn(
+        `Gemini stream attempt ${i + 1}/${GEMINI_TEXT_RETRY_SCHEDULE.length} (${model}) failed, backing off:`,
+        err?.message || err
+      );
+      onKeepalive?.();
+      if (retryDelayMs > 0) {
+        await sleepWithJitter(retryDelayMs);
+      }
+      onKeepalive?.();
+    }
+  }
+  throw lastErr;
 }
 
 // =====================================================================
@@ -2254,53 +2454,18 @@ app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
     const systemInstruction = buildTutorSystemInstruction(subjKey, modeKey, isEn, context);
     const { history, lastMessageParts } = buildGeminiChatHistoryAndLastTurn(messages);
 
-    const runStreamWithModel = async (modelName: string) => {
-      const chatConfig: Record<string, any> = { systemInstruction };
-      if (modelName === 'gemini-4-hydrogen') {
-        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+    const finalReply = await streamGeminiChatWithFallback({
+      ai,
+      history,
+      lastMessageParts,
+      systemInstruction,
+      onDelta: (piece) => sendSse({ delta: piece }),
+      onKeepalive: () => {
+        try {
+          res.write(': retrying\n\n');
+        } catch {}
       }
-      const chat = ai.chats.create({
-        model: modelName,
-        history,
-        config: chatConfig
-      });
-
-      const streamTask = async () => {
-        const stream = await chat.sendMessageStream({
-          message:
-            lastMessageParts.length === 1 && lastMessageParts[0].text
-              ? lastMessageParts[0].text
-              : lastMessageParts
-        });
-
-        let fullText = '';
-        for await (const chunk of stream) {
-          const piece = chunk.text || '';
-          if (piece) {
-            fullText += piece;
-            sendSse({ delta: piece });
-          }
-        }
-        if (!fullText.trim()) {
-          throw new Error(`Empty stream response from ${modelName}`);
-        }
-        return fullText;
-      };
-
-      return await withTimeout(
-        streamTask(),
-        modelName === 'gemini-4-hydrogen' ? 22000 : 25000,
-        `stream-${modelName}`
-      );
-    };
-
-    let finalReply = '';
-    try {
-      finalReply = await runStreamWithModel('gemini-4-hydrogen');
-    } catch (err1: any) {
-      console.warn('Primary stream error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
-      finalReply = await runStreamWithModel('gemini-3.1-flash-lite');
-    }
+    });
 
     sendSse({ done: true, reply: finalReply.trim() });
     return res.end();
@@ -2333,35 +2498,14 @@ app.post('/api/gemini/tutor', async (req: Request, res: Response) => {
     const systemInstruction = buildTutorSystemInstruction(subjKey, modeKey, isEn, context);
     const { history, lastMessageParts } = buildGeminiChatHistoryAndLastTurn(messages);
 
-    const runChatWithModel = async (modelName: string) => {
-      const chatConfig: Record<string, any> = { systemInstruction };
-      if (modelName === 'gemini-4-hydrogen') {
-        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
-      }
-      const chat = ai.chats.create({
-        model: modelName,
-        history,
-        config: chatConfig
-      });
-      return await withTimeout(
-        chat.sendMessage({
-          message:
-            lastMessageParts.length === 1 && lastMessageParts[0].text
-              ? lastMessageParts[0].text
-              : lastMessageParts
-        }),
-        20000,
-        `tutor-${modelName}`
-      );
-    };
-
-    let response;
-    try {
-      response = await runChatWithModel('gemini-4-hydrogen');
-    } catch (err1: any) {
-      console.warn('Primary chat error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
-      response = await runChatWithModel('gemini-3.1-flash-lite');
-    }
+    const response = await callGeminiChatWithFallback({
+      ai,
+      history,
+      lastMessageParts,
+      systemInstruction,
+      timeoutMs: 20000,
+      label: 'tutor'
+    });
 
     const reply = (response.text || '').trim();
     if (!reply) {
@@ -2373,7 +2517,35 @@ app.post('/api/gemini/tutor', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/tutor:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
+      error: extractCleanErrorMessage(err)
+    });
+  }
+});
+
+app.post('/api/tutor/ask', async (req: Request, res: Response) => {
+  try {
+    const { subject = 'physics', question = '' } = req.body || {};
+    const q = String(question || '').trim();
+    if (!q) {
+      return res.status(400).json({ error: 'Vui lòng nhập câu hỏi.' });
+    }
+    const ai = getGenAI();
+    const response = await callGeminiWithFallback({
+      ai,
+      contents: q,
+      systemInstruction: `You are a concise, inspiring STEM mentor specializing in ${subject}. Answer in 2-3 clear sentences.`,
+      thinkingLevel: ThinkingLevel.LOW,
+      timeoutMs: 18000
+    });
+    const answer = (response.text || '').trim();
+    if (!answer) {
+      throw new Error('Gemini chưa trả về phản hồi.');
+    }
+    return res.json({ success: true, answer });
+  } catch (err: any) {
+    console.error('Error in /api/tutor/ask:', err);
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -2441,31 +2613,16 @@ QUY TẮC TUYỆT ĐỐI: Mỗi phần tử trong mảng "options" PHẢI chứa
 - Câu 4, 5 (id: q4, q5): category = "specialization" — hỏi về nhánh chuyên sâu trong "${targetMajor}" và điểm nghẽn học tập, mỗi câu có 4 lựa chọn mô tả đầy đủ.`;
 
     let parsed: any = {};
-    let attemptModel: 'primary' | 'fallback' = 'primary';
 
     for (let attempt = 0; attempt < 2; attempt++) {
-      const response =
-        attemptModel === 'primary'
-          ? await callGeminiWithFallback({
-              ai,
-              contents: prompt,
-              systemInstruction,
-              responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.LOW,
-              timeoutMs: 18000
-            })
-          : await withTimeout(
-              ai.models.generateContent({
-                model: 'gemini-3.1-flash-lite',
-                contents: prompt,
-                config: {
-                  systemInstruction,
-                  responseMimeType: 'application/json'
-                }
-              }),
-              15000,
-              'diagnostic-quiz-retry'
-            );
+      const response = await callGeminiWithFallback({
+        ai,
+        contents: prompt,
+        systemInstruction,
+        responseMimeType: 'application/json',
+        thinkingLevel: ThinkingLevel.LOW,
+        timeoutMs: 18000
+      });
 
       parsed = safeParseGeminiJson<any>(response.text, {});
       const validList =
@@ -2474,7 +2631,6 @@ QUY TẮC TUYỆT ĐỐI: Mỗi phần tử trong mảng "options" PHẢI chứa
         parsed.questions.slice(0, 5).every((q: any) => !hasDegenerateQuizOptions(q?.options));
 
       if (validList) break;
-      attemptModel = 'fallback';
     }
 
     if (
@@ -2498,7 +2654,7 @@ QUY TẮC TUYỆT ĐỐI: Mỗi phần tử trong mảng "options" PHẢI chứa
     return res.json({ success: true, questions: normalized });
   } catch (err: any) {
     console.error('Error in /api/gemini/diagnostic-quiz:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -2611,28 +2767,14 @@ ${answerTranscript}`;
 
     let parsed: any = {};
     for (let attempt = 0; attempt < 2; attempt++) {
-      const response =
-        attempt === 0
-          ? await callGeminiWithFallback({
-              ai,
-              contents: prompt,
-              systemInstruction,
-              responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.LOW,
-              timeoutMs: 16000
-            })
-          : await withTimeout(
-              ai.models.generateContent({
-                model: 'gemini-3.1-flash-lite',
-                contents: prompt,
-                config: {
-                  systemInstruction,
-                  responseMimeType: 'application/json'
-                }
-              }),
-              15000,
-              'diagnostic-roadmap-retry'
-            );
+      const response = await callGeminiWithFallback({
+        ai,
+        contents: prompt,
+        systemInstruction,
+        responseMimeType: 'application/json',
+        thinkingLevel: ThinkingLevel.LOW,
+        timeoutMs: 18000
+      });
 
       parsed = safeParseGeminiJson<any>(response.text, {});
       if (Array.isArray(parsed?.stages) && parsed.stages.length >= 3) break;
@@ -2673,7 +2815,7 @@ ${answerTranscript}`;
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/diagnostic-roadmap:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -2787,7 +2929,7 @@ Hãy chấm điểm công tâm, chính xác từng bước lập luận/công th
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/grade-essay:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -2965,7 +3107,7 @@ NHIỆM VỤ:
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/grade-exam-image:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -3054,35 +3196,14 @@ ${evalContext}`;
       }
     }
 
-    const runChatWithModel = async (modelName: string) => {
-      const chatConfig: Record<string, any> = { systemInstruction };
-      if (modelName === 'gemini-4-hydrogen') {
-        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
-      }
-      const chat = ai.chats.create({
-        model: modelName,
-        history,
-        config: chatConfig
-      });
-      return await withTimeout(
-        chat.sendMessage({
-          message:
-            lastMessageParts.length === 1 && lastMessageParts[0].text
-              ? lastMessageParts[0].text
-              : lastMessageParts
-        }),
-        22000,
-        `exam-qa-${modelName}`
-      );
-    };
-
-    let response;
-    try {
-      response = await runChatWithModel('gemini-4-hydrogen');
-    } catch (err1: any) {
-      console.warn('Exam QA primary error, retrying with gemini-3.1-flash-lite:', err1?.message || err1);
-      response = await runChatWithModel('gemini-3.1-flash-lite');
-    }
+    const response = await callGeminiChatWithFallback({
+      ai,
+      history,
+      lastMessageParts,
+      systemInstruction,
+      timeoutMs: 22000,
+      label: 'exam-qa'
+    });
 
     const reply = (response.text || '').trim();
     if (!reply) {
@@ -3091,7 +3212,7 @@ ${evalContext}`;
     return res.json({ success: true, reply });
   } catch (err: any) {
     console.error('Error in /api/gemini/exam-qa:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -3397,7 +3518,7 @@ ${text ? `\nNội dung đề bài:\n${String(text).slice(0, 8000)}` : ''}`;
     });
   } catch (err: any) {
     console.error('Error analyzing problem with Gemini:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err),
       fallback: true
     });
@@ -3478,7 +3599,7 @@ Trả về JSON định dạng: { "stdout": string, "stderr": string, "isError":
     return res.json(result);
   } catch (err: any) {
     console.error('Error running code via Gemini:', err);
-    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 
@@ -3597,7 +3718,7 @@ Yêu cầu phân tích:
     return res.json({ success: true, analysis });
   } catch (err: any) {
     console.error('Error analyzing code mistake with Gemini:', err);
-    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 
@@ -3682,7 +3803,7 @@ Hãy chấm điểm chính xác từ 0 đến 10 (có thể dùng 0.5 điểm), 
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/grade-mini-essay:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -3766,28 +3887,14 @@ Trả về ĐÚNG 2 câu trắc nghiệm (câu 1 kiểm tra bản chất/điều
 
     let parsed: any = {};
     for (let attempt = 0; attempt < 2; attempt++) {
-      const response =
-        attempt === 0
-          ? await callGeminiWithFallback({
-              ai,
-              contents: prompt,
-              systemInstruction,
-              responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.LOW,
-              timeoutMs: 16000
-            })
-          : await withTimeout(
-              ai.models.generateContent({
-                model: 'gemini-3.1-flash-lite',
-                contents: prompt,
-                config: {
-                  systemInstruction,
-                  responseMimeType: 'application/json'
-                }
-              }),
-              15000,
-              'step-quiz-retry'
-            );
+      const response = await callGeminiWithFallback({
+        ai,
+        contents: prompt,
+        systemInstruction,
+        responseMimeType: 'application/json',
+        thinkingLevel: ThinkingLevel.LOW,
+        timeoutMs: 18000
+      });
 
       parsed = safeParseGeminiJson<any>(response.text, {});
       const valid =
@@ -3828,7 +3935,7 @@ Trả về ĐÚNG 2 câu trắc nghiệm (câu 1 kiểm tra bản chất/điều
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/generate-step-quiz:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -3911,28 +4018,14 @@ ${transcript}`;
 
     let parsed: any = {};
     for (let attempt = 0; attempt < 2; attempt++) {
-      const response =
-        attempt === 0
-          ? await callGeminiWithFallback({
-              ai,
-              contents: prompt,
-              systemInstruction,
-              responseMimeType: 'application/json',
-              thinkingLevel: ThinkingLevel.LOW,
-              timeoutMs: 16000
-            })
-          : await withTimeout(
-              ai.models.generateContent({
-                model: 'gemini-3.1-flash-lite',
-                contents: prompt,
-                config: {
-                  systemInstruction,
-                  responseMimeType: 'application/json'
-                }
-              }),
-              15000,
-              'analyze-lesson-progress-retry'
-            );
+      const response = await callGeminiWithFallback({
+        ai,
+        contents: prompt,
+        systemInstruction,
+        responseMimeType: 'application/json',
+        thinkingLevel: ThinkingLevel.LOW,
+        timeoutMs: 18000
+      });
 
       parsed = safeParseGeminiJson<any>(response.text, {});
       if (Array.isArray(parsed?.recommendedRoadmap) && parsed.recommendedRoadmap.length > 0) break;
@@ -3963,7 +4056,7 @@ ${transcript}`;
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/analyze-lesson-progress:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -4349,7 +4442,7 @@ Preferred primary UI language: ${isEn ? 'English (still include Vietnamese field
     });
   } catch (err: any) {
     console.error('Error in /api/spatial/generate-model:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -4502,7 +4595,7 @@ CÂU HỎI CỦA HỌC SINH: "${trimmedQuestion}"
     });
   } catch (err: any) {
     console.error('Error in /api/spatial/point-and-ask:', err);
-    return res.status(500).json({
+    return res.status(geminiErrorStatus(err)).json({
       error: extractCleanErrorMessage(err)
     });
   }
@@ -4869,7 +4962,7 @@ ${cleanText || '(Xem trực tiếp trong hình ảnh trang tài liệu đính k�
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/pdf-to-lesson:', err);
-    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 
@@ -4940,7 +5033,7 @@ app.post('/api/gemini/voice-mentor-3d', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('Error in /api/gemini/voice-mentor-3d:', err);
-    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 
@@ -5340,7 +5433,7 @@ app.post('/api/gemini/paper-to-sim', async (req: Request, res: Response) => {
     return res.json({ success: true, result });
   } catch (err: any) {
     console.error('paper-to-sim error:', err);
-    return res.status(500).json({ error: err?.message || 'Không phân tích được ảnh giấy nháp.' });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 
@@ -5437,7 +5530,7 @@ app.post('/api/gemini/text-to-sim', async (req: Request, res: Response) => {
     return res.json({ success: true, config });
   } catch (err: any) {
     console.error('text-to-sim error:', err);
-    return res.status(500).json({ error: err?.message || 'Không biên dịch được mô phỏng từ văn bản.' });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 
@@ -5513,7 +5606,7 @@ QUY TẮC BẮT BUỘC:
     return res.json({ success: true, plan: parsed });
   } catch (err: any) {
     console.error('voice-os-intent error:', err);
-    return res.status(500).json({ error: err?.message || 'Lỗi xử lý lệnh Voice OS.' });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 
@@ -5603,7 +5696,7 @@ app.post('/api/gemini/live-copilot', async (req: Request, res: Response) => {
     return res.json({ success: true, data: parsed });
   } catch (err: any) {
     console.error('live-copilot error:', err);
-    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 
@@ -5705,7 +5798,7 @@ Ngôn ngữ thuyết minh: ${language === 'en' ? 'English' : 'Tiếng Việt'}.`
     return res.json({ success: true, reel: normalized });
   } catch (err: any) {
     console.error('motion-reel error:', err);
-    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 
@@ -6027,7 +6120,7 @@ Lưu ý: varsJson là chuỗi JSON object chứa giá trị các biến đang th
     });
   } catch (err: any) {
     console.error('trace-code error:', err);
-    return res.status(500).json({ error: extractCleanErrorMessage(err) });
+    return res.status(geminiErrorStatus(err)).json({ error: extractCleanErrorMessage(err) });
   }
 });
 

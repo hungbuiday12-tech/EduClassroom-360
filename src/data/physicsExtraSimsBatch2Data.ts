@@ -25,7 +25,10 @@ export type Batch2PhysicsSim2DId =
   | 'electrolysis_faraday'
   | 'eye_optics_2d'
   | 'em_wave_3axis'
-  | 'phase_change_heating';
+  | 'phase_change_heating'
+  | 'distance_displacement_rel'
+  | 'power_plant_generator'
+  | 'fresnel_phasor_2d';
 
 export type Batch2Physics3DModeId =
   | 'atwood_pulley_3d'
@@ -52,7 +55,8 @@ export type Batch2Physics3DModeId =
   | 'electric_power_meter_3d'
   | 'electrolysis_3d'
   | 'eye_optics_3d'
-  | 'em_wave_3d';
+  | 'em_wave_3d'
+  | 'power_plant_3d';
 
 export const BATCH2_PHYSICS_2D_SIMS: Record<Batch2PhysicsSim2DId, Physics2DSimSpec> = {
   // MECHANICS (+4)
@@ -530,6 +534,67 @@ export const BATCH2_PHYSICS_2D_SIMS: Record<Batch2PhysicsSim2DId, Physics2DSimSp
       { label: 'Bếp công suất cao (2200W)', description: 'Độ dốc tăng nhiệt lớn, rút ngắn thời gian chuyển thể', params: { power: 2200, mass: 0.5, tStart: -20 } },
       { label: 'Khối lượng lớn (1.2 kg)', description: 'Cần lượng nhiệt Q = λm và Lm rất dài tại 0°C và 100°C', params: { power: 1200, mass: 1.2, tStart: -10 } }
     ]
+  },
+  distance_displacement_rel: {
+    id: 'distance_displacement_rel',
+    domainId: 'mechanics',
+    grades: ['Lớp 10'],
+    title: 'Tính Tương Đối Chuyển Động & Cộng Vận Tốc Qua Sông',
+    subtitle: 'Ca nô hướng vuông góc bờ bị dòng nước kéo xuôi: tổng hợp vectơ v₁₃ = v₁₂ + v₂₃, độ dịch chuyển d và quãng đường đi s',
+    formula: 'v₁₃ = v₁₂ + v₂₃ · |d| ≤ s',
+    linkedLessonId: 'phys-2006-10-5',
+    defaultParams: { v1: 4.0, vStream: 3.0, riverWidth: 40 },
+    paramBounds: {
+      v1: { min: 1.5, max: 8.0, step: 0.5, unit: 'm/s', label: 'Vận tốc ca nô v₁₂' },
+      vStream: { min: 0.0, max: 6.0, step: 0.5, unit: 'm/s', label: 'Vận tốc dòng nước v₂₃' },
+      riverWidth: { min: 20, max: 80, step: 5, unit: 'm', label: 'Bề rộng khúc sông L' }
+    },
+    presets: [
+      { label: 'Qua sông vuông góc (3-4-5)', description: 'v₁₂ = 4 m/s, v₂₃ = 3 m/s ⇒ v₁₃ = 5 m/s', params: { v1: 4.0, vStream: 3.0, riverWidth: 40 } },
+      { label: 'Nước đứng yên (v₂₃ = 0)', description: 'Đi thẳng sang bờ đối diện không bị dạt', params: { v1: 4.0, vStream: 0.0, riverWidth: 40 } },
+      { label: 'Nước chảy xiết (v₂₃ = 5.5 m/s)', description: 'Độ dạt hạ lưu rất lớn dù hướng mũi vuông góc bờ', params: { v1: 3.5, vStream: 5.5, riverWidth: 50 } }
+    ]
+  },
+  power_plant_generator: {
+    id: 'power_plant_generator',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 9', 'Lớp 12'],
+    title: 'Nhà Máy Thủy Điện – Nhiệt Điện & Phát Điện Lưới Quốc Gia',
+    subtitle: 'Chuyển hóa thế năng cột nước / nhiệt năng tuabin hơi làm quay rôto máy phát xoay chiều, qua máy tăng áp truyền tải đi xa',
+    formula: 'P_phát = H · ρ · g · Q · h · ΔP_tải = P²R / U²',
+    linkedLessonId: 'phys-2006-9-17',
+    defaultParams: { hydroMode: 1, headOrSteam: 60, loadMw: 120 },
+    paramBounds: {
+      hydroMode: { min: 0, max: 1, step: 1, unit: '', label: 'Nguồn (0:Nhiệt điện / 1:Thủy điện)' },
+      headOrSteam: { min: 20, max: 120, step: 10, unit: 'm/atm', label: 'Cột áp nước / Áp suất hơi' },
+      loadMw: { min: 40, max: 240, step: 20, unit: 'MW', label: 'Công suất tải tiêu thụ' }
+    },
+    presets: [
+      { label: 'Thủy điện cột áp 80 m', description: 'Dòng nước xả qua ống áp lực quay tuabin Pelton', params: { hydroMode: 1, headOrSteam: 80, loadMw: 140 } },
+      { label: 'Nhiệt điện tuabin hơi cao áp', description: 'Lò hơi đốt sinh luồng hơi áp suất cao quay máy phát', params: { hydroMode: 0, headOrSteam: 100, loadMw: 180 } }
+    ]
+  },
+  fresnel_phasor_2d: {
+    id: 'fresnel_phasor_2d',
+    domainId: 'waves_osc',
+    grades: ['Lớp 12'],
+    title: 'Giản Đồ Vectơ Quay Fre-nen & Tổng Hợp Dao Động Điều Hòa',
+    subtitle: 'Tổng hợp hai dao động cùng phương cùng tần số x = x₁ + x₂ bằng hình bình hành vectơ quay và so sánh lệch pha Δφ',
+    formula: 'A² = A₁² + A₂² + 2A₁A₂·cos(Δφ) · tanφ = (A₁sinφ₁ + A₂sinφ₂)/(A₁cosφ₁ + A₂cosφ₂)',
+    linkedLessonId: 'phys-2006-12-5',
+    defaultParams: { amp1: 5, amp2: 4, deltaPhiDeg: 60, freqHz: 1.0 },
+    paramBounds: {
+      amp1: { min: 1, max: 8, step: 0.5, unit: 'cm', label: 'Biên độ A₁' },
+      amp2: { min: 1, max: 8, step: 0.5, unit: 'cm', label: 'Biên độ A₂' },
+      deltaPhiDeg: { min: 0, max: 180, step: 15, unit: '°', label: 'Độ lệch pha Δφ' },
+      freqHz: { min: 0.4, max: 2.0, step: 0.2, unit: 'Hz', label: 'Tần số góc ω = 2πf' }
+    },
+    presets: [
+      { label: 'Lệch pha 60° (Tổng hợp chung)', description: 'Quan sát hình bình hành quay và đồ thị x₁, x₂, x', params: { amp1: 5, amp2: 4, deltaPhiDeg: 60, freqHz: 1.0 } },
+      { label: 'Vuông pha Δφ = 90° (Pitago)', description: 'A = √(A₁² + A₂²) = 5 cm với A₁=3, A₂=4', params: { amp1: 3, amp2: 4, deltaPhiDeg: 90, freqHz: 1.0 } },
+      { label: 'Cùng pha (Δφ = 0°)', description: 'Biên độ cực đại A_max = A₁ + A₂', params: { amp1: 4, amp2: 4, deltaPhiDeg: 0, freqHz: 1.0 } },
+      { label: 'Ngược pha (Δφ = 180°)', description: 'Biên độ cực tiểu A_min = |A₁ − A₂|', params: { amp1: 6, amp2: 4, deltaPhiDeg: 180, freqHz: 1.0 } }
+    ]
   }
 };
 
@@ -869,6 +934,19 @@ export const BATCH2_PHYSICS_3D_SIMS: Record<Batch2Physics3DModeId, Physics3DSimS
       { label: 'Sóng điện từ chuẩn', description: 'E và B vuông góc, dao động đồng pha', settings: { speed: 1, frequency: 1 } },
       { label: 'Tần số cao bước sóng ngắn', description: 'Mật độ bước sóng dày đặc hơn', settings: { speed: 1.2, frequency: 1.6 } }
     ]
+  },
+  power_plant_3d: {
+    id: 'power_plant_3d',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 9', 'Lớp 12'],
+    title: 'Nhà Máy Thủy Điện – Nhiệt Điện & Truyền Tải Điện 3D',
+    subtitle: 'Tổ hợp đập/lò hơi, tuabin cánh quạt quay rôto máy phát xoay chiều, trạm biến áp nâng áp và cột điện truyền tải 3D',
+    formula: 'P_phát = η · ρgQh · ΔP = P²R / U²',
+    linkedLessonId: 'phys-2006-9-17',
+    presets: [
+      { label: 'Tổ máy Thủy điện 80%', description: 'Dòng nước áp lực cao quay tuabin – rôto rực sáng', settings: { speed: 1.2, amplitude: 1.3 } },
+      { label: 'Tổ máy Nhiệt điện hơi quá nhiệt', description: 'Luồng hơi trắng quay tuabin và trạm biến áp tăng áp', settings: { speed: 1.4, amplitude: 1.4 } }
+    ]
   }
 };
 
@@ -1164,5 +1242,15 @@ export const BATCH2_3D_SCENE_CONFIGS: Record<Batch2Physics3DModeId, Extra3DScene
       { key: 'p2', label: 'Biên độ điện trường E₀', unit: '×', min: 0.4, max: 1.6, step: 0.1, defaultVal: 1.0, accent: 'accent-cyan-500' }
     ],
     computeReadout: (v) => `Véctơ E (đỏ, trục Y) và B (xanh lơ, trục Z) vuông góc nhau và dao động CÙNG PHA dọc phương truyền X.`
+  },
+  power_plant_3d: {
+    mode: 'power_plant_3d',
+    shortLabel: 'Nhà Máy Điện 3D',
+    hudTitle: 'Tổ Hợp Tuabin – Máy Phát & Trạm Tăng Áp 3D',
+    params: [
+      { key: 'p1', label: 'Lưu lượng nước / hơi', unit: '×', min: 0.5, max: 2.0, step: 0.1, defaultVal: 1.2, accent: 'accent-sky-500' },
+      { key: 'p2', label: 'Chế độ (0:Nhiệt / 1:Thủy)', unit: '', min: 0, max: 1, step: 1, defaultVal: 1, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => `${v.p2 >= 0.5 ? 'Thủy điện' : 'Nhiệt điện'}: Tốc độ quay tuabin ${(v.p1 * 50).toFixed(0)} Hz · Điện áp lưới sau trạm nâng áp ${(v.p1 * 220).toFixed(0)} kV.`
   }
 };

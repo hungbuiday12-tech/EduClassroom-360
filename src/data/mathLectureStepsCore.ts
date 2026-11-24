@@ -101,15 +101,15 @@ export const MATH_CUSTOM_LECTURE_STEPS_CORE: Record<string, LectureStep[]> = {
       formulaSection: {
         primaryFormula: 'x_1 + x_2 = -\\frac{2b}{3a}, \\qquad x_1 x_2 = \\frac{c}{3a}',
         secondaryFormulas: [
-          '\\text{3 nghiệm phân biệt} \\iff y_{CĐ}\\cdot y_{CT} < 0 \\quad (\\text{khi cắt trục } Ox)'
+          '\\text{3 nghiệm phân biệt} \\iff y_{\\text{CĐ}}\\cdot y_{\\text{CT}} < 0 \\quad (\\text{khi cắt trục } Ox)'
         ],
         variablesNote:
-          '• **Nhánh cuối đi lên** $\\implies a > 0$; **nhánh cuối đi xuống** $\\implies a < 0$.\n• Giao với $Ox$ tại **3 điểm phân biệt** $\\iff$ phương trình hoành độ giao điểm có 3 nghiệm phân biệt (đường thẳng cắt $y = f(x)$ nằm chặt giữa $y_{CT}$ và $y_{CĐ}$).'
+          '• **Nhánh cuối đi lên** $\\implies a > 0$; **nhánh cuối đi xuống** $\\implies a < 0$.\n• Giao với $Ox$ tại **3 điểm phân biệt** $\\iff$ phương trình hoành độ giao điểm có 3 nghiệm phân biệt (đường thẳng cắt $y = f(x)$ nằm chặt giữa $y_{\\text{CT}}$ và $y_{\\text{CĐ}}$).'
       },
       deepDiveSection:
         'Mẹo đọc dấu hệ số $a, b, c, d$ trên đề thi trắc nghiệm cực chuẩn: Nếu cực đại ở bên trái $Oy$ và cực tiểu ở bên phải $Oy$ ($x_1 x_2 < 0$), thì $c$ và $a$ **trái dấu** ($c/3a < 0$). Nếu cả 2 cực trị nằm bên phải $Oy$ ($x_1 + x_2 > 0$ và $x_1 x_2 > 0$), thì $b$ **trái dấu** $a$ và $c$ **cùng dấu** $a$.',
       teacherExplanation:
-        'Tìm điều kiện để phương trình $ax^3 + bx^2 + cx + d = m$ có 3 nghiệm phân biệt: chỉ cần kẻ đường ngang $y = m$ nằm giữa $y_{CT} < m < y_{CĐ}$!',
+        'Tìm điều kiện để phương trình $ax^3 + bx^2 + cx + d = m$ có 3 nghiệm phân biệt: chỉ cần kẻ đường ngang $y = m$ nằm giữa $y_{\\text{CT}} < m < y_{\\text{CĐ}}$!',
       keyTakeaway: 'Nhánh phải xác định dấu $a$; giao $Oy$ xác định $d$; Vi-ét cho $y\' = 0$ xác định dấu $b$ và $c$.',
       miniQuiz: [
         {
@@ -117,7 +117,7 @@ export const MATH_CUSTOM_LECTURE_STEPS_CORE: Record<string, LectureStep[]> = {
           question: 'Đồ thị hàm số $y = x^3 - 3x + 1$ cắt đường thẳng $y = m$ tại 3 điểm phân biệt khi và chỉ khi:',
           options: ['A. $-1 \\le m \\le 3$', 'B. $-1 < m < 3$', 'C. $m < -1$ hoặc $m > 3$', 'D. $-3 < m < 1$'],
           correctIndex: 1,
-          explanation: '$y\' = 3x^2 - 3 = 0 \\iff x = \\pm 1$. Giá trị cực trị $y_{CĐ} = y(-1) = 3$, $y_{CT} = y(1) = -1$. Để có 3 giao điểm: $-1 < m < 3$.'
+          explanation: '$y\' = 3x^2 - 3 = 0 \\iff x = \\pm 1$. Giá trị cực trị $y_{\\text{CĐ}} = y(-1) = 3$, $y_{\\text{CT}} = y(1) = -1$. Để có 3 giao điểm: $-1 < m < 3$.'
         },
         {
           id: 'm1-s3-q2',
@@ -138,9 +138,9 @@ export const MATH_CUSTOM_LECTURE_STEPS_CORE: Record<string, LectureStep[]> = {
         hint: 'Cô lập $m = x^3 - 3x^2$ rồi dùng giá trị cực đại, cực tiểu của $f(x) = x^3 - 3x^2$.',
         rubricChecklist: [
           'Đưa về giao điểm của $y = x^3 - 3x^2$ và đường thẳng $y = m$.',
-          'Tính $y\' = 3x^2 - 6x = 0 \\implies x = 0\\ (y_{CĐ} = 0)$ và $x = 2\\ (y_{CT} = -4)$. Có 2 nghiệm $\\iff m = 0$ hoặc $m = -4$.'
+          'Tính $y\' = 3x^2 - 6x = 0 \\implies x = 0\\ (y_{\\text{CĐ}} = 0)$ và $x = 2\\ (y_{\\text{CT}} = -4)$. Có 2 nghiệm $\\iff m = 0$ hoặc $m = -4$.'
         ],
-        sampleAnswer: 'Đưa phương trình về $x^3 - 3x^2 = m$. Xét $f(x) = x^3 - 3x^2$ có $f\'(x) = 3x^2 - 6x = 0 \\Leftrightarrow x = 0$ hoặc $x = 2$. Ta có $f_{CĐ} = f(0) = 0$ và $f_{CT} = f(2) = -4$. Đường thẳng $y = m$ cắt đồ thị $(C)$ tại đúng 2 điểm phân biệt khi tiếp xúc với một điểm cực trị: $m = 0$ hoặc $m = -4$.'
+        sampleAnswer: 'Đưa phương trình về $x^3 - 3x^2 = m$. Xét $f(x) = x^3 - 3x^2$ có $f\'(x) = 3x^2 - 6x = 0 \\Leftrightarrow x = 0$ hoặc $x = 2$. Ta có $f_{\\text{CĐ}} = f(0) = 0$ và $f_{\\text{CT}} = f(2) = -4$. Đường thẳng $y = m$ cắt đồ thị $(C)$ tại đúng 2 điểm phân biệt khi tiếp xúc với một điểm cực trị: $m = 0$ hoặc $m = -4$.'
       }
     }
   ],

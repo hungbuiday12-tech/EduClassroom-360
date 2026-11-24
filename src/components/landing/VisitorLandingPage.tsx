@@ -51,12 +51,15 @@ import {
   UploadCloud,
   Layers,
   Download,
-  Crown
+  Crown,
+  HelpCircle,
+  Users
 } from 'lucide-react';
 import { useAudio } from '../../context/AudioContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { PlatformReviews } from '../common/PlatformReviews';
 import { AppDownloadGuideSection } from '../common/AppDownloadGuideSection';
+import { ScrollProgressBar, ScrollReveal } from '../common/ScrollReveal';
 import type {
   DirectorySubjectFilter,
   LectureDirectoryTarget
@@ -585,6 +588,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
 
   return (
     <div className="relative min-h-screen text-slate-900 dark:text-slate-100 flex flex-col justify-between overflow-x-hidden selection:bg-sky-600 selection:text-white transition-colors duration-300">
+      <ScrollProgressBar />
       {/* Dynamic 60fps Galaxy Background (Works in both Dark Deep Space & Light Celestial Aurora) */}
       <GalaxyBackground interactive={true} intensity="vibrant" isDark={isDark} />
 
@@ -679,6 +683,34 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   document.body
                 )}
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigate({ subject: 'guide', tutorOpen: false });
+                onEnterAsGuest();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="group cs-deck-btn flex items-center gap-1.5 px-2.5 lg:px-3.5 py-1.5 text-xs font-extrabold rounded-md border border-cyan-400/70 bg-cyan-500/15 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-200 hover:bg-cyan-600 hover:text-white shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+              title={isEn ? 'Interactive Visual Guide' : 'Hướng dẫn cách hoạt động & tính năng'}
+            >
+              <HelpCircle className="w-4 h-4 shrink-0" />
+              <span>{isEn ? 'Guide' : 'Hướng dẫn'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigate({ subject: 'authors', tutorOpen: false });
+                onEnterAsGuest();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="group cs-deck-btn flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 text-xs font-bold rounded-md border border-slate-300/90 dark:border-white/20 bg-white/95 dark:bg-white/10 text-slate-800 dark:text-slate-100 hover:border-slate-500 dark:hover:border-sky-400 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+              title={isEn ? 'Meet the Creators (Class 9/4)' : 'Giới thiệu nhóm tác giả (9/4 THCS Bến Tre)'}
+            >
+              <Users className="w-4 h-4 shrink-0" />
+              <span className="hidden lg:inline">{isEn ? 'Authors' : 'Tác giả'}</span>
+            </button>
 
             <button
               type="button"
@@ -987,6 +1019,34 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   <Layers className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
                   <span>{isEn ? 'All Features' : 'Xem toàn bộ chức năng'}</span>
                   <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => {
+                    navigate({ subject: 'guide', tutorOpen: false });
+                    onEnterAsGuest();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="group sci-frame cs-deck-btn w-full sm:w-auto max-w-full px-4 py-3 rounded-md bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-cyan-600/20"
+                >
+                  <HelpCircle className="w-4 h-4 shrink-0" />
+                  <span>{isEn ? 'Interactive Guide' : 'Hướng dẫn'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() => {
+                    navigate({ subject: 'authors', tutorOpen: false });
+                    onEnterAsGuest();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="group cs-deck-btn w-full sm:w-auto max-w-full px-4 py-3 rounded-md bg-white/95 dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 border border-slate-300/90 dark:border-white/20 text-slate-800 dark:text-slate-100 font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Users className="w-4 h-4 shrink-0" />
+                  <span>{isEn ? 'Creators (9/4)' : 'Nhóm tác giả'}</span>
                 </button>
 
                 <button
@@ -1574,7 +1634,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         </div>
 
         {/* TABLE OF CONTENTS (MỤC LỤC) BAR */}
-        <section className="mt-6 sm:mt-8 sci-frame sci-scan-bar rounded-xl bg-white/90 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/90 dark:border-sky-500/25 p-5 sm:p-6 shadow-sm space-y-4">
+        <ScrollReveal direction="up" className="mt-6 sm:mt-8">
+        <section className="sci-frame sci-scan-bar rounded-xl bg-white/90 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/90 dark:border-sky-500/25 p-5 sm:p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-white/10">
             <div className="flex items-center gap-2.5">
               <ListOrdered className="w-5 h-5 text-blue-700 dark:text-sky-400 icon-anim-list shrink-0" />
@@ -1731,11 +1792,13 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             </button>
           </div>
         </section>
+        </ScrollReveal>
 
         {/* GRAND ANIMATED OVERVIEW SHOWCASE: FREE VS SYNAPSE PRE · 21 LABS · HOLO ATLAS 3D */}
+        <ScrollReveal direction="up" className="mt-10 sm:mt-14">
         <section
           aria-label={isEn ? 'Free vs Synapse Pre, 21 3D/4D Labs and Holo Atlas Overview' : 'Giới thiệu Miễn phí & Synapse Pre, 21 Phòng Lab 3D/4D và Học tương tác 3D'}
-          className="mt-10 sm:mt-14 space-y-6"
+          className="space-y-6"
         >
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div className="space-y-1.5">
@@ -2565,20 +2628,22 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             </div>
           </div>
         </section>
+        </ScrollReveal>
 
         {/* GRAND MULTI-DEVICE APP DOWNLOAD SHOWCASE (LAPTOP · ANDROID · IPHONE) */}
-        <div className="cv-auto mt-12 sm:mt-16">
+        <ScrollReveal direction="up" className="mt-12 sm:mt-16">
           <AppDownloadGuideSection
             id="visitor-app-download"
             onOpenInstallApp={onOpenInstallApp}
             showFeatureMatrix={true}
           />
-        </div>
+        </ScrollReveal>
 
         {/* COMPLETE PLATFORM CAPABILITIES SHOWCASE (ALL 9 WEB SYSTEMS) */}
+        <ScrollReveal direction="up" className="mt-12 sm:mt-16">
         <section
           id="visitor-all-features"
-          className="cv-auto scroll-mt-24 mt-12 sm:mt-16 pt-10 border-t border-slate-200/80 dark:border-white/10 space-y-8"
+          className="scroll-mt-24 pt-10 border-t border-slate-200/80 dark:border-white/10 space-y-8"
         >
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
             <div className="max-w-2xl space-y-2">
@@ -3217,9 +3282,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             </div>
           </div>
         </section>
+        </ScrollReveal>
 
         {/* Full Lecture Directory on Welcome Page (Lazy-Loaded) */}
-        <div className="cv-auto mt-12 sm:mt-16">
+        <ScrollReveal direction="up" className="mt-12 sm:mt-16">
           <Suspense
             fallback={
               <div className="py-10 text-center text-xs text-slate-400">
@@ -3237,12 +3303,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               actionHintEn="Click any lecture or roadmap below to launch directly into its 5-step simulation classroom (no sign-in required)."
             />
           </Suspense>
-        </div>
+        </ScrollReveal>
 
         {/* Community Reviews & Ratings Section on Landing */}
-        <div className="cv-auto mt-12 sm:mt-16">
+        <ScrollReveal direction="up" className="mt-12 sm:mt-16">
           <PlatformReviews id="visitor-platform-reviews" />
-        </div>
+        </ScrollReveal>
       </main>
 
       {/* Footer */}

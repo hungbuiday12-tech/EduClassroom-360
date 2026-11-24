@@ -146,6 +146,10 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
   switch (loc.subject) {
     case 'overview':
       return isEn ? 'Classroom' : 'Lớp học';
+    case 'guide':
+      return isEn ? 'Interactive Guide' : 'Hướng dẫn sử dụng';
+    case 'authors':
+      return isEn ? 'Authors · Class 9/4 Ben Tre' : 'Nhóm tác giả · 9/4 THCS Bến Tre';
     case 'synapse_v2':
       if (!loc.futureTab || loc.futureTab === 'hub' || loc.futureTab === 'what_if_physics_3d') {
         return isEn ? 'Synapse Pre · What-If Physics Sandbox 3D' : 'Synapse Pre · Vũ Trụ Định Luật Vật Lí 3D';

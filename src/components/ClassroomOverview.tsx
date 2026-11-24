@@ -52,7 +52,9 @@ import {
   Binary,
   CalendarCheck,
   CalendarClock,
-  RefreshCw
+  RefreshCw,
+  HelpCircle,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -74,6 +76,7 @@ import { AppDownloadGuideSection } from './common/AppDownloadGuideSection';
 import { CursorDodgeText } from './common/CursorDodgeText';
 import { AppearanceStudioBar } from './common/AppearanceStudioBar';
 import { GraphicsTierTriggerButton } from './common/GraphicsTierTriggerButton';
+import { ScrollProgressBar, ScrollReveal } from './common/ScrollReveal';
 import type {
   DirectorySubjectFilter,
   LectureDirectoryTarget
@@ -395,6 +398,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
 
   return (
     <div className="space-y-10">
+      <ScrollProgressBar />
       {/* SYNAPSE PREMIUM HOLOGRAPHIC PRO SHOWCASE (Trang chính Pre nâng cấp vượt bật) */}
       {hasPremiumAccess && (
         <section className="relative overflow-hidden rounded-3xl border border-amber-400/60 bg-slate-950/95 p-5 sm:p-7 text-white shadow-[0_0_70px_rgba(245,158,11,0.22)]">
@@ -546,6 +550,33 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
               <Sparkles className="w-4 h-4 shrink-0" />
               <span>{isEn ? 'Syn Meet & 3D' : 'Syn Meet 3D'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => {
+                onNavigate('guide');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="group cs-deck-btn min-h-[48px] px-5 sm:px-6 py-3 rounded bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 border border-cyan-300/70 text-white text-sm sm:text-base font-semibold shadow-lg shadow-cyan-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
+            >
+              <HelpCircle className="w-5 h-5 shrink-0" />
+              <span>{isEn ? 'Interactive Guide' : 'Hướng dẫn'}</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => {
+                onNavigate('authors');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="group cs-deck-btn min-h-[48px] px-5 sm:px-6 py-3 rounded bg-white/80 dark:bg-slate-900/65 backdrop-blur-md border border-slate-300/85 dark:border-white/20 hover:border-slate-500 dark:hover:border-sky-400 text-slate-900 dark:text-white text-sm sm:text-base font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Users className="w-4 h-4 shrink-0" />
+              <span>{isEn ? 'Creators (9/4)' : 'Nhóm tác giả'}</span>
             </button>
 
             <button
@@ -765,6 +796,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       </section>
 
       {/* TABLE OF CONTENTS (MỤC LỤC TRANG CHÍNH) */}
+      <ScrollReveal direction="up">
       <section className="sci-frame sci-scan-bar rounded-xl bg-white/90 dark:bg-slate-900/82 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/85 dark:border-sky-500/25 p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-white/10">
           <div className="flex items-center gap-2.5">
@@ -957,8 +989,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           </button>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* FLAGSHIP GATEWAY: SYNAPSE PRE (ĐẠI CÔNG TRÌNH TƯƠNG LAI & PHÒNG LAB AI 3D) */}
+      <ScrollReveal direction="up" delay={0.04}>
       <section className="group sci-frame relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-950 via-[#0a1a36] to-[#0f172a] text-white p-6 sm:p-8 border border-sky-400/50 shadow-[0_20px_55px_-16px_rgba(2,132,199,0.38)] space-y-5">
         <div className="absolute inset-0 sci-blueprint-bg opacity-35 pointer-events-none" />
         <span
@@ -1209,8 +1243,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           </button>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* GROWTH SUITE BENTO STRIP: Streak, Daily Quests, Sổ Lỗi Sai SM-2, PDF Studio & Community Showcase */}
+      <ScrollReveal direction="up">
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
           <div>
@@ -1357,8 +1393,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           </button>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* SECTION 1: 3 LARGE INTERACTIVE SUBJECTS BENTO (Toán · Vật lí · Tin học) */}
+      <ScrollReveal direction="up">
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 px-1">
           <div>
@@ -1600,8 +1638,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           </div>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* SECTION 2: 3 LARGE PLATFORM FEATURE FRAMES (Roadmap · Arena · Tri-AI) */}
+      <ScrollReveal direction="up">
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 px-1">
           <div>
@@ -1794,9 +1834,11 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           </div>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* SECTION 3: Dedicated Syn AI (Syn Math · Syn Physics · Syn Code) × Live Co-Pilot & Syn Reel */}
       {onOpenTutor && (
+        <ScrollReveal direction="up">
         <section className="sci-frame sci-scan-bar rounded-md bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-slate-200/90 dark:border-white/10 p-6 sm:p-7 shadow-[0_14px_42px_-16px_rgba(15,23,42,0.12)] space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200/70 dark:border-white/10">
             <div>
@@ -1901,9 +1943,11 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             })}
           </div>
         </section>
+        </ScrollReveal>
       )}
 
       {/* SECTION 4: Featured Exam Bank Banner */}
+      <ScrollReveal direction="scale">
       <section
         id="classroom-exams-banner"
         data-ripple="true"
@@ -1969,8 +2013,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
         </button>
       </section>
+      </ScrollReveal>
 
       {/* SECTION 5: Classroom Focus Utilities (Synced Study-Format Pomodoro + Bells + Quick Notebook) */}
+      <ScrollReveal direction="up">
       <section id="classroom-utilities" className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Focus Timer synced with Bottom-Left Floating Widget */}
         <div className="group lg:col-span-5 sci-frame bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/85 dark:border-sky-500/25 hover:border-sky-400/75 rounded-xl p-6 sm:p-7 shadow-xs flex flex-col justify-between space-y-4 transition-all">
@@ -2279,16 +2325,19 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           </div>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* SECTION 5B: Dedicated Live Meet & Shared 3D Classroom Frame */}
-      <LiveMeetShowcaseCard
-        id="classroom-live-meet"
-        isEn={isEn}
-        onOpenMeet={() => onNavigate('live_meet')}
-      />
+      <ScrollReveal direction="up">
+        <LiveMeetShowcaseCard
+          id="classroom-live-meet"
+          isEn={isEn}
+          onOpenMeet={() => onNavigate('live_meet')}
+        />
+      </ScrollReveal>
 
       {/* SECTION 6: Complete Lecture Directory (Target of Mục lục, Lazy-Loaded) */}
-      <div className="cv-auto">
+      <ScrollReveal direction="up">
         <Suspense
           fallback={
             <div className="py-10 text-center text-xs text-slate-400">
@@ -2304,21 +2353,21 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             onSelectCsTrack={handleSelectCsTrackFromDirectory}
           />
         </Suspense>
-      </div>
+      </ScrollReveal>
 
       {/* SECTION 7: Multi-Device App Download Guide & Full Feature Matrix */}
-      <div className="cv-auto">
+      <ScrollReveal direction="up">
         <AppDownloadGuideSection
           id="classroom-app-download"
           onOpenInstallApp={onOpenInstallApp}
           showFeatureMatrix={true}
         />
-      </div>
+      </ScrollReveal>
 
       {/* SECTION 8: Community Reviews, Star Ratings & Favorite Votes */}
-      <div className="cv-auto">
+      <ScrollReveal direction="up">
         <PlatformReviews id="platform-reviews" />
-      </div>
+      </ScrollReveal>
 
       {/* Synapse Pre (120k / 3 tháng) Registration & Admin Approval Modal */}
       <SynapsePremiumGateModal

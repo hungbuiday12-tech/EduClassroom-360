@@ -26,7 +26,9 @@ import {
   Crown,
   FlaskConical,
   Sparkles,
-  Video
+  Video,
+  HelpCircle,
+  Users
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useBackgroundTheme } from '../context/BackgroundContext';
@@ -324,6 +326,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             'bg-indigo-50/85 dark:bg-indigo-950/35 border border-indigo-300/75 dark:border-indigo-500/35 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/55 hover:border-indigo-400',
           activeClass:
             'bg-gradient-to-r from-indigo-600 to-blue-600 border border-indigo-400 text-white shadow-md shadow-indigo-600/25'
+        },
+        {
+          id: 'guide',
+          labelVi: 'Hướng dẫn sử dụng',
+          labelEn: 'Interactive Guide',
+          icon: <HelpCircle className="w-5 h-5 shrink-0" />,
+          idleClass:
+            'bg-cyan-50/85 dark:bg-cyan-950/35 border border-cyan-300/75 dark:border-cyan-500/35 text-cyan-900 dark:text-cyan-200 hover:bg-cyan-100 dark:hover:bg-cyan-900/55 hover:border-cyan-400',
+          activeClass:
+            'bg-gradient-to-r from-cyan-600 to-sky-600 border border-cyan-400 text-white shadow-md shadow-cyan-600/25'
+        },
+        {
+          id: 'authors',
+          labelVi: 'Nhóm tác giả 9/4',
+          labelEn: 'Creators (9/4)',
+          icon: <Users className="w-5 h-5 shrink-0" />,
+          idleClass:
+            'bg-slate-50/90 dark:bg-slate-900/50 border border-slate-300/80 dark:border-slate-600/45 text-slate-900 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70 hover:border-slate-400',
+          activeClass:
+            'bg-gradient-to-r from-slate-800 to-slate-900 dark:from-slate-700 dark:to-slate-800 border border-slate-500 text-white shadow-md'
         }
       ]
     },

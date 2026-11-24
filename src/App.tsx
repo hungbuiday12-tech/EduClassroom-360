@@ -30,6 +30,12 @@ const VisitorLandingPage = lazy(() =>
 const ClassroomOverview = lazy(() =>
   import('./components/ClassroomOverview').then((m) => ({ default: m.ClassroomOverview }))
 );
+const GuideTourPage = lazy(() =>
+  import('./components/guide/GuideTourPage').then((m) => ({ default: m.GuideTourPage }))
+);
+const AuthorsPage = lazy(() =>
+  import('./components/authors/AuthorsPage').then((m) => ({ default: m.AuthorsPage }))
+);
 const MathStudio = lazy(() =>
   import('./components/math/MathStudio').then((m) => ({ default: m.MathStudio }))
 );
@@ -595,6 +601,22 @@ function MainApp() {
                       />
                     )}
 
+                    {currentSubject === 'guide' && (
+                      <GuideTourPage
+                        onBack={goBack}
+                        onNavigateSubject={selectSubject}
+                        onReturnToLanding={!user ? handleReturnToLanding : undefined}
+                      />
+                    )}
+
+                    {currentSubject === 'authors' && (
+                      <AuthorsPage
+                        onBack={goBack}
+                        onNavigateSubject={selectSubject}
+                        onReturnToLanding={!user ? handleReturnToLanding : undefined}
+                      />
+                    )}
+
                     {currentSubject === 'roadmap' && (
                       <LearningRoadmap
                         onBack={goBack}
@@ -711,6 +733,18 @@ function MainApp() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">
+                  <button
+                    onClick={() => selectSubject('guide')}
+                    className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors font-semibold cursor-pointer"
+                  >
+                    {isEn ? 'Guide' : 'Hướng dẫn'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('authors')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold cursor-pointer"
+                  >
+                    {isEn ? 'Authors (9/4)' : 'Tác giả (9/4)'}
+                  </button>
                   <button
                     onClick={() => selectSubject('roadmap')}
                     className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"

@@ -1,4 +1,4 @@
-export type SubjectType = 'overview' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'math_sims' | 'physics' | 'physics_sims' | 'cs' | 'cs_sims' | 'exams' | 'arena' | 'live_meet' | 'forum' | 'growth_hub' | 'showcase' | 'future_lab';
+export type SubjectType = 'overview' | 'guide' | 'authors' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'math_sims' | 'physics' | 'physics_sims' | 'cs' | 'cs_sims' | 'exams' | 'arena' | 'live_meet' | 'forum' | 'growth_hub' | 'showcase' | 'future_lab';
 
 export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
 

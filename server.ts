@@ -1947,9 +1947,11 @@ function sleepWithJitter(baseMs: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, jittered));
 }
 
-const GEMINI_TEXT_RETRY_SCHEDULE: readonly { model: string; retryDelayMs: number }[] = [
-  { model: 'gemini-4-hydrogen', retryDelayMs: 250 },
-  { model: 'gemini-3.1-flash-lite', retryDelayMs: 0 }
+const GEMINI_TEXT_RETRY_SCHEDULE: readonly { label: string; model: string; retryDelayMs: number }[] = [
+  { label: 'primary', model: 'gemini-4-hydrogen', retryDelayMs: 2200 },
+  { label: 'backup-1', model: 'gemini-3.1-flash-lite', retryDelayMs: 2800 },
+  { label: 'backup-2', model: 'gemini-4-hydrogen', retryDelayMs: 3200 },
+  { label: 'backup-3', model: 'gemini-3.1-flash-lite', retryDelayMs: 0 }
 ];
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -2009,36 +2011,29 @@ async function callGeminiWithFallback({
   systemInstruction,
   responseMimeType,
   responseSchema,
-  thinkingLevel = ThinkingLevel.LOW,
-  timeoutMs = 18000
+  timeoutMs = 45000
 }: GeminiCallOptions) {
-  let skipThinkingConfig = false;
-
-  const buildConfig = (model: string) => {
+  const buildConfig = () => {
     const cfg: Record<string, any> = {};
     if (systemInstruction) cfg.systemInstruction = systemInstruction;
     if (responseMimeType) cfg.responseMimeType = responseMimeType;
     if (responseSchema) cfg.responseSchema = responseSchema;
-    if (model === 'gemini-4-hydrogen' && !skipThinkingConfig) {
-      const safeLevel = thinkingLevel === ThinkingLevel.MINIMAL ? ThinkingLevel.LOW : thinkingLevel;
-      cfg.thinkingConfig = { thinkingLevel: safeLevel };
-    }
     return cfg;
   };
 
+  const effectiveTimeout = Math.max(timeoutMs, 45000);
   let lastErr: any;
   for (let i = 0; i < GEMINI_TEXT_RETRY_SCHEDULE.length; i++) {
-    const { model, retryDelayMs } = GEMINI_TEXT_RETRY_SCHEDULE[i];
+    const { label, model, retryDelayMs } = GEMINI_TEXT_RETRY_SCHEDULE[i];
     try {
-      const attemptTimeout = i === 0 ? timeoutMs : Math.min(timeoutMs, 16000);
       const response = await withTimeout(
         ai.models.generateContent({
           model,
           contents,
-          config: buildConfig(model)
+          config: buildConfig()
         }),
-        attemptTimeout,
-        `${model}#${i + 1}`
+        effectiveTimeout,
+        `${label}:${model}#${i + 1}`
       );
       if (!(response.text || '').trim()) {
         throw new Error(`Empty response from ${model}`);
@@ -2047,20 +2042,16 @@ async function callGeminiWithFallback({
     } catch (err: any) {
       lastErr = err;
       const msg = String(err?.message || err || '').toLowerCase();
-      const thinkingIssue = msg.includes('thinking level') || msg.includes('thinkingconfig');
-      if (thinkingIssue) {
-        skipThinkingConfig = true;
-      }
       const retryable =
         isTransientGeminiError(err) ||
-        thinkingIssue ||
+        msg.includes('thinking') ||
         msg.includes('404') ||
         msg.includes('not found');
       if (!retryable || i === GEMINI_TEXT_RETRY_SCHEDULE.length - 1) {
         throw err;
       }
       console.warn(
-        `Gemini attempt ${i + 1}/${GEMINI_TEXT_RETRY_SCHEDULE.length} (${model}) failed, backing off:`,
+        `Gemini [${label}] attempt ${i + 1}/${GEMINI_TEXT_RETRY_SCHEDULE.length} (${model}) failed, waiting ${retryDelayMs}ms before backup:`,
         err?.message || err
       );
       if (retryDelayMs > 0) {
@@ -2076,7 +2067,7 @@ async function callGeminiChatWithFallback({
   history,
   lastMessageParts,
   systemInstruction,
-  timeoutMs = 20000,
+  timeoutMs = 45000,
   label = 'chat'
 }: {
   ai: GoogleGenAI;
@@ -2086,20 +2077,16 @@ async function callGeminiChatWithFallback({
   timeoutMs?: number;
   label?: string;
 }) {
-  let skipThinkingConfig = false;
+  const effectiveTimeout = Math.max(timeoutMs, 45000);
   let lastErr: any;
 
   for (let i = 0; i < GEMINI_TEXT_RETRY_SCHEDULE.length; i++) {
-    const { model, retryDelayMs } = GEMINI_TEXT_RETRY_SCHEDULE[i];
+    const { label: tierLabel, model, retryDelayMs } = GEMINI_TEXT_RETRY_SCHEDULE[i];
     try {
-      const chatConfig: Record<string, any> = { systemInstruction };
-      if (model === 'gemini-4-hydrogen' && !skipThinkingConfig) {
-        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
-      }
       const chat = ai.chats.create({
         model,
         history,
-        config: chatConfig
+        config: { systemInstruction }
       });
       const response = await withTimeout(
         chat.sendMessage({
@@ -2108,8 +2095,8 @@ async function callGeminiChatWithFallback({
               ? lastMessageParts[0].text
               : lastMessageParts
         }),
-        i === 0 ? timeoutMs : Math.min(timeoutMs, 18000),
-        `${label}-${model}#${i + 1}`
+        effectiveTimeout,
+        `${label}-${tierLabel}:${model}#${i + 1}`
       );
       if (!(response.text || '').trim()) {
         throw new Error(`Empty response from ${model}`);
@@ -2118,20 +2105,16 @@ async function callGeminiChatWithFallback({
     } catch (err: any) {
       lastErr = err;
       const msg = String(err?.message || err || '').toLowerCase();
-      const thinkingIssue = msg.includes('thinking level') || msg.includes('thinkingconfig');
-      if (thinkingIssue) {
-        skipThinkingConfig = true;
-      }
       const retryable =
         isTransientGeminiError(err) ||
-        thinkingIssue ||
+        msg.includes('thinking') ||
         msg.includes('404') ||
         msg.includes('not found');
       if (!retryable || i === GEMINI_TEXT_RETRY_SCHEDULE.length - 1) {
         throw err;
       }
       console.warn(
-        `Gemini chat attempt ${i + 1}/${GEMINI_TEXT_RETRY_SCHEDULE.length} (${label}/${model}) failed, backing off:`,
+        `Gemini chat [${tierLabel}] attempt ${i + 1}/${GEMINI_TEXT_RETRY_SCHEDULE.length} (${label}/${model}) failed, waiting ${retryDelayMs}ms before backup:`,
         err?.message || err
       );
       if (retryDelayMs > 0) {
@@ -2157,22 +2140,17 @@ async function streamGeminiChatWithFallback({
   onDelta: (piece: string) => void;
   onKeepalive?: () => void;
 }): Promise<string> {
-  let skipThinkingConfig = false;
   let lastErr: any;
 
   for (let i = 0; i < GEMINI_TEXT_RETRY_SCHEDULE.length; i++) {
-    const { model, retryDelayMs } = GEMINI_TEXT_RETRY_SCHEDULE[i];
+    const { label: tierLabel, model, retryDelayMs } = GEMINI_TEXT_RETRY_SCHEDULE[i];
     let emittedChunks = false;
 
     try {
-      const chatConfig: Record<string, any> = { systemInstruction };
-      if (model === 'gemini-4-hydrogen' && !skipThinkingConfig) {
-        chatConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
-      }
       const chat = ai.chats.create({
         model,
         history,
-        config: chatConfig
+        config: { systemInstruction }
       });
 
       const streamTask = async () => {
@@ -2200,8 +2178,8 @@ async function streamGeminiChatWithFallback({
 
       return await withTimeout(
         streamTask(),
-        model === 'gemini-4-hydrogen' ? 20000 : 22000,
-        `stream-${model}#${i + 1}`
+        60000,
+        `stream-${tierLabel}:${model}#${i + 1}`
       );
     } catch (err: any) {
       lastErr = err;
@@ -2209,20 +2187,16 @@ async function streamGeminiChatWithFallback({
         throw err;
       }
       const msg = String(err?.message || err || '').toLowerCase();
-      const thinkingIssue = msg.includes('thinking level') || msg.includes('thinkingconfig');
-      if (thinkingIssue) {
-        skipThinkingConfig = true;
-      }
       const retryable =
         isTransientGeminiError(err) ||
-        thinkingIssue ||
+        msg.includes('thinking') ||
         msg.includes('404') ||
         msg.includes('not found');
       if (!retryable || i === GEMINI_TEXT_RETRY_SCHEDULE.length - 1) {
         throw err;
       }
       console.warn(
-        `Gemini stream attempt ${i + 1}/${GEMINI_TEXT_RETRY_SCHEDULE.length} (${model}) failed, backing off:`,
+        `Gemini stream [${tierLabel}] attempt ${i + 1}/${GEMINI_TEXT_RETRY_SCHEDULE.length} (${model}) failed, waiting ${retryDelayMs}ms before backup:`,
         err?.message || err
       );
       onKeepalive?.();

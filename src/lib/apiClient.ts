@@ -476,7 +476,7 @@ async function fetchJsonOnce<T = any>(
 export async function safeFetchJson<T = any>(
   url: string,
   init: RequestInit = {},
-  timeoutMs = 65000
+  timeoutMs = 105000
 ): Promise<SafeApiResponse<T>> {
   const normalizedPath = url.startsWith('/') ? url : `/${url}`;
   const primaryUrl = resolveApiUrl(url);
@@ -554,7 +554,7 @@ export async function streamTutorChat(
     language?: string;
   },
   onDelta: (accumulatedText: string) => void,
-  timeoutMs = 70000
+  timeoutMs = 120000
 ): Promise<{ ok: boolean; reply?: string; error?: string; isStaticFallback?: boolean }> {
   const tryNonStreamFallback = async (): Promise<{
     ok: boolean;

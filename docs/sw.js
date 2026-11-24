@@ -78,7 +78,7 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "index.html",
-    "revision": "e493447a3bd1d2e7283af073d8f63ab8"
+    "revision": "edabe6a3cd50e14ab6afda96aacb81f2"
   }, {
     "url": "draco/draco_wasm_wrapper.js",
     "revision": "7a48a3fdc5785631621f4b20cd0937dc"
@@ -92,7 +92,7 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/workbox-window.prod.es5-Bd17z0YL.js",
     "revision": null
   }, {
-    "url": "assets/virtual_pwa-register-BOcMhu1S.js",
+    "url": "assets/virtual_pwa-register-D1zEhjN4.js",
     "revision": null
   }, {
     "url": "assets/vendor-react-CumqsUUt.js",
@@ -113,22 +113,22 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/roadmapData-CQJaOFQj.js",
     "revision": null
   }, {
-    "url": "assets/productDocxExporter-DmB3Zocd.js",
+    "url": "assets/productDocxExporter-C3kPA-gX.js",
     "revision": null
   }, {
-    "url": "assets/lessonProgressStore-DzSxDQLj.js",
-    "revision": null
-  }, {
-    "url": "assets/index-DhJUHS7i.js",
+    "url": "assets/lessonProgressStore-DV0QIuoM.js",
     "revision": null
   }, {
     "url": "assets/index-CgtryYwj.css",
     "revision": null
   }, {
+    "url": "assets/index-CZolSf1O.js",
+    "revision": null
+  }, {
     "url": "assets/handLandmarkerWorker-xPo-MoRQ.js",
     "revision": null
   }, {
-    "url": "assets/handGestureTracker-SGG23gWd.js",
+    "url": "assets/handGestureTracker-hTMi4HPX.js",
     "revision": null
   }, {
     "url": "assets/draco_wasm_wrapper-fZCQGLGb.js",
@@ -146,7 +146,7 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/draco_decoder-C32yEggz.wasm",
     "revision": null
   }, {
-    "url": "assets/customModelStore-BtR4gE0Z.js",
+    "url": "assets/customModelStore-BvaUwvyX.js",
     "revision": null
   }, {
     "url": "assets/customModelBuilder-DiNgJj8G.js",
@@ -161,106 +161,106 @@ define(['./workbox-6a0cc74a'], (function (workbox) { 'use strict';
     "url": "assets/confetti.module-Djt41fMX.js",
     "revision": null
   }, {
-    "url": "assets/codeRunner-lv6asEeu.js",
+    "url": "assets/codeRunner-D70CAr9i.js",
     "revision": null
   }, {
-    "url": "assets/XRayConfigPanel-DWQZOd_l.js",
+    "url": "assets/XRayConfigPanel-Cagdsb1f.js",
     "revision": null
   }, {
-    "url": "assets/VoiceMicButton-DTzcSmoO.js",
+    "url": "assets/VoiceMicButton-BmTAKUrY.js",
     "revision": null
   }, {
-    "url": "assets/VisitorLandingPage-gxKqPNXh.js",
+    "url": "assets/VisitorLandingPage-DQdmy4UD.js",
     "revision": null
   }, {
     "url": "assets/ViewportPortal-C6D_R9iR.js",
     "revision": null
   }, {
-    "url": "assets/TypingParrotoSandbox-EB7dZXN0.js",
+    "url": "assets/TypingParrotoSandbox-BNfkf_DH.js",
     "revision": null
   }, {
-    "url": "assets/TechTeardown3DLab-DJrYc2oc.js",
+    "url": "assets/TechTeardown3DLab-CFk7OHQ1.js",
     "revision": null
   }, {
-    "url": "assets/SynapseVoiceOS-CLWKCLWf.js",
+    "url": "assets/SynapseVoiceOS-seqMIK_z.js",
     "revision": null
   }, {
-    "url": "assets/SynAIProChat-DdywTuE3.js",
+    "url": "assets/SynAIProChat-DV5AZGW5.js",
     "revision": null
   }, {
     "url": "assets/SublimeEditor-T3k9fo3o.js",
     "revision": null
   }, {
-    "url": "assets/StudyForum-Cm2XH2jg.js",
+    "url": "assets/StudyForum-Du8iRQuy.js",
     "revision": null
   }, {
-    "url": "assets/SolarSystem3DLab-DaGcQP6A.js",
+    "url": "assets/SolarSystem3DLab-B8kQqvKB.js",
     "revision": null
   }, {
-    "url": "assets/SettingsModal-4aQL08UI.js",
+    "url": "assets/SettingsModal-CaKMJMUc.js",
     "revision": null
   }, {
     "url": "assets/ScrollReveal-DrGV897p.js",
     "revision": null
   }, {
-    "url": "assets/PhysicsDomainsPage-o3-YRhWW.js",
+    "url": "assets/PhysicsDomainsPage-HCchYijI.js",
     "revision": null
   }, {
-    "url": "assets/PWAInstallModal-Bv90lSxR.js",
+    "url": "assets/PWAInstallModal-hLoWWur8.js",
     "revision": null
   }, {
-    "url": "assets/MotionReelMiniChat-DkLVOVfZ.js",
+    "url": "assets/MotionReelMiniChat-4clWVN37.js",
     "revision": null
   }, {
-    "url": "assets/MathStudio-CXICfS2u.js",
+    "url": "assets/MathStudio-BMr092yg.js",
     "revision": null
   }, {
-    "url": "assets/LiveMeetClassroom-nSvfT2zE.js",
+    "url": "assets/LiveMeetClassroom-DMtTsIyQ.js",
     "revision": null
   }, {
-    "url": "assets/LectureDirectorySection-CywEsTNA.js",
+    "url": "assets/LectureDirectorySection-D7KMzUzN.js",
     "revision": null
   }, {
-    "url": "assets/LearnerPortfolioModal-BByeHK06.js",
+    "url": "assets/LearnerPortfolioModal-DBasH9Mg.js",
     "revision": null
   }, {
-    "url": "assets/InteractiveScratchpad-C70QCZNh.js",
+    "url": "assets/InteractiveScratchpad-B80BMMyT.js",
     "revision": null
   }, {
-    "url": "assets/HologramModeControls-CsqNtMyL.js",
+    "url": "assets/HologramModeControls-BNV5FR1E.js",
     "revision": null
   }, {
-    "url": "assets/GuideTourPage-BO1AeA6M.js",
+    "url": "assets/GuideTourPage-DFUClKm5.js",
     "revision": null
   }, {
-    "url": "assets/GrowthWorkspace-DryWKrEf.js",
+    "url": "assets/GrowthWorkspace-ggrkrV_Q.js",
     "revision": null
   }, {
-    "url": "assets/GraphicsTierTriggerButton-BMIY5QtW.js",
+    "url": "assets/GraphicsTierTriggerButton-DHTA3k25.js",
     "revision": null
   }, {
-    "url": "assets/GraphicsTierModal-CglPIN0C.js",
+    "url": "assets/GraphicsTierModal-CTELuHo1.js",
     "revision": null
   }, {
-    "url": "assets/CommunityShowcaseView-CiiFrNTM.js",
+    "url": "assets/CommunityShowcaseView-DuGL4lCs.js",
     "revision": null
   }, {
-    "url": "assets/CodeSimulationsPage-B7kWb028.js",
+    "url": "assets/CodeSimulationsPage-B7AVj_nQ.js",
     "revision": null
   }, {
-    "url": "assets/ClassroomOverview-BzuxePhG.js",
+    "url": "assets/ClassroomOverview-CfrenDVB.js",
     "revision": null
   }, {
-    "url": "assets/CS3DVisualizer-CaPqAQNx.js",
+    "url": "assets/CS3DVisualizer-CMJYBS-G.js",
     "revision": null
   }, {
-    "url": "assets/AuthorsPage-KQzkgt33.js",
+    "url": "assets/AuthorsPage-BL2jIn-b.js",
     "revision": null
   }, {
-    "url": "assets/AuthModal-C5xXTW8z.js",
+    "url": "assets/AuthModal-Dyj3ArZa.js",
     "revision": null
   }, {
-    "url": "assets/AssemblyStudio3DLab-D8QSbNzN.js",
+    "url": "assets/AssemblyStudio3DLab-DcWmm3Qe.js",
     "revision": null
   }, {
     "url": "apple-touch-icon.png",

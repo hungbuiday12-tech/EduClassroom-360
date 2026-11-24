@@ -26,6 +26,7 @@ import { MATH_CUSTOM_LECTURE_STEPS_11A } from './mathLectureSteps11A';
 import { MATH_CUSTOM_LECTURE_STEPS_11B } from './mathLectureSteps11B';
 import { MATH_CUSTOM_LECTURE_STEPS_12 } from './mathLectureSteps12';
 import { MATH_CUSTOM_LECTURE_STEPS_PRO } from './mathLectureStepsPro';
+import { enrichLectureStepWithConceptsAndAnnotations } from './lectureConceptAnnotations';
 
 const ALL_PHYSICS_CUSTOM_STEPS: Record<string, LectureStep[]> = {
   ...PHYSICS_CUSTOM_LECTURE_STEPS,
@@ -486,22 +487,31 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
           st.keyTakeaway
         );
 
-      return {
-        ...st,
-        conceptSection,
-        formulaSection: st.formulaSection || (primaryFormula ? {
-          primaryFormula,
-          secondaryFormulas: lesson.keyFormulas.filter((f) => f !== primaryFormula).slice(0, 2),
-          variablesNote: buildVariablesNote('physics', primaryFormula, lesson.subtitle, st.keyTakeaway, {
-            track: lesson.track,
-            tier: lesson.tier,
-            grade: lesson.grade
-          })
-        } : undefined),
-        deepDiveSection,
-        miniQuiz: mcqs,
-        miniEssay
-      };
+      return enrichLectureStepWithConceptsAndAnnotations(
+        {
+          ...st,
+          conceptSection,
+          formulaSection: st.formulaSection || (primaryFormula ? {
+            primaryFormula,
+            secondaryFormulas: lesson.keyFormulas.filter((f) => f !== primaryFormula).slice(0, 2),
+            variablesNote: buildVariablesNote('physics', primaryFormula, lesson.subtitle, st.keyTakeaway, {
+              track: lesson.track,
+              tier: lesson.tier,
+              grade: lesson.grade
+            })
+          } : undefined),
+          deepDiveSection,
+          miniQuiz: mcqs,
+          miniEssay
+        },
+        {
+          subject: 'physics',
+          lessonTitle: lesson.title,
+          grade: lesson.grade,
+          keyFormulas: lesson.keyFormulas
+        },
+        idx
+      );
     });
   }
 
@@ -698,7 +708,18 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
       )
   });
 
-  return rawSteps;
+  return rawSteps.map((st, idx) =>
+    enrichLectureStepWithConceptsAndAnnotations(
+      st,
+      {
+        subject: 'physics',
+        lessonTitle: lesson.title,
+        grade: lesson.grade,
+        keyFormulas: lesson.keyFormulas
+      },
+      idx
+    )
+  );
 }
 
 // ============================================================================
@@ -725,26 +746,35 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
         st.deepDiveSection ||
         `${st.teacherExplanation}${st.keyTakeaway ? `\n\n• **Bí kíp nhớ nhanh**: ${st.keyTakeaway}` : ''}`;
 
-      return {
-        ...st,
-        conceptSection,
-        formulaSection: st.formulaSection || (primaryFormula ? {
-          primaryFormula,
-          secondaryFormulas: lecture.keyFormulas.filter((f) => f !== primaryFormula).slice(0, 2),
-          variablesNote: buildVariablesNote('math', primaryFormula, lecture.description, lecture.commonTraps?.[idx], pedCtx)
-        } : undefined),
-        deepDiveSection,
-        miniQuiz:
-          st.miniQuiz && st.miniQuiz.length >= 2
-            ? st.miniQuiz.slice(0, 2)
-            : [
-                buildFormulaCheckMCQ(`${lecture.id}-s${idx}-q1`, st.stepTitle, primaryFormula, lecture.keyFormulas, 'math', st.keyTakeaway),
-                buildConditionCheckMCQ(`${lecture.id}-s${idx}-q2`, st.stepTitle, conceptSection, 'math', lecture.commonTraps?.[idx])
-              ],
-        miniEssay:
-          st.miniEssay ||
-          buildSectionMiniEssay(`${lecture.id}-s${idx}-e1`, st.stepTitle, conceptSection, primaryFormula, deepDiveSection, 'math', st.keyTakeaway)
-      };
+      return enrichLectureStepWithConceptsAndAnnotations(
+        {
+          ...st,
+          conceptSection,
+          formulaSection: st.formulaSection || (primaryFormula ? {
+            primaryFormula,
+            secondaryFormulas: lecture.keyFormulas.filter((f) => f !== primaryFormula).slice(0, 2),
+            variablesNote: buildVariablesNote('math', primaryFormula, lecture.description, lecture.commonTraps?.[idx], pedCtx)
+          } : undefined),
+          deepDiveSection,
+          miniQuiz:
+            st.miniQuiz && st.miniQuiz.length >= 2
+              ? st.miniQuiz.slice(0, 2)
+              : [
+                  buildFormulaCheckMCQ(`${lecture.id}-s${idx}-q1`, st.stepTitle, primaryFormula, lecture.keyFormulas, 'math', st.keyTakeaway),
+                  buildConditionCheckMCQ(`${lecture.id}-s${idx}-q2`, st.stepTitle, conceptSection, 'math', lecture.commonTraps?.[idx])
+                ],
+          miniEssay:
+            st.miniEssay ||
+            buildSectionMiniEssay(`${lecture.id}-s${idx}-e1`, st.stepTitle, conceptSection, primaryFormula, deepDiveSection, 'math', st.keyTakeaway)
+        },
+        {
+          subject: 'math',
+          lessonTitle: lecture.title,
+          grade: lecture.grade,
+          keyFormulas: lecture.keyFormulas
+        },
+        idx
+      );
     });
   }
 
@@ -920,7 +950,18 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
     });
   }
 
-  return steps;
+  return steps.map((st, idx) =>
+    enrichLectureStepWithConceptsAndAnnotations(
+      st,
+      {
+        subject: 'math',
+        lessonTitle: lecture.title,
+        grade: lecture.grade,
+        keyFormulas: lecture.keyFormulas
+      },
+      idx
+    )
+  );
 }
 
 // ============================================================================
@@ -1413,22 +1454,31 @@ export function buildCSLectureSteps(lesson: CSLesson): LectureStep[] {
         ? st.commonMistakes
         : easyGuide.commonMistakes;
 
-    return {
-      ...st,
-      quickIntuition: stepQuickIntuition,
-      dryRunTrace: stepDryRun,
-      commonMistakes: stepMistakes,
-      conceptSection,
-      formulaSection: st.formulaSection || {
-        primaryFormula,
-        secondaryFormulas: inlineFormulas.filter((f) => f !== primaryFormula).slice(0, 2),
-        variablesNote: buildVariablesNote('cs', primaryFormula, lesson.topic, st.keyTakeaway, {
-          csLevel: lesson.level
-        })
+    return enrichLectureStepWithConceptsAndAnnotations(
+      {
+        ...st,
+        quickIntuition: stepQuickIntuition,
+        dryRunTrace: stepDryRun,
+        commonMistakes: stepMistakes,
+        conceptSection,
+        formulaSection: st.formulaSection || {
+          primaryFormula,
+          secondaryFormulas: inlineFormulas.filter((f) => f !== primaryFormula).slice(0, 2),
+          variablesNote: buildVariablesNote('cs', primaryFormula, lesson.topic, st.keyTakeaway, {
+            csLevel: lesson.level
+          })
+        },
+        deepDiveSection,
+        miniQuiz: mcqs,
+        miniEssay
       },
-      deepDiveSection,
-      miniQuiz: mcqs,
-      miniEssay
-    };
+      {
+        subject: 'cs',
+        lessonTitle: lesson.title,
+        grade: lesson.level,
+        keyFormulas: [complexityFormula]
+      },
+      idx
+    );
   });
 }

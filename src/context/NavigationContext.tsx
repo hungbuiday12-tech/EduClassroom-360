@@ -118,7 +118,9 @@ function getInitialLocation(): NavLocation {
           'timemachine_holo_3d',
           'spatial_gesture_3d',
           'tech_teardown_3d',
-          'assembly_3d'
+          'assembly_3d',
+          'solar_system_3d',
+          'typing_parroto_sandbox'
         ].includes(rawFutureTab)
       ) {
         return {
@@ -168,6 +170,8 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       if (loc.futureTab === 'spatial_gesture_3d') return isEn ? 'Synapse Pre · Spatial 3D & WebAR Lab' : 'Synapse Pre · Học Cảm Giác 3D & AR';
       if (loc.futureTab === 'tech_teardown_3d') return isEn ? 'Synapse Pre · 3D Teardown & Repair Workshop' : 'Synapse Pre · Xưởng Phẫu Thuật Thiết Bị 3D';
       if (loc.futureTab === 'assembly_3d') return isEn ? 'Synapse Pre · Interactive 3D Assembly Studio' : 'Synapse Pre · Mô Phỏng Lắp Ráp Cơ Khí 3D';
+      if (loc.futureTab === 'solar_system_3d') return isEn ? 'Synapse Pre · Solar System 3D Ephemeris' : 'Synapse Pre · Hệ Mặt Trời 3D';
+      if (loc.futureTab === 'typing_parroto_sandbox') return isEn ? 'Synapse Pre · Parroto Typing Arena' : 'Synapse Pre · Đấu Trường Luyện Gõ Parroto';
       return loc.synapseMode === 'stage'
         ? isEn
           ? 'Synapse Pre · 3D Megastructure Stage'

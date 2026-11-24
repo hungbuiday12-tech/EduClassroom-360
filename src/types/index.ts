@@ -19,6 +19,14 @@ export interface ForumMessageReplyRef {
   excerpt: string;
 }
 
+export interface ForumLessonAttachment {
+  subject: 'math' | 'physics' | 'cs';
+  lessonId: string;
+  title: string;
+  subtitle?: string;
+  openSim?: boolean;
+}
+
 export interface ForumGroup {
   id: string;
   name: string;
@@ -32,6 +40,8 @@ export interface ForumGroup {
   lastMessagePreview?: string;
   lastMessageAt?: string;
   pinnedMessageId?: string;
+  topicTags?: string[];
+  gradeFocus?: string;
   createdAt: string;
 }
 
@@ -45,6 +55,15 @@ export interface ForumMessage {
   senderAvatar?: string;
   senderRole: 'student' | 'teacher' | 'admin';
   content: string;
+  messageType?: 'discussion' | 'question';
+  tags?: string[];
+  gradeTag?: string;
+  isSolved?: boolean;
+  solutionMessageId?: string;
+  isAcceptedSolution?: boolean;
+  upvotes?: string[];
+  attachment?: ForumLessonAttachment;
+  editedAt?: string;
   replyTo?: ForumMessageReplyRef;
   reactions?: Record<string, string[]>;
   poll?: ForumPoll;
@@ -215,11 +234,28 @@ export interface LectureStepFormulaSection {
   variablesNote?: string;
 }
 
+export interface LectureConceptEntry {
+  term: string;
+  symbol?: string;
+  definition: string;
+  intuition?: string;
+}
+
+export interface LectureSymbolAnnotation {
+  symbol: string;
+  meaning: string;
+  unitOrType?: string;
+  condition?: string;
+}
+
 export interface LectureStep {
   stepTitle: string;
   stepType?: 'intuition' | 'concept' | 'derivation' | 'example' | 'pitfall' | 'experiment';
   conceptSection?: string;
+  conceptGlossary?: LectureConceptEntry[];
   formulaSection?: LectureStepFormulaSection;
+  annotations?: LectureSymbolAnnotation[];
+  stepByStepNotes?: string[];
   deepDiveSection?: string;
   teacherExplanation: string;
   formulaHighlight?: string;
@@ -717,6 +753,10 @@ export interface RoadmapNode {
   prerequisites: string[];
   estimatedMinutes: number;
   targetLessonId?: string;
+  altLesson2006Id?: string;
+  altLessonChuyenId?: string;
+  examWeight?: string;
+  keyConcepts?: string[];
   workflowTips: string[];
   checkQuestions: string[];
 }
@@ -882,6 +922,51 @@ export interface WeeklyLeaderboardEntry {
   totalAttempts: number;
   totalTimeSec: number;
   updatedAt: string;
+}
+
+export interface ArenaSprintRecord {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  division: ArenaDivisionId;
+  subject: ArenaSubject;
+  score: number;
+  correctCount: number;
+  totalQuestions: number;
+  maxCombo: number;
+  durationSec: number;
+  createdAt: string;
+}
+
+export interface ArenaCompetitiveTier {
+  id: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master' | 'challenger';
+  nameVi: string;
+  nameEn: string;
+  minElo: number;
+  nextElo: number | null;
+  accentClass: string;
+  borderClass: string;
+}
+
+export interface ArenaAchievement {
+  id: string;
+  titleVi: string;
+  titleEn: string;
+  descriptionVi: string;
+  descriptionEn: string;
+  tier: 'bronze' | 'silver' | 'gold' | 'diamond';
+  unlocked: boolean;
+  progressText: string;
+}
+
+export interface ArenaRivalTarget {
+  userId: string;
+  displayName: string;
+  username: string;
+  targetScore: number;
+  targetDurationSec: number;
+  subjectLabel: string;
 }
 
 // ============================================================================
@@ -1055,7 +1140,8 @@ export type FutureLabTabId =
   | 'assembly_3d'
   | 'what_if_physics_3d'
   | 'algo_city_3d'
-  | 'solar_system_3d';
+  | 'solar_system_3d'
+  | 'typing_parroto_sandbox';
 
 export type PaperSimKind =
   | 'parabola'

@@ -10,6 +10,7 @@
     <meta name="apple-mobile-web-app-title" content="Synapse" />
     <title>Synapse - Lớp Học Trực Tuyến Mô Phỏng</title>
     <meta name="description" content="Nền tảng lớp học mô phỏng trực tuyến tích hợp vẽ đồ thị hàm số và hình học tương tác (Toán), mô phỏng 2D vật lý thời gian thực (Lí), trình biên dịch và hệ thống nộp bài chấm test C++/Python (Tin), cùng sơ đồ tư duy văn học (Văn)." />
+    <meta property="og:site_name" content="Synapse" />
     <meta property="og:title" content="Synapse - Lớp Học Trực Tuyến Mô Phỏng" />
     <meta property="og:description" content="Nền tảng lớp học mô phỏng trực tuyến tích hợp vẽ đồ thị hàm số và hình học tương tác (Toán), mô phỏng 2D vật lý thời gian thực (Lí), trình biên dịch và hệ thống nộp bài chấm test C++/Python (Tin), cùng sơ đồ tư duy văn học (Văn)." />
     <meta property="og:type" content="website" />
@@ -18,7 +19,16 @@
     <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=Lexend:wght@300;400;500;600;700&family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Nunito:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link
+      id="synapse-core-fonts"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Lexend:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    >
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+    </noscript>
     <script>
       // Fix GitHub Pages blank screen when URL is accessed without trailing slash (http/https only)
       (function() {
@@ -29,11 +39,28 @@
         }
       })();
     </script>
-    <script type="module" crossorigin src="./assets/index-DkZh0Gl_.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BL9PGcbQ.css">
+    <script type="module" crossorigin src="./assets/index-C0EWNd9T.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-BWaJ3C7D.js">
+    <link rel="modulepreload" crossorigin href="./assets/vendor-icons-BXYhyrKJ.js">
+    <link rel="modulepreload" crossorigin href="./assets/vendor-react-CY3uflm1.js">
+    <link rel="modulepreload" crossorigin href="./assets/vendor-motion-TjrKndtL.js">
+    <link rel="modulepreload" crossorigin href="./assets/vendor-firebase-DzNAFHyk.js">
+    <link rel="modulepreload" crossorigin href="./assets/soundEngine-BZhLy-Si.js">
+    <link rel="modulepreload" crossorigin href="./assets/vendor-docs-Dbby58Rr.js">
+    <link rel="modulepreload" crossorigin href="./assets/vendor-three-BzVmLgZy.js">
+    <link rel="modulepreload" crossorigin href="./assets/vendor-katex-qxbzPhgi.js">
+    <link rel="stylesheet" crossorigin href="./assets/vendor-katex-DMZ4qLFT.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-yvNK1hKp.css">
   <link rel="manifest" href="./manifest.webmanifest"></head>
   <body class="text-slate-900 antialiased selection:bg-sky-600 selection:text-white dark:text-slate-100 min-h-screen bg-slate-50 dark:bg-slate-950">
-    <div id="root"></div>
+    <div id="root">
+      <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:system-ui,-apple-system,sans-serif;color:#334155;padding:24px;text-align:center;">
+        <div style="width:40px;height:40px;border-radius:10px;border:3px solid #cbd5e1;border-top-color:#0284c7;animation:synBootSpin 0.8s linear infinite;"></div>
+        <div style="font-weight:700;font-size:15px;letter-spacing:-0.01em;">Synapse · Đang khởi động lớp học...</div>
+        <div style="font-size:12px;color:#64748b;">Tối ưu tải nhẹ cho mọi cấu hình máy</div>
+      </div>
+      <style>@keyframes synBootSpin{to{transform:rotate(360deg)}}</style>
+    </div>
   </body>
 </html>
 

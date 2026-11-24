@@ -338,6 +338,7 @@ function MainApp() {
       location.futureTab === 'paper_to_sim' ||
       location.futureTab === 'silicon_neural' ||
       location.futureTab === 'phone_sensor_lab' ||
+      location.futureTab === 'typing_parroto_sandbox' ||
       ((!location.futureTab || location.futureTab === 'megastructures') &&
         location.synapseMode === 'stage'));
   const isHeavy3DActive =

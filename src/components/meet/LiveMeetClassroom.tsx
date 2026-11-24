@@ -23,7 +23,9 @@ import {
   X,
 } from 'lucide-react';
 import { MeetShared3DStage } from './MeetShared3DStage';
+import { MeetLobbyAmbientStage } from './MeetLobbyAmbientStage';
 import { usePremium } from '../../context/PremiumContext';
+import { PerformanceMode, useBackgroundTheme } from '../../context/BackgroundContext';
 import {
   MeetChatMessage,
   MeetFloatingReaction,
@@ -74,6 +76,7 @@ interface RemoteVideoTileProps {
   stream?: MediaStream;
   compact?: boolean;
   pinned?: boolean;
+  graphicsQuality?: MeetGraphicsQuality;
   onPin?: () => void;
 }
 
@@ -83,6 +86,7 @@ const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean; onAudi
   compact = false,
   pinned = false,
   isLocal = false,
+  graphicsQuality = 'medium',
   onPin,
   onAudioBlockedChange,
 }) => {
@@ -91,6 +95,7 @@ const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean; onAudi
   const lastVideoIdsRef = useRef<string>('');
   const lastAudioIdsRef = useRef<string>('');
   const [audioBlocked, setAudioBlocked] = useState(false);
+  const [speakingLevel, setSpeakingLevel] = useState(0);
 
   const videoTrackIdsKey = stream
     ? stream
@@ -189,6 +194,56 @@ const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean; onAudi
     }
   }, [isLocal, stream, audioTrackIdsKey, peer.micOn, onAudioBlockedChange]);
 
+  // Live Web Audio speaking level meter when tier > 'low' and peer mic is active
+  useEffect(() => {
+    if (graphicsQuality === 'low' || !peer.micOn || !stream) {
+      setSpeakingLevel(0);
+      return;
+    }
+    const audioTracks = stream.getAudioTracks().filter((t) => t.readyState === 'live' && t.enabled);
+    if (audioTracks.length === 0) {
+      setSpeakingLevel(0);
+      return;
+    }
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+
+    let closed = false;
+    let timerId = 0;
+    let ctx: AudioContext | null = null;
+    try {
+      ctx = new AudioCtx();
+      const src = ctx.createMediaStreamSource(new MediaStream([audioTracks[0]]));
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 64;
+      analyser.smoothingTimeConstant = 0.7;
+      src.connect(analyser);
+      const bins = new Uint8Array(analyser.frequencyBinCount);
+
+      const sample = () => {
+        if (closed) return;
+        analyser.getByteFrequencyData(bins);
+        let sum = 0;
+        for (let i = 0; i < bins.length; i++) sum += bins[i];
+        const avg = sum / Math.max(1, bins.length);
+        const norm = Math.min(1, avg / 52);
+        setSpeakingLevel(norm > 0.08 ? norm : 0);
+        timerId = window.setTimeout(sample, graphicsQuality === 'high' ? 85 : 140);
+      };
+      sample();
+    } catch {
+      setSpeakingLevel(0);
+    }
+
+    return () => {
+      closed = true;
+      window.clearTimeout(timerId);
+      if (ctx) {
+        ctx.close().catch(() => {});
+      }
+    };
+  }, [graphicsQuality, peer.micOn, stream, audioTrackIdsKey]);
+
   const handleUnlockAudio = (e: React.MouseEvent) => {
     e.stopPropagation();
     const audioEl = audioRef.current;
@@ -210,15 +265,20 @@ const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean; onAudi
       stream &&
       stream.getVideoTracks().some((t) => t.readyState === 'live' && t.enabled)
   );
+  const isSpeaking = speakingLevel > 0.12;
 
   return (
     <div
       onClick={onPin}
-      className={`relative overflow-hidden rounded-2xl border bg-slate-900 select-none transition-colors ${
+      className={`relative overflow-hidden rounded-2xl border bg-slate-900 select-none transition-all duration-200 ${
         pinned
-          ? 'border-sky-400/70'
+          ? 'border-sky-400/75'
+          : isSpeaking && graphicsQuality === 'high'
+          ? 'border-emerald-400 shadow-[0_0_24px_-4px_rgba(16,185,129,0.55)]'
+          : isSpeaking
+          ? 'border-emerald-400/80'
           : peer.handRaised
-          ? 'border-amber-400/70'
+          ? 'border-amber-400/75'
           : 'border-slate-800 hover:border-slate-700'
       } ${onPin ? 'cursor-pointer' : ''} ${compact ? 'h-28 w-44 shrink-0' : 'h-full w-full min-h-[180px]'}`}
     >
@@ -292,13 +352,32 @@ const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean; onAudi
         <span className="truncate text-xs font-semibold text-white">
           {peer.name} {isLocal ? '(Bạn)' : ''}
         </span>
-        <span
-          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-            peer.micOn ? 'bg-slate-800/80 text-emerald-400' : 'bg-rose-600/90 text-white'
-          }`}
-        >
-          {peer.micOn ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {graphicsQuality !== 'low' && peer.micOn && (
+            <div className="flex items-end gap-0.5 h-4 px-1" aria-hidden="true">
+              {[0.45, 0.9, 0.65].map((scale, barIdx) => {
+                const barH = Math.max(20, Math.min(100, Math.round(speakingLevel * 100 * scale + 18)));
+                return (
+                  <span
+                    key={barIdx}
+                    className={`w-0.5 rounded-sm transition-all duration-100 ${
+                      isSpeaking ? 'bg-emerald-400' : 'bg-slate-500/70'
+                    }`}
+                    style={{ height: `${isSpeaking ? barH : 22}%` }}
+                  />
+                );
+              })}
+            </div>
+          )}
+          <span
+            data-circle="true"
+            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+              peer.micOn ? 'bg-slate-800/80 text-emerald-400' : 'bg-rose-600/90 text-white'
+            }`}
+          >
+            {peer.micOn ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -306,6 +385,7 @@ const PeerVideoTile: React.FC<RemoteVideoTileProps & { isLocal?: boolean; onAudi
 
 export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUserName }) => {
   const { hasPremiumAccess } = usePremium();
+  const { perfMode, applyGraphicsTier } = useBackgroundTheme();
   // Lobby state
   const [displayName, setDisplayName] = useState<string>(() => {
     const saved = localStorage.getItem('synapse_meet_name');
@@ -335,15 +415,16 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
   const [mediaNotice, setMediaNotice] = useState<string | null>(null);
   const [anyAudioBlocked, setAnyAudioBlocked] = useState<boolean>(false);
 
-  // Graphics quality ('medium' | 'high')
-  const [graphicsQuality, setGraphicsQuality] = useState<MeetGraphicsQuality>(() => {
-    const saved = localStorage.getItem('synapse_meet_graphics');
-    return saved === 'high' ? 'high' : 'medium';
-  });
+  // Synced Graphics quality ('low' | 'medium' | 'high') <-> BackgroundContext ('smooth' | 'balanced' | 'ultra')
+  const graphicsQuality: MeetGraphicsQuality =
+    perfMode === 'smooth' ? 'low' : perfMode === 'ultra' ? 'high' : 'medium';
 
   const handleSetGraphicsQuality = (q: MeetGraphicsQuality) => {
-    setGraphicsQuality(q);
-    localStorage.setItem('synapse_meet_graphics', q);
+    const mapped: PerformanceMode = q === 'low' ? 'smooth' : q === 'high' ? 'ultra' : 'balanced';
+    applyGraphicsTier(mapped, false);
+    try {
+      localStorage.setItem('synapse_meet_graphics', q);
+    } catch {}
   };
 
   // Stage & 3D sync
@@ -1212,22 +1293,8 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
   if (!roomCode) {
     return (
       <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-slate-950 text-slate-100 p-4 md:p-8">
-        {/* Ambient Graphics Backdrop (Medium vs High) */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div
-            className={`absolute -left-24 -top-24 h-80 w-80 rounded-full bg-sky-500/15 blur-3xl transition-transform duration-1000 ${
-              graphicsQuality === 'high' ? 'animate-pulse scale-110' : ''
-            }`}
-          />
-          <div
-            className={`absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-emerald-500/15 blur-3xl transition-transform duration-1000 ${
-              graphicsQuality === 'high' ? 'animate-pulse scale-110' : ''
-            }`}
-          />
-          {graphicsQuality === 'high' && (
-            <div className="absolute left-1/2 top-1/3 h-72 w-72 -translate-x-1/2 rounded-full bg-violet-500/10 blur-3xl animate-pulse" />
-          )}
-        </div>
+        {/* Tier-Scaled Ambient Backdrop (Low CSS Grid / Medium 2D Wave / High Interactive Three.js Diorama) */}
+        <MeetLobbyAmbientStage graphicsQuality={graphicsQuality} />
 
         <div className="relative z-10 mx-auto max-w-5xl space-y-6">
           {/* Header */}
@@ -1245,30 +1312,41 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
               </p>
             </div>
 
-            {/* Graphics Quality Selector */}
-            <div className="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/90 p-1 self-start md:self-auto">
+            {/* 3-Tier Graphics Quality Selector (Synced with Global Performance Mode) */}
+            <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/95 p-1 self-start md:self-auto">
+              <button
+                type="button"
+                onClick={() => handleSetGraphicsQuality('low')}
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
+                  graphicsQuality === 'low'
+                    ? 'bg-emerald-500 text-slate-950'
+                    : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                Thấp (Mượt)
+              </button>
               <button
                 type="button"
                 onClick={() => handleSetGraphicsQuality('medium')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
                   graphicsQuality === 'medium'
                     ? 'bg-sky-500 text-slate-950'
                     : 'text-slate-300 hover:bg-slate-800'
                 }`}
               >
-                Đồ họa Trung bình
+                Trung bình
               </button>
               <button
                 type="button"
                 onClick={() => handleSetGraphicsQuality('high')}
-                className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
+                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
                   graphicsQuality === 'high'
                     ? 'bg-gradient-to-r from-sky-400 to-violet-500 text-slate-950'
                     : 'text-slate-300 hover:bg-slate-800'
                 }`}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                Đồ họa Cao
+                Cao (Pro)
               </button>
             </div>
           </div>
@@ -1513,25 +1591,40 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
           </button>
         </div>
 
-        {/* Right: Graphics Quality + Copy Room Code */}
+        {/* Right: 3-Tier Graphics Quality + Copy Room Code */}
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => handleSetGraphicsQuality(graphicsQuality === 'high' ? 'medium' : 'high')}
-            className={`hidden md:inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
-              graphicsQuality === 'high'
-                ? 'border-violet-400/50 bg-violet-500/20 text-violet-200'
-                : 'border-slate-700 bg-slate-800/90 text-slate-300 hover:bg-slate-700'
-            }`}
-            title="Chuyển đổi mức đồ họa Trung bình / Cao"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            {graphicsQuality === 'high' ? 'Đồ họa Cao' : 'Trung bình'}
-          </button>
+          <div className="flex items-center rounded-xl border border-slate-800 bg-slate-950 p-0.5">
+            {(
+              [
+                { id: 'low' as MeetGraphicsQuality, short: 'Thấp', full: 'Đồ họa Thấp' },
+                { id: 'medium' as MeetGraphicsQuality, short: 'TB', full: 'Trung bình' },
+                { id: 'high' as MeetGraphicsQuality, short: 'Pro', full: 'Cao Pro' },
+              ]
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => handleSetGraphicsQuality(opt.id)}
+                title={opt.full}
+                className={`rounded-lg px-2 py-1 text-[11px] font-bold transition whitespace-nowrap cursor-pointer ${
+                  graphicsQuality === opt.id
+                    ? opt.id === 'high'
+                      ? 'bg-gradient-to-r from-sky-400 to-violet-500 text-slate-950'
+                      : opt.id === 'medium'
+                      ? 'bg-sky-500 text-slate-950'
+                      : 'bg-emerald-500 text-slate-950'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span className="sm:hidden">{opt.short}</span>
+                <span className="hidden sm:inline">{opt.full}</span>
+              </button>
+            ))}
+          </div>
 
           <button
             onClick={handleCopyCode}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 whitespace-nowrap"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 whitespace-nowrap cursor-pointer"
             title="Sao chép mã phòng"
           >
             <span className="font-mono tracking-widest text-sky-300">{roomCode}</span>
@@ -1584,7 +1677,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
               <div
                 className={`relative min-h-0 flex-1 overflow-hidden rounded-2xl border transition-all duration-300 ${
                   graphicsQuality === 'high'
-                    ? 'border-sky-500/40 shadow-[0_0_30px_rgba(14,165,233,0.12)]'
+                    ? 'border-sky-400/50 meet-stage-high-frame'
                     : 'border-slate-800'
                 }`}
               >
@@ -1627,6 +1720,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                       peer={peer}
                       stream={isLocal ? localDisplayStream : remoteStreams[peer.peerId]}
                       isLocal={isLocal}
+                      graphicsQuality={graphicsQuality}
                       onAudioBlockedChange={setAnyAudioBlocked}
                       compact
                     />
@@ -1646,6 +1740,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                       : remoteStreams[pinnedPeer.peerId]
                   }
                   isLocal={pinnedPeer.peerId === selfPeerId}
+                  graphicsQuality={graphicsQuality}
                   onAudioBlockedChange={setAnyAudioBlocked}
                   pinned
                   onPin={() => setPinnedPeerId(null)}
@@ -1661,6 +1756,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                         peer={peer}
                         stream={isLocal ? localDisplayStream : remoteStreams[peer.peerId]}
                         isLocal={isLocal}
+                        graphicsQuality={graphicsQuality}
                         onAudioBlockedChange={setAnyAudioBlocked}
                         compact
                         onPin={() => setPinnedPeerId(peer.peerId)}
@@ -1681,6 +1777,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
                     peer={peer}
                     stream={isLocal ? localDisplayStream : remoteStreams[peer.peerId]}
                     isLocal={isLocal}
+                    graphicsQuality={graphicsQuality}
                     onAudioBlockedChange={setAnyAudioBlocked}
                     onPin={() => setPinnedPeerId(peer.peerId)}
                   />
@@ -1695,7 +1792,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
               <div
                 key={r.id}
                 style={{ left: `${r.xPercent}%` }}
-                className="absolute bottom-6 flex flex-col items-center animate-bounce"
+                className="absolute bottom-8 flex flex-col items-center meet-reaction-float"
               >
                 <span className="text-3xl drop-shadow-lg">{r.emoji}</span>
                 <span className="mt-0.5 rounded bg-slate-900/90 px-1.5 py-0.5 text-[10px] font-medium text-white">
@@ -1853,9 +1950,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
       <footer className="relative flex shrink-0 items-center justify-center gap-2 border-t border-slate-800/90 bg-slate-900/95 px-4 py-3">
         {/* Mic */}
         <button
+          data-circle="true"
           onClick={toggleMic}
           title={micOn ? 'Tắt Micro' : 'Bật Micro'}
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition ${
+          className={`flex h-11 w-11 items-center justify-center rounded-full transition cursor-pointer ${
             micOn
               ? 'bg-slate-800 text-white hover:bg-slate-700'
               : 'bg-rose-600 text-white hover:bg-rose-500'
@@ -1866,9 +1964,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
         {/* Camera */}
         <button
+          data-circle="true"
           onClick={toggleCam}
           title={camOn ? 'Tắt Camera' : 'Bật Camera'}
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition ${
+          className={`flex h-11 w-11 items-center justify-center rounded-full transition cursor-pointer ${
             camOn
               ? 'bg-slate-800 text-white hover:bg-slate-700'
               : 'bg-rose-600 text-white hover:bg-rose-500'
@@ -1879,9 +1978,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
         {/* Screen Share */}
         <button
+          data-circle="true"
           onClick={toggleScreenShare}
           title={screenSharing ? 'Dừng chia sẻ màn hình' : 'Chia sẻ màn hình'}
-          className={`flex h-11 items-center gap-2 rounded-full px-4 text-xs font-semibold transition whitespace-nowrap ${
+          className={`flex h-11 items-center gap-2 rounded-full px-4 text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
             screenSharing
               ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
               : 'bg-slate-800 text-white hover:bg-slate-700'
@@ -1895,9 +1995,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
         {/* Shared 3D Model Toggle */}
         <button
+          data-circle="true"
           onClick={() => handleStageModeChange(stageMode === '3d' ? 'grid' : '3d')}
           title="Chuyển đổi Mô hình 3D chung"
-          className={`flex h-11 items-center gap-2 rounded-full px-4 text-xs font-semibold transition whitespace-nowrap ${
+          className={`flex h-11 items-center gap-2 rounded-full px-4 text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
             stageMode === '3d'
               ? 'bg-sky-500 text-slate-950 hover:bg-sky-400'
               : 'bg-slate-800 text-white hover:bg-slate-700'
@@ -1909,9 +2010,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
         {/* Raise Hand */}
         <button
+          data-circle="true"
           onClick={toggleHand}
           title={handRaised ? 'Hạ tay' : 'Giơ tay phát biểu'}
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition ${
+          className={`flex h-11 w-11 items-center justify-center rounded-full transition cursor-pointer ${
             handRaised
               ? 'bg-amber-400 text-slate-950 hover:bg-amber-300'
               : 'bg-slate-800 text-white hover:bg-slate-700'
@@ -1923,9 +2025,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
         {/* Reactions */}
         <div className="relative">
           <button
+            data-circle="true"
             onClick={() => setShowReactions((v) => !v)}
             title="Thả cảm xúc"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-800 text-white hover:bg-slate-700"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-800 text-white hover:bg-slate-700 cursor-pointer"
           >
             <Smile className="h-5 w-5" />
           </button>
@@ -1934,8 +2037,9 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
               {QUICK_REACTIONS.map((emoji) => (
                 <button
                   key={emoji}
+                  data-circle="true"
                   onClick={() => handleSendReaction(emoji)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-lg hover:bg-slate-800 transition"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-lg hover:bg-slate-800 transition cursor-pointer"
                 >
                   {emoji}
                 </button>
@@ -1946,9 +2050,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
         {/* Chat Drawer Toggle */}
         <button
+          data-circle="true"
           onClick={() => setDrawerTab((prev) => (prev === 'chat' ? null : 'chat'))}
           title="Trò chuyện"
-          className={`relative flex h-11 w-11 items-center justify-center rounded-full transition ${
+          className={`relative flex h-11 w-11 items-center justify-center rounded-full transition cursor-pointer ${
             drawerTab === 'chat'
               ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
               : 'bg-slate-800 text-white hover:bg-slate-700'
@@ -1956,7 +2061,7 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
         >
           <MessageSquare className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+            <span data-circle="true" className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -1964,9 +2069,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
         {/* People Drawer Toggle */}
         <button
+          data-circle="true"
           onClick={() => setDrawerTab((prev) => (prev === 'people' ? null : 'people'))}
           title="Thành viên"
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition ${
+          className={`flex h-11 w-11 items-center justify-center rounded-full transition cursor-pointer ${
             drawerTab === 'people'
               ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
               : 'bg-slate-800 text-white hover:bg-slate-700'
@@ -1977,9 +2083,10 @@ export const LiveMeetClassroom: React.FC<LiveMeetClassroomProps> = ({ currentUse
 
         {/* Leave Call */}
         <button
+          data-circle="true"
           onClick={leaveRoom}
           title="Rời phòng học"
-          className="ml-2 flex h-11 items-center gap-2 rounded-full bg-rose-600 px-5 text-xs font-semibold text-white hover:bg-rose-500 transition whitespace-nowrap"
+          className="ml-2 flex h-11 items-center gap-2 rounded-full bg-rose-600 px-5 text-xs font-semibold text-white hover:bg-rose-500 transition whitespace-nowrap cursor-pointer"
         >
           <PhoneOff className="h-4 w-4" />
           <span className="hidden sm:inline">Rời phòng</span>

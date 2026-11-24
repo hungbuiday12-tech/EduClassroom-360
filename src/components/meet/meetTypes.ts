@@ -94,7 +94,8 @@ export const MEET_3D_MODELS: Meet3DModelMeta[] = [
 ];
 
 export type MeetStageMode = 'grid' | '3d';
-export type MeetGraphicsQuality = 'medium' | 'high';
+export type MeetGraphicsQuality = 'low' | 'medium' | 'high';
+export type MeetCameraPreset = 'perspective' | 'front' | 'top' | 'closeup';
 
 export interface MeetShared3DState {
   modelId: string;
@@ -104,6 +105,7 @@ export interface MeetShared3DState {
   explode: number;
   autoSpin: boolean;
   wireframe?: boolean;
+  cameraPreset?: MeetCameraPreset;
   customModelName?: string;
   uploadedFileUrl?: string;
   uploadedFileExt?: 'glb' | 'gltf' | 'obj';

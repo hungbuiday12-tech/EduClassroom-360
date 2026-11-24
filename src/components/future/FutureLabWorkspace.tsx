@@ -55,6 +55,9 @@ const AssemblyStudio3DLab = lazy(() =>
 const SolarSystem3DLab = lazy(() =>
   import('./SolarSystem3DLab').then((m) => ({ default: m.SolarSystem3DLab }))
 );
+const TypingParrotoSandbox = lazy(() =>
+  import('./TypingParrotoSandbox').then((m) => ({ default: m.TypingParrotoSandbox }))
+);
 
 interface FutureLabWorkspaceProps {
   onBack?: () => void;
@@ -250,6 +253,18 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
           'Click the Sun or any of the 8 planets in the bottom dock (or directly in 3D space) to fly to and track that world.',
           'Scrub the 1800–2100 ephemeris timeline or pick Live / 1 day/s / 1 month/s / 1 year/s speeds.',
           'Inspect live distance from Earth in AU and light-minutes, and toggle orbital curves or world labels from the right rail.',
+        ],
+      },
+      typing_parroto_sandbox: {
+        vi: [
+          'Chọn chế độ Parroto Săn Từ (gõ từ bay ngẫu nhiên Anh–Việt, C++, Python, Báo cáo) hoặc Gõ Đoạn Văn Đếm Giờ (tải file / dán bài bất kỳ).',
+          'Chọn độ khó Dễ · Thường · Khó hoặc tự kéo thanh thời gian quy định cho bài văn, đồng thời chuyển mức đồ họa Thấp / Trung bình / Pro 3D ngay trên thanh trên.',
+          'Quan sát bàn phím trực tiếp ở góc trái sáng phím theo thời gian thực, giữ chuỗi Combo để kích hoạt Đóng băng / EMP / Khiên và nhận XP.',
+        ],
+        en: [
+          'Switch between Parroto Arcade (random EN–VI, C++, Python, or Report tokens) and Timed Passage Arena (upload or paste any text).',
+          'Select Easy, Normal, or Hard difficulty (or dial a custom timer) and test Low / Medium / Pro 3D animated backdrops in the top bar.',
+          'Watch the bottom-left live keyboard illuminate every keystroke in real time, chain combos for Freeze/EMP/Shield power-ups, and track WPM.',
         ],
       },
     };
@@ -642,6 +657,17 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
           <PhoneSensorPhysicsLab initialRoomCode={location.sensorRoomCode} />
         )}
         {activeView === 'dual_hand_sandbox' && <DualHandGPUParticleLab />}
+        {activeView === 'typing_parroto_sandbox' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[540px] rounded-2xl border border-sky-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-sky-300">
+                {isEn ? 'Initializing Parroto Typing Arena...' : 'Đang khởi tạo Đấu trường Gõ Parroto...'}
+              </div>
+            }
+          >
+            <TypingParrotoSandbox onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
       </div>
     </div>
   );

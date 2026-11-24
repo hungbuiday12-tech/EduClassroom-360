@@ -1,0 +1,1 @@
+var e={totalExams:1050,chuyenExams:525,standardExams:525,mathLectures:122,physicsLessons:117,csLessons:22,defaultMathLectureId:`math-9-1`,defaultPhysicsLessonId:`phys-9-mech-heat`,get totalLessons(){return this.mathLectures+this.physicsLessons+this.csLessons}};export{e as t};

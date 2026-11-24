@@ -569,6 +569,43 @@ export const PreStudioDiagramPreview: React.FC<PreStudioDiagramPreviewProps> = (
           </g>
         );
 
+      case 'typing_parroto_sandbox':
+        return (
+          <g>
+            {/* 3 Flight Lanes */}
+            <line x1="34" y1="34" x2="296" y2="34" stroke="#38bdf8" strokeOpacity="0.28" strokeWidth="1" />
+            <line x1="34" y1="60" x2="296" y2="60" stroke="#38bdf8" strokeOpacity="0.28" strokeWidth="1" />
+            <line x1="34" y1="86" x2="296" y2="86" stroke="#38bdf8" strokeOpacity="0.28" strokeWidth="1" />
+            {/* Shield Line */}
+            <line x1="34" y1="22" x2="34" y2="92" stroke="#f43f5e" strokeWidth="2" />
+            {/* Gliding Word Tokens */}
+            <rect x="112" y="23" width="72" height="18" rx="4" fill="#0f172a" stroke="#22d3ee" strokeWidth="1.6" />
+            <text x="120" y="35" fill="#34d399" fontSize="8" fontFamily="monospace" fontWeight="bold">vec</text>
+            <text x="136" y="35" fill="#e2e8f0" fontSize="8" fontFamily="monospace">tor&lt;int&gt;</text>
+            <rect x="176" y="49" width="82" height="18" rx="4" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.2" />
+            <text x="184" y="61" fill="#e2e8f0" fontSize="8" fontFamily="monospace">động lượng</text>
+            <rect x="84" y="75" width="66" height="18" rx="4" fill="#0f172a" stroke="#10b981" strokeWidth="1.2" />
+            <text x="92" y="87" fill="#a7f3d0" fontSize="8" fontFamily="monospace">enumerate</text>
+            {/* Mini Corner Live Keyboard */}
+            <rect x="24" y="96" width="94" height="28" rx="4" fill="#020617" stroke={accentHex} strokeWidth="1.4" />
+            {[0, 1, 2, 3, 4, 5, 6].map((k) => (
+              <rect
+                key={k}
+                x={30 + k * 12}
+                y="102"
+                width="9"
+                height="7"
+                rx="1.5"
+                fill={k === 3 ? '#22d3ee' : '#1e293b'}
+              />
+            ))}
+            <rect x="44" y="113" width="46" height="6" rx="1.5" fill="#10b981" />
+            <text x="130" y="138" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+              PARROTO TYPING · LIVE KEYBOARD · TIMED PASSAGE
+            </text>
+          </g>
+        );
+
       default:
         return null;
     }

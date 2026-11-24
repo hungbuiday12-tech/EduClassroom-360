@@ -566,7 +566,9 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
                 <Activity className="w-3.5 h-3.5 text-cyan-400" />
                 {isEn ? 'Vector Analytics' : 'Phân Tích Năng Lực'}
               </span>
-              <span className="text-[10px] font-mono text-cyan-300 tabular-nums">12 NODES</span>
+              <span className="text-[10px] font-mono text-cyan-300 tabular-nums">
+                {ROADMAP_NODES.length} NODES
+              </span>
             </div>
 
             <div className="h-28 flex items-end gap-1.5 pt-2 border-b border-slate-700/70 pb-1">
@@ -933,7 +935,7 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
                 subj: 'physics' as const
               },
               {
-                label: isEn ? 'CS · VNOI' : 'Tin · VNOI (12 bài)',
+                label: isEn ? 'CS · VNOI' : `Tin · VNOI (${CS_LESSONS.length} bài)`,
                 pct: metrics.csPct,
                 color: 'bg-emerald-400',
                 subj: 'cs' as const

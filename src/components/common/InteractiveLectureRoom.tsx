@@ -27,7 +27,9 @@ import {
   Loader2,
   Target,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Search,
+  BookMarked
 } from 'lucide-react';
 import {
   AITutorMode,
@@ -125,7 +127,8 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
 
   const [currentStepIdx, setCurrentStepIdx] = useState<number>(0);
   const [visitedSteps, setVisitedSteps] = useState<number[]>([0]);
-  const [viewLayout, setViewLayout] = useState<'slides' | 'full' | 'analytics'>('slides');
+  const [viewLayout, setViewLayout] = useState<'slides' | 'full' | 'glossary' | 'analytics'>('slides');
+  const [glossaryQuery, setGlossaryQuery] = useState<string>('');
   const [fontScale, setFontScale] = useState<'normal' | 'large'>('normal');
   const [revealedStepsMap, setRevealedStepsMap] = useState<Record<number, number>>({});
   const [copiedFormula, setCopiedFormula] = useState<string | null>(null);
@@ -1063,10 +1066,17 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
         {/* ============================================================== */}
         {/* SUB-SECTION 1: KHÁI NIỆM & BẢN CHẤT                            */}
         {/* ============================================================== */}
-        <section className="rounded-xl border border-indigo-200/70 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/15 p-4 sm:p-5 space-y-2.5">
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-            <BookOpen className="w-4 h-4" />
-            <span>1. Khái niệm &amp; Bản chất</span>
+        <section className="rounded-xl border border-indigo-200/70 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/15 p-4 sm:p-5 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+              <BookOpen className="w-4 h-4" />
+              <span>1. Khái niệm &amp; Bản chất</span>
+            </div>
+            {step.conceptGlossary && step.conceptGlossary.length > 0 && (
+              <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 tabular-nums">
+                {step.conceptGlossary.length} khái niệm trọng tâm
+              </span>
+            )}
           </div>
           <div
             className={`leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-line ${
@@ -1075,6 +1085,37 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
           >
             <FormattedText text={conceptText} />
           </div>
+
+          {step.conceptGlossary && step.conceptGlossary.length > 0 && (
+            <div className="grid grid-cols-1 gap-2.5 pt-2 border-t border-indigo-200/60 dark:border-indigo-900/40">
+              {step.conceptGlossary.map((cg, cgIdx) => (
+                <div
+                  key={cgIdx}
+                  className="rounded-lg bg-white/90 dark:bg-slate-900/80 border border-indigo-200/70 dark:border-indigo-900/50 p-3 space-y-1.5"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs sm:text-[13px] font-extrabold text-indigo-900 dark:text-indigo-200">
+                      {cg.term}
+                    </span>
+                    {cg.symbol && (
+                      <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/70 dark:border-indigo-800 text-xs font-mono text-indigo-700 dark:text-indigo-300 overflow-x-auto max-w-full">
+                        <MathFormula formula={cg.symbol} />
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                    <FormattedText text={cg.definition} />
+                  </div>
+                  {cg.intuition && (
+                    <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/30 rounded px-2.5 py-1.5 border border-emerald-200/60 dark:border-emerald-900/40">
+                      <span className="font-bold">Gợi ý dễ hiểu: </span>
+                      <FormattedText text={cg.intuition} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ============================================================== */}
@@ -1129,6 +1170,65 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
             {variablesNote && (
               <div className="text-xs sm:text-[13px] leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-line bg-white/70 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200/60 dark:border-slate-800/80">
                 <FormattedText text={variablesNote} />
+              </div>
+            )}
+
+            {step.annotations && step.annotations.length > 0 && (
+              <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+                <div className="px-3 py-2 bg-slate-100/80 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-200">
+                  <span>Bảng Chú Thích Ký Hiệu · Đơn Vị / Kiểu Dữ Liệu · Điều Kiện</span>
+                  <span className="font-mono text-slate-500 tabular-nums">{step.annotations.length} mục</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
+                        <th className="py-2 px-3 font-bold">Ký hiệu</th>
+                        <th className="py-2 px-3 font-bold">Ý nghĩa</th>
+                        <th className="py-2 px-3 font-bold">Đơn vị / Kiểu</th>
+                        <th className="py-2 px-3 font-bold">Điều kiện áp dụng</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                      {step.annotations.map((ann, aIdx) => (
+                        <tr key={aIdx} className="hover:bg-slate-50/80 dark:hover:bg-slate-950/60">
+                          <td className="py-2 px-3 font-mono font-bold text-indigo-700 dark:text-indigo-300 whitespace-nowrap">
+                            <MathFormula formula={ann.symbol} />
+                          </td>
+                          <td className="py-2 px-3 text-slate-800 dark:text-slate-200">
+                            <FormattedText text={ann.meaning} />
+                          </td>
+                          <td className="py-2 px-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            <FormattedText text={ann.unitOrType || '—'} />
+                          </td>
+                          <td className="py-2 px-3 text-amber-700 dark:text-amber-300">
+                            <FormattedText text={ann.condition || 'Theo bài toán'} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {step.stepByStepNotes && step.stepByStepNotes.length > 0 && (
+              <div className="rounded-lg border border-sky-200/80 dark:border-sky-900/50 bg-sky-50/50 dark:bg-sky-950/20 p-3 space-y-1.5">
+                <div className="text-[11px] font-extrabold uppercase tracking-wide text-sky-800 dark:text-sky-300">
+                  Trình tự đọc &amp; áp dụng từng bước
+                </div>
+                <ul className="space-y-1">
+                  {step.stepByStepNotes.map((note, nIdx) => (
+                    <li key={nIdx} className="text-xs text-slate-700 dark:text-slate-200 flex items-start gap-2">
+                      <span className="font-mono font-bold text-sky-600 dark:text-sky-400 shrink-0 tabular-nums">
+                        {nIdx + 1}.
+                      </span>
+                      <span className="leading-relaxed">
+                        <FormattedText text={note} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
@@ -2222,8 +2322,8 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
             {fontScale === 'normal' ? 'A+ Chữ lớn' : 'A- Chữ vừa'}
           </button>
 
-          {/* View Layout Switch: Interactive Slides vs Full Page vs Analytics */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+          {/* View Layout Switch: Interactive Slides vs Full Page vs Glossary vs Analytics */}
+          <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
             <button
               onClick={() => setViewLayout('slides')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
@@ -2247,6 +2347,17 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
               <span>Trọn bài ({safeSteps.length})</span>
             </button>
             <button
+              onClick={() => setViewLayout('glossary')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                viewLayout === 'glossary'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <BookMarked className="w-3.5 h-3.5" />
+              <span>Khái niệm &amp; Chú thích</span>
+            </button>
+            <button
               onClick={() => setViewLayout('analytics')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                 viewLayout === 'analytics'
@@ -2264,7 +2375,141 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
       {/* Main Teaching Stage */}
       {viewLayout === 'analytics' ? (
         renderAnalyticsAndRoadmapView()
-      ) : viewLayout === 'slides' && activeStep ? (
+      ) : viewLayout === 'glossary' ? (() => {
+        const q = glossaryQuery.trim().toLowerCase();
+        const uniqueConcepts = Array.from(
+          new Map(
+            safeSteps
+              .flatMap((st) => st.conceptGlossary || [])
+              .map((c) => [c.term, c])
+          ).values()
+        ).filter(
+          (c) =>
+            !q ||
+            c.term.toLowerCase().includes(q) ||
+            c.definition.toLowerCase().includes(q) ||
+            (c.intuition || '').toLowerCase().includes(q)
+        );
+        const uniqueAnnotations = Array.from(
+          new Map(
+            safeSteps
+              .flatMap((st) => st.annotations || [])
+              .map((a) => [a.symbol, a])
+          ).values()
+        ).filter(
+          (a) =>
+            !q ||
+            a.symbol.toLowerCase().includes(q) ||
+            a.meaning.toLowerCase().includes(q) ||
+            (a.unitOrType || '').toLowerCase().includes(q)
+        );
+
+        return (
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 sm:p-7 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Từ điển Khái niệm &amp; Bảng chú thích ký hiệu toàn bài
+                </div>
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mt-0.5">
+                  <FormattedText text={title} />
+                </h3>
+              </div>
+
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={glossaryQuery}
+                  onChange={(e) => setGlossaryQuery(e.target.value)}
+                  placeholder="Tìm khái niệm hoặc ký hiệu..."
+                  className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* Concept Cards */}
+            <div className="space-y-3">
+              <div className="text-xs font-extrabold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                1. Hệ thống Khái niệm &amp; Ý nghĩa trực quan ({uniqueConcepts.length})
+              </div>
+              {uniqueConcepts.length === 0 ? (
+                <p className="text-xs text-slate-500 italic">Không tìm thấy khái niệm phù hợp.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {uniqueConcepts.map((c, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 space-y-2"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                          {c.term}
+                        </span>
+                        {c.symbol && (
+                          <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/70 dark:border-indigo-800 text-xs font-mono text-indigo-700 dark:text-indigo-300">
+                            <MathFormula formula={c.symbol} />
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                        <FormattedText text={c.definition} />
+                      </div>
+                      {c.intuition && (
+                        <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/25 rounded px-2.5 py-1.5 border border-emerald-200/60 dark:border-emerald-900/40">
+                          <span className="font-bold">Gợi ý nhớ nhanh: </span>
+                          <FormattedText text={c.intuition} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Unified Symbol Annotation Table */}
+            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="text-xs font-extrabold uppercase tracking-wide text-slate-800 dark:text-slate-200">
+                2. Bảng Chú Thích Ký Hiệu · Đơn Vị · Điều Kiện ({uniqueAnnotations.length})
+              </div>
+              {uniqueAnnotations.length === 0 ? (
+                <p className="text-xs text-slate-500 italic">Không tìm thấy ký hiệu phù hợp.</p>
+              ) : (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300">
+                      <tr>
+                        <th className="py-2.5 px-3 font-bold">Ký hiệu</th>
+                        <th className="py-2.5 px-3 font-bold">Ý nghĩa</th>
+                        <th className="py-2.5 px-3 font-bold">Đơn vị / Kiểu</th>
+                        <th className="py-2.5 px-3 font-bold">Điều kiện áp dụng</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {uniqueAnnotations.map((a, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-950/60">
+                          <td className="py-2.5 px-3 font-mono font-bold text-indigo-700 dark:text-indigo-300 whitespace-nowrap">
+                            <MathFormula formula={a.symbol} />
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200">
+                            <FormattedText text={a.meaning} />
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            <FormattedText text={a.unitOrType || '—'} />
+                          </td>
+                          <td className="py-2.5 px-3 text-amber-700 dark:text-amber-300">
+                            <FormattedText text={a.condition || 'Theo đề bài'} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })() : viewLayout === 'slides' && activeStep ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Left Syllabus Outline */}
           <div className="lg:col-span-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs space-y-3">

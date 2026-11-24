@@ -98,8 +98,24 @@ interface WeeklyLeaderboardRecord {
   updatedAt: string;
 }
 
+interface ArenaSprintRecordServer {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  division: string;
+  subject: ArenaSubjectServer;
+  score: number;
+  correctCount: number;
+  totalQuestions: number;
+  maxCombo: number;
+  durationSec: number;
+  createdAt: string;
+}
+
 interface ArenaDatabase {
   attempts: ArenaAttemptRecord[];
+  sprints?: ArenaSprintRecordServer[];
 }
 
 const ARENA_DB_PATH = path.resolve(process.cwd(), '.arena_db.json');
@@ -110,13 +126,16 @@ function loadArenaDb(): ArenaDatabase {
       const raw = fs.readFileSync(ARENA_DB_PATH, 'utf8');
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.attempts)) {
-        return parsed;
+        return {
+          attempts: parsed.attempts,
+          sprints: Array.isArray(parsed.sprints) ? parsed.sprints : []
+        };
       }
     }
   } catch (err) {
     console.warn('Could not read .arena_db.json, initializing clean store:', err);
   }
-  return { attempts: [] };
+  return { attempts: [], sprints: [] };
 }
 
 function saveArenaDb(data: ArenaDatabase) {
@@ -656,6 +675,14 @@ interface ForumMessageReplyRefRecord {
   excerpt: string;
 }
 
+interface ForumLessonAttachmentRecord {
+  subject: 'math' | 'physics' | 'cs';
+  lessonId: string;
+  title: string;
+  subtitle?: string;
+  openSim?: boolean;
+}
+
 interface ForumGroupRecord {
   id: string;
   name: string;
@@ -669,6 +696,8 @@ interface ForumGroupRecord {
   lastMessagePreview?: string;
   lastMessageAt?: string;
   pinnedMessageId?: string;
+  topicTags?: string[];
+  gradeFocus?: string;
   createdAt: string;
 }
 
@@ -682,6 +711,15 @@ interface ForumMessageRecord {
   senderAvatar?: string;
   senderRole: 'student' | 'teacher' | 'admin';
   content: string;
+  messageType?: 'discussion' | 'question';
+  tags?: string[];
+  gradeTag?: string;
+  isSolved?: boolean;
+  solutionMessageId?: string;
+  isAcceptedSolution?: boolean;
+  upvotes?: string[];
+  attachment?: ForumLessonAttachmentRecord;
+  editedAt?: string;
   replyTo?: ForumMessageReplyRefRecord;
   reactions?: Record<string, string[]>;
   poll?: ForumPollRecord;
@@ -1023,7 +1061,7 @@ app.get('/api/forum/groups', (req: Request, res: Response) => {
 });
 
 app.post('/api/forum/groups', (req: Request, res: Response) => {
-  const { id, name, description, subject, creatorId, creatorName, creatorUsername } = req.body || {};
+  const { id, name, description, subject, creatorId, creatorName, creatorUsername, topicTags, gradeFocus } = req.body || {};
 
   if (!creatorId || !creatorName) {
     return res.status(401).json({ error: 'Chỉ tài khoản đã đăng nhập mới có thể tạo nhóm học tập.' });
@@ -1053,6 +1091,14 @@ app.post('/api/forum/groups', (req: Request, res: Response) => {
     return res.status(200).json({ success: true, group: existingGroup });
   }
 
+  const sanitizedTags = Array.isArray(topicTags)
+    ? topicTags
+        .map((t: unknown) => String(t || '').trim().slice(0, 28))
+        .filter(Boolean)
+        .slice(0, 4)
+    : undefined;
+  const cleanGradeFocus = gradeFocus ? String(gradeFocus).trim().slice(0, 24) : undefined;
+
   const nowIso = new Date().toISOString();
   const record: ForumGroupRecord = {
     id: cleanId,
@@ -1066,6 +1112,8 @@ app.post('/api/forum/groups', (req: Request, res: Response) => {
     messageCount: 0,
     lastMessagePreview: 'Nhóm vừa được tạo · Hãy gửi tin nhắn đầu tiên!',
     lastMessageAt: nowIso,
+    ...(sanitizedTags && sanitizedTags.length > 0 ? { topicTags: sanitizedTags } : {}),
+    ...(cleanGradeFocus ? { gradeFocus: cleanGradeFocus } : {}),
     createdAt: nowIso
   };
 
@@ -1109,6 +1157,10 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
     senderAvatar,
     senderRole,
     content,
+    messageType,
+    tags,
+    gradeTag,
+    attachment,
     replyTo,
     poll,
     isAiReply
@@ -1147,8 +1199,36 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
     }
   }
 
+  let sanitizedAttachment: ForumLessonAttachmentRecord | undefined;
+  if (attachment && typeof attachment === 'object' && attachment.lessonId && attachment.title) {
+    const attSubj = attachment.subject === 'physics' || attachment.subject === 'cs' ? attachment.subject : 'math';
+    sanitizedAttachment = {
+      subject: attSubj,
+      lessonId: String(attachment.lessonId).trim().slice(0, 80),
+      title: String(attachment.title).trim().slice(0, 140),
+      ...(attachment.subtitle ? { subtitle: String(attachment.subtitle).trim().slice(0, 160) } : {}),
+      openSim: Boolean(attachment.openSim)
+    };
+  }
+
+  const cleanTags = Array.isArray(tags)
+    ? tags
+        .map((t: unknown) => String(t || '').trim().slice(0, 28))
+        .filter(Boolean)
+        .slice(0, 4)
+    : undefined;
+  const cleanGradeTag = gradeTag ? String(gradeTag).trim().slice(0, 20) : undefined;
+  const cleanMessageType: 'discussion' | 'question' | undefined =
+    messageType === 'question' ? 'question' : undefined;
+
   const rawContent = String(content || '').trim();
-  const cleanContent = rawContent || (sanitizedPoll ? `📊 Bình chọn: ${sanitizedPoll.question}` : '');
+  const cleanContent =
+    rawContent ||
+    (sanitizedPoll
+      ? `📊 Bình chọn: ${sanitizedPoll.question}`
+      : sanitizedAttachment
+      ? `📎 Đính kèm bài học: ${sanitizedAttachment.title}`
+      : '');
   if (cleanContent.length < 1 || cleanContent.length > 4000) {
     return res.status(400).json({ error: 'Nội dung tin nhắn cần từ 1 đến 4000 ký tự.' });
   }
@@ -1198,9 +1278,14 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
       : undefined,
     senderRole: resolvedRole,
     content: cleanContent,
+    ...(cleanMessageType ? { messageType: cleanMessageType, isSolved: false } : {}),
+    ...(cleanTags && cleanTags.length > 0 ? { tags: cleanTags } : {}),
+    ...(cleanGradeTag ? { gradeTag: cleanGradeTag } : {}),
+    ...(sanitizedAttachment ? { attachment: sanitizedAttachment } : {}),
     ...(sanitizedReplyTo ? { replyTo: sanitizedReplyTo } : {}),
     ...(sanitizedPoll ? { poll: sanitizedPoll } : {}),
     ...(aiMode ? { isAiReply: true } : {}),
+    upvotes: [],
     reactions: {},
     createdAt: nowIso
   };
@@ -1342,6 +1427,141 @@ app.post('/api/forum/groups/:groupId/pin', (req: Request, res: Response) => {
   return res.json({ success: true, group });
 });
 
+app.patch('/api/forum/groups/:groupId/messages/:messageId', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const messageId = String(req.params.messageId || '').trim();
+  const { userId, userEmail, content } = req.body || {};
+
+  const cleanUserId = String(userId || '').trim();
+  if (!cleanUserId) {
+    return res.status(401).json({ error: 'Cần đăng nhập để chỉnh sửa tin nhắn.' });
+  }
+
+  const targetMsg = forumDb.messages.find((m) => m.id === messageId && m.groupId === groupId);
+  if (!targetMsg) {
+    return res.status(404).json({ error: 'Không tìm thấy tin nhắn.' });
+  }
+
+  const isAdmin = isForumAdminIdentity(userEmail);
+  if (targetMsg.senderId !== cleanUserId && !isAdmin) {
+    return res.status(403).json({ error: 'Bạn chỉ có thể chỉnh sửa tin nhắn của chính mình.' });
+  }
+
+  const cleanContent = String(content || '').trim();
+  if (cleanContent.length < 1 || cleanContent.length > 4000) {
+    return res.status(400).json({ error: 'Nội dung tin nhắn cần từ 1 đến 4000 ký tự.' });
+  }
+
+  targetMsg.content = cleanContent;
+  targetMsg.editedAt = new Date().toISOString();
+
+  const group = forumDb.groups.find((g) => g.id === groupId);
+  if (group) {
+    const latest = forumDb.messages
+      .filter((m) => m.groupId === groupId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    if (latest && latest.id === targetMsg.id) {
+      group.lastMessagePreview = cleanContent.replace(/\s+/g, ' ').slice(0, 160);
+    }
+  }
+
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:message_updated', groupId, message: targetMsg, group });
+  return res.json({ success: true, message: targetMsg, group });
+});
+
+app.post('/api/forum/groups/:groupId/messages/:messageId/upvote', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const messageId = String(req.params.messageId || '').trim();
+  const { userId } = req.body || {};
+
+  const cleanUserId = String(userId || '').trim().slice(0, 128);
+  if (!cleanUserId) {
+    return res.status(401).json({ error: 'Cần đăng nhập để bình chọn hữu ích.' });
+  }
+
+  const targetMsg = forumDb.messages.find((m) => m.id === messageId && m.groupId === groupId);
+  if (!targetMsg) {
+    return res.status(404).json({ error: 'Không tìm thấy tin nhắn.' });
+  }
+
+  const currentUpvotes = Array.isArray(targetMsg.upvotes) ? [...targetMsg.upvotes] : [];
+  const idx = currentUpvotes.indexOf(cleanUserId);
+  if (idx >= 0) currentUpvotes.splice(idx, 1);
+  else currentUpvotes.push(cleanUserId);
+
+  targetMsg.upvotes = currentUpvotes;
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:message_updated', groupId, message: targetMsg });
+  return res.json({ success: true, message: targetMsg });
+});
+
+app.post('/api/forum/groups/:groupId/messages/:messageId/accept', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const messageId = String(req.params.messageId || '').trim();
+  const { userId, userEmail } = req.body || {};
+
+  const cleanUserId = String(userId || '').trim();
+  if (!cleanUserId) {
+    return res.status(401).json({ error: 'Cần đăng nhập để đánh dấu lời giải chuẩn.' });
+  }
+
+  const group = forumDb.groups.find((g) => g.id === groupId);
+  const targetMsg = forumDb.messages.find((m) => m.id === messageId && m.groupId === groupId);
+  if (!group || !targetMsg) {
+    return res.status(404).json({ error: 'Không tìm thấy tin nhắn hoặc nhóm.' });
+  }
+
+  const parentMsg = targetMsg.replyTo
+    ? forumDb.messages.find((m) => m.id === targetMsg.replyTo!.id && m.groupId === groupId)
+    : undefined;
+  const isAdmin = isForumAdminIdentity(userEmail);
+  const canMark =
+    isAdmin ||
+    group.creatorId === cleanUserId ||
+    (parentMsg && parentMsg.senderId === cleanUserId) ||
+    targetMsg.messageType === 'question';
+
+  if (!canMark) {
+    return res.status(403).json({
+      error: 'Chỉ người đặt câu hỏi, trưởng nhóm hoặc Admin mới có thể đánh dấu Lời giải chuẩn.'
+    });
+  }
+
+  const nextAccepted = !targetMsg.isAcceptedSolution;
+  targetMsg.isAcceptedSolution = nextAccepted;
+  if (targetMsg.messageType === 'question') {
+    targetMsg.isSolved = nextAccepted;
+  }
+
+  const updatedMessages: ForumMessageRecord[] = [targetMsg];
+  if (parentMsg) {
+    parentMsg.isSolved = nextAccepted;
+    parentMsg.solutionMessageId = nextAccepted ? targetMsg.id : undefined;
+    updatedMessages.push(parentMsg);
+  }
+
+  saveForumDb(forumDb);
+  for (const m of updatedMessages) {
+    broadcastForumEvent({ type: 'forum:message_updated', groupId, message: m });
+  }
+
+  return res.json({ success: true, message: targetMsg, parentMessage: parentMsg });
+});
+
+app.post('/api/forum/groups/:groupId/typing', (req: Request, res: Response) => {
+  const groupId = String(req.params.groupId || '').trim();
+  const { userId, userName } = req.body || {};
+  if (!userId || !userName) return res.status(204).end();
+  broadcastForumEvent({
+    type: 'forum:typing',
+    groupId,
+    userId: String(userId).slice(0, 128),
+    userName: String(userName).slice(0, 60)
+  });
+  return res.json({ ok: true });
+});
+
 app.delete('/api/forum/groups/:groupId', (req: Request, res: Response) => {
   const groupId = String(req.params.groupId || '').trim();
   const userId = String(req.query.userId || req.body?.userId || '').trim();
@@ -1441,6 +1661,18 @@ app.get('/api/arena/stream', (req: Request, res: Response) => {
   });
 });
 
+function getTopSprintRecords(division?: string): ArenaSprintRecordServer[] {
+  const sprints = Array.isArray(arenaDb.sprints) ? arenaDb.sprints : [];
+  return sprints
+    .filter((s) => !division || s.division === division)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.correctCount !== a.correctCount) return b.correctCount - a.correctCount;
+      return a.durationSec - b.durationSec;
+    })
+    .slice(0, 25);
+}
+
 app.get('/api/arena/state', (req: Request, res: Response) => {
   const weekId = String(req.query.weekId || '').trim();
   const dateKey = String(req.query.dateKey || '').trim();
@@ -1476,13 +1708,105 @@ app.get('/api/arena/state', (req: Request, res: Response) => {
     }
   }
 
+  const suffix = division ? `_${division}` : '';
+  const availableWeeksSet = new Set<string>([weekId]);
+  for (const att of arenaDb.attempts) {
+    if (!suffix || att.weekId.endsWith(suffix)) {
+      availableWeeksSet.add(att.weekId);
+    }
+  }
+  const availableWeeks = Array.from(availableWeeksSet).sort((a, b) => b.localeCompare(a));
+
+  const weekAttemptsAll = arenaDb.attempts.filter((a) => a.weekId === weekId);
+  const highSpeedAttempts = weekAttemptsAll.filter((a) => a.score >= 80);
+  const fastestHighSec =
+    highSpeedAttempts.length > 0
+      ? Math.min(...highSpeedAttempts.map((a) => a.durationSec))
+      : null;
+  const topScore =
+    weekAttemptsAll.length > 0 ? Math.max(...weekAttemptsAll.map((a) => a.score)) : 0;
+
   return res.json({
     weekId,
     dateKey,
     division: division || undefined,
     leaderboard,
     userAttemptsToday,
-    userWeekAttempts
+    userWeekAttempts,
+    availableWeeks,
+    divisionStats: {
+      totalPlayers: leaderboard.length,
+      totalRounds: weekAttemptsAll.length,
+      topScore,
+      fastestHighSec
+    },
+    sprintLeaderboard: getTopSprintRecords(division || undefined)
+  });
+});
+
+app.post('/api/arena/sprint', (req: Request, res: Response) => {
+  const {
+    userId,
+    username,
+    displayName,
+    division,
+    subject,
+    score,
+    correctCount,
+    totalQuestions,
+    maxCombo,
+    durationSec
+  } = req.body || {};
+
+  if (!userId || !subject || typeof score !== 'number') {
+    return res.status(400).json({ error: 'Dữ liệu Speedrun không hợp lệ.' });
+  }
+  if (!['math', 'physics', 'cs'].includes(subject)) {
+    return res.status(400).json({ error: 'Môn thi Speedrun không hợp lệ.' });
+  }
+
+  const safeDivision = String(division || '12k').slice(0, 16);
+  const record: ArenaSprintRecordServer = {
+    id: `sprint_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    userId: String(userId).slice(0, 128),
+    username: String(username || 'hocvien').slice(0, 40),
+    displayName: String(displayName || 'Học viên').slice(0, 100),
+    division: safeDivision,
+    subject,
+    score: Math.max(0, Math.min(2000, Math.round(score))),
+    correctCount: Math.max(0, Math.round(Number(correctCount) || 0)),
+    totalQuestions: Math.max(1, Math.round(Number(totalQuestions) || 5)),
+    maxCombo: Math.max(0, Math.round(Number(maxCombo) || 0)),
+    durationSec: Math.max(1, Math.min(90, Math.round(Number(durationSec) || 90))),
+    createdAt: new Date().toISOString()
+  };
+
+  if (!Array.isArray(arenaDb.sprints)) arenaDb.sprints = [];
+  arenaDb.sprints.unshift(record);
+  if (arenaDb.sprints.length > 400) {
+    arenaDb.sprints = arenaDb.sprints.slice(0, 400);
+  }
+  saveArenaDb(arenaDb);
+
+  const sprintLeaderboard = getTopSprintRecords(safeDivision);
+  const payload = JSON.stringify({
+    type: 'arena:sprint_update',
+    division: safeDivision,
+    sprintLeaderboard,
+    timestamp: Date.now()
+  });
+  for (const client of sseClients) {
+    try {
+      client.write(`data: ${payload}\n\n`);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+
+  return res.json({
+    success: true,
+    record,
+    sprintLeaderboard
   });
 });
 

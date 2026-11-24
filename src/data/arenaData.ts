@@ -1,9 +1,14 @@
 import {
+  ArenaAchievement,
+  ArenaAttempt,
+  ArenaCompetitiveTier,
   ArenaDivisionId,
   ArenaDivisionMeta,
   ArenaEssayPrompt,
   ArenaQuestionMCQ,
-  ArenaSubject
+  ArenaSprintRecord,
+  ArenaSubject,
+  WeeklyLeaderboardEntry
 } from '../types';
 import {
   ARENA_DIVISIONS,
@@ -502,3 +507,263 @@ export function getDailyArenaSet(
 
   return { mcqs, essay };
 }
+
+// =====================================================================
+// COMPETITIVE SEASON TIERS, ELO, ACHIEVEMENTS & SPEEDRUN 90s GENERATOR
+// =====================================================================
+
+export const ARENA_COMPETITIVE_TIERS: ArenaCompetitiveTier[] = [
+  {
+    id: 'bronze',
+    nameVi: 'Đồng Chiến Binh',
+    nameEn: 'Bronze Warrior',
+    minElo: 0,
+    nextElo: 1100,
+    accentClass: 'text-amber-700 dark:text-amber-400',
+    borderClass: 'border-amber-400/60 bg-amber-500/10'
+  },
+  {
+    id: 'silver',
+    nameVi: 'Bạc Học Thuật',
+    nameEn: 'Silver Scholar',
+    minElo: 1100,
+    nextElo: 1250,
+    accentClass: 'text-slate-600 dark:text-slate-300',
+    borderClass: 'border-slate-400/60 bg-slate-500/10'
+  },
+  {
+    id: 'gold',
+    nameVi: 'Vàng Tinh Anh',
+    nameEn: 'Gold Elite',
+    minElo: 1250,
+    nextElo: 1450,
+    accentClass: 'text-amber-600 dark:text-amber-300',
+    borderClass: 'border-amber-400/70 bg-amber-400/15'
+  },
+  {
+    id: 'platinum',
+    nameVi: 'Bạch Kim',
+    nameEn: 'Platinum Vanguard',
+    minElo: 1450,
+    nextElo: 1650,
+    accentClass: 'text-cyan-600 dark:text-cyan-300',
+    borderClass: 'border-cyan-400/70 bg-cyan-500/15'
+  },
+  {
+    id: 'diamond',
+    nameVi: 'Kim Cương',
+    nameEn: 'Diamond Prodigy',
+    minElo: 1650,
+    nextElo: 1850,
+    accentClass: 'text-sky-600 dark:text-sky-300',
+    borderClass: 'border-sky-400/75 bg-sky-500/15'
+  },
+  {
+    id: 'master',
+    nameVi: 'Cao Thủ STEM',
+    nameEn: 'STEM Master',
+    minElo: 1850,
+    nextElo: 2050,
+    accentClass: 'text-violet-600 dark:text-violet-300',
+    borderClass: 'border-violet-400/75 bg-violet-500/15'
+  },
+  {
+    id: 'challenger',
+    nameVi: 'Thách Đấu Huyền Thoại',
+    nameEn: 'Grand Challenger',
+    minElo: 2050,
+    nextElo: null,
+    accentClass: 'text-rose-600 dark:text-rose-300',
+    borderClass: 'border-rose-400/80 bg-rose-500/15'
+  }
+];
+
+export function computeArenaEloAndTier(
+  attempts: ArenaAttempt[],
+  leaderboardRow?: WeeklyLeaderboardEntry | null,
+  sprintRecords: ArenaSprintRecord[] = []
+): {
+  elo: number;
+  tier: ArenaCompetitiveTier;
+  nextTier: ArenaCompetitiveTier | null;
+  progressPct: number;
+  pointsToNext: number;
+  avgScore: number;
+  bestScore: number;
+  winStreakEstimate: number;
+} {
+  const scores = attempts.map((a) => a.score);
+  const avgFromAttempts =
+    scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0;
+  const avgScore =
+    leaderboardRow && leaderboardRow.overallAvg > 0
+      ? leaderboardRow.overallAvg
+      : Math.round(avgFromAttempts * 10) / 10;
+
+  const bestFromRow = Math.max(
+    leaderboardRow?.mathBest ?? 0,
+    leaderboardRow?.physicsBest ?? 0,
+    leaderboardRow?.csBest ?? 0
+  );
+  const bestScore = Math.max(bestFromRow, scores.length > 0 ? Math.max(...scores) : 0);
+
+  const distinctSubjects = new Set(attempts.map((a) => a.subject)).size;
+  const highRounds = attempts.filter((a) => a.score >= 80).length;
+  const sprintBonus = Math.min(180, sprintRecords.length * 14 + (sprintRecords.some((s) => s.score >= 300) ? 45 : 0));
+
+  const totalMatches = Math.max(attempts.length, leaderboardRow?.totalAttempts ?? 0);
+  const rawElo =
+    1000 +
+    Math.round(avgScore * 7.2) +
+    Math.min(240, totalMatches * 28) +
+    distinctSubjects * 35 +
+    highRounds * 22 +
+    sprintBonus;
+
+  const elo = Math.max(950, rawElo);
+
+  let tierIdx = 0;
+  for (let i = 0; i < ARENA_COMPETITIVE_TIERS.length; i++) {
+    if (elo >= ARENA_COMPETITIVE_TIERS[i].minElo) {
+      tierIdx = i;
+    }
+  }
+  const tier = ARENA_COMPETITIVE_TIERS[tierIdx];
+  const nextTier =
+    tierIdx < ARENA_COMPETITIVE_TIERS.length - 1 ? ARENA_COMPETITIVE_TIERS[tierIdx + 1] : null;
+
+  const progressPct = nextTier
+    ? Math.max(
+        4,
+        Math.min(
+          100,
+          Math.round(((elo - tier.minElo) / Math.max(1, nextTier.minElo - tier.minElo)) * 100)
+        )
+      )
+    : 100;
+  const pointsToNext = nextTier ? Math.max(0, nextTier.minElo - elo) : 0;
+
+  const sortedRecent = [...attempts].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  let winStreakEstimate = 0;
+  for (const item of sortedRecent) {
+    if (item.score >= 60) winStreakEstimate += 1;
+    else break;
+  }
+
+  return {
+    elo,
+    tier,
+    nextTier,
+    progressPct,
+    pointsToNext,
+    avgScore,
+    bestScore,
+    winStreakEstimate
+  };
+}
+
+export function computeArenaAchievements(
+  attempts: ArenaAttempt[],
+  sprintRecords: ArenaSprintRecord[] = []
+): ArenaAchievement[] {
+  const distinctSubjs = new Set(attempts.map((a) => a.subject));
+  const bestSpeedHigh = attempts.some((a) => a.score >= 80 && a.durationSec <= 90);
+  const hasPerfect100 = attempts.some((a) => a.score >= 100);
+  const hasEssayMaster = attempts.some((a) => a.mode === 'essay' && a.score >= 85);
+  const bestSprint = sprintRecords.reduce((max, r) => Math.max(max, r.score), 0);
+
+  return [
+    {
+      id: 'first_blood',
+      titleVi: 'Chiến Binh Khai Cuộc',
+      titleEn: 'First Arena Match',
+      descriptionVi: 'Hoàn thành ít nhất 1 lượt thi đấu chính thức tại Đấu trường.',
+      descriptionEn: 'Complete at least 1 official Arena competition round.',
+      tier: 'bronze',
+      unlocked: attempts.length >= 1,
+      progressText: `${Math.min(attempts.length, 1)}/1 lượt`
+    },
+    {
+      id: 'trinity_master',
+      titleVi: 'Tam Môn Toàn Năng',
+      titleEn: 'STEM Tri-Subject',
+      descriptionVi: 'Ghi điểm cả 3 môn Toán, Vật lí và Tin học trong cùng tuần.',
+      descriptionEn: 'Record scores across Math, Physics & CS in the week.',
+      tier: 'silver',
+      unlocked: distinctSubjs.size >= 3,
+      progressText: `${distinctSubjs.size}/3 môn`
+    },
+    {
+      id: 'speed_demon',
+      titleVi: 'Tia Chớp Giải Đề',
+      titleEn: 'Lightning Solver',
+      descriptionVi: 'Đạt từ 80 điểm trở lên trong thời gian dưới 90 giây.',
+      descriptionEn: 'Score 80+ points in 90 seconds or less.',
+      tier: 'gold',
+      unlocked: bestSpeedHigh,
+      progressText: bestSpeedHigh ? 'Đã đạt' : 'Chưa đạt'
+    },
+    {
+      id: 'perfect_100',
+      titleVi: 'Bách Phát Bách Trúng',
+      titleEn: 'Flawless 100',
+      descriptionVi: 'Đạt điểm tuyệt đối 100/100 ở bất kỳ môn thi đấu nào.',
+      descriptionEn: 'Achieve a perfect 100/100 score in any round.',
+      tier: 'diamond',
+      unlocked: hasPerfect100,
+      progressText: hasPerfect100 ? '100/100đ' : 'Tối đa hiện tại'
+    },
+    {
+      id: 'essay_scholar',
+      titleVi: 'Học Giả Tự Luận AI',
+      titleEn: 'AI Essay Master',
+      descriptionVi: 'Đạt từ 85/100 điểm trở lên ở phần thi Tự luận do Syn AI chấm.',
+      descriptionEn: 'Score 85+ in an AI-graded Essay challenge.',
+      tier: 'gold',
+      unlocked: hasEssayMaster,
+      progressText: hasEssayMaster ? '≥ 85đ' : 'Chưa đạt'
+    },
+    {
+      id: 'sprint_legend',
+      titleVi: 'Kỷ Lục Gia Speedrun 90s',
+      titleEn: '90s Speedrun Champion',
+      descriptionVi: 'Đạt từ 350 điểm Combo trở lên trong chế độ Speedrun 90s.',
+      descriptionEn: 'Reach 350+ Combo points in 90s Speedrun mode.',
+      tier: 'diamond',
+      unlocked: bestSprint >= 350,
+      progressText: `${bestSprint}/350 điểm`
+    }
+  ];
+}
+
+export function getSprintArenaSet(
+  subject: ArenaSubject,
+  division: ArenaDivisionId = '12k',
+  seedOffset = 0
+): ArenaQuestionMCQ[] {
+  const divMcqs = ARENA_DIVISION_MCQ_BANK[division]?.[subject] || [];
+  const generalMcqs = ARENA_MCQ_BANK[subject] || [];
+
+  const mergedMap = new Map<string, ArenaQuestionMCQ>();
+  [...divMcqs, ...generalMcqs].forEach((q) => {
+    if (!mergedMap.has(q.id)) mergedMap.set(q.id, q);
+  });
+  const pool = Array.from(mergedMap.values());
+
+  let seed = (Date.now() + seedOffset * 9973) >>> 0;
+  for (let i = 0; i < division.length; i++) {
+    seed = (seed * 31 + division.charCodeAt(i)) >>> 0;
+  }
+
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    const j = seed % (i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled.slice(0, Math.min(6, shuffled.length));
+}
+

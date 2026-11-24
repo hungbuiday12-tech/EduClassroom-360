@@ -1,29 +1,46 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { safeFetchJson, resolveApiUrl } from '../../lib/apiClient';
+import { recordMistake } from '../../lib/learningGrowthStore';
+import { soundEngine } from '../../lib/soundEngine';
 import {
   ArrowLeft,
   Award,
+  BookmarkPlus,
+  Check,
   CheckCircle2,
   Clock,
   Code2,
   Compass,
+  Copy,
+  Crown,
+  Download,
   Eye,
   FileText,
+  Flag,
+  Flame,
   GraduationCap,
   Image as ImageIcon,
   Layers,
   Lock,
+  LogIn,
+  Medal,
   Play,
+  Search,
   Send,
   ShieldCheck,
   Sparkles,
+  Star,
+  Swords,
+  Target,
   Trophy,
   Users,
+  Volume2,
+  VolumeX,
+  X,
   XCircle,
   Zap,
-  AlertCircle,
-  LogIn
+  AlertCircle
 } from 'lucide-react';
 import {
   ArenaAttempt,
@@ -31,6 +48,9 @@ import {
   ArenaEssayEvaluation,
   ArenaGradeGroup,
   ArenaMode,
+  ArenaQuestionMCQ,
+  ArenaRivalTarget,
+  ArenaSprintRecord,
   ArenaSubject,
   ArenaTrack,
   CodeLanguage,
@@ -39,10 +59,13 @@ import {
 } from '../../types';
 import {
   ARENA_DIVISIONS,
+  computeArenaAchievements,
+  computeArenaEloAndTier,
   getArenaDivisionMeta,
   getArenaScopedWeekId,
   getDailyArenaSet,
   getDailyResetCountdown,
+  getSprintArenaSet,
   getVietnamNowParts,
   getWeekDateRangeLabel
 } from '../../data/arenaData';
@@ -71,10 +94,17 @@ interface ArenaHubProps {
 }
 
 const LOCAL_ATTEMPTS_KEY = 'educlassroom_arena_attempts_v1';
+const LOCAL_SPRINTS_KEY = 'educlassroom_arena_sprints_v1';
+const LOCAL_RIVALS_KEY = 'educlassroom_arena_rivals_v1';
 const GUEST_ARENA_ID_KEY = 'educlassroom_arena_guest_profile_v1';
 const ARENA_DIVISION_KEY = 'educlassroom_arena_division_v1';
+const ARENA_SFX_KEY = 'educlassroom_arena_sfx_v1';
+
+const SPRINT_DURATION_SEC = 90;
 
 type RankFilterTab = 'overall' | 'math' | 'physics' | 'cs';
+type RankSortMode = 'overallAvg' | 'bestTotal' | 'fastest' | 'attempts';
+type LobbySubTab = 'arena' | 'achievements' | 'speedrun';
 
 export const ArenaHub: React.FC<ArenaHubProps> = ({
   onBack,
@@ -98,10 +128,18 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   });
 
   const divisionMeta = useMemo(() => getArenaDivisionMeta(selectedDivision), [selectedDivision]);
-  const scopedWeekId = useMemo(
+  const liveScopedWeekId = useMemo(
     () => getArenaScopedWeekId(weekId, selectedDivision),
     [weekId, selectedDivision]
   );
+
+  // Historical week viewer
+  const [selectedWeekOverride, setSelectedWeekOverride] = useState<string | null>(null);
+  const activeScopedWeekId = selectedWeekOverride || liveScopedWeekId;
+
+  useEffect(() => {
+    setSelectedWeekOverride(null);
+  }, [selectedDivision]);
 
   const handleSelectDivision = (divId: ArenaDivisionId) => {
     setSelectedDivision(divId);
@@ -150,27 +188,95 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
   const [editingGuestName, setEditingGuestName] = useState(guestIdentity.displayName);
 
+  // Sound FX preference
+  const [sfxEnabled, setSfxEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(ARENA_SFX_KEY) !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const toggleSfx = () => {
+    const next = !sfxEnabled;
+    setSfxEnabled(next);
+    try {
+      localStorage.setItem(ARENA_SFX_KEY, String(next));
+    } catch {}
+  };
+  const playSfx = useCallback(
+    (id: 'tick' | 'correct' | 'wrong' | 'finish') => {
+      if (!sfxEnabled) return;
+      if (id === 'correct') soundEngine.playClick('crystal_ping', 0.45);
+      else if (id === 'wrong') soundEngine.playClick('wood_tap', 0.3);
+      else if (id === 'finish') soundEngine.playClick('holo_pulse', 0.55);
+      else soundEngine.playClick('mech_switch', 0.25);
+    },
+    [sfxEnabled]
+  );
+
   // Leaderboard & Attempts State
   const [serverLeaderboard, setServerLeaderboard] = useState<WeeklyLeaderboardEntry[]>([]);
   const [firestoreLeaderboard, setFirestoreLeaderboard] = useState<WeeklyLeaderboardEntry[]>([]);
+  const [availableWeeks, setAvailableWeeks] = useState<string[]>([]);
+  const [sprintLeaderboard, setSprintLeaderboard] = useState<ArenaSprintRecord[]>([]);
+  const [localSprints, setLocalSprints] = useState<ArenaSprintRecord[]>([]);
+  const [divisionStats, setDivisionStats] = useState<{
+    totalPlayers: number;
+    totalRounds: number;
+    topScore: number;
+    fastestHighSec: number | null;
+  }>({ totalPlayers: 0, totalRounds: 0, topScore: 0, fastestHighSec: null });
+
   const [userAttemptsToday, setUserAttemptsToday] = useState<Record<ArenaSubject, ArenaAttempt | null>>({
     math: null,
     physics: null,
     cs: null
   });
   const [userWeekAttempts, setUserWeekAttempts] = useState<ArenaAttempt[]>([]);
+  const [allMyAttempts, setAllMyAttempts] = useState<ArenaAttempt[]>([]);
+
+  // Lobby UI tabs, search, filters, rivals, H2H modal
+  const [lobbySubTab, setLobbySubTab] = useState<LobbySubTab>('arena');
   const [rankTab, setRankTab] = useState<RankFilterTab>('overall');
+  const [rankSort, setRankSort] = useState<RankSortMode>('overallAvg');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [onlyRivalsFilter, setOnlyRivalsFilter] = useState(false);
+  const [rivalIds, setRivalIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(LOCAL_RIVALS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [ghostRival, setGhostRival] = useState<ArenaRivalTarget | null>(null);
+  const [h2hEntry, setH2hEntry] = useState<WeeklyLeaderboardEntry | null>(null);
   const [isStreamLive, setIsStreamLive] = useState(false);
 
-  // Active Match State
+  const myRowRef = useRef<HTMLTableRowElement | null>(null);
+
+  // Active Match State (official MCQ/Essay OR unlimited Speedrun 90s)
   const [activeMatch, setActiveMatch] = useState<{
     subject: ArenaSubject;
     mode: ArenaMode;
     division: ArenaDivisionId;
     startedAt: number;
+    isSprint?: boolean;
+    sprintQuestions?: ArenaQuestionMCQ[];
   } | null>(null);
   const [matchElapsedSec, setMatchElapsedSec] = useState(0);
   const [mcqAnswers, setMcqAnswers] = useState<Record<string, number>>({});
+  const [flaggedQIds, setFlaggedQIds] = useState<Record<string, boolean>>({});
+  const [activeQIndex, setActiveQIndex] = useState(0);
+  const [savedMistakeIds, setSavedMistakeIds] = useState<Record<string, boolean>>({});
+  const [copiedSummary, setCopiedSummary] = useState(false);
+
+  // Sprint combo state
+  const [sprintCombo, setSprintCombo] = useState(0);
+  const [sprintMaxCombo, setSprintMaxCombo] = useState(0);
+  const [sprintScore, setSprintScore] = useState(0);
+  const [sprintResult, setSprintResult] = useState<ArenaSprintRecord | null>(null);
+
   const [mcqResult, setMcqResult] = useState<{
     attempt: ArenaAttempt;
     correctCount: number;
@@ -198,7 +304,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   });
 
   // Notify parent App when entering/exiting an active competition round so Syn AI is turned off during match
-  const isMatchInProgress = Boolean(activeMatch && !mcqResult && !essayResult);
+  const isMatchInProgress = Boolean(activeMatch && !mcqResult && !essayResult && !sprintResult);
   useEffect(() => {
     onMatchActiveChange?.(isMatchInProgress);
   }, [isMatchInProgress, onMatchActiveChange]);
@@ -218,54 +324,54 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Match timer
-  useEffect(() => {
-    if (!activeMatch || mcqResult || essayResult) return;
-    const t = setInterval(() => {
-      setMatchElapsedSec(Math.floor((Date.now() - activeMatch.startedAt) / 1000));
-    }, 1000);
-    return () => clearInterval(t);
-  }, [activeMatch, mcqResult, essayResult]);
-
-  // Load local cached attempts for current division as immediate hydration + fallback
+  // Load local cached attempts & sprint records
   const syncLocalAttempts = useCallback(() => {
     try {
       const raw = localStorage.getItem(LOCAL_ATTEMPTS_KEY);
       if (!raw) {
         setUserAttemptsToday({ math: null, physics: null, cs: null });
         setUserWeekAttempts([]);
-        return;
+        setAllMyAttempts([]);
+      } else {
+        const all: ArenaAttempt[] = JSON.parse(raw);
+        const mineAll = all.filter((a) => a.userId === activeContestant.uid);
+        setAllMyAttempts(mineAll);
+
+        const mineToday: Record<ArenaSubject, ArenaAttempt | null> = {
+          math: null,
+          physics: null,
+          cs: null
+        };
+        for (const subj of ['math', 'physics', 'cs'] as ArenaSubject[]) {
+          mineToday[subj] =
+            mineAll.find(
+              (a) =>
+                a.dateKey === dateKey &&
+                a.subject === subj &&
+                (a.division || '12k') === selectedDivision &&
+                a.weekId === liveScopedWeekId
+            ) || null;
+        }
+        setUserAttemptsToday(mineToday);
+        const mineWeek = mineAll.filter((a) => a.weekId === activeScopedWeekId);
+        setUserWeekAttempts(mineWeek);
       }
-      const all: ArenaAttempt[] = JSON.parse(raw);
-      const mineToday: Record<ArenaSubject, ArenaAttempt | null> = {
-        math: null,
-        physics: null,
-        cs: null
-      };
-      for (const subj of ['math', 'physics', 'cs'] as ArenaSubject[]) {
-        mineToday[subj] =
-          all.find(
-            (a) =>
-              a.userId === activeContestant.uid &&
-              a.dateKey === dateKey &&
-              a.subject === subj &&
-              (a.division || '12k') === selectedDivision &&
-              a.weekId === scopedWeekId
-          ) || null;
-      }
-      setUserAttemptsToday(mineToday);
-      const mineWeek = all.filter(
-        (a) => a.userId === activeContestant.uid && a.weekId === scopedWeekId
-      );
-      setUserWeekAttempts(mineWeek);
     } catch {}
-  }, [activeContestant.uid, dateKey, scopedWeekId, selectedDivision]);
+
+    try {
+      const rawSp = localStorage.getItem(LOCAL_SPRINTS_KEY);
+      if (rawSp) {
+        const parsed: ArenaSprintRecord[] = JSON.parse(rawSp);
+        setLocalSprints(parsed);
+      }
+    } catch {}
+  }, [activeContestant.uid, dateKey, liveScopedWeekId, activeScopedWeekId, selectedDivision]);
 
   // Fetch initial state from Express server + subscribe to SSE live updates
   const fetchServerState = useCallback(async () => {
     try {
       const params = new URLSearchParams({
-        weekId: scopedWeekId,
+        weekId: activeScopedWeekId,
         dateKey,
         division: selectedDivision,
         userId: activeContestant.uid
@@ -276,7 +382,16 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       if (Array.isArray(data.leaderboard)) {
         setServerLeaderboard(data.leaderboard);
       }
-      if (data.userAttemptsToday) {
+      if (Array.isArray(data.availableWeeks)) {
+        setAvailableWeeks(data.availableWeeks);
+      }
+      if (data.divisionStats) {
+        setDivisionStats(data.divisionStats);
+      }
+      if (Array.isArray(data.sprintLeaderboard)) {
+        setSprintLeaderboard(data.sprintLeaderboard);
+      }
+      if (data.userAttemptsToday && activeScopedWeekId === liveScopedWeekId) {
         setUserAttemptsToday((prev) => ({
           math: data.userAttemptsToday.math || prev.math,
           physics: data.userAttemptsToday.physics || prev.physics,
@@ -287,7 +402,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         setUserWeekAttempts(data.userWeekAttempts);
       }
     } catch {}
-  }, [scopedWeekId, dateKey, selectedDivision, activeContestant.uid]);
+  }, [activeScopedWeekId, liveScopedWeekId, dateKey, selectedDivision, activeContestant.uid]);
 
   useEffect(() => {
     setServerLeaderboard([]);
@@ -305,10 +420,16 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             const parsed = JSON.parse(event.data);
             if (
               parsed.type === 'arena:update' &&
-              parsed.weekId === scopedWeekId &&
+              parsed.weekId === activeScopedWeekId &&
               Array.isArray(parsed.leaderboard)
             ) {
               setServerLeaderboard(parsed.leaderboard);
+            } else if (
+              parsed.type === 'arena:sprint_update' &&
+              parsed.division === selectedDivision &&
+              Array.isArray(parsed.sprintLeaderboard)
+            ) {
+              setSprintLeaderboard(parsed.sprintLeaderboard);
             }
           } catch {}
         };
@@ -324,14 +445,14 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
     return () => {
       evtSource?.close();
     };
-  }, [scopedWeekId, syncLocalAttempts, fetchServerState]);
+  }, [activeScopedWeekId, selectedDivision, syncLocalAttempts, fetchServerState]);
 
-  // Subscribe to Firestore weekly_leaderboard when signed in (scoped by scopedWeekId)
+  // Subscribe to Firestore weekly_leaderboard when signed in (scoped by activeScopedWeekId)
   useEffect(() => {
     if (!firebaseUser) return;
     const lbQuery = query(
       collection(db, 'weekly_leaderboard'),
-      where('weekId', '==', scopedWeekId)
+      where('weekId', '==', activeScopedWeekId)
     );
     const unsub = onSnapshot(
       lbQuery,
@@ -349,10 +470,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       }
     );
     return () => unsub();
-  }, [firebaseUser, scopedWeekId]);
+  }, [firebaseUser, activeScopedWeekId]);
 
-  // Merge server + Firestore leaderboards seamlessly
-  const mergedLeaderboard = useMemo(() => {
+  // Merge server + Firestore leaderboards & apply tab / search / rival / sort filters
+  const baseLeaderboard = useMemo(() => {
     const map = new Map<string, WeeklyLeaderboardEntry>();
     for (const row of serverLeaderboard) {
       map.set(row.userId, row);
@@ -363,37 +484,174 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         map.set(row.userId, row);
       }
     }
-    const list = Array.from(map.values());
+    return Array.from(map.values()).sort((a, b) => {
+      if (b.overallAvg !== a.overallAvg) return b.overallAvg - a.overallAvg;
+      if (b.totalAttempts !== a.totalAttempts) return b.totalAttempts - a.totalAttempts;
+      return a.totalTimeSec - b.totalTimeSec;
+    });
+  }, [serverLeaderboard, firestoreLeaderboard]);
 
-    if (rankTab === 'overall') {
-      return list.sort((a, b) => {
-        if (b.overallAvg !== a.overallAvg) return b.overallAvg - a.overallAvg;
+  const mergedLeaderboard = useMemo(() => {
+    let list = [...baseLeaderboard];
+
+    if (rankTab === 'math') list = list.filter((r) => r.mathAvg !== null);
+    else if (rankTab === 'physics') list = list.filter((r) => r.physicsAvg !== null);
+    else if (rankTab === 'cs') list = list.filter((r) => r.csAvg !== null);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(
+        (r) => r.displayName.toLowerCase().includes(q) || r.username.toLowerCase().includes(q)
+      );
+    }
+
+    if (onlyRivalsFilter) {
+      list = list.filter((r) => rivalIds.includes(r.userId) || r.userId === activeContestant.uid);
+    }
+
+    list.sort((a, b) => {
+      if (rankSort === 'bestTotal') {
+        const aBest = (a.mathBest ?? 0) + (a.physicsBest ?? 0) + (a.csBest ?? 0);
+        const bBest = (b.mathBest ?? 0) + (b.physicsBest ?? 0) + (b.csBest ?? 0);
+        if (bBest !== aBest) return bBest - aBest;
+      } else if (rankSort === 'fastest') {
+        const aPace = a.totalAttempts > 0 ? a.totalTimeSec / a.totalAttempts : 9999;
+        const bPace = b.totalAttempts > 0 ? b.totalTimeSec / b.totalAttempts : 9999;
+        if (aPace !== bPace) return aPace - bPace;
+      } else if (rankSort === 'attempts') {
         if (b.totalAttempts !== a.totalAttempts) return b.totalAttempts - a.totalAttempts;
-        return a.totalTimeSec - b.totalTimeSec;
-      });
-    }
-    if (rankTab === 'math') {
-      return list
-        .filter((r) => r.mathAvg !== null)
-        .sort((a, b) => (b.mathAvg ?? 0) - (a.mathAvg ?? 0) || (b.mathBest ?? 0) - (a.mathBest ?? 0));
-    }
-    if (rankTab === 'physics') {
-      return list
-        .filter((r) => r.physicsAvg !== null)
-        .sort((a, b) => (b.physicsAvg ?? 0) - (a.physicsAvg ?? 0) || (b.physicsBest ?? 0) - (a.physicsBest ?? 0));
-    }
-    return list
-      .filter((r) => r.csAvg !== null)
-      .sort((a, b) => (b.csAvg ?? 0) - (a.csAvg ?? 0) || (b.csBest ?? 0) - (a.csBest ?? 0));
-  }, [serverLeaderboard, firestoreLeaderboard, rankTab]);
+      }
+
+      if (rankTab === 'math') return (b.mathAvg ?? 0) - (a.mathAvg ?? 0) || (b.mathBest ?? 0) - (a.mathBest ?? 0);
+      if (rankTab === 'physics') return (b.physicsAvg ?? 0) - (a.physicsAvg ?? 0) || (b.physicsBest ?? 0) - (a.physicsBest ?? 0);
+      if (rankTab === 'cs') return (b.csAvg ?? 0) - (a.csAvg ?? 0) || (b.csBest ?? 0) - (a.csBest ?? 0);
+
+      if (b.overallAvg !== a.overallAvg) return b.overallAvg - a.overallAvg;
+      if (b.totalAttempts !== a.totalAttempts) return b.totalAttempts - a.totalAttempts;
+      return a.totalTimeSec - b.totalTimeSec;
+    });
+
+    return list;
+  }, [baseLeaderboard, rankTab, rankSort, searchQuery, onlyRivalsFilter, rivalIds, activeContestant.uid]);
 
   const myLeaderboardRow = useMemo(() => {
-    const idx = mergedLeaderboard.findIndex((r) => r.userId === activeContestant.uid);
+    const idx = baseLeaderboard.findIndex((r) => r.userId === activeContestant.uid);
     return {
       rank: idx >= 0 ? idx + 1 : null,
-      entry: idx >= 0 ? mergedLeaderboard[idx] : null
+      entry: idx >= 0 ? baseLeaderboard[idx] : null
     };
-  }, [mergedLeaderboard, activeContestant.uid]);
+  }, [baseLeaderboard, activeContestant.uid]);
+
+  // Merged Sprint Leaderboard
+  const mergedSprintLeaderboard = useMemo(() => {
+    const map = new Map<string, ArenaSprintRecord>();
+    [...sprintLeaderboard, ...localSprints]
+      .filter((s) => s.division === selectedDivision)
+      .forEach((rec) => {
+        if (!map.has(rec.id)) map.set(rec.id, rec);
+      });
+    return Array.from(map.values())
+      .sort((a, b) => b.score - a.score || b.correctCount - a.correctCount || a.durationSec - b.durationSec)
+      .slice(0, 20);
+  }, [sprintLeaderboard, localSprints, selectedDivision]);
+
+  const mySprints = useMemo(
+    () => mergedSprintLeaderboard.filter((s) => s.userId === activeContestant.uid),
+    [mergedSprintLeaderboard, activeContestant.uid]
+  );
+
+  // Competitive ELO & Achievements computation
+  const myEloStats = useMemo(
+    () =>
+      computeArenaEloAndTier(
+        allMyAttempts.length > 0 ? allMyAttempts : userWeekAttempts,
+        myLeaderboardRow.entry,
+        mySprints
+      ),
+    [allMyAttempts, userWeekAttempts, myLeaderboardRow.entry, mySprints]
+  );
+
+  const myAchievements = useMemo(
+    () =>
+      computeArenaAchievements(
+        allMyAttempts.length > 0 ? allMyAttempts : userWeekAttempts,
+        mySprints
+      ),
+    [allMyAttempts, userWeekAttempts, mySprints]
+  );
+
+  // Target Score Advisor (points needed for #3 or #1)
+  const targetAdvisor = useMemo(() => {
+    if (baseLeaderboard.length === 0) return null;
+    const top1 = baseLeaderboard[0];
+    const top3 = baseLeaderboard[Math.min(2, baseLeaderboard.length - 1)];
+    const myAvg = myLeaderboardRow.entry?.overallAvg ?? 0;
+    const myRank = myLeaderboardRow.rank;
+    if (myRank === 1) {
+      return isEn ? 'Leading #1 in this zone!' : 'Bạn đang dẫn đầu #1 bảng xếp hạng khu vực!';
+    }
+    if (myRank && myRank <= 3) {
+      const gap1 = Math.max(0.5, +(top1.overallAvg - myAvg).toFixed(1));
+      return isEn
+        ? `Top 3! +${gap1} avg pts to claim #1 (${top1.displayName}).`
+        : `Đang giữ Top ${myRank}! Cần +${gap1}đ TB để vượt #1 (${top1.displayName}).`;
+    }
+    const gap3 = Math.max(1, +(top3.overallAvg - myAvg).toFixed(1));
+    return isEn
+      ? `Target Top 3: Reach ${top3.overallAvg}đ (+${gap3}đ avg).`
+      : `Mục tiêu vào Top 3: Đạt ${top3.overallAvg}đ (+${gap3}đ TB nữa).`;
+  }, [baseLeaderboard, myLeaderboardRow, isEn]);
+
+  const toggleRival = (uid: string) => {
+    setRivalIds((prev) => {
+      const next = prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid];
+      try {
+        localStorage.setItem(LOCAL_RIVALS_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleChallengeGhost = (row: WeeklyLeaderboardEntry) => {
+    setGhostRival({
+      userId: row.userId,
+      displayName: row.displayName,
+      username: row.username,
+      targetScore: row.overallAvg,
+      targetDurationSec: row.totalAttempts > 0 ? Math.round(row.totalTimeSec / row.totalAttempts) : 90,
+      subjectLabel: divisionMeta.shortLabelVi
+    });
+    setLobbySubTab('arena');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleExportCsv = () => {
+    const header = ['Hang', 'Ten Hien Thi', 'Username', 'Toan TB', 'Vat Li TB', 'Tin Hoc TB', 'TB Chung', 'So Luot', 'Thoi Gian (s)'];
+    const lines = [header.join(',')];
+    mergedLeaderboard.forEach((row, idx) => {
+      const safeName = `"${row.displayName.replace(/"/g, '""')}"`;
+      lines.push(
+        [
+          idx + 1,
+          safeName,
+          row.username,
+          row.mathAvg ?? '',
+          row.physicsAvg ?? '',
+          row.csAvg ?? '',
+          row.overallAvg,
+          row.totalAttempts,
+          row.totalTimeSec
+        ].join(',')
+      );
+    });
+    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `synapse-bxh-${activeScopedWeekId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleUpdateGuestName = () => {
     const clean = editingGuestName.trim() || 'Thí sinh Tự do';
@@ -404,27 +662,124 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
     } catch {}
   };
 
-  const startArenaMatch = (subject: ArenaSubject, mode: ArenaMode) => {
-    if (userAttemptsToday[subject]) return;
+  const startArenaMatch = (subject: ArenaSubject, mode: ArenaMode, isSprint = false) => {
+    if (!isSprint && userAttemptsToday[subject]) return;
+    if (!isSprint && selectedWeekOverride) setSelectedWeekOverride(null);
     const daily = getDailyArenaSet(subject, dateKey, selectedDivision);
+    const sprintQuestions = isSprint ? getSprintArenaSet(subject, selectedDivision, Date.now() % 1000) : undefined;
 
-    setActiveMatch({ subject, mode, division: selectedDivision, startedAt: Date.now() });
+    setActiveMatch({
+      subject,
+      mode: isSprint ? 'mcq' : mode,
+      division: selectedDivision,
+      startedAt: Date.now(),
+      isSprint,
+      sprintQuestions
+    });
     setMatchElapsedSec(0);
     setMcqAnswers({});
+    setFlaggedQIds({});
+    setActiveQIndex(0);
+    setSavedMistakeIds({});
+    setCopiedSummary(false);
     setMcqResult(null);
     setEssayResult(null);
+    setSprintResult(null);
+    setSprintCombo(0);
+    setSprintMaxCombo(0);
+    setSprintScore(0);
     setSubmitError(null);
     setEssayImage(null);
     setCsTestOutput(null);
     setShowEssayPreview(false);
 
-    if (mode === 'essay' && subject === 'cs' && daily.essay.sampleCode) {
+    if (!isSprint && mode === 'essay' && subject === 'cs' && daily.essay.sampleCode) {
       setCsLang(daily.essay.sampleCode.language);
       setEssayText(daily.essay.sampleCode.starter);
     } else {
       setEssayText('');
     }
+    playSfx('tick');
   };
+
+  // Commit Speedrun 90s record
+  const handleSubmitSprint = useCallback(async () => {
+    if (!activeMatch || !activeMatch.isSprint || sprintResult || isSubmittingMatch) return;
+    setIsSubmittingMatch(true);
+    const mcqs = activeMatch.sprintQuestions || [];
+    let correctCount = 0;
+    mcqs.forEach((q) => {
+      if (mcqAnswers[q.id] === q.correctIndex) correctCount += 1;
+    });
+    const durationSec = Math.max(1, Math.min(SPRINT_DURATION_SEC, Math.floor((Date.now() - activeMatch.startedAt) / 1000)));
+    const speedBonus = Math.max(0, SPRINT_DURATION_SEC - durationSec) * (correctCount >= 3 ? 2 : 0);
+    const finalScore = sprintScore + speedBonus;
+
+    const payload = {
+      userId: activeContestant.uid,
+      username: activeContestant.username,
+      displayName: activeContestant.displayName,
+      division: activeMatch.division,
+      subject: activeMatch.subject,
+      score: finalScore,
+      correctCount,
+      totalQuestions: mcqs.length,
+      maxCombo: sprintMaxCombo,
+      durationSec
+    };
+
+    let savedRecord: ArenaSprintRecord | null = null;
+    try {
+      const res = await safeFetchJson<any>('/api/arena/sprint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok && res.data?.record) {
+        savedRecord = res.data.record;
+        if (Array.isArray(res.data.sprintLeaderboard)) {
+          setSprintLeaderboard(res.data.sprintLeaderboard);
+        }
+      }
+    } catch {}
+
+    if (!savedRecord) {
+      savedRecord = {
+        ...payload,
+        id: `local_sprint_${Date.now()}`,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    try {
+      const raw = localStorage.getItem(LOCAL_SPRINTS_KEY);
+      const list: ArenaSprintRecord[] = raw ? JSON.parse(raw) : [];
+      const next = [savedRecord, ...list].slice(0, 40);
+      localStorage.setItem(LOCAL_SPRINTS_KEY, JSON.stringify(next));
+      setLocalSprints(next);
+    } catch {}
+
+    setSprintResult(savedRecord);
+    setIsSubmittingMatch(false);
+    playSfx('finish');
+    onEarnXP(25 + Math.round(finalScore / 15));
+    if (correctCount >= Math.max(3, mcqs.length - 1)) {
+      confetti({ particleCount: 70, spread: 65, origin: { y: 0.7 } });
+    }
+  }, [activeMatch, sprintResult, isSubmittingMatch, mcqAnswers, sprintScore, sprintMaxCombo, activeContestant, playSfx, onEarnXP]);
+
+  // Match timer + Speedrun 90s auto-submit
+  useEffect(() => {
+    if (!activeMatch || mcqResult || essayResult || sprintResult) return;
+    const t = setInterval(() => {
+      const sec = Math.floor((Date.now() - activeMatch.startedAt) / 1000);
+      setMatchElapsedSec(sec);
+      if (activeMatch.isSprint && sec >= SPRINT_DURATION_SEC) {
+        void handleSubmitSprint();
+      }
+    }, 1000);
+    return () => clearInterval(t);
+  }, [activeMatch, mcqResult, essayResult, sprintResult, handleSubmitSprint]);
 
   const commitAttemptToBackendAndFirestore = async (
     payload: Omit<ArenaAttempt, 'id' | 'createdAt'>
@@ -437,7 +792,6 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
     let savedAttempt: ArenaAttempt;
     let myEntry: WeeklyLeaderboardEntry | undefined;
-
     const divTag = payload.division || selectedDivision;
 
     if (res.ok && res.data?.attempt) {
@@ -447,7 +801,6 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         setServerLeaderboard(res.data.leaderboard);
       }
     } else if (res.isStaticFallback || res.status === 0 || res.status === 404 || res.status === 405 || res.status >= 500) {
-      // Static-export fallback: compute attempt & weekly row locally
       savedAttempt = {
         ...payload,
         id: `local_${payload.userId}_${payload.dateKey}_${payload.subject}_${divTag}`,
@@ -457,7 +810,6 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       throw new Error(res.error || 'Không thể lưu điểm thi đấu hôm nay.');
     }
 
-    // Persist locally
     let allLocal: ArenaAttempt[] = [];
     try {
       const raw = localStorage.getItem(LOCAL_ATTEMPTS_KEY);
@@ -520,10 +872,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
     setUserAttemptsToday((prev) => ({ ...prev, [payload.subject]: savedAttempt }));
     setUserWeekAttempts((prev) => [...prev.filter((a) => a.id !== savedAttempt.id), savedAttempt]);
+    setAllMyAttempts((prev) => [...prev.filter((a) => a.id !== savedAttempt.id), savedAttempt]);
 
-    // Sync to Firestore if signed into Firebase (weekId is already scoped <= 13 chars, strict schema compliance)
+    // Sync to Firestore if signed into Firebase (strict schema compliance)
     if (firebaseUser && myEntry) {
-      const data = { myEntry };
       const attemptId = `${firebaseUser.uid}_${payload.dateKey}_${payload.subject}_${divTag}`;
       try {
         await setDoc(doc(db, 'arena_attempts', attemptId), {
@@ -546,7 +898,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       }
 
       const lbId = `${payload.weekId}_${firebaseUser.uid}`;
-      const me = data.myEntry as WeeklyLeaderboardEntry;
+      const me = myEntry;
       try {
         await setDoc(
           doc(db, 'weekly_leaderboard', lbId),
@@ -581,9 +933,40 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
     return savedAttempt;
   };
 
-  // Submit MCQ Round
+  // Handle MCQ option pick (including Speedrun live combo calculation)
+  const handleSelectMcqOption = (q: ArenaQuestionMCQ, optIdx: number, idx: number) => {
+    if (mcqResult || sprintResult) return;
+    if (activeMatch?.isSprint) {
+      if (mcqAnswers[q.id] !== undefined) return; // Lock answer immediately in Speedrun
+      setMcqAnswers((prev) => ({ ...prev, [q.id]: optIdx }));
+      const isRight = optIdx === q.correctIndex;
+      if (isRight) {
+        const nextCombo = sprintCombo + 1;
+        setSprintCombo(nextCombo);
+        setSprintMaxCombo((m) => Math.max(m, nextCombo));
+        const mult = nextCombo >= 4 ? 3 : nextCombo >= 2 ? 2 : 1;
+        setSprintScore((s) => s + 60 * mult);
+        playSfx('correct');
+      } else {
+        setSprintCombo(0);
+        playSfx('wrong');
+      }
+      setActiveQIndex(idx);
+      return;
+    }
+
+    setMcqAnswers((prev) => ({ ...prev, [q.id]: optIdx }));
+    setActiveQIndex(idx);
+    playSfx('tick');
+  };
+
+  // Submit Official MCQ Round
   const handleSubmitMCQ = async () => {
     if (!activeMatch || isSubmittingMatch) return;
+    if (activeMatch.isSprint) {
+      await handleSubmitSprint();
+      return;
+    }
     setIsSubmittingMatch(true);
     setSubmitError(null);
 
@@ -614,6 +997,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       });
 
       setMcqResult({ attempt, correctCount, total: mcqs.length });
+      playSfx('finish');
       onEarnXP(40 + Math.round(score / 2));
       if (score >= 80) {
         confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
@@ -623,6 +1007,38 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
     } finally {
       setIsSubmittingMatch(false);
     }
+  };
+
+  // Save wrong question(s) into Error Notebook + SM-2 Flashcards
+  const saveQuestionToErrorNotebook = (q: ArenaQuestionMCQ, pickedIdx?: number) => {
+    if (!activeMatch) return;
+    recordMistake(
+      {
+        subject: activeMatch.subject,
+        sourceType: 'mock_test',
+        lessonKey: `arena_${activeMatch.division}_${activeMatch.subject}`,
+        lessonTitle: `Đấu trường ${divisionMeta.shortLabelVi} · ${subjectMeta[activeMatch.subject].label}`,
+        stepTitle: q.grade,
+        prompt: q.question,
+        userAnswer:
+          pickedIdx !== undefined && q.options[pickedIdx]
+            ? `${String.fromCharCode(65 + pickedIdx)}. ${q.options[pickedIdx]}`
+            : 'Chưa chọn đáp án',
+        correctAnswer: `${String.fromCharCode(65 + q.correctIndex)}. ${q.options[q.correctIndex]}`,
+        explanation: q.explanation
+      },
+      user?.uid
+    );
+    setSavedMistakeIds((prev) => ({ ...prev, [q.id]: true }));
+  };
+
+  const saveAllWrongQuestions = (mcqs: ArenaQuestionMCQ[]) => {
+    mcqs.forEach((q) => {
+      const picked = mcqAnswers[q.id];
+      if (picked !== q.correctIndex) {
+        saveQuestionToErrorNotebook(q, picked);
+      }
+    });
   };
 
   // Run CS sample tests inside Essay mode
@@ -669,7 +1085,6 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
     try {
       const { essay } = getDailyArenaSet(activeMatch.subject, dateKey, activeMatch.division);
 
-      // Run sandbox tests automatically if CS problem has tests
       let extraCodeNote = '';
       if (activeMatch.subject === 'cs' && essay.sampleCode?.tests?.length) {
         const m = essayText.match(/```(?:cpp|c\+\+|python|py)?\s*([\s\S]*?)```/i);
@@ -730,6 +1145,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       });
 
       setEssayResult({ attempt, evaluation });
+      playSfx('finish');
       onEarnXP(50 + Math.round(evaluation.score / 2));
       if (evaluation.score >= 80) {
         confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
@@ -757,6 +1173,43 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   const insertLatexSnippet = (snippet: string) => {
     setEssayText((prev) => prev + (prev.endsWith(' ') || prev === '' ? '' : ' ') + snippet);
   };
+
+  // Keyboard shortcuts during MCQ / Speedrun match
+  useEffect(() => {
+    if (!activeMatch || activeMatch.mode !== 'mcq' || mcqResult || sprintResult) return;
+    const activeMcqs = activeMatch.isSprint
+      ? activeMatch.sprintQuestions || []
+      : getDailyArenaSet(activeMatch.subject, dateKey, activeMatch.division).mcqs;
+    if (activeMcqs.length === 0) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+        return;
+      }
+      if (['1', '2', '3', '4'].includes(e.key)) {
+        const q = activeMcqs[activeQIndex];
+        const optIdx = Number(e.key) - 1;
+        if (q && optIdx < q.options.length) {
+          handleSelectMcqOption(q, optIdx, activeQIndex);
+        }
+      } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'n') {
+        const nextIdx = Math.min(activeMcqs.length - 1, activeQIndex + 1);
+        setActiveQIndex(nextIdx);
+        document.getElementById(`arena-q-${nextIdx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'p') {
+        const prevIdx = Math.max(0, activeQIndex - 1);
+        setActiveQIndex(prevIdx);
+        document.getElementById(`arena-q-${prevIdx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (e.key.toLowerCase() === 'f') {
+        const q = activeMcqs[activeQIndex];
+        if (q) setFlaggedQIds((prev) => ({ ...prev, [q.id]: !prev[q.id] }));
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
 
   const subjectMeta: Record<
     ArenaSubject,
@@ -789,15 +1242,19 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   };
 
   // =====================================================================
-  // VIEW: ACTIVE MATCH (TRẮC NGHIỆM HOẶC TỰ LUẬN)
+  // VIEW: ACTIVE MATCH (TRẮC NGHIỆM / SPEEDRUN 90s / TỰ LUẬN)
   // =====================================================================
   if (activeMatch) {
     const matchDivMeta = getArenaDivisionMeta(activeMatch.division);
-    const { mcqs, essay } = getDailyArenaSet(activeMatch.subject, dateKey, activeMatch.division);
+    const dailySet = getDailyArenaSet(activeMatch.subject, dateKey, activeMatch.division);
+    const mcqs = activeMatch.isSprint ? activeMatch.sprintQuestions || [] : dailySet.mcqs;
+    const essay = dailySet.essay;
     const meta = subjectMeta[activeMatch.subject];
+    const sprintRemainingSec = Math.max(0, SPRINT_DURATION_SEC - matchElapsedSec);
+    const sprintMultiplier = sprintCombo >= 4 ? 3 : sprintCombo >= 2 ? 2 : 1;
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Match Top Bar */}
         <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="arena-beam-sweep" />
@@ -807,44 +1264,80 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               className="arena-btn cs-deck-btn px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Back to Arena Lobby' : 'Quay lại Sảnh Đấu Trường'}</span>
+              <span>{isEn ? 'Lobby' : 'Quay lại Sảnh'}</span>
             </button>
             <div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                 <span className={`px-2 py-0.5 rounded-sm border text-[11px] font-bold ${matchDivMeta.badgeColor}`}>
                   {isEn ? matchDivMeta.labelEn : matchDivMeta.labelVi}
                 </span>
+                {activeMatch.isSprint && (
+                  <span className="px-2 py-0.5 rounded-sm border border-amber-400/60 bg-amber-500/15 text-amber-600 dark:text-amber-300 text-[11px] font-extrabold">
+                    SPEEDRUN 90s
+                  </span>
+                )}
                 <span>·</span>
                 <span>
-                  {isEn ? meta.labelEn : meta.label} · {activeMatch.mode === 'mcq' ? (isEn ? 'Speed MCQ' : 'Trắc nghiệm tốc độ') : (isEn ? 'Deep Essay' : 'Tự luận chuyên sâu')} · {dateKey}
+                  {isEn ? meta.labelEn : meta.label} · {activeMatch.isSprint ? 'Đấu Tốc Độ' : activeMatch.mode === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'}
                 </span>
               </div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-                {activeMatch.mode === 'mcq' ? (isEn ? `Daily Paper ${dateKey} (${mcqs.length} Qs)` : `Bộ đề ngày ${dateKey} (${mcqs.length} câu)`) : essay.title}
+                {activeMatch.isSprint
+                  ? `Speedrun ${mcqs.length} câu · Combo x1/x2/x3`
+                  : activeMatch.mode === 'mcq'
+                  ? `Bộ đề ngày ${dateKey} (${mcqs.length} câu)`
+                  : essay.title}
               </h2>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0 relative z-10">
-            <div className="px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300/70 dark:border-slate-700 font-mono text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5 tabular-nums">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 relative z-10">
+            {activeMatch.isSprint && (
+              <div className="px-3 py-1.5 rounded-md bg-amber-500/15 border border-amber-400/60 font-mono text-xs font-extrabold text-amber-600 dark:text-amber-300 flex items-center gap-1.5 tabular-nums">
+                <Flame className="w-3.5 h-3.5" />
+                <span>{sprintScore}đ</span>
+                {sprintCombo > 0 && <span>· {sprintCombo} Combo (x{sprintMultiplier})</span>}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={toggleSfx}
+              className="p-2 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300/70 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-400 cursor-pointer"
+              title={sfxEnabled ? 'Tắt âm thanh thi đấu' : 'Bật âm thanh thi đấu'}
+            >
+              {sfxEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+
+            <div
+              className={`px-3 py-1.5 rounded-md border font-mono text-sm font-bold flex items-center gap-1.5 tabular-nums ${
+                activeMatch.isSprint && sprintRemainingSec <= 15
+                  ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-400 text-rose-600 dark:text-rose-300'
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-300/70 dark:border-slate-700 text-slate-900 dark:text-white'
+              }`}
+            >
               <Clock className="w-4 h-4 text-indigo-500" />
-              <span>{formatDuration(matchElapsedSec)}</span>
+              <span>
+                {activeMatch.isSprint
+                  ? formatDuration(sprintRemainingSec)
+                  : formatDuration(matchElapsedSec)}
+              </span>
             </div>
 
             {isMatchInProgress ? (
               <div
                 className="px-3 py-2 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5"
-                title={isEn ? 'Syn AI Assistant is disabled during live competition for fair play' : 'Trợ lý Syn AI đã tạm tắt khi đang thi đấu để đảm bảo công bằng'}
+                title="Trợ lý Syn AI đã tạm tắt khi đang thi đấu để đảm bảo công bằng"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>{isEn ? 'Fair Play · AI Disabled' : 'Đã tắt Syn AI khi thi'}</span>
+                <span className="hidden sm:inline">Đã tắt Syn AI khi thi</span>
               </div>
             ) : (
               <button
                 onClick={() =>
                   onOpenTutor({
                     subject: activeMatch.subject,
-                    topicTitle: activeMatch.mode === 'mcq' ? `${isEn ? 'Arena' : 'Thi đấu'} ${isEn ? meta.labelEn : meta.label}` : essay.title,
+                    topicTitle: activeMatch.mode === 'mcq' ? `Thi đấu ${meta.label}` : essay.title,
                     problemStatement:
                       activeMatch.mode === 'essay'
                         ? essay.prompt
@@ -854,58 +1347,252 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                 className="arena-btn cs-deck-btn px-3 py-2 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{isEn ? 'Review with Syn AI' : 'Hỏi Syn AI sau thi'}</span>
+                <span>Hỏi Syn AI sau thi</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* MCQ MODE */}
+        {/* Speedrun 90s countdown progress bar */}
+        {activeMatch.isSprint && !sprintResult && (
+          <div className="w-full h-2 rounded-sm bg-slate-200 dark:bg-slate-800 overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 ${
+                sprintRemainingSec <= 15
+                  ? 'bg-rose-500'
+                  : 'bg-gradient-to-r from-amber-400 via-orange-500 to-sky-500'
+              }`}
+              style={{ width: `${Math.max(0, Math.min(100, (sprintRemainingSec / SPRINT_DURATION_SEC) * 100))}%` }}
+            />
+          </div>
+        )}
+
+        {/* Active Ghost Rival Duel Strip */}
+        {ghostRival && (
+          <div className="px-4 py-2.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300/80 dark:border-indigo-700 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 font-semibold text-indigo-800 dark:text-indigo-200">
+              <Swords className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span>
+                Đang thách đấu Ghost của <strong>{ghostRival.displayName}</strong> · Mục tiêu:{' '}
+                <span className="font-mono font-bold">{ghostRival.targetScore}đ</span> trong{' '}
+                <span className="font-mono font-bold">{formatDuration(ghostRival.targetDurationSec)}</span>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setGhostRival(null)}
+              className="text-slate-500 hover:text-slate-800 dark:hover:text-white cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* MCQ / SPEEDRUN MODE */}
         {activeMatch.mode === 'mcq' && (
           <div className="space-y-4">
+            {/* Official MCQ Result Banner */}
             {mcqResult && (
-              <div className="arena-frame arena-stagger-in bg-slate-900 border border-sky-500/40 text-white rounded-md p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="arena-frame arena-stagger-in bg-slate-900 border border-sky-500/40 text-white rounded-md p-6 space-y-4">
                 <div className="arena-beam-sweep" />
-                <div className="space-y-1 relative z-10">
-                  <div className="text-xs text-amber-300 font-mono font-bold uppercase tracking-wider">
-                    {isEn ? `Official Today (${dateKey}) · Recorded on ${weekId} Leaderboard` : `Kết quả chính thức hôm nay (${dateKey}) · Đã ghi nhận vào BXH ${weekId}`}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                  <div className="space-y-1">
+                    <div className="text-xs text-amber-300 font-mono font-bold uppercase tracking-wider">
+                      Kết quả chính thức hôm nay ({dateKey}) · Đã ghi nhận vào BXH {weekId}
+                    </div>
+                    <h3 className="text-2xl font-extrabold tabular-nums">
+                      Điểm số: {mcqResult.attempt.score}/100 ({mcqResult.correctCount}/{mcqResult.total} câu đúng)
+                    </h3>
+                    <p className="text-xs text-slate-300">
+                      Thời gian hoàn thành: {formatDuration(mcqResult.attempt.durationSec)} · Lượt thi môn {meta.label} hôm nay đã khóa đến 00:00 ngày mai.
+                    </p>
+                    {ghostRival && (
+                      <div
+                        className={`inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-sm text-xs font-bold ${
+                          mcqResult.attempt.score >= ghostRival.targetScore
+                            ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300'
+                            : 'bg-rose-500/20 border border-rose-400/50 text-rose-300'
+                        }`}
+                      >
+                        <Swords className="w-3.5 h-3.5" />
+                        <span>
+                          {mcqResult.attempt.score > ghostRival.targetScore
+                            ? `Thắng Ghost ${ghostRival.displayName} (+${+(mcqResult.attempt.score - ghostRival.targetScore).toFixed(1)}đ)!`
+                            : mcqResult.attempt.score === ghostRival.targetScore
+                            ? `Hòa điểm Ghost ${ghostRival.displayName}!`
+                            : `Thua Ghost ${ghostRival.displayName} (${+(mcqResult.attempt.score - ghostRival.targetScore).toFixed(1)}đ).`}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <h3 className="text-2xl font-extrabold tabular-nums">
-                    {isEn
-                      ? `Score: ${mcqResult.attempt.score}/100 (${mcqResult.correctCount}/${mcqResult.total} correct)`
-                      : `Điểm số: ${mcqResult.attempt.score}/100 (${mcqResult.correctCount}/${mcqResult.total} câu đúng)`}
-                  </h3>
-                  <p className="text-xs text-slate-300">
-                    {isEn
-                      ? `Completion time: ${formatDuration(mcqResult.attempt.durationSec)} · Today's ${meta.labelEn} attempt is locked until 00:00 tomorrow.`
-                      : `Thời gian hoàn thành: ${formatDuration(mcqResult.attempt.durationSec)} · Lượt thi môn ${meta.label} hôm nay đã khóa đến 00:00 ngày mai.`}
-                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {mcqResult.correctCount < mcqResult.total && (
+                      <button
+                        type="button"
+                        onClick={() => saveAllWrongQuestions(mcqs)}
+                        className="arena-btn px-3.5 py-2.5 rounded-md bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <BookmarkPlus className="w-4 h-4" />
+                        <span>Lưu câu sai vào Sổ lỗi SM-2</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const summaryText = `[Synapse Arena · ${divisionMeta.shortLabelVi}] ${activeContestant.displayName} đạt ${mcqResult.attempt.score}/100đ (${mcqResult.correctCount}/${mcqResult.total} câu) môn ${meta.label} trong ${formatDuration(mcqResult.attempt.durationSec)}!`;
+                        navigator.clipboard?.writeText(summaryText).catch(() => {});
+                        setCopiedSummary(true);
+                        window.setTimeout(() => setCopiedSummary(false), 1800);
+                      }}
+                      className="arena-btn px-3.5 py-2.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {copiedSummary ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      <span>{copiedSummary ? 'Đã chép' : 'Chia sẻ'}</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveMatch(null)}
+                      className="arena-btn arena-btn-primary cs-deck-btn px-5 py-2.5 rounded-md bg-amber-400 hover:bg-amber-300 border border-amber-200 text-slate-950 text-xs font-extrabold shrink-0 cursor-pointer"
+                    >
+                      Xem Bảng Xếp Hạng Tuần
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setActiveMatch(null)}
-                  className="arena-btn arena-btn-primary cs-deck-btn relative z-10 px-5 py-2.5 rounded-md bg-amber-400 hover:bg-amber-300 border border-amber-200 text-slate-950 text-xs font-extrabold shrink-0 cursor-pointer"
-                >
-                  {isEn ? 'View Weekly Leaderboard' : 'Xem Bảng Xếp Hạng Tuần'}
-                </button>
               </div>
             )}
 
+            {/* Speedrun 90s Result Banner */}
+            {sprintResult && (
+              <div className="arena-frame arena-stagger-in bg-slate-900 border border-amber-400/50 text-white rounded-md p-6 space-y-4">
+                <div className="arena-beam-sweep" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                  <div className="space-y-1">
+                    <div className="text-xs text-amber-300 font-mono font-bold uppercase tracking-wider">
+                      SPEEDRUN 90s · ĐÃ LƯU BXH TỐC ĐỘ ({divisionMeta.shortLabelVi})
+                    </div>
+                    <h3 className="text-2xl font-extrabold tabular-nums">
+                      Tổng điểm Combo: {sprintResult.score}đ ({sprintResult.correctCount}/{sprintResult.totalQuestions} đúng)
+                    </h3>
+                    <p className="text-xs text-slate-300">
+                      Max Combo: x{sprintResult.maxCombo} · Thời gian: {formatDuration(sprintResult.durationSec)}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {sprintResult.correctCount < sprintResult.totalQuestions && (
+                      <button
+                        type="button"
+                        onClick={() => saveAllWrongQuestions(mcqs)}
+                        className="arena-btn px-3.5 py-2.5 rounded-md bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <BookmarkPlus className="w-4 h-4" />
+                        <span>Lưu câu sai SM-2</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => startArenaMatch(activeMatch.subject, 'mcq', true)}
+                      className="arena-btn px-4 py-2.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Flame className="w-4 h-4" />
+                      <span>Chơi lại Speedrun mới</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveMatch(null)}
+                      className="arena-btn px-4 py-2.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-bold cursor-pointer"
+                    >
+                      Về Sảnh Arena
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Question Navigator + Keyboard Shortcuts Hint */}
+            <div className="arena-frame bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-md p-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {mcqs.map((q, idx) => {
+                  const answered = mcqAnswers[q.id] !== undefined;
+                  const isCurrent = activeQIndex === idx;
+                  const isFlagged = Boolean(flaggedQIds[q.id]);
+                  const isSubmitted = Boolean(mcqResult || sprintResult);
+                  const isRight = mcqAnswers[q.id] === q.correctIndex;
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveQIndex(idx);
+                        document.getElementById(`arena-q-${idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      className={`relative min-w-[34px] h-8 px-2 rounded-sm font-mono text-xs font-bold border transition cursor-pointer ${
+                        isSubmitted
+                          ? isRight
+                            ? 'bg-emerald-500 text-white border-emerald-400'
+                            : 'bg-rose-500 text-white border-rose-400'
+                          : isCurrent
+                          ? 'bg-indigo-600 text-white border-indigo-400'
+                          : answered
+                          ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-400/70'
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {idx + 1}
+                      {isFlagged && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-sm bg-amber-400" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 hidden sm:inline">
+                Phím tắt: 1–4 chọn · ←/→ chuyển câu · F đánh dấu
+              </span>
+            </div>
+
             {mcqs.map((q, idx) => {
               const picked = mcqAnswers[q.id];
-              const isSubmitted = Boolean(mcqResult);
+              const isSubmitted = Boolean(mcqResult || sprintResult);
+              const isInstantSprintLocked = Boolean(activeMatch.isSprint && picked !== undefined);
+              const revealAnswer = isSubmitted || isInstantSprintLocked;
               const isRight = picked === q.correctIndex;
+              const isFlagged = Boolean(flaggedQIds[q.id]);
 
               return (
                 <div
                   key={q.id}
+                  id={`arena-q-${idx}`}
+                  onClick={() => setActiveQIndex(idx)}
                   style={{ animationDelay: `${idx * 45}ms` }}
-                  className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 space-y-3"
+                  className={`arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border rounded-md p-5 space-y-3 transition-colors ${
+                    activeQIndex === idx
+                      ? 'border-indigo-400 dark:border-indigo-500'
+                      : 'border-slate-200/90 dark:border-slate-700/80'
+                  }`}
                 >
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                      {isEn ? `Question ${idx + 1}` : `Câu ${idx + 1}`} · {q.grade}
-                    </span>
-                    <span className="tabular-nums font-mono font-semibold">{q.points} {isEn ? 'pts' : 'điểm'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                        Câu {idx + 1} · {q.grade}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFlaggedQIds((prev) => ({ ...prev, [q.id]: !prev[q.id] }));
+                        }}
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border text-[10px] font-bold cursor-pointer ${
+                          isFlagged
+                            ? 'bg-amber-100 dark:bg-amber-950/60 border-amber-400 text-amber-700 dark:text-amber-300'
+                            : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+                        }`}
+                      >
+                        <Flag className="w-3 h-3" />
+                        <span>{isFlagged ? 'Đã gắn cờ' : 'Gắn cờ'}</span>
+                      </button>
+                    </div>
+                    <span className="tabular-nums font-mono font-semibold">{q.points} điểm</span>
                   </div>
 
                   <div className="text-sm text-slate-900 dark:text-slate-100 leading-relaxed font-medium">
@@ -918,7 +1605,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                       let stateStyle =
                         'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-indigo-400';
 
-                      if (isSubmitted) {
+                      if (revealAnswer) {
                         if (optIdx === q.correctIndex) {
                           stateStyle =
                             'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-900 dark:text-emerald-200';
@@ -934,8 +1621,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                       return (
                         <button
                           key={optIdx}
-                          disabled={isSubmitted}
-                          onClick={() => setMcqAnswers((prev) => ({ ...prev, [q.id]: optIdx }))}
+                          disabled={isSubmitted || isInstantSprintLocked}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectMcqOption(q, optIdx, idx);
+                          }}
                           className={`arena-btn p-3 rounded-md border text-left text-xs sm:text-sm flex items-start gap-2.5 cursor-pointer disabled:cursor-default ${stateStyle}`}
                         >
                           <span className="w-6 h-6 rounded-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-mono text-xs font-bold flex items-center justify-center shrink-0">
@@ -949,9 +1639,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     })}
                   </div>
 
-                  {isSubmitted && (
+                  {revealAnswer && (
                     <div className="mt-3 p-3.5 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <span
                           className={`font-bold flex items-center gap-1.5 ${
                             isRight ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
@@ -959,23 +1649,36 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                         >
                           {isRight ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                           {isRight
-                            ? (isEn ? 'Correct' : 'Chính xác')
-                            : (isEn ? `Incorrect (Answer: ${String.fromCharCode(65 + q.correctIndex)})` : `Chưa đúng (Đáp án: ${String.fromCharCode(65 + q.correctIndex)})`)}
+                            ? 'Chính xác'
+                            : `Chưa đúng (Đáp án: ${String.fromCharCode(65 + q.correctIndex)})`}
                         </span>
-                        {!isRight && (
-                          <button
-                            onClick={() =>
-                              onOpenTutor({
-                                subject: activeMatch.subject,
-                                topicTitle: `${isEn ? 'Question' : 'Câu'} ${idx + 1} (${q.grade})`,
-                                problemStatement: `${q.question}\nCác lựa chọn: ${q.options.join(' | ')}`
-                              })
-                            }
-                            className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>{isEn ? 'Ask Syn AI to explain' : 'Hỏi Syn AI giảng lại câu này'}</span>
-                          </button>
+
+                        {isSubmitted && !isRight && (
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => saveQuestionToErrorNotebook(q, picked)}
+                              disabled={Boolean(savedMistakeIds[q.id])}
+                              className="text-rose-600 dark:text-rose-400 font-bold hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-60"
+                            >
+                              <BookmarkPlus className="w-3.5 h-3.5" />
+                              <span>{savedMistakeIds[q.id] ? 'Đã lưu Sổ lỗi' : 'Lưu vào Sổ lỗi'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onOpenTutor({
+                                  subject: activeMatch.subject,
+                                  topicTitle: `Câu ${idx + 1} (${q.grade})`,
+                                  problemStatement: `${q.question}\nCác lựa chọn: ${q.options.join(' | ')}`
+                                })
+                              }
+                              className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>Hỏi Syn AI giảng lại</span>
+                            </button>
+                          </div>
                         )}
                       </div>
                       <div className="text-slate-700 dark:text-slate-300 leading-relaxed">
@@ -994,10 +1697,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               </div>
             )}
 
-            {!mcqResult && (
+            {!mcqResult && !sprintResult && (
               <div className="arena-frame flex items-center justify-between bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-md p-4">
                 <span className="text-xs font-mono text-slate-600 dark:text-slate-400 tabular-nums">
-                  {isEn ? `Selected ${Object.keys(mcqAnswers).length}/${mcqs.length} questions` : `Đã chọn ${Object.keys(mcqAnswers).length}/${mcqs.length} câu`}
+                  Đã chọn {Object.keys(mcqAnswers).length}/{mcqs.length} câu
                 </span>
                 <button
                   onClick={handleSubmitMCQ}
@@ -1007,8 +1710,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   <Send className="w-4 h-4" />
                   <span>
                     {isSubmittingMatch
-                      ? (isEn ? 'Submitting & ranking...' : 'Đang nộp & xếp hạng...')
-                      : (isEn ? "Submit Today's Round" : 'Nộp Bài Thi Hôm Nay')}
+                      ? 'Đang nộp & xếp hạng...'
+                      : activeMatch.isSprint
+                      ? 'Chốt điểm Speedrun 90s'
+                      : 'Nộp Bài Thi Hôm Nay'}
                   </span>
                 </button>
               </div>
@@ -1019,11 +1724,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         {/* ESSAY MODE (TỰ LUẬN / CODE) */}
         {activeMatch.mode === 'essay' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left: Prompt & Official Rubric */}
             <div className="lg:col-span-5 space-y-4">
               <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-md p-5 space-y-4">
                 <div className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                  {essay.grade} · {isEn ? '100-point Scale' : 'Thang điểm 100'}
+                  {essay.grade} · Thang điểm 100
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{essay.title}</h3>
                 <div className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line">
@@ -1032,7 +1736,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
                 <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
                   <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {isEn ? 'Essay Grading Rubric:' : 'Biểu điểm chấm Tự luận:'}
+                    Biểu điểm chấm Tự luận:
                   </div>
                   <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
                     {essay.rubricChecklist.map((r, i) => (
@@ -1048,7 +1752,6 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               </div>
             </div>
 
-            {/* Right: Answer Composer & Grading Result */}
             <div className="lg:col-span-7 space-y-4">
               {essayResult ? (
                 <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 rounded-md p-6 space-y-5">
@@ -1056,21 +1759,20 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     <div className="arena-beam-sweep" />
                     <div className="relative z-10">
                       <div className="text-xs text-amber-300 font-mono font-bold uppercase tracking-wider">
-                        {isEn ? `Official Essay Score (${dateKey})` : `Điểm Tự Luận Chính Thức (${dateKey})`}
+                        Điểm Tự Luận Chính Thức ({dateKey})
                       </div>
                       <div className="text-3xl font-extrabold tabular-nums mt-1">
-                        {essayResult.evaluation.score} / 100 {isEn ? 'pts' : 'điểm'}
+                        {essayResult.evaluation.score} / 100 điểm
                       </div>
                     </div>
                     <button
                       onClick={() => setActiveMatch(null)}
                       className="arena-btn arena-btn-primary cs-deck-btn relative z-10 px-4 py-2.5 rounded-md bg-amber-400 hover:bg-amber-300 border border-amber-200 text-slate-950 text-xs font-extrabold cursor-pointer"
                     >
-                      {isEn ? 'View Weekly Leaderboard' : 'Xem Bảng Xếp Hạng Tuần'}
+                      Xem Bảng Xếp Hạng Tuần
                     </button>
                   </div>
 
-                  {/* Step Rubric Breakdown */}
                   {essayResult.evaluation.stepScores.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -1136,7 +1838,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
                       <FileText className="w-4 h-4 text-indigo-500" />
-                      <span>{isEn ? 'Your Essay Solution' : 'Bài Làm Tự Luận Của Bạn'}</span>
+                      <span>Bài Làm Tự Luận Của Bạn</span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -1175,7 +1877,6 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     </div>
                   </div>
 
-                  {/* Quick Math/Physics Symbol Bar */}
                   {activeMatch.subject !== 'cs' && (
                     <div className="flex flex-wrap gap-1.5">
                       {[
@@ -1218,7 +1919,6 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     />
                   )}
 
-                  {/* CS Code Sandbox Preview Runner */}
                   {activeMatch.subject === 'cs' && essay.sampleCode && (
                     <div className="space-y-2">
                       <button
@@ -1237,14 +1937,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     </div>
                   )}
 
-                  {/* Optional handwritten image upload */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200/80 dark:border-slate-800">
                     <label className="arena-btn inline-flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
                       <ImageIcon className="w-4 h-4 text-indigo-500" />
                       <span>
-                        {essayImage
-                          ? (isEn ? 'Handwritten Photo Attached' : 'Đã đính kèm ảnh bài làm')
-                          : (isEn ? 'Or upload handwritten photo' : 'Hoặc tải ảnh bài viết giấy')}
+                        {essayImage ? 'Đã đính kèm ảnh bài làm' : 'Hoặc tải ảnh bài viết giấy'}
                       </span>
                       <input type="file" accept="image/*" onChange={handleEssayImagePick} className="hidden" />
                     </label>
@@ -1256,9 +1953,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     >
                       <Send className="w-4 h-4" />
                       <span>
-                        {isSubmittingMatch
-                          ? (isEn ? 'Syn AI Grading...' : 'Syn AI đang chấm...')
-                          : (isEn ? 'Submit for AI Grading' : 'Nộp Chấm Tự Luận')}
+                        {isSubmittingMatch ? 'Syn AI đang chấm...' : 'Nộp Chấm Tự Luận'}
                       </span>
                     </button>
                   </div>
@@ -1279,15 +1974,19 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   }
 
   // =====================================================================
-  // VIEW: ARENA LOBBY + DAILY LOCKS + WEEKLY LEADERBOARD
+  // VIEW: MODERN COMPETITIVE ARENA LOBBY + PODIUM + BXH + ACHIEVEMENTS + SPEEDRUN
   // =====================================================================
+  const unlockedCount = myAchievements.filter((a) => a.unlocked).length;
+  const top3Entries = mergedLeaderboard.slice(0, 3);
+
   return (
     <div className="space-y-6">
-      {/* Top Arena Header (Crisp Square-Cut Architectural Frame) */}
-      <div className="rm-arch-frame arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm">
+      {/* Top Arena Header & Season ELO Card */}
+      <div className="rm-arch-frame arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm space-y-5">
         <span aria-hidden="true" className="pointer-events-none absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t border-l border-indigo-500/60" />
         <span aria-hidden="true" className="pointer-events-none absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t border-r border-indigo-500/60" />
         <div className="arena-beam-sweep" />
+
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div className="space-y-2">
             <button
@@ -1299,14 +1998,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             </button>
 
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-              {isEn
-                ? 'Weekly Online Academic Arena & Leaderboard'
-                : 'Đấu Trường Giải Bài Online & Xếp Hạng Tuần'}
+              Đấu Trường Giải Bài Online & BXH Mùa Giải
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
-              {isEn
-                ? 'Compete in Multiple Choice or Essay rounds. Limit: 1 official round per subject per day · Live weekly ranking by subject & overall average.'
-                : 'Chọn thi Trắc nghiệm tốc độ hoặc Tự luận có giám khảo AI chấm điểm. Mỗi ngày được thi tối đa 1 lần/môn · Xếp hạng theo tuần từng môn và Điểm Trung Bình.'}
+              Thi đấu chính thức (1 lượt/ngày/môn tính điểm Tuần & ELO), đấu Speedrun 90s không giới hạn và đối đầu Ghost của Top Ranker.
             </p>
           </div>
 
@@ -1317,7 +2012,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               </div>
               <div className="text-slate-500 dark:text-slate-400 tabular-nums flex items-center gap-1.5 font-mono">
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
-                <span>{isEn ? `Next daily reset in: ${resetCountdown}` : `Mở lượt ngày mới sau: ${resetCountdown}`}</span>
+                <span>Mở lượt mới sau: {resetCountdown}</span>
               </div>
             </div>
 
@@ -1327,15 +2022,107 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                 className="arena-btn arena-btn-primary cs-deck-btn px-4 py-3 rounded-md bg-slate-900 dark:bg-white border border-slate-700 dark:border-slate-200 text-white dark:text-slate-900 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
-                <span>{isEn ? 'Sign In to Save Rank' : 'Đăng nhập lưu hạng'}</span>
+                <span>Đăng nhập lưu hạng</span>
               </button>
             )}
           </div>
         </div>
 
+        {/* Competitive Tier & Season ELO Bar */}
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-3 pt-4 border-t border-slate-200/80 dark:border-slate-800">
+          <div className={`lg:col-span-6 p-3.5 rounded-md border flex flex-col justify-between gap-2 ${myEloStats.tier.borderClass}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-md bg-white/90 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                  <Crown className={`w-5 h-5 ${myEloStats.tier.accentClass}`} />
+                </div>
+                <div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Bậc Xếp Hạng Mùa Giải
+                  </div>
+                  <div className={`text-sm font-extrabold ${myEloStats.tier.accentClass}`}>
+                    {isEn ? myEloStats.tier.nameEn : myEloStats.tier.nameVi}
+                  </div>
+                </div>
+              </div>
+              <div className="text-right font-mono tabular-nums">
+                <div className="text-lg font-extrabold text-slate-900 dark:text-white">{myEloStats.elo} ELO</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {myEloStats.nextTier
+                    ? `Còn ${myEloStats.pointsToNext} → ${myEloStats.nextTier.nameVi}`
+                    : 'Bậc Cao Nhất'}
+                </div>
+              </div>
+            </div>
+            <div className="w-full h-1.5 rounded-sm bg-slate-200/80 dark:bg-slate-800 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-500 transition-all duration-500"
+                style={{ width: `${myEloStats.progressPct}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="lg:col-span-6 grid grid-cols-3 gap-2.5">
+            <div className="p-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">Chuỗi đạt (≥60đ)</div>
+              <div className="text-lg font-extrabold font-mono text-amber-600 dark:text-amber-400 tabular-nums mt-0.5 flex items-center gap-1">
+                <Flame className="w-4 h-4" />
+                {myEloStats.winStreakEstimate} trận
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">Huy hiệu mở khóa</div>
+              <div className="text-lg font-extrabold font-mono text-indigo-600 dark:text-indigo-400 tabular-nums mt-0.5 flex items-center gap-1">
+                <Medal className="w-4 h-4" />
+                {unlockedCount}/{myAchievements.length}
+              </div>
+            </div>
+            <div className="p-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">Sĩ số khu vực</div>
+              <div className="text-lg font-extrabold font-mono text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+                {divisionStats.totalPlayers || baseLeaderboard.length} thí sinh
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sub-View Switcher + Target Score Advisor */}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
+            {(
+              [
+                { id: 'arena' as LobbySubTab, label: 'Sảnh Thi Đấu & BXH', icon: <Trophy className="w-3.5 h-3.5" /> },
+                { id: 'speedrun' as LobbySubTab, label: `BXH Speedrun 90s (${mergedSprintLeaderboard.length})`, icon: <Flame className="w-3.5 h-3.5" /> },
+                { id: 'achievements' as LobbySubTab, label: `Huy Hiệu (${unlockedCount}/${myAchievements.length})`, icon: <Award className="w-3.5 h-3.5" /> }
+              ]
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setLobbySubTab(tab.id)}
+                className={`arena-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-bold border whitespace-nowrap cursor-pointer ${
+                  lobbySubTab === tab.id
+                    ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {targetAdvisor && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-sky-50 dark:bg-sky-950/40 border border-sky-300/70 dark:border-sky-700 text-xs font-semibold text-sky-800 dark:text-sky-200">
+              <Target className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+              <span>{targetAdvisor}</span>
+            </div>
+          )}
+        </div>
+
         {/* Contestant Name Bar (when playing as guest) */}
         {!user && (
-          <div className="mt-4 pt-4 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+          <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
             <div className="text-xs text-slate-600 dark:text-slate-400">
               Bạn đang thi đấu với tên hiển thị khách (hoặc đăng nhập tài khoản để đồng bộ đa thiết bị):
             </div>
@@ -1358,7 +2145,29 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         )}
       </div>
 
-      {/* Zone / Division Selector (Khối Lớp & Hệ Chuyên / Không Chuyên / Đội Tuyển HSG) */}
+      {/* Active Ghost Challenge Banner */}
+      {ghostRival && (
+        <div className="arena-frame bg-indigo-600 text-white rounded-md p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3 text-xs sm:text-sm">
+            <Swords className="w-5 h-5 shrink-0 text-amber-300" />
+            <div>
+              <strong>Chế độ Thách Đấu Ghost:</strong> Đang khóa mục tiêu vượt qua{' '}
+              <span className="font-bold underline">{ghostRival.displayName}</span> (TB{' '}
+              <span className="font-mono font-bold">{ghostRival.targetScore}đ</span> · tốc độ{' '}
+              <span className="font-mono font-bold">{formatDuration(ghostRival.targetDurationSec)}</span>)
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setGhostRival(null)}
+            className="px-3 py-1 rounded-sm bg-white/15 hover:bg-white/25 text-xs font-bold cursor-pointer"
+          >
+            Hủy thách đấu
+          </button>
+        </div>
+      )}
+
+      {/* Zone / Division Selector */}
       <div
         style={{ animationDelay: '60ms' }}
         className="rm-arch-frame arena-frame roadmap-beam-sweep arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm space-y-4"
@@ -1372,14 +2181,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
-                {isEn
-                  ? 'Select Arena Zone (Grade & Specialized / Standard Track)'
-                  : 'Khu Vực Thi Đấu Theo Lớp & Hệ Chuyên / Không Chuyên'}
+                Khu Vực Thi Đấu Theo Lớp & Hệ Chuyên / Không Chuyên
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {isEn
-                  ? 'Each zone has tailored daily challenges and an isolated weekly leaderboard. Syn AI is automatically disabled during active rounds.'
-                  : 'Mỗi khu vực có bộ đề riêng đúng trình độ và BXH tuần độc lập. Trợ lý Syn AI sẽ tự động tắt khi thí sinh bước vào phòng thi.'}
+                Mỗi khu vực có bộ đề riêng đúng trình độ và BXH tuần độc lập. Trợ lý Syn AI sẽ tự động tắt khi thí sinh bước vào phòng thi.
               </p>
             </div>
           </div>
@@ -1389,20 +2194,19 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
           </span>
         </div>
 
-        {/* Grade Group + Track Selector */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-slate-200/80 dark:border-slate-800 relative z-10">
           <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 max-w-full scrollbar-none pb-0.5 sm:pb-0">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1 shrink-0">
-              {isEn ? 'Grade:' : 'Khối lớp:'}
+              Khối lớp:
             </span>
             {(
               [
-                { id: '9', vi: 'Lớp 9', en: 'Grade 9' },
-                { id: '10', vi: 'Lớp 10', en: 'Grade 10' },
-                { id: '11', vi: 'Lớp 11', en: 'Grade 11' },
-                { id: '12', vi: 'Lớp 12', en: 'Grade 12' },
-                { id: 'olp', vi: 'Đội tuyển HSG / Olympic', en: 'HSG / Olympiad' }
-              ] as { id: ArenaGradeGroup; vi: string; en: string }[]
+                { id: '9', vi: 'Lớp 9' },
+                { id: '10', vi: 'Lớp 10' },
+                { id: '11', vi: 'Lớp 11' },
+                { id: '12', vi: 'Lớp 12' },
+                { id: 'olp', vi: 'Đội tuyển HSG / Olympic' }
+              ] as { id: ArenaGradeGroup; vi: string }[]
             ).map((g) => {
               const active = divisionMeta.gradeGroup === g.id;
               return (
@@ -1416,7 +2220,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                       : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
                   }`}
                 >
-                  {isEn ? g.en : g.vi}
+                  {g.vi}
                 </button>
               );
             })}
@@ -1426,9 +2230,9 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md w-full sm:w-auto overflow-x-auto scrollbar-none">
               {(
                 [
-                  { id: 'khong_chuyen', vi: 'Hệ Không Chuyên (Chuẩn)', en: 'Standard Track' },
-                  { id: 'chuyen', vi: 'Hệ Chuyên (Nâng cao)', en: 'Specialized Track' }
-                ] as { id: ArenaTrack; vi: string; en: string }[]
+                  { id: 'khong_chuyen', vi: 'Hệ Không Chuyên (Chuẩn)' },
+                  { id: 'chuyen', vi: 'Hệ Chuyên (Nâng cao)' }
+                ] as { id: ArenaTrack; vi: string }[]
               ).map((t) => {
                 const active = divisionMeta.track === t.id;
                 return (
@@ -1442,7 +2246,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                         : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    {isEn ? t.en : t.vi}
+                    {t.vi}
                   </button>
                 );
               })}
@@ -1450,370 +2254,756 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
           ) : (
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-purple-50 dark:bg-purple-950/50 border border-purple-300 dark:border-purple-700 text-xs font-bold text-purple-700 dark:text-purple-300">
               <Layers className="w-3.5 h-3.5" />
-              <span>{isEn ? 'National Olympiad & VNOI Tier' : 'Bảng Chuyên Sâu HSG Tỉnh / Quốc Gia / VNOI'}</span>
+              <span>Bảng Chuyên Sâu HSG Tỉnh / Quốc Gia / VNOI</span>
             </div>
           )}
         </div>
-
-        {/* Active Zone Info Strip */}
-        <div className="px-3.5 py-2.5 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs relative z-10">
-          <div className="text-slate-600 dark:text-slate-300">
-            <strong className="text-slate-900 dark:text-white">
-              {isEn ? 'Zone Focus: ' : 'Trọng tâm khu vực: '}
-            </strong>
-            {isEn ? divisionMeta.descriptionEn : divisionMeta.descriptionVi}
-          </div>
-          <div className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-semibold shrink-0">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>{isEn ? 'AI Off in Match' : 'Tự tắt AI khi vào thi'}</span>
-          </div>
-        </div>
       </div>
 
-      {/* My Weekly Performance KPI Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div
-          style={{ animationDelay: '100ms' }}
-          className="rm-card-interactive arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm"
-        >
-          <div className="h-[2.5px] w-12 bg-indigo-500 roadmap-shimmer-bar mb-2" />
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            {isEn ? `Weekly Avg / Rank (${divisionMeta.shortLabelEn})` : `Điểm TB / Hạng (${divisionMeta.shortLabelVi})`}
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums mt-1">
-            {myLeaderboardRow.entry ? `${myLeaderboardRow.entry.overallAvg}${isEn ? 'pt' : 'đ'}` : '—'}
-            <span className="text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 ml-2">
-              {myLeaderboardRow.rank ? `#${myLeaderboardRow.rank}` : (isEn ? 'Unranked' : 'Chưa có hạng')}
-            </span>
-          </div>
-        </div>
-
-        {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj, kIdx) => {
-          const avg =
-            subj === 'math'
-              ? myLeaderboardRow.entry?.mathAvg
-              : subj === 'physics'
-              ? myLeaderboardRow.entry?.physicsAvg
-              : myLeaderboardRow.entry?.csAvg;
-          const best =
-            subj === 'math'
-              ? myLeaderboardRow.entry?.mathBest
-              : subj === 'physics'
-              ? myLeaderboardRow.entry?.physicsBest
-              : myLeaderboardRow.entry?.csBest;
-          const meta = subjectMeta[subj];
-          const topBarColor =
-            subj === 'math' ? 'bg-blue-500' : subj === 'physics' ? 'bg-amber-500' : 'bg-emerald-500';
-          return (
-            <div
-              key={subj}
-              style={{ animationDelay: `${145 + kIdx * 45}ms` }}
-              className="rm-card-interactive arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm"
-            >
-              <div className={`h-[2.5px] w-12 ${topBarColor} roadmap-shimmer-bar mb-2`} />
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>{isEn ? `${meta.labelEn} (Weekly Avg)` : `${meta.label} (TB tuần)`}</span>
-                {meta.icon}
-              </div>
-              <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums mt-1">
-                {avg !== null && avg !== undefined ? `${avg}${isEn ? 'pt' : 'đ'}` : '—'}
-                {best !== null && best !== undefined && (
-                  <span className="text-xs font-mono font-medium text-slate-500 ml-2">Max {best}</span>
-                )}
-              </div>
+      {/* ============================================================= */}
+      {/* SUB-TAB: ACHIEVEMENTS & SEASON STATS                           */}
+      {/* ============================================================= */}
+      {lobbySubTab === 'achievements' && (
+        <div className="space-y-6">
+          <div className="arena-frame bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-500" />
+                <span>Tủ Huy Hiệu Thành Tích ({unlockedCount}/{myAchievements.length})</span>
+              </h2>
+              <span className="text-xs font-mono text-slate-500">Cập nhật tự động theo kết quả thi đấu</span>
             </div>
-          );
-        })}
-      </div>
 
-      {/* Daily Arena Subject Cards (1 Attempt / Day / Subject) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj, sIdx) => {
-          const meta = subjectMeta[subj];
-          const todayAttempt = userAttemptsToday[subj];
-          const chosenMode = selectedLobbyMode[subj];
-          const accentStrip =
-            subj === 'math'
-              ? 'from-blue-500 via-cyan-400 to-indigo-500'
-              : subj === 'physics'
-              ? 'from-amber-500 via-orange-400 to-yellow-400'
-              : 'from-emerald-500 via-teal-400 to-cyan-500';
-
-          return (
-            <div
-              key={subj}
-              style={{ animationDelay: `${220 + sIdx * 60}ms` }}
-              className="rm-card-interactive arena-frame arena-card-hover arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm flex flex-col justify-between gap-4"
-            >
-              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${accentStrip} roadmap-shimmer-bar`} />
-
-              <div className="space-y-3 pt-1 relative z-10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                      {meta.icon}
-                    </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                      {isEn ? meta.labelEn : meta.label}
-                    </h3>
-                  </div>
-                  <span
-                    className={`text-xs font-mono font-bold tabular-nums ${
-                      todayAttempt ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
-                    }`}
-                  >
-                    {todayAttempt
-                      ? (isEn ? '0/1 today' : '0/1 lượt hôm nay')
-                      : (isEn ? '1/1 today' : '1/1 lượt hôm nay')}
-                  </span>
-                </div>
-
-                {todayAttempt ? (
-                  <div className="p-3.5 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
-                      <Lock className="w-3.5 h-3.5 text-amber-500" />
-                      <span>{isEn ? `Completed today's round (${dateKey})` : `Đã hoàn thành lượt thi hôm nay (${dateKey})`}</span>
-                    </div>
-                    <div className="text-slate-600 dark:text-slate-400 tabular-nums">
-                      {isEn ? 'Mode:' : 'Hình thức:'}{' '}
-                      {todayAttempt.mode === 'mcq' ? (isEn ? 'MCQ' : 'Trắc nghiệm') : (isEn ? 'Essay' : 'Tự luận')} ·{' '}
-                      {isEn ? 'Score:' : 'Điểm:'}{' '}
-                      <strong className="font-mono text-indigo-600 dark:text-indigo-400">{todayAttempt.score}/100</strong> ·{' '}
-                      <span className="font-mono">{formatDuration(todayAttempt.durationSec)}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500">{todayAttempt.summary}</div>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {isEn ? "Select round mode for today's single attempt:" : 'Chọn hình thức thi đấu cho lượt duy nhất hôm nay:'}
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
-                      <button
-                        onClick={() => setSelectedLobbyMode((prev) => ({ ...prev, [subj]: 'mcq' }))}
-                        className={`arena-btn py-2 px-2 rounded-sm text-xs font-bold cursor-pointer border ${
-                          chosenMode === 'mcq'
-                            ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-slate-900 dark:text-white shadow-xs'
-                            : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                      >
-                        {isEn ? 'MCQ (5 Qs)' : 'Trắc nghiệm (5 câu)'}
-                      </button>
-                      <button
-                        onClick={() => setSelectedLobbyMode((prev) => ({ ...prev, [subj]: 'essay' }))}
-                        className={`arena-btn py-2 px-2 rounded-sm text-xs font-bold cursor-pointer border ${
-                          chosenMode === 'essay'
-                            ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-slate-900 dark:text-white shadow-xs'
-                            : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                      >
-                        {isEn ? 'Essay (AI Graded)' : 'Tự luận (AI Chấm)'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {todayAttempt ? (
-                <div className="text-center py-2.5 px-4 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 tabular-nums relative z-10">
-                  {isEn ? `Reopens in ${resetCountdown}` : `Mở lại sau ${resetCountdown}`}
-                </div>
-              ) : (
-                <button
-                  onClick={() => startArenaMatch(subj, chosenMode)}
-                  className="arena-btn arena-btn-primary cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded-md bg-indigo-600 hover:bg-indigo-700 border border-indigo-400/60 text-white text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer"
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {myAchievements.map((ach) => (
+                <div
+                  key={ach.id}
+                  className={`p-4 rounded-md border space-y-2 transition-colors ${
+                    ach.unlocked
+                      ? 'bg-amber-50/70 dark:bg-amber-950/25 border-amber-400/70'
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 opacity-80'
+                  }`}
                 >
-                  <Play className="w-3.5 h-3.5" />
-                  <span>
-                    {isEn
-                      ? `Start ${chosenMode === 'mcq' ? 'MCQ' : 'Essay'} (${meta.labelEn})`
-                      : `Bắt đầu thi ${chosenMode === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'} (${meta.label})`}
-                  </span>
-                </button>
-              )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                      {ach.unlocked ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      ) : (
+                        <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                      )}
+                      {isEn ? ach.titleEn : ach.titleVi}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-sm border text-[10px] font-mono font-bold uppercase border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                      {ach.tier}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    {isEn ? ach.descriptionEn : ach.descriptionVi}
+                  </p>
+                  <div className="text-[11px] font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                    Tiến độ: {ach.progressText}
+                  </div>
+                </div>
+              ))}
             </div>
-          );
-        })}
-      </div>
-
-      {/* WEEKLY LEADERBOARD (MULTI-SUBJECT + OVERALL AVERAGE) */}
-      <div
-        style={{ animationDelay: '300ms' }}
-        className="rm-arch-frame arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm space-y-4"
-      >
-        <span aria-hidden="true" className="pointer-events-none absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t border-l border-amber-500/70" />
-        <span aria-hidden="true" className="pointer-events-none absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t border-r border-amber-500/70" />
-        <div className="arena-beam-sweep" />
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
-          <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
-              <div className="w-8 h-8 rounded-sm bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 flex items-center justify-center">
-                <Trophy className="w-4 h-4 text-amber-500 icon-anim-trophy" />
-              </div>
-              <span>
-                {isEn
-                  ? `Weekly Leaderboard (${weekId}) · ${divisionMeta.labelEn}`
-                  : `Bảng Xếp Hạng Tuần (${weekId}) · ${divisionMeta.labelVi}`}
-              </span>
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
-              <span className="font-mono">{getWeekDateRangeLabel()}</span>
-              <span aria-hidden="true">·</span>
-              <span className="inline-flex items-center gap-1.5">
-                {isStreamLive && <span className="arena-live-dot" />}
-                <span>
-                  {isStreamLive
-                    ? (isEn ? 'Live Real-Time Sync' : 'Đồng bộ trực tuyến thời gian thực')
-                    : (isEn ? 'Server Sync' : 'Đồng bộ máy chủ')}
-                </span>
-              </span>
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
-            {[
-              { id: 'overall' as RankFilterTab, label: isEn ? 'Overall Avg' : 'Trung Bình Chung' },
-              { id: 'math' as RankFilterTab, label: isEn ? 'Math' : 'Môn Toán' },
-              { id: 'physics' as RankFilterTab, label: isEn ? 'Physics' : 'Môn Vật Lí' },
-              { id: 'cs' as RankFilterTab, label: isEn ? 'CS' : 'Môn Tin Học' }
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setRankTab(t.id)}
-                className={`arena-btn px-3 py-1.5 rounded-sm text-xs font-bold whitespace-nowrap cursor-pointer border ${
-                  rankTab === t.id
-                    ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-indigo-600 dark:text-indigo-300 shadow-xs'
-                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
           </div>
         </div>
+      )}
 
-        {mergedLeaderboard.length === 0 ? (
-          <div className="py-10 text-center space-y-2 border border-dashed border-slate-300 dark:border-slate-700 rounded-md relative z-10">
-            <Users className="w-8 h-8 text-slate-400 mx-auto" />
-            <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
-              {isEn ? `No submissions yet for week ${weekId}` : `Chưa có thí sinh nào nộp bài trong tuần ${weekId}`}
+      {/* ============================================================= */}
+      {/* SUB-TAB: SPEEDRUN 90s HALL OF FAME                             */}
+      {/* ============================================================= */}
+      {lobbySubTab === 'speedrun' && (
+        <div className="arena-frame bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Flame className="w-5 h-5 text-amber-500" />
+                <span>BXH Speedrun 90s · {divisionMeta.labelVi}</span>
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Đấu tốc độ không giới hạn lượt/ngày · Tính điểm chuỗi Combo x1 → x2 → x3 + thưởng tốc độ.
+              </p>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {isEn
-                ? 'Complete 1 round in Math, Physics, or CS above to claim the #1 rank this week!'
-                : 'Hãy hoàn thành 1 lượt thi Toán, Vật lí hoặc Tin học ở phía trên để ghi danh vị trí #1 đầu tiên của tuần!'}
-            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj) => (
+                <button
+                  key={subj}
+                  type="button"
+                  onClick={() => startArenaMatch(subj, 'mcq', true)}
+                  className="arena-btn px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold flex items-center gap-1 cursor-pointer"
+                >
+                  <Flame className="w-3.5 h-3.5" />
+                  <span>Đấu {subjectMeta[subj].label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        ) : (
-          <div className="overflow-x-auto relative z-10 border border-slate-200 dark:border-slate-800 rounded-md">
-            <table className="w-full text-left border-collapse text-xs sm:text-sm">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-mono">
-                  <th className="py-2.5 px-3 font-semibold">{isEn ? 'Rank' : 'Hạng'}</th>
-                  <th className="py-2.5 px-3 font-semibold">{isEn ? 'Contestant' : 'Thí sinh'}</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'Math (Avg)' : 'Toán (TB)'}</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'Physics (Avg)' : 'Vật lí (TB)'}</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'CS (Avg)' : 'Tin học (TB)'}</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'Overall' : 'TB Chung'}</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">{isEn ? 'Rounds / Time' : 'Lượt / Thời gian'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                {mergedLeaderboard.map((row, idx) => {
-                  const isMe = row.userId === activeContestant.uid;
-                  const podiumBg =
-                    idx === 0
-                      ? 'bg-amber-50/45 dark:bg-amber-950/15'
-                      : idx === 1
-                      ? 'bg-slate-50/60 dark:bg-slate-800/25'
-                      : idx === 2
-                      ? 'bg-orange-50/40 dark:bg-orange-950/15'
-                      : '';
-                  return (
-                    <tr
-                      key={row.userId}
-                      style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
-                      className={`arena-row-in transition-colors ${
-                        isMe
-                          ? 'bg-indigo-50/80 dark:bg-indigo-950/35 font-semibold'
-                          : `${podiumBg} hover:bg-slate-50 dark:hover:bg-slate-800/45`
-                      }`}
-                    >
-                      <td className="py-3 px-3 font-mono font-bold tabular-nums">
-                        <span
-                          className={`inline-flex items-center justify-center min-w-[44px] px-2 py-0.5 rounded-sm border text-xs ${
-                            idx === 0
-                              ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-600 text-amber-800 dark:text-amber-300'
-                              : idx === 1
-                              ? 'bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200'
-                              : idx === 2
-                              ? 'bg-orange-100 dark:bg-orange-950/60 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-300'
-                              : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                          }`}
-                        >
-                          {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
-                        </span>
+
+          {mergedSprintLeaderboard.length === 0 ? (
+            <div className="py-10 text-center border border-dashed border-slate-300 dark:border-slate-700 rounded-md text-xs text-slate-500">
+              Chưa có kỷ lục Speedrun 90s nào ở khu vực này. Nhấn nút &ldquo;Đấu Speedrun&rdquo; để lập kỷ lục #1!
+            </div>
+          ) : (
+            <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-md">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-mono">
+                    <th className="py-2.5 px-3">Hạng</th>
+                    <th className="py-2.5 px-3">Thí sinh</th>
+                    <th className="py-2.5 px-3">Môn</th>
+                    <th className="py-2.5 px-3 text-right">Điểm Combo</th>
+                    <th className="py-2.5 px-3 text-right">Đúng / Max Combo</th>
+                    <th className="py-2.5 px-3 text-right">Thời gian</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {mergedSprintLeaderboard.map((rec, idx) => (
+                    <tr key={rec.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <td className="py-2.5 px-3 font-mono font-bold tabular-nums">#{idx + 1}</td>
+                      <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-white">
+                        {rec.displayName} {rec.userId === activeContestant.uid && <span className="text-indigo-500">(Bạn)</span>}
                       </td>
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-slate-900 dark:text-slate-100">
-                          {row.displayName} {isMe && <span className="text-indigo-600 dark:text-indigo-400">(Bạn)</span>}
-                        </div>
-                        <div className="text-[11px] font-mono text-slate-400">@{row.username}</div>
+                      <td className="py-2.5 px-3">{subjectMeta[rec.subject].label}</td>
+                      <td className="py-2.5 px-3 text-right font-mono font-extrabold text-amber-600 dark:text-amber-400 tabular-nums">
+                        {rec.score}đ
                       </td>
-                      <td className="py-3 px-3 text-right font-mono tabular-nums">
-                        {row.mathAvg !== null ? `${row.mathAvg}đ` : '—'}
+                      <td className="py-2.5 px-3 text-right font-mono tabular-nums">
+                        {rec.correctCount}/{rec.totalQuestions} · x{rec.maxCombo}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono tabular-nums">
-                        {row.physicsAvg !== null ? `${row.physicsAvg}đ` : '—'}
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono tabular-nums">
-                        {row.csAvg !== null ? `${row.csAvg}đ` : '—'}
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono font-extrabold text-indigo-600 dark:text-indigo-400 tabular-nums">
-                        {row.overallAvg}đ
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono text-xs text-slate-500 tabular-nums">
-                        {row.totalAttempts} lượt · {formatDuration(row.totalTimeSec)}
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-500 tabular-nums">
+                        {formatDuration(rec.durationSec)}
                       </td>
                     </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* SUB-TAB: MAIN ARENA LOBBY + TOP 3 PODIUM + FULL BXH            */}
+      {/* ============================================================= */}
+      {lobbySubTab === 'arena' && (
+        <>
+          {/* My Weekly Performance KPI Strip */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rm-card-interactive arena-frame arena-card-hover bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm">
+              <div className="h-[2.5px] w-12 bg-indigo-500 roadmap-shimmer-bar mb-2" />
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                Điểm TB / Hạng ({divisionMeta.shortLabelVi})
+              </div>
+              <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums mt-1">
+                {myLeaderboardRow.entry ? `${myLeaderboardRow.entry.overallAvg}đ` : '—'}
+                <span className="text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 ml-2">
+                  {myLeaderboardRow.rank ? `#${myLeaderboardRow.rank}` : 'Chưa có hạng'}
+                </span>
+              </div>
+            </div>
+
+            {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj) => {
+              const avg =
+                subj === 'math'
+                  ? myLeaderboardRow.entry?.mathAvg
+                  : subj === 'physics'
+                  ? myLeaderboardRow.entry?.physicsAvg
+                  : myLeaderboardRow.entry?.csAvg;
+              const best =
+                subj === 'math'
+                  ? myLeaderboardRow.entry?.mathBest
+                  : subj === 'physics'
+                  ? myLeaderboardRow.entry?.physicsBest
+                  : myLeaderboardRow.entry?.csBest;
+              const meta = subjectMeta[subj];
+              const topBarColor =
+                subj === 'math' ? 'bg-blue-500' : subj === 'physics' ? 'bg-amber-500' : 'bg-emerald-500';
+              return (
+                <div
+                  key={subj}
+                  className="rm-card-interactive arena-frame arena-card-hover bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm"
+                >
+                  <div className={`h-[2.5px] w-12 ${topBarColor} roadmap-shimmer-bar mb-2`} />
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span>{meta.label} (TB tuần)</span>
+                    {meta.icon}
+                  </div>
+                  <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tabular-nums mt-1">
+                    {avg !== null && avg !== undefined ? `${avg}đ` : '—'}
+                    {best !== null && best !== undefined && (
+                      <span className="text-xs font-mono font-medium text-slate-500 ml-2">Max {best}</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Daily Arena Subject Cards + Unlimited Speedrun 90s */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj) => {
+              const meta = subjectMeta[subj];
+              const todayAttempt = userAttemptsToday[subj];
+              const chosenMode = selectedLobbyMode[subj];
+              const accentStrip =
+                subj === 'math'
+                  ? 'from-blue-500 via-cyan-400 to-indigo-500'
+                  : subj === 'physics'
+                  ? 'from-amber-500 via-orange-400 to-yellow-400'
+                  : 'from-emerald-500 via-teal-400 to-cyan-500';
+
+              return (
+                <div
+                  key={subj}
+                  className="rm-card-interactive arena-frame arena-card-hover bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm flex flex-col justify-between gap-4"
+                >
+                  <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${accentStrip} roadmap-shimmer-bar`} />
+
+                  <div className="space-y-3 pt-1 relative z-10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                          {meta.icon}
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{meta.label}</h3>
+                      </div>
+                      <span
+                        className={`text-xs font-mono font-bold tabular-nums ${
+                          todayAttempt ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+                        }`}
+                      >
+                        {todayAttempt ? '0/1 lượt hôm nay' : '1/1 lượt hôm nay'}
+                      </span>
+                    </div>
+
+                    {todayAttempt ? (
+                      <div className="p-3.5 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
+                        <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
+                          <Lock className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Đã hoàn thành lượt chính thức ({dateKey})</span>
+                        </div>
+                        <div className="text-slate-600 dark:text-slate-400 tabular-nums">
+                          {todayAttempt.mode === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'} ·{' '}
+                          <strong className="font-mono text-indigo-600 dark:text-indigo-400">{todayAttempt.score}/100</strong> ·{' '}
+                          <span className="font-mono">{formatDuration(todayAttempt.durationSec)}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          Chọn hình thức thi đấu chính thức hôm nay:
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
+                          <button
+                            onClick={() => setSelectedLobbyMode((prev) => ({ ...prev, [subj]: 'mcq' }))}
+                            className={`arena-btn py-2 px-2 rounded-sm text-xs font-bold cursor-pointer border ${
+                              chosenMode === 'mcq'
+                                ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-slate-900 dark:text-white shadow-xs'
+                                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            Trắc nghiệm (5 câu)
+                          </button>
+                          <button
+                            onClick={() => setSelectedLobbyMode((prev) => ({ ...prev, [subj]: 'essay' }))}
+                            className={`arena-btn py-2 px-2 rounded-sm text-xs font-bold cursor-pointer border ${
+                              chosenMode === 'essay'
+                                ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-slate-900 dark:text-white shadow-xs'
+                                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            Tự luận (AI Chấm)
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 relative z-10">
+                    {todayAttempt ? (
+                      <div className="text-center py-2 px-3 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 tabular-nums">
+                        Mở lại lượt chính thức sau {resetCountdown}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => startArenaMatch(subj, chosenMode, false)}
+                        className="arena-btn arena-btn-primary cs-deck-btn w-full py-2.5 px-4 rounded-md bg-indigo-600 hover:bg-indigo-700 border border-indigo-400/60 text-white text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Play className="w-3.5 h-3.5" />
+                        <span>
+                          Thi Chính Thức ({chosenMode === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'})
+                        </span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => startArenaMatch(subj, 'mcq', true)}
+                      className="arena-btn w-full py-2 px-3 rounded-md bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/50 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Flame className="w-3.5 h-3.5" />
+                      <span>Đấu Tốc Độ Speedrun 90s (Không giới hạn)</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* WEEKLY LEADERBOARD (PODIUM + TOOLBAR + H2H + GHOST DUEL) */}
+          <div className="rm-arch-frame arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 sm:p-6 shadow-sm space-y-5">
+            <span aria-hidden="true" className="pointer-events-none absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t border-l border-amber-500/70" />
+            <span aria-hidden="true" className="pointer-events-none absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t border-r border-amber-500/70" />
+            <div className="arena-beam-sweep" />
+
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 relative z-10">
+              <div>
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
+                  <div className="w-8 h-8 rounded-sm bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 flex items-center justify-center">
+                    <Trophy className="w-4 h-4 text-amber-500 icon-anim-trophy" />
+                  </div>
+                  <span>
+                    Bảng Xếp Hạng ({activeScopedWeekId.split('_')[0]}) · {divisionMeta.labelVi}
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-2 mt-1">
+                  <span className="font-mono">{getWeekDateRangeLabel()}</span>
+                  <span>·</span>
+                  <span>
+                    {isStreamLive ? 'Đồng bộ trực tuyến thời gian thực' : 'Đồng bộ máy chủ'}
+                  </span>
+                  {divisionStats.topScore > 0 && (
+                    <>
+                      <span>·</span>
+                      <span className="font-mono text-amber-600 dark:text-amber-400">
+                        Cao nhất: {divisionStats.topScore}đ
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
+                {[
+                  { id: 'overall' as RankFilterTab, label: 'Trung Bình Chung' },
+                  { id: 'math' as RankFilterTab, label: 'Môn Toán' },
+                  { id: 'physics' as RankFilterTab, label: 'Môn Vật Lí' },
+                  { id: 'cs' as RankFilterTab, label: 'Môn Tin Học' }
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setRankTab(t.id)}
+                    className={`arena-btn px-3 py-1.5 rounded-sm text-xs font-bold whitespace-nowrap cursor-pointer border ${
+                      rankTab === t.id
+                        ? 'bg-white dark:bg-slate-900 border-indigo-400/70 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                        : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* TOP 3 OLYMPIC PODIUM SHOWCASE */}
+            {top3Entries.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 relative z-10">
+                {top3Entries.map((row, idx) => {
+                  const styleMap = [
+                    {
+                      badge: '🥇 HẠNG #1',
+                      border: 'border-amber-400/80 bg-amber-50/70 dark:bg-amber-950/25',
+                      scoreColor: 'text-amber-600 dark:text-amber-300'
+                    },
+                    {
+                      badge: '🥈 HẠNG #2',
+                      border: 'border-slate-300 dark:border-slate-600 bg-slate-50/80 dark:bg-slate-800/40',
+                      scoreColor: 'text-slate-700 dark:text-slate-200'
+                    },
+                    {
+                      badge: '🥉 HẠNG #3',
+                      border: 'border-orange-300 dark:border-orange-700 bg-orange-50/60 dark:bg-orange-950/25',
+                      scoreColor: 'text-orange-600 dark:text-orange-300'
+                    }
+                  ][idx];
+
+                  return (
+                    <div
+                      key={row.userId}
+                      className={`p-4 rounded-md border flex items-center justify-between gap-3 ${styleMap.border}`}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-mono font-extrabold text-slate-600 dark:text-slate-300">
+                          {styleMap.badge}
+                        </div>
+                        <div className="text-sm font-extrabold text-slate-900 dark:text-white truncate mt-0.5">
+                          {row.displayName}
+                        </div>
+                        <div className="text-[11px] font-mono text-slate-500">
+                          @{row.username} · {row.totalAttempts} lượt
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className={`text-xl font-extrabold font-mono tabular-nums ${styleMap.scoreColor}`}>
+                          {row.overallAvg}đ
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleChallengeGhost(row)}
+                          className="mt-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                        >
+                          Thách đấu Ghost
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              </div>
+            )}
 
-      {/* My Weekly Attempts History */}
-      {userWeekAttempts.length > 0 && (
-        <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm space-y-3">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Award className="w-4 h-4 text-indigo-500" />
-            <span>
-              {isEn
-                ? `Your Weekly Attempts Log (${userWeekAttempts.length} rounds)`
-                : `Nhật ký các lượt thi tuần này của bạn (${userWeekAttempts.length} lượt)`}
-            </span>
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {userWeekAttempts.map((att, hIdx) => (
-              <div
-                key={att.id}
-                style={{ animationDelay: `${hIdx * 35}ms` }}
-                className="arena-card-hover arena-row-in p-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
-              >
-                <div className="min-w-0">
-                  <div className="font-bold text-slate-900 dark:text-slate-100">
-                    {subjectMeta[att.subject].label} · {att.mode === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'} · {att.dateKey}
-                  </div>
-                  <div className="text-slate-500 dark:text-slate-400 truncate mt-0.5">{att.summary}</div>
+            {/* Competitive BXH Filter & Action Toolbar */}
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[220px]">
+                <div className="relative flex-1 max-w-xs">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Tìm tên thí sinh hoặc @username..."
+                    className="w-full pl-8 pr-3 py-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
                 </div>
-                <div className="text-right shrink-0 font-mono tabular-nums">
-                  <div className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">{att.score}đ</div>
-                  <div className="text-[11px] text-slate-400">{formatDuration(att.durationSec)}</div>
+
+                <select
+                  value={rankSort}
+                  onChange={(e) => setRankSort(e.target.value as RankSortMode)}
+                  className="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
+                >
+                  <option value="overallAvg">Xếp theo: Điểm TB</option>
+                  <option value="bestTotal">Xếp theo: Tổng Best 3 môn</option>
+                  <option value="fastest">Xếp theo: Tốc độ trung bình</option>
+                  <option value="attempts">Xếp theo: Số lượt thi</option>
+                </select>
+
+                {availableWeeks.length > 1 && (
+                  <select
+                    value={activeScopedWeekId}
+                    onChange={(e) =>
+                      setSelectedWeekOverride(e.target.value === liveScopedWeekId ? null : e.target.value)
+                    }
+                    className="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-mono font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
+                  >
+                    {availableWeeks.map((wk) => (
+                      <option key={wk} value={wk}>
+                        {wk === liveScopedWeekId ? `${wk.split('_')[0]} (Hiện tại)` : wk.split('_')[0]}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOnlyRivalsFilter((v) => !v)}
+                  className={`arena-btn px-2.5 py-1.5 rounded-md border text-xs font-bold flex items-center gap-1 cursor-pointer ${
+                    onlyRivalsFilter
+                      ? 'bg-amber-500 text-slate-950 border-amber-400'
+                      : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <Star className="w-3.5 h-3.5" />
+                  <span>Đối thủ ({rivalIds.length})</span>
+                </button>
+
+                {myLeaderboardRow.rank && (
+                  <button
+                    type="button"
+                    onClick={() => myRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                    className="arena-btn px-2.5 py-1.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 text-xs font-bold cursor-pointer"
+                  >
+                    Vị trí của tôi (#{myLeaderboardRow.rank})
+                  </button>
+                )}
+
+                {mergedLeaderboard.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleExportCsv}
+                    className="arena-btn px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer hover:border-indigo-400"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Xuất CSV</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {mergedLeaderboard.length === 0 ? (
+              <div className="py-10 text-center space-y-2 border border-dashed border-slate-300 dark:border-slate-700 rounded-md relative z-10">
+                <Users className="w-8 h-8 text-slate-400 mx-auto" />
+                <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  {searchQuery || onlyRivalsFilter
+                    ? 'Không tìm thấy thí sinh phù hợp bộ lọc'
+                    : `Chưa có thí sinh nào nộp bài trong tuần ${activeScopedWeekId.split('_')[0]}`}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Hoàn thành 1 lượt thi Toán, Vật lí hoặc Tin học phía trên để ghi danh vào Bảng Xếp Hạng!
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto relative z-10 border border-slate-200 dark:border-slate-800 rounded-md">
+                <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-mono">
+                      <th className="py-2.5 px-3 font-semibold">Hạng</th>
+                      <th className="py-2.5 px-3 font-semibold">Thí sinh</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Toán (TB)</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Vật lí (TB)</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Tin học (TB)</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">TB Chung</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Lượt / Thời gian</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {mergedLeaderboard.map((row, idx) => {
+                      const isMe = row.userId === activeContestant.uid;
+                      const isRival = rivalIds.includes(row.userId);
+                      const podiumBg =
+                        idx === 0
+                          ? 'bg-amber-50/45 dark:bg-amber-950/15'
+                          : idx === 1
+                          ? 'bg-slate-50/60 dark:bg-slate-800/25'
+                          : idx === 2
+                          ? 'bg-orange-50/40 dark:bg-orange-950/15'
+                          : '';
+                      return (
+                        <tr
+                          key={row.userId}
+                          ref={isMe ? myRowRef : undefined}
+                          style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
+                          className={`arena-row-in transition-colors ${
+                            isMe
+                              ? 'bg-indigo-50/80 dark:bg-indigo-950/35 font-semibold'
+                              : `${podiumBg} hover:bg-slate-50 dark:hover:bg-slate-800/45`
+                          }`}
+                        >
+                          <td className="py-3 px-3 font-mono font-bold tabular-nums">
+                            <span
+                              className={`inline-flex items-center justify-center min-w-[44px] px-2 py-0.5 rounded-sm border text-xs ${
+                                idx === 0
+                                  ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-600 text-amber-800 dark:text-amber-300'
+                                  : idx === 1
+                                  ? 'bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200'
+                                  : idx === 2
+                                  ? 'bg-orange-100 dark:bg-orange-950/60 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-300'
+                                  : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                              }`}
+                            >
+                              {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="font-bold text-slate-900 dark:text-slate-100">
+                              {row.displayName}{' '}
+                              {isMe && <span className="text-indigo-600 dark:text-indigo-400">(Bạn)</span>}
+                            </div>
+                            <div className="text-[11px] font-mono text-slate-400">@{row.username}</div>
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono tabular-nums">
+                            {row.mathAvg !== null ? `${row.mathAvg}đ` : '—'}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono tabular-nums">
+                            {row.physicsAvg !== null ? `${row.physicsAvg}đ` : '—'}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono tabular-nums">
+                            {row.csAvg !== null ? `${row.csAvg}đ` : '—'}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-extrabold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                            {row.overallAvg}đ
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono text-xs text-slate-500 tabular-nums">
+                            {row.totalAttempts} lượt · {formatDuration(row.totalTimeSec)}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            {!isMe && (
+                              <div className="inline-flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleRival(row.userId)}
+                                  title={isRival ? 'Bỏ theo dõi đối thủ' : 'Đánh dấu đối thủ'}
+                                  className={`p-1.5 rounded-sm border cursor-pointer ${
+                                    isRival
+                                      ? 'bg-amber-400/20 border-amber-400 text-amber-500'
+                                      : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:text-amber-400'
+                                  }`}
+                                >
+                                  <Star className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setH2hEntry(row)}
+                                  className="px-2 py-1 rounded-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:border-sky-400 cursor-pointer whitespace-nowrap"
+                                >
+                                  So sánh
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleChallengeGhost(row)}
+                                  className="px-2 py-1 rounded-sm bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-300 dark:border-indigo-700 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white cursor-pointer whitespace-nowrap"
+                                >
+                                  Ghost
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* My Weekly Attempts History */}
+          {userWeekAttempts.length > 0 && (
+            <div className="arena-frame arena-stagger-in bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-5 shadow-sm space-y-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Award className="w-4 h-4 text-indigo-500" />
+                <span>Nhật ký các lượt thi tuần này của bạn ({userWeekAttempts.length} lượt)</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {userWeekAttempts.map((att, hIdx) => (
+                  <div
+                    key={att.id}
+                    style={{ animationDelay: `${hIdx * 35}ms` }}
+                    className="arena-card-hover arena-row-in p-3 rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-bold text-slate-900 dark:text-slate-100">
+                        {subjectMeta[att.subject].label} · {att.mode === 'mcq' ? 'Trắc nghiệm' : 'Tự luận'} · {att.dateKey}
+                      </div>
+                      <div className="text-slate-500 dark:text-slate-400 truncate mt-0.5">{att.summary}</div>
+                    </div>
+                    <div className="text-right shrink-0 font-mono tabular-nums">
+                      <div className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">{att.score}đ</div>
+                      <div className="text-[11px] text-slate-400">{formatDuration(att.durationSec)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* HEAD-TO-HEAD (H2H) COMPARISON MODAL */}
+      {h2hEntry && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4"
+          onClick={() => setH2hEntry(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-5 sm:p-6 space-y-5 shadow-2xl"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-base font-extrabold text-slate-900 dark:text-white">
+                <Swords className="w-5 h-5 text-indigo-500" />
+                <span>So Sánh Đối Đầu (Head-to-Head)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setH2hEntry(null)}
+                className="p-1.5 rounded-sm text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div className="p-3 rounded-md bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800">
+                <div className="text-xs font-mono text-indigo-600 dark:text-indigo-300">BẠN</div>
+                <div className="text-sm font-extrabold text-slate-900 dark:text-white truncate mt-0.5">
+                  {activeContestant.displayName}
+                </div>
+                <div className="text-xl font-extrabold font-mono text-indigo-600 dark:text-indigo-400 mt-1 tabular-nums">
+                  {myLeaderboardRow.entry?.overallAvg ?? 0}đ
                 </div>
               </div>
-            ))}
+              <div className="p-3 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800">
+                <div className="text-xs font-mono text-amber-600 dark:text-amber-300">ĐỐI THỦ</div>
+                <div className="text-sm font-extrabold text-slate-900 dark:text-white truncate mt-0.5">
+                  {h2hEntry.displayName}
+                </div>
+                <div className="text-xl font-extrabold font-mono text-amber-600 dark:text-amber-400 mt-1 tabular-nums">
+                  {h2hEntry.overallAvg}đ
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {(
+                [
+                  {
+                    label: 'Toán học (TB)',
+                    mine: myLeaderboardRow.entry?.mathAvg ?? 0,
+                    theirs: h2hEntry.mathAvg ?? 0
+                  },
+                  {
+                    label: 'Vật lí (TB)',
+                    mine: myLeaderboardRow.entry?.physicsAvg ?? 0,
+                    theirs: h2hEntry.physicsAvg ?? 0
+                  },
+                  {
+                    label: 'Tin học (TB)',
+                    mine: myLeaderboardRow.entry?.csAvg ?? 0,
+                    theirs: h2hEntry.csAvg ?? 0
+                  }
+                ]
+              ).map((metric) => (
+                <div key={metric.label} className="space-y-1">
+                  <div className="flex items-center justify-between font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
+                    <span className="font-mono text-indigo-600 dark:text-indigo-400">{metric.mine}đ</span>
+                    <span>{metric.label}</span>
+                    <span className="font-mono text-amber-600 dark:text-amber-400">{metric.theirs}đ</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 h-2">
+                    <div className="bg-slate-200 dark:bg-slate-800 rounded-l-sm overflow-hidden flex justify-end">
+                      <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, metric.mine)}%` }} />
+                    </div>
+                    <div className="bg-slate-200 dark:bg-slate-800 rounded-r-sm overflow-hidden">
+                      <div className="h-full bg-amber-500" style={{ width: `${Math.min(100, metric.theirs)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleChallengeGhost(h2hEntry);
+                  setH2hEntry(null);
+                }}
+                className="arena-btn px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Swords className="w-3.5 h-3.5" />
+                <span>Thách đấu Ghost ngay</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setH2hEntry(null)}
+                className="px-4 py-2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}
